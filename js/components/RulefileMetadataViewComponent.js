@@ -255,7 +255,7 @@ export const RulefileMetadataViewComponent = (function () {
             if (Number.isNaN(date.getTime())) return iso_string;
             const locale = window.Translation?.getCurrentLocale?.()
                 || window.Translation?.currentLocale
-                || (typeof navigator !== 'undefined' ? navigator.language : 'sv-SE');
+                || (typeof navigator !== 'undefined' ? navigator.language : 'en-GB');
             return date.toLocaleDateString(locale, { year: 'numeric', month: '2-digit', day: '2-digit' });
         } catch (error) {
             console.warn('[RulefileMetadataViewComponent] Failed to format date', iso_string, error);

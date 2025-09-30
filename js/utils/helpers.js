@@ -89,7 +89,7 @@
         }
     }
 
-    function format_iso_to_local_datetime(iso_string, lang_code = 'sv-SE') {
+    function format_iso_to_local_datetime(iso_string, lang_code = 'en-GB') {
         if (!iso_string) return '';
         try {
             const date = new Date(iso_string);
@@ -111,7 +111,7 @@
         }
     }
 
-    function format_iso_to_relative_time(iso_string, lang_code = 'sv-SE') {
+    function format_iso_to_relative_time(iso_string, lang_code = 'en-GB') {
         if (!iso_string) return '';
         const t = (typeof window.Translation?.t === 'function') ? window.Translation.t : (key) => `**${key}**`;
         
@@ -341,7 +341,7 @@
         return 0;
     }
     
-    function format_number_locally(number, lang_code = 'sv-SE', options = {}) {
+    function format_number_locally(number, lang_code = 'en-GB', options = {}) {
         if (typeof number !== 'number' || isNaN(number)) {
             return '---';
         }
