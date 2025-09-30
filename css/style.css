@@ -44,6 +44,10 @@
     --container-max-width: 1080px;
     --spacing-unit: 1rem;
 
+    /* Build timestamp styling */
+    --build-timestamp-color: #9ca3af;
+    --build-timestamp-font-size: 0.75rem;
+
     --button-default-bg: #e0f2f1;
     --button-default-text: var(--primary-color-dark);
     --button-default-hover-bg: #cce8e4;

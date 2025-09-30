@@ -664,7 +664,7 @@ window.dependencyManager = dependencyManager;
         if (buildTimestampElement && window.BUILD_INFO) {
             const buildDate = window.BUILD_INFO.date;
             const buildTime = window.BUILD_INFO.time;
-            buildTimestampElement.textContent = `Build ${buildDate} kl ${buildTime}`;
+            buildTimestampElement.textContent = `Byggt ${buildDate} klockan ${buildTime}`;
         }
     }
 

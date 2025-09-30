@@ -16,5 +16,12 @@ export default defineConfig({
   },
   resolve: {
     preserveSymlinks: true
+  },
+  build: {
+    rollupOptions: {
+      input: {
+        main: './index.html'
+      }
+    }
   }
 })
