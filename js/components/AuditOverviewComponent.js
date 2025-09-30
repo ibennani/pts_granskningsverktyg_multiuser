@@ -119,12 +119,16 @@ export const AuditOverviewComponent = (function () {
     }
 
     function handle_export_word() {
+        console.log('[AuditOverview] handle_export_word called');
         const t = Translation_t;
         const current_global_state = local_getState();
+        console.log('[AuditOverview] Current audit status:', current_global_state.auditStatus);
         if (current_global_state.auditStatus !== 'locked') {
+            console.log('[AuditOverview] Audit not locked, showing warning');
             NotificationComponent_show_global_message(t('audit_not_locked_for_export', { status: current_global_state.auditStatus }), 'warning');
             return;
         }
+        console.log('[AuditOverview] Calling ExportLogic_export_to_word');
         ExportLogic_export_to_word(current_global_state);
     }
 
@@ -240,11 +244,16 @@ export const AuditOverviewComponent = (function () {
                 }));
             }
             if (ExportLogic_export_to_word) {
-                left_group.appendChild(Helpers_create_element('button', {
+                console.log('[AuditOverview] Creating Word export button');
+                const word_export_button = Helpers_create_element('button', {
                     class_name: ['button', 'button-default'],
                     html_content: `<span>${t('export_to_word')}</span>` + Helpers_get_icon_svg('export', ['currentColor'], 18),
                     event_listeners: { click: handle_export_word }
-                }));
+                });
+                console.log('[AuditOverview] Word export button created:', word_export_button);
+                left_group.appendChild(word_export_button);
+            } else {
+                console.log('[AuditOverview] ExportLogic_export_to_word not available');
             }
         }
 

@@ -323,12 +323,14 @@ async function export_to_excel(current_audit) {
 }
 
 async function export_to_word(current_audit) {
+    console.log('[Word Export] Starting export_to_word function');
     const t = get_t_internal();
     if (!current_audit) {
         show_global_message_internal(t('no_audit_data_to_save'), 'error');
         return;
     }
 
+    console.log('[Word Export] current_audit found, proceeding...');
     try {
         const children = [];
         
@@ -353,6 +355,7 @@ async function export_to_word(current_audit) {
 
         // Gå igenom alla krav med underkännanden - sortera enligt ref.text
         const requirements_with_deficiencies = get_requirements_with_deficiencies(current_audit);
+        console.log('[Word Export] Found requirements with deficiencies:', requirements_with_deficiencies.length);
         
         // Sortera krav enligt ref.text med naturlig sortering
         const sorted_requirements = requirements_with_deficiencies.sort((a, b) => {
@@ -422,12 +425,25 @@ async function export_to_word(current_audit) {
             }
             
             // Principer
-            if (req.classifications && req.classifications.length > 0) {
-                const principle_texts = req.classifications
-                    .filter(c => c.taxonomyId === 'wcag22-pour')
-                    .map(c => c.conceptId)
-                    .filter(Boolean);
-                
+            {
+                const classifications = Array.isArray(req.classifications) ? req.classifications : [];
+                const taxonomy = current_audit?.ruleFileContent?.metadata?.taxonomies
+                    ?.find(t => t.id === 'wcag22-pour');
+
+                const norm = v => String(v ?? '').trim().toLowerCase();
+
+                const principle_texts = taxonomy
+                    ? classifications
+                        .filter(c => norm(c.taxonomyId) === 'wcag22-pour')
+                        .map(c => {
+                            const concept = taxonomy.concepts?.find?.(x => norm(x?.id) === norm(c.conceptId));
+                            return (typeof concept?.label === 'string' && concept.label.trim())
+                                ? concept.label
+                                : c.conceptId; // fallback om något ändå glappar
+                        })
+                        .filter(Boolean)
+                    : [];
+
                 if (principle_texts.length > 0) {
                     bullet_items.push(
                         new Paragraph({
@@ -437,13 +453,14 @@ async function export_to_word(current_audit) {
                                 new TextRun({ text: principle_texts.join(', ') })
                             ],
                             indent: {
-                                left: 283, // 0.5 cm = 283 twips
-                                hanging: 142  // 0.25 cm = 142 twips
+                                left: 283,
+                                hanging: 142
                             }
                         })
                     );
                 }
             }
+
             
             // Lägg till punkslistan
             children.push(...bullet_items);
