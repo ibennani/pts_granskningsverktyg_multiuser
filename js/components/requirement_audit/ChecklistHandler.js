@@ -153,16 +153,18 @@ export const ChecklistHandler = (function () {
             check_wrapper.appendChild(condition_text_div);
             
             const actions_div = Helpers_create_element('div', { class_name: 'condition-actions' });
+            const check_icon = Helpers_get_icon_svg ? Helpers_get_icon_svg('check_circle', [], 16) : '';
+            const cancel_icon = Helpers_get_icon_svg ? Helpers_get_icon_svg('cancel', [], 16) : '';
             actions_div.append(
                 Helpers_create_element('button', { 
                     class_name: ['button', 'button-success', 'button-small'],
                     attributes: { 'data-action': 'set-check-complies' },
-                    html_content: `<span>${t('check_complies')}</span>` + Helpers_get_icon_svg('check_circle', [], 16)
+                    html_content: `<span>${t('check_complies')}</span>${check_icon}`
                 }),
                 Helpers_create_element('button', {
                     class_name: ['button', 'button-danger', 'button-small'],
                     attributes: { 'data-action': 'set-check-not-complies' },
-                    html_content: `<span>${t('check_does_not_comply')}</span>` + Helpers_get_icon_svg('cancel', [], 16)
+                    html_content: `<span>${t('check_does_not_comply')}</span>${cancel_icon}`
                 })
             );
             check_wrapper.appendChild(actions_div);
@@ -194,16 +196,18 @@ export const ChecklistHandler = (function () {
                 pc_item_li.appendChild(Helpers_create_element('div', { class_name: 'pass-criterion-status' }));
                 
                 const pc_actions_div = Helpers_create_element('div', { class_name: 'pass-criterion-actions' });
+                const thumb_up_icon = Helpers_get_icon_svg ? Helpers_get_icon_svg('thumb_up', [], 16) : '';
+                const thumb_down_icon = Helpers_get_icon_svg ? Helpers_get_icon_svg('thumb_down', [], 16) : '';
                 pc_actions_div.append(
                     Helpers_create_element('button', {
                         class_name: ['button', 'button-success', 'button-small'],
                         attributes: { 'data-action': 'set-pc-passed' },
-                        html_content: `<span>${t('pass_criterion_approved')}</span>` + Helpers_get_icon_svg('thumb_up', [], 16)
+                        html_content: `<span>${t('pass_criterion_approved')}</span>${thumb_up_icon}`
                     }),
                     Helpers_create_element('button', {
                         class_name: ['button', 'button-danger', 'button-small'],
                         attributes: { 'data-action': 'set-pc-failed' },
-                        html_content: `<span>${t('pass_criterion_failed')}</span>` + Helpers_get_icon_svg('thumb_down', [], 16)
+                        html_content: `<span>${t('pass_criterion_failed')}</span>${thumb_down_icon}`
                     })
                 );
                 pc_item_li.appendChild(pc_actions_div);

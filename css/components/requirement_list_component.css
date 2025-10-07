@@ -180,7 +180,7 @@
     font-style: normal;
     font-variant: normal;
     text-rendering: auto;
-    /* Font Awesome 6 Free Weights:
+    /* Font Awesome 7 Free Weights:
        Regular: 400
        Solid: 900
     */
@@ -192,28 +192,28 @@
 
 /* Specifika ikoner och färger */
 .status-icon-passed::before {
-    font-family: "Font Awesome 6 Free", "Font Awesome 6 Solid"; /* Fallback om solid inte är i Free */
+    font-family: "Font Awesome 7 Free";
     font-weight: 900; 
     content: "\f00c"; /* fa-check */
     color: var(--success-color);
 }
 
 .status-icon-failed::before {
-    font-family: "Font Awesome 6 Free", "Font Awesome 6 Solid";
+    font-family: "Font Awesome 7 Free";
     font-weight: 900; 
     content: "\f00d"; /* fa-xmark */
     color: var(--danger-color);
 }
 
 .status-icon-partially-audited::before {
-    font-family: "Font Awesome 6 Free", "Font Awesome 6 Solid";
+    font-family: "Font Awesome 7 Free";
     font-weight: 900; 
     content: "\f5c0"; /* fa-circle-half-stroke */
     color: var(--warning-color);
 }
 
 .status-icon-not-audited::before {
-    font-family: "Font Awesome 6 Free", "Font Awesome 6 Regular"; /* Fallback om regular inte är i Free */
+    font-family: "Font Awesome 7 Free";
     font-weight: 400; 
     content: "\f111"; /* fa-circle (regular) */
     color: var(--text-color-muted); 
@@ -221,7 +221,7 @@
 
 /* *** NYA REGLER FÖR "UPPDATERAD"-STATUS *** */
 .status-icon-updated::before {
-    font-family: "Font Awesome 6 Free", "Font Awesome 6 Solid";
+    font-family: "Font Awesome 7 Free";
     font-weight: 900;
     content: "\f01e"; /* fa-arrows-rotate (tidigare fa-sync-alt) */
     color: var(--info-color); /* Använder info-färgen (blå) */
