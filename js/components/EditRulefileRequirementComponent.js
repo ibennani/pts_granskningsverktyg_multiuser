@@ -165,16 +165,38 @@ export const EditRulefileRequirementComponent = (function () {
             return;
         }
         
-        local_dispatch({
-            type: local_StoreActionTypes.UPDATE_REQUIREMENT_DEFINITION,
-            payload: {
-                requirementId: params_ref.id,
-                updatedRequirementData: local_requirement_data
-            }
-        });
+        const is_new_requirement = params_ref.id === 'new';
         
-        NotificationComponent_show_global_message(t('rulefile_requirement_saved'), 'success');
-        router_ref('rulefile_view_requirement', { id: params_ref.id });
+        if (is_new_requirement) {
+            // Generera nytt ID och key för nytt krav
+            const new_id = Helpers_generate_uuid_v4();
+            const new_key = (local_requirement_data.title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').substring(0, 50) || 'req') + '-' + new_id.substring(0, 8);
+            
+            local_requirement_data.id = new_id;
+            local_requirement_data.key = new_key;
+            
+            local_dispatch({
+                type: local_StoreActionTypes.ADD_REQUIREMENT_DEFINITION,
+                payload: {
+                    requirementId: new_key,
+                    newRequirementData: local_requirement_data
+                }
+            });
+            
+            NotificationComponent_show_global_message(t('requirement_added_successfully', { reqTitle: local_requirement_data.title }), 'success');
+            router_ref('rulefile_view_requirement', { id: new_key });
+        } else {
+            local_dispatch({
+                type: local_StoreActionTypes.UPDATE_REQUIREMENT_DEFINITION,
+                payload: {
+                    requirementId: params_ref.id,
+                    updatedRequirementData: local_requirement_data
+                }
+            });
+            
+            NotificationComponent_show_global_message(t('rulefile_requirement_saved'), 'success');
+            router_ref('rulefile_view_requirement', { id: params_ref.id });
+        }
     }
     
     function handle_form_click(event) {
@@ -202,14 +224,19 @@ export const EditRulefileRequirementComponent = (function () {
                     passCriteria: []
                 });
 
-                // Spara ändringarna till global state direkt
-                if (typeof window !== 'undefined') {
-                    window.skipRulefileRequirementRender = (Number(window.skipRulefileRequirementRender) || 0) + 1;
+                // Spara ändringarna till global state direkt (endast för befintliga krav)
+                const is_new_requirement = params_ref.id === 'new';
+                if (!is_new_requirement) {
+                    // Endast för befintliga krav - spara till state
+                    if (typeof window !== 'undefined') {
+                        window.skipRulefileRequirementRender = (Number(window.skipRulefileRequirementRender) || 0) + 1;
+                    }
+                    local_dispatch({
+                        type: local_StoreActionTypes.UPDATE_REQUIREMENT_DEFINITION,
+                        payload: { requirementId: params_ref.id, updatedRequirementData: local_requirement_data }
+                    });
                 }
-                local_dispatch({
-                    type: local_StoreActionTypes.UPDATE_REQUIREMENT_DEFINITION,
-                    payload: { requirementId: params_ref.id, updatedRequirementData: local_requirement_data }
-                });
+                // För nya krav: håll allt lokalt tills kravet sparas
 
                 // Lägg bara till det nya elementet istället för att rendera om allt
                 _add_new_check_element(new_check_id);
@@ -218,7 +245,14 @@ export const EditRulefileRequirementComponent = (function () {
             case 'delete-check':
                 check_id = button.closest('.check-item-edit')?.dataset.checkId;
                 if (check_id) {
-                    router_ref('confirm_delete', { type: 'check', reqId: params_ref.id, checkId: check_id });
+                    const is_new_requirement = params_ref.id === 'new';
+                    if (is_new_requirement) {
+                        // För nya krav, ta bort kontrollpunkten direkt från local_requirement_data
+                        local_requirement_data.checks = local_requirement_data.checks.filter(c => c.id !== check_id);
+                        _rerender_checks_section();
+                    } else {
+                        router_ref('confirm_delete', { type: 'check', reqId: params_ref.id, checkId: check_id });
+                    }
                 }
                 break;
 
@@ -283,14 +317,19 @@ export const EditRulefileRequirementComponent = (function () {
                         failureStatementTemplate: ''
                     });
 
-                    // Spara ändringarna till global state direkt
-                    if (typeof window !== 'undefined') {
-                        window.skipRulefileRequirementRender = (Number(window.skipRulefileRequirementRender) || 0) + 1;
+                    // Spara ändringarna till global state direkt (endast för befintliga krav)
+                    const is_new_requirement = params_ref.id === 'new';
+                    if (!is_new_requirement) {
+                        // Endast för befintliga krav - spara till state
+                        if (typeof window !== 'undefined') {
+                            window.skipRulefileRequirementRender = (Number(window.skipRulefileRequirementRender) || 0) + 1;
+                        }
+                        local_dispatch({
+                            type: local_StoreActionTypes.UPDATE_REQUIREMENT_DEFINITION,
+                            payload: { requirementId: params_ref.id, updatedRequirementData: local_requirement_data }
+                        });
                     }
-                    local_dispatch({
-                        type: local_StoreActionTypes.UPDATE_REQUIREMENT_DEFINITION,
-                        payload: { requirementId: params_ref.id, updatedRequirementData: local_requirement_data }
-                    });
+                    // För nya krav: håll allt lokalt tills kravet sparas
 
                     // Lägg bara till det nya elementet istället för att rendera om allt
                     _add_new_pass_criterion_element(check_id, new_pc_id);
@@ -302,7 +341,17 @@ export const EditRulefileRequirementComponent = (function () {
                 check_id = button.closest('.check-item-edit')?.dataset.checkId;
                 pc_id = pc_item?.dataset.pcId;
                 if (check_id && pc_id) {
-                    router_ref('confirm_delete', { type: 'criterion', reqId: params_ref.id, checkId: check_id, pcId: pc_id });
+                    const is_new_requirement = params_ref.id === 'new';
+                    if (is_new_requirement) {
+                        // För nya krav, ta bort kriteriet direkt från local_requirement_data
+                        const check = local_requirement_data.checks.find(c => c.id === check_id);
+                        if (check) {
+                            check.passCriteria = check.passCriteria.filter(pc => pc.id !== pc_id);
+                            _rerender_checks_section();
+                        }
+                    } else {
+                        router_ref('confirm_delete', { type: 'criterion', reqId: params_ref.id, checkId: check_id, pcId: pc_id });
+                    }
                 }
                 break;
 
@@ -1102,17 +1151,46 @@ export const EditRulefileRequirementComponent = (function () {
         
         const requirement_id = params_ref?.id;
         const current_state = local_getState();
-        const requirement_from_store = current_state?.ruleFileContent?.requirements[requirement_id];
-
-        if (!requirement_from_store) {
-            plate_element.appendChild(Helpers_create_element('h1', { text_content: t('error_internal') }));
-            app_container_ref.appendChild(plate_element);
-            return;
+        const is_new_requirement = requirement_id === 'new';
+        
+        if (is_new_requirement) {
+            // Skapa tom kravstruktur för nytt krav
+            local_requirement_data = {
+                title: '',
+                expectedObservation: '',
+                instructions: '',
+                exceptions: '',
+                commonErrors: '',
+                tips: '',
+                examples: '',
+                standardReference: { text: '', url: '' },
+                metadata: {
+                    mainCategory: { text: '' },
+                    subCategory: { text: '' },
+                    impact: {
+                        isCritical: false,
+                        primaryScore: 0,
+                        secondaryScore: 0
+                    }
+                },
+                contentType: [],
+                classifications: [],
+                checks: []
+            };
+        } else {
+            const requirement_from_store = current_state?.ruleFileContent?.requirements[requirement_id];
+            if (!requirement_from_store) {
+                plate_element.appendChild(Helpers_create_element('h1', { text_content: t('error_internal') }));
+                app_container_ref.appendChild(plate_element);
+                return;
+            }
+            local_requirement_data = JSON.parse(JSON.stringify(requirement_from_store));
         }
 
-        local_requirement_data = JSON.parse(JSON.stringify(requirement_from_store));
-
-        plate_element.appendChild(Helpers_create_element('h1', { text_content: `${t('rulefile_edit_requirement_title')}: ${local_requirement_data.title}` }));
+        const page_title = is_new_requirement 
+            ? t('rulefile_add_requirement_title')
+            : `${t('rulefile_edit_requirement_title')}: ${local_requirement_data.title}`;
+        plate_element.appendChild(Helpers_create_element('h1', { text_content: page_title }));
         
         form_element_ref = Helpers_create_element('form');
         form_element_ref.addEventListener('submit', handle_form_submit);

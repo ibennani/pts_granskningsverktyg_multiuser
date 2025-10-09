@@ -23,6 +23,7 @@ export const ActionTypes = {
     CONFIRM_SINGLE_REVIEWED_REQUIREMENT: 'CONFIRM_SINGLE_REVIEWED_REQUIREMENT',
     CONFIRM_ALL_REVIEWED_REQUIREMENTS: 'CONFIRM_ALL_REVIEWED_REQUIREMENTS',
     UPDATE_REQUIREMENT_DEFINITION: 'UPDATE_REQUIREMENT_DEFINITION',
+    ADD_REQUIREMENT_DEFINITION: 'ADD_REQUIREMENT_DEFINITION',
     DELETE_REQUIREMENT_DEFINITION: 'DELETE_REQUIREMENT_DEFINITION',
     DELETE_CHECK_FROM_REQUIREMENT: 'DELETE_CHECK_FROM_REQUIREMENT',
     DELETE_CRITERION_FROM_CHECK: 'DELETE_CRITERION_FROM_CHECK',
@@ -144,6 +145,24 @@ function root_reducer(current_state, action) {
                 console.log(`%c[DEBUG] Reducer: FINAL classifications in new state for '${updateReqId}':`, 'color: #FF69B4; font-weight: bold;', JSON.parse(JSON.stringify(final_state.ruleFileContent.requirements[updateReqId].classifications)));
                 // --- DEBUG END ---
                 return final_state;
+            }
+            return current_state;
+
+        case ActionTypes.ADD_REQUIREMENT_DEFINITION:
+            const { requirementId: addReqId, newRequirementData } = action.payload;
+            console.log(`%c[DEBUG] Reducer: Received ADD_REQUIREMENT_DEFINITION for ID '${addReqId}'.`, 'color: #00FF00;');
+            if (current_state.ruleFileContent?.requirements && newRequirementData) {
+                const newRequirements = {
+                    ...current_state.ruleFileContent.requirements,
+                    [addReqId]: newRequirementData
+                };
+                return {
+                    ...current_state,
+                    ruleFileContent: {
+                        ...current_state.ruleFileContent,
+                        requirements: newRequirements
+                    }
+                };
             }
             return current_state;
 

@@ -61,6 +61,9 @@ export const RulefileRequirementsListComponent = (function () {
                 // *** KORRIGERING AV FELAKTIGT VY-NAMN ***
                 router_ref('confirm_delete', { type: 'requirement', reqId: requirementId });
                 break;
+            case 'add-req':
+                router_ref('rulefile_add_requirement', { id: 'new' });
+                break;
         }
     }
 
@@ -142,7 +145,20 @@ export const RulefileRequirementsListComponent = (function () {
             plate_element_ref.appendChild(global_message_element_ref);
         }
 
-        plate_element_ref.appendChild(Helpers_create_element('h1', { id: 'rulefile-list-h1', attributes: { tabindex: '-1' }, text_content: t('rulefile_edit_requirements_title') }));
+        // Skapa header-container med H1 och knapp på samma rad
+        const header_container = Helpers_create_element('div', { class_name: 'page-header-container', style: 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;' });
+        
+        const h1_element = Helpers_create_element('h1', { id: 'rulefile-list-h1', attributes: { tabindex: '-1' }, text_content: t('rulefile_edit_requirements_title') });
+        const add_requirement_button = Helpers_create_element('button', {
+            class_name: ['button', 'button-primary'],
+            html_content: `<span>${t('add_new_requirement_button')}</span>` + Helpers_get_icon_svg('add'),
+            attributes: { 'data-action': 'add-req', 'aria-label': t('add_new_requirement_button') }
+        });
+        
+        header_container.appendChild(h1_element);
+        header_container.appendChild(add_requirement_button);
+        plate_element_ref.appendChild(header_container);
+        
         plate_element_ref.appendChild(Helpers_create_element('p', { class_name: 'view-intro-text', text_content: t('rulefile_edit_requirements_intro') }));
 
         const toolbar_container_element = Helpers_create_element('div', { id: 'rulefile-list-toolbar-container' });
@@ -190,10 +206,12 @@ export const RulefileRequirementsListComponent = (function () {
         );
 
         content_div_for_delegation = Helpers_create_element('div', { class_name: 'requirements-list-content' });
-        content_div_for_delegation.addEventListener('click', handle_list_click);
-        // Add keyboard support for accessibility
-        content_div_for_delegation.addEventListener('keydown', handle_list_keydown);
         plate_element_ref.appendChild(content_div_for_delegation);
+        
+        // Flytta event delegation till plate_element_ref så den fångar alla klick inklusive header-knappen
+        plate_element_ref.addEventListener('click', handle_list_click);
+        // Add keyboard support for accessibility
+        plate_element_ref.addEventListener('keydown', handle_list_keydown);
 
         const bottom_actions_div = Helpers_create_element('div', { class_name: 'form-actions', style: 'margin-top: 2rem; justify-content: flex-start;' });
         const return_button = Helpers_create_element('button', {
@@ -373,7 +391,26 @@ export const RulefileRequirementsListComponent = (function () {
         const li = Helpers_create_element('li', { class_name: 'item-list-item', style: 'flex-direction: row; justify-content: space-between; align-items: center;' });
 
         const text_div = Helpers_create_element('div', { style: 'margin-right: 1rem; flex-grow: 1; min-width: 0;' });
-        text_div.appendChild(Helpers_create_element('h3', { style: 'font-size: 1.1rem; margin-bottom: 0.25rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;', text_content: req.title, attributes: { title: req.title } }));
+        
+        // Skapa H3-container för titel-knappen
+        const title_container = Helpers_create_element('h3', { 
+            style: 'font-size: 1.1rem; margin-bottom: 0.25rem; margin: 0; padding: 0;'
+        });
+        
+        // Skapa klickbar titel-knapp
+        const title_button = Helpers_create_element('button', {
+            class_name: 'requirement-list-title-button',
+            text_content: req.title,
+            attributes: { 
+                title: req.title,
+                'data-action': 'view-req',
+                'data-requirement-id': req.key,
+                'aria-label': `${t('view_prefix')} ${req.title}`
+            }
+        });
+        
+        title_container.appendChild(title_button);
+        text_div.appendChild(title_container);
         text_div.appendChild(Helpers_create_element('p', { style: 'font-size: 0.9rem; color: var(--text-color-muted); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;', text_content: req.standardReference?.text || '', attributes: { title: req.standardReference?.text || '' } }));
 
         const button_group = Helpers_create_element('div', { class_name: 'sample-actions-main', style: 'flex-shrink: 0;' });
@@ -417,8 +454,11 @@ export const RulefileRequirementsListComponent = (function () {
             unsubscribe_from_store_function = null;
         }
 
+        if (plate_element_ref) {
+            plate_element_ref.removeEventListener('click', handle_list_click);
+            plate_element_ref.removeEventListener('keydown', handle_list_keydown);
+        }
         if (content_div_for_delegation) {
-            content_div_for_delegation.removeEventListener('click', handle_list_click);
             content_div_for_delegation = null;
         }
         if (toolbar_component_instance) {

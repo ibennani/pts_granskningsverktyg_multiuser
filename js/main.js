@@ -175,6 +175,9 @@ window.dependencyManager = dependencyManager;
                 case 'rulefile_edit_requirement':
                     title_prefix = t('rulefile_edit_requirement_title');
                     break;
+                case 'rulefile_add_requirement':
+                    title_prefix = t('rulefile_add_requirement_title');
+                    break;
                 case 'rulefile_metadata':
                     title_prefix = t('rulefile_metadata_title');
                     break;
@@ -427,6 +430,7 @@ window.dependencyManager = dependencyManager;
             case 'rulefile_requirements': ComponentClass = RulefileRequirementsListComponent; break;
             case 'rulefile_view_requirement': ComponentClass = ViewRulefileRequirementComponent; break;
             case 'rulefile_edit_requirement': ComponentClass = EditRulefileRequirementComponent; break;
+            case 'rulefile_add_requirement': ComponentClass = EditRulefileRequirementComponent; break;
             case 'rulefile_metadata_edit': ComponentClass = EditRulefileMetadataViewComponent; break;
                 case 'rulefile_metadata': ComponentClass = RulefileMetadataViewComponent; break;
             case 'confirm_delete': ComponentClass = ConfirmDeleteViewComponent; break;
@@ -632,7 +636,7 @@ window.dependencyManager = dependencyManager;
             if (current_view_name_rendered === view_name_from_hash && 
                 current_view_component_instance && typeof current_view_component_instance.render === 'function') {
                 if (current_view_name_rendered !== 'confirm_sample_edit') {
-                    if (current_view_name_rendered === 'rulefile_edit_requirement') {
+                    if (current_view_name_rendered === 'rulefile_edit_requirement' || current_view_name_rendered === 'rulefile_add_requirement') {
                         const skip_count = Number(window.skipRulefileRequirementRender) || 0;
                         if (skip_count > 0) {
                             window.skipRulefileRequirementRender = skip_count - 1;

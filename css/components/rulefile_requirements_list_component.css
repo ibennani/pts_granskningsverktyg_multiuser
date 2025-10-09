@@ -1,0 +1,32 @@
+/* css/components/rulefile_requirements_list_component.css */
+
+.requirement-list-title-button {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font-family: inherit;
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--primary-color);
+    text-align: left;
+    cursor: pointer;
+    text-decoration: underline;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+    display: block;
+}
+
+.requirement-list-title-button:hover,
+.requirement-list-title-button:focus {
+    color: var(--primary-color-dark);
+    text-decoration: underline;
+}
+
+.requirement-list-title-button:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
