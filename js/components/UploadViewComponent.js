@@ -179,7 +179,7 @@ export const UploadViewComponent = (function () {
         const title = window.Helpers.create_element('h1', { text_content: t('app_title') });
         const intro_text = window.Helpers.create_element('p', { text_content: t('upload_view_intro') });
 
-        const audit_section_title = window.Helpers.create_element('h2', { text_content: t('upload_view_title_audit'), style: 'font-size: 1.2rem; margin-top: 2rem;' });
+        const actions_title = window.Helpers.create_element('h2', { text_content: t('upload_view_actions_title'), style: 'font-size: 1.2rem; margin-top: 2rem;' });
         const load_ongoing_audit_btn = window.Helpers.create_element('button', {
             id: 'load-ongoing-audit-btn',
             class_name: ['button', 'button-secondary'],
@@ -238,7 +238,7 @@ export const UploadViewComponent = (function () {
         app_container_ref.append(
             title, 
             intro_text, 
-            audit_section_title, 
+            actions_title,
             actions_container,
             section_separator,
             edit_section_title,
