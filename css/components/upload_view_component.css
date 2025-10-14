@@ -12,3 +12,24 @@
     flex-wrap: wrap; /* För mindre skärmar */
     gap: 1rem;
 }
+
+.upload-action-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+    align-items: flex-start;
+}
+
+.upload-action-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+}
+
+.upload-action-description {
+    font-size: 0.9rem;
+    opacity: 0.8;
+    margin: 0;
+}

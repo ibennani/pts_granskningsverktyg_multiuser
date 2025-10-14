@@ -180,18 +180,34 @@ export const UploadViewComponent = (function () {
         const intro_text = window.Helpers.create_element('p', { text_content: t('upload_view_intro') });
 
         const audit_section_title = window.Helpers.create_element('h2', { text_content: t('upload_view_title_audit'), style: 'font-size: 1.2rem; margin-top: 2rem;' });
+        const load_ongoing_audit_btn = window.Helpers.create_element('button', {
+            id: 'load-ongoing-audit-btn',
+            class_name: ['button', 'button-secondary'],
+            html_content: `<span>${t('upload_ongoing_audit')}</span>` + (window.Helpers.get_icon_svg ? window.Helpers.get_icon_svg('upload_file') : '')
+        });
+        const load_ongoing_description = window.Helpers.create_element('p', {
+            class_name: ['upload-action-description'],
+            text_content: t('upload_view_description_resume_audit')
+        });
+        const load_ongoing_block = window.Helpers.create_element('div', { class_name: ['upload-action-block'] });
+        load_ongoing_block.append(load_ongoing_audit_btn, load_ongoing_description);
+
         const start_new_audit_btn = window.Helpers.create_element('button', {
             id: 'start-new-audit-btn',
             class_name: ['button', 'button-primary'],
             html_content: `<span>${t('start_new_audit')}</span>` + (window.Helpers.get_icon_svg ? window.Helpers.get_icon_svg('start_new') : '')
         });
-        const load_ongoing_audit_btn = window.Helpers.create_element('button', {
-            id: 'load-ongoing-audit-btn',
-            class_name: ['button', 'button-secondary'],
-            html_content: `<span>${t('upload_ongoing_audit')}</span>` + (window.Helpers.get_icon_svg ? window.Helpers.get_icon_svg('load_existing') : '')
+        const start_new_description = window.Helpers.create_element('p', {
+            class_name: ['upload-action-description'],
+            text_content: t('upload_view_description_start_new')
         });
-        const audit_button_group = window.Helpers.create_element('div', { class_name: 'button-group' });
-        audit_button_group.append(start_new_audit_btn, load_ongoing_audit_btn);
+        const start_new_block = window.Helpers.create_element('div', { class_name: ['upload-action-block'] });
+        start_new_block.append(start_new_audit_btn, start_new_description);
+
+        const actions_container = window.Helpers.create_element('div', { class_name: ['upload-action-stack'] });
+        actions_container.append(load_ongoing_block, start_new_block);
+
+        const section_separator = window.Helpers.create_element('hr', { style: 'margin: 2rem 0;' });
 
         const edit_section_title = window.Helpers.create_element('h2', { text_content: t('upload_view_title_edit'), style: 'font-size: 1.2rem; margin-top: 2.5rem;' });
         const edit_rulefile_btn = window.Helpers.create_element('button', {
@@ -199,8 +215,12 @@ export const UploadViewComponent = (function () {
             class_name: ['button', 'button-default'],
             html_content: `<span>${t('upload_view_button_edit')}</span>` + (window.Helpers.get_icon_svg ? window.Helpers.get_icon_svg('edit') : '')
         });
-        const edit_button_group = window.Helpers.create_element('div', { class_name: 'button-group' });
-        edit_button_group.appendChild(edit_rulefile_btn);
+        const edit_description = window.Helpers.create_element('p', {
+            class_name: ['upload-action-description'],
+            text_content: t('upload_view_description_edit_rulefile')
+        });
+        const edit_block = window.Helpers.create_element('div', { class_name: ['upload-action-block'] });
+        edit_block.append(edit_rulefile_btn, edit_description);
 
         rule_file_input_for_audit = window.Helpers.create_element('input', {
             id: 'rule-file-input-audit',
@@ -219,10 +239,10 @@ export const UploadViewComponent = (function () {
             title, 
             intro_text, 
             audit_section_title, 
-            audit_button_group,
-            window.Helpers.create_element('hr', { style: 'margin: 2rem 0;' }),
+            actions_container,
+            section_separator,
             edit_section_title,
-            edit_button_group,
+            edit_block,
             rule_file_input_for_audit, 
             saved_audit_input_element, 
             rule_file_input_for_edit
