@@ -96,7 +96,7 @@ export const UpdateRulefileViewComponent = (function () {
         
         if (!window.RulefileUpdaterLogic) {
             console.error("CRITICAL: RulefileUpdaterLogic is not available on the window object.");
-            NotificationComponent_show_global_message('Internal application error. Please reload.', 'error');
+            NotificationComponent_show_global_message(t('error_internal_reload'), 'error');
             return;
         }
 
@@ -120,8 +120,10 @@ export const UpdateRulefileViewComponent = (function () {
 
             } catch (error) {
                 console.error("Fel vid uppdatering av regelfil:", error);
-                const detailed_error_message = `${t('rule_file_invalid_json')}. Teknisk detalj: ${error.message}`;
-                NotificationComponent_show_global_message(detailed_error_message, 'error');
+                NotificationComponent_show_global_message(
+                    t('rule_file_invalid_json_with_detail', { errorMessage: error.message }),
+                    'error'
+                );
             } finally {
                 if (event.target) event.target.value = '';
             }

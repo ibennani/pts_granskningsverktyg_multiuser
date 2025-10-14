@@ -165,8 +165,9 @@ export const ViewRulefileRequirementComponent = (function () {
                 text_content: `${t('check_item_title')} ${check_index + 1}`
             });
             check_wrapper.appendChild(check_number_label);
-            const logicText = check.logic ? check.logic.toUpperCase() : 'AND';
-            check_wrapper.appendChild(Helpers_create_element('p', { class_name: 'text-muted', html_content: `<strong>${t('check_logic_display')}</strong> ${logicText}`}));
+            const logic_key = check.logic?.toUpperCase() === 'OR' ? 'check_logic_or' : 'check_logic_and';
+            const logic_label = t(logic_key);
+            check_wrapper.appendChild(Helpers_create_element('p', { class_name: 'text-muted', html_content: `<strong>${t('check_logic_display')}</strong> ${logic_label}`}));
             if (check.passCriteria && check.passCriteria.length > 0) {
                 const pc_list = Helpers_create_element('ul', { class_name: 'pass-criteria-list' });
                 check.passCriteria.forEach((pc, pc_index) => {

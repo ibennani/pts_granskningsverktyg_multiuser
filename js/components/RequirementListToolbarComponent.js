@@ -182,7 +182,7 @@ export const RequirementListToolbarComponent = (function () {
             component_config.sortOptions.forEach(opt => {
                 sort_select.appendChild(Helpers_create_element('option', {
                     value: opt.value,
-                    text_content: t(opt.textKey, { defaultValue: opt.defaultValue })
+                    text_content: t(opt.textKey)
                 }));
             });
 

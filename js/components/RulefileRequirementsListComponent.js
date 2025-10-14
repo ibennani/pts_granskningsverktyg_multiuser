@@ -26,10 +26,10 @@ export const RulefileRequirementsListComponent = (function () {
     let results_summary_element = null;
 
     const SORT_OPTIONS = [
-        { value: 'ref_asc', textKey: 'sort_option_ref_asc_natural', defaultValue: 'Reference (Ascending)' },
-        { value: 'ref_desc', textKey: 'sort_option_ref_desc_natural', defaultValue: 'Reference (Descending)' },
-        { value: 'title_asc', textKey: 'sort_option_title_asc', defaultValue: 'Title (A-Z)' },
-        { value: 'title_desc', textKey: 'sort_option_title_desc', defaultValue: 'Title (Z-A)' }
+        { value: 'ref_asc', textKey: 'sort_option_ref_asc_natural' },
+        { value: 'ref_desc', textKey: 'sort_option_ref_desc_natural' },
+        { value: 'title_asc', textKey: 'sort_option_title_asc' },
+        { value: 'title_desc', textKey: 'sort_option_title_desc' }
     ];
 
     function assign_globals_once() {
@@ -44,11 +44,15 @@ export const RulefileRequirementsListComponent = (function () {
     }
 
     function handle_list_click(event) {
-        const button = event.target.closest('button[data-action]');
-        if (!button) return;
+        const action_element = event.target.closest('[data-action]');
+        if (!action_element) return;
 
-        const requirementId = button.dataset.requirementId;
-        const action = button.dataset.action;
+        if (action_element.tagName === 'A') {
+            event.preventDefault();
+        }
+
+        const requirementId = action_element.dataset.requirementId;
+        const action = action_element.dataset.action;
 
         switch (action) {
             case 'view-req':
@@ -70,9 +74,9 @@ export const RulefileRequirementsListComponent = (function () {
     function handle_list_keydown(event) {
         // Handle keyboard navigation for accessibility
         if (event.key === 'Enter' || event.key === ' ') {
-            const button = event.target.closest('button[data-action]');
-            if (!button) return;
-            
+            const action_element = event.target.closest('[data-action]');
+            if (!action_element) return;
+
             event.preventDefault();
             // Trigger the same action as click
             handle_list_click(event);
@@ -307,7 +311,10 @@ export const RulefileRequirementsListComponent = (function () {
         });
         console.log('[RulefileRequirementsListComponent] filtered count:', filtered_requirements.length, 'of', all_requirements.length);
         if (results_summary_element) {
-            results_summary_element.textContent = `Visar ${filtered_requirements.length} av ${all_requirements.length} krav`;
+            results_summary_element.textContent = t('rulefile_requirements_summary', {
+                filteredCount: filtered_requirements.length,
+                totalCount: all_requirements.length
+            });
         }
 
         const sorted_requirements = [...filtered_requirements];
@@ -398,11 +405,11 @@ export const RulefileRequirementsListComponent = (function () {
         });
         
         // Skapa klickbar titel-knapp
-        const title_button = Helpers_create_element('button', {
+        const title_button = Helpers_create_element('a', {
             class_name: 'requirement-list-title-button',
             text_content: req.title,
             attributes: { 
-                title: req.title,
+                href: '#',
                 'data-action': 'view-req',
                 'data-requirement-id': req.key,
                 'aria-label': `${t('view_prefix')} ${req.title}`
@@ -411,7 +418,7 @@ export const RulefileRequirementsListComponent = (function () {
         
         title_container.appendChild(title_button);
         text_div.appendChild(title_container);
-        text_div.appendChild(Helpers_create_element('p', { style: 'font-size: 0.9rem; color: var(--text-color-muted); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;', text_content: req.standardReference?.text || '', attributes: { title: req.standardReference?.text || '' } }));
+        text_div.appendChild(Helpers_create_element('p', { style: 'font-size: 0.9rem; color: var(--text-color-muted); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;', text_content: req.standardReference?.text || '' }));
 
         const button_group = Helpers_create_element('div', { class_name: 'sample-actions-main', style: 'flex-shrink: 0;' });
 

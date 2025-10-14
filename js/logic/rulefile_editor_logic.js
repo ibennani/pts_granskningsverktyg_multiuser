@@ -55,7 +55,7 @@
     // (Placeholder, as we are focusing on the requirement editor)
     function buildMetadataEditor(metadata, onSaveCallback) {
         const container = Helpers.create_element('div');
-        container.innerHTML = `<p>Metadata editor placeholder. Full implementation will follow.</p>`;
+        container.appendChild(Helpers.create_element('p', { text_content: Translation.t('metadata_editor_placeholder') }));
         return container;
     }
     
@@ -246,7 +246,7 @@
         leftWrapper.append(reqLabel, reqTextarea);
         const rightWrapper = Helpers.create_element('div', { class_name: 'criterion-textarea-wrapper' });
         const templateLabel = Helpers.create_element('label', { text_content: t('template_for_observation') });
-        const templateTextarea = Helpers.create_element('textarea', { class_name: 'form-control', value: pcData.failureStatementTemplate || '', name: 'passCriterionTemplate', attributes:{placeholder: t('failure_template_placeholder')} });
+        const templateTextarea = Helpers.create_element('textarea', { class_name: 'form-control', value: pcData.failureStatementTemplate || '', name: 'passCriterionTemplate' });
         Helpers.init_auto_resize_for_textarea(templateTextarea);
         const templateId = `req-template-${Helpers.generate_uuid_v4()}`;
         templateTextarea.id = templateId;

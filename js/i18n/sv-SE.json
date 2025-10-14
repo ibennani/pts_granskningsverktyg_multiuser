@@ -653,5 +653,10 @@
   "check_logic_display": "Logik för kriterier:",
   "content_types_associated": "Kopplade innehållstyper",
   "failure_statement_template_display": "Mall för avvikelsetext",
-  "metadata_and_classification_title": "Metadata och klassificering"
+  "metadata_and_classification_title": "Metadata och klassificering",
+  "rulefile_requirements_summary": "Visar {filteredCount} av {totalCount} krav",
+  "metadata_editor_placeholder": "Metadataredigeraren är under uppbyggnad. Funktionaliteten kommer i en senare version.",
+  "error_internal_reload": "Internt fel: försök att ladda om sidan.",
+  "rule_file_invalid_json_with_detail": "Filen måste vara i JSON-format. Teknisk detalj: {errorMessage}",
+  "requirement_with_reference": "{title} ({reference})"
 }

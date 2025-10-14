@@ -653,5 +653,10 @@
   "check_logic_display": "Logic for criteria:",
   "content_types_associated": "Associated Content Types",
   "failure_statement_template_display": "Template for failure statement",
-  "metadata_and_classification_title": "Metadata and Classification"
+  "metadata_and_classification_title": "Metadata and Classification",
+  "rulefile_requirements_summary": "Showing {filteredCount} of {totalCount} requirements",
+  "metadata_editor_placeholder": "The metadata editor is under construction. Full functionality will arrive in a later version.",
+  "error_internal_reload": "Internal error: try reloading the page.",
+  "rule_file_invalid_json_with_detail": "The file must be in JSON format. Technical detail: {errorMessage}",
+  "requirement_with_reference": "{title} ({reference})"
 }

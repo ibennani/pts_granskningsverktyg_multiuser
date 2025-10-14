@@ -197,7 +197,7 @@ export const ConfirmUpdatesViewComponent = (function () {
             const sample_section = Helpers_create_element('section', { style: { marginTop: '2rem' } });
             
             const h2 = Helpers_create_element('h2', { 
-                text_content: `${t('sample_label', { defaultValue: 'Sample' })}: ${data.sampleName}`,
+                text_content: `${t('sample_label')}: ${data.sampleName}`,
                 attributes: { tabindex: '-1' }
             });
             sample_section.appendChild(h2);
@@ -206,7 +206,9 @@ export const ConfirmUpdatesViewComponent = (function () {
             data.requirements.forEach(req => {
                 const li = Helpers_create_element('li', { class_name: 'item-list-item compact-review-item', style: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' } });
                 
-                const link_text = `${req.title} (${req.reference})`;
+                const link_text = req.reference
+                    ? t('requirement_with_reference', { title: req.title, reference: req.reference })
+                    : req.title;
                 const link = Helpers_create_element('a', {
                     text_content: link_text,
                     attributes: { href: '#' },
@@ -225,7 +227,7 @@ export const ConfirmUpdatesViewComponent = (function () {
                         'data-action': 'confirm-single',
                         'data-sample-id': sampleId,
                         'data-requirement-id': req.id,
-                        'aria-label': `${t(btn_text_key)} ${t('for_requirement', {defaultValue: 'for requirement'})} ${link_text}`
+                        'aria-label': `${t(btn_text_key)} ${t('for_requirement')} ${link_text}`
                     }
                 });
 
