@@ -673,14 +673,24 @@ window.dependencyManager = dependencyManager;
             buildTimestampElement.textContent = `Byggt ${buildDate} kl ${buildTime}`;
             buildTimestampElement.style.display = 'block';
         } else {
-            buildTimestampElement.textContent = '';
-            buildTimestampElement.style.display = 'none';
+            // Fallback: show current timestamp if BUILD_INFO is not available
+            const now = new Date();
+            const fallbackDate = now.toLocaleDateString('sv-SE');
+            const fallbackTime = now.toLocaleTimeString('sv-SE', {
+                hour: '2-digit',
+                minute: '2-digit',
+            });
+            buildTimestampElement.textContent = `Byggt ${fallbackDate} kl ${fallbackTime}`;
+            buildTimestampElement.style.display = 'block';
         }
     }
 
     async function init_app() { 
         set_initial_theme();
-        update_build_timestamp();
+        // Add a small delay to ensure build-info.js is loaded
+        setTimeout(() => {
+            update_build_timestamp();
+        }, 100);
         await window.Translation.ensure_initial_load();
         initState();
 

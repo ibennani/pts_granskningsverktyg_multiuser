@@ -12,44 +12,35 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const projectRoot = join(__dirname, '..');
 const distDir = join(projectRoot, 'dist');
 
-console.log('[postbuild-copy] Starting...');
-
-// Only copy i18n files, let Vite handle CSS
-const foldersToCopy = ['js/i18n'];
+console.log('[postbuild-simple] Starting...');
 
 if (!existsSync(distDir)) {
-  console.error(
-    '[postbuild-copy] dist directory not found. Did the Vite build succeed?'
-  );
+  console.error('[postbuild-simple] dist directory not found. Did the Vite build succeed?');
   process.exit(1);
 }
 
+// Copy CSS files to dist/css/ so preview works like dev
+const foldersToCopy = ['css'];
+
 for (const relativePath of foldersToCopy) {
-  console.log(`[postbuild-copy] Processing: ${relativePath}`);
+  console.log(`[postbuild-simple] Processing: ${relativePath}`);
   const sourcePath = join(projectRoot, relativePath);
   const targetPath = join(distDir, relativePath);
 
   if (!existsSync(sourcePath)) {
-    console.warn(
-      `[postbuild-copy] Skip "${relativePath}" – source path not found.`
-    );
+    console.warn(`[postbuild-simple] Skip "${relativePath}" – source path not found.`);
     continue;
   }
 
   try {
     mkdirSync(targetPath, { recursive: true });
     cpSync(sourcePath, targetPath, { recursive: true });
-    console.log(`[postbuild-copy] Successfully copied ${relativePath}`);
+    console.log(`[postbuild-simple] Successfully copied ${relativePath}`);
   } catch (error) {
-    console.error(
-      `[postbuild-copy] Failed to copy ${relativePath}:`,
-      error.message
-    );
+    console.error(`[postbuild-simple] Failed to copy ${relativePath}:`, error.message);
     process.exitCode = 1;
   }
 }
-
-console.log('[postbuild-copy] Finished copying folders, starting build-info generation...');
 
 // Generate build info file
 try {
@@ -69,7 +60,7 @@ window.BUILD_INFO = ${JSON.stringify(buildInfo, null, 2)};
 
   const buildInfoPath = join(distDir, 'build-info.js');
   writeFileSync(buildInfoPath, buildInfoContent, 'utf8');
-  console.log('[postbuild-copy] Generated build-info.js');
+  console.log('[postbuild-simple] Generated build-info.js');
 
   const formattedTimestamp = `Byggt ${buildInfo.date} kl ${buildInfo.time}`;
   const indexPath = join(distDir, 'index.html');
@@ -80,14 +71,11 @@ window.BUILD_INFO = ${JSON.stringify(buildInfo, null, 2)};
       `<div id="build-timestamp">${formattedTimestamp}</div>`
     );
     writeFileSync(indexPath, updatedHtml, 'utf8');
-    console.log('[postbuild-copy] Injected build timestamp into index.html');
+    console.log('[postbuild-simple] Injected build timestamp into index.html');
   }
 } catch (error) {
-  console.error(
-    '[postbuild-copy] Failed to generate build-info.js:',
-    error.message
-  );
+  console.error('[postbuild-simple] Failed to generate build-info.js:', error.message);
   process.exitCode = 1;
 }
 
-console.log('[postbuild-copy] Completed successfully');
+console.log('[postbuild-simple] Completed successfully');

@@ -12,44 +12,30 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const projectRoot = join(__dirname, '..');
 const distDir = join(projectRoot, 'dist');
 
-console.log('[postbuild-copy] Starting...');
-
-// Only copy i18n files, let Vite handle CSS
-const foldersToCopy = ['js/i18n'];
+console.log('[postbuild-fast] Starting...');
 
 if (!existsSync(distDir)) {
-  console.error(
-    '[postbuild-copy] dist directory not found. Did the Vite build succeed?'
-  );
+  console.error('[postbuild-fast] dist directory not found. Did the Vite build succeed?');
   process.exit(1);
 }
 
-for (const relativePath of foldersToCopy) {
-  console.log(`[postbuild-copy] Processing: ${relativePath}`);
-  const sourcePath = join(projectRoot, relativePath);
-  const targetPath = join(distDir, relativePath);
+// Copy CSS files to dist/css/ so preview works like dev
+console.log('[postbuild-fast] Copying CSS files...');
+const cssSourcePath = join(projectRoot, 'css');
+const cssTargetPath = join(distDir, 'css');
 
-  if (!existsSync(sourcePath)) {
-    console.warn(
-      `[postbuild-copy] Skip "${relativePath}" – source path not found.`
-    );
-    continue;
-  }
-
+if (existsSync(cssSourcePath)) {
   try {
-    mkdirSync(targetPath, { recursive: true });
-    cpSync(sourcePath, targetPath, { recursive: true });
-    console.log(`[postbuild-copy] Successfully copied ${relativePath}`);
+    mkdirSync(cssTargetPath, { recursive: true });
+    cpSync(cssSourcePath, cssTargetPath, { recursive: true });
+    console.log('[postbuild-fast] Successfully copied CSS files');
   } catch (error) {
-    console.error(
-      `[postbuild-copy] Failed to copy ${relativePath}:`,
-      error.message
-    );
-    process.exitCode = 1;
+    console.error('[postbuild-fast] Failed to copy CSS files:', error.message);
+    // Don't exit on CSS copy failure, continue with build-info
   }
+} else {
+  console.warn('[postbuild-fast] CSS source directory not found');
 }
-
-console.log('[postbuild-copy] Finished copying folders, starting build-info generation...');
 
 // Generate build info file
 try {
@@ -69,7 +55,7 @@ window.BUILD_INFO = ${JSON.stringify(buildInfo, null, 2)};
 
   const buildInfoPath = join(distDir, 'build-info.js');
   writeFileSync(buildInfoPath, buildInfoContent, 'utf8');
-  console.log('[postbuild-copy] Generated build-info.js');
+  console.log('[postbuild-fast] Generated build-info.js');
 
   const formattedTimestamp = `Byggt ${buildInfo.date} kl ${buildInfo.time}`;
   const indexPath = join(distDir, 'index.html');
@@ -80,14 +66,11 @@ window.BUILD_INFO = ${JSON.stringify(buildInfo, null, 2)};
       `<div id="build-timestamp">${formattedTimestamp}</div>`
     );
     writeFileSync(indexPath, updatedHtml, 'utf8');
-    console.log('[postbuild-copy] Injected build timestamp into index.html');
+    console.log('[postbuild-fast] Injected build timestamp into index.html');
   }
 } catch (error) {
-  console.error(
-    '[postbuild-copy] Failed to generate build-info.js:',
-    error.message
-  );
+  console.error('[postbuild-fast] Failed to generate build-info.js:', error.message);
   process.exitCode = 1;
 }
 
-console.log('[postbuild-copy] Completed successfully');
+console.log('[postbuild-fast] Completed successfully');

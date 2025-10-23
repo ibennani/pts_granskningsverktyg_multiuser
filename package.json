@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "dev:fixedport": "vite --port 5173 --strictPort",
-    "build": "vite build && node scripts/postbuild-copy.js",
+    "build": "vite build && node scripts/postbuild-final.js",
     "preview": "vite preview --config vite.config.mjs --open",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
