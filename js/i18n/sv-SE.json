@@ -658,5 +658,9 @@
   "metadata_editor_placeholder": "Metadataredigeraren är under uppbyggnad. Funktionaliteten kommer i en senare version.",
   "error_internal_reload": "Internt fel: försök att ladda om sidan.",
   "rule_file_invalid_json_with_detail": "Filen måste vara i JSON-format. Teknisk detalj: {errorMessage}",
-  "requirement_with_reference": "{title} ({reference})"
+  "requirement_with_reference": "{title} ({reference})",
+  "all_requirements_handled_for_sample": "Alla krav är granskade för detta stickprov",
+  "audit_requirement": "Granska krav",
+  "audit_requirement_title": "Granska krav",
+  "rule_file_must_have_at_least_one_requirement": "Regelfilen måste innehålla minst ett krav"
 }

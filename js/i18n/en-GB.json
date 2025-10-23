@@ -658,5 +658,9 @@
   "metadata_editor_placeholder": "The metadata editor is under construction. Full functionality will arrive in a later version.",
   "error_internal_reload": "Internal error: try reloading the page.",
   "rule_file_invalid_json_with_detail": "The file must be in JSON format. Technical detail: {errorMessage}",
-  "requirement_with_reference": "{title} ({reference})"
+  "requirement_with_reference": "{title} ({reference})",
+  "all_requirements_handled_for_sample": "All requirements reviewed for this sample",
+  "audit_requirement": "Review requirement",
+  "audit_requirement_title": "Review requirement",
+  "rule_file_must_have_at_least_one_requirement": "The rule file must contain at least one requirement"
 }
