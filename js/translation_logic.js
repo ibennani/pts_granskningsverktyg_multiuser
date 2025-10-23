@@ -39,6 +39,16 @@
             return requested_tag;
         }
 
+        // Special handling for common language codes that should map to our supported variants
+        const language_mappings = {
+            'sv': 'sv-SE',  // Swedish maps to Swedish (Sweden)
+            'en': 'en-GB'   // English maps to British English
+        };
+
+        if (language_mappings[requested_tag]) {
+            return language_mappings[requested_tag];
+        }
+
         const base_lang = requested_tag.split('-')[0];
         const matching_supported_base = Object.keys(supported_languages).find(
             key => key === base_lang || key.startsWith(`${base_lang}-`)
