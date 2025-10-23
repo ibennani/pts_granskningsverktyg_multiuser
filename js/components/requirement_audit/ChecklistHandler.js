@@ -259,6 +259,8 @@ export const ChecklistHandler = (function () {
             }
             
             const status_text_container = check_wrapper.querySelector('.check-status-display');
+            // Clear existing content before adding new status
+            status_text_container.innerHTML = '';
             const status_text = t(`audit_status_${calculated_check_status}`);
             const strong_element = Helpers_create_element('strong', { text_content: t('check_status') });
             status_text_container.appendChild(strong_element);
@@ -284,6 +286,8 @@ export const ChecklistHandler = (function () {
                 const current_pc_status = pc_data.status;
 
                 const pc_status_text_container = pc_item_li.querySelector('.pass-criterion-status');
+                // Clear existing content before adding new status
+                pc_status_text_container.innerHTML = '';
                 const pc_status_text = t(`audit_status_${current_pc_status}`);
                 const pc_strong_element = Helpers_create_element('strong', { text_content: t('status') });
                 pc_status_text_container.appendChild(pc_strong_element);

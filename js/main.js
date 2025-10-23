@@ -665,10 +665,16 @@ window.dependencyManager = dependencyManager;
 
     function update_build_timestamp() {
         const buildTimestampElement = document.getElementById('build-timestamp');
-        if (buildTimestampElement && window.BUILD_INFO) {
+        if (!buildTimestampElement) return;
+
+        if (window.BUILD_INFO?.date && window.BUILD_INFO?.time) {
             const buildDate = window.BUILD_INFO.date;
             const buildTime = window.BUILD_INFO.time;
-            buildTimestampElement.textContent = `Byggt ${buildDate} klockan ${buildTime}`;
+            buildTimestampElement.textContent = `Byggt ${buildDate} kl ${buildTime}`;
+            buildTimestampElement.style.display = 'block';
+        } else {
+            buildTimestampElement.textContent = '';
+            buildTimestampElement.style.display = 'none';
         }
     }
 
