@@ -44,7 +44,9 @@ export const RequirementListToolbarComponent = (function () {
                 const link_tag = document.querySelector(`link[href="${CSS_PATH}"]`);
                 if (!link_tag) await Helpers_load_css(CSS_PATH);
             } catch (error) {
-                console.warn("Failed to load CSS for RequirementListToolbarComponent:", error);
+                if (window.ConsoleManager) {
+                    window.ConsoleManager.warn("Failed to load CSS for RequirementListToolbarComponent:", error);
+                }
             }
         }
     }
@@ -57,10 +59,17 @@ export const RequirementListToolbarComponent = (function () {
     }
 
     function handle_search_input(event) {
-        clearTimeout(search_debounce_timer);
-        search_debounce_timer = setTimeout(() => {
-            update_and_notify({ searchText: event.target.value });
-        }, 300);
+        if (window.MemoryManager) {
+            window.MemoryManager.clearTimeout(search_debounce_timer);
+            search_debounce_timer = window.MemoryManager.setTimeout(() => {
+                update_and_notify({ searchText: event.target.value });
+            }, 300);
+        } else {
+            clearTimeout(search_debounce_timer);
+            search_debounce_timer = setTimeout(() => {
+                update_and_notify({ searchText: event.target.value });
+            }, 300);
+        }
     }
 
     function handle_status_filter_change(event) {
@@ -112,8 +121,13 @@ export const RequirementListToolbarComponent = (function () {
                     close_filter_panel();
                 }
             };
-            document.addEventListener('keydown', handle_panel_keydown_ref);
-            document.addEventListener('click', close_on_outside_click_ref, { capture: true });
+            if (window.MemoryManager) {
+                window.MemoryManager.addEventListener(document, 'keydown', handle_panel_keydown_ref);
+                window.MemoryManager.addEventListener(document, 'click', close_on_outside_click_ref, { capture: true });
+            } else {
+                document.addEventListener('keydown', handle_panel_keydown_ref);
+                document.addEventListener('click', close_on_outside_click_ref, { capture: true });
+            }
         }
     }
 
@@ -157,7 +171,11 @@ export const RequirementListToolbarComponent = (function () {
         const search_label = Helpers_create_element('label', { attributes: { for: 'req-list-search' }, text_content: t('search_in_help_texts_label') });
         search_group.appendChild(search_label);
         const search_input = Helpers_create_element('input', { id: 'req-list-search', class_name: 'form-control', attributes: { type: 'search' } });
-        search_input.addEventListener('input', handle_search_input);
+        if (window.MemoryManager) {
+            window.MemoryManager.addEventListener(search_input, 'input', handle_search_input);
+        } else {
+            search_input.addEventListener('input', handle_search_input);
+        }
         search_group.appendChild(search_input);
         toolbar.appendChild(search_group);
 
@@ -166,9 +184,15 @@ export const RequirementListToolbarComponent = (function () {
             const filter_label = Helpers_create_element('label', { text_content: t('filter_by_status_label') });
             filter_group.appendChild(filter_label);
             filter_button_ref = Helpers_create_element('button', { id: 'status-filter-toggle-btn', class_name: 'button button-default' });
-            filter_button_ref.addEventListener('click', toggle_filter_panel);
-            filter_panel_ref = Helpers_create_element('div', { id: 'status-filter-panel-smv', class_name: 'status-filter-panel' });
-            filter_panel_ref.addEventListener('change', handle_status_filter_change);
+            if (window.MemoryManager) {
+                window.MemoryManager.addEventListener(filter_button_ref, 'click', toggle_filter_panel);
+                filter_panel_ref = Helpers_create_element('div', { id: 'status-filter-panel-smv', class_name: 'status-filter-panel' });
+                window.MemoryManager.addEventListener(filter_panel_ref, 'change', handle_status_filter_change);
+            } else {
+                filter_button_ref.addEventListener('click', toggle_filter_panel);
+                filter_panel_ref = Helpers_create_element('div', { id: 'status-filter-panel-smv', class_name: 'status-filter-panel' });
+                filter_panel_ref.addEventListener('change', handle_status_filter_change);
+            }
             filter_group.append(filter_button_ref, filter_panel_ref);
             toolbar.appendChild(filter_group);
         }
@@ -186,7 +210,11 @@ export const RequirementListToolbarComponent = (function () {
                 }));
             });
 
-            sort_select.addEventListener('change', handle_sort_change);
+            if (window.MemoryManager) {
+                window.MemoryManager.addEventListener(sort_select, 'change', handle_sort_change);
+            } else {
+                sort_select.addEventListener('change', handle_sort_change);
+            }
             sort_group.appendChild(sort_select);
             toolbar.appendChild(sort_group);
         }
@@ -230,7 +258,9 @@ export const RequirementListToolbarComponent = (function () {
         // --- END OF CHANGE ---
 
         if (!container_ref || !Helpers_create_element || !Translation_t || !component_state) {
-            console.error("ToolbarComponent: Cannot render, core dependencies missing.");
+            if (window.ConsoleManager) {
+                window.ConsoleManager.error("ToolbarComponent: Cannot render, core dependencies missing.");
+            }
             return;
         }
 
@@ -319,11 +349,19 @@ export const RequirementListToolbarComponent = (function () {
         
         // Rensa document-level event listeners
         if (handle_panel_keydown_ref) {
-            document.removeEventListener('keydown', handle_panel_keydown_ref);
+            if (window.MemoryManager) {
+                window.MemoryManager.removeEventListener(document, 'keydown', handle_panel_keydown_ref);
+            } else {
+                document.removeEventListener('keydown', handle_panel_keydown_ref);
+            }
             handle_panel_keydown_ref = null;
         }
         if (close_on_outside_click_ref) {
-            document.removeEventListener('click', close_on_outside_click_ref, { capture: true });
+            if (window.MemoryManager) {
+                window.MemoryManager.removeEventListener(document, 'click', close_on_outside_click_ref, { capture: true });
+            } else {
+                document.removeEventListener('click', close_on_outside_click_ref, { capture: true });
+            }
             close_on_outside_click_ref = null;
         }
         

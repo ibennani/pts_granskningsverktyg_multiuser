@@ -19,12 +19,18 @@ import { marked } from '../utils/markdown.js';
      */
     function init() {
         if (initialized) {
-            console.warn("MarkdownToolbar is already initialized.");
+            if (window.ConsoleManager) {
+            window.ConsoleManager.warn("MarkdownToolbar is already initialized.");
+        }
             return;
         }
 
         if (window.Helpers && window.Helpers.load_css) {
-            window.Helpers.load_css(CSS_PATH).catch(err => console.error(err));
+            window.Helpers.load_css(CSS_PATH).catch(err => {
+                if (window.ConsoleManager) {
+                    window.ConsoleManager.error(err);
+                }
+            });
         }
 
         document.querySelectorAll('textarea').forEach(processTextarea);
@@ -46,7 +52,9 @@ import { marked } from '../utils/markdown.js';
 
         observer.observe(document.body, { childList: true, subtree: true });
         initialized = true;
-        console.log("MarkdownToolbar initialized and observing for new textareas.");
+        if (window.ConsoleManager) {
+            window.ConsoleManager.log("MarkdownToolbar initialized and observing for new textareas.");
+        }
     }
 
     /**
@@ -59,7 +67,9 @@ import { marked } from '../utils/markdown.js';
         
         // Check if focus protection is active - if so, delay processing
         if (window.focusProtectionActive || window.customFocusApplied) {
-            console.log('%c[FOCUS DEBUG] Markdown toolbar delaying processing due to focus protection', 'color: #FF6600; font-weight: bold;');
+            if (window.ConsoleManager) {
+                window.ConsoleManager.log('%c[FOCUS DEBUG] Markdown toolbar delaying processing due to focus protection', 'color: #FF6600; font-weight: bold;');
+            }
             setTimeout(() => processTextarea(textarea), 500);
             return;
         }
@@ -365,7 +375,9 @@ import { marked } from '../utils/markdown.js';
                 previewDiv.textContent = markdownText;
             }
         } catch (error) {
-            console.error("Error parsing Markdown:", error);
+            if (window.ConsoleManager) {
+                window.ConsoleManager.error("Error parsing Markdown:", error);
+            }
             previewDiv.textContent = "Error rendering preview. Check console for details.";
         }
     }

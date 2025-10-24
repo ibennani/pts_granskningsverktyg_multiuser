@@ -120,7 +120,9 @@ export const RequirementListComponent = (function () {
 
         try {
             await Helpers_load_css(CSS_PATH);
-            console.log('[RequirementListComponent] CSS loaded successfully');
+            if (window.ConsoleManager) {
+                window.ConsoleManager.log('[RequirementListComponent] CSS loaded successfully');
+            }
             
             // Kontrollera om Font Awesome är laddat från lokalt npm-paket
             const testElement = document.createElement('span');
@@ -129,12 +131,14 @@ export const RequirementListComponent = (function () {
             const computedStyle = window.getComputedStyle(testElement, '::before');
             const fontFamily = computedStyle.getPropertyValue('font-family');
             const content = computedStyle.getPropertyValue('content');
-            console.log('[RequirementListComponent] Font Awesome test (local npm package):', {
-                fontFamily,
-                content,
-                hasFontAwesome: fontFamily.includes('Font Awesome'),
-                isLocalPackage: true
-            });
+            if (window.ConsoleManager) {
+                window.ConsoleManager.log('[RequirementListComponent] Font Awesome test (local npm package):', {
+                    fontFamily,
+                    content,
+                    hasFontAwesome: fontFamily.includes('Font Awesome'),
+                    isLocalPackage: true
+                });
+            }
             document.body.removeChild(testElement);
             
             // Kontrollera om våra CSS-regler finns
@@ -144,14 +148,18 @@ export const RequirementListComponent = (function () {
             const testIconStyle = window.getComputedStyle(testIconElement, '::before');
             const testIconContent = testIconStyle.getPropertyValue('content');
             const testIconFontFamily = testIconStyle.getPropertyValue('font-family');
-            console.log('[RequirementListComponent] Our CSS test:', {
-                testIconContent,
-                testIconFontFamily,
-                hasOurCSS: testIconContent !== 'none'
-            });
+            if (window.ConsoleManager) {
+                window.ConsoleManager.log('[RequirementListComponent] Our CSS test:', {
+                    testIconContent,
+                    testIconFontFamily,
+                    hasOurCSS: testIconContent !== 'none'
+                });
+            }
             document.body.removeChild(testIconElement);
         } catch (e) {
-            console.warn('Failed to load CSS for RequirementListComponent:', e);
+            if (window.ConsoleManager) {
+                window.ConsoleManager.warn('Failed to load CSS for RequirementListComponent:', e);
+            }
         }
         
         is_dom_initialized = false;
@@ -377,11 +385,13 @@ export const RequirementListComponent = (function () {
         const display_status = req_result?.needsReview ? 'updated' : AuditLogic_calculate_requirement_status(req, req_result);
 
         // Debug: Logga status och klass
-        console.log(`[RequirementListComponent] Creating item for requirement ${req.key}:`, {
-            display_status,
-            status_icon_class: `status-icon-${display_status.replace('_', '-')}`,
-            req_result
-        });
+        if (window.ConsoleManager) {
+            window.ConsoleManager.log(`[RequirementListComponent] Creating item for requirement ${req.key}:`, {
+                display_status,
+                status_icon_class: `status-icon-${display_status.replace('_', '-')}`,
+                req_result
+            });
+        }
 
         const li = Helpers_create_element('li', { class_name: 'requirement-item compact-twoline' });
         

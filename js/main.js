@@ -4,7 +4,7 @@ import '@fontsource/roboto/400.css';
 import '@fontsource/roboto/500.css';
 import '@fontsource/roboto/700.css';
 import '@fortawesome/fontawesome-free/css/all.min.css';
-console.log('[Main.js] Font Awesome CSS imported from local npm package');
+consoleManager.log('[Main.js] Font Awesome CSS imported from local npm package');
 
 import './utils/helpers.js';
 import './translation_logic.js';
@@ -18,7 +18,11 @@ import './logic/rulefile_updater_logic.js';
 import './logic/ScoreCalculator.js';
 import './features/markdown_toolbar.js';
 import './utils/dependency_manager.js';
+import './utils/console_manager.js';
+import './utils/memory_manager.js';
 import { dependencyManager } from './utils/dependency_manager.js';
+import { consoleManager } from './utils/console_manager.js';
+import { memoryManager } from './utils/memory_manager.js';
 
 import { UploadViewComponent } from './components/UploadViewComponent.js';
 import { EditMetadataViewComponent } from './components/EditMetadataViewComponent.js'; 
@@ -61,7 +65,7 @@ window.dependencyManager = dependencyManager;
 
     // Fallback för app_container - kritiskt element
     if (!app_container) {
-        console.error("[Main.js] CRITICAL: App container not found in DOM! Creating fallback container.");
+        consoleManager.error("[Main.js] CRITICAL: App container not found in DOM! Creating fallback container.");
         app_container = document.createElement('div');
         app_container.id = 'app-container';
         app_container.style.cssText = 'min-height: 100vh; padding: 20px;';
@@ -76,7 +80,7 @@ window.dependencyManager = dependencyManager;
 
     // Fallback för action bar containers - mindre kritiskt
     if (!top_action_bar_container) {
-        console.warn("[Main.js] Top action bar container not found. Creating fallback container.");
+        consoleManager.warn("[Main.js] Top action bar container not found. Creating fallback container.");
         top_action_bar_container = document.createElement('div');
         top_action_bar_container.id = 'global-action-bar-top';
         top_action_bar_container.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: #f8f9fa; border-bottom: 1px solid #dee2e6;';
@@ -89,7 +93,7 @@ window.dependencyManager = dependencyManager;
     }
 
     if (!bottom_action_bar_container) {
-        console.warn("[Main.js] Bottom action bar container not found. Creating fallback container.");
+        consoleManager.warn("[Main.js] Bottom action bar container not found. Creating fallback container.");
         bottom_action_bar_container = document.createElement('div');
         bottom_action_bar_container.id = 'global-action-bar-bottom';
         bottom_action_bar_container.style.cssText = 'position: fixed; bottom: 0; left: 0; right: 0; z-index: 1000; background: #f8f9fa; border-top: 1px solid #dee2e6;';
@@ -103,7 +107,7 @@ window.dependencyManager = dependencyManager;
 
     // Lägg till en varning om att fallback-element skapades
     if (!document.getElementById('app-container') || !document.getElementById('global-action-bar-top') || !document.getElementById('global-action-bar-bottom')) {
-        console.warn("[Main.js] Some core containers were missing and fallback versions were created. Check HTML structure.");
+        consoleManager.warn("[Main.js] Some core containers were missing and fallback versions were created. Check HTML structure.");
     }
 
     let current_view_component_instance = null;
@@ -206,7 +210,7 @@ window.dependencyManager = dependencyManager;
                     break;
             }
         } catch (e) {
-            console.error("Error building page title:", e);
+            consoleManager.error("Error building page title:", e);
         }
         
         document.title = `${title_prefix}${title_suffix}`;
@@ -215,7 +219,7 @@ window.dependencyManager = dependencyManager;
     function update_app_chrome_texts() {
         const t = get_t_fallback();
         if (!window.Translation || typeof window.Translation.t !== 'function') {
-            console.warn("[Main.js] update_app_chrome_texts: Translation.t is not available.");
+            consoleManager.warn("[Main.js] update_app_chrome_texts: Translation.t is not available.");
             return;
         }
         try {
@@ -223,7 +227,7 @@ window.dependencyManager = dependencyManager;
                 top_action_bar_instance.render(); 
             }
         } catch (error) {
-            console.error("[Main.js] Error rendering top action bar:", error);
+            consoleManager.error("[Main.js] Error rendering top action bar:", error);
             if (error_boundary_instance && error_boundary_instance.show_error) {
                 error_boundary_instance.show_error({
                     message: `Top action bar render failed: ${error.message}`,
@@ -238,7 +242,7 @@ window.dependencyManager = dependencyManager;
                 bottom_action_bar_instance.render(); 
             }
         } catch (error) {
-            console.error("[Main.js] Error rendering bottom action bar:", error);
+            consoleManager.error("[Main.js] Error rendering bottom action bar:", error);
             if (error_boundary_instance && error_boundary_instance.show_error) {
                 error_boundary_instance.show_error({
                     message: `Bottom action bar render failed: ${error.message}`,
@@ -254,7 +258,7 @@ window.dependencyManager = dependencyManager;
         await window.dependencyManager?.initialize();
         
         if (!window.Translation || !window.Helpers || !window.NotificationComponent || !window.SaveAuditLogic) {
-            console.error("[Main.js] init_global_components: Core dependencies not available!");
+            consoleManager.error("[Main.js] init_global_components: Core dependencies not available!");
             return;
         }
         const common_deps = {
@@ -269,7 +273,7 @@ window.dependencyManager = dependencyManager;
         try {
             await top_action_bar_instance.init(top_action_bar_container, common_deps);
         } catch (error) {
-            console.error("[Main.js] Failed to initialize top action bar:", error);
+            consoleManager.error("[Main.js] Failed to initialize top action bar:", error);
             if (error_boundary_instance && error_boundary_instance.show_error) {
                 error_boundary_instance.show_error({
                     message: `Top action bar initialization failed: ${error.message}`,
@@ -282,7 +286,7 @@ window.dependencyManager = dependencyManager;
         try {
             await bottom_action_bar_instance.init(bottom_action_bar_container, common_deps);
         } catch (error) {
-            console.error("[Main.js] Failed to initialize bottom action bar:", error);
+            consoleManager.error("[Main.js] Failed to initialize bottom action bar:", error);
             if (error_boundary_instance && error_boundary_instance.show_error) {
                 error_boundary_instance.show_error({
                     message: `Bottom action bar initialization failed: ${error.message}`,
@@ -297,7 +301,7 @@ window.dependencyManager = dependencyManager;
             error_boundary_instance = ErrorBoundaryComponent;
             await error_boundary_instance.init(app_container);
         } catch (error) {
-            console.error("[Main.js] Failed to initialize error boundary:", error);
+            consoleManager.error("[Main.js] Failed to initialize error boundary:", error);
         }
     }
     
@@ -328,7 +332,7 @@ window.dependencyManager = dependencyManager;
 
     // --- START OF CHANGE ---
     function set_focus_to_h1() {
-        setTimeout(() => {
+        memoryManager.setTimeout(() => {
             // Kontrollera om en specifik fokusinstruktion redan har hanterats
             if (window.customFocusApplied) {
                 // Återställ flaggan och gör ingenting mer
@@ -382,7 +386,7 @@ window.dependencyManager = dependencyManager;
                 try {
                     current_view_component_instance.destroy();
                 } catch (err) {
-                    console.warn('[Main.js] Warning destroying RequirementListComponent before switching to rulefile view:', err);
+                    consoleManager.warn('[Main.js] Warning destroying RequirementListComponent before switching to rulefile view:', err);
                     // Log error to error boundary if available
                     if (error_boundary_instance && error_boundary_instance.show_error) {
                         error_boundary_instance.show_error({
@@ -396,7 +400,7 @@ window.dependencyManager = dependencyManager;
                 try {
                     current_view_component_instance.destroy();
                 } catch (err) {
-                    console.error('[Main.js] Error destroying component:', err);
+                    consoleManager.error('[Main.js] Error destroying component:', err);
                     // Log error to error boundary if available
                     if (error_boundary_instance && error_boundary_instance.show_error) {
                         error_boundary_instance.show_error({
@@ -436,7 +440,7 @@ window.dependencyManager = dependencyManager;
                 case 'rulefile_metadata': ComponentClass = RulefileMetadataViewComponent; break;
             case 'confirm_delete': ComponentClass = ConfirmDeleteViewComponent; break;
             default:
-                console.error(`[Main.js] View "${view_name_to_render}" not found in render_view switch.`);
+                consoleManager.error(`[Main.js] View "${view_name_to_render}" not found in render_view switch.`);
                 const error_h1 = document.createElement('h1');
                 error_h1.textContent = t("error_loading_view_details");
                 const error_p = document.createElement('p');
@@ -484,12 +488,12 @@ window.dependencyManager = dependencyManager;
             set_focus_to_h1(); 
 
         } catch (error) {
-            console.error(`[Main.js] CATCH BLOCK: Error during view ${view_name_to_render} lifecycle:`, error);
+            consoleManager.error(`[Main.js] CATCH BLOCK: Error during view ${view_name_to_render} lifecycle:`, error);
             
             // Use error boundary if available, otherwise fall back to simple error display
             if (error_boundary_instance && error_boundary_instance.show_error) {
                 const retry_callback = () => {
-                    console.log(`[Main.js] Retrying view ${view_name_to_render}`);
+                    consoleManager.log(`[Main.js] Retrying view ${view_name_to_render}`);
                     render_view(view_name_to_render, params_to_render);
                 };
                 
@@ -504,7 +508,7 @@ window.dependencyManager = dependencyManager;
                     try {
                         await error_boundary_instance.init(app_container, retry_callback);
                     } catch (retry_error) {
-                        console.error("[Main.js] Failed to re-initialize error boundary:", retry_error);
+                        consoleManager.error("[Main.js] Failed to re-initialize error boundary:", retry_error);
                     }
                 }
             } else {
@@ -552,7 +556,7 @@ window.dependencyManager = dependencyManager;
             const parsed_params = JSON.parse(current_view_params_rendered_json || '{}');
             updatePageTitle(current_view_name_rendered, parsed_params);
         } catch (error) {
-            console.warn('[Main.js] Failed to parse current view params for page title update:', error);
+            consoleManager.warn('[Main.js] Failed to parse current view params for page title update:', error);
             updatePageTitle(current_view_name_rendered, {});
         }
         if (current_view_component_instance && typeof current_view_component_instance.render === 'function') {
@@ -574,26 +578,26 @@ window.dependencyManager = dependencyManager;
             }
         };
         
-        document.addEventListener('languageChanged', language_changed_handler);
-        window.addEventListener('hashchange', hash_change_handler);
-        window.addEventListener('beforeunload', beforeunload_handler);
+        memoryManager.addEventListener(document, 'languageChanged', language_changed_handler);
+        memoryManager.addEventListener(window, 'hashchange', hash_change_handler);
+        memoryManager.addEventListener(window, 'beforeunload', beforeunload_handler);
         
         // Exponera cleanup-funktion globalt
         window.cleanupGlobalEventListeners = () => {
-            document.removeEventListener('languageChanged', language_changed_handler);
-            window.removeEventListener('hashchange', hash_change_handler);
-            window.removeEventListener('beforeunload', beforeunload_handler);
+            memoryManager.removeEventListener(document, 'languageChanged', language_changed_handler);
+            memoryManager.removeEventListener(window, 'hashchange', hash_change_handler);
+            memoryManager.removeEventListener(window, 'beforeunload', beforeunload_handler);
             
             // Clean up error boundary
             if (error_boundary_instance && typeof error_boundary_instance.destroy === 'function') {
                 try {
                     error_boundary_instance.destroy();
                 } catch (error) {
-                    console.error('[Main.js] Error cleaning up error boundary:', error);
+                    consoleManager.error('[Main.js] Error cleaning up error boundary:', error);
                 }
             }
             
-            console.info('[Main.js] Global event listeners cleaned up');
+            consoleManager.info('[Main.js] Global event listeners cleaned up');
         };
         subscribe((new_state) => { 
             const views_without_bottom_bar = ['upload', 'restore_session', 'sample_form', 'confirm_sample_edit', 'metadata', 'edit_metadata', 'rulefile_metadata', 'rulefile_metadata_edit'];
@@ -601,7 +605,7 @@ window.dependencyManager = dependencyManager;
             try {
                 top_action_bar_instance.render();
             } catch (error) {
-                console.error("[Main.js] Error in subscription top action bar render:", error);
+                consoleManager.error("[Main.js] Error in subscription top action bar render:", error);
                 if (error_boundary_instance && error_boundary_instance.show_error) {
                     error_boundary_instance.show_error({
                         message: `Top action bar subscription render failed: ${error.message}`,
@@ -615,7 +619,7 @@ window.dependencyManager = dependencyManager;
                 try {
                     bottom_action_bar_instance.render();
                 } catch (error) {
-                    console.error("[Main.js] Error in subscription bottom action bar render:", error);
+                    consoleManager.error("[Main.js] Error in subscription bottom action bar render:", error);
                     if (error_boundary_instance && error_boundary_instance.show_error) {
                         error_boundary_instance.show_error({
                             message: `Bottom action bar subscription render failed: ${error.message}`,
@@ -629,7 +633,7 @@ window.dependencyManager = dependencyManager;
                 const parsed_params = JSON.parse(current_view_params_rendered_json || '{}');
                 updatePageTitle(current_view_name_rendered, parsed_params);
             } catch (error) {
-                console.warn('[Main.js] Failed to parse current view params for page title update:', error);
+                consoleManager.warn('[Main.js] Failed to parse current view params for page title update:', error);
                 updatePageTitle(current_view_name_rendered, {});
             }
             const hash = window.location.hash.substring(1);
@@ -647,7 +651,7 @@ window.dependencyManager = dependencyManager;
                     try {
                         current_view_component_instance.render();
                     } catch (error) {
-                        console.error("[Main.js] Error in subscription current view render:", error);
+                        consoleManager.error("[Main.js] Error in subscription current view render:", error);
                         if (error_boundary_instance && error_boundary_instance.show_error) {
                             error_boundary_instance.show_error({
                                 message: `Current view render failed: ${error.message}`,
@@ -689,7 +693,7 @@ window.dependencyManager = dependencyManager;
     async function init_app() { 
         set_initial_theme();
         // Add a small delay to ensure build-info.js is loaded
-        setTimeout(() => {
+        memoryManager.setTimeout(() => {
             update_build_timestamp();
         }, 100);
         await window.Translation.ensure_initial_load();
@@ -699,12 +703,12 @@ window.dependencyManager = dependencyManager;
 
         const active_session_state = getState();
         if (active_session_state && active_session_state.ruleFileContent && active_session_state.auditStatus !== 'rulefile_editing') {
-            console.log("[Main.js] Active session found in sessionStorage. Starting normally.");
+            consoleManager.log("[Main.js] Active session found in sessionStorage. Starting normally.");
             await start_normal_session();
         } else {
             const autosaved_payload = loadStateFromLocalStorage();
             if (autosaved_payload) {
-                console.log("[Main.js] No active session, but found backup in localStorage. Prompting user.");
+                consoleManager.log("[Main.js] No active session, but found backup in localStorage. Prompting user.");
                 const on_restore = () => {
                     dispatch({ type: StoreActionTypes.LOAD_AUDIT_FROM_FILE, payload: autosaved_payload.auditState });
                     clearAutosavedState(); 
@@ -728,7 +732,7 @@ window.dependencyManager = dependencyManager;
                     on_discard 
                 });
             } else {
-                console.log("[Main.js] No active session, no backup. Starting fresh.");
+                consoleManager.log("[Main.js] No active session, no backup. Starting fresh.");
                 await start_normal_session();
             }
         }
@@ -736,10 +740,10 @@ window.dependencyManager = dependencyManager;
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
-            init_app().catch(err => console.error("Error during app initialization (from DOMContentLoaded):", err));
+            init_app().catch(err => consoleManager.error("Error during app initialization (from DOMContentLoaded):", err));
         });
     } else {
-        init_app().catch(err => console.error("Error during app initialization (direct call):", err));
+        init_app().catch(err => consoleManager.error("Error during app initialization (direct call):", err));
     }
 
 })();
