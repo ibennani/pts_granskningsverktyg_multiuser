@@ -179,6 +179,8 @@
     line-height: 1;
     vertical-align: middle;
     font-weight: normal; /* Säkerställ raka ikoner */
+    font-family: Arial, sans-serif; /* Säkerställ att Unicode-symboler visas */
+    text-rendering: optimizeLegibility; /* Förbättra rendering av Unicode */
 }
 
 /* Specifika färger för varje status ikon */

@@ -4,7 +4,7 @@ import { SaveAuditButtonComponentFactory } from './SaveAuditButtonComponent.js';
 export const GlobalActionBarComponentFactory = function () {
   'use-strict';
 
-  const CSS_PATH = 'css/components/global_action_bar_component.css';
+  const CSS_PATH = './css/components/global_action_bar_component.css';
   let container_ref;
   let dependencies = {};
 

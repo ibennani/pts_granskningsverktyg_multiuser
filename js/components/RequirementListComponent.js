@@ -4,7 +4,7 @@ import { RequirementListToolbarComponent } from './RequirementListToolbarCompone
 export const RequirementListComponent = (function () {
     'use-strict';
 
-    const CSS_PATH = 'css/components/requirement_list_component.css';
+    const CSS_PATH = './css/components/requirement_list_component.css';
     let app_container_ref;
     let router_ref;
     let params_ref;
@@ -227,17 +227,17 @@ export const RequirementListComponent = (function () {
     function get_status_icon(status) {
         switch (status) {
             case 'not_audited':
-                return '◯'; // Tom cirkel utan färg
+                return '○'; // Enkel tom cirkel
             case 'partially_audited':
-                return '◐'; // Orange halv cirkel
+                return '◐'; // Halv cirkel
             case 'passed':
-                return '✔'; // Fet grön bock
+                return '✓'; // Enkel bock
             case 'failed':
-                return '✖'; // Fet rött kryss
+                return '✗'; // Enkel kryss
             case 'updated':
-                return '⟲'; // Blå cirkulär pil
+                return '↻'; // Cirkulär pil
             default:
-                return '◯'; // Standard: tom cirkel utan färg
+                return '○'; // Standard: enkel tom cirkel
         }
     }
 

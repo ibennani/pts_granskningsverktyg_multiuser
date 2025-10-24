@@ -2,7 +2,7 @@
 export const RequirementListToolbarComponent = (function () {
     'use-strict';
 
-    const CSS_PATH = 'css/components/requirement_list_toolbar_component.css';
+    const CSS_PATH = './css/components/requirement_list_toolbar_component.css';
     let container_ref;
     
     let on_change_callback;

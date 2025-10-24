@@ -3,7 +3,7 @@
 export const UploadViewComponent = (function () {
   'use-strict';
 
-  const CSS_PATH = 'css/components/upload_view_component.css';
+  const CSS_PATH = './css/components/upload_view_component.css';
   let app_container_ref;
   let router_ref;
   let global_message_element_ref;

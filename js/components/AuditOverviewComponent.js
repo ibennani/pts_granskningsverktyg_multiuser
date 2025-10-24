@@ -6,7 +6,7 @@ import { AuditInfoComponent } from './AuditInfoComponent.js';
 export const AuditOverviewComponent = (function () {
     'use-strict';
 
-    const CSS_PATH = 'css/components/audit_overview_component.css';
+    const CSS_PATH = './css/components/audit_overview_component.css';
     let app_container_ref;
     let router_ref;
 

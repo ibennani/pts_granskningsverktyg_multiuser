@@ -8,7 +8,7 @@ import { waitForDependencies } from '../utils/safe_init_helper.js';
 
 export const RequirementAuditComponent = (function () { 
 
-    const CSS_PATH = 'css/components/requirement_audit_component.css';
+    const CSS_PATH = './css/components/requirement_audit_component.css';
     let app_container_ref;
     let router_ref;
     let params_ref;

@@ -7,7 +7,7 @@ import { marked } from '../utils/markdown.js';
 
     window.MarkdownToolbar = window.MarkdownToolbar || {};
 
-    const CSS_PATH = 'css/features/markdown_toolbar.css';
+    const CSS_PATH = './css/features/markdown_toolbar.css';
     const DEBOUNCE_DELAY_MS = 250;
     let initialized = false;
     let observer = null;
