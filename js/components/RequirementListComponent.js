@@ -58,9 +58,10 @@ export const RequirementListComponent = (function () {
     }
 
     function handle_requirement_list_click(event) {
-        const target_button = event.target.closest('button.list-title-button[data-requirement-id]');
-        if (target_button && router_ref && params_ref && params_ref.sampleId) {
-            const requirement_id = target_button.dataset.requirementId;
+        const target_link = event.target.closest('a.list-title-link[data-requirement-id]');
+        if (target_link && router_ref && params_ref && params_ref.sampleId) {
+            event.preventDefault(); // Förhindra standard länk-beteende
+            const requirement_id = target_link.dataset.requirementId;
             router_ref('requirement_audit', { sampleId: params_ref.sampleId, requirementId: requirement_id });
         }
     }
@@ -68,10 +69,10 @@ export const RequirementListComponent = (function () {
     function handle_requirement_list_keydown(event) {
         // Handle keyboard navigation for accessibility
         if (event.key === 'Enter' || event.key === ' ') {
-            const target_button = event.target.closest('button.list-title-button[data-requirement-id]');
-            if (target_button && router_ref && params_ref && params_ref.sampleId) {
+            const target_link = event.target.closest('a.list-title-link[data-requirement-id]');
+            if (target_link && router_ref && params_ref && params_ref.sampleId) {
                 event.preventDefault();
-                const requirement_id = target_button.dataset.requirementId;
+                const requirement_id = target_link.dataset.requirementId;
                 router_ref('requirement_audit', { sampleId: params_ref.sampleId, requirementId: requirement_id });
             }
         }
@@ -385,16 +386,16 @@ export const RequirementListComponent = (function () {
         const li = Helpers_create_element('li', { class_name: 'requirement-item compact-twoline' });
         
         const title_row_div = Helpers_create_element('div', { class_name: 'requirement-title-container' });
-        const title_button = Helpers_create_element('button', {
-            class_name: 'list-title-button',
+        const title_link = Helpers_create_element('a', {
+            class_name: 'list-title-link',
             text_content: req.title,
             attributes: { 
                 'data-requirement-id': req.key,
-                'aria-label': `${t('audit_requirement')}: ${req.title}`
+                'href': '#'
             }
         });
         
-        title_row_div.appendChild(title_button);
+        title_row_div.appendChild(title_link);
         li.appendChild(title_row_div);
 
         const details_row_div = Helpers_create_element('div', { class_name: 'requirement-details-row' });
@@ -409,7 +410,8 @@ export const RequirementListComponent = (function () {
         // Lägg till status ikon före texten
         const status_icon = Helpers_create_element('span', {
             class_name: `status-icon status-icon-${display_status.replace('_', '-')}`,
-            text_content: get_status_icon(display_status)
+            text_content: get_status_icon(display_status),
+            attributes: { 'aria-hidden': 'true' }
         });
         
         details_row_div.appendChild(status_icon);
