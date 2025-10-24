@@ -5,6 +5,7 @@
 - Playwright-testerna `noConsoleErrors` måste passera i Chromium och WebKit.
 - Använd modern ES-modulsyntax (`import/export`) i all kod.
 - Följ Vite-konventioner och håll fast porten 5173.
+- Använd aldrig CDN, använd endast npm-moduler. 
 
 ## AI-arbetsflöde
 - Analysera & Föreslå: När du får en uppgift, generera ingen kod. Analysera istället instruktionerna och återkom med en tydlig plan.

@@ -662,5 +662,13 @@
   "all_requirements_handled_for_sample": "Alla krav är granskade för detta stickprov",
   "audit_requirement": "Granska krav",
   "audit_requirement_title": "Granska krav",
-  "rule_file_must_have_at_least_one_requirement": "Regelfilen måste innehålla minst ett krav"
+  "rule_file_must_have_at_least_one_requirement": "Regelfilen måste innehålla minst ett krav",
+  "markdown_toolbar_bold": "Fet text",
+  "markdown_toolbar_italic": "Kursiv text", 
+  "markdown_toolbar_code": "Kod",
+  "markdown_toolbar_heading": "Rubrik",
+  "markdown_toolbar_bullet_list": "Punktlista",
+  "markdown_toolbar_numbered_list": "Numrerad lista",
+  "markdown_toolbar_link": "Länk",
+  "markdown_toolbar_preview": "Förhandsgranska"
 }

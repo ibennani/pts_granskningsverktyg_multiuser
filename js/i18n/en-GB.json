@@ -662,5 +662,13 @@
   "all_requirements_handled_for_sample": "All requirements reviewed for this sample",
   "audit_requirement": "Review requirement",
   "audit_requirement_title": "Review requirement",
-  "rule_file_must_have_at_least_one_requirement": "The rule file must contain at least one requirement"
+  "rule_file_must_have_at_least_one_requirement": "The rule file must contain at least one requirement",
+  "markdown_toolbar_bold": "Bold text",
+  "markdown_toolbar_italic": "Italic text", 
+  "markdown_toolbar_code": "Code",
+  "markdown_toolbar_heading": "Heading",
+  "markdown_toolbar_bullet_list": "Bullet list",
+  "markdown_toolbar_numbered_list": "Numbered list",
+  "markdown_toolbar_link": "Link",
+  "markdown_toolbar_preview": "Preview"
 }

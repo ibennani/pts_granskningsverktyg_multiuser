@@ -33,6 +33,19 @@
     line-height: 1; /* För att ikonen ska centreras snyggt */
     font-size: 0.9em; /* Gör ikonerna lite mindre än brödtexten */
     transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2rem;
+    min-height: 2rem;
+}
+
+/* Stil för ikonerna */
+.md-toolbar-icon {
+    font-size: 1.2em;
+    font-weight: 500;
+    line-height: 1;
+    display: inline-block;
 }
 
 /* --- NY, FÖRBÄTTRAD KOD --- */

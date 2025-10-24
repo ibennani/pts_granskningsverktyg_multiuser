@@ -25,6 +25,14 @@ for (const cssRef of cssReferences) {
     }
 }
 
+// Helper function to convert PascalCase to snake_case
+function pascalToSnakeCase(str) {
+    return str
+        .replace(/([A-Z])/g, '_$1')
+        .toLowerCase()
+        .replace(/^_/, '');
+}
+
 // Check component CSS files
 const componentsDir = join(projectRoot, 'js', 'components');
 const cssDir = join(projectRoot, 'css', 'components');
@@ -35,7 +43,9 @@ if (existsSync(componentsDir) && existsSync(cssDir)) {
     
     // Check if each component has a corresponding CSS file
     for (const component of components) {
-        const cssFileName = component.replace('.js', '.css');
+        const baseName = component.replace('.js', '');
+        const snakeCaseName = pascalToSnakeCase(baseName);
+        const cssFileName = `${snakeCaseName}.css`;
         const cssPath = join(cssDir, cssFileName);
         
         // Some components might not need CSS, so this is just a warning

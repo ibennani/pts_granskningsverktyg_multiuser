@@ -123,16 +123,16 @@ import { marked } from '../utils/markdown.js';
         toolbar.setAttribute('aria-controls', textarea.id);
 
         const buttons = [
-            { format: 'bold', icon: 'fa-bold' },
-            { format: 'italic', icon: 'fa-italic' },
-            { format: 'code', icon: 'fa-code' },
+            { format: 'bold', icon: 'B', symbol: '**', ariaLabelKey: 'markdown_toolbar_bold' },
+            { format: 'italic', icon: 'I', symbol: '*', ariaLabelKey: 'markdown_toolbar_italic' },
+            { format: 'code', icon: '</>', symbol: '`', ariaLabelKey: 'markdown_toolbar_code' },
             { type: 'separator' },
-            { format: 'heading', icon: 'fa-heading' },
-            { format: 'ul', icon: 'fa-list-ul' },
-            { format: 'ol', icon: 'fa-list-ol' },
-            { format: 'link', icon: 'fa-link' },
+            { format: 'heading', icon: 'H', symbol: '##', ariaLabelKey: 'markdown_toolbar_heading' },
+            { format: 'ul', icon: '•', symbol: '- ', ariaLabelKey: 'markdown_toolbar_bullet_list' },
+            { format: 'ol', icon: '1.', symbol: '1. ', ariaLabelKey: 'markdown_toolbar_numbered_list' },
+            { format: 'link', icon: '🔗', symbol: '[]()', ariaLabelKey: 'markdown_toolbar_link' },
             { type: 'spacer' },
-            { format: 'preview', icon: 'fa-eye' }
+            { format: 'preview', icon: '👁', symbol: 'preview', ariaLabelKey: 'markdown_toolbar_preview' }
         ];
 
         buttons.forEach(btnConfig => {
@@ -153,8 +153,15 @@ import { marked } from '../utils/markdown.js';
             const button = document.createElement('button');
             button.type = 'button';
             button.className = 'md-toolbar-btn';
-            const icon_element = document.createElement('i');
-            icon_element.className = `fa-solid ${btnConfig.icon}`;
+            
+            // Lägg till aria-label från översättningar
+            if (btnConfig.ariaLabelKey && window.Translation && window.Translation.t) {
+                button.setAttribute('aria-label', window.Translation.t(btnConfig.ariaLabelKey));
+            }
+            
+            const icon_element = document.createElement('span');
+            icon_element.className = 'md-toolbar-icon';
+            icon_element.textContent = btnConfig.icon;
             icon_element.setAttribute('aria-hidden', 'true');
             button.appendChild(icon_element);
 
