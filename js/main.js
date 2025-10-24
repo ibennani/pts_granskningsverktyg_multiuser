@@ -4,6 +4,7 @@ import '@fontsource/roboto/400.css';
 import '@fontsource/roboto/500.css';
 import '@fontsource/roboto/700.css';
 import '@fortawesome/fontawesome-free/css/all.min.css';
+console.log('[Main.js] Font Awesome CSS imported from local npm package');
 
 import './utils/helpers.js';
 import './translation_logic.js';
@@ -680,7 +681,7 @@ window.dependencyManager = dependencyManager;
                 hour: '2-digit',
                 minute: '2-digit',
             });
-            buildTimestampElement.textContent = `Byggt ${fallbackDate} kl ${fallbackTime}`;
+            buildTimestampElement.textContent = `Senaste dev ${fallbackDate} kl ${fallbackTime}`;
             buildTimestampElement.style.display = 'block';
         }
     }

@@ -1,5 +1,4 @@
-/* Import Font Awesome från node_modules */
-@import '@fortawesome/fontawesome-free/css/all.min.css';
+/* Font Awesome laddas via main.js istället för här för att undvika konflikter */
 
 /* Global styles and CSS variables - Teal/Coral Tema */
 :root {

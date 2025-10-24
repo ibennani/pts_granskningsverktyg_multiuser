@@ -117,7 +117,41 @@ export const RequirementListComponent = (function () {
             global_message_element_ref = NotificationComponent_get_global_message_element_reference();
         }
 
-        await Helpers_load_css(CSS_PATH).catch(e => console.warn(e));
+        try {
+            await Helpers_load_css(CSS_PATH);
+            console.log('[RequirementListComponent] CSS loaded successfully');
+            
+            // Kontrollera om Font Awesome är laddat från lokalt npm-paket
+            const testElement = document.createElement('span');
+            testElement.className = 'fa fa-check';
+            document.body.appendChild(testElement);
+            const computedStyle = window.getComputedStyle(testElement, '::before');
+            const fontFamily = computedStyle.getPropertyValue('font-family');
+            const content = computedStyle.getPropertyValue('content');
+            console.log('[RequirementListComponent] Font Awesome test (local npm package):', {
+                fontFamily,
+                content,
+                hasFontAwesome: fontFamily.includes('Font Awesome'),
+                isLocalPackage: true
+            });
+            document.body.removeChild(testElement);
+            
+            // Kontrollera om våra CSS-regler finns
+            const testIconElement = document.createElement('span');
+            testIconElement.className = 'status-icon-indicator status-icon-passed';
+            document.body.appendChild(testIconElement);
+            const testIconStyle = window.getComputedStyle(testIconElement, '::before');
+            const testIconContent = testIconStyle.getPropertyValue('content');
+            const testIconFontFamily = testIconStyle.getPropertyValue('font-family');
+            console.log('[RequirementListComponent] Our CSS test:', {
+                testIconContent,
+                testIconFontFamily,
+                hasOurCSS: testIconContent !== 'none'
+            });
+            document.body.removeChild(testIconElement);
+        } catch (e) {
+            console.warn('Failed to load CSS for RequirementListComponent:', e);
+        }
         
         is_dom_initialized = false;
     }
@@ -179,6 +213,23 @@ export const RequirementListComponent = (function () {
 
         app_container_ref.appendChild(plate_element_ref);
         is_dom_initialized = true;
+    }
+
+    function get_status_icon(status) {
+        switch (status) {
+            case 'not_audited':
+                return '◯'; // Tom cirkel utan färg
+            case 'partially_audited':
+                return '◐'; // Orange halv cirkel
+            case 'passed':
+                return '✔'; // Fet grön bock
+            case 'failed':
+                return '✖'; // Fet rött kryss
+            case 'updated':
+                return '⟲'; // Blå cirkulär pil
+            default:
+                return '◯'; // Standard: tom cirkel utan färg
+        }
     }
 
     function _populate_dynamic_content() {
@@ -324,6 +375,13 @@ export const RequirementListComponent = (function () {
         const req_result = (sample.requirementResults || {})[req.key];
         const display_status = req_result?.needsReview ? 'updated' : AuditLogic_calculate_requirement_status(req, req_result);
 
+        // Debug: Logga status och klass
+        console.log(`[RequirementListComponent] Creating item for requirement ${req.key}:`, {
+            display_status,
+            status_icon_class: `status-icon-${display_status.replace('_', '-')}`,
+            req_result
+        });
+
         const li = Helpers_create_element('li', { class_name: 'requirement-item compact-twoline' });
         
         const title_row_div = Helpers_create_element('div', { class_name: 'requirement-title-container' });
@@ -340,16 +398,22 @@ export const RequirementListComponent = (function () {
         li.appendChild(title_row_div);
 
         const details_row_div = Helpers_create_element('div', { class_name: 'requirement-details-row' });
-        const status_indicator_wrapper = Helpers_create_element('span', { class_name: 'requirement-status-indicator-wrapper' });
-        const status_icon_class = `status-icon-${display_status.replace('_', '-')}`;
         const status_text = t(display_status === 'updated' ? 'status_updated' : `audit_status_${display_status}`);
-        const status_icon_title = t(display_status === 'updated' ? 'status_updated_needs_review' : `audit_status_${display_status}`);
-
-        status_indicator_wrapper.append(
-            Helpers_create_element('span', { class_name: ['status-icon-indicator', status_icon_class], attributes: { 'aria-hidden': 'true', title: status_icon_title } }),
-            Helpers_create_element('span', { class_name: display_status === 'updated' ? 'status-text-updated' : '', text_content: ` ${status_text}` })
-        );
-        details_row_div.appendChild(status_indicator_wrapper);
+        
+        // Lägg till status ikon och text
+        const status_span = Helpers_create_element('span', { 
+            class_name: display_status === 'updated' ? 'status-text-updated' : '',
+            text_content: status_text
+        });
+        
+        // Lägg till status ikon före texten
+        const status_icon = Helpers_create_element('span', {
+            class_name: `status-icon status-icon-${display_status.replace('_', '-')}`,
+            text_content: get_status_icon(display_status)
+        });
+        
+        details_row_div.appendChild(status_icon);
+        details_row_div.appendChild(status_span);
 
         const total_checks = req.checks?.length || 0;
         const audited_checks = req_result?.checkResults ? Object.values(req_result.checkResults).filter(res => res.status === 'passed' || res.status === 'failed').length : 0;

@@ -1,6 +1,7 @@
 /* Styles for RequirementListComponent */
 .requirement-list-plate {
-    /* Använder .content-plate globalt */
+    /* Använder .content-plate globalt - ingen specifik styling behövs */
+    display: block;
 }
 
 /* Header för vyn - Stickprovsinfo */
@@ -33,10 +34,12 @@
     font-weight: 500; /* Lite mindre fet än default strong */
 }
 .requirement-list-header .sample-page-type {
-    /* Ingen specifik styling just nu */
+    /* Ingen specifik styling just nu - använder standard styling */
+    display: block;
 }
 .requirement-list-header .sample-audit-progress {
-    /* Ingen specifik styling just nu */
+    /* Ingen specifik styling just nu - använder standard styling */
+    display: block;
 }
 
 
@@ -162,75 +165,56 @@
 }
 
 
-/* Styling för Font Awesome ikoner via pseudo-element för status */
-.status-icon-indicator {
-    display: inline-block; 
-    width: 1.2em; /* Justera vid behov för att ge ikonen plats */
-    text-align: center; /* Centrera ikonen om width är större än ikonen */
-    margin-right: 0.3em; /* Lite utrymme mellan ikon och text om texten är kvar i wrappern */
-    font-size: 1em; /* Anpassa storleken på ikonen relativt omgivande text */
-    line-height: 1; /* För att undvika extra vertikalt utrymme */
-    vertical-align: middle; /* Försök att linjera den bättre med texten */
-}
-
-.status-icon-indicator::before {
-    -moz-osx-font-smoothing: grayscale;
-    -webkit-font-smoothing: antialiased;
-    display: inline-block; /* Viktigt */
-    font-style: normal;
-    font-variant: normal;
-    text-rendering: auto;
-    /* Font Awesome 7 Free Weights:
-       Regular: 400
-       Solid: 900
-    */
-    /* === ÄNDRING BÖRJAR HÄR === */
-    /* Ökar färgmättnad och ljusstyrka för alla statusikoner */
-    filter: saturate(180%) brightness(115%);
-    /* === ÄNDRING SLUTAR HÄR === */
-}
-
-/* Specifika ikoner och färger */
-.status-icon-passed::before {
-    font-family: "Font Awesome 7 Free";
-    font-weight: 900; 
-    content: "\f00c"; /* fa-check */
-    color: var(--success-color);
-}
-
-.status-icon-failed::before {
-    font-family: "Font Awesome 7 Free";
-    font-weight: 900; 
-    content: "\f00d"; /* fa-xmark */
-    color: var(--danger-color);
-}
-
-.status-icon-partially-audited::before {
-    font-family: "Font Awesome 7 Free";
-    font-weight: 900; 
-    content: "\f5c0"; /* fa-circle-half-stroke */
-    color: var(--warning-color);
-}
-
-.status-icon-not-audited::before {
-    font-family: "Font Awesome 7 Free";
-    font-weight: 400; 
-    content: "\f111"; /* fa-circle (regular) */
-    color: var(--text-color-muted); 
-}
-
-/* *** NYA REGLER FÖR "UPPDATERAD"-STATUS *** */
-.status-icon-updated::before {
-    font-family: "Font Awesome 7 Free";
-    font-weight: 900;
-    content: "\f01e"; /* fa-arrows-rotate (tidigare fa-sync-alt) */
-    color: var(--info-color); /* Använder info-färgen (blå) */
-}
 
 .requirements-list-content .status-text-updated {
     color: var(--info-color);
     font-weight: 500;
 }
+
+/* Status ikoner */
+.requirements-list-content .status-icon {
+    display: inline-block;
+    margin-right: 0.3rem; /* Återställd till ursprungligt värde */
+    font-size: 1rem;
+    line-height: 1;
+    vertical-align: middle;
+    font-weight: normal; /* Säkerställ raka ikoner */
+}
+
+/* Specifika färger för varje status ikon */
+.requirements-list-content .status-icon-not-audited {
+    color: #000000; /* Svart i ljust läge - enfärgad */
+    font-weight: bold; /* Fetare för bättre synlighet */
+    opacity: 1; /* Säkerställ full opacitet */
+    text-stroke: 2px currentColor; /* Tjockare cirkel - 2px */
+    -webkit-text-stroke: 2px currentColor; /* Webkit-stöd för tjockare cirkel */
+}
+
+[data-theme="dark"] .requirements-list-content .status-icon-not-audited {
+    color: #FFFFFF; /* Vit i mörkt läge - enfärgad */
+    opacity: 1; /* Säkerställ full opacitet */
+    text-stroke: 2px currentColor; /* Tjockare cirkel - 2px */
+    -webkit-text-stroke: 2px currentColor; /* Webkit-stöd för tjockare cirkel */
+}
+
+.requirements-list-content .status-icon-partially-audited {
+    color: #FF8C00; /* Orange */
+}
+
+.requirements-list-content .status-icon-passed {
+    color: #28A745; /* Grön */
+    font-weight: bold; /* Fetare ikon */
+}
+
+.requirements-list-content .status-icon-failed {
+    color: #DC3545; /* Röd */
+    font-weight: bold; /* Fetare ikon */
+}
+
+.requirements-list-content .status-icon-updated {
+    color: #007BFF; /* Blå */
+}
+
 /* *** SLUT PÅ NYA REGLER *** */
 
 .requirements-list-content .requirement-checks-info {
