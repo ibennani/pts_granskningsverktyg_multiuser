@@ -261,9 +261,44 @@ import { marked } from '../utils/markdown.js';
             else if (selectedText.startsWith(wrapper) && selectedText.endsWith(wrapper)) {
                 const unwrappedText = selectedText.substring(wrapper.length, selectedText.length - wrapper.length);
                 textarea.setRangeText(unwrappedText, start, end, 'select');
+            }
+            // FALL 2c: Markeringen innehåller dubbel-omslutning (t.ex. användaren markerade '****ord****')
+            else if (selectedText.startsWith(wrapper + wrapper) && selectedText.endsWith(wrapper + wrapper)) {
+                const unwrappedText = selectedText.substring(wrapper.length * 2, selectedText.length - wrapper.length * 2);
+                textarea.setRangeText(unwrappedText, start, end, 'select');
             } 
-            // FALL 3: Texten är omarkerad och ska formateras
+            // FALL 2b: Kontrollera om texten redan är omsluten i en bredare kontext
             else {
+                // Kontrollera om texten redan är formaterad genom att titta på en bredare kontext
+                const contextStart = Math.max(0, start - wrapper.length);
+                const contextEnd = Math.min(textarea.value.length, end + wrapper.length);
+                const contextText = textarea.value.substring(contextStart, contextEnd);
+                const contextBefore = textarea.value.substring(contextStart, start);
+                const contextAfter = textarea.value.substring(end, contextEnd);
+                
+                // Om kontexten visar att texten redan är omsluten, ta bort formateringen
+                if (contextBefore.endsWith(wrapper) && contextAfter.startsWith(wrapper)) {
+                    // Ta bort wrappers från kontexten
+                    const unwrappedContext = contextText.substring(wrapper.length, contextText.length - wrapper.length);
+                    textarea.setRangeText(unwrappedContext, contextStart, contextEnd, 'select');
+                    return; // Avsluta här för detta specialfall
+                }
+                
+                // Kontrollera om texten redan är dubbel-omsluten i kontexten
+                const doubleContextStart = Math.max(0, start - wrapper.length * 2);
+                const doubleContextEnd = Math.min(textarea.value.length, end + wrapper.length * 2);
+                const doubleContextText = textarea.value.substring(doubleContextStart, doubleContextEnd);
+                const doubleContextBefore = textarea.value.substring(doubleContextStart, start);
+                const doubleContextAfter = textarea.value.substring(end, doubleContextEnd);
+                
+                if (doubleContextBefore.endsWith(wrapper + wrapper) && doubleContextAfter.startsWith(wrapper + wrapper)) {
+                    // Ta bort dubbel-wrappers från kontexten
+                    const unwrappedContext = doubleContextText.substring(wrapper.length * 2, doubleContextText.length - wrapper.length * 2);
+                    textarea.setRangeText(unwrappedContext, doubleContextStart, doubleContextEnd, 'select');
+                    return; // Avsluta här för detta specialfall
+                }
+                
+                // FALL 3: Texten är omarkerad och ska formateras
                 const leadingSpace = selectedText.match(/^\s*/)?.[0] || '';
                 const trailingSpace = selectedText.match(/\s*$/)?.[0] || '';
                 const trimmedText = selectedText.trim();
