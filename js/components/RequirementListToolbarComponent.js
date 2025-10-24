@@ -236,9 +236,30 @@ export const RequirementListToolbarComponent = (function () {
 
         if (!is_dom_built) {
             initial_build();
-            const t = Translation_t;
+        }
+        
+        // Always update all text elements when rendering (for language changes)
+        const t = Translation_t;
+        
+        // Update search label
+        const search_label = container_ref.querySelector('label[for="req-list-search"]');
+        if (search_label) {
+            search_label.textContent = t('search_in_help_texts_label');
+        }
+        
+        // Update filter label and button
+        if (component_config.showStatusFilter) {
+            const filter_label = container_ref.querySelector('.status-filter-group label');
+            if (filter_label) {
+                filter_label.textContent = t('filter_by_status_label');
+            }
             
-            if (component_config.showStatusFilter && filter_panel_ref) {
+            if (filter_button_ref) {
+                filter_button_ref.textContent = t('status_filter_button_text');
+            }
+            
+            // Update filter panel content
+            if (filter_panel_ref) {
                 filter_panel_ref.innerHTML = `
                     <div class="form-check all-check">
                         <input id="status-filter-all" class="form-check-input" type="checkbox" data-status="all">
@@ -266,6 +287,26 @@ export const RequirementListToolbarComponent = (function () {
                         <label for="status-filter-updated">${t('filter_option_updated')}</label>
                     </div>
                 `;
+            }
+        }
+        
+        // Update sort label and options
+        if (component_config.sortOptions && component_config.sortOptions.length > 0) {
+            const sort_label = container_ref.querySelector('label[for="req-list-sort"]');
+            if (sort_label) {
+                sort_label.textContent = t('sort_by_label');
+            }
+            
+            const sort_select = container_ref.querySelector('#req-list-sort');
+            if (sort_select) {
+                // Update sort options
+                sort_select.innerHTML = '';
+                component_config.sortOptions.forEach(opt => {
+                    sort_select.appendChild(Helpers_create_element('option', {
+                        value: opt.value,
+                        text_content: t(opt.textKey)
+                    }));
+                });
             }
         }
 
