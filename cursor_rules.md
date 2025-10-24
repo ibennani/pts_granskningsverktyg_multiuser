@@ -15,7 +15,7 @@
   Använd `aria-disabled="true"` endast vid tillfälliga tillstånd där funktionen väntar på data.
 - Inga inaktiva komponenter någonsin – rendera bara komponenter som ska visas och användas i aktuellt tillstånd.
 - Inga placeholders – använd alltid synliga `<label>`-element.
-- Inga "Avbryt"-knappar – skriv vad som faktiskt händer.
+- Inga "Avbryt"-knappar – skriv vad som faktiskt händer. Ordet "Avbryt" kan dock utgöra en del av en längre beskrivning.
 - Inga mus-beroenden – allt ska fungera med tangentbord.
 - Språk i koden: engelska för filer, funktioner och variabler.
 
@@ -69,7 +69,7 @@ Utöver WCAG:s formella krav gäller följande projektspecifika regler:
 - Alla interaktioner som kräver pekgester ska ha ett tangentbordsalternativ.
 - Komponenter får inte kräva simultana gester (t.ex. nypa, dra med flera fingrar).
 - Touchytor ska vara minst 24×24 px (WCAG 2.5.8).
-- Inga tooltips som endast visas vid hover – all information ska vara tillgänglig utan mus och kunna nås via tangentbord.
+- Inga tooltips som endast visas vid hover – all information ska vara tillgänglig utan mus och kunna nås via tangentbord. Visuella effekter får använda hover
 
 ### Responsivitet och zoom
 - Allt innehåll ska vara fullt användbart vid 200 % zoom utan horisontell scroll, utöver nödvändig scroll för själva komponenten (WCAG 1.4.10).
@@ -79,6 +79,7 @@ Utöver WCAG:s formella krav gäller följande projektspecifika regler:
 - Inga element får vara dolda eller inaktiva genom `disabled`; använd `aria-disabled="true"` endast tillfälligt.
 - Undvik att gömma innehåll visuellt utan korrekt ARIA-hantering (`sr-only` eller `aria-hidden`).
 - Text som indikerar tillstånd (t.ex. "Sparar...", "Klar") ska kunna uppfattas av skärmläsare.
+- Använd alltid HTML-komponenter. Använd endast aria-attribut när standard-html inte räcker till.
 
 ## Byggtext-regel
 När `npm run build` körs ska texten  
