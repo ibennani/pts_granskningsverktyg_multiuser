@@ -1,11 +1,25 @@
-# Användarmanual: Webbapplikation för digital tillsyn
+# Användarmanual: Granskningsverktyget
 
-**Version:** 1.0
-**Datum:** 2024-05-27 _(Ersätt med aktuellt datum)_
+**Version:** 2.1.0
+**Datum:** 2025-01-27
 
 ## Välkommen!
 
-Denna manual hjälper dig att använda webbapplikationen för digital tillsyn. Verktyget är designat för att underlätta processen med att granska webbsidor och digitala tjänster mot en given uppsättning regler (en regelfil).
+Denna manual hjälper dig att använda Granskningsverktyget - ett webbaserat verktyg för digital tillsyn. Verktyget är designat för att underlätta processen med att granska webbsidor och digitala tjänster mot en given uppsättning regler (en regelfil).
+
+### Vad är Granskningsverktyget?
+
+Granskningsverktyget är en modern webbapplikation som stöder hela processen från regelfilsuppladdning till slutlig rapportgenerering. Verktyget är designat för att vara användarvänligt, tillgängligt och effektivt för granskare som arbetar med digital tillsyn.
+
+### Huvudfunktioner
+
+- **Regelfilshantering**: Ladda upp och validera JSON-baserade regelfiler
+- **Stickprovshantering**: Definiera och hantera stickprov för granskning
+- **Strukturerad granskning**: Systematisk bedömning av krav enligt regelfilen
+- **Dokumentation**: Observera och kommentera brister och förbättringsområden
+- **Export**: Generera rapporter i CSV, Excel och Word-format
+- **Språkstöd**: Svenska och engelska
+- **Responsiv design**: Fungerar på desktop och mobil
 
 ## Innehållsförteckning
 
@@ -41,10 +55,32 @@ Denna manual hjälper dig att använda webbapplikationen för digital tillsyn. V
 
 ## 1. Systemkrav
 
-För att använda applikationen behöver du:
-*   En modern webbläsare, till exempel de senaste versionerna av Google Chrome, Mozilla Firefox eller Microsoft Edge.
-*   JavaScript måste vara aktiverat i din webbläsare.
-*   En regelfil i json-format (om du startar en ny granskning).
+### Minimi-krav
+
+För att använda Granskningsverktyget behöver du:
+
+*   **Webbläsare**: En modern webbläsare med stöd för ES6-moduler
+  - Google Chrome 90+ (rekommenderat)
+  - Mozilla Firefox 88+
+  - Microsoft Edge 90+
+  - Safari 14+ (macOS)
+*   **JavaScript**: Måste vara aktiverat i din webbläsare
+*   **Internetanslutning**: För att ladda ner verktyget (endast första gången)
+*   **Regelfil**: En regelfil i JSON-format (om du startar en ny granskning)
+
+### Rekommenderade specifikationer
+
+*   **Skärmupplösning**: Minst 1024x768 pixlar (1920x1080 rekommenderat)
+*   **RAM**: Minst 4 GB (8 GB rekommenderat)
+*   **Diskutrymme**: Minst 100 MB för temporära filer
+
+### Tillgänglighet
+
+Verktyget stöder:
+*   **Tangentbordsnavigering**: Alla funktioner kan användas med tangentbord
+*   **Skärmläsare**: Kompatibelt med skärmläsare som NVDA, JAWS och VoiceOver
+*   **Färgkontrast**: Hög kontrast för bättre läsbarhet
+*   **Zoom**: Stöder webbläsarens zoom-funktioner
 
 Applikationen körs helt i din webbläsare och kräver ingen installation av programvara.
 
@@ -223,13 +259,63 @@ De exporterade filerna innehåller metadata, information om stickprov, och detal
 
 ## 11. Byta språk och tema
 
-Längst upp till höger i applikationen finns globala kontroller:
-*   **Språkväljare:** En dropdown-lista där du kan välja mellan tillgängliga språk (t.ex. Svenska, English). Gränssnittet uppdateras direkt när du byter språk. Ditt språkval sparas för framtida sessioner.
-*   **Temaväxlare:** En knapp för att växla mellan ljust och mörkt färgschema. Applikationen försöker initialt använda ditt operativsystems temainställning. Ditt val sparas för framtida sessioner.
+### Språkväxling
+
+Längst upp till höger i applikationen finns en språkväljare:
+*   **Språkväljare:** En dropdown-lista där du kan välja mellan tillgängliga språk (Svenska, English)
+*   **Automatisk uppdatering:** Gränssnittet uppdateras direkt när du byter språk
+*   **Sparat val:** Ditt språkval sparas för framtida sessioner
+*   **Standard:** Applikationen använder webbläsarens språkinställning som standard
+
+### Temaväxling
+
+Verktyget stöder både ljust och mörkt tema:
+*   **Temaväxlare:** En knapp för att växla mellan ljust och mörkt färgschema
+*   **Automatisk detektering:** Applikationen använder ditt operativsystems temainställning som standard
+*   **Sparat val:** Ditt temaval sparas för framtida sessioner
+*   **Tillgänglighet:** Båda temana uppfyller WCAG 2.2 AA-kraven för färgkontrast
+
+### Anpassning
+
+*   **Zoom:** Använd webbläsarens zoom-funktioner (Ctrl/Cmd + +/-)
+*   **Skärmläsare:** Verktyget är optimerat för skärmläsare
+*   **Tangentbord:** Alla funktioner kan användas med tangentbord
 
 ## 12. Felsökning och tips
 
-*   **Spara ofta:** Använd funktionen "Spara granskning till fil" regelbundet för att inte förlora arbete.
-*   **Problem med filuppladdning:** Kontrollera att din regelfil eller sparade granskningsfil är i korrekt json-format. Eventuella felmeddelanden kan ge ledtrådar.
-*   **Konstigt utseende eller funktion:** Prova att göra en "hård omladdning" av sidan i din webbläsare (ofta Ctrl+Shift+R eller Cmd+Shift+R) för att rensa eventuell cachad data som kan störa.
-*   **Kontakta support:** Om du stöter på problem som du inte kan lösa, kontakta den som tillhandahåller verktyget för support.
+### Vanliga problem och lösningar
+
+**Problem: Applikationen laddas inte**
+*   Kontrollera att JavaScript är aktiverat i din webbläsare
+*   Prova att ladda om sidan (F5 eller Ctrl+R)
+*   Kontrollera att du använder en modern webbläsare
+
+**Problem: Filuppladdning misslyckas**
+*   Kontrollera att din regelfil eller sparade granskningsfil är i korrekt JSON-format
+*   Eventuella felmeddelanden kan ge ledtrådar om vad som är fel
+*   Kontrollera att filen inte är korrupt eller för stor
+
+**Problem: Konstigt utseende eller funktion**
+*   Prova att göra en "hård omladdning" av sidan (Ctrl+Shift+R eller Cmd+Shift+R)
+*   Rensa webbläsarens cache och cookies
+*   Kontrollera att du använder en kompatibel webbläsare
+
+**Problem: Långsam prestanda**
+*   Stäng andra flikar och program som använder mycket minne
+*   Kontrollera att du har tillräckligt med RAM
+*   Prova att använda en annan webbläsare
+
+### Bästa praxis
+
+*   **Spara ofta:** Använd funktionen "Spara granskning till fil" regelbundet för att inte förlora arbete
+*   **Backup:** Skapa regelbundna säkerhetskopior av dina granskningar
+*   **Uppdateringar:** Håll din webbläsare uppdaterad för bästa prestanda
+*   **Stabilitet:** Undvik att stänga webbläsaren oväntat under pågående granskning
+
+### Support
+
+Om du stöter på problem som du inte kan lösa:
+*   Kontrollera att du använder en kompatibel webbläsare
+*   Kontakta den som tillhandahåller verktyget för support
+*   Inkludera information om din webbläsare och operativsystem
+*   Beskriv problemet så detaljerat som möjligt

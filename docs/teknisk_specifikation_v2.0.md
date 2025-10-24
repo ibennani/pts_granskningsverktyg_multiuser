@@ -1,41 +1,115 @@
-# Teknisk specifikation: Webbapplikation för digital tillsyn
+# Teknisk specifikation: Granskningsverktyget
 
-**Version:** 2.0
-**Datum:** 2024-05-27 _(Ersätt med aktuellt datum)_
+**Version:** 2.1.0
+**Datum:** 2025-01-27
 
 ## 1. Mål och syfte
 
-Webbapplikationen ska användas för digital tillsyn av webbsidor och digitala enheter. Användaren laddar upp en regelfil i json-format, definierar stickprov, granskar krav enligt regelfilen, dokumenterar observationer och kommentarer per krav och stickprov, samt exporterar granskningsresultat. Applikationen guidar användaren genom hela processen, stödjer sparande och laddning av pågående arbete, och körs helt lokalt i användarens webbläsare utan backend-beroenden.
+Granskningsverktyget är en modern webbapplikation för digital tillsyn av webbsidor och digitala tjänster. Verktyget stöder hela processen från regelfilsuppladdning till slutlig rapportgenerering, med fokus på användarvänlighet, tillgänglighet och effektivitet.
 
-## 2. Teknisk arkitektur (översikt)
+### Huvudsyfte
 
-### 2.1 Frontend-teknologier (exempel på nuvarande implementation)
-*   Html5, css3, modern javascript (es6+).
-*   Modulär och komponentbaserad kodstruktur rekommenderas.
-*   Ingen extern databaskoppling; all datahantering sker lokalt i webbläsaren.
-*   Stöd för moderna skrivbordswebbläsare (senaste versionerna av Chrome, Firefox, Edge rekommenderas).
+Verktyget ska underlätta strukturerad granskning enligt definierade regler genom att:
+- Validera och hantera JSON-baserade regelfiler
+- Stödja definiering och hantering av stickprov
+- Möjliggöra systematisk bedömning av krav
+- Dokumentera observationer och kommentarer
+- Generera rapporter i olika format (CSV, Excel, Word)
+- Säkerställa tillgänglighet enligt WCAG 2.2 AA
+
+### Tekniska mål
+
+- **Prestanda**: Snabb laddning och responsiv användarupplevelse
+- **Tillgänglighet**: Fullständig kompatibilitet med hjälpmedel
+- **Säkerhet**: Säker hantering av känslig data
+- **Skalbarhet**: Stöd för stora regelfiler och många stickprov
+- **Underhållbarhet**: Modulär arkitektur för enkel utveckling
+
+## 2. Teknisk arkitektur
+
+### 2.1 Frontend-teknologier
+
+**Kärnteknologier:**
+- **HTML5**: Semantisk markup för tillgänglighet
+- **CSS3**: Modern styling med CSS-variabler och flexbox/grid
+- **JavaScript ES6+**: Modulär arkitektur med import/export
+- **Vite**: Byggsystem och utvecklingsserver
+
+**Arkitekturprinciper:**
+- **Modulär design**: Varje komponent är en ES6-modul
+- **Komponentbaserat**: Återanvändbara UI-komponenter
+- **State management**: Redux-liknande pattern med centraliserad state
+- **Internationalisering**: Språkstöd via JSON-filer
+- **Responsiv design**: CSS-variabler för tema och styling
 
 ### 2.2 Rendering och navigation
-*   Dynamisk rendering av vyer och komponenter via klient-sidans logik.
-*   Url-hash (#) används för navigation mellan olika vyer/sektioner i applikationen.
+
+**Rendering:**
+- **SPA (Single Page Application)**: All rendering sker på klientsidan
+- **Hash-based routing**: URL-hash (#) för navigation mellan vyer
+- **Dynamic imports**: Lazy loading av komponenter vid behov
+- **Component lifecycle**: init(), render(), destroy() för alla komponenter
+
+**Navigation:**
+- **Hash routing**: `#view?param=value` för URL-struktur
+- **State-driven**: Navigation baserad på applikationens state
+- **Deep linking**: Direktlänkar till specifika vyer fungerar
 
 ## 3. Allmänna krav och principer
 
-*   **Datauthållighet:**
-    *   Pågående granskningsdata ska sparas i webbläsarens `sessionStorage` för att överleva sidomladdningar och navigering inom sessionen.
-    *   Användaren ska kunna spara ner hela granskningstillståndet till en lokal json-fil.
-    *   Användaren ska kunna ladda upp en tidigare sparad granskningsfil för att återuppta arbetet.
-*   **Användargränssnitt och design:**
-    *   **Responsiv design:** Applikationen ska vara fullt funktionell och visuellt tilltalande på skärmbredder från minst 1080px ner till cirka 320px (vanlig mobil bredd).
-    *   **Estetik:** Modernt, professionellt och användarvänligt gränssnitt. Ett färgschema (t.ex. teal/coral som i nuvarande implementation) med god kontrast och läsbarhet. Användning av rundade hörn och ett tydligt sans-serif-typsnitt (t.ex. Roboto) rekommenderas.
-    *   **Tema:** Stöd för både ljust och mörkt tema, med möjlighet för användaren att växla manuellt samt initialt respektera användarens operativsystemsinställning. Temainställningen ska sparas i `localStorage`.
-*   **Kodprinciper (rekommendationer):**
-    *   Tydlig och konsekvent namngivning av variabler, funktioner och filer (t.ex. snake_case för javascript-variabler).
-    *   Eventdelegering bör användas där det är lämpligt för att hantera händelser på listor eller dynamiskt genererade element.
-*   **Internationalisering (i18n):**
-    *   All text i användargränssnittet ska hanteras via ett översättningssystem.
-    *   Initialt stöd för svenska (sv-SE) och engelska (en-GB).
-    *   Användaren ska kunna byta språk via ett gränssnittselement. Språkvalet bör kunna sparas.
+### 3.1 Datauthållighet
+
+**Session Storage:**
+- Pågående granskningsdata sparas i `sessionStorage` för att överleva sidomladdningar
+- Automatisk sparning vid state-ändringar
+- Fallback till `localStorage` för autosave
+
+**Filbaserad sparning:**
+- Användaren kan spara hela granskningstillståndet till JSON-fil
+- Ladda tidigare sparade granskningar från fil
+- Versionshantering för kompatibilitet mellan olika versioner
+
+### 3.2 Användargränssnitt och design
+
+**Responsiv design:**
+- Fullt funktionell på skärmbredder från 320px till 1920px+
+- Mobile-first approach med progressiv förbättring
+- Flexibel layout som anpassar sig till olika skärmstorlekar
+
+**Estetik:**
+- Modernt, professionellt och användarvänligt gränssnitt
+- Färgschema med god kontrast och läsbarhet
+- Rundade hörn och tydligt sans-serif-typsnitt (Roboto)
+- Konsekvent design genom hela applikationen
+
+**Tema:**
+- Stöd för ljust och mörkt tema
+- Automatisk detektering av operativsystemsinställning
+- Manuell växling via UI-kontroll
+- Temainställning sparas i `localStorage`
+
+### 3.3 Kodprinciper
+
+**Namngivning:**
+- `camelCase` för JavaScript-variabler och funktioner
+- `PascalCase` för komponenter och klasser
+- `UPPER_SNAKE_CASE` för konstanter
+- Tydlig och beskrivande namngivning
+
+**Arkitektur:**
+- Event delegation för bättre prestanda
+- Modulär kodstruktur med tydliga ansvarsområden
+- Separation of concerns mellan UI, logik och data
+- Återanvändbara komponenter och funktioner
+
+### 3.4 Internationalisering
+
+**Språkstöd:**
+- All UI-text hanteras via översättningssystem
+- Stöd för svenska (sv-SE) och engelska (en-GB)
+- Språkväxling via UI-kontroll
+- Språkval sparas i `localStorage`
+- Automatisk detektering av webbläsarens språk
 
 ## 4. Kärnfunktionalitet och arbetsprocess
 
