@@ -74,26 +74,7 @@ export const RequirementInfoSections = (function () {
             render_markdown_section('requirement_tips', requirement_definition.tips)
         ];
 
-        // Special handling for metadata/content types
-        if (sample?.selectedContentTypes?.length > 0) {
-            const metadata_section = Helpers_create_element('div', { class_name: 'audit-section' });
-            metadata_section.appendChild(Helpers_create_element('h2', { text_content: t('content_types') }));
-            
-            const content_types_map = new Map();
-            (rule_file_metadata?.contentTypes || []).forEach(parent => {
-                (parent.types || []).forEach(child => content_types_map.set(child.id, child.text));
-            });
-            
-            const ul = Helpers_create_element('ul', { class_name: 'requirement-metadata-list' });
-            sample.selectedContentTypes.forEach(ct_id => {
-                ul.appendChild(Helpers_create_element('li', { text_content: content_types_map.get(ct_id) || ct_id }));
-            });
-
-            if (ul.hasChildNodes()) {
-                metadata_section.appendChild(ul);
-                sections_to_render.push(metadata_section);
-            }
-        }
+        // Intentionally do not render content types section on requirement audit view
         
         sections_to_render.filter(Boolean).forEach(section => container_ref.appendChild(section));
     }

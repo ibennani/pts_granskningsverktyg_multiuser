@@ -382,11 +382,11 @@
 }
 
 .audit-navigation-buttons.top-nav {
-    border-top: none;
-    border-bottom: 1px solid var(--border-color);
-    margin-top: 0;
+    border-top: 1px solid var(--border-color);
+    border-bottom: none;
+    margin-top: 1.5rem;
     margin-bottom: 2rem;
-    padding-top: 0;
+    padding-top: 1.5rem;
     padding-bottom: 1.5rem;
 }
 
