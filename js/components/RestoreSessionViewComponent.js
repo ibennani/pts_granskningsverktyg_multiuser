@@ -31,7 +31,9 @@ export const RestoreSessionViewComponent = (function () {
     function render() {
         if (!app_container_ref || !Translation_t || !Helpers_create_element || !autosaved_state_ref) {
             console.error("[RestoreSessionView] Cannot render, core dependencies or autosaved state missing.");
-            app_container_ref.innerHTML = `<p>Error: Could not display restore session options.</p>`;
+            const t = Translation_t || ((key) => key);
+            const errorMessage = t('restore_session_error_display');
+            app_container_ref.innerHTML = `<p>${window.Helpers?.escape_html(errorMessage) || errorMessage}</p>`;
             return;
         }
 

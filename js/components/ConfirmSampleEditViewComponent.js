@@ -39,7 +39,7 @@ export const ConfirmSampleEditViewComponent = (function () {
         const t = Translation_t;
         const pending_changes = local_getState().pendingSampleChanges;
         if (!pending_changes) {
-            NotificationComponent_show_global_message('Internal error: No pending changes found to apply.', 'error');
+            NotificationComponent_show_global_message(t('error_no_pending_sample_changes'), 'error');
             router_ref('audit_overview'); // Fallback
             return;
         }
@@ -86,7 +86,7 @@ export const ConfirmSampleEditViewComponent = (function () {
 
         if (!pending_changes) {
             plate_element_ref.appendChild(Helpers_create_element('h1', { text_content: t('error_internal') }));
-            plate_element_ref.appendChild(Helpers_create_element('p', { text_content: 'No pending sample changes were found.' }));
+            plate_element_ref.appendChild(Helpers_create_element('p', { text_content: t('error_no_pending_sample_changes') }));
             const back_button = Helpers_create_element('button', {
                 class_name: ['button', 'button-default'],
                 text_content: t('back_to_audit_overview')

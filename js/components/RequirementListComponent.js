@@ -245,6 +245,35 @@ export const RequirementListComponent = (function () {
         const t = get_t_internally();
         const current_global_state = local_getState();
         
+        // Uppdatera navigationsknappar när språket ändras
+        const top_nav_bar = plate_element_ref.querySelector('.requirements-navigation-bar:not(.bottom)');
+        if (top_nav_bar) {
+            top_nav_bar.innerHTML = '';
+            const current_state = local_getState();
+            let target_view = (current_state && current_state.auditStatus !== 'not_started') ? 'audit_overview' : 'sample_management';
+            let back_button_text_key = (target_view === 'audit_overview') ? 'back_to_audit_overview' : 'back_to_sample_management';
+            const back_button = Helpers_create_element('button', {
+                class_name: ['button', 'button-default'],
+                html_content: `<span>${t(back_button_text_key)}</span>` + (Helpers_get_icon_svg('arrow_back', ['currentColor'], 18) || '')
+            });
+            back_button.addEventListener('click', () => router_ref(target_view));
+            top_nav_bar.appendChild(back_button);
+        }
+        
+        const bottom_nav_bar = plate_element_ref.querySelector('.requirements-navigation-bar.bottom');
+        if (bottom_nav_bar) {
+            bottom_nav_bar.innerHTML = '';
+            const current_state = local_getState();
+            let target_view = (current_state && current_state.auditStatus !== 'not_started') ? 'audit_overview' : 'sample_management';
+            let back_button_text_key = (target_view === 'audit_overview') ? 'back_to_audit_overview' : 'back_to_sample_management';
+            const back_button = Helpers_create_element('button', {
+                class_name: ['button', 'button-default'],
+                html_content: `<span>${t(back_button_text_key)}</span>` + (Helpers_get_icon_svg('arrow_back', ['currentColor'], 18) || '')
+            });
+            back_button.addEventListener('click', () => router_ref(target_view));
+            bottom_nav_bar.appendChild(back_button);
+        }
+        
         const filter_settings = current_global_state.uiSettings?.requirementListFilter;
         if (toolbar_component_instance) {
              toolbar_component_instance.render(filter_settings);

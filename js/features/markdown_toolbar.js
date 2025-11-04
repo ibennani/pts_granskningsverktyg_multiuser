@@ -348,7 +348,9 @@ import { marked } from '../utils/markdown.js';
      */
     function updatePreview(textarea, previewDiv) {
         if (typeof marked === 'undefined') {
-            previewDiv.innerHTML = '<p style="color: red;">Error: marked.js library not loaded.</p>';
+            const t = window.Translation?.t || ((key) => key);
+            const errorMessage = t('markdown_error_library_not_loaded');
+            previewDiv.innerHTML = `<p style="color: red;">${window.Helpers?.escape_html(errorMessage) || errorMessage}</p>`;
             return;
         }
         let markdownText = textarea.value;
@@ -385,7 +387,8 @@ import { marked } from '../utils/markdown.js';
             if (window.ConsoleManager) {
                 window.ConsoleManager.error("Error parsing Markdown:", error);
             }
-            previewDiv.textContent = "Error rendering preview. Check console for details.";
+            const t = window.Translation?.t || ((key) => key);
+            previewDiv.textContent = t('markdown_error_rendering_preview');
         }
     }
     

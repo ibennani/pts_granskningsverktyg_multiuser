@@ -29,7 +29,10 @@
         if (typeof window.Helpers === 'undefined' || typeof window.Helpers.create_element !== 'function') {
             console.error("ProgressBarComponent: Helpers.create_element not available!");
             const fallback_progress = document.createElement('div');
-            fallback_progress.textContent = `Progress: ${current_value} / ${max_value}`;
+            const t = (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function')
+                ? window.Translation.t
+                : (key, rep) => (rep && rep.defaultValue ? rep.defaultValue : key);
+            fallback_progress.textContent = t('progress_bar_fallback_text', { current: current_value, max: max_value });
             return fallback_progress;
         }
 

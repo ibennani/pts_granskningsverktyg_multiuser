@@ -670,5 +670,15 @@
   "markdown_toolbar_bullet_list": "Bullet list",
   "markdown_toolbar_numbered_list": "Numbered list",
   "markdown_toolbar_link": "Link",
-  "markdown_toolbar_preview": "Preview"
+  "markdown_toolbar_preview": "Preview",
+  "build_timestamp_built": "Built {date} at {time}",
+  "build_timestamp_dev_fallback": "Latest dev {date} at {time}",
+  "markdown_error_library_not_loaded": "Error: marked.js library not loaded.",
+  "markdown_error_rendering_preview": "Error rendering preview. Check console for details.",
+  "restore_session_error_display": "Error: Could not display restore session options.",
+  "progress_bar_fallback_text": "Progress: {current} / {max}",
+  "translation_missing_translations": "Accessibility Audit Tool - Missing translations",
+  "error_rulefile_update_failed": "Error updating rule file",
+  "error_confirm_failed_temp_data_missing": "Confirmation failed: temporary data missing.",
+  "error_no_pending_sample_changes": "No pending sample changes were found."
 }

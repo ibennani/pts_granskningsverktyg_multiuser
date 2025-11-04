@@ -670,10 +670,21 @@ window.dependencyManager = dependencyManager;
         const buildTimestampElement = document.getElementById('build-timestamp');
         if (!buildTimestampElement) return;
 
+        const t = window.Translation?.t || ((key, replacements) => {
+            if (replacements) {
+                let result = key;
+                for (const [k, v] of Object.entries(replacements)) {
+                    result = result.replace(`{${k}}`, v);
+                }
+                return result;
+            }
+            return key;
+        });
+
         if (window.BUILD_INFO?.date && window.BUILD_INFO?.time) {
             const buildDate = window.BUILD_INFO.date;
             const buildTime = window.BUILD_INFO.time;
-            buildTimestampElement.textContent = `Byggt ${buildDate} kl ${buildTime}`;
+            buildTimestampElement.textContent = t('build_timestamp_built', { date: buildDate, time: buildTime });
             buildTimestampElement.style.display = 'block';
         } else {
             // Fallback: show current timestamp if BUILD_INFO is not available
@@ -683,7 +694,7 @@ window.dependencyManager = dependencyManager;
                 hour: '2-digit',
                 minute: '2-digit',
             });
-            buildTimestampElement.textContent = `Senaste dev ${fallbackDate} kl ${fallbackTime}`;
+            buildTimestampElement.textContent = t('build_timestamp_dev_fallback', { date: fallbackDate, time: fallbackTime });
             buildTimestampElement.style.display = 'block';
         }
     }

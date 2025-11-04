@@ -187,7 +187,7 @@ export const SampleListComponent = (function () {
             if (can_edit_or_delete) {
                  if (on_edit_callback) {
                     main_actions_div.appendChild(create_element('button', {
-                        class_name: ['button', 'button-default', 'button-small'],
+                        class_name: ['button', 'button-secondary', 'button-small'],
                         attributes: { 'data-action': 'edit-sample', 'aria-label': `${t('edit_sample')}: ${sample.description}` },
                         html_content: `<span>${t('edit_sample')}</span>` + (get_icon_svg ? get_icon_svg('edit', ['currentColor'], 16) : '')
                     }));

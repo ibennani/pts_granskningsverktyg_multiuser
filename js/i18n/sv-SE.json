@@ -670,5 +670,15 @@
   "markdown_toolbar_bullet_list": "Punktlista",
   "markdown_toolbar_numbered_list": "Numrerad lista",
   "markdown_toolbar_link": "Länk",
-  "markdown_toolbar_preview": "Förhandsgranska"
+  "markdown_toolbar_preview": "Förhandsgranska",
+  "build_timestamp_built": "Byggt {date} kl {time}",
+  "build_timestamp_dev_fallback": "Senaste dev {date} kl {time}",
+  "markdown_error_library_not_loaded": "Fel: marked.js-biblioteket är inte laddat.",
+  "markdown_error_rendering_preview": "Fel vid rendering av förhandsgranskning. Kontrollera konsolen för detaljer.",
+  "restore_session_error_display": "Fel: Kunde inte visa återställningsalternativ för session.",
+  "progress_bar_fallback_text": "Framsteg: {current} / {max}",
+  "translation_missing_translations": "Verktyg för tillsyn av tillgänglighet - Översättningar saknas",
+  "error_rulefile_update_failed": "Fel vid uppdatering av regelfil",
+  "error_confirm_failed_temp_data_missing": "Bekräftelse misslyckades: temporär data saknas.",
+  "error_no_pending_sample_changes": "Inga väntande ändringar av stickprovet hittades."
 }

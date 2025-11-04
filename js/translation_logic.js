@@ -72,7 +72,12 @@
             if (effective_lang_tag !== DEFAULT_LANGUAGE_TAG) {
                 return load_language_file(DEFAULT_LANGUAGE_TAG);
             }
-            loaded_translations = { app_title: 'Audit Tool - Missing translations' };
+            // Use a hardcoded fallback translation key since we can't use Translation.t() here
+            // This is the only exception where we need a hardcoded fallback
+            loaded_translations = { 
+                app_title: 'Audit Tool - Missing translations',
+                translation_missing_translations: 'Audit Tool - Missing translations'
+            };
             current_language_tag = DEFAULT_LANGUAGE_TAG;
             document.documentElement.lang = 'en';
             return loaded_translations;

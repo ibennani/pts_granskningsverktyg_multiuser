@@ -119,7 +119,9 @@ export const UpdateRulefileViewComponent = (function () {
                 render();
 
             } catch (error) {
-                console.error("Fel vid uppdatering av regelfil:", error);
+                const t = get_t_internally();
+                const errorMsg = t('error_rulefile_update_failed');
+                console.error(`${errorMsg}:`, error);
                 NotificationComponent_show_global_message(
                     t('rule_file_invalid_json_with_detail', { errorMessage: error.message }),
                     'error'
@@ -134,7 +136,8 @@ export const UpdateRulefileViewComponent = (function () {
     function handle_confirm_update_click() {
         const t = get_t_internally();
         if (!staged_new_rule_file_content || !staged_analysis_report) {
-            console.error("Bekräftelse misslyckades: temporär data saknas.");
+            const errorMsg = t('error_confirm_failed_temp_data_missing');
+            console.error(errorMsg);
             NotificationComponent_show_global_message(t('error_internal'), 'error');
             return;
         }

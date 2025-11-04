@@ -1,0 +1,26 @@
+[1mdiff --git a/js/components/AuditOverviewComponent.js b/js/components/AuditOverviewComponent.js[m
+[1mindex 195d9a7..18a2d84 100644[m
+[1m--- a/js/components/AuditOverviewComponent.js[m
+[1m+++ b/js/components/AuditOverviewComponent.js[m
+[36m@@ -217,7 +217,7 @@[m [mexport const AuditOverviewComponent = (function () {[m
+             }[m
+ [m
+             right_group.appendChild(Helpers_create_element('button', {[m
+[31m-                class_name: ['button', 'button-warning'],[m
+[32m+[m[32m                class_name: ['button', 'button-primary'],[m
+                 html_content: `<span>${t('lock_audit')}</span>` + Helpers_get_icon_svg('lock_audit', ['currentColor'], 18),[m
+                 event_listeners: { click: handle_lock_audit }[m
+             }));[m
+[1mdiff --git a/js/components/SaveAuditButtonComponent.js b/js/components/SaveAuditButtonComponent.js[m
+[1mindex 393e6af..8e8ced1 100644[m
+[1m--- a/js/components/SaveAuditButtonComponent.js[m
+[1m+++ b/js/components/SaveAuditButtonComponent.js[m
+[36m@@ -69,7 +69,7 @@[m [mexport const SaveAuditButtonComponentFactory = function () { // Ändrad till en[m
+         container_ref.innerHTML = ''; // Rensa container[m
+ [m
+         button_element = helpers_create_element_ref('button', {[m
+[31m-            class_name: ['button', 'button-default'], // Anpassa klasser efter behov[m
+[32m+[m[32m            class_name: ['button', 'button-primary'], // Primär knapp för huvudåtgärd[m
+             html_content: `<span class="button-text">${t_function_ref('save_audit_to_file')}</span>` +[m
+                           (helpers_get_icon_svg_ref ? helpers_get_icon_svg_ref('save', ['currentColor'], 18) : '')[m
+         });[m
