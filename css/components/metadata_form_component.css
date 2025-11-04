@@ -8,7 +8,7 @@
     padding: 1.5rem;
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    /* Skugga hanteras av global CSS för .content-plate */
 }
 
 .metadata-form-plate h1 {
@@ -33,17 +33,17 @@
 
 .metadata-form-container .form-control {
     border-width: 1px;
-    border-color: var(--secondary-color);
+    border-color: var(--border-color);
     padding: 0.625rem 0.875rem;
     background-color: var(--input-background-color);
     color: var(--text-color);
 }
 [data-theme="dark"] .metadata-form-container .form-control {
-    border-color: var(--secondary-color);
+    border-color: var(--border-color);
 }
 
 .metadata-form-container .form-control:focus {
-    border-color: var(--primary-color);
+    border-color: var(--border-color);
 }
 
 /* Actions are now part of the form component itself */

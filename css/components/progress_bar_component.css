@@ -13,7 +13,7 @@
     height: 1em; /* Use em for scalability, or a fixed px value like 12px or 16px */
     border-radius: var(--border-radius);
     border: 1px solid var(--border-color); /* Subtle border */
-    background-color: var(--input-background-color); /* Background of the track */
+    background-color: #F8F4F0; /* Ljusare variant av plattfärgen (#F0EAE3) */
     appearance: none; /* Needed to style progress bar on some browsers */
     -webkit-appearance: none;
     -moz-appearance: none;
@@ -22,7 +22,7 @@
 
 /* WebKit (Chrome, Safari, newer Edge) */
 .progress-bar-element::-webkit-progress-bar {
-    background-color: var(--input-background-color); /* Or var(--background-color) if preferred for track */
+    background-color: #F8F4F0; /* Ljusare variant av plattfärgen (#F0EAE3) */
     border-radius: var(--border-radius);
     /* border: 1px solid var(--border-color); Removed, parent has border */
 }
@@ -52,6 +52,10 @@
 
 
 /* Dark theme adjustments */
+[data-theme="dark"] .progress-bar-element {
+    background-color: var(--input-background-color);
+}
+
 [data-theme="dark"] .progress-bar-element::-webkit-progress-bar {
     background-color: var(--input-background-color);
     /* border-color: var(--border-color); Removed */

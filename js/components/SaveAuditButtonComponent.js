@@ -69,7 +69,7 @@ export const SaveAuditButtonComponentFactory = function () { // Ändrad till en 
         container_ref.innerHTML = ''; // Rensa container
 
         button_element = helpers_create_element_ref('button', {
-            class_name: ['button', 'button-default'], // Anpassa klasser efter behov
+            class_name: ['button', 'button-primary'], // Primär knapp för huvudåtgärd
             html_content: `<span class="button-text">${t_function_ref('save_audit_to_file')}</span>` +
                           (helpers_get_icon_svg_ref ? helpers_get_icon_svg_ref('save', ['currentColor'], 18) : '')
         });

@@ -29,6 +29,10 @@
     border-bottom: 1px dashed var(--secondary-color);
 }
 
+[data-theme="dark"] .edit-rulefile-requirement-view .audit-section h2 {
+    color: var(--heading-color);
+}
+
 /* Styling för redigerbara kontrollpunkter */
 .check-item-edit {
     padding: 1.5rem;

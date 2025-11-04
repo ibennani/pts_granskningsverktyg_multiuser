@@ -217,7 +217,7 @@ export const AuditOverviewComponent = (function () {
             }
 
             right_group.appendChild(Helpers_create_element('button', {
-                class_name: ['button', 'button-warning'],
+                class_name: ['button', 'button-primary'],
                 html_content: `<span>${t('lock_audit')}</span>` + Helpers_get_icon_svg('lock_audit', ['currentColor'], 18),
                 event_listeners: { click: handle_lock_audit }
             }));

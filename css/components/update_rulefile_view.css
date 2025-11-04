@@ -50,6 +50,10 @@
     margin-bottom: 0.75rem;
 }
 
+[data-theme="dark"] .update-rulefile-view-plate .report-section h3 {
+    color: var(--heading-color);
+}
+
 .update-rulefile-view-plate .report-list {
     list-style: disc;
     padding-left: 1.5rem;

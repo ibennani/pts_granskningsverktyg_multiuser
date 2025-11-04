@@ -9,6 +9,10 @@
     margin-bottom: 0; /* ÄNDRING: Tog bort marginalen under H1 för att minska avståndet */
 }
 
+[data-theme="dark"] .requirement-audit-header h1 {
+    color: var(--heading-color);
+}
+
 /* NY REGEL: Gör länken för aktör/stickprov klickbar över hela ytan med rätt pekare */
 .requirement-audit-header p a {
     cursor: pointer;
@@ -33,6 +37,17 @@
 .requirement-audit-header .standard-reference a:hover,
 .requirement-audit-header .audited-page-link a:hover { /* Gäller nu båda raderna */
     text-decoration: underline;
+}
+
+[data-theme="dark"] .requirement-audit-header .standard-reference a,
+[data-theme="dark"] .requirement-audit-header .audited-page-link a {
+    color: var(--link-color);
+}
+[data-theme="dark"] .requirement-audit-header .standard-reference a:hover,
+[data-theme="dark"] .requirement-audit-header .audited-page-link a:hover,
+[data-theme="dark"] .requirement-audit-header .standard-reference a:focus,
+[data-theme="dark"] .requirement-audit-header .audited-page-link a:focus {
+    color: var(--link-hover-color);
 }
 
 /* NYTT: Regel för att styla den nya etiketten (strong-taggen) */
@@ -81,6 +96,10 @@
     border-bottom: 1px dashed var(--secondary-color);
     text-transform: none;
     letter-spacing: normal;
+}
+
+[data-theme="dark"] .audit-section h2 {
+    color: var(--heading-color);
 }
 
 .audit-section p,
@@ -207,6 +226,10 @@
     font-weight: 500;
 }
 
+[data-theme="dark"] .check-condition-title {
+    color: var(--heading-color);
+}
+
 .check-number-label {
     margin: 0.25rem 0 0.5rem;
     font-weight: 600;
@@ -266,6 +289,10 @@
     font-weight: 600;
     margin: 0 0 0.75rem;
     color: var(--text-color);
+}
+
+[data-theme="dark"] .pass-criterion-heading {
+    color: var(--heading-color);
 }
 
 .pass-criterion-status {
@@ -363,12 +390,12 @@
     background-color: color-mix(in srgb, var(--input-background-color) 90%, var(--border-color));
     color: var(--text-color-muted);
     cursor: default;
-    border-color: var(--secondary-color);
+    border-color: var(--border-color);
 }
 
 [data-theme="dark"] .input-fields-container textarea.form-control.readonly-textarea {
     background-color: color-mix(in srgb, var(--input-background-color) 85%, black);
-    border-color: var(--secondary-color);
+    border-color: var(--border-color);
 }
 
 .audit-navigation-buttons {

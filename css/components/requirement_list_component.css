@@ -16,6 +16,10 @@
     color: var(--primary-color-dark);
 }
 
+[data-theme="dark"] .requirement-list-header h1 {
+    color: var(--heading-color);
+}
+
 /* NY REGEL: Gör länken i H1 klickbar över hela ytan med rätt pekare */
 .requirement-list-header h1 a {
     cursor: pointer;
@@ -66,12 +70,20 @@
     padding-bottom: 0.3rem;
     border-bottom: 1px solid var(--secondary-color);
 }
+
+[data-theme="dark"] .requirements-list-content .main-category-title {
+    color: var(--heading-color);
+}
 .requirements-list-content .sub-category-title { /* H3 */
     font-size: 1.15rem;
     color: var(--text-color);
     margin-top: 1.25rem;
     margin-bottom: 0.5rem;
     font-weight: 500;
+}
+
+[data-theme="dark"] .requirements-list-content .sub-category-title {
+    color: var(--heading-color);
 }
 
 .requirements-list-content .requirement-items-ul {
@@ -125,8 +137,21 @@
 .requirements-list-content .list-title-link:focus {
     color: var(--primary-color-dark);
 }
+
+[data-theme="dark"] .requirements-list-content .list-title-link {
+    color: var(--link-color);
+}
+[data-theme="dark"] .requirements-list-content .list-title-link:hover,
+[data-theme="dark"] .requirements-list-content .list-title-link:focus {
+    color: var(--link-hover-color);
+}
 .requirements-list-content .list-title-link:focus-visible {
     outline: 2px solid var(--primary-color);
+    outline-offset: 1px;
+}
+
+[data-theme="dark"] .requirements-list-content .list-title-link:focus-visible {
+    outline: 2px solid var(--link-color);
     outline-offset: 1px;
 }
 
@@ -159,8 +184,21 @@
 .requirements-list-content .list-reference-link:focus {
     color: var(--primary-color-dark);
 }
+
+[data-theme="dark"] .requirements-list-content .list-reference-link {
+    color: var(--link-color);
+}
+[data-theme="dark"] .requirements-list-content .list-reference-link:hover,
+[data-theme="dark"] .requirements-list-content .list-reference-link:focus {
+    color: var(--link-hover-color);
+}
 .requirements-list-content .list-reference-link:focus-visible {
      outline: 1px dashed var(--primary-color);
+     outline-offset: 1px;
+}
+
+[data-theme="dark"] .requirements-list-content .list-reference-link:focus-visible {
+     outline: 1px dashed var(--link-color);
      outline-offset: 1px;
 }
 

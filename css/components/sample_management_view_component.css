@@ -1,10 +1,10 @@
 /* Styles for SampleManagementViewComponent */
 .sample-management-view-plate { /* "Plattan" för denna vy */
-    background-color: var(--background-color);
+    background-color: var(--plate-background-color); /* Ändrad från var(--background-color) */
     padding: 1.5rem;
-    border: 2px solid var(--primary-color);
+    border: 1px solid var(--border-color); /* Ändrad från 2px solid var(--primary-color) */
     border-radius: var(--border-radius);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    /* Skugga hanteras av global CSS för .content-plate */
     margin-top: 1rem;
 }
 

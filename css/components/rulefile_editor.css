@@ -34,6 +34,10 @@
     padding: 0 0.5rem;
 }
 
+[data-theme="dark"] .rulefile-editor-section fieldset > h3 {
+    color: var(--heading-color);
+}
+
 .check-fieldset,
 .hierarchy-editor-fieldset {
     background-color: var(--background-color);
@@ -51,6 +55,11 @@
 .hierarchy-editor-fieldset > h4 {
     font-size: 1.1rem;
     color: var(--text-color);
+}
+
+[data-theme="dark"] .check-fieldset-header h4,
+[data-theme="dark"] .hierarchy-editor-fieldset > h4 {
+    color: var(--heading-color);
 }
 
 .pass-criterion-item h5 {
