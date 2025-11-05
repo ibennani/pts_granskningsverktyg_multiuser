@@ -131,8 +131,7 @@
     text-align: left;
     cursor: pointer;
     text-decoration: underline;
-    width: 100%;
-    display: inline;
+    display: inline-block;
 }
 
 .requirements-list-content .list-title-link:hover,

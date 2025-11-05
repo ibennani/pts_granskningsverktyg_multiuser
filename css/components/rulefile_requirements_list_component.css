@@ -1,5 +1,13 @@
 /* css/components/rulefile_requirements_list_component.css */
 
+/* Säkerställ att h3 bara tar upp så mycket plats som innehållet behöver */
+.requirements-list-content h3 {
+    display: inline-block;
+    margin: 0;
+    padding: 0;
+    width: auto;
+}
+
 .requirement-list-title-button {
     background: none;
     border: none;
@@ -15,8 +23,8 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    width: 100%;
-    display: block;
+    display: inline;
+    max-width: 100%;
 }
 
 .requirement-list-title-button:hover,
