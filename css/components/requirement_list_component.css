@@ -95,16 +95,17 @@
 .requirements-list-content .requirement-item.compact-twoline {
     padding: 0.6rem 0.8rem;
     margin-bottom: 0.6rem;
-    border: 1px solid var(--border-color);
+    border: 2px solid var(--border-color);
     border-left: 3px solid color-mix(in srgb, var(--primary-color) 60%, transparent);
-    background-color: var(--plate-background-color);
-    border-radius: 0 var(--border-radius) var(--border-radius) 0;
+    background-color: #FFF5E6; /* Väldigt ljus orange nyans */
+    border-radius: var(--border-radius); /* Rundade hörn överallt */
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
 }
 [data-theme="dark"] .requirements-list-content .requirement-item.compact-twoline {
-    border-left-color: color-mix(in srgb, var(--primary-color) 70%, transparent);
+    border-left-width: 2px; /* Samma bredd som övriga kanter */
+    border-left-color: var(--border-color); /* Samma färg som övriga kanter */
     background-color: color-mix(in srgb, var(--plate-background-color) 95%, black);
 }
 
@@ -125,7 +126,7 @@
     margin: 0;
     font-family: inherit;
     font-size: 1.05rem;
-    font-weight: 500;
+    font-weight: 600; /* Ökad från 500 till 600 för tydligare titlar */
     color: var(--primary-color);
     text-align: left;
     cursor: pointer;
@@ -133,6 +134,7 @@
     width: 100%;
     display: inline;
 }
+
 .requirements-list-content .list-title-link:hover,
 .requirements-list-content .list-title-link:focus {
     color: var(--primary-color-dark);
@@ -200,6 +202,14 @@
 [data-theme="dark"] .requirements-list-content .list-reference-link:focus-visible {
      outline: 1px dashed var(--link-color);
      outline-offset: 1px;
+}
+
+.requirements-list-content .list-reference-text {
+    color: var(--primary-color);
+}
+
+[data-theme="dark"] .requirements-list-content .list-reference-text {
+    color: var(--link-color);
 }
 
 

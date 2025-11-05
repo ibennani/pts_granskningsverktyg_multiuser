@@ -87,17 +87,38 @@
                 }, showList)
             );
         };
-        const list = Helpers.create_element('ul', { class_name: 'item-list' });
+        const list = Helpers.create_element('ul', { class_name: 'requirement-items-ul' });
         const requirementsList = Object.values(requirements || {});
         console.log('%c[DEBUG] Rendering requirements list:', 'color: #0000FF; font-weight: bold;', requirementsList);
         requirementsList.sort((a,b) => Helpers.natural_sort(a.title, b.title)).forEach(req => {
-            const li = Helpers.create_element('li', { class_name: 'item-list-item' });
-            const infoDiv = Helpers.create_element('div', { class_name: 'sample-info' });
-            infoDiv.appendChild(Helpers.create_element('h3', { text_content: req.title }));
-            infoDiv.appendChild(Helpers.create_element('p', { text_content: `ID: ${req.key}`, class_name: 'text-muted' }));
-            li.appendChild(infoDiv);
-            const actionsWrapper = Helpers.create_element('div', { class_name: 'sample-actions-wrapper' });
-            const mainActions = Helpers.create_element('div', { class_name: 'sample-actions-main' });
+            const li = Helpers.create_element('li', { class_name: 'requirement-item compact-twoline' });
+            
+            // Titel-rad (motsvarar requirement-title-container)
+            const title_row_div = Helpers.create_element('div', { class_name: 'requirement-title-container' });
+            const title_link = Helpers.create_element('button', {
+                class_name: 'list-title-link',
+                text_content: req.title,
+                attributes: { 
+                    'type': 'button'
+                }
+            });
+            title_link.addEventListener('click', () => showForm(req));
+            title_row_div.appendChild(title_link);
+            li.appendChild(title_row_div);
+            
+            // Detaljer-rad (motsvarar requirement-details-row)
+            const details_row_div = Helpers.create_element('div', { class_name: 'requirement-details-row' });
+            if (req.standardReference?.text) {
+                details_row_div.appendChild(req.standardReference.url 
+                    ? Helpers.create_element('a', { class_name: 'list-reference-link', text_content: req.standardReference.text, attributes: { href: req.standardReference.url, target: '_blank', rel: 'noopener noreferrer' } })
+                    : Helpers.create_element('span', { class_name: 'list-reference-text', text_content: req.standardReference.text })
+                );
+            } else {
+                // Om ingen referens finns, visa ID istället
+                details_row_div.appendChild(Helpers.create_element('span', { text_content: `ID: ${req.key}`, class_name: 'text-muted' }));
+            }
+            
+            // Åtgärder-knappar (lägg till på samma rad som detaljer)
             const editBtn = _createDynamicListButton('edit_button_label', () => showForm(req), { classNames: ['button', 'button-default', 'button-small'], icon: 'edit' });
             const deleteBtn = _createDynamicListButton('delete_sample', () => {
                 console.log('%c[DEBUG] Delete button clicked for requirement:', 'color: #FF0000; font-weight: bold;', { reqKey: req.key, reqTitle: req.title });
@@ -108,9 +129,10 @@
                     console.log('%c[DEBUG] Delete cancelled by user', 'color: #FF0000; font-weight: bold;');
                 }
             }, { classNames: ['button', 'button-danger', 'button-small'], icon: 'delete' });
-            mainActions.append(editBtn, deleteBtn);
-            actionsWrapper.appendChild(mainActions);
-            li.appendChild(actionsWrapper);
+            details_row_div.appendChild(editBtn);
+            details_row_div.appendChild(deleteBtn);
+            
+            li.appendChild(details_row_div);
             list.appendChild(li);
         });
         listContainer.appendChild(list);

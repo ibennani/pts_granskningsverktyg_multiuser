@@ -75,8 +75,9 @@
     flex-direction: column; /* Stack header and content vertically */
     gap: 0.75rem;
     padding: 1rem;
-    border: 1px solid var(--secondary-color);
+    border: 2px solid var(--border-color);
     border-radius: var(--border-radius);
+    background-color: #FFF5E6; /* Väldigt ljus orange nyans - samma som kravkort */
 }
 
 .criterion-item-header {

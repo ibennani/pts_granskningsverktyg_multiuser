@@ -274,10 +274,53 @@ export const ChecklistHandler = (function () {
             const pc_list = check_wrapper.querySelector('.pass-criteria-list');
             const compliance_info_text = check_wrapper.querySelector('.compliance-info-text');
 
-            pc_list.style.display = (overall_manual_status === 'passed' && pc_list.children.length > 0) ? '' : 'none';
-            compliance_info_text.style.display = (overall_manual_status === 'failed') ? '' : 'none';
+            // Spara tidigare tillstånd för att veta om vi ska animera
+            const pc_list_was_hidden = pc_list.style.display === 'none';
+            const compliance_was_hidden = compliance_info_text.style.display === 'none';
+
+            // Ta bort alla animation-klasser först
+            pc_list.classList.remove('slide-down-in', 'slide-down-out');
+            compliance_info_text.classList.remove('slide-down-in', 'slide-down-out');
+
+            // Visa/dölj godkännandekriterierna
+            if (overall_manual_status === 'passed' && pc_list.children.length > 0) {
+                pc_list.style.display = '';
+                // Animerar endast om det var dolt tidigare
+                if (pc_list_was_hidden) {
+                    pc_list.classList.add('slide-down-in');
+                }
+            } else {
+                // Animerar endast om det var synligt tidigare
+                if (!pc_list_was_hidden) {
+                    pc_list.classList.add('slide-down-out');
+                    setTimeout(() => {
+                        pc_list.style.display = 'none';
+                        pc_list.classList.remove('slide-down-out');
+                    }, 500);
+                } else {
+                    pc_list.style.display = 'none';
+                }
+            }
+            
+            // Visa/dölj compliance-info-text
             if (overall_manual_status === 'failed') {
                 compliance_info_text.textContent = t('check_marked_as_not_compliant_criteria_passed');
+                compliance_info_text.style.display = '';
+                // Animerar endast om det var dolt tidigare
+                if (compliance_was_hidden) {
+                    compliance_info_text.classList.add('slide-down-in');
+                }
+            } else {
+                // Animerar endast om det var synligt tidigare
+                if (!compliance_was_hidden) {
+                    compliance_info_text.classList.add('slide-down-out');
+                    setTimeout(() => {
+                        compliance_info_text.style.display = 'none';
+                        compliance_info_text.classList.remove('slide-down-out');
+                    }, 500);
+                } else {
+                    compliance_info_text.style.display = 'none';
+                }
             }
 
             check_wrapper.querySelectorAll('.pass-criterion-item[data-pc-id]').forEach(pc_item_li => {
@@ -311,12 +354,36 @@ export const ChecklistHandler = (function () {
                 const observation_textarea = observation_wrapper.querySelector('textarea');
 
                 const was_hidden = observation_wrapper.hidden;
-                observation_wrapper.hidden = (current_pc_status !== 'failed');
                 
-                if (was_hidden && !observation_wrapper.hidden && !is_audit_locked) {
-                    // Only focus if not in focus protection mode
-                    if (!window.focusProtectionActive && !window.customFocusApplied) {
-                        observation_textarea.focus();
+                // Ta bort alla animation-klasser först
+                observation_wrapper.classList.remove('slide-down-in', 'slide-down-out');
+                
+                // Visa/dölj observationsfältet
+                if (current_pc_status === 'failed') {
+                    observation_wrapper.hidden = false;
+                    // Animerar endast om det var dolt tidigare
+                    if (was_hidden) {
+                        observation_wrapper.classList.add('slide-down-in');
+                    }
+                    
+                    if (was_hidden && !is_audit_locked) {
+                        // Only focus if not in focus protection mode
+                        setTimeout(() => {
+                            if (!window.focusProtectionActive && !window.customFocusApplied) {
+                                observation_textarea.focus();
+                            }
+                        }, 500);
+                    }
+                } else {
+                    // Animerar endast om det var synligt tidigare
+                    if (!was_hidden) {
+                        observation_wrapper.classList.add('slide-down-out');
+                        setTimeout(() => {
+                            observation_wrapper.hidden = true;
+                            observation_wrapper.classList.remove('slide-down-out');
+                        }, 500);
+                    } else {
+                        observation_wrapper.hidden = true;
                     }
                 }
                 

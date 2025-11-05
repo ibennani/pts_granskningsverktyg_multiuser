@@ -27,7 +27,7 @@
     background-color: transparent;
     border: 1px solid transparent; /* Tar ingen plats men finns för hover/focus */
     border-radius: calc(var(--border-radius) - 2px);
-    color: var(--text-color-muted);
+    color: #000000; /* Svart i ljusa läget */
     cursor: pointer;
     padding: 0.3rem 0.5rem;
     line-height: 1; /* För att ikonen ska centreras snyggt */
@@ -38,6 +38,10 @@
     justify-content: center;
     min-width: 2rem;
     min-height: 2rem;
+}
+
+[data-theme="dark"] .md-toolbar-btn {
+    color: #FFFFFF; /* Vit i mörkt läge */
 }
 
 /* Stil för ikonerna */
@@ -54,7 +58,11 @@
 .md-toolbar-btn:hover {
     background-color: var(--button-default-bg);
     border-color: var(--secondary-color);
-    color: var(--text-color);
+    color: #000000; /* Svart i ljusa läget */
+}
+
+[data-theme="dark"] .md-toolbar-btn:hover {
+    color: #FFFFFF; /* Vit i mörkt läge */
 }
 
 /* Lägg till den nya, dedikerade stilen för fokus-effekten */
