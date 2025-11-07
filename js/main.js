@@ -359,7 +359,7 @@ window.dependencyManager = dependencyManager;
 
         updatePageTitle(view_name_to_render, params_to_render);
 
-        const views_without_bottom_bar = ['upload', 'restore_session', 'sample_form', 'confirm_sample_edit', 'metadata', 'edit_metadata', 'rulefile_metadata', 'rulefile_metadata_edit'];
+        const views_without_bottom_bar = ['restore_session', 'sample_form', 'confirm_sample_edit', 'metadata', 'edit_metadata', 'rulefile_metadata', 'rulefile_metadata_edit'];
         top_action_bar_instance.render();
         if (views_without_bottom_bar.includes(view_name_to_render)) {
             bottom_action_bar_container.style.display = 'none';
@@ -598,7 +598,7 @@ window.dependencyManager = dependencyManager;
             consoleManager.info('[Main.js] Global event listeners cleaned up');
         };
         subscribe((new_state) => { 
-            const views_without_bottom_bar = ['upload', 'restore_session', 'sample_form', 'confirm_sample_edit', 'metadata', 'edit_metadata', 'rulefile_metadata', 'rulefile_metadata_edit'];
+            const views_without_bottom_bar = ['restore_session', 'sample_form', 'confirm_sample_edit', 'metadata', 'edit_metadata', 'rulefile_metadata', 'rulefile_metadata_edit'];
             
             try {
                 top_action_bar_instance.render();

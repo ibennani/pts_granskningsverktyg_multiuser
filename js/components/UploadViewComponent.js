@@ -221,8 +221,13 @@ export const UploadViewComponent = (function () {
     app_container_ref.innerHTML = '';
     const t = get_t_func();
 
+    // Skapa bakgrundsplatta
+    const plate_element = window.Helpers.create_element('div', {
+      class_name: 'content-plate',
+    });
+
     if (global_message_element_ref) {
-      app_container_ref.appendChild(global_message_element_ref);
+      plate_element.appendChild(global_message_element_ref);
       if (
         window.NotificationComponent?.clear_global_message &&
         !global_message_element_ref.classList.contains('message-error') &&
@@ -332,7 +337,8 @@ export const UploadViewComponent = (function () {
       attributes: { type: 'file', accept: '.json', style: 'display: none;' },
     });
 
-    app_container_ref.append(
+    // Lägg till allt innehåll i bakgrundsplattan
+    plate_element.append(
       title,
       intro_text,
       actions_title,
@@ -344,6 +350,9 @@ export const UploadViewComponent = (function () {
       saved_audit_input_element,
       rule_file_input_for_edit
     );
+
+    // Lägg till bakgrundsplattan i app-container
+    app_container_ref.appendChild(plate_element);
 
     start_new_audit_btn.addEventListener('click', () =>
       rule_file_input_for_audit.click()
