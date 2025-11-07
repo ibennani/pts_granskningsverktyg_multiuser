@@ -460,7 +460,7 @@ select {
     border: 2px solid var(--border-color);
     appearance: none;
     border-radius: var(--border-radius);
-    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    transition: border-color 0.15s ease-in-out;
 }
 
 .form-control:focus,
@@ -545,40 +545,9 @@ textarea.form-control, textarea {
   outline: none;
 }
 
-a:focus-visible,
-.form-control:focus-visible,
-input[type="text"]:focus-visible,
-input[type="url"]:focus-visible,
-input[type="email"]:focus-visible,
-textarea:focus-visible,
-select:focus-visible,
-.button-default:focus-visible,
-.button-secondary:focus-visible {
-    box-shadow: 0 0 0 2px var(--plate-background-color), 0 0 0 4px var(--primary-color), 0 0 0 6px var(--focus-ring-color-outer);
-}
-
-.button-primary:focus-visible {
-    box-shadow: 0 0 0 2px var(--plate-background-color), 0 0 0 4px var(--button-primary-bg), 0 0 0 6px var(--focus-ring-color-outer);
-}
-.button-accent:focus-visible {
-    box-shadow: 0 0 0 2px var(--plate-background-color), 0 0 0 4px var(--button-accent-bg), 0 0 0 6px var(--focus-ring-color-outer);
-}
-.button-success:focus-visible {
-    box-shadow: 0 0 0 2px var(--plate-background-color), 0 0 0 4px var(--button-success-bg), 0 0 0 6px var(--focus-ring-color-outer);
-}
-.button-danger:focus-visible {
-    box-shadow: 0 0 0 2px var(--plate-background-color), 0 0 0 4px var(--button-danger-bg), 0 0 0 6px var(--focus-ring-color-outer);
-}
-.button-warning:focus-visible {
-    box-shadow: 0 0 0 2px var(--plate-background-color), 0 0 0 4px var(--button-warning-bg), 0 0 0 6px var(--focus-ring-color-outer);
-}
-.button-info:focus-visible {
-    box-shadow: 0 0 0 2px var(--plate-background-color), 0 0 0 4px var(--button-info-bg), 0 0 0 6px var(--focus-ring-color-outer);
-}
 
 .form-check-input:focus-visible + .form-check-label {
     border-radius: var(--border-radius);
-    box-shadow: 0 0 0 2px var(--plate-background-color), 0 0 0 4px var(--primary-color), 0 0 0 6px var(--focus-ring-color-outer);
 }
 
 input:-webkit-autofill,
@@ -592,7 +561,6 @@ select:-webkit-autofill:hover,
 select:-webkit-autofill:focus {
   border: 2px solid var(--border-color) !important;
   -webkit-text-fill-color: var(--text-color) !important;
-  -webkit-box-shadow: 0 0 0px 1000px var(--input-background-color) inset !important;
   transition: background-color 5000s ease-in-out 0s !important;
   font-family: var(--font-family-base) !important;
   font-size: var(--font-size-base) !important;
@@ -634,38 +602,6 @@ select:-webkit-autofill:focus {
     background-color: color-mix(in srgb, var(--plate-background-color) 95%, black);
 }
 
-/* Skuggor för plattor som vilar direkt mot bakgrunden - skuggan syns till höger och nedanför för svävande effekt */
-.view-container,
-.content-plate,
-.metadata-form-plate,
-.sample-management-view-plate,
-.update-rulefile-view-plate,
-.rulefile-metadata-plate,
-.requirement-audit-plate,
-.requirement-list-plate,
-.rulefile-metadata-edit-plate,
-.audit-overview-plate,
-.global-action-bar,
-#global-action-bar-top .global-action-bar,
-#global-action-bar-bottom .global-action-bar {
-    box-shadow: 8px 8px 25px rgba(0,0,0,0.2) !important;
-}
-
-[data-theme="dark"] .view-container,
-[data-theme="dark"] .content-plate,
-[data-theme="dark"] .metadata-form-plate,
-[data-theme="dark"] .sample-management-view-plate,
-[data-theme="dark"] .update-rulefile-view-plate,
-[data-theme="dark"] .rulefile-metadata-plate,
-[data-theme="dark"] .requirement-audit-plate,
-[data-theme="dark"] .requirement-list-plate,
-[data-theme="dark"] .rulefile-metadata-edit-plate,
-[data-theme="dark"] .audit-overview-plate,
-[data-theme="dark"] .global-action-bar,
-[data-theme="dark"] #global-action-bar-top .global-action-bar,
-[data-theme="dark"] #global-action-bar-bottom .global-action-bar {
-    box-shadow: 8px 8px 25px rgba(0,0,0,0.7) !important;
-}
 .item-list-item .sample-info {
     margin-bottom: 0;
     width: 100%;

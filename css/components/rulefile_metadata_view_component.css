@@ -64,7 +64,6 @@
     padding: 1.5rem;
     background: var(--surface-emphasis-bg);
     text-align: left;
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
 }
 
 .metadata-card h3 {

@@ -69,10 +69,6 @@
 .md-toolbar-btn:focus-visible {
     /* Vi tar bort webbläsarens standard-fokusring */
     outline: none; 
-    
-    /* Och applicerar vår nya, snygga hybrid-ring! */
-    /* Den inre ringen får temats primärfärg, den yttre den neutrala blå. */
-    box-shadow: 0 0 0 2px var(--primary-color), 0 0 0 4px var(--focus-ring-color-outer);
 }
 
 /* Speciell stil för preview-knappen när den är aktiv */

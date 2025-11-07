@@ -46,7 +46,6 @@
     color: var(--primary-color);
     background-color: var(--button-default-bg);
     outline: none;
-    box-shadow: 0 0 0 2px var(--plate-background-color), 0 0 0 4px var(--focus-ring-color-outer);
 }
 
 
@@ -193,13 +192,11 @@
     left: 0.75rem;
     font-weight: bold;
     color: var(--text-color); 
-    text-shadow: none; 
 }
 
 /* --- Text color adjustments for inside the bar --- */
 [data-theme="dark"] .principle-row__bar + .principle-row__value {
     color: var(--text-color);
-    text-shadow: 0 0 4px rgba(0,0,0,0.7);
 }
 
 [data-theme="dark"] .principle-row__bar[style*="width: 50%"] + .principle-row__value,
@@ -208,5 +205,4 @@
 [data-theme="dark"] .principle-row__bar[style*="width: 65%"] + .principle-row__value,
 [data-theme="dark"] .principle-row__bar[style*="width: 70%"] + .principle-row__value {
     color: var(--button-warning-text, #1b2326);
-    text-shadow: none;
 }

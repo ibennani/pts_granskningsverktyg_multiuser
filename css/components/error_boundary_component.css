@@ -7,7 +7,6 @@
     background: var(--error-background, #fef2f2);
     border: 2px solid var(--error-border, #fecaca);
     border-radius: 8px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     font-family: var(--font-family, 'Roboto', sans-serif);
 }
 
