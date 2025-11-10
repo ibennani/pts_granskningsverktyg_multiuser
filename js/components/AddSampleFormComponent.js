@@ -115,44 +115,58 @@ export const AddSampleFormComponent = (function () {
         }
     }
 
+    function save_form_data_immediately() {
+        if (!current_editing_sample_id) return; // Bara spara om vi redigerar ett befintligt sample
+        
+        const selected_category_radio = form_element?.querySelector('input[name="sampleCategory"]:checked');
+        const sample_category_id = selected_category_radio ? selected_category_radio.value : null;
+        const sample_type_id = sample_type_select?.value;
+        const sanitize_input = (input) => {
+            if (typeof input !== 'string') return '';
+            return input.trim().replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+        };
+
+        const description = sanitize_input(description_input?.value || '');
+        let url_val = sanitize_input(url_input?.value || '');
+        const selected_content_types = Array.from(content_types_container_element?.querySelectorAll('input[name="selectedContentTypes"]:checked') || []).map(cb => sanitize_input(cb.value));
+
+        if (url_val) url_val = Helpers.add_protocol_if_missing(url_val);
+
+        const sample_payload_data = {
+            sampleCategory: sample_category_id,
+            sampleType: sample_type_id,
+            description: description,
+            url: url_val,
+            selectedContentTypes: selected_content_types
+        };
+
+        // Använd samma logik som vid submit, men utan validering
+        const original_set = new Set(original_content_types_on_load);
+        const new_set = new Set(selected_content_types);
+        const are_sets_equal = original_set.size === new_set.size && [...original_set].every(value => new_set.has(value));
+
+        if (are_sets_equal) {
+            _perform_save(sample_payload_data);
+        } else {
+            _stage_changes_and_navigate(sample_payload_data);
+        }
+    }
+
     function debounced_autosave_form() {
         if (!current_editing_sample_id) return; // Bara spara om vi redigerar ett befintligt sample
         
         clearTimeout(debounceTimerFormFields);
         debounceTimerFormFields = setTimeout(() => {
-            const selected_category_radio = form_element?.querySelector('input[name="sampleCategory"]:checked');
-            const sample_category_id = selected_category_radio ? selected_category_radio.value : null;
-            const sample_type_id = sample_type_select?.value;
-            const sanitize_input = (input) => {
-                if (typeof input !== 'string') return '';
-                return input.trim().replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-            };
-
-            const description = sanitize_input(description_input?.value || '');
-            let url_val = sanitize_input(url_input?.value || '');
-            const selected_content_types = Array.from(content_types_container_element?.querySelectorAll('input[name="selectedContentTypes"]:checked') || []).map(cb => sanitize_input(cb.value));
-
-            if (url_val) url_val = Helpers.add_protocol_if_missing(url_val);
-
-            const sample_payload_data = {
-                sampleCategory: sample_category_id,
-                sampleType: sample_type_id,
-                description: description,
-                url: url_val,
-                selectedContentTypes: selected_content_types
-            };
-
-            // Använd samma logik som vid submit, men utan validering
-            const original_set = new Set(original_content_types_on_load);
-            const new_set = new Set(selected_content_types);
-            const are_sets_equal = original_set.size === new_set.size && [...original_set].every(value => new_set.has(value));
-
-            if (are_sets_equal) {
-                _perform_save(sample_payload_data);
-            } else {
-                _stage_changes_and_navigate(sample_payload_data);
-            }
+            save_form_data_immediately();
         }, 3000);
+    }
+
+    function handle_button_click(event) {
+        // Spara formulärdata när en knapp klickas (utom submit-knappar som redan hanterar sparning)
+        const button = event.target.closest('button');
+        if (button && button.type !== 'submit' && current_editing_sample_id) {
+            save_form_data_immediately();
+        }
     }
     
     function _stage_changes_and_navigate(sample_payload_data) {
@@ -256,6 +270,7 @@ export const AddSampleFormComponent = (function () {
         form_container_ref.innerHTML = '';
         form_element = Helpers.create_element('form', { class_name: 'add-sample-form' });
         form_element.addEventListener('submit', handle_form_submit);
+        form_element.addEventListener('click', handle_button_click);
 
         // --- Category Section ---
         form_element.appendChild(Helpers.create_element('h2', { text_content: t('sample_category_title') }));
@@ -354,7 +369,10 @@ export const AddSampleFormComponent = (function () {
 
     function destroy() {
         clearTimeout(debounceTimerFormFields);
-        if (form_element) form_element.removeEventListener('submit', handle_form_submit);
+        if (form_element) {
+            form_element.removeEventListener('submit', handle_form_submit);
+            form_element.removeEventListener('click', handle_button_click);
+        }
         if (sample_type_select) {
             sample_type_select.removeEventListener('change', update_description_from_sample_type);
             sample_type_select.removeEventListener('change', debounced_autosave_form);

@@ -152,22 +152,40 @@ export const EditRulefileRequirementComponent = (function () {
         local_requirement_data.checks = checks_data;
     }
 
+    function save_form_data_immediately() {
+        const is_new_requirement = params_ref?.id === 'new';
+        if (is_new_requirement || !local_requirement_data) return; // Bara spara för befintliga krav
+        
+        _update_local_data_from_form();
+        // Spara till state
+        if (typeof window !== 'undefined') {
+            window.skipRulefileRequirementRender = (Number(window.skipRulefileRequirementRender) || 0) + 1;
+        }
+        local_dispatch({
+            type: local_StoreActionTypes.UPDATE_REQUIREMENT_DEFINITION,
+            payload: { requirementId: params_ref.id, updatedRequirementData: local_requirement_data }
+        });
+    }
+
     function debounced_autosave_form() {
         const is_new_requirement = params_ref?.id === 'new';
         if (is_new_requirement || !local_requirement_data) return; // Bara spara för befintliga krav
         
         clearTimeout(debounceTimerFormFields);
         debounceTimerFormFields = setTimeout(() => {
-            _update_local_data_from_form();
-            // Spara till state
-            if (typeof window !== 'undefined') {
-                window.skipRulefileRequirementRender = (Number(window.skipRulefileRequirementRender) || 0) + 1;
-            }
-            local_dispatch({
-                type: local_StoreActionTypes.UPDATE_REQUIREMENT_DEFINITION,
-                payload: { requirementId: params_ref.id, updatedRequirementData: local_requirement_data }
-            });
+            save_form_data_immediately();
         }, 3000);
+    }
+
+    function handle_generic_button_click(event) {
+        // Spara formulärdata när en knapp klickas (utom submit-knappar och knappar med data-action som redan hanterar sparning)
+        const button = event.target.closest('button');
+        if (button && button.type !== 'submit' && !button.hasAttribute('data-action')) {
+            const is_new_requirement = params_ref?.id === 'new';
+            if (!is_new_requirement && local_requirement_data) {
+                save_form_data_immediately();
+            }
+        }
     }
 
     function handle_form_submit(event) {
@@ -1228,6 +1246,7 @@ export const EditRulefileRequirementComponent = (function () {
         form_element_ref = Helpers_create_element('form');
         form_element_ref.addEventListener('submit', handle_form_submit);
         form_element_ref.addEventListener('click', handle_form_click);
+        form_element_ref.addEventListener('click', handle_generic_button_click);
         
         _rerender_all_sections();
         
@@ -1258,6 +1277,7 @@ export const EditRulefileRequirementComponent = (function () {
         if (form_element_ref) {
             form_element_ref.removeEventListener('submit', handle_form_submit);
             form_element_ref.removeEventListener('click', handle_form_click);
+            form_element_ref.removeEventListener('click', handle_generic_button_click);
             // Rensa event listeners från alla input-fält
             const all_inputs = form_element_ref.querySelectorAll('input, textarea');
             if (all_inputs) {

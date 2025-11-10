@@ -72,35 +72,48 @@ export const MetadataFormComponent = (function () {
         }
     }
 
+    function save_form_data_immediately() {
+        if (!on_autosave_callback) return;
+        if (!case_number_input || !actor_name_input || !actor_link_input || !auditor_name_input || !case_handler_input || !internal_comment_input) return;
+        
+        let actor_link_value = actor_link_input.value.trim();
+        if (actor_link_value) {
+            actor_link_value = Helpers_add_protocol_if_missing(actor_link_value);
+        }
+
+        // Sanitize all form inputs to prevent XSS
+        const sanitize_input = (input) => {
+            if (typeof input !== 'string') return '';
+            return input.trim().replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+        };
+
+        const form_data = {
+            caseNumber: sanitize_input(case_number_input.value),
+            actorName: sanitize_input(actor_name_input.value),
+            actorLink: sanitize_input(actor_link_value),
+            auditorName: sanitize_input(auditor_name_input.value),
+            caseHandler: sanitize_input(case_handler_input.value),
+            internalComment: sanitize_input(internal_comment_input.value)
+        };
+
+        on_autosave_callback(form_data);
+    }
+
     function debounced_autosave_form() {
         if (!on_autosave_callback) return;
         
         clearTimeout(debounceTimerFormFields);
         debounceTimerFormFields = setTimeout(() => {
-            if (!case_number_input || !actor_name_input || !actor_link_input || !auditor_name_input || !case_handler_input || !internal_comment_input) return;
-            
-            let actor_link_value = actor_link_input.value.trim();
-            if (actor_link_value) {
-                actor_link_value = Helpers_add_protocol_if_missing(actor_link_value);
-            }
-
-            // Sanitize all form inputs to prevent XSS
-            const sanitize_input = (input) => {
-                if (typeof input !== 'string') return '';
-                return input.trim().replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-            };
-
-            const form_data = {
-                caseNumber: sanitize_input(case_number_input.value),
-                actorName: sanitize_input(actor_name_input.value),
-                actorLink: sanitize_input(actor_link_value),
-                auditorName: sanitize_input(auditor_name_input.value),
-                caseHandler: sanitize_input(case_handler_input.value),
-                internalComment: sanitize_input(internal_comment_input.value)
-            };
-
-            on_autosave_callback(form_data);
+            save_form_data_immediately();
         }, 3000);
+    }
+
+    function handle_button_click(event) {
+        // Spara formulärdata när en knapp klickas (utom submit-knappar som redan hanterar sparning)
+        const button = event.target.closest('button');
+        if (button && button.type !== 'submit') {
+            save_form_data_immediately();
+        }
     }
 
     function handle_form_submit(event) {
@@ -192,6 +205,7 @@ export const MetadataFormComponent = (function () {
         // Use novalidate to prevent default browser bubbles, allowing our custom message to show
         form_element_ref.setAttribute('novalidate', ''); 
         form_element_ref.addEventListener('submit', handle_form_submit);
+        form_element_ref.addEventListener('click', handle_button_click);
 
         const case_field = create_form_field('caseNumber', 'case_number', 'text', initialData.caseNumber);
         case_number_input = case_field.input_element;
@@ -249,6 +263,7 @@ export const MetadataFormComponent = (function () {
         clearTimeout(debounceTimerFormFields);
         if (form_element_ref) {
             form_element_ref.removeEventListener('submit', handle_form_submit);
+            form_element_ref.removeEventListener('click', handle_button_click);
         }
         // Rensa event listeners från alla input-fält
         const all_inputs = form_element_ref?.querySelectorAll('input, textarea');
