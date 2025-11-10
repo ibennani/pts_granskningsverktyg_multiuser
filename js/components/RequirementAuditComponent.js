@@ -339,6 +339,7 @@ export const RequirementAuditComponent = (function () {
         fg1.appendChild(label1);
         comment_to_auditor_input = Helpers_create_element('textarea', { id: 'commentToAuditor', class_name: 'form-control', attributes: { rows: '4' } });
         comment_to_auditor_input.addEventListener('input', debounced_save_comments);
+        comment_to_auditor_input.addEventListener('blur', debounced_save_comments);
         fg1.appendChild(comment_to_auditor_input);
 
         const fg2 = Helpers_create_element('div', { class_name: 'form-group' });
@@ -346,6 +347,7 @@ export const RequirementAuditComponent = (function () {
         fg2.appendChild(label2);
         comment_to_actor_input = Helpers_create_element('textarea', { id: 'commentToActor', class_name: 'form-control', attributes: { rows: '4' } });
         comment_to_actor_input.addEventListener('input', debounced_save_comments);
+        comment_to_actor_input.addEventListener('blur', debounced_save_comments);
         fg2.appendChild(comment_to_actor_input);
         
         container.append(fg1, fg2);
@@ -450,10 +452,12 @@ export const RequirementAuditComponent = (function () {
         // Rensa event listeners från input-elementen
         if (comment_to_auditor_input) {
             comment_to_auditor_input.removeEventListener('input', debounced_save_comments);
+            comment_to_auditor_input.removeEventListener('blur', debounced_save_comments);
             comment_to_auditor_input = null;
         }
         if (comment_to_actor_input) {
             comment_to_actor_input.removeEventListener('input', debounced_save_comments);
+            comment_to_actor_input.removeEventListener('blur', debounced_save_comments);
             comment_to_actor_input = null;
         }
         

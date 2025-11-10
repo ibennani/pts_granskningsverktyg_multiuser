@@ -18,6 +18,7 @@ export const EditRulefileRequirementComponent = (function () {
     
     let form_element_ref;
     let local_requirement_data = null;
+    let debounceTimerFormFields = null;
 
     function _create_move_check_button(direction, check) {
         const t = Translation_t;
@@ -149,6 +150,24 @@ export const EditRulefileRequirementComponent = (function () {
             checks_data.push(check_obj);
         });
         local_requirement_data.checks = checks_data;
+    }
+
+    function debounced_autosave_form() {
+        const is_new_requirement = params_ref?.id === 'new';
+        if (is_new_requirement || !local_requirement_data) return; // Bara spara för befintliga krav
+        
+        clearTimeout(debounceTimerFormFields);
+        debounceTimerFormFields = setTimeout(() => {
+            _update_local_data_from_form();
+            // Spara till state
+            if (typeof window !== 'undefined') {
+                window.skipRulefileRequirementRender = (Number(window.skipRulefileRequirementRender) || 0) + 1;
+            }
+            local_dispatch({
+                type: local_StoreActionTypes.UPDATE_REQUIREMENT_DEFINITION,
+                payload: { requirementId: params_ref.id, updatedRequirementData: local_requirement_data }
+            });
+        }, 3000);
     }
 
     function handle_form_submit(event) {
@@ -423,9 +442,15 @@ export const EditRulefileRequirementComponent = (function () {
             input = Helpers_create_element('textarea', { id: id, name: id, class_name: 'form-control', attributes: { rows: 4 } });
             input.value = Array.isArray(value) ? value.join('\n') : (value || '');
             window.Helpers.init_auto_resize_for_textarea(input);
+            input.addEventListener('input', debounced_autosave_form);
+            input.addEventListener('blur', debounced_autosave_form);
         } else {
             input = Helpers_create_element('input', { id: id, name: id, class_name: 'form-control', attributes: { type: input_type }});
-            input.value = value || ''; 
+            input.value = value || '';
+            if (input_type !== 'checkbox' && input_type !== 'radio') {
+                input.addEventListener('input', debounced_autosave_form);
+                input.addEventListener('blur', debounced_autosave_form);
+            }
         }
         form_group.appendChild(input);
         return form_group;
@@ -491,6 +516,7 @@ export const EditRulefileRequirementComponent = (function () {
                 if (selected_concepts.has(concept.id)) {
                     checkbox.checked = true;
                 }
+                checkbox.addEventListener('change', debounced_autosave_form);
                 const label = Helpers_create_element('label', { attributes: { for: `classification-${concept.id}` }, text_content: concept.label });
                 wrapper.append(checkbox, label);
                 fieldset.appendChild(wrapper);
@@ -516,6 +542,7 @@ export const EditRulefileRequirementComponent = (function () {
         if (metadata?.impact?.isCritical) {
             critical_checkbox.checked = true;
         }
+        critical_checkbox.addEventListener('change', debounced_autosave_form);
         critical_wrapper.appendChild(critical_checkbox);
         critical_wrapper.appendChild(Helpers_create_element('label', { attributes: { for: 'isCritical' }, text_content: t('is_critical') }));
         impact_group.appendChild(critical_wrapper);
@@ -561,6 +588,8 @@ export const EditRulefileRequirementComponent = (function () {
                 _update_parent_checkbox_state(parent_checkbox);
             }
         }
+        // Trigger autosave för checkboxes
+        debounced_autosave_form();
     }
 
     function _create_content_types_section(all_content_types, selected_content_types) {
@@ -575,6 +604,7 @@ export const EditRulefileRequirementComponent = (function () {
             const legend = Helpers_create_element('legend');
             const parent_id = `ct-parent-${group.id}`;
             const parent_checkbox = Helpers_create_element('input', { id: parent_id, class_name: 'form-check-input', attributes: { type: 'checkbox', 'data-parent-id': group.id } });
+            parent_checkbox.addEventListener('change', debounced_autosave_form);
             const parent_label = Helpers_create_element('label', { attributes: { for: parent_id }, text_content: group.text });
             legend.append(parent_checkbox, parent_label);
             fieldset.appendChild(legend);
@@ -592,6 +622,7 @@ export const EditRulefileRequirementComponent = (function () {
                 if (is_checked) {
                     child_checkbox.checked = true;
                 }
+                child_checkbox.addEventListener('change', debounced_autosave_form);
                 const child_label = Helpers_create_element('label', { attributes: { for: child_id }, text_content: child.text });
                 
                 child_wrapper.append(child_checkbox, child_label);
@@ -1065,8 +1096,10 @@ export const EditRulefileRequirementComponent = (function () {
         logic_fieldset.appendChild(Helpers_create_element('legend', { text_content: t('check_logic_title') }));
         const logic_and = Helpers_create_element('input', { id: `logic_${sane_check_id}_and`, name: `check_${sane_check_id}_logic`, value: 'AND', attributes: { type: 'radio' } });
         if (!check.logic || check.logic.toUpperCase() === 'AND') logic_and.checked = true;
+        logic_and.addEventListener('change', debounced_autosave_form);
         const logic_or = Helpers_create_element('input', { id: `logic_${sane_check_id}_or`, name: `check_${sane_check_id}_logic`, value: 'OR', attributes: { type: 'radio' } });
         if (check.logic?.toUpperCase() === 'OR') logic_or.checked = true;
+        logic_or.addEventListener('change', debounced_autosave_form);
         
         logic_fieldset.append(
             Helpers_create_element('div', { class_name: 'form-check', children: [logic_and, Helpers_create_element('label', { attributes: { for: `logic_${sane_check_id}_and` }, text_content: t('check_logic_and') })] }),
@@ -1221,9 +1254,19 @@ export const EditRulefileRequirementComponent = (function () {
     }
 
     function destroy() {
+        clearTimeout(debounceTimerFormFields);
         if (form_element_ref) {
             form_element_ref.removeEventListener('submit', handle_form_submit);
             form_element_ref.removeEventListener('click', handle_form_click);
+            // Rensa event listeners från alla input-fält
+            const all_inputs = form_element_ref.querySelectorAll('input, textarea');
+            if (all_inputs) {
+                all_inputs.forEach(input => {
+                    input.removeEventListener('input', debounced_autosave_form);
+                    input.removeEventListener('blur', debounced_autosave_form);
+                    input.removeEventListener('change', debounced_autosave_form);
+                });
+            }
         }
         app_container_ref.innerHTML = '';
         form_element_ref = null;

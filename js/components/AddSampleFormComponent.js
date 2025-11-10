@@ -27,6 +27,7 @@ export const AddSampleFormComponent = (function () {
     let original_content_types_on_load = [];
     let router_ref_internal;
     let previous_sample_type_value = "";
+    let debounceTimerFormFields = null;
 
     function get_t_internally() {
         return Translation_t || ((key) => `**${key}**`);
@@ -108,6 +109,50 @@ export const AddSampleFormComponent = (function () {
             const parentCheckbox = content_types_container_element.querySelector(`input[data-parent-id="${parentId}"]`);
             if (parentCheckbox) _updateParentCheckboxState(parentCheckbox);
         }
+        // Trigger autosave för checkboxes
+        if (current_editing_sample_id) {
+            debounced_autosave_form();
+        }
+    }
+
+    function debounced_autosave_form() {
+        if (!current_editing_sample_id) return; // Bara spara om vi redigerar ett befintligt sample
+        
+        clearTimeout(debounceTimerFormFields);
+        debounceTimerFormFields = setTimeout(() => {
+            const selected_category_radio = form_element?.querySelector('input[name="sampleCategory"]:checked');
+            const sample_category_id = selected_category_radio ? selected_category_radio.value : null;
+            const sample_type_id = sample_type_select?.value;
+            const sanitize_input = (input) => {
+                if (typeof input !== 'string') return '';
+                return input.trim().replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+            };
+
+            const description = sanitize_input(description_input?.value || '');
+            let url_val = sanitize_input(url_input?.value || '');
+            const selected_content_types = Array.from(content_types_container_element?.querySelectorAll('input[name="selectedContentTypes"]:checked') || []).map(cb => sanitize_input(cb.value));
+
+            if (url_val) url_val = Helpers.add_protocol_if_missing(url_val);
+
+            const sample_payload_data = {
+                sampleCategory: sample_category_id,
+                sampleType: sample_type_id,
+                description: description,
+                url: url_val,
+                selectedContentTypes: selected_content_types
+            };
+
+            // Använd samma logik som vid submit, men utan validering
+            const original_set = new Set(original_content_types_on_load);
+            const new_set = new Set(selected_content_types);
+            const are_sets_equal = original_set.size === new_set.size && [...original_set].every(value => new_set.has(value));
+
+            if (are_sets_equal) {
+                _perform_save(sample_payload_data);
+            } else {
+                _stage_changes_and_navigate(sample_payload_data);
+            }
+        }, 3000);
     }
     
     function _stage_changes_and_navigate(sample_payload_data) {
@@ -221,7 +266,10 @@ export const AddSampleFormComponent = (function () {
             const radio_wrapper = Helpers.create_element('div', { class_name: ['form-check', 'content-type-child-item'] });
             const radio = Helpers.create_element('input', { id: radio_id, class_name: 'form-check-input', attributes: { type: 'radio', name: 'sampleCategory', value: cat.id, required: true }});
             if ((sample_data && sample_data.sampleCategory === cat.id) || (!sample_data && index === 0)) radio.checked = true;
-            radio.addEventListener('change', () => on_category_change(cat.id));
+            radio.addEventListener('change', () => {
+                on_category_change(cat.id);
+                if (current_editing_sample_id) debounced_autosave_form();
+            });
             radio_wrapper.append(radio, Helpers.create_element('label', { attributes: { for: radio_id }, text_content: cat.text }));
             category_fieldset_element.appendChild(radio_wrapper);
         });
@@ -231,8 +279,13 @@ export const AddSampleFormComponent = (function () {
         form_element.appendChild(Helpers.create_element('h2', { text_content: t('sample_info_title')}));
         sample_type_select = Helpers.create_element('select', { id: 'sampleTypeSelect', class_name: 'form-control', attributes: { required: true, disabled: true }});
         sample_type_select.addEventListener('change', update_description_from_sample_type);
+        sample_type_select.addEventListener('change', () => { if (current_editing_sample_id) debounced_autosave_form(); });
         description_input = Helpers.create_element('input', { id: 'sampleDescriptionInput', class_name: 'form-control', attributes: { type: 'text', required: true }});
+        description_input.addEventListener('input', () => { if (current_editing_sample_id) debounced_autosave_form(); });
+        description_input.addEventListener('blur', () => { if (current_editing_sample_id) debounced_autosave_form(); });
         url_input = Helpers.create_element('input', { id: 'sampleUrlInput', class_name: 'form-control', attributes: { type: 'url' }});
+        url_input.addEventListener('input', () => { if (current_editing_sample_id) debounced_autosave_form(); });
+        url_input.addEventListener('blur', () => { if (current_editing_sample_id) debounced_autosave_form(); });
         url_form_group_ref = Helpers.create_element('div', { class_name: 'form-group', children: [Helpers.create_element('label', { attributes: {for: 'sampleUrlInput'}, text_content: t('url') }), url_input]});
         form_element.append(
             Helpers.create_element('div', { class_name: 'form-group', children: [Helpers.create_element('label', { attributes: {for: 'sampleTypeSelect'}, text_content: t('sample_type_label') + '*' }), sample_type_select]}),
@@ -300,8 +353,20 @@ export const AddSampleFormComponent = (function () {
     }
 
     function destroy() {
+        clearTimeout(debounceTimerFormFields);
         if (form_element) form_element.removeEventListener('submit', handle_form_submit);
-        if (sample_type_select) sample_type_select.removeEventListener('change', update_description_from_sample_type);
+        if (sample_type_select) {
+            sample_type_select.removeEventListener('change', update_description_from_sample_type);
+            sample_type_select.removeEventListener('change', debounced_autosave_form);
+        }
+        if (description_input) {
+            description_input.removeEventListener('input', debounced_autosave_form);
+            description_input.removeEventListener('blur', debounced_autosave_form);
+        }
+        if (url_input) {
+            url_input.removeEventListener('input', debounced_autosave_form);
+            url_input.removeEventListener('blur', debounced_autosave_form);
+        }
         if (content_types_container_element) content_types_container_element.removeEventListener('change', _handleCheckboxChange);
     }
 

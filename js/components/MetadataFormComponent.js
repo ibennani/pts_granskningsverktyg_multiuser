@@ -11,6 +11,7 @@ export const MetadataFormComponent = (function () {
     // Callbacks passed from parent during init
     let on_submit_callback;
     let on_cancel_callback;
+    let on_autosave_callback;
 
     // Dependencies
     let Translation_t;
@@ -20,6 +21,7 @@ export const MetadataFormComponent = (function () {
     // Internal DOM references, live only during render cycle
     let form_element_ref;
     let case_number_input, actor_name_input, actor_link_input, auditor_name_input, case_handler_input, internal_comment_input;
+    let debounceTimerFormFields = null;
 
     // Create safe assign function for this component's dependencies
     const safeAssignGlobals = createSafeAssignFunction([
@@ -60,6 +62,7 @@ export const MetadataFormComponent = (function () {
         
         on_submit_callback = _callbacks.onSubmit;
         on_cancel_callback = _callbacks.onCancel || null;
+        on_autosave_callback = _callbacks.onAutosave || null;
 
         if (Helpers_load_css) {
             await Helpers_load_css(CSS_PATH);
@@ -67,6 +70,37 @@ export const MetadataFormComponent = (function () {
             console.error('MetadataFormComponent: Helpers.load_css not available');
             throw new Error('Required dependency Helpers.load_css not available');
         }
+    }
+
+    function debounced_autosave_form() {
+        if (!on_autosave_callback) return;
+        
+        clearTimeout(debounceTimerFormFields);
+        debounceTimerFormFields = setTimeout(() => {
+            if (!case_number_input || !actor_name_input || !actor_link_input || !auditor_name_input || !case_handler_input || !internal_comment_input) return;
+            
+            let actor_link_value = actor_link_input.value.trim();
+            if (actor_link_value) {
+                actor_link_value = Helpers_add_protocol_if_missing(actor_link_value);
+            }
+
+            // Sanitize all form inputs to prevent XSS
+            const sanitize_input = (input) => {
+                if (typeof input !== 'string') return '';
+                return input.trim().replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+            };
+
+            const form_data = {
+                caseNumber: sanitize_input(case_number_input.value),
+                actorName: sanitize_input(actor_name_input.value),
+                actorLink: sanitize_input(actor_link_value),
+                auditorName: sanitize_input(auditor_name_input.value),
+                caseHandler: sanitize_input(case_handler_input.value),
+                internalComment: sanitize_input(internal_comment_input.value)
+            };
+
+            on_autosave_callback(form_data);
+        }, 3000);
     }
 
     function handle_form_submit(event) {
@@ -128,11 +162,15 @@ export const MetadataFormComponent = (function () {
                 id: id, class_name: 'form-control', attributes: { rows: '4', ...attributes }
             });
             input_element.value = current_value;
+            input_element.addEventListener('input', debounced_autosave_form);
+            input_element.addEventListener('blur', debounced_autosave_form);
         } else {
             input_element = Helpers_create_element('input', {
                 id: id, class_name: 'form-control', attributes: attributes
             });
             input_element.value = current_value;
+            input_element.addEventListener('input', debounced_autosave_form);
+            input_element.addEventListener('blur', debounced_autosave_form);
         }
 
         form_group.appendChild(label);
@@ -208,13 +246,23 @@ export const MetadataFormComponent = (function () {
     }
 
     function destroy() {
+        clearTimeout(debounceTimerFormFields);
         if (form_element_ref) {
             form_element_ref.removeEventListener('submit', handle_form_submit);
+        }
+        // Rensa event listeners från alla input-fält
+        const all_inputs = form_element_ref?.querySelectorAll('input, textarea');
+        if (all_inputs) {
+            all_inputs.forEach(input => {
+                input.removeEventListener('input', debounced_autosave_form);
+                input.removeEventListener('blur', debounced_autosave_form);
+            });
         }
         form_container_ref.innerHTML = '';
         form_element_ref = null;
         on_submit_callback = null;
         on_cancel_callback = null;
+        on_autosave_callback = null;
     }
 
     return {

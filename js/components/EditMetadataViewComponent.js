@@ -41,7 +41,16 @@ export const EditMetadataViewComponent = (function () {
         metadata_form_component_instance = MetadataFormComponent;
         await metadata_form_component_instance.init(metadata_form_container_element, {
             onSubmit: handle_form_submit,
-            onCancel: handle_cancel
+            onCancel: handle_cancel,
+            onAutosave: handle_autosave
+        });
+    }
+
+    function handle_autosave(form_data) {
+        // Spara metadata automatiskt utan att navigera
+        local_dispatch({
+            type: local_StoreActionTypes.UPDATE_METADATA,
+            payload: form_data
         });
     }
 

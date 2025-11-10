@@ -17,6 +17,7 @@ export const ChecklistHandler = (function () {
     let requirement_result_ref = null;
 
     let is_dom_built = false;
+    let debounceTimerObservations = null;
 
     // --- NY HJÄLPFUNKTION ---
     function _safe_parse_markdown_inline(markdown_string) {
@@ -47,6 +48,7 @@ export const ChecklistHandler = (function () {
 
         container_ref.addEventListener('click', handle_checklist_click);
         container_ref.addEventListener('input', handle_textarea_input);
+        container_ref.addEventListener('blur', handle_textarea_blur, true);
         // Add keyboard support for accessibility
         container_ref.addEventListener('keydown', handle_checklist_keydown);
     }
@@ -108,6 +110,34 @@ export const ChecklistHandler = (function () {
         if (pc_item && check_item) {
             const check_id = check_item.dataset.checkId;
             const pc_id = pc_item.dataset.pcId;
+            
+            // Debounce autosave med 3 sekunder
+            clearTimeout(debounceTimerObservations);
+            debounceTimerObservations = setTimeout(() => {
+                if (on_autosave_callback) {
+                    on_autosave_callback({ 
+                        type: 'pc_observation', 
+                        checkId: check_id, 
+                        pcId: pc_id, 
+                        value: textarea.value 
+                    });
+                }
+            }, 3000);
+        }
+    }
+
+    function handle_textarea_blur(event) {
+        const textarea = event.target;
+        if (!textarea.classList.contains('pc-observation-detail-textarea')) return;
+        
+        const pc_item = textarea.closest('.pass-criterion-item[data-pc-id]');
+        const check_item = textarea.closest('.check-item[data-check-id]');
+        if (pc_item && check_item) {
+            const check_id = check_item.dataset.checkId;
+            const pc_id = pc_item.dataset.pcId;
+            
+            // Spara direkt vid blur (efter att ha rensat debounce-timern)
+            clearTimeout(debounceTimerObservations);
             if (on_autosave_callback) {
                 on_autosave_callback({ 
                     type: 'pc_observation', 
@@ -411,9 +441,12 @@ export const ChecklistHandler = (function () {
     }
 
     function destroy() {
+        clearTimeout(debounceTimerObservations);
         if (container_ref) {
             container_ref.removeEventListener('click', handle_checklist_click);
             container_ref.removeEventListener('input', handle_textarea_input);
+            container_ref.removeEventListener('blur', handle_textarea_blur, true);
+            container_ref.removeEventListener('keydown', handle_checklist_keydown);
             container_ref.innerHTML = '';
         }
         is_dom_built = false;
