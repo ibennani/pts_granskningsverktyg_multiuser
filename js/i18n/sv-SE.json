@@ -48,7 +48,7 @@
   "cancel": "Avbryt",
   "cannot_change_criteria_if_check_not_compliant": "Kriterier kan inte ändras när kontrollpunkten är markerad 'Stämmer inte'",
   "case_handler": "Handläggare",
-  "case_number": "Ärendenummer",
+  "case_number": "Diarienummer",
   "check_complies": "Stämmer",
   "check_does_not_comply": "Stämmer inte",
   "check_marked_as_not_compliant_criteria_passed": "Kontrollpunkten är markerad som 'Stämmer inte' underliggande kriterier har automatiskt markerats som godkända och visas ej",
