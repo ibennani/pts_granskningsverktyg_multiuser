@@ -42,8 +42,13 @@ export const ViewRulefileRequirementComponent = (function () {
         }
 
         const renderer = new marked.Renderer();
-        renderer.link = (href, title, text) => `<a href="${href}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+        renderer.link = (href, title, text) => {
+            const safe_href = window.Helpers.escape_html(href);
+            const safe_text = window.Helpers.escape_html(text);
+            return `<a href="${safe_href}" target="_blank" rel="noopener noreferrer">${safe_text}</a>`;
+        };
         
+        // Escape ren HTML-kod så den visas som text, men respektera markdown-genererad HTML
         renderer.html = (html_token) => {
             const text_to_escape = (typeof html_token === 'object' && html_token !== null && typeof html_token.text === 'string')
                 ? html_token.text
@@ -54,10 +59,15 @@ export const ViewRulefileRequirementComponent = (function () {
 
         const options = { renderer, breaks: true, gfm: true };
         
-        if (is_inline) {
-            return marked.parseInline(String(markdown_string || ''), options);
+        // Använd alltid parse() för att hantera både block- och inline-markdown samt HTML-kod
+        const parsed_markdown = marked.parse(String(markdown_string || ''), options);
+        
+        // Använd sanitize_html om tillgängligt för extra säkerhet
+        if (window.Helpers.sanitize_html) {
+            return window.Helpers.sanitize_html(parsed_markdown);
         }
-        return marked.parse(String(markdown_string || ''), options);
+        
+        return parsed_markdown;
     }
 
     function _render_markdown_section(title_key, content_data) {

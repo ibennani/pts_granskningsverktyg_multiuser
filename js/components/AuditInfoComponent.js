@@ -127,7 +127,12 @@ export const AuditInfoComponent = (function () {
             let parsed_comment = md.internalComment;
             if (typeof marked !== 'undefined') {
                 const renderer = new marked.Renderer();
-                renderer.link = (href, title, text) => `<a href="${href}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+                renderer.link = (href, title, text) => {
+                    const safe_href = window.Helpers.escape_html(href);
+                    const safe_text = window.Helpers.escape_html(text);
+                    return `<a href="${safe_href}" target="_blank" rel="noopener noreferrer">${safe_text}</a>`;
+                };
+                // Escape ren HTML-kod så den visas som text, men respektera markdown-genererad HTML
                 renderer.html = (html_token) => {
                     const text_to_escape = (typeof html_token === 'object' && html_token !== null && typeof html_token.text === 'string')
                         ? html_token.text
@@ -136,10 +141,16 @@ export const AuditInfoComponent = (function () {
                 };
                 
                 const singleLineComment = md.internalComment.replace(/(\r\n|\n|\r)/gm, " ");
-                parsed_comment = marked.parseInline(singleLineComment, { 
+                parsed_comment = marked.parse(singleLineComment, { 
                     renderer: renderer,
+                    breaks: true,
                     gfm: true 
                 });
+                
+                // Använd sanitize_html om tillgängligt för extra säkerhet
+                if (window.Helpers.sanitize_html) {
+                    parsed_comment = window.Helpers.sanitize_html(parsed_comment);
+                }
             }
             info_panel.appendChild(create_info_item('internal_comment', parsed_comment, { is_markdown: true }));
         }
