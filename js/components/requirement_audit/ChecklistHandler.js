@@ -26,10 +26,27 @@ export const ChecklistHandler = (function () {
         }
 
         const renderer = new marked.Renderer();
-        renderer.link = (href, title, text) => `<a href="${href}" target="_blank" rel="noopener noreferrer">${text}</a>`;
-        renderer.html = (html) => window.Helpers.escape_html(html);
+        renderer.link = (href, title, text) => {
+            const safe_href = window.Helpers.escape_html(href);
+            const safe_text = window.Helpers.escape_html(text);
+            return `<a href="${safe_href}" target="_blank" rel="noopener noreferrer">${safe_text}</a>`;
+        };
+        // Escape ren HTML-kod så den visas som text, men respektera markdown-genererad HTML
+        renderer.html = (html_token) => {
+            const text_to_escape = (typeof html_token === 'object' && html_token !== null && typeof html_token.text === 'string')
+                ? html_token.text
+                : String(html_token || '');
+            return window.Helpers.escape_html(text_to_escape);
+        };
 
-        return marked.parseInline(String(markdown_string || ''), { renderer, breaks: true, gfm: true });
+        const parsed_markdown = marked.parse(String(markdown_string || ''), { renderer, breaks: true, gfm: true });
+        
+        // Använd sanitize_html om tillgängligt för extra säkerhet
+        if (window.Helpers.sanitize_html) {
+            return window.Helpers.sanitize_html(parsed_markdown);
+        }
+        
+        return parsed_markdown;
     }
 
     function assign_globals_once() {

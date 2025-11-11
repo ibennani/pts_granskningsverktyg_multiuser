@@ -350,6 +350,50 @@
         return null;
     }
 
+    function recalculateStatusesOnLoad(auditState) {
+        // Beräknar om statusar för alla kontrollpunkter och krav när en granskning laddas in
+        // Detta säkerställer att statusar är korrekta även om logiken har ändrats (t.ex. OR-logik fix)
+        if (!auditState || !auditState.ruleFileContent || !auditState.samples) {
+            return auditState;
+        }
+
+        const newState = JSON.parse(JSON.stringify(auditState));
+        
+        (newState.samples || []).forEach(sample => {
+            Object.keys(sample.requirementResults || {}).forEach(reqKey => {
+                const reqResult = sample.requirementResults[reqKey];
+                const reqDef = newState.ruleFileContent.requirements[reqKey];
+                if (!reqDef || !reqResult || !reqResult.checkResults) return;
+
+                // Beräkna om status för varje kontrollpunkt
+                Object.keys(reqResult.checkResults).forEach(checkKey => {
+                    const checkResult = reqResult.checkResults[checkKey];
+                    const checkDef = reqDef.checks.find(c => c.id === checkKey);
+                    if (!checkDef || !checkResult) return;
+
+                    // Beräkna om kontrollpunktens status med korrekt logik
+                    const recalculatedStatus = calculate_check_status(
+                        checkDef,
+                        checkResult.passCriteria,
+                        checkResult.overallStatus
+                    );
+                    checkResult.status = recalculatedStatus;
+                });
+
+                // Beräkna om status för hela kravet
+                const recalculatedReqStatus = calculate_requirement_status(reqDef, reqResult);
+                reqResult.status = recalculatedReqStatus;
+            });
+        });
+
+        // Om granskningen är låst, beräkna om bristindex baserat på korrekta statusar
+        if (newState.auditStatus === 'locked') {
+            return assignSortedDeficiencyIdsOnLock(newState);
+        }
+
+        return newState;
+    }
+
     const public_api = {
         calculate_requirement_status,
         calculate_check_status,
@@ -359,7 +403,8 @@
         find_first_incomplete_requirement_key_for_sample,
         assignSortedDeficiencyIdsOnLock,
         updateIncrementalDeficiencyIds,
-        removeAllDeficiencyIds
+        removeAllDeficiencyIds,
+        recalculateStatusesOnLoad
     };
 
     window.AuditLogic = public_api;

@@ -298,7 +298,8 @@ function root_reducer(current_state, action) {
                 if (!merged_state.deficiencyCounter) {
                     merged_state.deficiencyCounter = 1;
                 }
-                return window.AuditLogic.updateIncrementalDeficiencyIds(merged_state);
+                // Beräkna om statusar med korrekt logik (t.ex. OR-logik) och uppdatera bristindex om granskningen är låst
+                return window.AuditLogic.recalculateStatusesOnLoad(merged_state);
             }
             console.warn('[State.js] LOAD_AUDIT_FROM_FILE: Invalid payload.', action.payload);
             return current_state;
