@@ -1,29 +1,80 @@
-# Fil: .github/dependabot.yml
-
+# .github/dependabot.yml
 version: 2
+
 updates:
-  # Konfiguration för npm (JavaScript-beroenden)
+  # 1) NPM/Yarn – funktionella uppdateringar (grupperade, veckovis)
   - package-ecosystem: "npm"
-    # Söker efter package.json och package-lock.json i roten av repot
     directory: "/"
-    # Hur ofta ska Dependabot kolla efter uppdateringar?
     schedule:
-      interval: "daily" # Kan vara "weekly" eller "monthly"
-      time: "04:00" # Tid på dygnet (UTC)
-      timezone: "Europe/Stockholm" # Tidszon för schemat
-
-    # Begränsa antalet öppna PRs från Dependabot för att undvika att bli överöst
-    open-pull-requests-limit: 10
-
-    # Valfritt: Lägg automatiskt till granskare till PRs
+      interval: "weekly"
+      day: "monday"
+      time: "04:00"
+      timezone: "Europe/Stockholm"
+    target-branch: "main"
+    open-pull-requests-limit: 3
+    rebase-strategy: "disabled"     # mindre omtag/”PR-churn”
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
     reviewers:
-      - "ibennani" # Byt ut detta mot ditt GitHub-användarnamn
-
-    # Valfritt: Tilldela PRs till någon automatiskt
+      - "ibennani"
     assignees:
-      - "ibennani" # Byt ut detta mot ditt GitHub-användarnamn
-
-    # Valfritt: Lägg till etiketter (labels) på PRs för bättre organisering
+      - "ibennani"
     labels:
       - "dependencies"
+      - "dependabot"
+
+    # Färre PR:er via grupper
+    groups:
+      test-stack:
+        patterns:
+          - "jest*"
+          - "jest-axe*"
+          - "jsdom*"
+          - "playwright*"
+      build-tools:
+        patterns:
+          - "vite*"
+          - "eslint*"
+      markdown:
+        patterns:
+          - "marked*"
+
+    # Exempel: undvik stora major-bumpar på ESLint tills vidare
+    ignore:
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
+
+  # 2) NPM/Yarn – säkerhetsuppdateringar (oftare, eget “spår”)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "daily"
+      time: "04:15"
+      timezone: "Europe/Stockholm"
+    target-branch: "main"
+    # Endast säkerhet
+    allow:
+      - dependency-type: "direct"
+      - dependency-type: "all"
+    labels:
+      - "dependencies"
+      - "dependabot"
+      - "security"
+    # Begränsa till security alerts
+    # (Dependabot triggar dessa separat; ingen grouping behövs här)
+    # Tips: slå på "Dependabot alerts" och auto-merge för patch/minor i reposettings
+
+  # 3) GitHub Actions – håll workflows uppdaterade, men sällan
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+      time: "04:30"
+      timezone: "Europe/Stockholm"
+    target-branch: "main"
+    open-pull-requests-limit: 2
+    rebase-strategy: "disabled"
+    labels:
+      - "ci"
       - "dependabot"

@@ -1,21 +1,94 @@
-# Repository Guidelines
+# AGENTS.md
 
-## Project Structure & Module Organization
-The Vite front end lives in `js/`, split by responsibility: UI components under `js/components/`, domain-specific flows in `js/features/`, shared logic in `js/logic/` and `js/utils/`, and Playwright helpers in `js/i18n/` and `js/translation_logic.js`. Entry points (`js/main.js`, `index.html`) wire these modules to the DOM, while generated assets land in `dist/`. Styling sits in `css/`, project notes in `docs/`, and previous build artefacts or attachments under `test-results/`. Keep new modules focused and colocate tests or fixtures with their nearest feature folder before exporting through `js/export_logic.js` when they should be reused.
+Detta dokument beskriver hur AI-agenter (som Cursor Composer) kan användas för att utveckla och underhålla detta projekt.
 
-## Build, Test, and Development Commands
-- `npm install`: install dependencies; rerun after pulling changes that touch `package.json`.
-- `npm run dev` or `npm run dev:fixedport`: start Vite; the latter pins port 5173 for Playwright and bookmarking.
-- `npm run build`: produce an optimized bundle in `dist/`.
-- `npm run preview`: serve the built bundle locally for release checks.
-- `npm run test:e2e` / `npm run test:e2e:ui`: execute the Playwright suites headless or with the inspector.
-- `npm run watch:e2e`: hot-reload dev server and rerun tests on source changes.
+## Översikt
 
-## Coding Style & Naming Conventions
-Use modern ES modules, four-space indentation, and semicolons. Components exporting UI classes or factories should use PascalCase filenames (`UploadViewComponent.js`), while helpers and state utilities stay camelCase. Prefer descriptive Swedish copy for console messages and translation keys to match existing strings. Before pushing, ensure imports stay relative and shallow (`../utils/foo.js`) to keep bundles understandable.
+Granskningsverktyget är ett modulbaserat projekt med tydlig struktur och konventioner. Denna guide hjälper AI-agenter att förstå projektets arkitektur och följa etablerade mönster.
 
-## Testing Guidelines
-Playwright specs live in `tests/` and follow the `*.spec.js` convention; match that pattern when adding coverage. Favor scenario-driven tests that assert absence of console errors or regressions in rulefile editing. Run `npm run test:e2e` locally and inspect `test-results/` artefacts when failures occur. Aim to keep critical flows (upload, metadata edit, requirement audit) covered; add fixtures or mock data beside the spec when needed.
+## Projektstruktur
 
-## Commit & Pull Request Guidelines
-Recent history uses concise, Swedish, sentence-style commit subjects that describe the user-facing effect (e.g., “Det går att visa och spara…”). Mirror that tone, avoid prefixes, and commit once per logical change. PRs should summarize the behaviour change, list impacted views or modules, and link related backlog items. Attach screenshots or screencasts when UI behaviour shifts, and note any required Playwright updates or new translations so reviewers can validate quickly.
+Projektet är organiserat enligt följande struktur:
+
+- `js/` - Huvudkatalog för JavaScript-kod
+  - `components/` - UI-komponenter
+  - `features/` - Domänspecifika funktioner
+  - `logic/` - Affärslogik och utilities
+  - `utils/` - Hjälpfunktioner
+  - `i18n/` - Översättningar
+- `css/` - Stylesheets
+- `tests/` - Testfiler
+- `docs/` - Dokumentation
+
+## Kodningskonventioner
+
+### Namngivning
+- Komponenter: PascalCase (`UploadViewComponent.js`)
+- Funktioner och variabler: camelCase (`handle_export_word`)
+- Filer: matchar komponent/funktionsnamn
+
+### Modulstruktur
+- Använd ES6-moduler
+- Exportera med `export const ComponentName = (function() { ... })();`
+- Importera relativt (`../utils/foo.js`)
+
+### Indentering och formatering
+- 4 mellanslag för indentering
+- Använd semikolon
+- Följ ESLint-regler
+
+## Viktiga funktioner att känna till
+
+### Export-funktionalitet
+- Word-export: `js/export_logic.js` - `export_to_word()`
+- Excel-export: `js/export_logic.js` - `export_to_excel()`
+- CSV-export: `js/export_logic.js` - `export_to_csv()`
+
+### State-hantering
+- Central state i `js/state.js`
+- Använd `local_getState()` och `local_dispatch()` i komponenter
+
+### Översättningar
+- Använd `window.Translation.t()` för översättningar
+- Översättningsfiler i `js/i18n/`
+
+## Vanliga uppgifter
+
+### Lägga till en ny komponent
+1. Skapa fil i `js/components/`
+2. Följ modulmönstret med IIFE
+3. Exportera komponenten
+4. Importera och registrera i `js/main.js`
+
+### Lägga till en ny översättning
+1. Lägg till nyckel i `js/i18n/sv-SE.json` och `js/i18n/en-GB.json`
+2. Använd `t('nyckel')` i koden
+
+### Testa ändringar
+- Kör `npm run test:e2e` för E2E-tester
+- Kör `npm run lint` för att kontrollera kodkvalitet
+
+## Kända begränsningar
+
+### Word-export
+- Använder Words inbyggda TOC-funktion vilket ger en varning vid öppning
+- Användaren måste klicka "Ja" för att uppdatera fält
+- Manuella interna länkar fungerar inte korrekt med docx-biblioteket
+
+### Browser-kompatibilitet
+- Kräver moderna webbläsare med ES6-stöd
+- Testas främst i Chrome, Firefox och Edge
+
+## Tips för AI-agenter
+
+1. **Läs befintlig kod först** - Projektet har etablerade mönster som bör följas
+2. **Använd semantisk sökning** - Använd `codebase_search` för att hitta relevant kod
+3. **Följ projektets struktur** - Placera kod i rätt kataloger
+4. **Testa ändringar** - Kör tester efter större ändringar
+5. **Använd svenska** - Kommentarer och commit-meddelanden ska vara på svenska
+
+## Ytterligare resurser
+
+- Se `README.md` för allmän projektinformation
+- Se `package.json` för beroenden och scripts
+- Se `docs/` för detaljerad dokumentation
