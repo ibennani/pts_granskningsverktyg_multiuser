@@ -65,10 +65,51 @@
     color: #FFFFFF; /* Vit i mörkt läge */
 }
 
-/* Lägg till den nya, dedikerade stilen för fokus-effekten */
+/* Tydlig fokusmarkering för verktygsfältets knappar - ljust tema */
 .md-toolbar-btn:focus-visible {
-    /* Vi tar bort webbläsarens standard-fokusring */
-    outline: none; 
+    outline: none;
+    border: 2px solid var(--focus-ring-color-outer);
+    background-color: var(--button-default-bg);
+    box-shadow: 
+        0 0 0 2px var(--focus-ring-color),
+        0 0 0 4px rgba(176, 124, 191, 0.2);
+    color: #000000;
+    /* Säkerställ att transition fungerar även för box-shadow */
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Tydlig fokusmarkering för verktygsfältets knappar - mörkt tema */
+[data-theme="dark"] .md-toolbar-btn:focus-visible {
+    border: 2px solid var(--focus-ring-color-outer);
+    background-color: var(--button-default-bg);
+    box-shadow: 
+        0 0 0 2px var(--focus-ring-color),
+        0 0 0 4px rgba(213, 185, 221, 0.3),
+        0 0 8px rgba(213, 185, 221, 0.4);
+    color: #FFFFFF;
+}
+
+/* Säkerställ att fokusmarkeringen också syns när knappen är aktiv (fokuserad) */
+.md-toolbar-btn:focus {
+    outline: none;
+}
+
+/* Kombinera fokus med hover för extra tydlighet */
+.md-toolbar-btn:focus-visible:hover {
+    background-color: var(--button-default-hover-bg);
+    border-color: var(--focus-ring-color-outer);
+    box-shadow: 
+        0 0 0 2px var(--focus-ring-color),
+        0 0 0 4px rgba(176, 124, 191, 0.3),
+        0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="dark"] .md-toolbar-btn:focus-visible:hover {
+    background-color: var(--button-default-hover-bg);
+    box-shadow: 
+        0 0 0 2px var(--focus-ring-color),
+        0 0 0 4px rgba(213, 185, 221, 0.4),
+        0 0 12px rgba(213, 185, 221, 0.5);
 }
 
 /* Speciell stil för preview-knappen när den är aktiv */
@@ -76,6 +117,25 @@
     background-color: var(--secondary-color);
     color: var(--primary-color-dark);
     border-color: var(--primary-color);
+}
+
+/* Fokusmarkering för aktiv preview-knapp - ljust tema */
+.md-toolbar-btn[aria-pressed="true"]:focus-visible {
+    border: 2px solid var(--focus-ring-color-outer);
+    box-shadow: 
+        0 0 0 2px var(--focus-ring-color),
+        0 0 0 4px rgba(176, 124, 191, 0.3),
+        0 0 0 6px rgba(220, 125, 10, 0.2);
+}
+
+/* Fokusmarkering för aktiv preview-knapp - mörkt tema */
+[data-theme="dark"] .md-toolbar-btn[aria-pressed="true"]:focus-visible {
+    border: 2px solid var(--focus-ring-color-outer);
+    box-shadow: 
+        0 0 0 2px var(--focus-ring-color),
+        0 0 0 4px rgba(213, 185, 221, 0.4),
+        0 0 0 6px rgba(220, 125, 10, 0.3),
+        0 0 12px rgba(213, 185, 221, 0.5);
 }
 
 /* Visuell avdelare mellan knappgrupper */

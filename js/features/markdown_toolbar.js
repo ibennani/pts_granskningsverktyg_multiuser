@@ -97,7 +97,20 @@ import { marked } from '../utils/markdown.js';
         instanceMap.set(textarea.id, {
             previewVisible: wasPreviewVisible,
             previewDiv: previewDiv,
+            toolbar: toolbar,
             debouncedUpdate: debounce(() => updatePreview(textarea, previewDiv), DEBOUNCE_DELAY_MS)
+        });
+
+        // Hantera Shift+Tab från textarean för att gå tillbaka till verktygsfältet
+        textarea.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab' && e.shiftKey) {
+                // Hitta första knappen i verktygsfältet och fokusera den
+                const firstButton = toolbar.querySelector('.md-toolbar-btn');
+                if (firstButton) {
+                    e.preventDefault();
+                    firstButton.focus();
+                }
+            }
         });
 
         textarea.addEventListener('input', () => {
@@ -135,7 +148,10 @@ import { marked } from '../utils/markdown.js';
             { format: 'preview', icon: '👁', symbol: 'preview', ariaLabelKey: 'markdown_toolbar_preview' }
         ];
 
-        buttons.forEach(btnConfig => {
+        const toolbarButtons = [];
+        let buttonIndex = 0; // Räkna endast faktiska knappar
+
+        buttons.forEach((btnConfig) => {
             if (btnConfig.type === 'separator') {
                 const separator = document.createElement('div');
                 separator.className = 'md-toolbar-separator';
@@ -153,6 +169,9 @@ import { marked } from '../utils/markdown.js';
             const button = document.createElement('button');
             button.type = 'button';
             button.className = 'md-toolbar-btn';
+            
+            // Sätt tabindex: första knappen är tabbable, resten är -1
+            button.setAttribute('tabindex', buttonIndex === 0 ? '0' : '-1');
             
             // Lägg till aria-label från översättningar
             if (btnConfig.ariaLabelKey && window.Translation && window.Translation.t) {
@@ -184,9 +203,137 @@ import { marked } from '../utils/markdown.js';
                     applyFormat(textarea, btnConfig.format);
                 });
             }
+
+            // Keyboard navigation för verktygsfältet
+            button.addEventListener('keydown', (e) => {
+                handleToolbarKeydown(e, toolbarButtons, textarea);
+            });
+
+            toolbarButtons.push(button);
             toolbar.appendChild(button);
+            buttonIndex++; // Öka räknaren efter att knappen lagts till
         });
+
+        // När fokus lämnar verktygsfältet helt, återställ tabindex så första knappen är tabbable nästa gång
+        toolbar.addEventListener('focusout', (e) => {
+            // Vänta lite för att se om fokus går till en annan knapp i verktygsfältet
+            setTimeout(() => {
+                if (!toolbar.contains(document.activeElement)) {
+                    // Fokus har lämnat verktygsfältet helt, återställ till första knappen
+                    if (toolbarButtons.length > 0) {
+                        toolbarButtons.forEach((btn, idx) => {
+                            btn.setAttribute('tabindex', idx === 0 ? '0' : '-1');
+                        });
+                    }
+                }
+            }, 0);
+        });
+
         return toolbar;
+    }
+
+    /**
+     * Hanterar tangentbordsnavigation i verktygsfältet.
+     * @param {KeyboardEvent} e - Tangentbordshändelsen.
+     * @param {HTMLButtonElement[]} buttons - Array med alla knappar i verktygsfältet.
+     * @param {HTMLTextAreaElement} textarea - Textarean som verktygsfältet kontrollerar.
+     */
+    function handleToolbarKeydown(e, buttons, textarea) {
+        const currentIndex = buttons.indexOf(e.target);
+        if (currentIndex === -1) return;
+
+        let handled = false;
+
+        switch (e.key) {
+            case 'ArrowRight':
+                e.preventDefault();
+                const nextIndex = findNextButtonIndex(buttons, currentIndex, 1);
+                if (nextIndex !== -1) {
+                    focusButton(buttons, nextIndex);
+                    handled = true;
+                }
+                break;
+
+            case 'ArrowLeft':
+                e.preventDefault();
+                const prevIndex = findNextButtonIndex(buttons, currentIndex, -1);
+                if (prevIndex !== -1) {
+                    focusButton(buttons, prevIndex);
+                    handled = true;
+                }
+                break;
+
+            case 'Tab':
+                // Om Tab utan Shift, gå till textarean
+                if (!e.shiftKey) {
+                    e.preventDefault();
+                    textarea.focus();
+                    handled = true;
+                }
+                // Om Shift+Tab, låt standardbeteendet hända (gå tillbaka)
+                break;
+
+            case 'Home':
+                e.preventDefault();
+                focusButton(buttons, 0);
+                handled = true;
+                break;
+
+            case 'End':
+                e.preventDefault();
+                focusButton(buttons, buttons.length - 1);
+                handled = true;
+                break;
+        }
+
+        if (handled) {
+            e.stopPropagation();
+        }
+    }
+
+    /**
+     * Hittar nästa knappindex i verktygsfältet, hoppar över separatorer och spacer.
+     * @param {HTMLButtonElement[]} buttons - Array med alla knappar.
+     * @param {number} currentIndex - Nuvarande index.
+     * @param {number} direction - 1 för framåt, -1 för bakåt.
+     * @returns {number} Index för nästa knapp, eller -1 om ingen hittades.
+     */
+    function findNextButtonIndex(buttons, currentIndex, direction) {
+        let nextIndex = currentIndex + direction;
+        const maxIndex = buttons.length - 1;
+
+        // Wrap-around: om vi går förbi början, gå till slutet
+        if (nextIndex < 0) {
+            nextIndex = maxIndex;
+        }
+        // Wrap-around: om vi går förbi slutet, gå till början
+        else if (nextIndex > maxIndex) {
+            nextIndex = 0;
+        }
+
+        // Eftersom vi redan filtrerat bort separatorer och spacer när vi skapade buttons-arrayen,
+        // behöver vi inte hoppa över något här. Men vi kontrollerar att knappen finns.
+        if (nextIndex >= 0 && nextIndex < buttons.length && buttons[nextIndex]) {
+            return nextIndex;
+        }
+
+        return -1;
+    }
+
+    /**
+     * Fokuserar en specifik knapp i verktygsfältet.
+     * @param {HTMLButtonElement[]} buttons - Array med alla knappar.
+     * @param {number} index - Index för knappen som ska fokuseras.
+     */
+    function focusButton(buttons, index) {
+        if (index < 0 || index >= buttons.length) return;
+
+        // Ta bort tabindex från alla knappar
+        buttons.forEach(btn => btn.setAttribute('tabindex', '-1'));
+
+        // Sätt tabindex="0" på den knapp som ska fokuseras
+        buttons[index].setAttribute('tabindex', '0');
+        buttons[index].focus();
     }
 
     /**
