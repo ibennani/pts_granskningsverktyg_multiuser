@@ -160,9 +160,34 @@
             return (typeof pc_data === 'object' && pc_data !== null) ? pc_data.status : (pc_data || 'not_audited');
         });
         
-        if (pc_statuses.some(s => s === 'failed')) return "failed";
-        if (pc_statuses.some(s => s === 'not_audited')) return "partially_audited";
-        return "passed";
+        // Hämta logiken från check_object, default till "AND"
+        const logic = (check_object.logic || 'AND').toUpperCase();
+        
+        if (logic === 'OR') {
+            // OR-logik: Minst ett måste vara "passed" för att kontrollpunkten ska bli "passed"
+            // Kontrollpunkten blir "failed" endast om alla bedömda kriterier är "failed"
+            // Om alla är "not_audited" → "not_audited"
+            // Om några är "not_audited" och inga är "passed" → "partially_audited"
+            
+            const has_passed = pc_statuses.some(s => s === 'passed');
+            const has_failed = pc_statuses.some(s => s === 'failed');
+            const has_not_audited = pc_statuses.some(s => s === 'not_audited');
+            const all_not_audited = pc_statuses.every(s => s === 'not_audited');
+            const all_audited_and_failed = !pc_statuses.some(s => s === 'not_audited') && !has_passed;
+            
+            if (has_passed) return "passed";
+            if (all_not_audited) return "not_audited";
+            if (all_audited_and_failed) return "failed";
+            if (has_not_audited && !has_passed) return "partially_audited";
+            return "failed"; // Fallback
+        } else {
+            // AND-logik (default): Alla måste vara "passed" för att kontrollpunkten ska bli "passed"
+            // Om något är "failed" → "failed"
+            // Om något är "not_audited" och resten "passed" → "partially_audited"
+            if (pc_statuses.some(s => s === 'failed')) return "failed";
+            if (pc_statuses.some(s => s === 'not_audited')) return "partially_audited";
+            return "passed";
+        }
     }
 
     function calculate_requirement_status(requirement_object, requirement_result_object) {
