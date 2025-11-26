@@ -1,45 +1,38 @@
-// js/components/GlobalActionBarComponent.js
-import { SaveAuditButtonComponentFactory } from './SaveAuditButtonComponent.js';
+import { SaveAuditButtonComponent } from './SaveAuditButtonComponent.js';
 
-export const GlobalActionBarComponentFactory = function () {
+export const GlobalActionBarComponent = function () {
   'use-strict';
 
   const CSS_PATH = './css/components/global_action_bar_component.css';
-  let container_ref;
-  let dependencies = {};
+  let root;
+  let deps = {};
 
   let save_audit_button_component_instance = null;
   let save_audit_button_container_element = null;
 
-  async function init(_container, _dependencies) {
-    container_ref = _container;
-    dependencies = _dependencies;
+  async function init({ root: _root, deps: _deps }) {
+    root = _root;
+    deps = _deps;
 
-    if (dependencies.Helpers && dependencies.Helpers.load_css) {
+    if (deps.Helpers && deps.Helpers.load_css) {
       try {
         const link_tag = document.querySelector(`link[href="${CSS_PATH}"]`);
-        if (!link_tag) await dependencies.Helpers.load_css(CSS_PATH);
+        if (!link_tag) await deps.Helpers.load_css(CSS_PATH);
       } catch (error) {
         console.warn('Failed to load CSS for GlobalActionBarComponent:', error);
       }
     }
 
-    save_audit_button_container_element = dependencies.Helpers.create_element(
+    save_audit_button_container_element = deps.Helpers.create_element(
       'div',
       { class_name: 'save-audit-button-container' }
     );
-    save_audit_button_component_instance = SaveAuditButtonComponentFactory();
+    save_audit_button_component_instance = SaveAuditButtonComponent();
 
-    await save_audit_button_component_instance.init(
-      save_audit_button_container_element,
-      dependencies.getState,
-      dependencies.SaveAuditLogic.save_audit_to_json_file,
-      dependencies.Translation.t,
-      dependencies.NotificationComponent.show_global_message,
-      dependencies.Helpers.create_element,
-      dependencies.Helpers.get_icon_svg,
-      dependencies.Helpers.load_css
-    );
+    await save_audit_button_component_instance.init({
+        root: save_audit_button_container_element,
+        deps: deps
+    });
   }
 
   function clone_rulefile_content(ruleFileContent) {
@@ -118,7 +111,7 @@ export const GlobalActionBarComponentFactory = function () {
       NotificationComponent,
       dispatch,
       StoreActionTypes,
-    } = dependencies;
+    } = deps;
     const t = Translation.t;
     const current_state = getState();
 
@@ -203,10 +196,10 @@ export const GlobalActionBarComponentFactory = function () {
   }
 
   function render() {
-    if (!container_ref) return;
-    container_ref.innerHTML = '';
+    if (!root) return;
+    root.innerHTML = '';
 
-    const { getState, Translation, Helpers } = dependencies;
+    const { getState, Translation, Helpers } = deps;
     const t = Translation.t;
     const current_state = getState();
     const audit_status = current_state?.auditStatus;
@@ -219,7 +212,6 @@ export const GlobalActionBarComponentFactory = function () {
       class_name: ['action-bar-group', 'left'],
     });
 
-    // --- FIX: Logic only applies to the left group (save buttons) ---
     if (audit_status !== 'rulefile_editing' && has_rulefile_loaded) {
       save_audit_button_component_instance.render();
       left_group.appendChild(save_audit_button_container_element);
@@ -238,7 +230,6 @@ export const GlobalActionBarComponentFactory = function () {
 
     bar_element.appendChild(left_group);
 
-    // --- FIX: The right group is now ALWAYS rendered ---
     const right_group = Helpers.create_element('div', {
       class_name: ['action-bar-group', 'right'],
     });
@@ -247,14 +238,14 @@ export const GlobalActionBarComponentFactory = function () {
       class_name: 'language-selector-container',
     });
     const language_label = Helpers.create_element('label', {
-      attributes: { for: `language-selector-${container_ref.id}` },
+      attributes: { for: `language-selector-${root.id}` },
       text_content: t('language_switcher_label'),
       class_name: 'visually-hidden',
     });
     language_selector_container.appendChild(language_label);
 
     const language_selector = Helpers.create_element('select', {
-      id: `language-selector-${container_ref.id}`,
+      id: `language-selector-${root.id}`,
       class_name: ['form-control', 'form-control-small'],
     });
     const supported_languages = Translation.get_supported_languages();
@@ -333,15 +324,15 @@ export const GlobalActionBarComponentFactory = function () {
     right_group.appendChild(theme_toggle_button);
 
     bar_element.appendChild(right_group);
-    container_ref.appendChild(bar_element);
+    root.appendChild(bar_element);
   }
 
   function destroy() {
-    if (container_ref) container_ref.innerHTML = '';
+    if (root) root.innerHTML = '';
     if (save_audit_button_component_instance) {
       save_audit_button_component_instance.destroy();
     }
-    dependencies = {};
+    deps = {};
   }
 
   return {

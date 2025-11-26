@@ -43,7 +43,7 @@ import { RulefileMetadataViewComponent } from './components/RulefileMetadataView
 import { EditRulefileMetadataViewComponent } from './components/EditRulefileMetadataViewComponent.js';
 import { ErrorBoundaryComponent } from './components/ErrorBoundaryComponent.js';
 
-import { GlobalActionBarComponentFactory } from './components/GlobalActionBarComponent.js';
+import { GlobalActionBarComponent } from './components/GlobalActionBarComponent.js';
 
 import { getState, dispatch, subscribe, initState, StoreActionTypes, StoreInitialState, loadStateFromLocalStorage, clearAutosavedState, forceSaveStateToLocalStorage } from './state.js';
 window.getState = getState;
@@ -113,8 +113,8 @@ window.dependencyManager = dependencyManager;
     let current_view_params_rendered_json = "{}"; 
     let error_boundary_instance = null;
     
-    const top_action_bar_instance = GlobalActionBarComponentFactory();
-    const bottom_action_bar_instance = GlobalActionBarComponentFactory();
+    const top_action_bar_instance = GlobalActionBarComponent();
+    const bottom_action_bar_instance = GlobalActionBarComponent();
 
     function get_t_fallback() {
         return (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function')
@@ -269,7 +269,7 @@ window.dependencyManager = dependencyManager;
             SaveAuditLogic: window.SaveAuditLogic
         };
         try {
-            await top_action_bar_instance.init(top_action_bar_container, common_deps);
+            await top_action_bar_instance.init({ root: top_action_bar_container, deps: common_deps });
         } catch (error) {
             consoleManager.error("[Main.js] Failed to initialize top action bar:", error);
             if (error_boundary_instance && error_boundary_instance.show_error) {
@@ -282,7 +282,7 @@ window.dependencyManager = dependencyManager;
         }
         
         try {
-            await bottom_action_bar_instance.init(bottom_action_bar_container, common_deps);
+            await bottom_action_bar_instance.init({ root: bottom_action_bar_container, deps: common_deps });
         } catch (error) {
             consoleManager.error("[Main.js] Failed to initialize bottom action bar:", error);
             if (error_boundary_instance && error_boundary_instance.show_error) {
@@ -297,7 +297,7 @@ window.dependencyManager = dependencyManager;
         // Initialize error boundary
         try {
             error_boundary_instance = ErrorBoundaryComponent;
-            await error_boundary_instance.init(app_container);
+            await error_boundary_instance.init({ root: app_container, deps: common_deps });
         } catch (error) {
             consoleManager.error("[Main.js] Failed to initialize error boundary:", error);
         }
@@ -522,16 +522,7 @@ window.dependencyManager = dependencyManager;
                     message: error.message,
                     stack: error.stack,
                     component: view_name_to_render
-                });
-                
-                // Re-initialize error boundary with retry callback
-                if (error_boundary_instance.init) {
-                    try {
-                        await error_boundary_instance.init(app_container, retry_callback);
-                    } catch (retry_error) {
-                        consoleManager.error("[Main.js] Failed to re-initialize error boundary:", retry_error);
-                    }
-                }
+                }, retry_callback);
             } else {
                 // Fallback to simple error display
                 const view_name_escaped_for_error = local_helpers_escape_html(view_name_to_render);
