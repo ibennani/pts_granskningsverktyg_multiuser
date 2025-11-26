@@ -1,95 +1,69 @@
 // js/components/RequirementAuditComponent.js
 
-// Import the new sub-components
 import { ChecklistHandler } from './requirement_audit/ChecklistHandler.js';
 import { RequirementInfoSections } from './requirement_audit/RequirementInfoSections.js';
-import { RequirementAuditNavigationFactory } from './requirement_audit/RequirementAuditNavigation.js'; // Updated import
-import { waitForDependencies } from '../utils/safe_init_helper.js';
+import { RequirementAuditNavigationFactory } from './requirement_audit/RequirementAuditNavigation.js';
+import "../../css/components/requirement_audit_component.css";
 
-export const RequirementAuditComponent = (function () { 
+export const RequirementAuditComponent = {
+    // Dependencies
+    root: null,
+    deps: null,
+    router: null,
+    params: null,
+    getState: null,
+    dispatch: null,
+    StoreActionTypes: null,
+    Translation: null,
+    Helpers: null,
+    NotificationComponent: null,
+    AuditLogic: null,
 
-    const CSS_PATH = './css/components/requirement_audit_component.css';
-    let app_container_ref;
-    let router_ref;
-    let params_ref;
-    
-    // State management dependencies
-    let local_getState;
-    let local_dispatch;
-    let local_StoreActionTypes;
-    
-    // Other dependencies
-    let Translation_t;
-    let Helpers_create_element, Helpers_load_css, Helpers_add_protocol_if_missing, Helpers_get_current_iso_datetime_utc;
-    let NotificationComponent_show_global_message, NotificationComponent_clear_global_message, NotificationComponent_get_global_message_element_reference;
-    let AuditLogic_calculate_check_status, AuditLogic_calculate_requirement_status, AuditLogic_get_ordered_relevant_requirement_keys;
-    
-    // DOM references
-    let plate_element_ref = null;
-    let global_message_element_ref;
-    let comment_to_auditor_input, comment_to_actor_input;
-    let debounceTimerComments; 
-    
     // Sub-component instances
-    let checklist_handler_instance = null;
-    let info_sections_instance = null;
-    let top_navigation_instance = null;
-    let bottom_navigation_instance = null;
+    checklist_handler_instance: null,
+    info_sections_instance: null,
+    top_navigation_instance: null,
+    bottom_navigation_instance: null,
 
-    // Internal state for the view
-    let current_sample = null;
-    let current_requirement = null;
-    let current_result = null;
-    let ordered_requirement_keys = [];
-    
-    async function assign_globals_once() { 
-        if (Translation_t) return;
+    // DOM references
+    plate_element_ref: null,
+    global_message_element_ref: null,
+    comment_to_auditor_input: null,
+    comment_to_actor_input: null,
+    debounceTimerComments: null,
+
+    // Internal state
+    current_sample: null,
+    current_requirement: null,
+    current_result: null,
+    ordered_requirement_keys: [],
+
+    async init({ root, deps }) {
+        this.root = root;
+        this.deps = deps;
+        this.router = deps.router;
+        this.params = deps.params;
+        this.getState = deps.getState;
+        this.dispatch = deps.dispatch;
+        this.StoreActionTypes = deps.StoreActionTypes;
         
-        // Wait for dependencies to be ready
-        await waitForDependencies(['Translation', 'Helpers', 'NotificationComponent', 'AuditLogic']);
+        this.Translation = deps.Translation;
+        this.Helpers = deps.Helpers;
+        this.NotificationComponent = deps.NotificationComponent;
+        this.AuditLogic = deps.AuditLogic;
+
+        // Bind methods
+        this.handle_checklist_status_change = this.handle_checklist_status_change.bind(this);
+        this.handle_autosave = this.handle_autosave.bind(this);
+        this.handle_navigation = this.handle_navigation.bind(this);
+        this.debounced_save_comments = this.debounced_save_comments.bind(this);
+
+        this.global_message_element_ref = this.NotificationComponent.get_global_message_element_reference();
+    },
+
+    load_and_prepare_view_data() {
+        const state = this.getState();
         
-        Translation_t = window.Translation?.t;
-        Helpers_create_element = window.Helpers?.create_element;
-        Helpers_load_css = window.Helpers?.load_css;
-        Helpers_add_protocol_if_missing = window.Helpers?.add_protocol_if_missing;
-        Helpers_get_current_iso_datetime_utc = window.Helpers?.get_current_iso_datetime_utc;
-        NotificationComponent_show_global_message = window.NotificationComponent?.show_global_message;
-        NotificationComponent_clear_global_message = window.NotificationComponent?.clear_global_message;
-        NotificationComponent_get_global_message_element_reference = window.NotificationComponent?.get_global_message_element_reference;
-        AuditLogic_calculate_check_status = window.AuditLogic?.calculate_check_status;
-        AuditLogic_calculate_requirement_status = window.AuditLogic?.calculate_requirement_status;
-        AuditLogic_get_ordered_relevant_requirement_keys = window.AuditLogic?.get_ordered_relevant_requirement_keys;
-        
-        // Verify critical dependencies
-        if (!Translation_t || !Helpers_create_element || !Helpers_load_css) {
-            throw new Error('Required dependencies not available for RequirementAuditComponent');
-        }
-    }
-    
-    async function init(_app_container, _router, _params, _getState, _dispatch, _StoreActionTypes) { 
-        await assign_globals_once();
-        app_container_ref = _app_container;
-        router_ref = _router;
-        params_ref = _params;
-        local_getState = _getState;
-        local_dispatch = _dispatch;
-        local_StoreActionTypes = _StoreActionTypes; 
-        
-        try {
-            await window.Helpers.load_css_safely(CSS_PATH, 'RequirementAuditComponent', { 
-                timeout: 5000, 
-                maxRetries: 2 
-            });
-        } catch (error) {
-            // Fel hanteras redan i load_css_safely med användarvarning
-            console.warn('[RequirementAuditComponent] Continuing without CSS due to loading failure');
-        }
-    }
-    
-    function load_and_prepare_view_data() {
-        const state = local_getState();
-        
-        // Förbättrad data-validering med bättre felmeddelanden
         if (!state || typeof state !== 'object') {
             console.warn('[RequirementAuditComponent] No valid state available for data loading');
             return false;
@@ -100,12 +74,12 @@ export const RequirementAuditComponent = (function () {
             return false;
         }
         
-        if (!params_ref?.sampleId) {
+        if (!this.params?.sampleId) {
             console.warn('[RequirementAuditComponent] No sampleId available for data loading');
             return false;
         }
         
-        if (!params_ref?.requirementId) {
+        if (!this.params?.requirementId) {
             console.warn('[RequirementAuditComponent] No requirementId available for data loading');
             return false;
         }
@@ -115,21 +89,21 @@ export const RequirementAuditComponent = (function () {
             return false;
         }
         
-        current_sample = state.samples.find(s => s && s.id === params_ref.sampleId);
-        if (!current_sample) {
-            console.warn('[RequirementAuditComponent] Sample not found:', params_ref.sampleId);
+        this.current_sample = state.samples.find(s => s && s.id === this.params.sampleId);
+        if (!this.current_sample) {
+            console.warn('[RequirementAuditComponent] Sample not found:', this.params.sampleId);
             return false;
         }
         
-        current_requirement = state.ruleFileContent.requirements?.[params_ref.requirementId];
-        if (!current_requirement) {
-            console.warn('[RequirementAuditComponent] Requirement not found:', params_ref.requirementId);
+        this.current_requirement = state.ruleFileContent.requirements?.[this.params.requirementId];
+        if (!this.current_requirement) {
+            console.warn('[RequirementAuditComponent] Requirement not found:', this.params.requirementId);
             return false;
         }
         
-        const result_from_store = (current_sample.requirementResults || {})[params_ref.requirementId];
+        const result_from_store = (this.current_sample.requirementResults || {})[this.params.requirementId];
         
-        current_result = result_from_store 
+        this.current_result = result_from_store 
             ? (() => {
                 try {
                     return JSON.parse(JSON.stringify(result_from_store));
@@ -140,14 +114,14 @@ export const RequirementAuditComponent = (function () {
             })()
             : { status: 'not_audited', commentToAuditor: '', commentToActor: '', lastStatusUpdate: null, checkResults: {} };
 
-        (current_requirement.checks || []).forEach(check_def => {
-            if (!current_result.checkResults[check_def.id]) {
-                current_result.checkResults[check_def.id] = { status: 'not_audited', overallStatus: 'not_audited', passCriteria: {} };
+        (this.current_requirement.checks || []).forEach(check_def => {
+            if (!this.current_result.checkResults[check_def.id]) {
+                this.current_result.checkResults[check_def.id] = { status: 'not_audited', overallStatus: 'not_audited', passCriteria: {} };
             }
             (check_def.passCriteria || []).forEach(pc_def => {
-                const pc_data = current_result.checkResults[check_def.id].passCriteria[pc_def.id];
+                const pc_data = this.current_result.checkResults[check_def.id].passCriteria[pc_def.id];
                 if (typeof pc_data !== 'object' || pc_data === null) {
-                    current_result.checkResults[check_def.id].passCriteria[pc_def.id] = {
+                    this.current_result.checkResults[check_def.id].passCriteria[pc_def.id] = {
                         status: typeof pc_data === 'string' ? pc_data : 'not_audited',
                         observationDetail: '',
                         timestamp: null
@@ -156,26 +130,26 @@ export const RequirementAuditComponent = (function () {
             });
         });
         
-        ordered_requirement_keys = AuditLogic_get_ordered_relevant_requirement_keys(state.ruleFileContent, current_sample, 'default');
+        this.ordered_requirement_keys = this.AuditLogic.get_ordered_relevant_requirement_keys(state.ruleFileContent, this.current_sample, 'default');
         return true;
-    }
+    },
 
-    function handle_checklist_status_change(change_info) {
+    handle_checklist_status_change(change_info) {
         let modified_result;
         try {
-            modified_result = JSON.parse(JSON.stringify(current_result));
+            modified_result = JSON.parse(JSON.stringify(this.current_result));
         } catch (error) {
             console.warn('[RequirementAuditComponent] Failed to clone current result for status change:', error);
             return;
         }
         const check_result = modified_result.checkResults[change_info.checkId];
-        const check_definition = current_requirement.checks.find(c => c.id === change_info.checkId);
+        const check_definition = this.current_requirement.checks.find(c => c.id === change_info.checkId);
 
         if (change_info.type === 'check_overall_status_change') {
             check_result.overallStatus = check_result.overallStatus === change_info.newStatus ? 'not_audited' : change_info.newStatus;
         } else if (change_info.type === 'pc_status_change') {
             if (check_result.overallStatus !== 'passed') {
-                NotificationComponent_show_global_message(Translation_t('error_set_check_status_first'), 'warning');
+                this.NotificationComponent.show_global_message(this.Translation.t('error_set_check_status_first'), 'warning');
                 return;
             }
             const pc_result = check_result.passCriteria[change_info.pcId];
@@ -189,285 +163,285 @@ export const RequirementAuditComponent = (function () {
             }
         }
         
-        dispatch_result_update(modified_result);
-    }
+        this.dispatch_result_update(modified_result);
+    },
     
-    function debounced_save_comments() {
-        clearTimeout(debounceTimerComments);
-        debounceTimerComments = setTimeout(() => {
+    debounced_save_comments() {
+        clearTimeout(this.debounceTimerComments);
+        this.debounceTimerComments = setTimeout(() => {
             let modified_result;
             try {
-                modified_result = JSON.parse(JSON.stringify(current_result));
+                modified_result = JSON.parse(JSON.stringify(this.current_result));
             } catch (error) {
                 console.warn('[RequirementAuditComponent] Failed to clone current result for comment save:', error);
                 return;
             }
             let changed = false;
-            if (comment_to_auditor_input && modified_result.commentToAuditor !== comment_to_auditor_input.value) {
-                modified_result.commentToAuditor = comment_to_auditor_input.value;
+            if (this.comment_to_auditor_input && modified_result.commentToAuditor !== this.comment_to_auditor_input.value) {
+                modified_result.commentToAuditor = this.comment_to_auditor_input.value;
                 changed = true;
             }
-            if (comment_to_actor_input && modified_result.commentToActor !== comment_to_actor_input.value) {
-                modified_result.commentToActor = comment_to_actor_input.value;
+            if (this.comment_to_actor_input && modified_result.commentToActor !== this.comment_to_actor_input.value) {
+                modified_result.commentToActor = this.comment_to_actor_input.value;
                 changed = true;
             }
             if (changed) {
-                dispatch_result_update(modified_result);
+                this.dispatch_result_update(modified_result);
             }
         }, 3000);
-    }
+    },
 
-    function handle_autosave(change_info) {
+    handle_autosave(change_info) {
         if (change_info.type === 'pc_observation') {
             let modified_result;
             try {
-                modified_result = JSON.parse(JSON.stringify(current_result));
+                modified_result = JSON.parse(JSON.stringify(this.current_result));
             } catch (error) {
                 console.warn('[RequirementAuditComponent] Failed to clone current result for autosave:', error);
                 return;
             }
             modified_result.checkResults[change_info.checkId].passCriteria[change_info.pcId].observationDetail = change_info.value;
-            dispatch_result_update(modified_result);
+            this.dispatch_result_update(modified_result);
         }
-    }
+    },
 
-    function dispatch_result_update(modified_result_object) {
-        (current_requirement.checks || []).forEach(check_def => {
+    dispatch_result_update(modified_result_object) {
+        (this.current_requirement.checks || []).forEach(check_def => {
             const check_res = modified_result_object.checkResults[check_def.id];
-            check_res.status = AuditLogic_calculate_check_status(check_def, check_res.passCriteria, check_res.overallStatus);
+            check_res.status = this.AuditLogic.calculate_check_status(check_def, check_res.passCriteria, check_res.overallStatus);
         });
-        modified_result_object.status = AuditLogic_calculate_requirement_status(current_requirement, modified_result_object);
-        modified_result_object.lastStatusUpdate = Helpers_get_current_iso_datetime_utc();
+        modified_result_object.status = this.AuditLogic.calculate_requirement_status(this.current_requirement, modified_result_object);
+        modified_result_object.lastStatusUpdate = this.Helpers.get_current_iso_datetime_utc();
 
-        local_dispatch({
-            type: local_StoreActionTypes.UPDATE_REQUIREMENT_RESULT,
+        this.dispatch({
+            type: this.StoreActionTypes.UPDATE_REQUIREMENT_RESULT,
             payload: {
-                sampleId: params_ref.sampleId,
-                requirementId: params_ref.requirementId,
+                sampleId: this.params.sampleId,
+                requirementId: this.params.requirementId,
                 newRequirementResult: modified_result_object
             }
         });
-    }
+    },
 
-    function handle_navigation(action) {
-        const current_index = ordered_requirement_keys.indexOf(params_ref.requirementId);
+    handle_navigation(action) {
+        const current_index = this.ordered_requirement_keys.indexOf(this.params.requirementId);
         
         const navigate = (new_index) => {
-            if (new_index >= 0 && new_index < ordered_requirement_keys.length) {
-                router_ref('requirement_audit', { sampleId: params_ref.sampleId, requirementId: ordered_requirement_keys[new_index] });
+            if (new_index >= 0 && new_index < this.ordered_requirement_keys.length) {
+                this.router('requirement_audit', { sampleId: this.params.sampleId, requirementId: this.ordered_requirement_keys[new_index] });
             }
         };
 
         switch (action) {
             case 'back_to_list':
-                router_ref('requirement_list', { sampleId: params_ref.sampleId });
+                this.router('requirement_list', { sampleId: this.params.sampleId });
                 break;
             case 'previous':
                 if (current_index > 0) navigate(current_index - 1);
                 break;
             case 'next':
-                if (current_index < ordered_requirement_keys.length - 1) navigate(current_index + 1);
+                if (current_index < this.ordered_requirement_keys.length - 1) navigate(current_index + 1);
                 break;
             case 'next_unhandled':
-                 const next_key = window.AuditLogic.find_first_incomplete_requirement_key_for_sample(local_getState().ruleFileContent, current_sample, params_ref.requirementId);
+                 const next_key = this.AuditLogic.find_first_incomplete_requirement_key_for_sample(this.getState().ruleFileContent, this.current_sample, this.params.requirementId);
                  if (next_key) {
-                     router_ref('requirement_audit', { sampleId: params_ref.sampleId, requirementId: next_key });
+                     this.router('requirement_audit', { sampleId: this.params.sampleId, requirementId: next_key });
                  } else {
-                     NotificationComponent_show_global_message(Translation_t('all_requirements_handled_for_sample'), 'info');
+                     this.NotificationComponent.show_global_message(this.Translation.t('all_requirements_handled_for_sample'), 'info');
                  }
                 break;
             case 'confirm_reviewed_status':
                 let result;
                 try {
-                    result = JSON.parse(JSON.stringify(current_result));
+                    result = JSON.parse(JSON.stringify(this.current_result));
                 } catch (error) {
                     console.warn('[RequirementAuditComponent] Failed to clone current result for confirm status:', error);
                     return;
                 }
                 delete result.needsReview;
-                dispatch_result_update(result);
-                router_ref('requirement_list', { sampleId: params_ref.sampleId });
+                this.dispatch_result_update(result);
+                this.router('requirement_list', { sampleId: this.params.sampleId });
                 break;
         }
-    }
+    },
     
-    function build_initial_dom() {
-        app_container_ref.innerHTML = '';
-        plate_element_ref = Helpers_create_element('div', { class_name: 'content-plate requirement-audit-plate' });
+    build_initial_dom() {
+        this.root.innerHTML = '';
+        this.plate_element_ref = this.Helpers.create_element('div', { class_name: 'content-plate requirement-audit-plate' });
 
-        if (global_message_element_ref) {
-            plate_element_ref.appendChild(global_message_element_ref);
+        if (this.global_message_element_ref) {
+            this.plate_element_ref.appendChild(this.global_message_element_ref);
         }
         
-        // --- START OF CHANGE: Create separate instances using the factory ---
-        const top_nav_container = Helpers_create_element('div', { class_name: 'audit-navigation-buttons top-nav' });
-        top_navigation_instance = RequirementAuditNavigationFactory();
-        top_navigation_instance.init(top_nav_container, handle_navigation);
+        const top_nav_container = this.Helpers.create_element('div', { class_name: 'audit-navigation-buttons top-nav' });
+        this.top_navigation_instance = RequirementAuditNavigationFactory();
+        this.top_navigation_instance.init(top_nav_container, this.handle_navigation, { deps: this.deps });
         
-        const bottom_nav_container = Helpers_create_element('div', { class_name: 'audit-navigation-buttons bottom-nav' });
-        bottom_navigation_instance = RequirementAuditNavigationFactory();
-        bottom_navigation_instance.init(bottom_nav_container, handle_navigation);
-        // --- END OF CHANGE ---
+        const bottom_nav_container = this.Helpers.create_element('div', { class_name: 'audit-navigation-buttons bottom-nav' });
+        this.bottom_navigation_instance = RequirementAuditNavigationFactory();
+        this.bottom_navigation_instance.init(bottom_nav_container, this.handle_navigation, { deps: this.deps });
 
-        const info_sections_container = Helpers_create_element('div');
-        info_sections_instance = RequirementInfoSections;
-        info_sections_instance.init(info_sections_container);
+        const info_sections_container = this.Helpers.create_element('div');
+        this.info_sections_instance = RequirementInfoSections;
+        this.info_sections_instance.init(info_sections_container, { deps: this.deps });
 
-        const checklist_container = Helpers_create_element('div', { class_name: 'checks-container audit-section' });
-        checklist_handler_instance = ChecklistHandler;
-        checklist_handler_instance.init(checklist_container, { onStatusChange: handle_checklist_status_change, onAutosave: handle_autosave });
+        const checklist_container = this.Helpers.create_element('div', { class_name: 'checks-container audit-section' });
+        this.checklist_handler_instance = ChecklistHandler;
+        this.checklist_handler_instance.init(checklist_container, { onStatusChange: this.handle_checklist_status_change, onAutosave: this.handle_autosave }, { deps: this.deps });
         
-        plate_element_ref.append(
-            Helpers_create_element('div', { class_name: 'requirement-audit-header' }),
+        this.plate_element_ref.append(
+            this.Helpers.create_element('div', { class_name: 'requirement-audit-header' }),
             info_sections_container,
             top_nav_container,
             checklist_container,
-            build_comment_fields(),
+            this.build_comment_fields(),
             bottom_nav_container
         );
         
-        app_container_ref.appendChild(plate_element_ref);
-    }
+        this.root.appendChild(this.plate_element_ref);
+    },
     
-    function build_comment_fields() {
-        const t = Translation_t;
-        const container = Helpers_create_element('div', { class_name: 'input-fields-container audit-section' });
-        container.appendChild(Helpers_create_element('h2', { text_content: t('observations_and_comments_title') }));
+    build_comment_fields() {
+        const t = this.Translation.t;
+        const container = this.Helpers.create_element('div', { class_name: 'input-fields-container audit-section' });
+        container.appendChild(this.Helpers.create_element('h2', { text_content: t('observations_and_comments_title') }));
     
-        const fg1 = Helpers_create_element('div', { class_name: 'form-group' });
-        const label1 = Helpers_create_element('label', { attributes: { for: 'commentToAuditor' }, text_content: t('comment_to_auditor') });
+        const fg1 = this.Helpers.create_element('div', { class_name: 'form-group' });
+        const label1 = this.Helpers.create_element('label', { attributes: { for: 'commentToAuditor' }, text_content: t('comment_to_auditor') });
         fg1.appendChild(label1);
-        comment_to_auditor_input = Helpers_create_element('textarea', { id: 'commentToAuditor', class_name: 'form-control', attributes: { rows: '4' } });
-        comment_to_auditor_input.addEventListener('input', debounced_save_comments);
-        comment_to_auditor_input.addEventListener('blur', debounced_save_comments);
-        fg1.appendChild(comment_to_auditor_input);
+        this.comment_to_auditor_input = this.Helpers.create_element('textarea', { id: 'commentToAuditor', class_name: 'form-control', attributes: { rows: '4' } });
+        this.comment_to_auditor_input.addEventListener('input', this.debounced_save_comments);
+        this.comment_to_auditor_input.addEventListener('blur', this.debounced_save_comments);
+        fg1.appendChild(this.comment_to_auditor_input);
 
-        const fg2 = Helpers_create_element('div', { class_name: 'form-group' });
-        const label2 = Helpers_create_element('label', { attributes: { for: 'commentToActor' }, text_content: t('comment_to_actor') });
+        const fg2 = this.Helpers.create_element('div', { class_name: 'form-group' });
+        const label2 = this.Helpers.create_element('label', { attributes: { for: 'commentToActor' }, text_content: t('comment_to_actor') });
         fg2.appendChild(label2);
-        comment_to_actor_input = Helpers_create_element('textarea', { id: 'commentToActor', class_name: 'form-control', attributes: { rows: '4' } });
-        comment_to_actor_input.addEventListener('input', debounced_save_comments);
-        comment_to_actor_input.addEventListener('blur', debounced_save_comments);
-        fg2.appendChild(comment_to_actor_input);
+        this.comment_to_actor_input = this.Helpers.create_element('textarea', { id: 'commentToActor', class_name: 'form-control', attributes: { rows: '4' } });
+        this.comment_to_actor_input.addEventListener('input', this.debounced_save_comments);
+        this.comment_to_actor_input.addEventListener('blur', this.debounced_save_comments);
+        fg2.appendChild(this.comment_to_actor_input);
         
         container.append(fg1, fg2);
         return container;
-    }
+    },
     
-    function populate_dom_with_data() {
-        const t = Translation_t;
-        const state = local_getState();
+    populate_dom_with_data() {
+        const t = this.Translation.t;
+        const state = this.getState();
         const is_locked = state.auditStatus === 'locked';
 
-        const header = plate_element_ref.querySelector('.requirement-audit-header');
+        const header = this.plate_element_ref.querySelector('.requirement-audit-header');
         header.innerHTML = '';
         header.append(
-            Helpers_create_element('h1', { text_content: current_requirement.title }),
-            create_header_paragraph('standard-reference', t('requirement_standard_reference_label'), current_requirement.standardReference),
-            create_header_paragraph('audited-page-link', t('audited_page_label'), null, true),
-            create_header_paragraph('overall-requirement-status-display', t('overall_requirement_status'))
+            this.Helpers.create_element('h1', { text_content: this.current_requirement.title }),
+            this.create_header_paragraph('standard-reference', t('requirement_standard_reference_label'), this.current_requirement.standardReference),
+            this.create_header_paragraph('audited-page-link', t('audited_page_label'), null, true),
+            this.create_header_paragraph('overall-requirement-status-display', t('overall_requirement_status'))
         );
         
         const nav_options = {
             is_audit_locked: is_locked,
-            is_first_requirement: ordered_requirement_keys.indexOf(params_ref.requirementId) === 0,
-            is_last_requirement: ordered_requirement_keys.indexOf(params_ref.requirementId) === ordered_requirement_keys.length - 1,
-            sample_object: current_sample,
+            is_first_requirement: this.ordered_requirement_keys.indexOf(this.params.requirementId) === 0,
+            is_last_requirement: this.ordered_requirement_keys.indexOf(this.params.requirementId) === this.ordered_requirement_keys.length - 1,
+            sample_object: this.current_sample,
             rule_file_content: state.ruleFileContent,
-            requirement_result: current_result,
-            current_requirement_id: params_ref.requirementId
+            requirement_result: this.current_result,
+            current_requirement_id: this.params.requirementId
         };
-        top_navigation_instance.render(nav_options);
-        bottom_navigation_instance.render(nav_options);
+        this.top_navigation_instance.render(nav_options);
+        this.bottom_navigation_instance.render(nav_options);
 
-        info_sections_instance.render(current_requirement, current_sample, state.ruleFileContent.metadata);
-        checklist_handler_instance.render(current_requirement, current_result, is_locked);
+        this.info_sections_instance.render(this.current_requirement, this.current_sample, state.ruleFileContent.metadata);
+        this.checklist_handler_instance.render(this.current_requirement, this.current_result, is_locked);
         
-        comment_to_auditor_input.value = current_result.commentToAuditor || '';
-        comment_to_actor_input.value = current_result.commentToActor || '';
-        [comment_to_auditor_input, comment_to_actor_input].forEach(input => {
+        this.comment_to_auditor_input.value = this.current_result.commentToAuditor || '';
+        this.comment_to_actor_input.value = this.current_result.commentToActor || '';
+        [this.comment_to_auditor_input, this.comment_to_actor_input].forEach(input => {
             input.readOnly = is_locked;
             input.classList.toggle('readonly-textarea', is_locked);
-            if (window.Helpers?.init_auto_resize_for_textarea) {
-                window.Helpers.init_auto_resize_for_textarea(input);
+            if (this.Helpers?.init_auto_resize_for_textarea) {
+                this.Helpers.init_auto_resize_for_textarea(input);
             }
         });
         
-        if (current_result?.needsReview === true) {
-            NotificationComponent_show_global_message(t('requirement_updated_needs_review'), 'info');
+        if (this.current_result?.needsReview === true) {
+            this.NotificationComponent.show_global_message(t('requirement_updated_needs_review'), 'info');
         } else {
-            NotificationComponent_clear_global_message();
+            this.NotificationComponent.clear_global_message();
         }
-    }
+    },
 
-    function create_header_paragraph(className, label, data, isSampleLink = false) {
-        const p = Helpers_create_element('p', { class_name: className });
-        p.appendChild(Helpers_create_element('strong', { text_content: `${label} ` }));
+    create_header_paragraph(className, label, data, isSampleLink = false) {
+        const p = this.Helpers.create_element('p', { class_name: className });
+        p.appendChild(this.Helpers.create_element('strong', { text_content: `${label} ` }));
         
         if (isSampleLink) {
-            const context_text = `${local_getState().auditMetadata?.actorName || ''}: ${current_sample.description}`;
-            if (current_sample.url) {
-                p.appendChild(Helpers_create_element('a', {
+            const context_text = `${this.getState().auditMetadata?.actorName || ''}: ${this.current_sample.description}`;
+            if (this.current_sample.url) {
+                p.appendChild(this.Helpers.create_element('a', {
                     text_content: context_text,
-                    attributes: { href: Helpers_add_protocol_if_missing(current_sample.url), target: '_blank' }
+                    attributes: { href: this.Helpers.add_protocol_if_missing(this.current_sample.url), target: '_blank' }
                 }));
             } else {
                 p.appendChild(document.createTextNode(context_text));
             }
         } else if (className === 'overall-requirement-status-display') {
-            const status_key = current_result?.status || 'not_audited';
-            const status_text = Translation_t(`audit_status_${status_key}`);
-            const span = Helpers_create_element('span', { class_name: `status-text status-${status_key}`, text_content: status_text });
+            const status_key = this.current_result?.status || 'not_audited';
+            const status_text = this.Translation.t(`audit_status_${status_key}`);
+            const span = this.Helpers.create_element('span', { class_name: `status-text status-${status_key}`, text_content: status_text });
             p.appendChild(span);
         } else if (data?.text) {
             if (data.url) {
-                p.appendChild(Helpers_create_element('a', {
+                p.appendChild(this.Helpers.create_element('a', {
                     text_content: data.text,
-                    attributes: { href: Helpers_add_protocol_if_missing(data.url), target: '_blank' }
+                    attributes: { href: this.Helpers.add_protocol_if_missing(data.url), target: '_blank' }
                 }));
             } else {
                 p.appendChild(document.createTextNode(data.text));
             }
         }
         return p;
-    }
+    },
     
-    function render() {
-        if (!load_and_prepare_view_data()) {
-            NotificationComponent_show_global_message(Translation_t('error_loading_sample_or_requirement_data'), "error");
-            router_ref('audit_overview');
+    render() {
+        if (!this.load_and_prepare_view_data()) {
+            this.NotificationComponent.show_global_message(this.Translation.t('error_loading_sample_or_requirement_data'), "error");
+            this.router('audit_overview');
             return;
         }
 
-        if (!plate_element_ref || !app_container_ref.contains(plate_element_ref)) {
-            build_initial_dom();
+        if (!this.plate_element_ref || !this.root.contains(this.plate_element_ref)) {
+            this.build_initial_dom();
         }
         
-        populate_dom_with_data();
-    }
+        this.populate_dom_with_data();
+    },
     
-    function destroy() { 
-        clearTimeout(debounceTimerComments);
+    destroy() { 
+        clearTimeout(this.debounceTimerComments);
         
-        // Rensa event listeners från input-elementen
-        if (comment_to_auditor_input) {
-            comment_to_auditor_input.removeEventListener('input', debounced_save_comments);
-            comment_to_auditor_input.removeEventListener('blur', debounced_save_comments);
-            comment_to_auditor_input = null;
+        // Remove event listeners
+        if (this.comment_to_auditor_input) {
+            this.comment_to_auditor_input.removeEventListener('input', this.debounced_save_comments);
+            this.comment_to_auditor_input.removeEventListener('blur', this.debounced_save_comments);
+            this.comment_to_auditor_input = null;
         }
-        if (comment_to_actor_input) {
-            comment_to_actor_input.removeEventListener('input', debounced_save_comments);
-            comment_to_actor_input.removeEventListener('blur', debounced_save_comments);
-            comment_to_actor_input = null;
+        if (this.comment_to_actor_input) {
+            this.comment_to_actor_input.removeEventListener('input', this.debounced_save_comments);
+            this.comment_to_actor_input.removeEventListener('blur', this.debounced_save_comments);
+            this.comment_to_actor_input = null;
         }
         
-        checklist_handler_instance?.destroy();
-        info_sections_instance?.destroy();
-        top_navigation_instance?.destroy();
-        bottom_navigation_instance?.destroy();
+        this.checklist_handler_instance?.destroy();
+        this.info_sections_instance?.destroy();
+        this.top_navigation_instance?.destroy();
+        this.bottom_navigation_instance?.destroy();
         
-        if (app_container_ref) app_container_ref.innerHTML = '';
+        if (this.root) this.root.innerHTML = '';
+        this.root = null;
+        this.deps = null;
+        // Clean up refs
+        this.plate_element_ref = null;
     }
-    
-    return { init, render, destroy };
-})();
+};

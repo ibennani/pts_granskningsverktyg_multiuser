@@ -2,54 +2,48 @@
 
 import { marked } from '../../utils/markdown.js';
 
-export const RequirementInfoSections = (function () {
-    'use-strict';
-    
-    let container_ref;
+export const RequirementInfoSections = {
+    container_ref: null,
     
     // Dependencies
-    let Translation_t;
-    let Helpers_create_element;
+    Translation: null,
+    Helpers: null,
     
-    function assign_globals_once() {
-        if (Translation_t && Helpers_create_element) return;
-        Translation_t = window.Translation?.t;
-        Helpers_create_element = window.Helpers?.create_element;
-    }
+    init(_container, options = {}) {
+        this.container_ref = _container;
+        const deps = options.deps || {};
+        this.Translation = deps.Translation || window.Translation;
+        this.Helpers = deps.Helpers || window.Helpers;
+    },
     
-    function init(_container) {
-        assign_globals_once();
-        container_ref = _container;
-    }
-    
-    function render_markdown_section(title_key, content_data) {
-        const t = Translation_t;
+    render_markdown_section(title_key, content_data) {
+        const t = this.Translation.t;
         if (!content_data || (typeof content_data === 'string' && !content_data.trim())) {
             return null; // Return nothing if there's no content
         }
         
-        const section_div = Helpers_create_element('div', { class_name: 'audit-section' });
-        section_div.appendChild(Helpers_create_element('h2', { text_content: t(title_key) }));
+        const section_div = this.Helpers.create_element('div', { class_name: 'audit-section' });
+        section_div.appendChild(this.Helpers.create_element('h2', { text_content: t(title_key) }));
         
-        const content_element = Helpers_create_element('div', { class_name: ['audit-section-content', 'markdown-content'] });
+        const content_element = this.Helpers.create_element('div', { class_name: ['audit-section-content', 'markdown-content'] });
         
-        if (typeof marked !== 'undefined' && typeof window.Helpers.escape_html === 'function') {
+        if (typeof marked !== 'undefined' && typeof this.Helpers.escape_html === 'function') {
             const renderer = new marked.Renderer();
             renderer.link = (href, title, text) => {
-                const safe_href = window.Helpers.escape_html(href);
-                const safe_text = window.Helpers.escape_html(text);
+                const safe_href = this.Helpers.escape_html(href);
+                const safe_text = this.Helpers.escape_html(text);
                 return `<a href="${safe_href}" target="_blank" rel="noopener noreferrer">${safe_text}</a>`;
             };
             renderer.html = (html_token) => {
                 const text_to_escape = (typeof html_token === 'object' && html_token !== null && typeof html_token.text === 'string')
                     ? html_token.text
                     : String(html_token || '');
-                return window.Helpers.escape_html(text_to_escape);
+                return this.Helpers.escape_html(text_to_escape);
             };
             // Use safe HTML sanitization for markdown content
             const parsed_markdown = marked.parse(String(content_data), { renderer: renderer, breaks: true, gfm: true });
-            if (window.Helpers.sanitize_html) {
-                content_element.innerHTML = window.Helpers.sanitize_html(parsed_markdown);
+            if (this.Helpers.sanitize_html) {
+                content_element.innerHTML = this.Helpers.sanitize_html(parsed_markdown);
             } else {
                 content_element.textContent = String(content_data);
             }
@@ -59,34 +53,27 @@ export const RequirementInfoSections = (function () {
         
         section_div.appendChild(content_element);
         return section_div;
-    }
+    },
     
-    function render(requirement_definition, sample, rule_file_metadata) {
-        container_ref.innerHTML = '';
-        const t = Translation_t;
-
+    render(requirement_definition, sample, rule_file_metadata) {
+        this.container_ref.innerHTML = '';
+        
         const sections_to_render = [
-            render_markdown_section('requirement_expected_observation', requirement_definition.expectedObservation),
-            render_markdown_section('requirement_instructions', requirement_definition.instructions),
-            render_markdown_section('requirement_exceptions', requirement_definition.exceptions),
-            render_markdown_section('requirement_common_errors', requirement_definition.commonErrors),
-            render_markdown_section('requirement_examples', requirement_definition.examples),
-            render_markdown_section('requirement_tips', requirement_definition.tips)
+            this.render_markdown_section('requirement_expected_observation', requirement_definition.expectedObservation),
+            this.render_markdown_section('requirement_instructions', requirement_definition.instructions),
+            this.render_markdown_section('requirement_exceptions', requirement_definition.exceptions),
+            this.render_markdown_section('requirement_common_errors', requirement_definition.commonErrors),
+            this.render_markdown_section('requirement_examples', requirement_definition.examples),
+            this.render_markdown_section('requirement_tips', requirement_definition.tips)
         ];
 
         // Intentionally do not render content types section on requirement audit view
         
-        sections_to_render.filter(Boolean).forEach(section => container_ref.appendChild(section));
-    }
+        sections_to_render.filter(Boolean).forEach(section => this.container_ref.appendChild(section));
+    },
     
-    function destroy() {
-        if (container_ref) container_ref.innerHTML = '';
+    destroy() {
+        if (this.container_ref) this.container_ref.innerHTML = '';
+        this.container_ref = null;
     }
-
-    return {
-        init,
-        render,
-        destroy
-    };
-    
-})();
+};
