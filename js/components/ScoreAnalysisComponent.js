@@ -1,39 +1,29 @@
-// js/components/ScoreAnalysisComponent.js
+import "../../css/components/score_analysis_component.css";
 
-export const ScoreAnalysisComponent = (function () {
-    'use-strict';
-
-    const CSS_PATH = 'css/components/score_analysis_component.css';
-    let container_ref;
+export const ScoreAnalysisComponent = {
+    init({ root, deps }) {
+        this.root = root;
+        this.deps = deps;
+        this.Helpers = deps.Helpers;
+        this.Translation = deps.Translation;
+        this.getState = deps.getState;
+        this.ScoreCalculator = deps.ScoreCalculator;
+    },
     
-    // Dependencies injected via init
-    let Helpers, Translation, getState, ScoreCalculator;
-
-    async function init(_container, _dependencies) {
-        container_ref = _container;
-        
-        Helpers = _dependencies.Helpers;
-        Translation = _dependencies.Translation;
-        getState = _dependencies.getState;
-        ScoreCalculator = _dependencies.ScoreCalculator;
-
-        await Helpers.load_css(CSS_PATH);
-    }
-    
-    function _performAnalysis() {
+    _performAnalysis() {
         // Function name is kept for compatibility, but it now returns a deficiency index
-        return ScoreCalculator.calculateQualityScore(getState());
-    }
+        return this.ScoreCalculator.calculateQualityScore(this.getState());
+    },
 
-    function _createGaugeSVG(value, lang_code) {
+    _createGaugeSVG(value, lang_code) {
         const minAngle = -135;
         const maxAngle = 135;
         // Invert the angle calculation for deficiency index
         const angle = minAngle + (value / 100) * (maxAngle - minAngle);
 
-        const formattedValue = Helpers.format_number_locally(value, lang_code);
+        const formattedValue = this.Helpers.format_number_locally(value, lang_code);
 
-        const gradientId = `gaugeGradient-${Helpers.generate_uuid_v4()}`;
+        // const gradientId = `gaugeGradient-${this.Helpers.generate_uuid_v4()}`; // Unused var
 
         const describeArc = (x, y, radius, startAngle, endAngle) => {
             const start = polarToCartesian(x, y, radius, endAngle);
@@ -83,62 +73,62 @@ export const ScoreAnalysisComponent = (function () {
         `;
 
         return svgContent;
-    }
+    },
 
-    function render() {
-        if (!container_ref) return;
-        container_ref.innerHTML = '';
+    render() {
+        if (!this.root) return;
+        this.root.innerHTML = '';
         
-        const t = Translation.t;
-        const lang_code = Translation.get_current_language_code();
-        const analysis = _performAnalysis();
+        const t = this.Translation.t;
+        const lang_code = this.Translation.get_current_language_code();
+        const analysis = this._performAnalysis();
         
         if (!analysis) {
             return;
         }
 
-        const main_container = Helpers.create_element('div', { class_name: 'score-analysis-content' });
+        const main_container = this.Helpers.create_element('div', { class_name: 'score-analysis-content' });
 
-        const totalScoreContainer = Helpers.create_element('div', { class_name: 'score-analysis-total' });
+        const totalScoreContainer = this.Helpers.create_element('div', { class_name: 'score-analysis-total' });
         
-        totalScoreContainer.appendChild(Helpers.create_element('h3', { 
+        totalScoreContainer.appendChild(this.Helpers.create_element('h3', { 
             class_name: 'score-analysis-total__title',
             text_content: t('deficiency_index_title', {defaultValue: "Deficiency Index"})
         }));
 
-        const scoreVisualization = Helpers.create_element('div', { class_name: 'score-analysis-total__visualization' });
+        const scoreVisualization = this.Helpers.create_element('div', { class_name: 'score-analysis-total__visualization' });
         
-        const gaugeWrapper = Helpers.create_element('div', { class_name: 'score-gauge-wrapper' });
-        gaugeWrapper.innerHTML = _createGaugeSVG(analysis.totalScore, lang_code);
+        const gaugeWrapper = this.Helpers.create_element('div', { class_name: 'score-gauge-wrapper' });
+        gaugeWrapper.innerHTML = this._createGaugeSVG(analysis.totalScore, lang_code);
         
-        const scoreContext = Helpers.create_element('div', { class_name: 'score-analysis-total__context' });
-        scoreContext.appendChild(Helpers.create_element('p', { class_name: 'score-analysis-total__subtext', text_content: `(${t('lower_is_better', {defaultValue: "Lower is better"})})` }));
-        scoreContext.appendChild(Helpers.create_element('p', { class_name: 'score-analysis-total__info', text_content: t('based_on_samples', { count: analysis.sampleCount, defaultValue: `Based on ${analysis.sampleCount} audited samples.`}) }));
+        const scoreContext = this.Helpers.create_element('div', { class_name: 'score-analysis-total__context' });
+        scoreContext.appendChild(this.Helpers.create_element('p', { class_name: 'score-analysis-total__subtext', text_content: `(${t('lower_is_better', {defaultValue: "Lower is better"})})` }));
+        scoreContext.appendChild(this.Helpers.create_element('p', { class_name: 'score-analysis-total__info', text_content: t('based_on_samples', { count: analysis.sampleCount, defaultValue: `Based on ${analysis.sampleCount} audited samples.`}) }));
         
         scoreVisualization.appendChild(gaugeWrapper);
         scoreVisualization.appendChild(scoreContext);
         totalScoreContainer.appendChild(scoreVisualization);
         main_container.appendChild(totalScoreContainer);
 
-        const principlesContainer = Helpers.create_element('div', { class_name: 'score-analysis-principles' });
-        principlesContainer.appendChild(Helpers.create_element('h3', { 
+        const principlesContainer = this.Helpers.create_element('div', { class_name: 'score-analysis-principles' });
+        principlesContainer.appendChild(this.Helpers.create_element('h3', { 
             class_name: 'score-analysis-principles__title',
             text_content: t('score_by_principle_deficiency', {defaultValue: "Breakdown by Principle"})
         }));
 
-        const dl = Helpers.create_element('dl', { class_name: 'score-analysis-principles__list' });
+        const dl = this.Helpers.create_element('dl', { class_name: 'score-analysis-principles__list' });
 
         for (const principleId in analysis.principles) {
             const data = analysis.principles[principleId];
             
-            const row = Helpers.create_element('div', { class_name: 'principle-row' });
-            const dt = Helpers.create_element('dt', { class_name: 'principle-row__name', text_content: data.label });
+            const row = this.Helpers.create_element('div', { class_name: 'principle-row' });
+            const dt = this.Helpers.create_element('dt', { class_name: 'principle-row__name', text_content: data.label });
             
-            const dd = Helpers.create_element('dd', { class_name: 'principle-row__bar-container' });
+            const dd = this.Helpers.create_element('dd', { class_name: 'principle-row__bar-container' });
             
-            const formattedScoreForAria = Helpers.format_number_locally(data.score, lang_code);
+            const formattedScoreForAria = this.Helpers.format_number_locally(data.score, lang_code);
             
-            const bar = Helpers.create_element('div', {
+            const bar = this.Helpers.create_element('div', {
                 class_name: 'principle-row__bar',
                 attributes: {
                     style: `width: ${Math.min(data.score, 100)}%;`,
@@ -151,7 +141,7 @@ export const ScoreAnalysisComponent = (function () {
             });
             bar.style.setProperty('--score-percent', data.score);
 
-            const valueSpan = Helpers.create_element('span', { class_name: 'principle-row__value', text_content: Helpers.format_number_locally(data.score, lang_code) });
+            const valueSpan = this.Helpers.create_element('span', { class_name: 'principle-row__value', text_content: this.Helpers.format_number_locally(data.score, lang_code) });
             
             dd.appendChild(bar);
             dd.appendChild(valueSpan);
@@ -162,25 +152,24 @@ export const ScoreAnalysisComponent = (function () {
         
         principlesContainer.appendChild(dl);
         main_container.appendChild(principlesContainer);
-        container_ref.appendChild(main_container);
-    }
+        this.root.appendChild(main_container);
+    },
 
-    function destroy() {
-        if (container_ref) {
+    destroy() {
+        if (this.root) {
             // Clear all child elements to prevent memory leaks
-            while (container_ref.firstChild) {
-                container_ref.removeChild(container_ref.firstChild);
+            while (this.root.firstChild) {
+                this.root.removeChild(this.root.firstChild);
             }
-            container_ref.innerHTML = '';
+            this.root.innerHTML = '';
         }
         
         // Nullify all references to help with garbage collection
-        container_ref = null;
-        Helpers = null;
-        Translation = null;
-        getState = null;
-        ScoreCalculator = null;
+        this.root = null;
+        this.deps = null;
+        this.Helpers = null;
+        this.Translation = null;
+        this.getState = null;
+        this.ScoreCalculator = null;
     }
-
-    return { init, render, destroy };
-})();
+};

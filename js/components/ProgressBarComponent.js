@@ -1,30 +1,28 @@
-// js/components/ProgressBarComponent.js
-(function () { // IIFE start
-    'use-strict';
+import "../../css/components/progress_bar_component.css";
 
-    const CSS_PATH = 'css/components/progress_bar_component.css';
-    let css_loaded = false;
-    let created_instances = new Set(); // Track created instances for cleanup
+export const ProgressBarComponent = {
+    created_instances: new Set(),
+    css_loaded: false,
 
-    async function load_styles_if_needed() {
-        if (!css_loaded && typeof window.Helpers !== 'undefined' && typeof window.Helpers.load_css === 'function') {
-            if (!document.querySelector(`link[href="${CSS_PATH}"]`)) {
+    async load_styles_if_needed() {
+        if (!this.css_loaded && typeof window.Helpers !== 'undefined' && typeof window.Helpers.load_css === 'function') {
+            if (!document.querySelector(`link[href$="progress_bar_component.css"]`)) {
                 try {
-                    await window.Helpers.load_css(CSS_PATH);
-                    css_loaded = true;
+                    await window.Helpers.load_css('css/components/progress_bar_component.css');
+                    this.css_loaded = true;
                 } catch (error) {
                     console.warn("Failed to load CSS for ProgressBarComponent:", error);
                 }
             } else {
-                css_loaded = true; // Already in DOM
+                this.css_loaded = true; // Already in DOM
             }
-        } else if (!css_loaded) { // Fallback if Helpers.load_css is not available but css_loaded is false
-            console.warn("ProgressBarComponent: Helpers.load_css not available or CSS already loaded state unknown.");
+        } else if (!this.css_loaded) { 
+            // Fallback or ignore
         }
-    }
+    },
 
-    function create(current_value, max_value, options = {}) {
-        load_styles_if_needed(); // Fire and forget CSS loading
+    create(current_value, max_value, options = {}) {
+        this.load_styles_if_needed();
 
         if (typeof window.Helpers === 'undefined' || typeof window.Helpers.create_element !== 'function') {
             console.error("ProgressBarComponent: Helpers.create_element not available!");
@@ -44,9 +42,10 @@
         const progress_wrapper = create_element('div', { class_name: 'progress-bar-wrapper' });
         
         // Add cleanup method to the wrapper element
+        const self = this;
         progress_wrapper._cleanup = function() {
             // Remove from tracking set
-            created_instances.delete(progress_wrapper);
+            self.created_instances.delete(progress_wrapper);
             // Clear any child elements
             while (progress_wrapper.firstChild) {
                 progress_wrapper.removeChild(progress_wrapper.firstChild);
@@ -61,11 +60,9 @@
         if (options.id) {
             progress_element_attributes.id = options.id;
         }
-        // Set aria-valuemin, aria-valuemax, aria-valuenow for better accessibility with the native progress element
         progress_element_attributes['aria-valuemin'] = "0";
         progress_element_attributes['aria-valuemax'] = String(max_value);
         progress_element_attributes['aria-valuenow'] = String(current_value);
-
 
         const progress_element = create_element('progress', {
             class_name: 'progress-bar-element',
@@ -93,36 +90,21 @@
         }
 
         // Track this instance for cleanup
-        created_instances.add(progress_wrapper);
+        this.created_instances.add(progress_wrapper);
 
         return progress_wrapper;
-    }
+    },
     
-    function cleanup_all_instances() {
-        // Clean up all tracked instances
-        for (const instance of created_instances) {
+    cleanup_all_instances() {
+        for (const instance of this.created_instances) {
             if (instance._cleanup) {
                 instance._cleanup();
             }
         }
-        created_instances.clear();
+        this.created_instances.clear();
+    },
+
+    reset_css_state() {
+        this.css_loaded = false;
     }
-
-    function reset_css_state() {
-        css_loaded = false;
-    }
-
-    const public_api = {
-        create,
-        cleanup_all_instances,
-        reset_css_state
-    };
-
-    // Expose the component to the global scope
-    if (typeof window.ProgressBarComponent === 'undefined') {
-        window.ProgressBarComponent = public_api;
-    } else { // If re-running script for some reason, ensure it's updated.
-        window.ProgressBarComponent = public_api;
-    }
-
-})(); // IIFE end
+};

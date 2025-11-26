@@ -1,26 +1,29 @@
-// js/components/SampleListComponent.js
+import "../../css/components/sample_list_component.css";
+import { ProgressBarComponent } from './ProgressBarComponent.js';
 
-export const SampleListComponent = (function () {
-    'use-strict';
+export const SampleListComponent = {
+    init({ root, deps }) {
+        this.root = root;
+        this.deps = deps;
+        this.on_edit_callback = deps.on_edit || null;
+        this.on_delete_callback = deps.on_delete || null;
+        this.router = deps.router;
+        this.getState = deps.getState;
+        this.Translation = deps.Translation;
+        this.Helpers = deps.Helpers;
+        this.AuditLogic = deps.AuditLogic;
+        
+        this.ul_element_for_delegation = null;
+        this.handle_list_click = this.handle_list_click.bind(this);
+    },
 
-    const CSS_PATH = 'css/components/sample_list_component.css';
-    let list_container_ref;
-    let on_edit_callback; 
-    let on_delete_callback;
-    let router_ref_from_parent;
+    get_t_internally() {
+        return this.Translation?.t || ((key) => `**${key}**`);
+    },
 
-    let local_getState;
-    let Translation_t;
-    
-    let ul_element_for_delegation = null; 
-
-    function get_t_internally() {
-        return Translation_t || ((key) => `**${key}**`);
-    }
-
-    function handle_list_click(event) {
+    handle_list_click(event) {
         const target = event.target;
-        const current_global_state = local_getState ? local_getState() : null; 
+        const current_global_state = this.getState ? this.getState() : null; 
         if (!current_global_state) return;
 
         const action_button = target.closest('button[data-action]');
@@ -34,68 +37,53 @@ export const SampleListComponent = (function () {
         const sample = current_global_state.samples.find(s => s.id === sample_id);
         if (!sample) return;
         
-        const local_Helpers = window.Helpers;
-        const local_AuditLogic = window.AuditLogic;
-
         switch (action) {
             case 'edit-sample':
-                if (typeof on_edit_callback === 'function') on_edit_callback(sample_id);
+                if (typeof this.on_edit_callback === 'function') this.on_edit_callback(sample_id);
                 break;
             case 'delete-sample':
-                if (typeof on_delete_callback === 'function') on_delete_callback(sample_id);
+                if (typeof this.on_delete_callback === 'function') this.on_delete_callback(sample_id);
                 break;
             case 'view-requirements':
-                if (router_ref_from_parent) router_ref_from_parent('requirement_list', { sampleId: sample_id });
+                if (this.router) this.router('requirement_list', { sampleId: sample_id });
                 break;
             case 'visit-url':
-                if (sample.url && local_Helpers?.add_protocol_if_missing) window.open(local_Helpers.add_protocol_if_missing(sample.url), '_blank', 'noopener,noreferrer');
+                if (sample.url && this.Helpers?.add_protocol_if_missing) window.open(this.Helpers.add_protocol_if_missing(sample.url), '_blank', 'noopener,noreferrer');
                 break;
             case 'review-sample':
-                if (router_ref_from_parent && current_global_state.ruleFileContent && local_AuditLogic?.find_first_incomplete_requirement_key_for_sample) {
-                    const first_incomplete_req_key = local_AuditLogic.find_first_incomplete_requirement_key_for_sample(current_global_state.ruleFileContent, sample);
+                if (this.router && current_global_state.ruleFileContent && this.AuditLogic?.find_first_incomplete_requirement_key_for_sample) {
+                    const first_incomplete_req_key = this.AuditLogic.find_first_incomplete_requirement_key_for_sample(current_global_state.ruleFileContent, sample);
                     if (first_incomplete_req_key) {
-                        router_ref_from_parent('requirement_audit', { sampleId: sample.id, requirementId: first_incomplete_req_key });
+                        this.router('requirement_audit', { sampleId: sample.id, requirementId: first_incomplete_req_key });
                     } else { 
-                        router_ref_from_parent('requirement_list', { sampleId: sample.id });
+                        this.router('requirement_list', { sampleId: sample.id });
                     }
                 }
                 break;
         }
-    }
+    },
 
-    async function init(_list_container, _callbacks, _router_cb, _getState) {
-        list_container_ref = _list_container;
-        on_edit_callback = _callbacks?.on_edit || null;
-        on_delete_callback = _callbacks?.on_delete || null;
-        router_ref_from_parent = _router_cb;
-        local_getState = _getState;
+    render() {
+        if (!this.root) return;
+
+        const t = this.get_t_internally();
+        const state = this.getState(); 
+
+        const { create_element, get_icon_svg, escape_html, add_protocol_if_missing } = this.Helpers;
+        const { get_relevant_requirements_for_sample, find_first_incomplete_requirement_key_for_sample, calculate_requirement_status } = this.AuditLogic;
         
-        Translation_t = window.Translation?.t;
-
-        if (window.Helpers?.load_css) {
-            await window.Helpers.load_css(CSS_PATH).catch(e => console.warn(e));
-        }
-    }
-
-    function render() {
-        const t = get_t_internally();
-        const state = local_getState(); 
-
-        const { create_element, get_icon_svg, escape_html, add_protocol_if_missing } = window.Helpers;
-        const { get_relevant_requirements_for_sample, find_first_incomplete_requirement_key_for_sample, calculate_requirement_status } = window.AuditLogic;
-        
-        list_container_ref.innerHTML = '';
+        this.root.innerHTML = '';
 
         if (!state?.samples || state.samples.length === 0) {
-            list_container_ref.appendChild(create_element('p', { class_name: 'no-samples-message', text_content: t('no_samples_added') }));
+            this.root.appendChild(create_element('p', { class_name: 'no-samples-message', text_content: t('no_samples_added') }));
             return;
         }
 
-        if (!ul_element_for_delegation) {
-            ul_element_for_delegation = create_element('ul', { class_name: 'sample-list item-list' });
-            ul_element_for_delegation.addEventListener('click', handle_list_click);
+        if (!this.ul_element_for_delegation) {
+            this.ul_element_for_delegation = create_element('ul', { class_name: 'sample-list item-list' });
+            this.ul_element_for_delegation.addEventListener('click', this.handle_list_click);
         } else {
-            ul_element_for_delegation.innerHTML = '';
+            this.ul_element_for_delegation.innerHTML = '';
         }
         
         // --- FIX: Create lookup maps for new hierarchical data ---
@@ -164,8 +152,8 @@ export const SampleListComponent = (function () {
                 html_content: `<strong>${t('requirements_audited_for_sample')}:</strong> ${audited_reqs_count} / ${total_relevant_reqs}` 
             }));
             
-            if (window.ProgressBarComponent) {
-                info_div.appendChild(window.ProgressBarComponent.create(audited_reqs_count, total_relevant_reqs, {}));
+            if (ProgressBarComponent) {
+                info_div.appendChild(ProgressBarComponent.create(audited_reqs_count, total_relevant_reqs, {}));
             }
             
             if (sample.selectedContentTypes?.length > 0) {
@@ -185,14 +173,14 @@ export const SampleListComponent = (function () {
             const delete_actions_div = create_element('div', { class_name: 'sample-actions-delete' });
             
             if (can_edit_or_delete) {
-                 if (on_edit_callback) {
+                 if (this.on_edit_callback) {
                     main_actions_div.appendChild(create_element('button', {
                         class_name: ['button', 'button-secondary', 'button-small'],
                         attributes: { 'data-action': 'edit-sample', 'aria-label': `${t('edit_sample')}: ${sample.description}` },
                         html_content: `<span>${t('edit_sample')}</span>` + (get_icon_svg ? get_icon_svg('edit', ['currentColor'], 16) : '')
                     }));
                  }
-                 if (on_delete_callback && state.samples.length > 1) {
+                 if (this.on_delete_callback && state.samples.length > 1) {
                     delete_actions_div.appendChild(create_element('button', {
                         class_name: ['button', 'button-danger', 'button-small'],
                         attributes: { 'data-action': 'delete-sample', 'aria-label': `${t('delete_sample')}: ${sample.description}` },
@@ -224,17 +212,27 @@ export const SampleListComponent = (function () {
             if (delete_actions_div.hasChildNodes()) actions_wrapper_div.appendChild(delete_actions_div);
             if (actions_wrapper_div.hasChildNodes()) li.appendChild(actions_wrapper_div);
 
-            ul_element_for_delegation.appendChild(li);
+            this.ul_element_for_delegation.appendChild(li);
         });
-        list_container_ref.appendChild(ul_element_for_delegation);
-    }
+        this.root.appendChild(this.ul_element_for_delegation);
+    },
 
-    function destroy() {
-        if (ul_element_for_delegation) {
-            ul_element_for_delegation.removeEventListener('click', handle_list_click);
-            ul_element_for_delegation = null;
+    destroy() {
+        if (this.ul_element_for_delegation) {
+            this.ul_element_for_delegation.removeEventListener('click', this.handle_list_click);
+            this.ul_element_for_delegation = null;
         }
+        if (this.root) {
+            this.root.innerHTML = '';
+            this.root = null;
+        }
+        this.deps = null;
+        this.on_edit_callback = null;
+        this.on_delete_callback = null;
+        this.router = null;
+        this.getState = null;
+        this.Translation = null;
+        this.Helpers = null;
+        this.AuditLogic = null;
     }
-
-    return { init, render, destroy };
-})();
+};

@@ -1,46 +1,27 @@
-// js/components/ConfirmUpdatesViewComponent.js
+import "../../css/components/confirm_updates_view_component.css";
 
-export const ConfirmUpdatesViewComponent = (function () {
-    'use-strict';
+export const ConfirmUpdatesViewComponent = {
+    init({ root, deps }) {
+        this.root = root;
+        this.deps = deps;
+        this.router = deps.router;
+        this.getState = deps.getState;
+        this.dispatch = deps.dispatch;
+        this.StoreActionTypes = deps.StoreActionTypes;
+        this.Translation = deps.Translation;
+        this.Helpers = deps.Helpers;
+        this.NotificationComponent = deps.NotificationComponent;
+        
+        this.plate_element_ref = null;
+        this.list_container_for_delegation = null;
+        this.h1_ref = null;
+        
+        // Bind event handlers
+        this.handle_list_item_click = this.handle_list_item_click.bind(this);
+        this.handle_list_item_keydown = this.handle_list_item_keydown.bind(this);
+    },
 
-    const CSS_PATH = 'css/components/confirm_updates_view_component.css';
-    let app_container_ref;
-    let router_ref;
-    
-    let local_getState;
-    let local_dispatch;
-    let local_StoreActionTypes;
-
-    let Translation_t;
-    let Helpers_create_element, Helpers_get_icon_svg, Helpers_escape_html, Helpers_load_css;
-    let NotificationComponent_get_global_message_element_reference;
-
-    let plate_element_ref;
-    let list_container_for_delegation;
-    let h1_ref;
-
-    function assign_globals_once() {
-        if (Translation_t) return;
-        Translation_t = window.Translation?.t;
-        Helpers_create_element = window.Helpers?.create_element;
-        Helpers_get_icon_svg = window.Helpers?.get_icon_svg;
-        Helpers_escape_html = window.Helpers?.escape_html;
-        Helpers_load_css = window.Helpers?.load_css;
-        NotificationComponent_get_global_message_element_reference = window.NotificationComponent?.get_global_message_element_reference;
-    }
-    
-    async function init(_app_container, _router_cb, _params, _getState, _dispatch, _StoreActionTypes) {
-        assign_globals_once();
-        app_container_ref = _app_container;
-        router_ref = _router_cb;
-        local_getState = _getState;
-        local_dispatch = _dispatch;
-        local_StoreActionTypes = _StoreActionTypes;
-
-        await Helpers_load_css(CSS_PATH);
-    }
-
-    function handle_list_item_click(event) {
+    handle_list_item_click(event) {
         const button = event.target.closest('button[data-action="confirm-single"]');
         if (!button) return;
 
@@ -64,27 +45,27 @@ export const ConfirmUpdatesViewComponent = (function () {
         }
         
         const { sampleId, requirementId } = button.dataset;
-        local_dispatch({
-            type: local_StoreActionTypes.CONFIRM_SINGLE_REVIEWED_REQUIREMENT,
+        this.dispatch({
+            type: this.StoreActionTypes.CONFIRM_SINGLE_REVIEWED_REQUIREMENT,
             payload: { sampleId, requirementId }
         });
         
         setTimeout(() => {
             if (target_selector_for_button) {
-                const target_button = plate_element_ref.querySelector(target_selector_for_button);
+                const target_button = this.plate_element_ref.querySelector(target_selector_for_button);
                 if (target_button && target_button.previousElementSibling?.tagName === 'A') {
                     target_button.previousElementSibling.focus();
-                } else if (h1_ref) {
-                    h1_ref.focus();
+                } else if (this.h1_ref) {
+                    this.h1_ref.focus();
                 }
-            } else if (h1_ref) {
-                h1_ref.focus();
+            } else if (this.h1_ref) {
+                this.h1_ref.focus();
             }
         }, 0);
         // --- END OF NEW, ROBUST FOCUS LOGIC ---
-    }
+    },
 
-    function handle_list_item_keydown(event) {
+    handle_list_item_keydown(event) {
         // Handle keyboard navigation for accessibility
         if (event.key === 'Enter' || event.key === ' ') {
             const button = event.target.closest('button[data-action="confirm-single"]');
@@ -92,12 +73,12 @@ export const ConfirmUpdatesViewComponent = (function () {
             
             event.preventDefault();
             // Trigger the same action as click
-            handle_list_item_click(event);
+            this.handle_list_item_click(event);
         }
-    }
+    },
 
-    function get_updated_reqs_data() {
-        const state = local_getState();
+    get_updated_reqs_data() {
+        const state = this.getState();
         const updated_reqs_by_sample = {};
         let total_count = 0;
 
@@ -126,93 +107,92 @@ export const ConfirmUpdatesViewComponent = (function () {
         });
 
         return { updated_reqs_by_sample, total_count };
-    }
+    },
 
-    function render_action_buttons(position) {
-        const t = Translation_t;
-        const actions_div = Helpers_create_element('div', { class_name: 'form-actions', style: { marginTop: '1.5rem', justifyContent: 'space-between' } });
+    render_action_buttons(position) {
+        const t = this.Translation.t;
+        const actions_div = this.Helpers.create_element('div', { class_name: 'form-actions', style: { marginTop: '1.5rem', justifyContent: 'space-between' } });
         
-        const confirm_all_btn = Helpers_create_element('button', {
+        const confirm_all_btn = this.Helpers.create_element('button', {
             id: `${position}-confirm-all-btn`,
             class_name: ['button', 'button-success'],
             text_content: t('confirm_all_assessments_button')
         });
-        confirm_all_btn.addEventListener('click', () => router_ref('final_confirm_updates'));
+        confirm_all_btn.addEventListener('click', () => this.router('final_confirm_updates'));
 
-        const return_btn = Helpers_create_element('button', {
+        const return_btn = this.Helpers.create_element('button', {
             class_name: ['button', 'button-default'],
             text_content: t('return_to_audit_overview')
         });
-        return_btn.addEventListener('click', () => router_ref('audit_overview'));
+        return_btn.addEventListener('click', () => this.router('audit_overview'));
 
         actions_div.append(confirm_all_btn, return_btn);
         return actions_div;
-    }
+    },
 
-    function render() {
-        assign_globals_once();
-        const t = Translation_t;
-        app_container_ref.innerHTML = '';
-        plate_element_ref = Helpers_create_element('div', { class_name: 'content-plate' });
-        app_container_ref.appendChild(plate_element_ref);
+    render() {
+        if (!this.root) return;
+        const t = this.Translation.t;
+        this.root.innerHTML = '';
+        this.plate_element_ref = this.Helpers.create_element('div', { class_name: 'content-plate' });
+        this.root.appendChild(this.plate_element_ref);
 
-        const global_message_element = NotificationComponent_get_global_message_element_reference();
+        const global_message_element = this.NotificationComponent.get_global_message_element_reference();
         if (global_message_element) {
-            plate_element_ref.appendChild(global_message_element);
+            this.plate_element_ref.appendChild(global_message_element);
         }
 
-        const { updated_reqs_by_sample, total_count } = get_updated_reqs_data();
+        const { updated_reqs_by_sample, total_count } = this.get_updated_reqs_data();
         
-        h1_ref = Helpers_create_element('h1', { attributes: { tabindex: '-1' } });
-        plate_element_ref.appendChild(h1_ref);
+        this.h1_ref = this.Helpers.create_element('h1', { attributes: { tabindex: '-1' } });
+        this.plate_element_ref.appendChild(this.h1_ref);
 
         if (total_count === 0) {
-            h1_ref.textContent = t('all_updates_handled_title');
-            plate_element_ref.appendChild(Helpers_create_element('p', { class_name: 'view-intro-text', text_content: t('all_updates_handled_text') }));
+            this.h1_ref.textContent = t('all_updates_handled_title');
+            this.plate_element_ref.appendChild(this.Helpers.create_element('p', { class_name: 'view-intro-text', text_content: t('all_updates_handled_text') }));
             
-            const return_btn = Helpers_create_element('button', {
+            const return_btn = this.Helpers.create_element('button', {
                 class_name: ['button', 'button-primary'],
                 text_content: t('return_to_audit_overview')
             });
-            return_btn.addEventListener('click', () => router_ref('audit_overview'));
-            plate_element_ref.appendChild(return_btn);
+            return_btn.addEventListener('click', () => this.router('audit_overview'));
+            this.plate_element_ref.appendChild(return_btn);
 
-            h1_ref.focus();
+            this.h1_ref.focus();
             return;
         }
 
-        h1_ref.textContent = t('handle_updated_assessments_title', { count: total_count });
-        plate_element_ref.appendChild(Helpers_create_element('p', { class_name: 'view-intro-text', text_content: t('handle_updated_assessments_intro') }));
+        this.h1_ref.textContent = t('handle_updated_assessments_title', { count: total_count });
+        this.plate_element_ref.appendChild(this.Helpers.create_element('p', { class_name: 'view-intro-text', text_content: t('handle_updated_assessments_intro') }));
         
-        plate_element_ref.appendChild(render_action_buttons('top'));
+        this.plate_element_ref.appendChild(this.render_action_buttons('top'));
 
-        list_container_for_delegation = Helpers_create_element('div');
-        list_container_for_delegation.addEventListener('click', handle_list_item_click);
+        this.list_container_for_delegation = this.Helpers.create_element('div');
+        this.list_container_for_delegation.addEventListener('click', this.handle_list_item_click);
         // Add keyboard support for accessibility
-        list_container_for_delegation.addEventListener('keydown', handle_list_item_keydown);
+        this.list_container_for_delegation.addEventListener('keydown', this.handle_list_item_keydown);
 
-        const state = local_getState();
         for (const sampleId in updated_reqs_by_sample) {
             const data = updated_reqs_by_sample[sampleId];
-            const sample_section = Helpers_create_element('section', { style: { marginTop: '2rem' } });
+            const sample_section = this.Helpers.create_element('section', { style: { marginTop: '2rem' } });
             
-            const h2 = Helpers_create_element('h2', { 
+            const h2 = this.Helpers.create_element('h2', { 
                 text_content: `${t('sample_label')}: ${data.sampleName}`,
                 attributes: { tabindex: '-1' }
             });
             sample_section.appendChild(h2);
 
-            const ul = Helpers_create_element('ul', { class_name: 'item-list', style: { listStyle: 'none', padding: 0 } });
+            const ul = this.Helpers.create_element('ul', { class_name: 'item-list', style: { listStyle: 'none', padding: 0 } });
             data.requirements.forEach(req => {
-                const li = Helpers_create_element('li', { class_name: 'item-list-item compact-review-item', style: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' } });
+                const li = this.Helpers.create_element('li', { class_name: 'item-list-item compact-review-item', style: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' } });
                 
                 const link_text = req.reference
                     ? t('requirement_with_reference', { title: req.title, reference: req.reference })
                     : req.title;
-                const link = Helpers_create_element('a', {
+                const link = this.Helpers.create_element('a', {
                     text_content: link_text,
                     attributes: { href: '#' },
-                    event_listeners: { click: (e) => { e.preventDefault(); router_ref('requirement_audit', { sampleId, requirementId: req.id }); }}
+                    event_listeners: { click: (e) => { e.preventDefault(); this.router('requirement_audit', { sampleId, requirementId: req.id }); }}
                 });
 
                 let btn_text_key = 'confirm_status_and_return';
@@ -220,7 +200,7 @@ export const ConfirmUpdatesViewComponent = (function () {
                 if (req.status === 'passed') { btn_text_key = 'keep_passed_button'; btn_class = 'button-success'; }
                 else if (req.status === 'failed') { btn_text_key = 'keep_failed_button'; btn_class = 'button-danger'; }
 
-                const confirm_button = Helpers_create_element('button', {
+                const confirm_button = this.Helpers.create_element('button', {
                     class_name: ['button', btn_class, 'button-small'],
                     text_content: t(btn_text_key),
                     attributes: {
@@ -235,26 +215,23 @@ export const ConfirmUpdatesViewComponent = (function () {
                 ul.appendChild(li);
             });
             sample_section.appendChild(ul);
-            list_container_for_delegation.appendChild(sample_section);
+            this.list_container_for_delegation.appendChild(sample_section);
         }
         
-        plate_element_ref.appendChild(list_container_for_delegation);
-        plate_element_ref.appendChild(render_action_buttons('bottom'));
-    }
+        this.plate_element_ref.appendChild(this.list_container_for_delegation);
+        this.plate_element_ref.appendChild(this.render_action_buttons('bottom'));
+    },
 
-    function destroy() {
-        if (list_container_for_delegation) {
-            list_container_for_delegation.removeEventListener('click', handle_list_item_click);
+    destroy() {
+        if (this.list_container_for_delegation) {
+            this.list_container_for_delegation.removeEventListener('click', this.handle_list_item_click);
+            this.list_container_for_delegation.removeEventListener('keydown', this.handle_list_item_keydown);
         }
-        app_container_ref.innerHTML = '';
-        plate_element_ref = null;
-        list_container_for_delegation = null;
-        h1_ref = null;
+        if (this.root) this.root.innerHTML = '';
+        this.plate_element_ref = null;
+        this.list_container_for_delegation = null;
+        this.h1_ref = null;
+        this.root = null;
+        this.deps = null;
     }
-
-    return {
-        init,
-        render,
-        destroy
-    };
-})();
+};

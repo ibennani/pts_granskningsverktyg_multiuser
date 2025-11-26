@@ -6,15 +6,15 @@ import '@fontsource/roboto/700.css';
 
 import './utils/helpers.js';
 import './translation_logic.js';
-import './components/NotificationComponent.js';
-import './components/ProgressBarComponent.js';
+import { NotificationComponent } from './components/NotificationComponent.js';
+import { ProgressBarComponent } from './components/ProgressBarComponent.js';
 import './audit_logic.js';
 import './export_logic.js';
 import './logic/save_audit_logic.js';
 import './validation_logic.js';
 import './logic/rulefile_updater_logic.js';
 import './logic/ScoreCalculator.js';
-import './features/markdown_toolbar.js';
+import { MarkdownToolbar } from './features/markdown_toolbar.js';
 import './utils/dependency_manager.js';
 import './utils/console_manager.js';
 import './utils/memory_manager.js';
@@ -255,7 +255,7 @@ window.dependencyManager = dependencyManager;
         // Wait for dependency manager to be ready
         await window.dependencyManager?.initialize();
         
-        if (!window.Translation || !window.Helpers || !window.NotificationComponent || !window.SaveAuditLogic) {
+        if (!window.Translation || !window.Helpers || !NotificationComponent || !window.SaveAuditLogic) {
             consoleManager.error("[Main.js] init_global_components: Core dependencies not available!");
             return;
         }
@@ -265,7 +265,7 @@ window.dependencyManager = dependencyManager;
             StoreActionTypes: StoreActionTypes,
             Translation: window.Translation,
             Helpers: window.Helpers,
-            NotificationComponent: window.NotificationComponent,
+            NotificationComponent: NotificationComponent,
             SaveAuditLogic: window.SaveAuditLogic
         };
         try {
@@ -471,15 +471,38 @@ window.dependencyManager = dependencyManager;
                     params_to_render.autosaved_state
                 );
             } else {
-                await current_view_component_instance.init(
-                    app_container, 
-                    navigate_and_set_hash, 
-                    params_to_render,
-                    getState, 
-                    dispatch,
-                    StoreActionTypes,
-                    subscribe
-                );
+                // Support new component standard (init({ root, deps }))
+                // We assume if length is 1, it's the new standard
+                if (current_view_component_instance.init.length === 1) {
+                    await current_view_component_instance.init({
+                        root: app_container,
+                        deps: {
+                            router: navigate_and_set_hash,
+                            params: params_to_render,
+                            getState,
+                            dispatch,
+                            StoreActionTypes,
+                            subscribe,
+                            Translation: window.Translation,
+                            Helpers: window.Helpers,
+                            NotificationComponent: NotificationComponent,
+                            SaveAuditLogic: window.SaveAuditLogic,
+                            AuditLogic: window.AuditLogic,
+                            ExportLogic: window.ExportLogic
+                        }
+                    });
+                } else {
+                    // Legacy component support
+                    await current_view_component_instance.init(
+                        app_container, 
+                        navigate_and_set_hash, 
+                        params_to_render,
+                        getState, 
+                        dispatch,
+                        StoreActionTypes,
+                        subscribe
+                    );
+                }
             }
             
             current_view_component_instance.render();
@@ -565,7 +588,7 @@ window.dependencyManager = dependencyManager;
     async function start_normal_session() {
         await init_global_components(); 
         if (window.ScoreManager?.init) { window.ScoreManager.init(subscribe, getState, dispatch, StoreActionTypes); }
-        if (window.MarkdownToolbar?.init) { window.MarkdownToolbar.init(); }
+        if (MarkdownToolbar?.init) { MarkdownToolbar.init(); }
         // Lagra referenser till event listeners för senare cleanup
         const language_changed_handler = on_language_changed_event;
         const hash_change_handler = handle_hash_change;
@@ -661,7 +684,7 @@ window.dependencyManager = dependencyManager;
                 }
             }
         });
-        if (window.NotificationComponent?.clear_global_message) { window.NotificationComponent.clear_global_message(); }
+        if (NotificationComponent?.clear_global_message) { NotificationComponent.clear_global_message(); }
         handle_hash_change(); 
         update_app_chrome_texts();
     } 
@@ -721,7 +744,7 @@ window.dependencyManager = dependencyManager;
                 const on_restore = () => {
                     dispatch({ type: StoreActionTypes.LOAD_AUDIT_FROM_FILE, payload: autosaved_payload.auditState });
                     clearAutosavedState(); 
-                    if (window.NotificationComponent) window.NotificationComponent.show_global_message(get_t_fallback()('autosave_restored_successfully'), 'success');
+                    if (NotificationComponent) NotificationComponent.show_global_message(get_t_fallback()('autosave_restored_successfully'), 'success');
                     if (autosaved_payload.lastKnownHash && autosaved_payload.lastKnownHash !== '#') {
                         window.location.hash = autosaved_payload.lastKnownHash;
                     } else {

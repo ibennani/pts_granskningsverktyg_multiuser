@@ -1,0 +1,51 @@
+{
+  "task_status": "paused",
+  "current_phase": "refactoring components to ES modules and standard pattern",
+  "completed_files": [
+    "js/components/AuditInfoComponent.js",
+    "js/components/ScoreAnalysisComponent.js",
+    "js/components/SampleListComponent.js",
+    "js/components/AuditOverviewComponent.js",
+    "js/components/ConfirmDeleteViewComponent.js",
+    "js/components/ConfirmSampleEditViewComponent.js",
+    "js/components/ConfirmUpdatesViewComponent.js",
+    "js/features/markdown_toolbar.js",
+    "js/components/RequirementListToolbarComponent.js",
+    "js/components/RequirementListComponent.js",
+    "js/components/AddSampleFormComponent.js",
+    "js/components/SampleFormViewComponent.js",
+    "js/components/NotificationComponent.js",
+    "js/components/ProgressBarComponent.js"
+  ],
+  "modified_files": [
+    "js/main.js"
+  ],
+  "remaining_files": [
+    "js/components/GlobalActionBarComponent.js",
+    "js/components/SaveAuditButtonComponent.js",
+    "js/components/ErrorBoundaryComponent.js",
+    "js/components/EditMetadataViewComponent.js",
+    "js/components/SampleManagementViewComponent.js",
+    "js/components/UpdateRulefileViewComponent.js",
+    "js/components/RestoreSessionViewComponent.js",
+    "js/components/EditRulefileMainViewComponent.js",
+    "js/components/RulefileRequirementsListComponent.js",
+    "js/components/ViewRulefileRequirementComponent.js",
+    "js/components/EditRulefileRequirementComponent.js",
+    "js/components/RulefileMetadataViewComponent.js",
+    "js/components/EditRulefileMetadataViewComponent.js",
+    "js/components/FinalConfirmUpdatesViewComponent.js",
+    "js/components/UploadViewComponent.js",
+    "js/components/RequirementAuditComponent.js",
+    "js/components/RequirementCardComponent.js",
+    "js/components/requirement_audit/ChecklistHandler.js",
+    "js/components/requirement_audit/RequirementAuditNavigation.js",
+    "js/components/requirement_audit/RequirementInfoSections.js"
+  ],
+  "next_steps": [
+    "Refactor GlobalActionBarComponent.js and SaveAuditButtonComponent.js",
+    "Continue refactoring remaining components one by one",
+    "Update main.js imports and init calls as components are migrated"
+  ],
+  "notes": "ProgressBarComponent and NotificationComponent have been fully migrated and integrated into consumers (AuditOverview, SampleList, RequirementList, main.js). main.js has been updated to import them instead of relying on window globals for these two."
+}

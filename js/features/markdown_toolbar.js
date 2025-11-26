@@ -1,39 +1,20 @@
-// js/features/markdown_toolbar.js
-
 import { marked } from '../utils/markdown.js';
+import "../../css/features/markdown_toolbar.css";
 
-(function () { // IIFE för att undvika globala konflikter
-    'use-strict';
+const instanceMap = new Map();
+let observer = null;
+let initialized = false;
 
-    window.MarkdownToolbar = window.MarkdownToolbar || {};
-
-    const CSS_PATH = './css/features/markdown_toolbar.css';
-    const DEBOUNCE_DELAY_MS = 250;
-    let initialized = false;
-    let observer = null;
-    
-    const instanceMap = new Map();
-
-    /**
-     * Huvudfunktion för att initiera modulen.
-     */
-    function init() {
+export const MarkdownToolbar = {
+    init() {
         if (initialized) {
             if (window.ConsoleManager) {
-            window.ConsoleManager.warn("MarkdownToolbar is already initialized.");
-        }
+                window.ConsoleManager.warn("MarkdownToolbar is already initialized.");
+            }
             return;
         }
 
-        if (window.Helpers && window.Helpers.load_css) {
-            window.Helpers.load_css(CSS_PATH).catch(err => {
-                if (window.ConsoleManager) {
-                    window.ConsoleManager.error(err);
-                }
-            });
-        }
-
-        document.querySelectorAll('textarea').forEach(processTextarea);
+        document.querySelectorAll('textarea').forEach(node => this.processTextarea(node));
 
         observer = new MutationObserver((mutationsList) => {
             for (const mutation of mutationsList) {
@@ -41,9 +22,9 @@ import { marked } from '../utils/markdown.js';
                     mutation.addedNodes.forEach(node => {
                         if (node.nodeType === Node.ELEMENT_NODE) {
                             if (node.matches('textarea')) {
-                                processTextarea(node);
+                                this.processTextarea(node);
                             }
-                            node.querySelectorAll('textarea').forEach(processTextarea);
+                            node.querySelectorAll('textarea').forEach(n => this.processTextarea(n));
                         }
                     });
                 }
@@ -55,12 +36,9 @@ import { marked } from '../utils/markdown.js';
         if (window.ConsoleManager) {
             window.ConsoleManager.log("MarkdownToolbar initialized and observing for new textareas.");
         }
-    }
+    },
 
-    /**
-     * Bearbetar en enskild textarea.
-     */
-    function processTextarea(textarea) {
+    processTextarea(textarea) {
         if (textarea.closest('.markdown-editor-wrapper')) {
             return;
         }
@@ -70,12 +48,12 @@ import { marked } from '../utils/markdown.js';
             if (window.ConsoleManager) {
                 window.ConsoleManager.log('%c[FOCUS DEBUG] Markdown toolbar delaying processing due to focus protection', 'color: #FF6600; font-weight: bold;');
             }
-            setTimeout(() => processTextarea(textarea), 500);
+            setTimeout(() => this.processTextarea(textarea), 500);
             return;
         }
         
         if (!textarea.id) {
-            textarea.id = `md-editor-${window.Helpers.generate_uuid_v4()}`;
+            textarea.id = `md-editor-${window.Helpers?.generate_uuid_v4() || Math.random().toString(36).substr(2, 9)}`;
         }
 
         const existingInstance = instanceMap.get(textarea.id);
@@ -84,7 +62,7 @@ import { marked } from '../utils/markdown.js';
         const wrapper = document.createElement('div');
         wrapper.className = 'markdown-editor-wrapper';
 
-        const toolbar = createToolbar(textarea, wasPreviewVisible);
+        const toolbar = this.createToolbar(textarea, wasPreviewVisible);
         const previewDiv = document.createElement('div');
         previewDiv.className = 'md-preview markdown-content';
         previewDiv.style.display = wasPreviewVisible ? 'block' : 'none';
@@ -98,7 +76,7 @@ import { marked } from '../utils/markdown.js';
             previewVisible: wasPreviewVisible,
             previewDiv: previewDiv,
             toolbar: toolbar,
-            debouncedUpdate: debounce(() => updatePreview(textarea, previewDiv), DEBOUNCE_DELAY_MS)
+            debouncedUpdate: this.debounce(() => this.updatePreview(textarea, previewDiv), 250)
         });
 
         // Hantera Shift+Tab från textarean för att gå tillbaka till verktygsfältet
@@ -121,15 +99,13 @@ import { marked } from '../utils/markdown.js';
         });
 
         if (wasPreviewVisible) {
-            updatePreview(textarea, previewDiv);
+            this.updatePreview(textarea, previewDiv);
         }
-    }
+    },
 
-    /**
-     * Skapar verktygsraden.
-     */
-    function createToolbar(textarea, isPreviewInitiallyVisible) {
-        const t = window.Translation.t;
+    createToolbar(textarea, isPreviewInitiallyVisible) {
+        // Using window.Translation as per existing pattern for now, or ensure it's available
+        const t = window.Translation?.t || ((k) => k);
         const toolbar = document.createElement('div');
         toolbar.className = 'md-toolbar';
         toolbar.setAttribute('role', 'toolbar');
@@ -174,8 +150,8 @@ import { marked } from '../utils/markdown.js';
             button.setAttribute('tabindex', buttonIndex === 0 ? '0' : '-1');
             
             // Lägg till aria-label från översättningar
-            if (btnConfig.ariaLabelKey && window.Translation && window.Translation.t) {
-                button.setAttribute('aria-label', window.Translation.t(btnConfig.ariaLabelKey));
+            if (btnConfig.ariaLabelKey) {
+                button.setAttribute('aria-label', t(btnConfig.ariaLabelKey));
             }
             
             const icon_element = document.createElement('span');
@@ -193,20 +169,20 @@ import { marked } from '../utils/markdown.js';
                         instance.previewDiv.style.display = instance.previewVisible ? 'block' : 'none';
                         button.setAttribute('aria-pressed', instance.previewVisible);
                         if (instance.previewVisible) {
-                            updatePreview(textarea, instance.previewDiv);
+                            this.updatePreview(textarea, instance.previewDiv);
                         }
                     }
                 });
             } else {
                 button.addEventListener('click', (e) => {
                     e.preventDefault();
-                    applyFormat(textarea, btnConfig.format);
+                    this.applyFormat(textarea, btnConfig.format);
                 });
             }
 
             // Keyboard navigation för verktygsfältet
             button.addEventListener('keydown', (e) => {
-                handleToolbarKeydown(e, toolbarButtons, textarea);
+                this.handleToolbarKeydown(e, toolbarButtons, textarea);
             });
 
             toolbarButtons.push(button);
@@ -230,15 +206,9 @@ import { marked } from '../utils/markdown.js';
         });
 
         return toolbar;
-    }
+    },
 
-    /**
-     * Hanterar tangentbordsnavigation i verktygsfältet.
-     * @param {KeyboardEvent} e - Tangentbordshändelsen.
-     * @param {HTMLButtonElement[]} buttons - Array med alla knappar i verktygsfältet.
-     * @param {HTMLTextAreaElement} textarea - Textarean som verktygsfältet kontrollerar.
-     */
-    function handleToolbarKeydown(e, buttons, textarea) {
+    handleToolbarKeydown(e, buttons, textarea) {
         const currentIndex = buttons.indexOf(e.target);
         if (currentIndex === -1) return;
 
@@ -247,18 +217,18 @@ import { marked } from '../utils/markdown.js';
         switch (e.key) {
             case 'ArrowRight':
                 e.preventDefault();
-                const nextIndex = findNextButtonIndex(buttons, currentIndex, 1);
+                const nextIndex = this.findNextButtonIndex(buttons, currentIndex, 1);
                 if (nextIndex !== -1) {
-                    focusButton(buttons, nextIndex);
+                    this.focusButton(buttons, nextIndex);
                     handled = true;
                 }
                 break;
 
             case 'ArrowLeft':
                 e.preventDefault();
-                const prevIndex = findNextButtonIndex(buttons, currentIndex, -1);
+                const prevIndex = this.findNextButtonIndex(buttons, currentIndex, -1);
                 if (prevIndex !== -1) {
-                    focusButton(buttons, prevIndex);
+                    this.focusButton(buttons, prevIndex);
                     handled = true;
                 }
                 break;
@@ -275,13 +245,13 @@ import { marked } from '../utils/markdown.js';
 
             case 'Home':
                 e.preventDefault();
-                focusButton(buttons, 0);
+                this.focusButton(buttons, 0);
                 handled = true;
                 break;
 
             case 'End':
                 e.preventDefault();
-                focusButton(buttons, buttons.length - 1);
+                this.focusButton(buttons, buttons.length - 1);
                 handled = true;
                 break;
         }
@@ -289,16 +259,9 @@ import { marked } from '../utils/markdown.js';
         if (handled) {
             e.stopPropagation();
         }
-    }
+    },
 
-    /**
-     * Hittar nästa knappindex i verktygsfältet, hoppar över separatorer och spacer.
-     * @param {HTMLButtonElement[]} buttons - Array med alla knappar.
-     * @param {number} currentIndex - Nuvarande index.
-     * @param {number} direction - 1 för framåt, -1 för bakåt.
-     * @returns {number} Index för nästa knapp, eller -1 om ingen hittades.
-     */
-    function findNextButtonIndex(buttons, currentIndex, direction) {
+    findNextButtonIndex(buttons, currentIndex, direction) {
         let nextIndex = currentIndex + direction;
         const maxIndex = buttons.length - 1;
 
@@ -318,14 +281,9 @@ import { marked } from '../utils/markdown.js';
         }
 
         return -1;
-    }
+    },
 
-    /**
-     * Fokuserar en specifik knapp i verktygsfältet.
-     * @param {HTMLButtonElement[]} buttons - Array med alla knappar.
-     * @param {number} index - Index för knappen som ska fokuseras.
-     */
-    function focusButton(buttons, index) {
+    focusButton(buttons, index) {
         if (index < 0 || index >= buttons.length) return;
 
         // Ta bort tabindex från alla knappar
@@ -334,14 +292,9 @@ import { marked } from '../utils/markdown.js';
         // Sätt tabindex="0" på den knapp som ska fokuseras
         buttons[index].setAttribute('tabindex', '0');
         buttons[index].focus();
-    }
+    },
 
-    /**
-     * Applicerar eller tar bort Markdown-formatering på den markerade texten.
-     * @param {HTMLTextAreaElement} textarea - Mål-textrutan.
-     * @param {string} format - Vilken formatering som ska appliceras.
-     */
-    function applyFormat(textarea, format) {
+    applyFormat(textarea, format) {
         const start = textarea.selectionStart;
         const end = textarea.selectionEnd;
         const selectedText = textarea.value.substring(start, end);
@@ -386,7 +339,7 @@ import { marked } from '../utils/markdown.js';
                     textarea.setRangeText(replacement, lineStart, lineEnd, 'end');
                 }
             } else {
-                 // Samma logik som tidigare för markerad text
+                // Samma logik som tidigare för markerad text
                 const formatInfo = linePrefixFormats[format];
                 const isAlreadyFormatted = nonEmptyLines.every(line => formatInfo.regex.test(line));
                 let replacement;
@@ -417,38 +370,34 @@ import { marked } from '../utils/markdown.js';
             const textBefore = textarea.value.substring(start - wrapper.length, start);
             const textAfter = textarea.value.substring(end, end + wrapper.length);
 
-            // FALL 1: Texten är redan omsluten (t.ex. användaren markerade 'ord' i '**ord**')
+            // FALL 1: Texten är redan omsluten
             if (textBefore === wrapper && textAfter === wrapper) {
                 textarea.setRangeText(selectedText, start - wrapper.length, end + wrapper.length, 'select');
             } 
-            // FALL 2: Markeringen INNEHÅLLER omslutningen (t.ex. användaren markerade '**ord**')
+            // FALL 2: Markeringen INNEHÅLLER omslutningen
             else if (selectedText.startsWith(wrapper) && selectedText.endsWith(wrapper)) {
                 const unwrappedText = selectedText.substring(wrapper.length, selectedText.length - wrapper.length);
                 textarea.setRangeText(unwrappedText, start, end, 'select');
             }
-            // FALL 2c: Markeringen innehåller dubbel-omslutning (t.ex. användaren markerade '****ord****')
+            // FALL 2c: Markeringen innehåller dubbel-omslutning
             else if (selectedText.startsWith(wrapper + wrapper) && selectedText.endsWith(wrapper + wrapper)) {
                 const unwrappedText = selectedText.substring(wrapper.length * 2, selectedText.length - wrapper.length * 2);
                 textarea.setRangeText(unwrappedText, start, end, 'select');
             } 
             // FALL 2b: Kontrollera om texten redan är omsluten i en bredare kontext
             else {
-                // Kontrollera om texten redan är formaterad genom att titta på en bredare kontext
                 const contextStart = Math.max(0, start - wrapper.length);
                 const contextEnd = Math.min(textarea.value.length, end + wrapper.length);
                 const contextText = textarea.value.substring(contextStart, contextEnd);
                 const contextBefore = textarea.value.substring(contextStart, start);
                 const contextAfter = textarea.value.substring(end, contextEnd);
                 
-                // Om kontexten visar att texten redan är omsluten, ta bort formateringen
                 if (contextBefore.endsWith(wrapper) && contextAfter.startsWith(wrapper)) {
-                    // Ta bort wrappers från kontexten
                     const unwrappedContext = contextText.substring(wrapper.length, contextText.length - wrapper.length);
                     textarea.setRangeText(unwrappedContext, contextStart, contextEnd, 'select');
-                    return; // Avsluta här för detta specialfall
+                    return;
                 }
                 
-                // Kontrollera om texten redan är dubbel-omsluten i kontexten
                 const doubleContextStart = Math.max(0, start - wrapper.length * 2);
                 const doubleContextEnd = Math.min(textarea.value.length, end + wrapper.length * 2);
                 const doubleContextText = textarea.value.substring(doubleContextStart, doubleContextEnd);
@@ -456,10 +405,9 @@ import { marked } from '../utils/markdown.js';
                 const doubleContextAfter = textarea.value.substring(end, doubleContextEnd);
                 
                 if (doubleContextBefore.endsWith(wrapper + wrapper) && doubleContextAfter.startsWith(wrapper + wrapper)) {
-                    // Ta bort dubbel-wrappers från kontexten
                     const unwrappedContext = doubleContextText.substring(wrapper.length * 2, doubleContextText.length - wrapper.length * 2);
                     textarea.setRangeText(unwrappedContext, doubleContextStart, doubleContextEnd, 'select');
-                    return; // Avsluta här för detta specialfall
+                    return;
                 }
                 
                 // FALL 3: Texten är omarkerad och ska formateras
@@ -468,12 +416,11 @@ import { marked } from '../utils/markdown.js';
                 const trimmedText = selectedText.trim();
                 
                 if (trimmedText === '' && format !== 'link') {
-                    // Om ingen text är markerad, infoga bara tecknen och placera markören i mitten
                     textarea.setRangeText(`${wrapper}${wrapper}`, start, end, 'end');
                     textarea.setSelectionRange(start + wrapper.length, start + wrapper.length);
                     textarea.focus();
                     textarea.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
-                    return; // Avsluta här för detta specialfall
+                    return;
                 }
                 
                 const formattedText = `${wrapper}${trimmedText}${formatInfo.suffix || wrapper}`;
@@ -487,13 +434,9 @@ import { marked } from '../utils/markdown.js';
             textarea.focus();
         }
         textarea.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
-    }
+    },
 
-
-    /**
-     * Uppdaterar förhandsgranskningens innehåll.
-     */
-    function updatePreview(textarea, previewDiv) {
+    updatePreview(textarea, previewDiv) {
         if (typeof marked === 'undefined') {
             const t = window.Translation?.t || ((key) => key);
             const errorMessage = t('markdown_error_library_not_loaded');
@@ -511,7 +454,6 @@ import { marked } from '../utils/markdown.js';
             return link.replace('<a', '<a target="_blank" rel="noopener noreferrer"');
         };
 
-        // MODIFIED: This is the final, correct fix for escaping HTML.
         if (window.Helpers && window.Helpers.escape_html) {
             renderer.html = (html_token) => {
                 const text_to_escape = (typeof html_token === 'object' && html_token !== null && typeof html_token.text === 'string')
@@ -524,7 +466,6 @@ import { marked } from '../utils/markdown.js';
 
         try {
             const parsed_markdown = marked.parse(markdownText, { breaks: true, gfm: true, renderer: renderer });
-            // Use safe HTML sanitization for markdown preview
             if (window.Helpers && window.Helpers.sanitize_html) {
                 previewDiv.innerHTML = window.Helpers.sanitize_html(parsed_markdown);
             } else {
@@ -537,12 +478,9 @@ import { marked } from '../utils/markdown.js';
             const t = window.Translation?.t || ((key) => key);
             previewDiv.textContent = t('markdown_error_rendering_preview');
         }
-    }
-    
-    /**
-     * Debounce-funktion.
-     */
-    function debounce(func, delay) {
+    },
+
+    debounce(func, delay) {
         let timeout;
         return function(...args) {
             const context = this;
@@ -550,8 +488,4 @@ import { marked } from '../utils/markdown.js';
             timeout = setTimeout(() => func.apply(context, args), delay);
         };
     }
-    
-    // Exponera init-funktionen globalt
-    window.MarkdownToolbar.init = init;
-
-})();
+};
