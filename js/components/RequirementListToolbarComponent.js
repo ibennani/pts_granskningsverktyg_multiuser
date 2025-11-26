@@ -1,4 +1,6 @@
 // js/components/RequirementListToolbarComponent.js
+import { FilterPanelComponent } from './FilterPanelComponent.js';
+
 export const RequirementListToolbarComponent = (function () {
     'use-strict';
 
@@ -14,12 +16,6 @@ export const RequirementListToolbarComponent = (function () {
     let component_config;
 
     let search_debounce_timer;
-
-    let filter_button_ref;
-    let filter_panel_ref;
-    
-    let handle_panel_keydown_ref = null;
-    let close_on_outside_click_ref = null;
     
     let is_dom_built = false;
 
@@ -72,101 +68,16 @@ export const RequirementListToolbarComponent = (function () {
         }
     }
 
-    function handle_status_filter_change(event) {
-        const new_status_filters = { ...component_state.status };
-        const all_checkbox = filter_panel_ref.querySelector('input[data-status="all"]');
-        const status_checkboxes = filter_panel_ref.querySelectorAll('input[data-status]:not([data-status="all"])');
-
-        if (event.target === all_checkbox) {
-            const is_checked = all_checkbox.checked;
-            status_checkboxes.forEach(cb => { new_status_filters[cb.dataset.status] = is_checked; });
-        } else {
-            new_status_filters[event.target.dataset.status] = event.target.checked;
-        }
-        
-        update_and_notify({ status: new_status_filters });
-    }
-
     function handle_sort_change(event) {
         update_and_notify({ sortBy: event.target.value });
     }
     
-    function close_filter_panel(focus_button = true) {
-        if (filter_panel_ref && filter_panel_ref.classList.contains('is-visible')) {
-            filter_panel_ref.classList.remove('is-visible');
-            
-            if (handle_panel_keydown_ref) {
-                document.removeEventListener('keydown', handle_panel_keydown_ref);
-                handle_panel_keydown_ref = null;
-            }
-            if (close_on_outside_click_ref) {
-                document.removeEventListener('click', close_on_outside_click_ref);
-                close_on_outside_click_ref = null;
-            }
-            if (focus_button && filter_button_ref) {
-                filter_button_ref.focus();
-            }
-        }
-    }
-
-    function open_filter_panel() {
-        if (filter_panel_ref && !filter_panel_ref.classList.contains('is-visible')) {
-            filter_panel_ref.classList.add('is-visible');
-            const first_checkbox = filter_panel_ref.querySelector('input[type="checkbox"]');
-            first_checkbox?.focus();
-            
-            handle_panel_keydown_ref = (e) => handle_panel_keydown(e);
-            close_on_outside_click_ref = (e) => {
-                if (!filter_panel_ref.contains(e.target) && !filter_button_ref.contains(e.target)) {
-                    close_filter_panel();
-                }
-            };
-            if (window.MemoryManager) {
-                window.MemoryManager.addEventListener(document, 'keydown', handle_panel_keydown_ref);
-                window.MemoryManager.addEventListener(document, 'click', close_on_outside_click_ref, { capture: true });
-            } else {
-                document.addEventListener('keydown', handle_panel_keydown_ref);
-                document.addEventListener('click', close_on_outside_click_ref, { capture: true });
-            }
-        }
-    }
-
-    function toggle_filter_panel(event) {
-        event.stopPropagation();
-        if (filter_panel_ref?.classList.contains('is-visible')) {
-            close_filter_panel();
-        } else {
-            open_filter_panel();
-        }
-    }
-
-    function handle_panel_keydown(event) {
-        if (event.key === 'Escape') {
-            event.preventDefault();
-            close_filter_panel();
-            return;
-        }
-
-        if (event.key === 'Tab' && filter_panel_ref) {
-            const focusable_elements = Array.from(filter_panel_ref.querySelectorAll('input[type="checkbox"]'));
-            if (focusable_elements.length === 0) return;
-
-            const first_element = focusable_elements[0];
-            const last_element = focusable_elements[focusable_elements.length - 1];
-
-            if (event.shiftKey && document.activeElement === first_element) {
-                close_filter_panel(false); 
-            } else if (!event.shiftKey && document.activeElement === last_element) {
-                close_filter_panel(false);
-            }
-        }
-    }
-
     function initial_build() {
         container_ref.innerHTML = '';
         const t = Translation_t;
         const toolbar = Helpers_create_element('div', { class_name: 'requirements-list-toolbar' });
 
+        // Search Group
         const search_group = Helpers_create_element('div', { class_name: 'toolbar-group search-group' });
         const search_label = Helpers_create_element('label', { attributes: { for: 'req-list-search' }, text_content: t('search_in_help_texts_label') });
         search_group.appendChild(search_label);
@@ -179,24 +90,28 @@ export const RequirementListToolbarComponent = (function () {
         search_group.appendChild(search_input);
         toolbar.appendChild(search_group);
 
+        // Filter Group
         if (component_config.showStatusFilter) {
             const filter_group = Helpers_create_element('div', { class_name: 'toolbar-group status-filter-group' });
             const filter_label = Helpers_create_element('label', { text_content: t('filter_by_status_label') });
             filter_group.appendChild(filter_label);
-            filter_button_ref = Helpers_create_element('button', { id: 'status-filter-toggle-btn', class_name: 'button button-default' });
-            if (window.MemoryManager) {
-                window.MemoryManager.addEventListener(filter_button_ref, 'click', toggle_filter_panel);
-                filter_panel_ref = Helpers_create_element('div', { id: 'status-filter-panel-smv', class_name: 'status-filter-panel' });
-                window.MemoryManager.addEventListener(filter_panel_ref, 'change', handle_status_filter_change);
-            } else {
-                filter_button_ref.addEventListener('click', toggle_filter_panel);
-                filter_panel_ref = Helpers_create_element('div', { id: 'status-filter-panel-smv', class_name: 'status-filter-panel' });
-                filter_panel_ref.addEventListener('change', handle_status_filter_change);
-            }
-            filter_group.append(filter_button_ref, filter_panel_ref);
+            
+            // Initialize FilterPanelComponent attached to filter_group
+            FilterPanelComponent.init({
+                root: filter_group,
+                deps: {
+                    Translation: { t: Translation_t },
+                    Helpers: { create_element: Helpers_create_element },
+                    onFilterChange: (newFilters) => {
+                        update_and_notify({ status: newFilters });
+                    }
+                }
+            });
+            
             toolbar.appendChild(filter_group);
         }
         
+        // Sort Group
         if (component_config.sortOptions && component_config.sortOptions.length > 0) {
             const sort_group = Helpers_create_element('div', { class_name: 'toolbar-group sort-group' });
             const sort_label = Helpers_create_element('label', { attributes: { for: 'req-list-sort' }, text_content: t('sort_by_label') });
@@ -233,29 +148,17 @@ export const RequirementListToolbarComponent = (function () {
             sortSelect.value = component_state.sortBy;
         }
 
-        if (component_config.showStatusFilter && filter_panel_ref && filter_button_ref) {
-            filter_button_ref.textContent = t('status_filter_button_text');
-
-            const status_types = ['passed', 'failed', 'partially_audited', 'not_audited', 'updated'];
-            const all_individual_checked = status_types.every(status => component_state.status[status]);
-
-            if (filter_panel_ref.querySelector('#status-filter-all')) {
-                filter_panel_ref.querySelector('#status-filter-all').checked = all_individual_checked;
-                status_types.forEach(status => {
-                    if (filter_panel_ref.querySelector(`#status-filter-${status}`)) {
-                        filter_panel_ref.querySelector(`#status-filter-${status}`).checked = component_state.status[status];
-                    }
-                });
-            }
+        if (component_config.showStatusFilter) {
+            FilterPanelComponent.render({
+                filters: component_state.status
+            });
         }
     }
 
-    // --- START OF CHANGE: render can now accept new state ---
     function render(new_state = null) {
         if (new_state) {
             component_state = new_state;
         }
-        // --- END OF CHANGE ---
 
         if (!container_ref || !Helpers_create_element || !Translation_t || !component_state) {
             if (window.ConsoleManager) {
@@ -277,47 +180,13 @@ export const RequirementListToolbarComponent = (function () {
             search_label.textContent = t('search_in_help_texts_label');
         }
         
-        // Update filter label and button
+        // Update filter label
         if (component_config.showStatusFilter) {
             const filter_label = container_ref.querySelector('.status-filter-group label');
             if (filter_label) {
                 filter_label.textContent = t('filter_by_status_label');
             }
-            
-            if (filter_button_ref) {
-                filter_button_ref.textContent = t('status_filter_button_text');
-            }
-            
-            // Update filter panel content
-            if (filter_panel_ref) {
-                filter_panel_ref.innerHTML = `
-                    <div class="form-check all-check">
-                        <input id="status-filter-all" class="form-check-input" type="checkbox" data-status="all">
-                        <label for="status-filter-all">${t('show_all')}</label>
-                    </div>
-                    <hr>
-                    <div class="form-check">
-                        <input id="status-filter-passed" class="form-check-input" type="checkbox" data-status="passed">
-                        <label for="status-filter-passed">${t('audit_status_passed')}</label>
-                    </div>
-                    <div class="form-check">
-                        <input id="status-filter-failed" class="form-check-input" type="checkbox" data-status="failed">
-                        <label for="status-filter-failed">${t('audit_status_failed')}</label>
-                    </div>
-                    <div class="form-check">
-                        <input id="status-filter-partially_audited" class="form-check-input" type="checkbox" data-status="partially_audited">
-                        <label for="status-filter-partially_audited">${t('audit_status_partially_audited')}</label>
-                    </div>
-                    <div class="form-check">
-                        <input id="status-filter-not_audited" class="form-check-input" type="checkbox" data-status="not_audited">
-                        <label for="status-filter-not_audited">${t('audit_status_not_audited')}</label>
-                    </div>
-                    <div class="form-check">
-                        <input id="status-filter-updated" class="form-check-input" type="checkbox" data-status="updated">
-                        <label for="status-filter-updated">${t('filter_option_updated')}</label>
-                    </div>
-                `;
-            }
+            // FilterPanelComponent handles its own text updates in its render
         }
         
         // Update sort label and options
@@ -329,7 +198,9 @@ export const RequirementListToolbarComponent = (function () {
             
             const sort_select = container_ref.querySelector('#req-list-sort');
             if (sort_select) {
-                // Update sort options
+                // Save current value
+                const currentVal = sort_select.value;
+                // Update sort options texts
                 sort_select.innerHTML = '';
                 component_config.sortOptions.forEach(opt => {
                     sort_select.appendChild(Helpers_create_element('option', {
@@ -337,6 +208,7 @@ export const RequirementListToolbarComponent = (function () {
                         text_content: t(opt.textKey)
                     }));
                 });
+                sort_select.value = currentVal;
             }
         }
 
@@ -345,24 +217,9 @@ export const RequirementListToolbarComponent = (function () {
 
     function destroy() {
         clearTimeout(search_debounce_timer);
-        close_filter_panel();
         
-        // Rensa document-level event listeners
-        if (handle_panel_keydown_ref) {
-            if (window.MemoryManager) {
-                window.MemoryManager.removeEventListener(document, 'keydown', handle_panel_keydown_ref);
-            } else {
-                document.removeEventListener('keydown', handle_panel_keydown_ref);
-            }
-            handle_panel_keydown_ref = null;
-        }
-        if (close_on_outside_click_ref) {
-            if (window.MemoryManager) {
-                window.MemoryManager.removeEventListener(document, 'click', close_on_outside_click_ref, { capture: true });
-            } else {
-                document.removeEventListener('click', close_on_outside_click_ref, { capture: true });
-            }
-            close_on_outside_click_ref = null;
+        if (component_config.showStatusFilter) {
+            FilterPanelComponent.destroy();
         }
         
         if (container_ref) container_ref.innerHTML = '';
