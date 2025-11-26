@@ -4,17 +4,26 @@ test.describe('Startsida', () => {
   test('visar knappar i rätt ordning med infotexter', async ({ page }) => {
     await page.goto('/');
 
-    const loadButton = page.getByRole('button', {
-      name: 'Ladda upp pågående granskning',
+    // Force language to Swedish to ensure consistent test results regardless of browser defaults
+    await page.evaluate(() => {
+      if (window.Translation && window.Translation.set_language) {
+        return window.Translation.set_language('sv-SE');
+      }
     });
-    const startButton = page.getByRole('button', {
-      name: 'Starta ny granskning',
-    });
-    const editButton = page.getByRole('button', { name: 'Redigera regelfil' });
+
+    // Vänta på att innehållet laddas
+    const loadButton = page.locator('#load-ongoing-audit-btn');
+    const startButton = page.locator('#start-new-audit-btn');
+    const editButton = page.locator('#edit-rulefile-btn');
 
     await expect(loadButton).toBeVisible();
     await expect(startButton).toBeVisible();
     await expect(editButton).toBeVisible();
+
+    // Kontrollera texter med regex för att undvika encoding-problem om de kvarstår, men vi försöker med exakt text först
+    await expect(loadButton).toContainText('Ladda upp pågående granskning');
+    await expect(startButton).toContainText('Starta ny granskning');
+    await expect(editButton).toContainText('Redigera regelfil');
 
     const orderedButtons = await page
       .locator('.upload-action-block button')
@@ -46,7 +55,17 @@ test.describe('Startsida', () => {
 
   test('respekterar tabb-ordning mellan knapparna', async ({ page }) => {
     await page.goto('/');
+    
+    // Se till att första knappen är synlig innan vi börjar tabba
+    await expect(page.locator('#load-ongoing-audit-btn')).toBeVisible();
 
+    // Klicka någonstans neutralt eller fokusera body för att återställa fokus? 
+    // Oftast börjar tabb från adressfältet eller toppen av dokumentet.
+    // Vi kan tvinga fokus till body först om det behövs, men prova tab direkt.
+    
+    // Ibland krävs flera tabbar beroende på webbläsare och sidstruktur.
+    // Men om det är första fokuserbara elementet i main content:
+    
     await page.keyboard.press('Tab');
     await expect(page.locator('#load-ongoing-audit-btn')).toBeFocused();
 

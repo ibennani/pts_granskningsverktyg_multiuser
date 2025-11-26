@@ -12,7 +12,7 @@
         'en-GB': 'English (UK)'
     };
 
-    const DEFAULT_LANGUAGE_TAG = 'en-GB';
+    const DEFAULT_LANGUAGE_TAG = 'sv-SE';
 
     let current_language_tag = DEFAULT_LANGUAGE_TAG;
     let loaded_translations = {};
