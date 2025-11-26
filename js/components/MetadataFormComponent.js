@@ -1,165 +1,120 @@
-// js/components/MetadataFormComponent.js
-
-import { createSafeAssignFunction, waitForDependencies } from '../utils/safe_init_helper.js';
-
-export const MetadataFormComponent = (function () {
-    'use-strict';
-
-    const CSS_PATH = 'css/components/metadata_form_component.css';
-    let form_container_ref;
-    
-    // Callbacks passed from parent during init
-    let on_submit_callback;
-    let on_cancel_callback;
-    let on_autosave_callback;
-
-    // Dependencies
-    let Translation_t;
-    let Helpers_create_element, Helpers_get_icon_svg, Helpers_add_protocol_if_missing, Helpers_load_css;
-    let NotificationComponent_show_global_message; // NY DEPENDENCY
-
-    // Internal DOM references, live only during render cycle
-    let form_element_ref;
-    let case_number_input, actor_name_input, actor_link_input, auditor_name_input, case_handler_input, internal_comment_input;
-    let debounceTimerFormFields = null;
-
-    // Create safe assign function for this component's dependencies
-    const safeAssignGlobals = createSafeAssignFunction([
-        'Translation', 'Helpers', 'NotificationComponent'
-    ]);
-
-    async function assign_globals_once() {
-        if (Translation_t) return;
+export const MetadataFormComponent = {
+    init({ root, deps, options = {} }) {
+        this.root = root;
+        this.deps = deps;
         
-        const success = await safeAssignGlobals({
-            Translation_t: () => window.Translation?.t,
-            Helpers_create_element: () => window.Helpers?.create_element,
-            Helpers_get_icon_svg: () => window.Helpers?.get_icon_svg,
-            Helpers_add_protocol_if_missing: () => window.Helpers?.add_protocol_if_missing,
-            Helpers_load_css: () => window.Helpers?.load_css,
-            NotificationComponent_show_global_message: () => window.NotificationComponent?.show_global_message
-        });
+        // Callbacks from options
+        this.on_submit_callback = options.onSubmit;
+        this.on_cancel_callback = options.onCancel;
+        this.on_autosave_callback = options.onAutosave;
+
+        // Dependencies
+        this.Translation = deps.Translation;
+        this.Helpers = deps.Helpers;
+        this.NotificationComponent = deps.NotificationComponent;
         
-        if (!success) {
-            throw new Error('Required dependencies not available for MetadataFormComponent');
+        // Internal state
+        this.debounceTimerFormFields = null;
+        this.case_number_input = null;
+        this.actor_name_input = null;
+        this.actor_link_input = null;
+        this.auditor_name_input = null;
+        this.case_handler_input = null;
+        this.internal_comment_input = null;
+        this.form_element_ref = null;
+
+        // Load CSS if possible
+        const CSS_PATH = 'css/components/metadata_form_component.css';
+        if (this.Helpers && this.Helpers.load_css) {
+            this.Helpers.load_css(CSS_PATH);
         }
-        
-        // Assign the values
-        Translation_t = window.Translation?.t;
-        Helpers_create_element = window.Helpers?.create_element;
-        Helpers_get_icon_svg = window.Helpers?.get_icon_svg;
-        Helpers_add_protocol_if_missing = window.Helpers?.add_protocol_if_missing;
-        Helpers_load_css = window.Helpers?.load_css;
-        NotificationComponent_show_global_message = window.NotificationComponent?.show_global_message;
-    }
+    },
 
-    async function init(_form_container, _callbacks) {
-        // Wait for dependencies to be ready
-        await waitForDependencies(['Translation', 'Helpers', 'NotificationComponent']);
+    save_form_data_immediately() {
+        if (!this.on_autosave_callback) return;
+        if (!this.case_number_input || !this.actor_name_input || !this.actor_link_input || !this.auditor_name_input || !this.case_handler_input || !this.internal_comment_input) return;
         
-        await assign_globals_once();
-        form_container_ref = _form_container;
-        
-        on_submit_callback = _callbacks.onSubmit;
-        on_cancel_callback = _callbacks.onCancel || null;
-        on_autosave_callback = _callbacks.onAutosave || null;
-
-        if (Helpers_load_css) {
-            await Helpers_load_css(CSS_PATH);
-        } else {
-            console.error('MetadataFormComponent: Helpers.load_css not available');
-            throw new Error('Required dependency Helpers.load_css not available');
-        }
-    }
-
-    function save_form_data_immediately() {
-        if (!on_autosave_callback) return;
-        if (!case_number_input || !actor_name_input || !actor_link_input || !auditor_name_input || !case_handler_input || !internal_comment_input) return;
-        
-        let actor_link_value = actor_link_input.value.trim();
-        if (actor_link_value) {
-            actor_link_value = Helpers_add_protocol_if_missing(actor_link_value);
+        let actor_link_value = this.actor_link_input.value.trim();
+        if (actor_link_value && this.Helpers.add_protocol_if_missing) {
+            actor_link_value = this.Helpers.add_protocol_if_missing(actor_link_value);
         }
 
-        // Sanitize all form inputs to prevent XSS
         const sanitize_input = (input) => {
             if (typeof input !== 'string') return '';
             return input.trim().replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
         };
 
         const form_data = {
-            caseNumber: sanitize_input(case_number_input.value),
-            actorName: sanitize_input(actor_name_input.value),
+            caseNumber: sanitize_input(this.case_number_input.value),
+            actorName: sanitize_input(this.actor_name_input.value),
             actorLink: sanitize_input(actor_link_value),
-            auditorName: sanitize_input(auditor_name_input.value),
-            caseHandler: sanitize_input(case_handler_input.value),
-            internalComment: sanitize_input(internal_comment_input.value)
+            auditorName: sanitize_input(this.auditor_name_input.value),
+            caseHandler: sanitize_input(this.case_handler_input.value),
+            internalComment: sanitize_input(this.internal_comment_input.value)
         };
 
-        on_autosave_callback(form_data);
-    }
+        this.on_autosave_callback(form_data);
+    },
 
-    function debounced_autosave_form() {
-        if (!on_autosave_callback) return;
+    debounced_autosave_form() {
+        if (!this.on_autosave_callback) return;
         
-        clearTimeout(debounceTimerFormFields);
-        debounceTimerFormFields = setTimeout(() => {
-            save_form_data_immediately();
+        clearTimeout(this.debounceTimerFormFields);
+        this.debounceTimerFormFields = setTimeout(() => {
+            this.save_form_data_immediately();
         }, 3000);
-    }
+    },
 
-    function handle_button_click(event) {
-        // Spara formulärdata när en knapp klickas (utom submit-knappar som redan hanterar sparning)
+    handle_button_click(event) {
         const button = event.target.closest('button');
         if (button && button.type !== 'submit') {
-            save_form_data_immediately();
+            this.save_form_data_immediately();
         }
-    }
+    },
 
-    function handle_form_submit(event) {
+    handle_form_submit(event) {
         event.preventDefault();
         
-        const actor_name_value = actor_name_input.value.trim();
+        const actor_name_value = this.actor_name_input.value.trim();
+        const t = this.Translation.t;
 
-        // --- START OF CHANGE: VALIDATION ---
         if (!actor_name_value) {
-            const t = Translation_t;
-            NotificationComponent_show_global_message(t('field_is_required', { fieldName: t('actor_name') }), 'error');
-            actor_name_input.focus();
-            actor_name_input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            return; // Stop submission
-        }
-        // --- END OF CHANGE: VALIDATION ---
-
-        let actor_link_value = actor_link_input.value.trim();
-        if (actor_link_value) {
-            actor_link_value = Helpers_add_protocol_if_missing(actor_link_value);
+            if (this.NotificationComponent) {
+                this.NotificationComponent.show_global_message(t('field_is_required', { fieldName: t('actor_name') }), 'error');
+            }
+            this.actor_name_input.focus();
+            this.actor_name_input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
         }
 
-        // Sanitize all form inputs to prevent XSS
+        let actor_link_value = this.actor_link_input.value.trim();
+        if (actor_link_value && this.Helpers.add_protocol_if_missing) {
+            actor_link_value = this.Helpers.add_protocol_if_missing(actor_link_value);
+        }
+
         const sanitize_input = (input) => {
             if (typeof input !== 'string') return '';
             return input.trim().replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
         };
 
         const form_data = {
-            caseNumber: sanitize_input(case_number_input.value),
+            caseNumber: sanitize_input(this.case_number_input.value),
             actorName: sanitize_input(actor_name_value),
             actorLink: sanitize_input(actor_link_value),
-            auditorName: sanitize_input(auditor_name_input.value),
-            caseHandler: sanitize_input(case_handler_input.value),
-            internalComment: sanitize_input(internal_comment_input.value)
+            auditorName: sanitize_input(this.auditor_name_input.value),
+            caseHandler: sanitize_input(this.case_handler_input.value),
+            internalComment: sanitize_input(this.internal_comment_input.value)
         };
 
-        if (typeof on_submit_callback === 'function') {
-            on_submit_callback(form_data);
+        if (typeof this.on_submit_callback === 'function') {
+            this.on_submit_callback(form_data);
         }
-    }
+    },
 
-    function create_form_field(id, label_key, type = 'text', current_value = '', is_required = false) { // Added is_required param
-        const t = Translation_t;
-        const form_group = Helpers_create_element('div', { class_name: 'form-group' });
-        const label = Helpers_create_element('label', {
+    create_form_field(id, label_key, type = 'text', current_value = '', is_required = false) {
+        const t = this.Translation.t;
+        const form_group = this.Helpers.create_element('div', { class_name: 'form-group' });
+        const label = this.Helpers.create_element('label', {
             attributes: { for: id },
             text_content: t(label_key)
         });
@@ -170,119 +125,118 @@ export const MetadataFormComponent = (function () {
             attributes.required = true;
         }
 
+        // Bind for event listeners
+        const debouncedSave = this.debounced_autosave_form.bind(this);
+
         if (type === 'textarea') {
-            input_element = Helpers_create_element('textarea', {
+            input_element = this.Helpers.create_element('textarea', {
                 id: id, class_name: 'form-control', attributes: { rows: '4', ...attributes }
             });
             input_element.value = current_value;
-            input_element.addEventListener('input', debounced_autosave_form);
-            input_element.addEventListener('blur', debounced_autosave_form);
+            input_element.addEventListener('input', debouncedSave);
+            input_element.addEventListener('blur', debouncedSave);
         } else {
-            input_element = Helpers_create_element('input', {
+            input_element = this.Helpers.create_element('input', {
                 id: id, class_name: 'form-control', attributes: attributes
             });
             input_element.value = current_value;
-            input_element.addEventListener('input', debounced_autosave_form);
-            input_element.addEventListener('blur', debounced_autosave_form);
+            input_element.addEventListener('input', debouncedSave);
+            input_element.addEventListener('blur', debouncedSave);
         }
 
         form_group.appendChild(label);
         form_group.appendChild(input_element);
         return { form_group, input_element };
-    }
+    },
 
-    function render(options = {}) {
+    render(options = {}) {
         const {
             initialData = {},
             submitButtonText = 'Submit',
             cancelButtonText = null
         } = options;
 
-        form_container_ref.innerHTML = '';
-        const form_wrapper = Helpers_create_element('div', { class_name: 'metadata-form-container' });
+        this.root.innerHTML = '';
+        const form_wrapper = this.Helpers.create_element('div', { class_name: 'metadata-form-container' });
 
-        form_element_ref = Helpers_create_element('form');
-        // Use novalidate to prevent default browser bubbles, allowing our custom message to show
-        form_element_ref.setAttribute('novalidate', ''); 
-        form_element_ref.addEventListener('submit', handle_form_submit);
-        form_element_ref.addEventListener('click', handle_button_click);
-
-        const case_field = create_form_field('caseNumber', 'case_number', 'text', initialData.caseNumber);
-        case_number_input = case_field.input_element;
-        form_element_ref.appendChild(case_field.form_group);
-
-        const actor_field = create_form_field('actorName', 'actor_name', 'text', initialData.actorName, true); // Mark as required
-        actor_name_input = actor_field.input_element;
-        form_element_ref.appendChild(actor_field.form_group);
-
-        const actor_link_field = create_form_field('actorLink', 'actor_link', 'url', initialData.actorLink);
-        actor_link_input = actor_link_field.input_element;
-        form_element_ref.appendChild(actor_link_field.form_group);
-
-        const auditor_field = create_form_field('auditorName', 'auditor_name', 'text', initialData.auditorName);
-        auditor_name_input = auditor_field.input_element;
-        form_element_ref.appendChild(auditor_field.form_group);
+        this.form_element_ref = this.Helpers.create_element('form');
+        this.form_element_ref.setAttribute('novalidate', ''); 
         
-        const case_handler_field = create_form_field('caseHandler', 'case_handler', 'text', initialData.caseHandler);
-        case_handler_input = case_handler_field.input_element;
-        form_element_ref.appendChild(case_handler_field.form_group);
+        // Bind methods
+        this.handle_form_submit = this.handle_form_submit.bind(this);
+        this.handle_button_click = this.handle_button_click.bind(this);
 
-        const comment_field = create_form_field('internalComment', 'internal_comment', 'textarea', initialData.internalComment);
-        internal_comment_input = comment_field.input_element;
-        form_element_ref.appendChild(comment_field.form_group);
+        this.form_element_ref.addEventListener('submit', this.handle_form_submit);
+        this.form_element_ref.addEventListener('click', this.handle_button_click);
+
+        const case_field = this.create_form_field('caseNumber', 'case_number', 'text', initialData.caseNumber);
+        this.case_number_input = case_field.input_element;
+        this.form_element_ref.appendChild(case_field.form_group);
+
+        const actor_field = this.create_form_field('actorName', 'actor_name', 'text', initialData.actorName, true);
+        this.actor_name_input = actor_field.input_element;
+        this.form_element_ref.appendChild(actor_field.form_group);
+
+        const actor_link_field = this.create_form_field('actorLink', 'actor_link', 'url', initialData.actorLink);
+        this.actor_link_input = actor_link_field.input_element;
+        this.form_element_ref.appendChild(actor_link_field.form_group);
+
+        const auditor_field = this.create_form_field('auditorName', 'auditor_name', 'text', initialData.auditorName);
+        this.auditor_name_input = auditor_field.input_element;
+        this.form_element_ref.appendChild(auditor_field.form_group);
         
-        if (window.Helpers?.init_auto_resize_for_textarea) {
-            window.Helpers.init_auto_resize_for_textarea(internal_comment_input);
+        const case_handler_field = this.create_form_field('caseHandler', 'case_handler', 'text', initialData.caseHandler);
+        this.case_handler_input = case_handler_field.input_element;
+        this.form_element_ref.appendChild(case_handler_field.form_group);
+
+        const comment_field = this.create_form_field('internalComment', 'internal_comment', 'textarea', initialData.internalComment);
+        this.internal_comment_input = comment_field.input_element;
+        this.form_element_ref.appendChild(comment_field.form_group);
+        
+        if (this.Helpers.init_auto_resize_for_textarea) {
+            this.Helpers.init_auto_resize_for_textarea(this.internal_comment_input);
         }
 
-        const form_actions_wrapper = Helpers_create_element('div', { class_name: 'form-actions' });
+        const form_actions_wrapper = this.Helpers.create_element('div', { class_name: 'form-actions' });
         
-        if (cancelButtonText && typeof on_cancel_callback === 'function') {
-            const cancel_button = Helpers_create_element('button', {
+        if (cancelButtonText && typeof this.on_cancel_callback === 'function') {
+            const cancel_button = this.Helpers.create_element('button', {
                 class_name: ['button', 'button-default'],
                 attributes: { type: 'button' },
                 text_content: cancelButtonText
             });
-            cancel_button.addEventListener('click', on_cancel_callback);
+            cancel_button.addEventListener('click', this.on_cancel_callback);
             form_actions_wrapper.appendChild(cancel_button);
         }
 
-        const submit_button = Helpers_create_element('button', {
+        const submit_button = this.Helpers.create_element('button', {
             class_name: ['button', 'button-primary'],
             attributes: { type: 'submit' },
-            html_content: `<span>${submitButtonText}</span>` + Helpers_get_icon_svg('arrow_forward')
+            html_content: `<span>${submitButtonText}</span>` + (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('arrow_forward') : '')
         });
         form_actions_wrapper.appendChild(submit_button);
 
-        form_element_ref.appendChild(form_actions_wrapper);
-        form_wrapper.appendChild(form_element_ref);
-        form_container_ref.appendChild(form_wrapper);
-    }
+        this.form_element_ref.appendChild(form_actions_wrapper);
+        form_wrapper.appendChild(this.form_element_ref);
+        this.root.appendChild(form_wrapper);
+    },
 
-    function destroy() {
-        clearTimeout(debounceTimerFormFields);
-        if (form_element_ref) {
-            form_element_ref.removeEventListener('submit', handle_form_submit);
-            form_element_ref.removeEventListener('click', handle_button_click);
+    destroy() {
+        clearTimeout(this.debounceTimerFormFields);
+        if (this.form_element_ref) {
+            this.form_element_ref.removeEventListener('submit', this.handle_form_submit);
+            this.form_element_ref.removeEventListener('click', this.handle_button_click);
         }
-        // Rensa event listeners från alla input-fält
-        const all_inputs = form_element_ref?.querySelectorAll('input, textarea');
-        if (all_inputs) {
-            all_inputs.forEach(input => {
-                input.removeEventListener('input', debounced_autosave_form);
-                input.removeEventListener('blur', debounced_autosave_form);
-            });
-        }
-        form_container_ref.innerHTML = '';
-        form_element_ref = null;
-        on_submit_callback = null;
-        on_cancel_callback = null;
-        on_autosave_callback = null;
+        
+        // No strict need to remove other listeners as we are clearing innerHTML and dropping references, 
+        // but for completeness one could track them.
+        
+        if (this.root) this.root.innerHTML = '';
+        this.form_element_ref = null;
+        this.on_submit_callback = null;
+        this.on_cancel_callback = null;
+        this.on_autosave_callback = null;
+        this.root = null;
+        this.deps = null;
     }
-
-    return {
-        init,
-        render,
-        destroy
-    };
-})();
+};

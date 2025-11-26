@@ -464,12 +464,23 @@ window.dependencyManager = dependencyManager;
             }
 
             if (view_name_to_render === 'restore_session') {
-                await current_view_component_instance.init(
-                    app_container, 
-                    params_to_render.on_restore, 
-                    params_to_render.on_discard, 
-                    params_to_render.autosaved_state
-                );
+                await current_view_component_instance.init({
+                    root: app_container,
+                    deps: {
+                        router: navigate_and_set_hash,
+                        params: params_to_render, // Contains on_restore, on_discard, autosaved_state
+                        getState,
+                        dispatch,
+                        StoreActionTypes,
+                        subscribe,
+                        Translation: window.Translation,
+                        Helpers: window.Helpers,
+                        NotificationComponent: NotificationComponent,
+                        SaveAuditLogic: window.SaveAuditLogic,
+                        AuditLogic: window.AuditLogic,
+                        ExportLogic: window.ExportLogic
+                    }
+                });
             } else {
                 // Support new component standard (init({ root, deps }))
                 // We assume if length is 1, it's the new standard

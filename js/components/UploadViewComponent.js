@@ -1,72 +1,83 @@
-// js/components/UploadViewComponent.js
+export const UploadViewComponent = {
+  init({ root, deps }) {
+    this.root = root;
+    this.deps = deps;
+    this.router = deps.router;
+    this.getState = deps.getState;
+    this.dispatch = deps.dispatch;
+    this.StoreActionTypes = deps.StoreActionTypes;
+    this.Translation = deps.Translation;
+    this.Helpers = deps.Helpers;
+    this.NotificationComponent = deps.NotificationComponent;
+    this.ValidationLogic = window.ValidationLogic; // Assuming this is still global or passed via deps if refactored. Usually utils are modules now, but let's check if it's passed. It's not in the standard deps list I saw earlier. I will use window fallback if not in deps.
 
-export const UploadViewComponent = (function () {
-  'use-strict';
+    this.CSS_PATH = './css/components/upload_view_component.css';
+    
+    // Internal refs
+    this.rule_file_input_for_audit = null;
+    this.saved_audit_input_element = null;
+    this.rule_file_input_for_edit = null;
 
-  const CSS_PATH = './css/components/upload_view_component.css';
-  let app_container_ref;
-  let router_ref;
-  let global_message_element_ref;
+    // Bind methods
+    this.handle_audit_rule_file_select = this.handle_audit_rule_file_select.bind(this);
+    this.handle_saved_audit_file_select = this.handle_saved_audit_file_select.bind(this);
+    this.handle_edit_file_select = this.handle_edit_file_select.bind(this);
 
-  let rule_file_input_for_audit;
-  let saved_audit_input_element;
-  let rule_file_input_for_edit;
+    if (this.Helpers && this.Helpers.load_css_safely) {
+        this.Helpers.load_css_safely(this.CSS_PATH, 'UploadViewComponent', {
+            timeout: 5000,
+            maxRetries: 2,
+        }).catch(() => {
+            console.warn('[UploadViewComponent] Continuing without CSS due to loading failure');
+        });
+    }
+  },
 
-  // Local state/dependencies
-  let local_getState;
-  let local_dispatch;
-  let local_StoreActionTypes;
+  get_t_func() {
+    return (this.Translation && typeof this.Translation.t === 'function')
+      ? this.Translation.t
+      : (key) => `**${key}**`;
+  },
 
-  function get_t_func() {
-    return typeof window.Translation !== 'undefined' &&
-      typeof window.Translation.t === 'function'
-      ? window.Translation.t
-      : (key, replacements) => `**${key}**`;
-  }
-
-  function handle_audit_rule_file_select(event) {
-    const t = get_t_func();
+  handle_audit_rule_file_select(event) {
+    const t = this.get_t_func();
     const file = event.target.files[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = function (e) {
+    reader.onload = (e) => {
       try {
         const json_content = JSON.parse(e.target.result);
-        const validation_result =
-          window.ValidationLogic.validate_rule_file_json(json_content);
+        const validation_result = (this.ValidationLogic || window.ValidationLogic).validate_rule_file_json(json_content);
 
         if (validation_result.isValid) {
-          if (
-            window.Store &&
-            typeof window.Store.clearAutosavedState === 'function'
-          ) {
-            window.Store.clearAutosavedState();
+          if (window.Store && typeof window.Store.clearAutosavedState === 'function') {
+             window.Store.clearAutosavedState();
           }
 
-          if (window.NotificationComponent)
-            NotificationComponent.show_global_message(
+          if (this.NotificationComponent)
+            this.NotificationComponent.show_global_message(
               validation_result.message,
               'success'
             );
 
-          local_dispatch({
-            type: local_StoreActionTypes.INITIALIZE_NEW_AUDIT,
+          this.dispatch({
+            type: this.StoreActionTypes.INITIALIZE_NEW_AUDIT,
             payload: { ruleFileContent: json_content },
           });
 
-          router_ref('metadata');
+          this.router('metadata');
         } else {
-          if (window.NotificationComponent)
-            NotificationComponent.show_global_message(
+          if (this.NotificationComponent)
+            this.NotificationComponent.show_global_message(
               validation_result.message,
               'error'
             );
         }
       } catch (error) {
         console.error('Error parsing JSON from rule file for audit:', error);
-        if (window.NotificationComponent)
-          NotificationComponent.show_global_message(
+        if (this.NotificationComponent)
+          this.NotificationComponent.show_global_message(
             t('rule_file_invalid_json'),
             'error'
           );
@@ -75,43 +86,42 @@ export const UploadViewComponent = (function () {
       }
     };
     reader.readAsText(file);
-  }
+  },
 
-  function handle_saved_audit_file_select(event) {
-    const t = get_t_func();
+  handle_saved_audit_file_select(event) {
+    const t = this.get_t_func();
     const file = event.target.files[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = function (e) {
+    reader.onload = (e) => {
       try {
         const file_content_object = JSON.parse(e.target.result);
-        const validation_result =
-          window.ValidationLogic.validate_saved_audit_file(file_content_object);
+        const validation_result = (this.ValidationLogic || window.ValidationLogic).validate_saved_audit_file(file_content_object);
 
         if (validation_result.isValid) {
-          local_dispatch({
-            type: local_StoreActionTypes.LOAD_AUDIT_FROM_FILE,
+          this.dispatch({
+            type: this.StoreActionTypes.LOAD_AUDIT_FROM_FILE,
             payload: file_content_object,
           });
 
-          if (window.NotificationComponent)
-            NotificationComponent.show_global_message(
+          if (this.NotificationComponent)
+            this.NotificationComponent.show_global_message(
               t('saved_audit_loaded_successfully'),
               'success'
             );
-          router_ref('audit_overview');
+          this.router('audit_overview');
         } else {
-          if (window.NotificationComponent)
-            NotificationComponent.show_global_message(
+          if (this.NotificationComponent)
+            this.NotificationComponent.show_global_message(
               validation_result.message,
               'error'
             );
         }
       } catch (error) {
         console.error('Error parsing JSON from saved audit file:', error);
-        if (window.NotificationComponent)
-          NotificationComponent.show_global_message(
+        if (this.NotificationComponent)
+          this.NotificationComponent.show_global_message(
             t('error_invalid_saved_audit_file'),
             'error'
           );
@@ -120,30 +130,26 @@ export const UploadViewComponent = (function () {
       }
     };
     reader.readAsText(file);
-  }
+  },
 
-  function handle_edit_file_select(event) {
-    const t = get_t_func();
+  handle_edit_file_select(event) {
+    const t = this.get_t_func();
     const file = event.target.files[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = function (e) {
+    reader.onload = (e) => {
       try {
         const json_content = JSON.parse(e.target.result);
-        const validation_result =
-          window.ValidationLogic.validate_rule_file_json(json_content);
+        const validation_result = (this.ValidationLogic || window.ValidationLogic).validate_rule_file_json(json_content);
 
         if (validation_result.isValid) {
-          if (
-            window.Store &&
-            typeof window.Store.clearAutosavedState === 'function'
-          ) {
+          if (window.Store && typeof window.Store.clearAutosavedState === 'function') {
             window.Store.clearAutosavedState();
           }
 
-          local_dispatch({
-            type: local_StoreActionTypes.INITIALIZE_RULEFILE_EDITING,
+          this.dispatch({
+            type: this.StoreActionTypes.INITIALIZE_RULEFILE_EDITING,
             payload: {
               ruleFileContent: json_content,
               originalRuleFileContentString: JSON.stringify(
@@ -155,19 +161,18 @@ export const UploadViewComponent = (function () {
             },
           });
 
-          // --- HÄR ÄR ÄNDRINGEN ---
-          router_ref('edit_rulefile_main');
+          this.router('edit_rulefile_main');
         } else {
-          if (window.NotificationComponent)
-            NotificationComponent.show_global_message(
+          if (this.NotificationComponent)
+            this.NotificationComponent.show_global_message(
               validation_result.message,
               'error'
             );
         }
       } catch (error) {
         console.error('Error parsing rule file for editing:', error);
-        if (window.NotificationComponent)
-          NotificationComponent.show_global_message(
+        if (this.NotificationComponent)
+          this.NotificationComponent.show_global_message(
             t('rule_file_invalid_json'),
             'error'
           );
@@ -176,168 +181,137 @@ export const UploadViewComponent = (function () {
       }
     };
     reader.readAsText(file);
-  }
+  },
 
-  async function init(
-    _app_container,
-    _router,
-    _params,
-    _getState,
-    _dispatch,
-    _StoreActionTypes
-  ) {
-    app_container_ref = _app_container;
-    router_ref = _router;
-
-    local_getState = _getState;
-    local_dispatch = _dispatch;
-    local_StoreActionTypes = _StoreActionTypes;
-
-    if (window.NotificationComponent?.get_global_message_element_reference) {
-      global_message_element_ref =
-        window.NotificationComponent.get_global_message_element_reference();
-    }
-
-    if (window.Helpers?.load_css_safely) {
-      try {
-        await window.Helpers.load_css_safely(CSS_PATH, 'UploadViewComponent', {
-          timeout: 5000,
-          maxRetries: 2,
-        });
-      } catch (error) {
-        // Fel hanteras redan i load_css_safely med användarvarning
-        console.warn(
-          '[UploadViewComponent] Continuing without CSS due to loading failure'
-        );
-      }
-    }
-  }
-
-  function render() {
-    if (!app_container_ref || !window.Helpers?.create_element) {
+  render() {
+    if (!this.root || !this.Helpers || !this.Helpers.create_element) {
       console.error('[UploadViewComponent] render prerequisites missing.');
       return;
     }
-    app_container_ref.innerHTML = '';
-    const t = get_t_func();
+    this.root.innerHTML = '';
+    const t = this.get_t_func();
 
-    // Skapa bakgrundsplatta
-    const plate_element = window.Helpers.create_element('div', {
+    // Create plate
+    const plate_element = this.Helpers.create_element('div', {
       class_name: 'content-plate',
     });
 
-    if (global_message_element_ref) {
-      plate_element.appendChild(global_message_element_ref);
-      if (
-        window.NotificationComponent?.clear_global_message &&
-        !global_message_element_ref.classList.contains('message-error') &&
-        !global_message_element_ref.classList.contains('message-warning')
-      ) {
-        window.NotificationComponent.clear_global_message();
-      }
+    if (this.NotificationComponent && this.NotificationComponent.get_global_message_element_reference) {
+        const global_message_element_ref = this.NotificationComponent.get_global_message_element_reference();
+        plate_element.appendChild(global_message_element_ref);
+        
+        if (this.NotificationComponent.clear_global_message &&
+            !global_message_element_ref.classList.contains('message-error') &&
+            !global_message_element_ref.classList.contains('message-warning')
+        ) {
+            this.NotificationComponent.clear_global_message();
+        }
     }
 
-    const title = window.Helpers.create_element('h1', {
+    const title = this.Helpers.create_element('h1', {
       text_content: t('app_title'),
     });
-    const intro_text = window.Helpers.create_element('p', {
+    const intro_text = this.Helpers.create_element('p', {
       text_content: t('upload_view_intro'),
     });
 
-    const actions_title = window.Helpers.create_element('h2', {
+    const actions_title = this.Helpers.create_element('h2', {
       text_content: t('upload_view_actions_title'),
       style: 'font-size: 1.2rem; margin-top: 2rem;',
     });
+    
+    // Action 1: Load ongoing
     const load_ongoing_description_id = 'upload-help-resume';
-    const load_ongoing_audit_btn = window.Helpers.create_element('button', {
+    const load_ongoing_audit_btn = this.Helpers.create_element('button', {
       id: 'load-ongoing-audit-btn',
       class_name: ['button', 'button-secondary'],
       attributes: { 'aria-describedby': load_ongoing_description_id },
       html_content:
         `<span>${t('upload_ongoing_audit')}</span>` +
-        (window.Helpers.get_icon_svg
-          ? window.Helpers.get_icon_svg('upload_file')
+        (this.Helpers.get_icon_svg
+          ? this.Helpers.get_icon_svg('upload_file')
           : ''),
     });
-    const load_ongoing_description = window.Helpers.create_element('p', {
+    const load_ongoing_description = this.Helpers.create_element('p', {
       class_name: ['upload-action-description'],
       attributes: { id: load_ongoing_description_id },
       text_content: t('upload_view_description_resume_audit'),
     });
-    const load_ongoing_block = window.Helpers.create_element('div', {
+    const load_ongoing_block = this.Helpers.create_element('div', {
       class_name: ['upload-action-block'],
     });
     load_ongoing_block.append(load_ongoing_audit_btn, load_ongoing_description);
 
+    // Action 2: Start new
     const start_new_description_id = 'upload-help-start-new';
-    const start_new_audit_btn = window.Helpers.create_element('button', {
+    const start_new_audit_btn = this.Helpers.create_element('button', {
       id: 'start-new-audit-btn',
       class_name: ['button', 'button-primary'],
       attributes: { 'aria-describedby': start_new_description_id },
       html_content:
         `<span>${t('start_new_audit')}</span>` +
-        (window.Helpers.get_icon_svg
-          ? window.Helpers.get_icon_svg('start_new')
+        (this.Helpers.get_icon_svg
+          ? this.Helpers.get_icon_svg('start_new')
           : ''),
     });
-    const start_new_description = window.Helpers.create_element('p', {
+    const start_new_description = this.Helpers.create_element('p', {
       class_name: ['upload-action-description'],
       attributes: { id: start_new_description_id },
       text_content: t('upload_view_description_start_new'),
     });
-    const start_new_block = window.Helpers.create_element('div', {
+    const start_new_block = this.Helpers.create_element('div', {
       class_name: ['upload-action-block'],
     });
     start_new_block.append(start_new_audit_btn, start_new_description);
 
-    const actions_container = window.Helpers.create_element('div', {
+    const actions_container = this.Helpers.create_element('div', {
       class_name: ['upload-action-stack'],
     });
     actions_container.append(load_ongoing_block, start_new_block);
 
-    const section_separator = window.Helpers.create_element('hr', {
+    const section_separator = this.Helpers.create_element('hr', {
       style: 'margin: 2rem 0;',
     });
 
-    const edit_section_title = window.Helpers.create_element('h2', {
+    // Action 3: Edit rulefile
+    const edit_section_title = this.Helpers.create_element('h2', {
       text_content: t('upload_view_title_edit'),
       style: 'font-size: 1.2rem; margin-top: 2.5rem;',
     });
     const edit_description_id = 'upload-help-edit';
-    const edit_rulefile_btn = window.Helpers.create_element('button', {
+    const edit_rulefile_btn = this.Helpers.create_element('button', {
       id: 'edit-rulefile-btn',
       class_name: ['button', 'button-default'],
       attributes: { 'aria-describedby': edit_description_id },
       html_content:
         `<span>${t('upload_view_button_edit')}</span>` +
-        (window.Helpers.get_icon_svg
-          ? window.Helpers.get_icon_svg('edit')
+        (this.Helpers.get_icon_svg
+          ? this.Helpers.get_icon_svg('edit')
           : ''),
     });
-    const edit_description = window.Helpers.create_element('p', {
+    const edit_description = this.Helpers.create_element('p', {
       class_name: ['upload-action-description'],
       attributes: { id: edit_description_id },
       text_content: t('upload_view_description_edit_rulefile'),
     });
-    const edit_block = window.Helpers.create_element('div', {
+    const edit_block = this.Helpers.create_element('div', {
       class_name: ['upload-action-block'],
     });
     edit_block.append(edit_rulefile_btn, edit_description);
 
-    rule_file_input_for_audit = window.Helpers.create_element('input', {
+    this.rule_file_input_for_audit = this.Helpers.create_element('input', {
       id: 'rule-file-input-audit',
       attributes: { type: 'file', accept: '.json', style: 'display: none;' },
     });
-    saved_audit_input_element = window.Helpers.create_element('input', {
+    this.saved_audit_input_element = this.Helpers.create_element('input', {
       id: 'saved-audit-input',
       attributes: { type: 'file', accept: '.json', style: 'display: none;' },
     });
-    rule_file_input_for_edit = window.Helpers.create_element('input', {
+    this.rule_file_input_for_edit = this.Helpers.create_element('input', {
       id: 'rule-file-input-edit',
       attributes: { type: 'file', accept: '.json', style: 'display: none;' },
     });
 
-    // Lägg till allt innehåll i bakgrundsplattan
     plate_element.append(
       title,
       intro_text,
@@ -346,65 +320,63 @@ export const UploadViewComponent = (function () {
       section_separator,
       edit_section_title,
       edit_block,
-      rule_file_input_for_audit,
-      saved_audit_input_element,
-      rule_file_input_for_edit
+      this.rule_file_input_for_audit,
+      this.saved_audit_input_element,
+      this.rule_file_input_for_edit
     );
 
-    // Lägg till bakgrundsplattan i app-container
-    app_container_ref.appendChild(plate_element);
+    this.root.appendChild(plate_element);
 
+    // Event listeners
     start_new_audit_btn.addEventListener('click', () =>
-      rule_file_input_for_audit.click()
+      this.rule_file_input_for_audit.click()
     );
-    rule_file_input_for_audit.addEventListener(
+    this.rule_file_input_for_audit.addEventListener(
       'change',
-      handle_audit_rule_file_select
+      this.handle_audit_rule_file_select
     );
 
     load_ongoing_audit_btn.addEventListener('click', () =>
-      saved_audit_input_element.click()
+      this.saved_audit_input_element.click()
     );
-    saved_audit_input_element.addEventListener(
+    this.saved_audit_input_element.addEventListener(
       'change',
-      handle_saved_audit_file_select
+      this.handle_saved_audit_file_select
     );
 
     edit_rulefile_btn.addEventListener('click', () =>
-      rule_file_input_for_edit.click()
+      this.rule_file_input_for_edit.click()
     );
-    rule_file_input_for_edit.addEventListener(
+    this.rule_file_input_for_edit.addEventListener(
       'change',
-      handle_edit_file_select
+      this.handle_edit_file_select
     );
+  },
+
+  destroy() {
+    if (this.rule_file_input_for_audit)
+      this.rule_file_input_for_audit.removeEventListener(
+        'change',
+        this.handle_audit_rule_file_select
+      );
+    if (this.saved_audit_input_element)
+      this.saved_audit_input_element.removeEventListener(
+        'change',
+        this.handle_saved_audit_file_select
+      );
+    if (this.rule_file_input_for_edit)
+      this.rule_file_input_for_edit.removeEventListener(
+        'change',
+        this.handle_edit_file_select
+      );
+
+    if (this.root) this.root.innerHTML = '';
+    
+    this.root = null;
+    this.deps = null;
+    this.ValidationLogic = null;
+    this.rule_file_input_for_audit = null;
+    this.saved_audit_input_element = null;
+    this.rule_file_input_for_edit = null;
   }
-
-  function destroy() {
-    if (rule_file_input_for_audit)
-      rule_file_input_for_audit.removeEventListener(
-        'change',
-        handle_audit_rule_file_select
-      );
-    if (saved_audit_input_element)
-      saved_audit_input_element.removeEventListener(
-        'change',
-        handle_saved_audit_file_select
-      );
-    if (rule_file_input_for_edit)
-      rule_file_input_for_edit.removeEventListener(
-        'change',
-        handle_edit_file_select
-      );
-
-    app_container_ref.innerHTML = '';
-    local_getState = null;
-    local_dispatch = null;
-    local_StoreActionTypes = null;
-  }
-
-  return {
-    init,
-    render,
-    destroy,
-  };
-})();
+};
