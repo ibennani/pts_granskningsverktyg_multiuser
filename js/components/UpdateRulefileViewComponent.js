@@ -1,128 +1,95 @@
 // js/components/UpdateRulefileViewComponent.js
 
-export const UpdateRulefileViewComponent = (function () {
-    'use-strict';
-
-    const CSS_PATH = 'css/components/update_rulefile_view.css';
-    let app_container_ref;
-    let router_ref;
-
-    let local_getState;
-    let local_dispatch;
-    let local_StoreActionTypes;
-
-    let Translation_t;
-    let Helpers_create_element, Helpers_get_icon_svg, Helpers_load_css, Helpers_escape_html;
-    let NotificationComponent_show_global_message, NotificationComponent_get_global_message_element_reference;
-    let SaveAuditLogic_save_audit_to_json_file;
-    let ValidationLogic_validate_rule_file_json;
-
-    let global_message_element_ref;
-    let plate_element_ref;
-
-    const VIEW_STEPS = {
+export const UpdateRulefileViewComponent = {
+    CSS_PATH: 'css/components/update_rulefile_view.css',
+    VIEW_STEPS: {
         WARNING: 'WARNING',
         UPLOAD: 'UPLOAD',
         CONFIRM: 'CONFIRM'
-    };
-    let current_step = VIEW_STEPS.WARNING;
-    let staged_new_rule_file_content = null;
-    let staged_analysis_report = null;
+    },
 
+    async init({ root, deps }) {
+        this.root = root;
+        this.deps = deps;
+        this.router = deps.router;
+        this.getState = deps.getState;
+        this.dispatch = deps.dispatch;
+        this.StoreActionTypes = deps.StoreActionTypes;
+        this.Translation = deps.Translation;
+        this.Helpers = deps.Helpers;
+        this.NotificationComponent = deps.NotificationComponent;
+        this.SaveAuditLogic = deps.SaveAuditLogic;
 
-    function get_t_internally() {
-        return window.Translation?.t || ((key) => `**${key}**`);
-    }
+        this.current_step = this.VIEW_STEPS.WARNING;
+        this.staged_new_rule_file_content = null;
+        this.staged_analysis_report = null;
+        this.plate_element_ref = null;
 
-    function assign_globals_once() {
-        if (Translation_t && Helpers_create_element) return;
-
-        Translation_t = window.Translation?.t;
-        Helpers_create_element = window.Helpers?.create_element;
-        Helpers_get_icon_svg = window.Helpers?.get_icon_svg;
-        Helpers_load_css = window.Helpers?.load_css;
-        Helpers_escape_html = window.Helpers?.escape_html;
-        NotificationComponent_show_global_message = window.NotificationComponent?.show_global_message;
-        NotificationComponent_get_global_message_element_reference = window.NotificationComponent?.get_global_message_element_reference;
-        SaveAuditLogic_save_audit_to_json_file = window.SaveAuditLogic?.save_audit_to_json_file;
-        ValidationLogic_validate_rule_file_json = window.ValidationLogic?.validate_rule_file_json;
-    }
-    
-    async function init(_app_container, _router, _params, _getState, _dispatch, _StoreActionTypes) {
-        assign_globals_once();
-        app_container_ref = _app_container;
-        router_ref = _router;
-        local_getState = _getState;
-        local_dispatch = _dispatch;
-        local_StoreActionTypes = _StoreActionTypes;
-
-        if (NotificationComponent_get_global_message_element_reference) {
-            global_message_element_ref = NotificationComponent_get_global_message_element_reference();
-        }
-
-        if (Helpers_load_css && CSS_PATH) {
+        if (this.Helpers?.load_css && this.CSS_PATH) {
             try {
-                const link_tag = document.querySelector(`link[href="${CSS_PATH}"]`);
+                const link_tag = document.querySelector(`link[href="${this.CSS_PATH}"]`);
                 if (!link_tag) {
-                    await Helpers_load_css(CSS_PATH);
+                    await this.Helpers.load_css(this.CSS_PATH);
                 }
             } catch (error) {
                 console.warn("CSS for UpdateRulefileViewComponent not found yet, skipping load.", error);
             }
         }
-        current_step = VIEW_STEPS.WARNING;
-        staged_new_rule_file_content = null;
-        staged_analysis_report = null;
-    }
+    },
 
-    function handle_backup_click() {
-        const t = get_t_internally();
-        if (SaveAuditLogic_save_audit_to_json_file) {
-            SaveAuditLogic_save_audit_to_json_file(local_getState(), t, NotificationComponent_show_global_message);
-            current_step = VIEW_STEPS.UPLOAD;
-            render();
+    get_t_internally() {
+        return this.Translation?.t || ((key) => `**${key}**`);
+    },
+
+    handle_backup_click() {
+        const t = this.get_t_internally();
+        if (this.SaveAuditLogic?.save_audit_to_json_file) {
+            this.SaveAuditLogic.save_audit_to_json_file(this.getState(), t, this.NotificationComponent?.show_global_message);
+            this.current_step = this.VIEW_STEPS.UPLOAD;
+            this.render();
         } else {
             console.error("SaveAuditLogic not available to perform backup.");
-            if (NotificationComponent_show_global_message) {
-                NotificationComponent_show_global_message(t('error_saving_audit'), 'error');
+            if (this.NotificationComponent?.show_global_message) {
+                this.NotificationComponent.show_global_message(t('error_saving_audit'), 'error');
             }
         }
-    }
+    },
 
-    function handle_new_rule_file_upload(event) {
-        const t = get_t_internally();
+    handle_new_rule_file_upload(event) {
+        const t = this.get_t_internally();
         const file = event.target.files[0];
         if (!file) return;
         
         if (!window.RulefileUpdaterLogic) {
             console.error("CRITICAL: RulefileUpdaterLogic is not available on the window object.");
-            NotificationComponent_show_global_message(t('error_internal_reload'), 'error');
+            this.NotificationComponent?.show_global_message(t('error_internal_reload'), 'error');
             return;
         }
 
         const reader = new FileReader();
-        reader.onload = function (e) {
+        reader.onload = (e) => {
             try {
                 const new_rule_content = JSON.parse(e.target.result);
-                const validation = ValidationLogic_validate_rule_file_json(new_rule_content);
+                // Assuming ValidationLogic is available globally as in original code
+                const validation = window.ValidationLogic?.validate_rule_file_json(new_rule_content);
 
-                if (!validation.isValid) {
-                    NotificationComponent_show_global_message(validation.message, 'error');
+                if (validation && !validation.isValid) {
+                    this.NotificationComponent?.show_global_message(validation.message, 'error');
                     return;
                 }
 
-                const report = window.RulefileUpdaterLogic.analyze_rule_file_changes(local_getState(), new_rule_content);
-                staged_analysis_report = report;
-                staged_new_rule_file_content = new_rule_content;
+                const report = window.RulefileUpdaterLogic.analyze_rule_file_changes(this.getState(), new_rule_content);
+                this.staged_analysis_report = report;
+                this.staged_new_rule_file_content = new_rule_content;
 
-                current_step = VIEW_STEPS.CONFIRM;
-                render();
+                this.current_step = this.VIEW_STEPS.CONFIRM;
+                this.render();
 
             } catch (error) {
-                const t = get_t_internally();
+                const t = this.get_t_internally();
                 const errorMsg = t('error_rulefile_update_failed');
                 console.error(`${errorMsg}:`, error);
-                NotificationComponent_show_global_message(
+                this.NotificationComponent?.show_global_message(
                     t('rule_file_invalid_json_with_detail', { errorMessage: error.message }),
                     'error'
                 );
@@ -131,125 +98,128 @@ export const UpdateRulefileViewComponent = (function () {
             }
         };
         reader.readAsText(file);
-    }
+    },
     
-    function handle_confirm_update_click() {
-        const t = get_t_internally();
-        if (!staged_new_rule_file_content || !staged_analysis_report) {
+    handle_confirm_update_click() {
+        const t = this.get_t_internally();
+        if (!this.staged_new_rule_file_content || !this.staged_analysis_report) {
             const errorMsg = t('error_confirm_failed_temp_data_missing');
             console.error(errorMsg);
-            NotificationComponent_show_global_message(t('error_internal'), 'error');
+            this.NotificationComponent?.show_global_message(t('error_internal'), 'error');
             return;
         }
 
         const final_reconciled_state = window.RulefileUpdaterLogic.apply_rule_file_update(
-            local_getState(),
-            staged_new_rule_file_content,
-            staged_analysis_report
+            this.getState(),
+            this.staged_new_rule_file_content,
+            this.staged_analysis_report
         );
         
-        local_dispatch({
-            type: local_StoreActionTypes.REPLACE_RULEFILE_AND_RECONCILE,
+        this.dispatch({
+            type: this.StoreActionTypes.REPLACE_RULEFILE_AND_RECONCILE,
             payload: final_reconciled_state
         });
 
-        NotificationComponent_show_global_message(t('update_rulefile_success'), 'success');
-        router_ref('audit_overview');
-    }
+        this.NotificationComponent?.show_global_message(t('update_rulefile_success'), 'success');
+        this.router('audit_overview');
+    },
 
-    function render() {
-        assign_globals_once();
+    render() {
+        if (!this.root) return;
         
-        if (!plate_element_ref) {
-            app_container_ref.innerHTML = '';
-            plate_element_ref = Helpers_create_element('div', { class_name: 'content-plate update-rulefile-view-plate' });
-            app_container_ref.appendChild(plate_element_ref);
+        if (!this.plate_element_ref || !this.root.contains(this.plate_element_ref)) {
+            this.root.innerHTML = '';
+            this.plate_element_ref = this.Helpers.create_element('div', { class_name: 'content-plate update-rulefile-view-plate' });
+            this.root.appendChild(this.plate_element_ref);
         }
         
-        plate_element_ref.innerHTML = '';
+        this.plate_element_ref.innerHTML = '';
 
-        if (global_message_element_ref) {
-            plate_element_ref.appendChild(global_message_element_ref);
+        if (this.NotificationComponent?.get_global_message_element_reference) {
+            const global_message_element_ref = this.NotificationComponent.get_global_message_element_reference();
+            if (global_message_element_ref) {
+                this.plate_element_ref.appendChild(global_message_element_ref);
+            }
         }
 
-        plate_element_ref.appendChild(Helpers_create_element('h1', { text_content: get_t_internally()('update_rulefile_title') }));
+        this.plate_element_ref.appendChild(this.Helpers.create_element('h1', { text_content: this.get_t_internally()('update_rulefile_title') }));
 
-        switch (current_step) {
-            case VIEW_STEPS.WARNING:
-                render_warning_step();
+        switch (this.current_step) {
+            case this.VIEW_STEPS.WARNING:
+                this.render_warning_step();
                 break;
-            case VIEW_STEPS.UPLOAD:
-                render_upload_step();
+            case this.VIEW_STEPS.UPLOAD:
+                this.render_upload_step();
                 break;
-            case VIEW_STEPS.CONFIRM:
-                render_confirm_step(staged_analysis_report);
+            case this.VIEW_STEPS.CONFIRM:
+                this.render_confirm_step(this.staged_analysis_report);
                 break;
         }
-    }
+    },
 
-    function render_warning_step() {
-        const t = get_t_internally();
-        plate_element_ref.appendChild(Helpers_create_element('p', { class_name: 'view-intro-text', text_content: t('update_rulefile_warning_intro') }));
+    render_warning_step() {
+        const t = this.get_t_internally();
+        this.plate_element_ref.appendChild(this.Helpers.create_element('p', { class_name: 'view-intro-text', text_content: t('update_rulefile_warning_intro') }));
         
-        const warning_list = Helpers_create_element('ul', { class_name: 'warning-list' });
+        const warning_list = this.Helpers.create_element('ul', { class_name: 'warning-list' });
         warning_list.innerHTML = `
             <li>${t('update_rulefile_warning_li1')}</li>
             <li>${t('update_rulefile_warning_li2')}</li>
         `;
-        plate_element_ref.appendChild(warning_list);
+        this.plate_element_ref.appendChild(warning_list);
 
-        plate_element_ref.appendChild(Helpers_create_element('h2', { style: { 'font-size': '1.2rem', 'margin-top': '1.5rem' }, text_content: t('update_rulefile_recommendation') }));
-        plate_element_ref.appendChild(Helpers_create_element('p', { text_content: t('update_rulefile_backup_text') }));
+        this.plate_element_ref.appendChild(this.Helpers.create_element('h2', { style: { 'font-size': '1.2rem', 'margin-top': '1.5rem' }, text_content: t('update_rulefile_recommendation') }));
+        this.plate_element_ref.appendChild(this.Helpers.create_element('p', { text_content: t('update_rulefile_backup_text') }));
 
-        const backup_button = Helpers_create_element('button', {
+        const backup_button = this.Helpers.create_element('button', {
             class_name: ['button', 'button-primary'],
-            html_content: `<span>${t('save_audit_to_file')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('save') : '')
+            html_content: `<span>${t('save_audit_to_file')}</span>` + (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('save') : '')
         });
-        backup_button.addEventListener('click', handle_backup_click);
+        backup_button.addEventListener('click', () => this.handle_backup_click());
         
-        const actions_div = Helpers_create_element('div', { class_name: 'form-actions', style: { 'margin-top': '2rem' } });
+        const actions_div = this.Helpers.create_element('div', { class_name: 'form-actions', style: { 'margin-top': '2rem' } });
         actions_div.append(backup_button);
-        plate_element_ref.appendChild(actions_div);
-    }
+        this.plate_element_ref.appendChild(actions_div);
+    },
     
-    function render_upload_step() {
-        const t = get_t_internally();
+    render_upload_step() {
+        const t = this.get_t_internally();
         
-        plate_element_ref.appendChild(Helpers_create_element('div', {
+        this.plate_element_ref.appendChild(this.Helpers.create_element('div', {
             class_name: 'backup-confirmation',
-            html_content: (Helpers_get_icon_svg ? Helpers_get_icon_svg('check_circle') : '✔') + ` <span>${t('update_rulefile_backup_saved')}</span>`
+            html_content: (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('check_circle') : '✔') + ` <span>${t('update_rulefile_backup_saved')}</span>`
         }));
         
-        plate_element_ref.appendChild(Helpers_create_element('h2', { style: { 'font-size': '1.2rem', 'margin-top': '1.5rem' }, text_content: t('update_rulefile_step2_title') }));
-        plate_element_ref.appendChild(Helpers_create_element('p', { text_content: t('update_rulefile_step2_text') }));
+        this.plate_element_ref.appendChild(this.Helpers.create_element('h2', { style: { 'font-size': '1.2rem', 'margin-top': '1.5rem' }, text_content: t('update_rulefile_step2_title') }));
+        this.plate_element_ref.appendChild(this.Helpers.create_element('p', { text_content: t('update_rulefile_step2_text') }));
 
-        const file_input = Helpers_create_element('input', { id: 'new-rule-file-input', attributes: { type: 'file', accept: '.json', style: 'display: none;' } });
-        file_input.addEventListener('change', handle_new_rule_file_upload);
+        const file_input = this.Helpers.create_element('input', { id: 'new-rule-file-input', attributes: { type: 'file', accept: '.json', style: 'display: none;' } });
+        file_input.addEventListener('change', (e) => this.handle_new_rule_file_upload(e));
 
-        const upload_button = Helpers_create_element('button', {
+        const upload_button = this.Helpers.create_element('button', {
             class_name: ['button', 'button-primary'],
-            html_content: `<span>${t('upload_new_rulefile_btn')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('upload_file') : '')
+            html_content: `<span>${t('upload_new_rulefile_btn')}</span>` + (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('upload_file') : '')
         });
         upload_button.addEventListener('click', () => file_input.click());
         
-        const actions_div = Helpers_create_element('div', { class_name: 'form-actions', style: { 'margin-top': '2rem' } });
+        const actions_div = this.Helpers.create_element('div', { class_name: 'form-actions', style: { 'margin-top': '2rem' } });
         actions_div.appendChild(upload_button);
         
-        plate_element_ref.appendChild(file_input);
-        plate_element_ref.appendChild(actions_div);
-    }
+        this.plate_element_ref.appendChild(file_input);
+        this.plate_element_ref.appendChild(actions_div);
+    },
 
-    function render_confirm_step(report) {
-        const t = get_t_internally();
-        const old_reqs = local_getState().ruleFileContent.requirements;
+    render_confirm_step(report) {
+        const t = this.get_t_internally();
+        const old_reqs = this.getState().ruleFileContent.requirements;
 
-        plate_element_ref.appendChild(Helpers_create_element('p', { class_name: 'view-intro-text', text_content: t('update_rulefile_confirm_intro') }));
+        this.plate_element_ref.appendChild(this.Helpers.create_element('p', { class_name: 'view-intro-text', text_content: t('update_rulefile_confirm_intro') }));
 
         const render_report_section = (title_key, items) => {
-            const section = Helpers_create_element('div', { class_name: 'report-section' });
-            section.appendChild(Helpers_create_element('h3', { text_content: `${t(title_key)} (${items.length})` }));
+            const section = this.Helpers.create_element('div', { class_name: 'report-section' });
+            section.appendChild(this.Helpers.create_element('h3', { text_content: `${t(title_key)} (${items.length})` }));
             if (items.length > 0) {
-                const ul = Helpers_create_element('ul', { class_name: 'report-list' });
+                const ul = this.Helpers.create_element('ul', { class_name: 'report-list' });
                 items.forEach(item => {
                     const old_req_def = old_reqs[item.id];
                     const ref_text = old_req_def?.standardReference?.text;
@@ -259,48 +229,43 @@ export const UpdateRulefileViewComponent = (function () {
                         display_text += ` (${ref_text})`;
                     }
                     
-                    ul.appendChild(Helpers_create_element('li', { text_content: Helpers_escape_html(display_text) }));
+                    ul.appendChild(this.Helpers.create_element('li', { text_content: this.Helpers.escape_html(display_text) }));
                 });
                 section.appendChild(ul);
             } else {
-                section.appendChild(Helpers_create_element('p', { class_name: 'text-muted', text_content: t('no_items_in_category') }));
+                section.appendChild(this.Helpers.create_element('p', { class_name: 'text-muted', text_content: t('no_items_in_category') }));
             }
             return section;
         };
         
-        plate_element_ref.appendChild(render_report_section('update_report_updated_reqs_title', report.updated_requirements));
-        plate_element_ref.appendChild(render_report_section('update_report_removed_reqs_title', report.removed_requirements));
+        this.plate_element_ref.appendChild(render_report_section('update_report_updated_reqs_title', report.updated_requirements));
+        this.plate_element_ref.appendChild(render_report_section('update_report_removed_reqs_title', report.removed_requirements));
 
-        const confirm_button = Helpers_create_element('button', {
+        const confirm_button = this.Helpers.create_element('button', {
             class_name: ['button', 'button-success'],
-            html_content: `<span>${t('update_rulefile_confirm_button')}</span>` + (Helpers_get_icon_svg ? Helpers_get_icon_svg('check_circle') : '')
+            html_content: `<span>${t('update_rulefile_confirm_button')}</span>` + (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('check_circle') : '')
         });
-        confirm_button.addEventListener('click', handle_confirm_update_click);
+        confirm_button.addEventListener('click', () => this.handle_confirm_update_click());
 
-        const cancel_button = Helpers_create_element('button', {
+        const cancel_button = this.Helpers.create_element('button', {
             class_name: ['button', 'button-default'],
             text_content: t('update_rulefile_continue_with_old')
         });
-        cancel_button.addEventListener('click', () => router_ref('audit_overview'));
+        cancel_button.addEventListener('click', () => this.router('audit_overview'));
         
-        const actions_div = Helpers_create_element('div', { class_name: 'form-actions', style: { 'margin-top': '2rem' } });
+        const actions_div = this.Helpers.create_element('div', { class_name: 'form-actions', style: { 'margin-top': '2rem' } });
         
         actions_div.append(confirm_button, cancel_button);
-        plate_element_ref.appendChild(actions_div);
-    }
+        this.plate_element_ref.appendChild(actions_div);
+    },
 
-    function destroy() {
-        app_container_ref.innerHTML = '';
-        plate_element_ref = null;
-        global_message_element_ref = null;
-        current_step = VIEW_STEPS.WARNING;
-        staged_analysis_report = null;
-        staged_new_rule_file_content = null;
+    destroy() {
+        if (this.root) this.root.innerHTML = '';
+        this.plate_element_ref = null;
+        this.current_step = this.VIEW_STEPS.WARNING;
+        this.staged_analysis_report = null;
+        this.staged_new_rule_file_content = null;
+        this.root = null;
+        this.deps = null;
     }
-
-    return {
-        init,
-        render,
-        destroy
-    };
-})();
+};
