@@ -1,0 +1,105 @@
+---
+description: Standardmönster för JavaScript UI-komponenter i Granskningsverktyget
+globs: js/components/**/*.js
+---
+
+# Standard för JavaScript-komponenter
+
+Alla nya och refaktorerade UI-komponenter i `js/components/` ska följa detta strikta mönster.
+
+## Grundstruktur
+
+Komponenten ska vara en ES6-modul som exporterar ett enda objekt (Singleton-pattern). Använd inte IIFE (Immediately Invoked Function Expressions) eller klasser om det inte är absolut nödvändigt.
+
+```javascript
+// js/components/ExempelComponent.js
+
+export const ExempelComponent = {
+    // Konstanter definieras som properties
+    CSS_PATH: 'css/components/exempel_component.css',
+
+    // Standard init-metod med en parameter: ett objekt med root och deps
+    async init({ root, deps }) {
+        this.root = root;
+        this.deps = deps;
+        
+        // Destrukturera och spara beroenden på `this`
+        this.router = deps.router;
+        this.getState = deps.getState;
+        this.dispatch = deps.dispatch;
+        this.StoreActionTypes = deps.StoreActionTypes;
+        this.Translation = deps.Translation;
+        this.Helpers = deps.Helpers;
+        this.NotificationComponent = deps.NotificationComponent;
+        
+        // Initiera interna referenser
+        this.plate_element_ref = null;
+        
+        // Binda metoder som används som callbacks
+        this.handle_click = this.handle_click.bind(this);
+
+        // Ladda CSS om nödvändigt
+        if (this.Helpers?.load_css && this.CSS_PATH) {
+            await this.Helpers.load_css(this.CSS_PATH).catch(e => console.warn(e));
+        }
+    },
+
+    // Exempel på event handler
+    handle_click(event) {
+        // Logik...
+    },
+
+    // Render-metoden ansvarar för att rita upp UI
+    render() {
+        if (!this.root) return;
+        const t = this.Translation.t;
+        
+        // Rensa root eller container
+        this.root.innerHTML = '';
+        
+        // Skapa element med Helpers.create_element
+        this.plate_element_ref = this.Helpers.create_element('div', { class_name: 'content-plate' });
+        
+        const heading = this.Helpers.create_element('h1', { text_content: t('exempel_titel') });
+        this.plate_element_ref.appendChild(heading);
+
+        // Lägg till i DOM
+        this.root.appendChild(this.plate_element_ref);
+    },
+
+    // Destroy-metoden städar upp
+    destroy() {
+        // Ta bort event listeners om de lagts på globala objekt (window/document)
+        // Element som ligger i this.root städas oftast automatiskt när this.root töms, 
+        // men timers och prenumerationer måste avslutas här.
+        
+        if (this.root) {
+            this.root.innerHTML = '';
+        }
+        
+        // Rensa referenser
+        this.root = null;
+        this.plate_element_ref = null;
+        this.deps = null;
+    }
+};
+```
+
+## Regler
+
+1.  **Dependency Injection**: Inga globala referenser (`window.Helpers`, `window.Translation`) ska användas direkt i metoder. Alla beroenden ska injiceras via `init` och sparas på `this`.
+2.  **Object Literal**: Använd `export const Component = { ... }`.
+3.  **Metoder**: Använd `methodName() { ... }` syntax.
+4.  **This-context**: För callbacks (event listeners), bind `this` i `init` eller använd pilfunktioner i `render`. Att binda i `init` (`this.method = this.method.bind(this)`) föredras för prestanda och tydlighet vid borttagning.
+5.  **Helpers**: Använd alltid `this.Helpers.create_element` för DOM-manipulation.
+6.  **State**: Hämta state via `this.getState()`. Undvik att lagra applikations-state internt i komponenten; använd Redux-storen. UI-state (t.ex. "är dropdown öppen") kan lagras på `this`.
+7.  **Text**: All text ska hämtas via `this.Translation.t('key')`.
+8.  **CSS**: Definiera `CSS_PATH` och ladda i `init`.
+9.  **Destroy**: Implementera alltid `destroy` för att undvika minnesläckor.
+
+## Varför?
+Detta mönster säkerställer:
+-   Enhetlighet i kodbasen.
+-   Testbarhet (lätt att mocka deps).
+-   Tydlig livscykelhantering (`init` -> `render` -> `destroy`).
+-   Undvikande av globala namespace-föroreningar.
