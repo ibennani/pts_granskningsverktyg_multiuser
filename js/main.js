@@ -126,8 +126,8 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
     let current_view_params_rendered_json = "{}"; 
     let error_boundary_instance = null;
     
-    const top_action_bar_instance = GlobalActionBarComponent();
-    const bottom_action_bar_instance = GlobalActionBarComponent();
+    const top_action_bar_instance = new GlobalActionBarComponent();
+    const bottom_action_bar_instance = new GlobalActionBarComponent();
 
     function get_t_fallback() {
         return (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function')

@@ -2,7 +2,7 @@
 
 import { ChecklistHandler } from './requirement_audit/ChecklistHandler.js';
 import { RequirementInfoSections } from './requirement_audit/RequirementInfoSections.js';
-import { RequirementAuditNavigationFactory } from './requirement_audit/RequirementAuditNavigation.js';
+import { RequirementAuditNavigationComponent } from './requirement_audit/RequirementAuditNavigation.js';
 import "../../css/components/requirement_audit_component.css";
 
 export const RequirementAuditComponent = {
@@ -274,11 +274,11 @@ export const RequirementAuditComponent = {
         }
         
         const top_nav_container = this.Helpers.create_element('div', { class_name: 'audit-navigation-buttons top-nav' });
-        this.top_navigation_instance = RequirementAuditNavigationFactory();
+        this.top_navigation_instance = new RequirementAuditNavigationComponent();
         this.top_navigation_instance.init(top_nav_container, this.handle_navigation, { deps: this.deps });
         
         const bottom_nav_container = this.Helpers.create_element('div', { class_name: 'audit-navigation-buttons bottom-nav' });
-        this.bottom_navigation_instance = RequirementAuditNavigationFactory();
+        this.bottom_navigation_instance = new RequirementAuditNavigationComponent();
         this.bottom_navigation_instance.init(bottom_nav_container, this.handle_navigation, { deps: this.deps });
 
         const info_sections_container = this.Helpers.create_element('div');

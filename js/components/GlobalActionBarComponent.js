@@ -1,45 +1,67 @@
 import { SaveAuditButtonComponent } from './SaveAuditButtonComponent.js';
 
-export const GlobalActionBarComponent = function () {
-  'use-strict';
+export class GlobalActionBarComponent {
+  constructor() {
+    this.CSS_PATH = './css/components/global_action_bar_component.css';
+    
+    // Internal references
+    this.root = null;
+    this.deps = null;
+    this.save_audit_button_container_element = null;
+    this.save_audit_button_instance = null;
+    this.theme_toggle_button = null;
 
-  const CSS_PATH = './css/components/global_action_bar_component.css';
-  let root;
-  let deps = {};
+    // Dependencies
+    this.getState = null;
+    this.Translation = null;
+    this.Helpers = null;
+    this.NotificationComponent = null;
+    this.dispatch = null;
+    this.StoreActionTypes = null;
 
-  let save_audit_button_component_instance = null;
-  let save_audit_button_container_element = null;
+    // Bind methods
+    this.handle_save_rulefile = this.handle_save_rulefile.bind(this);
+    this.handle_language_change = this.handle_language_change.bind(this);
+    this.toggle_theme = this.toggle_theme.bind(this);
+  }
 
-  async function init({ root: _root, deps: _deps }) {
-    root = _root;
-    deps = _deps;
+  async init({ root, deps }) {
+    this.root = root;
+    this.deps = deps;
+    this.getState = deps.getState;
+    this.Translation = deps.Translation;
+    this.Helpers = deps.Helpers;
+    this.NotificationComponent = deps.NotificationComponent;
+    this.dispatch = deps.dispatch;
+    this.StoreActionTypes = deps.StoreActionTypes;
 
-    if (deps.Helpers && deps.Helpers.load_css) {
+    if (this.Helpers && this.Helpers.load_css) {
       try {
-        const link_tag = document.querySelector(`link[href="${CSS_PATH}"]`);
-        if (!link_tag) await deps.Helpers.load_css(CSS_PATH);
+        const link_tag = document.querySelector(`link[href="${this.CSS_PATH}"]`);
+        if (!link_tag) await this.Helpers.load_css(this.CSS_PATH);
       } catch (error) {
         console.warn('Failed to load CSS for GlobalActionBarComponent:', error);
       }
     }
 
-    save_audit_button_container_element = deps.Helpers.create_element(
+    this.save_audit_button_container_element = this.Helpers.create_element(
       'div',
       { class_name: 'save-audit-button-container' }
     );
-    save_audit_button_component_instance = SaveAuditButtonComponent();
-
-    await save_audit_button_component_instance.init({
-        root: save_audit_button_container_element,
-        deps: deps
+    
+    // Initialize child component
+    this.save_audit_button_instance = new SaveAuditButtonComponent();
+    await this.save_audit_button_instance.init({
+        root: this.save_audit_button_container_element,
+        deps: this.deps
     });
   }
 
-  function clone_rulefile_content(ruleFileContent) {
+  clone_rulefile_content(ruleFileContent) {
     return JSON.parse(JSON.stringify(ruleFileContent));
   }
 
-  function compute_next_version(current_version_string, today) {
+  compute_next_version(current_version_string, today) {
     const current_year = today.getFullYear();
     const current_month = today.getMonth() + 1;
     const version_match =
@@ -62,7 +84,7 @@ export const GlobalActionBarComponent = function () {
     return `${current_year}.${current_month}.r1`;
   }
 
-  function to_filename_version_suffix(version_string) {
+  to_filename_version_suffix(version_string) {
     const match =
       typeof version_string === 'string'
         ? version_string.match(/^(\d{4})\.(\d{1,2})\.r(\d+)$/)
@@ -74,9 +96,9 @@ export const GlobalActionBarComponent = function () {
     return `${year}_${month}_r${release}`;
   }
 
-  function build_rulefile_download_filename(original_filename, version_string) {
+  build_rulefile_download_filename(original_filename, version_string) {
     const default_extension = '.json';
-    const version_suffix = to_filename_version_suffix(version_string);
+    const version_suffix = this.to_filename_version_suffix(version_string);
     const safe_suffix = version_suffix || '';
     if (!original_filename) {
       return `rulefile_${safe_suffix || 'export'}${default_extension}`;
@@ -104,19 +126,12 @@ export const GlobalActionBarComponent = function () {
     return `${updated_base}${extension}`;
   }
 
-  function handle_save_rulefile() {
-    const {
-      getState,
-      Translation,
-      NotificationComponent,
-      dispatch,
-      StoreActionTypes,
-    } = deps;
-    const t = Translation.t;
-    const current_state = getState();
+  handle_save_rulefile() {
+    const t = this.Translation.t;
+    const current_state = this.getState();
 
     if (!current_state.ruleFileContent) {
-      NotificationComponent.show_global_message(t('error_internal'), 'error');
+      this.NotificationComponent.show_global_message(t('error_internal'), 'error');
       return;
     }
 
@@ -136,11 +151,11 @@ export const GlobalActionBarComponent = function () {
       current_state.ruleFileOriginalFilename || 'rulefile.json';
 
     if (is_edit_mode && has_changes) {
-      const updated_rulefile_content = clone_rulefile_content(
+      const updated_rulefile_content = this.clone_rulefile_content(
         current_state.ruleFileContent
       );
       const current_metadata = updated_rulefile_content.metadata || {};
-      const next_version = compute_next_version(
+      const next_version = this.compute_next_version(
         current_metadata.version,
         today
       );
@@ -155,18 +170,18 @@ export const GlobalActionBarComponent = function () {
         null,
         2
       );
-      filename_for_download = build_rulefile_download_filename(
+      filename_for_download = this.build_rulefile_download_filename(
         current_state.ruleFileOriginalFilename,
         next_version
       );
 
-      if (typeof dispatch === 'function' && StoreActionTypes) {
-        dispatch({
-          type: StoreActionTypes.SET_RULE_FILE_CONTENT,
+      if (typeof this.dispatch === 'function' && this.StoreActionTypes) {
+        this.dispatch({
+          type: this.StoreActionTypes.SET_RULE_FILE_CONTENT,
           payload: { ruleFileContent: updated_rulefile_content },
         });
-        dispatch({
-          type: StoreActionTypes.SET_RULEFILE_EDIT_BASELINE,
+        this.dispatch({
+          type: this.StoreActionTypes.SET_RULEFILE_EDIT_BASELINE,
           payload: {
             originalRuleFileContentString: data_string_for_download,
             originalRuleFileFilename: filename_for_download,
@@ -189,155 +204,168 @@ export const GlobalActionBarComponent = function () {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
 
-    NotificationComponent.show_global_message(
+    this.NotificationComponent.show_global_message(
       t('rulefile_saved_as_file', { filename: filename_for_download }),
       'success'
     );
   }
 
-  function render() {
-    if (!root) return;
-    root.innerHTML = '';
+  handle_language_change(event) {
+    this.Translation.set_language(event.target.value);
+  }
 
-    const { getState, Translation, Helpers } = deps;
-    const t = Translation.t;
-    const current_state = getState();
+  toggle_theme() {
+    const current_theme =
+      document.documentElement.getAttribute('data-theme') || 'light';
+    this.set_theme(current_theme === 'dark' ? 'light' : 'dark');
+  }
+
+  set_theme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme_preference', theme);
+    this.update_theme_button_content(theme);
+  }
+
+  update_theme_button_content(theme) {
+    if (!this.theme_toggle_button) return;
+
+    const t = this.Translation.t;
+    this.theme_toggle_button.innerHTML = '';
+    const icon_color = getComputedStyle(document.documentElement)
+      .getPropertyValue('--button-default-text')
+      .trim();
+
+    if (theme === 'dark') {
+      const light_span = this.Helpers.create_element('span', {
+        class_name: 'button-text',
+        text_content: t('light_mode'),
+      });
+      this.theme_toggle_button.appendChild(light_span);
+      if (this.Helpers.get_icon_svg) {
+        const light_icon = this.Helpers.get_icon_svg(
+          'light_mode',
+          [icon_color],
+          18
+        );
+        if (light_icon) {
+          this.theme_toggle_button.insertAdjacentHTML('beforeend', light_icon);
+        }
+      }
+      this.theme_toggle_button.setAttribute('aria-label', t('light_mode'));
+    } else {
+      const dark_span = this.Helpers.create_element('span', {
+        class_name: 'button-text',
+        text_content: t('dark_mode'),
+      });
+      this.theme_toggle_button.appendChild(dark_span);
+      if (this.Helpers.get_icon_svg) {
+        const dark_icon = this.Helpers.get_icon_svg('dark_mode', [icon_color], 18);
+        if (dark_icon) {
+          this.theme_toggle_button.insertAdjacentHTML('beforeend', dark_icon);
+        }
+      }
+      this.theme_toggle_button.setAttribute('aria-label', t('dark_mode'));
+    }
+  }
+
+  render() {
+    if (!this.root) return;
+    this.root.innerHTML = '';
+
+    const t = this.Translation.t;
+    const current_state = this.getState();
     const audit_status = current_state?.auditStatus;
     const has_rulefile_loaded = Boolean(current_state?.ruleFileContent);
 
-    const bar_element = Helpers.create_element('div', {
+    const bar_element = this.Helpers.create_element('div', {
       class_name: 'global-action-bar',
     });
-    const left_group = Helpers.create_element('div', {
+    const left_group = this.Helpers.create_element('div', {
       class_name: ['action-bar-group', 'left'],
     });
 
     if (audit_status !== 'rulefile_editing' && has_rulefile_loaded) {
-      save_audit_button_component_instance.render();
-      left_group.appendChild(save_audit_button_container_element);
+      if (this.save_audit_button_instance) {
+          this.save_audit_button_instance.render();
+          left_group.appendChild(this.save_audit_button_container_element);
+      }
     } else if (audit_status === 'rulefile_editing' && has_rulefile_loaded) {
-      const save_rulefile_button = Helpers.create_element('button', {
+      const save_rulefile_button = this.Helpers.create_element('button', {
         class_name: ['button', 'button-primary'],
         html_content:
           `<span class="button-text">${t('save_and_download_rulefile')}</span>` +
-          (Helpers.get_icon_svg
-            ? Helpers.get_icon_svg('save', ['currentColor'], 18)
+          (this.Helpers.get_icon_svg
+            ? this.Helpers.get_icon_svg('save', ['currentColor'], 18)
             : ''),
       });
-      save_rulefile_button.addEventListener('click', handle_save_rulefile);
+      save_rulefile_button.addEventListener('click', this.handle_save_rulefile);
       left_group.appendChild(save_rulefile_button);
     }
 
     bar_element.appendChild(left_group);
 
-    const right_group = Helpers.create_element('div', {
+    const right_group = this.Helpers.create_element('div', {
       class_name: ['action-bar-group', 'right'],
     });
 
-    const language_selector_container = Helpers.create_element('div', {
+    const language_selector_container = this.Helpers.create_element('div', {
       class_name: 'language-selector-container',
     });
-    const language_label = Helpers.create_element('label', {
-      attributes: { for: `language-selector-${root.id}` },
+    const language_label = this.Helpers.create_element('label', {
+      attributes: { for: `language-selector-${this.root.id}` },
       text_content: t('language_switcher_label'),
       class_name: 'visually-hidden',
     });
     language_selector_container.appendChild(language_label);
 
-    const language_selector = Helpers.create_element('select', {
-      id: `language-selector-${root.id}`,
+    const language_selector = this.Helpers.create_element('select', {
+      id: `language-selector-${this.root.id}`,
       class_name: ['form-control', 'form-control-small'],
     });
-    const supported_languages = Translation.get_supported_languages();
+    const supported_languages = this.Translation.get_supported_languages();
     for (const lang_code in supported_languages) {
-      const option = Helpers.create_element('option', {
+      const option = this.Helpers.create_element('option', {
         value: lang_code,
         text_content: supported_languages[lang_code],
       });
       language_selector.appendChild(option);
     }
-    language_selector.value = Translation.get_current_language_code();
-    language_selector.addEventListener('change', (event) =>
-      Translation.set_language(event.target.value)
-    );
+    language_selector.value = this.Translation.get_current_language_code();
+    language_selector.addEventListener('change', this.handle_language_change);
     language_selector_container.appendChild(language_selector);
     right_group.appendChild(language_selector_container);
 
-    const theme_toggle_button = Helpers.create_element('button', {
+    this.theme_toggle_button = this.Helpers.create_element('button', {
       class_name: ['button', 'button-default'],
       attributes: { 'aria-live': 'polite' },
     });
 
-    function update_theme_button_content(theme) {
-      theme_toggle_button.innerHTML = '';
-      const icon_color = getComputedStyle(document.documentElement)
-        .getPropertyValue('--button-default-text')
-        .trim();
-      if (theme === 'dark') {
-        const light_span = Helpers.create_element('span', {
-          class_name: 'button-text',
-          text_content: t('light_mode'),
-        });
-        theme_toggle_button.appendChild(light_span);
-        if (Helpers.get_icon_svg) {
-          const light_icon = Helpers.get_icon_svg(
-            'light_mode',
-            [icon_color],
-            18
-          );
-          if (light_icon) {
-            theme_toggle_button.insertAdjacentHTML('beforeend', light_icon);
-          }
-        }
-        theme_toggle_button.setAttribute('aria-label', t('light_mode'));
-      } else {
-        const dark_span = Helpers.create_element('span', {
-          class_name: 'button-text',
-          text_content: t('dark_mode'),
-        });
-        theme_toggle_button.appendChild(dark_span);
-        if (Helpers.get_icon_svg) {
-          const dark_icon = Helpers.get_icon_svg('dark_mode', [icon_color], 18);
-          if (dark_icon) {
-            theme_toggle_button.insertAdjacentHTML('beforeend', dark_icon);
-          }
-        }
-        theme_toggle_button.setAttribute('aria-label', t('dark_mode'));
-      }
-    }
-
-    function set_theme(theme) {
-      document.documentElement.setAttribute('data-theme', theme);
-      localStorage.setItem('theme_preference', theme);
-      update_theme_button_content(theme);
-    }
-
-    theme_toggle_button.addEventListener('click', () => {
-      const current_theme =
-        document.documentElement.getAttribute('data-theme') || 'light';
-      set_theme(current_theme === 'dark' ? 'light' : 'dark');
-    });
+    this.theme_toggle_button.addEventListener('click', this.toggle_theme);
 
     const current_theme =
       document.documentElement.getAttribute('data-theme') || 'light';
-    update_theme_button_content(current_theme);
-    right_group.appendChild(theme_toggle_button);
+    this.update_theme_button_content(current_theme);
+    right_group.appendChild(this.theme_toggle_button);
 
     bar_element.appendChild(right_group);
-    root.appendChild(bar_element);
+    this.root.appendChild(bar_element);
   }
 
-  function destroy() {
-    if (root) root.innerHTML = '';
-    if (save_audit_button_component_instance) {
-      save_audit_button_component_instance.destroy();
+  destroy() {
+    if (this.root) this.root.innerHTML = '';
+    
+    // Destroy child component
+    if (this.save_audit_button_instance) {
+        this.save_audit_button_instance.destroy();
     }
-    deps = {};
+    
+    this.root = null;
+    this.deps = null;
+    this.save_audit_button_container_element = null;
+    this.theme_toggle_button = null;
+    this.Helpers = null;
+    this.Translation = null;
+    this.getState = null;
+    this.dispatch = null;
   }
-
-  return {
-    init,
-    render,
-    destroy,
-  };
-};
+}
