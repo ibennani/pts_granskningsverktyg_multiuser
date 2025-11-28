@@ -34,8 +34,8 @@ async function renderStartView() {
   const bodyContent = bodyMatch ? bodyMatch[1] : '';
   document.body.innerHTML = bodyContent;
 
-  await import('../../js/utils/helpers.js');
-
+  const Helpers = await import('../../js/utils/helpers.js');
+  window.Helpers = { ...Helpers };
   window.Helpers.load_css_safely = jest.fn().mockResolvedValue();
 
   window.Translation = {
@@ -53,7 +53,7 @@ async function renderStartView() {
   };
 
   window.NotificationComponent = {
-    get_global_message_element_reference: jest.fn().mockReturnValue(null),
+    get_global_message_element_reference: jest.fn().mockReturnValue(document.createElement('div')),
     clear_global_message: jest.fn(),
     show_global_message: jest.fn(),
   };
@@ -63,14 +63,22 @@ async function renderStartView() {
   );
   const appContainer = document.getElementById('app-container');
 
-  await UploadViewComponent.init(
-    appContainer,
-    jest.fn(),
-    {},
-    () => ({}),
-    jest.fn(),
-    {}
-  );
+  await UploadViewComponent.init({
+    root: appContainer,
+    deps: {
+      router: jest.fn(),
+      getState: () => ({}),
+      dispatch: jest.fn(),
+      StoreActionTypes: {},
+      Translation: window.Translation,
+      Helpers: window.Helpers,
+      NotificationComponent: window.NotificationComponent,
+      ValidationLogic: {
+        validate_rule_file_json: jest.fn(),
+        validate_saved_audit_file: jest.fn(),
+      },
+    },
+  });
   UploadViewComponent.render();
 
   return { UploadViewComponent, appContainer };
