@@ -1,7 +1,9 @@
 {
-  "task_status": "completed",
-  "current_phase": "refactoring components to ES modules and standard pattern",
+  "task_status": "in_progress",
+  "current_phase": "refactoring logic files to ES modules",
   "completed_files": [
+    "js/validation_logic.js",
+    "js/audit_logic.js",
     "js/components/AuditInfoComponent.js",
     "js/components/ScoreAnalysisComponent.js",
     "js/components/SampleListComponent.js",
@@ -40,32 +42,28 @@
   ],
   "modified_files": [
     "js/main.js",
-    "js/components/GlobalActionBarComponent.js",
-    "js/components/SaveAuditButtonComponent.js",
-    "js/components/ErrorBoundaryComponent.js",
-    "js/components/MetadataFormComponent.js",
-    "js/components/EditMetadataViewComponent.js",
-    "js/components/SampleManagementViewComponent.js",
+    "js/state.js",
+    "js/utils/dependency_manager.js",
+    "js/utils/safe_init_helper.js",
+    "js/validation_logic.js",
+    "js/audit_logic.js",
     "js/components/UploadViewComponent.js",
-    "js/components/RestoreSessionViewComponent.js",
-    "js/components/RequirementCardComponent.js",
-    "js/components/RequirementAuditComponent.js",
-    "js/components/requirement_audit/ChecklistHandler.js",
-    "js/components/requirement_audit/RequirementAuditNavigation.js",
-    "js/components/requirement_audit/RequirementInfoSections.js",
-    "js/components/EditRulefileMainViewComponent.js",
-    "js/components/RulefileRequirementsListComponent.js",
-    "js/components/ViewRulefileRequirementComponent.js",
-    "js/components/EditRulefileRequirementComponent.js",
-    "js/components/RulefileMetadataViewComponent.js",
-    "js/components/EditRulefileMetadataViewComponent.js",
     "js/components/UpdateRulefileViewComponent.js",
-    "js/components/FinalConfirmUpdatesViewComponent.js"
+    "js/components/requirement_audit/RequirementAuditNavigation.js"
   ],
-  "remaining_files": [],
+  "remaining_files": [
+    "js/utils/helpers.js",
+    "js/translation_logic.js",
+    "js/logic/save_audit_logic.js",
+    "js/logic/rulefile_updater_logic.js",
+    "js/logic/ScoreCalculator.js",
+    "js/logic/RuleDataProcessor.js",
+    "js/logic/rulefile_editor_logic.js"
+  ],
   "next_steps": [
-    "Verify all functionalities in browser",
-    "Run regression tests"
+    "Refactor js/utils/helpers.js to ES6 module",
+    "Handle window.NotificationComponent dependency",
+    "Continue refactoring remaining logic files"
   ],
-  "notes": "Completed refactoring of all Rulefile related components. Deleted dead code RulefileEditorMainViewComponent.js."
+  "notes": "Refactored ValidationLogic and AuditLogic to ES6 modules. Updated main.js to import them and assign to window for backward compatibility while also supporting dependency injection. Updated dependent components and utility files."
 }

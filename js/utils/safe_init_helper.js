@@ -1,5 +1,7 @@
 // js/utils/safe_init_helper.js
 
+import * as AuditLogic from '../audit_logic.js';
+
 /**
  * Safe Initialization Helper - Provides utilities for safe component initialization
  * Prevents race conditions by ensuring dependencies are available before use
@@ -58,7 +60,7 @@ function getDependencyValue(depName) {
         'Translation': () => window.Translation,
         'Helpers': () => window.Helpers,
         'NotificationComponent': () => window.NotificationComponent,
-        'AuditLogic': () => window.AuditLogic,
+        'AuditLogic': () => AuditLogic,
         'SaveAuditLogic': () => window.SaveAuditLogic,
         'ScoreCalculator': () => window.ScoreCalculator,
         'ExportLogic': () => window.ExportLogic
@@ -177,7 +179,7 @@ export function createCommonDependencyAssigner() {
             Translation: () => window.Translation,
             Helpers: () => window.Helpers,
             NotificationComponent: () => window.NotificationComponent,
-            AuditLogic: () => window.AuditLogic,
+            AuditLogic: () => AuditLogic,
             SaveAuditLogic: () => window.SaveAuditLogic
         });
     };

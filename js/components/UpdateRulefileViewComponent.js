@@ -19,6 +19,7 @@ export const UpdateRulefileViewComponent = {
         this.Helpers = deps.Helpers;
         this.NotificationComponent = deps.NotificationComponent;
         this.SaveAuditLogic = deps.SaveAuditLogic;
+        this.ValidationLogic = deps.ValidationLogic || window.ValidationLogic;
 
         this.current_step = this.VIEW_STEPS.WARNING;
         this.staged_new_rule_file_content = null;
@@ -71,7 +72,7 @@ export const UpdateRulefileViewComponent = {
             try {
                 const new_rule_content = JSON.parse(e.target.result);
                 // Assuming ValidationLogic is available globally as in original code
-                const validation = window.ValidationLogic?.validate_rule_file_json(new_rule_content);
+                const validation = this.ValidationLogic?.validate_rule_file_json(new_rule_content);
 
                 if (validation && !validation.isValid) {
                     this.NotificationComponent?.show_global_message(validation.message, 'error');

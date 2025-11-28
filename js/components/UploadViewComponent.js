@@ -9,7 +9,7 @@ export const UploadViewComponent = {
     this.Translation = deps.Translation;
     this.Helpers = deps.Helpers;
     this.NotificationComponent = deps.NotificationComponent;
-    this.ValidationLogic = window.ValidationLogic; // Assuming this is still global or passed via deps if refactored. Usually utils are modules now, but let's check if it's passed. It's not in the standard deps list I saw earlier. I will use window fallback if not in deps.
+    this.ValidationLogic = deps.ValidationLogic || window.ValidationLogic; 
 
     this.CSS_PATH = './css/components/upload_view_component.css';
     
@@ -48,7 +48,7 @@ export const UploadViewComponent = {
     reader.onload = (e) => {
       try {
         const json_content = JSON.parse(e.target.result);
-        const validation_result = (this.ValidationLogic || window.ValidationLogic).validate_rule_file_json(json_content);
+        const validation_result = this.ValidationLogic.validate_rule_file_json(json_content);
 
         if (validation_result.isValid) {
           if (window.Store && typeof window.Store.clearAutosavedState === 'function') {
@@ -97,7 +97,7 @@ export const UploadViewComponent = {
     reader.onload = (e) => {
       try {
         const file_content_object = JSON.parse(e.target.result);
-        const validation_result = (this.ValidationLogic || window.ValidationLogic).validate_saved_audit_file(file_content_object);
+        const validation_result = this.ValidationLogic.validate_saved_audit_file(file_content_object);
 
         if (validation_result.isValid) {
           this.dispatch({
@@ -141,7 +141,7 @@ export const UploadViewComponent = {
     reader.onload = (e) => {
       try {
         const json_content = JSON.parse(e.target.result);
-        const validation_result = (this.ValidationLogic || window.ValidationLogic).validate_rule_file_json(json_content);
+        const validation_result = this.ValidationLogic.validate_rule_file_json(json_content);
 
         if (validation_result.isValid) {
           if (window.Store && typeof window.Store.clearAutosavedState === 'function') {

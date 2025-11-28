@@ -13,6 +13,15 @@ export default defineConfig({
         locale: 'sv-SE',
       },
     },
+    {
+      name: 'Microsoft Edge',
+      use: {
+        ...devices['Desktop Edge'],
+        channel: 'msedge',
+        baseURL: process.env.E2E_BASE_URL || 'http://localhost:5173',
+        locale: 'sv-SE',
+      },
+    },
   ],
   webServer: {
     command: 'npm run dev:fixedport',

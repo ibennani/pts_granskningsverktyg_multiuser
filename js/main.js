@@ -8,10 +8,10 @@ import './utils/helpers.js';
 import './translation_logic.js';
 import { NotificationComponent } from './components/NotificationComponent.js';
 import { ProgressBarComponent } from './components/ProgressBarComponent.js';
-import './audit_logic.js';
+import * as AuditLogic from './audit_logic.js';
 import './export_logic.js';
 import './logic/save_audit_logic.js';
-import './validation_logic.js';
+import * as ValidationLogic from './validation_logic.js';
 import './logic/rulefile_updater_logic.js';
 import './logic/ScoreCalculator.js';
 import { MarkdownToolbar } from './features/markdown_toolbar.js';
@@ -50,7 +50,11 @@ window.getState = getState;
 window.dispatch = dispatch;
 window.Store = { getState, dispatch, subscribe, StoreActionTypes, StoreInitialState, clearAutosavedState, forceSaveStateToLocalStorage };
 window.StoreActionTypes = StoreActionTypes;
+window.NotificationComponent = NotificationComponent;
 window.dependencyManager = dependencyManager;
+// Compatibility assignment
+window.ValidationLogic = ValidationLogic;
+window.AuditLogic = AuditLogic; // Compatibility assignment
 
 
 (function () {
@@ -266,7 +270,9 @@ window.dependencyManager = dependencyManager;
             Translation: window.Translation,
             Helpers: window.Helpers,
             NotificationComponent: NotificationComponent,
-            SaveAuditLogic: window.SaveAuditLogic
+            SaveAuditLogic: window.SaveAuditLogic,
+            AuditLogic: AuditLogic,
+            ValidationLogic: ValidationLogic
         };
         try {
             await top_action_bar_instance.init({ root: top_action_bar_container, deps: common_deps });
@@ -477,8 +483,9 @@ window.dependencyManager = dependencyManager;
                         Helpers: window.Helpers,
                         NotificationComponent: NotificationComponent,
                         SaveAuditLogic: window.SaveAuditLogic,
-                        AuditLogic: window.AuditLogic,
-                        ExportLogic: window.ExportLogic
+                        AuditLogic: AuditLogic,
+                        ExportLogic: window.ExportLogic,
+                        ValidationLogic: ValidationLogic
                     }
                 });
             } else {
@@ -498,8 +505,9 @@ window.dependencyManager = dependencyManager;
                             Helpers: window.Helpers,
                             NotificationComponent: NotificationComponent,
                             SaveAuditLogic: window.SaveAuditLogic,
-                            AuditLogic: window.AuditLogic,
-                            ExportLogic: window.ExportLogic
+                            AuditLogic: AuditLogic,
+                            ExportLogic: window.ExportLogic,
+                            ValidationLogic: ValidationLogic
                         }
                     });
                 } else {

@@ -18,7 +18,7 @@ export const RequirementAuditNavigationFactory = function () {
         const deps = options.deps || {};
         Translation = deps.Translation || window.Translation;
         Helpers = deps.Helpers || window.Helpers;
-        AuditLogic = deps.AuditLogic || window.AuditLogic;
+        AuditLogic = deps.AuditLogic;
     }
 
     function render(options) {

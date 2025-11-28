@@ -5,6 +5,8 @@
  * Prevents race conditions by ensuring all dependencies are available before component initialization
  */
 
+import * as AuditLogic from '../audit_logic.js';
+
 class DependencyManager {
     constructor() {
         this.dependencies = new Map();
@@ -121,7 +123,7 @@ class DependencyManager {
         this.register('Helpers', () => window.Helpers, true);
         this.register('Translation', () => window.Translation, true);
         this.register('NotificationComponent', () => window.NotificationComponent, true);
-        this.register('AuditLogic', () => window.AuditLogic, true);
+        this.register('AuditLogic', () => AuditLogic, true);
         this.register('SaveAuditLogic', () => window.SaveAuditLogic, true);
         this.register('ScoreCalculator', () => window.ScoreCalculator, false);
         this.register('ExportLogic', () => window.ExportLogic, false);

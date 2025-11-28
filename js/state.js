@@ -299,7 +299,7 @@ function root_reducer(current_state, action) {
                     merged_state.deficiencyCounter = 1;
                 }
                 // Beräkna om statusar med korrekt logik (t.ex. OR-logik) och uppdatera bristindex om granskningen är låst
-                return window.AuditLogic.recalculateStatusesOnLoad(merged_state);
+                return AuditLogic.recalculateStatusesOnLoad(merged_state);
             }
             console.warn('[State.js] LOAD_AUDIT_FROM_FILE: Invalid payload.', action.payload);
             return current_state;
@@ -326,7 +326,7 @@ function root_reducer(current_state, action) {
         
         case ActionTypes.DELETE_SAMPLE:
             new_state = { ...current_state, samples: current_state.samples.filter(s => s.id !== action.payload.sampleId) };
-            return window.AuditLogic.updateIncrementalDeficiencyIds(new_state);
+            return AuditLogic.updateIncrementalDeficiencyIds(new_state);
 
         case ActionTypes.UPDATE_REQUIREMENT_RESULT:
             const { sampleId: updateSampleId, requirementId: updateRequirementId, newRequirementResult } = action.payload;
@@ -340,7 +340,7 @@ function root_reducer(current_state, action) {
                         : sample
                 )
             };
-            return window.AuditLogic.updateIncrementalDeficiencyIds(new_state);
+            return AuditLogic.updateIncrementalDeficiencyIds(new_state);
 
         case ActionTypes.SET_AUDIT_STATUS:
             const newStatus = action.payload.status;
@@ -349,19 +349,19 @@ function root_reducer(current_state, action) {
 
             if (newStatus === 'locked' && current_state.auditStatus === 'in_progress') {
                 if (current_state.deficiencyCounter === 1) {
-                    state_before_status_change = window.AuditLogic.assignSortedDeficiencyIdsOnLock(current_state);
+                    state_before_status_change = AuditLogic.assignSortedDeficiencyIdsOnLock(current_state);
                 }
                 timeUpdate.endTime = state_before_status_change.endTime || get_current_iso_datetime_utc_internal();
             } 
             else if (newStatus === 'in_progress' && current_state.auditStatus === 'locked') {
                 timeUpdate.endTime = null;
                 // Ta bort alla ID:n när granskningen låses upp
-                state_before_status_change = window.AuditLogic.removeAllDeficiencyIds(current_state);
+                state_before_status_change = AuditLogic.removeAllDeficiencyIds(current_state);
             } 
             else if (newStatus === 'in_progress' && current_state.auditStatus === 'not_started') {
                 timeUpdate.startTime = get_current_iso_datetime_utc_internal();
                 // Ta bort alla ID:n när granskningen startas
-                state_before_status_change = window.AuditLogic.removeAllDeficiencyIds(current_state);
+                state_before_status_change = AuditLogic.removeAllDeficiencyIds(current_state);
             }
 
             return { ...state_before_status_change, auditStatus: newStatus, ...timeUpdate };
@@ -677,8 +677,8 @@ function clearAutosavedState() {
 
 function initState() {
     internal_state = loadStateFromSessionStorage();
-    if (window.AuditLogic && typeof window.AuditLogic.updateIncrementalDeficiencyIds === 'function') {
-        internal_state = window.AuditLogic.updateIncrementalDeficiencyIds(internal_state);
+    if (AuditLogic && typeof AuditLogic.updateIncrementalDeficiencyIds === 'function') {
+        internal_state = AuditLogic.updateIncrementalDeficiencyIds(internal_state);
         saveStateToSessionStorage(internal_state);
     } else {
         console.error("[State.js] AuditLogic not available during initState. State may be inconsistent.");
