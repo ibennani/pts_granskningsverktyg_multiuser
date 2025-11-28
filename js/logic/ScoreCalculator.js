@@ -48,12 +48,28 @@ function _getRelevantRequirementsForSample(ruleFileContent, sample) {
  * @returns {object|null} An object with totalScore and a breakdown by principle, or null if calculation is not possible.
  */
 export function calculateQualityScore(auditState) {
-    if (!auditState?.ruleFileContent?.requirements || !auditState.ruleFileContent.metadata?.taxonomies || !auditState.samples?.length) {
-        return null; // Not enough data to calculate a score.
+    if (!auditState) {
+        console.warn('[ScoreCalculator] auditState is null or undefined');
+        return null;
+    }
+    if (!auditState.ruleFileContent?.requirements) {
+        console.warn('[ScoreCalculator] Missing requirements in ruleFileContent');
+        return null;
+    }
+    if (!auditState.ruleFileContent.metadata?.taxonomies) {
+        console.warn('[ScoreCalculator] Missing taxonomies in ruleFileContent metadata');
+        return null;
+    }
+    if (!auditState.samples?.length) {
+        console.warn('[ScoreCalculator] No samples found');
+        return null;
     }
 
     const classifications = auditState.ruleFileContent.metadata.taxonomies.find(tax => tax.id === 'wcag22-pour');
-    if (!classifications) return null;
+    if (!classifications) {
+        console.warn('[ScoreCalculator] WCAG22-POUR taxonomy not found');
+        return null;
+    }
 
     let totalMaxWeight = 0;
     let totalDeductions = 0;

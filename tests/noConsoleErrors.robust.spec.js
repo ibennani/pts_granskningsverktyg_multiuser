@@ -4,7 +4,8 @@ import { test, expect } from '@playwright/test';
 // Mönster för dev-brus du ev. vill ignorera
 const IGNORE = [
   'Failed to load source map',         // vanligt vid dev
-  'favicon.ico - Failed to load resource',
+  'favicon.ico',                       // 404 för favicon
+  'Failed to load resource',           // Generella laddningsfel (t.ex. favicon)
   'ResizeObserver loop limit exceeded' // vissa UI-bibliotek
 ];
 

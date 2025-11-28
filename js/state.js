@@ -1,4 +1,5 @@
 // js/state.js
+import * as AuditLogic from './audit_logic.js';
 
 const APP_STATE_KEY = 'digitalTillsynAppCentralState';
 const APP_AUTOSAVE_KEY = 'digitalTillsynAppAutosave';

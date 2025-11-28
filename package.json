@@ -16,7 +16,7 @@
     "postinstall": "playwright install",
     "lint": "eslint . --max-warnings=0",
     "format:check": "prettier js/components/UploadViewComponent.js tests/unit/home.ui.spec.js tests/home.e2e.spec.js eslint.config.js jest.config.js playwright.config.js package.json README.md --check",
-    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --passWithNoTests --runInBand",
+    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config jest.config.js --passWithNoTests --runInBand --testPathIgnorePatterns .e2e.spec.js",
     "e2e:live": "playwright test",
     "validate:imports": "node scripts/validate-imports.js",
     "validate:components": "node scripts/validate-components.js",

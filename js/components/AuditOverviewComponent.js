@@ -5,7 +5,7 @@ import { ProgressBarComponent } from './ProgressBarComponent.js';
 import "../../css/components/audit_overview_component.css";
 
 export const AuditOverviewComponent = {
-    init({ root, deps }) {
+    async init({ root, deps }) {
         this.root = root;
         this.deps = deps;
         
@@ -40,7 +40,7 @@ export const AuditOverviewComponent = {
         this.handle_export_excel = this.handle_export_excel.bind(this);
         this.handle_export_word = this.handle_export_word.bind(this);
 
-        this.init_sub_components();
+        await this.init_sub_components();
 
         if (!this.unsubscribe_from_store_function && typeof this.subscribe === 'function') {
             this.unsubscribe_from_store_function = this.subscribe(this.handle_store_update);
