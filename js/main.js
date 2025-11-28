@@ -4,16 +4,18 @@ import '@fontsource/roboto/400.css';
 import '@fontsource/roboto/500.css';
 import '@fontsource/roboto/700.css';
 
-import './utils/helpers.js';
-import './translation_logic.js';
+import * as Helpers from './utils/helpers.js';
+import * as TranslationLogic from './translation_logic.js';
 import { NotificationComponent } from './components/NotificationComponent.js';
 import { ProgressBarComponent } from './components/ProgressBarComponent.js';
 import * as AuditLogic from './audit_logic.js';
 import './export_logic.js';
-import './logic/save_audit_logic.js';
+import * as SaveAuditLogic from './logic/save_audit_logic.js';
 import * as ValidationLogic from './validation_logic.js';
-import './logic/rulefile_updater_logic.js';
-import './logic/ScoreCalculator.js';
+import * as RulefileUpdaterLogic from './logic/rulefile_updater_logic.js';
+import * as ScoreCalculator from './logic/ScoreCalculator.js';
+import * as RuleDataProcessor from './logic/RuleDataProcessor.js';
+import * as RulefileEditorLogic from './logic/rulefile_editor_logic.js';
 import { MarkdownToolbar } from './features/markdown_toolbar.js';
 import './utils/dependency_manager.js';
 import './utils/console_manager.js';
@@ -52,6 +54,13 @@ window.Store = { getState, dispatch, subscribe, StoreActionTypes, StoreInitialSt
 window.StoreActionTypes = StoreActionTypes;
 window.NotificationComponent = NotificationComponent;
 window.dependencyManager = dependencyManager;
+window.Helpers = Helpers;
+window.Translation = TranslationLogic;
+window.SaveAuditLogic = SaveAuditLogic;
+window.RulefileUpdaterLogic = RulefileUpdaterLogic;
+window.ScoreCalculator = ScoreCalculator;
+window.RuleDataProcessor = RuleDataProcessor;
+window.RulefileEditorLogic = RulefileEditorLogic;
 // Compatibility assignment
 window.ValidationLogic = ValidationLogic;
 window.AuditLogic = AuditLogic; // Compatibility assignment
