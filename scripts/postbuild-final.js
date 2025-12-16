@@ -97,10 +97,15 @@ window.BUILD_INFO = ${JSON.stringify(buildInfo, null, 2)};
     const indexHtml = readFileSync(indexPath, 'utf8');
     
     // Remove Vite's CSS and add our copied CSS files
+    // VIKTIGT: Vi kommenterar bort detta eftersom det tar bort CSS-bundlen som innehåller
+    // typsnitt (Roboto) och andra importerade stilar.
+    /*
     let updatedHtml = indexHtml.replace(
       /<link rel="stylesheet" crossorigin href="\/assets\/main-[^"]*\.css">/,
       ''
     );
+    */
+    let updatedHtml = indexHtml;
     
     // Add our CSS files after the title
     updatedHtml = updatedHtml.replace(

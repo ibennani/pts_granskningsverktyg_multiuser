@@ -150,7 +150,7 @@ function export_to_csv(current_audit) {
     
     const report_prefix = t('filename_audit_report_prefix');
     const deficiencies_suffix = t('filename_deficiencies_suffix');
-    const actor_name = (current_audit.auditMetadata.actorName || t('filename_fallback_actor')).replace(/[^a-z0-9]/gi, '_');
+    const actor_name = (current_audit.auditMetadata.actorName || t('filename_fallback_actor')).replace(/[^a-z0-9åäöÅÄÖ]/gi, '_');
     const filename = `${report_prefix}_${deficiencies_suffix}_${actor_name}_${new Date().toISOString().split('T')[0]}.csv`;
 
     link.setAttribute("download", filename);
@@ -305,7 +305,7 @@ async function export_to_excel(current_audit) {
 
         const report_prefix = t('filename_audit_report_prefix');
         const deficiencies_suffix = t('filename_deficiencies_suffix');
-        const actor_name = (current_audit.auditMetadata.actorName || t('filename_fallback_actor')).replace(/[^a-z0-9]/gi, '_');
+        const actor_name = (current_audit.auditMetadata.actorName || t('filename_fallback_actor')).replace(/[^a-z0-9åäöÅÄÖ]/gi, '_');
         const filename = `${report_prefix}_${deficiencies_suffix}_${actor_name}_${new Date().toISOString().split('T')[0]}.xlsx`;
 
         link.href = url;
@@ -382,7 +382,25 @@ async function export_to_word(current_audit) {
 
             // Punkslista med referens och principer
             const bullet_items = [];
+
+            // Samla in alla unika brist-IDn för detta krav
+            const all_deficiency_ids = new Set();
+            const samples_for_ids = get_samples_with_deficiencies_for_requirement(req, current_audit);
+            for (const sample of samples_for_ids) {
+                const defs = get_deficiencies_for_sample(req, sample, current_audit, t);
+                for (const def of defs) {
+                    if (def.deficiencyId) {
+                        const id = extractDeficiencyNumber(def.deficiencyId);
+                        if (id) all_deficiency_ids.add(id);
+                    }
+                }
+            }
             
+            // Sortera IDn numeriskt
+            const sorted_deficiency_ids = Array.from(all_deficiency_ids).sort((a, b) => {
+                return parseInt(a, 10) - parseInt(b, 10);
+            });
+
             // Referens
             if (req.standardReference?.text) {
                 const ref_text = req.standardReference.text;
@@ -461,6 +479,22 @@ async function export_to_word(current_audit) {
                 }
             }
 
+            // Lägg till Brist-punkt om det finns några brister
+            if (sorted_deficiency_ids.length > 0) {
+                bullet_items.push(
+                    new Paragraph({
+                        children: [
+                            new TextRun({ text: "• " }),
+                            new TextRun({ text: "Brist: ", bold: true }),
+                            new TextRun({ text: sorted_deficiency_ids.join(', ') })
+                        ],
+                        indent: {
+                            left: 283,
+                            hanging: 142
+                        }
+                    })
+                );
+            }
             
             // Lägg till punkslistan
             children.push(...bullet_items);
@@ -512,13 +546,20 @@ async function export_to_word(current_audit) {
                 // Skapa innehåll för stickprovet
                 const sampleContent = [];
                 
+                // Hämta brister för detta stickprov för att kunna lägga till ID i rubriken
+                const deficiencies = get_deficiencies_for_sample(req, sample, current_audit, t);
+                const useNumberedList = deficiencies.length > 1;
+                
+                // Extrahera unika brist-IDn för detta stickprov
+                const deficiencyIds = [...new Set(deficiencies.map(d => extractDeficiencyNumber(d.deficiencyId)))].filter(Boolean).sort((a,b) => parseInt(a, 10)-parseInt(b, 10));
+                
                 // Lägg till h4-rubrik för stickprovet
                 sampleContent.push(
                     new Paragraph({
                         children: [
                             new TextRun({
                                 text: sample.description || sample.url || "Stickprov",
-                                color: "6E3282"  // Samma lila färg som ramen
+                                color: "000000"  // Svart färg
                             })
                         ],
                         heading: "Heading4",
@@ -530,14 +571,14 @@ async function export_to_word(current_audit) {
                 );
 
                 // Lägg till bristtext för detta stickprov
-                const deficiencies = get_deficiencies_for_sample(req, sample, current_audit, t);
-                const useNumberedList = deficiencies.length > 1;
                 
                 for (let i = 0; i < deficiencies.length; i++) {
                     const deficiency = deficiencies[i];
                     const numberPrefix = useNumberedList ? `${i + 1}. ` : '';
                     const observationText = deficiency.observationDetail;
                     const isStandardText = deficiency.isStandardText || false;
+                    const defId = extractDeficiencyNumber(deficiency.deficiencyId);
+                    const defIdString = defId ? `Brist ${defId}: ` : '';
                     
                     // Om observationText innehåller \n, hantera radbrytningar
                     if (observationText.includes('\n')) {
@@ -550,27 +591,25 @@ async function export_to_word(current_audit) {
                             
                             if (isFirstLine) {
                                 // Första raden: nummer + eventuell prefix + text
-                                const prefix = isStandardText ? "Kravet är inte uppfyllt: " : "";
-                                textRuns = [
-                                    new TextRun({ text: numberPrefix + prefix + lines[lineIndex] })
-                                ];
+                                // Lägg till Brist ID med fetstil om det finns
+                                if (defIdString) {
+                                    textRuns.push(new TextRun({ text: numberPrefix + defIdString, bold: true }));
+                                    const prefix = isStandardText ? "Kravet är inte uppfyllt: " : "";
+                                    textRuns.push(new TextRun({ text: prefix + lines[lineIndex] }));
+                                } else {
+                                    const prefix = isStandardText ? "Kravet är inte uppfyllt: " : "";
+                                    textRuns.push(new TextRun({ text: numberPrefix + prefix + lines[lineIndex] }));
+                                }
                             } else if (isLastLine) {
-                                // Sista raden: text + bristindex i kursiv
+                                // Sista raden: text (utan bristindex)
                                 textRuns = [
-                                    new TextRun({ text: '   ' + lines[lineIndex] + ' ' }),
-                                    new TextRun({ text: `(${formatDeficiencyForWord(deficiency.deficiencyId)})`, italics: true })
+                                    new TextRun({ text: '   ' + lines[lineIndex] + ' ' })
                                 ];
                             } else {
                                 // Mellanrader: bara text
                                 textRuns = [
                                     new TextRun({ text: '   ' + lines[lineIndex] })
                                 ];
-                            }
-                            
-                            // Om det bara finns en rad, lägg till bristindex på samma rad
-                            if (lines.length === 1) {
-                                textRuns.push(new TextRun({ text: ' ' }));
-                                textRuns.push(new TextRun({ text: `(${formatDeficiencyForWord(deficiency.deficiencyId)})`, italics: true }));
                             }
                             
                             sampleContent.push(
@@ -585,13 +624,19 @@ async function export_to_word(current_audit) {
                         }
                     } else {
                         // Enkel text utan radbrytningar
-                        const prefix = isStandardText ? "Kravet är inte uppfyllt: " : "";
+                        let textRuns = [];
+                        if (defIdString) {
+                            textRuns.push(new TextRun({ text: numberPrefix + defIdString, bold: true }));
+                            const prefix = isStandardText ? "Kravet är inte uppfyllt: " : "";
+                            textRuns.push(new TextRun({ text: prefix + observationText + ' ' }));
+                        } else {
+                            const prefix = isStandardText ? "Kravet är inte uppfyllt: " : "";
+                            textRuns.push(new TextRun({ text: numberPrefix + prefix + observationText + ' ' }));
+                        }
+
                         sampleContent.push(
                             new Paragraph({
-                                children: [
-                                    new TextRun({ text: numberPrefix + prefix + observationText + ' ' }),
-                                    new TextRun({ text: `(${formatDeficiencyForWord(deficiency.deficiencyId)})`, italics: true })
-                                ],
+                                children: textRuns,
                                 indent: useNumberedList ? {
                                     left: 283, // 0.5 cm = 283 twips
                                     hanging: 142  // 0.25 cm = 142 twips
@@ -637,47 +682,14 @@ async function export_to_word(current_audit) {
                     });
                 }
                 
-                // Wrappa stickprovet i en tabell med ram och bakgrund
-                const sampleTable = new Table({
-                    rows: [
-                        new TableRow({
-                            children: [
-                                new TableCell({
-                                    children: sampleContent,
-                                    width: { size: 100, type: WidthType.PERCENTAGE },
-                                    shading: {
-                                        type: ShadingType.SOLID,
-                                        color: "F4F1EE", // Varm beige bakgrund
-                                        fill: "F4F1EE"
-                                    },
-                                    margins: {
-                                        top: 240,    // 12pt
-                                        bottom: 240, // 12pt  
-                                        left: 240,   // 12pt
-                                        right: 240   // 12pt
-                                    }
-                                })
-                            ],
-                            // Förhindra att raden bryts över sidor
-                            cantSplit: true
-                        })
-                    ],
-                    width: { size: 100, type: WidthType.PERCENTAGE },
-                    borders: {
-                        top: { style: BorderStyle.SINGLE, size: 12, color: "6E3282" },    // Lila ram
-                        bottom: { style: BorderStyle.SINGLE, size: 12, color: "6E3282" }, // Lila ram
-                        left: { style: BorderStyle.SINGLE, size: 12, color: "6E3282" },   // Lila ram
-                        right: { style: BorderStyle.SINGLE, size: 12, color: "6E3282" },  // Lila ram
-                        insideHorizontal: { style: BorderStyle.NONE },
-                        insideVertical: { style: BorderStyle.NONE }
-                    },
-                    // Förhindra att tabellen bryts över sidor
-                    cantSplit: true
-                });
+                // Wrappa stickprovet i en tabell med ram och bakgrund - NEJ, kunden vill ha texten direkt på sidan
+                // men behålla brist-ID vid texten (inte i punktlistan).
+                // Vi tar bort tabellen men behåller innehållet.
                 
-                children.push(sampleTable);
+                // Lägg till innehållet direkt
+                children.push(...sampleContent);
                 
-                // Lägg till lite utrymme efter tabellen
+                // Lägg till lite utrymme efter stickprovet (istället för efter tabellen)
                 children.push(new Paragraph({
                     children: [new TextRun({ text: "" })],
                     spacing: { after: 240 } // 12pt avstånd efter
@@ -774,7 +786,7 @@ async function export_to_word(current_audit) {
         const link = document.createElement('a');
 
         const report_prefix = t('filename_audit_report_prefix');
-        const actor_name = (current_audit.auditMetadata.actorName || t('filename_fallback_actor')).replace(/[^a-z0-9]/gi, '_');
+        const actor_name = (current_audit.auditMetadata.actorName || t('filename_fallback_actor')).replace(/[^a-z0-9åäöÅÄÖ]/gi, '_');
         const filename = `${report_prefix}_${actor_name}_${new Date().toISOString().split('T')[0]}.docx`;
 
         link.href = url;
