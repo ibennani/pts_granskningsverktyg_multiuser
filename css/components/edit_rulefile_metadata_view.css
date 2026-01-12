@@ -49,10 +49,7 @@
     font-size: 1rem;
 }
 
-.form-control:focus {
-    outline: 3px solid var(--focus-ring-color);
-    border-color: var(--focus-ring-color-outer);
-}
+
 
 .field-hint {
     margin: 0;

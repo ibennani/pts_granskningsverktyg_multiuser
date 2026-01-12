@@ -5,7 +5,8 @@
     display: flex;
     flex-direction: column;
     width: 100%;
-    position: relative; /* För framtida positionering om det skulle behövas */
+    position: relative;
+    /* För framtida positionering om det skulle behövas */
 }
 
 /* Själva verktygsraden */
@@ -17,7 +18,8 @@
     padding: 0.5rem;
     border: 1px solid var(--border-color);
     background-color: var(--background-color);
-    border-bottom: none; /* Gränsen mellan verktygsrad och textarea sköts av textarean */
+    border-bottom: none;
+    /* Gränsen mellan verktygsrad och textarea sköts av textarean */
     border-top-left-radius: var(--border-radius);
     border-top-right-radius: var(--border-radius);
 }
@@ -25,13 +27,17 @@
 /* Stil för varje individuell knapp i verktygsraden */
 .md-toolbar-btn {
     background-color: transparent;
-    border: 1px solid transparent; /* Tar ingen plats men finns för hover/focus */
+    border: 1px solid transparent;
+    /* Tar ingen plats men finns för hover/focus */
     border-radius: calc(var(--border-radius) - 2px);
-    color: #000000; /* Svart i ljusa läget */
+    color: #000000;
+    /* Svart i ljusa läget */
     cursor: pointer;
     padding: 0.3rem 0.5rem;
-    line-height: 1; /* För att ikonen ska centreras snyggt */
-    font-size: 0.9em; /* Gör ikonerna lite mindre än brödtexten */
+    line-height: 1;
+    /* För att ikonen ska centreras snyggt */
+    font-size: 0.9em;
+    /* Gör ikonerna lite mindre än brödtexten */
     transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
     display: flex;
     align-items: center;
@@ -41,7 +47,8 @@
 }
 
 [data-theme="dark"] .md-toolbar-btn {
-    color: #FFFFFF; /* Vit i mörkt läge */
+    color: #FFFFFF;
+    /* Vit i mörkt läge */
 }
 
 /* Stil för ikonerna */
@@ -58,59 +65,15 @@
 .md-toolbar-btn:hover {
     background-color: var(--button-default-bg);
     border-color: var(--secondary-color);
-    color: #000000; /* Svart i ljusa läget */
+    color: #000000;
+    /* Svart i ljusa läget */
 }
 
 [data-theme="dark"] .md-toolbar-btn:hover {
-    color: #FFFFFF; /* Vit i mörkt läge */
-}
-
-/* Tydlig fokusmarkering för verktygsfältets knappar - ljust tema */
-.md-toolbar-btn:focus-visible {
-    outline: none;
-    border: 2px solid var(--focus-ring-color-outer);
-    background-color: var(--button-default-bg);
-    box-shadow: 
-        0 0 0 2px var(--focus-ring-color),
-        0 0 0 4px rgba(176, 124, 191, 0.2);
-    color: #000000;
-    /* Säkerställ att transition fungerar även för box-shadow */
-    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-/* Tydlig fokusmarkering för verktygsfältets knappar - mörkt tema */
-[data-theme="dark"] .md-toolbar-btn:focus-visible {
-    border: 2px solid var(--focus-ring-color-outer);
-    background-color: var(--button-default-bg);
-    box-shadow: 
-        0 0 0 2px var(--focus-ring-color),
-        0 0 0 4px rgba(213, 185, 221, 0.3),
-        0 0 8px rgba(213, 185, 221, 0.4);
     color: #FFFFFF;
+    /* Vit i mörkt läge */
 }
 
-/* Säkerställ att fokusmarkeringen också syns när knappen är aktiv (fokuserad) */
-.md-toolbar-btn:focus {
-    outline: none;
-}
-
-/* Kombinera fokus med hover för extra tydlighet */
-.md-toolbar-btn:focus-visible:hover {
-    background-color: var(--button-default-hover-bg);
-    border-color: var(--focus-ring-color-outer);
-    box-shadow: 
-        0 0 0 2px var(--focus-ring-color),
-        0 0 0 4px rgba(176, 124, 191, 0.3),
-        0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-[data-theme="dark"] .md-toolbar-btn:focus-visible:hover {
-    background-color: var(--button-default-hover-bg);
-    box-shadow: 
-        0 0 0 2px var(--focus-ring-color),
-        0 0 0 4px rgba(213, 185, 221, 0.4),
-        0 0 12px rgba(213, 185, 221, 0.5);
-}
 
 /* Speciell stil för preview-knappen när den är aktiv */
 .md-toolbar-btn[aria-pressed="true"] {
@@ -119,26 +82,8 @@
     border-color: var(--primary-color);
 }
 
-/* Fokusmarkering för aktiv preview-knapp - ljust tema */
-.md-toolbar-btn[aria-pressed="true"]:focus-visible {
-    border: 2px solid var(--focus-ring-color-outer);
-    box-shadow: 
-        0 0 0 2px var(--focus-ring-color),
-        0 0 0 4px rgba(176, 124, 191, 0.3),
-        0 0 0 6px rgba(220, 125, 10, 0.2);
-}
-
-/* Fokusmarkering för aktiv preview-knapp - mörkt tema */
-[data-theme="dark"] .md-toolbar-btn[aria-pressed="true"]:focus-visible {
-    border: 2px solid var(--focus-ring-color-outer);
-    box-shadow: 
-        0 0 0 2px var(--focus-ring-color),
-        0 0 0 4px rgba(213, 185, 221, 0.4),
-        0 0 0 6px rgba(220, 125, 10, 0.3),
-        0 0 12px rgba(213, 185, 221, 0.5);
-}
-
 /* Visuell avdelare mellan knappgrupper */
+
 .md-toolbar-separator {
     color: var(--border-color);
     margin: 0 0.25rem;
@@ -153,8 +98,10 @@
 .markdown-editor-wrapper textarea.form-control {
     border-top-left-radius: 0;
     border-top-right-radius: 0;
-    margin-top: 0; /* Tar bort eventuell marginal som .form-control kan ha */
-    resize: vertical; /* Tillåt vertikal omskalning men inte horisontell */
+    margin-top: 0;
+    /* Tar bort eventuell marginal som .form-control kan ha */
+    resize: vertical;
+    /* Tillåt vertikal omskalning men inte horisontell */
 }
 
 /* Förhandsgranskningsytan - NU FÖR BARA CONTAINER-STYLING */
@@ -164,7 +111,8 @@
     border: 1px dashed var(--secondary-color);
     border-radius: var(--border-radius);
     background-color: var(--background-color);
-    min-height: 100px; /* Ger lite utrymme att skriva i innan den växer */
+    min-height: 100px;
+    /* Ger lite utrymme att skriva i innan den växer */
     word-wrap: break-word;
 }
 
@@ -173,15 +121,16 @@
 /* ==================================================================== */
 
 /* Grundläggande styling inuti ALLA markdown-renderade ytor */
-.markdown-content > *:first-child {
+.markdown-content>*:first-child {
     margin-top: 0;
 }
-.markdown-content > *:last-child {
+
+.markdown-content>*:last-child {
     margin-bottom: 0;
 }
 
-.markdown-content h1, 
-.markdown-content h2, 
+.markdown-content h1,
+.markdown-content h2,
 .markdown-content h3,
 .markdown-content h4 {
     margin-top: 1rem;
@@ -189,14 +138,17 @@
     padding-bottom: 0.25rem;
     line-height: 1.3;
 }
+
 .markdown-content h2 {
     border-bottom: 1px solid var(--border-color);
 }
 
 /* Stil för inline-kod (t.ex. `background-color`) */
 .markdown-content code {
-    background-color: color-mix(in srgb, var(--secondary-color) 40%, transparent); /* Subtil, tematisk bakgrund */
-    color: color-mix(in srgb, var(--primary-color-dark) 95%, black); /* Tematisk, mörk textfärg för kod */
+    background-color: color-mix(in srgb, var(--secondary-color) 40%, transparent);
+    /* Subtil, tematisk bakgrund */
+    color: color-mix(in srgb, var(--primary-color-dark) 95%, black);
+    /* Tematisk, mörk textfärg för kod */
     padding: 0.2em 0.4em;
     border-radius: 4px;
     /* Bättre font-stack för monospace-typsnitt */
@@ -206,8 +158,10 @@
 
 /* Stil för hela kodblock (omsluts av ```) */
 .markdown-content pre {
-    background-color: color-mix(in srgb, var(--background-color) 95%, var(--border-color)); /* Bakgrund som är något mörkare än sidans */
-    color: var(--text-color); /* Säkerställ att texten ärver standardfärg */
+    background-color: color-mix(in srgb, var(--background-color) 95%, var(--border-color));
+    /* Bakgrund som är något mörkare än sidans */
+    color: var(--text-color);
+    /* Säkerställ att texten ärver standardfärg */
     padding: 1rem;
     border-radius: var(--border-radius);
     overflow-x: auto;
@@ -219,18 +173,21 @@
     padding: 0;
     background-color: transparent;
     border: none;
-    color: inherit; /* Ärver färg från <pre>-elementet */
-    font-size: inherit; /* Ärver storlek från <pre>-elementet */
+    color: inherit;
+    /* Ärver färg från <pre>-elementet */
+    font-size: inherit;
+    /* Ärver storlek från <pre>-elementet */
 }
 
 /* Anpassningar för mörkt tema */
 [data-theme="dark"] .markdown-content code {
-     background-color: color-mix(in srgb, var(--secondary-color) 25%, transparent);
-     color: color-mix(in srgb, var(--primary-color) 90%, white);
+    background-color: color-mix(in srgb, var(--secondary-color) 25%, transparent);
+    color: color-mix(in srgb, var(--primary-color) 90%, white);
 }
 
 [data-theme="dark"] .markdown-content pre {
-    background-color: rgba(0,0,0,0.2); /* Mörk, halvtransparent bakgrund för kontrast */
+    background-color: rgba(0, 0, 0, 0.2);
+    /* Mörk, halvtransparent bakgrund för kontrast */
 }
 
 .markdown-content blockquote {
@@ -239,19 +196,25 @@
     margin-left: 0;
     color: var(--text-color-muted);
 }
-.markdown-content ul, .markdown-content ol {
+
+.markdown-content ul,
+.markdown-content ol {
     padding-left: 1.5rem;
     margin-bottom: 1rem;
 }
+
 .markdown-content table {
     border-collapse: collapse;
     width: 100%;
     margin-bottom: 1rem;
 }
-.markdown-content th, .markdown-content td {
+
+.markdown-content th,
+.markdown-content td {
     border: 1px solid var(--border-color);
     padding: 0.5rem;
 }
+
 .markdown-content th {
     background-color: var(--background-color);
 }

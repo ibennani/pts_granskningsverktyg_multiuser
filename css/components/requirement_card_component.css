@@ -4,79 +4,127 @@
     border: 2px solid var(--border-color);
     border-radius: var(--border-radius);
     margin-bottom: 1rem;
-    background-color: #FFF5E6; /* Väldigt ljus orange nyans */
-    padding: 1rem; /* Padding direkt på li-elementet för att ge utrymme runt innehållet */
+    background-color: #FFF5E6;
+    /* Väldigt ljus orange nyans */
+    padding: 1rem;
+    /* Padding direkt på li-elementet för att ge utrymme runt innehållet */
 }
 
 
 .requirement-card-inner-content {
     display: flex;
-    align-items: flex-start; /* Linjera indikatorn med toppen av textblocket */
-    gap: 0.75rem; /* Avstånd mellan statusindikator och textinnehållsblocket */
+    align-items: flex-start;
+    /* Linjera indikatorn med toppen av textblocket */
+    gap: 0.75rem;
+    /* Avstånd mellan statusindikator och textinnehållsblocket */
 }
 
 .status-indicator {
     width: 12px;
     height: 12px;
     border-radius: 50%;
-    margin-top: 0.3em; /* Justera vertikal position för att linjera snyggt med första textraden i titeln */
-    flex-shrink: 0; /* Förhindra att den krymper om texten är lång */
+    margin-top: 0.3em;
+    /* Justera vertikal position för att linjera snyggt med första textraden i titeln */
+    flex-shrink: 0;
+    /* Förhindra att den krymper om texten är lång */
 }
 
 /* Statusfärger för indikatorn */
-.status-indicator.status-passed { background-color: var(--success-color); }
-.status-indicator.status-failed { background-color: var(--danger-color); }
-.status-indicator.status-not_audited { background-color: var(--secondary-color); }
-.status-indicator.status-partially_audited { background-color: var(--warning-color); } /* Ny statusfärg */
+.status-indicator.status-passed {
+    background-color: var(--success-color);
+}
+
+.status-indicator.status-failed {
+    background-color: var(--danger-color);
+}
+
+.status-indicator.status-not_audited {
+    background-color: var(--secondary-color);
+}
+
+.status-indicator.status-partially_audited {
+    background-color: var(--warning-color);
+}
+
+/* Ny statusfärg */
 
 /* Mörkt tema för statusindikatorer */
-[data-theme="dark"] .status-indicator.status-passed { background-color: var(--success-color); } /* Kan behöva ljusare grön om standard är för mörk */
-[data-theme="dark"] .status-indicator.status-failed { background-color: var(--danger-color); } /* Kan behöva ljusare röd */
-[data-theme="dark"] .status-indicator.status-not_audited { background-color: var(--text-color-muted); } /* Använd en dämpad färg */
-[data-theme="dark"] .status-indicator.status-partially_audited { background-color: var(--warning-color); } /* Kan behöva justeras */
+[data-theme="dark"] .status-indicator.status-passed {
+    background-color: var(--success-color);
+}
+
+/* Kan behöva ljusare grön om standard är för mörk */
+[data-theme="dark"] .status-indicator.status-failed {
+    background-color: var(--danger-color);
+}
+
+/* Kan behöva ljusare röd */
+[data-theme="dark"] .status-indicator.status-not_audited {
+    background-color: var(--text-color-muted);
+}
+
+/* Använd en dämpad färg */
+[data-theme="dark"] .status-indicator.status-partially_audited {
+    background-color: var(--warning-color);
+}
+
+/* Kan behöva justeras */
 
 
 .requirement-card-text-content {
-    flex-grow: 1; /* Låt textinnehållet ta upp resterande utrymme */
+    flex-grow: 1;
+    /* Låt textinnehållet ta upp resterande utrymme */
     display: flex;
-    flex-direction: column; /* Titel ovanför referens */
-    gap: 0.1rem; /* Mindre gap mellan titel och referens */
+    flex-direction: column;
+    /* Titel ovanför referens */
+    gap: 0.1rem;
+    /* Mindre gap mellan titel och referens */
 }
 
-.requirement-card-title-container { /* Omslutande H3 för titelknappen */
-    margin: 0; /* Ta bort default H3-marginal */
-    padding:0;
-    line-height: 1.3; /* Anpassa radhöjd för titeln */
-    font-weight: 600; /* Ökad från 500 till 600 för tydligare titlar */
+.requirement-card-title-container {
+    /* Omslutande H3 för titelknappen */
+    margin: 0;
+    /* Ta bort default H3-marginal */
+    padding: 0;
+    line-height: 1.3;
+    /* Anpassa radhöjd för titeln */
+    font-weight: 600;
+    /* Ökad från 500 till 600 för tydligare titlar */
 }
 
-.requirement-card-title-button { /* Själva titel-knappen */
+.requirement-card-title-button {
+    /* Själva titel-knappen */
     background: none;
     border: none;
     padding: 0;
     margin: 0;
-    font-family: inherit; /* Ärver från body/card */
-    font-size: 1.1rem; /* Tydlig titelstorlek */
-    font-weight: 600; /* Ökad från 500 till 600 för tydligare titlar */
+    font-family: inherit;
+    /* Ärver från body/card */
+    font-size: 1.1rem;
+    /* Tydlig titelstorlek */
+    font-weight: 600;
+    /* Ökad från 500 till 600 för tydligare titlar */
     color: var(--primary-color);
     text-align: left;
     cursor: pointer;
     text-decoration: underline;
-    line-height: inherit; /* Ärver från H3-containern */
+    line-height: inherit;
+    /* Ärver från H3-containern */
 }
+
 .requirement-card-title-button:hover,
 .requirement-card-title-button:focus {
-    text-decoration: underline; /* Tydliggör interaktivitet */
+    text-decoration: underline;
+    /* Tydliggör interaktivitet */
     color: var(--primary-color-dark);
 }
+
 /* Fokusstil specifikt för titel-knappen om den inte ärver från global .button */
-.requirement-card-title-button:focus-visible {
-    outline: 2px solid var(--primary-color);
-    outline-offset: 2px;
-}
 
 
-.requirement-card-reference-wrapper { /* Wrapper för referenslänk/text */
+
+.requirement-card-reference-wrapper {
+    /* Wrapper för referenslänk/text */
     /* margin-top: 0.25rem; Tas bort, gap på flex-container sköter det */
 }
 
@@ -84,20 +132,21 @@
 .requirement-card-reference-text {
     font-size: 0.85rem;
     color: var(--text-color-muted);
-    display: inline-block; /* Viktigt för padding/margin och hover-effekter på länken */
-    line-height: 1.4; /* Lite mer radhöjd för läsbarhet */
+    display: inline-block;
+    /* Viktigt för padding/margin och hover-effekter på länken */
+    line-height: 1.4;
+    /* Lite mer radhöjd för läsbarhet */
 }
+
 .requirement-card-reference-link {
-    color: var(--primary-color); /* Länkfärg */
-    /* text-decoration: none; */ /* Ta bort så att den ärver global understrykning */
+    color: var(--primary-color);
+    /* Länkfärg */
+    /* text-decoration: none; */
+    /* Ta bort så att den ärver global understrykning */
 }
+
 .requirement-card-reference-link:hover,
 .requirement-card-reference-link:focus {
     text-decoration: underline;
     color: var(--primary-color-dark);
-}
-/* Fokusstil specifikt för referenslänken */
-.requirement-card-reference-link:focus-visible {
-    outline: 2px solid var(--primary-color);
-    outline-offset: 1px;
 }

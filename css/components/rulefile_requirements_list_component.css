@@ -32,9 +32,3 @@
     color: var(--primary-color-dark);
     text-decoration: underline;
 }
-
-.requirement-list-title-button:focus-visible {
-    outline: 2px solid var(--primary-color);
-    outline-offset: 2px;
-}
-

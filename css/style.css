@@ -45,8 +45,13 @@
 
     --border-color: #B07CBF; /* Lila 60% från PTS - mörkare rosa för bättre kontrast mot ljus bakgrund */
     
-    --focus-ring-color: rgba(176, 124, 191, 0.4); /* Lila 60% - rosa */
-    --focus-ring-color-outer: #B07CBF; /* Lila 60% från PTS */
+/* Focus ring variables - Updated for high contrast */
+    --focus-offset: 1px;
+    --focus-inner-width: 2px;
+    --focus-outer-width: 2px;
+    --focus-inner-color: #ffffff;
+    --focus-outer-color: #000000;
+
 
     --button-default-bg: #FAF7F4; /* Ljusare än plattor för bättre synlighet */
     --button-default-text: var(--text-color);
@@ -145,8 +150,10 @@
 
     --border-color: #D5B9DD; /* Lila 40% från PTS - ljus rosa för alla kantlinjer */
     
-    --focus-ring-color: rgba(213, 185, 221, 0.4); /* Lila 40% - rosa */
-    --focus-ring-color-outer: #D5B9DD; /* Lila 40% från PTS */
+/* Focus ring variables - Updated for high contrast */
+    --focus-inner-color: #ffffff;
+    --focus-outer-color: #000000;
+
 
     --button-default-bg: #423051; /* Ljusare än plattor för bättre kontrast */
     --button-default-text: var(--text-color);
@@ -293,7 +300,7 @@ a {
     color: var(--link-color);
     text-decoration: underline;
 }
-a:hover, a:focus {
+a:hover, a:focus-visible {
     color: var(--link-hover-color);
 }
 
@@ -301,7 +308,7 @@ a:hover, a:focus {
     color: var(--link-color);
 }
 [data-theme="dark"] a:hover, 
-[data-theme="dark"] a:focus {
+[data-theme="dark"] a:focus-visible {
     color: var(--link-hover-color);
 }
 
@@ -463,12 +470,22 @@ select {
     transition: border-color 0.15s ease-in-out;
 }
 
+.form-control:focus-visible,
+input[type="text"]:focus-visible,
+input[type="url"]:focus-visible,
+input[type="email"]:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+    border-color: var(--border-color); /* Keep default border, focus is handled globally */
+    outline: none;
+}
 .form-control:focus,
 input[type="text"]:focus,
 input[type="url"]:focus,
 input[type="email"]:focus,
 textarea:focus,
 select:focus {
+    /* Fallback/Correction for click focus sticking */
     border-color: var(--primary-color);
     outline: none;
 }
@@ -542,7 +559,19 @@ textarea.form-control, textarea {
 }
 
 :focus-visible {
-  outline: none;
+    outline: var(--focus-outer-width) solid var(--focus-outer-color);
+    outline-offset: calc(var(--focus-offset) + var(--focus-inner-width));
+    box-shadow: 0 0 0 calc(var(--focus-inner-width) + var(--focus-offset)) var(--focus-inner-color); 
+    /* 
+       Note: The box-shadow fills the gap + inner ring space.
+       To explicitly have a transparent gap (1px) + white ring (2px) + black ring (2px):
+       Outline offset = 1px (gap) + 2px (white) = 3px.
+       Shadow needs to be white at 1px-3px.
+       Box-shadow starts at 0. Simple box-shadow covers 0-3px.
+       Visual result: Object -> White(3px) -> Black(2px).
+       This satisfies "Inner White, Outer Black".
+    */
+    z-index: 10;
 }
 
 

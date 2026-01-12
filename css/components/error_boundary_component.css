@@ -179,12 +179,12 @@
         margin: 1rem;
         padding: 1.5rem;
     }
-    
+
     .error-boundary-actions {
         flex-direction: column;
         align-items: stretch;
     }
-    
+
     .error-boundary-retry-button,
     .error-boundary-reload-button,
     .error-boundary-back-button {
@@ -193,18 +193,7 @@
     }
 }
 
-/* Accessibility improvements */
-.error-boundary-container:focus-within {
-    outline: 2px solid var(--focus-outline, #0d6efd);
-    outline-offset: 2px;
-}
 
-.error-boundary-retry-button:focus,
-.error-boundary-reload-button:focus,
-.error-boundary-back-button:focus {
-    outline: 2px solid var(--focus-outline, #0d6efd);
-    outline-offset: 2px;
-}
 
 /* Animation for error appearance */
 @keyframes errorSlideIn {
@@ -212,6 +201,7 @@
         opacity: 0;
         transform: translateY(-20px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
