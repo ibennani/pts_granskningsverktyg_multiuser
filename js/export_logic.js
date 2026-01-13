@@ -151,7 +151,9 @@ function export_to_csv(current_audit) {
     const report_prefix = t('filename_audit_report_prefix');
     const deficiencies_suffix = t('filename_deficiencies_suffix');
     const actor_name = (current_audit.auditMetadata.actorName || t('filename_fallback_actor')).replace(/[^a-z0-9åäöÅÄÖ]/gi, '_');
-    const filename = `${report_prefix}_${deficiencies_suffix}_${actor_name}_${new Date().toISOString().split('T')[0]}.csv`;
+    const case_number = (current_audit.auditMetadata.caseNumber || '').replace(/[^a-z0-9åäöÅÄÖ]/gi, '_');
+    const case_number_prefix = case_number ? `${case_number}_` : '';
+    const filename = `${case_number_prefix}${report_prefix}_${deficiencies_suffix}_${actor_name}_${new Date().toISOString().split('T')[0]}.csv`;
 
     link.setAttribute("download", filename);
     document.body.appendChild(link);
@@ -306,7 +308,9 @@ async function export_to_excel(current_audit) {
         const report_prefix = t('filename_audit_report_prefix');
         const deficiencies_suffix = t('filename_deficiencies_suffix');
         const actor_name = (current_audit.auditMetadata.actorName || t('filename_fallback_actor')).replace(/[^a-z0-9åäöÅÄÖ]/gi, '_');
-        const filename = `${report_prefix}_${deficiencies_suffix}_${actor_name}_${new Date().toISOString().split('T')[0]}.xlsx`;
+        const case_number = (current_audit.auditMetadata.caseNumber || '').replace(/[^a-z0-9åäöÅÄÖ]/gi, '_');
+        const case_number_prefix = case_number ? `${case_number}_` : '';
+        const filename = `${case_number_prefix}${report_prefix}_${deficiencies_suffix}_${actor_name}_${new Date().toISOString().split('T')[0]}.xlsx`;
 
         link.href = url;
         link.download = filename;
