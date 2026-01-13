@@ -97,8 +97,18 @@ export const AuditInfoComponent = {
         info_panel.appendChild(this.create_info_item('version_rulefile', rf_meta.version));
         info_panel.appendChild(this.create_info_item('status', t(`audit_status_${current_state.auditStatus}`)));
         info_panel.appendChild(this.create_info_item('start_time', this.Helpers.format_iso_to_local_datetime(current_state.startTime, lang_code)));
+        
+        // Show end time if available, or if audit is locked (fallback to now if missing in state for locked audit)
         if (current_state.endTime) {
             info_panel.appendChild(this.create_info_item('end_time', this.Helpers.format_iso_to_local_datetime(current_state.endTime, lang_code)));
+        } else if (current_state.auditStatus === 'locked') {
+             // Fallback for locked audits without recorded end time - show current time or a placeholder
+             // However, to avoid showing a misleading "now" every time the component renders, we should probably rely on state.
+             // But if state is missing it, maybe show "Unknown" or similar? 
+             // Or update state? We can't update state inside render.
+             // Given the previous fix in state.js, this branch should ideally not be reached for newly locked audits.
+             // For old audits, they might still be missing endTime.
+             info_panel.appendChild(this.create_info_item('end_time', '---'));
         }
         
         if (md.internalComment) {

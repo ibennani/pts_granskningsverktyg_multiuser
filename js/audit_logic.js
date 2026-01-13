@@ -395,3 +395,49 @@ export function recalculateStatusesOnLoad(auditState) {
 
     return newState;
 }
+
+export function recalculateAuditTimes(auditState) {
+    if (!auditState || !auditState.samples) {
+        return auditState;
+    }
+
+    let minTime = null;
+    let maxTime = null;
+
+    (auditState.samples || []).forEach(sample => {
+        Object.values(sample.requirementResults || {}).forEach(reqResult => {
+            // Kolla timestamp på krav-nivå (lastStatusUpdate) för bakåtkompatibilitet och täckning
+            if (reqResult.lastStatusUpdate) {
+                if (!minTime || reqResult.lastStatusUpdate < minTime) minTime = reqResult.lastStatusUpdate;
+                if (!maxTime || reqResult.lastStatusUpdate > maxTime) maxTime = reqResult.lastStatusUpdate;
+            }
+
+            Object.values(reqResult.checkResults || {}).forEach(checkResult => {
+                // Kolla timestamp på check-nivå
+                if (checkResult.timestamp) {
+                    if (!minTime || checkResult.timestamp < minTime) minTime = checkResult.timestamp;
+                    if (!maxTime || checkResult.timestamp > maxTime) maxTime = checkResult.timestamp;
+                }
+
+                // Kolla timestamp på passCriteria-nivå
+                if (checkResult.passCriteria) {
+                    Object.values(checkResult.passCriteria).forEach(pcResult => {
+                        if (pcResult.timestamp) {
+                            if (!minTime || pcResult.timestamp < minTime) minTime = pcResult.timestamp;
+                            if (!maxTime || pcResult.timestamp > maxTime) maxTime = pcResult.timestamp;
+                        }
+                    });
+                }
+            });
+        });
+    });
+
+    if (minTime || maxTime) {
+        const newState = { ...auditState };
+        if (minTime) newState.startTime = minTime;
+        if (maxTime) newState.endTime = maxTime;
+        return newState;
+    }
+    
+    return auditState;
+}

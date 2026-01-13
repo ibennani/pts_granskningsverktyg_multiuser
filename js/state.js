@@ -269,7 +269,7 @@ function root_reducer(current_state, action) {
             if (action.payload && typeof action.payload === 'object') {
                 const loaded_data = action.payload;
                 const new_state_base = JSON.parse(JSON.stringify(initial_state));
-                const merged_state = {
+                let merged_state = {
                     ...new_state_base,
                     ...loaded_data,
                     uiSettings: {
@@ -299,6 +299,10 @@ function root_reducer(current_state, action) {
                 if (!merged_state.deficiencyCounter) {
                     merged_state.deficiencyCounter = 1;
                 }
+                
+                // Beräkna om tider baserat på timestamps i resultaten
+                merged_state = AuditLogic.recalculateAuditTimes(merged_state);
+
                 // Beräkna om statusar med korrekt logik (t.ex. OR-logik) och uppdatera bristindex om granskningen är låst
                 return AuditLogic.recalculateStatusesOnLoad(merged_state);
             }
@@ -341,6 +345,7 @@ function root_reducer(current_state, action) {
                         : sample
                 )
             };
+            new_state = AuditLogic.recalculateAuditTimes(new_state);
             return AuditLogic.updateIncrementalDeficiencyIds(new_state);
 
         case ActionTypes.SET_AUDIT_STATUS:
@@ -352,20 +357,32 @@ function root_reducer(current_state, action) {
                 if (current_state.deficiencyCounter === 1) {
                     state_before_status_change = AuditLogic.assignSortedDeficiencyIdsOnLock(current_state);
                 }
-                timeUpdate.endTime = state_before_status_change.endTime || get_current_iso_datetime_utc_internal();
+                // Uppdatera tider en sista gång vid låsning för att vara säker
+                state_before_status_change = AuditLogic.recalculateAuditTimes(state_before_status_change);
+                
+                // Fallback: Om ingen sluttid kunde beräknas (t.ex. gamla data utan timestamps), sätt sluttid till nu
+                if (!state_before_status_change.endTime) {
+                    timeUpdate.endTime = get_current_iso_datetime_utc_internal();
+                }
             } 
             else if (newStatus === 'in_progress' && current_state.auditStatus === 'locked') {
-                timeUpdate.endTime = null;
                 // Ta bort alla ID:n när granskningen låses upp
                 state_before_status_change = AuditLogic.removeAllDeficiencyIds(current_state);
+                // Nollställ endTime när vi låser upp, eftersom granskningen nu är pågående
+                timeUpdate.endTime = null; 
+                state_before_status_change = AuditLogic.recalculateAuditTimes(state_before_status_change);
             } 
             else if (newStatus === 'in_progress' && current_state.auditStatus === 'not_started') {
-                timeUpdate.startTime = get_current_iso_datetime_utc_internal();
                 // Ta bort alla ID:n när granskningen startas
                 state_before_status_change = AuditLogic.removeAllDeficiencyIds(current_state);
+                // Nollställ tider vid omstart (eller låt dem vara om vi vill behålla historik?)
+                // Enligt instruktion ska vi utgå från interaktioner, så recalculateAuditTimes borde hantera det korrekt
+                // om vi inte nollställer timestamps i resultaten.
+                // Om 'not_started' -> 'in_progress' är det en ny granskning eller återupptagen.
+                state_before_status_change = AuditLogic.recalculateAuditTimes(state_before_status_change);
             }
 
-            return { ...state_before_status_change, auditStatus: newStatus, ...timeUpdate };
+            return { ...state_before_status_change, auditStatus: newStatus };
 
         case ActionTypes.REPLACE_RULEFILE_AND_RECONCILE:
             if (!action.payload || !action.payload.ruleFileContent || !action.payload.samples) {

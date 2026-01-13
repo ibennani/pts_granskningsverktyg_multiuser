@@ -144,9 +144,11 @@ export const RequirementAuditComponent = {
         }
         const check_result = modified_result.checkResults[change_info.checkId];
         const check_definition = this.current_requirement.checks.find(c => c.id === change_info.checkId);
+        const current_time = this.Helpers.get_current_iso_datetime_utc();
 
         if (change_info.type === 'check_overall_status_change') {
             check_result.overallStatus = check_result.overallStatus === change_info.newStatus ? 'not_audited' : change_info.newStatus;
+            check_result.timestamp = current_time;
         } else if (change_info.type === 'pc_status_change') {
             if (check_result.overallStatus !== 'passed') {
                 this.NotificationComponent.show_global_message(this.Translation.t('error_set_check_status_first'), 'warning');
@@ -154,6 +156,7 @@ export const RequirementAuditComponent = {
             }
             const pc_result = check_result.passCriteria[change_info.pcId];
             pc_result.status = pc_result.status === change_info.newStatus ? 'not_audited' : change_info.newStatus;
+            pc_result.timestamp = current_time;
             
             if (pc_result.status === 'failed' && (!pc_result.observationDetail || pc_result.observationDetail.trim() === '')) {
                 const pc_def = check_definition.passCriteria.find(pc => pc.id === change_info.pcId);
@@ -200,7 +203,9 @@ export const RequirementAuditComponent = {
                 console.warn('[RequirementAuditComponent] Failed to clone current result for autosave:', error);
                 return;
             }
-            modified_result.checkResults[change_info.checkId].passCriteria[change_info.pcId].observationDetail = change_info.value;
+            const pc_res = modified_result.checkResults[change_info.checkId].passCriteria[change_info.pcId];
+            pc_res.observationDetail = change_info.value;
+            pc_res.timestamp = this.Helpers.get_current_iso_datetime_utc();
             this.dispatch_result_update(modified_result);
         }
     },

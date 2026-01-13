@@ -295,7 +295,13 @@ export const AuditOverviewComponent = {
         const current_global_state = this.getState();
 
         if (!current_global_state || !current_global_state.ruleFileContent) {
-            this.NotificationComponent.show_global_message(t("error_no_active_audit"), "error");
+            // Anropa inte NotificationComponent här om elementet inte är redo eller root är fel
+            if (this.root) {
+                this.root.innerHTML = '';
+                const error_div = this.Helpers.create_element('div', { class_name: 'content-plate' });
+                error_div.textContent = t("error_no_active_audit");
+                this.root.appendChild(error_div);
+            }
             return;
         }
 
