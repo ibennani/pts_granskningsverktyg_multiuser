@@ -4,23 +4,33 @@
 :root {
     /* PTS Grafisk Profil - Ljust Tema */
     /* Primär färg: PTS Lila #6E3282 */
-    --primary-color: #6E3282; /* Primär lila från PTS */
-    --primary-color-dark: #4A2159; /* Mörkare lila */
-    
+    --primary-color: #6E3282;
+    /* Primär lila från PTS */
+    --primary-color-dark: #4A2159;
+    /* Mörkare lila */
+
     /* Rubrik- och länkfärger baserat på PTS färger - samma färg */
-    --link-color: #6E3282; /* Primär lila från PTS - mörk för läsbarhet mot ljus bakgrund */
-    --link-hover-color: #8A3F9E; /* Lite ljusare lila vid hover */
-    --heading-color: #6E3282; /* Samma färg som länkar - primär lila från PTS */
-    --button-primary-bg: #FFE5CC; /* Ljust orange bakgrund för primära knappar */
+    --link-color: #6E3282;
+    /* Primär lila från PTS - mörk för läsbarhet mot ljus bakgrund */
+    --link-hover-color: #8A3F9E;
+    /* Lite ljusare lila vid hover */
+    --heading-color: #6E3282;
+    /* Samma färg som länkar - primär lila från PTS */
+    --button-primary-bg: #FFE5CC;
+    /* Ljust orange bakgrund för primära knappar */
     --button-primary-text: var(--text-color);
-    --button-primary-border: #DC7D0A; /* Orange från PTS */
-    --button-primary-hover-bg: #FFD9B3; /* Lite mörkare orange vid hover */
+    --button-primary-border: #DC7D0A;
+    /* Orange från PTS */
+    --button-primary-hover-bg: #FFD9B3;
+    /* Lite mörkare orange vid hover */
 
     --border-radius: 12px;
 
     /* Sekundära färger från PTS - använder orange/gul */
-    --secondary-color: #DC7D0A; /* Mörkgul/orange från PTS */
-    --accent-color: #DC7D0A; /* Mörkgul från PTS */
+    --secondary-color: #DC7D0A;
+    /* Mörkgul/orange från PTS */
+    --accent-color: #DC7D0A;
+    /* Mörkgul från PTS */
     --accent-color-light: rgba(220, 125, 10, 0.15);
 
     /* --- START OF CHANGE: Updated vars to align with new button theme --- */
@@ -28,24 +38,32 @@
     --danger-color-light: rgba(201, 74, 74, 0.15);
     --warning-color: #c9953d;
     --warning-color-light: rgba(201, 149, 61, 0.15);
-    --info-color: #6E3282; /* Primär lila från PTS */
+    --info-color: #6E3282;
+    /* Primär lila från PTS */
     --info-color-light: rgba(110, 50, 130, 0.15);
     --success-color: #58a47a;
     --success-color-light: rgba(88, 164, 122, 0.15);
     /* --- END OF CHANGE --- */
 
-    --text-color: #1e2a2b; /* Mörk text för läsbarhet mot ljus bakgrund */
-    --text-color-muted: #4a5a5c; /* Mörkare nedtonad text */
+    --text-color: #1e2a2b;
+    /* Mörk text för läsbarhet mot ljus bakgrund */
+    --text-color-muted: #4a5a5c;
+    /* Mörkare nedtonad text */
 
     /* Bakgrund ljus med radial gradient - mörkare för bättre kontrast */
-    --background-color: radial-gradient(ellipse at top right, #D4C8BA, #C8BAA8); /* Mörkare ljusgrå gradient */
-    --plate-background-color: #F0EAE3; /* Mörkare än vit men ljusare än bakgrund för att syna inmatningsfält */
-    --input-background-color: #ffffff; /* Vit bakgrund för inmatningsfält - syns tydligt mot plattor */
-    --input-text-color: #1e2a2b; /* Mörk text i inmatningsfält */
+    --background-color: radial-gradient(ellipse at top right, #D4C8BA, #C8BAA8);
+    /* Mörkare ljusgrå gradient */
+    --plate-background-color: #F0EAE3;
+    /* Mörkare än vit men ljusare än bakgrund för att syna inmatningsfält */
+    --input-background-color: #ffffff;
+    /* Vit bakgrund för inmatningsfält - syns tydligt mot plattor */
+    --input-text-color: #1e2a2b;
+    /* Mörk text i inmatningsfält */
 
-    --border-color: #B07CBF; /* Lila 60% från PTS - mörkare rosa för bättre kontrast mot ljus bakgrund */
-    
-/* Focus ring variables - Updated for high contrast */
+    --border-color: #B07CBF;
+    /* Lila 60% från PTS - mörkare rosa för bättre kontrast mot ljus bakgrund */
+
+    /* Focus ring variables - Updated for high contrast */
     --focus-offset: 1px;
     --focus-inner-width: 2px;
     --focus-outer-width: 2px;
@@ -53,36 +71,54 @@
     --focus-outer-color: #000000;
 
 
-    --button-default-bg: #FAF7F4; /* Ljusare än plattor för bättre synlighet */
+    --button-default-bg: #FAF7F4;
+    /* Ljusare än plattor för bättre synlighet */
     --button-default-text: var(--text-color);
-    --button-default-hover-bg: #F5F0EB; /* Lite mörkare vid hover */
-    --button-default-border: #B07CBF; /* Lila 60% - rosa */
+    --button-default-hover-bg: #F5F0EB;
+    /* Lite mörkare vid hover */
+    --button-default-border: #B07CBF;
+    /* Lila 60% - rosa */
 
-    --button-accent-bg: #FAF7F4; /* Ljusare än plattor för bättre synlighet */
+    --button-accent-bg: #FAF7F4;
+    /* Ljusare än plattor för bättre synlighet */
     --button-accent-text: var(--text-color);
-    --button-accent-border: #B07CBF; /* Lila 60% - rosa */
-    --button-accent-hover-bg: #F5F0EB; /* Lite mörkare vid hover */
+    --button-accent-border: #B07CBF;
+    /* Lila 60% - rosa */
+    --button-accent-hover-bg: #F5F0EB;
+    /* Lite mörkare vid hover */
 
-    --button-success-bg: #d1eabc; /* Ljusgrön för godkänt/stämmer */
-    --button-success-text: #395123; /* Mörk grön text */
+    --button-success-bg: #d1eabc;
+    /* Ljusgrön för godkänt/stämmer */
+    --button-success-text: #395123;
+    /* Mörk grön text */
     --button-success-border: #60a37e;
-    --button-success-hover-bg: #c1dda4; /* Lite mörkare vid hover */
+    --button-success-hover-bg: #c1dda4;
+    /* Lite mörkare vid hover */
 
-    --button-danger-bg: #f8d7da; /* Ljus röd för underkänt/stämmer inte */
-    --button-danger-text: #58151c; /* Mörk röd text */
+    --button-danger-bg: #f8d7da;
+    /* Ljus röd för underkänt/stämmer inte */
+    --button-danger-text: #58151c;
+    /* Mörk röd text */
     --button-danger-border: var(--danger-color);
-    --button-danger-hover-bg: #f1c2c7; /* Lite mörkare vid hover */
+    --button-danger-hover-bg: #f1c2c7;
+    /* Lite mörkare vid hover */
 
-    --button-warning-bg: #FAF7F4; /* Ljusare än plattor för bättre synlighet */
+    --button-warning-bg: #FAF7F4;
+    /* Ljusare än plattor för bättre synlighet */
     --button-warning-text: var(--text-color);
-    --button-warning-border: #B07CBF; /* Lila 60% - rosa */
-    --button-warning-hover-bg: #F5F0EB; /* Lite mörkare vid hover */
+    --button-warning-border: #B07CBF;
+    /* Lila 60% - rosa */
+    --button-warning-hover-bg: #F5F0EB;
+    /* Lite mörkare vid hover */
 
-    --button-info-bg: #FAF7F4; /* Ljusare än plattor för bättre synlighet */
+    --button-info-bg: #FAF7F4;
+    /* Ljusare än plattor för bättre synlighet */
     --button-info-text: var(--text-color);
-    --button-info-border: #B07CBF; /* Lila 60% - rosa */
-    --button-info-hover-bg: #F5F0EB; /* Lite mörkare vid hover */
-    
+    --button-info-border: #B07CBF;
+    /* Lila 60% - rosa */
+    --button-info-hover-bg: #F5F0EB;
+    /* Lite mörkare vid hover */
+
     --gradient-success-color: var(--success-color);
     --gradient-warning-color: var(--warning-color);
     --gradient-orange-color: #ff8c42;
@@ -97,7 +133,7 @@
     --font-family-base: var(--font-family-sans-serif);
     --font-size-base: 1rem;
     --line-height-base: 1.6;
-    
+
     --container-max-width: 1080px;
     --spacing-unit: 1rem;
 
@@ -109,23 +145,33 @@
 [data-theme="dark"] {
     /* PTS Grafisk Profil - Mörkt Tema */
     /* Primär färg: PTS Lila #6E3282 */
-    --primary-color: #9650AA; /* Ljusare lila för bättre synlighet */
-    --primary-color-dark: #6E3282; /* Primär lila från PTS */
-    
+    --primary-color: #9650AA;
+    /* Ljusare lila för bättre synlighet */
+    --primary-color-dark: #6E3282;
+    /* Primär lila från PTS */
+
     /* Rubrik- och länkfärger baserat på PTS färger - samma ljusa färg */
-    --link-color: #D5B9DD; /* Lila 40% från PTS - ljus rosa */
-    --link-hover-color: #D5B9DD; /* Samma färg som länkar */
-    --heading-color: #D5B9DD; /* Samma färg som länkar (#D5B9DD - Lila 40% från PTS) */
-    --button-primary-bg: #B8630A; /* Mörkare orange från PTS paletten */
+    --link-color: #D5B9DD;
+    /* Lila 40% från PTS - ljus rosa */
+    --link-hover-color: #D5B9DD;
+    /* Samma färg som länkar */
+    --heading-color: #D5B9DD;
+    /* Samma färg som länkar (#D5B9DD - Lila 40% från PTS) */
+    --button-primary-bg: #B8630A;
+    /* Mörkare orange från PTS paletten */
     --button-primary-text: #ffffff;
-    --button-primary-border: #DC7D0A; /* Orange från PTS */
-    --button-primary-hover-bg: #C46F0A; /* Lite ljusare orange vid hover */
+    --button-primary-border: #DC7D0A;
+    /* Orange från PTS */
+    --button-primary-hover-bg: #C46F0A;
+    /* Lite ljusare orange vid hover */
 
     --border-radius: 12px;
 
     /* Sekundära färger från PTS - använder orange/gul istället för blå */
-    --secondary-color: #DC7D0A; /* Mörkgul/orange från PTS */
-    --accent-color: #DC7D0A; /* Mörkgul från PTS */
+    --secondary-color: #DC7D0A;
+    /* Mörkgul/orange från PTS */
+    --accent-color: #DC7D0A;
+    /* Mörkgul från PTS */
     --accent-color-light: rgba(220, 125, 10, 0.2);
 
     /* --- START OF CHANGE: Updated vars to align with new button theme --- */
@@ -133,37 +179,50 @@
     --danger-color-light: rgba(138, 52, 58, 0.2);
     --warning-color: #c9953d;
     --warning-color-light: rgba(142, 109, 42, 0.2);
-    --info-color: #6E3282; /* Primär lila från PTS istället för blå */
+    --info-color: #6E3282;
+    /* Primär lila från PTS istället för blå */
     --info-color-light: rgba(110, 50, 130, 0.2);
     --success-color: #58a47a;
     --success-color-light: rgba(64, 117, 88, 0.2);
     /* --- END OF CHANGE --- */
 
-    --text-color: #F4F1EE; /* Ljusgrå från PTS */
-    --text-color-muted: #D5B9DD; /* Lila 40% för nedtonad text */
+    --text-color: #F4F1EE;
+    /* Ljusgrå från PTS */
+    --text-color-muted: #D5B9DD;
+    /* Lila 40% för nedtonad text */
 
     /* Bakgrund mörk men ljusare än inmatningsfält - mörkblå från PTS */
     --background-color: radial-gradient(ellipse at top right, #253A4F, #1A2330);
-    --plate-background-color: #2E1F2E; /* Mörkare lila än tidigare */
-    --input-background-color: #141414; /* Nästan svart - från PTS svart #141414 */
-    --input-text-color: #F4F1EE; /* Ljus text i inmatningsfält - nästan lika ljus som rubriker */
+    --plate-background-color: #2E1F2E;
+    /* Mörkare lila än tidigare */
+    --input-background-color: #141414;
+    /* Nästan svart - från PTS svart #141414 */
+    --input-text-color: #F4F1EE;
+    /* Ljus text i inmatningsfält - nästan lika ljus som rubriker */
 
-    --border-color: #D5B9DD; /* Lila 40% från PTS - ljus rosa för alla kantlinjer */
-    
-/* Focus ring variables - Updated for high contrast */
+    --border-color: #D5B9DD;
+    /* Lila 40% från PTS - ljus rosa för alla kantlinjer */
+
+    /* Focus ring variables - Updated for high contrast */
     --focus-inner-color: #ffffff;
     --focus-outer-color: #000000;
 
 
-    --button-default-bg: #423051; /* Ljusare än plattor för bättre kontrast */
+    --button-default-bg: #423051;
+    /* Ljusare än plattor för bättre kontrast */
     --button-default-text: var(--text-color);
-    --button-default-hover-bg: #4A2A5A; /* Lite ljusare vid hover */
-    --button-default-border: #D5B9DD; /* Ljus rosa */
+    --button-default-hover-bg: #4A2A5A;
+    /* Lite ljusare vid hover */
+    --button-default-border: #D5B9DD;
+    /* Ljus rosa */
 
-    --button-accent-bg: #DC7D0A; /* Mörkgul från PTS */
+    --button-accent-bg: #DC7D0A;
+    /* Mörkgul från PTS */
     --button-accent-text: var(--text-color);
-    --button-accent-border: #D5B9DD; /* Ljus rosa */
-    --button-accent-hover-bg: #E68A1A; /* Mellanton */
+    --button-accent-border: #D5B9DD;
+    /* Ljus rosa */
+    --button-accent-hover-bg: #E68A1A;
+    /* Mellanton */
 
     --button-success-bg: #407558;
     --button-success-text: var(--text-color);
@@ -175,16 +234,22 @@
     --button-danger-border: var(--danger-color);
     --button-danger-hover-bg: #a1474d;
 
-    --button-warning-bg: #DC7D0A; /* Mörkgul från PTS */
+    --button-warning-bg: #DC7D0A;
+    /* Mörkgul från PTS */
     --button-warning-text: var(--text-color);
-    --button-warning-border: #D5B9DD; /* Ljus rosa */
-    --button-warning-hover-bg: #E68A1A; /* Mellanton */
+    --button-warning-border: #D5B9DD;
+    /* Ljus rosa */
+    --button-warning-hover-bg: #E68A1A;
+    /* Mellanton */
 
-    --button-info-bg: #6E3282; /* Primär lila från PTS istället för blå */
+    --button-info-bg: #6E3282;
+    /* Primär lila från PTS istället för blå */
     --button-info-text: var(--text-color);
-    --button-info-border: #D5B9DD; /* Ljus rosa */
-    --button-info-hover-bg: #8A3F9E; /* Ljusare lila */
-    
+    --button-info-border: #D5B9DD;
+    /* Ljus rosa */
+    --button-info-hover-bg: #8A3F9E;
+    /* Ljusare lila */
+
     --gradient-success-color: var(--success-color);
     --gradient-warning-color: var(--warning-color);
     --gradient-orange-color: #ff8c42;
@@ -250,32 +315,43 @@ body {
     overflow-x: hidden;
 }
 
-.content-plate h1 { margin-bottom: 0.5rem; }
+.content-plate h1 {
+    margin-bottom: 0.5rem;
+}
+
 .content-plate .view-intro-text,
-.content-plate p.view-intro-text { 
-    margin-bottom: 1.5rem !important; 
-    font-size: 1rem !important; 
-    color: var(--text-color-muted) !important; 
+.content-plate p.view-intro-text {
+    margin-bottom: 1.5rem !important;
+    font-size: 1rem !important;
+    color: var(--text-color-muted) !important;
     font-weight: normal !important;
 }
 
 [data-theme="dark"] .content-plate .view-intro-text,
 [data-theme="dark"] .content-plate p.view-intro-text {
-    color: #FFFFFF !important; /* Vit färg i mörkt läge */
+    color: #FFFFFF !important;
+    /* Vit färg i mörkt läge */
 }
-.content-plate h1 + .view-intro-text,
-.content-plate h1 + p.view-intro-text {
+
+.content-plate h1+.view-intro-text,
+.content-plate h1+p.view-intro-text {
     color: var(--text-color-muted) !important;
     font-weight: normal !important;
 }
 
-[data-theme="dark"] .content-plate h1 + .view-intro-text,
-[data-theme="dark"] .content-plate h1 + p.view-intro-text {
-    color: #FFFFFF !important; /* Vit färg i mörkt läge */
+[data-theme="dark"] .content-plate h1+.view-intro-text,
+[data-theme="dark"] .content-plate h1+p.view-intro-text {
+    color: #FFFFFF !important;
+    /* Vit färg i mörkt läge */
 }
 
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
     margin-bottom: 0.75em;
     font-weight: 500;
     line-height: 1.2;
@@ -283,11 +359,11 @@ h1, h2, h3, h4, h5, h6 {
     transition: color 0.3s ease;
 }
 
-[data-theme="dark"] h1, 
-[data-theme="dark"] h2, 
-[data-theme="dark"] h3, 
-[data-theme="dark"] h4, 
-[data-theme="dark"] h5, 
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3,
+[data-theme="dark"] h4,
+[data-theme="dark"] h5,
 [data-theme="dark"] h6 {
     color: var(--heading-color);
 }
@@ -300,14 +376,17 @@ a {
     color: var(--link-color);
     text-decoration: underline;
 }
-a:hover, a:focus-visible {
+
+a:hover,
+a:focus-visible {
     color: var(--link-hover-color);
 }
 
 [data-theme="dark"] a {
     color: var(--link-color);
 }
-[data-theme="dark"] a:hover, 
+
+[data-theme="dark"] a:hover,
 [data-theme="dark"] a:focus-visible {
     color: var(--link-hover-color);
 }
@@ -331,9 +410,11 @@ a:hover, a:focus-visible {
     gap: 0.5rem;
     transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
+
 .button:last-child {
     margin-right: 0;
 }
+
 .button svg {
     width: 1.2em;
     height: 1.2em;
@@ -344,7 +425,9 @@ a:hover, a:focus-visible {
     background-color: var(--button-default-bg);
     border-color: var(--button-default-border);
 }
-.button-default:hover, .button-default:focus {
+
+.button-default:hover,
+.button-default:focus {
     background-color: var(--button-default-hover-bg);
 }
 
@@ -353,7 +436,9 @@ a:hover, a:focus-visible {
     color: var(--button-primary-text);
     border-color: var(--button-primary-border);
 }
-.button-primary:hover, .button-primary:focus {
+
+.button-primary:hover,
+.button-primary:focus {
     background-color: var(--button-primary-hover-bg);
 }
 
@@ -362,11 +447,14 @@ a:hover, a:focus-visible {
     color: var(--button-default-text);
     border-color: var(--button-default-border);
 }
+
 [data-theme="dark"] .button-secondary {
     color: var(--text-color);
     border-color: var(--button-default-border);
 }
-.button-secondary:hover, .button-secondary:focus {
+
+.button-secondary:hover,
+.button-secondary:focus {
     background-color: var(--button-default-hover-bg);
 }
 
@@ -375,7 +463,9 @@ a:hover, a:focus-visible {
     color: var(--button-accent-text);
     border-color: var(--button-accent-border);
 }
-.button-accent:hover, .button-accent:focus {
+
+.button-accent:hover,
+.button-accent:focus {
     background-color: var(--button-accent-hover-bg);
 }
 
@@ -384,7 +474,9 @@ a:hover, a:focus-visible {
     color: var(--button-success-text);
     border-color: var(--button-success-border);
 }
-.button-success:hover, .button-success:focus {
+
+.button-success:hover,
+.button-success:focus {
     background-color: var(--button-success-hover-bg);
 }
 
@@ -393,7 +485,9 @@ a:hover, a:focus-visible {
     color: var(--button-danger-text);
     border-color: var(--button-danger-border);
 }
-.button-danger:hover, .button-danger:focus {
+
+.button-danger:hover,
+.button-danger:focus {
     background-color: var(--button-danger-hover-bg);
 }
 
@@ -402,7 +496,9 @@ a:hover, a:focus-visible {
     color: var(--button-warning-text);
     border-color: var(--button-warning-border);
 }
-.button-warning:hover, .button-warning:focus {
+
+.button-warning:hover,
+.button-warning:focus {
     background-color: var(--button-warning-hover-bg);
 }
 
@@ -411,13 +507,16 @@ a:hover, a:focus-visible {
     color: var(--button-info-text);
     border-color: var(--button-info-border);
 }
-.button-info:hover, .button-info:focus {
+
+.button-info:hover,
+.button-info:focus {
     background-color: var(--button-info-hover-bg);
 }
 
 .form-group {
     margin-bottom: 1rem;
 }
+
 .form-label {
     display: block;
     margin-bottom: 0.25rem;
@@ -431,10 +530,12 @@ a:hover, a:focus-visible {
     margin-top: 1.5rem;
     width: 100%;
 }
+
 .form-actions.space-between-groups {
     justify-content: space-between;
     align-items: center;
 }
+
 .form-actions .action-group-left,
 .form-actions .action-group-right {
     display: flex;
@@ -442,6 +543,7 @@ a:hover, a:focus-visible {
     gap: 0.75rem;
     flex-wrap: wrap;
 }
+
 .form-actions .action-group-left .button,
 .form-actions .action-group-right .button {
     margin-right: 0;
@@ -470,24 +572,20 @@ select {
     transition: border-color 0.15s ease-in-out;
 }
 
-.form-control:focus-visible,
-input[type="text"]:focus-visible,
-input[type="url"]:focus-visible,
-input[type="email"]:focus-visible,
-textarea:focus-visible,
-select:focus-visible {
-    border-color: var(--border-color); /* Keep default border, focus is handled globally */
-    outline: none;
-}
+
 .form-control:focus,
 input[type="text"]:focus,
 input[type="url"]:focus,
 input[type="email"]:focus,
 textarea:focus,
 select:focus {
-    /* Fallback/Correction for click focus sticking */
-    border-color: var(--primary-color);
-    outline: none;
+    /* Enforce global focus ring also on click/active focus for inputs */
+    outline: var(--focus-outer-width) solid var(--focus-outer-color);
+    outline-offset: calc(var(--focus-offset) + var(--focus-inner-width));
+    box-shadow: 0 0 0 calc(var(--focus-inner-width) + var(--focus-offset)) var(--focus-inner-color);
+    border-color: var(--border-color);
+    /* Maintain visual consistency, do not change border color */
+    z-index: 10;
 }
 
 [data-theme="dark"] .form-control,
@@ -505,19 +603,21 @@ select:focus {
 [data-theme="dark"] input[type="email"]:focus,
 [data-theme="dark"] textarea:focus,
 [data-theme="dark"] select:focus {
-    border-color: var(--primary-color);
+    border-color: var(--border-color);
 }
-.form-group > .form-control,
-.form-group > input[type="text"],
-.form-group > input[type="url"],
-.form-group > input[type="email"],
-.form-group > textarea,
-.form-group > select {
+
+.form-group>.form-control,
+.form-group>input[type="text"],
+.form-group>input[type="url"],
+.form-group>input[type="email"],
+.form-group>textarea,
+.form-group>select {
     margin-top: 0;
 }
 
 
-textarea.form-control, textarea {
+textarea.form-control,
+textarea {
     min-height: calc(var(--line-height-base) * 3em + 1.2rem + 4px);
     resize: none;
     overflow-y: hidden;
@@ -539,15 +639,18 @@ textarea.form-control, textarea {
     margin-bottom: 0.5rem;
     min-height: 1.5rem;
 }
+
 .form-check-input {
     appearance: auto;
     opacity: 1;
-    width: auto; height: auto;
+    width: auto;
+    height: auto;
     position: static;
     margin-top: 0;
     margin-right: 0.5em;
     font-family: inherit;
 }
+
 .form-check-label {
     cursor: pointer;
     padding-left: 0;
@@ -561,7 +664,7 @@ textarea.form-control, textarea {
 :focus-visible {
     outline: var(--focus-outer-width) solid var(--focus-outer-color);
     outline-offset: calc(var(--focus-offset) + var(--focus-inner-width));
-    box-shadow: 0 0 0 calc(var(--focus-inner-width) + var(--focus-offset)) var(--focus-inner-color); 
+    box-shadow: 0 0 0 calc(var(--focus-inner-width) + var(--focus-offset)) var(--focus-inner-color);
     /* 
        Note: The box-shadow fills the gap + inner ring space.
        To explicitly have a transparent gap (1px) + white ring (2px) + black ring (2px):
@@ -575,7 +678,7 @@ textarea.form-control, textarea {
 }
 
 
-.form-check-input:focus-visible + .form-check-label {
+.form-check-input:focus-visible+.form-check-label {
     border-radius: var(--border-radius);
 }
 
@@ -588,36 +691,76 @@ textarea:-webkit-autofill:focus,
 select:-webkit-autofill,
 select:-webkit-autofill:hover,
 select:-webkit-autofill:focus {
-  border: 2px solid var(--border-color) !important;
-  -webkit-text-fill-color: var(--text-color) !important;
-  transition: background-color 5000s ease-in-out 0s !important;
-  font-family: var(--font-family-base) !important;
-  font-size: var(--font-size-base) !important;
+    border: 2px solid var(--border-color) !important;
+    -webkit-text-fill-color: var(--text-color) !important;
+    transition: background-color 5000s ease-in-out 0s !important;
+    font-family: var(--font-family-base) !important;
+    font-size: var(--font-size-base) !important;
 }
 
-.hidden { display: none !important; }
+.hidden {
+    display: none !important;
+}
+
 .visually-hidden {
-    border: 0; clip: rect(0 0 0 0); height: 1px; margin: -1px;
-    overflow: hidden; padding: 0; position: absolute; width: 1px;
+    border: 0;
+    clip: rect(0 0 0 0);
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    padding: 0;
+    position: absolute;
+    width: 1px;
     white-space: nowrap;
 }
-.text-danger { color: var(--danger-color); }
-.text-success { color: var(--success-color); }
-.text-warning { color: var(--warning-color); }
-.text-info { color: var(--info-color); }
-.text-muted { color: var(--text-color-muted); }
 
-.info-block dl { margin-bottom: var(--spacing-unit); }
-.info-block dt { font-weight: 700; color: var(--text-color); }
-.info-block dd { margin-left: 0; margin-bottom: 0.5rem; color: var(--text-color-muted); }
+.text-danger {
+    color: var(--danger-color);
+}
 
-.item-list { list-style: none; padding: 0; }
+.text-success {
+    color: var(--success-color);
+}
+
+.text-warning {
+    color: var(--warning-color);
+}
+
+.text-info {
+    color: var(--info-color);
+}
+
+.text-muted {
+    color: var(--text-color-muted);
+}
+
+.info-block dl {
+    margin-bottom: var(--spacing-unit);
+}
+
+.info-block dt {
+    font-weight: 700;
+    color: var(--text-color);
+}
+
+.info-block dd {
+    margin-left: 0;
+    margin-bottom: 0.5rem;
+    color: var(--text-color-muted);
+}
+
+.item-list {
+    list-style: none;
+    padding: 0;
+}
+
 .item-list-item {
     border: 2px solid var(--border-color);
     border-left: 3px solid color-mix(in srgb, var(--primary-color) 60%, transparent);
     border-radius: var(--border-radius);
     margin-bottom: 0.6rem;
-    background-color: #FFF5E6; /* Väldigt ljus orange nyans */
+    background-color: #FFF5E6;
+    /* Väldigt ljus orange nyans */
     display: flex;
     flex-direction: column;
     align-items: stretch;
@@ -626,8 +769,10 @@ select:-webkit-autofill:focus {
 }
 
 [data-theme="dark"] .item-list-item {
-    border-left-width: 2px; /* Samma bredd som övriga kanter */
-    border-left-color: var(--border-color); /* Samma färg som övriga kanter */
+    border-left-width: 2px;
+    /* Samma bredd som övriga kanter */
+    border-left-color: var(--border-color);
+    /* Samma färg som övriga kanter */
     background-color: color-mix(in srgb, var(--plate-background-color) 95%, black);
 }
 
@@ -635,6 +780,7 @@ select:-webkit-autofill:focus {
     margin-bottom: 0;
     width: 100%;
 }
+
 .item-list-item .sample-info h3 {
     font-size: 1.05rem;
     margin-top: 0;
@@ -646,6 +792,7 @@ select:-webkit-autofill:focus {
 [data-theme="dark"] .item-list-item .sample-info h3 {
     color: var(--link-color);
 }
+
 .item-list-item .sample-info p {
     font-size: 0.8rem;
     color: var(--text-color-muted);
@@ -653,22 +800,27 @@ select:-webkit-autofill:focus {
     margin-top: 0;
     line-height: 1.4;
 }
+
 .item-list-item .sample-info p strong {
     color: var(--text-color);
     font-weight: 500;
 }
+
 .item-list-item .sample-info .content-types-display {
     font-size: 0.85rem;
     margin-top: 0.5rem;
 }
+
 .item-list-item .sample-info .content-types-display ul {
     list-style: disc;
     margin-left: 1.25rem;
     padding-left: 0.5rem;
 }
+
 .item-list-item .sample-info .content-types-display li {
     margin-bottom: 0.1rem;
 }
+
 .item-list-item .sample-actions-wrapper {
     display: flex;
     justify-content: space-between;
@@ -676,11 +828,13 @@ select:-webkit-autofill:focus {
     width: 100%;
     margin-top: 0.5rem;
 }
+
 .item-list-item .sample-actions-main {
     display: flex;
     gap: 0.5rem;
     flex-wrap: wrap;
 }
+
 .item-list-item .sample-actions-main .button,
 .item-list-item .sample-actions-delete .button {
     margin-right: 0;
@@ -690,6 +844,7 @@ select:-webkit-autofill:focus {
     padding: 0.375rem 0.75rem;
     font-size: 0.875rem;
 }
+
 .button.button-small svg {
     width: 1em;
     height: 1em;
@@ -700,15 +855,18 @@ select:-webkit-autofill:focus {
         flex-direction: column;
         align-items: stretch;
     }
+
     .item-list-item .sample-actions-main {
         margin-bottom: 0.5rem;
         justify-content: flex-start;
     }
+
     .item-list-item .sample-actions-main .button,
     .item-list-item .sample-actions-delete .button {
         width: 100%;
         margin-bottom: 0.5rem;
     }
+
     .item-list-item .sample-actions-main .button:last-child,
     .item-list-item .sample-actions-delete .button:last-child {
         margin-bottom: 0;
@@ -716,17 +874,43 @@ select:-webkit-autofill:focus {
 }
 
 @media (max-width: 576px) {
-    body { padding: 1rem 0.5rem; }
-    #app-container, #global-action-bar-top, #global-action-bar-bottom { padding: 0 0.5rem; }
-    h1 { font-size: 1.75rem; }
-    h2 { font-size: 1.5rem; }
-    .button { padding: 0.5rem 1rem; font-size: 0.9rem; }
+    body {
+        padding: 1rem 0.5rem;
+    }
+
+    #app-container,
+    #global-action-bar-top,
+    #global-action-bar-bottom {
+        padding: 0 0.5rem;
+    }
+
+    h1 {
+        font-size: 1.75rem;
+    }
+
+    h2 {
+        font-size: 1.5rem;
+    }
+
+    .button {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+    }
 }
 
 /* Global transitions */
-body, #app-container, .button, .form-control,
-input[type="text"], input[type="url"], input[type="email"], textarea, select,
-.item-list-item, .view-container, .content-plate {
+body,
+#app-container,
+.button,
+.form-control,
+input[type="text"],
+input[type="url"],
+input[type="email"],
+textarea,
+select,
+.item-list-item,
+.view-container,
+.content-plate {
     transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
@@ -738,68 +922,110 @@ input[type="text"], input[type="url"], input[type="email"], textarea, select,
     border-radius: var(--border-radius);
     position: relative;
 }
-#global-message-area[hidden] { display: none; }
+
+#global-message-area[hidden] {
+    display: none;
+}
+
 .global-message-close-btn {
-    background: none; border: none;
-    font-size: 1.5rem; line-height: 1;
-    cursor: pointer; padding: 0 0.5rem; opacity: 0.7;
-    position: absolute; top: 50%; right: 1rem;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 0.5rem;
+    opacity: 0.7;
+    position: absolute;
+    top: 50%;
+    right: 1rem;
     transform: translateY(-50%);
 }
+
 .global-message-close-btn:hover,
-.global-message-close-btn:focus { opacity: 1; }
+.global-message-close-btn:focus {
+    opacity: 1;
+}
 
 #global-message-area.message-info {
     background-color: var(--button-info-bg);
     border-color: var(--button-info-border);
     color: var(--button-info-text);
 }
-#global-message-area.message-info .global-message-close-btn { color: var(--button-info-text); }
+
+#global-message-area.message-info .global-message-close-btn {
+    color: var(--button-info-text);
+}
+
 [data-theme="dark"] #global-message-area.message-info {
-    background-color: var(--info-color-light); 
+    background-color: var(--info-color-light);
     border-color: var(--button-info-border);
     color: var(--button-info-text);
 }
-[data-theme="dark"] #global-message-area.message-info .global-message-close-btn { color: var(--button-info-text); }
+
+[data-theme="dark"] #global-message-area.message-info .global-message-close-btn {
+    color: var(--button-info-text);
+}
 
 #global-message-area.message-success {
     background-color: var(--button-success-bg);
     border-color: var(--button-success-border);
     color: var(--button-success-text);
 }
-#global-message-area.message-success .global-message-close-btn { color: var(--button-success-text); }
+
+#global-message-area.message-success .global-message-close-btn {
+    color: var(--button-success-text);
+}
+
 [data-theme="dark"] #global-message-area.message-success {
-    background-color: var(--success-color-light); 
+    background-color: var(--success-color-light);
     border-color: var(--button-success-border);
     color: var(--button-success-text);
 }
-[data-theme="dark"] #global-message-area.message-success .global-message-close-btn { color: var(--button-success-text); }
+
+[data-theme="dark"] #global-message-area.message-success .global-message-close-btn {
+    color: var(--button-success-text);
+}
 
 #global-message-area.message-warning {
     background-color: var(--button-warning-bg);
     border-color: var(--button-warning-border);
     color: var(--button-warning-text);
 }
-#global-message-area.message-warning .global-message-close-btn { color: var(--button-warning-text); }
+
+#global-message-area.message-warning .global-message-close-btn {
+    color: var(--button-warning-text);
+}
+
 [data-theme="dark"] #global-message-area.message-warning {
-    background-color: var(--warning-color-light); 
+    background-color: var(--warning-color-light);
     border-color: var(--button-warning-border);
     color: var(--button-warning-text);
 }
-[data-theme="dark"] #global-message-area.message-warning .global-message-close-btn { color: var(--button-warning-text); }
+
+[data-theme="dark"] #global-message-area.message-warning .global-message-close-btn {
+    color: var(--button-warning-text);
+}
 
 #global-message-area.message-error {
     background-color: var(--button-danger-bg);
     border-color: var(--button-danger-border);
     color: var(--button-danger-text);
 }
-#global-message-area.message-error .global-message-close-btn { color: var(--button-danger-text); }
+
+#global-message-area.message-error .global-message-close-btn {
+    color: var(--button-danger-text);
+}
+
 [data-theme="dark"] #global-message-area.message-error {
     background-color: var(--danger-color-light);
     border-color: var(--button-danger-border);
     color: var(--button-danger-text);
 }
-[data-theme="dark"] #global-message-area.message-error .global-message-close-btn { color: var(--button-danger-text); }
+
+[data-theme="dark"] #global-message-area.message-error .global-message-close-btn {
+    color: var(--button-danger-text);
+}
+
 /* --- END OF CHANGE --- */
 
 .form-actions,

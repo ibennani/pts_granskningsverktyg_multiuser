@@ -1,6 +1,6 @@
 import { SampleListComponent } from './SampleListComponent.js';
 import { ScoreAnalysisComponent } from './ScoreAnalysisComponent.js';
-import { AuditInfoComponent } from './AuditInfoComponent.js'; 
+import { AuditInfoComponent } from './AuditInfoComponent.js';
 import { ProgressBarComponent } from './ProgressBarComponent.js';
 import "../../css/components/audit_overview_component.css";
 
@@ -8,7 +8,7 @@ export const AuditOverviewComponent = {
     async init({ root, deps }) {
         this.root = root;
         this.deps = deps;
-        
+
         // Extract dependencies for easier access
         this.router = deps.router;
         this.getState = deps.getState;
@@ -20,7 +20,7 @@ export const AuditOverviewComponent = {
         this.NotificationComponent = deps.NotificationComponent;
         this.ExportLogic = deps.ExportLogic;
         this.AuditLogic = deps.AuditLogic;
-        
+
         // Internal state
         this.unsubscribe_from_store_function = null;
         this.sample_list_container_element = null;
@@ -29,7 +29,7 @@ export const AuditOverviewComponent = {
         this.previously_focused_element = null;
 
         this.global_message_element_ref = this.NotificationComponent.get_global_message_element_reference();
-        
+
         // Bind methods
         this.handle_store_update = this.handle_store_update.bind(this);
         this.handle_edit_sample_request_from_list = this.handle_edit_sample_request_from_list.bind(this);
@@ -38,7 +38,10 @@ export const AuditOverviewComponent = {
         this.handle_unlock_audit = this.handle_unlock_audit.bind(this);
         this.handle_export_csv = this.handle_export_csv.bind(this);
         this.handle_export_excel = this.handle_export_excel.bind(this);
+        this.handle_export_csv = this.handle_export_csv.bind(this);
+        this.handle_export_excel = this.handle_export_excel.bind(this);
         this.handle_export_word = this.handle_export_word.bind(this);
+        this.handle_export_test = this.handle_export_test.bind(this);
 
         await this.init_sub_components();
 
@@ -72,7 +75,7 @@ export const AuditOverviewComponent = {
                 AuditLogic: this.AuditLogic
             }
         });
-        
+
         this.scoreAnalysisContainerElement = this.Helpers.create_element('div', { id: 'score-analysis-component-container' });
         await ScoreAnalysisComponent.init({
             root: this.scoreAnalysisContainerElement,
@@ -169,6 +172,18 @@ export const AuditOverviewComponent = {
         }
     },
 
+    handle_export_test() {
+        const t = this.Translation.t;
+        const current_global_state = this.getState();
+        if (current_global_state.auditStatus !== 'locked') {
+            this.NotificationComponent.show_global_message(t('audit_not_locked_for_export', { status: current_global_state.auditStatus }), 'warning');
+            return;
+        }
+        if (this.ExportLogic?.export_test) {
+            this.ExportLogic.export_test(current_global_state);
+        }
+    },
+
     handle_store_update(new_state) {
         // Handled by main.js subscription triggering render()
     },
@@ -231,6 +246,17 @@ export const AuditOverviewComponent = {
                 });
                 console.log('[AuditOverview] Word export button created:', word_export_button);
                 left_group.appendChild(word_export_button);
+
+                // Add Text Export button
+                if (this.ExportLogic?.export_test) {
+                    const text_export_button = this.Helpers.create_element('button', {
+                        class_name: ['button', 'button-default'],
+                        html_content: `<span>${t('export_test')}</span>` + this.Helpers.get_icon_svg('export', ['currentColor'], 18),
+                        event_listeners: { click: this.handle_export_test }
+                    });
+                    left_group.appendChild(text_export_button);
+                }
+
             } else {
                 console.log('[AuditOverview] ExportLogic_export_to_word not available');
             }
@@ -238,16 +264,16 @@ export const AuditOverviewComponent = {
 
         if (left_group.hasChildNodes()) actions_div.appendChild(left_group);
         if (right_group.hasChildNodes()) actions_div.appendChild(right_group);
-        
+
         return actions_div;
     },
 
     render() {
         const t = this.Translation.t;
         this.root.innerHTML = '';
-        
+
         const current_global_state = this.getState();
-        
+
         if (!current_global_state || !current_global_state.ruleFileContent) {
             this.NotificationComponent.show_global_message(t("error_no_active_audit"), "error");
             return;
@@ -260,7 +286,7 @@ export const AuditOverviewComponent = {
             plate_element.appendChild(this.global_message_element_ref);
         }
         plate_element.appendChild(this.Helpers.create_element('h1', { text_content: t('audit_overview_title') }));
-        
+
         const dashboard_container = this.Helpers.create_element('div', { class_name: 'overview-dashboard' });
 
         if (this.audit_info_container_element) {
@@ -269,29 +295,29 @@ export const AuditOverviewComponent = {
         }
 
         const score_panel = this.Helpers.create_element('div', { class_name: ['dashboard-panel', 'score-panel'] });
-        score_panel.appendChild(this.Helpers.create_element('h2', { 
+        score_panel.appendChild(this.Helpers.create_element('h2', {
             class_name: 'dashboard-panel__title',
-            text_content: t('result_summary_and_deficiency_analysis', {defaultValue: "Result Summary"})
+            text_content: t('result_summary_and_deficiency_analysis', { defaultValue: "Result Summary" })
         }));
-        
+
         const progress_data = this.AuditLogic.calculate_overall_audit_progress(current_global_state);
         const lang_code = this.Translation.get_current_language_code();
         const percentage = (progress_data.total > 0) ? (progress_data.audited / progress_data.total) * 100 : 0;
         const formatted_percentage = this.Helpers.format_number_locally(percentage, lang_code, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
         const valueText = `${progress_data.audited} / ${progress_data.total} (${formatted_percentage} %)`;
 
-        score_panel.appendChild(this.Helpers.create_element('h3', { 
+        score_panel.appendChild(this.Helpers.create_element('h3', {
             class_name: 'dashboard-panel__subtitle',
             text_content: t('total_audit_progress_header', { defaultValue: "Klart hittills" })
         }));
         const progress_container = this.Helpers.create_element('div', { class_name: 'info-item--progress-container' });
         progress_container.appendChild(this.Helpers.create_element('p', { class_name: 'progress-text-wrapper', html_content: `<strong>${t('total_requirements_audited_label')}:</strong><span class="value">${valueText}</span>` }));
-        
+
         if (ProgressBarComponent) {
             progress_container.appendChild(ProgressBarComponent.create(progress_data.audited, progress_data.total));
         }
         score_panel.appendChild(progress_container);
-        
+
         const divider = this.Helpers.create_element('div', {
             style: {
                 borderBottom: '1px dashed var(--secondary-color)',
@@ -299,20 +325,20 @@ export const AuditOverviewComponent = {
             }
         });
         score_panel.appendChild(divider);
-        
+
         if (this.scoreAnalysisContainerElement) {
             score_panel.appendChild(this.scoreAnalysisContainerElement);
             ScoreAnalysisComponent.render();
         }
         dashboard_container.appendChild(score_panel);
-        
+
         plate_element.appendChild(dashboard_container);
-        
+
         const top_actions_section = this.Helpers.create_element('section', { class_name: 'audit-overview-section' });
         top_actions_section.appendChild(this.Helpers.create_element('h2', { text_content: t('audit_actions_title') }));
         top_actions_section.appendChild(this.create_actions_bar(current_global_state));
         plate_element.appendChild(top_actions_section);
-        
+
         const sample_section = this.Helpers.create_element('section', { class_name: 'audit-overview-section' });
         const sample_management_header_div = this.Helpers.create_element('div', { class_name: 'sample-list-header' });
         const number_of_samples = current_global_state.samples ? current_global_state.samples.length : 0;
@@ -328,7 +354,7 @@ export const AuditOverviewComponent = {
         sample_section.appendChild(sample_management_header_div);
         if (this.sample_list_container_element) {
             sample_section.appendChild(this.sample_list_container_element);
-            SampleListComponent.render(); 
+            SampleListComponent.render();
         }
         plate_element.appendChild(sample_section);
 
@@ -339,9 +365,9 @@ export const AuditOverviewComponent = {
     },
 
     destroy() {
-        if (this.unsubscribe_from_store_function) { 
-            this.unsubscribe_from_store_function(); 
-            this.unsubscribe_from_store_function = null; 
+        if (this.unsubscribe_from_store_function) {
+            this.unsubscribe_from_store_function();
+            this.unsubscribe_from_store_function = null;
         }
         SampleListComponent.destroy();
         AuditInfoComponent.destroy();
@@ -351,7 +377,7 @@ export const AuditOverviewComponent = {
         this.scoreAnalysisContainerElement = null;
         this.audit_info_container_element = null;
         this.previously_focused_element = null;
-        
+
         this.root = null;
         this.deps = null;
         // clear other deps

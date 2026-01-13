@@ -1,7 +1,7 @@
 // js/export_logic.js
 
 import ExcelJS from 'exceljs/dist/exceljs.min.js';
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle, UnderlineType, ExternalHyperlink, InternalHyperlink, ShadingType, TabStopType } from 'docx';
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle, UnderlineType, ExternalHyperlink, InternalHyperlink, ShadingType, TabStopType, SectionType, PageOrientation } from 'docx';
 
 function get_t_internal() {
     if (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function') {
@@ -1502,10 +1502,852 @@ function get_deficiencies_for_sample(requirement, sample, current_audit, t) {
 }
 
 
+// --- STICKPROVSBASERAD TEXTEXPORT (NY) ---
+async function export_to_text_export_deprecated(current_audit) {
+    console.log('[Text Export] Starting export_to_text_export function');
+    const t = get_t_internal();
+    if (!current_audit) {
+        show_global_message_internal(t('no_audit_data_to_save'), 'error');
+        return;
+    }
+
+    try {
+        const children = [];
+
+
+        // 1. H1 Titel
+        children.push(
+            new Paragraph({
+                children: [
+                    new TextRun({
+                        text: "Textexport - Granskningsresultat per stickprov"
+                    })
+                ],
+                heading: "Heading1"
+            })
+        );
+
+        // 2. Iterera stickprov (H2)
+        const samples = current_audit.samples || [];
+
+        for (const sample of samples) {
+            // Kontrollera om stickprovet har några brister alls
+            const deficiencies = get_deficiencies_for_sample_any_req(sample, current_audit, t);
+            if (deficiencies.length === 0) continue;
+
+            // H2: Stickprovets namn
+            children.push(
+                new Paragraph({
+                    children: [
+                        new TextRun({
+                            text: sample.description || sample.url || "Namnlöst stickprov"
+                        })
+                    ],
+                    heading: "Heading2",
+                    pageBreakBefore: true
+                })
+            );
+
+            // 3. Iterera krav med brister för detta stickprov (H3)
+            const requirements_map = group_deficiencies_by_requirement(deficiencies, current_audit);
+
+            // Sortera krav enligt referens
+            const sorted_req_ids = Object.keys(requirements_map).sort((a, b) => {
+                const reqA = current_audit.ruleFileContent.requirements[a];
+                const reqB = current_audit.ruleFileContent.requirements[b];
+                const refA = reqA?.standardReference?.text || '';
+                const refB = reqB?.standardReference?.text || '';
+                return natural_sort(refA, refB);
+            });
+
+            for (const reqId of sorted_req_ids) {
+                const req = current_audit.ruleFileContent.requirements[reqId];
+                const reqDeficiencies = requirements_map[reqId];
+
+                // H3: Kravets titel
+                // Extrahera siffra från referens för sortering/titel
+                let referenceNumber = "";
+                if (req.standardReference?.text) {
+                    const refText = req.standardReference.text.trim();
+                    const startMatch = refText.match(/^([\d\.]+)/);
+                    const endMatch = refText.match(/([\d\.]+)$/);
+                    if (startMatch) referenceNumber = startMatch[1];
+                    else if (endMatch) referenceNumber = endMatch[1];
+                }
+                if (referenceNumber.endsWith('.')) referenceNumber = referenceNumber.slice(0, -1);
+
+                const h3_text = (referenceNumber ? referenceNumber + " " : "") + req.title;
+
+                children.push(
+                    new Paragraph({
+                        children: [
+                            new TextRun({
+                                text: h3_text
+                            })
+                        ],
+                        heading: "Heading3"
+                    })
+                );
+
+                // Metadata (Referens, Principer, Brist)
+                const metadata_items = [];
+
+                // Referens
+                if (req.standardReference?.text) {
+                    const ref_text = req.standardReference.text;
+                    const ref_url = req.standardReference.url;
+
+                    if (ref_url) {
+                        metadata_items.push(new Paragraph({
+                            children: [
+                                new TextRun({ text: "Referens: ", bold: true }),
+                                new ExternalHyperlink({
+                                    children: [new TextRun({ text: ref_text, style: "Hyperlink" })],
+                                    // Använd helper för att säkra url om den finns
+                                    link: (window.Helpers && window.Helpers.add_protocol_if_missing) ? window.Helpers.add_protocol_if_missing(ref_url) : ref_url
+                                })
+                            ]
+                        }));
+                    } else {
+                        metadata_items.push(new Paragraph({
+                            children: [
+                                new TextRun({ text: "Referens: ", bold: true }),
+                                new TextRun({ text: ref_text })
+                            ]
+                        }));
+                    }
+                }
+
+                // Principer
+                {
+                    const classifications = Array.isArray(req.classifications) ? req.classifications : [];
+                    const taxonomy = current_audit?.ruleFileContent?.metadata?.taxonomies?.find(t => t.id === 'wcag22-pour');
+                    const norm = v => String(v ?? '').trim().toLowerCase();
+                    const principle_texts = taxonomy
+                        ? classifications
+                            .filter(c => norm(c.taxonomyId) === 'wcag22-pour')
+                            .map(c => {
+                                const concept = taxonomy.concepts?.find?.(x => norm(x?.id) === norm(c.conceptId));
+                                return (typeof concept?.label === 'string' && concept.label.trim())
+                                    ? concept.label
+                                    : c.conceptId;
+                            })
+                            .filter(Boolean)
+                        : [];
+
+                    if (principle_texts.length > 0) {
+                        metadata_items.push(new Paragraph({
+                            children: [
+                                new TextRun({ text: "Principer: ", bold: true }),
+                                new TextRun({ text: principle_texts.join(', ') })
+                            ]
+                        }));
+                    }
+                }
+
+                // Brist IDn (specifika för detta stickprov/krav)
+                const deficiencyIds = [...new Set(reqDeficiencies.map(d => extractDeficiencyNumber(d.deficiencyId)))].filter(Boolean).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+                if (deficiencyIds.length > 0) {
+                    metadata_items.push(new Paragraph({
+                        children: [
+                            new TextRun({ text: "Brist: ", bold: true }),
+                            new TextRun({ text: deficiencyIds.join(', ') })
+                        ]
+                    }));
+                }
+
+                children.push(...metadata_items);
+
+                // Dummy Text (Utan rubrik "Kravets syfte")
+                children.push(
+                    new Paragraph({
+                        children: [
+                            new TextRun({
+                                text: "Här kommer en ny text visas. Denna text är ännu inte klar."
+                            })
+                        ]
+                    })
+                );
+
+                // H4: "Aktuella observationer"
+                children.push(
+                    new Paragraph({
+                        children: [
+                            new TextRun({
+                                text: "Aktuella observationer"
+                            })
+                        ],
+                        heading: "Heading4"
+                    })
+                );
+
+                // Lista observationer/brister
+                for (let i = 0; i < reqDeficiencies.length; i++) {
+                    const deficiency = reqDeficiencies[i];
+
+                    let observationText = (deficiency.observationDetail || '').trim();
+                    observationText = observationText.replace(/^[\s]*[-*]\s/gm, '• ');
+
+                    const isStandardText = deficiency.isStandardText || false;
+                    const defId = extractDeficiencyNumber(deficiency.deficiencyId);
+                    const defIdString = defId ? `Brist ${defId}: ` : '';
+
+                    if (observationText.includes('\n')) {
+                        const lines = observationText.split('\n');
+                        for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+                            const isFirstLine = lineIndex === 0;
+                            const isLastLine = lineIndex === lines.length - 1;
+                            let textRuns = [];
+                            let lineText = lines[lineIndex];
+                            const isBulletLine = lineText.trim().startsWith('•');
+
+                            const indentConfig = isBulletLine ? { left: 227, hanging: 227 } : {};
+                            const tabStopsConfig = isBulletLine ? [{ position: 227, type: TabStopType.LEFT }] : [];
+
+                            let runText = lineText;
+                            if (isBulletLine) runText = runText.replace('• ', '•\t');
+
+                            if (isFirstLine) {
+                                if (defIdString) {
+                                    textRuns.push(new TextRun({ text: defIdString, bold: true }));
+                                    const prefix = isStandardText ? "Kravet är inte uppfyllt: " : "";
+                                    textRuns.push(new TextRun({ text: prefix + runText }));
+                                } else {
+                                    const prefix = isStandardText ? "Kravet är inte uppfyllt: " : "";
+                                    textRuns.push(new TextRun({ text: prefix + runText }));
+                                }
+                            } else {
+                                textRuns = [new TextRun({ text: runText + (isLastLine ? ' ' : '') })];
+                            }
+
+                            children.push(new Paragraph({
+                                children: textRuns,
+                                spacing: { after: isLastLine ? 120 : 0 },
+                                indent: indentConfig,
+                                tabStops: tabStopsConfig
+                            }));
+                        }
+                    } else {
+                        // Enkelrad
+                        let textRuns = [];
+                        const isBulletLine = observationText.trim().startsWith('•');
+                        const indentConfig = isBulletLine ? { left: 227, hanging: 227 } : {};
+                        const tabStopsConfig = isBulletLine ? [{ position: 227, type: TabStopType.LEFT }] : [];
+
+                        let runText = observationText;
+                        if (isBulletLine) runText = runText.replace('• ', '•\t');
+
+                        if (defIdString) {
+                            textRuns.push(new TextRun({ text: defIdString, bold: true }));
+                            const prefix = isStandardText ? "Kravet är inte uppfyllt: " : "";
+                            textRuns.push(new TextRun({ text: prefix + runText + ' ' }));
+                        } else {
+                            const prefix = isStandardText ? "Kravet är inte uppfyllt: " : "";
+                            textRuns.push(new TextRun({ text: prefix + runText + ' ' }));
+                        }
+
+                        children.push(new Paragraph({
+                            children: textRuns,
+                            spacing: { after: 120 },
+                            indent: indentConfig,
+                            tabStops: tabStopsConfig
+                        }));
+                    }
+                } // slut loop observationer
+
+                // Kommentar för detta krav på detta stickprov
+                const req_key = req.key || req.id;
+                const sample_result = (sample.requirementResults || {})[req_key];
+                if (sample_result && sample_result.commentToActor && sample_result.commentToActor.trim()) {
+                    children.push(new Paragraph({
+                        children: [new TextRun({ text: "" })],
+                        spacing: { before: 120 }
+                    }));
+                    children.push(new Paragraph({
+                        children: [
+                            new TextRun({ text: "Kommentar: ", bold: true, color: "6E3282" }),
+                            new TextRun({ text: sample_result.commentToActor.trim() })
+                        ]
+                    }));
+                }
+
+            } // slut loop krav
+        } // slut loop stickprov
+
+        // Generera Word-fil
+        const doc = new Document({
+            sections: [{
+                properties: {},
+                children: children
+            }],
+            styles: {
+                default: {
+                    document: {
+                        run: {
+                            font: "Calibri",
+                            size: 22 // 11pt
+                        },
+                        paragraph: {
+                            spacing: {
+                                after: 60, // 3pt
+                                line: 240, // 1.0
+                                lineRule: "auto"
+                            }
+                        }
+                    },
+                    heading1: {
+                        run: {
+                            font: "Calibri",
+                            size: 36, // 18pt
+                            bold: true
+                        },
+                        paragraph: {
+                            spacing: {
+                                before: 200, // 10pt
+                                after: 60,   // 3pt
+                                line: 240,
+                                lineRule: "auto"
+                            }
+                        }
+                    },
+                    heading2: {
+                        run: {
+                            font: "Calibri",
+                            size: 32, // 16pt
+                            bold: true
+                        },
+                        paragraph: {
+                            spacing: {
+                                before: 200, // 10pt
+                                after: 60,   // 3pt
+                                line: 240,
+                                lineRule: "auto"
+                            }
+                        }
+                    },
+                    heading3: {
+                        run: {
+                            font: "Calibri",
+                            size: 28, // 14pt
+                            bold: true
+                        },
+                        paragraph: {
+                            spacing: {
+                                before: 200, // 10pt
+                                after: 60,   // 3pt
+                                line: 240,
+                                lineRule: "auto"
+                            }
+                        }
+                    },
+                    heading4: {
+                        run: {
+                            font: "Calibri",
+                            size: 24, // 12pt
+                            bold: true
+                        },
+                        paragraph: {
+                            spacing: {
+                                before: 200, // 10pt
+                                after: 60,   // 3pt
+                                line: 240,
+                                lineRule: "auto"
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        const blob = await Packer.toBlob(doc);
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+
+        const report_prefix = t('filename_audit_report_prefix');
+        const deficiencies_suffix = "textexport";
+        const actor_name = (current_audit.auditMetadata.actorName || t('filename_fallback_actor')).replace(/[^a-z0-9åäöÅÄÖ]/gi, '_');
+        const filename = `${report_prefix}_${deficiencies_suffix}_${actor_name}_${new Date().toISOString().split('T')[0]}.docx`;
+
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        show_global_message_internal(t('audit_saved_as_file', { filename: filename }), 'success');
+
+    } catch (error) {
+        console.error("Error exporting to Word (Textexport):", error);
+        show_global_message_internal(t('error_exporting_word') + ` ${error.message}`, 'error');
+    }
+}
+
+
+
+
+// --- START OF CHANGE: NEW EXPORT FUNCTION ---
+async function export_test(current_audit) {
+    console.log('[Word Export] Starting export_test function');
+    const t = get_t_internal();
+    if (!current_audit) {
+        show_global_message_internal(t('no_audit_data_to_save'), 'error');
+        return;
+    }
+
+    try {
+        const children = [];
+
+        // 1. Heading 1: Underkända krav
+        children.push(
+            new Paragraph({
+                children: [
+                    new TextRun({
+                        text: "Underkända krav",
+                    })
+                ],
+                heading: "Heading1"
+            })
+        );
+
+        // 2. Intro text
+        children.push(
+            new Paragraph({
+                children: [
+                    new TextRun({
+                        text: "Detta avsnitt redovisar en sammanställning av de krav som har underkänts vid granskningen. Sammanställningen baseras på stickprov, vilket innebär att motsvarande brister även kan förekomma på andra delar av den granskade sidan eller på andra delar av webbplatsen. Det är därför nödvändigt att genomföra en genomgång av hela webbplatsen för att säkerställa om samma typ av brister förekommer även på andra ställen. I detta avsnitt redovisas endast de brister som har identifierats vid granskningen."
+                    })
+                ]
+            })
+        );
+
+        // 3. Filter samples with deficiencies and sort them (using original order or name?)
+        // Let's use the order in the audit object which usually reflects user order.
+        const all_samples = current_audit.samples || [];
+        const samples_with_deficiencies = all_samples.filter(sample => {
+            const defs = get_all_deficiencies_for_sample_generic(sample, current_audit);
+            return defs.length > 0;
+        });
+
+        console.log('[Word Export TextExport] Found samples with deficiencies:', samples_with_deficiencies.length);
+
+        for (const sample of samples_with_deficiencies) {
+            // H2 Sample Name
+            children.push(
+                new Paragraph({
+                    children: [
+                        new TextRun({
+                            text: sample.description || sample.url || "Ospecificerat stickprov"
+                        })
+                    ],
+                    heading: "Heading2",
+                    pageBreakBefore: true
+                })
+            );
+
+            // Get failing requirements for this sample
+            const failing_req_ids = get_failing_requirement_ids_for_sample(sample);
+
+            // Get requirement definitions and sort them by reference
+            const failing_reqs = [];
+            const all_reqs = current_audit.ruleFileContent.requirements || {};
+
+            failing_req_ids.forEach(req_id => {
+                // Find requirement object regardless of structure (key vs id)
+                let req = null;
+                // Try direct lookup
+                if (all_reqs[req_id]) req = all_reqs[req_id];
+                else {
+                    // Try finding by id or key property
+                    req = Object.values(all_reqs).find(r => r.id === req_id || r.key === req_id);
+                }
+
+                if (req) failing_reqs.push(req);
+            });
+
+            const sorted_reqs = failing_reqs.sort((a, b) => {
+                const ref_a = a.standardReference?.text || '';
+                const ref_b = b.standardReference?.text || '';
+                return natural_sort(ref_a, ref_b);
+            });
+
+            for (const req of sorted_reqs) {
+                // H3 Requirement Title
+                // Extract number/reference similar to existing export
+                let referenceNumber = "";
+                if (req.standardReference?.text) {
+                    const refText = req.standardReference.text.trim();
+                    const startMatch = refText.match(/^([\d\.]+)/);
+                    const endMatch = refText.match(/([\d\.]+)$/);
+                    if (startMatch) referenceNumber = startMatch[1];
+                    else if (endMatch) referenceNumber = endMatch[1];
+                    else if (refText.match(/\d/)) referenceNumber = refText;
+                }
+                if (referenceNumber.endsWith('.')) referenceNumber = referenceNumber.slice(0, -1);
+
+                const h3_text = (referenceNumber ? referenceNumber + " " : "") + req.title;
+
+                children.push(
+                    new Paragraph({
+                        children: [
+                            new TextRun({
+                                text: h3_text
+                            })
+                        ],
+                        heading: "Heading3",
+                        spacing: { before: 360 } // 18pt (approx 18px depending on user intent, typically points in Word)
+                    })
+                );
+
+                // Requirement Metadata (Reference, Principles, Deficiency IDs) customized for THIS sample
+                const metadata_items = [];
+
+                // Deficiency IDs for THIS sample + requirement
+                const deficiencies = get_deficiencies_for_sample(req, sample, current_audit, t);
+                const deficiencyIds = [...new Set(deficiencies.map(d => extractDeficiencyNumber(d.deficiencyId)))].filter(Boolean).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+
+                // Reference (Standard)
+                if (req.standardReference?.text) {
+                    const ref_text = req.standardReference.text;
+                    const ref_url = req.standardReference.url;
+                    if (ref_url) {
+                        metadata_items.push(new Paragraph({
+                            children: [
+                                new TextRun({ text: "Referens: ", bold: true }),
+                                new ExternalHyperlink({
+                                    children: [new TextRun({ text: ref_text, style: "Hyperlink" })],
+                                    link: ref_url
+                                })
+                            ]
+                        }));
+                    } else {
+                        metadata_items.push(new Paragraph({
+                            children: [
+                                new TextRun({ text: "Referens: ", bold: true }),
+                                new TextRun({ text: ref_text })
+                            ]
+                        }));
+                    }
+                }
+
+                // Principles
+                {
+                    const classifications = Array.isArray(req.classifications) ? req.classifications : [];
+                    const taxonomy = current_audit?.ruleFileContent?.metadata?.taxonomies?.find(t => t.id === 'wcag22-pour');
+                    const norm = v => String(v ?? '').trim().toLowerCase();
+                    const principle_texts = taxonomy
+                        ? classifications
+                            .filter(c => norm(c.taxonomyId) === 'wcag22-pour')
+                            .map(c => {
+                                const concept = taxonomy.concepts?.find?.(x => norm(x?.id) === norm(c.conceptId));
+                                return (typeof concept?.label === 'string' && concept.label.trim()) ? concept.label : c.conceptId;
+                            })
+                            .filter(Boolean)
+                        : [];
+
+                    if (principle_texts.length > 0) {
+                        metadata_items.push(new Paragraph({
+                            children: [
+                                new TextRun({ text: "Principer: ", bold: true }),
+                                new TextRun({ text: principle_texts.join(', ') })
+                            ]
+                        }));
+                    }
+                }
+
+                // Brist IDs associated with THIS sample
+                if (deficiencyIds.length > 0) {
+                    metadata_items.push(new Paragraph({
+                        children: [
+                            new TextRun({ text: "Brist: ", bold: true }),
+                            new TextRun({ text: deficiencyIds.join(', ') })
+                        ]
+                    }));
+                }
+
+                children.push(...metadata_items);
+
+                // Disclaimer / Placeholder text (No "Kravets syfte" header)
+                children.push(
+                    new Paragraph({
+                        children: [
+                            new TextRun({
+                                text: "Om detta krav: ",
+                                bold: true
+                            }),
+                            new TextRun({
+                                text: "Här kommer en ny text visas. Denna text är ännu inte klar."
+                            })
+                        ]
+                    })
+                );
+
+
+                // H4 "Aktuella observationer"
+                children.push(
+                    new Paragraph({
+                        children: [
+                            new TextRun({
+                                text: "Aktuella observationer"
+                            })
+                        ],
+                        heading: "Heading4",
+                        spacing: { before: 200 } // Ensure 10pt before
+                    })
+                );
+
+                // Add deficiency texts for this sample
+                for (let i = 0; i < deficiencies.length; i++) {
+                    const deficiency = deficiencies[i];
+                    let observationText = (deficiency.observationDetail || '').trim();
+                    observationText = observationText.replace(/^[\s]*[-*]\s/gm, '• ');
+
+                    const isStandardText = deficiency.isStandardText || false;
+                    const defId = extractDeficiencyNumber(deficiency.deficiencyId);
+                    const defIdString = defId ? `Brist ${defId}: ` : '';
+
+                    if (observationText.includes('\n')) {
+                        const lines = observationText.split('\n');
+                        for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+                            const isFirstLine = lineIndex === 0;
+                            const isLastLine = lineIndex === lines.length - 1;
+                            let textRuns = [];
+                            let lineText = lines[lineIndex];
+                            const isBulletLine = lineText.trim().startsWith('•');
+                            // 227 twips ~ 0.4cm. Hanging indent for bullet
+                            const indentConfig = isBulletLine ? { left: 227, hanging: 227 } : {};
+                            const tabStopsConfig = isBulletLine ? [{ position: 227, type: TabStopType.LEFT }] : [];
+
+                            let runText = lineText;
+                            if (isBulletLine) runText = runText.replace('• ', '•\t');
+
+                            if (isFirstLine) {
+                                if (defIdString) {
+                                    textRuns.push(new TextRun({ text: defIdString, bold: true }));
+                                    const prefix = isStandardText ? "Kravet är inte uppfyllt: " : "";
+                                    textRuns.push(new TextRun({ text: prefix + runText }));
+                                } else {
+                                    const prefix = isStandardText ? "Kravet är inte uppfyllt: " : "";
+                                    textRuns.push(new TextRun({ text: prefix + runText }));
+                                }
+                            } else if (isLastLine) {
+                                textRuns = [new TextRun({ text: runText + ' ' })];
+                            } else {
+                                textRuns = [new TextRun({ text: runText })];
+                            }
+
+                            children.push(new Paragraph({
+                                children: textRuns,
+                                spacing: { after: isLastLine ? 120 : 0 }, // 6pt after (requested 6px, using 120 twips which is ~6pt)
+                                indent: indentConfig,
+                                tabStops: tabStopsConfig
+                            }));
+                        }
+                    } else {
+                        // Single line
+                        let textRuns = [];
+                        const isBulletLine = observationText.trim().startsWith('•');
+                        const indentConfig = isBulletLine ? { left: 227, hanging: 227 } : {};
+                        const tabStopsConfig = isBulletLine ? [{ position: 227, type: TabStopType.LEFT }] : [];
+                        let runText = observationText;
+                        if (isBulletLine) runText = runText.replace('• ', '•\t');
+
+                        if (defIdString) {
+                            textRuns.push(new TextRun({ text: defIdString, bold: true }));
+                            const prefix = isStandardText ? "Kravet är inte uppfyllt: " : "";
+                            textRuns.push(new TextRun({ text: prefix + runText + ' ' }));
+                        } else {
+                            const prefix = isStandardText ? "Kravet är inte uppfyllt: " : "";
+                            textRuns.push(new TextRun({ text: prefix + runText + ' ' }));
+                        }
+
+                        children.push(new Paragraph({
+                            children: textRuns,
+                            spacing: { after: 120 }, // 6pt after
+                            indent: indentConfig,
+                            tabStops: tabStopsConfig
+                        }));
+                    }
+                }
+
+                // Comment to actor (reused logic)
+                const req_key = req.key || req.id;
+                const sample_result = (sample.requirementResults || {})[req_key];
+                if (sample_result && sample_result.commentToActor && sample_result.commentToActor.trim()) {
+                    children.push(new Paragraph({ children: [new TextRun({ text: "" })], spacing: { before: 60 } }));
+                    children.push(new Paragraph({
+                        children: [
+                            new TextRun({ text: "Kommentar: ", bold: true, color: "6E3282" }),
+                            new TextRun({ text: sample_result.commentToActor.trim() })
+                        ],
+                        spacing: { after: 60 }
+                    }));
+                }
+            }
+        }
+
+        const doc = new Document({
+            sections: [{
+                properties: {
+                    type: SectionType.NEXT_PAGE,
+                    page: {
+                        size: {
+                            orientation: PageOrientation.PORTRAIT,
+                            width: 11906, // A4 width in twips (210mm)
+                            height: 16838 // A4 height in twips (297mm)
+                        },
+                        margin: {
+                            top: 1440, // 2.54 cm
+                            right: 1440,
+                            bottom: 1440,
+                            left: 1440
+                        }
+                    }
+                },
+                children: children
+            }],
+            styles: {
+                default: {
+                    document: {
+                        run: {
+                            font: "Calibri",
+                            size: 22 // 11pt
+                        },
+                        paragraph: {
+                            alignment: AlignmentType.LEFT,
+                            spacing: {
+                                after: 60, // 3pt
+                                line: 240, // Standard line spacing usually implies 240 (1.0) or 276 (1.15) depending on Word version. User said "Standard".
+                                lineRule: "auto"
+                            }
+                        }
+                    },
+                    heading1: {
+                        run: {
+                            font: "Calibri",
+                            size: 36, // 18pt
+                            bold: true
+                        },
+                        paragraph: {
+                            spacing: {
+                                before: 200, // 10pt
+                                after: 60,   // Standard 3pt or overridden? User said: "Efteravstånd följer i standardlogik om inget annat sätts" -> 3pt (60 twips)
+                            },
+                            outlineLevel: 0
+                        }
+                    },
+                    heading2: {
+                        run: {
+                            font: "Calibri",
+                            size: 32, // 16pt
+                            bold: true
+                        },
+                        paragraph: {
+                            spacing: {
+                                before: 200, // 10pt
+                                after: 60
+                            },
+                            outlineLevel: 1
+                        }
+                    },
+                    heading3: {
+                        run: {
+                            font: "Calibri",
+                            size: 28, // 14pt
+                            bold: true
+                        },
+                        paragraph: {
+                            spacing: {
+                                before: 200, // 10pt
+                                after: 60
+                            },
+                            outlineLevel: 2
+                        }
+                    },
+                    heading4: {
+                        run: {
+                            font: "Calibri",
+                            size: 24, // 12pt
+                            bold: true
+                        },
+                        paragraph: {
+                            spacing: {
+                                before: 200, // 10pt
+                                after: 60
+                            },
+                            outlineLevel: 3
+                        }
+                    }
+                }
+            }
+        });
+
+        const blob = await Packer.toBlob(doc);
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+
+        const report_prefix = t('filename_audit_report_prefix');
+        const deficiencies_suffix = t('filename_deficiencies_suffix');
+        const actor_name = (current_audit.auditMetadata.actorName || t('filename_fallback_actor')).replace(/[^a-z0-9åäöÅÄÖ]/gi, '_');
+        const filename = `${report_prefix}_${deficiencies_suffix}_${actor_name}_textexport_${new Date().toISOString().split('T')[0]}.docx`;
+
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        show_global_message_internal(t('audit_saved_as_file', { filename: filename }), 'success');
+
+    } catch (error) {
+        console.error("Error exporting to Word (Text Export):", error);
+        show_global_message_internal(t('error_exporting_word') + ` ${error.message}`, 'error');
+    }
+}
+
+// Helper to get failing requirement IDs for a specific sample
+function get_failing_requirement_ids_for_sample(sample) {
+    const failing_ids = [];
+    const results = sample.requirementResults || {};
+    Object.keys(results).forEach(req_key => {
+        const result = results[req_key];
+        if (result.checkResults) {
+            let hasFailure = false;
+            Object.values(result.checkResults).forEach(check => {
+                if (check.passCriteria) {
+                    Object.values(check.passCriteria).forEach(pc => {
+                        if (pc.status === 'failed') hasFailure = true;
+                    });
+                }
+            });
+            if (hasFailure) failing_ids.push(req_key);
+        }
+    });
+    return failing_ids;
+}
+
+// Helper to get deficiencies for a specific sample and requirement
+// (Refactored/Reused existing logic but ensure it's scoped correctly)
+// The existing get_deficiencies_for_sample takes (req, sample, current_audit, t)
+// We can just use that.
+
+// helper function to get all deficiencies for a sample to check if it has any
+function get_all_deficiencies_for_sample_generic(sample, current_audit) {
+    const deficiencies = [];
+    const all_reqs = current_audit.ruleFileContent.requirements || {};
+    Object.values(all_reqs).forEach(req => {
+        const defs = get_deficiencies_for_sample(req, sample, current_audit, () => { });
+        deficiencies.push(...defs);
+    });
+    return deficiencies;
+}
+// --- END OF CHANGE ---
+
 const public_api = {
     export_to_csv,
     export_to_excel,
-    export_to_word
+    export_to_word,
+    export_test // Add the new export function to the export object
 };
 
 window.ExportLogic = public_api;

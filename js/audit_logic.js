@@ -154,6 +154,7 @@ export function calculate_check_status(check_object, pass_criteria_statuses_map,
     if (!check_object?.passCriteria || check_object.passCriteria.length === 0) return "passed";
 
     if (overall_manual_status === 'failed') return "failed";
+    if (overall_manual_status === 'not_applicable') return "passed";
     if (overall_manual_status === 'not_audited') return "not_audited";
 
     const pc_statuses = check_object.passCriteria.map(pc => {

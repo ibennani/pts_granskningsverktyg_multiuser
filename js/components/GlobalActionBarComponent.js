@@ -3,13 +3,14 @@ import { SaveAuditButtonComponent } from './SaveAuditButtonComponent.js';
 export class GlobalActionBarComponent {
   constructor() {
     this.CSS_PATH = './css/components/global_action_bar_component.css';
-    
+
     // Internal references
     this.root = null;
     this.deps = null;
-    this.save_audit_button_container_element = null;
+    this.save_audit_button_element = null;
     this.save_audit_button_instance = null;
     this.theme_toggle_button = null;
+    this.theme_observer = null;
 
     // Dependencies
     this.getState = null;
@@ -48,13 +49,16 @@ export class GlobalActionBarComponent {
       'div',
       { class_name: 'save-audit-button-container' }
     );
-    
+
     // Initialize child component
     this.save_audit_button_instance = new SaveAuditButtonComponent();
     await this.save_audit_button_instance.init({
-        root: this.save_audit_button_container_element,
-        deps: this.deps
+      root: this.save_audit_button_container_element,
+      deps: this.deps
     });
+
+    // Setup MutationObserver for theme synchronization
+    this.setup_theme_observer();
   }
 
   clone_rulefile_content(ruleFileContent) {
@@ -223,7 +227,32 @@ export class GlobalActionBarComponent {
   set_theme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('theme_preference', theme);
-    this.update_theme_button_content(theme);
+    // Button update is now handled by MutationObserver
+  }
+
+  setup_theme_observer() {
+    // Disconnect existing observer if any
+    if (this.theme_observer) {
+      this.theme_observer.disconnect();
+    }
+
+    this.theme_observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
+          const new_theme = document.documentElement.getAttribute('data-theme') || 'light';
+          this.update_theme_button_content(new_theme);
+        }
+      });
+    });
+
+    this.theme_observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme']
+    });
+
+    // Initial sync
+    const current_theme = document.documentElement.getAttribute('data-theme') || 'light';
+    this.update_theme_button_content(current_theme);
   }
 
   update_theme_button_content(theme) {
@@ -286,8 +315,8 @@ export class GlobalActionBarComponent {
 
     if (audit_status !== 'rulefile_editing' && has_rulefile_loaded) {
       if (this.save_audit_button_instance) {
-          this.save_audit_button_instance.render();
-          left_group.appendChild(this.save_audit_button_container_element);
+        this.save_audit_button_instance.render();
+        left_group.appendChild(this.save_audit_button_container_element);
       }
     } else if (audit_status === 'rulefile_editing' && has_rulefile_loaded) {
       const save_rulefile_button = this.Helpers.create_element('button', {
@@ -342,9 +371,10 @@ export class GlobalActionBarComponent {
 
     this.theme_toggle_button.addEventListener('click', this.toggle_theme);
 
-    const current_theme =
-      document.documentElement.getAttribute('data-theme') || 'light';
+    // Initial content set (will also be handled by observer, but good for initial render)
+    const current_theme = document.documentElement.getAttribute('data-theme') || 'light';
     this.update_theme_button_content(current_theme);
+
     right_group.appendChild(this.theme_toggle_button);
 
     bar_element.appendChild(right_group);
@@ -353,12 +383,17 @@ export class GlobalActionBarComponent {
 
   destroy() {
     if (this.root) this.root.innerHTML = '';
-    
+
     // Destroy child component
     if (this.save_audit_button_instance) {
-        this.save_audit_button_instance.destroy();
+      this.save_audit_button_instance.destroy();
     }
-    
+
+    if (this.theme_observer) {
+      this.theme_observer.disconnect();
+      this.theme_observer = null;
+    }
+
     this.root = null;
     this.deps = null;
     this.save_audit_button_container_element = null;

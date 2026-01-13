@@ -88,7 +88,7 @@ export const ChecklistHandler = {
             change_info.newStatus = 'passed';
         } else if (action === 'set-check-not-complies') {
             change_info.type = 'check_overall_status_change';
-            change_info.newStatus = 'failed';
+            change_info.newStatus = 'not_applicable';
         } else if (pc_item_element) {
             const pc_id = pc_item_element.dataset.pcId;
             change_info.pcId = pc_id;
@@ -297,7 +297,7 @@ export const ChecklistHandler = {
             
             if (complies_btn && not_complies_btn) {
                 complies_btn.classList.toggle('active', overall_manual_status === 'passed');
-                not_complies_btn.classList.toggle('active', overall_manual_status === 'failed');
+                not_complies_btn.classList.toggle('active', overall_manual_status === 'not_applicable');
                 complies_btn.parentElement.style.display = this.is_audit_locked ? 'none' : 'flex';
             }
             
@@ -341,8 +341,8 @@ export const ChecklistHandler = {
             }
             
             // Show/hide compliance info text
-            if (overall_manual_status === 'failed') {
-                compliance_info_text.textContent = t('check_marked_as_not_compliant_criteria_passed');
+            if (overall_manual_status === 'not_applicable') {
+                compliance_info_text.textContent = t('condition_not_met_criteria_auto_passed');
                 compliance_info_text.style.display = '';
                 if (compliance_was_hidden) {
                     compliance_info_text.classList.add('slide-down-in');
