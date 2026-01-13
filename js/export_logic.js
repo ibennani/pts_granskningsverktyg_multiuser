@@ -1891,8 +1891,8 @@ async function export_to_text_export_deprecated(current_audit) {
 
 
 // --- START OF CHANGE: NEW EXPORT FUNCTION ---
-async function export_test(current_audit) {
-    console.log('[Word Export] Starting export_test function');
+async function export_to_word_samples(current_audit) {
+    console.log('[Word Export] Starting export_to_word_samples function');
     const t = get_t_internal();
     if (!current_audit) {
         show_global_message_internal(t('no_audit_data_to_save'), 'error');
@@ -2351,7 +2351,7 @@ const public_api = {
     export_to_csv,
     export_to_excel,
     export_to_word,
-    export_test // Add the new export function to the export object
+    export_to_word_samples // Add the new export function to the export object
 };
 
 window.ExportLogic = public_api;

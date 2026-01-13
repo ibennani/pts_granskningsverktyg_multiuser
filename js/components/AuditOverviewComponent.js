@@ -38,10 +38,8 @@ export const AuditOverviewComponent = {
         this.handle_unlock_audit = this.handle_unlock_audit.bind(this);
         this.handle_export_csv = this.handle_export_csv.bind(this);
         this.handle_export_excel = this.handle_export_excel.bind(this);
-        this.handle_export_csv = this.handle_export_csv.bind(this);
-        this.handle_export_excel = this.handle_export_excel.bind(this);
         this.handle_export_word = this.handle_export_word.bind(this);
-        this.handle_export_test = this.handle_export_test.bind(this);
+        this.handle_export_to_word_samples = this.handle_export_to_word_samples.bind(this);
 
         await this.init_sub_components();
 
@@ -172,15 +170,15 @@ export const AuditOverviewComponent = {
         }
     },
 
-    handle_export_test() {
+    handle_export_to_word_samples() {
         const t = this.Translation.t;
         const current_global_state = this.getState();
         if (current_global_state.auditStatus !== 'locked') {
             this.NotificationComponent.show_global_message(t('audit_not_locked_for_export', { status: current_global_state.auditStatus }), 'warning');
             return;
         }
-        if (this.ExportLogic?.export_test) {
-            this.ExportLogic.export_test(current_global_state);
+        if (this.ExportLogic?.export_to_word_samples) {
+            this.ExportLogic.export_to_word_samples(current_global_state);
         }
     },
 
@@ -191,79 +189,101 @@ export const AuditOverviewComponent = {
     create_actions_bar(state) {
         const t = this.Translation.t;
         const actions_div = this.Helpers.create_element('div', { class_name: 'audit-overview-actions' });
-        const left_group = this.Helpers.create_element('div', { class_name: 'action-group-left' });
-        const right_group = this.Helpers.create_element('div', { class_name: 'action-group-right' });
-
-        if (state.auditStatus === 'in_progress') {
-            left_group.appendChild(this.Helpers.create_element('button', {
-                class_name: ['button', 'button-default'],
-                html_content: `<span>${t('update_rulefile_button')}</span>` + this.Helpers.get_icon_svg('update', ['currentColor'], 18),
-                event_listeners: { click: () => this.router('update_rulefile') }
-            }));
-
-            const updated_reqs_count = state.samples.flatMap(s => Object.values(s.requirementResults || {})).filter(r => r.needsReview === true).length;
-            if (updated_reqs_count > 0) {
-                left_group.appendChild(this.Helpers.create_element('button', {
-                    class_name: ['button', 'button-info'],
-                    html_content: `<span>${t('handle_updated_assessments', { count: updated_reqs_count })}</span>` + this.Helpers.get_icon_svg('info', ['currentColor'], 18),
-                    event_listeners: { click: () => this.router('confirm_updates') }
-                }));
-            }
-
-            right_group.appendChild(this.Helpers.create_element('button', {
-                class_name: ['button', 'button-primary'],
-                html_content: `<span>${t('lock_audit')}</span>` + this.Helpers.get_icon_svg('lock_audit', ['currentColor'], 18),
-                event_listeners: { click: this.handle_lock_audit }
-            }));
-        }
 
         if (state.auditStatus === 'locked') {
-            left_group.appendChild(this.Helpers.create_element('button', {
-                class_name: ['button', 'button-secondary'],
+            // Custom layout for locked state: vertical stack
+            // Row 1: Unlock button (Primary)
+            // Row 2: Export buttons
+            
+            // Override default flex styles for this state if needed, or rely on rows
+            actions_div.style.flexDirection = 'column';
+            actions_div.style.alignItems = 'flex-start';
+            
+            // Row 1
+            const row1 = this.Helpers.create_element('div', { 
+                class_name: 'action-row-primary',
+                style: { width: '100%' } 
+            });
+            
+            row1.appendChild(this.Helpers.create_element('button', {
+                class_name: ['button', 'button-primary'], // Changed from secondary to primary
                 html_content: `<span>${t('unlock_audit')}</span>` + this.Helpers.get_icon_svg('unlock_audit', ['currentColor'], 18),
                 event_listeners: { click: this.handle_unlock_audit }
             }));
+            
+            actions_div.appendChild(row1);
+
+            // Row 2
+            const row2 = this.Helpers.create_element('div', { 
+                class_name: 'action-row-exports',
+                style: { display: 'flex', gap: '0.75rem', flexWrap: 'wrap', width: '100%' }
+            });
+
             if (this.ExportLogic?.export_to_csv) {
-                left_group.appendChild(this.Helpers.create_element('button', {
+                row2.appendChild(this.Helpers.create_element('button', {
                     class_name: ['button', 'button-default'],
                     html_content: `<span>${t('export_to_csv')}</span>` + this.Helpers.get_icon_svg('export', ['currentColor'], 18),
                     event_listeners: { click: this.handle_export_csv }
                 }));
             }
             if (this.ExportLogic?.export_to_excel) {
-                left_group.appendChild(this.Helpers.create_element('button', {
+                row2.appendChild(this.Helpers.create_element('button', {
                     class_name: ['button', 'button-default'],
                     html_content: `<span>${t('export_to_excel')}</span>` + this.Helpers.get_icon_svg('export', ['currentColor'], 18),
                     event_listeners: { click: this.handle_export_excel }
                 }));
             }
             if (this.ExportLogic?.export_to_word) {
-                console.log('[AuditOverview] Creating Word export button');
                 const word_export_button = this.Helpers.create_element('button', {
                     class_name: ['button', 'button-default'],
                     html_content: `<span>${t('export_to_word')}</span>` + this.Helpers.get_icon_svg('export', ['currentColor'], 18),
                     event_listeners: { click: this.handle_export_word }
                 });
-                console.log('[AuditOverview] Word export button created:', word_export_button);
-                left_group.appendChild(word_export_button);
+                row2.appendChild(word_export_button);
+            }
+            
+            if (this.ExportLogic?.export_to_word_samples) {
+                const text_export_button = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-default'],
+                    html_content: `<span>${t('export_to_word_samples')}</span>` + this.Helpers.get_icon_svg('export', ['currentColor'], 18),
+                    event_listeners: { click: this.handle_export_to_word_samples }
+                });
+                row2.appendChild(text_export_button);
+            }
 
-                // Add Text Export button
-                if (this.ExportLogic?.export_test) {
-                    const text_export_button = this.Helpers.create_element('button', {
-                        class_name: ['button', 'button-default'],
-                        html_content: `<span>${t('export_test')}</span>` + this.Helpers.get_icon_svg('export', ['currentColor'], 18),
-                        event_listeners: { click: this.handle_export_test }
-                    });
-                    left_group.appendChild(text_export_button);
+            actions_div.appendChild(row2);
+
+        } else {
+            // Default layout for in_progress
+            const left_group = this.Helpers.create_element('div', { class_name: 'action-group-left' });
+            const right_group = this.Helpers.create_element('div', { class_name: 'action-group-right' });
+
+            if (state.auditStatus === 'in_progress') {
+                left_group.appendChild(this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-default'],
+                    html_content: `<span>${t('update_rulefile_button')}</span>` + this.Helpers.get_icon_svg('update', ['currentColor'], 18),
+                    event_listeners: { click: () => this.router('update_rulefile') }
+                }));
+
+                const updated_reqs_count = state.samples.flatMap(s => Object.values(s.requirementResults || {})).filter(r => r.needsReview === true).length;
+                if (updated_reqs_count > 0) {
+                    left_group.appendChild(this.Helpers.create_element('button', {
+                        class_name: ['button', 'button-info'],
+                        html_content: `<span>${t('handle_updated_assessments', { count: updated_reqs_count })}</span>` + this.Helpers.get_icon_svg('info', ['currentColor'], 18),
+                        event_listeners: { click: () => this.router('confirm_updates') }
+                    }));
                 }
 
-            } else {
-                console.log('[AuditOverview] ExportLogic_export_to_word not available');
+                right_group.appendChild(this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-primary'],
+                    html_content: `<span>${t('lock_audit')}</span>` + this.Helpers.get_icon_svg('lock_audit', ['currentColor'], 18),
+                    event_listeners: { click: this.handle_lock_audit }
+                }));
             }
-        }
 
-        if (left_group.hasChildNodes()) actions_div.appendChild(left_group);
-        if (right_group.hasChildNodes()) actions_div.appendChild(right_group);
+            if (left_group.hasChildNodes()) actions_div.appendChild(left_group);
+            if (right_group.hasChildNodes()) actions_div.appendChild(right_group);
+        }
 
         return actions_div;
     },

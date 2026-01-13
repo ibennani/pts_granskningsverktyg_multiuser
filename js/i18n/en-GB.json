@@ -166,8 +166,7 @@
   "excel_status_wont_fix": "Will not fix",
   "export_to_csv": "Export to CSV",
   "export_to_excel": "Export to Excel",
-  "export_to_word": "Export to Word",
-  "export_test": "Word - test",
+  "export_to_word": "Export to Word (requirements)",
   "error_exporting_word": "Error exporting to Word.",
   "total_requirements_reviewed": "Total requirements reviewed",
   "principle_breakdown": "Principle breakdown",
@@ -606,5 +605,6 @@
   "translation_missing_translations": "Accessibility Audit Tool - Missing translations",
   "error_rulefile_update_failed": "Error updating rule file",
   "error_confirm_failed_temp_data_missing": "Confirmation failed: temporary data missing.",
-  "error_no_pending_sample_changes": "No pending sample changes were found."
+  "error_no_pending_sample_changes": "No pending sample changes were found.",
+  "export_to_word_samples": "Export to Word (samples)"
 }
