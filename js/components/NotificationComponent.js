@@ -22,6 +22,10 @@ export const NotificationComponent = {
     },
 
     _update_global_message_content(message, type) {
+        if (!this.event_listeners) {
+            this.event_listeners = new Set();
+        }
+
         if (!this.global_message_element || !window.Translation || !window.Helpers) {
             // Try to get element if it was created after init
             this.global_message_element = document.getElementById(GLOBAL_MESSAGE_CONTAINER_ID);

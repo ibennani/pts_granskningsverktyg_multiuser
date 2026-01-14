@@ -180,14 +180,16 @@ export const RulefileRequirementsListComponent = {
             status: { ...default_status_state }
         };
 
-        await this.toolbar_component_instance.init(
-            toolbar_container_element,
-            this.handle_toolbar_change,
-            initial_toolbar_state,
-            { t: t },
-            { create_element: this.Helpers.create_element, load_css: this.Helpers.load_css },
-            { showStatusFilter: false, sortOptions: this.SORT_OPTIONS }
-        );
+        await this.toolbar_component_instance.init({
+            root: toolbar_container_element,
+            deps: {
+                on_change: this.handle_toolbar_change,
+                initial_state: initial_toolbar_state,
+                Translation: { t: t },
+                Helpers: { create_element: this.Helpers.create_element, load_css: this.Helpers.load_css },
+                config: { showStatusFilter: false, sortOptions: this.SORT_OPTIONS }
+            }
+        });
 
         this.content_div_for_delegation = this.Helpers.create_element('div', { class_name: 'requirements-list-content' });
         this.plate_element_ref.appendChild(this.content_div_for_delegation);
