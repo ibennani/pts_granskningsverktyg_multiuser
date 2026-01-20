@@ -150,6 +150,7 @@
   "excel_col_deficiency_id": "Brist-ID",
   "excel_col_expected_obs": "Förväntad observation",
   "excel_col_observation": "Observation",
+  "excel_col_pts_qc_comments": "PTS QC-kommentarer",
   "excel_col_reference": "Referens",
   "excel_col_req_title": "Kravets titel",
   "excel_col_sample_name": "Stickprovets namn",

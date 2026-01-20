@@ -150,6 +150,7 @@
   "excel_col_deficiency_id": "Deficiency ID",
   "excel_col_expected_obs": "Expected observation",
   "excel_col_observation": "Observation",
+  "excel_col_pts_qc_comments": "PTS QC comments",
   "excel_col_reference": "Reference",
   "excel_col_req_title": "Requirement Title",
   "excel_col_sample_name": "Sample name",

@@ -220,7 +220,8 @@ async function export_to_excel(current_audit) {
             { header: t('excel_col_sample_name'), key: 'sampleName', width: 30 },
             { header: t('excel_col_sample_url'), key: 'sampleUrl', width: 40 },
             { header: "Kravets syfte", key: 'control', width: 60 },
-            { header: t('excel_col_observation'), key: 'observation', width: 70 }
+            { header: t('excel_col_observation'), key: 'observation', width: 70 },
+            { header: t('excel_col_pts_qc_comments'), key: 'ptsQcComments', width: 70 }
         ];
 
         const deficiencies_data = [];
@@ -263,7 +264,8 @@ async function export_to_excel(current_audit) {
                                 sampleName: sample.description,
                                 sampleUrl: url_obj,
                                 control: "Här kommer en ny text visas. Denna text är ännu inte klar.",
-                                observation: finalObservation
+                                observation: finalObservation,
+                                ptsQcComments: ''
                             });
                         }
                     });
