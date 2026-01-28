@@ -2073,20 +2073,6 @@ async function export_to_word_samples(current_audit) {
 
                 children.push(...metadata_items);
 
-                // Disclaimer / Placeholder text (No "Kravets syfte" header)
-                children.push(
-                    new Paragraph({
-                        children: [
-                            new TextRun({
-                                text: "Om detta krav: ",
-                                bold: true
-                            }),
-                            new TextRun({
-                                text: "Här kommer en ny text visas. Denna text är ännu inte klar."
-                            })
-                        ]
-                    })
-                );
 
 
                 // H4 "Aktuella observationer"
