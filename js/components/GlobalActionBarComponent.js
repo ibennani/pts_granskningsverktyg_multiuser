@@ -100,34 +100,18 @@ export class GlobalActionBarComponent {
     return `${year}_${month}_r${release}`;
   }
 
-  build_rulefile_download_filename(original_filename, version_string) {
+  generate_rulefile_filename(title, version_string) {
     const default_extension = '.json';
     const version_suffix = this.to_filename_version_suffix(version_string);
-    const safe_suffix = version_suffix || '';
-    if (!original_filename) {
-      return `rulefile_${safe_suffix || 'export'}${default_extension}`;
-    }
+    const safe_suffix = version_suffix ? `_${version_suffix}` : '';
 
-    const last_dot_index = original_filename.lastIndexOf('.');
-    const extension =
-      last_dot_index > -1
-        ? original_filename.slice(last_dot_index)
-        : default_extension;
-    const base_name =
-      last_dot_index > -1
-        ? original_filename.slice(0, last_dot_index)
-        : original_filename;
+    let base_name = (title || 'rulefile').trim();
+    // Ersätt alla whitespace med understreck
+    base_name = base_name.replace(/\s+/g, '_');
+    // Ta bort ogiltiga filnamnstecken: \ / : * ? " < > |
+    base_name = base_name.replace(/[\\/:*?"<>|]/g, '');
 
-    if (!safe_suffix) {
-      return `${base_name}${extension}`;
-    }
-
-    const pattern = /(_\d{4}_\d{1,2}_r\d+)$/;
-    const updated_base = base_name.match(pattern)
-      ? base_name.replace(pattern, `_${safe_suffix}`)
-      : `${base_name}_${safe_suffix}`;
-
-    return `${updated_base}${extension}`;
+    return `${base_name}${safe_suffix}${default_extension}`;
   }
 
   handle_save_rulefile() {
@@ -151,8 +135,7 @@ export class GlobalActionBarComponent {
     const today = new Date();
     const today_iso_date = today.toISOString().split('T')[0];
     let data_string_for_download = current_string;
-    let filename_for_download =
-      current_state.ruleFileOriginalFilename || 'rulefile.json';
+    let filename_for_download = 'rulefile.json';
 
     if (is_edit_mode && has_changes) {
       const updated_rulefile_content = this.clone_rulefile_content(
@@ -174,8 +157,9 @@ export class GlobalActionBarComponent {
         null,
         2
       );
-      filename_for_download = this.build_rulefile_download_filename(
-        current_state.ruleFileOriginalFilename,
+      const title = updated_rulefile_content.metadata?.title || 'rulefile';
+      filename_for_download = this.generate_rulefile_filename(
+        title,
         next_version
       );
 
@@ -194,6 +178,14 @@ export class GlobalActionBarComponent {
       }
     } else if (is_edit_mode && !has_changes && original_string) {
       data_string_for_download = original_string;
+      // Generera filnamn baserat på titel även när det inte finns ändringar
+      const current_metadata = current_state.ruleFileContent?.metadata || {};
+      const current_version = current_metadata.version || null;
+      const title = current_metadata.title || 'rulefile';
+      filename_for_download = this.generate_rulefile_filename(
+        title,
+        current_version
+      );
     }
 
     const blob = new Blob([data_string_for_download], {
