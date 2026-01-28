@@ -519,29 +519,6 @@ async function export_to_word(current_audit) {
             // Lägg till metadata-raderna
             children.push(...metadata_items);
 
-            // Lägg till h3 "Kravets syfte"
-            children.push(
-                new Paragraph({
-                    children: [
-                        new TextRun({
-                            text: "Kravets syfte"
-                        })
-                    ],
-                    heading: "Heading3"
-                })
-            );
-
-            // Lägg till placeholder text för "Kravets syfte"
-            children.push(
-                new Paragraph({
-                    children: [
-                        new TextRun({
-                            text: "Här kommer en ny text visas. Denna text är ännu inte klar."
-                        })
-                    ]
-                })
-            );
-
             // Lägg till h3 "Observation per stickprov"
             children.push(
                 new Paragraph({
