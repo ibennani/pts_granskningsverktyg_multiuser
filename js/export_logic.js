@@ -830,17 +830,20 @@ async function export_to_word_internal(current_audit, sortBy) {
         const url = URL.createObjectURL(buffer);
         const link = document.createElement('a');
 
-        const report_prefix = t('filename_audit_report_prefix');
         const actor_name = (current_audit.auditMetadata.actorName || t('filename_fallback_actor')).replace(/[^a-z0-9åäöÅÄÖ]/gi, '_');
-        const case_number = (current_audit.auditMetadata.caseNumber || '').replace(/[^a-z0-9åäöÅÄÖ]/gi, '_');
-        const case_number_prefix = case_number ? `${case_number}_` : '';
-
+        const case_number = (current_audit.auditMetadata.caseNumber || '').trim();
+        
+        // Behåll bindestreck i ärendenummer (t.ex. "25-18359")
+        const sanitized_case_number = case_number ? case_number.replace(/[^a-z0-9åäöÅÄÖ-]/gi, '') : '';
+        
+        const sort_suffix = isSortByRequirements ? '_sorterat_på_krav' : '_sorterat_på_stickprov';
+        const date_str = new Date().toISOString().split('T')[0];
+        
         let filename;
-        if (isSortByRequirements) {
-            filename = `${case_number_prefix}${report_prefix}_${actor_name}_${new Date().toISOString().split('T')[0]}.docx`;
+        if (sanitized_case_number) {
+            filename = `${sanitized_case_number}_${actor_name}_${date_str}${sort_suffix}.docx`;
         } else {
-            const deficiencies_suffix = t('filename_deficiencies_suffix');
-            filename = `${report_prefix}_${deficiencies_suffix}_${actor_name}_textexport_${new Date().toISOString().split('T')[0]}.docx`;
+            filename = `${actor_name}_${date_str}${sort_suffix}.docx`;
         }
 
         link.href = url;
