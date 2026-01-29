@@ -2169,22 +2169,37 @@ async function export_to_html(current_audit) {
                 background-color: var(--background-color);
             }
             .html-export-container {
-                display: flex;
                 min-height: 100vh;
-                max-width: 1080px;
-                margin: 0 auto;
                 position: relative;
             }
             .html-export-sidebar {
                 position: fixed;
-                left: calc(50% - 540px);
                 top: 0;
-                width: 250px;
+                width: 280px;
                 height: 100vh;
                 background-color: #ffffff;
                 padding: 2rem 1rem;
                 overflow-y: auto;
                 z-index: 1;
+            }
+            /* Positionera sidebar och content relativt viewport för att undvika glapp */
+            @media (min-width: 1081px) {
+                .html-export-sidebar {
+                    left: calc(50vw - 540px);
+                }
+                .html-export-content {
+                    left: calc(50vw - 540px + 280px);
+                    width: calc(1080px - 280px);
+                }
+            }
+            @media (max-width: 1080px) {
+                .html-export-sidebar {
+                    left: 0;
+                }
+                .html-export-content {
+                    left: 280px;
+                    width: calc(100vw - 280px);
+                }
             }
             .html-export-sidebar h2 {
                 font-size: 1.25rem;
@@ -2248,16 +2263,35 @@ async function export_to_html(current_audit) {
                 outline: none;
             }
             .html-export-content {
-                margin-left: 250px;
-                flex: 1;
+                position: fixed;
+                top: 0;
                 padding: 2rem;
                 background-color: #ffffff;
                 min-height: 100vh;
+                height: 100vh;
                 border-left: 2px solid var(--border-color);
                 z-index: 1;
-                position: relative;
-                width: calc(100% - 250px);
+                overflow-y: auto;
+                overflow-x: hidden;
                 box-sizing: border-box;
+            }
+            @media (max-width: 600px) {
+                .html-export-sidebar {
+                    width: 200px;
+                }
+                @media (max-width: 1080px) {
+                    .html-export-content {
+                        left: 200px;
+                        width: calc(100vw - 200px);
+                    }
+                }
+            }
+            /* Fixa anchor-länkar med smooth scroll */
+            .html-export-content h1[id],
+            .html-export-content h2[id],
+            .html-export-content h3[id],
+            .html-export-content div[id] {
+                scroll-margin-top: 1rem;
             }
             .html-export-content h1 {
                 font-size: 2rem;
@@ -2393,6 +2427,41 @@ async function export_to_html(current_audit) {
         ${sidebar_html}
         ${content_html}
     </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const content = document.querySelector('.html-export-content');
+            if (content) {
+                // Funktion för att hantera smooth scroll till target
+                function handleSmoothScroll(e, targetId) {
+                    e.preventDefault();
+                    const target = document.getElementById(targetId);
+                    if (target && content.contains(target)) {
+                        const targetTop = target.offsetTop;
+                        content.scrollTo({
+                            top: targetTop - 20,
+                            behavior: 'smooth'
+                        });
+                    }
+                }
+                
+                // Hantera klick på länkar i sidebar
+                document.querySelectorAll('.html-export-sidebar a[href^="#"]').forEach(link => {
+                    link.addEventListener('click', function(e) {
+                        const targetId = this.getAttribute('href').substring(1);
+                        handleSmoothScroll(e, targetId);
+                    });
+                });
+                
+                // Hantera klick på bristnummer-länkar i metadata
+                document.querySelectorAll('.deficiency-link').forEach(link => {
+                    link.addEventListener('click', function(e) {
+                        const targetId = this.getAttribute('href').substring(1);
+                        handleSmoothScroll(e, targetId);
+                    });
+                });
+            }
+        });
+    </script>
 </body>
 </html>`;
 
