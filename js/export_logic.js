@@ -2051,6 +2051,195 @@ function create_html_comments(requirement, sample, t) {
     return html;
 }
 
+// Hjälpfunktion för att hämta alla stickprov med brister
+function get_samples_with_deficiencies(current_audit) {
+    const samples_with_deficiencies = [];
+    const requirements = Object.values(current_audit.ruleFileContent.requirements || {});
+    
+    (current_audit.samples || []).forEach(sample => {
+        let has_deficiencies = false;
+        
+        requirements.forEach(req => {
+            const req_key = req.key || req.id;
+            const result = (sample.requirementResults || {})[req_key];
+            if (!result || !result.checkResults) return;
+            
+            const has_deficiencies_for_req = Object.values(result.checkResults).some(check_res => {
+                if (!check_res || !check_res.passCriteria) return false;
+                return Object.values(check_res.passCriteria).some(pc_obj =>
+                    pc_obj && pc_obj.status === 'failed' && pc_obj.deficiencyId
+                );
+            });
+            
+            if (has_deficiencies_for_req) {
+                has_deficiencies = true;
+            }
+        });
+        
+        if (has_deficiencies) {
+            samples_with_deficiencies.push(sample);
+        }
+    });
+    
+    return samples_with_deficiencies;
+}
+
+// Hjälpfunktion för att hämta krav med brister för ett specifikt stickprov
+function get_requirements_with_deficiencies_for_sample(sample, current_audit) {
+    const requirements = Object.values(current_audit.ruleFileContent.requirements || {});
+    return requirements.filter(req => {
+        const req_key = req.key || req.id;
+        const result = (sample.requirementResults || {})[req_key];
+        if (!result || !result.checkResults) return false;
+        
+        return Object.values(result.checkResults).some(check_res => {
+            if (!check_res || !check_res.passCriteria) return false;
+            return Object.values(check_res.passCriteria).some(pc_obj =>
+                pc_obj && pc_obj.status === 'failed' && pc_obj.deficiencyId
+            );
+        });
+    });
+}
+
+// Hjälpfunktion för att bygga sidebar och content sorterat på krav
+function build_content_sorted_by_requirement(current_audit, t) {
+    const requirements_with_deficiencies = get_requirements_with_deficiencies(current_audit);
+    const sorted_requirements = requirements_with_deficiencies.sort((a, b) => {
+        const ref_a = a.standardReference?.text || '';
+        const ref_b = b.standardReference?.text || '';
+        return natural_sort(ref_a, ref_b);
+    });
+
+    let sidebar_html = '<ul role="list">';
+    sidebar_html += '<li role="listitem" class="sidebar-h1"><a href="#h1-underkanda-krav" aria-label="Huvudrubrik: Underkända krav">Underkända krav</a>';
+
+    let content_html = '';
+    content_html += '<h1 id="h1-underkanda-krav">Underkända krav</h1>';
+    content_html += '<p>Detta avsnitt redovisar en sammanställning av de krav som har underkänts vid granskningen. Sammanställningen baseras på stickprov, vilket innebär att motsvarande brister även kan förekomma på andra delar av den granskade sidan eller på andra delar av webbplatsen. Det är därför nödvändigt att genomföra en genomgång av hela webbplatsen för att säkerställa om samma typ av brister förekommer även på andra ställen. I detta avsnitt redovisas endast de brister som har identifierats vid granskningen.</p>';
+
+    sidebar_html += '<ul role="list">';
+    for (const req of sorted_requirements) {
+        const referenceNumber = extract_reference_number(req);
+        const h2_text = (referenceNumber ? referenceNumber + " " : "") + req.title;
+        const h2_anchor_id = 'h2-' + generate_anchor_id(h2_text);
+
+        sidebar_html += `<li role="listitem" class="sidebar-h2"><a href="#${h2_anchor_id}" aria-label="Krav: ${escape_html_internal(h2_text)}">${escape_html_internal(h2_text)}</a>`;
+
+        content_html += `<h2 id="${h2_anchor_id}">${escape_html_internal(h2_text)}</h2>`;
+
+        const all_deficiency_ids = new Set();
+        const samples_for_ids = get_samples_with_deficiencies_for_requirement(req, current_audit);
+        for (const sample of samples_for_ids) {
+            const defs = get_deficiencies_for_sample(req, sample, current_audit, t);
+            for (const def of defs) {
+                if (def.deficiencyId) {
+                    const id = extractDeficiencyNumber(def.deficiencyId);
+                    if (id) all_deficiency_ids.add(id);
+                }
+            }
+        }
+        const sorted_deficiency_ids = Array.from(all_deficiency_ids).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+        content_html += create_html_metadata(req, current_audit, sorted_deficiency_ids, t);
+
+        const samples_with_deficiencies = get_samples_with_deficiencies_for_requirement(req, current_audit);
+        for (const sample of samples_with_deficiencies) {
+            const deficiencies = get_deficiencies_for_sample(req, sample, current_audit, t);
+            const sampleName = sample.description || sample.url || "";
+            const h3_anchor_id = 'h3-' + generate_anchor_id(h2_text + ' ' + sampleName);
+
+            if (sample.url) {
+                const safe_url = escape_html_internal(window.Helpers?.add_protocol_if_missing ? window.Helpers.add_protocol_if_missing(sample.url) : sample.url);
+                content_html += `<h3 id="${h3_anchor_id}">Stickprov: <a href="${safe_url}" target="_blank" rel="noopener noreferrer">${escape_html_internal(sampleName)}</a></h3>`;
+            } else {
+                content_html += `<h3 id="${h3_anchor_id}">Stickprov: ${escape_html_internal(sampleName)}</h3>`;
+            }
+
+            sidebar_html += `<ul role="list"><li role="listitem" class="sidebar-h3"><a href="#${h3_anchor_id}" aria-label="Stickprov: ${escape_html_internal(sampleName)} för krav: ${escape_html_internal(h2_text)}">${escape_html_internal(sampleName)}</a></li></ul>`;
+
+            for (const deficiency of deficiencies) {
+                content_html += create_html_observations(deficiency, t);
+            }
+
+            content_html += create_html_comments(req, sample, t);
+        }
+        sidebar_html += '</li>';
+    }
+    sidebar_html += '</ul></li></ul>';
+
+    return { sidebar_html, content_html };
+}
+
+// Hjälpfunktion för att bygga sidebar och content sorterat på stickprov
+function build_content_sorted_by_sample(current_audit, t) {
+    const samples_with_deficiencies = get_samples_with_deficiencies(current_audit);
+    const sorted_samples = samples_with_deficiencies.sort((a, b) => {
+        const name_a = (a.description || a.url || "").toLowerCase();
+        const name_b = (b.description || b.url || "").toLowerCase();
+        return natural_sort(name_a, name_b);
+    });
+
+    let sidebar_html = '<ul role="list">';
+    sidebar_html += '<li role="listitem" class="sidebar-h1"><a href="#h1-underkanda-krav" aria-label="Huvudrubrik: Underkända krav">Underkända krav</a>';
+
+    let content_html = '';
+    content_html += '<h1 id="h1-underkanda-krav">Underkända krav</h1>';
+    content_html += '<p>Detta avsnitt redovisar en sammanställning av de krav som har underkänts vid granskningen. Sammanställningen baseras på stickprov, vilket innebär att motsvarande brister även kan förekomma på andra delar av den granskade sidan eller på andra delar av webbplatsen. Det är därför nödvändigt att genomföra en genomgång av hela webbplatsen för att säkerställa om samma typ av brister förekommer även på andra ställen. I detta avsnitt redovisas endast de brister som har identifierats vid granskningen.</p>';
+
+    sidebar_html += '<ul role="list">';
+    for (const sample of sorted_samples) {
+        const sampleName = sample.description || sample.url || "";
+        const h2_anchor_id = 'h2-sample-' + generate_anchor_id(sampleName);
+
+        sidebar_html += `<li role="listitem" class="sidebar-h2"><a href="#${h2_anchor_id}" aria-label="Stickprov: ${escape_html_internal(sampleName)}">${escape_html_internal(sampleName)}</a>`;
+
+        if (sample.url) {
+            const safe_url = escape_html_internal(window.Helpers?.add_protocol_if_missing ? window.Helpers.add_protocol_if_missing(sample.url) : sample.url);
+            content_html += `<h2 id="${h2_anchor_id}">Stickprov: <a href="${safe_url}" target="_blank" rel="noopener noreferrer">${escape_html_internal(sampleName)}</a></h2>`;
+        } else {
+            content_html += `<h2 id="${h2_anchor_id}">Stickprov: ${escape_html_internal(sampleName)}</h2>`;
+        }
+
+        const requirements_with_deficiencies = get_requirements_with_deficiencies_for_sample(sample, current_audit);
+        const sorted_requirements = requirements_with_deficiencies.sort((a, b) => {
+            const ref_a = a.standardReference?.text || '';
+            const ref_b = b.standardReference?.text || '';
+            return natural_sort(ref_a, ref_b);
+        });
+
+        sidebar_html += '<ul role="list">';
+        for (const req of sorted_requirements) {
+            const referenceNumber = extract_reference_number(req);
+            const h3_text = (referenceNumber ? referenceNumber + " " : "") + req.title;
+            const h3_anchor_id = 'h3-' + generate_anchor_id(sampleName + ' ' + h3_text);
+
+            sidebar_html += `<li role="listitem" class="sidebar-h3"><a href="#${h3_anchor_id}" aria-label="Krav: ${escape_html_internal(h3_text)} för stickprov: ${escape_html_internal(sampleName)}">${escape_html_internal(h3_text)}</a></li>`;
+
+            content_html += `<h3 id="${h3_anchor_id}">${escape_html_internal(h3_text)}</h3>`;
+
+            const deficiencies = get_deficiencies_for_sample(req, sample, current_audit, t);
+            const all_deficiency_ids = new Set();
+            for (const def of deficiencies) {
+                if (def.deficiencyId) {
+                    const id = extractDeficiencyNumber(def.deficiencyId);
+                    if (id) all_deficiency_ids.add(id);
+                }
+            }
+            const sorted_deficiency_ids = Array.from(all_deficiency_ids).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+            content_html += create_html_metadata(req, current_audit, sorted_deficiency_ids, t);
+
+            for (const deficiency of deficiencies) {
+                content_html += create_html_observations(deficiency, t);
+            }
+
+            content_html += create_html_comments(req, sample, t);
+        }
+        sidebar_html += '</ul></li>';
+    }
+    sidebar_html += '</ul></li></ul>';
+
+    return { sidebar_html, content_html };
+}
+
 // HTML-exportfunktion (sorterar på krav)
 async function export_to_html(current_audit) {
     const t = get_t_internal();
@@ -2060,83 +2249,35 @@ async function export_to_html(current_audit) {
     }
 
     try {
-        // Hämta krav med brister (sorterade på krav)
-        const requirements_with_deficiencies = get_requirements_with_deficiencies(current_audit);
-        const sorted_requirements = requirements_with_deficiencies.sort((a, b) => {
-            const ref_a = a.standardReference?.text || '';
-            const ref_b = b.standardReference?.text || '';
-            return natural_sort(ref_a, ref_b);
-        });
+        // Bygg innehåll sorterat på krav (default)
+        const { sidebar_html: sidebar_html_requirement, content_html: content_html_requirement } = build_content_sorted_by_requirement(current_audit, t);
+        const { sidebar_html: sidebar_html_sample, content_html: content_html_sample } = build_content_sorted_by_sample(current_audit, t);
 
-        // Bygg sidebar med länkar (nested structure)
-        let sidebar_html = '<nav class="html-export-sidebar" aria-label="Innehållsförteckning" role="navigation"><h2>Innehållsförteckning</h2><ul role="list">';
-        sidebar_html += '<li role="listitem" class="sidebar-h1"><a href="#h1-underkanda-krav" aria-label="Huvudrubrik: Underkända krav">Underkända krav</a>';
+        // Bygg sidebar med länkar (nested structure) inklusive sorteringsalternativ
+        let sidebar_html = '<nav class="html-export-sidebar" aria-label="Innehållsförteckning" role="navigation"><h2>Innehållsförteckning</h2>';
+        sidebar_html += '<div class="sort-controls">';
+        sidebar_html += '<div class="sort-label">Sortera på</div>';
+        sidebar_html += '<div class="sort-options">';
+        sidebar_html += '<label class="sort-option"><input type="radio" name="sort-by" value="requirement" checked> Krav</label>';
+        sidebar_html += '<label class="sort-option"><input type="radio" name="sort-by" value="sample"> Stickprov</label>';
+        sidebar_html += '</div>';
+        sidebar_html += '</div>';
+        sidebar_html += '<div class="sidebar-content" data-sort-type="requirement">';
+        sidebar_html += sidebar_html_requirement;
+        sidebar_html += '</div>';
+        sidebar_html += '<div class="sidebar-content" data-sort-type="sample" style="display: none;">';
+        sidebar_html += sidebar_html_sample;
+        sidebar_html += '</div>';
+        sidebar_html += '</nav>';
 
-        // Bygg huvudinnehåll
+        // Bygg huvudinnehåll med båda versionerna
         let content_html = '<main class="html-export-content">';
-        
-        // H1: Underkända krav
-        content_html += '<h1 id="h1-underkanda-krav">Underkända krav</h1>';
-        content_html += '<p>Detta avsnitt redovisar en sammanställning av de krav som har underkänts vid granskningen. Sammanställningen baseras på stickprov, vilket innebär att motsvarande brister även kan förekomma på andra delar av den granskade sidan eller på andra delar av webbplatsen. Det är därför nödvändigt att genomföra en genomgång av hela webbplatsen för att säkerställa om samma typ av brister förekommer även på andra ställen. I detta avsnitt redovisas endast de brister som har identifierats vid granskningen.</p>';
-
-        // För varje krav
-        sidebar_html += '<ul role="list">';
-        for (const req of sorted_requirements) {
-            const referenceNumber = extract_reference_number(req);
-            const h2_text = (referenceNumber ? referenceNumber + " " : "") + req.title;
-            const h2_anchor_id = 'h2-' + generate_anchor_id(h2_text);
-
-            // Lägg till H2 i sidebar (nested under H1)
-            sidebar_html += `<li role="listitem" class="sidebar-h2"><a href="#${h2_anchor_id}" aria-label="Krav: ${escape_html_internal(h2_text)}">${escape_html_internal(h2_text)}</a>`;
-
-            // H2: Kravets titel
-            content_html += `<h2 id="${h2_anchor_id}">${escape_html_internal(h2_text)}</h2>`;
-
-            // Metadata för detta krav (alla brister för alla stickprov)
-            const all_deficiency_ids = new Set();
-            const samples_for_ids = get_samples_with_deficiencies_for_requirement(req, current_audit);
-            for (const sample of samples_for_ids) {
-                const defs = get_deficiencies_for_sample(req, sample, current_audit, t);
-                for (const def of defs) {
-                    if (def.deficiencyId) {
-                        const id = extractDeficiencyNumber(def.deficiencyId);
-                        if (id) all_deficiency_ids.add(id);
-                    }
-                }
-            }
-            const sorted_deficiency_ids = Array.from(all_deficiency_ids).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
-            content_html += create_html_metadata(req, current_audit, sorted_deficiency_ids, t);
-
-            // H3 för varje stickprov (höjd från H4)
-            const samples_with_deficiencies = get_samples_with_deficiencies_for_requirement(req, current_audit);
-            for (const sample of samples_with_deficiencies) {
-                const deficiencies = get_deficiencies_for_sample(req, sample, current_audit, t);
-                const sampleName = sample.description || sample.url || "";
-                const h3_anchor_id = 'h3-' + generate_anchor_id(h2_text + ' ' + sampleName);
-
-                if (sample.url) {
-                    const safe_url = escape_html_internal(window.Helpers?.add_protocol_if_missing ? window.Helpers.add_protocol_if_missing(sample.url) : sample.url);
-                    content_html += `<h3 id="${h3_anchor_id}">Stickprov: <a href="${safe_url}" target="_blank" rel="noopener noreferrer">${escape_html_internal(sampleName)}</a></h3>`;
-                } else {
-                    content_html += `<h3 id="${h3_anchor_id}">Stickprov: ${escape_html_internal(sampleName)}</h3>`;
-                }
-
-                // Lägg till H3 i sidebar (nested under H2)
-                sidebar_html += `<ul role="list"><li role="listitem" class="sidebar-h3"><a href="#${h3_anchor_id}" aria-label="Stickprov: ${escape_html_internal(sampleName)} för krav: ${escape_html_internal(h2_text)}">${escape_html_internal(sampleName)}</a></li></ul>`;
-
-                // Observationer
-                for (const deficiency of deficiencies) {
-                    content_html += create_html_observations(deficiency, t);
-                }
-
-                // Kommentarer
-                content_html += create_html_comments(req, sample, t);
-            }
-            // Stäng H2-li
-            sidebar_html += '</li>';
-        }
-        // Stäng H1-ul och H1-li
-        sidebar_html += '</ul></li></ul></nav>';
+        content_html += '<div class="content-section" data-sort-type="requirement">';
+        content_html += content_html_requirement;
+        content_html += '</div>';
+        content_html += '<div class="content-section" data-sort-type="sample" style="display: none;">';
+        content_html += content_html_sample;
+        content_html += '</div>';
         content_html += '</main>';
 
         // CSS med variabler från appens style.css
@@ -2172,11 +2313,25 @@ async function export_to_html(current_audit) {
                 min-height: 100vh;
                 position: relative;
             }
+            .html-export-banner {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                background-color: var(--primary-color);
+                color: #ffffff;
+                padding: 1rem 2rem;
+                font-size: 1.1rem;
+                font-weight: 600;
+                text-align: center;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                z-index: 2;
+            }
             .html-export-sidebar {
                 position: fixed;
-                top: 0;
+                top: 60px;
                 width: 280px;
-                height: 100vh;
+                height: calc(100vh - 60px);
                 background-color: #ffffff;
                 padding: 2rem 1rem;
                 overflow-y: auto;
@@ -2201,11 +2356,86 @@ async function export_to_html(current_audit) {
                     width: calc(100vw - 280px);
                 }
             }
+            @media (max-width: 600px) {
+                .html-export-sidebar {
+                    width: 200px;
+                }
+                @media (max-width: 1080px) {
+                    .html-export-content {
+                        left: 200px;
+                        width: calc(100vw - 200px);
+                    }
+                }
+            }
             .html-export-sidebar h2 {
                 font-size: 1.25rem;
                 color: var(--heading-color);
                 margin-bottom: 1rem;
                 font-weight: bold;
+            }
+            .sort-controls {
+                margin-bottom: 1.5rem;
+                padding: 1rem;
+                background-color: rgba(110, 50, 130, 0.05);
+                border-radius: 8px;
+                border: 1px solid rgba(110, 50, 130, 0.15);
+            }
+            .sort-label {
+                font-size: 0.85rem;
+                font-weight: 600;
+                color: var(--text-color-muted);
+                margin-bottom: 0.75rem;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+            .sort-options {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            .sort-option {
+                display: flex;
+                align-items: center;
+                font-size: 0.9rem;
+                color: var(--text-color);
+                cursor: pointer;
+                padding: 0.5rem 0.75rem;
+                border-radius: 6px;
+                transition: all 0.2s ease;
+                position: relative;
+            }
+            .sort-option:hover {
+                background-color: rgba(110, 50, 130, 0.08);
+                color: var(--link-color);
+            }
+            .sort-option input[type="radio"] {
+                margin: 0;
+                margin-right: 0.75rem;
+                cursor: pointer;
+                width: 18px;
+                height: 18px;
+                accent-color: var(--primary-color);
+                position: relative;
+            }
+            .sort-option input[type="radio"]:checked {
+                accent-color: var(--primary-color);
+            }
+            .sort-option:has(input[type="radio"]:checked),
+            .sort-option.is-active {
+                background-color: rgba(110, 50, 130, 0.12);
+                color: var(--primary-color);
+                font-weight: 500;
+            }
+            .sort-option:has(input[type="radio"]:checked)::before,
+            .sort-option.is-active::before {
+                content: '';
+                position: absolute;
+                left: 0;
+                top: 0;
+                bottom: 0;
+                width: 3px;
+                background-color: var(--primary-color);
+                border-radius: 0 3px 3px 0;
             }
             .html-export-sidebar ul {
                 list-style: none;
@@ -2264,43 +2494,38 @@ async function export_to_html(current_audit) {
             }
             .html-export-content {
                 position: fixed;
-                top: 0;
-                padding: 2rem;
+                top: 60px;
+                padding: 0;
                 background-color: #ffffff;
-                min-height: 100vh;
-                height: 100vh;
+                min-height: calc(100vh - 60px);
+                height: calc(100vh - 60px);
                 border-left: 2px solid var(--border-color);
                 z-index: 1;
+                overflow: hidden;
+                box-sizing: border-box;
+            }
+            .content-section {
+                padding: 2rem;
+                height: 100%;
                 overflow-y: auto;
                 overflow-x: hidden;
                 box-sizing: border-box;
             }
-            @media (max-width: 600px) {
-                .html-export-sidebar {
-                    width: 200px;
-                }
-                @media (max-width: 1080px) {
-                    .html-export-content {
-                        left: 200px;
-                        width: calc(100vw - 200px);
-                    }
-                }
-            }
             /* Fixa anchor-länkar med smooth scroll */
-            .html-export-content h1[id],
-            .html-export-content h2[id],
-            .html-export-content h3[id],
-            .html-export-content div[id] {
+            .content-section h1[id],
+            .content-section h2[id],
+            .content-section h3[id],
+            .content-section div[id] {
                 scroll-margin-top: 1rem;
             }
-            .html-export-content h1 {
+            .content-section h1 {
                 font-size: 2rem;
                 color: var(--heading-color);
                 margin-top: 0;
                 margin-bottom: 0.5rem;
                 font-weight: bold;
             }
-            .html-export-content h2 {
+            .content-section h2 {
                 font-size: 1.75rem;
                 color: var(--heading-color);
                 margin-top: 2rem;
@@ -2308,7 +2533,7 @@ async function export_to_html(current_audit) {
                 font-weight: bold;
                 scroll-margin-top: 1rem;
             }
-            .html-export-content h3 {
+            .content-section h3 {
                 font-size: 1.35rem;
                 color: var(--heading-color);
                 margin-top: 1.5rem;
@@ -2338,24 +2563,24 @@ async function export_to_html(current_audit) {
             .observation-content {
                 display: block;
             }
-            .html-export-content h4 {
+            .content-section h4 {
                 font-size: 1.25rem;
                 color: var(--heading-color);
                 margin-top: 1.25rem;
                 margin-bottom: 0.5rem;
                 font-weight: bold;
             }
-            .html-export-content p {
+            .content-section p {
                 margin-bottom: 0.75rem;
             }
-            .html-export-content a {
+            .content-section a {
                 color: var(--link-color);
                 text-decoration: underline;
             }
-            .html-export-content a:hover {
+            .content-section a:hover {
                 color: var(--link-hover-color);
             }
-            .html-export-content strong {
+            .content-section strong {
                 font-weight: bold;
             }
             /* Markdown-innehåll styling */
@@ -2413,52 +2638,118 @@ async function export_to_html(current_audit) {
             }
         `;
 
+        // Skapa titeltext för banner och title
+        const title_text = `Granskningsrapport - ${escape_html_internal(current_audit.auditMetadata.actorName || t('filename_fallback_actor'))}${current_audit.auditMetadata.caseNumber ? ' - ' + escape_html_internal(current_audit.auditMetadata.caseNumber) : ''}`;
+
         // Bygg komplett HTML-dokument
         const html_document = `<!DOCTYPE html>
 <html lang="sv">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Granskningsrapport - ${escape_html_internal(current_audit.auditMetadata.actorName || t('filename_fallback_actor'))}${current_audit.auditMetadata.caseNumber ? ' - ' + escape_html_internal(current_audit.auditMetadata.caseNumber) : ''}</title>
+    <title>${title_text}</title>
     <style>${css}</style>
 </head>
 <body>
     <div class="html-export-container">
+        <div class="html-export-banner">
+            ${title_text}
+        </div>
         ${sidebar_html}
         ${content_html}
     </div>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const content = document.querySelector('.html-export-content');
-            if (content) {
-                // Funktion för att hantera smooth scroll till target
-                function handleSmoothScroll(e, targetId) {
-                    e.preventDefault();
-                    const target = document.getElementById(targetId);
-                    if (target && content.contains(target)) {
-                        const targetTop = target.offsetTop;
-                        content.scrollTo({
-                            top: targetTop - 20,
-                            behavior: 'smooth'
-                        });
-                    }
+            const sidebar = document.querySelector('.html-export-sidebar');
+            
+            // Funktion för att hantera smooth scroll till target
+            function handleSmoothScroll(e, targetId) {
+                e.preventDefault();
+                const activeContent = content.querySelector('.content-section[style*="display: block"], .content-section:not([style*="display: none"])');
+                if (!activeContent) return;
+                
+                const target = activeContent.querySelector('#' + targetId);
+                if (target) {
+                    const targetTop = target.offsetTop;
+                    activeContent.scrollTo({
+                        top: targetTop - 20,
+                        behavior: 'smooth'
+                    });
                 }
-                
-                // Hantera klick på länkar i sidebar
-                document.querySelectorAll('.html-export-sidebar a[href^="#"]').forEach(link => {
+            }
+            
+            // Funktion för att uppdatera länkar när sortering ändras
+            function setupLinks(container) {
+                container.querySelectorAll('a[href^="#"]').forEach(link => {
                     link.addEventListener('click', function(e) {
                         const targetId = this.getAttribute('href').substring(1);
                         handleSmoothScroll(e, targetId);
                     });
                 });
                 
-                // Hantera klick på bristnummer-länkar i metadata
-                document.querySelectorAll('.deficiency-link').forEach(link => {
+                container.querySelectorAll('.deficiency-link').forEach(link => {
                     link.addEventListener('click', function(e) {
                         const targetId = this.getAttribute('href').substring(1);
                         handleSmoothScroll(e, targetId);
                     });
                 });
+            }
+            
+            // Funktion för att växla sortering
+            function switchSorting(sortType) {
+                // Dölj alla sidebar- och content-sektioner
+                document.querySelectorAll('.sidebar-content').forEach(el => {
+                    el.style.display = 'none';
+                });
+                document.querySelectorAll('.content-section').forEach(el => {
+                    el.style.display = 'none';
+                });
+                
+                // Visa rätt sektioner
+                const sidebarSection = sidebar.querySelector('.sidebar-content[data-sort-type="' + sortType + '"]');
+                const contentSection = content.querySelector('.content-section[data-sort-type="' + sortType + '"]');
+                
+                if (sidebarSection) {
+                    sidebarSection.style.display = 'block';
+                    setupLinks(sidebarSection);
+                }
+                if (contentSection) {
+                    contentSection.style.display = 'block';
+                    setupLinks(contentSection);
+                    // Scrolla till toppen när man växlar
+                    contentSection.scrollTo({ top: 0, behavior: 'instant' });
+                }
+            }
+            
+            // Funktion för att uppdatera aktiva klasser på radioknappar
+            function updateActiveClasses() {
+                document.querySelectorAll('.sort-option').forEach(option => {
+                    option.classList.remove('is-active');
+                });
+                document.querySelectorAll('input[name="sort-by"]:checked').forEach(radio => {
+                    radio.closest('.sort-option')?.classList.add('is-active');
+                });
+            }
+            
+            // Hantera ändringar i radioknappar
+            const radioButtons = document.querySelectorAll('input[name="sort-by"]');
+            radioButtons.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    if (this.checked) {
+                        switchSorting(this.value);
+                        updateActiveClasses();
+                    }
+                });
+            });
+            
+            // Initial setup för länkar i default visning (krav)
+            if (content) {
+                const defaultSidebar = sidebar.querySelector('.sidebar-content[data-sort-type="requirement"]');
+                const defaultContent = content.querySelector('.content-section[data-sort-type="requirement"]');
+                if (defaultSidebar) setupLinks(defaultSidebar);
+                if (defaultContent) setupLinks(defaultContent);
+                updateActiveClasses();
             }
         });
     </script>
@@ -2477,9 +2768,9 @@ async function export_to_html(current_audit) {
         
         let filename;
         if (sanitized_case_number) {
-            filename = `${sanitized_case_number}_${actor_name}_${date_str}_brister_lista.html`;
+            filename = `${sanitized_case_number}_${actor_name}_${date_str}.html`;
         } else {
-            filename = `${actor_name}_${date_str}_brister_lista.html`;
+            filename = `${actor_name}_${date_str}.html`;
         }
 
         link.href = url;
