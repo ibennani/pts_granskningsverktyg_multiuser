@@ -148,12 +148,18 @@ function export_to_csv(current_audit) {
     const link = document.createElement("a");
     link.setAttribute("href", url);
 
-    const report_prefix = t('filename_audit_report_prefix');
-    const deficiencies_suffix = t('filename_deficiencies_suffix');
     const actor_name = (current_audit.auditMetadata.actorName || t('filename_fallback_actor')).replace(/[^a-z0-9åäöÅÄÖ]/gi, '_');
-    const case_number = (current_audit.auditMetadata.caseNumber || '').replace(/[^a-z0-9åäöÅÄÖ]/gi, '_');
-    const case_number_prefix = case_number ? `${case_number}_` : '';
-    const filename = `${case_number_prefix}${report_prefix}_${deficiencies_suffix}_${actor_name}_${new Date().toISOString().split('T')[0]}.csv`;
+    const case_number = (current_audit.auditMetadata.caseNumber || '').trim();
+    // Behåll bindestreck i ärendenummer (t.ex. "25-18359")
+    const sanitized_case_number = case_number ? case_number.replace(/[^a-z0-9åäöÅÄÖ-]/gi, '') : '';
+    const date_str = new Date().toISOString().split('T')[0];
+    
+    let filename;
+    if (sanitized_case_number) {
+        filename = `${sanitized_case_number}_${actor_name}_${date_str}_brister_lista.csv`;
+    } else {
+        filename = `${actor_name}_${date_str}_brister_lista.csv`;
+    }
 
     link.setAttribute("download", filename);
     document.body.appendChild(link);
@@ -307,12 +313,18 @@ async function export_to_excel(current_audit) {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
 
-        const report_prefix = t('filename_audit_report_prefix');
-        const deficiencies_suffix = t('filename_deficiencies_suffix');
         const actor_name = (current_audit.auditMetadata.actorName || t('filename_fallback_actor')).replace(/[^a-z0-9åäöÅÄÖ]/gi, '_');
-        const case_number = (current_audit.auditMetadata.caseNumber || '').replace(/[^a-z0-9åäöÅÄÖ]/gi, '_');
-        const case_number_prefix = case_number ? `${case_number}_` : '';
-        const filename = `${case_number_prefix}${report_prefix}_${deficiencies_suffix}_${actor_name}_${new Date().toISOString().split('T')[0]}.xlsx`;
+        const case_number = (current_audit.auditMetadata.caseNumber || '').trim();
+        // Behåll bindestreck i ärendenummer (t.ex. "25-18359")
+        const sanitized_case_number = case_number ? case_number.replace(/[^a-z0-9åäöÅÄÖ-]/gi, '') : '';
+        const date_str = new Date().toISOString().split('T')[0];
+        
+        let filename;
+        if (sanitized_case_number) {
+            filename = `${sanitized_case_number}_${actor_name}_${date_str}_brister_lista.xlsx`;
+        } else {
+            filename = `${actor_name}_${date_str}_brister_lista.xlsx`;
+        }
 
         link.href = url;
         link.download = filename;
