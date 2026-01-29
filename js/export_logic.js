@@ -2,6 +2,7 @@
 
 import ExcelJS from 'exceljs/dist/exceljs.min.js';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle, UnderlineType, ExternalHyperlink, InternalHyperlink, ShadingType, TabStopType, SectionType, PageOrientation } from 'docx';
+import { marked } from './utils/markdown.js';
 
 function get_t_internal() {
     if (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function') {
@@ -617,36 +618,28 @@ async function export_to_word_internal(current_audit, sortBy) {
                 const sorted_deficiency_ids = Array.from(all_deficiency_ids).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
                 children.push(...create_metadata_paragraphs(req, current_audit, sorted_deficiency_ids, t));
 
-                // H3 "Observation per stickprov"
-                children.push(
-                    new Paragraph({
-                        children: [new TextRun({ text: "Observation per stickprov" })],
-                        heading: "Heading3"
-                    })
-                );
-
-                // H4 för varje stickprov
+                // H3 för varje stickprov (höjd från H4)
                 const samples_with_deficiencies = get_samples_with_deficiencies_for_requirement(req, current_audit);
                 for (const sample of samples_with_deficiencies) {
                     const deficiencies = get_deficiencies_for_sample(req, sample, current_audit, t);
                     const sampleName = sample.description || sample.url || "";
 
-                    const h4_children = [new TextRun({ text: "Stickprov: ", color: "000000" })];
+                    const h3_children = [new TextRun({ text: "Stickprov: ", color: "000000" })];
                     if (sample.url) {
-                        h4_children.push(
+                        h3_children.push(
                             new ExternalHyperlink({
                                 children: [new TextRun({ text: sampleName, style: "Hyperlink" })],
                                 link: sample.url
                             })
                         );
                     } else {
-                        h4_children.push(new TextRun({ text: sampleName, color: "000000" }));
+                        h3_children.push(new TextRun({ text: sampleName, color: "000000" }));
                     }
 
                     children.push(
                         new Paragraph({
-                            children: h4_children,
-                            heading: "Heading4",
+                            children: h3_children,
+                            heading: "Heading3",
                             spacing: { before: 200, after: 60 }
                         })
                     );
@@ -1894,11 +1887,552 @@ function get_all_deficiencies_for_sample_generic(sample, current_audit) {
 }
 // --- END OF CHANGE ---
 
+// Hjälpfunktion för att escape HTML
+function escape_html_internal(str) {
+    if (typeof window.Helpers !== 'undefined' && typeof window.Helpers.escape_html === 'function') {
+        return window.Helpers.escape_html(str);
+    }
+    if (str === null || str === undefined) {
+        return '';
+    }
+    const safe_string = String(str);
+    return safe_string
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
+// Hjälpfunktion för att generera anchor-ID från text
+function generate_anchor_id(text) {
+    if (!text) return '';
+    return String(text)
+        .toLowerCase()
+        .trim()
+        .replace(/[åäö]/g, (match) => {
+            const map = { 'å': 'a', 'ä': 'a', 'ö': 'o' };
+            return map[match] || match;
+        })
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+}
+
+// Hjälpfunktion för att skapa HTML-metadata (Referens, Principer, Brist)
+function create_html_metadata(requirement, current_audit, deficiencyIds, t) {
+    let html = '';
+
+    // Referens
+    if (requirement.standardReference?.text) {
+        const ref_text = escape_html_internal(requirement.standardReference.text);
+        const ref_url = requirement.standardReference.url;
+        if (ref_url) {
+            const safe_url = escape_html_internal(window.Helpers?.add_protocol_if_missing ? window.Helpers.add_protocol_if_missing(ref_url) : ref_url);
+            html += `<p class="metadata-compact"><strong>Referens: </strong><a href="${safe_url}" target="_blank" rel="noopener noreferrer">${ref_text}</a></p>`;
+        } else {
+            html += `<p class="metadata-compact"><strong>Referens: </strong>${ref_text}</p>`;
+        }
+    }
+
+    // Principer
+    {
+        const classifications = Array.isArray(requirement.classifications) ? requirement.classifications : [];
+        const taxonomy = current_audit?.ruleFileContent?.metadata?.taxonomies?.find(t => t.id === 'wcag22-pour');
+        const norm = v => String(v ?? '').trim().toLowerCase();
+        const principle_texts = taxonomy
+            ? classifications
+                .filter(c => norm(c.taxonomyId) === 'wcag22-pour')
+                .map(c => {
+                    const concept = taxonomy.concepts?.find?.(x => norm(x?.id) === norm(c.conceptId));
+                    return (typeof concept?.label === 'string' && concept.label.trim())
+                        ? concept.label
+                        : c.conceptId;
+                })
+                .filter(Boolean)
+            : [];
+
+        if (principle_texts.length > 0) {
+            html += `<p class="metadata-compact"><strong>Principer: </strong>${escape_html_internal(principle_texts.join(', '))}</p>`;
+        }
+    }
+
+    // Brist - länka varje nummer
+    if (deficiencyIds.length > 0) {
+        const deficiencyLinks = deficiencyIds.map(id => {
+            const anchorId = `deficiency-${id}`;
+            return `<a href="#${anchorId}" class="deficiency-link">${escape_html_internal(id)}</a>`;
+        }).join(', ');
+        html += `<p class="metadata-compact"><strong>Brist: </strong>${deficiencyLinks}</p>`;
+    }
+
+    return html;
+}
+
+// Hjälpfunktion för att rendera markdown till HTML (säkert)
+function render_markdown_to_html(markdown_text) {
+    if (!markdown_text || typeof markdown_text !== 'string') {
+        return '';
+    }
+
+    // Om marked inte är tillgängligt, fallback till escape
+    if (typeof marked === 'undefined') {
+        return escape_html_internal(markdown_text);
+    }
+
+    try {
+        const renderer = new marked.Renderer();
+        renderer.link = (href, title, text) => {
+            const safe_href = escape_html_internal(href);
+            const safe_text = escape_html_internal(text);
+            return `<a href="${safe_href}" target="_blank" rel="noopener noreferrer">${safe_text}</a>`;
+        };
+        renderer.html = (html_token) => {
+            const text_to_escape = (typeof html_token === 'object' && html_token !== null && typeof html_token.text === 'string')
+                ? html_token.text
+                : String(html_token || '');
+            return escape_html_internal(text_to_escape);
+        };
+
+        const parsed_markdown = marked.parse(String(markdown_text), { renderer, breaks: true, gfm: true });
+        
+        // Sanitize om tillgängligt
+        if (typeof window.Helpers !== 'undefined' && typeof window.Helpers.sanitize_html === 'function') {
+            return window.Helpers.sanitize_html(parsed_markdown);
+        }
+        
+        return parsed_markdown;
+    } catch (error) {
+        console.warn('Error rendering markdown:', error);
+        return escape_html_internal(markdown_text);
+    }
+}
+
+// Hjälpfunktion för att skapa HTML-observationer
+function create_html_observations(deficiency, t) {
+    let html = '';
+    let observationText = (deficiency.observationDetail || '').trim();
+    observationText = observationText.replace(/^[\s]*[-*]\s/gm, '• ');
+
+    const isStandardText = deficiency.isStandardText || false;
+    const defId = extractDeficiencyNumber(deficiency.deficiencyId);
+    const anchorId = defId ? `deficiency-${defId}` : '';
+    const defIdString = defId ? `Brist ${defId}: ` : '';
+
+    // Rendera markdown för observationstexten
+    const prefix = isStandardText ? "Kravet är inte uppfyllt: " : "";
+    const fullText = prefix + observationText;
+    let renderedMarkdown = render_markdown_to_html(fullText);
+    
+    // Ta bort första <p>-taggen om den finns för att undvika radbrytning efter brist-ID
+    // Och gör om till inline om det bara är en paragraf
+    if (renderedMarkdown.trim().startsWith('<p>') && renderedMarkdown.trim().endsWith('</p>')) {
+        renderedMarkdown = renderedMarkdown.trim().replace(/^<p>/, '').replace(/<\/p>$/, '');
+    }
+
+    if (defIdString && anchorId) {
+        html += `<div class="observation-content" id="${anchorId}"><strong class="deficiency-id">${escape_html_internal(defIdString)}</strong><span class="observation-text">${renderedMarkdown}</span></div>`;
+    } else {
+        html += `<div class="observation-content">${renderedMarkdown}</div>`;
+    }
+
+    return html;
+}
+
+// Hjälpfunktion för att skapa HTML-kommentarer
+function create_html_comments(requirement, sample, t) {
+    let html = '';
+    const req_key = requirement.key || requirement.id;
+    const sample_result = (sample.requirementResults || {})[req_key];
+    if (sample_result && sample_result.commentToActor && sample_result.commentToActor.trim()) {
+        html += '<p style="margin-top: 0.5em;"></p>';
+        const renderedMarkdown = render_markdown_to_html(sample_result.commentToActor.trim());
+        html += `<div class="comment-content"><strong style="color: #6E3282;">Kommentar: </strong>${renderedMarkdown}</div>`;
+    }
+    return html;
+}
+
+// HTML-exportfunktion (sorterar på krav)
+async function export_to_html(current_audit) {
+    const t = get_t_internal();
+    if (!current_audit) {
+        show_global_message_internal(t('no_audit_data_to_save'), 'error');
+        return;
+    }
+
+    try {
+        // Hämta krav med brister (sorterade på krav)
+        const requirements_with_deficiencies = get_requirements_with_deficiencies(current_audit);
+        const sorted_requirements = requirements_with_deficiencies.sort((a, b) => {
+            const ref_a = a.standardReference?.text || '';
+            const ref_b = b.standardReference?.text || '';
+            return natural_sort(ref_a, ref_b);
+        });
+
+        // Bygg sidebar med länkar (nested structure)
+        let sidebar_html = '<nav class="html-export-sidebar" aria-label="Innehållsförteckning" role="navigation"><h2>Innehållsförteckning</h2><ul role="list">';
+        sidebar_html += '<li role="listitem" class="sidebar-h1"><a href="#h1-underkanda-krav" aria-label="Huvudrubrik: Underkända krav">Underkända krav</a>';
+
+        // Bygg huvudinnehåll
+        let content_html = '<main class="html-export-content">';
+        
+        // H1: Underkända krav
+        content_html += '<h1 id="h1-underkanda-krav">Underkända krav</h1>';
+        content_html += '<p>Detta avsnitt redovisar en sammanställning av de krav som har underkänts vid granskningen. Sammanställningen baseras på stickprov, vilket innebär att motsvarande brister även kan förekomma på andra delar av den granskade sidan eller på andra delar av webbplatsen. Det är därför nödvändigt att genomföra en genomgång av hela webbplatsen för att säkerställa om samma typ av brister förekommer även på andra ställen. I detta avsnitt redovisas endast de brister som har identifierats vid granskningen.</p>';
+
+        // För varje krav
+        sidebar_html += '<ul role="list">';
+        for (const req of sorted_requirements) {
+            const referenceNumber = extract_reference_number(req);
+            const h2_text = (referenceNumber ? referenceNumber + " " : "") + req.title;
+            const h2_anchor_id = 'h2-' + generate_anchor_id(h2_text);
+
+            // Lägg till H2 i sidebar (nested under H1)
+            sidebar_html += `<li role="listitem" class="sidebar-h2"><a href="#${h2_anchor_id}" aria-label="Krav: ${escape_html_internal(h2_text)}">${escape_html_internal(h2_text)}</a>`;
+
+            // H2: Kravets titel
+            content_html += `<h2 id="${h2_anchor_id}">${escape_html_internal(h2_text)}</h2>`;
+
+            // Metadata för detta krav (alla brister för alla stickprov)
+            const all_deficiency_ids = new Set();
+            const samples_for_ids = get_samples_with_deficiencies_for_requirement(req, current_audit);
+            for (const sample of samples_for_ids) {
+                const defs = get_deficiencies_for_sample(req, sample, current_audit, t);
+                for (const def of defs) {
+                    if (def.deficiencyId) {
+                        const id = extractDeficiencyNumber(def.deficiencyId);
+                        if (id) all_deficiency_ids.add(id);
+                    }
+                }
+            }
+            const sorted_deficiency_ids = Array.from(all_deficiency_ids).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+            content_html += create_html_metadata(req, current_audit, sorted_deficiency_ids, t);
+
+            // H3 för varje stickprov (höjd från H4)
+            const samples_with_deficiencies = get_samples_with_deficiencies_for_requirement(req, current_audit);
+            for (const sample of samples_with_deficiencies) {
+                const deficiencies = get_deficiencies_for_sample(req, sample, current_audit, t);
+                const sampleName = sample.description || sample.url || "";
+                const h3_anchor_id = 'h3-' + generate_anchor_id(h2_text + ' ' + sampleName);
+
+                if (sample.url) {
+                    const safe_url = escape_html_internal(window.Helpers?.add_protocol_if_missing ? window.Helpers.add_protocol_if_missing(sample.url) : sample.url);
+                    content_html += `<h3 id="${h3_anchor_id}">Stickprov: <a href="${safe_url}" target="_blank" rel="noopener noreferrer">${escape_html_internal(sampleName)}</a></h3>`;
+                } else {
+                    content_html += `<h3 id="${h3_anchor_id}">Stickprov: ${escape_html_internal(sampleName)}</h3>`;
+                }
+
+                // Lägg till H3 i sidebar (nested under H2)
+                sidebar_html += `<ul role="list"><li role="listitem" class="sidebar-h3"><a href="#${h3_anchor_id}" aria-label="Stickprov: ${escape_html_internal(sampleName)} för krav: ${escape_html_internal(h2_text)}">${escape_html_internal(sampleName)}</a></li></ul>`;
+
+                // Observationer
+                for (const deficiency of deficiencies) {
+                    content_html += create_html_observations(deficiency, t);
+                }
+
+                // Kommentarer
+                content_html += create_html_comments(req, sample, t);
+            }
+            // Stäng H2-li
+            sidebar_html += '</li>';
+        }
+        // Stäng H1-ul och H1-li
+        sidebar_html += '</ul></li></ul></nav>';
+        content_html += '</main>';
+
+        // CSS med variabler från appens style.css
+        const css = `
+            :root {
+                --primary-color: #6E3282;
+                --primary-color-dark: #4A2159;
+                --link-color: #6E3282;
+                --link-hover-color: #8A3F9E;
+                --heading-color: #6E3282;
+                --text-color: #1e2a2b;
+                --text-color-muted: #4a5a5c;
+                --background-color: #F0EAE3;
+                --border-color: #B07CBF;
+                --border-radius: 12px;
+            }
+            html {
+                scroll-behavior: smooth;
+            }
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                font-size: 16px;
+                line-height: 1.6;
+                color: var(--text-color);
+                background-color: var(--background-color);
+            }
+            .html-export-container {
+                display: flex;
+                min-height: 100vh;
+                max-width: 1080px;
+                margin: 0 auto;
+                position: relative;
+            }
+            .html-export-sidebar {
+                position: fixed;
+                left: calc(50% - 540px);
+                top: 0;
+                width: 250px;
+                height: 100vh;
+                background-color: #ffffff;
+                padding: 2rem 1rem;
+                overflow-y: auto;
+                z-index: 1;
+            }
+            .html-export-sidebar h2 {
+                font-size: 1.25rem;
+                color: var(--heading-color);
+                margin-bottom: 1rem;
+                font-weight: bold;
+            }
+            .html-export-sidebar ul {
+                list-style: none;
+            }
+            .html-export-sidebar ul ul {
+                margin-top: 0.125rem;
+            }
+            .html-export-sidebar li {
+                margin-bottom: 0.25rem;
+            }
+            /* H1 styling - Ingen indrag, tydlig */
+            .html-export-sidebar .sidebar-h1 > a {
+                font-size: 1.1rem;
+                font-weight: 600;
+                padding-left: 0;
+                color: var(--heading-color);
+            }
+            /* H2 styling - Måttlig indrag */
+            .html-export-sidebar .sidebar-h2 > a {
+                font-size: 1rem;
+                font-weight: 500;
+                color: var(--link-color);
+                border-left: 2px solid var(--border-color);
+                padding-left: 1.5rem;
+            }
+            /* H3 styling - Mer indrag, subtilare */
+            .html-export-sidebar .sidebar-h3 > a {
+                font-size: 0.95rem;
+                font-weight: 400;
+                color: var(--text-color-muted);
+                border-left: 1px solid var(--border-color);
+                padding-left: 2.5rem;
+            }
+            /* Gemensam styling för alla länkar */
+            .html-export-sidebar a {
+                text-decoration: underline;
+                display: block;
+                padding-top: 0.125rem;
+                padding-bottom: 0.125rem;
+                transition: all 0.2s;
+                border-radius: 4px;
+            }
+            .html-export-sidebar a:hover {
+                color: var(--link-hover-color);
+                text-decoration: underline;
+                background-color: rgba(110, 50, 130, 0.05);
+            }
+            /* Fokusindikator för tillgänglighet */
+            .html-export-sidebar a:focus {
+                outline: 3px solid var(--primary-color);
+                outline-offset: 2px;
+                background-color: rgba(110, 50, 130, 0.1);
+            }
+            .html-export-sidebar a:focus:not(:focus-visible) {
+                outline: none;
+            }
+            .html-export-content {
+                margin-left: 250px;
+                flex: 1;
+                padding: 2rem;
+                background-color: #ffffff;
+                min-height: 100vh;
+                border-left: 2px solid var(--border-color);
+                z-index: 1;
+                position: relative;
+                width: calc(100% - 250px);
+                box-sizing: border-box;
+            }
+            .html-export-content h1 {
+                font-size: 2rem;
+                color: var(--heading-color);
+                margin-top: 0;
+                margin-bottom: 0.5rem;
+                font-weight: bold;
+            }
+            .html-export-content h2 {
+                font-size: 1.75rem;
+                color: var(--heading-color);
+                margin-top: 2rem;
+                margin-bottom: 0.5rem;
+                font-weight: bold;
+                scroll-margin-top: 1rem;
+            }
+            .html-export-content h3 {
+                font-size: 1.35rem;
+                color: var(--heading-color);
+                margin-top: 1.5rem;
+                margin-bottom: 0.5rem;
+                font-weight: bold;
+                scroll-margin-top: 1rem;
+            }
+            /* Kompakt metadata */
+            .metadata-compact {
+                margin-bottom: 0.25rem !important;
+            }
+            /* Deficiency länkar */
+            .deficiency-link {
+                color: var(--link-color);
+                text-decoration: underline;
+            }
+            .deficiency-link:hover {
+                color: var(--link-hover-color);
+            }
+            .deficiency-id {
+                font-weight: normal;
+                display: inline;
+            }
+            .observation-text {
+                display: inline;
+            }
+            .observation-content {
+                display: block;
+            }
+            .html-export-content h4 {
+                font-size: 1.25rem;
+                color: var(--heading-color);
+                margin-top: 1.25rem;
+                margin-bottom: 0.5rem;
+                font-weight: bold;
+            }
+            .html-export-content p {
+                margin-bottom: 0.75rem;
+            }
+            .html-export-content a {
+                color: var(--link-color);
+                text-decoration: underline;
+            }
+            .html-export-content a:hover {
+                color: var(--link-hover-color);
+            }
+            .html-export-content strong {
+                font-weight: bold;
+            }
+            /* Markdown-innehåll styling */
+            .observation-content,
+            .comment-content {
+                margin-bottom: 0.75rem;
+            }
+            .observation-content p,
+            .comment-content p {
+                margin-bottom: 0.5rem;
+            }
+            .observation-content p:last-child,
+            .comment-content p:last-child {
+                margin-bottom: 0;
+            }
+            .observation-content ul,
+            .comment-content ul,
+            .observation-content ol,
+            .comment-content ol {
+                margin-left: 1.5em;
+                margin-bottom: 0.5rem;
+            }
+            .observation-content li,
+            .comment-content li {
+                margin-bottom: 0.25rem;
+            }
+            .observation-content code,
+            .comment-content code {
+                background-color: rgba(110, 50, 130, 0.1);
+                padding: 0.125em 0.25em;
+                border-radius: 3px;
+                font-family: 'Courier New', monospace;
+                font-size: 0.9em;
+            }
+            .observation-content pre,
+            .comment-content pre {
+                background-color: rgba(110, 50, 130, 0.1);
+                padding: 1em;
+                border-radius: 4px;
+                overflow-x: auto;
+                margin-bottom: 0.5rem;
+            }
+            .observation-content pre code,
+            .comment-content pre code {
+                background-color: transparent;
+                padding: 0;
+            }
+            .observation-content blockquote,
+            .comment-content blockquote {
+                border-left: 3px solid var(--border-color);
+                padding-left: 1em;
+                margin-left: 0;
+                margin-bottom: 0.5rem;
+                color: var(--text-color-muted);
+            }
+        `;
+
+        // Bygg komplett HTML-dokument
+        const html_document = `<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Granskningsrapport - ${escape_html_internal(current_audit.auditMetadata.actorName || t('filename_fallback_actor'))}${current_audit.auditMetadata.caseNumber ? ' - ' + escape_html_internal(current_audit.auditMetadata.caseNumber) : ''}</title>
+    <style>${css}</style>
+</head>
+<body>
+    <div class="html-export-container">
+        ${sidebar_html}
+        ${content_html}
+    </div>
+</body>
+</html>`;
+
+        // Skapa blob och ladda ner
+        const blob = new Blob([html_document], { type: 'text/html;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+
+        const actor_name = (current_audit.auditMetadata.actorName || t('filename_fallback_actor')).replace(/[^a-z0-9åäöÅÄÖ]/gi, '_');
+        const case_number = (current_audit.auditMetadata.caseNumber || '').trim();
+        const sanitized_case_number = case_number ? case_number.replace(/[^a-z0-9åäöÅÄÖ-]/gi, '') : '';
+        const date_str = new Date().toISOString().split('T')[0];
+        
+        let filename;
+        if (sanitized_case_number) {
+            filename = `${sanitized_case_number}_${actor_name}_${date_str}_brister_lista.html`;
+        } else {
+            filename = `${actor_name}_${date_str}_brister_lista.html`;
+        }
+
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        show_global_message_internal(t('audit_saved_as_file', { filename: filename }), 'success');
+
+    } catch (error) {
+        console.error("Error exporting to HTML:", error);
+        show_global_message_internal(t('error_exporting_html') + ` ${error.message}`, 'error');
+    }
+}
+
 const public_api = {
     export_to_csv,
     export_to_excel,
     export_to_word,
-    export_to_word_samples // Add the new export function to the export object
+    export_to_word_samples,
+    export_to_html
 };
 
 window.ExportLogic = public_api;

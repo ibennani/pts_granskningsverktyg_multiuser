@@ -40,6 +40,7 @@ export const AuditOverviewComponent = {
         this.handle_export_excel = this.handle_export_excel.bind(this);
         this.handle_export_word = this.handle_export_word.bind(this);
         this.handle_export_to_word_samples = this.handle_export_to_word_samples.bind(this);
+        this.handle_export_html = this.handle_export_html.bind(this);
 
         await this.init_sub_components();
 
@@ -182,6 +183,18 @@ export const AuditOverviewComponent = {
         }
     },
 
+    handle_export_html() {
+        const t = this.Translation.t;
+        const current_global_state = this.getState();
+        if (current_global_state.auditStatus !== 'locked') {
+            this.NotificationComponent.show_global_message(t('audit_not_locked_for_export', { status: current_global_state.auditStatus }), 'warning');
+            return;
+        }
+        if (this.ExportLogic?.export_to_html) {
+            this.ExportLogic.export_to_html(current_global_state);
+        }
+    },
+
     handle_store_update(new_state) {
         // Handled by main.js subscription triggering render()
     },
@@ -249,6 +262,15 @@ export const AuditOverviewComponent = {
                     event_listeners: { click: this.handle_export_to_word_samples }
                 });
                 row2.appendChild(text_export_button);
+            }
+
+            if (this.ExportLogic?.export_to_html) {
+                const html_export_button = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-default'],
+                    html_content: `<span>${t('export_to_html')}</span>` + this.Helpers.get_icon_svg('export', ['currentColor'], 18),
+                    event_listeners: { click: this.handle_export_html }
+                });
+                row2.appendChild(html_export_button);
             }
 
             actions_div.appendChild(row2);
