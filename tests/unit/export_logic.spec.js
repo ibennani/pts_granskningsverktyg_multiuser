@@ -173,11 +173,11 @@ describe('ExportLogic - Word Export', () => {
         };
     }
 
-    describe('export_to_word', () => {
+    describe('export_to_word_criterias', () => {
         test('should generate Word document without "Kravets syfte" section', async () => {
             const mockAudit = createMockAudit();
 
-            await ExportLogic.export_to_word(mockAudit);
+            await ExportLogic.export_to_word_criterias(mockAudit);
 
             // Verify Document was created
             expect(mockDocument).toHaveBeenCalled();
@@ -192,13 +192,13 @@ describe('ExportLogic - Word Export', () => {
             expect(allText).not.toContain('Här kommer en ny text visas. Denna text är ännu inte klar.');
 
             // Verify important sections ARE present
-            expect(allText).toContain('Underkända krav');
+            expect(allText).toContain('Redovisning av granskningsresultatet');
         });
 
         test('should include requirement metadata', async () => {
             const mockAudit = createMockAudit();
 
-            await ExportLogic.export_to_word(mockAudit);
+            await ExportLogic.export_to_word_criterias(mockAudit);
 
             const allText = textRunInstances
                 .map(tr => tr.text)
@@ -212,14 +212,15 @@ describe('ExportLogic - Word Export', () => {
         test('should include observation section', async () => {
             const mockAudit = createMockAudit();
 
-            await ExportLogic.export_to_word(mockAudit);
+            await ExportLogic.export_to_word_criterias(mockAudit);
 
             const allText = textRunInstances
                 .map(tr => tr.text)
                 .join(' ');
 
             // Verify observation section is present
-            expect(allText).toContain('Observation per stickprov');
+            // When sorting by requirements, observations come directly after "Stickprov:" heading
+            expect(allText).toContain('Stickprov:');
             expect(allText).toContain('Test observation');
         });
 
@@ -231,7 +232,7 @@ describe('ExportLogic - Word Export', () => {
                 samples: []
             };
 
-            await ExportLogic.export_to_word(emptyAudit);
+            await ExportLogic.export_to_word_criterias(emptyAudit);
 
             // Should still create document
             expect(mockDocument).toHaveBeenCalled();
@@ -257,7 +258,7 @@ describe('ExportLogic - Word Export', () => {
             expect(allText).not.toContain('Här kommer en ny text visas. Denna text är ännu inte klar.');
 
             // Verify important sections ARE present
-            expect(allText).toContain('Underkända krav');
+            expect(allText).toContain('Redovisning av granskningsresultatet');
         });
 
         test('should include "Aktuella observationer" section', async () => {

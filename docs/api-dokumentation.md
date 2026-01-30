@@ -270,14 +270,16 @@ window.memoryManager.addEventListener(document, 'click', handleClick);
 interface ExportLogic {
     export_to_csv(currentAudit: AppState): void;
     export_to_excel(currentAudit: AppState): Promise<void>;
-    export_to_word(currentAudit: AppState): Promise<void>;
+    export_to_word_criterias(currentAudit: AppState): Promise<void>;
+    export_to_word_samples(currentAudit: AppState): Promise<void>;
 }
 
 // Exempel
 const state = window.Store.getState();
 window.ExportLogic.export_to_csv(state);
 await window.ExportLogic.export_to_excel(state);
-await window.ExportLogic.export_to_word(state);
+await window.ExportLogic.export_to_word_criterias(state);
+await window.ExportLogic.export_to_word_samples(state);
 ```
 
 ### Export-funktioner
@@ -295,10 +297,16 @@ async function export_to_excel(current_audit) {
     // Filnamn: audit_report_deficiencies_[actor]_[date].xlsx
 }
 
-// Word Export
-async function export_to_word(current_audit) {
-    // Genererar Word-dokument med formaterad rapport
-    // Filnamn: audit_report_[actor]_[date].docx
+// Word Export (sorterat på krav)
+async function export_to_word_criterias(current_audit) {
+    // Genererar Word-dokument med formaterad rapport, sorterat på krav
+    // Filnamn: [case_number]_[actor]_[date]_sorterat_på_krav.docx
+}
+
+// Word Export (sorterat på stickprov)
+async function export_to_word_samples(current_audit) {
+    // Genererar Word-dokument med formaterad rapport, sorterat på stickprov
+    // Filnamn: [case_number]_[actor]_[date]_sorterat_på_stickprov.docx
 }
 ```
 
@@ -614,9 +622,17 @@ try {
     window.NotificationComponent.show_global_message('Fel vid Excel-export', 'error');
 }
 
-// Word-export
+// Word-export (sorterat på krav)
 try {
-    await window.ExportLogic.export_to_word(state);
+    await window.ExportLogic.export_to_word_criterias(state);
+    window.NotificationComponent.show_global_message('Word-dokument genererat', 'success');
+} catch (error) {
+    window.NotificationComponent.show_global_message('Fel vid Word-export', 'error');
+}
+
+// Word-export (sorterat på stickprov)
+try {
+    await window.ExportLogic.export_to_word_samples(state);
     window.NotificationComponent.show_global_message('Word-dokument genererat', 'success');
 } catch (error) {
     window.NotificationComponent.show_global_message('Fel vid Word-export', 'error');
