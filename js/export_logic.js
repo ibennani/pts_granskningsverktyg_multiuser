@@ -3251,6 +3251,7 @@ async function export_to_html(current_audit) {
                                                     })();
                                                 }
                                             }
+                                    }
                                     } catch (e) {
                                         console.warn('[HTML Export] Kunde inte dekodera textinnehåll, använder hash-jämförelse:', e);
                                         // Fallback till hash-jämförelse med textinnehåll
