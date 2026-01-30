@@ -40,7 +40,8 @@ Projektet är organiserat enligt följande struktur:
 ## Viktiga funktioner att känna till
 
 ### Export-funktionalitet
-- Word-export: `js/export_logic.js` - `export_to_word()`
+- Word-export (sorterat på krav): `js/export_logic.js` - `export_to_word_criterias()`
+- Word-export (sorterat på stickprov): `js/export_logic.js` - `export_to_word_samples()`
 - Excel-export: `js/export_logic.js` - `export_to_excel()`
 - CSV-export: `js/export_logic.js` - `export_to_csv()`
 
