@@ -1,3 +1,5 @@
+import { migrate_rulefile_to_new_structure } from '../logic/rulefile_migration_logic.js';
+
 export const UploadViewComponent = {
   init({ root, deps }) {
     this.root = root;
@@ -48,7 +50,13 @@ export const UploadViewComponent = {
     reader.onload = (e) => {
       try {
         const json_content = JSON.parse(e.target.result);
-        const validation_result = this.ValidationLogic.validate_rule_file_json(json_content);
+        
+        // Konvertera från gammal struktur till ny struktur om nödvändigt
+        const migrated_content = migrate_rulefile_to_new_structure(json_content, {
+          Translation: this.Translation
+        });
+        
+        const validation_result = this.ValidationLogic.validate_rule_file_json(migrated_content);
 
         if (validation_result.isValid) {
           if (window.Store && typeof window.Store.clearAutosavedState === 'function') {
@@ -63,7 +71,7 @@ export const UploadViewComponent = {
 
           this.dispatch({
             type: this.StoreActionTypes.INITIALIZE_NEW_AUDIT,
-            payload: { ruleFileContent: json_content },
+            payload: { ruleFileContent: migrated_content },
           });
 
           this.router('metadata');
@@ -97,6 +105,15 @@ export const UploadViewComponent = {
     reader.onload = (e) => {
       try {
         const file_content_object = JSON.parse(e.target.result);
+        
+        // Konvertera regelfilen från gammal struktur till ny struktur om nödvändigt
+        if (file_content_object.ruleFileContent) {
+          file_content_object.ruleFileContent = migrate_rulefile_to_new_structure(
+            file_content_object.ruleFileContent,
+            { Translation: this.Translation }
+          );
+        }
+        
         const validation_result = this.ValidationLogic.validate_saved_audit_file(file_content_object);
 
         if (validation_result.isValid) {
@@ -141,22 +158,30 @@ export const UploadViewComponent = {
     reader.onload = (e) => {
       try {
         const json_content = JSON.parse(e.target.result);
-        const validation_result = this.ValidationLogic.validate_rule_file_json(json_content);
+        
+        // Konvertera från gammal struktur till ny struktur om nödvändigt
+        const migrated_content = migrate_rulefile_to_new_structure(json_content, {
+          Translation: this.Translation
+        });
+        
+        const validation_result = this.ValidationLogic.validate_rule_file_json(migrated_content);
 
         if (validation_result.isValid) {
           if (window.Store && typeof window.Store.clearAutosavedState === 'function') {
             window.Store.clearAutosavedState();
           }
 
+          const migrated_content_string = JSON.stringify(
+            migrated_content,
+            null,
+            2
+          );
+
           this.dispatch({
             type: this.StoreActionTypes.INITIALIZE_RULEFILE_EDITING,
             payload: {
-              ruleFileContent: json_content,
-              originalRuleFileContentString: JSON.stringify(
-                json_content,
-                null,
-                2
-              ),
+              ruleFileContent: migrated_content,
+              originalRuleFileContentString: migrated_content_string,
               originalRuleFileFilename: file.name || '',
             },
           });

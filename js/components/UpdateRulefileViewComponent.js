@@ -1,4 +1,5 @@
 // js/components/UpdateRulefileViewComponent.js
+import { migrate_rulefile_to_new_structure } from '../logic/rulefile_migration_logic.js';
 
 export const UpdateRulefileViewComponent = {
     CSS_PATH: 'css/components/update_rulefile_view.css',
@@ -70,7 +71,13 @@ export const UpdateRulefileViewComponent = {
         const reader = new FileReader();
         reader.onload = (e) => {
             try {
-                const new_rule_content = JSON.parse(e.target.result);
+                const json_content = JSON.parse(e.target.result);
+                
+                // Konvertera från gammal struktur till ny struktur om nödvändigt
+                const new_rule_content = migrate_rulefile_to_new_structure(json_content, {
+                    Translation: this.Translation
+                });
+                
                 // Assuming ValidationLogic is available globally as in original code
                 const validation = this.ValidationLogic?.validate_rule_file_json(new_rule_content);
 

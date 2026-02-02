@@ -18,6 +18,40 @@ export default defineConfig({
         channel: 'msedge',
         baseURL: process.env.E2E_BASE_URL || 'http://localhost:5173',
         locale: 'sv-SE',
+        // Sätt Accept-Language header till svenska Sverige
+        // Detta säkerställer att webbläsaren kommunicerar att den föredrar svenska Sverige
+        extraHTTPHeaders: {
+          'Accept-Language': 'sv-SE,sv;q=0.9,en;q=0.8',
+        },
+        // Anpassa user agent för att ersätta engelsk locale med svensk
+        // Edge user agent kan innehålla locale-information som behöver ändras
+        userAgent: (() => {
+          const baseUA = devices['Desktop Edge'].userAgent || '';
+          
+          // Ersätt eventuell engelsk locale (en-US, en-GB, en) med sv-SE
+          let modifiedUA = baseUA
+            .replace(/en-US/gi, 'sv-SE')
+            .replace(/en-GB/gi, 'sv-SE')
+            .replace(/; en\)/gi, '; sv-SE)')
+            .replace(/; en-US\)/gi, '; sv-SE)')
+            .replace(/; en-GB\)/gi, '; sv-SE)');
+          
+          // Om sv-SE inte redan finns i user agent-strängen, lägg till det
+          if (!modifiedUA.includes('sv-SE')) {
+            // Försök lägga till sv-SE i den sista parentesgruppen
+            const lastParenMatch = modifiedUA.match(/(\([^)]+)\)$/);
+            if (lastParenMatch) {
+              modifiedUA = modifiedUA.replace(/(\([^)]+)\)$/, (m) => {
+                return m.replace(')', '; sv-SE)');
+              });
+            } else {
+              // Om inget matchar, lägg till i slutet
+              modifiedUA = modifiedUA + ' (sv-SE)';
+            }
+          }
+          
+          return modifiedUA;
+        })(),
       },
     },
   ],

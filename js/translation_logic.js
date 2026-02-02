@@ -10,7 +10,7 @@ const supported_languages = {
     'en-GB': 'English (UK)'
 };
 
-const DEFAULT_LANGUAGE_TAG = 'sv-SE';
+const DEFAULT_LANGUAGE_TAG = 'en-GB';
 
 let current_language_tag = DEFAULT_LANGUAGE_TAG;
 let loaded_translations = {};

@@ -11,6 +11,36 @@
     <!-- Build info (generated during build) -->
     <script src="build-info.js"></script>
     
+    <!-- Override navigator.language for development (Cursor's internal browser) -->
+    <script>
+        // I utvecklingsläge, sätt navigator.language till sv-SE så att Cursor's interna webbläsare
+        // kommunicerar svensk locale till applikationen
+        (function() {
+            // Detektera utvecklingsläge (localhost eller 127.0.0.1)
+            const isDev = window.location.hostname === 'localhost' || 
+                         window.location.hostname === '127.0.0.1' ||
+                         window.location.port === '5173' ||
+                         window.location.port === '4173';
+            
+            if (isDev) {
+                try {
+                    // Override navigator.language för att kommunicera svenska
+                    Object.defineProperty(navigator, 'language', {
+                        get: function() { return 'sv-SE'; },
+                        configurable: true
+                    });
+                    // Override navigator.languages också
+                    Object.defineProperty(navigator, 'languages', {
+                        get: function() { return ['sv-SE', 'sv', 'en-GB', 'en']; },
+                        configurable: true
+                    });
+                } catch (e) {
+                    console.warn('Could not override navigator.language:', e);
+                }
+            }
+        })();
+    </script>
+    
     <!-- Main application logic (ES6 module) -->
     <script type="module" src="js/main.js"></script>
 
