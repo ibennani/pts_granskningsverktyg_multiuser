@@ -154,7 +154,7 @@ function _buildSingleRequirementForm(req, allContentTypes, isNew, onSave, onCanc
     form.appendChild(Helpers.create_element('h2', { text_content: isNew ? t('add_new_requirement_button') : t('edit_requirement_title') }));
     form.appendChild(_buildReqFormBasicSection(req));
     form.appendChild(_buildReqFormRefSection(req));
-    form.appendChild(_buildReqFormHelpTextsSection(req));
+    form.appendChild(_buildReqFormHelpTextsSection(req, allContentTypes));
     form.appendChild(_buildReqFormChecksSection(req));
     form.appendChild(_buildReqFormContentTypesSection(req, allContentTypes));
     form.appendChild(_buildReqFormMetadataSection(req));
@@ -182,14 +182,36 @@ function _buildReqFormRefSection(req) {
     return fieldset;
 }
 
-function _buildReqFormHelpTextsSection(req) {
+function _buildReqFormHelpTextsSection(req, allContentTypes) {
     const fieldset = Helpers.create_element('fieldset');
     fieldset.appendChild(Helpers.create_element('h3', {text_content: Translation.t('help_texts')}));
-    fieldset.appendChild(_createFormField('expected_observation', 'expectedObservation', req.expectedObservation || '', 'textarea'));
-    fieldset.appendChild(_createFormField('requirement_instructions', 'instructions', req.instructions || '', 'textarea'));
-    fieldset.appendChild(_createFormField('requirement_exceptions', 'exceptions', String(req.exceptions || ''), 'textarea'));
-    fieldset.appendChild(_createFormField('requirement_common_errors', 'commonErrors', String(req.commonErrors || ''), 'textarea'));
-    fieldset.appendChild(_createFormField('requirement_tips', 'tips', String(req.tips || ''), 'textarea'));
+    
+    // Support both old format (direct fields) and new format (infoBlocks)
+    // Note: This legacy editor uses old format for backward compatibility
+    // The new EditRulefileRequirementComponent handles infoBlocks properly
+    const has_info_blocks = req.infoBlocks && typeof req.infoBlocks === 'object';
+    
+    if (has_info_blocks) {
+        // For new format, we'll still show the fields but map from infoBlocks
+        const block_order = ['expectedObservation', 'instructions', 'exceptions', 'commonErrors', 'tips', 'examples'];
+        block_order.forEach(block_id => {
+            const block = req.infoBlocks[block_id];
+            const text = block?.text || '';
+            fieldset.appendChild(_createFormField(
+                `requirement_${block_id.toLowerCase()}`,
+                block_id,
+                text,
+                'textarea'
+            ));
+        });
+    } else {
+        // Old format
+        fieldset.appendChild(_createFormField('expected_observation', 'expectedObservation', req.expectedObservation || '', 'textarea'));
+        fieldset.appendChild(_createFormField('requirement_instructions', 'instructions', req.instructions || '', 'textarea'));
+        fieldset.appendChild(_createFormField('requirement_exceptions', 'exceptions', String(req.exceptions || ''), 'textarea'));
+        fieldset.appendChild(_createFormField('requirement_common_errors', 'commonErrors', String(req.commonErrors || ''), 'textarea'));
+        fieldset.appendChild(_createFormField('requirement_tips', 'tips', String(req.tips || ''), 'textarea'));
+    }
     return fieldset;
 }
 
@@ -323,15 +345,30 @@ function _parseRequirementForm(form, originalReq, isNew) {
         newReq.id = Helpers.generate_uuid_v4();
         newReq.key = (newReq.title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').substring(0, 50) || 'req') + '-' + newReq.id.substring(0, 8);
     }
-    newReq.expectedObservation = form.elements['expectedObservation'].value.trim();
+    // Support both old format and new format
+    // Note: This legacy editor saves in old format for backward compatibility
+    // The new EditRulefileRequirementComponent handles infoBlocks properly
+    if (newReq.infoBlocks && typeof newReq.infoBlocks === 'object') {
+        // Update infoBlocks from form if they exist
+        const block_order = ['expectedObservation', 'instructions', 'exceptions', 'commonErrors', 'tips', 'examples'];
+        block_order.forEach(block_id => {
+            const form_field = form.elements[block_id];
+            if (form_field && newReq.infoBlocks[block_id]) {
+                newReq.infoBlocks[block_id].text = form_field.value.trim();
+            }
+        });
+    } else {
+        // Old format
+        newReq.expectedObservation = form.elements['expectedObservation']?.value.trim() || '';
+        newReq.instructions = form.elements['instructions']?.value.trim() || '';
+        newReq.exceptions = form.elements['exceptions']?.value.trim() || '';
+        newReq.commonErrors = form.elements['commonErrors']?.value.trim() || '';
+        newReq.tips = form.elements['tips']?.value.trim() || '';
+    }
     newReq.standardReference = {
-        text: form.elements['standardReference.text'].value.trim(),
-        url: form.elements['standardReference.url'].value.trim(),
+        text: form.elements['standardReference.text']?.value.trim() || '',
+        url: form.elements['standardReference.url']?.value.trim() || '',
     };
-    newReq.instructions = form.elements['instructions'].value.trim();
-    newReq.exceptions = form.elements['exceptions'].value.trim();
-    newReq.commonErrors = form.elements['commonErrors'].value.trim();
-    newReq.tips = form.elements['tips'].value.trim();
     newReq.contentType = [];
     for (const element of form.elements) {
         if (element.name.startsWith('contentType-') && element.checked) {

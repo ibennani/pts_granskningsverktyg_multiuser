@@ -88,7 +88,8 @@ export const SampleListComponent = {
         
         // --- FIX: Create lookup maps for new hierarchical data ---
         const content_types_map = new Map();
-        (state.ruleFileContent.metadata.contentTypes || []).forEach(parent => {
+        const content_types = state.ruleFileContent.metadata?.vocabularies?.contentTypes || state.ruleFileContent.metadata?.contentTypes || [];
+        content_types.forEach(parent => {
             (parent.types || []).forEach(child => content_types_map.set(child.id, child.text));
         });
 

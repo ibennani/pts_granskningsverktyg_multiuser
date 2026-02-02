@@ -332,13 +332,19 @@ export const RulefileMetadataViewComponent = {
                 this._create_list(metadata.keywords, 'rulefile_metadata_empty_value', 'metadata-list')
             ]);
 
+            const vocabularies = metadata.vocabularies || {};
+            const page_types = vocabularies.pageTypes || metadata.pageTypes || [];
+            const content_types = vocabularies.contentTypes || metadata.contentTypes || [];
+            const taxonomies = vocabularies.taxonomies || metadata.taxonomies || [];
+            const sample_types = vocabularies.sampleTypes || metadata.samples?.sampleTypes || [];
+            
             const page_types_section = this._create_section('rulefile_metadata_section_page_types', [
-                this._create_list(metadata.pageTypes, 'rulefile_metadata_empty_value', 'metadata-list')
+                this._create_list(page_types, 'rulefile_metadata_empty_value', 'metadata-list')
             ]);
 
-            const content_types_section = this._create_content_types_section(metadata.contentTypes);
+            const content_types_section = this._create_content_types_section(content_types);
             const samples_section = this._create_samples_section(metadata.samples);
-            const taxonomies_section = this._create_taxonomies_section(metadata.taxonomies);
+            const taxonomies_section = this._create_taxonomies_section(taxonomies);
 
             [
                 general_section,

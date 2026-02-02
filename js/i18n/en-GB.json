@@ -610,5 +610,15 @@
   "error_rulefile_update_failed": "Error updating rule file",
   "error_confirm_failed_temp_data_missing": "Confirmation failed: temporary data missing.",
   "error_no_pending_sample_changes": "No pending sample changes were found.",
-  "export_to_word_samples": "Export to Word (samples)"
+  "export_to_word_samples": "Export to Word (samples)",
+  "info_block_name_label": "Block name",
+  "info_block_expanded_label": "Initially expanded",
+  "info_block_text": "Content",
+  "report_template_sections_title": "Report Template - Sections",
+  "report_section_name_placeholder": "Section name",
+  "report_section_required": "Required",
+  "report_section_content": "Content (Markdown)",
+  "confirm_delete_report_section": "Are you sure you want to delete this section?",
+  "add_report_section": "Add report section",
+  "new_report_section": "New section"
 }

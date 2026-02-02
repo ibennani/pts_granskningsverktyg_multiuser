@@ -137,16 +137,74 @@ export const ViewRulefileRequirementComponent = {
              this.plate_element_ref.appendChild(general_info_section);
         }
 
-        // Help Texts
-        const help_text_sections = [
-            this._render_markdown_section('requirement_expected_observation', requirement.expectedObservation),
-            this._render_markdown_section('requirement_instructions', requirement.instructions),
-            this._render_markdown_section('requirement_exceptions', requirement.exceptions),
-            this._render_markdown_section('requirement_common_errors', requirement.commonErrors),
-            this._render_markdown_section('requirement_tips', requirement.tips),
-            this._render_markdown_section('requirement_examples', requirement.examples)
-        ];
-        help_text_sections.filter(Boolean).forEach(sec => this.plate_element_ref.appendChild(sec));
+        // Help Texts - Support both old format (direct fields) and new format (infoBlocks)
+        const has_info_blocks = requirement.infoBlocks && typeof requirement.infoBlocks === 'object';
+        const block_order = current_state.ruleFileContent.metadata?.blockOrders?.infoBlocks || [];
+        
+        if (has_info_blocks) {
+            // New format: use infoBlocks with ordering from metadata.blockOrders.infoBlocks
+            const info_blocks = requirement.infoBlocks;
+            const ordered_block_ids = [...block_order];
+            
+            // Add any blocks that exist in infoBlocks but not in the order list (render them last)
+            const extra_block_ids = Object.keys(info_blocks).filter(id => !ordered_block_ids.includes(id));
+            ordered_block_ids.push(...extra_block_ids);
+            
+            ordered_block_ids.forEach(block_id => {
+                const block = info_blocks[block_id];
+                if (!block || !block.text || (typeof block.text === 'string' && !block.text.trim())) {
+                    return; // Skip empty blocks
+                }
+                
+                // Create accordion-style section
+                const section_div = this.Helpers.create_element('div', { class_name: 'audit-section info-block-section' });
+                
+                // Create accordion header
+                const header = this.Helpers.create_element('div', { 
+                    class_name: ['info-block-header', block.expanded === false ? 'collapsed' : 'expanded'],
+                    attributes: { role: 'button', tabindex: '0', 'aria-expanded': block.expanded !== false ? 'true' : 'false' }
+                });
+                header.appendChild(this.Helpers.create_element('h2', { text_content: block.name || block_id }));
+                
+                // Create content container
+                const content_element = this.Helpers.create_element('div', { 
+                    class_name: ['audit-section-content', 'markdown-content', 'info-block-content'],
+                    style: block.expanded === false ? 'display: none;' : ''
+                });
+                content_element.innerHTML = this._safe_parse_markdown(block.text);
+                
+                // Toggle functionality
+                header.addEventListener('click', () => {
+                    const is_expanded = header.getAttribute('aria-expanded') === 'true';
+                    header.setAttribute('aria-expanded', !is_expanded ? 'true' : 'false');
+                    header.classList.toggle('collapsed', is_expanded);
+                    header.classList.toggle('expanded', !is_expanded);
+                    content_element.style.display = is_expanded ? 'none' : '';
+                });
+                
+                header.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        header.click();
+                    }
+                });
+                
+                section_div.appendChild(header);
+                section_div.appendChild(content_element);
+                this.plate_element_ref.appendChild(section_div);
+            });
+        } else {
+            // Old format: fallback to direct fields (for backward compatibility)
+            const help_text_sections = [
+                this._render_markdown_section('requirement_expected_observation', requirement.expectedObservation),
+                this._render_markdown_section('requirement_instructions', requirement.instructions),
+                this._render_markdown_section('requirement_exceptions', requirement.exceptions),
+                this._render_markdown_section('requirement_common_errors', requirement.commonErrors),
+                this._render_markdown_section('requirement_tips', requirement.tips),
+                this._render_markdown_section('requirement_examples', requirement.examples)
+            ];
+            help_text_sections.filter(Boolean).forEach(sec => this.plate_element_ref.appendChild(sec));
+        }
         
         // Checkpoints
         const checks_container = this.Helpers.create_element('div', { class_name: 'checks-container audit-section' });
@@ -209,7 +267,8 @@ export const ViewRulefileRequirementComponent = {
         }
         
         // WCAG Principles section
-        const pour_taxonomy = current_state.ruleFileContent.metadata.taxonomies.find(tax => tax.id === 'wcag22-pour');
+        const taxonomies = current_state.ruleFileContent.metadata?.vocabularies?.taxonomies || current_state.ruleFileContent.metadata?.taxonomies || [];
+        const pour_taxonomy = taxonomies.find(tax => tax.id === 'wcag22-pour');
         if (pour_taxonomy && requirement.classifications?.length > 0) {
             const concepts = requirement.classifications
                 .filter(c => c.taxonomyId === 'wcag22-pour')
@@ -249,7 +308,8 @@ export const ViewRulefileRequirementComponent = {
             content_types_section.appendChild(this.Helpers.create_element('h2', { text_content: t('content_types_associated') }));
             const content_types_ul = this.Helpers.create_element('ul', { class_name: 'requirement-metadata-list' });
             const content_types_map = new Map();
-            (current_state.ruleFileContent.metadata.contentTypes || []).forEach(parent => {
+            const content_types = current_state.ruleFileContent.metadata?.vocabularies?.contentTypes || current_state.ruleFileContent.metadata?.contentTypes || [];
+            content_types.forEach(parent => {
                 (parent.types || []).forEach(child => content_types_map.set(child.id, child.text));
             });
             requirement.contentType.forEach(ct_id => {

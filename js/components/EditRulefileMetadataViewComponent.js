@@ -58,20 +58,50 @@ export const EditRulefileMetadataViewComponent = {
             workingMetadata.monitoringType.text = workingMetadata.monitoringType.text || '';
         }
 
-        workingMetadata.pageTypes = Array.isArray(workingMetadata.pageTypes) ? [...workingMetadata.pageTypes] : [];
-        workingMetadata.contentTypes = Array.isArray(workingMetadata.contentTypes) ? [...workingMetadata.contentTypes] : [];
-
+        // Support both old format (direct) and new format (vocabularies)
+        if (!workingMetadata.vocabularies) {
+            // Migrate to new format if needed
+            workingMetadata.vocabularies = {};
+            if (workingMetadata.pageTypes) {
+                workingMetadata.vocabularies.pageTypes = Array.isArray(workingMetadata.pageTypes) ? [...workingMetadata.pageTypes] : [];
+            }
+            if (workingMetadata.contentTypes) {
+                workingMetadata.vocabularies.contentTypes = Array.isArray(workingMetadata.contentTypes) ? [...workingMetadata.contentTypes] : [];
+            }
+            if (workingMetadata.taxonomies) {
+                workingMetadata.vocabularies.taxonomies = Array.isArray(workingMetadata.taxonomies) ? [...workingMetadata.taxonomies] : [];
+            }
+            if (workingMetadata.samples?.sampleTypes) {
+                workingMetadata.vocabularies.sampleTypes = Array.isArray(workingMetadata.samples.sampleTypes) ? [...workingMetadata.samples.sampleTypes] : [];
+            }
+        }
+        
+        // Ensure vocabularies structure exists
+        if (!workingMetadata.vocabularies.pageTypes) {
+            workingMetadata.vocabularies.pageTypes = Array.isArray(workingMetadata.pageTypes) ? [...workingMetadata.pageTypes] : [];
+        }
+        if (!workingMetadata.vocabularies.contentTypes) {
+            workingMetadata.vocabularies.contentTypes = Array.isArray(workingMetadata.contentTypes) ? [...workingMetadata.contentTypes] : [];
+        }
+        if (!workingMetadata.vocabularies.taxonomies) {
+            workingMetadata.vocabularies.taxonomies = Array.isArray(workingMetadata.taxonomies) ? [...workingMetadata.taxonomies] : [];
+        }
+        if (!workingMetadata.vocabularies.sampleTypes) {
+            workingMetadata.vocabularies.sampleTypes = Array.isArray(workingMetadata.samples?.sampleTypes) ? [...workingMetadata.samples.sampleTypes] : [];
+        }
+        
+        // Backward compatibility: also set direct properties
+        workingMetadata.pageTypes = workingMetadata.vocabularies.pageTypes;
+        workingMetadata.contentTypes = workingMetadata.vocabularies.contentTypes;
+        workingMetadata.taxonomies = workingMetadata.vocabularies.taxonomies;
+        
         if (!workingMetadata.samples) {
             workingMetadata.samples = { sampleCategories: [], sampleTypes: [] };
         }
         workingMetadata.samples.sampleCategories = Array.isArray(workingMetadata.samples.sampleCategories)
             ? [...workingMetadata.samples.sampleCategories]
             : [];
-        workingMetadata.samples.sampleTypes = Array.isArray(workingMetadata.samples.sampleTypes)
-            ? [...workingMetadata.samples.sampleTypes]
-            : [];
-
-        workingMetadata.taxonomies = Array.isArray(workingMetadata.taxonomies) ? [...workingMetadata.taxonomies] : [];
+        workingMetadata.samples.sampleTypes = workingMetadata.vocabularies.sampleTypes;
         workingMetadata.keywords = Array.isArray(workingMetadata.keywords) ? [...workingMetadata.keywords] : [];
         return workingMetadata;
     },
@@ -494,6 +524,198 @@ export const EditRulefileMetadataViewComponent = {
         container.appendChild(addTaxonomyBtn);
     },
 
+    _create_report_template_section(reportTemplate, metadata) {
+        const t = this.Translation.t;
+        const section = this.Helpers.create_element('section', { class_name: 'form-section' });
+        section.appendChild(this.Helpers.create_element('h2', { text_content: t('report_template_sections_title') || 'Rapportmall - Sektioner' }));
+        
+        const current_state = this.getState();
+        const block_order = metadata?.blockOrders?.reportSections || [];
+        const sections = reportTemplate.sections || {};
+        
+        const container = this.Helpers.create_element('div', { class_name: 'report-sections-editor' });
+        
+        // Render sections in order from blockOrders.reportSections
+        const ordered_section_ids = [...block_order];
+        const extra_section_ids = Object.keys(sections).filter(id => !ordered_section_ids.includes(id));
+        ordered_section_ids.push(...extra_section_ids);
+        
+        ordered_section_ids.forEach((section_id, index) => {
+            const section_data = sections[section_id] || { name: '', required: false, content: '' };
+            
+            const section_card = this.Helpers.create_element('div', { 
+                class_name: 'report-section-card',
+                attributes: { 'data-section-id': section_id }
+            });
+            
+            const header = this.Helpers.create_element('div', { class_name: 'report-section-header' });
+            
+            // Move up button
+            if (index > 0) {
+                const move_up_btn = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-small', 'button-default'],
+                    attributes: { type: 'button', 'data-action': 'move-section-up', 'data-section-id': section_id },
+                    html_content: this.Helpers.get_icon_svg('arrow_upward', [], 16)
+                });
+                move_up_btn.addEventListener('click', () => {
+                    const current_index = ordered_section_ids.indexOf(section_id);
+                    if (current_index > 0) {
+                        ordered_section_ids.splice(current_index, 1);
+                        ordered_section_ids.splice(current_index - 1, 0, section_id);
+                        this._render_report_template_sections(container, reportTemplate, metadata);
+                    }
+                });
+                header.appendChild(move_up_btn);
+            }
+            
+            // Move down button
+            if (index < ordered_section_ids.length - 1) {
+                const move_down_btn = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-small', 'button-default'],
+                    attributes: { type: 'button', 'data-action': 'move-section-down', 'data-section-id': section_id },
+                    html_content: this.Helpers.get_icon_svg('arrow_downward', [], 16)
+                });
+                move_down_btn.addEventListener('click', () => {
+                    const current_index = ordered_section_ids.indexOf(section_id);
+                    if (current_index < ordered_section_ids.length - 1) {
+                        ordered_section_ids.splice(current_index, 1);
+                        ordered_section_ids.splice(current_index + 1, 0, section_id);
+                        this._render_report_template_sections(container, reportTemplate, metadata);
+                    }
+                });
+                header.appendChild(move_down_btn);
+            }
+            
+            // Section name input
+            const name_input = this.Helpers.create_element('input', {
+                class_name: 'form-control',
+                attributes: {
+                    type: 'text',
+                    'data-section-id': section_id,
+                    'data-field': 'name',
+                    value: section_data.name || '',
+                    placeholder: t('report_section_name_placeholder') || 'Sektionsnamn'
+                }
+            });
+            name_input.style.width = '200px';
+            name_input.style.display = 'inline-block';
+            header.appendChild(name_input);
+            
+            // Required checkbox
+            const required_label = this.Helpers.create_element('label', {
+                class_name: 'checkbox-label',
+                attributes: { 'for': `section_${section_id}_required` }
+            });
+            const required_checkbox = this.Helpers.create_element('input', {
+                attributes: {
+                    id: `section_${section_id}_required`,
+                    type: 'checkbox',
+                    'data-section-id': section_id,
+                    'data-field': 'required',
+                    checked: section_data.required === true,
+                    disabled: section_data.required === true // Can't uncheck if required
+                }
+            });
+            required_label.appendChild(required_checkbox);
+            required_label.appendChild(document.createTextNode(' ' + (t('report_section_required') || 'Obligatorisk')));
+            header.appendChild(required_label);
+            
+            // Delete button (only if not required)
+            if (!section_data.required) {
+                const delete_btn = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-small', 'button-danger'],
+                    attributes: { type: 'button', 'data-action': 'delete-section', 'data-section-id': section_id },
+                    html_content: this.Helpers.get_icon_svg('delete', [], 16)
+                });
+                delete_btn.addEventListener('click', () => {
+                    if (confirm(t('confirm_delete_report_section') || 'Är du säker på att du vill ta bort denna sektion?')) {
+                        delete sections[section_id];
+                        const order_index = ordered_section_ids.indexOf(section_id);
+                        if (order_index !== -1) {
+                            ordered_section_ids.splice(order_index, 1);
+                        }
+                        this._render_report_template_sections(container, reportTemplate, metadata);
+                    }
+                });
+                header.appendChild(delete_btn);
+            }
+            
+            section_card.appendChild(header);
+            
+            // Content textarea
+            const content_group = this.Helpers.create_element('div', { class_name: 'form-group' });
+            const content_label = this.Helpers.create_element('label', {
+                attributes: { 'for': `section_${section_id}_content` },
+                text_content: t('report_section_content') || 'Innehåll (Markdown)'
+            });
+            const content_textarea = this.Helpers.create_element('textarea', {
+                class_name: 'form-control',
+                attributes: {
+                    id: `section_${section_id}_content`,
+                    'data-section-id': section_id,
+                    'data-field': 'content',
+                    rows: '6'
+                }
+            });
+            content_textarea.value = section_data.content || '';
+            this.Helpers.init_auto_resize_for_textarea?.(content_textarea);
+            content_group.appendChild(content_label);
+            content_group.appendChild(content_textarea);
+            section_card.appendChild(content_group);
+            
+            container.appendChild(section_card);
+        });
+        
+        // Add new section button
+        const add_section_btn = this.Helpers.create_element('button', {
+            class_name: ['button', 'button-secondary'],
+            attributes: { type: 'button' },
+            html_content: `<span>${t('add_report_section') || 'Lägg till rapportsektion'}</span>` + this.Helpers.get_icon_svg('add', [], 16)
+        });
+        add_section_btn.addEventListener('click', () => {
+            const new_id = `section-${this.Helpers.generate_uuid_v4().substring(0, 8)}`;
+            sections[new_id] = {
+                name: t('new_report_section') || 'Ny sektion',
+                required: false,
+                content: ''
+            };
+            // Add to order list
+            const block_order = metadata?.blockOrders?.reportSections || [];
+            block_order.push(new_id);
+            if (!metadata.blockOrders) {
+                metadata.blockOrders = {};
+            }
+            if (!metadata.blockOrders.reportSections) {
+                metadata.blockOrders.reportSections = [];
+            }
+            metadata.blockOrders.reportSections = block_order;
+            this._render_report_template_sections(container, reportTemplate, metadata);
+        });
+        container.appendChild(add_section_btn);
+        
+        section.appendChild(container);
+        
+        // Store reference for updates
+        this._report_template_ref = reportTemplate;
+        this._report_template_metadata_ref = metadata;
+        
+        return section;
+    },
+
+    _render_report_template_sections(container, reportTemplate, metadata) {
+        // Re-render the sections editor
+        const parent_section = container.closest('.form-section');
+        if (parent_section) {
+            const form = parent_section.closest('form');
+            if (form) {
+                // Re-create the entire report template section
+                const old_section = parent_section;
+                const new_section = this._create_report_template_section(reportTemplate, metadata);
+                old_section.replaceWith(new_section);
+            }
+        }
+    },
+
     _create_form(metadata) {
         const workingMetadata = this._ensure_metadata_defaults(this._clone_metadata(metadata));
         const form = this.Helpers.create_element('form', { class_name: 'rulefile-metadata-edit-form' });
@@ -561,6 +783,16 @@ export const EditRulefileMetadataViewComponent = {
         taxonomies_section.appendChild(taxonomies_body);
         this._renderTaxonomiesEditor(taxonomies_body, workingMetadata);
 
+        // Report Template Sections (if reportTemplate exists in ruleFileContent)
+        const current_state = this.getState();
+        const rule_file_content = current_state?.ruleFileContent || {};
+        const report_template = rule_file_content.reportTemplate || { sections: {} };
+        // Ensure reportTemplate.sections exists
+        if (!report_template.sections) {
+            report_template.sections = {};
+        }
+        const report_sections_section = this._create_report_template_section(report_template, workingMetadata);
+        
         form.append(
             general_section,
             publisher_section,
@@ -569,7 +801,8 @@ export const EditRulefileMetadataViewComponent = {
             page_types_section,
             content_types_section,
             samples_section,
-            taxonomies_section
+            taxonomies_section,
+            report_sections_section
         );
 
         form.addEventListener('submit', event => {
@@ -766,12 +999,49 @@ export const EditRulefileMetadataViewComponent = {
             taxonomies: cleanedTaxonomies
         };
 
+        // Collect report template sections data
+        const report_template_sections = {};
+        const report_section_order = [];
+        if (this._report_template_ref) {
+            const section_cards = form.querySelectorAll('.report-section-card');
+            section_cards.forEach(card => {
+                const section_id = card.dataset.sectionId;
+                if (!section_id) return;
+                
+                const name_input = card.querySelector(`input[data-field="name"][data-section-id="${section_id}"]`);
+                const required_checkbox = card.querySelector(`input[data-field="required"][data-section-id="${section_id}"]`);
+                const content_textarea = card.querySelector(`textarea[data-field="content"][data-section-id="${section_id}"]`);
+                
+                report_template_sections[section_id] = {
+                    name: name_input?.value.trim() || '',
+                    required: required_checkbox?.checked || false,
+                    content: content_textarea?.value.trim() || ''
+                };
+                report_section_order.push(section_id);
+            });
+        }
+        
+        // Update metadata.blockOrders.reportSections
+        if (report_section_order.length > 0) {
+            if (!updatedMetadata.blockOrders) {
+                updatedMetadata.blockOrders = {};
+            }
+            updatedMetadata.blockOrders.reportSections = report_section_order;
+        }
+        
         const state = this.getState();
         const currentRulefile = state?.ruleFileContent || {};
         const updatedRulefileContent = {
             ...currentRulefile,
             metadata: updatedMetadata
         };
+        
+        // Update reportTemplate if it exists or create it
+        if (Object.keys(report_template_sections).length > 0 || currentRulefile.reportTemplate) {
+            updatedRulefileContent.reportTemplate = {
+                sections: report_template_sections
+            };
+        }
 
         this.dispatch({
             type: this.StoreActionTypes.UPDATE_RULEFILE_CONTENT,

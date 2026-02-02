@@ -272,7 +272,7 @@ export const AddSampleFormComponent = {
         const sample_data = this.current_editing_sample_id ? current_state.samples.find(s => s.id === this.current_editing_sample_id) : null;
         const sample_config = current_state.ruleFileContent.metadata.samples || {};
         const sample_categories = sample_config.sampleCategories || [];
-        const grouped_content_types = current_state.ruleFileContent.metadata.contentTypes || [];
+        const grouped_content_types = current_state.ruleFileContent.metadata?.vocabularies?.contentTypes || current_state.ruleFileContent.metadata?.contentTypes || [];
 
         this.original_content_types_on_load = sample_data ? [...sample_data.selectedContentTypes] : [];
 

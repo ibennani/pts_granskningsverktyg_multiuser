@@ -41,7 +41,8 @@ export function precalculateRuleData(ruleFileContent) {
     }
     
     const requirements = ruleFileContent.requirements;
-    const classifications = ruleFileContent.metadata.taxonomies.find(tax => tax.id === 'wcag22-pour');
+    const taxonomies = ruleFileContent.metadata?.vocabularies?.taxonomies || ruleFileContent.metadata?.taxonomies || [];
+    const classifications = taxonomies.find(tax => tax.id === 'wcag22-pour');
     
     if (!classifications) {
         console.error("[RuleDataProcessor] 'wcag22-pour' taxonomy not found in rule file.");

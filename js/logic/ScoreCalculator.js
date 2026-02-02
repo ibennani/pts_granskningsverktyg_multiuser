@@ -65,7 +65,8 @@ export function calculateQualityScore(auditState) {
         return null;
     }
 
-    const classifications = auditState.ruleFileContent.metadata.taxonomies.find(tax => tax.id === 'wcag22-pour');
+    const taxonomies = auditState.ruleFileContent.metadata?.vocabularies?.taxonomies || auditState.ruleFileContent.metadata?.taxonomies || [];
+    const classifications = taxonomies.find(tax => tax.id === 'wcag22-pour');
     if (!classifications) {
         console.warn('[ScoreCalculator] WCAG22-POUR taxonomy not found');
         return null;

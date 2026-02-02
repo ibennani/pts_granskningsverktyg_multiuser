@@ -65,16 +65,85 @@ export const EditRulefileRequirementComponent = {
         });
     },
 
+    _get_default_block_name(block_id) {
+        const t = this.Translation.t;
+        const name_map = {
+            'expectedObservation': t('requirement_expected_observation') || 'Förväntad observation',
+            'instructions': t('requirement_instructions') || 'Instruktioner',
+            'examples': t('requirement_examples') || 'Exempel',
+            'tips': t('requirement_tips') || 'Tips',
+            'commonErrors': t('requirement_common_errors') || 'Vanliga fel',
+            'exceptions': t('requirement_exceptions') || 'Undantag'
+        };
+        return name_map[block_id] || block_id;
+    },
+
+    _get_translation_key_for_block(block_id) {
+        const key_map = {
+            'expectedObservation': 'requirement_expected_observation',
+            'instructions': 'requirement_instructions',
+            'examples': 'requirement_examples',
+            'tips': 'requirement_tips',
+            'commonErrors': 'requirement_common_errors',
+            'exceptions': 'requirement_exceptions'
+        };
+        return key_map[block_id];
+    },
+
     _update_local_data_from_form() {
         if (!this.form_element_ref) return;
         
         this.local_requirement_data.title = this.form_element_ref.querySelector('#title')?.value || '';
-        this.local_requirement_data.expectedObservation = this.form_element_ref.querySelector('#expectedObservation')?.value || '';
-        this.local_requirement_data.instructions = this.form_element_ref.querySelector('#instructions')?.value || '';
-        this.local_requirement_data.exceptions = this.form_element_ref.querySelector('#exceptions')?.value || '';
-        this.local_requirement_data.commonErrors = this.form_element_ref.querySelector('#commonErrors')?.value || '';
-        this.local_requirement_data.tips = this.form_element_ref.querySelector('#tips')?.value || '';
-        this.local_requirement_data.examples = this.form_element_ref.querySelector('#examples')?.value || '';
+        
+        // Support both old format (direct fields) and new format (infoBlocks)
+        const has_info_blocks = this.local_requirement_data.infoBlocks && typeof this.local_requirement_data.infoBlocks === 'object';
+        const current_state = this.getState();
+        const block_order = current_state?.ruleFileContent?.metadata?.blockOrders?.infoBlocks || [];
+        
+        if (has_info_blocks) {
+            // New format: update infoBlocks structure
+            if (!this.local_requirement_data.infoBlocks) {
+                this.local_requirement_data.infoBlocks = {};
+            }
+            
+            const ordered_block_ids = [...block_order];
+            const extra_block_ids = Array.from(this.form_element_ref.querySelectorAll('[data-block-id]'))
+                .map(el => el.dataset.blockId)
+                .filter(id => !ordered_block_ids.includes(id));
+            ordered_block_ids.push(...extra_block_ids);
+            
+            ordered_block_ids.forEach(block_id => {
+                if (!this.local_requirement_data.infoBlocks[block_id]) {
+                    this.local_requirement_data.infoBlocks[block_id] = {
+                        name: this._get_default_block_name(block_id),
+                        expanded: true,
+                        text: ''
+                    };
+                }
+                
+                const name_input = this.form_element_ref.querySelector(`#infoBlock_${block_id}_name`);
+                const expanded_checkbox = this.form_element_ref.querySelector(`#infoBlock_${block_id}_expanded`);
+                const text_textarea = this.form_element_ref.querySelector(`#infoBlock_${block_id}_text`);
+                
+                if (name_input) {
+                    this.local_requirement_data.infoBlocks[block_id].name = name_input.value.trim() || this._get_default_block_name(block_id);
+                }
+                if (expanded_checkbox) {
+                    this.local_requirement_data.infoBlocks[block_id].expanded = expanded_checkbox.checked;
+                }
+                if (text_textarea) {
+                    this.local_requirement_data.infoBlocks[block_id].text = text_textarea.value.trim();
+                }
+            });
+        } else {
+            // Old format: fallback to direct fields (for backward compatibility)
+            this.local_requirement_data.expectedObservation = this.form_element_ref.querySelector('#expectedObservation')?.value || '';
+            this.local_requirement_data.instructions = this.form_element_ref.querySelector('#instructions')?.value || '';
+            this.local_requirement_data.exceptions = this.form_element_ref.querySelector('#exceptions')?.value || '';
+            this.local_requirement_data.commonErrors = this.form_element_ref.querySelector('#commonErrors')?.value || '';
+            this.local_requirement_data.tips = this.form_element_ref.querySelector('#tips')?.value || '';
+            this.local_requirement_data.examples = this.form_element_ref.querySelector('#examples')?.value || '';
+        }
         
         if (!this.local_requirement_data.standardReference) {
             this.local_requirement_data.standardReference = { text: '', url: '' };
@@ -483,7 +552,8 @@ export const EditRulefileRequirementComponent = {
         fragment.appendChild(section_wrapper);
 
         const current_state = this.getState();
-        const pour_taxonomy = current_state.ruleFileContent.metadata.taxonomies.find(tax => tax.id === 'wcag22-pour');
+        const taxonomies = current_state.ruleFileContent.metadata?.vocabularies?.taxonomies || current_state.ruleFileContent.metadata?.taxonomies || [];
+        const pour_taxonomy = taxonomies.find(tax => tax.id === 'wcag22-pour');
         
         if (pour_taxonomy && pour_taxonomy.concepts) {
             const pour_section = this.Helpers.create_element('div', { class_name: 'audit-section' });
@@ -648,12 +718,91 @@ export const EditRulefileRequirementComponent = {
         
         const help_texts_section = this.Helpers.create_element('div', { class_name: 'audit-section' });
         help_texts_section.appendChild(this.Helpers.create_element('h2', { text_content: t('help_texts_title') }));
-        help_texts_section.appendChild(this._create_form_group('requirement_expected_observation', 'expectedObservation', this.local_requirement_data.expectedObservation, true));
-        help_texts_section.appendChild(this._create_form_group('requirement_instructions', 'instructions', this.local_requirement_data.instructions, true));
-        help_texts_section.appendChild(this._create_form_group('requirement_exceptions', 'exceptions', this.local_requirement_data.exceptions, true));
-        help_texts_section.appendChild(this._create_form_group('requirement_common_errors', 'commonErrors', this.local_requirement_data.commonErrors, true));
-        help_texts_section.appendChild(this._create_form_group('requirement_tips', 'tips', this.local_requirement_data.tips, true));
-        help_texts_section.appendChild(this._create_form_group('requirement_examples', 'examples', this.local_requirement_data.examples, true));
+        
+        // Support both old format (direct fields) and new format (infoBlocks)
+        const has_info_blocks = this.local_requirement_data.infoBlocks && typeof this.local_requirement_data.infoBlocks === 'object';
+        const block_order = current_state.ruleFileContent.metadata?.blockOrders?.infoBlocks || [];
+        
+        if (has_info_blocks) {
+            // New format: render infoBlocks in order
+            const info_blocks = this.local_requirement_data.infoBlocks;
+            const ordered_block_ids = [...block_order];
+            
+            // Add any blocks that exist in infoBlocks but not in the order list (render them last)
+            const extra_block_ids = Object.keys(info_blocks).filter(id => !ordered_block_ids.includes(id));
+            ordered_block_ids.push(...extra_block_ids);
+            
+            ordered_block_ids.forEach(block_id => {
+                const block = info_blocks[block_id];
+                if (!block) {
+                    // Create empty block if it doesn't exist
+                    info_blocks[block_id] = {
+                        name: this._get_default_block_name(block_id),
+                        expanded: true,
+                        text: ''
+                    };
+                }
+                
+                const block_container = this.Helpers.create_element('div', { class_name: 'info-block-edit-container', attributes: { 'data-block-id': block_id } });
+                
+                // Block name field
+                const name_group = this.Helpers.create_element('div', { class_name: 'form-group' });
+                name_group.appendChild(this.Helpers.create_element('label', { 
+                    attributes: { for: `infoBlock_${block_id}_name` },
+                    text_content: t('info_block_name_label') || 'Blocknamn'
+                }));
+                const name_input = this.Helpers.create_element('input', {
+                    class_name: 'form-control',
+                    attributes: { 
+                        id: `infoBlock_${block_id}_name`,
+                        name: `infoBlock_${block_id}_name`,
+                        type: 'text',
+                        value: block.name || ''
+                    }
+                });
+                name_group.appendChild(name_input);
+                
+                // Expanded checkbox
+                const expanded_group = this.Helpers.create_element('div', { class_name: 'form-group' });
+                const expanded_label = this.Helpers.create_element('label', { 
+                    class_name: 'checkbox-label',
+                    attributes: { for: `infoBlock_${block_id}_expanded` }
+                });
+                const expanded_checkbox = this.Helpers.create_element('input', {
+                    attributes: {
+                        id: `infoBlock_${block_id}_expanded`,
+                        name: `infoBlock_${block_id}_expanded`,
+                        type: 'checkbox',
+                        checked: block.expanded !== false
+                    }
+                });
+                expanded_label.appendChild(expanded_checkbox);
+                expanded_label.appendChild(document.createTextNode(' ' + (t('info_block_expanded_label') || 'Initialt expanderad')));
+                expanded_group.appendChild(expanded_label);
+                
+                // Text field (textarea)
+                const text_group = this._create_form_group(
+                    this._get_translation_key_for_block(block_id) || 'info_block_text',
+                    `infoBlock_${block_id}_text`,
+                    block.text || '',
+                    true
+                );
+                
+                block_container.appendChild(name_group);
+                block_container.appendChild(expanded_group);
+                block_container.appendChild(text_group);
+                help_texts_section.appendChild(block_container);
+            });
+        } else {
+            // Old format: fallback to direct fields (for backward compatibility)
+            help_texts_section.appendChild(this._create_form_group('requirement_expected_observation', 'expectedObservation', this.local_requirement_data.expectedObservation || '', true));
+            help_texts_section.appendChild(this._create_form_group('requirement_instructions', 'instructions', this.local_requirement_data.instructions || '', true));
+            help_texts_section.appendChild(this._create_form_group('requirement_exceptions', 'exceptions', this.local_requirement_data.exceptions || '', true));
+            help_texts_section.appendChild(this._create_form_group('requirement_common_errors', 'commonErrors', this.local_requirement_data.commonErrors || '', true));
+            help_texts_section.appendChild(this._create_form_group('requirement_tips', 'tips', this.local_requirement_data.tips || '', true));
+            help_texts_section.appendChild(this._create_form_group('requirement_examples', 'examples', this.local_requirement_data.examples || '', true));
+        }
+        
         this.form_element_ref.appendChild(help_texts_section);
         
         const checks_container_wrapper = this.Helpers.create_element('div', { class_name: 'checks-container-edit' });
@@ -664,7 +813,7 @@ export const EditRulefileRequirementComponent = {
         this.form_element_ref.appendChild(this._create_classification_section(this.local_requirement_data.metadata, this.local_requirement_data.classifications));
         this.form_element_ref.appendChild(this._create_impact_section(this.local_requirement_data.metadata));
 
-        const all_content_types = current_state.ruleFileContent.metadata.contentTypes || [];
+        const all_content_types = current_state.ruleFileContent.metadata?.vocabularies?.contentTypes || current_state.ruleFileContent.metadata?.contentTypes || [];
         const selected_content_types = this.local_requirement_data.contentType || [];
         this.form_element_ref.appendChild(this._create_content_types_section(all_content_types, selected_content_types));
         
@@ -1176,14 +1325,12 @@ export const EditRulefileRequirementComponent = {
         
         if (is_new_requirement) {
             // Skapa tom kravstruktur för nytt krav
+            // Use new format with infoBlocks if blockOrders exists, otherwise use old format
+            const block_order = current_state.ruleFileContent.metadata?.blockOrders?.infoBlocks;
+            const use_new_format = Array.isArray(block_order) && block_order.length > 0;
+            
             this.local_requirement_data = {
                 title: '',
-                expectedObservation: '',
-                instructions: '',
-                exceptions: '',
-                commonErrors: '',
-                tips: '',
-                examples: '',
                 standardReference: { text: '', url: '' },
                 metadata: {
                     mainCategory: { text: '' },
@@ -1198,6 +1345,26 @@ export const EditRulefileRequirementComponent = {
                 classifications: [],
                 checks: []
             };
+            
+            // Initialize infoBlocks if using new format
+            if (use_new_format) {
+                this.local_requirement_data.infoBlocks = {};
+                block_order.forEach(block_id => {
+                    this.local_requirement_data.infoBlocks[block_id] = {
+                        name: this._get_default_block_name(block_id),
+                        expanded: true,
+                        text: ''
+                    };
+                });
+            } else {
+                // Old format fallback
+                this.local_requirement_data.expectedObservation = '';
+                this.local_requirement_data.instructions = '';
+                this.local_requirement_data.exceptions = '';
+                this.local_requirement_data.commonErrors = '';
+                this.local_requirement_data.tips = '';
+                this.local_requirement_data.examples = '';
+            }
         } else {
             const requirement_from_store = current_state?.ruleFileContent?.requirements[requirement_id];
             if (!requirement_from_store) {
@@ -1206,6 +1373,35 @@ export const EditRulefileRequirementComponent = {
                 return;
             }
             this.local_requirement_data = JSON.parse(JSON.stringify(requirement_from_store));
+            
+            // Migrate from old format to new format if needed
+            const block_order = current_state.ruleFileContent.metadata?.blockOrders?.infoBlocks;
+            const has_info_blocks = this.local_requirement_data.infoBlocks && typeof this.local_requirement_data.infoBlocks === 'object';
+            const has_old_fields = this.local_requirement_data.expectedObservation !== undefined || 
+                                   this.local_requirement_data.instructions !== undefined;
+            
+            if (!has_info_blocks && has_old_fields && Array.isArray(block_order) && block_order.length > 0) {
+                // Migrate old format to new format
+                this.local_requirement_data.infoBlocks = {};
+                block_order.forEach(block_id => {
+                    const old_field_map = {
+                        'expectedObservation': 'expectedObservation',
+                        'instructions': 'instructions',
+                        'examples': 'examples',
+                        'tips': 'tips',
+                        'commonErrors': 'commonErrors',
+                        'exceptions': 'exceptions'
+                    };
+                    const old_field = old_field_map[block_id];
+                    this.local_requirement_data.infoBlocks[block_id] = {
+                        name: this._get_default_block_name(block_id),
+                        expanded: true,
+                        text: this.local_requirement_data[old_field] || ''
+                    };
+                    // Remove old field
+                    delete this.local_requirement_data[old_field];
+                });
+            }
         }
 
         const page_title = is_new_requirement 

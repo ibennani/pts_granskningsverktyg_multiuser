@@ -609,5 +609,15 @@
   "translation_missing_translations": "Verktyg för tillsyn av tillgänglighet - Översättningar saknas",
   "error_rulefile_update_failed": "Fel vid uppdatering av regelfil",
   "error_confirm_failed_temp_data_missing": "Bekräftelse misslyckades: temporär data saknas.",
-  "error_no_pending_sample_changes": "Inga väntande ändringar av stickprovet hittades."
+  "error_no_pending_sample_changes": "Inga väntande ändringar av stickprovet hittades.",
+  "info_block_name_label": "Blocknamn",
+  "info_block_expanded_label": "Initialt expanderad",
+  "info_block_text": "Innehåll",
+  "report_template_sections_title": "Rapportmall - Sektioner",
+  "report_section_name_placeholder": "Sektionsnamn",
+  "report_section_required": "Obligatorisk",
+  "report_section_content": "Innehåll (Markdown)",
+  "confirm_delete_report_section": "Är du säker på att du vill ta bort denna sektion?",
+  "add_report_section": "Lägg till rapportsektion",
+  "new_report_section": "Ny sektion"
 }

@@ -26,6 +26,53 @@ export function validate_rule_file_json(json_object) {
 
     // --- VALIDATION FOR NEW HIERARCHICAL STRUCTURE ---
 
+    // Validate metadata.blockOrders (new in version 2026.2.r1)
+    if (metadata.blockOrders) {
+        if (typeof metadata.blockOrders !== 'object') {
+            return { isValid: false, message: "metadata.blockOrders måste vara ett objekt" };
+        }
+        if (metadata.blockOrders.infoBlocks && !Array.isArray(metadata.blockOrders.infoBlocks)) {
+            return { isValid: false, message: "metadata.blockOrders.infoBlocks måste vara en array" };
+        }
+        if (metadata.blockOrders.reportSections && !Array.isArray(metadata.blockOrders.reportSections)) {
+            return { isValid: false, message: "metadata.blockOrders.reportSections måste vara en array" };
+        }
+    }
+
+    // Validate metadata.vocabularies (new in version 2026.2.r1)
+    if (metadata.vocabularies) {
+        if (typeof metadata.vocabularies !== 'object') {
+            return { isValid: false, message: "metadata.vocabularies måste vara ett objekt" };
+        }
+    }
+
+    // Validate reportTemplate (new in version 2026.2.r1)
+    if (json_object.reportTemplate) {
+        if (typeof json_object.reportTemplate !== 'object') {
+            return { isValid: false, message: "reportTemplate måste vara ett objekt" };
+        }
+        if (json_object.reportTemplate.sections) {
+            if (typeof json_object.reportTemplate.sections !== 'object') {
+                return { isValid: false, message: "reportTemplate.sections måste vara ett objekt" };
+            }
+            // Validate each section
+            for (const [section_id, section] of Object.entries(json_object.reportTemplate.sections)) {
+                if (typeof section !== 'object') {
+                    return { isValid: false, message: `reportTemplate.sections['${section_id}'] måste vara ett objekt` };
+                }
+                if (typeof section.name !== 'string') {
+                    return { isValid: false, message: `reportTemplate.sections['${section_id}'].name måste vara en sträng` };
+                }
+                if (typeof section.required !== 'boolean') {
+                    return { isValid: false, message: `reportTemplate.sections['${section_id}'].required måste vara en boolean` };
+                }
+                if (section.content !== undefined && typeof section.content !== 'string') {
+                    return { isValid: false, message: `reportTemplate.sections['${section_id}'].content måste vara en sträng` };
+                }
+            }
+        }
+    }
+
     // Validate metadata.samples.sampleCategories
     if (!metadata.samples || typeof metadata.samples !== 'object' || !Array.isArray(metadata.samples.sampleCategories) || metadata.samples.sampleCategories.length === 0) {
         return { isValid: false, message: "Regelfilen måste innehålla 'metadata.samples.sampleCategories' som en array med minst en kategori." };
@@ -41,11 +88,12 @@ export function validate_rule_file_json(json_object) {
         }
     }
 
-    // Validate metadata.contentTypes
-    if (!Array.isArray(metadata.contentTypes) || metadata.contentTypes.length === 0) {
-        return { isValid: false, message: "Regelfilen måste innehålla 'metadata.contentTypes' som en array med minst en huvudinnehållstyp." };
+    // Validate metadata.vocabularies.contentTypes (new format) or metadata.contentTypes (old format)
+    const contentTypes = metadata.vocabularies?.contentTypes || metadata.contentTypes;
+    if (!Array.isArray(contentTypes) || contentTypes.length === 0) {
+        return { isValid: false, message: "Regelfilen måste innehålla 'metadata.vocabularies.contentTypes' (eller 'metadata.contentTypes') som en array med minst en huvudinnehållstyp." };
     }
-    for (const group of metadata.contentTypes) {
+    for (const group of contentTypes) {
         if (!group.id || !group.text || !Array.isArray(group.types) || group.types.length === 0) {
             return { isValid: false, message: `Varje objekt i 'contentTypes' måste ha 'id', 'text', och en 'types'-array med minst ett objekt. Fel vid: ${group.text || 'Okänd innehållstyp'}` };
         }
@@ -112,6 +160,28 @@ export function validate_rule_file_json(json_object) {
         // Validera contentType om det finns
         if (req_obj.contentType && !Array.isArray(req_obj.contentType)) {
             return { isValid: false, message: `Requirement '${req_id}' contentType must be an array if provided` };
+        }
+        
+        // Validera infoBlocks (new in version 2026.2.r1)
+        if (req_obj.infoBlocks) {
+            if (typeof req_obj.infoBlocks !== 'object') {
+                return { isValid: false, message: `Requirement '${req_id}' infoBlocks måste vara ett objekt` };
+            }
+            // Validate each info block
+            for (const [block_id, block] of Object.entries(req_obj.infoBlocks)) {
+                if (typeof block !== 'object') {
+                    return { isValid: false, message: `Requirement '${req_id}' infoBlocks['${block_id}'] måste vara ett objekt` };
+                }
+                if (typeof block.name !== 'string') {
+                    return { isValid: false, message: `Requirement '${req_id}' infoBlocks['${block_id}'].name måste vara en sträng` };
+                }
+                if (typeof block.expanded !== 'boolean') {
+                    return { isValid: false, message: `Requirement '${req_id}' infoBlocks['${block_id}'].expanded måste vara en boolean` };
+                }
+                if (block.text !== undefined && typeof block.text !== 'string') {
+                    return { isValid: false, message: `Requirement '${req_id}' infoBlocks['${block_id}'].text måste vara en sträng` };
+                }
+            }
         }
     }
 
