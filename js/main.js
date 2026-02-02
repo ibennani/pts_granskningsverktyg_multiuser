@@ -43,6 +43,7 @@ import { EditRulefileRequirementComponent } from './components/EditRulefileRequi
 import { ConfirmDeleteViewComponent } from './components/ConfirmDeleteViewComponent.js';
 import { RulefileMetadataViewComponent } from './components/RulefileMetadataViewComponent.js';
 import { EditRulefileMetadataViewComponent } from './components/EditRulefileMetadataViewComponent.js';
+import { RulefileSectionsViewComponent } from './components/RulefileSectionsViewComponent.js';
 import { ErrorBoundaryComponent } from './components/ErrorBoundaryComponent.js';
 
 import { GlobalActionBarComponent } from './components/GlobalActionBarComponent.js';
@@ -199,6 +200,9 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
                     break;
                 case 'rulefile_metadata_edit':
                     title_prefix = t('rulefile_metadata_edit_title');
+                    break;
+                case 'rulefile_sections':
+                    title_prefix = t('rulefile_sections_title');
                     break;
                 case 'confirm_delete':
                     switch(params.type) {
@@ -374,7 +378,7 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
 
         updatePageTitle(view_name_to_render, params_to_render);
 
-        const views_without_bottom_bar = ['restore_session', 'sample_form', 'confirm_sample_edit', 'metadata', 'edit_metadata', 'rulefile_metadata', 'rulefile_metadata_edit'];
+        const views_without_bottom_bar = ['restore_session', 'sample_form', 'confirm_sample_edit', 'metadata', 'edit_metadata', 'rulefile_metadata', 'rulefile_metadata_edit', 'rulefile_sections'];
         top_action_bar_instance.render();
         if (views_without_bottom_bar.includes(view_name_to_render)) {
             bottom_action_bar_container.style.display = 'none';
@@ -451,6 +455,7 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
             case 'rulefile_add_requirement': ComponentClass = EditRulefileRequirementComponent; break;
             case 'rulefile_metadata_edit': ComponentClass = EditRulefileMetadataViewComponent; break;
                 case 'rulefile_metadata': ComponentClass = RulefileMetadataViewComponent; break;
+            case 'rulefile_sections': ComponentClass = RulefileSectionsViewComponent; break;
             case 'confirm_delete': ComponentClass = ConfirmDeleteViewComponent; break;
             default:
                 consoleManager.error(`[Main.js] View "${view_name_to_render}" not found in render_view switch.`);
@@ -640,7 +645,7 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
             consoleManager.info('[Main.js] Global event listeners cleaned up');
         };
         subscribe((new_state) => { 
-            const views_without_bottom_bar = ['restore_session', 'sample_form', 'confirm_sample_edit', 'metadata', 'edit_metadata', 'rulefile_metadata', 'rulefile_metadata_edit'];
+            const views_without_bottom_bar = ['restore_session', 'sample_form', 'confirm_sample_edit', 'metadata', 'edit_metadata', 'rulefile_metadata', 'rulefile_metadata_edit', 'rulefile_sections'];
             
             try {
                 top_action_bar_instance.render();
