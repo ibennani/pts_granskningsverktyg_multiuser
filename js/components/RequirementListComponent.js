@@ -271,10 +271,35 @@ export const RequirementListComponent = {
             if (!active_status_filters.includes(display_status)) return false;
 
             if (search_term) {
-                const searchable_content = [
-                    req.title, req.expectedObservation, req.instructions, req.tips, 
-                    req.exceptions, req.commonErrors, req.standardReference?.text
-                ].flat().filter(Boolean).map(item => (typeof item === 'object' ? item.text : String(item))).join(' ').toLowerCase();
+                // Build searchable content array
+                const searchable_fields = [req.title, req.standardReference?.text];
+                
+                // Support both old format (direct fields) and new format (infoBlocks)
+                const has_info_blocks = req.infoBlocks && typeof req.infoBlocks === 'object';
+                
+                if (has_info_blocks) {
+                    // New format: extract text from all infoBlocks
+                    const info_blocks_texts = Object.values(req.infoBlocks)
+                        .map(block => block.text)
+                        .filter(Boolean);
+                    searchable_fields.push(...info_blocks_texts);
+                } else {
+                    // Old format: use direct fields for backward compatibility
+                    searchable_fields.push(
+                        req.expectedObservation,
+                        req.instructions,
+                        req.tips,
+                        req.exceptions,
+                        req.commonErrors
+                    );
+                }
+                
+                const searchable_content = searchable_fields
+                    .flat()
+                    .filter(Boolean)
+                    .map(item => (typeof item === 'object' ? item.text : String(item)))
+                    .join(' ')
+                    .toLowerCase();
                 return searchable_content.includes(search_term);
             }
             return true;

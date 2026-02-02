@@ -73,11 +73,12 @@ export function validate_rule_file_json(json_object) {
         }
     }
 
-    // Validate metadata.samples.sampleCategories
-    if (!metadata.samples || typeof metadata.samples !== 'object' || !Array.isArray(metadata.samples.sampleCategories) || metadata.samples.sampleCategories.length === 0) {
-        return { isValid: false, message: "Regelfilen måste innehålla 'metadata.samples.sampleCategories' som en array med minst en kategori." };
+    // Validate metadata.samples.sampleCategories (old format) or metadata.vocabularies.sampleTypes.sampleCategories (new format)
+    const sampleCategories = metadata.vocabularies?.sampleTypes?.sampleCategories || metadata.samples?.sampleCategories;
+    if (!Array.isArray(sampleCategories) || sampleCategories.length === 0) {
+        return { isValid: false, message: "Regelfilen måste innehålla 'metadata.vocabularies.sampleTypes.sampleCategories' (eller 'metadata.samples.sampleCategories') som en array med minst en kategori." };
     }
-    for (const category of metadata.samples.sampleCategories) {
+    for (const category of sampleCategories) {
         if (!category.id || !category.text || !Array.isArray(category.categories) || category.categories.length === 0) {
             return { isValid: false, message: `Varje objekt i 'sampleCategories' måste ha 'id', 'text', och en 'categories'-array med minst ett objekt. Fel vid: ${category.text || 'Okänd kategori'}` };
         }

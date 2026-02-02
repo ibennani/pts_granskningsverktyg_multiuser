@@ -272,13 +272,9 @@ export const RulefileRequirementsListComponent = {
         const filtered_requirements = all_requirements.filter(req => {
             if (!search_term) return true;
 
-            const normalized_content = this.extractSearchableText([
+            // Build searchable content array
+            const searchable_fields = [
                 req.title,
-                req.expectedObservation,
-                req.instructions,
-                req.tips,
-                req.exceptions,
-                req.commonErrors,
                 req.standardReference?.text,
                 req.standardReference?.description,
                 req.metadata?.mainCategory?.text,
@@ -287,7 +283,29 @@ export const RulefileRequirementsListComponent = {
                 req.classifications,
                 req.contentType,
                 req.checks
-            ]).toLowerCase();
+            ];
+
+            // Support both old format (direct fields) and new format (infoBlocks)
+            const has_info_blocks = req.infoBlocks && typeof req.infoBlocks === 'object';
+            
+            if (has_info_blocks) {
+                // New format: extract text from all infoBlocks
+                const info_blocks_texts = Object.values(req.infoBlocks)
+                    .map(block => block.text)
+                    .filter(Boolean);
+                searchable_fields.push(...info_blocks_texts);
+            } else {
+                // Old format: use direct fields for backward compatibility
+                searchable_fields.push(
+                    req.expectedObservation,
+                    req.instructions,
+                    req.tips,
+                    req.exceptions,
+                    req.commonErrors
+                );
+            }
+
+            const normalized_content = this.extractSearchableText(searchable_fields).toLowerCase();
 
             return normalized_content.includes(search_term);
         });

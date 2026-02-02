@@ -71,8 +71,29 @@ export const EditRulefileMetadataViewComponent = {
             if (workingMetadata.taxonomies) {
                 workingMetadata.vocabularies.taxonomies = Array.isArray(workingMetadata.taxonomies) ? [...workingMetadata.taxonomies] : [];
             }
+            // Handle sampleTypes - can be either an object with sampleCategories or an array
             if (workingMetadata.samples?.sampleTypes) {
-                workingMetadata.vocabularies.sampleTypes = Array.isArray(workingMetadata.samples.sampleTypes) ? [...workingMetadata.samples.sampleTypes] : [];
+                if (typeof workingMetadata.samples.sampleTypes === 'object' && !Array.isArray(workingMetadata.samples.sampleTypes)) {
+                    // New format: object with sampleCategories and sampleTypes array
+                    workingMetadata.vocabularies.sampleTypes = {
+                        sampleCategories: Array.isArray(workingMetadata.samples.sampleTypes.sampleCategories) 
+                            ? [...workingMetadata.samples.sampleTypes.sampleCategories] 
+                            : [],
+                        sampleTypes: Array.isArray(workingMetadata.samples.sampleTypes.sampleTypes) 
+                            ? [...workingMetadata.samples.sampleTypes.sampleTypes] 
+                            : []
+                    };
+                } else if (Array.isArray(workingMetadata.samples.sampleTypes)) {
+                    // Old format: just an array
+                    workingMetadata.vocabularies.sampleTypes = {
+                        sampleCategories: [],
+                        sampleTypes: [...workingMetadata.samples.sampleTypes]
+                    };
+                } else {
+                    workingMetadata.vocabularies.sampleTypes = { sampleCategories: [], sampleTypes: [] };
+                }
+            } else {
+                workingMetadata.vocabularies.sampleTypes = { sampleCategories: [], sampleTypes: [] };
             }
         }
         
@@ -87,7 +108,21 @@ export const EditRulefileMetadataViewComponent = {
             workingMetadata.vocabularies.taxonomies = Array.isArray(workingMetadata.taxonomies) ? [...workingMetadata.taxonomies] : [];
         }
         if (!workingMetadata.vocabularies.sampleTypes) {
-            workingMetadata.vocabularies.sampleTypes = Array.isArray(workingMetadata.samples?.sampleTypes) ? [...workingMetadata.samples.sampleTypes] : [];
+            workingMetadata.vocabularies.sampleTypes = { sampleCategories: [], sampleTypes: [] };
+        }
+        
+        // Ensure sampleTypes is an object with both properties
+        if (typeof workingMetadata.vocabularies.sampleTypes !== 'object' || Array.isArray(workingMetadata.vocabularies.sampleTypes)) {
+            workingMetadata.vocabularies.sampleTypes = {
+                sampleCategories: [],
+                sampleTypes: Array.isArray(workingMetadata.vocabularies.sampleTypes) ? [...workingMetadata.vocabularies.sampleTypes] : []
+            };
+        }
+        if (!Array.isArray(workingMetadata.vocabularies.sampleTypes.sampleCategories)) {
+            workingMetadata.vocabularies.sampleTypes.sampleCategories = [];
+        }
+        if (!Array.isArray(workingMetadata.vocabularies.sampleTypes.sampleTypes)) {
+            workingMetadata.vocabularies.sampleTypes.sampleTypes = [];
         }
         
         // Backward compatibility: also set direct properties
@@ -98,10 +133,14 @@ export const EditRulefileMetadataViewComponent = {
         if (!workingMetadata.samples) {
             workingMetadata.samples = { sampleCategories: [], sampleTypes: [] };
         }
-        workingMetadata.samples.sampleCategories = Array.isArray(workingMetadata.samples.sampleCategories)
-            ? [...workingMetadata.samples.sampleCategories]
+        // Set sampleCategories from vocabularies
+        workingMetadata.samples.sampleCategories = Array.isArray(workingMetadata.vocabularies.sampleTypes.sampleCategories)
+            ? [...workingMetadata.vocabularies.sampleTypes.sampleCategories]
             : [];
-        workingMetadata.samples.sampleTypes = workingMetadata.vocabularies.sampleTypes;
+        // Set sampleTypes array from vocabularies.sampleTypes.sampleTypes
+        workingMetadata.samples.sampleTypes = Array.isArray(workingMetadata.vocabularies.sampleTypes.sampleTypes)
+            ? [...workingMetadata.vocabularies.sampleTypes.sampleTypes]
+            : [];
         workingMetadata.keywords = Array.isArray(workingMetadata.keywords) ? [...workingMetadata.keywords] : [];
         return workingMetadata;
     },
@@ -330,8 +369,8 @@ export const EditRulefileMetadataViewComponent = {
 
     _renderSampleCategoriesEditor(container, workingMetadata) {
         container.innerHTML = '';
-
-        const categories = workingMetadata.samples.sampleCategories || [];
+        // Support both old format (metadata.samples.sampleCategories) and new format (metadata.vocabularies.sampleTypes.sampleCategories)
+        const categories = workingMetadata.vocabularies?.sampleTypes?.sampleCategories || workingMetadata.samples?.sampleCategories || [];
         if (categories.length === 0) {
             container.appendChild(this.Helpers.create_element('p', {
                 class_name: 'editable-empty',
@@ -352,6 +391,19 @@ export const EditRulefileMetadataViewComponent = {
             const removeCategoryInitial = this.Translation.t('rulefile_metadata_remove_sample_category', { name: heading.textContent });
             const removeCategoryBtn = this._create_small_button(removeCategoryInitial, 'delete', () => {
                 categories.splice(categoryIndex, 1);
+                // Ensure vocabularies structure is updated
+                if (!workingMetadata.vocabularies) {
+                    workingMetadata.vocabularies = {};
+                }
+                if (!workingMetadata.vocabularies.sampleTypes) {
+                    workingMetadata.vocabularies.sampleTypes = { sampleCategories: [], sampleTypes: [] };
+                }
+                workingMetadata.vocabularies.sampleTypes.sampleCategories = categories;
+                // Also update samples for backward compatibility
+                if (!workingMetadata.samples) {
+                    workingMetadata.samples = { sampleCategories: [], sampleTypes: [] };
+                }
+                workingMetadata.samples.sampleCategories = categories;
                 this._renderSampleCategoriesEditor(container, workingMetadata);
             }, 'danger', { plainText: true, ariaLabel: removeCategoryInitial });
             headingRow.append(heading, removeCategoryBtn);
@@ -359,6 +411,19 @@ export const EditRulefileMetadataViewComponent = {
 
             card.appendChild(this._create_inline_input('rulefile_metadata_field_text', category.text || '', value => {
                 category.text = value;
+                // Sync to vocabularies structure
+                if (!workingMetadata.vocabularies) {
+                    workingMetadata.vocabularies = {};
+                }
+                if (!workingMetadata.vocabularies.sampleTypes) {
+                    workingMetadata.vocabularies.sampleTypes = { sampleCategories: [], sampleTypes: [] };
+                }
+                workingMetadata.vocabularies.sampleTypes.sampleCategories = categories;
+                // Also update samples for backward compatibility
+                if (!workingMetadata.samples) {
+                    workingMetadata.samples = { sampleCategories: [], sampleTypes: [] };
+                }
+                workingMetadata.samples.sampleCategories = categories;
                 const updatedName = value || this.Translation.t('rulefile_metadata_untitled_item');
                 const updatedLabel = this.Translation.t('rulefile_metadata_remove_sample_category', { name: updatedName });
                 heading.textContent = updatedName;
@@ -366,6 +431,19 @@ export const EditRulefileMetadataViewComponent = {
             }));
             card.appendChild(this._create_checkbox_input('rulefile_metadata_field_has_url', category.hasUrl, value => {
                 category.hasUrl = value;
+                // Sync to vocabularies structure
+                if (!workingMetadata.vocabularies) {
+                    workingMetadata.vocabularies = {};
+                }
+                if (!workingMetadata.vocabularies.sampleTypes) {
+                    workingMetadata.vocabularies.sampleTypes = { sampleCategories: [], sampleTypes: [] };
+                }
+                workingMetadata.vocabularies.sampleTypes.sampleCategories = categories;
+                // Also update samples for backward compatibility
+                if (!workingMetadata.samples) {
+                    workingMetadata.samples = { sampleCategories: [], sampleTypes: [] };
+                }
+                workingMetadata.samples.sampleCategories = categories;
             }));
 
             const subList = this.Helpers.create_element('div', { class_name: 'editable-sublist' });
@@ -379,10 +457,36 @@ export const EditRulefileMetadataViewComponent = {
                 const removeSubInitial = this.Translation.t('rulefile_metadata_remove_sample_subcategory', { name: subDisplay });
                 const removeSubBtn = this._create_small_button(removeSubInitial, 'delete', () => {
                     category.categories.splice(subIndex, 1);
+                    // Sync to vocabularies structure
+                    if (!workingMetadata.vocabularies) {
+                        workingMetadata.vocabularies = {};
+                    }
+                    if (!workingMetadata.vocabularies.sampleTypes) {
+                        workingMetadata.vocabularies.sampleTypes = { sampleCategories: [], sampleTypes: [] };
+                    }
+                    workingMetadata.vocabularies.sampleTypes.sampleCategories = categories;
+                    // Also update samples for backward compatibility
+                    if (!workingMetadata.samples) {
+                        workingMetadata.samples = { sampleCategories: [], sampleTypes: [] };
+                    }
+                    workingMetadata.samples.sampleCategories = categories;
                     this._renderSampleCategoriesEditor(container, workingMetadata);
                 }, 'danger', { plainText: true, ariaLabel: removeSubInitial });
                 row.appendChild(this._create_inline_input('rulefile_metadata_field_text', subCategory.text || '', value => {
                     subCategory.text = value;
+                    // Sync to vocabularies structure
+                    if (!workingMetadata.vocabularies) {
+                        workingMetadata.vocabularies = {};
+                    }
+                    if (!workingMetadata.vocabularies.sampleTypes) {
+                        workingMetadata.vocabularies.sampleTypes = { sampleCategories: [], sampleTypes: [] };
+                    }
+                    workingMetadata.vocabularies.sampleTypes.sampleCategories = categories;
+                    // Also update samples for backward compatibility
+                    if (!workingMetadata.samples) {
+                        workingMetadata.samples = { sampleCategories: [], sampleTypes: [] };
+                    }
+                    workingMetadata.samples.sampleCategories = categories;
                     const updatedName = value || this.Translation.t('rulefile_metadata_untitled_item');
                     const updatedLabel = this.Translation.t('rulefile_metadata_remove_sample_subcategory', { name: updatedName });
                     removeSubBtn.updateButtonText?.(updatedLabel, updatedLabel);
@@ -393,6 +497,19 @@ export const EditRulefileMetadataViewComponent = {
 
             const addSubBtn = this._create_small_button('rulefile_metadata_add_sample_subcategory', 'add', () => {
                 category.categories.push({ id: '', text: '' });
+                // Sync to vocabularies structure
+                if (!workingMetadata.vocabularies) {
+                    workingMetadata.vocabularies = {};
+                }
+                if (!workingMetadata.vocabularies.sampleTypes) {
+                    workingMetadata.vocabularies.sampleTypes = { sampleCategories: [], sampleTypes: [] };
+                }
+                workingMetadata.vocabularies.sampleTypes.sampleCategories = categories;
+                // Also update samples for backward compatibility
+                if (!workingMetadata.samples) {
+                    workingMetadata.samples = { sampleCategories: [], sampleTypes: [] };
+                }
+                workingMetadata.samples.sampleCategories = categories;
                 this._renderSampleCategoriesEditor(container, workingMetadata);
             });
             subList.appendChild(addSubBtn);
@@ -402,6 +519,19 @@ export const EditRulefileMetadataViewComponent = {
 
         const addCategoryBtn = this._create_small_button('rulefile_metadata_add_sample_category', 'add', () => {
             categories.push({ id: '', text: '', hasUrl: false, categories: [] });
+            // Ensure vocabularies structure is updated
+            if (!workingMetadata.vocabularies) {
+                workingMetadata.vocabularies = {};
+            }
+            if (!workingMetadata.vocabularies.sampleTypes) {
+                workingMetadata.vocabularies.sampleTypes = { sampleCategories: [], sampleTypes: [] };
+            }
+            workingMetadata.vocabularies.sampleTypes.sampleCategories = categories;
+            // Also update samples for backward compatibility
+            if (!workingMetadata.samples) {
+                workingMetadata.samples = { sampleCategories: [], sampleTypes: [] };
+            }
+            workingMetadata.samples.sampleCategories = categories;
             this._renderSampleCategoriesEditor(container, workingMetadata);
         });
         container.appendChild(addCategoryBtn);
@@ -996,7 +1126,18 @@ export const EditRulefileMetadataViewComponent = {
                 sampleCategories: cleanedSampleCategories,
                 sampleTypes: cleanedSampleTypes
             },
-            taxonomies: cleanedTaxonomies
+            taxonomies: cleanedTaxonomies,
+            // Update vocabularies structure
+            vocabularies: {
+                ...originalMetadata.vocabularies,
+                pageTypes: cleanedPageTypes,
+                contentTypes: cleanedContentTypes,
+                taxonomies: cleanedTaxonomies,
+                sampleTypes: {
+                    sampleCategories: cleanedSampleCategories,
+                    sampleTypes: cleanedSampleTypes
+                }
+            }
         };
 
         // Collect report template sections data
