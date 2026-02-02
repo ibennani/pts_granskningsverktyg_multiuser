@@ -41,8 +41,9 @@ import { RulefileRequirementsListComponent } from './components/RulefileRequirem
 import { ViewRulefileRequirementComponent } from './components/ViewRulefileRequirementComponent.js';
 import { EditRulefileRequirementComponent } from './components/EditRulefileRequirementComponent.js';
 import { ConfirmDeleteViewComponent } from './components/ConfirmDeleteViewComponent.js';
-import { RulefileMetadataViewComponent } from './components/RulefileMetadataViewComponent.js';
 import { EditRulefileMetadataViewComponent } from './components/EditRulefileMetadataViewComponent.js';
+import { EditGeneralSectionComponent } from './components/EditGeneralSectionComponent.js';
+import { EditPageTypesSectionComponent } from './components/EditPageTypesSectionComponent.js';
 import { RulefileSectionsViewComponent } from './components/RulefileSectionsViewComponent.js';
 import { ErrorBoundaryComponent } from './components/ErrorBoundaryComponent.js';
 
@@ -195,11 +196,14 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
                 case 'rulefile_add_requirement':
                     title_prefix = t('rulefile_add_requirement_title');
                     break;
-                case 'rulefile_metadata':
-                    title_prefix = t('rulefile_metadata_title');
-                    break;
                 case 'rulefile_metadata_edit':
                     title_prefix = t('rulefile_metadata_edit_title');
+                    break;
+                case 'rulefile_sections_edit_general':
+                    title_prefix = t('rulefile_sections_edit_general_title') || 'Redigera allmän information';
+                    break;
+                case 'rulefile_sections_edit_page_types':
+                    title_prefix = t('rulefile_sections_edit_page_types_title') || 'Redigera sidtyper';
                     break;
                 case 'rulefile_sections':
                     title_prefix = t('rulefile_sections_title');
@@ -378,7 +382,7 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
 
         updatePageTitle(view_name_to_render, params_to_render);
 
-        const views_without_bottom_bar = ['restore_session', 'sample_form', 'confirm_sample_edit', 'metadata', 'edit_metadata', 'rulefile_metadata', 'rulefile_metadata_edit', 'rulefile_sections'];
+        const views_without_bottom_bar = ['restore_session', 'sample_form', 'confirm_sample_edit', 'metadata', 'edit_metadata', 'rulefile_metadata_edit', 'rulefile_sections_edit_general', 'rulefile_sections_edit_page_types', 'rulefile_sections'];
         top_action_bar_instance.render();
         if (views_without_bottom_bar.includes(view_name_to_render)) {
             bottom_action_bar_container.style.display = 'none';
@@ -454,7 +458,8 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
             case 'rulefile_edit_requirement': ComponentClass = EditRulefileRequirementComponent; break;
             case 'rulefile_add_requirement': ComponentClass = EditRulefileRequirementComponent; break;
             case 'rulefile_metadata_edit': ComponentClass = EditRulefileMetadataViewComponent; break;
-                case 'rulefile_metadata': ComponentClass = RulefileMetadataViewComponent; break;
+            case 'rulefile_sections_edit_general': ComponentClass = EditGeneralSectionComponent; break;
+            case 'rulefile_sections_edit_page_types': ComponentClass = EditPageTypesSectionComponent; break;
             case 'rulefile_sections': ComponentClass = RulefileSectionsViewComponent; break;
             case 'confirm_delete': ComponentClass = ConfirmDeleteViewComponent; break;
             default:
@@ -645,7 +650,7 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
             consoleManager.info('[Main.js] Global event listeners cleaned up');
         };
         subscribe((new_state) => { 
-            const views_without_bottom_bar = ['restore_session', 'sample_form', 'confirm_sample_edit', 'metadata', 'edit_metadata', 'rulefile_metadata', 'rulefile_metadata_edit', 'rulefile_sections'];
+            const views_without_bottom_bar = ['restore_session', 'sample_form', 'confirm_sample_edit', 'metadata', 'edit_metadata', 'rulefile_metadata_edit', 'rulefile_sections_edit_general', 'rulefile_sections_edit_page_types', 'rulefile_sections'];
             
             try {
                 top_action_bar_instance.render();

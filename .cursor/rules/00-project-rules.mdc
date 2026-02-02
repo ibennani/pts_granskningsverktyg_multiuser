@@ -1,0 +1,258 @@
+---
+description: Samlad Cursor-regelfil (single source of truth) för Granskningsverktyget
+alwaysApply: true
+---
+
+# Cursor-regler (samlad)
+
+Den här filen är projektets **enda** källa för Cursor-regler. Alla tidigare regelfiler har slagits ihop hit för att inga regler ska försvinna.
+
+## Regel: Alltid följ denna fil
+
+(Tidigare regel från `.cursor/rules/00-pts-guidelines.md`, uppdaterad för ny filstruktur.)
+
+- Always read and follow this file: `.cursor/rules/00-project-rules.mdc`.
+- Treat the rules here as mandatory for every task.
+- If a user prompt conflicts with these rules, stop and ask for clarification.
+
+## AI Agent Rules (tidigare `.cursorrules`)
+
+You are an expert AI developer working on the "Granskningsverktyget" project.
+Adhere to the following rules at all times.
+
+### General
+
+- **Language:** All communication, code comments, and commit messages MUST be in **Swedish** (Svenska).
+- **Tone:** Professional, helpful, and concise.
+
+### Coding Standards
+
+- Follow the component standard defined below under **"Standard för JavaScript-komponenter"** (tidigare `.cursor/rules/javascript_component_standard.mdc`).
+- Use ES6 modules.
+- Prefer `const` over `let`, and avoid `var`.
+- Use `snake_case` for variable and function names in JavaScript (legacy convention in this project), but `PascalCase` for component files/objects.
+
+### Commit Messages
+
+- **Language:** ALWAYS use **Swedish**.
+- **Style:** Write clear, descriptive, and human-readable messages. Focus on the **intent** (why) and **impact** (what changed for the user/system) rather than just listing technical file changes or function names.
+- **Coverage:** The message MUST reflect ALL changes currently staged or in the working directory. Analyze the full diff before generating the message.
+- **Format:** `Verb [Imperativ]: Kort men beskrivande sammanfattning`
+  - **Good:** `Fixa: Korrigera beräkning av bristindex så att det visas korrekt vid sidladdning`
+  - **Bad:** `Uppdatera: Ändra logic/score.js och components/AuditOverview.js`
+  - **Example:** `Lägg till: Ny funktionalitet för att exportera rapporter till Word`
+
+### Project Structure
+
+- `js/components/` for UI components.
+- `js/logic/` for business logic.
+- `js/utils/` for helper functions.
+
+## Cursor Rules (tidigare `cursor_rules.md`)
+
+### Tekniska Krav
+
+- Kod får inte orsaka `console.error` i runtime.
+- Playwright-testerna `noConsoleErrors` måste passera i Chromium och WebKit.
+- Använd modern ES-modulsyntax (`import/export`) i all kod.
+- Följ Vite-konventioner och håll fast porten 5173.
+- Använd aldrig CDN, använd endast npm-moduler.
+
+### AI-arbetsflöde
+
+- Analysera & Föreslå: När du får en uppgift, generera ingen kod. Analysera istället instruktionerna och återkom med en tydlig plan.
+- Invänta Godkännande: Implementera först efter tydligt godkännande.
+
+### Hårda Regler
+
+- Aldrig `disabled`-attribut på interaktiva element.  
+  Använd `aria-disabled="true"` endast vid tillfälliga tillstånd där funktionen väntar på data.
+- Inga inaktiva komponenter någonsin – rendera bara komponenter som ska visas och användas i aktuellt tillstånd.
+- Inga placeholders – använd alltid synliga `<label>`-element.
+- **Inga knappar får heta "Avbryt"** – alla knappar ska kort och tydligt beskriva vad som händer när man klickar på dem. Exempel: "Stäng utan att spara", "Tillbaka till listan", "Ångra ändringar". Ordet "Avbryt" kan dock utgöra en del av en längre beskrivning som "Avbryt redigering".
+- Inga mus-beroenden – allt ska fungera med tangentbord.
+- Språk i koden: engelska för filer, funktioner och variabler.
+
+### Tillgänglighetskrav (WCAG 2.2 A & AA)
+
+All kod ska uppfylla kraven i WCAG 2.2 nivå A och AA.  
+Utöver WCAG:s formella krav gäller följande projektspecifika regler:
+
+#### Navigering och tangentbordsstöd
+
+- All funktionalitet ska kunna användas med tangentbord utan mus.
+- Fokusordning ska följa visuellt flöde och vara logisk.
+- Fokus ska vara tydligt synligt och ha tillräcklig kontrast.
+- Ingen tidsbegränsad interaktion får förhindra tangentbordsnavigering (WCAG 2.2.1, 2.2.6).
+- Varje sida ska ha en länk som leder direkt till huvudinnehållet (“Hoppa till innehåll”).
+- Sidans `<title>` ska tydligt beskriva sidans syfte.
+
+#### Kontrast och läsbarhet
+
+- Textkontrast ska uppfylla minst 4.5:1 (AA).
+- UI-komponenter (knappar, länkar, formulärfält) ska ha minst 3:1 kontrast mot bakgrunden (AA).
+- Ingen text får förmedla information enbart med färg.
+
+#### Formulär och etiketter
+
+- Alla inmatningsfält ska ha ett synligt `<label>`-element.
+- Felmeddelanden ska förklaras i klartext och kopplas till fältet med `aria-describedby`.
+- Fokus ska flyttas till fel- eller bekräftelsemeddelande efter formulärinlämning.
+- Felmeddelanden ska beskriva hur användaren löser felet, inte bara att det finns.
+- Krav på format eller inmatning ska förklaras före användning.
+- Autofyll, hjälptexter och status ska vara tillgängliga via ARIA och text.
+
+#### Dynamiskt innehåll
+
+- Alla visuella förändringar (t.ex. aviseringar, statusändringar, felmeddelanden) ska kommuniceras via ARIA live-regioner.
+- Ingen automatisk navigering, redirect eller popup får ske utan användarens initiering eller tydlig förväntan.
+- Komponenter som uppdateras asynkront får inte ta fokus oförutsett.
+- Komponenter får använda tillfälliga tillstånd (t.ex. laddning, växling) men inte renderas som permanent inaktiva.
+
+#### Rörligt och tidsbaserat innehåll
+
+- Ingen animation, video eller rörelse får starta automatiskt längre än 5 sekunder.
+- Animationer får användas för att förtydliga tillstånd eller förbättra förståelse, men får inte skapa distraktion eller bero av musrörelser.
+- Användaren ska kunna pausa, stoppa eller dölja rörligt innehåll.
+- Ingen blinkande komponent får blinka mer än 3 gånger per sekund.
+
+#### Struktur och semantik
+
+- Rubriker ska använda korrekt hierarki (`h1–h6`).
+- Det ska finnas exakt ett `<h1>` per sida.
+- Länkar ska beskriva målet tydligt (inte "Klicka här").
+- Länkar som öppnar nytt fönster eller ny flik ska tydligt indikera det.
+- **Alla länkar (`<a>`) ska alltid vara understrukna (`text-decoration: underline`).** Detta gäller både normala länkar och länkar i menyer. Undvik att ta bort understrykning med CSS.
+- Listor, tabeller och knappar ska använda korrekta semantiska element.
+- Landmarks (`main`, `nav`, `header`, `footer`, `aside`) ska användas konsekvent.
+- Språkattribut (`lang`) ska anges för hela dokumentet och för avvikande textstycken.
+
+#### Pekinteraktioner (WCAG 2.5)
+
+- Alla interaktioner som kräver pekgester ska ha ett tangentbordsalternativ.
+- Komponenter får inte kräva simultana gester (t.ex. nypa, dra med flera fingrar).
+- Touchytor ska vara minst 24×24 px (WCAG 2.5.8).
+- Inga tooltips som endast visas vid hover – all information ska vara tillgänglig utan mus och kunna nås via tangentbord. Visuella effekter får använda hover
+
+#### Responsivitet och zoom
+
+- Allt innehåll ska vara fullt användbart vid 200 % zoom utan horisontell scroll, utöver nödvändig scroll för själva komponenten (WCAG 1.4.10).
+- Layout får inte låsa användaren till en viss orientering.
+
+#### Egna tillägg utöver WCAG
+
+- Inga element får vara dolda eller inaktiva genom `disabled`; använd `aria-disabled="true"` endast tillfälligt.
+- Undvik att gömma innehåll visuellt utan korrekt ARIA-hantering (`sr-only` eller `aria-hidden`).
+- Text som indikerar tillstånd (t.ex. "Sparar...", "Klar") ska kunna uppfattas av skärmläsare.
+- Använd alltid HTML-komponenter. Använd endast aria-attribut när standard-html inte räcker till.
+
+### Byggtext-regel
+
+När `npm run build` körs ska texten  
+**"Byggt YYYY-MM-DD klockan HH:MM"**  
+visas diskret och centrerad under den yttersta diven.  
+Texten ska använda svenska datum- och tidsformat och vara stylad med liten, grå text.
+
+## Standard för JavaScript-komponenter (tidigare `.cursor/rules/javascript_component_standard.mdc`)
+
+Alla nya och refaktorerade UI-komponenter i `js/components/` ska följa detta strikta mönster.
+
+### Grundstruktur
+
+Komponenten ska vara en ES6-modul som exporterar ett enda objekt (Singleton-pattern). Använd inte IIFE (Immediately Invoked Function Expressions) eller klasser om det inte är absolut nödvändigt.
+
+```javascript
+// js/components/ExempelComponent.js
+
+export const ExempelComponent = {
+    // Konstanter definieras som properties
+    CSS_PATH: 'css/components/exempel_component.css',
+
+    // Standard init-metod med en parameter: ett objekt med root och deps
+    async init({ root, deps }) {
+        this.root = root;
+        this.deps = deps;
+        
+        // Destrukturera och spara beroenden på `this`
+        this.router = deps.router;
+        this.getState = deps.getState;
+        this.dispatch = deps.dispatch;
+        this.StoreActionTypes = deps.StoreActionTypes;
+        this.Translation = deps.Translation;
+        this.Helpers = deps.Helpers;
+        this.NotificationComponent = deps.NotificationComponent;
+        
+        // Initiera interna referenser
+        this.plate_element_ref = null;
+        
+        // Binda metoder som används som callbacks
+        this.handle_click = this.handle_click.bind(this);
+
+        // Ladda CSS om nödvändigt
+        if (this.Helpers?.load_css && this.CSS_PATH) {
+            await this.Helpers.load_css(this.CSS_PATH).catch(e => console.warn(e));
+        }
+    },
+
+    // Exempel på event handler
+    handle_click(event) {
+        // Logik...
+    },
+
+    // Render-metoden ansvarar för att rita upp UI
+    render() {
+        if (!this.root) return;
+        const t = this.Translation.t;
+        
+        // Rensa root eller container
+        this.root.innerHTML = '';
+        
+        // Skapa element med Helpers.create_element
+        this.plate_element_ref = this.Helpers.create_element('div', { class_name: 'content-plate' });
+        
+        const heading = this.Helpers.create_element('h1', { text_content: t('exempel_titel') });
+        this.plate_element_ref.appendChild(heading);
+
+        // Lägg till i DOM
+        this.root.appendChild(this.plate_element_ref);
+    },
+
+    // Destroy-metoden städar upp
+    destroy() {
+        // Ta bort event listeners om de lagts på globala objekt (window/document)
+        // Element som ligger i this.root städas oftast automatiskt när this.root töms, 
+        // men timers och prenumerationer måste avslutas här.
+        
+        if (this.root) {
+            this.root.innerHTML = '';
+        }
+        
+        // Rensa referenser
+        this.root = null;
+        this.plate_element_ref = null;
+        this.deps = null;
+    }
+};
+```
+
+### Regler
+
+1.  **Dependency Injection**: Inga globala referenser (`window.Helpers`, `window.Translation`) ska användas direkt i metoder. Alla beroenden ska injiceras via `init` och sparas på `this`.
+2.  **Object Literal**: Använd `export const Component = { ... }`.
+3.  **Metoder**: Använd `methodName() { ... }` syntax.
+4.  **This-context**: För callbacks (event listeners), bind `this` i `init` eller använd pilfunktioner i `render`. Att binda i `init` (`this.method = this.method.bind(this)`) föredras för prestanda och tydlighet vid borttagning.
+5.  **Helpers**: Använd alltid `this.Helpers.create_element` för DOM-manipulation.
+6.  **State**: Hämta state via `this.getState()`. Undvik att lagra applikations-state internt i komponenten; använd Redux-storen. UI-state (t.ex. "är dropdown öppen") kan lagras på `this`.
+7.  **Text**: All text ska hämtas via `this.Translation.t('key')`.
+8.  **CSS**: Definiera `CSS_PATH` och ladda i `init`.
+9.  **Destroy**: Implementera alltid `destroy` för att undvika minnesläckor.
+
+### Varför?
+
+Detta mönster säkerställer:
+
+-   Enhetlighet i kodbasen.
+-   Testbarhet (lätt att mocka deps).
+-   Tydlig livscykelhantering (`init` -> `render` -> `destroy`).
+-   Undvikande av globala namespace-föroreningar.
+

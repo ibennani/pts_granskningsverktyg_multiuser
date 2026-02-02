@@ -40,6 +40,18 @@ export const RulefileSectionsViewComponent = {
                 editRoute: 'rulefile_metadata_edit',
                 editSection: 'classifications'
             },
+            page_types: {
+                id: 'page_types',
+                title: t('rulefile_metadata_section_page_types') || 'Sidtyper',
+                editRoute: 'rulefile_metadata_edit',
+                editSection: 'page_types'
+            },
+            content_types: {
+                id: 'content_types',
+                title: t('rulefile_metadata_section_content_types') || 'Innehållstyper',
+                editRoute: 'rulefile_metadata_edit',
+                editSection: 'content_types'
+            },
             report_template: {
                 id: 'report_template',
                 title: t('rulefile_section_report_template_title') || 'Rapportmall',
@@ -65,11 +77,12 @@ export const RulefileSectionsViewComponent = {
         });
 
         const sections = [
-            { id: 'general', label: t('rulefile_section_general_title') || 'Allmän information', icon: 'info' },
-            { id: 'publisher_source', label: t('rulefile_section_publisher_source_title') || 'Utgivare & källa', icon: 'person' },
-            { id: 'classifications', label: t('rulefile_section_classifications_title') || 'Klassificeringar', icon: 'label' },
-            { id: 'report_template', label: t('rulefile_section_report_template_title') || 'Rapportmall', icon: 'description' },
-            { id: 'info_blocks_order', label: t('rulefile_section_info_blocks_order_title') || 'Info-blocks ordning', icon: 'view_list' }
+            { id: 'general', label: t('rulefile_section_general_title') || 'Allmän information' },
+            { id: 'page_types', label: t('rulefile_metadata_section_page_types') || 'Sidtyper' },
+            { id: 'content_types', label: t('rulefile_metadata_section_content_types') || 'Innehållstyper' },
+            { id: 'report_template', label: t('rulefile_section_report_template_title') || 'Rapportmall' },
+            { id: 'info_blocks_order', label: t('rulefile_section_info_blocks_order_title') || 'Info-blocks ordning' },
+            { id: 'classifications', label: t('rulefile_section_classifications_title') || 'Klassificeringar' }
         ];
 
         const menu_list = this.Helpers.create_element('ul', { class_name: 'rulefile-sections-menu-list' });
@@ -82,8 +95,7 @@ export const RulefileSectionsViewComponent = {
                     href: `#rulefile_sections?section=${section.id}`,
                     'aria-current': current_section_id === section.id ? 'page' : null
                 },
-                html_content: (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg(section.icon, [], 20) : '') + 
-                              `<span>${section.label}</span>`
+                text_content: section.label
             });
             menu_link.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -101,31 +113,42 @@ export const RulefileSectionsViewComponent = {
         const t = this.Translation.t;
         const header_wrapper = this.Helpers.create_element('div', { class_name: 'rulefile-sections-header' });
         
-        const heading = this.Helpers.create_element('h1', { text_content: section_config.title });
-        
-        const edit_button = this.Helpers.create_element('button', {
-            class_name: ['button', 'button-secondary', 'rulefile-sections-edit-button'],
-            attributes: {
-                type: 'button',
-                'aria-label': t('rulefile_sections_edit_button_aria', { sectionName: section_config.title }) || 
-                             `Redigera ${section_config.title}`
-            },
-            html_content: `<span>${t('edit_button_label') || 'Redigera'}</span>` + 
-                          (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('edit') : '')
-        });
-        
-        edit_button.addEventListener('click', () => {
-            if (section_config.isEditable) {
-                // För info_blocks_order, växla till redigeringsläge i samma vy
-                this.router('rulefile_sections', { section: section_config.id, edit: 'true' });
-            } else {
-                // För andra sektioner, gå till metadata-edit
-                this.router(section_config.editRoute);
-            }
-        });
-
+        const heading = this.Helpers.create_element('h2', { text_content: section_config.title });
         header_wrapper.appendChild(heading);
-        header_wrapper.appendChild(edit_button);
+        
+        // Lägg till redigera-knapp direkt till höger om h2 för general-sektionen
+        if (section_config.id === 'general') {
+            const edit_button = this.Helpers.create_element('button', {
+                class_name: ['button', 'button-secondary', 'rulefile-sections-edit-button'],
+                attributes: {
+                    type: 'button',
+                    'aria-label': t('rulefile_sections_edit_general_aria') || 'Redigera allmän information'
+                },
+                html_content: `<span>${t('edit_button_label') || 'Redigera'}</span>` + 
+                              (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('edit') : '')
+            });
+            edit_button.addEventListener('click', () => {
+                this.router('rulefile_sections_edit_general');
+            });
+            header_wrapper.appendChild(edit_button);
+        }
+        
+        // Lägg till redigera-knapp för page_types-sektionen
+        if (section_config.id === 'page_types') {
+            const edit_button = this.Helpers.create_element('button', {
+                class_name: ['button', 'button-secondary', 'rulefile-sections-edit-button'],
+                attributes: {
+                    type: 'button',
+                    'aria-label': t('rulefile_sections_edit_page_types_aria') || 'Redigera sidtyper'
+                },
+                html_content: `<span>${t('edit_button_label') || 'Redigera'}</span>` + 
+                              (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('edit') : '')
+            });
+            edit_button.addEventListener('click', () => {
+                this.router('rulefile_sections_edit_page_types');
+            });
+            header_wrapper.appendChild(edit_button);
+        }
         
         return header_wrapper;
     },
@@ -219,6 +242,7 @@ export const RulefileSectionsViewComponent = {
             ? (monitoringKey && monitoringKey !== monitoringText ? `${monitoringText} (${monitoringKey})` : monitoringText)
             : monitoringKey;
 
+        // Allmän information
         section.appendChild(this._create_definition_list([
             [t('rulefile_metadata_field_title'), metadata.title],
             [t('rulefile_metadata_field_description'), metadata.description],
@@ -229,6 +253,38 @@ export const RulefileSectionsViewComponent = {
             [t('rulefile_metadata_field_date_modified'), this._format_date_display(metadata.dateModified)],
             [t('rulefile_metadata_field_license'), metadata.license]
         ]));
+
+        // Utgivare
+        const publisher_subsection = this.Helpers.create_element('div', { class_name: 'metadata-subsection' });
+        publisher_subsection.appendChild(this.Helpers.create_element('h2', { text_content: t('rulefile_metadata_section_publisher') }));
+        publisher_subsection.appendChild(this._create_definition_list([
+            [t('rulefile_metadata_field_publisher_name'), metadata.publisher?.name],
+            [t('rulefile_metadata_field_publisher_contact'), metadata.publisher?.contactPoint]
+        ]));
+        section.appendChild(publisher_subsection);
+
+        // Källa
+        const source_subsection = this.Helpers.create_element('div', { class_name: 'metadata-subsection' });
+        source_subsection.appendChild(this.Helpers.create_element('h2', { text_content: t('rulefile_metadata_section_source') }));
+        
+        const source_link_node = this._create_source_link(metadata.source?.url);
+        const source_entries = [
+            [t('rulefile_metadata_field_source_title'), metadata.source?.title],
+            [t('rulefile_metadata_field_source_retrieved'), this._format_date_display(metadata.source?.retrievedDate)],
+            [t('rulefile_metadata_field_source_format'), metadata.source?.format]
+        ];
+        const source_section_nodes = [];
+        if (source_link_node) {
+            const link_container = this.Helpers.create_element('p');
+            link_container.appendChild(source_link_node);
+            source_section_nodes.push(link_container);
+        }
+        const source_definition_list = this._create_definition_list(source_entries);
+        if (source_definition_list.childNodes.length > 0) {
+            source_section_nodes.push(source_definition_list);
+        }
+        source_section_nodes.forEach(node => source_subsection.appendChild(node));
+        section.appendChild(source_subsection);
 
         return section;
     },
@@ -275,8 +331,6 @@ export const RulefileSectionsViewComponent = {
         const section = this.Helpers.create_element('section', { class_name: 'rulefile-section-content' });
         
         const vocabularies = metadata.vocabularies || {};
-        const page_types = vocabularies.pageTypes || metadata.pageTypes || [];
-        const content_types = vocabularies.contentTypes || metadata.contentTypes || [];
         const taxonomies = vocabularies.taxonomies || metadata.taxonomies || [];
 
         // Keywords
@@ -284,58 +338,6 @@ export const RulefileSectionsViewComponent = {
         keywords_subsection.appendChild(this.Helpers.create_element('h2', { text_content: t('rulefile_metadata_section_keywords') }));
         keywords_subsection.appendChild(this._create_list(metadata.keywords, 'rulefile_metadata_empty_value', 'metadata-list'));
         section.appendChild(keywords_subsection);
-
-        // Page Types
-        const page_types_subsection = this.Helpers.create_element('div', { class_name: 'metadata-subsection' });
-        page_types_subsection.appendChild(this.Helpers.create_element('h2', { text_content: t('rulefile_metadata_section_page_types') }));
-        page_types_subsection.appendChild(this._create_list(page_types, 'rulefile_metadata_empty_value', 'metadata-list'));
-        section.appendChild(page_types_subsection);
-
-        // Content Types
-        const content_types_subsection = this.Helpers.create_element('div', { class_name: 'metadata-subsection' });
-        content_types_subsection.appendChild(this.Helpers.create_element('h2', { text_content: t('rulefile_metadata_section_content_types') }));
-        if (!Array.isArray(content_types) || content_types.length === 0) {
-            content_types_subsection.appendChild(this.Helpers.create_element('p', { 
-                class_name: 'metadata-empty', 
-                text_content: t('rulefile_metadata_empty_value') 
-            }));
-        } else {
-            const root_list = this.Helpers.create_element('ul', { class_name: 'metadata-nested-list' });
-            content_types.forEach(parent => {
-                const parent_item = this.Helpers.create_element('li');
-                parent_item.appendChild(this.Helpers.create_element('span', { 
-                    class_name: 'metadata-subject', 
-                    text_content: parent.text || parent.id || t('rulefile_metadata_untitled_item') 
-                }));
-                if (parent.description) {
-                    parent_item.appendChild(this.Helpers.create_element('p', { 
-                        class_name: 'metadata-description', 
-                        text_content: parent.description 
-                    }));
-                }
-                if (Array.isArray(parent.types) && parent.types.length > 0) {
-                    const child_list = this.Helpers.create_element('ul', { class_name: 'metadata-nested-list-child' });
-                    parent.types.forEach(child => {
-                        const child_item = this.Helpers.create_element('li');
-                        child_item.appendChild(this.Helpers.create_element('span', { 
-                            class_name: 'metadata-subject', 
-                            text_content: child.text || child.id || t('rulefile_metadata_untitled_item') 
-                        }));
-                        if (child.description) {
-                            child_item.appendChild(this.Helpers.create_element('p', { 
-                                class_name: 'metadata-description', 
-                                text_content: child.description 
-                            }));
-                        }
-                        child_list.appendChild(child_item);
-                    });
-                    parent_item.appendChild(child_list);
-                }
-                root_list.appendChild(parent_item);
-            });
-            content_types_subsection.appendChild(root_list);
-        }
-        section.appendChild(content_types_subsection);
 
         // Samples
         const samples_subsection = this.Helpers.create_element('div', { class_name: 'metadata-subsection' });
@@ -419,6 +421,174 @@ export const RulefileSectionsViewComponent = {
             taxonomies_subsection.appendChild(wrapper);
         }
         section.appendChild(taxonomies_subsection);
+
+        return section;
+    },
+
+    _render_page_types_section(metadata) {
+        const t = this.Translation.t;
+        const section = this.Helpers.create_element('section', { class_name: 'rulefile-section-content' });
+        
+        // Försök hämta pageTypes från olika platser i strukturen
+        const vocabularies = metadata.vocabularies || {};
+        let page_types = vocabularies.pageTypes || metadata.pageTypes || [];
+        
+        // Hämta sampleCategories från olika platser i strukturen
+        const samples = metadata.samples || {};
+        let sample_categories = samples.sampleCategories || [];
+        
+        // Om sampleCategories är tom, försök hämta från vocabularies
+        if (!Array.isArray(sample_categories) || sample_categories.length === 0) {
+            const vocab_samples = vocabularies.sampleTypes || {};
+            if (Array.isArray(vocab_samples.sampleCategories)) {
+                sample_categories = vocab_samples.sampleCategories;
+            }
+        }
+        
+        // Om pageTypes är tom, använd sampleCategories som källa
+        if (!Array.isArray(page_types) || page_types.length === 0) {
+            if (Array.isArray(sample_categories) && sample_categories.length > 0) {
+                // Extrahera pageTypes från sampleCategories
+                page_types = sample_categories.map(cat => cat.text || cat.id).filter(Boolean);
+            }
+        }
+
+        if (!Array.isArray(page_types) || page_types.length === 0) {
+            section.appendChild(this.Helpers.create_element('p', { 
+                class_name: 'metadata-empty', 
+                text_content: t('rulefile_metadata_empty_value') 
+            }));
+            return section;
+        }
+
+        // För varje sidtyp, visa den som h3 och dess kopplade kategorier som punktlista
+        page_types.forEach((page_type, index) => {
+            // Hitta motsvarande sampleCategory genom att matcha text eller id
+            const page_type_str = String(page_type);
+            const page_type_normalized = page_type_str.toLowerCase().trim();
+            
+            // Först försök matcha exakt på text
+            let matching_category = sample_categories.find(cat => {
+                const cat_text = (cat.text || '').toLowerCase().trim();
+                return cat_text === page_type_normalized;
+            });
+            
+            // Om ingen exakt match, försök matcha på id eller normaliserad text
+            if (!matching_category) {
+                matching_category = sample_categories.find(cat => {
+                    const cat_text = (cat.text || '').toLowerCase().trim();
+                    const cat_id = (cat.id || '').toLowerCase().trim();
+                    const cat_id_without_dashes = cat_id.replace(/-/g, ' ').trim();
+                    
+                    return cat_id === page_type_normalized ||
+                           cat_id_without_dashes === page_type_normalized ||
+                           cat_id.replace(/-/g, '') === page_type_normalized.replace(/\s+/g, '') ||
+                           // Matcha även om det finns små skillnader i tecken
+                           cat_text.includes(page_type_normalized) || 
+                           page_type_normalized.includes(cat_text);
+                });
+            }
+            
+            // Fallback: om ingen match hittades, försök matcha på index-position
+            if (!matching_category && index < sample_categories.length) {
+                matching_category = sample_categories[index];
+            }
+            
+            // Debug: logga om matchning misslyckas (kan tas bort senare)
+            if (!matching_category) {
+                console.warn('[RulefileSectionsViewComponent] No matching category found for page type:', page_type_str, 'Available categories:', sample_categories.map(c => c.text || c.id));
+            } else if (!Array.isArray(matching_category.categories) || matching_category.categories.length === 0) {
+                console.warn('[RulefileSectionsViewComponent] Matching category found but no categories array:', matching_category);
+            }
+
+            // Skapa wrapper för varje sidtyp med korrekt styling
+            const page_type_wrapper = this.Helpers.create_element('div', { class_name: 'page-type-item' });
+            
+            // Skapa h3 för sidtypen med korrekt styling (liknande metadata-subsection h2)
+            const heading = this.Helpers.create_element('h3', { 
+                text_content: page_type_str,
+                class_name: 'page-type-heading'
+            });
+            page_type_wrapper.appendChild(heading);
+
+            // Skapa punktlista för kategorierna direkt under h3
+            if (matching_category && Array.isArray(matching_category.categories) && matching_category.categories.length > 0) {
+                const categories_list = this.Helpers.create_element('ul', { class_name: 'metadata-list' });
+                matching_category.categories.forEach(category => {
+                    const category_text = category.text || category.id || t('rulefile_metadata_untitled_item');
+                    const list_item = this.Helpers.create_element('li', { text_content: category_text });
+                    categories_list.appendChild(list_item);
+                });
+                page_type_wrapper.appendChild(categories_list);
+            } else {
+                // Om inga kategorier hittades, visa ett meddelande direkt under h3 utan mellanrum
+                const empty_msg = this.Helpers.create_element('p', { 
+                    class_name: 'metadata-empty page-type-empty', 
+                    text_content: t('rulefile_metadata_empty_value') 
+                });
+                page_type_wrapper.appendChild(empty_msg);
+            }
+            
+            section.appendChild(page_type_wrapper);
+            
+            // Lägg till mellanrum mellan sidtyper (utom efter sista)
+            if (index < page_types.length - 1) {
+                const spacer = this.Helpers.create_element('div', { style: 'margin-bottom: 2rem;' });
+                section.appendChild(spacer);
+            }
+        });
+
+        return section;
+    },
+
+    _render_content_types_section(metadata) {
+        const t = this.Translation.t;
+        const section = this.Helpers.create_element('section', { class_name: 'rulefile-section-content' });
+        
+        const vocabularies = metadata.vocabularies || {};
+        const content_types = vocabularies.contentTypes || metadata.contentTypes || [];
+
+        if (!Array.isArray(content_types) || content_types.length === 0) {
+            section.appendChild(this.Helpers.create_element('p', { 
+                class_name: 'metadata-empty', 
+                text_content: t('rulefile_metadata_empty_value') 
+            }));
+        } else {
+            const root_list = this.Helpers.create_element('ul', { class_name: 'metadata-nested-list' });
+            content_types.forEach(parent => {
+                const parent_item = this.Helpers.create_element('li');
+                parent_item.appendChild(this.Helpers.create_element('span', { 
+                    class_name: 'metadata-subject', 
+                    text_content: parent.text || parent.id || t('rulefile_metadata_untitled_item') 
+                }));
+                if (parent.description) {
+                    parent_item.appendChild(this.Helpers.create_element('p', { 
+                        class_name: 'metadata-description', 
+                        text_content: parent.description 
+                    }));
+                }
+                if (Array.isArray(parent.types) && parent.types.length > 0) {
+                    const child_list = this.Helpers.create_element('ul', { class_name: 'metadata-nested-list-child' });
+                    parent.types.forEach(child => {
+                        const child_item = this.Helpers.create_element('li');
+                        child_item.appendChild(this.Helpers.create_element('span', { 
+                            class_name: 'metadata-subject', 
+                            text_content: child.text || child.id || t('rulefile_metadata_untitled_item') 
+                        }));
+                        if (child.description) {
+                            child_item.appendChild(this.Helpers.create_element('p', { 
+                                class_name: 'metadata-description', 
+                                text_content: child.description 
+                            }));
+                        }
+                        child_list.appendChild(child_item);
+                    });
+                    parent_item.appendChild(child_list);
+                }
+                root_list.appendChild(parent_item);
+            });
+            section.appendChild(root_list);
+        }
 
         return section;
     },
@@ -655,68 +825,103 @@ export const RulefileSectionsViewComponent = {
 
         this.root.innerHTML = '';
         
-        const container = this.Helpers.create_element('div', { class_name: 'rulefile-sections-container' });
+        // Main wrapper (content-plate) som innehåller allt
+        const main_plate = this.Helpers.create_element('div', { class_name: 'content-plate rulefile-sections-main-plate' });
         
         // Global message
         const global_message = this.NotificationComponent.get_global_message_element_reference();
         if (global_message) {
-            container.appendChild(global_message);
+            main_plate.appendChild(global_message);
         }
 
-        // Back button
-        const back_button = this.Helpers.create_element('button', {
-            class_name: ['button', 'button-default'],
-            html_content: `<span>${t('back_to_edit_options') || 'Tillbaka'}</span>` + 
-                          (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('arrow_back') : '')
+        // Main heading
+        const main_heading = this.Helpers.create_element('h1', { 
+            text_content: t('rulefile_sections_title') || 'Regelfilens innehåll' 
         });
-        back_button.addEventListener('click', () => this.router('edit_rulefile_main'));
-        container.appendChild(back_button);
+        main_plate.appendChild(main_heading);
 
-        // Main layout
+        // Main layout - flex container för meny och innehåll
         const layout = this.Helpers.create_element('div', { class_name: 'rulefile-sections-layout' });
         
-        // Left menu
+        // Left menu - ligger i main-wrapper
         const left_menu = this._create_left_menu(section_id);
         layout.appendChild(left_menu);
 
-        // Content area
-        const content_area = this.Helpers.create_element('div', { class_name: 'rulefile-sections-content-area' });
-        const plate = this.Helpers.create_element('div', { class_name: 'content-plate' });
-
-        const section_config = this._get_section_config(section_id);
-        const header = this._create_header(section_config);
-        plate.appendChild(header);
+        // Right wrapper - egen wrapper för högerinnehållet
+        const right_wrapper = this.Helpers.create_element('div', { class_name: 'rulefile-sections-right-wrapper' });
+        
+        // Content plate för högerinnehållet
+        const content_plate = this.Helpers.create_element('div', { class_name: 'content-plate rulefile-sections-content-plate' });
 
         // Render section content
         const metadata = state.ruleFileContent.metadata;
         let section_content;
+        let header_section_config;
         
         switch (section_id) {
             case 'general':
+            case 'publisher_source':
+                // publisher_source visas nu i general-sektionen, använd general som rubrik
+                header_section_config = this._get_section_config('general');
                 section_content = this._render_general_section(metadata);
                 break;
-            case 'publisher_source':
-                section_content = this._render_publisher_source_section(metadata);
-                break;
             case 'classifications':
+                header_section_config = this._get_section_config(section_id);
                 section_content = this._render_classifications_section(metadata);
                 break;
+            case 'page_types':
+                header_section_config = this._get_section_config(section_id);
+                section_content = this._render_page_types_section(metadata);
+                break;
+            case 'content_types':
+                header_section_config = this._get_section_config(section_id);
+                section_content = this._render_content_types_section(metadata);
+                break;
             case 'report_template':
+                header_section_config = this._get_section_config(section_id);
                 section_content = this._render_report_template_section(state.ruleFileContent);
                 break;
             case 'info_blocks_order':
+                header_section_config = this._get_section_config(section_id);
                 section_content = this._render_info_blocks_order_section(metadata, is_editing);
                 break;
             default:
+                header_section_config = this._get_section_config('general');
                 section_content = this._render_general_section(metadata);
         }
 
-        plate.appendChild(section_content);
-        content_area.appendChild(plate);
-        layout.appendChild(content_area);
+        // Skapa header för alla sektioner (inklusive page_types)
+        const header = this._create_header(header_section_config);
+        content_plate.appendChild(header);
+        content_plate.appendChild(section_content);
+        right_wrapper.appendChild(content_plate);
+        layout.appendChild(right_wrapper);
 
-        container.appendChild(layout);
-        this.root.appendChild(container);
+        main_plate.appendChild(layout);
+
+        // Back button - längst ner i main wrapper
+        const back_button = this.Helpers.create_element('button', {
+            class_name: ['button', 'button-default'],
+            html_content: `<span>${t('back_to_edit_options') || 'Tillbaka till redigeringsmenyn'}</span>` + 
+                          (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('arrow_back') : '')
+        });
+        back_button.addEventListener('click', () => this.router('edit_rulefile_main'));
+        main_plate.appendChild(back_button);
+
+        this.root.appendChild(main_plate);
+
+        // Sätt fokus på h2 om det finns i sessionStorage
+        const focusSelector = sessionStorage.getItem('focusAfterLoad');
+        if (focusSelector) {
+            sessionStorage.removeItem('focusAfterLoad');
+            setTimeout(() => {
+                const elementToFocus = this.root.querySelector(focusSelector);
+                if (elementToFocus) {
+                    elementToFocus.setAttribute('tabindex', '-1');
+                    elementToFocus.focus();
+                }
+            }, 100);
+        }
     },
 
     destroy() {

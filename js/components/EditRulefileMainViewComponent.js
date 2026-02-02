@@ -38,18 +38,11 @@ export const EditRulefileMainViewComponent = {
         const view_sections_button = this.Helpers.create_element('button', {
             class_name: ['button', 'button-primary'],
             attributes: { type: 'button' },
-            html_content: `<span>${t('view_rulefile_sections_button') || 'Visa regelfilsektioner'}</span>` + this.Helpers.get_icon_svg('view_list')
+            html_content: `<span>${t('view_rulefile_sections_button') || 'Visa regelfilens innehåll'}</span>` + this.Helpers.get_icon_svg('view_list')
         });
         view_sections_button.addEventListener('click', () => this.router('rulefile_sections', { section: 'general' }));
-        
-        const edit_meta_button = this.Helpers.create_element('button', {
-            class_name: ['button', 'button-secondary'],
-            attributes: { type: 'button' },
-            html_content: `<span>${t('edit_rulefile_metadata_button')}</span>` + this.Helpers.get_icon_svg('edit')
-        });
-        edit_meta_button.addEventListener('click', () => this.router('rulefile_metadata'));
 
-        button_group.append(edit_reqs_button, view_sections_button, edit_meta_button);
+        button_group.append(edit_reqs_button, view_sections_button);
         plate_element.appendChild(button_group);
 
         const actions_div = this.Helpers.create_element('div', { class_name: 'form-actions', style: 'margin-top: 3rem;' });

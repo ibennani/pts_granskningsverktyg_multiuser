@@ -953,7 +953,7 @@ export const EditRulefileMetadataViewComponent = {
             attributes: { type: 'button' },
             html_content: `<span>${this.Translation.t('rulefile_metadata_view_without_saving')}</span>` + (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('visibility') : '')
         });
-        footerCancelButton.addEventListener('click', () => this.router('rulefile_metadata'));
+        footerCancelButton.addEventListener('click', () => this.router('edit_rulefile_main'));
 
         footerActions.append(footerSaveButton, footerCancelButton);
         form.appendChild(footerActions);
@@ -1190,7 +1190,7 @@ export const EditRulefileMetadataViewComponent = {
         });
 
         this.NotificationComponent.show_global_message?.(t('rulefile_metadata_edit_saved'), 'success');
-        this.router('rulefile_metadata');
+        this.router('edit_rulefile_main');
     },
 
     render() {
@@ -1230,7 +1230,7 @@ export const EditRulefileMetadataViewComponent = {
             attributes: { type: 'button' },
             html_content: `<span>${t('rulefile_metadata_view_without_saving')}</span>` + (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('visibility') : '')
         });
-        viewWithoutSaveButton.addEventListener('click', () => this.router('rulefile_metadata'));
+        viewWithoutSaveButton.addEventListener('click', () => this.router('edit_rulefile_main'));
 
         actionRow.append(saveTopButton, viewWithoutSaveButton);
 
