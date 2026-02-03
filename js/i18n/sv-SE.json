@@ -447,7 +447,7 @@
   "rulefile_metadata_field_language": "Språk",
   "rulefile_metadata_field_monitoring_type": "Tillsynstyp",
   "rulefile_metadata_field_monitoring_type_key": "Tillsynstyp (nyckel)",
-  "rulefile_metadata_field_monitoring_type_label": "Tillsynstyp (visningsnamn)",
+  "rulefile_metadata_field_monitoring_type_label": "Vad ska granskas?",
   "rulefile_metadata_field_date_created": "Skapad",
   "rulefile_metadata_field_date_modified": "Senast ändrad",
   "rulefile_metadata_field_license": "Licens",

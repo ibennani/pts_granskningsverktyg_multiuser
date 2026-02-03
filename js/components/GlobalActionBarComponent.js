@@ -19,6 +19,10 @@ export class GlobalActionBarComponent {
     this.NotificationComponent = null;
     this.dispatch = null;
     this.StoreActionTypes = null;
+    
+    // State för att optimera re-rendering
+    this.last_audit_status = null;
+    this.last_has_rulefile_loaded = null;
 
     // Bind methods
     this.handle_save_rulefile = this.handle_save_rulefile.bind(this);
@@ -291,12 +295,34 @@ export class GlobalActionBarComponent {
 
   render() {
     if (!this.root) return;
-    this.root.innerHTML = '';
-
+    
     const t = this.Translation.t;
     const current_state = this.getState();
     const audit_status = current_state?.auditStatus;
     const has_rulefile_loaded = Boolean(current_state?.ruleFileContent);
+    
+    // Om inget har ändrats som påverkar action bar visuellt, hoppa över re-rendering
+    // Detta förhindrar onödiga re-renderingar vid autospar av metadata
+    if (this.last_audit_status === audit_status && 
+        this.last_has_rulefile_loaded === has_rulefile_loaded &&
+        this.root.children.length > 0) {
+      return; // Inget visuellt har ändrats, hoppa över re-rendering
+    }
+    
+    // Spara aktuellt fokus innan re-rendering
+    const activeElement = document.activeElement;
+    const wasFocusedInBar = activeElement && this.root.contains(activeElement);
+    let focusInfo = null;
+    if (wasFocusedInBar) {
+      focusInfo = {
+        element: activeElement,
+        id: activeElement.id,
+        name: activeElement.name,
+        tagName: activeElement.tagName
+      };
+    }
+    
+    this.root.innerHTML = '';
 
     const bar_element = this.Helpers.create_element('div', {
       class_name: 'global-action-bar',
@@ -371,6 +397,26 @@ export class GlobalActionBarComponent {
 
     bar_element.appendChild(right_group);
     this.root.appendChild(bar_element);
+    
+    // Spara state för nästa render
+    this.last_audit_status = audit_status;
+    this.last_has_rulefile_loaded = has_rulefile_loaded;
+    
+    // Återställ fokus om det var i action bar innan re-rendering
+    if (focusInfo && focusInfo.element && document.contains(focusInfo.element)) {
+      // Elementet finns fortfarande, behåll fokus där det är
+      // (det borde inte ha ändrats eftersom vi bara re-renderade action bar)
+    } else if (focusInfo) {
+      // Försök hitta elementet igen baserat på id/name
+      const restoredElement = focusInfo.id 
+        ? this.root.querySelector(`#${focusInfo.id}`)
+        : focusInfo.name 
+          ? this.root.querySelector(`[name="${focusInfo.name}"]`)
+          : null;
+      if (restoredElement) {
+        restoredElement.focus();
+      }
+    }
   }
 
   destroy() {

@@ -447,7 +447,7 @@
   "rulefile_metadata_field_language": "Language",
   "rulefile_metadata_field_monitoring_type": "Monitoring Type",
   "rulefile_metadata_field_monitoring_type_key": "Monitoring Type (key)",
-  "rulefile_metadata_field_monitoring_type_label": "Monitoring Type (label)",
+  "rulefile_metadata_field_monitoring_type_label": "What will you be monitoring?",
   "rulefile_metadata_field_date_created": "Created",
   "rulefile_metadata_field_date_modified": "Last modified",
   "rulefile_metadata_field_license": "License",

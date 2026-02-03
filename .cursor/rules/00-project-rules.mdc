@@ -67,6 +67,7 @@ Adhere to the following rules at all times.
 
 - Aldrig `disabled`-attribut på interaktiva element.  
   Använd `aria-disabled="true"` endast vid tillfälliga tillstånd där funktionen väntar på data.
+- **Alla formulärfält ska vara redigerbara** – aldrig använd `readonly`-attribut på formulärfält i redigeringsläge. Om ett fält inte ska kunna redigeras ska det inte visas eller ska formuläret inte vara i redigeringsläge.
 - Inga inaktiva komponenter någonsin – rendera bara komponenter som ska visas och användas i aktuellt tillstånd.
 - Inga placeholders – använd alltid synliga `<label>`-element.
 - **Inga knappar får heta "Avbryt"** – alla knappar ska kort och tydligt beskriva vad som händer när man klickar på dem. Exempel: "Stäng utan att spara", "Tillbaka till listan", "Ångra ändringar". Ordet "Avbryt" kan dock utgöra en del av en längre beskrivning som "Avbryt redigering".
@@ -152,6 +153,175 @@ När `npm run build` körs ska texten
 **"Byggt YYYY-MM-DD klockan HH:MM"**  
 visas diskret och centrerad under den yttersta diven.  
 Texten ska använda svenska datum- och tidsformat och vara stylad med liten, grå text.
+
+### Autospar-regler
+
+Alla formulärkomponenter och state-hantering ska följa dessa strikta regler för autospar:
+
+#### Central autospar (state.js)
+
+- **Timing:** 3 sekunder debounce efter varje state-ändring
+- **Mekanism:** När `dispatch()` anropas startas en timer. Om inget nytt dispatch sker inom 3 sekunder sparas state till localStorage
+- **Scope:** Gäller alla state-ändringar i hela applikationen
+
+#### Formulärkomponenter
+
+Alla formulärkomponenter måste följa samma mönster:
+
+- **Timing:** 3 sekunder debounce efter inaktivitet
+- **Triggas av:** Endast `input`-events (när användaren skriver)
+- **Triggas INTE av:**
+  - `blur`-events (när fokus lämnar fältet)
+  - Klick på labels eller andra element
+  - Navigering mellan fält
+  - Dubbelklick på labels eller andra element
+
+**Komponenter som använder detta:**
+- `EditGeneralSectionComponent` (regelfilsmetadata)
+- `EditPageTypesSectionComponent` (sidtyper)
+- `MetadataFormComponent` (granskningsmetadata)
+- `AddSampleFormComponent` (stickprov)
+- `ChecklistHandler` (observationer i granskning)
+- `EditRulefileRequirementComponent` (kravredigering)
+
+#### Manuell sparning
+
+- **Spara-knappar:** Sparar omedelbart och rensar debounce-timer
+- **Inget autospar:** Autospar triggas inte vid manuell sparning
+
+#### Fokus och scroll-hantering
+
+När autospar sker måste följande bevaras för att autospar ska vara helt osynligt för användaren:
+
+- **Fokus:** Aktuellt fokuserat element och textmarkering (selectionStart/selectionEnd) måste bevaras
+- **Scroll:** Både element scroll-position och window scroll-position måste bevaras
+- **Element-identifiering:** Eftersom DOM-element kan skapas om vid re-render måste vi spara element-identifierare (id, name, data-index) istället för element-referenser
+- **Användning:** Använd `focus({ preventScroll: true })` när möjligt och återställ scroll-position efter autospar
+- **Timing:** Vänta minst 50ms efter dispatch för att säkerställa att render() har körts innan fokus återställs
+
+#### Trimning av formulärfält vid sparning
+
+När formulär sparas (vid manuell sparning eller när användaren lämnar formulärvyn) måste alla inputfält och textarea-fält trimmas:
+
+- **Alla strängvärden:** Trimmas för att ta bort inledande och avslutande mellanslag
+- **När:** Vid sparning av formulärdata (i `_parse_form_data`, `_update_local_data_from_form`, `_save_form_values_to_metadata`, etc.)
+- **Var:** I alla formulärkomponenter när data läses från formulärfält
+- **Autospar:** Trimmas INTE vid autospar (endast vid manuell sparning eller när formulärvyn lämnas)
+
+#### Implementation-exempel
+
+```javascript
+// Korrekt implementation av autospar i formulärkomponenter
+debounced_autosave_form() {
+    clearTimeout(this.debounceTimer);
+    this.debounceTimer = setTimeout(() => {
+        this.save_form_data_immediately();
+    }, 3000);
+},
+
+save_form_data_immediately() {
+    if (!this.form_element_ref || !this.working_metadata) return;
+    
+    // Spara aktuellt fokus och scroll-position innan autospar
+    const activeElement = document.activeElement;
+    const focusInfo = activeElement && this.form_element_ref.contains(activeElement) ? {
+        elementId: activeElement.id || null,
+        elementName: activeElement.name || null,
+        dataIndex: activeElement.getAttribute('data-index') || null,
+        selectionStart: activeElement.selectionStart !== undefined ? activeElement.selectionStart : null,
+        selectionEnd: activeElement.selectionEnd !== undefined ? activeElement.selectionEnd : null,
+        scrollTop: activeElement.scrollTop !== undefined ? activeElement.scrollTop : null,
+        scrollLeft: activeElement.scrollLeft !== undefined ? activeElement.scrollLeft : null
+    } : null;
+    
+    const windowScrollY = window.scrollY;
+    const windowScrollX = window.scrollX;
+    
+    // Spara data (utan trimning vid autospar)
+    this.dispatch({ type: this.StoreActionTypes.UPDATE_DATA, payload: { ... } });
+    
+    // Återställ fokus och scroll-position efter autospar
+    // Vänta 50ms för att säkerställa att render() har körts
+    setTimeout(() => {
+        requestAnimationFrame(() => {
+            // Återställ window scroll-position
+            window.scrollTo({ left: windowScrollX, top: windowScrollY, behavior: 'instant' });
+            
+            // Återställ fokus om det fanns ett aktivt element
+            if (focusInfo && this.form_element_ref) {
+                let elementToFocus = null;
+                
+                // Försök hitta elementet via id först, sedan name, sedan data-index
+                if (focusInfo.elementId) {
+                    elementToFocus = this.form_element_ref.querySelector(`#${CSS.escape(focusInfo.elementId)}`);
+                }
+                if (!elementToFocus && focusInfo.elementName) {
+                    elementToFocus = this.form_element_ref.querySelector(`[name="${CSS.escape(focusInfo.elementName)}"]`);
+                }
+                if (!elementToFocus && focusInfo.dataIndex !== null) {
+                    const elements = this.form_element_ref.querySelectorAll(`[data-index="${CSS.escape(focusInfo.dataIndex)}"]`);
+                    if (elements.length > 0) {
+                        elementToFocus = elements[0];
+                    }
+                }
+                
+                if (elementToFocus && document.contains(elementToFocus)) {
+                    // Återställ element scroll-position om det är ett scrollbart element
+                    if (focusInfo.scrollTop !== null && elementToFocus.scrollTop !== undefined) {
+                        elementToFocus.scrollTop = focusInfo.scrollTop;
+                    }
+                    if (focusInfo.scrollLeft !== null && elementToFocus.scrollLeft !== undefined) {
+                        elementToFocus.scrollLeft = focusInfo.scrollLeft;
+                    }
+                    
+                    // Återställ fokus
+                    try {
+                        elementToFocus.focus({ preventScroll: true });
+                    } catch (e) {
+                        elementToFocus.focus();
+                    }
+                    
+                    // Återställ textmarkering om det är ett textfält
+                    if (focusInfo.selectionStart !== null && focusInfo.selectionEnd !== null && elementToFocus.setSelectionRange) {
+                        try {
+                            elementToFocus.setSelectionRange(focusInfo.selectionStart, focusInfo.selectionEnd);
+                        } catch (e) {
+                            // Ignorera om setSelectionRange inte fungerar
+                        }
+                    }
+                }
+            }
+        });
+    }, 50);
+},
+
+// Event listeners - ENDAST på input, INTE på blur
+input.addEventListener('input', this.debounced_autosave_form);
+// INTE: input.addEventListener('blur', this.save_form_data_immediately);
+
+// Exempel på trimning vid manuell sparning
+_parse_form_data(form, workingMetadata) {
+    const formData = new FormData(form);
+    const data = {};
+    
+    for (const [key, value] of formData.entries()) {
+        // Trim strängvärden för att ta bort inledande och avslutande mellanslag
+        const trimmedValue = typeof value === 'string' ? value.trim() : value;
+        // ... spara trimmedValue i data-strukturen
+    }
+    
+    return workingMetadata;
+}
+```
+
+#### Sammanfattning
+
+- **Autospar:** Sker endast vid 3 sekunders inaktivitet efter input
+- **Autospar triggas INTE:** Vid blur, klick eller navigering
+- **Manuell sparning:** Via knappar fungerar omedelbart och rensar debounce-timer
+- **Fokus och scroll:** Bevaras vid autospar så användaren inte märker något
+- **Trimning:** Alla formulärfält trimmas vid manuell sparning eller när formulärvyn lämnas, INTE vid autospar
+- **Osynlighet:** Autospar ska vara helt osynligt för användaren - ingen fokus-förändring, ingen scroll-förändring, inga visuella ändringar
 
 ## Standard för JavaScript-komponenter (tidigare `.cursor/rules/javascript_component_standard.mdc`)
 

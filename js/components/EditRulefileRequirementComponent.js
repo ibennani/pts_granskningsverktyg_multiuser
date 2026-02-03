@@ -93,7 +93,9 @@ export const EditRulefileRequirementComponent = {
     _update_local_data_from_form() {
         if (!this.form_element_ref) return;
         
-        this.local_requirement_data.title = this.form_element_ref.querySelector('#title')?.value || '';
+        // Trim alla strängvärden när de läses från formulärfält
+        const titleValue = this.form_element_ref.querySelector('#title')?.value || '';
+        this.local_requirement_data.title = typeof titleValue === 'string' ? titleValue.trim() : titleValue;
         
         // Support both old format (direct fields) and new format (infoBlocks)
         const has_info_blocks = this.local_requirement_data.infoBlocks && typeof this.local_requirement_data.infoBlocks === 'object';
@@ -126,30 +128,46 @@ export const EditRulefileRequirementComponent = {
                 const text_textarea = this.form_element_ref.querySelector(`#infoBlock_${block_id}_text`);
                 
                 if (name_input) {
-                    this.local_requirement_data.infoBlocks[block_id].name = name_input.value.trim() || this._get_default_block_name(block_id);
+                    const nameValue = name_input.value || '';
+                    this.local_requirement_data.infoBlocks[block_id].name = typeof nameValue === 'string' ? nameValue.trim() || this._get_default_block_name(block_id) : this._get_default_block_name(block_id);
                 }
                 if (expanded_checkbox) {
                     this.local_requirement_data.infoBlocks[block_id].expanded = expanded_checkbox.checked;
                 }
                 if (text_textarea) {
-                    this.local_requirement_data.infoBlocks[block_id].text = text_textarea.value.trim();
+                    const textValue = text_textarea.value || '';
+                    this.local_requirement_data.infoBlocks[block_id].text = typeof textValue === 'string' ? textValue.trim() : textValue;
                 }
             });
         } else {
             // Old format: fallback to direct fields (for backward compatibility)
-            this.local_requirement_data.expectedObservation = this.form_element_ref.querySelector('#expectedObservation')?.value || '';
-            this.local_requirement_data.instructions = this.form_element_ref.querySelector('#instructions')?.value || '';
-            this.local_requirement_data.exceptions = this.form_element_ref.querySelector('#exceptions')?.value || '';
-            this.local_requirement_data.commonErrors = this.form_element_ref.querySelector('#commonErrors')?.value || '';
-            this.local_requirement_data.tips = this.form_element_ref.querySelector('#tips')?.value || '';
-            this.local_requirement_data.examples = this.form_element_ref.querySelector('#examples')?.value || '';
+            const expectedObservationValue = this.form_element_ref.querySelector('#expectedObservation')?.value || '';
+            this.local_requirement_data.expectedObservation = typeof expectedObservationValue === 'string' ? expectedObservationValue.trim() : expectedObservationValue;
+            
+            const instructionsValue = this.form_element_ref.querySelector('#instructions')?.value || '';
+            this.local_requirement_data.instructions = typeof instructionsValue === 'string' ? instructionsValue.trim() : instructionsValue;
+            
+            const exceptionsValue = this.form_element_ref.querySelector('#exceptions')?.value || '';
+            this.local_requirement_data.exceptions = typeof exceptionsValue === 'string' ? exceptionsValue.trim() : exceptionsValue;
+            
+            const commonErrorsValue = this.form_element_ref.querySelector('#commonErrors')?.value || '';
+            this.local_requirement_data.commonErrors = typeof commonErrorsValue === 'string' ? commonErrorsValue.trim() : commonErrorsValue;
+            
+            const tipsValue = this.form_element_ref.querySelector('#tips')?.value || '';
+            this.local_requirement_data.tips = typeof tipsValue === 'string' ? tipsValue.trim() : tipsValue;
+            
+            const examplesValue = this.form_element_ref.querySelector('#examples')?.value || '';
+            this.local_requirement_data.examples = typeof examplesValue === 'string' ? examplesValue.trim() : examplesValue;
         }
         
         if (!this.local_requirement_data.standardReference) {
             this.local_requirement_data.standardReference = { text: '', url: '' };
         }
-        this.local_requirement_data.standardReference.text = this.form_element_ref.querySelector('#standardReferenceText')?.value || '';
-        this.local_requirement_data.standardReference.url = this.form_element_ref.querySelector('#standardReferenceUrl')?.value || '';
+        const standardRefTextValue = this.form_element_ref.querySelector('#standardReferenceText')?.value || '';
+        this.local_requirement_data.standardReference.text = typeof standardRefTextValue === 'string' ? standardRefTextValue.trim() : standardRefTextValue;
+        
+        const standardRefUrlValue = this.form_element_ref.querySelector('#standardReferenceUrl')?.value || '';
+        this.local_requirement_data.standardReference.url = typeof standardRefUrlValue === 'string' ? standardRefUrlValue.trim() : standardRefUrlValue;
 
         if (!this.local_requirement_data.metadata) {
             this.local_requirement_data.metadata = {};
@@ -157,12 +175,14 @@ export const EditRulefileRequirementComponent = {
         if (!this.local_requirement_data.metadata.mainCategory) {
             this.local_requirement_data.metadata.mainCategory = { text: '' };
         }
-        this.local_requirement_data.metadata.mainCategory.text = this.form_element_ref.querySelector('#mainCategoryText')?.value || '';
+        const mainCategoryTextValue = this.form_element_ref.querySelector('#mainCategoryText')?.value || '';
+        this.local_requirement_data.metadata.mainCategory.text = typeof mainCategoryTextValue === 'string' ? mainCategoryTextValue.trim() : mainCategoryTextValue;
 
         if (!this.local_requirement_data.metadata.subCategory) {
             this.local_requirement_data.metadata.subCategory = { text: '' };
         }
-        this.local_requirement_data.metadata.subCategory.text = this.form_element_ref.querySelector('#subCategoryText')?.value || '';
+        const subCategoryTextValue = this.form_element_ref.querySelector('#subCategoryText')?.value || '';
+        this.local_requirement_data.metadata.subCategory.text = typeof subCategoryTextValue === 'string' ? subCategoryTextValue.trim() : subCategoryTextValue;
 
         if (!this.local_requirement_data.metadata.impact) {
             this.local_requirement_data.metadata.impact = {};
@@ -186,9 +206,10 @@ export const EditRulefileRequirementComponent = {
         this.form_element_ref.querySelectorAll('.check-item-edit').forEach(check_el => {
             const check_id = check_el.dataset.checkId;
             const sane_check_id = this.Helpers.sanitize_id_for_css_selector(check_id);
+            const conditionValue = check_el.querySelector(`#check_${sane_check_id}_condition`)?.value || '';
             const check_obj = {
                 id: check_id,
-                condition: check_el.querySelector(`#check_${sane_check_id}_condition`)?.value || '',
+                condition: typeof conditionValue === 'string' ? conditionValue.trim() : conditionValue,
                 logic: check_el.querySelector(`input[name="check_${sane_check_id}_logic"]:checked`)?.value || 'AND',
                 passCriteria: []
             };
@@ -196,10 +217,12 @@ export const EditRulefileRequirementComponent = {
             check_el.querySelectorAll('.pc-item-edit').forEach(pc_el => {
                 const pc_id = pc_el.dataset.pcId;
                 const sane_pc_id = this.Helpers.sanitize_id_for_css_selector(pc_id);
+                const requirementValue = pc_el.querySelector(`#pc_${sane_check_id}_${sane_pc_id}_requirement`)?.value || '';
+                const failureTemplateValue = pc_el.querySelector(`#pc_${sane_check_id}_${sane_pc_id}_failureTemplate`)?.value || '';
                 check_obj.passCriteria.push({
                     id: pc_id,
-                    requirement: pc_el.querySelector(`#pc_${sane_check_id}_${sane_pc_id}_requirement`)?.value || '',
-                    failureStatementTemplate: pc_el.querySelector(`#pc_${sane_check_id}_${sane_pc_id}_failureTemplate`)?.value || ''
+                    requirement: typeof requirementValue === 'string' ? requirementValue.trim() : requirementValue,
+                    failureStatementTemplate: typeof failureTemplateValue === 'string' ? failureTemplateValue.trim() : failureTemplateValue
                 });
             });
             checks_data.push(check_obj);

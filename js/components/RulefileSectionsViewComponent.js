@@ -13,6 +13,9 @@ export const RulefileSectionsViewComponent = {
         this.Translation = deps.Translation;
         this.Helpers = deps.Helpers;
         this.NotificationComponent = deps.NotificationComponent;
+        this.is_initial_render = true; // Flagga för att veta om detta är första render
+        this.general_form_initial_focus_set = false; // Flagga för att veta om fokus redan har satts på general-formuläret
+        this.page_types_form_initial_focus_set = false; // Flagga för att veta om fokus redan har satts på page_types-formuläret
         
         if (this.Helpers?.load_css) {
             await this.Helpers.load_css(this.CSS_PATH).catch(err => console.warn('[RulefileSectionsViewComponent] Failed to load CSS', err));
@@ -109,15 +112,15 @@ export const RulefileSectionsViewComponent = {
         return menu;
     },
 
-    _create_header(section_config) {
+    _create_header(section_config, is_editing = false) {
         const t = this.Translation.t;
         const header_wrapper = this.Helpers.create_element('div', { class_name: 'rulefile-sections-header' });
         
         const heading = this.Helpers.create_element('h2', { text_content: section_config.title });
         header_wrapper.appendChild(heading);
         
-        // Lägg till redigera-knapp direkt till höger om h2 för general-sektionen
-        if (section_config.id === 'general') {
+        // Lägg till redigera-knapp direkt till höger om h2 för general-sektionen (bara om inte redigerar)
+        if (section_config.id === 'general' && !is_editing) {
             const edit_button = this.Helpers.create_element('button', {
                 class_name: ['button', 'button-secondary', 'rulefile-sections-edit-button'],
                 attributes: {
@@ -128,13 +131,13 @@ export const RulefileSectionsViewComponent = {
                               (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('edit') : '')
             });
             edit_button.addEventListener('click', () => {
-                this.router('rulefile_sections_edit_general');
+                this.router('rulefile_sections', { section: 'general', edit: 'true' });
             });
             header_wrapper.appendChild(edit_button);
         }
         
-        // Lägg till redigera-knapp för page_types-sektionen
-        if (section_config.id === 'page_types') {
+        // Lägg till redigera-knapp för page_types-sektionen (bara om inte redigerar)
+        if (section_config.id === 'page_types' && !is_editing) {
             const edit_button = this.Helpers.create_element('button', {
                 class_name: ['button', 'button-secondary', 'rulefile-sections-edit-button'],
                 attributes: {
@@ -145,7 +148,7 @@ export const RulefileSectionsViewComponent = {
                               (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('edit') : '')
             });
             edit_button.addEventListener('click', () => {
-                this.router('rulefile_sections_edit_page_types');
+                this.router('rulefile_sections', { section: 'page_types', edit: 'true' });
             });
             header_wrapper.appendChild(edit_button);
         }
@@ -236,11 +239,8 @@ export const RulefileSectionsViewComponent = {
         const t = this.Translation.t;
         const section = this.Helpers.create_element('section', { class_name: 'rulefile-section-content' });
         
-        const monitoringText = metadata.monitoringType?.text || metadata.monitoringType?.label || '';
-        const monitoringKey = metadata.monitoringType?.type || '';
-        const monitoringDisplay = monitoringText
-            ? (monitoringKey && monitoringKey !== monitoringText ? `${monitoringText} (${monitoringKey})` : monitoringText)
-            : monitoringKey;
+        // Visa endast text, aldrig nyckeln (type)
+        const monitoringDisplay = metadata.monitoringType?.text || metadata.monitoringType?.label || '';
 
         // Allmän information
         section.appendChild(this._create_definition_list([
@@ -804,6 +804,80 @@ export const RulefileSectionsViewComponent = {
         });
     },
 
+    async _render_general_edit_form(container, metadata) {
+        const is_first_render = !this.general_edit_component;
+        
+        // Om formuläret redan är renderat, hoppa över (förhindra re-rendering vid autospar)
+        if (this.general_edit_component && container.children.length > 0) {
+            return;
+        }
+        
+        // Dynamiskt importera EditGeneralSectionComponent
+        const { EditGeneralSectionComponent } = await import('./EditGeneralSectionComponent.js');
+        
+        // Initiera komponenten med container som root
+        await EditGeneralSectionComponent.init({
+            root: container,
+            deps: this.deps
+        });
+        
+        // Rendera formuläret inline
+        EditGeneralSectionComponent.render();
+        
+        // Sätt fokus på första h2 endast när formuläret renderas första gången (när användaren klickar på redigera-knappen)
+        // Inte vid autospar/re-rendering
+        if (is_first_render && !this.general_form_initial_focus_set) {
+            setTimeout(() => {
+                const firstH2 = container.querySelector('h2');
+                if (firstH2) {
+                    firstH2.setAttribute('tabindex', '-1');
+                    firstH2.focus();
+                    this.general_form_initial_focus_set = true;
+                }
+            }, 100);
+        }
+        
+        // Spara referens för cleanup
+        this.general_edit_component = EditGeneralSectionComponent;
+    },
+
+    async _render_page_types_edit_form(container, metadata) {
+        const is_first_render = !this.page_types_edit_component;
+        
+        // Om formuläret redan är renderat, hoppa över (förhindra re-rendering vid autospar)
+        if (this.page_types_edit_component && container.children.length > 0) {
+            return;
+        }
+        
+        // Dynamiskt importera EditPageTypesSectionComponent
+        const { EditPageTypesSectionComponent } = await import('./EditPageTypesSectionComponent.js');
+        
+        // Initiera komponenten med container som root
+        await EditPageTypesSectionComponent.init({
+            root: container,
+            deps: this.deps
+        });
+        
+        // Rendera formuläret inline
+        EditPageTypesSectionComponent.render();
+        
+        // Sätt fokus på första h2 endast när formuläret renderas första gången (när användaren klickar på redigera-knappen)
+        // Inte vid autospar/re-rendering
+        if (is_first_render && !this.page_types_form_initial_focus_set) {
+            setTimeout(() => {
+                const firstH2 = container.querySelector('h2');
+                if (firstH2) {
+                    firstH2.setAttribute('tabindex', '-1');
+                    firstH2.focus();
+                    this.page_types_form_initial_focus_set = true;
+                }
+            }, 100);
+        }
+        
+        // Spara referens för cleanup
+        this.page_types_edit_component = EditPageTypesSectionComponent;
+    },
+
     render() {
         if (!this.root) return;
         const t = this.Translation.t;
@@ -858,42 +932,63 @@ export const RulefileSectionsViewComponent = {
         let section_content;
         let header_section_config;
         
-        switch (section_id) {
-            case 'general':
-            case 'publisher_source':
-                // publisher_source visas nu i general-sektionen, använd general som rubrik
-                header_section_config = this._get_section_config('general');
-                section_content = this._render_general_section(metadata);
-                break;
-            case 'classifications':
-                header_section_config = this._get_section_config(section_id);
-                section_content = this._render_classifications_section(metadata);
-                break;
-            case 'page_types':
-                header_section_config = this._get_section_config(section_id);
-                section_content = this._render_page_types_section(metadata);
-                break;
-            case 'content_types':
-                header_section_config = this._get_section_config(section_id);
-                section_content = this._render_content_types_section(metadata);
-                break;
-            case 'report_template':
-                header_section_config = this._get_section_config(section_id);
-                section_content = this._render_report_template_section(state.ruleFileContent);
-                break;
-            case 'info_blocks_order':
-                header_section_config = this._get_section_config(section_id);
-                section_content = this._render_info_blocks_order_section(metadata, is_editing);
-                break;
-            default:
-                header_section_config = this._get_section_config('general');
-                section_content = this._render_general_section(metadata);
-        }
+        // Om vi är i redigeringsläge för general eller page_types, visa formuläret inline
+        if (is_editing && (section_id === 'general' || section_id === 'page_types')) {
+            header_section_config = this._get_section_config(section_id);
+            const header = this._create_header(header_section_config, is_editing);
+            content_plate.appendChild(header);
+            
+            // Skapa en container för redigeringsformuläret
+            const edit_form_container = this.Helpers.create_element('div', { class_name: 'rulefile-section-edit-form-container' });
+            
+            // Ladda och rendera rätt redigeringskomponent
+            if (section_id === 'general') {
+                this._render_general_edit_form(edit_form_container, metadata);
+            } else if (section_id === 'page_types') {
+                this._render_page_types_edit_form(edit_form_container, metadata);
+            }
+            
+            content_plate.appendChild(edit_form_container);
+        } else {
+            // Normal visningsläge
+            switch (section_id) {
+                case 'general':
+                case 'publisher_source':
+                    // publisher_source visas nu i general-sektionen, använd general som rubrik
+                    header_section_config = this._get_section_config('general');
+                    section_content = this._render_general_section(metadata);
+                    break;
+                case 'classifications':
+                    header_section_config = this._get_section_config(section_id);
+                    section_content = this._render_classifications_section(metadata);
+                    break;
+                case 'page_types':
+                    header_section_config = this._get_section_config(section_id);
+                    section_content = this._render_page_types_section(metadata);
+                    break;
+                case 'content_types':
+                    header_section_config = this._get_section_config(section_id);
+                    section_content = this._render_content_types_section(metadata);
+                    break;
+                case 'report_template':
+                    header_section_config = this._get_section_config(section_id);
+                    section_content = this._render_report_template_section(state.ruleFileContent);
+                    break;
+                case 'info_blocks_order':
+                    header_section_config = this._get_section_config(section_id);
+                    section_content = this._render_info_blocks_order_section(metadata, is_editing);
+                    break;
+                default:
+                    header_section_config = this._get_section_config('general');
+                    section_content = this._render_general_section(metadata);
+            }
 
-        // Skapa header för alla sektioner (inklusive page_types)
-        const header = this._create_header(header_section_config);
-        content_plate.appendChild(header);
-        content_plate.appendChild(section_content);
+            // Skapa header för alla sektioner (inklusive page_types)
+            const header = this._create_header(header_section_config, is_editing);
+            content_plate.appendChild(header);
+            content_plate.appendChild(section_content);
+        }
+        
         right_wrapper.appendChild(content_plate);
         layout.appendChild(right_wrapper);
 
@@ -911,8 +1006,10 @@ export const RulefileSectionsViewComponent = {
         this.root.appendChild(main_plate);
 
         // Sätt fokus på h2 om det finns i sessionStorage
+        // Men endast om detta är första render (när vi faktiskt navigerar hit)
+        // Inte vid autospar/re-rendering när state ändras
         const focusSelector = sessionStorage.getItem('focusAfterLoad');
-        if (focusSelector) {
+        if (focusSelector && this.is_initial_render) {
             sessionStorage.removeItem('focusAfterLoad');
             setTimeout(() => {
                 const elementToFocus = this.root.querySelector(focusSelector);
@@ -922,9 +1019,26 @@ export const RulefileSectionsViewComponent = {
                 }
             }, 100);
         }
+        
+        // Sätt flaggan till false efter första render
+        this.is_initial_render = false;
     },
 
     destroy() {
+        // Cleanup redigeringskomponenter om de finns
+        if (this.general_edit_component && typeof this.general_edit_component.destroy === 'function') {
+            this.general_edit_component.destroy();
+            this.general_edit_component = null;
+        }
+        if (this.page_types_edit_component && typeof this.page_types_edit_component.destroy === 'function') {
+            this.page_types_edit_component.destroy();
+            this.page_types_edit_component = null;
+        }
+        
+        // Återställ fokus-flaggorna så att fokus sätts när användaren navigerar tillbaka
+        this.general_form_initial_focus_set = false;
+        this.page_types_form_initial_focus_set = false;
+        
         if (this.root) {
             this.root.innerHTML = '';
         }
