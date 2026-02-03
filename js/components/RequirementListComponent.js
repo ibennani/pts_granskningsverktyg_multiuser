@@ -17,6 +17,8 @@ export const RequirementListComponent = {
         this.NotificationComponent = deps.NotificationComponent;
         this.AuditLogic = deps.AuditLogic;
 
+        this.RETURN_FOCUS_SESSION_KEY = 'gv_return_focus_requirement_list_v1';
+
         this.global_message_element_ref = null;
         this.content_div_for_delegation = null;
         this.toolbar_component_instance = null;
@@ -356,27 +358,68 @@ export const RequirementListComponent = {
             await this._initialRender();
         }
         this._populate_dynamic_content();
-        
-        // Sätt fokus på länken för det krav som användaren just var på
-        this._focus_on_requirement_link_if_needed();
+
+        // Återställ fokus när användaren kommer tillbaka från "Granska krav" till listan
+        this._apply_return_focus_if_needed();
     },
 
-    _focus_on_requirement_link_if_needed() {
-        // Kontrollera om det finns en requirementId i params som indikerar vilket krav användaren just var på
-        if (this.params?.requirementId && this.content_div_for_delegation) {
-            // Vänta lite för att säkerställa att DOM:en är helt renderad
-            setTimeout(() => {
-                const target_link = this.content_div_for_delegation.querySelector(
-                    `a.list-title-link[data-requirement-id="${CSS.escape(this.params.requirementId)}"]`
-                );
-                if (target_link) {
-                    // Scrolla till länken om den inte är synlig
-                    target_link.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    // Sätt fokus på länken
-                    target_link.focus();
-                }
-            }, 100);
+    _apply_return_focus_if_needed() {
+        if (!this.content_div_for_delegation) return;
+        if (!window.sessionStorage || !this.RETURN_FOCUS_SESSION_KEY) return;
+
+        let raw = null;
+        try {
+            raw = window.sessionStorage.getItem(this.RETURN_FOCUS_SESSION_KEY);
+        } catch (e) {
+            return;
         }
+        if (!raw) return;
+
+        let focus_instruction = null;
+        try {
+            focus_instruction = JSON.parse(raw);
+        } catch (e) {
+            // Ogiltig data, rensa för att undvika loop.
+            try { window.sessionStorage.removeItem(this.RETURN_FOCUS_SESSION_KEY); } catch (err) {}
+            return;
+        }
+
+        const current_sample_id = this.params?.sampleId || null;
+        const requirement_id = focus_instruction?.requirementId || null;
+        const sample_id = focus_instruction?.sampleId || null;
+
+        // Rensa alltid instruktionen (one-shot), oavsett utfall.
+        try { window.sessionStorage.removeItem(this.RETURN_FOCUS_SESSION_KEY); } catch (e) {}
+
+        if (!current_sample_id || !requirement_id || !sample_id) return;
+        if (String(sample_id) !== String(current_sample_id)) return;
+
+        const target_link = this.content_div_for_delegation.querySelector(
+            `a.list-title-link[data-requirement-id="${CSS.escape(String(requirement_id))}"]`
+        );
+        if (!target_link) return;
+
+        // Hindra generella "fokusera <h1>" i main.js från att skriva över länkfokus.
+        window.customFocusApplied = true;
+
+        // Scrolla med offset för fixed headers och sätt fokus utan att scrolla om.
+        const top_action_bar = document.getElementById('global-action-bar-top');
+        const top_bar_height = top_action_bar ? top_action_bar.offsetHeight : 0;
+
+        const element_rect = target_link.getBoundingClientRect();
+        const absolute_element_top = element_rect.top + window.pageYOffset;
+        const scroll_position = absolute_element_top - top_bar_height;
+
+        window.scrollTo({ top: scroll_position, behavior: 'smooth' });
+
+        // Vänta lite så att smooth-scroll hinner starta innan fokus sätts.
+        setTimeout(() => {
+            try {
+                target_link.focus({ preventScroll: true });
+            } catch (e) {
+                target_link.focus();
+            }
+        }, 150);
     },
 
     create_requirement_list_item(req, sample) {
