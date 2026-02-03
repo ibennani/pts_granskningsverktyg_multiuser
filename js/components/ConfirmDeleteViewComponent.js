@@ -95,10 +95,19 @@ export const ConfirmDeleteViewComponent = {
 
         const handle_confirm = () => {
             this.dispatch(config.dispatchAction);
-            if (config.focusOnSuccess === 'h1') {
+            // Sätt fokus tillbaka till listan efter lyckad radering (one-shot).
+            // För raderade regelfilskrav vill vi fokusera på en titel-länk i listan (inte <h1>).
+            if (deleteType === 'requirement' && this.params?.reqId) {
+                try {
+                    window.sessionStorage?.setItem('gv_return_focus_rulefile_requirements_list_v1', JSON.stringify({
+                        deletedRequirementId: this.params.reqId,
+                        createdAt: Date.now()
+                    }));
+                } catch (e) {}
+            } else if (config.focusOnSuccess === 'h1') {
                 sessionStorage.setItem('focusOnH1AfterLoad', 'true');
             } else {
-                sessionStorage.setItem('focusAfterLoad', config.focusOnSuccess); 
+                sessionStorage.setItem('focusAfterLoad', config.focusOnSuccess);
             }
             this.router(config.returnRoute, config.returnParams || {});
         };

@@ -50,6 +50,7 @@ export const AuditInfoComponent = {
 
         const header_wrapper = this.Helpers.create_element('div', { class_name: 'panel-header-wrapper' });
         header_wrapper.appendChild(this.Helpers.create_element('h2', { 
+            id: 'audit-info-heading',
             class_name: 'dashboard-panel__title',
             text_content: t('audit_info_title') 
         }));

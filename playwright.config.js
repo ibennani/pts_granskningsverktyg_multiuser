@@ -12,6 +12,28 @@ export default defineConfig({
   
   projects: [
     {
+      name: 'Chromium',
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: process.env.E2E_BASE_URL || 'http://localhost:5173',
+        locale: 'sv-SE',
+        extraHTTPHeaders: {
+          'Accept-Language': 'sv-SE,sv;q=0.9,en;q=0.8',
+        },
+      },
+    },
+    {
+      name: 'WebKit',
+      use: {
+        ...devices['Desktop Safari'],
+        baseURL: process.env.E2E_BASE_URL || 'http://localhost:5173',
+        locale: 'sv-SE',
+        extraHTTPHeaders: {
+          'Accept-Language': 'sv-SE,sv;q=0.9,en;q=0.8',
+        },
+      },
+    },
+    {
       name: 'Microsoft Edge',
       use: {
         ...devices['Desktop Edge'],

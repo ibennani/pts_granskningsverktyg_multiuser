@@ -46,6 +46,9 @@ import { EditGeneralSectionComponent } from './components/EditGeneralSectionComp
 import { EditPageTypesSectionComponent } from './components/EditPageTypesSectionComponent.js';
 import { RulefileSectionsViewComponent } from './components/RulefileSectionsViewComponent.js';
 import { ErrorBoundaryComponent } from './components/ErrorBoundaryComponent.js';
+import { SideMenuComponent } from './components/SideMenuComponent.js';
+import { AuditActionsViewComponent } from './components/AuditActionsViewComponent.js';
+import { AllRequirementsViewComponent } from './components/AllRequirementsViewComponent.js';
 
 import { GlobalActionBarComponent } from './components/GlobalActionBarComponent.js';
 
@@ -75,6 +78,10 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
     let app_container = document.getElementById('app-container');
     let top_action_bar_container = document.getElementById('global-action-bar-top');
     let bottom_action_bar_container = document.getElementById('global-action-bar-bottom');
+
+    let side_menu_root = null;
+    let main_view_root = null;
+    const side_menu_component_instance = SideMenuComponent;
 
     // Fallback för app_container - kritiskt element
     if (!app_container) {
@@ -131,6 +138,41 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
     const top_action_bar_instance = new GlobalActionBarComponent();
     const bottom_action_bar_instance = new GlobalActionBarComponent();
 
+    function ensure_app_layout() {
+        if (!app_container) return;
+        if (document.getElementById('app-layout') && document.getElementById('app-main-view-root') && document.getElementById('app-side-menu-root')) {
+            side_menu_root = document.getElementById('app-side-menu-root');
+            main_view_root = document.getElementById('app-main-view-root');
+            return;
+        }
+
+        app_container.innerHTML = '';
+
+        const layout = document.createElement('div');
+        layout.id = 'app-layout';
+        layout.className = 'app-layout';
+
+        side_menu_root = document.createElement('div');
+        side_menu_root.id = 'app-side-menu-root';
+        side_menu_root.className = 'app-side-menu-root';
+
+        main_view_root = document.createElement('div');
+        main_view_root.id = 'app-main-view-root';
+        main_view_root.className = 'app-main-view-root';
+
+        layout.appendChild(side_menu_root);
+        layout.appendChild(main_view_root);
+        app_container.appendChild(layout);
+    }
+
+    function update_side_menu(view_name, params = {}) {
+        if (!side_menu_component_instance || typeof side_menu_component_instance.render !== 'function') return;
+        if (typeof side_menu_component_instance.set_current_view === 'function') {
+            side_menu_component_instance.set_current_view(view_name, params);
+        }
+        side_menu_component_instance.render();
+    }
+
     function get_t_fallback() {
         return (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function')
             ? window.Translation.t
@@ -165,6 +207,12 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
                     break;
                 case 'audit_overview':
                     title_prefix = t('audit_overview_title');
+                    break;
+                case 'audit_actions':
+                    title_prefix = t('audit_actions_title');
+                    break;
+                case 'all_requirements':
+                    title_prefix = t('left_menu_all_requirements');
                     break;
                 case 'requirement_list':
                     title_prefix = t('requirement_list_title_suffix');
@@ -291,6 +339,22 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
             AuditLogic: AuditLogic,
             ValidationLogic: ValidationLogic
         };
+
+        // Initialize side menu (persistent)
+        try {
+            if (side_menu_root) {
+                await side_menu_component_instance.init({
+                    root: side_menu_root,
+                    deps: {
+                        ...common_deps,
+                        router: navigate_and_set_hash,
+                        subscribe
+                    }
+                });
+            }
+        } catch (error) {
+            consoleManager.error("[Main.js] Failed to initialize side menu:", error);
+        }
         try {
             await top_action_bar_instance.init({ root: top_action_bar_container, deps: common_deps });
         } catch (error) {
@@ -320,7 +384,7 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
         // Initialize error boundary
         try {
             error_boundary_instance = ErrorBoundaryComponent;
-            await error_boundary_instance.init({ root: app_container, deps: common_deps });
+            await error_boundary_instance.init({ root: main_view_root || app_container, deps: common_deps });
         } catch (error) {
             consoleManager.error("[Main.js] Failed to initialize error boundary:", error);
         }
@@ -361,8 +425,9 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
                 return;
             }
             // Annars, kör den generella fokuseringen
-            if (app_container) {
-                const h1_element = app_container.querySelector('h1');
+            const focus_root = main_view_root || app_container;
+            if (focus_root) {
+                const h1_element = focus_root.querySelector('h1');
                 if (h1_element) {
                     if (h1_element.getAttribute('tabindex') === null) {
                         h1_element.setAttribute('tabindex', '-1');
@@ -374,13 +439,93 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
     }
     // --- END OF CHANGE ---
 
+    function apply_post_render_focus_instruction({ view_name, view_root }) {
+        // One-shot fokusinstruktioner används för att sätta fokus på rätt ställe
+        // när användaren återgår från en vy till en annan (t.ex. efter formulär).
+        if (!view_root || !window.sessionStorage) return false;
+
+        const RETURN_FOCUS_AUDIT_INFO_H2_KEY = 'gv_return_focus_audit_info_h2_v1';
+
+        if (view_name !== 'audit_overview') return false;
+
+        let raw = null;
+        try {
+            raw = window.sessionStorage.getItem(RETURN_FOCUS_AUDIT_INFO_H2_KEY);
+        } catch (e) {
+            return false;
+        }
+        if (!raw) return false;
+
+        let instruction = null;
+        try {
+            instruction = JSON.parse(raw);
+        } catch (e) {
+            try { window.sessionStorage.removeItem(RETURN_FOCUS_AUDIT_INFO_H2_KEY); } catch (err) {}
+            return false;
+        }
+
+        if (instruction?.focus !== 'audit_info_h2') {
+            try { window.sessionStorage.removeItem(RETURN_FOCUS_AUDIT_INFO_H2_KEY); } catch (err) {}
+            return false;
+        }
+
+        // Hindra generella "fokusera <h1>" från att skriva över.
+        window.customFocusApplied = true;
+
+        // Försök hitta rubriken efter render. Om den ännu inte finns (pga sub-render),
+        // gör ett par retry-försök innan vi ger upp.
+        let attempts_left = 6;
+        const try_focus = () => {
+            const heading = view_root.querySelector('#audit-info-heading');
+            if (heading) {
+                // Scrolla så rubriken hamnar längst upp (med hänsyn till topp-baren)
+                const top_action_bar = document.getElementById('global-action-bar-top');
+                const top_bar_height = top_action_bar ? top_action_bar.offsetHeight : 0;
+
+                const rect = heading.getBoundingClientRect();
+                const absolute_top = rect.top + window.pageYOffset;
+                const scroll_target = Math.max(0, absolute_top - top_bar_height);
+
+                window.scrollTo({ top: scroll_target, behavior: 'auto' });
+
+                try {
+                    if (heading.getAttribute('tabindex') === null) {
+                        heading.setAttribute('tabindex', '-1');
+                    }
+                    heading.focus({ preventScroll: true });
+                } catch (e) {
+                    heading.focus();
+                }
+                try { window.sessionStorage.removeItem(RETURN_FOCUS_AUDIT_INFO_H2_KEY); } catch (err) {}
+                return;
+            }
+
+            attempts_left -= 1;
+            if (attempts_left <= 0) {
+                // Rensa för att undvika loop om elementet inte finns.
+                try { window.sessionStorage.removeItem(RETURN_FOCUS_AUDIT_INFO_H2_KEY); } catch (err) {}
+                return;
+            }
+
+            memoryManager.setTimeout(try_focus, 50);
+        };
+
+        // Vänta en tick så att DOM + subkomponenter hinner rendera.
+        memoryManager.setTimeout(try_focus, 0);
+        return true;
+    }
+
     async function render_view(view_name_to_render, params_to_render = {}) {
         const t = get_t_fallback();
         const local_helpers_escape_html = (typeof window.Helpers !== 'undefined' && typeof window.Helpers.escape_html === 'function')
             ? window.Helpers.escape_html
             : (s) => s; 
 
+        ensure_app_layout();
+        const view_root = main_view_root || app_container;
+
         updatePageTitle(view_name_to_render, params_to_render);
+        update_side_menu(view_name_to_render, params_to_render);
 
         const views_without_bottom_bar = ['restore_session', 'sample_form', 'confirm_sample_edit', 'metadata', 'edit_metadata', 'rulefile_metadata_edit', 'rulefile_sections_edit_general', 'rulefile_sections_edit_page_types', 'rulefile_sections'];
         top_action_bar_instance.render();
@@ -433,7 +578,9 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
                 }
             }
         }
-        app_container.innerHTML = ''; 
+        if (view_root) {
+            view_root.innerHTML = '';
+        }
         current_view_component_instance = null;
 
         let ComponentClass;
@@ -446,6 +593,8 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
             case 'sample_form': ComponentClass = SampleFormViewComponent; break;
             case 'confirm_sample_edit': ComponentClass = ConfirmSampleEditViewComponent; break; 
             case 'audit_overview': ComponentClass = AuditOverviewComponent; break;
+            case 'audit_actions': ComponentClass = AuditActionsViewComponent; break;
+            case 'all_requirements': ComponentClass = AllRequirementsViewComponent; break;
             case 'requirement_list': ComponentClass = RequirementListComponent; break;
             case 'requirement_audit': ComponentClass = RequirementAuditComponent; break;
             case 'update_rulefile': ComponentClass = UpdateRulefileViewComponent; break; 
@@ -468,8 +617,10 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
                 error_h1.textContent = t("error_loading_view_details");
                 const error_p = document.createElement('p');
                 error_p.textContent = t("error_view_not_found", {viewName: local_helpers_escape_html(view_name_to_render)});
-                app_container.appendChild(error_h1);
-                app_container.appendChild(error_p);
+                if (view_root) {
+                    view_root.appendChild(error_h1);
+                    view_root.appendChild(error_p);
+                }
                 return;
         }
 
@@ -490,7 +641,7 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
 
             if (view_name_to_render === 'restore_session') {
                 await current_view_component_instance.init({
-                    root: app_container,
+                    root: view_root,
                     deps: {
                         router: navigate_and_set_hash,
                         params: params_to_render, // Contains on_restore, on_discard, autosaved_state
@@ -512,7 +663,7 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
                 // We assume if length is 1, it's the new standard
                 if (current_view_component_instance.init.length === 1) {
                     await current_view_component_instance.init({
-                        root: app_container,
+                        root: view_root,
                         deps: {
                             router: navigate_and_set_hash,
                             params: params_to_render,
@@ -532,7 +683,7 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
                 } else {
                     // Legacy component support
                     await current_view_component_instance.init(
-                        app_container, 
+                        view_root, 
                         navigate_and_set_hash, 
                         params_to_render,
                         getState, 
@@ -544,7 +695,13 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
             }
             
             current_view_component_instance.render();
-            set_focus_to_h1(); 
+            const did_apply_custom_focus = apply_post_render_focus_instruction({
+                view_name: view_name_to_render,
+                view_root
+            });
+            if (!did_apply_custom_focus) {
+                set_focus_to_h1();
+            }
 
         } catch (error) {
             consoleManager.error(`[Main.js] CATCH BLOCK: Error during view ${view_name_to_render} lifecycle:`, error);
@@ -564,13 +721,13 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
             } else {
                 // Fallback to simple error display
                 const view_name_escaped_for_error = local_helpers_escape_html(view_name_to_render);
-                if(app_container) {
+                if(view_root) {
                     const error_h1 = document.createElement('h1');
                     error_h1.textContent = t("error_loading_view_details");
                     const error_p = document.createElement('p');
                     error_p.textContent = t("error_loading_view", {viewName: view_name_escaped_for_error, errorMessage: error.message});
-                    app_container.appendChild(error_h1);
-                    app_container.appendChild(error_p);
+                    view_root.appendChild(error_h1);
+                    view_root.appendChild(error_p);
                 }
             }
         }
@@ -605,9 +762,11 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
         try {
             const parsed_params = JSON.parse(current_view_params_rendered_json || '{}');
             updatePageTitle(current_view_name_rendered, parsed_params);
+            update_side_menu(current_view_name_rendered, parsed_params);
         } catch (error) {
             consoleManager.warn('[Main.js] Failed to parse current view params for page title update:', error);
             updatePageTitle(current_view_name_rendered, {});
+            update_side_menu(current_view_name_rendered, {});
         }
         if (current_view_component_instance && typeof current_view_component_instance.render === 'function') {
             current_view_component_instance.render();
@@ -615,6 +774,7 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
     }
     
     async function start_normal_session() {
+        ensure_app_layout();
         await init_global_components(); 
         if (window.ScoreManager?.init) { window.ScoreManager.init(subscribe, getState, dispatch, StoreActionTypes); }
         if (MarkdownToolbar?.init) { MarkdownToolbar.init(); }
@@ -682,9 +842,11 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
             try {
                 const parsed_params = JSON.parse(current_view_params_rendered_json || '{}');
                 updatePageTitle(current_view_name_rendered, parsed_params);
+                update_side_menu(current_view_name_rendered, parsed_params);
             } catch (error) {
                 consoleManager.warn('[Main.js] Failed to parse current view params for page title update:', error);
                 updatePageTitle(current_view_name_rendered, {});
+                update_side_menu(current_view_name_rendered, {});
             }
             const hash = window.location.hash.substring(1);
             const [view_name_from_hash,] = hash.split('?');
@@ -785,6 +947,7 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
                     clearAutosavedState();
                     await start_normal_session(); 
                 };
+                ensure_app_layout();
                 await init_global_components();
                 update_app_chrome_texts();
                 render_view('restore_session', { 

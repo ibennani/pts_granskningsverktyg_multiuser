@@ -1,0 +1,33 @@
+.all-requirements__list .item-list-item {
+    padding: 0.5rem 0.75rem;
+    gap: 0.25rem;
+}
+
+.all-requirements__title {
+    font-size: 1.1rem;
+    margin-bottom: 0;
+}
+
+.all-requirements__meta {
+    font-size: 0.85rem;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.all-requirements__occurs {
+    font-size: 0.85rem;
+    margin-top: 0;
+    margin-bottom: 0.1rem;
+}
+
+.all-requirements__samples {
+    margin: 0;
+    padding-left: 0;
+    list-style: none;
+}
+
+.all-requirements__samples li {
+    margin: 0.15rem 0;
+    font-size: 0.85rem;
+}
+

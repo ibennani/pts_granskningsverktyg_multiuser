@@ -19,6 +19,23 @@ export const EditMetadataViewComponent = {
         this.handle_form_submit = this.handle_form_submit.bind(this);
         this.handle_cancel = this.handle_cancel.bind(this);
         this.handle_autosave = this.handle_autosave.bind(this);
+
+        this.RETURN_FOCUS_SESSION_KEY = 'gv_return_focus_audit_info_h2_v1';
+    },
+
+    _request_focus_on_audit_info_h2() {
+        // Instruktion: när användaren återgår från formuläret ska fokus hamna på
+        // "Granskningsinformation" (h2) i föregående vy.
+        try {
+            if (window.sessionStorage) {
+                window.sessionStorage.setItem(this.RETURN_FOCUS_SESSION_KEY, JSON.stringify({ focus: 'audit_info_h2' }));
+            }
+        } catch (e) {
+            // Ignorera om sessionStorage inte är tillgängligt.
+        }
+
+        // Hindra generella "fokusera <h1>" i main.js från att skriva över.
+        window.customFocusApplied = true;
     },
 
     handle_autosave(form_data) {
@@ -41,11 +58,13 @@ export const EditMetadataViewComponent = {
             this.router('sample_management');
         } else {
             this.NotificationComponent.show_global_message(this.Translation.t('metadata_updated_successfully'), 'success');
+            this._request_focus_on_audit_info_h2();
             this.router('audit_overview');
         }
     },
 
     handle_cancel() {
+        this._request_focus_on_audit_info_h2();
         this.router('audit_overview');
     },
 

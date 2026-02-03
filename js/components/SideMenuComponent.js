@@ -1,0 +1,298 @@
+export const SideMenuComponent = {
+    CSS_PATH: 'css/components/side_menu_component.css',
+
+    async init({ root, deps }) {
+        this.root = root;
+        this.deps = deps;
+
+        this.router = deps.router;
+        this.getState = deps.getState;
+        this.Translation = deps.Translation;
+        this.Helpers = deps.Helpers;
+
+        this.current_view_name = 'upload';
+        this.current_view_params = {};
+        this.is_menu_open = false;
+
+        this.menu_button_ref = null;
+        this.nav_ref = null;
+        this.first_link_ref = null;
+
+        this.small_screen_media_query = window.matchMedia
+            ? window.matchMedia('(max-width: 768px)')
+            : null;
+
+        this.handle_toggle_menu = this.handle_toggle_menu.bind(this);
+        this.handle_close_menu = this.handle_close_menu.bind(this);
+        this.handle_document_keydown = this.handle_document_keydown.bind(this);
+        this.handle_media_query_change = this.handle_media_query_change.bind(this);
+
+        if (this.Helpers?.load_css && this.CSS_PATH) {
+            await this.Helpers.load_css(this.CSS_PATH).catch(() => {});
+        }
+
+        if (this.small_screen_media_query) {
+            try {
+                this.small_screen_media_query.addEventListener('change', this.handle_media_query_change);
+            } catch (e) {
+                // Safari < 14
+                this.small_screen_media_query.addListener(this.handle_media_query_change);
+            }
+        }
+    },
+
+    set_current_view(view_name, params = {}) {
+        this.current_view_name = view_name || 'upload';
+        this.current_view_params = params || {};
+    },
+
+    is_small_screen() {
+        if (!this.small_screen_media_query) return false;
+        return Boolean(this.small_screen_media_query.matches);
+    },
+
+    handle_media_query_change() {
+        if (!this.is_small_screen()) {
+            this.is_menu_open = false;
+            this.remove_escape_listener();
+        }
+        this.render();
+    },
+
+    handle_toggle_menu() {
+        if (this.is_menu_open) {
+            this.handle_close_menu({ restore_focus: true });
+            return;
+        }
+
+        this.is_menu_open = true;
+        this.add_escape_listener();
+        this.render();
+
+        // Fokus på första länken när menyn öppnas
+        requestAnimationFrame(() => {
+            if (this.first_link_ref && document.contains(this.first_link_ref)) {
+                try {
+                    this.first_link_ref.focus({ preventScroll: true });
+                } catch (e) {
+                    this.first_link_ref.focus();
+                }
+            }
+        });
+    },
+
+    handle_close_menu({ restore_focus = false } = {}) {
+        if (!this.is_menu_open) return;
+        this.is_menu_open = false;
+        this.remove_escape_listener();
+        this.render();
+
+        if (restore_focus) {
+            requestAnimationFrame(() => {
+                if (this.menu_button_ref && document.contains(this.menu_button_ref)) {
+                    try {
+                        this.menu_button_ref.focus({ preventScroll: true });
+                    } catch (e) {
+                        this.menu_button_ref.focus();
+                    }
+                }
+            });
+        }
+    },
+
+    add_escape_listener() {
+        document.addEventListener('keydown', this.handle_document_keydown);
+    },
+
+    remove_escape_listener() {
+        document.removeEventListener('keydown', this.handle_document_keydown);
+    },
+
+    handle_document_keydown(event) {
+        if (!this.is_small_screen()) return;
+        if (!this.is_menu_open) return;
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            this.handle_close_menu({ restore_focus: true });
+        }
+    },
+
+    build_hash(view_name, params = {}) {
+        const has_params = params && Object.keys(params).length > 0;
+        if (!has_params) return `#${view_name}`;
+        return `#${view_name}?${new URLSearchParams(params).toString()}`;
+    },
+
+    create_menu_link({ label, view_name, params = {} }) {
+        const is_active = this.current_view_name === view_name;
+        const href = this.build_hash(view_name, params);
+
+        const link = this.Helpers.create_element('a', {
+            attributes: {
+                href,
+                ...(is_active ? { 'aria-current': 'page' } : {})
+            },
+            class_name: ['side-menu__link', ...(is_active ? ['active'] : [])],
+            text_content: label
+        });
+
+        link.addEventListener('click', (event) => {
+            if (typeof this.router === 'function') {
+                event.preventDefault();
+                this.router(view_name, params);
+            }
+            if (this.is_small_screen()) {
+                this.handle_close_menu();
+            }
+        });
+
+        return link;
+    },
+
+    get_menu_model() {
+        const t = this.Translation.t;
+        const state = typeof this.getState === 'function' ? this.getState() : null;
+        const audit_status = state?.auditStatus;
+        const sample_count = state?.samples?.length || 0;
+        const requirements = state?.ruleFileContent?.requirements;
+        const requirement_count = Array.isArray(requirements)
+            ? requirements.length
+            : (requirements && typeof requirements === 'object')
+                ? Object.keys(requirements).length
+                : 0;
+
+        if (this.current_view_name === 'upload') return { should_show: false, items: [], aria_label: t('side_menu_aria_label') };
+
+        if (audit_status === 'rulefile_editing') {
+            return {
+                should_show: true,
+                aria_label: t('side_menu_aria_label'),
+                items: [
+                    { label: t('edit_rulefile_title'), view_name: 'edit_rulefile_main' },
+                    { label: t('rulefile_sections_title'), view_name: 'rulefile_sections' },
+                    { label: t('rulefile_edit_requirements_title'), view_name: 'rulefile_requirements' }
+                ]
+            };
+        }
+
+        if (this.current_view_name === 'metadata' || this.current_view_name === 'edit_metadata') {
+            return {
+                should_show: true,
+                aria_label: t('side_menu_aria_label'),
+                items: [
+                    { label: t('audit_metadata_title'), view_name: 'metadata' },
+                    { label: t('left_menu_sample_list_with_count', { count: sample_count }), view_name: 'sample_management' }
+                ]
+            };
+        }
+
+        if (audit_status === 'in_progress' || audit_status === 'locked') {
+            return {
+                should_show: true,
+                aria_label: t('side_menu_aria_label'),
+                items: [
+                    { label: t('left_menu_audit_overview'), view_name: 'audit_overview' },
+                    { label: t('left_menu_sample_list_with_count', { count: sample_count }), view_name: 'sample_management' },
+                    { label: t('left_menu_all_requirements_with_count', { count: requirement_count }), view_name: 'all_requirements' },
+                    { label: t('left_menu_actions'), view_name: 'audit_actions' }
+                ]
+            };
+        }
+
+        // Fallback: visa minsta möjliga meny när vi inte är i ett definierat läge
+        return {
+            should_show: true,
+            aria_label: t('side_menu_aria_label'),
+            items: [
+                { label: t('audit_metadata_title'), view_name: 'metadata' },
+                { label: t('left_menu_sample_list_with_count', { count: sample_count }), view_name: 'sample_management' }
+            ]
+        };
+    },
+
+    render() {
+        if (!this.root) return;
+        const t = this.Translation.t;
+
+        const menu_model = this.get_menu_model();
+        if (!menu_model.should_show) {
+            this.root.innerHTML = '';
+            this.root.classList.add('hidden');
+            this.is_menu_open = false;
+            this.remove_escape_listener();
+            return;
+        }
+
+        this.root.classList.remove('hidden');
+        this.root.innerHTML = '';
+        this.first_link_ref = null;
+
+        const wrapper = this.Helpers.create_element('div', { class_name: 'side-menu' });
+
+        const menu_button = this.Helpers.create_element('button', {
+            class_name: ['button', 'button-default', 'side-menu__toggle'],
+            attributes: {
+                type: 'button',
+                'aria-expanded': this.is_menu_open ? 'true' : 'false',
+                'aria-controls': 'side-menu-nav'
+            },
+            text_content: this.is_menu_open ? t('side_menu_close_button') : t('side_menu_open_button'),
+            event_listeners: { click: this.handle_toggle_menu }
+        });
+        this.menu_button_ref = menu_button;
+        wrapper.appendChild(menu_button);
+
+        const nav = this.Helpers.create_element('nav', {
+            id: 'side-menu-nav',
+            class_name: ['side-menu__nav', ...(this.is_menu_open ? ['is-open'] : [])],
+            attributes: { 'aria-label': menu_model.aria_label }
+        });
+        this.nav_ref = nav;
+
+        const list = this.Helpers.create_element('ul', { class_name: 'side-menu__list' });
+        menu_model.items.forEach((item, idx) => {
+            const li = this.Helpers.create_element('li', { class_name: 'side-menu__item' });
+            const link = this.create_menu_link(item);
+            if (idx === 0) {
+                this.first_link_ref = link;
+            }
+            li.appendChild(link);
+            list.appendChild(li);
+        });
+        nav.appendChild(list);
+
+        const should_hide_nav = this.is_small_screen() && !this.is_menu_open;
+        nav.hidden = should_hide_nav;
+
+        wrapper.appendChild(nav);
+        this.root.appendChild(wrapper);
+    },
+
+    destroy() {
+        this.remove_escape_listener();
+
+        if (this.small_screen_media_query) {
+            try {
+                this.small_screen_media_query.removeEventListener('change', this.handle_media_query_change);
+            } catch (e) {
+                this.small_screen_media_query.removeListener(this.handle_media_query_change);
+            }
+        }
+
+        if (this.root) {
+            this.root.innerHTML = '';
+        }
+
+        this.root = null;
+        this.deps = null;
+        this.router = null;
+        this.getState = null;
+        this.Translation = null;
+        this.Helpers = null;
+
+        this.menu_button_ref = null;
+        this.nav_ref = null;
+        this.first_link_ref = null;
+        this.small_screen_media_query = null;
+    }
+};

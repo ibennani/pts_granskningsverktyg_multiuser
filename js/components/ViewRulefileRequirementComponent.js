@@ -116,7 +116,15 @@ export const ViewRulefileRequirementComponent = {
             class_name: ['button', 'button-default'],
             html_content: `<span>${t('back_to_requirement_list')}</span>` + this.Helpers.get_icon_svg('arrow_back')
         });
-        back_button_top.addEventListener('click', () => this.router('rulefile_requirements'));
+        back_button_top.addEventListener('click', () => {
+            try {
+                window.sessionStorage?.setItem('gv_return_focus_rulefile_requirements_list_v1', JSON.stringify({
+                    requirementId: requirement_id,
+                    createdAt: Date.now()
+                }));
+            } catch (e) {}
+            this.router('rulefile_requirements');
+        });
         top_nav_bar.appendChild(back_button_top);
         this.plate_element_ref.appendChild(top_nav_bar);
 
@@ -325,7 +333,15 @@ export const ViewRulefileRequirementComponent = {
             class_name: ['button', 'button-default'],
             html_content: `<span>${t('back_to_requirement_list')}</span>` + this.Helpers.get_icon_svg('arrow_back')
         });
-        back_button_bottom.addEventListener('click', () => this.router('rulefile_requirements'));
+        back_button_bottom.addEventListener('click', () => {
+            try {
+                window.sessionStorage?.setItem('gv_return_focus_rulefile_requirements_list_v1', JSON.stringify({
+                    requirementId: requirement_id,
+                    createdAt: Date.now()
+                }));
+            } catch (e) {}
+            this.router('rulefile_requirements');
+        });
         bottom_nav_bar.appendChild(back_button_bottom);
         this.plate_element_ref.appendChild(bottom_nav_bar);
 

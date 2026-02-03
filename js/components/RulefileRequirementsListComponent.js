@@ -3,6 +3,7 @@ import { RequirementListToolbarComponent } from './RequirementListToolbarCompone
 
 export const RulefileRequirementsListComponent = {
     CSS_PATH: 'css/components/rulefile_requirements_list_component.css',
+    RETURN_FOCUS_SESSION_KEY: 'gv_return_focus_rulefile_requirements_list_v1',
     SORT_OPTIONS: [
         { value: 'ref_asc', textKey: 'sort_option_ref_asc_natural' },
         { value: 'ref_desc', textKey: 'sort_option_ref_desc_natural' },
@@ -335,7 +336,15 @@ export const RulefileRequirementsListComponent = {
             this.content_div_for_delegation.appendChild(req_ul);
         }
         
-        // Ensure focus logic remains
+        // Återställ fokus när användaren kommer tillbaka till listan (t.ex. från "Visa krav" eller efter radering)
+        if (this._apply_return_focus_if_needed()) {
+            // Rensa äldre fokusflaggor så att de inte skriver över vår fokus-återställning
+            try { sessionStorage.removeItem('focusAfterLoad'); } catch (e) {}
+            try { sessionStorage.removeItem('focusOnH1AfterLoad'); } catch (e) {}
+            return;
+        }
+
+        // Befintlig fokuslogik (används även av andra flöden)
         const focusSelector = sessionStorage.getItem('focusAfterLoad');
         if (focusSelector) {
             sessionStorage.removeItem('focusAfterLoad');
@@ -348,6 +357,67 @@ export const RulefileRequirementsListComponent = {
             sessionStorage.removeItem('focusOnH1AfterLoad');
             this.plate_element_ref.querySelector('#rulefile-list-h1')?.focus();
         }
+    },
+
+    _apply_return_focus_if_needed() {
+        if (!this.plate_element_ref) return false;
+        if (!window.sessionStorage || !this.RETURN_FOCUS_SESSION_KEY) return false;
+
+        let raw = null;
+        try {
+            raw = window.sessionStorage.getItem(this.RETURN_FOCUS_SESSION_KEY);
+        } catch (e) {
+            return false;
+        }
+        if (!raw) return false;
+
+        let focus_instruction = null;
+        try {
+            focus_instruction = JSON.parse(raw);
+        } catch (e) {
+            try { window.sessionStorage.removeItem(this.RETURN_FOCUS_SESSION_KEY); } catch (err) {}
+            return false;
+        }
+
+        // One-shot: rensa alltid instruktionen, oavsett utfall.
+        try { window.sessionStorage.removeItem(this.RETURN_FOCUS_SESSION_KEY); } catch (e) {}
+
+        const requirement_id = focus_instruction?.requirementId || null;
+        const deleted_requirement_id = focus_instruction?.deletedRequirementId || null;
+
+        let target_link = null;
+        if (requirement_id) {
+            target_link = this.plate_element_ref.querySelector(
+                `a.requirement-list-title-button[data-requirement-id="${CSS.escape(String(requirement_id))}"]`
+            );
+        }
+
+        // Om kravet är raderat (eller inte finns i aktuell filtrering), fokusera första titel-länken i listan.
+        if (!target_link && deleted_requirement_id) {
+            target_link = this.plate_element_ref.querySelector('a.requirement-list-title-button[data-requirement-id]');
+        }
+        if (!target_link) return false;
+
+        // Hindra generella "fokusera <h1>" i main.js från att skriva över vår fokus.
+        window.customFocusApplied = true;
+
+        const top_action_bar = document.getElementById('global-action-bar-top');
+        const top_bar_height = top_action_bar ? top_action_bar.offsetHeight : 0;
+
+        const element_rect = target_link.getBoundingClientRect();
+        const absolute_element_top = element_rect.top + window.pageYOffset;
+        const scroll_position = absolute_element_top - top_bar_height;
+
+        window.scrollTo({ top: scroll_position, behavior: 'smooth' });
+        setTimeout(() => {
+            try {
+                target_link.focus({ preventScroll: true });
+            } catch (e) {
+                target_link.focus();
+            }
+        }, 150);
+
+        return true;
     },
     
     _create_requirement_list_item(req) {

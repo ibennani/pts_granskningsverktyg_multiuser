@@ -96,7 +96,9 @@ export const SampleManagementViewComponent = {
             this.plate_element_ref.appendChild(global_message_element_ref);
         }
 
-        this.plate_element_ref.appendChild(this.Helpers.create_element('h1', { text_content: t('sample_management_title') }));
+        this.plate_element_ref.appendChild(this.Helpers.create_element('h1', {
+            text_content: t('sample_management_title_with_count', { count: current_state.samples?.length || 0 })
+        }));
         this.plate_element_ref.appendChild(this.Helpers.create_element('p', { class_name: 'view-intro-text', text_content: t('add_samples_intro_message') }));
         
         const top_actions_div = this.Helpers.create_element('div', { class_name: 'sample-management-actions' });
