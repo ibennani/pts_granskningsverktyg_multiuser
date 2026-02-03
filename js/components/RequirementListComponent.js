@@ -356,6 +356,27 @@ export const RequirementListComponent = {
             await this._initialRender();
         }
         this._populate_dynamic_content();
+        
+        // Sätt fokus på länken för det krav som användaren just var på
+        this._focus_on_requirement_link_if_needed();
+    },
+
+    _focus_on_requirement_link_if_needed() {
+        // Kontrollera om det finns en requirementId i params som indikerar vilket krav användaren just var på
+        if (this.params?.requirementId && this.content_div_for_delegation) {
+            // Vänta lite för att säkerställa att DOM:en är helt renderad
+            setTimeout(() => {
+                const target_link = this.content_div_for_delegation.querySelector(
+                    `a.list-title-link[data-requirement-id="${CSS.escape(this.params.requirementId)}"]`
+                );
+                if (target_link) {
+                    // Scrolla till länken om den inte är synlig
+                    target_link.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    // Sätt fokus på länken
+                    target_link.focus();
+                }
+            }, 100);
+        }
     },
 
     create_requirement_list_item(req, sample) {
