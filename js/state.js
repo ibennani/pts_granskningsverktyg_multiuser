@@ -19,6 +19,7 @@ export const ActionTypes = {
     UPDATE_RULEFILE_CONTENT: 'UPDATE_RULEFILE_CONTENT',
     REPLACE_RULEFILE_AND_RECONCILE: 'REPLACE_RULEFILE_AND_RECONCILE',
     SET_UI_FILTER_SETTINGS: 'SET_UI_FILTER_SETTINGS',
+    SET_ALL_REQUIREMENTS_FILTER_SETTINGS: 'SET_ALL_REQUIREMENTS_FILTER_SETTINGS',
     STAGE_SAMPLE_CHANGES: 'STAGE_SAMPLE_CHANGES',
     CLEAR_STAGED_SAMPLE_CHANGES: 'CLEAR_STAGED_SAMPLE_CHANGES',
     CONFIRM_SINGLE_REVIEWED_REQUIREMENT: 'CONFIRM_SINGLE_REVIEWED_REQUIREMENT',
@@ -60,6 +61,10 @@ const initial_state = {
                 not_audited: true, 
                 updated: true
             }
+        },
+        allRequirementsFilter: {
+            searchText: '',
+            sortBy: 'default'
         }
     },
     auditCalculations: {}, 
@@ -69,6 +74,13 @@ const initial_state = {
 let internal_state = { ...initial_state };
 let listeners = [];
 let autosaveDebounceTimer = null;
+
+// Actions som endast uppdaterar UI-inställningar och inte ska trigga central autospar (localStorage).
+// Viktigt: dessa actions ska inte heller nollställa en redan schemalagd autospar-timer.
+const NON_AUTOSAVE_ACTION_TYPES = new Set([
+    ActionTypes.SET_UI_FILTER_SETTINGS,
+    ActionTypes.SET_ALL_REQUIREMENTS_FILTER_SETTINGS
+]);
 
 // Dispatch queue för att förhindra race conditions
 let dispatch_queue = [];
@@ -429,6 +441,18 @@ function root_reducer(current_state, action) {
                     }
                 }
             };
+        
+        case ActionTypes.SET_ALL_REQUIREMENTS_FILTER_SETTINGS:
+            return {
+                ...current_state,
+                uiSettings: {
+                    ...current_state.uiSettings,
+                    allRequirementsFilter: {
+                        ...current_state.uiSettings.allRequirementsFilter,
+                        ...action.payload
+                    }
+                }
+            };
 
         default:
             return current_state;
@@ -541,15 +565,18 @@ function execute_single_dispatch(action) {
                 }
 
                 // Sätt upp autosave med felhantering
-                clearTimeout(autosaveDebounceTimer);
-                autosaveDebounceTimer = setTimeout(() => {
-                    try {
-                        saveStateToLocalStorage(internal_state);
-                    } catch (autosaveError) {
-                        console.warn('[State.js] Failed to autosave state to localStorage:', autosaveError);
-                        // Autosave-fel är inte kritiskt, fortsätt
-                    }
-                }, 3000);
+                const should_trigger_autosave = action && action.type && !NON_AUTOSAVE_ACTION_TYPES.has(action.type);
+                if (should_trigger_autosave) {
+                    clearTimeout(autosaveDebounceTimer);
+                    autosaveDebounceTimer = setTimeout(() => {
+                        try {
+                            saveStateToLocalStorage(internal_state);
+                        } catch (autosaveError) {
+                            console.warn('[State.js] Failed to autosave state to localStorage:', autosaveError);
+                            // Autosave-fel är inte kritiskt, fortsätt
+                        }
+                    }, 3000);
+                }
 
                 // Notifiera listeners med felhantering
                 try {

@@ -38,6 +38,24 @@ export const AddSampleFormComponent = {
         this._handleCheckboxChange = this._handleCheckboxChange.bind(this);
     },
 
+    get_sample_categories_from_state() {
+        const state = this.getState ? this.getState() : null;
+        const metadata = state?.ruleFileContent?.metadata || {};
+        const samples = metadata.samples || {};
+
+        let sample_categories = Array.isArray(samples.sampleCategories) ? samples.sampleCategories : [];
+
+        // Fallback: nyare struktur kan ha sampleCategories i vocabularies
+        if (sample_categories.length === 0) {
+            const vocab_sample_types = metadata.vocabularies?.sampleTypes || {};
+            if (Array.isArray(vocab_sample_types.sampleCategories)) {
+                sample_categories = vocab_sample_types.sampleCategories;
+            }
+        }
+
+        return sample_categories;
+    },
+
     get_t_internally() {
         return this.Translation?.t || ((key) => `**${key}**`);
     },
@@ -55,10 +73,15 @@ export const AddSampleFormComponent = {
     },
 
     on_category_change(selected_cat_id, preselected_sample_type_id = null) {
-        const sample_categories = this.getState().ruleFileContent.metadata.samples.sampleCategories;
+        const sample_categories = this.get_sample_categories_from_state();
         const selected_category = sample_categories.find(c => c.id === selected_cat_id);
 
         if (!selected_category) return;
+
+        // Byt kategori: bygg om dropdownen från början
+        if (this.sample_type_select) {
+            this.sample_type_select.innerHTML = '';
+        }
 
         const default_option = this.Helpers.create_element('option', {
             value: '',
@@ -166,8 +189,18 @@ export const AddSampleFormComponent = {
         const rule_file = state.ruleFileContent;
         const sample_being_edited = state.samples.find(s => s.id === this.current_editing_sample_id);
 
-        const old_relevant_reqs = new Set(this.AuditLogic.get_relevant_requirements_for_sample(rule_file, { ...sample_being_edited, selectedContentTypes: this.original_content_types_on_load }).map(r => r.id));
-        const new_relevant_reqs = new Set(this.AuditLogic.get_relevant_requirements_for_sample(rule_file, sample_payload_data).map(r => r.id));
+        const old_relevant_reqs = new Set(
+            this.AuditLogic
+                .get_relevant_requirements_for_sample(rule_file, { ...sample_being_edited, selectedContentTypes: this.original_content_types_on_load })
+                .map(r => r.key || r.id)
+                .filter(Boolean)
+        );
+        const new_relevant_reqs = new Set(
+            this.AuditLogic
+                .get_relevant_requirements_for_sample(rule_file, sample_payload_data)
+                .map(r => r.key || r.id)
+                .filter(Boolean)
+        );
 
         const added_req_ids = [...new_relevant_reqs].filter(id => !old_relevant_reqs.has(id));
         const removed_req_ids = [...old_relevant_reqs].filter(id => !new_relevant_reqs.has(id));
@@ -270,8 +303,7 @@ export const AddSampleFormComponent = {
         this.current_editing_sample_id = sample_id_to_edit;
         const current_state = this.getState();
         const sample_data = this.current_editing_sample_id ? current_state.samples.find(s => s.id === this.current_editing_sample_id) : null;
-        const sample_config = current_state.ruleFileContent.metadata.samples || {};
-        const sample_categories = sample_config.sampleCategories || [];
+        const sample_categories = this.get_sample_categories_from_state();
         const grouped_content_types = current_state.ruleFileContent.metadata?.vocabularies?.contentTypes || current_state.ruleFileContent.metadata?.contentTypes || [];
 
         this.original_content_types_on_load = sample_data ? [...sample_data.selectedContentTypes] : [];

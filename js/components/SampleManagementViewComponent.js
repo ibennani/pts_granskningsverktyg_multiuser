@@ -117,29 +117,31 @@ export const SampleManagementViewComponent = {
         this.sample_list_component_instance.render();
         this.plate_element_ref.appendChild(this.sample_list_container_element);
         
-        // Render bottom actions
-        const bottom_actions_div = this.Helpers.create_element('div', { class_name: ['form-actions', 'space-between-groups'], style: 'margin-top: 2rem; width: 100%;' });
-        
-        const left_group_bottom = this.Helpers.create_element('div', { class_name: 'action-group-left' });
-        const back_to_metadata_btn = this.Helpers.create_element('button', {
-            class_name: ['button', 'button-default'],
-            html_content: `<span>${t('back_to_metadata')}</span>` + (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('arrow_back') : '')
-        });
-        back_to_metadata_btn.addEventListener('click', () => this.router('metadata'));
-        left_group_bottom.appendChild(back_to_metadata_btn);
-        bottom_actions_div.appendChild(left_group_bottom);
-
-        if (current_state.samples.length > 0) {
-            const right_group_bottom = this.Helpers.create_element('div', { class_name: 'action-group-right' });
-            const start_audit_button = this.Helpers.create_element('button', {
-                class_name: ['button', 'button-success'],
-                html_content: `<span>${t('start_audit')}</span>` + (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('check_circle') : '')
+        // Render bottom actions (endast vid första flödet: ny granskning som ännu inte påbörjats)
+        if (current_state.auditStatus === 'not_started') {
+            const bottom_actions_div = this.Helpers.create_element('div', { class_name: ['form-actions', 'space-between-groups'], style: 'margin-top: 2rem; width: 100%;' });
+            
+            const left_group_bottom = this.Helpers.create_element('div', { class_name: 'action-group-left' });
+            const back_to_metadata_btn = this.Helpers.create_element('button', {
+                class_name: ['button', 'button-default'],
+                html_content: `<span>${t('back_to_metadata')}</span>` + (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('arrow_back') : '')
             });
-            start_audit_button.addEventListener('click', this.handle_start_audit);
-            right_group_bottom.appendChild(start_audit_button);
-            bottom_actions_div.appendChild(right_group_bottom);
+            back_to_metadata_btn.addEventListener('click', () => this.router('metadata'));
+            left_group_bottom.appendChild(back_to_metadata_btn);
+            bottom_actions_div.appendChild(left_group_bottom);
+
+            if (current_state.samples.length > 0) {
+                const right_group_bottom = this.Helpers.create_element('div', { class_name: 'action-group-right' });
+                const start_audit_button = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-success'],
+                    html_content: `<span>${t('start_audit')}</span>` + (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('check_circle') : '')
+                });
+                start_audit_button.addEventListener('click', this.handle_start_audit);
+                right_group_bottom.appendChild(start_audit_button);
+                bottom_actions_div.appendChild(right_group_bottom);
+            }
+            this.plate_element_ref.appendChild(bottom_actions_div);
         }
-        this.plate_element_ref.appendChild(bottom_actions_div);
     },
 
     destroy() {

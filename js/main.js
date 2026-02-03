@@ -167,6 +167,42 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
 
     function update_side_menu(view_name, params = {}) {
         if (!side_menu_component_instance || typeof side_menu_component_instance.render !== 'function') return;
+
+        // Vid återställning av session ska vänstermenyn aldrig renderas.
+        // Vi tömmer/döljer containern och lämnar utan att anropa render().
+        if (view_name === 'restore_session') {
+            if (side_menu_root) {
+                side_menu_root.innerHTML = '';
+                side_menu_root.classList.add('hidden');
+            }
+            return;
+        }
+
+        // När användaren anger metadata för en ny granskning ska vänstermenyn aldrig renderas.
+        // Detta gäller under "not_started"-fasen i metadata-vyn.
+        const state_for_menu = typeof getState === 'function' ? getState() : null;
+        const is_initial_setup_view =
+            (
+                view_name === 'metadata' ||
+                view_name === 'edit_metadata' ||
+                view_name === 'sample_management' ||
+                view_name === 'sample_form' ||
+                view_name === 'confirm_sample_edit'
+            ) &&
+            state_for_menu?.auditStatus === 'not_started';
+        if (is_initial_setup_view) {
+            if (side_menu_root) {
+                side_menu_root.innerHTML = '';
+                side_menu_root.classList.add('hidden');
+            }
+            return;
+        }
+
+        // Säkerställ att menyn blir synlig igen när vi lämnar restore_session.
+        if (side_menu_root) {
+            side_menu_root.classList.remove('hidden');
+        }
+
         if (typeof side_menu_component_instance.set_current_view === 'function') {
             side_menu_component_instance.set_current_view(view_name, params);
         }
@@ -527,14 +563,9 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
         updatePageTitle(view_name_to_render, params_to_render);
         update_side_menu(view_name_to_render, params_to_render);
 
-        const views_without_bottom_bar = ['restore_session', 'sample_form', 'confirm_sample_edit', 'metadata', 'edit_metadata', 'rulefile_metadata_edit', 'rulefile_sections_edit_general', 'rulefile_sections_edit_page_types', 'rulefile_sections'];
         top_action_bar_instance.render();
-        if (views_without_bottom_bar.includes(view_name_to_render)) {
-            bottom_action_bar_container.style.display = 'none';
-        } else {
-            bottom_action_bar_container.style.display = '';
-            bottom_action_bar_instance.render();
-        }
+        bottom_action_bar_container.style.display = '';
+        bottom_action_bar_instance.render();
 
         if (current_view_name_rendered === view_name_to_render && 
             current_view_params_rendered_json === JSON.stringify(params_to_render) &&
@@ -810,8 +841,6 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
             consoleManager.info('[Main.js] Global event listeners cleaned up');
         };
         subscribe((new_state) => { 
-            const views_without_bottom_bar = ['restore_session', 'sample_form', 'confirm_sample_edit', 'metadata', 'edit_metadata', 'rulefile_metadata_edit', 'rulefile_sections_edit_general', 'rulefile_sections_edit_page_types', 'rulefile_sections'];
-            
             try {
                 top_action_bar_instance.render();
             } catch (error) {
@@ -825,18 +854,16 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
                 }
             }
             
-            if (!views_without_bottom_bar.includes(current_view_name_rendered)) {
-                try {
-                    bottom_action_bar_instance.render();
-                } catch (error) {
-                    consoleManager.error("[Main.js] Error in subscription bottom action bar render:", error);
-                    if (error_boundary_instance && error_boundary_instance.show_error) {
-                        error_boundary_instance.show_error({
-                            message: `Bottom action bar subscription render failed: ${error.message}`,
-                            stack: error.stack,
-                            component: 'BottomActionBar'
-                        });
-                    }
+            try {
+                bottom_action_bar_instance.render();
+            } catch (error) {
+                consoleManager.error("[Main.js] Error in subscription bottom action bar render:", error);
+                if (error_boundary_instance && error_boundary_instance.show_error) {
+                    error_boundary_instance.show_error({
+                        message: `Bottom action bar subscription render failed: ${error.message}`,
+                        stack: error.stack,
+                        component: 'BottomActionBar'
+                    });
                 }
             }
             try {

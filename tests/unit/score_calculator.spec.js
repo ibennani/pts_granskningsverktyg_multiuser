@@ -41,22 +41,42 @@ describe('ScoreCalculator', () => {
         jest.spyOn(console, 'warn').mockImplementation(() => {});
     });
 
-    test('returns null if auditState is invalid', () => {
-        expect(calculateQualityScore(null)).toBeNull();
-        expect(calculateQualityScore({})).toBeNull();
+    test('returns fallback analysis if auditState is invalid', () => {
+        const result1 = calculateQualityScore(null);
+        expect(result1).not.toBeNull();
+        expect(result1.totalScore).toBe(0);
+        expect(result1.sampleCount).toBe(0);
+        expect(result1.principles?.perceivable?.score).toBe(0);
+
+        const result2 = calculateQualityScore({});
+        expect(result2).not.toBeNull();
+        expect(result2.totalScore).toBe(0);
+        expect(result2.sampleCount).toBe(0);
+        expect(result2.principles?.perceivable?.score).toBe(0);
     });
 
-    test('returns null if requirements or taxonomies are missing', () => {
-        expect(calculateQualityScore({ ruleFileContent: {} })).toBeNull();
-        expect(calculateQualityScore({ ruleFileContent: { requirements: {} } })).toBeNull();
+    test('returns fallback analysis if requirements or taxonomies are missing', () => {
+        const result1 = calculateQualityScore({ ruleFileContent: {} });
+        expect(result1).not.toBeNull();
+        expect(result1.totalScore).toBe(0);
+        expect(result1.principles?.perceivable?.score).toBe(0);
+
+        const result2 = calculateQualityScore({ ruleFileContent: { requirements: {} } });
+        expect(result2).not.toBeNull();
+        expect(result2.totalScore).toBe(0);
+        expect(result2.principles?.perceivable?.score).toBe(0);
     });
 
-    test('returns null if no samples exist', () => {
+    test('returns score 0 if no samples exist', () => {
         const state = {
             ruleFileContent: mockRuleFileContent,
             samples: []
         };
-        expect(calculateQualityScore(state)).toBeNull();
+        const result = calculateQualityScore(state);
+        expect(result).not.toBeNull();
+        expect(result.totalScore).toBe(0);
+        expect(result.sampleCount).toBe(0);
+        expect(result.principles?.perceivable?.score).toBe(0);
     });
 
     test('calculates score 0 for perfect audit (no failures)', () => {

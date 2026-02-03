@@ -31,7 +31,9 @@ function _getRelevantRequirementsForSample(ruleFileContent, sample) {
     const all_reqs = Object.values(ruleFileContent.requirements);
 
     if (!sample.selectedContentTypes?.length) {
-        return [];
+        // Om stickprovet saknar innehållstyper: behandla som "alla krav är relevanta"
+        // (samma princip som i AuditLogic) för att bristindex ska kunna beräknas konsekvent.
+        return all_reqs;
     }
     
     return all_reqs.filter(req => {
@@ -48,40 +50,60 @@ function _getRelevantRequirementsForSample(ruleFileContent, sample) {
  * @returns {object|null} An object with totalScore and a breakdown by principle, or null if calculation is not possible.
  */
 export function calculateQualityScore(auditState) {
+    const safe_sample_count = Array.isArray(auditState?.samples) ? auditState.samples.length : 0;
+
     if (!auditState) {
         console.warn('[ScoreCalculator] auditState is null or undefined');
-        return null;
+        return {
+            totalScore: 0,
+            principles: {
+                perceivable: { labelKey: 'perceivable', score: 0 },
+                operable: { labelKey: 'operable', score: 0 },
+                understandable: { labelKey: 'understandable', score: 0 },
+                robust: { labelKey: 'robust', score: 0 }
+            },
+            sampleCount: 0
+        };
     }
+
     if (!auditState.ruleFileContent?.requirements) {
         console.warn('[ScoreCalculator] Missing requirements in ruleFileContent');
-        return null;
-    }
-    if (!auditState.ruleFileContent.metadata?.taxonomies) {
-        console.warn('[ScoreCalculator] Missing taxonomies in ruleFileContent metadata');
-        return null;
-    }
-    if (!auditState.samples?.length) {
-        console.warn('[ScoreCalculator] No samples found');
-        return null;
+        return {
+            totalScore: 0,
+            principles: {
+                perceivable: { labelKey: 'perceivable', score: 0 },
+                operable: { labelKey: 'operable', score: 0 },
+                understandable: { labelKey: 'understandable', score: 0 },
+                robust: { labelKey: 'robust', score: 0 }
+            },
+            sampleCount: safe_sample_count
+        };
     }
 
     const taxonomies = auditState.ruleFileContent.metadata?.vocabularies?.taxonomies || auditState.ruleFileContent.metadata?.taxonomies || [];
-    const classifications = taxonomies.find(tax => tax.id === 'wcag22-pour');
-    if (!classifications) {
-        console.warn('[ScoreCalculator] WCAG22-POUR taxonomy not found');
-        return null;
-    }
+    const classifications = Array.isArray(taxonomies)
+        ? taxonomies.find(tax => tax?.id === 'wcag22-pour')
+        : null;
+
+    const concepts = Array.isArray(classifications?.concepts) && classifications.concepts.length > 0
+        ? classifications.concepts
+        : [
+            { id: 'perceivable', labelKey: 'perceivable', label: 'Perceivable' },
+            { id: 'operable', labelKey: 'operable', label: 'Operable' },
+            { id: 'understandable', labelKey: 'understandable', label: 'Understandable' },
+            { id: 'robust', labelKey: 'robust', label: 'Robust' }
+        ];
 
     let totalMaxWeight = 0;
     let totalDeductions = 0;
     
     const principleScores = {};
-    classifications.concepts.forEach(c => {
+    concepts.forEach(c => {
         principleScores[c.id] = { maxWeight: 0, deductions: 0 };
     });
 
     // 1. Iterate through each sample to calculate contributions.
-    auditState.samples.forEach(sample => {
+    (auditState.samples || []).forEach(sample => {
         const relevantReqsForSample = _getRelevantRequirementsForSample(auditState.ruleFileContent, sample);
         
         relevantReqsForSample.forEach(reqDef => {
@@ -122,12 +144,13 @@ export function calculateQualityScore(auditState) {
 
     // 2. Calculate the final normalized deficiency indexes
     const finalPrincipleReport = {};
-    classifications.concepts.forEach(concept => {
+    concepts.forEach(concept => {
         const id = concept.id;
-        const data = principleScores[id];
+        const data = principleScores[id] || { maxWeight: 0, deductions: 0 };
         // Deficiency Index = (Total Deductions / Max Possible Weight) * 100
         const deficiencyIndex = (data.maxWeight > 0) ? (data.deductions / data.maxWeight) * 100 : 0;
         finalPrincipleReport[id] = {
+            ...(concept.labelKey ? { labelKey: concept.labelKey } : {}),
             label: concept.label,
             score: parseFloat(deficiencyIndex.toFixed(1))
         };
@@ -138,7 +161,7 @@ export function calculateQualityScore(auditState) {
     return {
         totalScore: parseFloat(finalTotalDeficiencyIndex.toFixed(1)),
         principles: finalPrincipleReport,
-        sampleCount: auditState.samples.length
+        sampleCount: safe_sample_count
     };
 }
 

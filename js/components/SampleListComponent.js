@@ -112,23 +112,23 @@ export const SampleListComponent = {
             
             const info_div = create_element('div', { class_name: 'sample-info' });
             
-            const desc_h3 = create_element('h3');
+            const desc_h2 = create_element('h2');
             const sample_needs_review = Object.values(sample.requirementResults || {}).some(res => res.needsReview === true);
 
             if (sample_needs_review && get_icon_svg) {
-                desc_h3.innerHTML = get_icon_svg('update', ['currentColor'], 20) + ' ';
+                desc_h2.innerHTML = get_icon_svg('update', ['currentColor'], 20) + ' ';
             }
             
             const sample_description_text = sample.description || t('undefined_description');
             if (sample.url) {
-                desc_h3.appendChild(create_element('a', {
+                desc_h2.appendChild(create_element('a', {
                     text_content: sample_description_text,
                     attributes: { href: add_protocol_if_missing(sample.url), target: '_blank', rel: 'noopener noreferrer' }
                 }));
             } else {
-                desc_h3.appendChild(document.createTextNode(sample_description_text));
+                desc_h2.appendChild(document.createTextNode(sample_description_text));
             }
-            info_div.appendChild(desc_h3);
+            info_div.appendChild(desc_h2);
             
             // --- FIX: Display text from maps ---
             const category_text = sample_categories_map.get(sample.sampleCategory) || sample.sampleCategory;

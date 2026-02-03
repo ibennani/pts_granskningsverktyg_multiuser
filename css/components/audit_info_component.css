@@ -27,9 +27,10 @@
 /* -- REGLER FÖR RUBRIK OCH REDIGERA-KNAPP -- */
 .audit-info-panel .panel-header-wrapper {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: center;
     gap: 1rem;
+    flex-wrap: wrap;
     margin-bottom: 1.5rem;
     padding-bottom: 0.5rem;
     border-bottom: 1px dashed var(--secondary-color);

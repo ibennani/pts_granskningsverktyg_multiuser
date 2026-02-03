@@ -9,6 +9,7 @@ export const SideMenuComponent = {
         this.getState = deps.getState;
         this.Translation = deps.Translation;
         this.Helpers = deps.Helpers;
+        this.AuditLogic = deps.AuditLogic;
 
         this.current_view_name = 'upload';
         this.current_view_params = {};
@@ -123,8 +124,23 @@ export const SideMenuComponent = {
         return `#${view_name}?${new URLSearchParams(params).toString()}`;
     },
 
+    get_view_name_from_location_hash() {
+        // Härleder aktiv vy från URL:en för att undvika att menyn "fastnar"
+        // i fel aktivt val vid navigeringar som inte alltid uppdaterar intern state i exakt rätt ordning.
+        try {
+            const raw = window.location?.hash || '';
+            const hash = raw.startsWith('#') ? raw.substring(1) : raw;
+            const [view_name] = hash.split('?');
+            return view_name || null;
+        } catch (e) {
+            return null;
+        }
+    },
+
     create_menu_link({ label, view_name, params = {} }) {
-        const is_active = this.current_view_name === view_name;
+        const view_from_hash = this.get_view_name_from_location_hash();
+        const active_view_name = view_from_hash || this.current_view_name;
+        const is_active = active_view_name === view_name;
         const href = this.build_hash(view_name, params);
 
         const link = this.Helpers.create_element('a', {
@@ -154,14 +170,54 @@ export const SideMenuComponent = {
         const state = typeof this.getState === 'function' ? this.getState() : null;
         const audit_status = state?.auditStatus;
         const sample_count = state?.samples?.length || 0;
-        const requirements = state?.ruleFileContent?.requirements;
-        const requirement_count = Array.isArray(requirements)
-            ? requirements.length
-            : (requirements && typeof requirements === 'object')
-                ? Object.keys(requirements).length
-                : 0;
+        const rule_file_content = state?.ruleFileContent || null;
+        const requirements = rule_file_content?.requirements;
 
-        if (this.current_view_name === 'upload') return { should_show: false, items: [], aria_label: t('side_menu_aria_label') };
+        // Antalet krav i menyn ska räkna krav som är relevanta för minst ett stickprov,
+        // baserat på valda innehållstyper (inte baserat på requirementResults som ofta är tomt innan granskning).
+        const can_use_audit_logic = Boolean(
+            this.AuditLogic &&
+            typeof this.AuditLogic.get_relevant_requirements_for_sample === 'function' &&
+            rule_file_content
+        );
+
+        const requirement_ids_in_rulefile = new Set();
+        if (Array.isArray(requirements)) {
+            requirements.forEach((req, idx) => {
+                const req_id = (req && typeof req === 'object') ? (req.key || req.id || String(idx)) : String(idx);
+                if (req_id) requirement_ids_in_rulefile.add(String(req_id));
+            });
+        } else if (requirements && typeof requirements === 'object') {
+            Object.entries(requirements).forEach(([req_id, req]) => {
+                const effective_id = (req && typeof req === 'object') ? (req.key || req.id || req_id) : req_id;
+                if (effective_id) requirement_ids_in_rulefile.add(String(effective_id));
+            });
+        }
+
+        const requirement_ids_in_samples = new Set();
+        (state?.samples || []).forEach(sample => {
+            if (can_use_audit_logic) {
+                const relevant_reqs = this.AuditLogic.get_relevant_requirements_for_sample(rule_file_content, sample);
+                (relevant_reqs || []).forEach(req => {
+                    const req_id = req?.key || req?.id;
+                    if (req_id) requirement_ids_in_samples.add(String(req_id));
+                });
+                return;
+            }
+
+            // Fallback (bakåtkompatibilitet): om AuditLogic inte är injicerad.
+            const req_results = sample?.requirementResults;
+            if (!req_results || typeof req_results !== 'object') return;
+            Object.keys(req_results).forEach(req_id => requirement_ids_in_samples.add(String(req_id)));
+        });
+
+        const requirement_count = requirement_ids_in_rulefile.size > 0
+            ? [...requirement_ids_in_samples].filter(req_id => requirement_ids_in_rulefile.has(req_id)).length
+            : requirement_ids_in_samples.size;
+
+        if (this.current_view_name === 'upload' || this.current_view_name === 'restore_session') {
+            return { should_show: false, items: [], aria_label: t('side_menu_aria_label') };
+        }
 
         if (audit_status === 'rulefile_editing') {
             return {

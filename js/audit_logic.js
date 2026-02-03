@@ -267,8 +267,9 @@ export function get_relevant_requirements_for_sample(rule_file_content, sample) 
     
     try {
         const all_reqs = Object.values(rule_file_content.requirements).filter(req => {
-            // Validera att varje requirement är ett giltigt objekt
-            return req && typeof req === 'object' && req.id;
+            // Validera att varje requirement är ett giltigt objekt.
+            // Stöd både nyare format (key) och äldre format (id).
+            return req && typeof req === 'object' && (req.key || req.id);
         });
         
         if (!sample.selectedContentTypes || !Array.isArray(sample.selectedContentTypes) || sample.selectedContentTypes.length === 0) {

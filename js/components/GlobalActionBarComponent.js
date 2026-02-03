@@ -23,6 +23,7 @@ export class GlobalActionBarComponent {
     // State för att optimera re-rendering
     this.last_audit_status = null;
     this.last_has_rulefile_loaded = null;
+    this.last_language_code = null;
 
     // Bind methods
     this.handle_save_rulefile = this.handle_save_rulefile.bind(this);
@@ -300,11 +301,16 @@ export class GlobalActionBarComponent {
     const current_state = this.getState();
     const audit_status = current_state?.auditStatus;
     const has_rulefile_loaded = Boolean(current_state?.ruleFileContent);
+    const current_language_code =
+      typeof this.Translation?.get_current_language_code === 'function'
+        ? this.Translation.get_current_language_code()
+        : null;
     
     // Om inget har ändrats som påverkar action bar visuellt, hoppa över re-rendering
     // Detta förhindrar onödiga re-renderingar vid autospar av metadata
     if (this.last_audit_status === audit_status && 
         this.last_has_rulefile_loaded === has_rulefile_loaded &&
+        this.last_language_code === current_language_code &&
         this.root.children.length > 0) {
       return; // Inget visuellt har ändrats, hoppa över re-rendering
     }
@@ -401,6 +407,7 @@ export class GlobalActionBarComponent {
     // Spara state för nästa render
     this.last_audit_status = audit_status;
     this.last_has_rulefile_loaded = has_rulefile_loaded;
+    this.last_language_code = current_language_code;
     
     // Återställ fokus om det var i action bar innan re-rendering
     if (focusInfo && focusInfo.element && document.contains(focusInfo.element)) {

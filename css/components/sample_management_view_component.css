@@ -5,7 +5,7 @@
     border: 1px solid var(--border-color); /* Ändrad från 2px solid var(--primary-color) */
     border-radius: var(--border-radius);
     /* Skugga hanteras av global CSS för .content-plate */
-    margin-top: 1rem;
+    margin-top: 0;
 }
 
 .sample-management-view-plate h1 {

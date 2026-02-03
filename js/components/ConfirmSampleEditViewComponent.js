@@ -36,6 +36,13 @@ export const ConfirmSampleEditViewComponent = {
         
         const current_state = this.getState();
         const return_view = (current_state.auditStatus === 'not_started') ? 'sample_management' : 'audit_overview';
+        if (return_view === 'audit_overview') {
+            try {
+                if (window.sessionStorage) {
+                    window.sessionStorage.setItem('gv_return_focus_audit_info_h2_v1', JSON.stringify({ focus: 'audit_info_h2' }));
+                }
+            } catch (e) {}
+        }
         this.router(return_view);
     },
 
@@ -44,6 +51,13 @@ export const ConfirmSampleEditViewComponent = {
         
         const current_state = this.getState();
         const return_view = (current_state.auditStatus === 'not_started') ? 'sample_management' : 'audit_overview';
+        if (return_view === 'audit_overview') {
+            try {
+                if (window.sessionStorage) {
+                    window.sessionStorage.setItem('gv_return_focus_audit_info_h2_v1', JSON.stringify({ focus: 'audit_info_h2' }));
+                }
+            } catch (e) {}
+        }
         this.router(return_view);
     },
 

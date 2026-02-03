@@ -81,10 +81,21 @@ export const ScoreAnalysisComponent = {
         
         const t = this.Translation.t;
         const lang_code = this.Translation.get_current_language_code();
-        const analysis = this._performAnalysis();
+        let analysis = this._performAnalysis();
         
+        // Fallback: graferna ska alltid vara synliga även innan något granskats.
         if (!analysis) {
-            return;
+            const safe_sample_count = this.getState()?.samples?.length || 0;
+            analysis = {
+                totalScore: 0,
+                principles: {
+                    perceivable: { labelKey: 'perceivable', score: 0 },
+                    operable: { labelKey: 'operable', score: 0 },
+                    understandable: { labelKey: 'understandable', score: 0 },
+                    robust: { labelKey: 'robust', score: 0 }
+                },
+                sampleCount: safe_sample_count
+            };
         }
 
         const main_container = this.Helpers.create_element('div', { class_name: 'score-analysis-content' });
@@ -118,11 +129,18 @@ export const ScoreAnalysisComponent = {
 
         const dl = this.Helpers.create_element('dl', { class_name: 'score-analysis-principles__list' });
 
-        for (const principleId in analysis.principles) {
+        const default_order = ['perceivable', 'operable', 'understandable', 'robust'];
+        const principle_ids = Object.keys(analysis.principles || {});
+        const ordered_principle_ids = default_order.every(id => principle_ids.includes(id))
+            ? default_order
+            : principle_ids;
+
+        for (const principleId of ordered_principle_ids) {
             const data = analysis.principles[principleId];
             
             const row = this.Helpers.create_element('div', { class_name: 'principle-row' });
-            const dt = this.Helpers.create_element('dt', { class_name: 'principle-row__name', text_content: data.label });
+            const label_text = data?.labelKey ? t(data.labelKey) : (data?.label || '');
+            const dt = this.Helpers.create_element('dt', { class_name: 'principle-row__name', text_content: label_text });
             
             const dd = this.Helpers.create_element('dd', { class_name: 'principle-row__bar-container' });
             
@@ -136,7 +154,7 @@ export const ScoreAnalysisComponent = {
                     'aria-valuenow': data.score,
                     'aria-valuemin': '0',
                     'aria-valuemax': '100',
-                    'aria-label': t('deficiency_index_for_principle', { principle: data.label, score: formattedScoreForAria, defaultValue: `Deficiency index for ${data.label}: ${formattedScoreForAria} out of 100` })
+                    'aria-label': t('deficiency_index_for_principle', { principle: label_text, score: formattedScoreForAria, defaultValue: `Deficiency index for ${label_text}: ${formattedScoreForAria} out of 100` })
                 }
             });
             bar.style.setProperty('--score-percent', data.score);

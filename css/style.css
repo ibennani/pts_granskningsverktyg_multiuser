@@ -781,7 +781,7 @@ select:-webkit-autofill:focus {
     width: 100%;
 }
 
-.item-list-item .sample-info h3 {
+.item-list-item .sample-info h2 {
     font-size: 1.05rem;
     margin-top: 0;
     margin-bottom: 0;
@@ -789,7 +789,7 @@ select:-webkit-autofill:focus {
     font-weight: 600;
 }
 
-[data-theme="dark"] .item-list-item .sample-info h3 {
+[data-theme="dark"] .item-list-item .sample-info h2 {
     color: var(--link-color);
 }
 

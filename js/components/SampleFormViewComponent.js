@@ -39,15 +39,33 @@ export const SampleFormViewComponent = {
         });
     },
 
+    _request_focus_on_audit_info_h2() {
+        // Instruktion: när användaren återgår till granskningsöversikten ska fokus hamna på
+        // "Granskningsinformation" (h2) i översikten, inte på sidans h1.
+        try {
+            if (window.sessionStorage) {
+                window.sessionStorage.setItem('gv_return_focus_audit_info_h2_v1', JSON.stringify({ focus: 'audit_info_h2' }));
+            }
+        } catch (e) {
+            // Ignorera om sessionStorage inte är tillgängligt.
+        }
+    },
+
     on_form_saved_or_updated() {
         const current_state = this.getState();
         const previous_view = (current_state.auditStatus === 'not_started') ? 'sample_management' : 'audit_overview';
+        if (previous_view === 'audit_overview') {
+            this._request_focus_on_audit_info_h2();
+        }
         this.router(previous_view);
     },
     
     discard_and_return() {
         const current_state = this.getState();
         const previous_view = (current_state.auditStatus === 'not_started') ? 'sample_management' : 'audit_overview';
+        if (previous_view === 'audit_overview') {
+            this._request_focus_on_audit_info_h2();
+        }
         this.router(previous_view);
     },
 
@@ -56,6 +74,7 @@ export const SampleFormViewComponent = {
         const sample_id_to_edit = this.params?.editSampleId || null;
         const current_state = this.getState();
         const audit_status = current_state.auditStatus;
+        const sample_count = current_state.samples?.length || 0;
 
         this.root.innerHTML = '';
         this.plate_element_ref = this.Helpers.create_element('div', { class_name: 'content-plate' });
@@ -79,18 +98,27 @@ export const SampleFormViewComponent = {
         this.add_sample_form_component_instance.render(sample_id_to_edit);
         this.plate_element_ref.appendChild(this.add_sample_form_container_element);
 
-        // Lägg till en nedre navigationsrad med "Tillbaka"-knapp
-        const bottom_actions_div = this.Helpers.create_element('div', { class_name: 'form-actions', style: 'margin-top: 2rem; justify-content: flex-start;' });
-        
-        const return_button_text_key = (audit_status === 'not_started') ? 'back_to_sample_management' : 'back_to_audit_overview';
-        
-        const return_button = this.Helpers.create_element('button', {
-            class_name: ['button', 'button-default'],
-            html_content: `<span>${t(return_button_text_key)}</span>` + (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('arrow_back') : '')
-        });
-        return_button.addEventListener('click', this.discard_and_return.bind(this));
-        bottom_actions_div.appendChild(return_button);
-        this.plate_element_ref.appendChild(bottom_actions_div);
+        // Lägg till en nedre navigationsrad med "Tillbaka"-knapp.
+        // Undantag: När användaren lägger till det allra första stickprovet i en ny granskning
+        // ska "Tillbaka till alla stickprov" aldrig renderas.
+        const should_hide_back_to_samples_for_first_sample =
+            audit_status === 'not_started' &&
+            !sample_id_to_edit &&
+            sample_count === 0;
+
+        if (!should_hide_back_to_samples_for_first_sample) {
+            const bottom_actions_div = this.Helpers.create_element('div', { class_name: 'form-actions', style: 'margin-top: 2rem; justify-content: flex-start;' });
+            
+            const return_button_text_key = (audit_status === 'not_started') ? 'back_to_sample_management' : 'back_to_audit_overview';
+            
+            const return_button = this.Helpers.create_element('button', {
+                class_name: ['button', 'button-default'],
+                html_content: `<span>${t(return_button_text_key)}</span>` + (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('arrow_back') : '')
+            });
+            return_button.addEventListener('click', this.discard_and_return.bind(this));
+            bottom_actions_div.appendChild(return_button);
+            this.plate_element_ref.appendChild(bottom_actions_div);
+        }
     },
 
     destroy() {
