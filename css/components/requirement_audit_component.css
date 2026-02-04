@@ -493,19 +493,22 @@
 
 
 .requirement-audit-header-title-wrapper {
-    display: flex;
-    align-items: center; /* Centrerar vertikalt */
-    gap: 1rem; /* Skapar ett fast avstånd mellan rubrik och knapp */
-    flex-wrap: wrap; /* Tillåter radbrytning på små skärmar */
+    display: block;
     margin-bottom: 0.5rem;
+    line-height: 1.5; /* Säkerställer konsekvent radhöjd */
 }
 
 .requirement-audit-header-title-wrapper h1 {
     margin: 0; /* Tar bort H1-elementets standardmarginal */
+    display: inline; /* Gör h1 inline så att texten kan brytas naturligt och knappen kan följa direkt efter */
+    line-height: inherit;
 }
 
 .requirement-audit-header-title-wrapper .edit-button {
-    flex-shrink: 0; /* Förhindrar att knappen trycks ihop */
+    display: inline-block; /* Gör knappen inline-block så den kan ligga direkt efter texten */
+    vertical-align: baseline; /* Alignerar knappen med textens baseline */
+    margin-left: 1rem; /* Avstånd från rubriken */
+    white-space: nowrap; /* Förhindrar att knappen bryts på flera rader */
 }
 /* Styling för listan med metadata i visningsläget */
 .requirement-metadata-list {

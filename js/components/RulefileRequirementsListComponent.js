@@ -422,13 +422,13 @@ export const RulefileRequirementsListComponent = {
     
     _create_requirement_list_item(req) {
         const t = this.Translation.t;
-        const li = this.Helpers.create_element('li', { class_name: 'item-list-item', style: 'flex-direction: row; justify-content: space-between; align-items: center;' });
+        const li = this.Helpers.create_element('li', { class_name: ['item-list-item', 'rulefile-requirement-row'] });
 
-        const text_div = this.Helpers.create_element('div', { style: 'margin-right: 1rem; flex-grow: 1; min-width: 0;' });
+        const text_div = this.Helpers.create_element('div', { class_name: 'rulefile-requirement-row__text' });
         
         // Skapa H3-container för titel-knappen
         const title_container = this.Helpers.create_element('h3', { 
-            style: 'font-size: 1.1rem; margin-bottom: 0.25rem; margin: 0; padding: 0;'
+            class_name: 'rulefile-requirement-row__title'
         });
         
         // Skapa klickbar titel-knapp
@@ -445,9 +445,9 @@ export const RulefileRequirementsListComponent = {
         
         title_container.appendChild(title_button);
         text_div.appendChild(title_container);
-        text_div.appendChild(this.Helpers.create_element('p', { style: 'font-size: 0.9rem; color: var(--text-color-muted); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;', text_content: req.standardReference?.text || '' }));
+        text_div.appendChild(this.Helpers.create_element('p', { class_name: 'rulefile-requirement-row__reference', text_content: req.standardReference?.text || '' }));
 
-        const button_group = this.Helpers.create_element('div', { class_name: 'sample-actions-main', style: 'flex-shrink: 0;' });
+        const button_group = this.Helpers.create_element('div', { class_name: ['sample-actions-main', 'rulefile-requirement-row__actions'] });
 
         const view_button = this.Helpers.create_element('button', {
             class_name: ['button', 'button-default', 'button-small'],

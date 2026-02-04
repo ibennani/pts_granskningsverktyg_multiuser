@@ -514,7 +514,14 @@ export const EditRulefileRequirementComponent = {
         const t = this.Translation.t;
         const form_group = this.Helpers.create_element('div', { class_name: 'form-group' });
         const label_text = label_text_override || t(label_key);
-        form_group.appendChild(this.Helpers.create_element('label', { attributes: { for: id }, text_content: label_text }));
+        const label = this.Helpers.create_element('label', { attributes: { for: id }, text_content: label_text });
+        
+        // Wrap label text in <strong> for text inputs and textareas
+        if ((is_textarea || input_type === 'text') && label_text) {
+            label.innerHTML = `<strong>${label_text}</strong>`;
+        }
+        
+        form_group.appendChild(label);
         
         let input;
         if (is_textarea) {
@@ -770,10 +777,13 @@ export const EditRulefileRequirementComponent = {
                 
                 // Block name field
                 const name_group = this.Helpers.create_element('div', { class_name: 'form-group' });
-                name_group.appendChild(this.Helpers.create_element('label', { 
+                const name_label_text = t('info_block_name_label') || 'Blocknamn';
+                const name_label = this.Helpers.create_element('label', { 
                     attributes: { for: `infoBlock_${block_id}_name` },
-                    text_content: t('info_block_name_label') || 'Blocknamn'
-                }));
+                    html_content: `<strong>${name_label_text}</strong>`
+                });
+                name_group.appendChild(name_label);
+                
                 const name_input = this.Helpers.create_element('input', {
                     class_name: 'form-control',
                     attributes: { 
@@ -783,10 +793,11 @@ export const EditRulefileRequirementComponent = {
                         value: block.name || ''
                     }
                 });
+                name_input.addEventListener('input', this.debounced_autosave_form);
+                name_input.addEventListener('blur', this.debounced_autosave_form);
                 name_group.appendChild(name_input);
                 
-                // Expanded checkbox
-                const expanded_group = this.Helpers.create_element('div', { class_name: 'form-group' });
+                // Expanded checkbox - placed directly under the Blocknamn input field
                 const expanded_label = this.Helpers.create_element('label', { 
                     class_name: 'checkbox-label',
                     attributes: { for: `infoBlock_${block_id}_expanded` }
@@ -799,9 +810,10 @@ export const EditRulefileRequirementComponent = {
                         checked: block.expanded !== false
                     }
                 });
+                expanded_checkbox.addEventListener('change', this.debounced_autosave_form);
                 expanded_label.appendChild(expanded_checkbox);
                 expanded_label.appendChild(document.createTextNode(' ' + (t('info_block_expanded_label') || 'Initialt expanderad')));
-                expanded_group.appendChild(expanded_label);
+                name_group.appendChild(expanded_label);
                 
                 // Text field (textarea)
                 const text_group = this._create_form_group(
@@ -812,7 +824,6 @@ export const EditRulefileRequirementComponent = {
                 );
                 
                 block_container.appendChild(name_group);
-                block_container.appendChild(expanded_group);
                 block_container.appendChild(text_group);
                 help_texts_section.appendChild(block_container);
             });
