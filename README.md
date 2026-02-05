@@ -102,7 +102,7 @@ npm run validate:css     # Validera CSS
 ### Utvecklingsmiljö
 
 Projektet använder:
-- **Vite** för byggsystem och utvecklingsserver
+- **Vite** för byggsystem och utvecklingsserver (port 5173)
 - **ESLint** för kodkvalitet
 - **Prettier** för kodformatering
 - **Playwright** för E2E-testning
@@ -110,11 +110,13 @@ Projektet använder:
 
 ### Kodstruktur
 
-- **Modulär arkitektur**: Varje komponent är en ES6-modul
-- **State management**: Redux-liknande pattern med centraliserad state
-- **Komponentbaserat**: Återanvändbara UI-komponenter
-- **Internationalisering**: Språkstöd via JSON-filer
+- **Modulär arkitektur**: Varje komponent är en ES6-modul utan IIFE
+- **Komponentmönster**: `export const ComponentName = { init({ root, deps }), render(), destroy() }`
+- **State management**: Redux-liknande pattern med centraliserad state (exporteras från `js/state.js`)
+- **Komponentbaserat**: Återanvändbara UI-komponenter med dependency injection via `deps`-objekt
+- **Internationalisering**: Språkstöd via JSON-filer i `js/i18n/`
 - **Responsiv design**: CSS-variabler för tema och styling
+- **Namngivning**: `snake_case` för funktioner och variabler, `PascalCase` för komponenter
 
 ## 📖 Dokumentation
 
@@ -172,11 +174,13 @@ Språkfiler finns i `/js/i18n/` och användaren kan växla språk via UI.
 
 ## 📊 Exportformat
 
-Verktyget stöder export i flera format:
+Verktyget stöder export i flera format (via `window.ExportLogic`):
 
-- **CSV**: Strukturerad data för vidare analys
-- **Excel**: Användarvänlig tabell med formatering
-- **Word**: Formaterad rapport för slutrapport
+- **CSV**: Strukturerad data för vidare analys (`export_to_csv()`)
+- **Excel**: Användarvänlig tabell med formatering (`export_to_excel()`)
+- **Word (krav)**: Formaterad rapport sorterad på krav (`export_to_word_criterias()`)
+- **Word (stickprov)**: Formaterad rapport sorterad på stickprov (`export_to_word_samples()`)
+- **HTML**: HTML-rapport för webbvisning (`export_to_html()`)
 
 ## 🔧 Konfiguration
 
@@ -192,7 +196,10 @@ NODE_ENV=production
 
 ### Byggkonfiguration
 
-Se `vite.config.mjs` för byggkonfiguration och `playwright.config.js` för testkonfiguration.
+- **Vite**: Se `vite.config.mjs` för byggkonfiguration (port 5173 för dev, 4173 för preview)
+- **Playwright**: Se `playwright.config.js` för testkonfiguration
+- **ESLint**: Se `eslint.config.js` för linting-regler
+- **Prettier**: Se `.prettierrc` för formateringsregler
 
 ## 🐛 Felsökning
 

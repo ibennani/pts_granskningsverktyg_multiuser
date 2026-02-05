@@ -1,6 +1,6 @@
 // js/components/requirement_audit/RequirementInfoSections.js
 
-import { marked } from '../../utils/markdown.js';
+import { marked, auto_convert_code_like_to_codeblocks } from '../../utils/markdown.js';
 
 export const RequirementInfoSections = {
     container_ref: null,
@@ -28,6 +28,9 @@ export const RequirementInfoSections = {
         const content_element = this.Helpers.create_element('div', { class_name: ['audit-section-content', 'markdown-content'] });
         
         if (typeof marked !== 'undefined' && typeof this.Helpers.escape_html === 'function') {
+            // Automatiskt konvertera kod-liknande text till kodblock för att bevara radbrytningar
+            const processed_content = auto_convert_code_like_to_codeblocks(String(content_data));
+            
             const renderer = new marked.Renderer();
             renderer.link = (href, title, text) => {
                 const safe_href = this.Helpers.escape_html(href);
@@ -41,7 +44,7 @@ export const RequirementInfoSections = {
                 return this.Helpers.escape_html(text_to_escape);
             };
             // Use safe HTML sanitization for markdown content
-            const parsed_markdown = marked.parse(String(content_data), { renderer: renderer, breaks: true, gfm: true });
+            const parsed_markdown = marked.parse(processed_content, { renderer: renderer, breaks: true, gfm: true });
             if (this.Helpers.sanitize_html) {
                 content_element.innerHTML = this.Helpers.sanitize_html(parsed_markdown);
             } else {
@@ -95,6 +98,9 @@ export const RequirementInfoSections = {
                 
                 // Parse markdown content
                 if (typeof marked !== 'undefined' && typeof this.Helpers.escape_html === 'function') {
+                    // Automatiskt konvertera kod-liknande text till kodblock för att bevara radbrytningar
+                    const processed_text = auto_convert_code_like_to_codeblocks(String(block.text));
+                    
                     const renderer = new marked.Renderer();
                     renderer.link = (href, title, text) => {
                         const safe_href = this.Helpers.escape_html(href);
@@ -107,7 +113,7 @@ export const RequirementInfoSections = {
                             : String(html_token || '');
                         return this.Helpers.escape_html(text_to_escape);
                     };
-                    const parsed_markdown = marked.parse(String(block.text), { renderer: renderer, breaks: true, gfm: true });
+                    const parsed_markdown = marked.parse(processed_text, { renderer: renderer, breaks: true, gfm: true });
                     if (this.Helpers.sanitize_html) {
                         content_element.innerHTML = this.Helpers.sanitize_html(parsed_markdown);
                     } else {

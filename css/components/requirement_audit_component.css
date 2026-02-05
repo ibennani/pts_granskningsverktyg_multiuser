@@ -24,7 +24,7 @@
     font-size: 0.9rem;
     color: var(--text-color-muted);
     margin-top: 0.25rem; /* Lite luft mellan referensraderna */
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
 }
 
 
@@ -75,7 +75,7 @@
 
 /* KORRIGERAD SEKTIONSSTYLING FÖR JÄMN LUFT */
 .audit-section {
-    margin-bottom: 2rem; /* Konsekvent avstånd mellan alla sektioner */
+    margin-bottom: 1rem; /* Minskat avstånd mellan sektioner */
 }
 
 .audit-section:last-of-type {
@@ -90,7 +90,8 @@
     font-size: 1.3rem;
     color: var(--primary-color);
     font-weight: 500;
-    margin-bottom: 0.51rem;
+    margin-top: 0;
+    margin-bottom: 0.5rem;
     padding-bottom: 0.0rem;
     border-bottom: 1px dashed var(--secondary-color);
     text-transform: none;
@@ -106,7 +107,8 @@
 .audit-section ol {
     font-size: 1rem;
     color: var(--text-color);
-    margin-bottom: 1rem;
+    margin-top: 0;
+    margin-bottom: 0.75rem;
     line-height: 1.7;
 }
 
@@ -180,7 +182,7 @@
 }
 
 .checks-container {
-    margin-top: 2rem;
+    margin-top: 1rem;
 }
 
 .check-item {
@@ -219,8 +221,9 @@
 .check-condition-title {
     font-size: 1.15rem;
     color: var(--text-color);
-    margin-top: 0;
-    margin-bottom: 0.5rem;
+    margin: 0 0 0 0;
+    padding: 0;
+    line-height: 1.2;
     font-weight: 500;
 }
 
@@ -229,9 +232,17 @@
 }
 
 .check-number-label {
-    margin: 0.25rem 0 0.5rem;
+    margin: 0 0 0 0;
+    padding: 0;
+    line-height: 1;
     font-weight: 600;
     color: var(--secondary-color);
+}
+
+.check-item p.text-muted {
+    margin: 0 0 12px 0;
+    padding: 0;
+    line-height: 1.2;
 }
 
 .check-status-display {
@@ -472,10 +483,10 @@
 .audit-navigation-buttons.top-nav {
     border-top: 1px solid var(--border-color);
     border-bottom: none;
-    margin-top: 1.5rem;
-    margin-bottom: 2rem;
-    padding-top: 1.5rem;
-    padding-bottom: 1.5rem;
+    margin-top: 0.75rem;
+    margin-bottom: 1rem;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
 }
 
 .audit-navigation-buttons .nav-group-left,
@@ -494,7 +505,7 @@
 
 .requirement-audit-header-title-wrapper {
     display: block;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
     line-height: 1.5; /* Säkerställer konsekvent radhöjd */
 }
 

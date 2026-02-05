@@ -35,13 +35,35 @@ window.ValidationLogic # Validering
 
 ### Store API
 
+State management exponeras både som ES-modul och via `window.Store` för bakåtkompatibilitet.
+
+**ES-modul (rekommenderat):**
+```javascript
+import { getState, dispatch, subscribe, StoreActionTypes } from './state.js';
+
+// Hämta aktuell state
+const state = getState();
+
+// Dispatch action
+await dispatch({
+    type: StoreActionTypes.UPDATE_METADATA,
+    payload: { caseNumber: '12345' }
+});
+
+// Prenumerera på state-ändringar
+const unsubscribe = subscribe((newState) => {
+    console.log('State updated:', newState);
+});
+```
+
+**Via window (bakåtkompatibilitet):**
 ```javascript
 // Hämta aktuell state
 const state = window.Store.getState();
 
 // Dispatch action
-window.Store.dispatch({
-    type: 'UPDATE_METADATA',
+await window.Store.dispatch({
+    type: window.StoreActionTypes.UPDATE_METADATA,
     payload: { caseNumber: '12345' }
 });
 
@@ -146,7 +168,7 @@ Alla komponenter följer samma API-mönster:
 ```javascript
 // Komponent API
 interface Component {
-    init(container, routerCallback, params, getState, dispatch, actionTypes, subscribe): Promise<void>;
+    init({ root, deps }): Promise<void>;
     render(): void;
     destroy(): void;
 }
@@ -156,9 +178,22 @@ interface Component {
 
 ```javascript
 // js/components/UploadViewComponent.js
-window.UploadViewComponent = {
-    async init(container, routerCallback, params, getState, dispatch, actionTypes, subscribe) {
-        // Initialisering
+export const UploadViewComponent = {
+    async init({ root, deps }) {
+        this.root = root;
+        this.deps = deps;
+        this.router = deps.router;
+        this.getState = deps.getState;
+        this.dispatch = deps.dispatch;
+        this.StoreActionTypes = deps.StoreActionTypes;
+        this.Translation = deps.Translation;
+        this.Helpers = deps.Helpers;
+        this.NotificationComponent = deps.NotificationComponent;
+        
+        // Ladda CSS
+        if (this.Helpers?.load_css_safely) {
+            await this.Helpers.load_css_safely(this.CSS_PATH, 'UploadViewComponent');
+        }
     },
     
     render() {
@@ -167,6 +202,8 @@ window.UploadViewComponent = {
     
     destroy() {
         // Cleanup
+        this.root = null;
+        this.deps = null;
     }
 };
 ```
@@ -176,13 +213,18 @@ window.UploadViewComponent = {
 ```javascript
 // Init-parametrar
 interface ComponentInitParams {
-    container: HTMLElement;           // DOM-container
-    routerCallback: Function;         // Navigeringsfunktion
-    params: Object;                  // URL-parametrar
-    getState: Function;              // State-getter
-    dispatch: Function;              // Action dispatcher
-    actionTypes: Object;             // Action types
-    subscribe: Function;             // State subscription
+    root: HTMLElement;              // DOM-container där komponenten renderas
+    deps: {                         // Beroenden-objekt
+        router: Function;          // Navigeringsfunktion
+        getState: Function;         // State-getter
+        dispatch: Function;         // Action dispatcher
+        StoreActionTypes: Object;   // Action types
+        Translation: Object;        // Översättningsfunktioner
+        Helpers: Object;            // Hjälpfunktioner
+        NotificationComponent: Object; // Notifikationskomponent
+        ValidationLogic?: Object;   // Valideringslogik (valfritt)
+        // ... andra beroenden
+    }
 }
 ```
 
@@ -265,6 +307,8 @@ window.memoryManager.addEventListener(document, 'click', handleClick);
 
 ### ExportLogic API
 
+ExportLogic exponeras via `window.ExportLogic` och skapas i `js/export_logic.js`.
+
 ```javascript
 // window.ExportLogic
 interface ExportLogic {
@@ -272,6 +316,7 @@ interface ExportLogic {
     export_to_excel(currentAudit: AppState): Promise<void>;
     export_to_word_criterias(currentAudit: AppState): Promise<void>;
     export_to_word_samples(currentAudit: AppState): Promise<void>;
+    export_to_html(currentAudit: AppState): Promise<void>;
 }
 
 // Exempel
@@ -280,6 +325,7 @@ window.ExportLogic.export_to_csv(state);
 await window.ExportLogic.export_to_excel(state);
 await window.ExportLogic.export_to_word_criterias(state);
 await window.ExportLogic.export_to_word_samples(state);
+await window.ExportLogic.export_to_html(state);
 ```
 
 ### Export-funktioner
@@ -475,103 +521,117 @@ const ErrorTypes = {
 
 ```javascript
 // js/components/ExampleComponent.js
-(function() {
-    'use strict';
-    
-    let componentState = {
-        container: null,
-        routerCallback: null,
-        getState: null,
-        dispatch: null,
-        actionTypes: null,
-        unsubscribe: null
-    };
-    
-    async function init(container, routerCallback, params, getState, dispatch, actionTypes, subscribe) {
-        componentState.container = container;
-        componentState.routerCallback = routerCallback;
-        componentState.getState = getState;
-        componentState.dispatch = dispatch;
-        componentState.actionTypes = actionTypes;
+import '../../css/components/example_component.css';
+
+export const ExampleComponent = {
+    async init({ root, deps }) {
+        this.root = root;
+        this.deps = deps;
+        this.router = deps.router;
+        this.getState = deps.getState;
+        this.dispatch = deps.dispatch;
+        this.StoreActionTypes = deps.StoreActionTypes;
+        this.Translation = deps.Translation;
+        this.Helpers = deps.Helpers;
         
         // Lyssna på state-ändringar
-        componentState.unsubscribe = subscribe(handleStateChange);
+        this.unsubscribe = deps.subscribe(this.handleStateChange.bind(this));
         
         // Ladda CSS
-        await window.Helpers.load_css('css/components/example_component.css');
+        if (this.Helpers?.load_css_safely) {
+            await this.Helpers.load_css_safely(
+                './css/components/example_component.css',
+                'ExampleComponent'
+            );
+        }
         
         // Initial rendering
-        render();
-    }
+        this.render();
+    },
     
-    function render() {
-        const state = componentState.getState();
+    render() {
+        if (!this.root) return;
         
-        componentState.container.innerHTML = `
-            <div class="example-component">
-                <h2>Exempel</h2>
-                <p>Status: ${state.auditStatus}</p>
-                <button class="example-button" data-testid="example-button">
-                    Klicka här
-                </button>
-            </div>
-        `;
+        const state = this.getState();
+        const t = this.Translation.t;
         
-        setupEventListeners();
-    }
+        // Rensa root
+        this.root.innerHTML = '';
+        
+        // Skapa element med Helpers.create_element
+        const container = this.Helpers.create_element('div', {
+            class_name: 'example-component'
+        });
+        
+        const heading = this.Helpers.create_element('h2', {
+            text_content: t('example_title')
+        });
+        
+        const statusText = this.Helpers.create_element('p', {
+            text_content: `Status: ${state.auditStatus}`
+        });
+        
+        const button = this.Helpers.create_element('button', {
+            class_name: 'example-button',
+            text_content: t('click_here'),
+            attributes: { 'data-testid': 'example-button' }
+        });
+        
+        container.appendChild(heading);
+        container.appendChild(statusText);
+        container.appendChild(button);
+        this.root.appendChild(container);
+        
+        // Event listeners
+        button.addEventListener('click', this.handleClick.bind(this));
+    },
     
-    function setupEventListeners() {
-        componentState.container.addEventListener('click', handleClick);
-    }
-    
-    function handleClick(event) {
-        if (event.target.matches('.example-button')) {
-            handleExampleAction();
-        }
-    }
-    
-    function handleExampleAction() {
-        componentState.dispatch({
-            type: componentState.actionTypes.UPDATE_METADATA,
+    handleClick(event) {
+        this.dispatch({
+            type: this.StoreActionTypes.UPDATE_METADATA,
             payload: { caseNumber: '12345' }
         });
-    }
+    },
     
-    function handleStateChange(newState) {
-        render();
-    }
+    handleStateChange(newState) {
+        this.render();
+    },
     
-    function destroy() {
-        if (componentState.unsubscribe) {
-            componentState.unsubscribe();
+    destroy() {
+        if (this.unsubscribe) {
+            this.unsubscribe();
         }
         
-        componentState.container.removeEventListener('click', handleClick);
-        componentState.container.innerHTML = '';
+        if (this.root) {
+            this.root.innerHTML = '';
+        }
+        
+        this.root = null;
+        this.deps = null;
     }
-    
-    window.ExampleComponent = {
-        init,
-        render,
-        destroy
-    };
-})();
+};
 ```
 
 ### State management-exempel
 
 ```javascript
+// Importera från modul (rekommenderat)
+import { dispatch, getState, StoreActionTypes } from './state.js';
+
+// Eller använd window (bakåtkompatibilitet)
+const { dispatch, getState, StoreActionTypes } = window.Store;
+
 // Skapa ny granskning
-window.Store.dispatch({
-    type: window.StoreActionTypes.INITIALIZE_NEW_AUDIT,
+await dispatch({
+    type: StoreActionTypes.INITIALIZE_NEW_AUDIT,
     payload: {
         ruleFileContent: ruleFileData
     }
 });
 
 // Uppdatera metadata
-window.Store.dispatch({
-    type: window.StoreActionTypes.UPDATE_METADATA,
+await dispatch({
+    type: StoreActionTypes.UPDATE_METADATA,
     payload: {
         caseNumber: '2025-001',
         actorName: 'Testföretag AB',
@@ -580,8 +640,8 @@ window.Store.dispatch({
 });
 
 // Lägg till stickprov
-window.Store.dispatch({
-    type: window.StoreActionTypes.ADD_SAMPLE,
+await dispatch({
+    type: StoreActionTypes.ADD_SAMPLE,
     payload: {
         id: window.Helpers.generate_uuid_v4(),
         description: 'Startsida',
@@ -591,8 +651,8 @@ window.Store.dispatch({
 });
 
 // Uppdatera kravresultat
-window.Store.dispatch({
-    type: window.StoreActionTypes.UPDATE_REQUIREMENT_RESULT,
+await dispatch({
+    type: StoreActionTypes.UPDATE_REQUIREMENT_RESULT,
     payload: {
         sampleId: 'sample-123',
         requirementId: 'req-1',
@@ -636,6 +696,14 @@ try {
     window.NotificationComponent.show_global_message('Word-dokument genererat', 'success');
 } catch (error) {
     window.NotificationComponent.show_global_message('Fel vid Word-export', 'error');
+}
+
+// HTML-export
+try {
+    await window.ExportLogic.export_to_html(state);
+    window.NotificationComponent.show_global_message('HTML-fil genererad', 'success');
+} catch (error) {
+    window.NotificationComponent.show_global_message('Fel vid HTML-export', 'error');
 }
 ```
 

@@ -24,12 +24,12 @@ Projektet är organiserat enligt följande struktur:
 
 ### Namngivning
 - Komponenter: PascalCase (`UploadViewComponent.js`)
-- Funktioner och variabler: camelCase (`handle_export_word`)
+- Funktioner och variabler: snake_case (`handle_export_word`, `export_to_word_criterias`)
 - Filer: matchar komponent/funktionsnamn
 
 ### Modulstruktur
 - Använd ES6-moduler
-- Exportera med `export const ComponentName = (function() { ... })();`
+- Exportera med `export const ComponentName = { init({ root, deps }), render(), destroy() }` (INGEN IIFE)
 - Importera relativt (`../utils/foo.js`)
 
 ### Indentering och formatering
@@ -40,25 +40,29 @@ Projektet är organiserat enligt följande struktur:
 ## Viktiga funktioner att känna till
 
 ### Export-funktionalitet
-- Word-export (sorterat på krav): `js/export_logic.js` - `export_to_word_criterias()`
-- Word-export (sorterat på stickprov): `js/export_logic.js` - `export_to_word_samples()`
-- Excel-export: `js/export_logic.js` - `export_to_excel()`
-- CSV-export: `js/export_logic.js` - `export_to_csv()`
+- Exponeras via `window.ExportLogic` (skapas i `js/export_logic.js`)
+- Word-export (sorterat på krav): `window.ExportLogic.export_to_word_criterias()`
+- Word-export (sorterat på stickprov): `window.ExportLogic.export_to_word_samples()`
+- Excel-export: `window.ExportLogic.export_to_excel()`
+- CSV-export: `window.ExportLogic.export_to_csv()`
+- HTML-export: `window.ExportLogic.export_to_html()`
 
 ### State-hantering
 - Central state i `js/state.js`
-- Använd `local_getState()` och `local_dispatch()` i komponenter
+- Exporterar `getState`, `dispatch`, `subscribe`, `StoreActionTypes` från modulen
+- För bakåtkompatibilitet exponeras även via `window.Store` och `window.StoreActionTypes`
+- I komponenter: använd `deps.getState()` och `deps.dispatch()` (från deps-objektet)
 
 ### Översättningar
-- Använd `window.Translation.t()` för översättningar
+- Använd `deps.Translation.t()` eller `window.Translation.t()` för översättningar
 - Översättningsfiler i `js/i18n/`
 
 ## Vanliga uppgifter
 
 ### Lägga till en ny komponent
 1. Skapa fil i `js/components/`
-2. Följ modulmönstret med IIFE
-3. Exportera komponenten
+2. Följ modulmönstret: `export const ComponentName = { init({ root, deps }), render(), destroy() }` (INGEN IIFE)
+3. CSS importeras via `Helpers.load_css_safely()` i `init()`
 4. Importera och registrera i `js/main.js`
 
 ### Lägga till en ny översättning

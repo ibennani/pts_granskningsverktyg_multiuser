@@ -91,16 +91,16 @@ State Change → Component Re-render → UI Update
 
 **Namngivning:**
 ```javascript
-// Variabler: camelCase
-const userName = 'john';
-const isLoggedIn = true;
+// Variabler: snake_case (projektets konvention)
+const user_name = 'john';
+const is_logged_in = true;
 
-// Funktioner: camelCase
-function calculateScore() { }
-const handleClick = () => { };
+// Funktioner: snake_case (projektets konvention)
+function calculate_score() { }
+const handle_click = () => { };
 
-// Klasser: PascalCase
-class UserComponent { }
+// Komponenter: PascalCase
+export const UserComponent = { ... };
 
 // Konstanter: UPPER_SNAKE_CASE
 const API_BASE_URL = 'https://api.example.com';
@@ -254,93 +254,97 @@ docs: uppdatera användarmanual
 
 ```javascript
 // js/components/ExampleComponent.js
-(function() {
-    'use strict';
-    
-    let componentState = {
-        isVisible: false,
-        data: null
-    };
-    
-    let domElements = {};
-    
-    async function init(container, routerCallback, params, getState, dispatch, actionTypes, subscribe) {
-        // Initialisering
-        domElements.container = container;
-        componentState.routerCallback = routerCallback;
-        componentState.getState = getState;
-        componentState.dispatch = dispatch;
-        componentState.actionTypes = actionTypes;
-        
-        // Lyssna på state-ändringar
-        componentState.unsubscribe = subscribe(handleStateChange);
+import '../../css/components/example_component.css';
+
+export const ExampleComponent = {
+    async init({ root, deps }) {
+        this.root = root;
+        this.deps = deps;
+        this.router = deps.router;
+        this.getState = deps.getState;
+        this.dispatch = deps.dispatch;
+        this.StoreActionTypes = deps.StoreActionTypes;
+        this.Translation = deps.Translation;
+        this.Helpers = deps.Helpers;
         
         // Ladda CSS
-        await window.Helpers.load_css('css/components/example_component.css');
+        if (this.Helpers?.load_css_safely) {
+            await this.Helpers.load_css_safely(
+                './css/components/example_component.css',
+                'ExampleComponent'
+            );
+        }
+        
+        // Lyssna på state-ändringar
+        this.unsubscribe = deps.subscribe(this.handleStateChange.bind(this));
         
         // Initial rendering
-        render();
-    }
+        this.render();
+    },
     
-    function render() {
-        const state = componentState.getState();
+    render() {
+        if (!this.root) return;
         
-        domElements.container.innerHTML = `
-            <div class="example-component">
-                <h2>Exempel</h2>
-                <p>Innehåll: ${state.exampleData || 'Ingen data'}</p>
-            </div>
-        `;
+        const state = this.getState();
+        const t = this.Translation.t;
+        
+        // Rensa root
+        this.root.innerHTML = '';
+        
+        // Skapa element med Helpers.create_element
+        const container = this.Helpers.create_element('div', {
+            class_name: 'example-component'
+        });
+        
+        const heading = this.Helpers.create_element('h2', {
+            text_content: t('example_title')
+        });
+        
+        const content = this.Helpers.create_element('p', {
+            text_content: `Innehåll: ${state.exampleData || 'Ingen data'}`
+        });
+        
+        const button = this.Helpers.create_element('button', {
+            class_name: 'example-button',
+            text_content: t('click_here')
+        });
+        
+        container.appendChild(heading);
+        container.appendChild(content);
+        container.appendChild(button);
+        this.root.appendChild(container);
         
         // Event listeners
-        setupEventListeners();
-    }
+        button.addEventListener('click', this.handleClick.bind(this));
+    },
     
-    function setupEventListeners() {
-        // Event delegation för bättre prestanda
-        domElements.container.addEventListener('click', handleClick);
-    }
-    
-    function handleClick(event) {
-        const target = event.target;
-        
-        if (target.matches('.example-button')) {
-            handleExampleAction();
-        }
-    }
-    
-    function handleExampleAction() {
+    handleClick(event) {
         // Dispatch action
-        componentState.dispatch({
-            type: componentState.actionTypes.EXAMPLE_ACTION,
+        this.dispatch({
+            type: this.StoreActionTypes.EXAMPLE_ACTION,
             payload: { data: 'example' }
         });
-    }
+    },
     
-    function handleStateChange(newState) {
+    handleStateChange(newState) {
         // Uppdatera komponent vid state-ändringar
-        if (componentState.isVisible) {
-            render();
-        }
-    }
+        this.render();
+    },
     
-    function destroy() {
+    destroy() {
         // Cleanup
-        if (componentState.unsubscribe) {
-            componentState.unsubscribe();
+        if (this.unsubscribe) {
+            this.unsubscribe();
         }
         
-        domElements.container.removeEventListener('click', handleClick);
-        domElements.container.innerHTML = '';
+        if (this.root) {
+            this.root.innerHTML = '';
+        }
+        
+        this.root = null;
+        this.deps = null;
     }
-    
-    // Exportera komponent
-    window.ExampleComponent = {
-        init,
-        render,
-        destroy
-    };
-})();
+};
 ```
 
 ### CSS för komponenter
@@ -398,6 +402,9 @@ const initial_state = {
     startTime: null,
     endTime: null,
     samples: [],
+    deficiencyCounter: 1,
+    ruleFileOriginalContentString: null,
+    ruleFileOriginalFilename: '',
     uiSettings: {
         requirementListFilter: {
             searchText: '',
@@ -406,46 +413,72 @@ const initial_state = {
                 passed: true, 
                 failed: true, 
                 partially_audited: true, 
-                not_audited: true 
+                not_audited: true,
+                updated: true
             }
+        },
+        allRequirementsFilter: {
+            searchText: '',
+            sortBy: 'default'
         }
-    }
+    },
+    auditCalculations: {},
+    pendingSampleChanges: null
 };
 ```
 
 ### Actions
 
 ```javascript
-// Action types
+// Action types (exporteras som StoreActionTypes)
 export const ActionTypes = {
     INITIALIZE_NEW_AUDIT: 'INITIALIZE_NEW_AUDIT',
+    INITIALIZE_RULEFILE_EDITING: 'INITIALIZE_RULEFILE_EDITING',
+    LOAD_AUDIT_FROM_FILE: 'LOAD_AUDIT_FROM_FILE',
     UPDATE_METADATA: 'UPDATE_METADATA',
     ADD_SAMPLE: 'ADD_SAMPLE',
     UPDATE_SAMPLE: 'UPDATE_SAMPLE',
     DELETE_SAMPLE: 'DELETE_SAMPLE',
     SET_AUDIT_STATUS: 'SET_AUDIT_STATUS',
-    UPDATE_REQUIREMENT_RESULT: 'UPDATE_REQUIREMENT_RESULT'
+    UPDATE_REQUIREMENT_RESULT: 'UPDATE_REQUIREMENT_RESULT',
+    SET_RULE_FILE_CONTENT: 'SET_RULE_FILE_CONTENT',
+    UPDATE_RULEFILE_CONTENT: 'UPDATE_RULEFILE_CONTENT',
+    REPLACE_RULEFILE_AND_RECONCILE: 'REPLACE_RULEFILE_AND_RECONCILE',
+    SET_UI_FILTER_SETTINGS: 'SET_UI_FILTER_SETTINGS',
+    SET_ALL_REQUIREMENTS_FILTER_SETTINGS: 'SET_ALL_REQUIREMENTS_FILTER_SETTINGS',
+    STAGE_SAMPLE_CHANGES: 'STAGE_SAMPLE_CHANGES',
+    CLEAR_STAGED_SAMPLE_CHANGES: 'CLEAR_STAGED_SAMPLE_CHANGES',
+    CONFIRM_SINGLE_REVIEWED_REQUIREMENT: 'CONFIRM_SINGLE_REVIEWED_REQUIREMENT',
+    CONFIRM_ALL_REVIEWED_REQUIREMENTS: 'CONFIRM_ALL_REVIEWED_REQUIREMENTS',
+    UPDATE_REQUIREMENT_DEFINITION: 'UPDATE_REQUIREMENT_DEFINITION',
+    ADD_REQUIREMENT_DEFINITION: 'ADD_REQUIREMENT_DEFINITION',
+    DELETE_REQUIREMENT_DEFINITION: 'DELETE_REQUIREMENT_DEFINITION',
+    DELETE_CHECK_FROM_REQUIREMENT: 'DELETE_CHECK_FROM_REQUIREMENT',
+    DELETE_CRITERION_FROM_CHECK: 'DELETE_CRITERION_FROM_CHECK',
+    SET_RULEFILE_EDIT_BASELINE: 'SET_RULEFILE_EDIT_BASELINE'
 };
 
-// Action creators
-function initializeNewAudit(ruleFileContent) {
-    return {
-        type: ActionTypes.INITIALIZE_NEW_AUDIT,
-        payload: { ruleFileContent }
-    };
-}
+// Användning i komponenter
+import { dispatch, StoreActionTypes } from './state.js';
 
-function updateMetadata(metadata) {
-    return {
-        type: ActionTypes.UPDATE_METADATA,
-        payload: metadata
-    };
-}
+// Dispatch action (returnerar Promise)
+await dispatch({
+    type: StoreActionTypes.UPDATE_METADATA,
+    payload: {
+        caseNumber: '2025-001',
+        actorName: 'Testföretag AB'
+    }
+});
 ```
 
 ### Reducers
 
+Reducer-funktionen (`root_reducer`) finns i `js/state.js` och hanterar alla action types. Den är privat och anropas internt av `dispatch()`-funktionen.
+
+**Viktigt:** Reducer-funktionen är inte direkt tillgänglig utanför `state.js`. Använd `dispatch()` för att uppdatera state.
+
 ```javascript
+// I state.js (internt)
 function root_reducer(current_state, action) {
     switch (action.type) {
         case ActionTypes.INITIALIZE_NEW_AUDIT:
@@ -474,6 +507,12 @@ function root_reducer(current_state, action) {
             return current_state;
     }
 }
+
+// Användning i komponenter (via dispatch)
+await dispatch({
+    type: StoreActionTypes.UPDATE_METADATA,
+    payload: { caseNumber: '2025-001' }
+});
 ```
 
 ## 7. Testning

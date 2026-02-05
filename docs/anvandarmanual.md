@@ -254,6 +254,9 @@ Eftersom applikationen körs helt i din webbläsare sparas ditt arbete i den akt
 När en granskning är **låst** kan du exportera resultaten. Från **granskningsöversikten**:
 *   Klicka på **"Exportera till csv"** för att få resultaten som en eller flera textfiler i komma-separerat format.
 *   Klicka på **"Exportera till excel"** för att få resultaten som en excel-fil (.xlsx), ofta med olika flikar för information och resultat.
+*   Klicka på **"Exportera till Word (krav)"** för att få en formaterad Word-rapport sorterad på krav.
+*   Klicka på **"Exportera till Word (stickprov)"** för att få en formaterad Word-rapport sorterat på stickprov.
+*   Klicka på **"Exportera till HTML"** för att få en HTML-rapport för webbvisning.
 
 De exporterade filerna innehåller metadata, information om stickprov, och detaljerade resultat för varje granskat krav, inklusive dina observationer och kommentarer till aktören.
 

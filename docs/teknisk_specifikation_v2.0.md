@@ -33,7 +33,9 @@ Verktyget ska underlätta strukturerad granskning enligt definierade regler geno
 - **HTML5**: Semantisk markup för tillgänglighet
 - **CSS3**: Modern styling med CSS-variabler och flexbox/grid
 - **JavaScript ES6+**: Modulär arkitektur med import/export
-- **Vite**: Byggsystem och utvecklingsserver
+- **Vite**: Byggsystem och utvecklingsserver (port 5173)
+- **Playwright**: E2E-testning
+- **Jest**: Enhetstester
 
 **Arkitekturprinciper:**
 - **Modulär design**: Varje komponent är en ES6-modul
@@ -91,7 +93,7 @@ Verktyget ska underlätta strukturerad granskning enligt definierade regler geno
 ### 3.3 Kodprinciper
 
 **Namngivning:**
-- `camelCase` för JavaScript-variabler och funktioner
+- `snake_case` för JavaScript-variabler och funktioner (projektets konvention)
 - `PascalCase` för komponenter och klasser
 - `UPPER_SNAKE_CASE` för konstanter
 - Tydlig och beskrivande namngivning
@@ -317,7 +319,7 @@ Varje objekt representerar resultatet för ett enskilt krav på ett enskilt stic
 *   `js/translation_logic.js`: Hantering av internationalisering.
 *   `js/utils/helpers.js`: Allmänna hjälpfunktioner.
 *   `js/i18n/`: Json-filer för språköversättningar (t.ex. `sv-SE.json`, `en-GB.json`).
-*   `js/components/`: Återanvändbara ui-komponenter (t.ex. för vyer, formulär, listor). Varje komponent bör vara en egen es6-modul.
+*   `js/components/`: Återanvändbara ui-komponenter (t.ex. för vyer, formulär, listor). Varje komponent är en ES6-modul som exporterar ett objekt med `init({ root, deps })`, `render()`, och `destroy()` metoder. Komponenter använder INTE IIFE.
 
 ## 9. Internationalisering (i18n) – Detaljer
 

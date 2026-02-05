@@ -1,6 +1,6 @@
 // js/components/ViewRulefileRequirementComponent.js
 
-import { marked } from '../utils/markdown.js';
+import { marked, auto_convert_code_like_to_codeblocks } from '../utils/markdown.js';
 
 export const ViewRulefileRequirementComponent = {
     CSS_PATH: 'css/components/requirement_audit_component.css',
@@ -25,6 +25,9 @@ export const ViewRulefileRequirementComponent = {
             return this.Helpers.escape_html(markdown_string);
         }
 
+        // Automatiskt konvertera kod-liknande text till kodblock för att bevara radbrytningar
+        const processed_markdown = auto_convert_code_like_to_codeblocks(String(markdown_string || ''));
+
         const renderer = new marked.Renderer();
         renderer.link = (href, title, text) => {
             const safe_href = this.Helpers.escape_html(href);
@@ -44,7 +47,7 @@ export const ViewRulefileRequirementComponent = {
         const options = { renderer, breaks: true, gfm: true };
         
         // Använd alltid parse() för att hantera både block- och inline-markdown samt HTML-kod
-        const parsed_markdown = marked.parse(String(markdown_string || ''), options);
+        const parsed_markdown = marked.parse(processed_markdown, options);
         
         // Använd sanitize_html om tillgängligt för extra säkerhet
         if (this.Helpers.sanitize_html) {
@@ -219,13 +222,16 @@ export const ViewRulefileRequirementComponent = {
         checks_container.appendChild(this.Helpers.create_element('h2', { text_content: t('checks_title') }));
         (requirement.checks || []).forEach((check, check_index) => {
             const check_wrapper = this.Helpers.create_element('div', { class_name: 'check-item status-not_audited', style: 'border-left-width: 3px;' });
-            const condition_h3 = this.Helpers.create_element('h3', { class_name: 'check-condition-title', html_content: this._safe_parse_markdown(check.condition) });
-            check_wrapper.appendChild(condition_h3);
+            // Kontrollpunkt nummer först
             const check_number_label = this.Helpers.create_element('p', {
                 class_name: 'check-number-label',
-                text_content: `${t('check_item_title')} ${check_index + 1}`
+                text_content: `${t('check_item_title')} ${check_index + 1}:`
             });
             check_wrapper.appendChild(check_number_label);
+            // Sedan villkoret
+            const condition_h3 = this.Helpers.create_element('h3', { class_name: 'check-condition-title', html_content: this._safe_parse_markdown(check.condition) });
+            check_wrapper.appendChild(condition_h3);
+            // Slutligen logiken
             const logic_key = check.logic?.toUpperCase() === 'OR' ? 'check_logic_or' : 'check_logic_and';
             const logic_label = t(logic_key);
             check_wrapper.appendChild(this.Helpers.create_element('p', { class_name: 'text-muted', html_content: `<strong>${t('check_logic_display')}</strong> ${logic_label}`}));

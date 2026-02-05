@@ -69,16 +69,22 @@ Projektet följer en standardiserad struktur för webbapplikationer:
 *   **Felhantering:** Grundläggande felhantering om en specificerad vykomponent inte kan laddas eller om renderingen misslyckas.
 
 ### 3.2 `state.js`
-*   **Ansvar:** Hanterar det globala applikationstillståndet, vilket primärt är det omfattande `current_audit`-objektet.
-*   **`current_audit`-objektet:** Dess struktur är detaljerad i den tekniska specifikationen (avsnitt 6.1-6.3) och inkluderar all information om regelfilen, metadata, stickprov, och granskningsresultat.
-*   **Lagringsmekanism:** Använder `sessionStorage` för att spara `current_audit`-objektet. Detta gör att användarens arbete kvarstår vid sidomladdningar inom samma webbläsarsession. Objektet serialiseras till JSON innan lagring och deserialiseras vid läsning.
-*   **Nyckelfunktioner:**
-    *   `getCurrentAudit()`: Returnerar en referens till det aktuella `current_audit`-objektet (eller `null` om inget finns).
-    *   `setCurrentAudit(auditDataObject)`: Uppdaterar det interna `current_audit`-objektet med `auditDataObject` och skriver omedelbart den nya versionen till `sessionStorage`.
-    *   `initNewAudit()`: Skapar ett nytt, tomt `current_audit`-objekt med standardvärden och aktuell `saveFileVersion`. Används när en ny granskning startas.
-    *   `loadAuditFromFileData(fileContentObject)`: Ersätter det aktuella `current_audit`-objektet med data från en uppladdad, tidigare sparad granskningsfil. Inkluderar en kontroll av `saveFileVersion` för att varna om inkompatibilitet.
-    *   `clearCurrentAudit()`: Nollställer det interna `current_audit`-objektet och tar bort det från `sessionStorage`. Används t.ex. för att starta om.
-    *   `getAppSaveFileVersion()`: Returnerar den version som applikationen för närvarande använder för att spara filer, vilket möjliggör framtida versionshantering.
+*   **Ansvar:** Hanterar det globala applikationstillståndet med Redux-liknande pattern. Exporterar funktioner för state-hantering.
+*   **State-struktur:** State-objektet innehåller `ruleFileContent`, `auditMetadata`, `auditStatus`, `samples`, `uiSettings`, `auditCalculations`, etc. Strukturen är detaljerad i den tekniska specifikationen (avsnitt 6.1-6.3).
+*   **Lagringsmekanism:** 
+    *   Använder `localStorage` för att spara state med autospar (3 sekunders debounce).
+    *   Använder `sessionStorage` som backup.
+    *   State serialiseras till JSON innan lagring och deserialiseras vid läsning.
+*   **Exporterade funktioner:**
+    *   `getState()`: Returnerar en kopia av det aktuella state-objektet.
+    *   `dispatch(action)`: Dispatcherar en action som uppdaterar state via reducer. Returnerar Promise.
+    *   `subscribe(listener)`: Prenumererar på state-ändringar. Returnerar unsubscribe-funktion.
+    *   `initState()`: Initierar state från localStorage eller skapar initial state.
+    *   `loadStateFromLocalStorage()`: Laddar state från localStorage.
+    *   `clearAutosavedState()`: Rensar autosparat state.
+    *   `forceSaveStateToLocalStorage(state)`: Tvingar sparning av state.
+*   **Action Types:** Exporteras som `StoreActionTypes` (tidigare `ActionTypes`).
+*   **Bakåtkompatibilitet:** För bakåtkompatibilitet exponeras även via `window.Store` och `window.StoreActionTypes`.
 
 ### 3.3 `translation_logic.js`
 *   **Ansvar:** Tillhandahåller funktionalitet för internationalisering (i18n).
@@ -125,54 +131,73 @@ Projektet följer en standardiserad struktur för webbapplikationer:
 Varje JavaScript-fil i denna katalog representerar en UI-komponent. De flesta följer ett mönster med en IIFE som returnerar ett objekt med metoderna `init(container, router_cb, params)`, `render()`, och `destroy()`. De exporteras sedan som namngivna konstanter.
 
 ### 4.1 Vykomponenter
-Dessa renderas direkt av `main.js` och utgör de huvudsakliga "sidorna" i applikationen.
+Dessa renderas direkt av `main.js` och utgör de huvudsakliga "sidorna" i applikationen. Alla komponenter följer samma mönster:
+
+**Komponentstruktur:**
+```javascript
+export const ComponentName = {
+    init({ root, deps }) {
+        // root: DOM-element där komponenten renderas
+        // deps: objekt med beroenden (router, getState, dispatch, Translation, Helpers, etc.)
+        this.root = root;
+        this.deps = deps;
+        // Ladda CSS via Helpers.load_css_safely()
+    },
+    render() {
+        // Rendera komponentens UI
+    },
+    destroy() {
+        // Rensa event listeners och referenser
+    }
+};
+```
 
 *   **`UploadViewComponent.js`**
     *   **Syfte:** Applikationens startvy. Tillåter användaren att antingen ladda upp en JSON-regelfil för att starta en ny granskning, eller ladda upp en tidigare sparad JSON-granskningsfil.
     *   **Internt tillstånd:** Håller referenser till filinput-elementen.
-    *   **Interaktioner:** Använder `FileReader` API för att läsa filinnehåll. Anropar `ValidationLogic` för att validera filerna. Vid lyckad validering/laddning, uppdateras `State` och `router_ref` anropas för att navigera till nästa vy (`MetadataViewComponent` för ny granskning, `AuditOverviewComponent` för laddad granskning). Använder `NotificationComponent` för att visa statusmeddelanden.
+    *   **Interaktioner:** Använder `FileReader` API för att läsa filinnehåll. Anropar `ValidationLogic` för att validera filerna. Vid lyckad validering/laddning, uppdateras state via `deps.dispatch()` och `deps.router()` anropas för att navigera till nästa vy (`EditMetadataViewComponent` för ny granskning, `AuditOverviewComponent` för laddad granskning). Använder `NotificationComponent` för att visa statusmeddelanden.
     *   **CSS:** `css/components/upload_view_component.css`.
 
-*   **`MetadataViewComponent.js`**
+*   **`EditMetadataViewComponent.js`**
     *   **Syfte:** Tillåter användaren att mata in eller visa metadata för den aktuella granskningen (t.ex. ärendenummer, aktör).
     *   **Internt tillstånd:** Håller referenser till formulärfälten.
-    *   **Interaktioner:** Läser initial metadata från `State.getCurrentAudit().auditMetadata`. Om granskningens status är `not_started`, är fälten redigerbara. Vid submit sparas datan till `State` och `router_ref` navigerar till `SampleManagementViewComponent`. Om status inte är `not_started`, visas datan som skrivskyddad. Använder `NotificationComponent`.
-    *   **CSS:** `css/components/metadata_view_component.css`.
+    *   **Interaktioner:** Läser initial metadata från `deps.getState().auditMetadata`. Om granskningens status är `not_started`, är fälten redigerbara. Vid submit sparas datan via `deps.dispatch()` och `deps.router()` navigerar till `SampleManagementViewComponent`. Om status inte är `not_started`, visas datan som skrivskyddad. Använder `NotificationComponent`.
+    *   **CSS:** `css/components/edit_metadata_view_component.css`.
 
 *   **`SampleManagementViewComponent.js`**
     *   **Syfte:** Hanterar skapande, listning, redigering och radering av stickprov *innan* en granskning har startat (dvs. när `auditStatus === 'not_started'`).
     *   **Internt tillstånd:** Håller reda på om formuläret för att lägga till/redigera stickprov är synligt (`is_form_visible`).
-    *   **Interaktioner:** Använder/initierar `AddSampleFormComponent` för att visa formuläret och `SampleListComponent` för att visa listan över befintliga stickprov. Knapparna "Lägg till nytt stickprov" och "Starta granskning" renderas villkorligt. Vid start av granskning uppdateras `auditStatus` i `State` och `router_ref` navigerar till `AuditOverviewComponent`.
+    *   **Interaktioner:** Använder/initierar `SampleFormViewComponent` för att visa formuläret och `SampleListComponent` för att visa listan över befintliga stickprov. Knapparna "Lägg till nytt stickprov" och "Starta granskning" renderas villkorligt. Vid start av granskning uppdateras `auditStatus` via `deps.dispatch()` och `deps.router()` navigerar till `AuditOverviewComponent`.
     *   **CSS:** `css/components/sample_management_view_component.css`.
 
 *   **`AuditOverviewComponent.js`**
     *   **Syfte:** Central vy som visar en översikt av en pågående eller låst granskning. Inkluderar metadata, övergripande progress, en lista över stickprov, och åtgärder för hela granskningen. Tillåter hantering av stickprov (lägga till, redigera, radera) om granskningen är `in_progress`.
     *   **Internt tillstånd:** `is_add_sample_form_visible` för att styra formulärets synlighet.
-    *   **Interaktioner:** Hämtar all data från `State.getCurrentAudit()`. Använder `AuditLogic.calculate_overall_audit_progress` och `ProgressBarComponent` för att visa total progress. Initierar och använder `SampleListComponent` för att visa stickprovslistan. Initierar och använder `AddSampleFormComponent` (dynamiskt visad/dold) för att lägga till eller redigera stickprov när `auditStatus === 'in_progress'`. Hanterar anrop till `ExportLogic` för export. Hanterar logik för att låsa/låsa upp granskning.
+    *   **Interaktioner:** Hämtar all data från `deps.getState()`. Använder `AuditLogic.calculate_overall_audit_progress` och `ProgressBarComponent` för att visa total progress. Initierar och använder `SampleListComponent` för att visa stickprovslistan. Initierar och använder `SampleFormViewComponent` (dynamiskt visad/dold) för att lägga till eller redigera stickprov när `auditStatus === 'in_progress'`. Hanterar anrop till `window.ExportLogic` för export. Hanterar logik för att låsa/låsa upp granskning.
     *   **CSS:** `css/components/audit_overview_component.css`.
 
 *   **`RequirementListComponent.js`**
     *   **Syfte:** Visar en detaljerad lista över alla krav som är relevanta för ett specifikt stickprov, grupperade efter kategori och underkategori.
     *   **Internt tillstånd:** Håller det aktuella `sample_object`, en lista över `relevant_requirements` och en strukturerad `requirements_by_category`.
-    *   **Interaktioner:** Tar emot `sampleId` som parameter. Använder `AuditLogic` för att hämta och sortera relevanta krav. Renderar varje krav, ofta med hjälp av en intern logik eller `RequirementCardComponent` (om den används externt). Klick på en kravtitel navigerar till `RequirementAuditComponent` via `router_ref`. Använder eventdelegering för klick på kravtitlar.
+    *   **Interaktioner:** Tar emot `sampleId` som parameter via router. Använder `AuditLogic` för att hämta och sortera relevanta krav. Renderar varje krav, ofta med hjälp av en intern logik eller `RequirementCardComponent` (om den används externt). Klick på en kravtitel navigerar till `RequirementAuditComponent` via `deps.router()`. Använder eventdelegering för klick på kravtitlar.
     *   **CSS:** `css/components/requirement_list_component.css`.
 
 *   **`RequirementAuditComponent.js`**
     *   **Syfte:** Detaljvy för att granska och bedöma ett enskilt krav mot ett specifikt stickprov.
     *   **Internt tillstånd:** Håller referenser till `current_sample_object`, `current_requirement_object`, `current_requirement_result`, samt till DOM-element för inmatningsfält.
-    *   **Interaktioner:** Tar emot `sampleId` och `requirementId` som parametrar. Visar all information om kravet. Renderar kontrollpunkter och godkännandekriterier med interaktiva knappar för statusbedömning. Använder eventdelegering för knappinteraktioner. Anropar `AuditLogic` för att beräkna statusar. Sparar ändringar i `requirementResults` till `State` (antingen direkt eller via `auto_save_text_data`). Hanterar navigationsknappar ("Föregående", "Nästa", "Nästa ohanterade").
+    *   **Interaktioner:** Tar emot `sampleId` och `requirementId` som parametrar via router. Visar all information om kravet. Renderar kontrollpunkter och godkännandekriterier med interaktiva knappar för statusbedömning. Använder eventdelegering för knappinteraktioner. Anropar `AuditLogic` för att beräkna statusar. Sparar ändringar i `requirementResults` via `deps.dispatch()`. Hanterar navigationsknappar ("Föregående", "Nästa", "Nästa ohanterade").
     *   **CSS:** `css/components/requirement_audit_component.css`.
 
 ### 4.2 Återanvändbara UI-delkomponenter
 
-*   **`AddSampleFormComponent.js`**
+*   **`SampleFormViewComponent.js`**
     *   **Syfte:** Ett formulär för att mata in eller redigera detaljer för ett stickprov (sidtyp, beskrivning, url, innehållstyper).
-    *   **Interaktioner:** Anropas av `SampleManagementViewComponent` (för initiala stickprov) och `AuditOverviewComponent` (för stickprov under pågående granskning). Populerar sina fält från `current_audit.ruleFileContent.metadata` (för `pageTypes` och `contentTypes`). Vid submit anropas en `on_sample_saved_callback` som tillhandahålls av föräldrakomponenten.
-    *   **CSS:** `css/components/add_sample_form_component.css`.
+    *   **Interaktioner:** Anropas av `SampleManagementViewComponent` (för initiala stickprov) och `AuditOverviewComponent` (för stickprov under pågående granskning). Populerar sina fält från `deps.getState().ruleFileContent.metadata` (för `pageTypes` och `contentTypes`). Vid submit anropas en `on_sample_saved_callback` som tillhandahålls av föräldrakomponenten.
+    *   **CSS:** `css/components/sample_form_view_component.css`.
 
 *   **`SampleListComponent.js`**
     *   **Syfte:** Renderar en lista (`<ul>`) av stickprov (`<li>`). Varje listobjekt visar information om stickprovet och åtgärdsknappar.
-    *   **Interaktioner:** Används av `SampleManagementViewComponent` och `AuditOverviewComponent`. Läser `current_audit.samples` från `State`. Renderar knappar ("Redigera", "Radera", "Visa krav", "Granska", "Besök url") villkorligt baserat på `auditStatus` och antal stickprov. Använder eventdelegering för att hantera klick på dessa knappar, och anropar sedan antingen `router_ref_from_parent` för navigering eller `on_edit_callback`/`on_delete_callback` som tillhandahålls av föräldern.
+    *   **Interaktioner:** Används av `SampleManagementViewComponent` och `AuditOverviewComponent`. Läser `deps.getState().samples`. Renderar knappar ("Redigera", "Radera", "Visa krav", "Granska", "Besök url") villkorligt baserat på `auditStatus` och antal stickprov. Använder eventdelegering för att hantera klick på dessa knappar, och anropar sedan antingen `deps.router()` för navigering eller `on_edit_callback`/`on_delete_callback` som tillhandahålls av föräldern.
     *   **CSS:** `css/components/sample_list_component.css`.
 
 *   **`RequirementCardComponent.js`**
@@ -205,8 +230,21 @@ _(Se föregående svar för detaljerad beskrivning av flödena: Starta ny gransk
 *   **ARIA-attribut:** `aria-pressed` används på växlingsknappar (t.ex. för "Stämmer"/"Stämmer inte"). `aria-label` används på knappar i `SampleListComponent` för att ge unik kontext när flera likadana knappar finns.
 
 ## 7. Utvecklingsmiljö och byggprocess
-Systemet består av statiska HTML-, CSS- och JavaScript-filer. Det finns **ingen formell byggprocess** (t.ex. med Webpack, Parcel, eller liknande). Kodändringar reflekteras direkt i webbläsaren efter omladdning.
-För lokal utveckling rekommenderas starkt att använda en enkel lokal HTTP-server (t.ex. via Node.js `http-server`, Python `python -m http.server`, eller en inbyggd server i en kodredigerare som VS Code Live Server). Detta är nödvändigt för att ES6-moduler (`import`/`export`) ska fungera korrekt och för att `fetch`-anrop (som används för att ladda språkfiler) ska kunna genomföras utan problem relaterade till `file:///`-protokollet.
+Systemet använder **Vite** som byggsystem och utvecklingsserver. Vite hanterar:
+- ES6-modulbundling och transformation
+- Hot Module Replacement (HMR) för snabb utveckling
+- Produktionsbyggnad med optimering och minifiering
+- Automatisk konfiguration av HTTP-server för utveckling
+
+**Utveckling:**
+- Kör `npm run dev` för att starta utvecklingsservern på port 5173
+- Vite serverar filer och hanterar ES6-moduler automatiskt
+- HMR uppdaterar ändringar automatiskt i webbläsaren
+
+**Produktion:**
+- Kör `npm run build` för att bygga optimerade filer till `dist/`-mappen
+- Byggprocessen inkluderar lintning, validering och optimering
+- Använd `npm run preview` för att förhandsgranska produktionsbyggnaden
 
 ## 8. Kända begränsningar och potentiella förbättringsområden
 _(Se den separata sektionen som utvecklats tidigare för en detaljerad lista)._
