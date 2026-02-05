@@ -426,8 +426,8 @@ export const RulefileRequirementsListComponent = {
 
         const text_div = this.Helpers.create_element('div', { class_name: 'rulefile-requirement-row__text' });
         
-        // Skapa H3-container för titel-knappen
-        const title_container = this.Helpers.create_element('h3', { 
+        // Skapa H2-container för titel-knappen
+        const title_container = this.Helpers.create_element('h2', { 
             class_name: 'rulefile-requirement-row__title'
         });
         
@@ -477,8 +477,47 @@ export const RulefileRequirementsListComponent = {
         
         if (!this.is_dom_initialized) {
             await this._initialRender();
+        } else {
+            // Update static text elements when language changes
+            this._update_static_texts();
         }
         this._populate_dynamic_content();
+    },
+
+    _update_static_texts() {
+        if (!this.plate_element_ref) return;
+        const t = this.Translation.t;
+        
+        // Update H1 title
+        const h1_element = this.plate_element_ref.querySelector('#rulefile-list-h1');
+        if (h1_element) {
+            h1_element.textContent = t('rulefile_edit_requirements_title');
+        }
+        
+        // Update intro text
+        const intro_text = this.plate_element_ref.querySelector('.view-intro-text');
+        if (intro_text) {
+            intro_text.textContent = t('rulefile_edit_requirements_intro');
+        }
+        
+        // Update "Add new requirement" button
+        const add_button = this.plate_element_ref.querySelector('button[data-action="add-req"]');
+        if (add_button) {
+            const button_text = add_button.querySelector('span');
+            if (button_text) {
+                button_text.textContent = t('add_new_requirement_button');
+            }
+            add_button.setAttribute('aria-label', t('add_new_requirement_button'));
+        }
+        
+        // Update "Back to edit options" button
+        const back_button = this.plate_element_ref.querySelector('.form-actions button');
+        if (back_button && !back_button.querySelector('[data-action="add-req"]')) {
+            const back_button_text = back_button.querySelector('span');
+            if (back_button_text) {
+                back_button_text.textContent = t('back_to_edit_options');
+            }
+        }
     },
 
     destroy() {

@@ -284,10 +284,10 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
                     title_prefix = t('rulefile_metadata_edit_title');
                     break;
                 case 'rulefile_sections_edit_general':
-                    title_prefix = t('rulefile_sections_edit_general_title') || 'Redigera allmän information';
+                    title_prefix = t('rulefile_sections_edit_general_title');
                     break;
                 case 'rulefile_sections_edit_page_types':
-                    title_prefix = t('rulefile_sections_edit_page_types_title') || 'Redigera sidtyper';
+                    title_prefix = t('rulefile_sections_edit_page_types_title');
                     break;
                 case 'rulefile_sections':
                     title_prefix = t('rulefile_sections_title');

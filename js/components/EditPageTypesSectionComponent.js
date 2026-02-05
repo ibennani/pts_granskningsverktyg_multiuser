@@ -606,9 +606,9 @@ export const EditPageTypesSectionComponent = {
             attributes: {
                 type: 'button',
                 'data-action': 'delete-new-page-type',
-                'aria-label': t('rulefile_metadata_delete_new_page_type_aria') || 'Ta bort ny sidtyp'
+                'aria-label': t('rulefile_metadata_delete_new_page_type_aria')
             },
-            html_content: `<span>${t('rulefile_metadata_delete_button_text') || 'Ta bort'}</span>` + 
+            html_content: `<span>${t('rulefile_metadata_delete_button_text')}</span>` + 
                           (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('delete', ['currentColor'], 16) : '')
         });
         delete_button.addEventListener('click', () => {
@@ -895,7 +895,7 @@ export const EditPageTypesSectionComponent = {
                 type: 'button',
                 'data-action': 'add-page-type'
             },
-            html_content: `<span>${t('rulefile_metadata_add_page_type') || 'Lägg till sidtyp'}</span>` + 
+            html_content: `<span>${t('rulefile_metadata_add_page_type')}</span>` + 
                           (this.Helpers.get_icon_svg ? `<span aria-hidden="true">${this.Helpers.get_icon_svg('add', ['currentColor'], 16)}</span>` : '')
         });
         add_button.addEventListener('click', () => {
@@ -1024,9 +1024,9 @@ export const EditPageTypesSectionComponent = {
                     type: 'button',
                     'data-action': 'delete-page-type',
                     'data-index': index,
-                    'aria-label': t('rulefile_metadata_delete_page_type_aria', { pageType: page_type_str }) || `Ta bort sidtyp: ${page_type_str}`
+                    'aria-label': t('rulefile_metadata_delete_page_type_aria', { pageType: page_type_str })
                 },
-                html_content: `<span>${t('rulefile_metadata_delete_button_text') || 'Ta bort'}</span>` + 
+                html_content: `<span>${t('rulefile_metadata_delete_button_text')}</span>` +
                               (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('delete', ['currentColor'], 16) : '')
             });
             delete_button.addEventListener('click', (e) => {

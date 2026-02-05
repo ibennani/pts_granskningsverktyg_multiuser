@@ -800,7 +800,7 @@ export const EditRulefileMetadataViewComponent = {
         const add_section_btn = this.Helpers.create_element('button', {
             class_name: ['button', 'button-secondary'],
             attributes: { type: 'button' },
-            html_content: `<span>${t('add_report_section') || 'Lägg till rapportsektion'}</span>` + this.Helpers.get_icon_svg('add', [], 16)
+            html_content: `<span>${t('add_report_section')}</span>` + this.Helpers.get_icon_svg('add', [], 16)
         });
         add_section_btn.addEventListener('click', () => {
             const new_id = `section-${this.Helpers.generate_uuid_v4().substring(0, 8)}`;

@@ -38,7 +38,7 @@ export const EditRulefileMainViewComponent = {
         const view_sections_button = this.Helpers.create_element('button', {
             class_name: ['button', 'button-primary'],
             attributes: { type: 'button' },
-            html_content: `<span>${t('view_rulefile_sections_button') || 'Visa regelfilens innehåll'}</span>` + this.Helpers.get_icon_svg('view_list')
+            html_content: `<span>${t('view_rulefile_sections_button')}</span>` + this.Helpers.get_icon_svg('view_list')
         });
         view_sections_button.addEventListener('click', () => this.router('rulefile_sections', { section: 'general' }));
 

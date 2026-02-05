@@ -66,12 +66,12 @@ export function migrate_rulefile_to_new_structure(ruleFileContent, options = {})
     // Funktion för att få standardnamn för ett block
     const get_default_block_name = (block_id) => {
         const name_map = {
-            'expectedObservation': t('requirement_expected_observation') || 'Förväntad observation',
-            'instructions': t('requirement_instructions') || 'Instruktioner',
-            'examples': t('requirement_examples') || 'Exempel',
-            'tips': t('requirement_tips') || 'Tips',
-            'commonErrors': t('requirement_common_errors') || 'Vanliga fel',
-            'exceptions': t('requirement_exceptions') || 'Undantag'
+            'expectedObservation': t('requirement_expected_observation'),
+            'instructions': t('requirement_instructions'),
+            'examples': t('requirement_examples'),
+            'tips': t('requirement_tips'),
+            'commonErrors': t('requirement_common_errors'),
+            'exceptions': t('requirement_exceptions')
         };
         return name_map[block_id] || block_id;
     };

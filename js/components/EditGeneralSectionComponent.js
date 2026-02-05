@@ -138,7 +138,7 @@ export const EditGeneralSectionComponent = {
         const footerCancelButton = this.Helpers.create_element('button', {
             class_name: ['button', 'button-default'],
             attributes: { type: 'button' },
-            html_content: `<span>${this.Translation.t('back_without_saving') || 'Tillbaka utan att spara'}</span>`
+            html_content: `<span>${this.Translation.t('back_without_saving')}</span>`
         });
         footerCancelButton.addEventListener('click', () => {
             // Rensa debounce timer vid avbryt

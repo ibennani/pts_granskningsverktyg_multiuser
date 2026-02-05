@@ -68,12 +68,12 @@ export const EditRulefileRequirementComponent = {
     _get_default_block_name(block_id) {
         const t = this.Translation.t;
         const name_map = {
-            'expectedObservation': t('requirement_expected_observation') || 'Förväntad observation',
-            'instructions': t('requirement_instructions') || 'Instruktioner',
-            'examples': t('requirement_examples') || 'Exempel',
-            'tips': t('requirement_tips') || 'Tips',
-            'commonErrors': t('requirement_common_errors') || 'Vanliga fel',
-            'exceptions': t('requirement_exceptions') || 'Undantag'
+            'expectedObservation': t('requirement_expected_observation'),
+            'instructions': t('requirement_instructions'),
+            'examples': t('requirement_examples'),
+            'tips': t('requirement_tips'),
+            'commonErrors': t('requirement_common_errors'),
+            'exceptions': t('requirement_exceptions')
         };
         return name_map[block_id] || block_id;
     },
@@ -123,14 +123,12 @@ export const EditRulefileRequirementComponent = {
                     };
                 }
                 
-                const name_input = this.form_element_ref.querySelector(`#infoBlock_${block_id}_name`);
                 const expanded_checkbox = this.form_element_ref.querySelector(`#infoBlock_${block_id}_expanded`);
                 const text_textarea = this.form_element_ref.querySelector(`#infoBlock_${block_id}_text`);
                 
-                if (name_input) {
-                    const nameValue = name_input.value || '';
-                    this.local_requirement_data.infoBlocks[block_id].name = typeof nameValue === 'string' ? nameValue.trim() || this._get_default_block_name(block_id) : this._get_default_block_name(block_id);
-                }
+                // Block name is now displayed as h2 and not editable, so we keep the existing name
+                // No need to update it from form
+                
                 if (expanded_checkbox) {
                     this.local_requirement_data.infoBlocks[block_id].expanded = expanded_checkbox.checked;
                 }
@@ -775,29 +773,13 @@ export const EditRulefileRequirementComponent = {
                 
                 const block_container = this.Helpers.create_element('div', { class_name: 'info-block-edit-container', attributes: { 'data-block-id': block_id } });
                 
-                // Block name field
-                const name_group = this.Helpers.create_element('div', { class_name: 'form-group' });
-                const name_label_text = t('info_block_name_label') || 'Blocknamn';
-                const name_label = this.Helpers.create_element('label', { 
-                    attributes: { for: `infoBlock_${block_id}_name` },
-                    html_content: `<strong>${name_label_text}</strong>`
-                });
-                name_group.appendChild(name_label);
+                // Block name as h2 heading
+                const block_name = block.name || this._get_default_block_name(block_id);
+                const block_heading = this.Helpers.create_element('h2', { text_content: block_name });
+                block_container.appendChild(block_heading);
                 
-                const name_input = this.Helpers.create_element('input', {
-                    class_name: 'form-control',
-                    attributes: { 
-                        id: `infoBlock_${block_id}_name`,
-                        name: `infoBlock_${block_id}_name`,
-                        type: 'text',
-                        value: block.name || ''
-                    }
-                });
-                name_input.addEventListener('input', this.debounced_autosave_form);
-                name_input.addEventListener('blur', this.debounced_autosave_form);
-                name_group.appendChild(name_input);
-                
-                // Expanded checkbox - placed directly under the Blocknamn input field
+                // Expanded checkbox group
+                const expanded_group = this.Helpers.create_element('div', { class_name: 'form-group' });
                 const expanded_label = this.Helpers.create_element('label', { 
                     class_name: 'checkbox-label',
                     attributes: { for: `infoBlock_${block_id}_expanded` }
@@ -812,8 +794,8 @@ export const EditRulefileRequirementComponent = {
                 });
                 expanded_checkbox.addEventListener('change', this.debounced_autosave_form);
                 expanded_label.appendChild(expanded_checkbox);
-                expanded_label.appendChild(document.createTextNode(' ' + (t('info_block_expanded_label') || 'Initialt expanderad')));
-                name_group.appendChild(expanded_label);
+                expanded_label.appendChild(document.createTextNode(' ' + t('info_block_expanded_label')));
+                expanded_group.appendChild(expanded_label);
                 
                 // Text field (textarea)
                 const text_group = this._create_form_group(
@@ -823,7 +805,7 @@ export const EditRulefileRequirementComponent = {
                     true
                 );
                 
-                block_container.appendChild(name_group);
+                block_container.appendChild(expanded_group);
                 block_container.appendChild(text_group);
                 help_texts_section.appendChild(block_container);
             });

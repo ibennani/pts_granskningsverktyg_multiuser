@@ -125,9 +125,9 @@ export const RulefileSectionsViewComponent = {
                 class_name: ['button', 'button-secondary', 'rulefile-sections-edit-button'],
                 attributes: {
                     type: 'button',
-                    'aria-label': t('rulefile_sections_edit_general_aria') || 'Redigera allmän information'
+                    'aria-label': t('rulefile_sections_edit_general_aria')
                 },
-                html_content: `<span>${t('edit_button_label') || 'Redigera'}</span>` + 
+                html_content: `<span>${t('edit_button_label')}</span>` +
                               (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('edit') : '')
             });
             edit_button.addEventListener('click', () => {
@@ -142,9 +142,9 @@ export const RulefileSectionsViewComponent = {
                 class_name: ['button', 'button-secondary', 'rulefile-sections-edit-button'],
                 attributes: {
                     type: 'button',
-                    'aria-label': t('rulefile_sections_edit_page_types_aria') || 'Redigera sidtyper'
+                    'aria-label': t('rulefile_sections_edit_page_types_aria')
                 },
-                html_content: `<span>${t('edit_button_label') || 'Redigera'}</span>` + 
+                html_content: `<span>${t('edit_button_label')}</span>` +
                               (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('edit') : '')
             });
             edit_button.addEventListener('click', () => {
@@ -645,12 +645,12 @@ export const RulefileSectionsViewComponent = {
     _get_block_display_name(block_id) {
         const t = this.Translation.t;
         const name_map = {
-            'expectedObservation': t('requirement_expected_observation') || 'Förväntad observation',
-            'instructions': t('requirement_instructions') || 'Instruktioner',
-            'exceptions': t('requirement_exceptions') || 'Undantag',
-            'commonErrors': t('requirement_common_errors') || 'Vanliga fel',
-            'tips': t('requirement_tips') || 'Tips',
-            'examples': t('requirement_examples') || 'Exempel'
+            'expectedObservation': t('requirement_expected_observation'),
+            'instructions': t('requirement_instructions'),
+            'exceptions': t('requirement_exceptions'),
+            'commonErrors': t('requirement_common_errors'),
+            'tips': t('requirement_tips'),
+            'examples': t('requirement_examples')
         };
         return name_map[block_id] || block_id;
     },
@@ -735,7 +735,7 @@ export const RulefileSectionsViewComponent = {
             const save_button = this.Helpers.create_element('button', {
                 class_name: ['button', 'button-primary'],
                 attributes: { type: 'button' },
-                html_content: `<span>${t('save_changes_button') || 'Spara ändringar'}</span>` + 
+                html_content: `<span>${t('save_changes_button')}</span>` + 
                               (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('save') : '')
             });
             save_button.addEventListener('click', () => {
@@ -750,7 +750,7 @@ export const RulefileSectionsViewComponent = {
             const cancel_button = this.Helpers.create_element('button', {
                 class_name: ['button', 'button-default'],
                 attributes: { type: 'button' },
-                html_content: `<span>${t('cancel') || 'Avbryt'}</span>`
+                html_content: `<span>${t('cancel')}</span>`
             });
             cancel_button.addEventListener('click', () => {
                 this.router('rulefile_sections', { section: 'info_blocks_order' });
@@ -997,7 +997,7 @@ export const RulefileSectionsViewComponent = {
         // Back button - längst ner i main wrapper
         const back_button = this.Helpers.create_element('button', {
             class_name: ['button', 'button-default'],
-            html_content: `<span>${t('back_to_edit_options') || 'Tillbaka till redigeringsmenyn'}</span>` + 
+            html_content: `<span>${t('back_to_edit_options')}</span>` + 
                           (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('arrow_back') : '')
         });
         back_button.addEventListener('click', () => this.router('edit_rulefile_main'));
