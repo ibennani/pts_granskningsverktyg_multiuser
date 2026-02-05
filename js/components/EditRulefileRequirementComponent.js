@@ -649,12 +649,15 @@ export const EditRulefileRequirementComponent = {
         if (checked_children === 0) {
             parent_checkbox.checked = false;
             parent_checkbox.indeterminate = false;
+            parent_checkbox.setAttribute('aria-checked', 'false');
         } else if (checked_children === total_children) {
             parent_checkbox.checked = true;
             parent_checkbox.indeterminate = false;
+            parent_checkbox.setAttribute('aria-checked', 'true');
         } else {
             parent_checkbox.checked = false;
             parent_checkbox.indeterminate = true;
+            parent_checkbox.setAttribute('aria-checked', 'mixed');
         }
     },
 
@@ -685,14 +688,39 @@ export const EditRulefileRequirementComponent = {
 
         all_content_types.forEach(group => {
             const fieldset = this.Helpers.create_element('fieldset', { class_name: 'content-type-parent-group-edit' });
+            const group_children_id = `ct-children-${group.id}`;
             
-            const legend = this.Helpers.create_element('legend');
-            const parent_id = `ct-parent-${group.id}`;
-            const parent_checkbox = this.Helpers.create_element('input', { id: parent_id, class_name: 'form-check-input', attributes: { type: 'checkbox', 'data-parent-id': group.id } });
-            parent_checkbox.addEventListener('change', this.debounced_autosave_form);
-            const parent_label = this.Helpers.create_element('label', { attributes: { for: parent_id }, text_content: group.text });
-            legend.append(parent_checkbox, parent_label);
+            // Legend för skärmläsare (visuellt dold)
+            const legend = this.Helpers.create_element('legend', { class_name: 'visually-hidden', text_content: group.text });
             fieldset.appendChild(legend);
+            
+            // Visuell wrapper för parent checkbox
+            const parent_header = this.Helpers.create_element('div', { class_name: 'content-type-parent-header-edit' });
+            const parent_id = `ct-parent-${group.id}`;
+            const parent_checkbox = this.Helpers.create_element('input', { 
+                id: parent_id, 
+                class_name: 'form-check-input', 
+                attributes: { 
+                    type: 'checkbox', 
+                    'data-parent-id': group.id,
+                    'aria-controls': group_children_id,
+                    'aria-label': `${group.text}, välj alla`
+                } 
+            });
+            parent_checkbox.addEventListener('change', this.debounced_autosave_form);
+            const parent_label = this.Helpers.create_element('label', { 
+                attributes: { for: parent_id }, 
+                text_content: group.text,
+                class_name: 'content-type-parent-label-edit'
+            });
+            parent_header.append(parent_checkbox, parent_label);
+            fieldset.appendChild(parent_header);
+            
+            // Container för children med ID för ARIA
+            const children_container = this.Helpers.create_element('div', { 
+                class_name: 'content-type-children-container-edit', 
+                attributes: { id: group_children_id } 
+            });
 
             (group.types || []).forEach(child => {
                 const child_id = `ct-child-${child.id}`;
@@ -702,17 +730,27 @@ export const EditRulefileRequirementComponent = {
                 const child_checkbox = this.Helpers.create_element('input', { 
                     id: child_id, 
                     class_name: 'form-check-input', 
-                    attributes: { type: 'checkbox', name: 'contentType', value: child.id, 'data-child-for': group.id } 
+                    attributes: { 
+                        type: 'checkbox', 
+                        name: 'contentType', 
+                        value: child.id, 
+                        'data-child-for': group.id,
+                        'aria-labelledby': `${child_id}-label`
+                    } 
                 });
                 if (is_checked) {
                     child_checkbox.checked = true;
                 }
                 child_checkbox.addEventListener('change', this.debounced_autosave_form);
-                const child_label = this.Helpers.create_element('label', { attributes: { for: child_id }, text_content: child.text });
+                const child_label = this.Helpers.create_element('label', { 
+                    attributes: { for: child_id, id: `${child_id}-label` }, 
+                    text_content: child.text 
+                });
                 
                 child_wrapper.append(child_checkbox, child_label);
-                fieldset.appendChild(child_wrapper);
+                children_container.appendChild(child_wrapper);
             });
+            fieldset.appendChild(children_container);
             section_wrapper.appendChild(fieldset);
         });
         return section_wrapper;

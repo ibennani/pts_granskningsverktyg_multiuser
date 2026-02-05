@@ -122,26 +122,69 @@
     }
 }
 
-/* HIERARKISKA INNEHÅLLSTYPER */
-.content-type-parent-group-edit {
-    border: none;
+/* Visuellt dold legend för skärmläsare */
+.content-type-parent-group-edit legend.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
     padding: 0;
-    margin: 0 0 1rem 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
 }
 
-.content-type-parent-group-edit legend {
-    font-weight: 500;
-    padding: 0;
-    margin-bottom: 0.5rem;
-    font-size: 1.1em;
-    width: auto;
+/* HIERARKISKA INNEHÅLLSTYPER */
+.content-type-parent-group-edit {
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 1rem 1.25rem;
+    margin: 0 0 1.5rem 0;
+    background-color: var(--plate-background-color);
+}
+
+/* Visuell header för parent checkbox */
+.content-type-parent-header-edit {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+    margin-bottom: 0.75rem;
+    border-bottom: 2px solid var(--secondary-color);
+}
+
+.content-type-parent-header-edit .form-check-input {
+    width: 1.25rem;
+    height: 1.25rem;
+    margin: 0;
+    cursor: pointer;
+}
+
+.content-type-parent-label-edit {
+    font-size: 1.1em;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin: 0;
+    cursor: pointer;
+    flex: 1;
+}
+
+[data-theme="dark"] .content-type-parent-label-edit {
+    color: var(--heading-color);
+}
+
+/* Container för children med visuell koppling */
+.content-type-children-container-edit {
+    padding-left: 0.5rem;
+    margin-top: 0.5rem;
+    border-left: 3px solid var(--secondary-color);
+    padding-left: 1rem;
+    margin-left: 0.75rem;
 }
 
 .content-type-child-item-edit {
-    padding-left: 2rem;
+    padding-left: 0.5rem;
     margin-bottom: 0.75rem;
 }
 

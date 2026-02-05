@@ -111,6 +111,13 @@ export const AddSampleFormComponent = {
         const someChecked = Array.from(children).some(child => child.checked);
         parentCheckbox.checked = allChecked;
         parentCheckbox.indeterminate = someChecked && !allChecked;
+        
+        // Uppdatera ARIA-attribut för skärmläsare
+        if (parentCheckbox.indeterminate) {
+            parentCheckbox.setAttribute('aria-checked', 'mixed');
+        } else {
+            parentCheckbox.setAttribute('aria-checked', parentCheckbox.checked.toString());
+        }
     },
 
     _handleCheckboxChange(event) {
@@ -357,24 +364,66 @@ export const AddSampleFormComponent = {
         this.content_types_container_element.appendChild(this.Helpers.create_element('p', { text_content: t('content_types_instruction'), style: { 'margin-top': '0', 'color': 'var(--text-color-muted)' } }));
         grouped_content_types.forEach(group => {
             const fieldset = this.Helpers.create_element('fieldset', { class_name: 'content-type-parent-group' });
-            const legend = this.Helpers.create_element('legend');
-            const parent_id = `ct-parent-${group.id}`;
-            const parent_checkbox = this.Helpers.create_element('input', { id: parent_id, class_name: 'form-check-input', attributes: { type: 'checkbox', 'data-parent-id': group.id } });
-            legend.append(parent_checkbox, this.Helpers.create_element('label', { attributes: { for: parent_id }, text_content: group.text }));
+            const group_children_id = `ct-children-${group.id}`;
+            
+            // Legend för skärmläsare (visuellt dold)
+            const legend = this.Helpers.create_element('legend', { class_name: 'visually-hidden', text_content: group.text });
             fieldset.appendChild(legend);
+            
+            // Visuell wrapper för parent checkbox
+            const parent_header = this.Helpers.create_element('div', { class_name: 'content-type-parent-header' });
+            const parent_id = `ct-parent-${group.id}`;
+            const parent_checkbox = this.Helpers.create_element('input', { 
+                id: parent_id, 
+                class_name: 'form-check-input', 
+                attributes: { 
+                    type: 'checkbox', 
+                    'data-parent-id': group.id,
+                    'aria-controls': group_children_id,
+                    'aria-label': `${group.text}, välj alla`
+                } 
+            });
+            const parent_label = this.Helpers.create_element('label', { attributes: { for: parent_id }, text_content: group.text, class_name: 'content-type-parent-label' });
+            parent_header.append(parent_checkbox, parent_label);
+            fieldset.appendChild(parent_header);
+            
+            // Container för children med ID för ARIA
+            const children_container = this.Helpers.create_element('div', { class_name: 'content-type-children-container', attributes: { id: group_children_id } });
+            
             (group.types || []).forEach(child => {
                 const child_id = `ct-child-${child.id}`;
                 const child_wrapper = this.Helpers.create_element('div', { class_name: 'form-check content-type-child-item' });
-                const child_checkbox = this.Helpers.create_element('input', { id: child_id, class_name: 'form-check-input', attributes: { type: 'checkbox', name: 'selectedContentTypes', value: child.id, 'data-child-for': group.id } });
-                child_wrapper.append(child_checkbox, this.Helpers.create_element('label', { attributes: { for: child_id }, text_content: child.text }));
-                fieldset.appendChild(child_wrapper);
+                const desc_id = child.description ? `ct-desc-${child.id}` : null;
+                const child_checkbox = this.Helpers.create_element('input', { 
+                    id: child_id, 
+                    class_name: 'form-check-input', 
+                    attributes: { 
+                        type: 'checkbox', 
+                        name: 'selectedContentTypes', 
+                        value: child.id, 
+                        'data-child-for': group.id,
+                        'aria-describedby': desc_id ? desc_id : null,
+                        'aria-labelledby': `${child_id}-label`
+                    } 
+                });
+                const child_label = this.Helpers.create_element('label', { 
+                    attributes: { for: child_id, id: `${child_id}-label` }, 
+                    text_content: child.text 
+                });
+                child_wrapper.append(child_checkbox, child_label);
+                children_container.appendChild(child_wrapper);
+                
                 if (child.description) {
-                    const desc_div = this.Helpers.create_element('div', { class_name: 'content-type-description markdown-content' });
+                    const desc_div = this.Helpers.create_element('div', { 
+                        class_name: 'content-type-description markdown-content',
+                        attributes: { id: desc_id }
+                    });
                     if (typeof marked !== 'undefined') desc_div.innerHTML = marked.parse(child.description);
                     else desc_div.textContent = child.description;
-                    fieldset.appendChild(desc_div);
+                    children_container.appendChild(desc_div);
                 }
             });
+            fieldset.appendChild(children_container);
             this.content_types_container_element.appendChild(fieldset);
         });
         this.content_types_container_element.addEventListener('change', this._handleCheckboxChange);

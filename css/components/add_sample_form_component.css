@@ -29,32 +29,77 @@
     margin-top: 0;
 }
 
+/* Visuellt dold legend för skärmläsare */
+.content-type-parent-group legend.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
 /* Main group for a parent category (e.g., Webbsida) */
 .content-type-parent-group {
-    border: none;
-    padding: 0;
-    margin: 0 0 1rem 0;
-    max-width: 100%;
-    overflow-x: hidden;
-    box-sizing: border-box;
-}
-.content-type-parent-group legend {
-    padding: 0;
-    margin-bottom: 0.5rem;
-    font-size: 1.1em;
-    font-weight: 500;
-    width: 100%;
-    display: flex;
-    align-items: center;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 1rem 1.25rem;
+    margin: 0 0 1.5rem 0;
+    background-color: var(--plate-background-color);
     max-width: 100%;
     overflow-x: hidden;
     box-sizing: border-box;
 }
 
+/* Visuell header för parent checkbox */
+.content-type-parent-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+    margin-bottom: 0.75rem;
+    border-bottom: 2px solid var(--secondary-color);
+    max-width: 100%;
+    overflow-x: hidden;
+    box-sizing: border-box;
+}
+
+.content-type-parent-header .form-check-input {
+    width: 1.25rem;
+    height: 1.25rem;
+    margin: 0;
+    cursor: pointer;
+}
+
+.content-type-parent-label {
+    font-size: 1.1em;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin: 0;
+    cursor: pointer;
+    flex: 1;
+}
+
+[data-theme="dark"] .content-type-parent-label {
+    color: var(--heading-color);
+}
+
+/* Container för children med visuell koppling */
+.content-type-children-container {
+    padding-left: 0.5rem;
+    margin-top: 0.5rem;
+    border-left: 3px solid var(--secondary-color);
+    padding-left: 1rem;
+    margin-left: 0.75rem;
+}
+
 /* Container for a child item (e.g., a specific page type or content type) */
 .content-type-child-item {
-    padding-left: 2rem;
-    margin-bottom: 0; /* Reset margin for tighter spacing */
+    padding-left: 0.5rem;
+    margin-bottom: 0.5rem;
     max-width: 100%;
     overflow-x: hidden;
     box-sizing: border-box;
@@ -62,13 +107,13 @@
 
 /* Description for a child item */
 .content-type-description {
-    padding-left: 3.5rem; /* Indent further than the checkbox */
-    margin-top: 0.25rem; /* Bring it closer to the item above */
-    margin-bottom: 1rem; /* Space before the next item */
+    padding-left: 2rem; /* Indent to align with checkbox label */
+    margin-top: 0.25rem;
+    margin-bottom: 0.75rem;
     font-size: 0.9em;
     color: var(--text-color-muted);
     line-height: 1.5;
-    max-width: calc(100% - 3.5rem);
+    max-width: 100%;
     overflow-wrap: break-word;
     word-wrap: break-word;
     word-break: break-word;

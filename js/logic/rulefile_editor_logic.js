@@ -304,15 +304,22 @@ function _buildReqFormContentTypesSection(req, allContentTypes) {
     const fieldset = Helpers.create_element('fieldset');
     fieldset.appendChild(Helpers.create_element('h3', {text_content: Translation.t('content_types')}));
     (allContentTypes || []).forEach(group => {
-        const groupFieldset = Helpers.create_element('fieldset');
-        groupFieldset.appendChild(Helpers.create_element('h4', {text_content: group.text}));
+        const groupFieldset = Helpers.create_element('fieldset', { class_name: 'content-type-group-editor' });
+        const legend = Helpers.create_element('legend', { text_content: group.text });
+        groupFieldset.appendChild(legend);
         (group.types || []).forEach(type => {
             const isChecked = Array.isArray(req.contentType) && req.contentType.includes(type.id);
             const checkbox = _createFormField(type.text, `contentType-${type.id}`, isChecked, 'checkbox');
             if (type.description) {
+                const descId = `ct-desc-editor-${type.id}`;
+                const checkboxInput = checkbox.querySelector('input[type="checkbox"]');
+                if (checkboxInput) {
+                    checkboxInput.setAttribute('aria-describedby', descId);
+                }
                 const desc = Helpers.create_element('p', {
                     class_name: 'field-instruction content-type-description',
-                    text_content: type.description
+                    text_content: type.description,
+                    attributes: { id: descId }
                 });
                 checkbox.appendChild(desc);
             }
