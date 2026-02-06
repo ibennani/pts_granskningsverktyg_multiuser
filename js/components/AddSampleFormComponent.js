@@ -383,8 +383,10 @@ export const AddSampleFormComponent = {
                     'aria-label': `${group.text}, välj alla`
                 } 
             });
+            const parent_h3 = this.Helpers.create_element('h3');
             const parent_label = this.Helpers.create_element('label', { attributes: { for: parent_id }, text_content: group.text, class_name: 'content-type-parent-label' });
-            parent_header.append(parent_checkbox, parent_label);
+            parent_h3.appendChild(parent_label);
+            parent_header.append(parent_checkbox, parent_h3);
             fieldset.appendChild(parent_header);
             
             // Container för children med ID för ARIA

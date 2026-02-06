@@ -74,13 +74,17 @@
     cursor: pointer;
 }
 
+.content-type-parent-header h3 {
+    margin: 0;
+    flex: 1;
+}
+
 .content-type-parent-label {
     font-size: 1.1em;
     font-weight: 600;
     color: var(--primary-color);
     margin: 0;
     cursor: pointer;
-    flex: 1;
 }
 
 [data-theme="dark"] .content-type-parent-label {
