@@ -542,6 +542,7 @@
   "rulefile_metadata_move_page_type_down_aria_with_position": "Move down page type: {pageType} ({newPosition} of {totalCount})",
   "rulefile_metadata_move_up_text": "Move up",
   "rulefile_metadata_move_down_text": "Move down",
+  "rulefile_metadata_save_page_types": "Save page types",
   "rulefile_info_blocks_order_instruction": "Change the order by clicking the arrows. This order is used for all requirements in the rule file.",
   "rulefile_info_blocks_order_saved": "Info blocks order saved",
   "move_up": "Move up",

@@ -15,6 +15,22 @@
     min-width: 0;
 }
 
+.app-right-sidebar-root {
+    flex: 0 0 300px;
+    width: 300px;
+    background-color: var(--plate-background-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    min-height: 200px;
+    display: none;
+}
+
+.app-right-sidebar-root:not(:empty) {
+    display: flex;
+    flex-direction: column;
+}
+
 .side-menu {
     position: sticky;
     top: 1rem;
@@ -70,6 +86,11 @@
     .app-side-menu-root {
         width: 100%;
         min-width: 0;
+        flex: 0 0 auto;
+    }
+
+    .app-right-sidebar-root {
+        width: 100%;
         flex: 0 0 auto;
     }
 

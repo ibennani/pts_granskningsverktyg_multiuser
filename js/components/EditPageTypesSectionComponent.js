@@ -222,7 +222,7 @@ export const EditPageTypesSectionComponent = {
         }, 400); // Vänta 300ms (fade-out) + 100ms = 400ms totalt
     },
 
-    _save_form_values_to_metadata(workingMetadata) {
+    _save_form_values_to_metadata(workingMetadata, shouldTrim = false) {
         if (!this.form_element_ref) return;
         
         const form = this.form_element_ref;
@@ -235,19 +235,23 @@ export const EditPageTypesSectionComponent = {
         
         page_type_inputs.forEach((input, index) => {
             const dataIndex = input.getAttribute('data-index');
+            const rawValue = input.value;
+            const value = shouldTrim ? rawValue.trim() : rawValue;
+            
             if (dataIndex === 'new') {
                 // Hantera ny sidtyp - lägg till om den har värde
-                const value = input.value.trim();
-                if (value) {
+                // Vid autospar: behåll otrimmade värden, vid manuell sparning: trimma
+                const finalValue = shouldTrim ? value.trim() : value;
+                if (finalValue) {
                     // Om det inte redan finns i arrayen, lägg till
-                    if (!page_types.includes(value)) {
-                        page_types.push(value);
+                    if (!page_types.includes(finalValue)) {
+                        page_types.push(finalValue);
                     }
                 }
             } else {
                 const idx = parseInt(dataIndex, 10);
                 if (!isNaN(idx) && idx < page_types.length) {
-                    page_types[idx] = input.value.trim();
+                    page_types[idx] = value;
                 }
             }
         });
@@ -264,19 +268,34 @@ export const EditPageTypesSectionComponent = {
         
         category_textareas.forEach((textarea, index) => {
             const dataIndex = textarea.getAttribute('data-index');
+            const rawValue = textarea.value;
+            
             if (dataIndex === 'new') {
                 // Hantera nya kategorier
-                const category_lines = textarea.value.split('\n').map(line => line.trim()).filter(Boolean);
+                // Vid autospar: behåll otrimmade värden, vid manuell sparning: trimma
+                const category_lines = shouldTrim 
+                    ? rawValue.split('\n').map(line => line.trim()).filter(Boolean)
+                    : rawValue.split('\n');
+                    
                 if (category_lines.length > 0) {
                     // Hitta motsvarande page_type för den nya kategorin
                     const newPageTypeInput = form.querySelector('input[data-index="new"]');
-                    if (newPageTypeInput && newPageTypeInput.value.trim()) {
-                        const pageTypeText = newPageTypeInput.value.trim();
+                    const pageTypeRawValue = newPageTypeInput?.value || '';
+                    const pageTypeValue = shouldTrim ? pageTypeRawValue.trim() : pageTypeRawValue;
+                    
+                    if (newPageTypeInput && pageTypeValue) {
+                        const pageTypeText = shouldTrim ? pageTypeValue.trim() : pageTypeValue;
                         // Skapa ny sampleCategory
                         const newCategory = {
                             text: pageTypeText,
-                            id: this._generate_slug(pageTypeText),
-                            categories: category_lines.map(text => ({ text, id: this._generate_slug(text) }))
+                            id: this._generate_slug(pageTypeText.trim()),
+                            categories: category_lines.map(text => {
+                                const trimmedText = shouldTrim ? text.trim() : text;
+                                return { 
+                                    text: trimmedText, 
+                                    id: this._generate_slug(trimmedText.trim()) 
+                                };
+                            })
                         };
                         sample_categories.push(newCategory);
                     }
@@ -284,9 +303,19 @@ export const EditPageTypesSectionComponent = {
             } else {
                 const idx = parseInt(dataIndex, 10);
                 if (!isNaN(idx) && idx < sample_categories.length && sample_categories[idx]) {
-                    const category_lines = textarea.value.split('\n').map(line => line.trim()).filter(Boolean);
+                    // Vid autospar: behåll otrimmade värden, vid manuell sparning: trimma
+                    const category_lines = shouldTrim 
+                        ? rawValue.split('\n').map(line => line.trim()).filter(Boolean)
+                        : rawValue.split('\n');
+                        
                     if (sample_categories[idx].categories) {
-                        sample_categories[idx].categories = category_lines.map(text => ({ text, id: this._generate_slug(text) }));
+                        sample_categories[idx].categories = category_lines.map(text => {
+                            const trimmedText = shouldTrim ? text.trim() : text;
+                            return { 
+                                text: trimmedText, 
+                                id: this._generate_slug(trimmedText.trim()) 
+                            };
+                        });
                     }
                 }
             }
@@ -297,7 +326,7 @@ export const EditPageTypesSectionComponent = {
         }
     },
 
-    save_form_data_immediately() {
+    save_form_data_immediately(shouldTrim = false) {
         if (!this.form_element_ref || !this.working_metadata) return;
         
         // Spara aktuellt fokus och scroll-position innan autospar
@@ -315,8 +344,8 @@ export const EditPageTypesSectionComponent = {
         const windowScrollY = window.scrollY;
         const windowScrollX = window.scrollX;
         
-        // Spara formulärvärden till workingMetadata
-        this._save_form_values_to_metadata(this.working_metadata);
+        // Spara formulärvärden till workingMetadata (trimma endast vid manuell sparning)
+        this._save_form_values_to_metadata(this.working_metadata, shouldTrim);
         
         const state = this.getState();
         const currentRulefile = state?.ruleFileContent || {};
@@ -1111,10 +1140,56 @@ export const EditPageTypesSectionComponent = {
         // Knapparna skapas redan korrekt i loopen ovan med rätt logik
         // Ingen behov av att uppdatera dem här eftersom logiken redan tar hänsyn till showing_add_form
 
+        // Spara-knapp efter alla formulärfält
+        const save_button_container = this.Helpers.create_element('div', { 
+            class_name: 'form-actions',
+            style: 'margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color, #e0e0e0);'
+        });
+        
+        const save_button = this.Helpers.create_element('button', {
+            class_name: ['button', 'button-primary'],
+            attributes: {
+                type: 'button',
+                'aria-label': t('rulefile_metadata_save_page_types')
+            },
+            html_content: `<span>${t('rulefile_metadata_save_page_types')}</span>` + 
+                          (this.Helpers.get_icon_svg ? `<span aria-hidden="true">${this.Helpers.get_icon_svg('save', ['currentColor'], 16)}</span>` : '')
+        });
+        
+        save_button.addEventListener('click', () => {
+            // Rensa debounce-timer för att spara omedelbart
+            if (this.debounceTimer) {
+                clearTimeout(this.debounceTimer);
+                this.debounceTimer = null;
+            }
+            
+            // Trimma alla formulärfält vid manuell sparning
+            if (this.form_element_ref) {
+                const inputs = this.form_element_ref.querySelectorAll('input[type="text"], textarea');
+                inputs.forEach(input => {
+                    if (typeof input.value === 'string') {
+                        input.value = input.value.trim();
+                    }
+                });
+            }
+            
+            // Spara formulärdata omedelbart med trimning (shouldTrim = true)
+            this.save_form_data_immediately(true);
+            
+            // Visa bekräftelsemeddelande
+            this.NotificationComponent.show_global_message?.(
+                t('rulefile_metadata_edit_saved') || 'Ändringar sparade',
+                'success'
+            );
+        });
+        
+        save_button_container.appendChild(save_button);
+        form.appendChild(save_button_container);
+
         // Form submit handler (tom för nu)
         form.addEventListener('submit', event => {
             event.preventDefault();
-            // Spara-funktionalitet kommer senare
+            // Spara-funktionalitet hanteras via knappen
         });
 
         return { form, workingMetadata };
@@ -1125,6 +1200,11 @@ export const EditPageTypesSectionComponent = {
         const state = this.getState();
 
         if (!state?.ruleFileContent?.metadata) {
+            return;
+        }
+
+        // Förhindra re-rendering om formuläret redan finns och är aktivt (förhindrar att autospar tömmer formuläret)
+        if (this.form_element_ref && this.root.contains(this.form_element_ref) && this.root.children.length > 0) {
             return;
         }
 

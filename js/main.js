@@ -163,7 +163,8 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
 
     function ensure_app_layout() {
         if (!app_container) return;
-        if (document.getElementById('app-layout') && document.getElementById('app-main-view-root') && document.getElementById('app-side-menu-root')) {
+        const right_sidebar_root = document.getElementById('app-right-sidebar-root');
+        if (document.getElementById('app-layout') && document.getElementById('app-main-view-root') && document.getElementById('app-side-menu-root') && right_sidebar_root) {
             side_menu_root = document.getElementById('app-side-menu-root');
             main_view_root = document.getElementById('app-main-view-root');
             return;
@@ -183,8 +184,13 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
         main_view_root.id = 'app-main-view-root';
         main_view_root.className = 'app-main-view-root';
 
+        const right_sidebar = document.createElement('div');
+        right_sidebar.id = 'app-right-sidebar-root';
+        right_sidebar.className = 'app-right-sidebar-root';
+
         layout.appendChild(side_menu_root);
         layout.appendChild(main_view_root);
+        layout.appendChild(right_sidebar);
         app_container.appendChild(layout);
     }
 

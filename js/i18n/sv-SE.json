@@ -542,6 +542,7 @@
   "rulefile_metadata_move_page_type_down_aria_with_position": "Flytta ner sidtyp: {pageType} ({newPosition} av {totalCount})",
   "rulefile_metadata_move_up_text": "Flytta upp",
   "rulefile_metadata_move_down_text": "Flytta ner",
+  "rulefile_metadata_save_page_types": "Spara sidtyper",
   "rulefile_info_blocks_order_instruction": "Ändra ordningen genom att klicka på pilarna. Denna ordning används för alla krav i regelfilen.",
   "rulefile_info_blocks_order_saved": "Info-blocks ordning sparad",
   "move_up": "Flytta upp",
