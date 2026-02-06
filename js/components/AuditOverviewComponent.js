@@ -94,6 +94,12 @@ export const AuditOverviewComponent = {
 
         const dashboard_container = this.Helpers.create_element('div', { class_name: 'overview-dashboard' });
 
+        // Granskningsinfo först
+        if (this.audit_info_container_element) {
+            dashboard_container.appendChild(this.audit_info_container_element);
+            AuditInfoComponent.render();
+        }
+
         const score_panel = this.Helpers.create_element('div', { class_name: ['dashboard-panel', 'score-panel'] });
         score_panel.appendChild(this.Helpers.create_element('h2', {
             class_name: 'dashboard-panel__title',
@@ -131,12 +137,6 @@ export const AuditOverviewComponent = {
             ScoreAnalysisComponent.render();
         }
         dashboard_container.appendChild(score_panel);
-
-        // Granskningsinfo efter resultatsammanfattningen (kompakt vy)
-        if (this.audit_info_container_element) {
-            dashboard_container.appendChild(this.audit_info_container_element);
-            AuditInfoComponent.render();
-        }
 
         plate_element.appendChild(dashboard_container);
     },

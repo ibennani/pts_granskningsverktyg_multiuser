@@ -1,14 +1,15 @@
 /* css/components/rulefile_sections_view.css */
 
 .rulefile-sections-main-plate {
-    max-width: 1400px;
-    margin: 0 auto;
+    width: 100%;
+    max-width: 100%;
 }
 
 .rulefile-sections-layout {
     display: flex;
     gap: 2rem;
     margin-top: 2rem;
+    width: 100%;
 }
 
 .rulefile-sections-menu {
@@ -53,6 +54,7 @@
 
 .rulefile-sections-content-plate {
     /* Content plate för högerinnehållet */
+    width: 100%;
 }
 
 .rulefile-sections-main-plate > .button {
