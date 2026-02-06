@@ -43,7 +43,11 @@ export class RequirementAuditNavigationComponent {
             sample_object,
             rule_file_content,
             requirement_result,
-            current_requirement_id
+            current_requirement_id,
+            previous_aria_label,
+            next_aria_label,
+            next_unhandled_aria_label,
+            next_unhandled_available
         } = options;
 
         const t = this.Translation.t;
@@ -83,6 +87,9 @@ export class RequirementAuditNavigationComponent {
                     class_name: 'button button-secondary',
                     html_content: `<span>${t('previous_requirement')}</span>` + this.Helpers.get_icon_svg('arrow_back', [], 18)
                 });
+                if (previous_aria_label) {
+                    prev_btn.setAttribute('aria-label', previous_aria_label);
+                }
                 prev_btn.addEventListener('click', this.handle_prev_click);
                 nav_group_right.appendChild(prev_btn);
             }
@@ -93,17 +100,26 @@ export class RequirementAuditNavigationComponent {
                     class_name: 'button button-secondary',
                     html_content: `<span>${t('next_requirement')}</span>` + this.Helpers.get_icon_svg('arrow_forward', [], 18)
                 });
+                if (next_aria_label) {
+                    next_btn.setAttribute('aria-label', next_aria_label);
+                }
                 next_btn.addEventListener('click', this.handle_next_click);
                 nav_group_right.appendChild(next_btn);
             }
 
             // Next unhandled button
             const next_unhandled_key = this.AuditLogic.find_first_incomplete_requirement_key_for_sample(rule_file_content, sample_object, current_requirement_id);
-            if (next_unhandled_key !== null) {
+            const should_show_next_unhandled = (typeof next_unhandled_available === 'boolean')
+                ? next_unhandled_available
+                : (next_unhandled_key !== null);
+            if (should_show_next_unhandled) {
                 const next_unhandled_btn = this.Helpers.create_element('button', { 
                     class_name: 'button button-primary',
                     html_content: `<span>${t('next_unhandled_requirement')}</span>` + this.Helpers.get_icon_svg('arrow_forward_alt', [], 18)
                 });
+                if (next_unhandled_aria_label) {
+                    next_unhandled_btn.setAttribute('aria-label', next_unhandled_aria_label);
+                }
                 next_unhandled_btn.addEventListener('click', this.handle_next_unhandled_click);
                 nav_group_right.appendChild(next_unhandled_btn);
             }

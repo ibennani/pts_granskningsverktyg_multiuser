@@ -84,6 +84,7 @@ window.DraftManager = DraftManager;
 
     let side_menu_root = null;
     let main_view_root = null;
+    let right_sidebar_root = null;
     const side_menu_component_instance = SideMenuComponent;
 
     // Fallback för app_wrapper - kritiskt element
@@ -167,10 +168,11 @@ window.DraftManager = DraftManager;
 
     function ensure_app_layout() {
         if (!app_container) return;
-        const right_sidebar_root = document.getElementById('app-right-sidebar-root');
-        if (document.getElementById('app-layout') && document.getElementById('app-main-view-root') && document.getElementById('app-side-menu-root') && right_sidebar_root) {
+        const existing_right_sidebar_root = document.getElementById('app-right-sidebar-root');
+        if (document.getElementById('app-layout') && document.getElementById('app-main-view-root') && document.getElementById('app-side-menu-root') && existing_right_sidebar_root) {
             side_menu_root = document.getElementById('app-side-menu-root');
             main_view_root = document.getElementById('app-main-view-root');
+            right_sidebar_root = existing_right_sidebar_root;
             return;
         }
 
@@ -191,6 +193,7 @@ window.DraftManager = DraftManager;
         const right_sidebar = document.createElement('div');
         right_sidebar.id = 'app-right-sidebar-root';
         right_sidebar.className = 'app-right-sidebar-root';
+        right_sidebar_root = right_sidebar;
 
         layout.appendChild(side_menu_root);
         layout.appendChild(main_view_root);
@@ -564,8 +567,15 @@ window.DraftManager = DraftManager;
     // --- START OF CHANGE ---
     function set_focus_to_h1() {
         memoryManager.setTimeout(() => {
+            let force_focus = false;
+            try {
+                force_focus = window.sessionStorage?.getItem('gv_force_focus_h1_v1') === 'true';
+                if (force_focus) {
+                    window.sessionStorage?.removeItem('gv_force_focus_h1_v1');
+                }
+            } catch (e) {}
             // Kontrollera om en specifik fokusinstruktion redan har hanterats
-            if (window.customFocusApplied) {
+            if (window.customFocusApplied && !force_focus) {
                 // Återställ flaggan och gör ingenting mer
                 window.customFocusApplied = false;
                 return;
@@ -796,7 +806,8 @@ window.DraftManager = DraftManager;
                         SaveAuditLogic: window.SaveAuditLogic,
                         AuditLogic: AuditLogic,
                         ExportLogic: window.ExportLogic,
-                        ValidationLogic: ValidationLogic
+                        ValidationLogic: ValidationLogic,
+                        rightSidebarRoot: right_sidebar_root
                     }
                 });
             } else {
@@ -818,7 +829,8 @@ window.DraftManager = DraftManager;
                             SaveAuditLogic: window.SaveAuditLogic,
                             AuditLogic: AuditLogic,
                             ExportLogic: window.ExportLogic,
-                            ValidationLogic: ValidationLogic
+                            ValidationLogic: ValidationLogic,
+                            rightSidebarRoot: right_sidebar_root
                         }
                     });
                 } else {

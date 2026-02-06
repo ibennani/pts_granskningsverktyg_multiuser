@@ -1,0 +1,194 @@
+.requirement-audit-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.requirement-audit-sidebar h2 {
+    font-size: 1.2rem;
+    margin: 0;
+    color: var(--primary-color);
+}
+
+[data-theme="dark"] .requirement-audit-sidebar h2 {
+    color: var(--heading-color);
+}
+
+.requirement-audit-sidebar__mode {
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 0.5rem 0.75rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+    align-items: center;
+}
+
+.requirement-audit-sidebar__mode legend {
+    font-weight: 600;
+    margin: 0;
+    padding: 0 0.25rem;
+}
+
+.requirement-audit-sidebar__mode-option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+}
+
+.requirement-audit-sidebar__filters {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.requirement-audit-sidebar__filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.requirement-audit-sidebar__filter-group label {
+    font-size: 0.95rem;
+}
+
+.requirement-audit-sidebar__filters .form-control {
+    font-size: 0.95rem;
+    padding: 0.35rem 0.5rem;
+}
+
+.requirement-audit-sidebar__filters .FilterPanelComponent__toggle {
+    padding: 0.35rem 0.6rem;
+    font-size: 0.95rem;
+}
+
+.requirement-audit-sidebar__list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.requirement-audit-sidebar__items {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.requirement-audit-sidebar__item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 0.4rem 0.55rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background-color: var(--plate-background-color);
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.requirement-audit-sidebar__item:last-child {
+    border-bottom: 1px solid var(--border-color);
+}
+
+.requirement-audit-sidebar__link {
+    text-decoration: underline;
+    color: var(--link-color);
+}
+
+.requirement-audit-sidebar__item:hover {
+    border-color: var(--primary-color);
+}
+
+.requirement-audit-sidebar__item:focus-within {
+    border-color: var(--primary-color);
+    background-color: color-mix(in srgb, var(--accent-color-light) 20%, var(--plate-background-color));
+}
+
+.requirement-audit-sidebar__item.is-active {
+    border-width: 2px;
+    border-color: var(--primary-color);
+    background-color: color-mix(in srgb, var(--accent-color-light) 40%, var(--plate-background-color));
+}
+
+.requirement-audit-sidebar__link.is-active {
+    font-weight: 700;
+}
+
+[data-theme="dark"] .requirement-audit-sidebar__item.is-active {
+    background-color: color-mix(in srgb, var(--plate-background-color) 84%, var(--accent-color));
+}
+
+.requirement-audit-sidebar__reference {
+    font-size: 0.85rem;
+    line-height: 1.2;
+    color: var(--text-color-muted);
+}
+
+.requirement-audit-sidebar__meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.85rem;
+    color: var(--text-color-muted);
+}
+
+.requirement-audit-sidebar__status-icon {
+    font-size: 0.95rem;
+}
+
+.requirement-audit-sidebar .status-icon {
+    display: inline-block;
+    margin-right: 0.1rem;
+    font-size: 0.95rem;
+    line-height: 1;
+    vertical-align: middle;
+    font-weight: normal;
+    font-family: Arial, sans-serif;
+    text-rendering: optimizeLegibility;
+}
+
+.requirement-audit-sidebar .status-icon-not-audited {
+    color: #000000;
+    font-weight: bold;
+    opacity: 1;
+    text-stroke: 2px currentColor;
+    -webkit-text-stroke: 2px currentColor;
+}
+
+[data-theme="dark"] .requirement-audit-sidebar .status-icon-not-audited {
+    color: #FFFFFF;
+    opacity: 1;
+    text-stroke: 2px currentColor;
+    -webkit-text-stroke: 2px currentColor;
+}
+
+.requirement-audit-sidebar .status-icon-partially-audited {
+    color: #FF8C00;
+}
+
+.requirement-audit-sidebar .status-icon-passed {
+    color: #28A745;
+    font-weight: bold;
+}
+
+.requirement-audit-sidebar .status-icon-failed {
+    color: #DC3545;
+    font-weight: bold;
+}
+
+.requirement-audit-sidebar .status-icon-updated {
+    color: #007BFF;
+}
+
+.requirement-audit-sidebar__meta {
+    font-size: 0.9rem;
+    color: var(--text-color-muted);
+}
+
+.requirement-audit-sidebar__empty {
+    margin: 0;
+    color: var(--text-color-muted);
+}

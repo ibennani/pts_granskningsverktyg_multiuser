@@ -3,6 +3,7 @@
 import { ChecklistHandler } from './requirement_audit/ChecklistHandler.js';
 import { RequirementInfoSections } from './requirement_audit/RequirementInfoSections.js';
 import { RequirementAuditNavigationComponent } from './requirement_audit/RequirementAuditNavigation.js';
+import { RequirementAuditSidebarComponent } from './RequirementAuditSidebarComponent.js';
 import "../../css/components/requirement_audit_component.css";
 
 export const RequirementAuditComponent = {
@@ -24,6 +25,7 @@ export const RequirementAuditComponent = {
     info_sections_instance: null,
     top_navigation_instance: null,
     bottom_navigation_instance: null,
+    right_sidebar_component_instance: null,
 
     // DOM references
     plate_element_ref: null,
@@ -36,6 +38,8 @@ export const RequirementAuditComponent = {
     current_requirement: null,
     current_result: null,
     ordered_requirement_keys: [],
+    right_sidebar_root: null,
+    sidebar_navigation_state: null,
 
     async init({ root, deps }) {
         this.root = root;
@@ -50,13 +54,26 @@ export const RequirementAuditComponent = {
         this.Helpers = deps.Helpers;
         this.NotificationComponent = deps.NotificationComponent;
         this.AuditLogic = deps.AuditLogic;
+        this.right_sidebar_root = deps.rightSidebarRoot || null;
 
         // Bind methods
         this.handle_checklist_status_change = this.handle_checklist_status_change.bind(this);
         this.handle_navigation = this.handle_navigation.bind(this);
         this.handle_comment_input = this.handle_comment_input.bind(this);
+        this.handle_sidebar_filters_change = this.handle_sidebar_filters_change.bind(this);
 
         this.global_message_element_ref = this.NotificationComponent.get_global_message_element_reference();
+
+        if (this.right_sidebar_root) {
+            this.right_sidebar_component_instance = RequirementAuditSidebarComponent;
+            await this.right_sidebar_component_instance.init({
+                root: this.right_sidebar_root,
+                deps: {
+                    ...this.deps,
+                    onSidebarFiltersChange: this.handle_sidebar_filters_change
+                }
+            });
+        }
     },
 
     load_and_prepare_view_data() {
@@ -177,6 +194,139 @@ export const RequirementAuditComponent = {
         }
     },
 
+    handle_sidebar_filters_change(payload) {
+        this.sidebar_navigation_state = payload;
+        this.render_navigation_from_sidebar();
+    },
+
+    render_navigation_from_sidebar() {
+        if (!this.top_navigation_instance || !this.bottom_navigation_instance) return;
+        const nav_options = this.build_navigation_options();
+        this.top_navigation_instance.render(nav_options);
+        this.bottom_navigation_instance.render(nav_options);
+    },
+
+    build_navigation_options() {
+        const t = this.Translation.t;
+        const state = this.getState();
+        const is_locked = state?.auditStatus === 'locked';
+        const navigation_state = this.get_navigation_state();
+        const { is_first, is_last, prev_item, next_item, next_unhandled_item } = navigation_state;
+
+        const build_aria_label = (button_text, item) => {
+            if (!item) return button_text;
+            let label = `${button_text} ${item.link_text}`;
+            if (item.ref_text) {
+                label = `${label} ${item.ref_text}`;
+            }
+            return label;
+        };
+
+        return {
+            is_audit_locked: is_locked,
+            is_first_requirement: is_first,
+            is_last_requirement: is_last,
+            sample_object: this.current_sample,
+            rule_file_content: state?.ruleFileContent,
+            requirement_result: this.current_result,
+            current_requirement_id: this.params.requirementId,
+            previous_aria_label: build_aria_label(t('previous_requirement'), prev_item),
+            next_aria_label: build_aria_label(t('next_requirement'), next_item),
+            next_unhandled_aria_label: build_aria_label(t('next_unhandled_requirement'), next_unhandled_item),
+            next_unhandled_available: Boolean(next_unhandled_item)
+        };
+    },
+
+    get_navigation_state() {
+        const mode = this.sidebar_navigation_state?.mode || 'sample_requirements';
+        let items = [];
+
+        if (mode === 'requirement_samples') {
+            items = this.sidebar_navigation_state?.sample_items || [];
+        } else {
+            items = this.sidebar_navigation_state?.requirement_items || [];
+        }
+
+        if (!items.length) {
+            if (mode === 'requirement_samples') {
+                items = this.get_fallback_sample_items();
+            } else {
+                items = this.get_fallback_requirement_items();
+            }
+        }
+
+        const current_key = mode === 'requirement_samples'
+            ? String(this.params.sampleId)
+            : String(this.params.requirementId);
+        const key_for_item = (item) => mode === 'requirement_samples'
+            ? String(item?.sample?.id)
+            : String(item?.req_key);
+
+        const current_index = items.findIndex(item => key_for_item(item) === current_key);
+        const prev_item = current_index > 0 ? items[current_index - 1] : null;
+        const next_item = current_index >= 0 && current_index < items.length - 1 ? items[current_index + 1] : null;
+        const next_unhandled_item = items.find(item => {
+            if (key_for_item(item) === current_key) return false;
+            return item.display_status === 'not_audited' || item.display_status === 'partially_audited';
+        }) || null;
+
+        return {
+            mode,
+            items,
+            current_index,
+            is_first: current_index <= 0,
+            is_last: current_index === -1 || current_index >= items.length - 1,
+            prev_item,
+            next_item,
+            next_unhandled_item
+        };
+    },
+
+    get_fallback_requirement_items() {
+        const state = this.getState();
+        const rule_file_content = state?.ruleFileContent;
+        if (!rule_file_content || !this.current_sample) return [];
+        const ordered_keys = this.AuditLogic.get_ordered_relevant_requirement_keys(
+            rule_file_content,
+            this.current_sample,
+            'default'
+        );
+        return (ordered_keys || []).map(req_key => {
+            const requirement = rule_file_content.requirements?.[req_key];
+            const req_result = this.current_sample.requirementResults?.[req_key];
+            const display_status = req_result?.needsReview ? 'updated' : this.AuditLogic.calculate_requirement_status(requirement, req_result);
+            return {
+                req_key,
+                requirement,
+                display_status,
+                link_text: requirement?.title || this.Translation.t('unknown_value', { val: req_key }),
+                ref_text: requirement?.standardReference?.text || ''
+            };
+        }).filter(item => item.requirement);
+    },
+
+    get_fallback_sample_items() {
+        const state = this.getState();
+        const rule_file_content = state?.ruleFileContent;
+        const samples = state?.samples || [];
+        if (!rule_file_content || !this.current_requirement) return [];
+        const requirement_key = this.current_requirement?.key || this.params.requirementId;
+        const matching = samples.filter(sample => {
+            const relevant_requirements = this.AuditLogic.get_relevant_requirements_for_sample(rule_file_content, sample);
+            return (relevant_requirements || []).some(req => String(req?.key || req?.id) === String(requirement_key));
+        });
+        const sorted = matching.sort((a, b) => (a?.description || '').localeCompare(b?.description || '', 'sv', { numeric: true, sensitivity: 'base' }));
+        return sorted.map(sample => {
+            const req_result = sample?.requirementResults?.[requirement_key];
+            const display_status = req_result?.needsReview ? 'updated' : this.AuditLogic.calculate_requirement_status(this.current_requirement, req_result);
+            return {
+                sample,
+                display_status,
+                link_text: sample?.description || this.Translation.t('undefined_description')
+            };
+        });
+    },
+
     dispatch_result_update(modified_result_object) {
         (this.current_requirement.checks || []).forEach(check_def => {
             const check_res = modified_result_object.checkResults[check_def.id];
@@ -196,11 +346,16 @@ export const RequirementAuditComponent = {
     },
 
     handle_navigation(action) {
-        const current_index = this.ordered_requirement_keys.indexOf(this.params.requirementId);
-        
-        const navigate = (new_index) => {
-            if (new_index >= 0 && new_index < this.ordered_requirement_keys.length) {
-                this.router('requirement_audit', { sampleId: this.params.sampleId, requirementId: this.ordered_requirement_keys[new_index] });
+        const navigation_state = this.get_navigation_state();
+        const mode = navigation_state.mode;
+        const { prev_item, next_item, next_unhandled_item } = navigation_state;
+
+        const navigate_to_item = (item) => {
+            if (!item) return;
+            if (mode === 'requirement_samples') {
+                this.router('requirement_audit', { sampleId: item.sample.id, requirementId: this.params.requirementId });
+            } else {
+                this.router('requirement_audit', { sampleId: this.params.sampleId, requirementId: item.req_key });
             }
         };
 
@@ -216,15 +371,14 @@ export const RequirementAuditComponent = {
                 this.router('requirement_list', { sampleId: this.params.sampleId });
                 break;
             case 'previous':
-                if (current_index > 0) navigate(current_index - 1);
+                navigate_to_item(prev_item);
                 break;
             case 'next':
-                if (current_index < this.ordered_requirement_keys.length - 1) navigate(current_index + 1);
+                navigate_to_item(next_item);
                 break;
             case 'next_unhandled':
-                 const next_key = this.AuditLogic.find_first_incomplete_requirement_key_for_sample(this.getState().ruleFileContent, this.current_sample, this.params.requirementId);
-                 if (next_key) {
-                     this.router('requirement_audit', { sampleId: this.params.sampleId, requirementId: next_key });
+                 if (next_unhandled_item) {
+                     navigate_to_item(next_unhandled_item);
                  } else {
                      this.NotificationComponent.show_global_message(this.Translation.t('all_requirements_handled_for_sample'), 'info');
                  }
@@ -326,15 +480,7 @@ export const RequirementAuditComponent = {
             this.create_header_paragraph('overall-requirement-status-display', t('overall_requirement_status'))
         );
         
-        const nav_options = {
-            is_audit_locked: is_locked,
-            is_first_requirement: this.ordered_requirement_keys.indexOf(this.params.requirementId) === 0,
-            is_last_requirement: this.ordered_requirement_keys.indexOf(this.params.requirementId) === this.ordered_requirement_keys.length - 1,
-            sample_object: this.current_sample,
-            rule_file_content: state.ruleFileContent,
-            requirement_result: this.current_result,
-            current_requirement_id: this.params.requirementId
-        };
+        const nav_options = this.build_navigation_options();
         this.top_navigation_instance.render(nav_options);
         this.bottom_navigation_instance.render(nav_options);
 
@@ -402,6 +548,24 @@ export const RequirementAuditComponent = {
         }
         
         this.populate_dom_with_data();
+        this.render_right_sidebar();
+        this.render_navigation_from_sidebar();
+    },
+
+    render_right_sidebar() {
+        if (!this.right_sidebar_component_instance || !this.right_sidebar_root) return;
+        const state = this.getState();
+        const sidebar_options = {
+            current_sample: this.current_sample,
+            current_requirement: this.current_requirement,
+            rule_file_content: state?.ruleFileContent,
+            samples: state?.samples || [],
+            requirement_id: this.params?.requirementId
+        };
+        this.right_sidebar_component_instance.render(sidebar_options);
+        if (typeof this.right_sidebar_component_instance.get_navigation_payload === 'function') {
+            this.sidebar_navigation_state = this.right_sidebar_component_instance.get_navigation_payload(sidebar_options);
+        }
     },
     
     destroy() { 
@@ -422,11 +586,14 @@ export const RequirementAuditComponent = {
         this.info_sections_instance?.destroy();
         this.top_navigation_instance?.destroy();
         this.bottom_navigation_instance?.destroy();
+        this.right_sidebar_component_instance?.destroy();
         
         if (this.root) this.root.innerHTML = '';
         this.root = null;
         this.deps = null;
         // Clean up refs
         this.plate_element_ref = null;
+        this.right_sidebar_component_instance = null;
+        this.right_sidebar_root = null;
     }
 };
