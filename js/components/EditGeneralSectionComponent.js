@@ -85,7 +85,7 @@ export const EditGeneralSectionComponent = {
 
         // General section
         const general_section = this.Helpers.create_element('section', { class_name: 'form-section' });
-        general_section.appendChild(this.Helpers.create_element('h2', { text_content: this.Translation.t('rulefile_metadata_section_general') }));
+        general_section.appendChild(this.Helpers.create_element('h3', { text_content: this.Translation.t('rulefile_metadata_section_general') }));
         general_section.appendChild(this._create_field('rulefile_metadata_field_title', 'metadata.title', metadata.title || '', 'text', { required: true }));
         general_section.appendChild(this._create_field('rulefile_metadata_field_description', 'metadata.description', metadata.description || '', 'textarea'));
         general_section.appendChild(this._create_field('rulefile_metadata_field_version', 'metadata.version', metadata.version || ''));
@@ -98,13 +98,13 @@ export const EditGeneralSectionComponent = {
 
         // Publisher section
         const publisher_section = this.Helpers.create_element('section', { class_name: 'form-section' });
-        publisher_section.appendChild(this.Helpers.create_element('h2', { text_content: this.Translation.t('rulefile_metadata_section_publisher') }));
+        publisher_section.appendChild(this.Helpers.create_element('h3', { text_content: this.Translation.t('rulefile_metadata_section_publisher') }));
         publisher_section.appendChild(this._create_field('rulefile_metadata_field_publisher_name', 'metadata.publisher.name', metadata.publisher?.name || ''));
         publisher_section.appendChild(this._create_field('rulefile_metadata_field_publisher_contact', 'metadata.publisher.contactPoint', metadata.publisher?.contactPoint || ''));
 
         // Source section
         const source_section = this.Helpers.create_element('section', { class_name: 'form-section' });
-        source_section.appendChild(this.Helpers.create_element('h2', { text_content: this.Translation.t('rulefile_metadata_section_source') }));
+        source_section.appendChild(this.Helpers.create_element('h3', { text_content: this.Translation.t('rulefile_metadata_section_source') }));
         source_section.appendChild(this._create_field('rulefile_metadata_field_source_url', 'metadata.source.url', metadata.source?.url || '', 'url'));
         source_section.appendChild(this._create_field('rulefile_metadata_field_source_title', 'metadata.source.title', metadata.source?.title || ''));
         source_section.appendChild(this._create_field('rulefile_metadata_field_source_retrieved', 'metadata.source.retrievedDate', metadata.source?.retrievedDate || '', 'date'));

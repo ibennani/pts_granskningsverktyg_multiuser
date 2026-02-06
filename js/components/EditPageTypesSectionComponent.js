@@ -715,6 +715,16 @@ export const EditPageTypesSectionComponent = {
         });
     },
 
+    handle_add_page_type_click() {
+        if (!this.form_element_ref || !this.working_metadata) return;
+
+        const page_types_section = this.form_element_ref.querySelector('.form-section');
+        const page_types_container = this.form_element_ref.querySelector('.page-types-editor');
+        if (!page_types_section || !page_types_container) return;
+
+        this._toggle_add_form(page_types_section, page_types_container, this.working_metadata);
+    },
+
     _render_form_with_animation(workingMetadata, focus_index, old_index, clickedButton) {
         // Spara workingMetadata
         this.working_metadata = workingMetadata;
@@ -888,30 +898,6 @@ export const EditPageTypesSectionComponent = {
         
         // Skapa page_types_container först så den är tillgänglig i event listenern
         const page_types_container = this.Helpers.create_element('div', { class_name: 'page-types-editor' });
-        
-        // H2 med knapp direkt till höger
-        const h2_wrapper = this.Helpers.create_element('div', { 
-            class_name: 'page-types-section-header',
-            style: 'display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.25rem;'
-        });
-        const h2 = this.Helpers.create_element('h2', { text_content: t('rulefile_metadata_section_page_types') || 'Sidtyper' });
-        h2.style.margin = '0';
-        h2_wrapper.appendChild(h2);
-        
-        const add_button = this.Helpers.create_element('button', {
-            class_name: ['button', 'button-primary', 'button-small'],
-            attributes: {
-                type: 'button',
-                'data-action': 'add-page-type'
-            },
-            html_content: `<span>${t('rulefile_metadata_add_page_type')}</span>` + 
-                          (this.Helpers.get_icon_svg ? `<span aria-hidden="true">${this.Helpers.get_icon_svg('add', ['currentColor'], 16)}</span>` : '')
-        });
-        add_button.addEventListener('click', () => {
-            this._toggle_add_form(page_types_section, page_types_container, workingMetadata);
-        });
-        h2_wrapper.appendChild(add_button);
-        page_types_section.appendChild(h2_wrapper);
         
         // Lägg till formulär för ny sidtyp om det ska visas
         if (this.showing_add_form) {

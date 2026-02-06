@@ -152,6 +152,23 @@ export const RulefileSectionsViewComponent = {
             });
             header_wrapper.appendChild(edit_button);
         }
+
+        // Lägg till "lägg till"-knapp för page_types i redigeringsläge
+        if (section_config.id === 'page_types' && is_editing) {
+            const add_button = this.Helpers.create_element('button', {
+                class_name: ['button', 'button-primary', 'button-small', 'rulefile-sections-edit-button'],
+                attributes: {
+                    type: 'button',
+                    'data-action': 'add-page-type'
+                },
+                html_content: `<span>${t('rulefile_metadata_add_page_type')}</span>` +
+                              (this.Helpers.get_icon_svg ? `<span aria-hidden="true">${this.Helpers.get_icon_svg('add', ['currentColor'], 16)}</span>` : '')
+            });
+            add_button.addEventListener('click', () => {
+                this.page_types_edit_component?.handle_add_page_type_click?.();
+            });
+            header_wrapper.appendChild(add_button);
+        }
         
         return header_wrapper;
     },
