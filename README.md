@@ -118,6 +118,16 @@ Projektet använder:
 - **Responsiv design**: CSS-variabler för tema och styling
 - **Namngivning**: `snake_case` för funktioner och variabler, `PascalCase` för komponenter
 
+### Utkast (Draft Autosave)
+
+Autospar sker globalt via `js/draft_manager.js` och sparar endast fältutkast i storage utan att trigga re-render.
+
+- **Fältidentifiering**: använd `data-draft-path` för stabil nyckel (prioriteras), annars `name`/`id` och sist fallback-selector.
+- **Ignorera fält**: `data-draft-ignore="true"` (ignoreras helt).
+- **Känsliga fält**: `data-draft-sensitive="true"` eller `type="password"` sparas inte i localStorage.
+- **TTL**: utkast äldre än 7 dagar rensas automatiskt.
+- **Restore-policy**: utkast yngre än 2 timmar auto-restore; äldre utkast återställs bara om fältet är tomt.
+
 ## 📖 Dokumentation
 
 All dokumentation finns i `/docs`-mappen:

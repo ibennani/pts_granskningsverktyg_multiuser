@@ -30,7 +30,6 @@ export const RequirementAuditComponent = {
     global_message_element_ref: null,
     comment_to_auditor_input: null,
     comment_to_actor_input: null,
-    debounceTimerComments: null,
 
     // Internal state
     current_sample: null,
@@ -54,9 +53,8 @@ export const RequirementAuditComponent = {
 
         // Bind methods
         this.handle_checklist_status_change = this.handle_checklist_status_change.bind(this);
-        this.handle_autosave = this.handle_autosave.bind(this);
         this.handle_navigation = this.handle_navigation.bind(this);
-        this.debounced_save_comments = this.debounced_save_comments.bind(this);
+        this.handle_comment_input = this.handle_comment_input.bind(this);
 
         this.global_message_element_ref = this.NotificationComponent.get_global_message_element_reference();
     },
@@ -169,44 +167,13 @@ export const RequirementAuditComponent = {
         this.dispatch_result_update(modified_result);
     },
     
-    debounced_save_comments() {
-        clearTimeout(this.debounceTimerComments);
-        this.debounceTimerComments = setTimeout(() => {
-            let modified_result;
-            try {
-                modified_result = JSON.parse(JSON.stringify(this.current_result));
-            } catch (error) {
-                console.warn('[RequirementAuditComponent] Failed to clone current result for comment save:', error);
-                return;
-            }
-            let changed = false;
-            if (this.comment_to_auditor_input && modified_result.commentToAuditor !== this.comment_to_auditor_input.value) {
-                modified_result.commentToAuditor = this.comment_to_auditor_input.value;
-                changed = true;
-            }
-            if (this.comment_to_actor_input && modified_result.commentToActor !== this.comment_to_actor_input.value) {
-                modified_result.commentToActor = this.comment_to_actor_input.value;
-                changed = true;
-            }
-            if (changed) {
-                this.dispatch_result_update(modified_result);
-            }
-        }, 3000);
-    },
-
-    handle_autosave(change_info) {
-        if (change_info.type === 'pc_observation') {
-            let modified_result;
-            try {
-                modified_result = JSON.parse(JSON.stringify(this.current_result));
-            } catch (error) {
-                console.warn('[RequirementAuditComponent] Failed to clone current result for autosave:', error);
-                return;
-            }
-            const pc_res = modified_result.checkResults[change_info.checkId].passCriteria[change_info.pcId];
-            pc_res.observationDetail = change_info.value;
-            pc_res.timestamp = this.Helpers.get_current_iso_datetime_utc();
-            this.dispatch_result_update(modified_result);
+    handle_comment_input() {
+        if (!this.current_result) return;
+        if (this.comment_to_auditor_input) {
+            this.current_result.commentToAuditor = this.comment_to_auditor_input.value;
+        }
+        if (this.comment_to_actor_input) {
+            this.current_result.commentToActor = this.comment_to_actor_input.value;
         }
     },
 
@@ -306,7 +273,7 @@ export const RequirementAuditComponent = {
 
         const checklist_container = this.Helpers.create_element('div', { class_name: 'checks-container audit-section' });
         this.checklist_handler_instance = ChecklistHandler;
-        this.checklist_handler_instance.init(checklist_container, { onStatusChange: this.handle_checklist_status_change, onAutosave: this.handle_autosave }, { deps: this.deps });
+        this.checklist_handler_instance.init(checklist_container, { onStatusChange: this.handle_checklist_status_change }, { deps: this.deps });
         
         this.plate_element_ref.append(
             this.Helpers.create_element('div', { class_name: 'requirement-audit-header' }),
@@ -329,16 +296,16 @@ export const RequirementAuditComponent = {
         const label1 = this.Helpers.create_element('label', { attributes: { for: 'commentToAuditor' }, text_content: t('comment_to_auditor') });
         fg1.appendChild(label1);
         this.comment_to_auditor_input = this.Helpers.create_element('textarea', { id: 'commentToAuditor', class_name: 'form-control', attributes: { rows: '4' } });
-        this.comment_to_auditor_input.addEventListener('input', this.debounced_save_comments);
-        this.comment_to_auditor_input.addEventListener('blur', this.debounced_save_comments);
+        this.comment_to_auditor_input.addEventListener('input', this.handle_comment_input);
+        this.comment_to_auditor_input.addEventListener('blur', this.handle_comment_input);
         fg1.appendChild(this.comment_to_auditor_input);
 
         const fg2 = this.Helpers.create_element('div', { class_name: 'form-group' });
         const label2 = this.Helpers.create_element('label', { attributes: { for: 'commentToActor' }, text_content: t('comment_to_actor') });
         fg2.appendChild(label2);
         this.comment_to_actor_input = this.Helpers.create_element('textarea', { id: 'commentToActor', class_name: 'form-control', attributes: { rows: '4' } });
-        this.comment_to_actor_input.addEventListener('input', this.debounced_save_comments);
-        this.comment_to_actor_input.addEventListener('blur', this.debounced_save_comments);
+        this.comment_to_actor_input.addEventListener('input', this.handle_comment_input);
+        this.comment_to_actor_input.addEventListener('blur', this.handle_comment_input);
         fg2.appendChild(this.comment_to_actor_input);
         
         container.append(fg1, fg2);
@@ -438,17 +405,16 @@ export const RequirementAuditComponent = {
     },
     
     destroy() { 
-        clearTimeout(this.debounceTimerComments);
         
         // Remove event listeners
         if (this.comment_to_auditor_input) {
-            this.comment_to_auditor_input.removeEventListener('input', this.debounced_save_comments);
-            this.comment_to_auditor_input.removeEventListener('blur', this.debounced_save_comments);
+            this.comment_to_auditor_input.removeEventListener('input', this.handle_comment_input);
+            this.comment_to_auditor_input.removeEventListener('blur', this.handle_comment_input);
             this.comment_to_auditor_input = null;
         }
         if (this.comment_to_actor_input) {
-            this.comment_to_actor_input.removeEventListener('input', this.debounced_save_comments);
-            this.comment_to_actor_input.removeEventListener('blur', this.debounced_save_comments);
+            this.comment_to_actor_input.removeEventListener('input', this.handle_comment_input);
+            this.comment_to_actor_input.removeEventListener('blur', this.handle_comment_input);
             this.comment_to_actor_input = null;
         }
         

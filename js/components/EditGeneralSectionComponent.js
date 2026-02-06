@@ -13,12 +13,8 @@ export const EditGeneralSectionComponent = {
         this.Translation = deps.Translation;
         this.Helpers = deps.Helpers;
         this.NotificationComponent = deps.NotificationComponent;
-        this.debounceTimer = null;
         this.form_element_ref = null;
         this.working_metadata = null;
-        
-        // Binda autospar-metoder
-        this.debounced_autosave_form = this.debounced_autosave_form.bind(this);
         this.save_form_data_immediately = this.save_form_data_immediately.bind(this);
         
         if (this.Helpers?.load_css) {
@@ -44,9 +40,6 @@ export const EditGeneralSectionComponent = {
                 }
             });
             textarea.value = value ?? '';
-            // Lägg till autospar-event listeners
-            // Autospar sker endast vid inaktivitet (debounced), inte vid blur
-            textarea.addEventListener('input', this.debounced_autosave_form);
             container.appendChild(textarea);
             this.Helpers.init_auto_resize_for_textarea?.(textarea);
         } else {
@@ -60,9 +53,6 @@ export const EditGeneralSectionComponent = {
                 }
             });
             input.value = value ?? '';
-            // Lägg till autospar-event listeners
-            // Autospar sker endast vid inaktivitet (debounced), inte vid blur
-            input.addEventListener('input', this.debounced_autosave_form);
             container.appendChild(input);
         }
 
@@ -141,8 +131,6 @@ export const EditGeneralSectionComponent = {
             html_content: `<span>${this.Translation.t('back_without_saving')}</span>`
         });
         footerCancelButton.addEventListener('click', () => {
-            // Rensa debounce timer vid avbryt
-            clearTimeout(this.debounceTimer);
             this.router('rulefile_sections', { section: 'general' });
         });
 
@@ -290,19 +278,12 @@ export const EditGeneralSectionComponent = {
         }, 50);
     },
 
-    debounced_autosave_form() {
-        clearTimeout(this.debounceTimer);
-        this.debounceTimer = setTimeout(() => {
-            this.save_form_data_immediately();
-        }, 3000);
-    },
-
     _handle_submit(form, originalMetadata, workingMetadata) {
         const t = this.Translation.t;
-        
-        // Rensa debounce timer och spara omedelbart
-        clearTimeout(this.debounceTimer);
         this.save_form_data_immediately();
+        if (window.DraftManager?.commitCurrentDraft) {
+            window.DraftManager.commitCurrentDraft();
+        }
 
         this.NotificationComponent.show_global_message?.(t('rulefile_metadata_edit_saved'), 'success');
         
@@ -329,20 +310,6 @@ export const EditGeneralSectionComponent = {
     },
 
     destroy() {
-        // Rensa debounce timer
-        if (this.debounceTimer) {
-            clearTimeout(this.debounceTimer);
-            this.debounceTimer = null;
-        }
-        
-        // Ta bort event listeners från formulärfält
-        if (this.form_element_ref) {
-            const inputs = this.form_element_ref.querySelectorAll('input, textarea');
-            inputs.forEach(input => {
-                input.removeEventListener('input', this.debounced_autosave_form);
-            });
-        }
-        
         if (this.root) {
             this.root.innerHTML = '';
         }

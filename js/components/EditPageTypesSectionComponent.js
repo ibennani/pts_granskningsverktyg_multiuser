@@ -16,10 +16,6 @@ export const EditPageTypesSectionComponent = {
         this.form_element_ref = null;
         this.working_metadata = null;
         this.showing_add_form = false;
-        this.debounceTimer = null;
-        
-        // Binda autospar-metoder
-        this.debounced_autosave_form = this.debounced_autosave_form.bind(this);
         this.save_form_data_immediately = this.save_form_data_immediately.bind(this);
         
         if (this.Helpers?.load_css) {
@@ -442,13 +438,6 @@ export const EditPageTypesSectionComponent = {
                 }
             });
         }, 50);
-    },
-
-    debounced_autosave_form() {
-        clearTimeout(this.debounceTimer);
-        this.debounceTimer = setTimeout(() => {
-            this.save_form_data_immediately();
-        }, 3000);
     },
 
     _generate_slug(value) {
@@ -1139,12 +1128,6 @@ export const EditPageTypesSectionComponent = {
         });
         
         save_button.addEventListener('click', () => {
-            // Rensa debounce-timer för att spara omedelbart
-            if (this.debounceTimer) {
-                clearTimeout(this.debounceTimer);
-                this.debounceTimer = null;
-            }
-            
             // Trimma alla formulärfält vid manuell sparning
             if (this.form_element_ref) {
                 const inputs = this.form_element_ref.querySelectorAll('input[type="text"], textarea');
@@ -1157,6 +1140,9 @@ export const EditPageTypesSectionComponent = {
             
             // Spara formulärdata omedelbart med trimning (shouldTrim = true)
             this.save_form_data_immediately(true);
+            if (window.DraftManager?.commitCurrentDraft) {
+                window.DraftManager.commitCurrentDraft();
+            }
             
             // Visa bekräftelsemeddelande
             this.NotificationComponent.show_global_message?.(
@@ -1218,20 +1204,6 @@ export const EditPageTypesSectionComponent = {
     },
 
     destroy() {
-        // Rensa debounce timer
-        if (this.debounceTimer) {
-            clearTimeout(this.debounceTimer);
-            this.debounceTimer = null;
-        }
-        
-        // Ta bort event listeners från formulärfält
-        if (this.form_element_ref) {
-            const inputs = this.form_element_ref.querySelectorAll('input, textarea');
-            inputs.forEach(input => {
-                input.removeEventListener('input', this.debounced_autosave_form);
-            });
-        }
-        
         if (this.root) {
             this.root.innerHTML = '';
         }

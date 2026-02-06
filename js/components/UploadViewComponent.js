@@ -59,8 +59,8 @@ export const UploadViewComponent = {
         const validation_result = this.ValidationLogic.validate_rule_file_json(migrated_content);
 
         if (validation_result.isValid) {
-          if (window.Store && typeof window.Store.clearAutosavedState === 'function') {
-             window.Store.clearAutosavedState();
+          if (window.DraftManager?.clearCurrentDraft) {
+            window.DraftManager.clearCurrentDraft();
           }
 
           if (this.NotificationComponent)
@@ -167,8 +167,8 @@ export const UploadViewComponent = {
         const validation_result = this.ValidationLogic.validate_rule_file_json(migrated_content);
 
         if (validation_result.isValid) {
-          if (window.Store && typeof window.Store.clearAutosavedState === 'function') {
-            window.Store.clearAutosavedState();
+          if (window.DraftManager?.clearCurrentDraft) {
+            window.DraftManager.clearCurrentDraft();
           }
 
           const migrated_content_string = JSON.stringify(

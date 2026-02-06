@@ -52,10 +52,11 @@ import { AllRequirementsViewComponent } from './components/AllRequirementsViewCo
 
 import { GlobalActionBarComponent } from './components/GlobalActionBarComponent.js';
 
-import { getState, dispatch, subscribe, initState, StoreActionTypes, StoreInitialState, loadStateFromLocalStorage, clearAutosavedState, forceSaveStateToLocalStorage } from './state.js';
+import { DraftManager } from './draft_manager.js';
+import { getState, dispatch, subscribe, initState, StoreActionTypes, StoreInitialState } from './state.js';
 window.getState = getState;
 window.dispatch = dispatch;
-window.Store = { getState, dispatch, subscribe, StoreActionTypes, StoreInitialState, clearAutosavedState, forceSaveStateToLocalStorage };
+window.Store = { getState, dispatch, subscribe, StoreActionTypes, StoreInitialState };
 window.StoreActionTypes = StoreActionTypes;
 window.NotificationComponent = NotificationComponent;
 window.dependencyManager = dependencyManager;
@@ -69,6 +70,7 @@ window.RulefileEditorLogic = RulefileEditorLogic;
 // Compatibility assignment
 window.ValidationLogic = ValidationLogic;
 window.AuditLogic = AuditLogic; // Compatibility assignment
+window.DraftManager = DraftManager;
 
 
 (function () {
@@ -157,6 +159,8 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
     let current_view_name_rendered = null;
     let current_view_params_rendered_json = "{}"; 
     let error_boundary_instance = null;
+    let draft_listeners_initialized = false;
+    let draft_is_composing = false;
     
     const top_action_bar_instance = new GlobalActionBarComponent();
     const bottom_action_bar_instance = new GlobalActionBarComponent();
@@ -480,6 +484,83 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
         }
     }
 
+    function get_route_key_from_hash() {
+        const hash = window.location.hash || '';
+        const raw = hash.startsWith('#') ? hash.slice(1) : hash;
+        const [view_name] = raw.split('?');
+        return view_name || 'upload';
+    }
+
+    function get_scope_key_from_hash() {
+        const route_key = get_route_key_from_hash();
+        if (current_view_name_rendered === route_key) {
+            return `${route_key}:${current_view_params_rendered_json}`;
+        }
+        const raw = (window.location.hash || '').replace(/^#/, '');
+        const [, query = ''] = raw.split('?');
+        if (!query) return `${route_key}:{}`;
+        const url_params = new URLSearchParams(query);
+        const params_obj = {};
+        Array.from(url_params.entries()).forEach(([key, value]) => { params_obj[key] = value; });
+        return `${route_key}:${JSON.stringify(params_obj)}`;
+    }
+
+    function should_capture_draft_target(target) {
+        if (!target) return false;
+        if (target.closest && target.closest('[data-draft-ignore="true"]')) return false;
+        if (target.getAttribute && target.getAttribute('data-draft-ignore') === 'true') return false;
+        if (target.getAttribute && target.getAttribute('data-draft-sensitive') === 'true') return false;
+        if (target.type === 'password' || target.type === 'file') return false;
+        if (target.isContentEditable) return true;
+        const tag = target.tagName ? target.tagName.toLowerCase() : '';
+        return tag === 'input' || tag === 'textarea' || tag === 'select';
+    }
+
+    function handle_draft_event(event) {
+        if (!DraftManager?.captureFieldChange) return;
+        if (!event || !event.target) return;
+        if (draft_is_composing && event.type === 'input') return;
+        const target = event.target;
+        if (!should_capture_draft_target(target)) return;
+        DraftManager.captureFieldChange(target);
+    }
+
+    function init_draft_manager() {
+        DraftManager.init({
+            getRouteKey: get_route_key_from_hash,
+            getScopeKey: get_scope_key_from_hash,
+            rootProvider: () => main_view_root || app_container,
+            restorePolicy: { max_auto_restore_age_ms: 2 * 60 * 60 * 1000 },
+            onConflict: () => {
+                if (NotificationComponent?.show_global_message) {
+                    NotificationComponent.show_global_message('Utkast uppdaterades i annan flik.', 'info');
+                } else {
+                    consoleManager.warn('[Main.js] Draft conflict detected.');
+                }
+            }
+        });
+
+        if (draft_listeners_initialized) return;
+        draft_listeners_initialized = true;
+
+        document.addEventListener('input', handle_draft_event, true);
+        document.addEventListener('change', handle_draft_event, true);
+        document.addEventListener('compositionstart', (event) => {
+            draft_is_composing = true;
+        }, true);
+        document.addEventListener('compositionend', (event) => {
+            draft_is_composing = false;
+            handle_draft_event(event);
+        }, true);
+
+        window.addEventListener('pagehide', () => DraftManager.flushNow('pagehide'));
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) DraftManager.flushNow('visibilitychange');
+        });
+        window.addEventListener('beforeunload', () => DraftManager.flushNow('beforeunload'));
+        window.addEventListener('storage', (event) => DraftManager.handleStorageEvent(event));
+    }
+
     // --- START OF CHANGE ---
     function set_focus_to_h1() {
         memoryManager.setTimeout(() => {
@@ -755,6 +836,9 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
             }
             
             current_view_component_instance.render();
+            if (DraftManager?.restoreIntoDom) {
+                DraftManager.restoreIntoDom(view_root);
+            }
             const did_apply_custom_focus = apply_post_render_focus_instruction({
                 view_name: view_name_to_render,
                 view_root
@@ -841,22 +925,13 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
         // Lagra referenser till event listeners för senare cleanup
         const language_changed_handler = on_language_changed_event;
         const hash_change_handler = handle_hash_change;
-        const beforeunload_handler = () => {
-            const current_state = getState();
-            if (window.Store && typeof window.Store.forceSaveStateToLocalStorage === 'function') {
-                window.Store.forceSaveStateToLocalStorage(current_state);
-            }
-        };
-        
         memoryManager.addEventListener(document, 'languageChanged', language_changed_handler);
         memoryManager.addEventListener(window, 'hashchange', hash_change_handler);
-        memoryManager.addEventListener(window, 'beforeunload', beforeunload_handler);
         
         // Exponera cleanup-funktion globalt
         window.cleanupGlobalEventListeners = () => {
             memoryManager.removeEventListener(document, 'languageChanged', language_changed_handler);
             memoryManager.removeEventListener(window, 'hashchange', hash_change_handler);
-            memoryManager.removeEventListener(window, 'beforeunload', beforeunload_handler);
             
             // Clean up error boundary
             if (error_boundary_instance && typeof error_boundary_instance.destroy === 'function') {
@@ -918,6 +993,9 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
                     }
                     try {
                         current_view_component_instance.render();
+                        if (DraftManager?.restoreIntoDom) {
+                            DraftManager.restoreIntoDom(main_view_root || app_container);
+                        }
                     } catch (error) {
                         consoleManager.error("[Main.js] Error in subscription current view render:", error);
                         if (error_boundary_instance && error_boundary_instance.show_error) {
@@ -977,6 +1055,7 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
         }, 100);
         await window.Translation.ensure_initial_load();
         initState();
+        init_draft_manager();
 
         dispatch({ type: StoreActionTypes.CLEAR_STAGED_SAMPLE_CHANGES });
 
@@ -985,36 +1064,8 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
             consoleManager.log("[Main.js] Active session found in sessionStorage. Starting normally.");
             await start_normal_session();
         } else {
-            const autosaved_payload = loadStateFromLocalStorage();
-            if (autosaved_payload) {
-                consoleManager.log("[Main.js] No active session, but found backup in localStorage. Prompting user.");
-                const on_restore = () => {
-                    dispatch({ type: StoreActionTypes.LOAD_AUDIT_FROM_FILE, payload: autosaved_payload.auditState });
-                    clearAutosavedState(); 
-                    if (NotificationComponent) NotificationComponent.show_global_message(get_t_fallback()('autosave_restored_successfully'), 'success');
-                    if (autosaved_payload.lastKnownHash && autosaved_payload.lastKnownHash !== '#') {
-                        window.location.hash = autosaved_payload.lastKnownHash;
-                    } else {
-                        window.location.hash = '#audit_overview';
-                    }
-                    start_normal_session(); 
-                };
-                const on_discard = async () => {
-                    clearAutosavedState();
-                    await start_normal_session(); 
-                };
-                ensure_app_layout();
-                await init_global_components();
-                update_app_chrome_texts();
-                render_view('restore_session', { 
-                    autosaved_state: autosaved_payload.auditState,
-                    on_restore, 
-                    on_discard 
-                });
-            } else {
-                consoleManager.log("[Main.js] No active session, no backup. Starting fresh.");
-                await start_normal_session();
-            }
+            consoleManager.log("[Main.js] No active session. Starting fresh.");
+            await start_normal_session();
         }
     }
 

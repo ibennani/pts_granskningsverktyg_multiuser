@@ -2,7 +2,6 @@
 import * as AuditLogic from './audit_logic.js';
 
 const APP_STATE_KEY = 'digitalTillsynAppCentralState';
-const APP_AUTOSAVE_KEY = 'digitalTillsynAppAutosave';
 const APP_STATE_VERSION = '2.1.0'; // Version bumped to reflect new scoring model
 
 export const ActionTypes = {
@@ -73,14 +72,6 @@ const initial_state = {
 
 let internal_state = { ...initial_state };
 let listeners = [];
-let autosaveDebounceTimer = null;
-
-// Actions som endast uppdaterar UI-inställningar och inte ska trigga central autospar (localStorage).
-// Viktigt: dessa actions ska inte heller nollställa en redan schemalagd autospar-timer.
-const NON_AUTOSAVE_ACTION_TYPES = new Set([
-    ActionTypes.SET_UI_FILTER_SETTINGS,
-    ActionTypes.SET_ALL_REQUIREMENTS_FILTER_SETTINGS
-]);
 
 // Dispatch queue för att förhindra race conditions
 let dispatch_queue = [];
@@ -480,39 +471,6 @@ function root_reducer(current_state, action) {
 }
 
 
-function saveStateToLocalStorage(state_to_save) {
-    if (!state_to_save || state_to_save.auditStatus === 'not_started' || state_to_save.auditStatus === 'rulefile_editing') {
-        return;
-    }
-    try {
-        const autosave_payload = {
-            auditState: state_to_save,
-            lastKnownHash: window.location.hash
-        };
-        const serializedState = JSON.stringify(autosave_payload);
-        localStorage.setItem(APP_AUTOSAVE_KEY, serializedState);
-    } catch (e) {
-        console.error("[State.js] Could not save state to localStorage:", e);
-    }
-}
-
-function forceSaveStateToLocalStorage(state_to_save) {
-    if (!state_to_save || state_to_save.auditStatus === 'not_started' || state_to_save.auditStatus === 'rulefile_editing') {
-        return;
-    }
-    try {
-        const autosave_payload = {
-            auditState: state_to_save,
-            lastKnownHash: window.location.hash
-        };
-        const serializedState = JSON.stringify(autosave_payload);
-        localStorage.setItem(APP_AUTOSAVE_KEY, serializedState);
-        console.log("[State.js] State forcefully saved to localStorage on page exit.");
-    } catch (e) {
-        console.error("[State.js] Could not perform final save to localStorage:", e);
-    }
-}
-
 function dispatch(action) {
     if (!action || typeof action.type !== 'string') {
         console.error('[State.js] Invalid action dispatched. Action must be an object with a "type" property.', action);
@@ -582,20 +540,6 @@ function execute_single_dispatch(action) {
                 } catch (saveError) {
                     console.warn('[State.js] Failed to save state to sessionStorage:', saveError);
                     // Fortsätt ändå, detta är inte kritiskt
-                }
-
-                // Sätt upp autosave med felhantering
-                const should_trigger_autosave = action && action.type && !NON_AUTOSAVE_ACTION_TYPES.has(action.type);
-                if (should_trigger_autosave) {
-                    clearTimeout(autosaveDebounceTimer);
-                    autosaveDebounceTimer = setTimeout(() => {
-                        try {
-                            saveStateToLocalStorage(internal_state);
-                        } catch (autosaveError) {
-                            console.warn('[State.js] Failed to autosave state to localStorage:', autosaveError);
-                            // Autosave-fel är inte kritiskt, fortsätt
-                        }
-                    }, 3000);
                 }
 
                 // Notifiera listeners med felhantering
@@ -712,34 +656,6 @@ function saveStateToSessionStorage(state_to_save) {
     }
 }
 
-function loadStateFromLocalStorage() {
-    const serializedState = localStorage.getItem(APP_AUTOSAVE_KEY);
-    if (serializedState === null) return null;
-    try {
-        const storedPayload = JSON.parse(serializedState);
-        
-        if (storedPayload && storedPayload.auditState && storedPayload.lastKnownHash) {
-            const storedState = storedPayload.auditState;
-            if (storedState.saveFileVersion && storedState.saveFileVersion.startsWith(APP_STATE_VERSION.split('.')[0])) {
-                return storedPayload; 
-            }
-        } else {
-            const storedState = storedPayload;
-            if (storedState.saveFileVersion && storedState.saveFileVersion.startsWith(APP_STATE_VERSION.split('.')[0])) {
-                return { auditState: storedState, lastKnownHash: '#audit_overview' };
-            }
-        }
-    } catch (e) {
-        return null;
-    }
-    return null;
-}
-
-function clearAutosavedState() {
-    localStorage.removeItem(APP_AUTOSAVE_KEY);
-    console.log("[State.js] Autosaved state cleared from localStorage.");
-}
-
 function initState() {
     internal_state = loadStateFromSessionStorage();
     if (AuditLogic && typeof AuditLogic.updateIncrementalDeficiencyIds === 'function') {
@@ -756,8 +672,5 @@ export {
     subscribe, 
     initState, 
     ActionTypes as StoreActionTypes, 
-    initial_state as StoreInitialState,
-    loadStateFromLocalStorage,
-    clearAutosavedState,
-    forceSaveStateToLocalStorage
+    initial_state as StoreInitialState
 };

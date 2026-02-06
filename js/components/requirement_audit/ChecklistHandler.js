@@ -5,7 +5,6 @@ import { marked } from '../../utils/markdown.js';
 export const ChecklistHandler = {
     container_ref: null,
     on_status_change_callback: null,
-    on_autosave_callback: null,
 
     Translation: null,
     Helpers: null,
@@ -15,7 +14,6 @@ export const ChecklistHandler = {
     requirement_result_ref: null,
 
     is_dom_built: false,
-    debounceTimerObservations: null,
 
     // --- HELPER FUNCTION ---
     _safe_parse_markdown_inline(markdown_string) {
@@ -50,7 +48,6 @@ export const ChecklistHandler = {
     init(_container, _callbacks, options = {}) {
         this.container_ref = _container;
         this.on_status_change_callback = _callbacks.onStatusChange;
-        this.on_autosave_callback = _callbacks.onAutosave;
         this.is_dom_built = false;
 
         const deps = options.deps || {};
@@ -60,12 +57,11 @@ export const ChecklistHandler = {
         // Bind handlers to this instance
         this.handle_checklist_click = this.handle_checklist_click.bind(this);
         this.handle_textarea_input = this.handle_textarea_input.bind(this);
-        this.handle_textarea_blur = this.handle_textarea_blur.bind(this);
         this.handle_checklist_keydown = this.handle_checklist_keydown.bind(this);
 
         this.container_ref.addEventListener('click', this.handle_checklist_click);
         this.container_ref.addEventListener('input', this.handle_textarea_input);
-        this.container_ref.addEventListener('blur', this.handle_textarea_blur, true);
+        this.container_ref.addEventListener('blur', this.handle_textarea_input, true);
         // Add keyboard support for accessibility
         this.container_ref.addEventListener('keydown', this.handle_checklist_keydown);
     },
@@ -124,44 +120,16 @@ export const ChecklistHandler = {
         
         const pc_item = textarea.closest('.pass-criterion-item[data-pc-id]');
         const check_item = textarea.closest('.check-item[data-check-id]');
-        if (pc_item && check_item) {
+        if (pc_item && check_item && this.requirement_result_ref?.checkResults) {
             const check_id = check_item.dataset.checkId;
             const pc_id = pc_item.dataset.pcId;
-            
-            // Debounce autosave 
-            clearTimeout(this.debounceTimerObservations);
-            this.debounceTimerObservations = setTimeout(() => {
-                if (this.on_autosave_callback) {
-                    this.on_autosave_callback({ 
-                        type: 'pc_observation', 
-                        checkId: check_id, 
-                        pcId: pc_id, 
-                        value: textarea.value 
-                    });
-                }
-            }, 3000);
-        }
-    },
-
-    handle_textarea_blur(event) {
-        const textarea = event.target;
-        if (!textarea.classList.contains('pc-observation-detail-textarea')) return;
-        
-        const pc_item = textarea.closest('.pass-criterion-item[data-pc-id]');
-        const check_item = textarea.closest('.check-item[data-check-id]');
-        if (pc_item && check_item) {
-            const check_id = check_item.dataset.checkId;
-            const pc_id = pc_item.dataset.pcId;
-            
-            // Save immediately on blur (clearing the debounce timer)
-            clearTimeout(this.debounceTimerObservations);
-            if (this.on_autosave_callback) {
-                this.on_autosave_callback({ 
-                    type: 'pc_observation', 
-                    checkId: check_id, 
-                    pcId: pc_id, 
-                    value: textarea.value 
-                });
+            const check_result = this.requirement_result_ref.checkResults[check_id];
+            if (check_result?.passCriteria?.[pc_id]) {
+                check_result.passCriteria[pc_id].observationDetail = textarea.value;
+                const ts = this.Helpers?.get_current_iso_datetime_utc
+                    ? this.Helpers.get_current_iso_datetime_utc()
+                    : new Date().toISOString();
+                check_result.passCriteria[pc_id].timestamp = ts;
             }
         }
     },
@@ -442,11 +410,10 @@ export const ChecklistHandler = {
     },
 
     destroy() {
-        clearTimeout(this.debounceTimerObservations);
         if (this.container_ref) {
             this.container_ref.removeEventListener('click', this.handle_checklist_click);
             this.container_ref.removeEventListener('input', this.handle_textarea_input);
-            this.container_ref.removeEventListener('blur', this.handle_textarea_blur, true);
+            this.container_ref.removeEventListener('blur', this.handle_textarea_input, true);
             this.container_ref.removeEventListener('keydown', this.handle_checklist_keydown);
             this.container_ref.innerHTML = '';
         }

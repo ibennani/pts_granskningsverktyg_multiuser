@@ -6,7 +6,6 @@ export const MetadataFormComponent = {
         // Callbacks from options
         this.on_submit_callback = options.onSubmit;
         this.on_cancel_callback = options.onCancel;
-        this.on_autosave_callback = options.onAutosave;
 
         // Dependencies
         this.Translation = deps.Translation;
@@ -14,7 +13,6 @@ export const MetadataFormComponent = {
         this.NotificationComponent = deps.NotificationComponent;
         
         // Internal state
-        this.debounceTimerFormFields = null;
         this.case_number_input = null;
         this.actor_name_input = null;
         this.actor_link_input = null;
@@ -27,48 +25,6 @@ export const MetadataFormComponent = {
         const CSS_PATH = 'css/components/metadata_form_component.css';
         if (this.Helpers && this.Helpers.load_css) {
             this.Helpers.load_css(CSS_PATH);
-        }
-    },
-
-    save_form_data_immediately() {
-        if (!this.on_autosave_callback) return;
-        if (!this.case_number_input || !this.actor_name_input || !this.actor_link_input || !this.auditor_name_input || !this.case_handler_input || !this.internal_comment_input) return;
-        
-        let actor_link_value = this.actor_link_input.value.trim();
-        if (actor_link_value && this.Helpers.add_protocol_if_missing) {
-            actor_link_value = this.Helpers.add_protocol_if_missing(actor_link_value);
-        }
-
-        const sanitize_input = (input) => {
-            if (typeof input !== 'string') return '';
-            return input.trim().replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-        };
-
-        const form_data = {
-            caseNumber: sanitize_input(this.case_number_input.value),
-            actorName: sanitize_input(this.actor_name_input.value),
-            actorLink: sanitize_input(actor_link_value),
-            auditorName: sanitize_input(this.auditor_name_input.value),
-            caseHandler: sanitize_input(this.case_handler_input.value),
-            internalComment: sanitize_input(this.internal_comment_input.value)
-        };
-
-        this.on_autosave_callback(form_data);
-    },
-
-    debounced_autosave_form() {
-        if (!this.on_autosave_callback) return;
-        
-        clearTimeout(this.debounceTimerFormFields);
-        this.debounceTimerFormFields = setTimeout(() => {
-            this.save_form_data_immediately();
-        }, 3000);
-    },
-
-    handle_button_click(event) {
-        const button = event.target.closest('button');
-        if (button && button.type !== 'submit') {
-            this.save_form_data_immediately();
         }
     },
 
@@ -126,22 +82,16 @@ export const MetadataFormComponent = {
         }
 
         // Bind for event listeners
-        const debouncedSave = this.debounced_autosave_form.bind(this);
-
         if (type === 'textarea') {
             input_element = this.Helpers.create_element('textarea', {
                 id: id, class_name: 'form-control', attributes: { rows: '4', ...attributes }
             });
             input_element.value = current_value;
-            input_element.addEventListener('input', debouncedSave);
-            input_element.addEventListener('blur', debouncedSave);
         } else {
             input_element = this.Helpers.create_element('input', {
                 id: id, class_name: 'form-control', attributes: attributes
             });
             input_element.value = current_value;
-            input_element.addEventListener('input', debouncedSave);
-            input_element.addEventListener('blur', debouncedSave);
         }
 
         form_group.appendChild(label);
@@ -164,10 +114,7 @@ export const MetadataFormComponent = {
         
         // Bind methods
         this.handle_form_submit = this.handle_form_submit.bind(this);
-        this.handle_button_click = this.handle_button_click.bind(this);
-
         this.form_element_ref.addEventListener('submit', this.handle_form_submit);
-        this.form_element_ref.addEventListener('click', this.handle_button_click);
 
         const case_field = this.create_form_field('caseNumber', 'case_number', 'text', initialData.caseNumber);
         this.case_number_input = case_field.input_element;
@@ -222,10 +169,8 @@ export const MetadataFormComponent = {
     },
 
     destroy() {
-        clearTimeout(this.debounceTimerFormFields);
         if (this.form_element_ref) {
             this.form_element_ref.removeEventListener('submit', this.handle_form_submit);
-            this.form_element_ref.removeEventListener('click', this.handle_button_click);
         }
         
         // No strict need to remove other listeners as we are clearing innerHTML and dropping references, 
@@ -235,7 +180,6 @@ export const MetadataFormComponent = {
         this.form_element_ref = null;
         this.on_submit_callback = null;
         this.on_cancel_callback = null;
-        this.on_autosave_callback = null;
         this.root = null;
         this.deps = null;
     }

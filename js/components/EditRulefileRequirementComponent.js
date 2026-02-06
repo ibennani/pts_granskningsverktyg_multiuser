@@ -23,8 +23,6 @@ export const EditRulefileRequirementComponent = {
         // Bind methods
         this.handle_form_submit = this.handle_form_submit.bind(this);
         this.handle_form_click = this.handle_form_click.bind(this);
-        this.handle_generic_button_click = this.handle_generic_button_click.bind(this);
-        this.debounced_autosave_form = this.debounced_autosave_form.bind(this);
         this._handle_content_type_change = this._handle_content_type_change.bind(this);
         
         await this.Helpers.load_css(this.CSS_PATH_SHARED).catch(e => console.warn(e));
@@ -242,26 +240,6 @@ export const EditRulefileRequirementComponent = {
         });
     },
 
-    debounced_autosave_form() {
-        const is_new_requirement = this.params?.id === 'new';
-        if (is_new_requirement || !this.local_requirement_data) return; 
-        
-        clearTimeout(this.debounceTimerFormFields);
-        this.debounceTimerFormFields = setTimeout(() => {
-            this.save_form_data_immediately();
-        }, 3000);
-    },
-
-    handle_generic_button_click(event) {
-        const button = event.target.closest('button');
-        if (button && button.type !== 'submit' && !button.hasAttribute('data-action')) {
-            const is_new_requirement = this.params?.id === 'new';
-            if (!is_new_requirement && this.local_requirement_data) {
-                this.save_form_data_immediately();
-            }
-        }
-    },
-
     handle_form_submit(event) {
         event.preventDefault();
         this._update_local_data_from_form(); 
@@ -291,6 +269,9 @@ export const EditRulefileRequirementComponent = {
                     newRequirementData: this.local_requirement_data
                 }
             });
+            if (window.DraftManager?.commitCurrentDraft) {
+                window.DraftManager.commitCurrentDraft();
+            }
             
             this.NotificationComponent.show_global_message(t('requirement_added_successfully', { reqTitle: this.local_requirement_data.title }), 'success');
             this.router('rulefile_view_requirement', { id: new_key });
@@ -302,6 +283,9 @@ export const EditRulefileRequirementComponent = {
                     updatedRequirementData: this.local_requirement_data
                 }
             });
+            if (window.DraftManager?.commitCurrentDraft) {
+                window.DraftManager.commitCurrentDraft();
+            }
             
             this.NotificationComponent.show_global_message(t('rulefile_requirement_saved'), 'success');
             this.router('rulefile_view_requirement', { id: this.params.id });
@@ -526,15 +510,9 @@ export const EditRulefileRequirementComponent = {
             input = this.Helpers.create_element('textarea', { id: id, name: id, class_name: 'form-control', attributes: { rows: 4 } });
             input.value = Array.isArray(value) ? value.join('\n') : (value || '');
             window.Helpers.init_auto_resize_for_textarea(input);
-            input.addEventListener('input', this.debounced_autosave_form);
-            input.addEventListener('blur', this.debounced_autosave_form);
         } else {
             input = this.Helpers.create_element('input', { id: id, name: id, class_name: 'form-control', attributes: { type: input_type }});
             input.value = value || '';
-            if (input_type !== 'checkbox' && input_type !== 'radio') {
-                input.addEventListener('input', this.debounced_autosave_form);
-                input.addEventListener('blur', this.debounced_autosave_form);
-            }
         }
         form_group.appendChild(input);
         return form_group;
@@ -601,7 +579,6 @@ export const EditRulefileRequirementComponent = {
                 if (selected_concepts.has(concept.id)) {
                     checkbox.checked = true;
                 }
-                checkbox.addEventListener('change', this.debounced_autosave_form);
                 const label = this.Helpers.create_element('label', { attributes: { for: `classification-${concept.id}` }, text_content: concept.label });
                 wrapper.append(checkbox, label);
                 fieldset.appendChild(wrapper);
@@ -627,7 +604,6 @@ export const EditRulefileRequirementComponent = {
         if (metadata?.impact?.isCritical) {
             critical_checkbox.checked = true;
         }
-        critical_checkbox.addEventListener('change', this.debounced_autosave_form);
         critical_wrapper.appendChild(critical_checkbox);
         critical_wrapper.appendChild(this.Helpers.create_element('label', { attributes: { for: 'isCritical' }, text_content: t('is_critical') }));
         impact_group.appendChild(critical_wrapper);
@@ -676,8 +652,6 @@ export const EditRulefileRequirementComponent = {
                 this._update_parent_checkbox_state(parent_checkbox);
             }
         }
-        // Trigger autosave för checkboxes
-        this.debounced_autosave_form();
     },
 
     _create_content_types_section(all_content_types, selected_content_types) {
@@ -707,7 +681,6 @@ export const EditRulefileRequirementComponent = {
                     'aria-label': `${group.text}, välj alla`
                 } 
             });
-            parent_checkbox.addEventListener('change', this.debounced_autosave_form);
             const parent_label = this.Helpers.create_element('label', { 
                 attributes: { for: parent_id }, 
                 text_content: group.text,
@@ -741,7 +714,6 @@ export const EditRulefileRequirementComponent = {
                 if (is_checked) {
                     child_checkbox.checked = true;
                 }
-                child_checkbox.addEventListener('change', this.debounced_autosave_form);
                 const child_label = this.Helpers.create_element('label', { 
                     attributes: { for: child_id, id: `${child_id}-label` }, 
                     text_content: child.text 
@@ -830,7 +802,6 @@ export const EditRulefileRequirementComponent = {
                         checked: block.expanded !== false
                     }
                 });
-                expanded_checkbox.addEventListener('change', this.debounced_autosave_form);
                 expanded_label.appendChild(expanded_checkbox);
                 expanded_label.appendChild(document.createTextNode(' ' + t('info_block_expanded_label')));
                 expanded_group.appendChild(expanded_label);
@@ -1286,10 +1257,8 @@ export const EditRulefileRequirementComponent = {
         logic_fieldset.appendChild(this.Helpers.create_element('legend', { text_content: t('check_logic_title') }));
         const logic_and = this.Helpers.create_element('input', { id: `logic_${sane_check_id}_and`, name: `check_${sane_check_id}_logic`, value: 'AND', attributes: { type: 'radio' } });
         if (!check.logic || check.logic.toUpperCase() === 'AND') logic_and.checked = true;
-        logic_and.addEventListener('change', this.debounced_autosave_form);
         const logic_or = this.Helpers.create_element('input', { id: `logic_${sane_check_id}_or`, name: `check_${sane_check_id}_logic`, value: 'OR', attributes: { type: 'radio' } });
         if (check.logic?.toUpperCase() === 'OR') logic_or.checked = true;
-        logic_or.addEventListener('change', this.debounced_autosave_form);
         
         logic_fieldset.append(
             this.Helpers.create_element('div', { class_name: 'form-check', children: [logic_and, this.Helpers.create_element('label', { attributes: { for: `logic_${sane_check_id}_and` }, text_content: t('check_logic_and') })] }),
@@ -1466,7 +1435,6 @@ export const EditRulefileRequirementComponent = {
         this.form_element_ref = this.Helpers.create_element('form');
         this.form_element_ref.addEventListener('submit', this.handle_form_submit);
         this.form_element_ref.addEventListener('click', this.handle_form_click);
-        this.form_element_ref.addEventListener('click', this.handle_generic_button_click);
         
         this._rerender_all_sections();
         
@@ -1497,16 +1465,6 @@ export const EditRulefileRequirementComponent = {
         if (this.form_element_ref) {
             this.form_element_ref.removeEventListener('submit', this.handle_form_submit);
             this.form_element_ref.removeEventListener('click', this.handle_form_click);
-            this.form_element_ref.removeEventListener('click', this.handle_generic_button_click);
-            // Rensa event listeners från alla input-fält
-            const all_inputs = this.form_element_ref.querySelectorAll('input, textarea');
-            if (all_inputs) {
-                all_inputs.forEach(input => {
-                    input.removeEventListener('input', this.debounced_autosave_form);
-                    input.removeEventListener('blur', this.debounced_autosave_form);
-                    input.removeEventListener('change', this.debounced_autosave_form);
-                });
-            }
         }
         if (this.root) this.root.innerHTML = '';
         this.form_element_ref = null;

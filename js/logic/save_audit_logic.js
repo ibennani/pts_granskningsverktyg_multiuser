@@ -1,7 +1,6 @@
 // js/logic/save_audit_logic.js
 'use-strict';
 
-import { clearAutosavedState } from '../state.js';
 
 function _generate_filename(audit_data, t_func) {
     const now = new Date();
@@ -48,13 +47,14 @@ export function save_audit_to_json_file(current_audit_data, t_func, show_notific
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    // --- NYTT: Rensa autosave efter en lyckad manuell sparning ---
+    // Rensa aktivt utkast efter lyckad manuell sparning
     try {
-        clearAutosavedState();
+        if (window.DraftManager?.commitCurrentDraft) {
+            window.DraftManager.commitCurrentDraft();
+        }
     } catch (e) {
-        console.warn("[SaveAuditLogic] Could not clear autosaved state:", e);
+        console.warn("[SaveAuditLogic] Could not commit draft after save:", e);
     }
-    // --- SLUT PÅ NYTT ---
 
     if (show_notification_func) show_notification_func(t_func('audit_saved_as_file', { filename: filename }), 'success');
     console.log(`[SaveAuditLogic] Audit saved as ${filename}`);

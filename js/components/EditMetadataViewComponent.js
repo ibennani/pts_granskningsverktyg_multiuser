@@ -18,7 +18,6 @@ export const EditMetadataViewComponent = {
 
         this.handle_form_submit = this.handle_form_submit.bind(this);
         this.handle_cancel = this.handle_cancel.bind(this);
-        this.handle_autosave = this.handle_autosave.bind(this);
 
         this.RETURN_FOCUS_SESSION_KEY = 'gv_return_focus_audit_info_h2_v1';
     },
@@ -38,18 +37,14 @@ export const EditMetadataViewComponent = {
         window.customFocusApplied = true;
     },
 
-    handle_autosave(form_data) {
-        this.dispatch({
-            type: this.StoreActionTypes.UPDATE_METADATA,
-            payload: form_data
-        });
-    },
-
     handle_form_submit(form_data) {
         this.dispatch({
             type: this.StoreActionTypes.UPDATE_METADATA,
             payload: form_data
         });
+        if (window.DraftManager?.commitCurrentDraft) {
+            window.DraftManager.commitCurrentDraft();
+        }
         
         const current_status = this.getState().auditStatus;
         
@@ -106,8 +101,7 @@ export const EditMetadataViewComponent = {
             deps: this.deps,
             options: {
                 onSubmit: this.handle_form_submit,
-                onCancel: this.handle_cancel,
-                onAutosave: this.handle_autosave
+                onCancel: this.handle_cancel
             }
         });
 
