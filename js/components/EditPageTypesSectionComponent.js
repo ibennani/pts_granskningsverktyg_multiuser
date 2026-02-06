@@ -103,9 +103,6 @@ export const EditPageTypesSectionComponent = {
             samples.sampleCategories = sample_categories;
         }
         
-        // Spara ändringar omedelbart
-        this.save_form_data_immediately();
-        
         // Rendera om formuläret med animation
         this._render_form_with_animation(workingMetadata, new_index, index, clickedButton);
     },
@@ -199,9 +196,6 @@ export const EditPageTypesSectionComponent = {
                 if (samples.sampleCategories) {
                     samples.sampleCategories = sample_categories;
                 }
-                
-                // Spara ändringar omedelbart
-                this.save_form_data_immediately();
                 
                 // Återställ showing_add_form när formuläret renderas om
                 this.showing_add_form = false;
@@ -327,7 +321,13 @@ export const EditPageTypesSectionComponent = {
     },
 
     save_form_data_immediately(shouldTrim = false) {
-        if (!this.form_element_ref || !this.working_metadata) return;
+        if (!this.form_element_ref) return;
+        
+        const state = this.getState();
+        if (!this.working_metadata) {
+            const base_metadata = state?.ruleFileContent?.metadata || {};
+            this.working_metadata = this._ensure_metadata_defaults(this._clone_metadata(base_metadata));
+        }
         
         // Spara aktuellt fokus och scroll-position innan autospar
         const activeElement = document.activeElement;
@@ -347,7 +347,6 @@ export const EditPageTypesSectionComponent = {
         // Spara formulärvärden till workingMetadata (trimma endast vid manuell sparning)
         this._save_form_values_to_metadata(this.working_metadata, shouldTrim);
         
-        const state = this.getState();
         const currentRulefile = state?.ruleFileContent || {};
         
         // Uppdatera metadata-strukturen korrekt
@@ -657,10 +656,6 @@ export const EditPageTypesSectionComponent = {
             }
         });
         
-        // Lägg till autospar-event listeners
-        // Autospar sker endast vid inaktivitet (debounced), inte vid blur
-        page_type_input.addEventListener('input', this.debounced_autosave_form);
-        
         page_type_group.appendChild(label_row);
         page_type_group.appendChild(page_type_input);
         page_type_wrapper.appendChild(page_type_group);
@@ -680,10 +675,6 @@ export const EditPageTypesSectionComponent = {
                 'data-index': 'new'
             }
         });
-        
-        // Lägg till autospar-event listeners
-        // Autospar sker endast vid inaktivitet (debounced), inte vid blur
-        categories_textarea.addEventListener('input', this.debounced_autosave_form);
         
         this.Helpers.init_auto_resize_for_textarea?.(categories_textarea);
         categories_group.appendChild(categories_label);
@@ -1078,10 +1069,6 @@ export const EditPageTypesSectionComponent = {
             });
             page_type_input.value = page_type_str;
             
-            // Lägg till autospar-event listeners
-            // Autospar sker endast vid inaktivitet (debounced), inte vid blur
-            page_type_input.addEventListener('input', this.debounced_autosave_form);
-            
             page_type_group.appendChild(label_row);
             page_type_group.appendChild(page_type_input);
             page_type_wrapper.appendChild(page_type_group);
@@ -1122,10 +1109,6 @@ export const EditPageTypesSectionComponent = {
                 categories_textarea.value = category_texts.join('\n');
             }
             
-            // Lägg till autospar-event listeners
-            // Autospar sker endast vid inaktivitet (debounced), inte vid blur
-            categories_textarea.addEventListener('input', this.debounced_autosave_form);
-            
             this.Helpers.init_auto_resize_for_textarea?.(categories_textarea);
             categories_group.appendChild(categories_label);
             categories_group.appendChild(categories_textarea);
@@ -1142,8 +1125,7 @@ export const EditPageTypesSectionComponent = {
 
         // Spara-knapp efter alla formulärfält
         const save_button_container = this.Helpers.create_element('div', { 
-            class_name: 'form-actions',
-            style: 'margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color, #e0e0e0);'
+            class_name: 'form-actions'
         });
         
         const save_button = this.Helpers.create_element('button', {
@@ -1181,9 +1163,27 @@ export const EditPageTypesSectionComponent = {
                 t('rulefile_metadata_edit_saved') || 'Ändringar sparade',
                 'success'
             );
+            
+            // Navigera tillbaka till översikten över sidtyper
+            sessionStorage.setItem('focusAfterLoad', '.rulefile-sections-header h2');
+            this.router('rulefile_sections', { section: 'page_types' });
+        });
+        
+        const cancel_button = this.Helpers.create_element('button', {
+            class_name: ['button', 'button-default'],
+            attributes: {
+                type: 'button',
+                'aria-label': t('rulefile_page_types_back_without_saving')
+            },
+            html_content: `<span>${t('rulefile_page_types_back_without_saving')}</span>`
+        });
+        cancel_button.addEventListener('click', () => {
+            sessionStorage.setItem('focusAfterLoad', '.rulefile-sections-header h2');
+            this.router('rulefile_sections', { section: 'page_types' });
         });
         
         save_button_container.appendChild(save_button);
+        save_button_container.appendChild(cancel_button);
         form.appendChild(save_button_container);
 
         // Form submit handler (tom för nu)

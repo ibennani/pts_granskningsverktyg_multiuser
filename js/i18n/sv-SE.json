@@ -455,6 +455,7 @@
   "rulefile_metadata_save_metadata": "Spara metadata",
   "rulefile_metadata_view_without_saving": "Visa metadata utan att spara",
   "back_without_saving": "Tillbaka utan att spara",
+  "rulefile_page_types_back_without_saving": "Tillbaka till sidtyper utan att spara",
   "rulefile_metadata_section_general": "Allmänt",
   "rulefile_metadata_section_publisher": "Utgivare",
   "rulefile_metadata_section_source": "Källa",

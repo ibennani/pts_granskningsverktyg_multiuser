@@ -924,9 +924,6 @@ export const RulefileSectionsViewComponent = {
         // Right wrapper - egen wrapper för högerinnehållet
         const right_wrapper = this.Helpers.create_element('div', { class_name: 'rulefile-sections-right-wrapper' });
         
-        // Content plate för högerinnehållet
-        const content_plate = this.Helpers.create_element('div', { class_name: 'content-plate rulefile-sections-content-plate' });
-
         // Render section content
         const metadata = state.ruleFileContent.metadata;
         let section_content;
@@ -936,7 +933,7 @@ export const RulefileSectionsViewComponent = {
         if (is_editing && (section_id === 'general' || section_id === 'page_types')) {
             header_section_config = this._get_section_config(section_id);
             const header = this._create_header(header_section_config, is_editing);
-            content_plate.appendChild(header);
+            right_wrapper.appendChild(header);
             
             // Skapa en container för redigeringsformuläret
             const edit_form_container = this.Helpers.create_element('div', { class_name: 'rulefile-section-edit-form-container' });
@@ -948,7 +945,7 @@ export const RulefileSectionsViewComponent = {
                 this._render_page_types_edit_form(edit_form_container, metadata);
             }
             
-            content_plate.appendChild(edit_form_container);
+            right_wrapper.appendChild(edit_form_container);
         } else {
             // Normal visningsläge
             switch (section_id) {
@@ -985,11 +982,10 @@ export const RulefileSectionsViewComponent = {
 
             // Skapa header för alla sektioner (inklusive page_types)
             const header = this._create_header(header_section_config, is_editing);
-            content_plate.appendChild(header);
-            content_plate.appendChild(section_content);
+            right_wrapper.appendChild(header);
+            right_wrapper.appendChild(section_content);
         }
         
-        right_wrapper.appendChild(content_plate);
         layout.appendChild(right_wrapper);
 
         main_plate.appendChild(layout);

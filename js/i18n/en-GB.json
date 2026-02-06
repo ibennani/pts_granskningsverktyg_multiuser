@@ -455,6 +455,7 @@
   "rulefile_metadata_save_metadata": "Save metadata",
   "rulefile_metadata_view_without_saving": "View metadata without saving",
   "back_without_saving": "Back without saving",
+  "rulefile_page_types_back_without_saving": "Back to page types without saving",
   "rulefile_metadata_section_general": "General",
   "rulefile_metadata_section_publisher": "Publisher",
   "rulefile_metadata_section_source": "Source",
