@@ -35,12 +35,24 @@ Adhere to the following rules at all times.
 ### Commit Messages
 
 - **Language:** ALWAYS use **Swedish**.
-- **Style:** Write clear, descriptive, and human-readable messages. Focus on the **intent** (why) and **impact** (what changed for the user/system) rather than just listing technical file changes or function names.
+- **Style:** Kortfattat och användarfokuserat. Beskriv **vilka funktioner som ändrats** och **hur det påverkar användningen**. Undvik att nämna filnamn eller tekniska implementationdetaljer.
 - **Coverage:** The message MUST reflect ALL changes currently staged or in the working directory. Analyze the full diff before generating the message.
-- **Format:** `Verb [Imperativ]: Kort men beskrivande sammanfattning`
-  - **Good:** `Fixa: Korrigera beräkning av bristindex så att det visas korrekt vid sidladdning`
-  - **Bad:** `Uppdatera: Ändra logic/score.js och components/AuditOverview.js`
-  - **Example:** `Lägg till: Ny funktionalitet för att exportera rapporter till Word`
+- **Format:** 
+  - **En ändring:** `Verb [Imperativ]: Ändrat [funktion] för [var] så att [användarpåverkan]`
+  - **Flera ändringar:** Använd punktlistor med samma struktur för varje ändring
+- **Exempel:**
+  - **Good (en ändring):** `Ändra: Sorteringsfunktionen för kravlistan så att krav sorteras efter prioritet istället för alfabetiskt`
+  - **Good (en ändring):** `Fixa: Beräkningen av bristindex så att det visas korrekt vid sidladdning`
+  - **Good (flera ändringar):**
+    ```
+    Uppdatera: Flera funktioner för att förbättra användarupplevelsen
+    - Ändrat sorteringsfunktionen för kravlistan så att krav sorteras efter prioritet istället för alfabetiskt
+    - Fixat beräkningen av bristindex så att det visas korrekt vid sidladdning
+    - Lagt till exportfunktion för rapporter så att användare kan exportera till Word
+    ```
+  - **Bad:** `Uppdatera: Ändra beräkning i logic/score.js och uppdatera render i AuditOverview.js` (nämner filer)
+  - **Bad:** `Refaktorera: Flytta state-hantering till Redux store` (tekniskt, ingen användarpåverkan)
+  - **Bad:** `Fixa: Bristindex visas nu korrekt` (saknar kontext om vad som ändrats)
 
 ### Project Structure
 
