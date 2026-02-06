@@ -57,7 +57,6 @@ export const AllRequirementsViewComponent = {
     get_sort_options() {
         // Begränsad sortering för "Krav"-vyn (inte stickprovsspecifik)
         return [
-            { value: 'default', textKey: 'sort_option_default' },
             { value: 'ref_asc', textKey: 'sort_option_ref_asc_natural' },
             { value: 'ref_desc', textKey: 'sort_option_ref_desc_natural' },
             { value: 'title_asc', textKey: 'sort_option_title_asc' },
@@ -214,10 +213,29 @@ export const AllRequirementsViewComponent = {
         this.h1_element_ref.textContent = t('all_requirements_title_audit_with_count', { count: total_count });
 
         // Toolbar (separat state för denna vy)
-        const current_ui_settings = state.uiSettings?.allRequirementsFilter || { searchText: '', sortBy: 'default' };
+        let current_ui_settings = state.uiSettings?.allRequirementsFilter || { searchText: '', sortBy: null };
+        
+        // Automatisk val av sortering första gången: om några krav har referenstext, välj ref_asc, annars title_asc
+        if (!current_ui_settings.sortBy || current_ui_settings.sortBy === 'default') {
+            const has_any_reference = entries_in_any_sample.some(([, req]) => {
+                const ref = this.get_reference_string_for_sort(req);
+                return ref && ref.trim() !== '';
+            });
+            const auto_sort_by = has_any_reference ? 'ref_asc' : 'title_asc';
+            
+            // Uppdatera state med automatiskt vald sortering
+            this.dispatch({
+                type: this.StoreActionTypes.SET_ALL_REQUIREMENTS_FILTER_SETTINGS,
+                payload: { ...current_ui_settings, sortBy: auto_sort_by }
+            });
+            
+            // Uppdatera current_ui_settings för att använda det nya värdet
+            current_ui_settings = { ...current_ui_settings, sortBy: auto_sort_by };
+        }
+        
         const initial_toolbar_state = {
             searchText: current_ui_settings.searchText || '',
-            sortBy: current_ui_settings.sortBy || 'default',
+            sortBy: current_ui_settings.sortBy,
         };
 
         // Initiera toolbar endast om den inte redan byggt DOM i denna container.
@@ -254,18 +272,30 @@ export const AllRequirementsViewComponent = {
             totalCount: total_count
         });
 
-        const sort_by = current_ui_settings.sortBy || 'default';
+        const sort_by = current_ui_settings.sortBy || 'ref_asc';
         const sorted_entries = [...filtered_entries];
         if (sort_by === 'title_asc') {
             sorted_entries.sort((a, b) => this.compare_strings_locale(a?.[1]?.title, b?.[1]?.title));
         } else if (sort_by === 'title_desc') {
             sorted_entries.sort((a, b) => this.compare_strings_locale(b?.[1]?.title, a?.[1]?.title));
         } else if (sort_by === 'ref_asc') {
-            sorted_entries.sort((a, b) => this.compare_strings_locale(this.get_reference_string_for_sort(a?.[1]), this.get_reference_string_for_sort(b?.[1])));
+            sorted_entries.sort((a, b) => {
+                const ref_a = this.get_reference_string_for_sort(a?.[1]);
+                const ref_b = this.get_reference_string_for_sort(b?.[1]);
+                if (this.Helpers?.natural_sort) {
+                    return this.Helpers.natural_sort(ref_a || 'Z', ref_b || 'Z');
+                }
+                return this.compare_strings_locale(ref_a, ref_b);
+            });
         } else if (sort_by === 'ref_desc') {
-            sorted_entries.sort((a, b) => this.compare_strings_locale(this.get_reference_string_for_sort(b?.[1]), this.get_reference_string_for_sort(a?.[1])));
-        } else {
-            // default: behåll regelfilens ordning
+            sorted_entries.sort((a, b) => {
+                const ref_a = this.get_reference_string_for_sort(a?.[1]);
+                const ref_b = this.get_reference_string_for_sort(b?.[1]);
+                if (this.Helpers?.natural_sort) {
+                    return this.Helpers.natural_sort(ref_b || 'Z', ref_a || 'Z');
+                }
+                return this.compare_strings_locale(ref_b, ref_a);
+            });
         }
 
         this.list_element_ref.innerHTML = '';
@@ -331,7 +361,9 @@ export const AllRequirementsViewComponent = {
                 const ul = this.Helpers.create_element('ul', { class_name: 'all-requirements__samples' });
                 matching_samples.forEach(sample => {
                     const sample_label = sample?.description || t('undefined_description');
-                    const href = `#requirement_list?${new URLSearchParams({ sampleId: sample.id }).toString()}`;
+                    // Hämta requirementId från req (kan vara req.key eller req.id eller req_id)
+                    const requirement_id = req?.key || req?.id || req_id;
+                    const href = `#requirement_audit?${new URLSearchParams({ sampleId: sample.id, requirementId: requirement_id }).toString()}`;
 
                     const a = this.Helpers.create_element('a', {
                         text_content: sample_label,
@@ -340,7 +372,7 @@ export const AllRequirementsViewComponent = {
                     a.addEventListener('click', (event) => {
                         if (typeof this.router === 'function') {
                             event.preventDefault();
-                            this.router('requirement_list', { sampleId: sample.id });
+                            this.router('requirement_audit', { sampleId: sample.id, requirementId: requirement_id });
                         }
                     });
 

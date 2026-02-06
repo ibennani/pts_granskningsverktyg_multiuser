@@ -27,7 +27,7 @@ export const RequirementListComponent = {
         this.results_summary_element_ref = null;
 
         this.SORT_OPTIONS = [
-            { value: 'default', textKey: 'sort_option_ref_asc_natural', defaultValue: 'Reference (Ascending)' },
+            { value: 'ref_asc', textKey: 'sort_option_ref_asc_natural', defaultValue: 'Reference (Ascending)' },
             { value: 'ref_desc', textKey: 'sort_option_ref_desc_natural', defaultValue: 'Reference (Descending)' },
             { value: 'title_asc', textKey: 'sort_option_title_asc', defaultValue: 'Title (A-Z)' },
             { value: 'title_desc', textKey: 'sort_option_title_desc', defaultValue: 'Title (Z-A)' },
@@ -118,13 +118,13 @@ export const RequirementListComponent = {
         const current_state_for_init = this.getState();
         const current_ui_settings = current_state_for_init.uiSettings?.requirementListFilter || {
             searchText: '',
-            sortBy: 'default',
+            sortBy: null,
             status: { passed: true, failed: true, partially_audited: true, not_audited: true, updated: true }
         };
 
         const initial_toolbar_state = {
             searchText: current_ui_settings.searchText || '',
-            sortBy: current_ui_settings.sortBy || 'default',
+            sortBy: current_ui_settings.sortBy || null,
             status: current_ui_settings.status || { passed: true, failed: true, partially_audited: true, not_audited: true, updated: true }
         };
 
@@ -205,11 +205,7 @@ export const RequirementListComponent = {
             bottom_nav_bar.appendChild(back_button);
         }
         
-        const filter_settings = current_global_state.uiSettings?.requirementListFilter;
-        if (this.toolbar_component_instance) {
-             this.toolbar_component_instance.render(filter_settings);
-        }
-
+        let filter_settings = current_global_state.uiSettings?.requirementListFilter;
         const current_sample_object = current_global_state.samples.find(s => s.id === this.params.sampleId);
 
         // Header Logic
@@ -264,8 +260,34 @@ export const RequirementListComponent = {
             header_div.appendChild(ProgressBarComponent.create(audited_requirements_count, total_relevant_requirements, {}));
         }
 
-        const search_term = (filter_settings.searchText || '').toLowerCase();
-        const active_status_filters = Object.keys(filter_settings.status).filter(key => filter_settings.status[key]);
+        // Automatisk val av sortering första gången: om några krav har referenstext, välj ref_asc, annars title_asc
+        let effective_filter_settings = filter_settings || {};
+        if (!effective_filter_settings.sortBy || effective_filter_settings.sortBy === 'default') {
+            const has_any_reference = all_relevant_requirements.some(req => {
+                const ref = req.standardReference?.text;
+                return ref && typeof ref === 'string' && ref.trim() !== '';
+            });
+            const auto_sort_by = has_any_reference ? 'ref_asc' : 'title_asc';
+            
+            // Uppdatera state med automatiskt vald sortering
+            this.dispatch({
+                type: this.StoreActionTypes.SET_UI_FILTER_SETTINGS,
+                payload: { ...effective_filter_settings, sortBy: auto_sort_by }
+            });
+            
+            // Uppdatera effective_filter_settings för att använda det nya värdet
+            effective_filter_settings = { ...effective_filter_settings, sortBy: auto_sort_by };
+            // Uppdatera filter_settings också för toolbar
+            filter_settings = effective_filter_settings;
+        }
+        
+        // Render toolbar med korrekt filter_settings
+        if (this.toolbar_component_instance) {
+             this.toolbar_component_instance.render(filter_settings);
+        }
+
+        const search_term = (effective_filter_settings.searchText || '').toLowerCase();
+        const active_status_filters = Object.keys(effective_filter_settings.status || {}).filter(key => effective_filter_settings.status[key]);
 
         const filtered_requirements = all_relevant_requirements.filter(req => {
             const result = (current_sample_object.requirementResults || {})[req.key];
@@ -316,6 +338,7 @@ export const RequirementListComponent = {
 
         const sorted_requirements = [...filtered_requirements];
         const sort_function = {
+            'ref_asc': (a, b) => this.Helpers.natural_sort(a.standardReference?.text || 'Z', b.standardReference?.text || 'Z'),
             'ref_desc': (a, b) => this.Helpers.natural_sort(b.standardReference?.text || 'Z', a.standardReference?.text || 'Z'),
             'title_asc': (a, b) => (a.title || '').localeCompare(b.title || ''),
             'title_desc': (a, b) => (b.title || '').localeCompare(a.title || ''),
@@ -328,10 +351,9 @@ export const RequirementListComponent = {
                     return isAUpdated - isBUpdated;
                 }
                 return this.Helpers.natural_sort(a.standardReference?.text || 'Z', b.standardReference?.text || 'Z');
-            },
-            'default': (a, b) => this.Helpers.natural_sort(a.standardReference?.text || 'Z', b.standardReference?.text || 'Z')
+            }
         };
-        const effectiveSortKey = sort_function.hasOwnProperty(filter_settings.sortBy) ? filter_settings.sortBy : 'default';
+        const effectiveSortKey = sort_function.hasOwnProperty(effective_filter_settings.sortBy) ? effective_filter_settings.sortBy : 'ref_asc';
         sorted_requirements.sort(sort_function[effectiveSortKey]);
 
         this.content_div_for_delegation.innerHTML = '';
