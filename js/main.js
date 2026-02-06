@@ -75,6 +75,7 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
     'use-strict';
 
     // Robust DOM-element kontroll med fallback-alternativ
+    let app_wrapper = document.getElementById('app-wrapper');
     let app_container = document.getElementById('app-container');
     let top_action_bar_container = document.getElementById('global-action-bar-top');
     let bottom_action_bar_container = document.getElementById('global-action-bar-bottom');
@@ -83,6 +84,20 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
     let main_view_root = null;
     const side_menu_component_instance = SideMenuComponent;
 
+    // Fallback för app_wrapper - kritiskt element
+    if (!app_wrapper) {
+        consoleManager.error("[Main.js] CRITICAL: App wrapper not found in DOM! Creating fallback wrapper.");
+        app_wrapper = document.createElement('div');
+        app_wrapper.id = 'app-wrapper';
+        
+        // Lägg till i body om body finns, annars i documentElement
+        if (document.body) {
+            document.body.appendChild(app_wrapper);
+        } else {
+            document.documentElement.appendChild(app_wrapper);
+        }
+    }
+
     // Fallback för app_container - kritiskt element
     if (!app_container) {
         consoleManager.error("[Main.js] CRITICAL: App container not found in DOM! Creating fallback container.");
@@ -90,8 +105,10 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
         app_container.id = 'app-container';
         app_container.style.cssText = 'min-height: 100vh; padding: 20px;';
         
-        // Lägg till i body om body finns, annars i documentElement
-        if (document.body) {
+        // Lägg till i wrapper om den finns, annars i body
+        if (app_wrapper) {
+            app_wrapper.appendChild(app_container);
+        } else if (document.body) {
             document.body.appendChild(app_container);
         } else {
             document.documentElement.appendChild(app_container);
@@ -105,7 +122,10 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
         top_action_bar_container.id = 'global-action-bar-top';
         top_action_bar_container.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: #f8f9fa; border-bottom: 1px solid #dee2e6;';
         
-        if (document.body) {
+        // Lägg till i wrapper om den finns, annars i body
+        if (app_wrapper) {
+            app_wrapper.insertBefore(top_action_bar_container, app_wrapper.firstChild);
+        } else if (document.body) {
             document.body.insertBefore(top_action_bar_container, document.body.firstChild);
         } else {
             app_container.insertBefore(top_action_bar_container, app_container.firstChild);
@@ -118,7 +138,10 @@ window.AuditLogic = AuditLogic; // Compatibility assignment
         bottom_action_bar_container.id = 'global-action-bar-bottom';
         bottom_action_bar_container.style.cssText = 'position: fixed; bottom: 0; left: 0; right: 0; z-index: 1000; background: #f8f9fa; border-top: 1px solid #dee2e6;';
         
-        if (document.body) {
+        // Lägg till i wrapper om den finns, annars i body
+        if (app_wrapper) {
+            app_wrapper.appendChild(bottom_action_bar_container);
+        } else if (document.body) {
             document.body.appendChild(bottom_action_bar_container);
         } else {
             app_container.appendChild(bottom_action_bar_container);

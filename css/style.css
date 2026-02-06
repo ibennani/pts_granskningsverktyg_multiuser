@@ -294,13 +294,18 @@ body {
     max-width: 100vw;
 }
 
-#app-container,
-#global-action-bar-top,
-#global-action-bar-bottom {
+#app-wrapper {
     max-width: var(--container-max-width);
     width: 100%;
     padding: 0 var(--spacing-unit);
     margin-inline: auto;
+    overflow-x: hidden;
+}
+
+#app-container,
+#global-action-bar-top,
+#global-action-bar-bottom {
+    width: 100%;
     overflow-x: hidden;
 }
 
@@ -878,9 +883,7 @@ select:-webkit-autofill:focus {
         padding: 1rem 0.5rem;
     }
 
-    #app-container,
-    #global-action-bar-top,
-    #global-action-bar-bottom {
+    #app-wrapper {
         padding: 0 0.5rem;
     }
 
@@ -1049,7 +1052,6 @@ select,
     font-size: 11px;
     color: #888;
     font-family: 'Roboto', sans-serif;
-    max-width: var(--container-max-width);
 }
 
 [data-theme="dark"] #build-timestamp {
