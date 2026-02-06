@@ -17,6 +17,11 @@ export const NotificationComponent = {
                 });
             } else if (!window.Helpers && !this.global_message_element) {
                 console.error("NotificationComponent: Helpers module not available to create message container.");
+            } else if (this.global_message_element) {
+                // Säkerställ att aria-live alltid finns på elementet
+                if (!this.global_message_element.getAttribute('aria-live')) {
+                    this.global_message_element.setAttribute('aria-live', 'polite');
+                }
             }
         });
     },
@@ -34,8 +39,22 @@ export const NotificationComponent = {
                 return;
             }
         }
+        
+        // Säkerställ att aria-live alltid finns på elementet
+        if (!this.global_message_element.getAttribute('aria-live')) {
+            this.global_message_element.setAttribute('aria-live', 'polite');
+        }
+        
         const { t } = window.Translation;
         const { create_element } = window.Helpers;
+
+        // Sätt role="alert" INNAN innehållet ändras för error/warning
+        // Detta säkerställer att skärmläsare meddelar ändringen korrekt
+        if (type === 'error' || type === 'warning') {
+            this.global_message_element.setAttribute('role', 'alert');
+        } else {
+            this.global_message_element.removeAttribute('role');
+        }
 
         this.global_message_element.innerHTML = '';
 
@@ -55,9 +74,6 @@ export const NotificationComponent = {
                 // Track the event listener for cleanup
                 this.event_listeners.add({ element: close_button, event: 'click', handler: closeHandler });
                 this.global_message_element.appendChild(close_button);
-                this.global_message_element.setAttribute('role', 'alert');
-            } else {
-                this.global_message_element.removeAttribute('role');
             }
             this.global_message_element.removeAttribute('hidden');
         } else {
@@ -112,6 +128,10 @@ export const NotificationComponent = {
                 this.global_message_element.hidden = true;
             } else {
                  this.global_message_element = document.getElementById(GLOBAL_MESSAGE_CONTAINER_ID);
+                 // Säkerställ att aria-live alltid finns på elementet
+                 if (this.global_message_element && !this.global_message_element.getAttribute('aria-live')) {
+                     this.global_message_element.setAttribute('aria-live', 'polite');
+                 }
             }
         }
         return this.global_message_element;
