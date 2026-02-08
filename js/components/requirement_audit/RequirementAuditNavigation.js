@@ -47,7 +47,10 @@ export class RequirementAuditNavigationComponent {
             previous_aria_label,
             next_aria_label,
             next_unhandled_aria_label,
-            next_unhandled_available
+            next_unhandled_available,
+            previous_text_key = 'previous_requirement',
+            next_text_key = 'next_requirement',
+            next_unhandled_text_key = 'next_unhandled_requirement'
         } = options;
 
         const t = this.Translation.t;
@@ -85,7 +88,7 @@ export class RequirementAuditNavigationComponent {
             if (!is_first_requirement) {
                 const prev_btn = this.Helpers.create_element('button', { 
                     class_name: 'button button-secondary',
-                    html_content: `<span>${t('previous_requirement')}</span>` + this.Helpers.get_icon_svg('arrow_back', [], 18)
+                    html_content: `<span>${t(previous_text_key)}</span>` + this.Helpers.get_icon_svg('arrow_back', [], 18)
                 });
                 if (previous_aria_label) {
                     prev_btn.setAttribute('aria-label', previous_aria_label);
@@ -98,7 +101,7 @@ export class RequirementAuditNavigationComponent {
             if (!is_last_requirement) {
                 const next_btn = this.Helpers.create_element('button', { 
                     class_name: 'button button-secondary',
-                    html_content: `<span>${t('next_requirement')}</span>` + this.Helpers.get_icon_svg('arrow_forward', [], 18)
+                    html_content: `<span>${t(next_text_key)}</span>` + this.Helpers.get_icon_svg('arrow_forward', [], 18)
                 });
                 if (next_aria_label) {
                     next_btn.setAttribute('aria-label', next_aria_label);
@@ -115,7 +118,7 @@ export class RequirementAuditNavigationComponent {
             if (should_show_next_unhandled) {
                 const next_unhandled_btn = this.Helpers.create_element('button', { 
                     class_name: 'button button-primary',
-                    html_content: `<span>${t('next_unhandled_requirement')}</span>` + this.Helpers.get_icon_svg('arrow_forward_alt', [], 18)
+                    html_content: `<span>${t(next_unhandled_text_key)}</span>` + this.Helpers.get_icon_svg('arrow_forward_alt', [], 18)
                 });
                 if (next_unhandled_aria_label) {
                     next_unhandled_btn.setAttribute('aria-label', next_unhandled_aria_label);

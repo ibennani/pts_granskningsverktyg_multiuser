@@ -70,6 +70,8 @@ export const RequirementAuditComponent = {
                 root: this.right_sidebar_root,
                 deps: {
                     ...this.deps,
+                    dispatch: this.dispatch,
+                    StoreActionTypes: this.StoreActionTypes,
                     onSidebarFiltersChange: this.handle_sidebar_filters_change
                 }
             });
@@ -211,11 +213,17 @@ export const RequirementAuditComponent = {
         const state = this.getState();
         const is_locked = state?.auditStatus === 'locked';
         const navigation_state = this.get_navigation_state();
-        const { is_first, is_last, prev_item, next_item, next_unhandled_item } = navigation_state;
+        const { mode, is_first, is_last, prev_item, next_item, next_unhandled_item } = navigation_state;
+
+        // Välj rätt översättningsnyckel baserat på mode
+        const is_sample_mode = mode === 'requirement_samples';
+        const previous_key = is_sample_mode ? 'previous_sample' : 'previous_requirement';
+        const next_key = is_sample_mode ? 'next_sample' : 'next_requirement';
+        const next_unhandled_key = is_sample_mode ? 'next_unhandled_sample' : 'next_unhandled_requirement';
 
         const build_aria_label = (button_text, item) => {
             if (!item) return button_text;
-            let label = `${button_text} ${item.link_text}`;
+            let label = `${button_text}: ${item.link_text}`;
             if (item.ref_text) {
                 label = `${label} ${item.ref_text}`;
             }
@@ -230,10 +238,13 @@ export const RequirementAuditComponent = {
             rule_file_content: state?.ruleFileContent,
             requirement_result: this.current_result,
             current_requirement_id: this.params.requirementId,
-            previous_aria_label: build_aria_label(t('previous_requirement'), prev_item),
-            next_aria_label: build_aria_label(t('next_requirement'), next_item),
-            next_unhandled_aria_label: build_aria_label(t('next_unhandled_requirement'), next_unhandled_item),
-            next_unhandled_available: Boolean(next_unhandled_item)
+            previous_aria_label: build_aria_label(t(previous_key), prev_item),
+            next_aria_label: build_aria_label(t(next_key), next_item),
+            next_unhandled_aria_label: build_aria_label(t(next_unhandled_key), next_unhandled_item),
+            next_unhandled_available: Boolean(next_unhandled_item),
+            previous_text_key: previous_key,
+            next_text_key: next_key,
+            next_unhandled_text_key: next_unhandled_key
         };
     },
 

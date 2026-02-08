@@ -48,6 +48,8 @@ export const RequirementAuditSidebarComponent = {
         this.deps = deps;
         this.router = deps.router;
         this.getState = deps.getState;
+        this.dispatch = deps.dispatch;
+        this.StoreActionTypes = deps.StoreActionTypes;
         this.Translation = deps.Translation;
         this.Helpers = deps.Helpers;
         this.AuditLogic = deps.AuditLogic;
@@ -57,6 +59,9 @@ export const RequirementAuditSidebarComponent = {
         this.handle_link_click = this.handle_link_click.bind(this);
         this.handle_search_input = this.handle_search_input.bind(this);
         this.handle_sort_change = this.handle_sort_change.bind(this);
+
+        // Ladda sparade inställningar från state
+        this.load_settings_from_state();
 
         if (this.Helpers?.load_css_safely) {
             await this.Helpers.load_css_safely(this.CSS_PATH, 'RequirementAuditSidebarComponent').catch(() => {});
@@ -140,6 +145,7 @@ export const RequirementAuditSidebarComponent = {
             text_content: this.Translation.t('filter_by_status_label')
         });
         status_group.appendChild(this.status_label_ref);
+        const current_filters_for_init = this.get_current_filters();
         FilterPanelComponent.init({
             root: status_group,
             deps: {
@@ -148,11 +154,14 @@ export const RequirementAuditSidebarComponent = {
                 onFilterChange: (new_filters) => {
                     const current = this.get_current_filters();
                     current.status = new_filters;
+                    this.save_settings_to_state();
                     this.render(this.last_render_options);
                     this.notify_filters_changed();
                 }
             }
         });
+        // Sätt initiala filter-värden efter init
+        FilterPanelComponent.render({ filters: current_filters_for_init.status || {} });
         this.filter_container_ref.appendChild(status_group);
 
         const sort_group = this.Helpers.create_element('div', { class_name: 'requirement-audit-sidebar__filter-group' });
@@ -197,6 +206,8 @@ export const RequirementAuditSidebarComponent = {
             this.search_input_ref.value = this.filters_by_mode[new_value].searchText || '';
         }
 
+        this.save_settings_to_state();
+
         if (this.last_render_options) {
             this.render(this.last_render_options);
         }
@@ -205,6 +216,7 @@ export const RequirementAuditSidebarComponent = {
     handle_search_input(event) {
         const current = this.get_current_filters();
         current.searchText = event?.target?.value || '';
+        this.save_settings_to_state();
         this.render(this.last_render_options);
         this.notify_filters_changed();
     },
@@ -212,6 +224,7 @@ export const RequirementAuditSidebarComponent = {
     handle_sort_change(event) {
         const current = this.get_current_filters();
         current.sortBy = event?.target?.value || current.sortBy;
+        this.save_settings_to_state();
         this.render(this.last_render_options);
         this.notify_filters_changed();
     },
@@ -581,6 +594,48 @@ export const RequirementAuditSidebarComponent = {
         if (payload) {
             this.on_filters_change_callback(payload);
         }
+    },
+
+    load_settings_from_state() {
+        if (!this.getState) return;
+        const state = this.getState();
+        const sidebar_settings = state?.uiSettings?.requirementAuditSidebar;
+        
+        if (sidebar_settings) {
+            if (sidebar_settings.selectedMode) {
+                this.selected_mode = sidebar_settings.selectedMode;
+            }
+            if (sidebar_settings.filtersByMode) {
+                // Merga sparade filter med default-värden
+                if (sidebar_settings.filtersByMode.sample_requirements) {
+                    this.filters_by_mode.sample_requirements = {
+                        ...this.filters_by_mode.sample_requirements,
+                        ...sidebar_settings.filtersByMode.sample_requirements
+                    };
+                }
+                if (sidebar_settings.filtersByMode.requirement_samples) {
+                    this.filters_by_mode.requirement_samples = {
+                        ...this.filters_by_mode.requirement_samples,
+                        ...sidebar_settings.filtersByMode.requirement_samples
+                    };
+                }
+            }
+        }
+    },
+
+    save_settings_to_state() {
+        if (!this.dispatch || !this.StoreActionTypes) return;
+        
+        this.dispatch({
+            type: this.StoreActionTypes.SET_REQUIREMENT_AUDIT_SIDEBAR_SETTINGS,
+            payload: {
+                selectedMode: this.selected_mode,
+                filtersByMode: {
+                    sample_requirements: { ...this.filters_by_mode.sample_requirements },
+                    requirement_samples: { ...this.filters_by_mode.requirement_samples }
+                }
+            }
+        });
     },
 
     get_display_status(requirement, requirement_result) {

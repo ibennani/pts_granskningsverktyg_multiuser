@@ -19,6 +19,7 @@ export const ActionTypes = {
     REPLACE_RULEFILE_AND_RECONCILE: 'REPLACE_RULEFILE_AND_RECONCILE',
     SET_UI_FILTER_SETTINGS: 'SET_UI_FILTER_SETTINGS',
     SET_ALL_REQUIREMENTS_FILTER_SETTINGS: 'SET_ALL_REQUIREMENTS_FILTER_SETTINGS',
+    SET_REQUIREMENT_AUDIT_SIDEBAR_SETTINGS: 'SET_REQUIREMENT_AUDIT_SIDEBAR_SETTINGS',
     STAGE_SAMPLE_CHANGES: 'STAGE_SAMPLE_CHANGES',
     CLEAR_STAGED_SAMPLE_CHANGES: 'CLEAR_STAGED_SAMPLE_CHANGES',
     CONFIRM_SINGLE_REVIEWED_REQUIREMENT: 'CONFIRM_SINGLE_REVIEWED_REQUIREMENT',
@@ -64,6 +65,21 @@ const initial_state = {
         allRequirementsFilter: {
             searchText: '',
             sortBy: 'default'
+        },
+        requirementAuditSidebar: {
+            selectedMode: 'sample_requirements',
+            filtersByMode: {
+                sample_requirements: {
+                    searchText: '',
+                    sortBy: 'ref_asc',
+                    status: { passed: true, failed: true, partially_audited: true, not_audited: true, updated: true }
+                },
+                requirement_samples: {
+                    searchText: '',
+                    sortBy: 'sample_asc',
+                    status: { passed: true, failed: true, partially_audited: true, not_audited: true, updated: true }
+                }
+            }
         }
     },
     auditCalculations: {}, 
@@ -462,6 +478,18 @@ function root_reducer(current_state, action) {
                     ...current_state.uiSettings,
                     allRequirementsFilter: updated_all_req_filter,
                     requirementListFilter: updated_req_list_filter
+                }
+            };
+        
+        case ActionTypes.SET_REQUIREMENT_AUDIT_SIDEBAR_SETTINGS:
+            return {
+                ...current_state,
+                uiSettings: {
+                    ...current_state.uiSettings,
+                    requirementAuditSidebar: {
+                        ...(current_state.uiSettings?.requirementAuditSidebar || {}),
+                        ...action.payload
+                    }
                 }
             };
 
