@@ -15,7 +15,10 @@ export const EditGeneralSectionComponent = {
         this.NotificationComponent = deps.NotificationComponent;
         this.form_element_ref = null;
         this.working_metadata = null;
+        this.initial_metadata_snapshot = null;
+        this.debounceTimer = null;
         this.save_form_data_immediately = this.save_form_data_immediately.bind(this);
+        this.debounced_autosave_form = this.debounced_autosave_form.bind(this);
         
         if (this.Helpers?.load_css) {
             await this.Helpers.load_css(this.CSS_PATH).catch(err => console.warn('[EditGeneralSectionComponent] Failed to load CSS', err));
@@ -40,6 +43,7 @@ export const EditGeneralSectionComponent = {
                 }
             });
             textarea.value = value ?? '';
+            textarea.addEventListener('input', this.debounced_autosave_form);
             container.appendChild(textarea);
             this.Helpers.init_auto_resize_for_textarea?.(textarea);
         } else {
@@ -53,6 +57,7 @@ export const EditGeneralSectionComponent = {
                 }
             });
             input.value = value ?? '';
+            input.addEventListener('input', this.debounced_autosave_form);
             container.appendChild(input);
         }
 
@@ -131,6 +136,7 @@ export const EditGeneralSectionComponent = {
             html_content: `<span>${this.Translation.t('back_without_saving')}</span>`
         });
         footerCancelButton.addEventListener('click', () => {
+            this._restore_initial_state();
             this.router('rulefile_sections', { section: 'general' });
         });
 
@@ -190,6 +196,13 @@ export const EditGeneralSectionComponent = {
         }
 
         return workingMetadata;
+    },
+
+    debounced_autosave_form() {
+        clearTimeout(this.debounceTimer);
+        this.debounceTimer = setTimeout(() => {
+            this.save_form_data_immediately();
+        }, 250);
     },
 
     save_form_data_immediately() {
@@ -292,6 +305,23 @@ export const EditGeneralSectionComponent = {
         this.router('rulefile_sections', { section: 'general' });
     },
 
+    _restore_initial_state() {
+        if (!this.initial_metadata_snapshot) return;
+        
+        const state = this.getState();
+        const currentRulefile = state?.ruleFileContent || {};
+        
+        const restoredRulefileContent = {
+            ...currentRulefile,
+            metadata: this.initial_metadata_snapshot
+        };
+
+        this.dispatch({
+            type: this.StoreActionTypes.UPDATE_RULEFILE_CONTENT,
+            payload: { ruleFileContent: restoredRulefileContent }
+        });
+    },
+
     render() {
         if (!this.root) return;
         const state = this.getState();
@@ -299,6 +329,9 @@ export const EditGeneralSectionComponent = {
         if (!state?.ruleFileContent?.metadata) {
             return;
         }
+
+        // Spara ursprungsläget när vyn laddas
+        this.initial_metadata_snapshot = this._clone_metadata(state.ruleFileContent.metadata);
 
         this.root.innerHTML = '';
 
@@ -310,12 +343,19 @@ export const EditGeneralSectionComponent = {
     },
 
     destroy() {
+        // Spara autosparat data innan komponenten förstörs (vid navigering bort)
+        if (this.form_element_ref && this.working_metadata) {
+            clearTimeout(this.debounceTimer);
+            this.save_form_data_immediately();
+        }
+        
         if (this.root) {
             this.root.innerHTML = '';
         }
         this.root = null;
         this.form_element_ref = null;
         this.working_metadata = null;
+        this.initial_metadata_snapshot = null;
         this.deps = null;
     }
 };

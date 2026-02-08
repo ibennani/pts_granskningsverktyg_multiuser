@@ -140,7 +140,7 @@ export const ConfirmDeleteViewComponent = {
 
         const cancel_button = this.Helpers.create_element('button', {
             class_name: ['button', 'button-default'],
-            html_content: `<span>${t('cancel_and_return_to_list')}</span>`
+            html_content: `<span>${t('keep_item')}</span>`
         });
         cancel_button.addEventListener('click', handle_cancel);
 

@@ -35,24 +35,26 @@ Adhere to the following rules at all times.
 ### Commit Messages
 
 - **Language:** ALWAYS use **Swedish**.
-- **Style:** Kortfattat och användarfokuserat. Beskriv **vilka funktioner som ändrats** och **hur det påverkar användningen**. Undvik att nämna filnamn eller tekniska implementationdetaljer.
-- **Coverage:** The message MUST reflect ALL changes currently staged or in the working directory. Analyze the full diff before generating the message.
+- **Målgrupp:** Commit-meddelanden ska vara begripliga för personer som inte har teknisk kunskap. Fokusera på **vad användaren kan göra** och **hur funktionerna fungerar**, inte på tekniska detaljer eller filnamn.
+- **Style:** Skriv kortfattat och tydligt. Beskriv **vilken funktion som ändrats** och **hur det påverkar användningen av verktyget**. Undvik att nämna filnamn, kodstrukturer eller tekniska termer som "refaktorera", "dispatch" eller "state-hantering".
+- **Coverage:** Meddelandet måste täcka ALLA ändringar som är staged eller i working directory. Analysera hela diffen innan meddelandet genereras.
 - **Format:** 
-  - **En ändring:** `Verb [Imperativ]: Ändrat [funktion] för [var] så att [användarpåverkan]`
+  - **En ändring:** `Verb [Imperativ]: [Vad användaren ser/upplever] så att [vad som händer eller förbättras]`
   - **Flera ändringar:** Använd punktlistor med samma struktur för varje ändring
 - **Exempel:**
-  - **Good (en ändring):** `Ändra: Sorteringsfunktionen för kravlistan så att krav sorteras efter prioritet istället för alfabetiskt`
-  - **Good (en ändring):** `Fixa: Beräkningen av bristindex så att det visas korrekt vid sidladdning`
-  - **Good (flera ändringar):**
+  - **Bra (en ändring):** `Ändra: Sorteringsfunktionen för kravlistan så att krav sorteras efter prioritet istället för alfabetiskt`
+  - **Bra (en ändring):** `Fixa: Bristindex visas nu korrekt när sidan laddas`
+  - **Bra (en ändring):** `Lägg till: Möjlighet att exportera rapporter till Word så att användare kan spara granskningar som dokument`
+  - **Bra (flera ändringar):**
     ```
     Uppdatera: Flera funktioner för att förbättra användarupplevelsen
     - Ändrat sorteringsfunktionen för kravlistan så att krav sorteras efter prioritet istället för alfabetiskt
-    - Fixat beräkningen av bristindex så att det visas korrekt vid sidladdning
+    - Fixat bristindex så att det visas korrekt när sidan laddas
     - Lagt till exportfunktion för rapporter så att användare kan exportera till Word
     ```
-  - **Bad:** `Uppdatera: Ändra beräkning i logic/score.js och uppdatera render i AuditOverview.js` (nämner filer)
-  - **Bad:** `Refaktorera: Flytta state-hantering till Redux store` (tekniskt, ingen användarpåverkan)
-  - **Bad:** `Fixa: Bristindex visas nu korrekt` (saknar kontext om vad som ändrats)
+  - **Dåligt:** `Uppdatera: Ändra beräkning i logic/score.js och uppdatera render i AuditOverview.js` (nämner filer som användaren inte känner till)
+  - **Dåligt:** `Refaktorera: Flytta state-hantering till Redux store` (tekniskt språk som inte säger något om vad användaren upplever)
+  - **Dåligt:** `Fixa: Bristindex visas nu korrekt` (saknar kontext om vad som faktiskt ändrats eller när problemet uppstod)
 
 ### Project Structure
 
@@ -172,15 +174,15 @@ Alla formulärkomponenter och state-hantering ska följa dessa strikta regler f�
 
 #### Central autospar (state.js)
 
-- **Timing:** 3 sekunder debounce efter varje state-ändring
-- **Mekanism:** När `dispatch()` anropas startas en timer. Om inget nytt dispatch sker inom 3 sekunder sparas state till localStorage
+- **Timing:** Sparar direkt till sessionStorage när `dispatch()` anropas (ingen debounce)
+- **Mekanism:** När `dispatch()` anropas sparas state omedelbart till sessionStorage
 - **Scope:** Gäller alla state-ändringar i hela applikationen
 
 #### Formulärkomponenter
 
 Alla formulärkomponenter måste följa samma mönster:
 
-- **Timing:** 3 sekunder debounce efter inaktivitet
+- **Timing:** 0,25 sekunder (250ms) debounce efter inaktivitet
 - **Triggas av:** Endast `input`-events (när användaren skriver)
 - **Triggas INTE av:**
   - `blur`-events (när fokus lämnar fältet)
@@ -228,7 +230,7 @@ debounced_autosave_form() {
     clearTimeout(this.debounceTimer);
     this.debounceTimer = setTimeout(() => {
         this.save_form_data_immediately();
-    }, 3000);
+    }, 250);
 },
 
 save_form_data_immediately() {
@@ -326,11 +328,19 @@ _parse_form_data(form, workingMetadata) {
 }
 ```
 
+#### Navigering och återställning
+
+- **Vid navigering bort från vy:** Autosparat data sparas automatiskt innan komponenten förstörs (i `destroy()`-metoden)
+- **Vid "spara inte"-knappar:** Alla autosparade ändringar i den aktuella vyn återställs till ursprungsläget när vyn laddades
+- **Ursprungsläget:** Sparas när komponenten renderas första gången (`render()`) och används för återställning
+
 #### Sammanfattning
 
-- **Autospar:** Sker endast vid 3 sekunders inaktivitet efter input
-- **Autospar triggas INTE:** Vid blur, klick eller navigering
+- **Autospar:** Sker vid 0,25 sekunders (250ms) inaktivitet efter input
+- **Autospar triggas INTE:** Vid blur, klick eller navigering (men sparas vid navigering bort)
 - **Manuell sparning:** Via knappar fungerar omedelbart och rensar debounce-timer
+- **Navigering bort:** Autosparat data sparas automatiskt innan komponenten förstörs
+- **"Spara inte"-knappar:** Återställer alla autosparade ändringar till ursprungsläget
 - **Fokus och scroll:** Bevaras vid autospar så användaren inte märker något
 - **Trimning:** Alla formulärfält trimmas vid manuell sparning eller när formulärvyn lämnas, INTE vid autospar
 - **Osynlighet:** Autospar ska vara helt osynligt för användaren - ingen fokus-förändring, ingen scroll-förändring, inga visuella ändringar

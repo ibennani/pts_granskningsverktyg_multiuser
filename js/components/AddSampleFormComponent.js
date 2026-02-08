@@ -29,11 +29,13 @@ export const AddSampleFormComponent = {
         this.original_content_types_on_load = [];
         this.previous_sample_type_value = "";
         this.debounceTimerFormFields = null;
+        this.initial_sample_snapshot = null;
 
         // Bind methods
         this.handle_form_submit = this.handle_form_submit.bind(this);
         this.update_description_from_sample_type = this.update_description_from_sample_type.bind(this);
         this._handleCheckboxChange = this._handleCheckboxChange.bind(this);
+        this.debounced_autosave_form = this.debounced_autosave_form.bind(this);
     },
 
     get_sample_categories_from_state() {
@@ -130,6 +132,14 @@ export const AddSampleFormComponent = {
             const parentCheckbox = this.content_types_container_element.querySelector(`input[data-parent-id="${parentId}"]`);
             if (parentCheckbox) this._updateParentCheckboxState(parentCheckbox);
         }
+    },
+
+    debounced_autosave_form() {
+        if (!this.current_editing_sample_id) return; // Autospar endast för redigering, inte för nya stickprov
+        clearTimeout(this.debounceTimerFormFields);
+        this.debounceTimerFormFields = setTimeout(() => {
+            this.save_form_data_immediately(true);
+        }, 250);
     },
 
     save_form_data_immediately(is_autosave = false) {
@@ -283,6 +293,18 @@ export const AddSampleFormComponent = {
         }
     },
 
+    _restore_initial_state() {
+        if (!this.initial_sample_snapshot || !this.current_editing_sample_id) return;
+        
+        this.dispatch({
+            type: this.StoreActionTypes.UPDATE_SAMPLE,
+            payload: {
+                sampleId: this.current_editing_sample_id,
+                updatedSampleData: this.initial_sample_snapshot
+            }
+        });
+    },
+
     render(sample_id_to_edit = null) {
         // Prevent re-rendering (and resetting form state) if we are already editing this sample and the form is mounted.
         if (this.current_editing_sample_id === sample_id_to_edit && this.form_element && this.root && this.root.contains(this.form_element)) {
@@ -293,6 +315,13 @@ export const AddSampleFormComponent = {
         this.current_editing_sample_id = sample_id_to_edit;
         const current_state = this.getState();
         const sample_data = this.current_editing_sample_id ? current_state.samples.find(s => s.id === this.current_editing_sample_id) : null;
+        
+        // Spara ursprungsläget när vyn laddas (endast för redigering)
+        if (sample_data) {
+            this.initial_sample_snapshot = JSON.parse(JSON.stringify(sample_data));
+        } else {
+            this.initial_sample_snapshot = null;
+        }
         const sample_categories = this.get_sample_categories_from_state();
         const grouped_content_types = current_state.ruleFileContent.metadata?.vocabularies?.contentTypes || current_state.ruleFileContent.metadata?.contentTypes || [];
 
@@ -324,7 +353,9 @@ export const AddSampleFormComponent = {
         this.sample_type_select = this.Helpers.create_element('select', { id: 'sampleTypeSelect', class_name: 'form-control', attributes: { required: true, disabled: true } });
         this.sample_type_select.addEventListener('change', this.update_description_from_sample_type);
         this.description_input = this.Helpers.create_element('input', { id: 'sampleDescriptionInput', class_name: 'form-control', attributes: { type: 'text', required: true } });
+        this.description_input.addEventListener('input', this.debounced_autosave_form);
         this.url_input = this.Helpers.create_element('input', { id: 'sampleUrlInput', class_name: 'form-control', attributes: { type: 'url' } });
+        this.url_input.addEventListener('input', this.debounced_autosave_form);
         this.url_form_group_ref = this.Helpers.create_element('div', { class_name: 'form-group', children: [this.Helpers.create_element('label', { attributes: { for: 'sampleUrlInput' }, text_content: t('url') }), this.url_input] });
         this.form_element.append(
             this.Helpers.create_element('div', { class_name: 'form-group', children: [this.Helpers.create_element('label', { attributes: { for: 'sampleTypeSelect' }, text_content: t('sample_type_label') + '*' }), this.sample_type_select] }),
@@ -404,7 +435,10 @@ export const AddSampleFormComponent = {
             fieldset.appendChild(children_container);
             this.content_types_container_element.appendChild(fieldset);
         });
-        this.content_types_container_element.addEventListener('change', this._handleCheckboxChange);
+        this.content_types_container_element.addEventListener('change', (e) => {
+            this._handleCheckboxChange(e);
+            this.debounced_autosave_form();
+        });
         const all_child_checkboxes = this.content_types_container_element.querySelectorAll('input[data-child-for]');
         all_child_checkboxes.forEach(cb => { cb.checked = sample_data?.selectedContentTypes?.includes(cb.value) || false; });
         this.content_types_container_element.querySelectorAll('input[data-parent-id]').forEach(pc => this._updateParentCheckboxState(pc));
@@ -436,6 +470,12 @@ export const AddSampleFormComponent = {
     },
 
     destroy() {
+        // Spara autosparat data innan komponenten förstörs (vid navigering bort)
+        if (this.current_editing_sample_id && this.form_element) {
+            clearTimeout(this.debounceTimerFormFields);
+            this.save_form_data_immediately(true);
+        }
+        
         clearTimeout(this.debounceTimerFormFields);
         if (this.form_element) {
             this.form_element.removeEventListener('submit', this.handle_form_submit);
@@ -448,5 +488,6 @@ export const AddSampleFormComponent = {
         this.root = null;
         this.deps = null;
         this.form_element = null;
+        this.initial_sample_snapshot = null;
     }
 };

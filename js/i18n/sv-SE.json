@@ -594,6 +594,8 @@
   "template_for_observation": "Mall för avvikelsetext",
   "criterion_header": "Kriterium",
   "cancel_and_return_to_list": "Avbryt och återgå till listan",
+  "back_to_requirement_list_without_saving": "Till kravlistan utan att spara",
+  "keep_item": "Behåll",
   "check_condition_label": "Vad måste stämma för att det ska gå att genomföra en kontroll?",
   "delete_prefix": "Radera",
   "edit_rulefile_button": "Redigera regelfil",

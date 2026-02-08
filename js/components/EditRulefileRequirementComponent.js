@@ -18,12 +18,14 @@ export const EditRulefileRequirementComponent = {
         
         this.form_element_ref = null;
         this.local_requirement_data = null;
+        this.initial_requirement_snapshot = null;
         this.debounceTimerFormFields = null;
 
         // Bind methods
         this.handle_form_submit = this.handle_form_submit.bind(this);
         this.handle_form_click = this.handle_form_click.bind(this);
         this._handle_content_type_change = this._handle_content_type_change.bind(this);
+        this.debounced_autosave_form = this.debounced_autosave_form.bind(this);
         
         await this.Helpers.load_css(this.CSS_PATH_SHARED).catch(e => console.warn(e));
         await this.Helpers.load_css(this.CSS_PATH_SPECIFIC).catch(e => console.warn(e));
@@ -224,6 +226,16 @@ export const EditRulefileRequirementComponent = {
             checks_data.push(check_obj);
         });
         this.local_requirement_data.checks = checks_data;
+    },
+
+    debounced_autosave_form() {
+        const is_new_requirement = this.params?.id === 'new';
+        if (is_new_requirement || !this.local_requirement_data) return;
+        
+        clearTimeout(this.debounceTimerFormFields);
+        this.debounceTimerFormFields = setTimeout(() => {
+            this.save_form_data_immediately();
+        }, 250);
     },
 
     save_form_data_immediately() {
@@ -509,10 +521,14 @@ export const EditRulefileRequirementComponent = {
         if (is_textarea) {
             input = this.Helpers.create_element('textarea', { id: id, name: id, class_name: 'form-control', attributes: { rows: 4 } });
             input.value = Array.isArray(value) ? value.join('\n') : (value || '');
+            input.addEventListener('input', this.debounced_autosave_form);
             window.Helpers.init_auto_resize_for_textarea(input);
         } else {
             input = this.Helpers.create_element('input', { id: id, name: id, class_name: 'form-control', attributes: { type: input_type }});
             input.value = value || '';
+            if (input_type === 'text' || input_type === 'number') {
+                input.addEventListener('input', this.debounced_autosave_form);
+            }
         }
         form_group.appendChild(input);
         return form_group;
@@ -539,9 +555,12 @@ export const EditRulefileRequirementComponent = {
         const cancel_button = this.Helpers.create_element('button', {
             type: 'button',
             class_name: ['button', 'button-default'],
-            html_content: `<span>${t('cancel_and_return_to_list')}</span>`
+            html_content: `<span>${t('back_to_requirement_list_without_saving')}</span>`
         });
-        cancel_button.addEventListener('click', () => this.router('rulefile_requirements'));
+        cancel_button.addEventListener('click', () => {
+            this._restore_initial_state();
+            this.router('rulefile_requirements');
+        });
         
         actions_div.append(save_button, cancel_button);
         return actions_div;
@@ -604,6 +623,7 @@ export const EditRulefileRequirementComponent = {
         if (metadata?.impact?.isCritical) {
             critical_checkbox.checked = true;
         }
+        critical_checkbox.addEventListener('change', this.debounced_autosave_form);
         critical_wrapper.appendChild(critical_checkbox);
         critical_wrapper.appendChild(this.Helpers.create_element('label', { attributes: { for: 'isCritical' }, text_content: t('is_critical') }));
         impact_group.appendChild(critical_wrapper);
@@ -658,7 +678,10 @@ export const EditRulefileRequirementComponent = {
         const t = this.Translation.t;
         const section_wrapper = this.Helpers.create_element('div', { class_name: 'audit-section' });
         section_wrapper.appendChild(this.Helpers.create_element('h2', { text_content: t('content_types_section_title') }));
-        section_wrapper.addEventListener('change', this._handle_content_type_change);
+        section_wrapper.addEventListener('change', (e) => {
+            this._handle_content_type_change(e);
+            this.debounced_autosave_form();
+        });
 
         all_content_types.forEach(group => {
             const fieldset = this.Helpers.create_element('fieldset', { class_name: 'content-type-parent-group-edit' });
@@ -1257,8 +1280,10 @@ export const EditRulefileRequirementComponent = {
         logic_fieldset.appendChild(this.Helpers.create_element('legend', { text_content: t('check_logic_title') }));
         const logic_and = this.Helpers.create_element('input', { id: `logic_${sane_check_id}_and`, name: `check_${sane_check_id}_logic`, value: 'AND', attributes: { type: 'radio' } });
         if (!check.logic || check.logic.toUpperCase() === 'AND') logic_and.checked = true;
+        logic_and.addEventListener('change', this.debounced_autosave_form);
         const logic_or = this.Helpers.create_element('input', { id: `logic_${sane_check_id}_or`, name: `check_${sane_check_id}_logic`, value: 'OR', attributes: { type: 'radio' } });
         if (check.logic?.toUpperCase() === 'OR') logic_or.checked = true;
+        logic_or.addEventListener('change', this.debounced_autosave_form);
         
         logic_fieldset.append(
             this.Helpers.create_element('div', { class_name: 'form-check', children: [logic_and, this.Helpers.create_element('label', { attributes: { for: `logic_${sane_check_id}_and` }, text_content: t('check_logic_and') })] }),
@@ -1425,6 +1450,9 @@ export const EditRulefileRequirementComponent = {
                     delete this.local_requirement_data[old_field];
                 });
             }
+            
+            // Spara ursprungsläget när vyn laddas (efter migrering om nödvändigt)
+            this.initial_requirement_snapshot = JSON.parse(JSON.stringify(this.local_requirement_data));
         }
 
         const page_title = is_new_requirement 
@@ -1460,7 +1488,25 @@ export const EditRulefileRequirementComponent = {
         }, 100);
     },
 
+    _restore_initial_state() {
+        if (!this.initial_requirement_snapshot || this.params?.id === 'new') return;
+        
+        this.dispatch({
+            type: this.StoreActionTypes.UPDATE_REQUIREMENT_DEFINITION,
+            payload: {
+                requirementId: this.params.id,
+                updatedRequirementData: this.initial_requirement_snapshot
+            }
+        });
+    },
+
     destroy() {
+        // Spara autosparat data innan komponenten förstörs (vid navigering bort)
+        if (this.form_element_ref && this.local_requirement_data && this.params?.id !== 'new') {
+            clearTimeout(this.debounceTimerFormFields);
+            this.save_form_data_immediately();
+        }
+        
         clearTimeout(this.debounceTimerFormFields);
         if (this.form_element_ref) {
             this.form_element_ref.removeEventListener('submit', this.handle_form_submit);
@@ -1469,6 +1515,7 @@ export const EditRulefileRequirementComponent = {
         if (this.root) this.root.innerHTML = '';
         this.form_element_ref = null;
         this.local_requirement_data = null;
+        this.initial_requirement_snapshot = null;
         this.root = null;
         this.deps = null;
     }

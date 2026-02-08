@@ -594,6 +594,8 @@
   "template_for_observation": "Template for Deviation Text",
   "criterion_header": "Criterion",
   "cancel_and_return_to_list": "Cancel and return to list",
+  "back_to_requirement_list_without_saving": "Back to requirement list without saving",
+  "keep_item": "Keep",
   "check_condition_label": "What must be true to perform the check?",
   "delete_prefix": "Delete",
   "edit_rulefile_button": "Edit Rule File",

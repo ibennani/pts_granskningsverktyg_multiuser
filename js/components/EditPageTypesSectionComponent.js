@@ -15,8 +15,11 @@ export const EditPageTypesSectionComponent = {
         this.NotificationComponent = deps.NotificationComponent;
         this.form_element_ref = null;
         this.working_metadata = null;
+        this.initial_metadata_snapshot = null;
         this.showing_add_form = false;
+        this.debounceTimer = null;
         this.save_form_data_immediately = this.save_form_data_immediately.bind(this);
+        this.debounced_autosave_form = this.debounced_autosave_form.bind(this);
         
         if (this.Helpers?.load_css) {
             await this.Helpers.load_css(this.CSS_PATH).catch(err => console.warn('[EditPageTypesSectionComponent] Failed to load CSS', err));
@@ -440,6 +443,13 @@ export const EditPageTypesSectionComponent = {
         }, 50);
     },
 
+    debounced_autosave_form() {
+        clearTimeout(this.debounceTimer);
+        this.debounceTimer = setTimeout(() => {
+            this.save_form_data_immediately(false);
+        }, 250);
+    },
+
     _generate_slug(value) {
         if (!value) return '';
         return value.toString().trim().toLowerCase()
@@ -644,6 +654,7 @@ export const EditPageTypesSectionComponent = {
                 'data-index': 'new'
             }
         });
+        page_type_input.addEventListener('input', this.debounced_autosave_form);
         
         page_type_group.appendChild(label_row);
         page_type_group.appendChild(page_type_input);
@@ -664,6 +675,7 @@ export const EditPageTypesSectionComponent = {
                 'data-index': 'new'
             }
         });
+        categories_textarea.addEventListener('input', this.debounced_autosave_form);
         
         this.Helpers.init_auto_resize_for_textarea?.(categories_textarea);
         categories_group.appendChild(categories_label);
@@ -1043,6 +1055,7 @@ export const EditPageTypesSectionComponent = {
                 }
             });
             page_type_input.value = page_type_str;
+            page_type_input.addEventListener('input', this.debounced_autosave_form);
             
             page_type_group.appendChild(label_row);
             page_type_group.appendChild(page_type_input);
@@ -1077,6 +1090,7 @@ export const EditPageTypesSectionComponent = {
                     'data-index': index
                 }
             });
+            categories_textarea.addEventListener('input', this.debounced_autosave_form);
             
             // Fyll textarea med kategorier (varje kategori på en egen rad)
             if (matching_category && Array.isArray(matching_category.categories) && matching_category.categories.length > 0) {
@@ -1150,6 +1164,7 @@ export const EditPageTypesSectionComponent = {
             html_content: `<span>${t('rulefile_page_types_back_without_saving')}</span>`
         });
         cancel_button.addEventListener('click', () => {
+            this._restore_initial_state();
             sessionStorage.setItem('focusAfterLoad', '.rulefile-sections-header h2');
             this.router('rulefile_sections', { section: 'page_types' });
         });
@@ -1167,6 +1182,23 @@ export const EditPageTypesSectionComponent = {
         return { form, workingMetadata };
     },
 
+    _restore_initial_state() {
+        if (!this.initial_metadata_snapshot) return;
+        
+        const state = this.getState();
+        const currentRulefile = state?.ruleFileContent || {};
+        
+        const restoredRulefileContent = {
+            ...currentRulefile,
+            metadata: this.initial_metadata_snapshot
+        };
+
+        this.dispatch({
+            type: this.StoreActionTypes.UPDATE_RULEFILE_CONTENT,
+            payload: { ruleFileContent: restoredRulefileContent }
+        });
+    },
+
     render() {
         if (!this.root) return;
         const state = this.getState();
@@ -1180,6 +1212,9 @@ export const EditPageTypesSectionComponent = {
             return;
         }
 
+        // Spara ursprungsläget när vyn laddas
+        this.initial_metadata_snapshot = this._clone_metadata(state.ruleFileContent.metadata);
+
         this.root.innerHTML = '';
 
         const { form, workingMetadata } = this._create_form(state.ruleFileContent.metadata);
@@ -1190,12 +1225,19 @@ export const EditPageTypesSectionComponent = {
     },
 
     destroy() {
+        // Spara autosparat data innan komponenten förstörs (vid navigering bort)
+        if (this.form_element_ref && this.working_metadata) {
+            clearTimeout(this.debounceTimer);
+            this.save_form_data_immediately(false);
+        }
+        
         if (this.root) {
             this.root.innerHTML = '';
         }
         this.root = null;
         this.form_element_ref = null;
         this.working_metadata = null;
+        this.initial_metadata_snapshot = null;
         this.deps = null;
     }
 };
