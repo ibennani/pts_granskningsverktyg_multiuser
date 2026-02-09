@@ -572,7 +572,7 @@ function execute_single_dispatch(action) {
 
                 // Notifiera listeners med felhantering
                 try {
-                    notify_listeners();
+                    notify_listeners({ skip_render: action?.payload?.skip_render === true });
                 } catch (listenerError) {
                     console.warn('[State.js] Error notifying state listeners:', listenerError);
                     // Listener-fel ska inte stoppa state-uppdateringen
@@ -634,12 +634,12 @@ function subscribe(listener_function) {
     };
 }
 
-function notify_listeners() {
+function notify_listeners(listener_meta = null) {
     const currentSnapshot = getState();
     setTimeout(() => {
         listeners.forEach(listener => {
             try {
-                listener(currentSnapshot);
+                listener(currentSnapshot, listener_meta);
             } catch (error) {
                 console.error('[State.js] Error in listener function:', error);
             }

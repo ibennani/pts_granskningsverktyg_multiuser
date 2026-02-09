@@ -956,7 +956,10 @@ window.DraftManager = DraftManager;
             
             consoleManager.info('[Main.js] Global event listeners cleaned up');
         };
-        subscribe((new_state) => { 
+        subscribe((new_state, listener_meta) => { 
+            if (listener_meta?.skip_render) {
+                return;
+            }
             try {
                 top_action_bar_instance.render();
             } catch (error) {

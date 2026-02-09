@@ -383,7 +383,7 @@ export const EditPageTypesSectionComponent = {
         // Dispatch - detta kommer att trigga listeners som kan re-rendera komponenter
         this.dispatch({
             type: this.StoreActionTypes.UPDATE_RULEFILE_CONTENT,
-            payload: { ruleFileContent: updatedRulefileContent }
+            payload: { ruleFileContent: updatedRulefileContent, skip_render: shouldTrim !== true }
         });
         
         // Återställ fokus och scroll-position efter att listeners har körts

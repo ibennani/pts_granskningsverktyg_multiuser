@@ -206,7 +206,8 @@ export const AddSampleFormComponent = {
             payload: {
                 sampleId: this.current_editing_sample_id,
                 updatedSampleData: sample_payload_data,
-                analysis: { added_reqs: added_req_ids, removed_reqs: removed_req_ids, data_will_be_lost }
+                analysis: { added_reqs: added_req_ids, removed_reqs: removed_req_ids, data_will_be_lost },
+                skip_render: is_autosave === true
             }
         });
 
@@ -218,7 +219,14 @@ export const AddSampleFormComponent = {
     _perform_save(sample_payload_data, is_autosave = false) {
         const t = this.get_t_internally();
         if (this.current_editing_sample_id) {
-            this.dispatch({ type: this.StoreActionTypes.UPDATE_SAMPLE, payload: { sampleId: this.current_editing_sample_id, updatedSampleData: sample_payload_data } });
+            this.dispatch({
+                type: this.StoreActionTypes.UPDATE_SAMPLE,
+                payload: {
+                    sampleId: this.current_editing_sample_id,
+                    updatedSampleData: sample_payload_data,
+                    skip_render: is_autosave === true
+                }
+            });
 
             // Update the baseline for content types so future changes are compared against this saved state
             if (sample_payload_data.selectedContentTypes) {
@@ -233,7 +241,10 @@ export const AddSampleFormComponent = {
             }
         } else {
             const new_sample_object = { ...sample_payload_data, id: this.Helpers.generate_uuid_v4(), requirementResults: {} };
-            this.dispatch({ type: this.StoreActionTypes.ADD_SAMPLE, payload: new_sample_object });
+            this.dispatch({
+                type: this.StoreActionTypes.ADD_SAMPLE,
+                payload: { ...new_sample_object, skip_render: is_autosave === true }
+            });
             if (!is_autosave && window.DraftManager?.commitCurrentDraft) {
                 window.DraftManager.commitCurrentDraft();
             }

@@ -90,12 +90,21 @@ export const EditRulefileRequirementComponent = {
         return key_map[block_id];
     },
 
-    _update_local_data_from_form() {
+    _update_local_data_from_form(shouldTrim = false) {
         if (!this.form_element_ref) return;
+        const normalize_value = (value) => {
+            if (typeof value !== 'string') return value;
+            return shouldTrim ? value.trim() : value;
+        };
+        const normalize_textarea_value = (value) => {
+            if (typeof value !== 'string') return value;
+            if (!shouldTrim) return value;
+            return value.split('\n').map(line => line.trim()).join('\n');
+        };
         
         // Trim alla strängvärden när de läses från formulärfält
         const titleValue = this.form_element_ref.querySelector('#title')?.value || '';
-        this.local_requirement_data.title = typeof titleValue === 'string' ? titleValue.trim() : titleValue;
+        this.local_requirement_data.title = normalize_value(titleValue);
         
         // Support both old format (direct fields) and new format (infoBlocks)
         const has_info_blocks = this.local_requirement_data.infoBlocks && typeof this.local_requirement_data.infoBlocks === 'object';
@@ -134,38 +143,38 @@ export const EditRulefileRequirementComponent = {
                 }
                 if (text_textarea) {
                     const textValue = text_textarea.value || '';
-                    this.local_requirement_data.infoBlocks[block_id].text = typeof textValue === 'string' ? textValue.trim() : textValue;
+                    this.local_requirement_data.infoBlocks[block_id].text = normalize_textarea_value(textValue);
                 }
             });
         } else {
             // Old format: fallback to direct fields (for backward compatibility)
             const expectedObservationValue = this.form_element_ref.querySelector('#expectedObservation')?.value || '';
-            this.local_requirement_data.expectedObservation = typeof expectedObservationValue === 'string' ? expectedObservationValue.trim() : expectedObservationValue;
+            this.local_requirement_data.expectedObservation = normalize_textarea_value(expectedObservationValue);
             
             const instructionsValue = this.form_element_ref.querySelector('#instructions')?.value || '';
-            this.local_requirement_data.instructions = typeof instructionsValue === 'string' ? instructionsValue.trim() : instructionsValue;
+            this.local_requirement_data.instructions = normalize_textarea_value(instructionsValue);
             
             const exceptionsValue = this.form_element_ref.querySelector('#exceptions')?.value || '';
-            this.local_requirement_data.exceptions = typeof exceptionsValue === 'string' ? exceptionsValue.trim() : exceptionsValue;
+            this.local_requirement_data.exceptions = normalize_textarea_value(exceptionsValue);
             
             const commonErrorsValue = this.form_element_ref.querySelector('#commonErrors')?.value || '';
-            this.local_requirement_data.commonErrors = typeof commonErrorsValue === 'string' ? commonErrorsValue.trim() : commonErrorsValue;
+            this.local_requirement_data.commonErrors = normalize_textarea_value(commonErrorsValue);
             
             const tipsValue = this.form_element_ref.querySelector('#tips')?.value || '';
-            this.local_requirement_data.tips = typeof tipsValue === 'string' ? tipsValue.trim() : tipsValue;
+            this.local_requirement_data.tips = normalize_textarea_value(tipsValue);
             
             const examplesValue = this.form_element_ref.querySelector('#examples')?.value || '';
-            this.local_requirement_data.examples = typeof examplesValue === 'string' ? examplesValue.trim() : examplesValue;
+            this.local_requirement_data.examples = normalize_textarea_value(examplesValue);
         }
         
         if (!this.local_requirement_data.standardReference) {
             this.local_requirement_data.standardReference = { text: '', url: '' };
         }
         const standardRefTextValue = this.form_element_ref.querySelector('#standardReferenceText')?.value || '';
-        this.local_requirement_data.standardReference.text = typeof standardRefTextValue === 'string' ? standardRefTextValue.trim() : standardRefTextValue;
+        this.local_requirement_data.standardReference.text = normalize_value(standardRefTextValue);
         
         const standardRefUrlValue = this.form_element_ref.querySelector('#standardReferenceUrl')?.value || '';
-        this.local_requirement_data.standardReference.url = typeof standardRefUrlValue === 'string' ? standardRefUrlValue.trim() : standardRefUrlValue;
+        this.local_requirement_data.standardReference.url = normalize_value(standardRefUrlValue);
 
         if (!this.local_requirement_data.metadata) {
             this.local_requirement_data.metadata = {};
@@ -174,13 +183,13 @@ export const EditRulefileRequirementComponent = {
             this.local_requirement_data.metadata.mainCategory = { text: '' };
         }
         const mainCategoryTextValue = this.form_element_ref.querySelector('#mainCategoryText')?.value || '';
-        this.local_requirement_data.metadata.mainCategory.text = typeof mainCategoryTextValue === 'string' ? mainCategoryTextValue.trim() : mainCategoryTextValue;
+        this.local_requirement_data.metadata.mainCategory.text = normalize_value(mainCategoryTextValue);
 
         if (!this.local_requirement_data.metadata.subCategory) {
             this.local_requirement_data.metadata.subCategory = { text: '' };
         }
         const subCategoryTextValue = this.form_element_ref.querySelector('#subCategoryText')?.value || '';
-        this.local_requirement_data.metadata.subCategory.text = typeof subCategoryTextValue === 'string' ? subCategoryTextValue.trim() : subCategoryTextValue;
+        this.local_requirement_data.metadata.subCategory.text = normalize_value(subCategoryTextValue);
 
         if (!this.local_requirement_data.metadata.impact) {
             this.local_requirement_data.metadata.impact = {};
@@ -207,7 +216,7 @@ export const EditRulefileRequirementComponent = {
             const conditionValue = check_el.querySelector(`#check_${sane_check_id}_condition`)?.value || '';
             const check_obj = {
                 id: check_id,
-                condition: typeof conditionValue === 'string' ? conditionValue.trim() : conditionValue,
+                condition: normalize_textarea_value(conditionValue),
                 logic: check_el.querySelector(`input[name="check_${sane_check_id}_logic"]:checked`)?.value || 'AND',
                 passCriteria: []
             };
@@ -219,8 +228,8 @@ export const EditRulefileRequirementComponent = {
                 const failureTemplateValue = pc_el.querySelector(`#pc_${sane_check_id}_${sane_pc_id}_failureTemplate`)?.value || '';
                 check_obj.passCriteria.push({
                     id: pc_id,
-                    requirement: typeof requirementValue === 'string' ? requirementValue.trim() : requirementValue,
-                    failureStatementTemplate: typeof failureTemplateValue === 'string' ? failureTemplateValue.trim() : failureTemplateValue
+                    requirement: normalize_textarea_value(requirementValue),
+                    failureStatementTemplate: normalize_textarea_value(failureTemplateValue)
                 });
             });
             checks_data.push(check_obj);
@@ -234,27 +243,24 @@ export const EditRulefileRequirementComponent = {
         
         clearTimeout(this.debounceTimerFormFields);
         this.debounceTimerFormFields = setTimeout(() => {
-            this.save_form_data_immediately();
+            this.save_form_data_immediately(false);
         }, 250);
     },
 
-    save_form_data_immediately() {
+    save_form_data_immediately(shouldTrim = false) {
         const is_new_requirement = this.params?.id === 'new';
         if (is_new_requirement || !this.local_requirement_data) return; 
         
-        this._update_local_data_from_form();
-        if (typeof window !== 'undefined') {
-            window.skipRulefileRequirementRender = (Number(window.skipRulefileRequirementRender) || 0) + 1;
-        }
+        this._update_local_data_from_form(shouldTrim);
         this.dispatch({
             type: this.StoreActionTypes.UPDATE_REQUIREMENT_DEFINITION,
-            payload: { requirementId: this.params.id, updatedRequirementData: this.local_requirement_data }
+            payload: { requirementId: this.params.id, updatedRequirementData: this.local_requirement_data, skip_render: shouldTrim !== true }
         });
     },
 
     handle_form_submit(event) {
         event.preventDefault();
-        this._update_local_data_from_form(); 
+        this._update_local_data_from_form(true);
 
         const t = this.Translation.t;
         if (!this.local_requirement_data.title.trim()) {
@@ -311,7 +317,7 @@ export const EditRulefileRequirementComponent = {
         event.stopPropagation();
         event.preventDefault();
         
-        this._update_local_data_from_form();
+        this._update_local_data_from_form(false);
 
         const previous_layout = this._capture_positions();
 
@@ -1504,7 +1510,7 @@ export const EditRulefileRequirementComponent = {
         // Spara autosparat data innan komponenten förstörs (vid navigering bort)
         if (this.form_element_ref && this.local_requirement_data && this.params?.id !== 'new') {
             clearTimeout(this.debounceTimerFormFields);
-            this.save_form_data_immediately();
+            this.save_form_data_immediately(true);
         }
         
         clearTimeout(this.debounceTimerFormFields);
