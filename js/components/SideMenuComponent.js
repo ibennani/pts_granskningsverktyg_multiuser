@@ -225,8 +225,8 @@ export const SideMenuComponent = {
                 aria_label: t('side_menu_aria_label'),
                 items: [
                     { label: t('edit_rulefile_title'), view_name: 'edit_rulefile_main' },
-                    { label: t('rulefile_sections_title'), view_name: 'rulefile_sections' },
-                    { label: t('rulefile_edit_requirements_title'), view_name: 'rulefile_requirements' }
+                    { label: t('rulefile_edit_requirements_title'), view_name: 'rulefile_requirements' },
+                    { label: t('rulefile_sections_title'), view_name: 'rulefile_sections' }
                 ]
             };
         }
