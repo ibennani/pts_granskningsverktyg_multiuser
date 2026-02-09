@@ -74,19 +74,32 @@ export function validate_rule_file_json(json_object) {
     }
 
     // Validate metadata.samples.sampleCategories (old format) or metadata.vocabularies.sampleTypes.sampleCategories (new format)
+    // Also check for sampleTypes array as an alternative
     const sampleCategories = metadata.vocabularies?.sampleTypes?.sampleCategories || metadata.samples?.sampleCategories;
-    if (!Array.isArray(sampleCategories) || sampleCategories.length === 0) {
-        return { isValid: false, message: "Regelfilen måste innehålla 'metadata.vocabularies.sampleTypes.sampleCategories' (eller 'metadata.samples.sampleCategories') som en array med minst en kategori." };
+    const sampleTypes = metadata.vocabularies?.sampleTypes?.sampleTypes || metadata.samples?.sampleTypes;
+    
+    // Allow either sampleCategories (hierarchical) or sampleTypes (simple array) to be present
+    if (!Array.isArray(sampleCategories) && !Array.isArray(sampleTypes)) {
+        return { isValid: false, message: "Regelfilen måste innehålla antingen 'metadata.vocabularies.sampleTypes.sampleCategories' (eller 'metadata.samples.sampleCategories') som en array med minst en kategori, eller 'metadata.vocabularies.sampleTypes.sampleTypes' (eller 'metadata.samples.sampleTypes') som en array med minst en typ." };
     }
-    for (const category of sampleCategories) {
-        if (!category.id || !category.text || !Array.isArray(category.categories) || category.categories.length === 0) {
-            return { isValid: false, message: `Varje objekt i 'sampleCategories' måste ha 'id', 'text', och en 'categories'-array med minst ett objekt. Fel vid: ${category.text || 'Okänd kategori'}` };
-        }
-        for (const subcat of category.categories) {
-            if (!subcat.id || !subcat.text) {
-                return { isValid: false, message: `Varje underkategori i '${category.text}' måste ha 'id' och 'text'.` };
+    
+    // If sampleCategories exists and is not empty, validate its structure
+    if (Array.isArray(sampleCategories) && sampleCategories.length > 0) {
+        for (const category of sampleCategories) {
+            if (!category.id || !category.text || !Array.isArray(category.categories) || category.categories.length === 0) {
+                return { isValid: false, message: `Varje objekt i 'sampleCategories' måste ha 'id', 'text', och en 'categories'-array med minst ett objekt. Fel vid: ${category.text || 'Okänd kategori'}` };
+            }
+            for (const subcat of category.categories) {
+                if (!subcat.id || !subcat.text) {
+                    return { isValid: false, message: `Varje underkategori i '${category.text}' måste ha 'id' och 'text'.` };
+                }
             }
         }
+    }
+    
+    // If sampleTypes exists, validate it's a non-empty array
+    if (Array.isArray(sampleTypes) && sampleTypes.length === 0) {
+        return { isValid: false, message: "Om 'metadata.vocabularies.sampleTypes.sampleTypes' (eller 'metadata.samples.sampleTypes') finns måste det vara en array med minst en typ." };
     }
 
     // Validate metadata.vocabularies.contentTypes (new format) or metadata.contentTypes (old format)

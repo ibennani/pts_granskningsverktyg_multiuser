@@ -76,7 +76,7 @@ const initial_state = {
                 },
                 requirement_samples: {
                     searchText: '',
-                    sortBy: 'sample_asc',
+                    sortBy: 'creation_order',
                     status: { passed: true, failed: true, partially_audited: true, not_audited: true, updated: true }
                 }
             }
