@@ -340,6 +340,7 @@
   "rule_file_validation_failed": "Validering av regelfil misslyckades",
   "sample_added_successfully": "Stickprov tillagt i listan",
   "sample_category_title": "Kategori",
+  "no_sample_categories_available": "Inga kategorier är definierade i regelfilen. Kontakta administratören för att lägga till kategorier.",
   "sample_deleted_successfully": "Stickprov \"{sampleName}\" har raderats",
   "sample_description_auto_filled": "Beskrivningen har automatiskt fyllts med sidtypen, men kan redigeras",
   "sample_edit_confirm_action_button": "Bekräfta och spara ändringar",

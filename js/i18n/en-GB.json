@@ -340,6 +340,7 @@
   "rule_file_validation_failed": "Rule file validation failed.",
   "sample_added_successfully": "Sample added to the list.",
   "sample_category_title": "Category",
+  "no_sample_categories_available": "No categories are defined in the rule file. Contact the administrator to add categories.",
   "sample_deleted_successfully": "Sample \"{sampleName}\" has been deleted.",
   "sample_description_auto_filled": "The description has been auto-filled with the page type, but can be edited.",
   "sample_edit_confirm_action_button": "Confirm and Save Changes",
