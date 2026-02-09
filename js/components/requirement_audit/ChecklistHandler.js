@@ -5,6 +5,7 @@ import { marked } from '../../utils/markdown.js';
 export const ChecklistHandler = {
     container_ref: null,
     on_status_change_callback: null,
+    on_observation_change_callback: null,
 
     Translation: null,
     Helpers: null,
@@ -48,6 +49,7 @@ export const ChecklistHandler = {
     init(_container, _callbacks, options = {}) {
         this.container_ref = _container;
         this.on_status_change_callback = _callbacks.onStatusChange;
+        this.on_observation_change_callback = _callbacks.onObservationChange;
         this.is_dom_built = false;
 
         const deps = options.deps || {};
@@ -130,6 +132,9 @@ export const ChecklistHandler = {
                     ? this.Helpers.get_current_iso_datetime_utc()
                     : new Date().toISOString();
                 check_result.passCriteria[pc_id].timestamp = ts;
+            }
+            if (event.type === 'input' && this.on_observation_change_callback) {
+                this.on_observation_change_callback();
             }
         }
     },

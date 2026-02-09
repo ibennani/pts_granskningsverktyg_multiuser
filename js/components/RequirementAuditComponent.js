@@ -40,6 +40,7 @@ export const RequirementAuditComponent = {
     ordered_requirement_keys: [],
     right_sidebar_root: null,
     sidebar_navigation_state: null,
+    debounceTimerAudit: null,
 
     async init({ root, deps }) {
         this.root = root;
@@ -60,6 +61,8 @@ export const RequirementAuditComponent = {
         this.handle_checklist_status_change = this.handle_checklist_status_change.bind(this);
         this.handle_navigation = this.handle_navigation.bind(this);
         this.handle_comment_input = this.handle_comment_input.bind(this);
+        this.handle_comment_input_with_autosave = this.handle_comment_input_with_autosave.bind(this);
+        this.debounced_autosave_result = this.debounced_autosave_result.bind(this);
         this.handle_sidebar_filters_change = this.handle_sidebar_filters_change.bind(this);
 
         this.global_message_element_ref = this.NotificationComponent.get_global_message_element_reference();
@@ -194,6 +197,18 @@ export const RequirementAuditComponent = {
         if (this.comment_to_actor_input) {
             this.current_result.commentToActor = this.comment_to_actor_input.value;
         }
+    },
+
+    handle_comment_input_with_autosave() {
+        this.handle_comment_input();
+        this.debounced_autosave_result();
+    },
+
+    debounced_autosave_result() {
+        clearTimeout(this.debounceTimerAudit);
+        this.debounceTimerAudit = setTimeout(() => {
+            this.save_result_immediately({ skipRender: true });
+        }, 250);
     },
 
     handle_sidebar_filters_change(payload) {
@@ -338,7 +353,7 @@ export const RequirementAuditComponent = {
         });
     },
 
-    dispatch_result_update(modified_result_object) {
+    dispatch_result_update(modified_result_object, options = {}) {
         (this.current_requirement.checks || []).forEach(check_def => {
             const check_res = modified_result_object.checkResults[check_def.id];
             check_res.status = this.AuditLogic.calculate_check_status(check_def, check_res.passCriteria, check_res.overallStatus);
@@ -351,12 +366,22 @@ export const RequirementAuditComponent = {
             payload: {
                 sampleId: this.params.sampleId,
                 requirementId: this.params.requirementId,
-                newRequirementResult: modified_result_object
+                newRequirementResult: modified_result_object,
+                skip_render: options.skipRender === true
             }
         });
     },
 
+    save_result_immediately({ skipRender = false } = {}) {
+        if (!this.current_result) return;
+        this.dispatch_result_update(this.current_result, { skipRender });
+    },
+
     handle_navigation(action) {
+        this.handle_comment_input();
+        clearTimeout(this.debounceTimerAudit);
+        this.save_result_immediately({ skipRender: true });
+
         const navigation_state = this.get_navigation_state();
         const mode = navigation_state.mode;
         const { prev_item, next_item, next_unhandled_item } = navigation_state;
@@ -438,7 +463,14 @@ export const RequirementAuditComponent = {
 
         const checklist_container = this.Helpers.create_element('div', { class_name: 'checks-container audit-section' });
         this.checklist_handler_instance = ChecklistHandler;
-        this.checklist_handler_instance.init(checklist_container, { onStatusChange: this.handle_checklist_status_change }, { deps: this.deps });
+        this.checklist_handler_instance.init(
+            checklist_container,
+            {
+                onStatusChange: this.handle_checklist_status_change,
+                onObservationChange: this.debounced_autosave_result
+            },
+            { deps: this.deps }
+        );
         
         this.plate_element_ref.append(
             this.Helpers.create_element('div', { class_name: 'requirement-audit-header' }),
@@ -461,7 +493,7 @@ export const RequirementAuditComponent = {
         const label1 = this.Helpers.create_element('label', { attributes: { for: 'commentToAuditor' }, text_content: t('comment_to_auditor') });
         fg1.appendChild(label1);
         this.comment_to_auditor_input = this.Helpers.create_element('textarea', { id: 'commentToAuditor', class_name: 'form-control', attributes: { rows: '4' } });
-        this.comment_to_auditor_input.addEventListener('input', this.handle_comment_input);
+        this.comment_to_auditor_input.addEventListener('input', this.handle_comment_input_with_autosave);
         this.comment_to_auditor_input.addEventListener('blur', this.handle_comment_input);
         fg1.appendChild(this.comment_to_auditor_input);
 
@@ -469,7 +501,7 @@ export const RequirementAuditComponent = {
         const label2 = this.Helpers.create_element('label', { attributes: { for: 'commentToActor' }, text_content: t('comment_to_actor') });
         fg2.appendChild(label2);
         this.comment_to_actor_input = this.Helpers.create_element('textarea', { id: 'commentToActor', class_name: 'form-control', attributes: { rows: '4' } });
-        this.comment_to_actor_input.addEventListener('input', this.handle_comment_input);
+        this.comment_to_actor_input.addEventListener('input', this.handle_comment_input_with_autosave);
         this.comment_to_actor_input.addEventListener('blur', this.handle_comment_input);
         fg2.appendChild(this.comment_to_actor_input);
         
@@ -580,15 +612,16 @@ export const RequirementAuditComponent = {
     },
     
     destroy() { 
+        clearTimeout(this.debounceTimerAudit);
         
         // Remove event listeners
         if (this.comment_to_auditor_input) {
-            this.comment_to_auditor_input.removeEventListener('input', this.handle_comment_input);
+            this.comment_to_auditor_input.removeEventListener('input', this.handle_comment_input_with_autosave);
             this.comment_to_auditor_input.removeEventListener('blur', this.handle_comment_input);
             this.comment_to_auditor_input = null;
         }
         if (this.comment_to_actor_input) {
-            this.comment_to_actor_input.removeEventListener('input', this.handle_comment_input);
+            this.comment_to_actor_input.removeEventListener('input', this.handle_comment_input_with_autosave);
             this.comment_to_actor_input.removeEventListener('blur', this.handle_comment_input);
             this.comment_to_actor_input = null;
         }
