@@ -57,6 +57,11 @@ Projektet är organiserat enligt följande struktur:
 - Använd `deps.Translation.t()` eller `window.Translation.t()` för översättningar
 - Översättningsfiler i `js/i18n/`
 
+### Autospar
+- Central autospar-service i `js/logic/autosave_service.js`
+- Debounce 250 ms, sparar utan visuell omrendering, bevarar fokus/markering/scroll
+- Se `docs/autosave_integration.md` för instruktion om hur nya vyer ansluts
+
 ## Vanliga uppgifter
 
 ### Lägga till en ny komponent

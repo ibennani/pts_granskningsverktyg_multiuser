@@ -16,6 +16,7 @@ import * as RulefileUpdaterLogic from './logic/rulefile_updater_logic.js';
 import * as ScoreCalculator from './logic/ScoreCalculator.js';
 import * as RuleDataProcessor from './logic/RuleDataProcessor.js';
 import * as RulefileEditorLogic from './logic/rulefile_editor_logic.js';
+import { AutosaveService } from './logic/autosave_service.js';
 import { MarkdownToolbar } from './features/markdown_toolbar.js';
 import './utils/dependency_manager.js';
 import './utils/console_manager.js';
@@ -67,6 +68,7 @@ window.RulefileUpdaterLogic = RulefileUpdaterLogic;
 window.ScoreCalculator = ScoreCalculator;
 window.RuleDataProcessor = RuleDataProcessor;
 window.RulefileEditorLogic = RulefileEditorLogic;
+window.AutosaveService = AutosaveService;
 // Compatibility assignment
 window.ValidationLogic = ValidationLogic;
 window.AuditLogic = AuditLogic; // Compatibility assignment
@@ -409,7 +411,8 @@ window.DraftManager = DraftManager;
             NotificationComponent: NotificationComponent,
             SaveAuditLogic: window.SaveAuditLogic,
             AuditLogic: AuditLogic,
-            ValidationLogic: ValidationLogic
+            ValidationLogic: ValidationLogic,
+            AutosaveService: AutosaveService
         };
 
         // Initialize side menu (persistent)
@@ -807,6 +810,7 @@ window.DraftManager = DraftManager;
                         AuditLogic: AuditLogic,
                         ExportLogic: window.ExportLogic,
                         ValidationLogic: ValidationLogic,
+                        AutosaveService: AutosaveService,
                         rightSidebarRoot: right_sidebar_root
                     }
                 });
@@ -830,6 +834,7 @@ window.DraftManager = DraftManager;
                             AuditLogic: AuditLogic,
                             ExportLogic: window.ExportLogic,
                             ValidationLogic: ValidationLogic,
+                            AutosaveService: AutosaveService,
                             rightSidebarRoot: right_sidebar_root
                         }
                     });

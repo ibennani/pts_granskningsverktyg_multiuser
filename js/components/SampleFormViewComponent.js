@@ -34,7 +34,8 @@ export const SampleFormViewComponent = {
                 Translation: this.Translation,
                 Helpers: this.Helpers,
                 NotificationComponent: this.NotificationComponent,
-                AuditLogic: this.AuditLogic
+                AuditLogic: this.AuditLogic,
+                AutosaveService: this.deps?.AutosaveService || window.AutosaveService
             }
         });
     },
@@ -61,6 +62,7 @@ export const SampleFormViewComponent = {
     },
     
     discard_and_return() {
+        this.add_sample_form_component_instance.discard?.();
         const current_state = this.getState();
         const previous_view = (current_state.auditStatus === 'not_started') ? 'sample_management' : 'audit_overview';
         if (previous_view === 'audit_overview') {

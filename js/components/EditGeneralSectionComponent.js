@@ -13,12 +13,13 @@ export const EditGeneralSectionComponent = {
         this.Translation = deps.Translation;
         this.Helpers = deps.Helpers;
         this.NotificationComponent = deps.NotificationComponent;
+        this.AutosaveService = deps.AutosaveService;
         this.form_element_ref = null;
         this.working_metadata = null;
         this.initial_metadata_snapshot = null;
-        this.debounceTimer = null;
-        this.save_form_data_immediately = this.save_form_data_immediately.bind(this);
-        this.debounced_autosave_form = this.debounced_autosave_form.bind(this);
+        this.autosave_session = null;
+        this.skip_autosave_on_destroy = false;
+        this.handle_autosave_input = this.handle_autosave_input.bind(this);
         
         if (this.Helpers?.load_css) {
             await this.Helpers.load_css(this.CSS_PATH).catch(err => console.warn('[EditGeneralSectionComponent] Failed to load CSS', err));
@@ -43,7 +44,7 @@ export const EditGeneralSectionComponent = {
                 }
             });
             textarea.value = value ?? '';
-            textarea.addEventListener('input', this.debounced_autosave_form);
+            textarea.addEventListener('input', this.handle_autosave_input);
             container.appendChild(textarea);
             this.Helpers.init_auto_resize_for_textarea?.(textarea);
         } else {
@@ -57,7 +58,7 @@ export const EditGeneralSectionComponent = {
                 }
             });
             input.value = value ?? '';
-            input.addEventListener('input', this.debounced_autosave_form);
+            input.addEventListener('input', this.handle_autosave_input);
             container.appendChild(input);
         }
 
@@ -137,6 +138,8 @@ export const EditGeneralSectionComponent = {
         });
         footerCancelButton.addEventListener('click', () => {
             this._restore_initial_state();
+            this.skip_autosave_on_destroy = true;
+            this.autosave_session?.cancel_pending();
             this.router('rulefile_sections', { section: 'general' });
         });
 
@@ -146,9 +149,14 @@ export const EditGeneralSectionComponent = {
         return { form, workingMetadata };
     },
 
-    _parse_form_data(form, workingMetadata) {
+    _parse_form_data(form, workingMetadata, should_trim = false, trim_text = null) {
         const formData = new FormData(form);
         const data = {};
+        const normalize_value = (value) => {
+            if (typeof value !== 'string') return value;
+            if (!should_trim || typeof trim_text !== 'function') return value;
+            return trim_text(value);
+        };
 
         for (const [key, value] of formData.entries()) {
             const keys = key.split('.');
@@ -159,8 +167,8 @@ export const EditGeneralSectionComponent = {
                 }
                 current = current[keys[i]];
             }
-            // Trim strängvärden för att ta bort inledande och avslutande mellanslag
-            current[keys[keys.length - 1]] = typeof value === 'string' ? value.trim() : value;
+            // Trimma endast mellanslag per rad vid manuell sparning
+            current[keys[keys.length - 1]] = normalize_value(value);
         }
 
         // Merge with workingMetadata to preserve structure
@@ -169,28 +177,29 @@ export const EditGeneralSectionComponent = {
                 // Behåll befintlig type (nyckeln är en intern identifierare och ska inte ändras)
                 workingMetadata.monitoringType = {
                     type: workingMetadata.monitoringType?.type || data.metadata.monitoringType.type || '',
-                    text: typeof data.metadata.monitoringType.text === 'string' ? data.metadata.monitoringType.text.trim() : (data.metadata.monitoringType.text || '')
+                    text: normalize_value(data.metadata.monitoringType.text) || ''
                 };
             }
             if (data.metadata.publisher) {
                 workingMetadata.publisher = {
-                    name: typeof data.metadata.publisher.name === 'string' ? data.metadata.publisher.name.trim() : (data.metadata.publisher.name || ''),
-                    contactPoint: typeof data.metadata.publisher.contactPoint === 'string' ? data.metadata.publisher.contactPoint.trim() : (data.metadata.publisher.contactPoint || '')
+                    name: normalize_value(data.metadata.publisher.name) || '',
+                    contactPoint: normalize_value(data.metadata.publisher.contactPoint) || ''
                 };
             }
             if (data.metadata.source) {
                 workingMetadata.source = {
-                    url: typeof data.metadata.source.url === 'string' ? data.metadata.source.url.trim() : (data.metadata.source.url || ''),
-                    title: typeof data.metadata.source.title === 'string' ? data.metadata.source.title.trim() : (data.metadata.source.title || ''),
-                    retrievedDate: typeof data.metadata.source.retrievedDate === 'string' ? data.metadata.source.retrievedDate.trim() : (data.metadata.source.retrievedDate || ''),
-                    format: typeof data.metadata.source.format === 'string' ? data.metadata.source.format.trim() : (data.metadata.source.format || '')
+                    url: normalize_value(data.metadata.source.url) || '',
+                    title: normalize_value(data.metadata.source.title) || '',
+                    retrievedDate: normalize_value(data.metadata.source.retrievedDate) || '',
+                    format: normalize_value(data.metadata.source.format) || ''
                 };
             }
             // Copy other general fields
             Object.keys(data.metadata).forEach(key => {
                 if (!['monitoringType', 'publisher', 'source'].includes(key)) {
                     const value = data.metadata[key];
-                    workingMetadata[key] = typeof value === 'string' ? value.trim() : (value || '');
+                    const normalized = normalize_value(value);
+                    workingMetadata[key] = typeof normalized === 'string' ? normalized : (normalized || '');
                 }
             });
         }
@@ -198,102 +207,13 @@ export const EditGeneralSectionComponent = {
         return workingMetadata;
     },
 
-    debounced_autosave_form() {
-        clearTimeout(this.debounceTimer);
-        this.debounceTimer = setTimeout(() => {
-            this.save_form_data_immediately();
-        }, 250);
-    },
-
-    save_form_data_immediately() {
-        if (!this.form_element_ref || !this.working_metadata) return;
-        
-        // Spara aktuellt fokus och scroll-position innan autospar
-        const activeElement = document.activeElement;
-        const focusInfo = activeElement && this.form_element_ref.contains(activeElement) ? {
-            elementId: activeElement.id || null,
-            elementName: activeElement.name || null,
-            selectionStart: activeElement.selectionStart !== undefined ? activeElement.selectionStart : null,
-            selectionEnd: activeElement.selectionEnd !== undefined ? activeElement.selectionEnd : null,
-            scrollTop: activeElement.scrollTop !== undefined ? activeElement.scrollTop : null,
-            scrollLeft: activeElement.scrollLeft !== undefined ? activeElement.scrollLeft : null
-        } : null;
-        
-        const windowScrollY = window.scrollY;
-        const windowScrollX = window.scrollX;
-        
-        // Spara formulärdata tyst utan att påverka sidan
-        const updatedMetadata = this._parse_form_data(this.form_element_ref, this.working_metadata);
-        
-        const state = this.getState();
-        const currentRulefile = state?.ruleFileContent || {};
-        
-        const updatedRulefileContent = {
-            ...currentRulefile,
-            metadata: {
-                ...currentRulefile.metadata,
-                ...updatedMetadata
-            }
-        };
-
-        // Dispatch - detta kommer att trigga listeners som kan re-rendera komponenter
-        this.dispatch({
-            type: this.StoreActionTypes.UPDATE_RULEFILE_CONTENT,
-            payload: { ruleFileContent: updatedRulefileContent, skip_render: true }
-        });
-        
-        // Återställ fokus och scroll-position efter att listeners har körts
-        // Vänta lite längre för att säkerställa att render() har körts
-        setTimeout(() => {
-            requestAnimationFrame(() => {
-                // Återställ window scroll-position
-                window.scrollTo({ left: windowScrollX, top: windowScrollY, behavior: 'instant' });
-                
-                // Återställ fokus om det fanns ett aktivt element
-                if (focusInfo && this.form_element_ref) {
-                    let elementToFocus = null;
-                    
-                    // Försök hitta elementet via id först, sedan name
-                    if (focusInfo.elementId) {
-                        elementToFocus = this.form_element_ref.querySelector(`#${CSS.escape(focusInfo.elementId)}`);
-                    }
-                    if (!elementToFocus && focusInfo.elementName) {
-                        elementToFocus = this.form_element_ref.querySelector(`[name="${CSS.escape(focusInfo.elementName)}"]`);
-                    }
-                    
-                    if (elementToFocus && document.contains(elementToFocus)) {
-                        // Återställ element scroll-position om det är ett scrollbart element
-                        if (focusInfo.scrollTop !== null && elementToFocus.scrollTop !== undefined) {
-                            elementToFocus.scrollTop = focusInfo.scrollTop;
-                        }
-                        if (focusInfo.scrollLeft !== null && elementToFocus.scrollLeft !== undefined) {
-                            elementToFocus.scrollLeft = focusInfo.scrollLeft;
-                        }
-                        
-                        // Återställ fokus
-                        try {
-                            elementToFocus.focus({ preventScroll: true });
-                        } catch (e) {
-                            elementToFocus.focus();
-                        }
-                        
-                        // Återställ textmarkering om det är ett textfält
-                        if (focusInfo.selectionStart !== null && focusInfo.selectionEnd !== null && elementToFocus.setSelectionRange) {
-                            try {
-                                elementToFocus.setSelectionRange(focusInfo.selectionStart, focusInfo.selectionEnd);
-                            } catch (e) {
-                                // Ignorera om setSelectionRange inte fungerar
-                            }
-                        }
-                    }
-                }
-            });
-        }, 50);
+    handle_autosave_input() {
+        this.autosave_session?.request_autosave();
     },
 
     _handle_submit(form, originalMetadata, workingMetadata) {
         const t = this.Translation.t;
-        this.save_form_data_immediately();
+        this.autosave_session?.flush({ should_trim: true, skip_render: false });
         if (window.DraftManager?.commitCurrentDraft) {
             window.DraftManager.commitCurrentDraft();
         }
@@ -339,16 +259,41 @@ export const EditGeneralSectionComponent = {
         this.form_element_ref = form;
         this.working_metadata = workingMetadata;
 
+        this.autosave_session?.destroy();
+        this.autosave_session = this.AutosaveService?.create_session({
+            form_element: form,
+            focus_root: form,
+            debounce_ms: 250,
+            on_save: ({ should_trim, skip_render, trim_text }) => {
+                if (!this.form_element_ref || !this.working_metadata) return;
+                const updatedMetadata = this._parse_form_data(this.form_element_ref, this.working_metadata, should_trim, trim_text);
+                const currentState = this.getState();
+                const currentRulefile = currentState?.ruleFileContent || {};
+                const updatedRulefileContent = {
+                    ...currentRulefile,
+                    metadata: {
+                        ...currentRulefile.metadata,
+                        ...updatedMetadata
+                    }
+                };
+                this.dispatch({
+                    type: this.StoreActionTypes.UPDATE_RULEFILE_CONTENT,
+                    payload: { ruleFileContent: updatedRulefileContent, skip_render: skip_render === true }
+                });
+            }
+        }) || null;
+
         this.root.appendChild(form);
     },
 
     destroy() {
         // Spara autosparat data innan komponenten förstörs (vid navigering bort)
-        if (this.form_element_ref && this.working_metadata) {
-            clearTimeout(this.debounceTimer);
-            this.save_form_data_immediately();
+        if (!this.skip_autosave_on_destroy && this.form_element_ref && this.working_metadata) {
+            this.autosave_session?.flush({ should_trim: true, skip_render: false });
         }
-        
+        this.autosave_session?.destroy();
+        this.autosave_session = null;
+
         if (this.root) {
             this.root.innerHTML = '';
         }

@@ -16,6 +16,7 @@ export const AddSampleFormComponent = {
         this.Helpers = deps.Helpers;
         this.NotificationComponent = deps.NotificationComponent;
         this.AuditLogic = deps.AuditLogic;
+        this.AutosaveService = deps.AutosaveService;
 
         this.form_element = null;
         this.category_fieldset_element = null;
@@ -28,14 +29,16 @@ export const AddSampleFormComponent = {
         this.current_editing_sample_id = null;
         this.original_content_types_on_load = [];
         this.previous_sample_type_value = "";
-        this.debounceTimerFormFields = null;
+        this.autosave_session = null;
+        this.skip_autosave_on_destroy = false;
         this.initial_sample_snapshot = null;
 
         // Bind methods
         this.handle_form_submit = this.handle_form_submit.bind(this);
         this.update_description_from_sample_type = this.update_description_from_sample_type.bind(this);
         this._handleCheckboxChange = this._handleCheckboxChange.bind(this);
-        this.debounced_autosave_form = this.debounced_autosave_form.bind(this);
+        this.handle_autosave_input = this.handle_autosave_input.bind(this);
+        this.handle_content_type_change = this.handle_content_type_change.bind(this);
     },
 
     get_sample_categories_from_state() {
@@ -134,15 +137,17 @@ export const AddSampleFormComponent = {
         }
     },
 
-    debounced_autosave_form() {
+    handle_autosave_input() {
         if (!this.current_editing_sample_id) return; // Autospar endast för redigering, inte för nya stickprov
-        clearTimeout(this.debounceTimerFormFields);
-        this.debounceTimerFormFields = setTimeout(() => {
-            this.save_form_data_immediately(true);
-        }, 250);
+        this.autosave_session?.request_autosave();
     },
 
-    save_form_data_immediately(is_autosave = false) {
+    handle_content_type_change(e) {
+        this._handleCheckboxChange(e);
+        this.handle_autosave_input();
+    },
+
+    save_form_data_immediately(is_autosave = false, should_trim = !is_autosave) {
         if (!this.current_editing_sample_id) return;
 
         const selected_category_radio = this.form_element?.querySelector('input[name="sampleCategory"]:checked');
@@ -150,7 +155,8 @@ export const AddSampleFormComponent = {
         const sample_type_id = this.sample_type_select?.value;
         const sanitize_input = (input) => {
             if (typeof input !== 'string') return '';
-            return input.trim().replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+            const stripped = input.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+            return should_trim ? stripped.trim() : stripped;
         };
 
         const description = sanitize_input(this.description_input?.value || '');
@@ -364,9 +370,9 @@ export const AddSampleFormComponent = {
         this.sample_type_select = this.Helpers.create_element('select', { id: 'sampleTypeSelect', class_name: 'form-control', attributes: { required: true, disabled: true } });
         this.sample_type_select.addEventListener('change', this.update_description_from_sample_type);
         this.description_input = this.Helpers.create_element('input', { id: 'sampleDescriptionInput', class_name: 'form-control', attributes: { type: 'text', required: true } });
-        this.description_input.addEventListener('input', this.debounced_autosave_form);
+        this.description_input.addEventListener('input', this.handle_autosave_input);
         this.url_input = this.Helpers.create_element('input', { id: 'sampleUrlInput', class_name: 'form-control', attributes: { type: 'url' } });
-        this.url_input.addEventListener('input', this.debounced_autosave_form);
+        this.url_input.addEventListener('input', this.handle_autosave_input);
         this.url_form_group_ref = this.Helpers.create_element('div', { class_name: 'form-group', children: [this.Helpers.create_element('label', { attributes: { for: 'sampleUrlInput' }, text_content: t('url') }), this.url_input] });
         this.form_element.append(
             this.Helpers.create_element('div', { class_name: 'form-group', children: [this.Helpers.create_element('label', { attributes: { for: 'sampleTypeSelect' }, text_content: t('sample_type_label') + '*' }), this.sample_type_select] }),
@@ -446,10 +452,7 @@ export const AddSampleFormComponent = {
             fieldset.appendChild(children_container);
             this.content_types_container_element.appendChild(fieldset);
         });
-        this.content_types_container_element.addEventListener('change', (e) => {
-            this._handleCheckboxChange(e);
-            this.debounced_autosave_form();
-        });
+        this.content_types_container_element.addEventListener('change', this.handle_content_type_change);
         const all_child_checkboxes = this.content_types_container_element.querySelectorAll('input[data-child-for]');
         all_child_checkboxes.forEach(cb => { cb.checked = sample_data?.selectedContentTypes?.includes(cb.value) || false; });
         this.content_types_container_element.querySelectorAll('input[data-parent-id]').forEach(pc => this._updateParentCheckboxState(pc));
@@ -472,6 +475,19 @@ export const AddSampleFormComponent = {
 
         this.root.appendChild(this.form_element);
 
+        this.autosave_session?.destroy();
+        this.autosave_session = null;
+        if (this.current_editing_sample_id && this.AutosaveService) {
+            this.autosave_session = this.AutosaveService.create_session({
+                form_element: this.form_element,
+                focus_root: this.form_element,
+                debounce_ms: 250,
+                on_save: ({ is_autosave }) => {
+                    this.save_form_data_immediately(is_autosave, !is_autosave);
+                }
+            });
+        }
+
         // --- Post-render initialization ---
         const selected_cat_id = sample_data?.sampleCategory || sample_categories[0]?.id;
         if (selected_cat_id) {
@@ -480,21 +496,27 @@ export const AddSampleFormComponent = {
         this.previous_sample_type_value = sample_data?.sampleType ? this.sample_type_select.options[this.sample_type_select.selectedIndex]?.text : '';
     },
 
+    discard() {
+        this.skip_autosave_on_destroy = true;
+        this.autosave_session?.cancel_pending();
+    },
+
     destroy() {
-        // Spara autosparat data innan komponenten förstörs (vid navigering bort)
-        if (this.current_editing_sample_id && this.form_element) {
-            clearTimeout(this.debounceTimerFormFields);
-            this.save_form_data_immediately(true);
+        if (!this.skip_autosave_on_destroy && this.current_editing_sample_id && this.form_element) {
+            this.autosave_session?.flush({ should_trim: true, skip_render: false });
         }
-        
-        clearTimeout(this.debounceTimerFormFields);
+        this.autosave_session?.destroy();
+        this.autosave_session = null;
+
         if (this.form_element) {
             this.form_element.removeEventListener('submit', this.handle_form_submit);
         }
         if (this.sample_type_select) {
             this.sample_type_select.removeEventListener('change', this.update_description_from_sample_type);
         }
-        if (this.content_types_container_element) this.content_types_container_element.removeEventListener('change', this._handleCheckboxChange);
+        if (this.content_types_container_element) {
+            this.content_types_container_element.removeEventListener('change', this.handle_content_type_change);
+        }
 
         this.root = null;
         this.deps = null;
