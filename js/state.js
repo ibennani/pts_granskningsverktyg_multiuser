@@ -2,6 +2,7 @@
 import * as AuditLogic from './audit_logic.js';
 
 const APP_STATE_KEY = 'digitalTillsynAppCentralState';
+const APP_STATE_BACKUP_KEY = 'digitalTillsynAppStateBackup';
 const APP_STATE_VERSION = '2.1.0'; // Version bumped to reflect new scoring model
 
 export const ActionTypes = {
@@ -647,6 +648,77 @@ function notify_listeners(listener_meta = null) {
     }, 0);
 }
 
+function has_restorable_state(state) {
+    if (!state || typeof state !== 'object') return false;
+    if (state.ruleFileContent) return true;
+    if (state.samples && state.samples.length > 0) return true;
+    if (state.auditStatus && state.auditStatus !== 'not_started') return true;
+    const meta = state.auditMetadata;
+    if (meta && typeof meta === 'object') {
+        const has_content = ['caseNumber', 'actorName', 'actorLink', 'auditorName', 'caseHandler', 'internalComment']
+            .some(key => meta[key] && String(meta[key]).trim() !== '');
+        if (has_content) return true;
+    }
+    return false;
+}
+
+function loadStateFromLocalStorageBackup() {
+    try {
+        const serialized = localStorage.getItem(APP_STATE_BACKUP_KEY);
+        if (serialized === null) return null;
+        const stored = JSON.parse(serialized);
+        if (!stored) return null;
+
+        let state_to_merge;
+        let restore_position = null;
+
+        if (stored.state && stored.restorePosition !== undefined) {
+            state_to_merge = stored.state;
+            restore_position = stored.restorePosition;
+        } else if (stored.saveFileVersion) {
+            state_to_merge = stored;
+        } else {
+            return null;
+        }
+
+        if (!state_to_merge.saveFileVersion || !state_to_merge.saveFileVersion.startsWith(APP_STATE_VERSION.split('.')[0])) {
+            localStorage.removeItem(APP_STATE_BACKUP_KEY);
+            return null;
+        }
+        const merged = {
+            ...JSON.parse(JSON.stringify(initial_state)),
+            ...state_to_merge,
+            saveFileVersion: APP_STATE_VERSION
+        };
+        if (!has_restorable_state(merged)) return null;
+        return { state: merged, restorePosition: restore_position };
+    } catch (e) {
+        try { localStorage.removeItem(APP_STATE_BACKUP_KEY); } catch (_) {}
+        return null;
+    }
+}
+
+function clearLocalStorageBackup() {
+    try {
+        localStorage.removeItem(APP_STATE_BACKUP_KEY);
+    } catch (e) {
+        console.warn('[State.js] Could not clear localStorage backup:', e);
+    }
+}
+
+function updateBackupRestorePosition(restore_position) {
+    try {
+        const serialized = localStorage.getItem(APP_STATE_BACKUP_KEY);
+        if (serialized === null) return;
+        const backup = JSON.parse(serialized);
+        if (!backup || !backup.state) return;
+        backup.restorePosition = restore_position;
+        localStorage.setItem(APP_STATE_BACKUP_KEY, JSON.stringify(backup));
+    } catch (e) {
+        console.warn('[State.js] Could not update backup restore position:', e);
+    }
+}
+
 function loadStateFromSessionStorage() {
     const serializedState = sessionStorage.getItem(APP_STATE_KEY);
     if (serializedState === null) {
@@ -676,6 +748,17 @@ function saveStateToSessionStorage(state_to_save) {
         const complete_state_to_save = { ...state_to_save, saveFileVersion: APP_STATE_VERSION };
         const serializedState = JSON.stringify(complete_state_to_save);
         sessionStorage.setItem(APP_STATE_KEY, serializedState);
+        if (has_restorable_state(complete_state_to_save)) {
+            try {
+                const restore_position = typeof window.__gv_get_restore_position === 'function'
+                    ? window.__gv_get_restore_position()
+                    : null;
+                const backup = { state: complete_state_to_save, restorePosition: restore_position };
+                localStorage.setItem(APP_STATE_BACKUP_KEY, JSON.stringify(backup));
+            } catch (localE) {
+                console.warn('[State.js] Could not save state backup to localStorage:', localE);
+            }
+        }
     } catch (e) {
         console.error("[State.js] Could not save state to sessionStorage:", e);
         if (window.NotificationComponent && typeof window.NotificationComponent.show_global_message === 'function' && typeof window.Translation?.t === 'function') {
@@ -700,5 +783,9 @@ export {
     subscribe, 
     initState, 
     ActionTypes as StoreActionTypes, 
-    initial_state as StoreInitialState
+    initial_state as StoreInitialState,
+    loadStateFromLocalStorageBackup,
+    clearLocalStorageBackup,
+    updateBackupRestorePosition,
+    APP_STATE_KEY
 };

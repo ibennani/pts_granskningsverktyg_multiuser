@@ -54,7 +54,7 @@ import { AllRequirementsViewComponent } from './components/AllRequirementsViewCo
 import { GlobalActionBarComponent } from './components/GlobalActionBarComponent.js';
 
 import { DraftManager } from './draft_manager.js';
-import { getState, dispatch, subscribe, initState, StoreActionTypes, StoreInitialState } from './state.js';
+import { getState, dispatch, subscribe, initState, StoreActionTypes, StoreInitialState, loadStateFromLocalStorageBackup, clearLocalStorageBackup, updateBackupRestorePosition, APP_STATE_KEY } from './state.js';
 window.getState = getState;
 window.dispatch = dispatch;
 window.Store = { getState, dispatch, subscribe, StoreActionTypes, StoreInitialState };
@@ -490,6 +490,28 @@ window.DraftManager = DraftManager;
         }
     }
 
+    let restore_position_state = { view: null, params: {}, focusInfo: null };
+
+    function capture_focus_info_from_element(el) {
+        if (!el || !main_view_root || !main_view_root.contains(el)) return null;
+        const id = el.id;
+        const name = el.getAttribute?.('name');
+        const data_index = el.getAttribute?.('data-index');
+        if (id) return { elementId: id, elementName: null, dataIndex: null };
+        if (name !== null && name !== undefined) return { elementId: null, elementName: name, dataIndex: data_index };
+        return null;
+    }
+
+    function update_restore_position(view, params, focus_info) {
+        restore_position_state = {
+            view: view,
+            params: params || {},
+            focusInfo: focus_info ?? restore_position_state.focusInfo
+        };
+    }
+
+    window.__gv_get_restore_position = () => restore_position_state;
+
     function get_route_key_from_hash() {
         const hash = window.location.hash || '';
         const raw = hash.startsWith('#') ? hash.slice(1) : hash;
@@ -598,7 +620,46 @@ window.DraftManager = DraftManager;
     }
     // --- END OF CHANGE ---
 
+    function apply_restore_focus_instruction({ view_root }) {
+        if (!view_root) return false;
+        const focus_info = window.__gv_restore_focus_info;
+        if (!focus_info) return false;
+        window.__gv_restore_focus_info = null;
+        window.customFocusApplied = true;
+
+        const try_focus = (attempts_left) => {
+            let el = null;
+            if (focus_info.elementId) {
+                el = view_root.querySelector(`#${CSS.escape(focus_info.elementId)}`);
+            }
+            if (!el && focus_info.elementName) {
+                el = view_root.querySelector(`[name="${CSS.escape(focus_info.elementName)}"]`);
+                if (!el && focus_info.dataIndex !== null && focus_info.dataIndex !== undefined) {
+                    const candidates = view_root.querySelectorAll(`[name="${CSS.escape(focus_info.elementName)}"]`);
+                    const idx = parseInt(focus_info.dataIndex, 10);
+                    if (!Number.isNaN(idx) && candidates[idx]) el = candidates[idx];
+                }
+            }
+            if (el && document.contains(el)) {
+                try {
+                    el.focus({ preventScroll: false });
+                    el.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+                } catch (e) {
+                    el.focus();
+                }
+                return;
+            }
+            if (attempts_left > 0) {
+                memoryManager.setTimeout(() => try_focus(attempts_left - 1), 50);
+            }
+        };
+        memoryManager.setTimeout(() => try_focus(5), 100);
+        return true;
+    }
+
     function apply_post_render_focus_instruction({ view_name, view_root }) {
+        if (view_root && apply_restore_focus_instruction({ view_root })) return true;
+
         // One-shot fokusinstruktioner används för att sätta fokus på rätt ställe
         // när användaren återgår från en vy till en annan (t.ex. efter formulär).
         if (!view_root || !window.sessionStorage) return false;
@@ -856,6 +917,11 @@ window.DraftManager = DraftManager;
             if (DraftManager?.restoreIntoDom) {
                 DraftManager.restoreIntoDom(view_root);
             }
+            if (view_name_to_render !== 'restore_session') {
+                update_restore_position(view_name_to_render, params_to_render, null);
+                updateBackupRestorePosition(window.__gv_get_restore_position?.());
+            }
+
             const did_apply_custom_focus = apply_post_render_focus_instruction({
                 view_name: view_name_to_render,
                 view_root
@@ -934,7 +1000,8 @@ window.DraftManager = DraftManager;
         }
     }
     
-    async function start_normal_session() {
+    async function start_normal_session(options = {}) {
+        const { restore_pending } = options;
         ensure_app_layout();
         await init_global_components(); 
         if (window.ScoreManager?.init) { window.ScoreManager.init(subscribe, getState, dispatch, StoreActionTypes); }
@@ -944,11 +1011,30 @@ window.DraftManager = DraftManager;
         const hash_change_handler = handle_hash_change;
         memoryManager.addEventListener(document, 'languageChanged', language_changed_handler);
         memoryManager.addEventListener(window, 'hashchange', hash_change_handler);
-        
+
+        let focus_capture_timer = null;
+        const focus_in_handler = (e) => {
+            if (focus_capture_timer) clearTimeout(focus_capture_timer);
+            focus_capture_timer = setTimeout(() => {
+                focus_capture_timer = null;
+                const info = capture_focus_info_from_element(document.activeElement);
+                if (info) {
+                    update_restore_position(current_view_name_rendered, JSON.parse(current_view_params_rendered_json || '{}'), info);
+                    updateBackupRestorePosition(window.__gv_get_restore_position?.());
+                }
+            }, 150);
+        };
+        const focus_root = main_view_root || app_container;
+        if (focus_root) {
+            focus_root.addEventListener('focusin', focus_in_handler);
+        }
+
         // Exponera cleanup-funktion globalt
         window.cleanupGlobalEventListeners = () => {
             memoryManager.removeEventListener(document, 'languageChanged', language_changed_handler);
             memoryManager.removeEventListener(window, 'hashchange', hash_change_handler);
+            const fr = main_view_root || app_container;
+            if (fr) fr.removeEventListener('focusin', focus_in_handler);
             
             // Clean up error boundary
             if (error_boundary_instance && typeof error_boundary_instance.destroy === 'function') {
@@ -1030,7 +1116,32 @@ window.DraftManager = DraftManager;
             }
         });
         if (NotificationComponent?.clear_global_message) { NotificationComponent.clear_global_message(); }
-        handle_hash_change(); 
+
+        if (restore_pending) {
+            const state_to_restore = restore_pending.state || restore_pending;
+            const restore_position = restore_pending.restorePosition || null;
+            const on_restore = () => {
+                clearLocalStorageBackup();
+                dispatch({ type: StoreActionTypes.LOAD_AUDIT_FROM_FILE, payload: state_to_restore });
+                if (restore_position && restore_position.view) {
+                    window.__gv_restore_focus_info = restore_position.focusInfo || null;
+                    navigate_and_set_hash(restore_position.view, restore_position.params || {});
+                }
+                handle_hash_change();
+            };
+            const on_discard = () => {
+                clearLocalStorageBackup();
+                window.location.hash = '#upload';
+                handle_hash_change();
+            };
+            await render_view('restore_session', {
+                on_restore,
+                on_discard,
+                autosaved_state: state_to_restore
+            });
+        } else {
+            handle_hash_change(); 
+        }
         update_app_chrome_texts();
     } 
 
@@ -1074,18 +1185,31 @@ window.DraftManager = DraftManager;
             update_build_timestamp();
         }, 100);
         await window.Translation.ensure_initial_load();
+
+        const had_session_storage = typeof sessionStorage !== 'undefined' && sessionStorage.getItem(APP_STATE_KEY) !== null;
         initState();
         init_draft_manager();
 
         dispatch({ type: StoreActionTypes.CLEAR_STAGED_SAMPLE_CHANGES });
 
+        let restore_pending = null;
+        if (!had_session_storage) {
+            restore_pending = loadStateFromLocalStorageBackup();
+            if (restore_pending) {
+                consoleManager.log("[Main.js] Session was cleared (e.g. tab closed) but backup found in localStorage. Showing restore prompt.");
+            }
+        }
+
         const active_session_state = getState();
         if (active_session_state && active_session_state.ruleFileContent && active_session_state.auditStatus !== 'rulefile_editing') {
             consoleManager.log("[Main.js] Active session found in sessionStorage. Starting normally.");
-            await start_normal_session();
+            await start_normal_session({ restore_pending: null });
+        } else if (restore_pending) {
+            consoleManager.log("[Main.js] Showing restore session prompt.");
+            await start_normal_session({ restore_pending });
         } else {
             consoleManager.log("[Main.js] No active session. Starting fresh.");
-            await start_normal_session();
+            await start_normal_session({ restore_pending: null });
         }
     }
 
