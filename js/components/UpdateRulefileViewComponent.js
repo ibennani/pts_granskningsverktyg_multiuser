@@ -46,7 +46,8 @@ export const UpdateRulefileViewComponent = {
     handle_backup_click() {
         const t = this.get_t_internally();
         if (this.SaveAuditLogic?.save_audit_to_json_file) {
-            this.SaveAuditLogic.save_audit_to_json_file(this.getState(), t, this.NotificationComponent?.show_global_message);
+            const show_msg = (msg, type) => this.NotificationComponent?.show_global_message?.(msg, type);
+            this.SaveAuditLogic.save_audit_to_json_file(this.getState(), t, show_msg);
             this.current_step = this.VIEW_STEPS.UPLOAD;
             this.render();
         } else {

@@ -49,7 +49,8 @@ export class SaveAuditButtonComponent {
         }
         
         if (typeof this.SaveAuditLogic.save_audit_to_json_file === 'function') {
-             this.SaveAuditLogic.save_audit_to_json_file(current_audit_data, t, this.NotificationComponent.show_global_message);
+             const show_msg = (msg, type) => this.NotificationComponent?.show_global_message?.(msg, type);
+             this.SaveAuditLogic.save_audit_to_json_file(current_audit_data, t, show_msg);
         } else {
              console.error("[SaveAuditButtonComponent] SaveAuditLogic.save_audit_to_json_file is not a function");
         }
