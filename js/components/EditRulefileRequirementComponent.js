@@ -1,5 +1,7 @@
 // js/components/EditRulefileRequirementComponent.js
 
+import { show_confirm_delete_modal, build_delete_warning_text } from '../logic/confirm_delete_modal_logic.js';
+
 export const EditRulefileRequirementComponent = {
     CSS_PATH_SHARED: 'css/components/requirement_audit_component.css',
     CSS_PATH_SPECIFIC: 'css/components/edit_rulefile_requirement_component.css',
@@ -353,7 +355,26 @@ export const EditRulefileRequirementComponent = {
                         this.local_requirement_data.checks = this.local_requirement_data.checks.filter(c => c.id !== check_id);
                         this._rerender_checks_section();
                     } else {
-                        this.router('confirm_delete', { type: 'check', reqId: this.params.id, checkId: check_id });
+                        const warning_text = build_delete_warning_text(
+                            'check',
+                            { reqId: this.params.id, checkId: check_id },
+                            this.getState,
+                            this.Translation,
+                            this.Helpers
+                        );
+                        if (warning_text) {
+                            show_confirm_delete_modal({
+                                warning_text,
+                                delete_button: button,
+                                on_confirm: () => {
+                                    this.dispatch({
+                                        type: this.StoreActionTypes.DELETE_CHECK_FROM_REQUIREMENT,
+                                        payload: { requirementId: this.params.id, checkId }
+                                    });
+                                    this.router('rulefile_edit_requirement', { id: this.params.id });
+                                }
+                            });
+                        }
                     }
                 }
                 break;
@@ -433,7 +454,7 @@ export const EditRulefileRequirementComponent = {
                 }
                 break;
 
-            case 'delete-pass-criterion':
+            case 'delete-pass-criterion': {
                 const pc_item = button.closest('.pc-item-edit');
                 check_id = button.closest('.check-item-edit')?.dataset.checkId;
                 pc_id = pc_item?.dataset.pcId;
@@ -446,10 +467,30 @@ export const EditRulefileRequirementComponent = {
                             this._rerender_checks_section();
                         }
                     } else {
-                        this.router('confirm_delete', { type: 'criterion', reqId: this.params.id, checkId: check_id, pcId: pc_id });
+                        const warning_text = build_delete_warning_text(
+                            'criterion',
+                            { reqId: this.params.id, checkId: check_id, pcId: pc_id },
+                            this.getState,
+                            this.Translation,
+                            this.Helpers
+                        );
+                        if (warning_text) {
+                            show_confirm_delete_modal({
+                                warning_text,
+                                delete_button: button,
+                                on_confirm: () => {
+                                    this.dispatch({
+                                        type: this.StoreActionTypes.DELETE_CRITERION_FROM_CHECK,
+                                        payload: { requirementId: this.params.id, checkId: check_id, passCriterionId: pc_id }
+                                    });
+                                    this.router('rulefile_edit_requirement', { id: this.params.id });
+                                }
+                            });
+                        }
                     }
                 }
                 break;
+            }
 
             case 'move-pass-criterion-up':
             case 'move-pass-criterion-down':

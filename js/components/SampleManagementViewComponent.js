@@ -50,7 +50,7 @@ export const SampleManagementViewComponent = {
         this.router('sample_form', { editSampleId: sample_id });
     },
 
-    handle_delete_sample_request_from_list(sample_id) {
+    handle_delete_sample_request_from_list(sample_id, delete_button) {
         const t = this.Translation.t;
         const current_state = this.getState();
         if (current_state.samples.length <= 1) {
@@ -59,16 +59,19 @@ export const SampleManagementViewComponent = {
         }
 
         const sample_to_delete = current_state.samples.find(s => s.id === sample_id);
+        if (!sample_to_delete) return;
         const sample_name = this.Helpers.escape_html(sample_to_delete.description);
-        this.previously_focused_element = document.activeElement;
+        const warning_text = t('confirm_delete_sample', { sampleName: sample_name });
+        const button_el = delete_button && delete_button.tagName === 'BUTTON' ? delete_button : document.activeElement;
 
-        if (confirm(t('confirm_delete_sample', { sampleName: sample_name }))) {
-            this.dispatch({ type: this.StoreActionTypes.DELETE_SAMPLE, payload: { sampleId: sample_id } });
-            // State update triggers re-render via subscription in main.js
-        } else {
-            if (this.previously_focused_element) {
-                this.previously_focused_element.focus();
-            }
+        if (window.show_confirm_delete_modal) {
+            window.show_confirm_delete_modal({
+                warning_text,
+                delete_button: button_el,
+                on_confirm: () => {
+                    this.dispatch({ type: this.StoreActionTypes.DELETE_SAMPLE, payload: { sampleId: sample_id } });
+                }
+            });
         }
     },
 

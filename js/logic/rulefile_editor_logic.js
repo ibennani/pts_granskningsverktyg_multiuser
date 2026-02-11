@@ -120,12 +120,13 @@ export function buildRequirementsEditor(requirements, allContentTypes, onSaveCal
         // Åtgärder-knappar (lägg till på samma rad som detaljer)
         const editBtn = _createDynamicListButton('edit_button_label', () => showForm(req), { classNames: ['button', 'button-default', 'button-small'], icon: 'edit' });
         const deleteBtn = _createDynamicListButton('delete_sample', () => {
-            console.log('%c[DEBUG] Delete button clicked for requirement:', 'color: #FF0000; font-weight: bold;', { reqKey: req.key, reqTitle: req.title });
-            if (confirm(t('confirm_delete_requirement', { reqTitle: req.title }))) {
-                console.log('%c[DEBUG] Delete confirmed, calling onDeleteCallback:', 'color: #FF0000; font-weight: bold;', req.key);
-                onDeleteCallback(req.key);
-            } else {
-                console.log('%c[DEBUG] Delete cancelled by user', 'color: #FF0000; font-weight: bold;');
+            const warning_text = t('confirm_delete_requirement', { reqTitle: req.title });
+            if (window.show_confirm_delete_modal) {
+                window.show_confirm_delete_modal({
+                    warning_text,
+                    delete_button: deleteBtn,
+                    on_confirm: () => onDeleteCallback(req.key)
+                });
             }
         }, { classNames: ['button', 'button-danger', 'button-small'], icon: 'delete' });
         details_row_div.appendChild(editBtn);

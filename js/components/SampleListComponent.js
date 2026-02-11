@@ -42,7 +42,9 @@ export const SampleListComponent = {
                 if (typeof this.on_edit_callback === 'function') this.on_edit_callback(sample_id);
                 break;
             case 'delete-sample':
-                if (typeof this.on_delete_callback === 'function') this.on_delete_callback(sample_id);
+                if (typeof this.on_delete_callback === 'function') {
+                    this.on_delete_callback(sample_id, action_button);
+                }
                 break;
             case 'view-requirements':
                 if (this.router) this.router('requirement_list', { sampleId: sample_id });

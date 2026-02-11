@@ -1,5 +1,6 @@
 // js/components/RulefileRequirementsListComponent.js
 import { RequirementListToolbarComponent } from './RequirementListToolbarComponent.js';
+import { show_confirm_delete_modal, build_delete_warning_text } from '../logic/confirm_delete_modal_logic.js';
 
 export const RulefileRequirementsListComponent = {
     CSS_PATH: 'css/components/rulefile_requirements_list_component.css',
@@ -68,9 +69,32 @@ export const RulefileRequirementsListComponent = {
             case 'edit-req':
                 this.router('rulefile_edit_requirement', { id: requirementId });
                 break;
-            case 'delete-req':
-                this.router('confirm_delete', { type: 'requirement', reqId: requirementId });
+            case 'delete-req': {
+                const warning_text = build_delete_warning_text(
+                    'requirement',
+                    { reqId: requirementId },
+                    this.getState,
+                    this.Translation,
+                    this.Helpers
+                );
+                if (!warning_text) break;
+                const delete_btn = action_element.tagName === 'BUTTON' ? action_element : action_element.querySelector('button[data-action="delete-req"]');
+                show_confirm_delete_modal({
+                    warning_text,
+                    delete_button: delete_btn || action_element,
+                    on_confirm: () => {
+                        this.dispatch({ type: this.StoreActionTypes.DELETE_REQUIREMENT_DEFINITION, payload: { requirementId } });
+                        try {
+                            window.sessionStorage?.setItem('gv_return_focus_rulefile_requirements_list_v1', JSON.stringify({
+                                deletedRequirementId: requirementId,
+                                createdAt: Date.now()
+                            }));
+                        } catch (e) {}
+                        this.router('rulefile_requirements');
+                    }
+                });
                 break;
+            }
             case 'add-req':
                 this.router('rulefile_add_requirement', { id: 'new' });
                 break;

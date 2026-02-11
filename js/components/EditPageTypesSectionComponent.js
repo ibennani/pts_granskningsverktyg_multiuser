@@ -941,8 +941,22 @@ export const EditPageTypesSectionComponent = {
             });
             delete_button.addEventListener('click', (e) => {
                 e.preventDefault();
-                const current_metadata = this.working_metadata || this._ensure_metadata_defaults(this._clone_metadata(this.getState().ruleFileContent.metadata));
-                this._delete_page_type_with_animation(current_metadata, index, page_type_wrapper);
+                const h1_text = t('modal_h1_delete_page_type');
+                const message_text = t('modal_message_delete_page_type', { name: page_type_str });
+                if (window.show_confirm_delete_modal) {
+                    window.show_confirm_delete_modal({
+                        h1_text,
+                        warning_text: message_text,
+                        delete_button,
+                        on_confirm: () => {
+                            const current_metadata = this.working_metadata || this._ensure_metadata_defaults(this._clone_metadata(this.getState().ruleFileContent.metadata));
+                            this._delete_page_type_with_animation(current_metadata, index, page_type_wrapper);
+                        }
+                    });
+                } else {
+                    const current_metadata = this.working_metadata || this._ensure_metadata_defaults(this._clone_metadata(this.getState().ruleFileContent.metadata));
+                    this._delete_page_type_with_animation(current_metadata, index, page_type_wrapper);
+                }
             });
             
             label_row.appendChild(left_group);

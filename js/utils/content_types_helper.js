@@ -1,6 +1,27 @@
 // js/utils/content_types_helper.js
 
 /**
+ * Räknar antal unika krav som är kopplade till en innehållstyp (parent + alla underkategorier).
+ * @param {Object} ruleFileContent - Innehåller requirements
+ * @param {Object} parentContentType - Parent med { id, types: [{ id }] }
+ * @returns {number} Antal unika krav som refererar denna innehållstyp eller någon underkategori
+ */
+export function get_requirements_count_for_parent_content_type(ruleFileContent, parentContentType) {
+    if (!ruleFileContent?.requirements) return 0;
+    const ids_to_check = new Set();
+    if (parentContentType?.id) ids_to_check.add(parentContentType.id);
+    (parentContentType?.types || []).forEach(child => {
+        if (child?.id) ids_to_check.add(child.id);
+    });
+    const req_ids = new Set();
+    for (const id of ids_to_check) {
+        const refs = get_requirements_by_content_type_id(ruleFileContent, id);
+        refs.forEach(({ id: reqId }) => req_ids.add(reqId));
+    }
+    return req_ids.size;
+}
+
+/**
  * Räknar antal krav som är kopplade till en underkategori (content type).
  * @param {Object} ruleFileContent - Innehåller requirements
  * @param {string} contentTypeId - Underkategori-id (t.ex. "teknisk-grundstruktur-roller-och-egenskaper-i-koden")

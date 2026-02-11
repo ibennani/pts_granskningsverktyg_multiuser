@@ -93,7 +93,7 @@ export const ModalComponent = {
         }
     },
 
-    close() {
+    close(focus_element_override) {
         if (!this.overlay_element_ref) return;
 
         this.overlay_element_ref.removeEventListener('keydown', this.handle_backdrop_keydown);
@@ -111,11 +111,12 @@ export const ModalComponent = {
         this.dialog_element_ref = null;
         this.content_container_ref = null;
 
-        if (this.focus_before_open && document.contains(this.focus_before_open)) {
+        const element_to_focus = focus_element_override ?? this.focus_before_open;
+        if (element_to_focus && document.contains(element_to_focus)) {
             try {
-                this.focus_before_open.focus({ preventScroll: true });
+                element_to_focus.focus({ preventScroll: true });
             } catch (e) {
-                this.focus_before_open.focus();
+                element_to_focus.focus();
             }
         }
         this.focus_before_open = null;

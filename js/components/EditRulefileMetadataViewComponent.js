@@ -755,13 +755,20 @@ export const EditRulefileMetadataViewComponent = {
                     html_content: this.Helpers.get_icon_svg('delete', [], 16)
                 });
                 delete_btn.addEventListener('click', () => {
-                    if (confirm(t('confirm_delete_report_section') || 'Är du säker på att du vill ta bort denna sektion?')) {
-                        delete sections[section_id];
-                        const order_index = ordered_section_ids.indexOf(section_id);
-                        if (order_index !== -1) {
-                            ordered_section_ids.splice(order_index, 1);
-                        }
-                        this._render_report_template_sections(container, reportTemplate, metadata);
+                    const warning_text = t('confirm_delete_report_section') || 'Är du säker på att du vill ta bort denna sektion?';
+                    if (window.show_confirm_delete_modal) {
+                        window.show_confirm_delete_modal({
+                            warning_text,
+                            delete_button: delete_btn,
+                            on_confirm: () => {
+                                delete sections[section_id];
+                                const order_index = ordered_section_ids.indexOf(section_id);
+                                if (order_index !== -1) {
+                                    ordered_section_ids.splice(order_index, 1);
+                                }
+                                this._render_report_template_sections(container, reportTemplate, metadata);
+                            }
+                        });
                     }
                 });
                 header.appendChild(delete_btn);

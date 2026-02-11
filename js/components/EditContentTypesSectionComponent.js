@@ -2,6 +2,7 @@
 
 import {
     get_requirements_count_by_content_type_id,
+    get_requirements_count_for_parent_content_type,
     remove_content_type_from_requirements
 } from '../utils/content_types_helper.js';
 
@@ -157,8 +158,26 @@ export const EditContentTypesSectionComponent = {
             const headingRow = this.Helpers.create_element('div', { class_name: 'editable-card-header' });
             const heading = this.Helpers.create_element('h3', { text_content: parent.text || t('rulefile_metadata_untitled_item') });
             const initialRemoveLabel = this.Translation.t('rulefile_metadata_remove_content_type', { name: heading.textContent });
+            const parentDisplayName = parent.text || t('rulefile_metadata_untitled_item');
             const removeParentBtn = this._create_small_button(initialRemoveLabel, 'delete', () => {
-                this._delete_content_type_with_animation(workingMetadata, parentIndex, card);
+                const h1_text = this.Translation.t('modal_h1_delete_content_type');
+                const reqCount = get_requirements_count_for_parent_content_type(ruleFileContent, parent);
+                const message_text = reqCount > 0
+                    ? this.Translation.t('modal_message_delete_content_type_with_requirements', {
+                        name: parentDisplayName,
+                        count: reqCount
+                    })
+                    : this.Translation.t('modal_message_delete_content_type', { name: parentDisplayName });
+                if (window.show_confirm_delete_modal) {
+                    window.show_confirm_delete_modal({
+                        h1_text,
+                        warning_text: message_text,
+                        delete_button: removeParentBtn,
+                        on_confirm: () => this._delete_content_type_with_animation(workingMetadata, parentIndex, card)
+                    });
+                } else {
+                    this._delete_content_type_with_animation(workingMetadata, parentIndex, card);
+                }
             }, 'danger', { plainText: true, ariaLabel: initialRemoveLabel });
             headingRow.append(heading, removeParentBtn);
             card.appendChild(headingRow);
@@ -191,7 +210,19 @@ export const EditContentTypesSectionComponent = {
                 const childDisplayName = child.text || t('rulefile_metadata_untitled_item');
                 const removeChildInitial = this.Translation.t('rulefile_metadata_remove_content_subtype', { name: childDisplayName });
                 const removeChildBtn = this._create_small_button(removeChildInitial, 'delete', () => {
-                    this._delete_content_subtype_with_animation(workingMetadata, parentIndex, childIndex, child, container, childCard);
+                    const msg = reqCount > 0
+                        ? (t('rulefile_metadata_remove_content_type_with_requirements', { count: reqCount })
+                            || `Denna underkategori är kopplad till ${reqCount} krav. Vill du ta bort den? Kopplingen till kraven tas bort.`)
+                        : (t('confirm_delete_content_subtype', { name: childDisplayName }) || `Är du säker på att du vill ta bort undertypen "${childDisplayName}"?`);
+                    if (window.show_confirm_delete_modal) {
+                        window.show_confirm_delete_modal({
+                            warning_text: msg,
+                            delete_button: removeChildBtn,
+                            on_confirm: () => this._delete_content_subtype_with_animation(workingMetadata, parentIndex, childIndex, child, container, childCard)
+                        });
+                    } else {
+                        this._delete_content_subtype_with_animation(workingMetadata, parentIndex, childIndex, child, container, childCard);
+                    }
                 }, 'danger', { plainText: true, ariaLabel: removeChildInitial });
                 childHeader.appendChild(removeChildBtn);
 
@@ -369,12 +400,6 @@ export const EditContentTypesSectionComponent = {
         const ruleFileContent = this.getState()?.ruleFileContent || {};
         const childId = child.id;
         const reqCount = childId ? get_requirements_count_by_content_type_id(ruleFileContent, childId) : 0;
-
-        if (reqCount > 0) {
-            const msg = t('rulefile_metadata_remove_content_type_with_requirements', { count: reqCount })
-                || `Denna underkategori är kopplad till ${reqCount} krav. Vill du ta bort den? Kopplingen till kraven tas bort.`;
-            if (!window.confirm(msg)) return;
-        }
 
         this.handle_autosave_input();
 

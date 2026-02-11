@@ -16,7 +16,7 @@
 .modal-dialog {
     width: max-content;
     max-width: 50vw;
-    background-color: var(--bg-color, #fff);
+    background-color: var(--plate-background-color, #fff);
     border-radius: var(--border-radius, 12px);
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
     padding: 1.5rem;
@@ -51,12 +51,20 @@
 .modal-message {
     margin-top: 0;
     margin-bottom: 1rem;
+    white-space: pre-line;
 }
 
 .modal-content .button {
     align-self: flex-start;
 }
 
+.modal-confirm-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+}
+
 [data-theme="dark"] .modal-dialog {
-    background-color: var(--bg-color);
+    background-color: var(--plate-background-color);
 }
