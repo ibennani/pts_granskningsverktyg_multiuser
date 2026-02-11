@@ -595,6 +595,8 @@
   "help_texts": "Help Texts and Instructions",
   "add_check": "Add Checkpoint",
   "metadata": "Metadata",
+  "modal_h1_text": "The modal is here",
+  "modal_message_text": "This is the first modal",
   "main_category_text": "Main Category (text)",
   "sub_category_text": "Subcategory (text)",
   "is_critical": "Is Critical?",

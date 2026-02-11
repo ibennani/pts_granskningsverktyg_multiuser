@@ -52,6 +52,7 @@ import { AuditActionsViewComponent } from './components/AuditActionsViewComponen
 import { AllRequirementsViewComponent } from './components/AllRequirementsViewComponent.js';
 
 import { GlobalActionBarComponent } from './components/GlobalActionBarComponent.js';
+import { ModalComponent } from './components/ModalComponent.js';
 
 import { DraftManager } from './draft_manager.js';
 import { getState, dispatch, subscribe, initState, StoreActionTypes, StoreInitialState, loadStateFromLocalStorageBackup, clearLocalStorageBackup, updateBackupRestorePosition, APP_STATE_KEY } from './state.js';
@@ -60,6 +61,7 @@ window.dispatch = dispatch;
 window.Store = { getState, dispatch, subscribe, StoreActionTypes, StoreInitialState };
 window.StoreActionTypes = StoreActionTypes;
 window.NotificationComponent = NotificationComponent;
+window.ModalComponent = ModalComponent;
 window.dependencyManager = dependencyManager;
 window.Helpers = Helpers;
 window.Translation = TranslationLogic;
@@ -409,6 +411,7 @@ window.DraftManager = DraftManager;
             Translation: window.Translation,
             Helpers: window.Helpers,
             NotificationComponent: NotificationComponent,
+            ModalComponent: ModalComponent,
             SaveAuditLogic: window.SaveAuditLogic,
             AuditLogic: AuditLogic,
             ValidationLogic: ValidationLogic,
@@ -462,6 +465,16 @@ window.DraftManager = DraftManager;
             await error_boundary_instance.init({ root: main_view_root || app_container, deps: common_deps });
         } catch (error) {
             consoleManager.error("[Main.js] Failed to initialize error boundary:", error);
+        }
+
+        // Initialize modal (global, samma nivå som app-wrapper)
+        const modal_root = document.getElementById('modal-root');
+        if (modal_root) {
+            try {
+                await ModalComponent.init({ root: modal_root, deps: common_deps });
+            } catch (error) {
+                consoleManager.error("[Main.js] Failed to initialize modal:", error);
+            }
         }
     }
     
@@ -1029,10 +1042,34 @@ window.DraftManager = DraftManager;
             focus_root.addEventListener('focusin', focus_in_handler);
         }
 
+        const h1_click_handler = (e) => {
+            const h1 = e.target.closest('h1');
+            if (!h1) return;
+            if (e.target.closest('a') || e.target.closest('button') || e.target.closest('input')) return;
+            e.preventDefault();
+            const t = get_t_fallback();
+            ModalComponent.show(
+                {
+                    h1_text: t('modal_h1_text'),
+                    message_text: t('modal_message_text'),
+                },
+                (container, modal) => {
+                    const close_btn = Helpers.create_element('button', {
+                        class_name: ['button', 'button-primary'],
+                        text_content: t('close'),
+                    });
+                    close_btn.addEventListener('click', () => modal.close());
+                    container.appendChild(close_btn);
+                }
+            );
+        };
+        document.addEventListener('click', h1_click_handler, true);
+
         // Exponera cleanup-funktion globalt
         window.cleanupGlobalEventListeners = () => {
             memoryManager.removeEventListener(document, 'languageChanged', language_changed_handler);
             memoryManager.removeEventListener(window, 'hashchange', hash_change_handler);
+            document.removeEventListener('click', h1_click_handler, true);
             const fr = main_view_root || app_container;
             if (fr) fr.removeEventListener('focusin', focus_in_handler);
             

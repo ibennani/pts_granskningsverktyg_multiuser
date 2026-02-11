@@ -1,0 +1,62 @@
+/* ModalComponent: overlay och dialog */
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 25vh;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-dialog {
+    width: max-content;
+    max-width: 50vw;
+    background-color: var(--bg-color, #fff);
+    border-radius: var(--border-radius, 12px);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+    padding: 1.5rem;
+    outline: none;
+}
+
+@media (max-width: 768px) {
+    .modal-overlay {
+        padding: 0;
+        align-items: stretch;
+    }
+
+    .modal-dialog {
+        width: 100%;
+        max-width: none;
+        height: 100%;
+        border-radius: 0;
+    }
+}
+
+.modal-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.modal-heading {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.modal-message {
+    margin-top: 0;
+    margin-bottom: 1rem;
+}
+
+.modal-content .button {
+    align-self: flex-start;
+}
+
+[data-theme="dark"] .modal-dialog {
+    background-color: var(--bg-color);
+}

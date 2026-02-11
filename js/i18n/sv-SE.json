@@ -595,6 +595,8 @@
   "help_texts": "Hjälptexter och instruktioner",
   "add_check": "Lägg till kontrollpunkt",
   "metadata": "Metadata",
+  "modal_h1_text": "Modalen är här",
+  "modal_message_text": "Detta är den första modalen",
   "main_category_text": "Huvudkategori (text)",
   "sub_category_text": "Underkategori (text)",
   "is_critical": "Är kritiskt?",
