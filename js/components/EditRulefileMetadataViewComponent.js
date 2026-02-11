@@ -320,9 +320,6 @@ export const EditRulefileMetadataViewComponent = {
                 const updatedLabel = this.Translation.t('rulefile_metadata_remove_content_type', { name: displayName });
                 removeParentBtn.updateButtonText?.(updatedLabel, updatedLabel);
             }));
-            card.appendChild(this._create_inline_input('rulefile_metadata_field_description', parent.description || '', value => {
-                parent.description = value;
-            }, { textarea: true }));
 
             const childList = this.Helpers.create_element('div', { class_name: 'editable-sublist' });
             parent.types.forEach((child, childIndex) => {
@@ -979,7 +976,7 @@ export const EditRulefileMetadataViewComponent = {
             const cleanedParent = {
                 id: (parent.id || '').trim(),
                 text: (parent.text || '').trim(),
-                description: (parent.description || '').trim()
+                description: ''
             };
             const childTypes = Array.isArray(parent.types) ? parent.types : [];
             cleanedParent.types = childTypes
@@ -990,7 +987,7 @@ export const EditRulefileMetadataViewComponent = {
                 }))
                 .filter(child => child.id || child.text || child.description);
             return cleanedParent;
-        }).filter(parent => parent.id || parent.text || parent.description || (parent.types && parent.types.length > 0));
+        }).filter(parent => parent.id || parent.text || (parent.types && parent.types.length > 0));
 
         const cleanedSampleCategories = (workingMetadata.samples?.sampleCategories || []).map(category => {
             const cleanedCategory = {

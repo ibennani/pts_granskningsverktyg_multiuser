@@ -200,6 +200,11 @@
     margin: 0;
 }
 
+.content-type-requirements-count {
+    font-size: 0.875rem;
+    color: var(--text-color-muted);
+}
+
 .editable-child-card {
     background: color-mix(in srgb, var(--surface-emphasis-bg) 90%, #000000 10%);
     border: 1px solid color-mix(in srgb, var(--surface-emphasis-border) 80%, #000000 20%);
@@ -248,4 +253,51 @@
     flex-wrap: wrap;
     gap: 1rem;
     align-items: center;
+}
+
+/* Kompakt styling för innehållstyper-formuläret */
+.content-types-edit-form .content-types-editor,
+.content-types-edit-form .editable-card-list {
+    gap: 0.75rem;
+}
+
+.content-types-edit-form .editable-card {
+    padding: 0.75rem 1rem;
+    gap: 0.5rem;
+}
+
+.content-types-edit-form .editable-card-header {
+    gap: 0.5rem;
+}
+
+.content-types-edit-form .editable-card-header h3 {
+    font-size: 1.1rem;
+}
+
+.content-types-edit-form .editable-sublist {
+    gap: 0.5rem;
+}
+
+.content-types-edit-form .editable-sublist h4 {
+    margin: 0.35rem 0 0.2rem 0;
+    font-size: 0.95rem;
+}
+
+.content-types-edit-form .editable-child-card {
+    padding: 0.6rem 0.85rem;
+    gap: 0.5rem;
+}
+
+.content-types-edit-form .inline-field {
+    gap: 0.25rem;
+}
+
+.content-types-edit-form .form-control-compact {
+    padding: 0.35rem 0.5rem;
+    font-size: 0.9rem;
+}
+
+.content-types-edit-form .form-actions {
+    margin-top: 0.75rem;
+    gap: 0.75rem;
 }

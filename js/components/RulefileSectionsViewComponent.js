@@ -16,6 +16,7 @@ export const RulefileSectionsViewComponent = {
         this.is_initial_render = true; // Flagga för att veta om detta är första render
         this.general_form_initial_focus_set = false; // Flagga för att veta om fokus redan har satts på general-formuläret
         this.page_types_form_initial_focus_set = false; // Flagga för att veta om fokus redan har satts på page_types-formuläret
+        this.content_types_form_initial_focus_set = false; // Flagga för att veta om fokus redan har satts på content_types-formuläret
         
         if (this.Helpers?.load_css) {
             await this.Helpers.load_css(this.CSS_PATH).catch(err => console.warn('[RulefileSectionsViewComponent] Failed to load CSS', err));
@@ -116,10 +117,10 @@ export const RulefileSectionsViewComponent = {
         const t = this.Translation.t;
         const header_wrapper = this.Helpers.create_element('div', { class_name: 'rulefile-sections-header' });
         
+        const heading_row = this.Helpers.create_element('div', { class_name: 'rulefile-sections-header-row' });
         const heading = this.Helpers.create_element('h2', { text_content: section_config.title });
-        header_wrapper.appendChild(heading);
+        heading_row.appendChild(heading);
         
-        // Lägg till redigera-knapp direkt till höger om h2 för general-sektionen (bara om inte redigerar)
         if (section_config.id === 'general' && !is_editing) {
             const edit_button = this.Helpers.create_element('button', {
                 class_name: ['button', 'button-secondary', 'rulefile-sections-edit-button'],
@@ -133,10 +134,9 @@ export const RulefileSectionsViewComponent = {
             edit_button.addEventListener('click', () => {
                 this.router('rulefile_sections', { section: 'general', edit: 'true' });
             });
-            header_wrapper.appendChild(edit_button);
+            heading_row.appendChild(edit_button);
         }
         
-        // Lägg till redigera-knapp för page_types-sektionen (bara om inte redigerar)
         if (section_config.id === 'page_types' && !is_editing) {
             const edit_button = this.Helpers.create_element('button', {
                 class_name: ['button', 'button-secondary', 'rulefile-sections-edit-button'],
@@ -150,10 +150,35 @@ export const RulefileSectionsViewComponent = {
             edit_button.addEventListener('click', () => {
                 this.router('rulefile_sections', { section: 'page_types', edit: 'true' });
             });
-            header_wrapper.appendChild(edit_button);
+            heading_row.appendChild(edit_button);
         }
 
-        // Lägg till "lägg till"-knapp för page_types i redigeringsläge
+        if (section_config.id === 'content_types' && !is_editing) {
+            const edit_button = this.Helpers.create_element('button', {
+                class_name: ['button', 'button-secondary', 'rulefile-sections-edit-button'],
+                attributes: {
+                    type: 'button',
+                    'aria-label': t('rulefile_sections_edit_content_types_aria')
+                },
+                html_content: `<span>${t('edit_button_label')}</span>` +
+                              (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('edit') : '')
+            });
+            edit_button.addEventListener('click', () => {
+                this.router('rulefile_sections', { section: 'content_types', edit: 'true' });
+            });
+            heading_row.appendChild(edit_button);
+        }
+
+        header_wrapper.appendChild(heading_row);
+
+        if (section_config.id === 'content_types' && is_editing) {
+            const intro = this.Helpers.create_element('p', {
+                class_name: 'field-hint rulefile-sections-header-intro',
+                text_content: t('rulefile_metadata_content_types_intro') || 'Lägg till eller redigera huvudkategorier och underkategorier.\nEndast underkategorier har beskrivningar.\nUnderkategorier kan kopplas till krav.'
+            });
+            header_wrapper.appendChild(intro);
+        }
+
         if (section_config.id === 'page_types' && is_editing) {
             const add_button = this.Helpers.create_element('button', {
                 class_name: ['button', 'button-primary', 'button-small', 'rulefile-sections-edit-button'],
@@ -167,7 +192,7 @@ export const RulefileSectionsViewComponent = {
             add_button.addEventListener('click', () => {
                 this.page_types_edit_component?.handle_add_page_type_click?.();
             });
-            header_wrapper.appendChild(add_button);
+            heading_row.appendChild(add_button);
         }
         
         return header_wrapper;
@@ -895,6 +920,36 @@ export const RulefileSectionsViewComponent = {
         this.page_types_edit_component = EditPageTypesSectionComponent;
     },
 
+    async _render_content_types_edit_form(container, metadata) {
+        const is_first_render = !this.content_types_edit_component;
+        
+        if (this.content_types_edit_component && container.children.length > 0) {
+            return;
+        }
+        
+        const { EditContentTypesSectionComponent } = await import('./EditContentTypesSectionComponent.js');
+        
+        await EditContentTypesSectionComponent.init({
+            root: container,
+            deps: this.deps
+        });
+        
+        EditContentTypesSectionComponent.render();
+        
+        if (is_first_render && !this.content_types_form_initial_focus_set) {
+            setTimeout(() => {
+                const firstH2 = container.querySelector('h2');
+                if (firstH2) {
+                    firstH2.setAttribute('tabindex', '-1');
+                    firstH2.focus();
+                    this.content_types_form_initial_focus_set = true;
+                }
+            }, 100);
+        }
+        
+        this.content_types_edit_component = EditContentTypesSectionComponent;
+    },
+
     render() {
         if (!this.root) return;
         const t = this.Translation.t;
@@ -946,8 +1001,8 @@ export const RulefileSectionsViewComponent = {
         let section_content;
         let header_section_config;
         
-        // Om vi är i redigeringsläge för general eller page_types, visa formuläret inline
-        if (is_editing && (section_id === 'general' || section_id === 'page_types')) {
+        // Om vi är i redigeringsläge för general, page_types eller content_types, visa formuläret inline
+        if (is_editing && (section_id === 'general' || section_id === 'page_types' || section_id === 'content_types')) {
             header_section_config = this._get_section_config(section_id);
             const header = this._create_header(header_section_config, is_editing);
             right_wrapper.appendChild(header);
@@ -960,6 +1015,8 @@ export const RulefileSectionsViewComponent = {
                 this._render_general_edit_form(edit_form_container, metadata);
             } else if (section_id === 'page_types') {
                 this._render_page_types_edit_form(edit_form_container, metadata);
+            } else if (section_id === 'content_types') {
+                this._render_content_types_edit_form(edit_form_container, metadata);
             }
             
             right_wrapper.appendChild(edit_form_container);
@@ -1049,8 +1106,14 @@ export const RulefileSectionsViewComponent = {
         }
         
         // Återställ fokus-flaggorna så att fokus sätts när användaren navigerar tillbaka
+        if (this.content_types_edit_component && typeof this.content_types_edit_component.destroy === 'function') {
+            this.content_types_edit_component.destroy();
+            this.content_types_edit_component = null;
+        }
+        
         this.general_form_initial_focus_set = false;
         this.page_types_form_initial_focus_set = false;
+        this.content_types_form_initial_focus_set = false;
         
         if (this.root) {
             this.root.innerHTML = '';

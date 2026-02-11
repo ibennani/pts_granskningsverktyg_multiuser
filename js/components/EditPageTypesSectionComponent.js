@@ -148,17 +148,15 @@ export const EditPageTypesSectionComponent = {
         const allItems = container.querySelectorAll('.page-type-editor-item');
         
         // Fade:a ut elementet som ska tas bort
-        // Sätt transition explicit (överrid den globala transitionen)
         elementToDelete.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
         
         // Vänta en frame för att säkerställa att transition är satt innan vi ändrar värden
         requestAnimationFrame(() => {
-            // Nu sätt fade-out värden
             elementToDelete.style.opacity = '0';
             elementToDelete.style.transform = 'scale(0.95)';
         });
         
-        // Vänta tills fade-out är klar (300ms) + 0.1 sekunder extra, sedan ta bort från DOM och flytta upp
+        // Vänta tills fade-out är klar (300ms), sedan ta bort från DOM och flytta upp
         setTimeout(() => {
             // Ta bort elementet från DOM:en direkt
             if (elementToDelete.parentNode) {
@@ -214,7 +212,7 @@ export const EditPageTypesSectionComponent = {
                 this.working_metadata = workingMetadata;
                 this.autosave_session?.set_form_element?.(new_form);
             }, 400);
-        }, 400); // Vänta 300ms (fade-out) + 100ms = 400ms totalt
+        }, 400);
     },
 
     _save_form_values_to_metadata(workingMetadata, shouldTrim = false) {

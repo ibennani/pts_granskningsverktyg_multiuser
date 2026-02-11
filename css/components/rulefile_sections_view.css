@@ -64,9 +64,19 @@
 
 .rulefile-sections-header {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    gap: 0.25rem;
     margin-bottom: 2rem;
+}
+
+.rulefile-sections-header-row {
+    display: flex;
+    align-items: center;
     gap: 1rem;
+}
+
+.rulefile-sections-header-row h2 {
+    margin: 0;
 }
 
 .rulefile-sections-header h2 {
@@ -74,6 +84,12 @@
     font-size: 1.5rem;
     font-weight: 600;
     color: var(--primary-color);
+}
+
+.rulefile-sections-header-intro {
+    margin: 0.25rem 0 0 0;
+    max-width: 50rem;
+    white-space: pre-line;
 }
 
 .rulefile-sections-edit-button {
