@@ -161,7 +161,7 @@ function _buildSingleRequirementForm(req, allContentTypes, isNew, onSave, onCanc
     form.appendChild(_buildReqFormMetadataSection(req));
     const actions = Helpers.create_element('div', { class_name: 'form-actions' });
     const saveBtn = Helpers.create_element('button', { type: 'submit', class_name: 'button button-primary', text_content: t('save_changes_button') });
-    const cancelBtn = Helpers.create_element('button', { type: 'button', class_name: 'button button-default', text_content: t('cancel') });
+    const cancelBtn = Helpers.create_element('button', { type: 'button', class_name: 'button button-default', text_content: t('back_to_requirement_list_without_saving') });
     cancelBtn.addEventListener('click', onCancel);
     actions.append(saveBtn, cancelBtn);
     form.appendChild(actions);

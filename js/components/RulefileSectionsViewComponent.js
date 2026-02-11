@@ -64,7 +64,7 @@ export const RulefileSectionsViewComponent = {
             },
             info_blocks_order: {
                 id: 'info_blocks_order',
-                title: t('rulefile_section_info_blocks_order_title') || 'Info-blocks ordning',
+                title: t('rulefile_section_info_blocks_order_title') || 'Informationsblock',
                 editRoute: 'rulefile_sections',
                 editSection: 'info_blocks_order',
                 isEditable: true
@@ -84,8 +84,8 @@ export const RulefileSectionsViewComponent = {
             { id: 'general', label: t('rulefile_section_general_title') || 'Allmän information' },
             { id: 'page_types', label: t('rulefile_metadata_section_page_types') || 'Sidtyper' },
             { id: 'content_types', label: t('rulefile_metadata_section_content_types') || 'Innehållstyper' },
+            { id: 'info_blocks_order', label: t('rulefile_section_info_blocks_order_title') || 'Informationsblock' },
             { id: 'report_template', label: t('rulefile_section_report_template_title') || 'Rapportmall' },
-            { id: 'info_blocks_order', label: t('rulefile_section_info_blocks_order_title') || 'Info-blocks ordning' },
             { id: 'classifications', label: t('rulefile_section_classifications_title') || 'Klassificeringar' }
         ];
 
@@ -169,12 +169,36 @@ export const RulefileSectionsViewComponent = {
             heading_row.appendChild(edit_button);
         }
 
+        if (section_config.id === 'info_blocks_order' && !is_editing) {
+            const edit_button = this.Helpers.create_element('button', {
+                class_name: ['button', 'button-secondary', 'rulefile-sections-edit-button'],
+                attributes: {
+                    type: 'button',
+                    'aria-label': t('rulefile_sections_edit_info_blocks_aria') || 'Redigera informationsblock'
+                },
+                html_content: `<span>${t('edit_button_label')}</span>` +
+                              (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('edit') : '')
+            });
+            edit_button.addEventListener('click', () => {
+                this.router('rulefile_sections', { section: 'info_blocks_order', edit: 'true' });
+            });
+            heading_row.appendChild(edit_button);
+        }
+
         header_wrapper.appendChild(heading_row);
 
         if (section_config.id === 'content_types' && is_editing) {
             const intro = this.Helpers.create_element('p', {
                 class_name: 'field-hint rulefile-sections-header-intro',
                 text_content: t('rulefile_metadata_content_types_intro') || 'Lägg till eller redigera huvudkategorier och underkategorier.\nEndast underkategorier har beskrivningar.\nUnderkategorier kan kopplas till krav.'
+            });
+            header_wrapper.appendChild(intro);
+        }
+
+        if (section_config.id === 'info_blocks_order') {
+            const intro = this.Helpers.create_element('p', {
+                class_name: 'field-hint rulefile-sections-header-intro',
+                text_content: t('rulefile_info_blocks_order_intro') || 'Här väljer du vad du vill kalla de olika informationsblock som visas överst i alla krav, ovanför kontrollpunkterna. Det går även att ändra i vilken ordning informationsblocken visas.'
             });
             header_wrapper.appendChild(intro);
         }
@@ -697,6 +721,15 @@ export const RulefileSectionsViewComponent = {
         return name_map[block_id] || block_id;
     },
 
+    _get_custom_block_name_from_requirements(block_id) {
+        const requirements = this.getState()?.ruleFileContent?.requirements || {};
+        for (const req of Object.values(requirements)) {
+            const name = req?.infoBlocks?.[block_id]?.name;
+            if (typeof name === 'string') return name;
+        }
+        return '';
+    },
+
     _render_info_blocks_order_section(metadata, isEditing = false) {
         const t = this.Translation.t;
         const section = this.Helpers.create_element('section', { class_name: 'rulefile-section-content' });
@@ -711,7 +744,7 @@ export const RulefileSectionsViewComponent = {
         ];
 
         if (isEditing) {
-            // Redigeringsläge: upp/ner-knappar
+            // Redigeringsläge: textfält, upp/ner-knappar, radera-knapp
             const editor = this.Helpers.create_element('div', { class_name: 'info-blocks-order-editor' });
             const info_text = this.Helpers.create_element('p', { 
                 class_name: 'field-hint',
@@ -719,54 +752,158 @@ export const RulefileSectionsViewComponent = {
             });
             editor.appendChild(info_text);
 
-            const list = this.Helpers.create_element('ol', { class_name: 'info-blocks-order-list-editable' });
             const working_order = [...block_order];
-            
+
+            const add_button = this.Helpers.create_element('button', {
+                class_name: ['button', 'button-default', 'button-small'],
+                attributes: { type: 'button', 'aria-label': t('rulefile_info_blocks_add_button') },
+                html_content: `<span>${t('rulefile_info_blocks_add_button')}</span>` +
+                             (this.Helpers.get_icon_svg ? `<span aria-hidden="true">${this.Helpers.get_icon_svg('add', ['currentColor'], 16)}</span>` : '')
+            });
+            add_button.addEventListener('click', () => {
+                const new_id = `custom_${this.Helpers.generate_uuid_v4().substring(0, 8)}`;
+                this._append_info_block_to_list(list, new_id, t);
+            });
+            editor.appendChild(add_button);
+
+            const list = this.Helpers.create_element('ol', { class_name: 'info-blocks-order-list-editable' });
+            const total = working_order.length;
+
             working_order.forEach((blockId, index) => {
-                const list_item = this.Helpers.create_element('li', { class_name: 'info-blocks-order-item' });
+                const list_item = this.Helpers.create_element('li', { class_name: 'info-blocks-order-item', attributes: { 'data-index': index } });
                 const item_content = this.Helpers.create_element('div', { class_name: 'info-blocks-order-item-content' });
-                item_content.appendChild(this.Helpers.create_element('span', { 
-                    text_content: this._get_block_display_name(blockId) 
-                }));
-                
+
+                const input_id = `info_block_name_${blockId}`;
+                const name_label = this.Helpers.create_element('label', {
+                    attributes: { for: input_id },
+                    text_content: t('rulefile_info_blocks_order_name_label') || 'Namn',
+                    class_name: 'info-blocks-order-name-label'
+                });
+                const display_name = blockId.startsWith('custom_')
+                    ? this._get_custom_block_name_from_requirements(blockId)
+                    : this._get_block_display_name(blockId);
+                const block_label = (display_name || '').trim() || t('rulefile_info_blocks_unnamed_block');
+                const text_input = this.Helpers.create_element('input', {
+                    class_name: 'form-control info-blocks-order-name-input',
+                    attributes: {
+                        type: 'text',
+                        id: input_id,
+                        value: display_name,
+                        'data-block-id': blockId
+                    }
+                });
+                const input_wrapper = this.Helpers.create_element('div', { class_name: 'info-blocks-order-input-wrapper' });
+                input_wrapper.appendChild(name_label);
+                input_wrapper.appendChild(text_input);
+                item_content.appendChild(input_wrapper);
+
                 const controls = this.Helpers.create_element('div', { class_name: 'info-blocks-order-controls' });
-                
-                if (index > 0) {
+
+                const is_first = index === 0;
+                const is_last = index === total - 1;
+
+                const up_slot = this.Helpers.create_element('div', { class_name: 'info-blocks-order-btn-slot' });
+                if (!is_first) {
+                    const up_target_index = index - 1;
+                    const up_aria = block_label === t('rulefile_info_blocks_unnamed_block')
+                        ? block_label
+                        : (up_target_index === 0
+                            ? (t('rulefile_info_blocks_move_up_to_top') || 'Flytta till översta raden')
+                            : (t('rulefile_info_blocks_move_up_to_row', { row: up_target_index + 1 }) || `Flytta upp till rad ${up_target_index + 1}`));
                     const up_btn = this.Helpers.create_element('button', {
                         class_name: ['button', 'button-small', 'button-default'],
-                        attributes: { 
+                        attributes: {
                             type: 'button',
-                            'aria-label': t('move_up') || 'Flytta upp'
+                            'data-action': 'move-info-block-up',
+                            'data-index': String(index),
+                            'aria-label': up_aria
                         },
-                        html_content: this.Helpers.get_icon_svg('arrow_upward', [], 16)
+                        html_content: `<span>${t('rulefile_metadata_move_up_text') || 'Flytta upp'}</span>` +
+                                     (this.Helpers.get_icon_svg ? `<span aria-hidden="true">${this.Helpers.get_icon_svg('arrow_upward', ['currentColor'], 16)}</span>` : '')
                     });
-                    up_btn.addEventListener('click', () => {
-                        const temp = working_order[index];
-                        working_order[index] = working_order[index - 1];
-                        working_order[index - 1] = temp;
-                        this._save_info_blocks_order(working_order);
+                    up_btn.addEventListener('click', (e) => {
+                        const li = e.currentTarget.closest('.info-blocks-order-item');
+                        const ol = li?.closest('ol');
+                        if (!ol || !li) return;
+                        const items = Array.from(ol.children);
+                        const idx = items.indexOf(li);
+                        if (idx > 0) {
+                            ol.insertBefore(li, items[idx - 1]);
+                            this._refresh_info_block_move_buttons(ol, t);
+                        }
                     });
-                    controls.appendChild(up_btn);
+                    up_slot.appendChild(up_btn);
                 }
-                
-                if (index < working_order.length - 1) {
+                controls.appendChild(up_slot);
+
+                const down_slot = this.Helpers.create_element('div', { class_name: 'info-blocks-order-btn-slot' });
+                if (!is_last) {
+                    const down_target_index = index + 1;
+                    const down_aria = block_label === t('rulefile_info_blocks_unnamed_block')
+                        ? block_label
+                        : (down_target_index === total - 1
+                            ? (t('rulefile_info_blocks_move_down_to_bottom') || 'Flytta till nedersta raden')
+                            : (t('rulefile_info_blocks_move_down_to_row', { row: down_target_index + 1 }) || `Flytta ner till rad ${down_target_index + 1}`));
                     const down_btn = this.Helpers.create_element('button', {
                         class_name: ['button', 'button-small', 'button-default'],
-                        attributes: { 
+                        attributes: {
                             type: 'button',
-                            'aria-label': t('move_down') || 'Flytta ner'
+                            'data-action': 'move-info-block-down',
+                            'data-index': String(index),
+                            'aria-label': down_aria
                         },
-                        html_content: this.Helpers.get_icon_svg('arrow_downward', [], 16)
+                        html_content: `<span>${t('rulefile_metadata_move_down_text') || 'Flytta ner'}</span>` +
+                                     (this.Helpers.get_icon_svg ? `<span aria-hidden="true">${this.Helpers.get_icon_svg('arrow_downward', ['currentColor'], 16)}</span>` : '')
                     });
-                    down_btn.addEventListener('click', () => {
-                        const temp = working_order[index];
-                        working_order[index] = working_order[index + 1];
-                        working_order[index + 1] = temp;
-                        this._save_info_blocks_order(working_order);
+                    down_btn.addEventListener('click', (e) => {
+                        const li = e.currentTarget.closest('.info-blocks-order-item');
+                        const ol = li?.closest('ol');
+                        if (!ol || !li) return;
+                        const items = Array.from(ol.children);
+                        const idx = items.indexOf(li);
+                        if (idx < items.length - 1) {
+                            ol.insertBefore(items[idx + 1], li);
+                            this._refresh_info_block_move_buttons(ol, t);
+                        }
                     });
-                    controls.appendChild(down_btn);
+                    down_slot.appendChild(down_btn);
                 }
-                
+                controls.appendChild(down_slot);
+
+                const delete_btn = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-small', 'button-danger'],
+                    attributes: {
+                        type: 'button',
+                        'aria-label': block_label === t('rulefile_info_blocks_unnamed_block')
+                            ? block_label
+                            : (t('rulefile_metadata_delete_button_text') || 'Ta bort')
+                    },
+                    html_content: `<span>${t('rulefile_metadata_delete_button_text') || 'Ta bort'}</span>` +
+                                 (this.Helpers.get_icon_svg ? `<span aria-hidden="true">${this.Helpers.get_icon_svg('delete', ['currentColor'], 16)}</span>` : '')
+                });
+                delete_btn.addEventListener('click', () => {
+                    const input = list_item.querySelector('.info-blocks-order-name-input');
+                    const block_name = (input?.value || '').trim() || t('rulefile_info_blocks_unnamed_block');
+                    const count = this._count_requirements_with_info_block_text(blockId);
+                    let warning_text = t('modal_message_delete_info_block_intro', { name: block_name });
+                    if (count > 0) {
+                        warning_text += '\n\n' + t('modal_message_delete_info_block_count', { count });
+                        warning_text += '\n\n' + t('modal_message_delete_info_block_warning', { count });
+                    }
+                    warning_text += '\n\n' + t('modal_message_delete_info_block_confirm');
+                    if (window.show_confirm_delete_modal) {
+                        window.show_confirm_delete_modal({
+                            h1_text: t('modal_h1_delete_info_block', { name: block_name }),
+                            warning_text,
+                            delete_button: delete_btn,
+                            on_confirm: () => this._remove_info_block_from_dom(list_item, list)
+                        });
+                    } else {
+                        this._remove_info_block_from_dom(list_item, list);
+                    }
+                });
+                controls.appendChild(delete_btn);
+
                 item_content.appendChild(controls);
                 list_item.appendChild(item_content);
                 list.appendChild(list_item);
@@ -781,9 +918,43 @@ export const RulefileSectionsViewComponent = {
                               (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('save') : '')
             });
             save_button.addEventListener('click', () => {
-                this._save_info_blocks_order(working_order);
+                const inputs = list.querySelectorAll('.info-blocks-order-name-input');
+                const order_from_dom = Array.from(inputs).map(inp => inp.getAttribute('data-block-id'));
+                const block_names = Array.from(inputs).reduce((acc, inp) => {
+                    const id = inp.getAttribute('data-block-id');
+                    if (id) acc[id] = (inp.value || '').trim();
+                    return acc;
+                }, {});
+                const unnamed_count = Object.values(block_names).filter(n => !n).length;
+                if (unnamed_count > 0) {
+                    const ModalComponent = window.ModalComponent;
+                    const Helpers = window.Helpers;
+                    if (ModalComponent?.show && Helpers?.create_element) {
+                        const first_empty = Array.from(inputs).find(inp => !(inp.value || '').trim());
+                        ModalComponent.show(
+                            {
+                                h1_text: t('modal_h1_unnamed_info_blocks'),
+                                message_text: t('modal_message_unnamed_info_blocks', { count: unnamed_count })
+                            },
+                            (container, modal) => {
+                                const btn = Helpers.create_element('button', {
+                                    class_name: ['button', 'button-primary'],
+                                    text_content: t('modal_unnamed_info_blocks_understand')
+                                });
+                                btn.addEventListener('click', () => {
+                                    modal.close(first_empty ?? null);
+                                });
+                                const wrapper = Helpers.create_element('div', { class_name: 'modal-confirm-actions' });
+                                wrapper.appendChild(btn);
+                                container.appendChild(wrapper);
+                            }
+                        );
+                    }
+                    return;
+                }
+                this._save_info_blocks_order(order_from_dom, block_names);
                 this.NotificationComponent.show_global_message?.(
-                    t('rulefile_info_blocks_order_saved') || 'Info-blocks ordning sparad',
+                    t('rulefile_info_blocks_order_saved') || 'Informationsblock sparad',
                     'success'
                 );
                 this.router('rulefile_sections', { section: 'info_blocks_order' });
@@ -791,8 +962,8 @@ export const RulefileSectionsViewComponent = {
             
             const cancel_button = this.Helpers.create_element('button', {
                 class_name: ['button', 'button-default'],
-                attributes: { type: 'button' },
-                html_content: `<span>${t('cancel')}</span>`
+                attributes: { type: 'button', 'aria-label': t('rulefile_info_blocks_back_to_view') },
+                html_content: `<span>${t('rulefile_info_blocks_back_to_view')}</span>`
             });
             cancel_button.addEventListener('click', () => {
                 this.router('rulefile_sections', { section: 'info_blocks_order' });
@@ -808,9 +979,10 @@ export const RulefileSectionsViewComponent = {
             // Visningsläge: visa ordningen
             const list = this.Helpers.create_element('ol', { class_name: 'info-blocks-order-list' });
             block_order.forEach((blockId) => {
-                const item = this.Helpers.create_element('li', {
-                    text_content: this._get_block_display_name(blockId)
-                });
+                const name = blockId.startsWith('custom_')
+                    ? (this._get_custom_block_name_from_requirements(blockId) || t('rulefile_info_blocks_unnamed_block'))
+                    : this._get_block_display_name(blockId);
+                const item = this.Helpers.create_element('li', { text_content: name });
                 list.appendChild(item);
             });
             section.appendChild(list);
@@ -819,25 +991,312 @@ export const RulefileSectionsViewComponent = {
         return section;
     },
 
-    _save_info_blocks_order(new_order) {
+    _append_info_block_to_list(list, new_id, t) {
+        const total = list.children.length + 1;
+        const block_label = t('rulefile_info_blocks_unnamed_block');
+        const list_item = this.Helpers.create_element('li', { class_name: 'info-blocks-order-item', attributes: { 'data-index': String(total - 1) } });
+        const item_content = this.Helpers.create_element('div', { class_name: 'info-blocks-order-item-content' });
+
+        const input_id = `info_block_name_${new_id}`;
+        const name_label = this.Helpers.create_element('label', {
+            attributes: { for: input_id },
+            text_content: t('rulefile_info_blocks_order_name_label') || 'Namn',
+            class_name: 'info-blocks-order-name-label'
+        });
+        const text_input = this.Helpers.create_element('input', {
+            class_name: 'form-control info-blocks-order-name-input',
+            attributes: { type: 'text', id: input_id, value: '', 'data-block-id': new_id }
+        });
+        const input_wrapper = this.Helpers.create_element('div', { class_name: 'info-blocks-order-input-wrapper' });
+        input_wrapper.appendChild(name_label);
+        input_wrapper.appendChild(text_input);
+        item_content.appendChild(input_wrapper);
+
+        const controls = this.Helpers.create_element('div', { class_name: 'info-blocks-order-controls' });
+
+        const up_slot = this.Helpers.create_element('div', { class_name: 'info-blocks-order-btn-slot' });
+        const up_btn = this.Helpers.create_element('button', {
+            class_name: ['button', 'button-small', 'button-default'],
+            attributes: { type: 'button', 'data-action': 'move-info-block-up', 'aria-label': block_label },
+            html_content: `<span>${t('rulefile_metadata_move_up_text') || 'Flytta upp'}</span>` +
+                         (this.Helpers.get_icon_svg ? `<span aria-hidden="true">${this.Helpers.get_icon_svg('arrow_upward', ['currentColor'], 16)}</span>` : '')
+        });
+        up_btn.addEventListener('click', (e) => {
+            const li = e.currentTarget.closest('.info-blocks-order-item');
+            const ol = li?.closest('ol');
+            if (!ol || !li) return;
+            const items = Array.from(ol.children);
+            const idx = items.indexOf(li);
+            if (idx > 0) ol.insertBefore(li, items[idx - 1]);
+        });
+        up_slot.appendChild(up_btn);
+        controls.appendChild(up_slot);
+
+        const down_slot = this.Helpers.create_element('div', { class_name: 'info-blocks-order-btn-slot' });
+        controls.appendChild(down_slot);
+
+        const delete_btn = this.Helpers.create_element('button', {
+            class_name: ['button', 'button-small', 'button-danger'],
+            attributes: { type: 'button', 'aria-label': block_label },
+            html_content: `<span>${t('rulefile_metadata_delete_button_text') || 'Ta bort'}</span>` +
+                         (this.Helpers.get_icon_svg ? `<span aria-hidden="true">${this.Helpers.get_icon_svg('delete', ['currentColor'], 16)}</span>` : '')
+        });
+        delete_btn.addEventListener('click', () => {
+            const input = list_item.querySelector('.info-blocks-order-name-input');
+            const block_name = (input?.value || '').trim() || block_label;
+            const count = this._count_requirements_with_info_block_text(new_id);
+            let warning_text = t('modal_message_delete_info_block_intro', { name: block_name });
+            if (count > 0) {
+                warning_text += '\n\n' + t('modal_message_delete_info_block_count', { count });
+                warning_text += '\n\n' + t('modal_message_delete_info_block_warning', { count });
+            }
+            warning_text += '\n\n' + t('modal_message_delete_info_block_confirm');
+            if (window.show_confirm_delete_modal) {
+                window.show_confirm_delete_modal({
+                    h1_text: t('modal_h1_delete_info_block', { name: block_name }),
+                    warning_text,
+                    delete_button: delete_btn,
+                    on_confirm: () => this._remove_info_block_from_dom(list_item, list)
+                });
+            } else {
+                this._remove_info_block_from_dom(list_item, list);
+            }
+        });
+        controls.appendChild(delete_btn);
+
+        item_content.appendChild(controls);
+        list_item.appendChild(item_content);
+
+        const prev_last = list.lastElementChild;
+        if (prev_last) {
+            const prev_controls = prev_last.querySelector('.info-blocks-order-controls');
+            const prev_down_slot = prev_controls?.querySelectorAll('.info-blocks-order-btn-slot')[1];
+            if (prev_down_slot && prev_down_slot.children.length === 0) {
+                const down_btn = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-small', 'button-default'],
+                    attributes: { type: 'button', 'data-action': 'move-info-block-down', 'aria-label': block_label },
+                    html_content: `<span>${t('rulefile_metadata_move_down_text') || 'Flytta ner'}</span>` +
+                                 (this.Helpers.get_icon_svg ? `<span aria-hidden="true">${this.Helpers.get_icon_svg('arrow_downward', ['currentColor'], 16)}</span>` : '')
+                });
+                down_btn.addEventListener('click', (e) => {
+                    const li = e.currentTarget.closest('.info-blocks-order-item');
+                    const ol = li?.closest('ol');
+                    if (!ol || !li) return;
+                    const items = Array.from(ol.children);
+                    const idx = items.indexOf(li);
+                    if (idx < items.length - 1) {
+                        ol.insertBefore(items[idx + 1], li);
+                        this._refresh_info_block_move_buttons(ol, t);
+                    }
+                });
+                prev_down_slot.appendChild(down_btn);
+            }
+        }
+
+        list.appendChild(list_item);
+        requestAnimationFrame(() => text_input.focus());
+    },
+
+    _refresh_info_block_move_buttons(ol, t) {
+        const items = Array.from(ol.children);
+        const total = items.length;
+        items.forEach((li, index) => {
+            const controls = li.querySelector('.info-blocks-order-controls');
+            if (!controls) return;
+            const slots = controls.querySelectorAll('.info-blocks-order-btn-slot');
+            const up_slot = slots[0];
+            const down_slot = slots[1];
+            if (!up_slot || !down_slot) return;
+
+            const input = li.querySelector('.info-blocks-order-name-input');
+            const block_label = (input?.value || '').trim() || t('rulefile_info_blocks_unnamed_block');
+            const is_first = index === 0;
+            const is_last = index === total - 1;
+
+            if (is_first) {
+                up_slot.innerHTML = '';
+            } else {
+                if (up_slot.children.length === 0) {
+                    const up_target_index = index - 1;
+                    const up_aria = block_label === t('rulefile_info_blocks_unnamed_block')
+                        ? block_label
+                        : (up_target_index === 0
+                            ? (t('rulefile_info_blocks_move_up_to_top') || 'Flytta till översta raden')
+                            : (t('rulefile_info_blocks_move_up_to_row', { row: up_target_index + 1 }) || `Flytta upp till rad ${up_target_index + 1}`));
+                    const up_btn = this.Helpers.create_element('button', {
+                        class_name: ['button', 'button-small', 'button-default'],
+                        attributes: { type: 'button', 'data-action': 'move-info-block-up', 'aria-label': up_aria },
+                        html_content: `<span>${t('rulefile_metadata_move_up_text') || 'Flytta upp'}</span>` +
+                                     (this.Helpers.get_icon_svg ? `<span aria-hidden="true">${this.Helpers.get_icon_svg('arrow_upward', ['currentColor'], 16)}</span>` : '')
+                    });
+                    up_btn.addEventListener('click', (e) => {
+                        const li_el = e.currentTarget.closest('.info-blocks-order-item');
+                        const ol_el = li_el?.closest('ol');
+                        if (!ol_el || !li_el) return;
+                        const items_el = Array.from(ol_el.children);
+                        const idx_el = items_el.indexOf(li_el);
+                        if (idx_el > 0) {
+                            ol_el.insertBefore(li_el, items_el[idx_el - 1]);
+                            this._refresh_info_block_move_buttons(ol_el, t);
+                        }
+                    });
+                    up_slot.appendChild(up_btn);
+                }
+            }
+
+            if (is_last) {
+                down_slot.innerHTML = '';
+            } else {
+                if (down_slot.children.length === 0) {
+                    const down_target_index = index + 1;
+                    const down_aria = block_label === t('rulefile_info_blocks_unnamed_block')
+                        ? block_label
+                        : (down_target_index === total - 1
+                            ? (t('rulefile_info_blocks_move_down_to_bottom') || 'Flytta till nedersta raden')
+                            : (t('rulefile_info_blocks_move_down_to_row', { row: down_target_index + 1 }) || `Flytta ner till rad ${down_target_index + 1}`));
+                    const down_btn = this.Helpers.create_element('button', {
+                        class_name: ['button', 'button-small', 'button-default'],
+                        attributes: { type: 'button', 'data-action': 'move-info-block-down', 'aria-label': down_aria },
+                        html_content: `<span>${t('rulefile_metadata_move_down_text') || 'Flytta ner'}</span>` +
+                                     (this.Helpers.get_icon_svg ? `<span aria-hidden="true">${this.Helpers.get_icon_svg('arrow_downward', ['currentColor'], 16)}</span>` : '')
+                    });
+                    down_btn.addEventListener('click', (e) => {
+                        const li_el = e.currentTarget.closest('.info-blocks-order-item');
+                        const ol_el = li_el?.closest('ol');
+                        if (!ol_el || !li_el) return;
+                        const items_el = Array.from(ol_el.children);
+                        const idx_el = items_el.indexOf(li_el);
+                        if (idx_el < items_el.length - 1) {
+                            ol_el.insertBefore(items_el[idx_el + 1], li_el);
+                            this._refresh_info_block_move_buttons(ol_el, t);
+                        }
+                    });
+                    down_slot.appendChild(down_btn);
+                }
+            }
+        });
+    },
+
+    _remove_info_block_from_dom(list_item, list) {
+        const items = Array.from(list.children);
+        const idx = items.indexOf(list_item);
+        const was_last = idx === items.length - 1;
+        list_item.remove();
+        if (was_last && items.length > 1) {
+            const new_last = items[idx - 1];
+            const down_slots = new_last.querySelectorAll('.info-blocks-order-btn-slot');
+            if (down_slots[1]) down_slots[1].innerHTML = '';
+        }
+    },
+
+    _add_info_block(new_block_id, new_order) {
+        const state = this.getState();
+        const currentRulefile = state?.ruleFileContent || {};
+        const metadata = { ...currentRulefile.metadata };
+        const requirements = { ...currentRulefile.requirements };
+
+        if (!metadata.blockOrders) metadata.blockOrders = {};
+        metadata.blockOrders = { ...metadata.blockOrders, infoBlocks: new_order };
+
+        for (const [req_id, req] of Object.entries(requirements)) {
+            const new_info_blocks = req?.infoBlocks && typeof req.infoBlocks === 'object'
+                ? { ...req.infoBlocks }
+                : {};
+            new_info_blocks[new_block_id] = { name: '', expanded: true, text: '' };
+            requirements[req_id] = { ...req, infoBlocks: new_info_blocks };
+        }
+
+        const updatedRulefileContent = {
+            ...currentRulefile,
+            metadata,
+            requirements
+        };
+
+        this.dispatch({
+            type: this.StoreActionTypes.UPDATE_RULEFILE_CONTENT,
+            payload: { ruleFileContent: updatedRulefileContent }
+        });
+    },
+
+    _count_requirements_with_info_block_text(block_id) {
+        const state = this.getState();
+        const requirements = state?.ruleFileContent?.requirements || {};
+        let count = 0;
+        for (const req of Object.values(requirements)) {
+            const text = req?.infoBlocks?.[block_id]?.text;
+            if (typeof text === 'string' && text.trim().length > 0) {
+                count += 1;
+            }
+        }
+        return count;
+    },
+
+    _delete_info_block(block_id, index, working_order) {
+        const new_order = working_order.filter(id => id !== block_id);
+        const state = this.getState();
+        const currentRulefile = state?.ruleFileContent || {};
+        const metadata = { ...currentRulefile.metadata };
+        const requirements = { ...currentRulefile.requirements };
+
+        if (!metadata.blockOrders) metadata.blockOrders = {};
+        metadata.blockOrders = { ...metadata.blockOrders, infoBlocks: new_order };
+
+        for (const [req_id, req] of Object.entries(requirements)) {
+            if (req?.infoBlocks && typeof req.infoBlocks === 'object') {
+                const new_info_blocks = { ...req.infoBlocks };
+                delete new_info_blocks[block_id];
+                requirements[req_id] = { ...req, infoBlocks: new_info_blocks };
+            }
+        }
+
+        const updatedRulefileContent = {
+            ...currentRulefile,
+            metadata,
+            requirements
+        };
+
+        this.dispatch({
+            type: this.StoreActionTypes.UPDATE_RULEFILE_CONTENT,
+            payload: { ruleFileContent: updatedRulefileContent }
+        });
+
+        this.NotificationComponent.show_global_message?.(
+            this.Translation.t('rulefile_info_blocks_order_saved') || 'Informationsblock sparad',
+            'success'
+        );
+    },
+
+    _save_info_blocks_order(new_order, block_names = {}) {
         const state = this.getState();
         const currentRulefile = state?.ruleFileContent || {};
         const metadata = currentRulefile.metadata || {};
-        
-        if (!metadata.blockOrders) {
-            metadata.blockOrders = {};
+        const requirements = { ...currentRulefile.requirements };
+
+        if (!metadata.blockOrders) metadata.blockOrders = {};
+        metadata.blockOrders = { ...metadata.blockOrders, infoBlocks: new_order };
+
+        if (Object.keys(block_names).length > 0) {
+            for (const [req_id, req] of Object.entries(requirements)) {
+                const base_blocks = req?.infoBlocks && typeof req.infoBlocks === 'object' ? req.infoBlocks : {};
+                const new_info_blocks = { ...base_blocks };
+                for (const [block_id, name] of Object.entries(block_names)) {
+                    const existing = new_info_blocks[block_id];
+                    new_info_blocks[block_id] = existing
+                        ? { ...existing, name }
+                        : { name, expanded: true, text: '' };
+                }
+                const order_set = new Set(new_order);
+                const filtered = Object.fromEntries(
+                    Object.entries(new_info_blocks).filter(([id]) => order_set.has(id))
+                );
+                requirements[req_id] = { ...req, infoBlocks: filtered };
+            }
         }
-        metadata.blockOrders.infoBlocks = new_order;
-        
+
         const updatedRulefileContent = {
             ...currentRulefile,
-            metadata: {
-                ...metadata,
-                blockOrders: {
-                    ...metadata.blockOrders,
-                    infoBlocks: new_order
-                }
-            }
+            metadata,
+            requirements
         };
 
         this.dispatch({
@@ -1088,6 +1547,92 @@ export const RulefileSectionsViewComponent = {
                     elementToFocus.focus();
                 }
             }, 100);
+        }
+
+        // Animation och fokusåterställning efter flytt av informationsblock
+        // 1. Faida ut raden vi flyttar till, 2. Flytta vår rad, 3. Faida in den andra raden på sin nya plats. Allt inom 1 sekund.
+        if (section_id === 'info_blocks_order' && is_editing && this.info_blocks_move_after_render) {
+            const { focus_index, old_index, button_type } = this.info_blocks_move_after_render;
+            this.info_blocks_move_after_render = null;
+            const list_el = this.root.querySelector('.info-blocks-order-list-editable');
+            if (list_el) {
+                const items = Array.from(list_el.querySelectorAll('.info-blocks-order-item'));
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        const moved_item = items[focus_index];
+                        const other_item = items[old_index];
+                        if (moved_item && other_item && moved_item !== other_item) {
+                            const get_offset = (el) => el.getBoundingClientRect().top;
+                            const dist = get_offset(other_item) - get_offset(moved_item);
+                            const cubic = 'cubic-bezier(0.4, 0, 0.2, 1)';
+
+                            moved_item.style.position = 'relative';
+                            moved_item.style.zIndex = '10';
+                            moved_item.classList.add('info-blocks-order-item-moving');
+                            moved_item.style.transition = 'none';
+                            moved_item.style.transform = `translateY(${dist}px)`;
+
+                            other_item.style.position = 'relative';
+                            other_item.style.zIndex = '9';
+                            other_item.classList.add('info-blocks-order-item-moving');
+                            other_item.style.transition = 'none';
+                            other_item.style.transform = `translateY(${-dist}px)`;
+
+                            requestAnimationFrame(() => {
+                                other_item.style.transition = `opacity 0.2s ${cubic}`;
+                                other_item.style.opacity = '0';
+                                moved_item.style.transition = `transform 1s ${cubic}`;
+                                moved_item.style.transform = 'translateY(0)';
+
+                                setTimeout(() => {
+                                    other_item.style.transition = `transform 0.3s ${cubic}`;
+                                    other_item.style.transform = 'translateY(0)';
+                                }, 200);
+
+                                setTimeout(() => {
+                                    other_item.style.transition = `opacity 0.5s ${cubic}`;
+                                    other_item.style.opacity = '1';
+                                }, 500);
+
+                                setTimeout(() => {
+                                    moved_item.style.transition = '';
+                                    moved_item.style.transform = '';
+                                    moved_item.classList.remove('info-blocks-order-item-moving');
+                                    other_item.style.transition = '';
+                                    other_item.style.transform = '';
+                                    other_item.style.opacity = '';
+                                    other_item.classList.remove('info-blocks-order-item-moving');
+                                    const action = button_type === 'up' ? 'move-info-block-up' : 'move-info-block-down';
+                                    const btn = list_el.querySelector(`button[data-action="${action}"][data-index="${focus_index}"]`);
+                                    if (btn) btn.focus();
+                                }, 1000);
+                            });
+                        } else {
+                            const action = button_type === 'up' ? 'move-info-block-up' : 'move-info-block-down';
+                            const btn = list_el.querySelector(`button[data-action="${action}"][data-index="${focus_index}"]`);
+                            if (btn) btn.focus();
+                        }
+                    });
+                });
+            }
+        }
+
+        if (section_id === 'info_blocks_order' && is_editing && this.info_blocks_add_after_render) {
+            const { focus_index } = this.info_blocks_add_after_render;
+            this.info_blocks_add_after_render = null;
+            const list_el = this.root.querySelector('.info-blocks-order-list-editable');
+            if (list_el) {
+                const items = list_el.querySelectorAll('.info-blocks-order-item');
+                const target_item = items[focus_index];
+                if (target_item) {
+                    const input = target_item.querySelector('.info-blocks-order-name-input');
+                    if (input) {
+                        requestAnimationFrame(() => {
+                            requestAnimationFrame(() => input.focus());
+                        });
+                    }
+                }
+            }
         }
         
         // Sätt flaggan till false efter första render
