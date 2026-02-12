@@ -30,6 +30,7 @@
   "stuck_modal_label": "Your description",
   "stuck_modal_save": "Save",
   "stuck_modal_discard": "Close without saving",
+  "stuck_modal_problem_solved": "Problem solved",
   "approve_all_remaining": "Approve all remaining unreviewed requirements",
   "audit_actions_title": "Actions",
   "audit_actions_status_section_title": "Locking and updates",

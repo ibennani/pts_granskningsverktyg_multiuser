@@ -276,6 +276,24 @@ export const ChecklistHandler = {
                 });
                 actions_wrapper.appendChild(save_btn);
                 actions_wrapper.appendChild(discard_btn);
+                if ((existing_description || '').trim() !== '') {
+                    const problem_solved_btn = this.Helpers.create_element('button', {
+                        class_name: ['button', 'button-default', 'modal-action-right'],
+                        attributes: { type: 'button' },
+                        text_content: t('stuck_modal_problem_solved')
+                    });
+                    problem_solved_btn.addEventListener('click', () => {
+                        const check_result = this.requirement_result_ref?.checkResults?.[check_id];
+                        if (check_result?.passCriteria?.[pc_id]) {
+                            check_result.passCriteria[pc_id].stuckProblemDescription = '';
+                            if (this.on_observation_change_callback) {
+                                this.on_observation_change_callback();
+                            }
+                        }
+                        modal.close(stuck_btn);
+                    });
+                    actions_wrapper.appendChild(problem_solved_btn);
+                }
                 container.appendChild(actions_wrapper);
             }
         );

@@ -125,6 +125,10 @@
     flex-wrap: wrap;
 }
 
+.modal-attach-media-actions .modal-action-right {
+    margin-left: auto;
+}
+
 [data-theme="dark"] .modal-dialog {
     background-color: var(--plate-background-color);
 }

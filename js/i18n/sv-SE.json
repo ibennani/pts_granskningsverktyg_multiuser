@@ -30,6 +30,7 @@
   "stuck_modal_label": "Din beskrivning",
   "stuck_modal_save": "Spara",
   "stuck_modal_discard": "Stäng utan att spara",
+  "stuck_modal_problem_solved": "Problemet är löst",
   "approve_all_remaining": "Godkänn alla återstående icke-granskade krav",
   "audit_actions_title": "Åtgärder",
   "audit_actions_status_section_title": "Låsning och uppdatering",
