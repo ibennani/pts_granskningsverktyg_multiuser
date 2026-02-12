@@ -127,7 +127,7 @@ window.DraftManager = DraftManager;
     // Fallback för action bar containers - mindre kritiskt
     if (!top_action_bar_container) {
         consoleManager.warn("[Main.js] Top action bar container not found. Creating fallback container.");
-        top_action_bar_container = document.createElement('div');
+        top_action_bar_container = document.createElement('nav');
         top_action_bar_container.id = 'global-action-bar-top';
         top_action_bar_container.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: #f8f9fa; border-bottom: 1px solid #dee2e6;';
         
@@ -143,7 +143,7 @@ window.DraftManager = DraftManager;
 
     if (!bottom_action_bar_container) {
         consoleManager.warn("[Main.js] Bottom action bar container not found. Creating fallback container.");
-        bottom_action_bar_container = document.createElement('div');
+        bottom_action_bar_container = document.createElement('nav');
         bottom_action_bar_container.id = 'global-action-bar-bottom';
         bottom_action_bar_container.style.cssText = 'position: fixed; bottom: 0; left: 0; right: 0; z-index: 1000; background: #f8f9fa; border-top: 1px solid #dee2e6;';
         
@@ -192,11 +192,12 @@ window.DraftManager = DraftManager;
         side_menu_root.id = 'app-side-menu-root';
         side_menu_root.className = 'app-side-menu-root';
 
-        main_view_root = document.createElement('div');
+        main_view_root = document.createElement('main');
         main_view_root.id = 'app-main-view-root';
         main_view_root.className = 'app-main-view-root';
+        main_view_root.setAttribute('tabindex', '-1');
 
-        const right_sidebar = document.createElement('div');
+        const right_sidebar = document.createElement('aside');
         right_sidebar.id = 'app-right-sidebar-root';
         right_sidebar.className = 'app-right-sidebar-root';
         right_sidebar_root = right_sidebar;
@@ -205,6 +206,9 @@ window.DraftManager = DraftManager;
         layout.appendChild(main_view_root);
         layout.appendChild(right_sidebar);
         app_container.appendChild(layout);
+        if (typeof update_landmarks_and_skip_link === 'function') {
+            update_landmarks_and_skip_link();
+        }
     }
 
     function update_side_menu(view_name, params = {}) {
@@ -774,7 +778,8 @@ window.DraftManager = DraftManager;
             current_view_params_rendered_json === JSON.stringify(params_to_render) &&
             current_view_component_instance && typeof current_view_component_instance.render === 'function') {
             
-            current_view_component_instance.render(); 
+            current_view_component_instance.render();
+            ensure_skip_link_target(view_root);
             return;
         }
         
@@ -854,6 +859,7 @@ window.DraftManager = DraftManager;
                 if (view_root) {
                     view_root.appendChild(error_h1);
                     view_root.appendChild(error_p);
+                    ensure_skip_link_target(view_root);
                 }
                 return;
         }
@@ -933,6 +939,7 @@ window.DraftManager = DraftManager;
             }
             
             current_view_component_instance.render();
+            ensure_skip_link_target(view_root);
             if (DraftManager?.restoreIntoDom) {
                 DraftManager.restoreIntoDom(view_root);
             }
@@ -974,16 +981,23 @@ window.DraftManager = DraftManager;
                     error_p.textContent = t("error_loading_view", {viewName: view_name_escaped_for_error, errorMessage: error.message});
                     view_root.appendChild(error_h1);
                     view_root.appendChild(error_p);
+                    ensure_skip_link_target(view_root);
                 }
             }
         }
     }
 
+    const SKIP_LINK_ANCHOR_ID = 'main-content-heading';
+
     function handle_hash_change() { 
         const hash = window.location.hash.substring(1);
         const [view_name_from_hash, ...param_pairs] = hash.split('?');
+        /* Ignorera #main-content-heading – det är en intern ankare för skiplänken, inte ett vynamn */
+        const is_skip_link_anchor = view_name_from_hash === SKIP_LINK_ANCHOR_ID;
+        const effective_view_name = is_skip_link_anchor ? '' : view_name_from_hash;
+
         const params = {};
-        if (param_pairs.length > 0) {
+        if (param_pairs.length > 0 && !is_skip_link_anchor) {
             const query_string = param_pairs.join('?');
             const url_params = new URLSearchParams(query_string);
             for (const [key, value] of url_params) { params[key] = value; }
@@ -991,14 +1005,20 @@ window.DraftManager = DraftManager;
         let target_view = 'upload';
         let target_params = params;
         const current_global_state = getState();
-        if (view_name_from_hash) {
-            target_view = view_name_from_hash;
+        if (effective_view_name) {
+            target_view = effective_view_name;
         } else if (current_global_state && current_global_state.ruleFileContent && current_global_state.auditStatus !== 'rulefile_editing') {
             target_view = 'audit_overview';
             target_params = {};
         } else if (current_global_state && current_global_state.ruleFileContent && current_global_state.auditStatus === 'rulefile_editing') {
             target_view = 'rulefile_sections';
             target_params = { section: 'general' };
+        }
+        if (is_skip_link_anchor) {
+            const target_hash_part = target_params && Object.keys(target_params).length > 0 ?
+                `${target_view}?${new URLSearchParams(target_params).toString()}` :
+                target_view;
+            history.replaceState(null, '', `#${target_hash_part}`);
         }
         render_view(target_view, target_params);
     }
@@ -1197,6 +1217,47 @@ window.DraftManager = DraftManager;
         }
     }
 
+    function ensure_skip_link_target(root) {
+        if (!root) return;
+        const prev = document.getElementById('main-content-heading');
+        if (prev) prev.removeAttribute('id');
+        const h1 = root.querySelector('h1');
+        if (h1) {
+            h1.id = 'main-content-heading';
+            if (h1.getAttribute('tabindex') === null) {
+                h1.setAttribute('tabindex', '-1');
+            }
+        }
+    }
+
+    function setup_skip_link_click_handler() {
+        const skip_link = document.querySelector('.skip-link');
+        if (!skip_link || skip_link.hasAttribute('data-skip-handler-bound')) return;
+        skip_link.setAttribute('data-skip-handler-bound', 'true');
+        skip_link.addEventListener('click', (e) => {
+            const target = document.getElementById(SKIP_LINK_ANCHOR_ID);
+            if (target) {
+                e.preventDefault();
+                target.focus({ preventScroll: false });
+                target.scrollIntoView({ block: 'start', behavior: 'smooth' });
+            }
+        });
+    }
+
+    function update_landmarks_and_skip_link() {
+        const t = typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function'
+            ? window.Translation.t.bind(window.Translation)
+            : (key) => key;
+        const skip_link = document.querySelector('.skip-link');
+        if (skip_link) skip_link.textContent = t('skip_to_content');
+        const top_nav = document.getElementById('global-action-bar-top');
+        if (top_nav) top_nav.setAttribute('aria-label', t('landmark_top_navigation'));
+        const bottom_nav = document.getElementById('global-action-bar-bottom');
+        if (bottom_nav) bottom_nav.setAttribute('aria-label', t('landmark_bottom_navigation'));
+        const right_sidebar = document.getElementById('app-right-sidebar-root');
+        if (right_sidebar) right_sidebar.setAttribute('aria-label', t('landmark_right_sidebar'));
+    }
+
     async function init_app() { 
         set_initial_theme();
         // Add a small delay to ensure build-info.js is loaded
@@ -1204,6 +1265,9 @@ window.DraftManager = DraftManager;
             update_build_timestamp();
         }, 100);
         await window.Translation.ensure_initial_load();
+        setup_skip_link_click_handler();
+        update_landmarks_and_skip_link();
+        document.addEventListener('languageChanged', update_landmarks_and_skip_link);
 
         const had_session_storage = typeof sessionStorage !== 'undefined' && sessionStorage.getItem(APP_STATE_KEY) !== null;
         initState();

@@ -97,7 +97,7 @@ export const ViewRulefileRequirementComponent = {
         // Header
         const header_div = this.Helpers.create_element('div', { class_name: 'requirement-audit-header' });
         const title_wrapper = this.Helpers.create_element('div', { class_name: 'requirement-audit-header-title-wrapper' });
-        const h1_element = this.Helpers.create_element('h1', { text_content: requirement.title, id: 'view-requirement-h1', attributes: { tabindex: '-1' } });
+        const h1_element = this.Helpers.create_element('h1', { text_content: requirement.title, id: 'main-content-heading', attributes: { tabindex: '-1' } });
         title_wrapper.appendChild(h1_element);
         
         const edit_button = this.Helpers.create_element('button', {

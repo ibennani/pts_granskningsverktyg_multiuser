@@ -52,7 +52,7 @@ export const ScoreAnalysisComponent = {
         const orangeEndAngle = minAngle + (45 / 100) * totalAngle; // 45% of 270° = 121.5°
 
         const svgContent = `
-            <svg viewBox="0 0 100 85" class="score-gauge-svg">
+            <svg viewBox="0 0 100 85" class="score-gauge-svg" aria-hidden="true">
                 <!-- Gauge track (background) -->
                 <path class="score-gauge__track" d="${describeArc(50, 50, 40, minAngle, maxAngle)}" />
                 
@@ -142,7 +142,7 @@ export const ScoreAnalysisComponent = {
             const label_text = data?.labelKey ? t(data.labelKey) : (data?.label || '');
             const dt = this.Helpers.create_element('dt', { class_name: 'principle-row__name', text_content: label_text });
             
-            const dd = this.Helpers.create_element('dd', { class_name: 'principle-row__bar-container' });
+            const dd = this.Helpers.create_element('dd', { class_name: 'principle-row__bar-container', attributes: { 'aria-hidden': 'true' } });
             
             const formattedScoreForAria = this.Helpers.format_number_locally(data.score, lang_code);
             

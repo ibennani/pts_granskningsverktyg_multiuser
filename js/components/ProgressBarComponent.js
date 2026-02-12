@@ -63,6 +63,7 @@ export const ProgressBarComponent = {
         progress_element_attributes['aria-valuemin'] = "0";
         progress_element_attributes['aria-valuemax'] = String(max_value);
         progress_element_attributes['aria-valuenow'] = String(current_value);
+        progress_element_attributes['aria-hidden'] = 'true';
 
         const progress_element = create_element('progress', {
             class_name: 'progress-bar-element',

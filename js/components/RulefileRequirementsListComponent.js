@@ -159,7 +159,7 @@ export const RulefileRequirementsListComponent = {
         // Skapa header-container med H1 och knapp på samma rad
         const header_container = this.Helpers.create_element('div', { class_name: 'page-header-container', style: 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;' });
         
-        const h1_element = this.Helpers.create_element('h1', { id: 'rulefile-list-h1', attributes: { tabindex: '-1' }, text_content: t('rulefile_requirements_menu_title') });
+        const h1_element = this.Helpers.create_element('h1', { id: 'main-content-heading', attributes: { tabindex: '-1' }, text_content: t('rulefile_requirements_menu_title') });
         const add_requirement_button = this.Helpers.create_element('button', {
             class_name: ['button', 'button-primary'],
             html_content: `<span>${t('add_new_requirement_button')}</span>` + this.Helpers.get_icon_svg('add'),
@@ -379,7 +379,7 @@ export const RulefileRequirementsListComponent = {
             }
         } else if (sessionStorage.getItem('focusOnH1AfterLoad')) {
             sessionStorage.removeItem('focusOnH1AfterLoad');
-            this.plate_element_ref.querySelector('#rulefile-list-h1')?.focus();
+            this.plate_element_ref.querySelector('#main-content-heading')?.focus();
         }
     },
 
@@ -513,7 +513,7 @@ export const RulefileRequirementsListComponent = {
         const t = this.Translation.t;
         
         // Update H1 title
-        const h1_element = this.plate_element_ref.querySelector('#rulefile-list-h1');
+        const h1_element = this.plate_element_ref.querySelector('#main-content-heading');
         if (h1_element) {
             h1_element.textContent = t('rulefile_requirements_menu_title');
         }
