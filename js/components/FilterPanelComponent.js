@@ -57,6 +57,14 @@ export const FilterPanelComponent = {
             }
         }
 
+        // Update checkbox labels (for language change)
+        if (this._elements.panel) {
+            this._elements.panel.querySelectorAll('label[data-text-key]').forEach(labelEl => {
+                const key = labelEl.getAttribute('data-text-key');
+                if (key) labelEl.textContent = t(key);
+            });
+        }
+
         // Update Checkboxes
         this._updateCheckboxes();
     },
@@ -132,7 +140,7 @@ export const FilterPanelComponent = {
             attributes: { type: 'checkbox', 'data-status': 'all' } 
         });
         const allLabel = Helpers.create_element('label', { 
-            attributes: { for: 'filter-panel-all' },
+            attributes: { for: 'filter-panel-all', 'data-text-key': 'show_all' },
             text_content: t('show_all')
         });
         allWrapper.append(allInput, allLabel);
@@ -158,7 +166,7 @@ export const FilterPanelComponent = {
             if (status === 'updated') textKey = 'filter_option_updated';
             
             const label = Helpers.create_element('label', { 
-                attributes: { for: `filter-panel-${status}` },
+                attributes: { for: `filter-panel-${status}`, 'data-text-key': textKey },
                 text_content: t(textKey)
             });
             wrapper.append(input, label);

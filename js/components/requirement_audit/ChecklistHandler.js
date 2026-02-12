@@ -15,6 +15,7 @@ export const ChecklistHandler = {
     requirement_result_ref: null,
 
     is_dom_built: false,
+    last_language_code: null,
 
     // --- HELPER FUNCTION ---
     _safe_parse_markdown_inline(markdown_string) {
@@ -67,6 +68,7 @@ export const ChecklistHandler = {
         this.handle_textarea_input = this.handle_textarea_input.bind(this);
         this.handle_checklist_keydown = this.handle_checklist_keydown.bind(this);
         this.handle_attach_media_click = this.handle_attach_media_click.bind(this);
+        this.handle_stuck_click = this.handle_stuck_click.bind(this);
 
         this.container_ref.addEventListener('click', this.handle_checklist_click);
         this.container_ref.addEventListener('input', this.handle_textarea_input);
@@ -79,6 +81,12 @@ export const ChecklistHandler = {
         const attach_btn = event.target.closest('button[data-action="attach-media"]');
         if (attach_btn) {
             this.handle_attach_media_click(event, attach_btn);
+            return;
+        }
+
+        const stuck_btn = event.target.closest('button[data-action="stuck"]');
+        if (stuck_btn) {
+            this.handle_stuck_click(event, stuck_btn);
             return;
         }
 
@@ -195,6 +203,76 @@ export const ChecklistHandler = {
                 });
                 discard_btn.addEventListener('click', () => {
                     modal.close(attach_btn);
+                });
+                actions_wrapper.appendChild(save_btn);
+                actions_wrapper.appendChild(discard_btn);
+                container.appendChild(actions_wrapper);
+            }
+        );
+    },
+
+    handle_stuck_click(event, stuck_btn) {
+        event.preventDefault();
+        const pc_item = stuck_btn.closest('.pass-criterion-item[data-pc-id]');
+        const check_item = stuck_btn.closest('.check-item[data-check-id]');
+        if (!pc_item || !check_item) return;
+
+        const pc_id = pc_item.dataset.pcId;
+        const check_id = check_item.dataset.checkId;
+
+        const ModalComponent = window.ModalComponent;
+        if (!ModalComponent?.show || !this.Helpers?.create_element) return;
+
+        const t = this.Translation.t;
+        ModalComponent.show(
+            {
+                h1_text: t('stuck_modal_h1'),
+                message_text: t('stuck_modal_intro')
+            },
+            (container, modal) => {
+                const form_group = this.Helpers.create_element('div', { class_name: 'form-group' });
+                const label = this.Helpers.create_element('label', {
+                    attributes: { for: 'stuck-problem-description' },
+                    text_content: t('stuck_modal_label')
+                });
+                form_group.appendChild(label);
+
+                const existing_description = this.requirement_result_ref?.checkResults?.[check_id]?.passCriteria?.[pc_id]?.stuckProblemDescription || '';
+                const textarea = this.Helpers.create_element('textarea', {
+                    id: 'stuck-problem-description',
+                    class_name: 'form-control',
+                    attributes: { rows: '5' }
+                });
+                textarea.value = existing_description;
+                if (this.Helpers?.init_auto_resize_for_textarea) {
+                    this.Helpers.init_auto_resize_for_textarea(textarea);
+                }
+                form_group.appendChild(textarea);
+                container.appendChild(form_group);
+
+                const actions_wrapper = this.Helpers.create_element('div', { class_name: 'modal-attach-media-actions' });
+                const save_btn = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-primary'],
+                    text_content: t('stuck_modal_save')
+                });
+                save_btn.addEventListener('click', () => {
+                    const description = (textarea.value || '').trim();
+                    const check_result = this.requirement_result_ref?.checkResults?.[check_id];
+                    if (check_result?.passCriteria?.[pc_id]) {
+                        check_result.passCriteria[pc_id].stuckProblemDescription = description;
+                        if (this.on_observation_change_callback) {
+                            this.on_observation_change_callback();
+                        }
+                    }
+                    modal.close(stuck_btn);
+                });
+                const discard_btn = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-default'],
+                    attributes: { type: 'button' },
+                    text_content: t('stuck_modal_discard')
+                });
+                discard_btn.addEventListener('click', () => {
+                    modal.close(stuck_btn);
                 });
                 actions_wrapper.appendChild(save_btn);
                 actions_wrapper.appendChild(discard_btn);
@@ -351,6 +429,21 @@ export const ChecklistHandler = {
                     html_content: `<span>${this.Helpers.escape_html(t('attach_media_button'))}</span>${attach_icons_html}`
                 });
                 attach_media_row.appendChild(attach_media_btn);
+
+                const stuck_aria_label = `${t('stuck_button')} ${t('attach_media_aria_label_for')} ${criterion_title}: ${requirement_plain}`;
+                const warning_icon = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('warning', ['currentColor'], 16) : '';
+                const stuck_btn = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-default', 'button-small', 'stuck-button'],
+                    attributes: {
+                        'data-action': 'stuck',
+                        'data-check-id': check_definition.id,
+                        'data-pc-id': pc_def.id,
+                        type: 'button',
+                        'aria-label': stuck_aria_label
+                    },
+                    html_content: `<span>${this.Helpers.escape_html(t('stuck_button'))}</span>${warning_icon ? `<span class="stuck-button-icon" aria-hidden="true">${warning_icon}</span>` : ''}`
+                });
+                attach_media_row.appendChild(stuck_btn);
                 observation_wrapper.appendChild(attach_media_row);
 
                 pc_item_li.appendChild(observation_wrapper);
@@ -518,6 +611,14 @@ export const ChecklistHandler = {
         this.requirement_definition_ref = requirement_definition;
         this.requirement_result_ref = requirement_result;
         this.is_audit_locked = locked_status;
+
+        const current_lang = typeof this.Translation?.get_current_language_code === 'function'
+            ? this.Translation.get_current_language_code()
+            : null;
+        if (this.last_language_code !== current_lang) {
+            this.last_language_code = current_lang;
+            this.is_dom_built = false;
+        }
 
         if (!this.is_dom_built) {
             this.build_initial_dom();

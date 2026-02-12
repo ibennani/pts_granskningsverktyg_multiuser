@@ -145,10 +145,16 @@ export const RequirementAuditComponent = {
                         status: typeof pc_data === 'string' ? pc_data : 'not_audited',
                         observationDetail: '',
                         timestamp: null,
-                        attachedMediaFilenames: []
+                        attachedMediaFilenames: [],
+                        stuckProblemDescription: ''
                     };
-                } else if (!Array.isArray(pc_data.attachedMediaFilenames)) {
-                    pc_data.attachedMediaFilenames = [];
+                } else {
+                    if (!Array.isArray(pc_data.attachedMediaFilenames)) {
+                        pc_data.attachedMediaFilenames = [];
+                    }
+                    if (typeof pc_data.stuckProblemDescription !== 'string') {
+                        pc_data.stuckProblemDescription = '';
+                    }
                 }
             });
         });
@@ -532,6 +538,16 @@ export const RequirementAuditComponent = {
 
         this.info_sections_instance.render(this.current_requirement, this.current_sample, state.ruleFileContent.metadata);
         this.checklist_handler_instance.render(this.current_requirement, this.current_result, is_locked);
+
+        const comments_section = this.plate_element_ref.querySelector('.input-fields-container.audit-section');
+        if (comments_section) {
+            const comments_h2 = comments_section.querySelector('h2');
+            if (comments_h2) comments_h2.textContent = t('observations_and_comments_title');
+            const label1 = comments_section.querySelector('label[for="commentToAuditor"]');
+            if (label1) label1.textContent = t('comment_to_auditor');
+            const label2 = comments_section.querySelector('label[for="commentToActor"]');
+            if (label2) label2.textContent = t('comment_to_actor');
+        }
         
         this.comment_to_auditor_input.value = this.current_result.commentToAuditor || '';
         this.comment_to_actor_input.value = this.current_result.commentToActor || '';

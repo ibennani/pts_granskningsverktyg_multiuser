@@ -309,10 +309,16 @@ function root_reducer(current_state, action) {
                                             status: pcValue,
                                             observationDetail: '',
                                             timestamp: merged_state.startTime || null,
-                                            attachedMediaFilenames: []
+                                            attachedMediaFilenames: [],
+                                            stuckProblemDescription: ''
                                         };
-                                    } else if (typeof pcValue === 'object' && pcValue !== null && !Array.isArray(pcValue.attachedMediaFilenames)) {
-                                        pcValue.attachedMediaFilenames = [];
+                                    } else if (typeof pcValue === 'object' && pcValue !== null) {
+                                        if (!Array.isArray(pcValue.attachedMediaFilenames)) {
+                                            pcValue.attachedMediaFilenames = [];
+                                        }
+                                        if (typeof pcValue.stuckProblemDescription !== 'string') {
+                                            pcValue.stuckProblemDescription = '';
+                                        }
                                     }
                                 });
                             }

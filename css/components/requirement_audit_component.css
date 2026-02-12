@@ -506,6 +506,17 @@
     margin-top: 0.75rem;
     display: flex;
     align-items: center;
+    gap: 0.5rem;
+}
+
+.pc-attach-media-row .stuck-button {
+    margin-left: auto;
+}
+
+.pc-attach-media-row .stuck-button-icon {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 0.25em;
 }
 
 .pc-attach-media-row .attach-media-button-icons {
