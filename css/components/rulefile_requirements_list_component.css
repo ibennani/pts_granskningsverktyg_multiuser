@@ -1,5 +1,67 @@
 /* css/components/rulefile_requirements_list_component.css */
 
+/* Kompakt layout i höjdled */
+.rulefile-requirements-list-plate.content-plate {
+    padding: 1rem 1.5rem;
+}
+
+.rulefile-requirements-list-plate .page-header-container {
+    margin-bottom: 0.5rem;
+}
+
+.rulefile-requirements-list-plate .view-intro-text {
+    margin-bottom: 0.5rem !important;
+}
+
+.rulefile-requirements-list-plate .requirements-list-toolbar {
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.5rem;
+    gap: 0.75rem;
+}
+
+.rulefile-requirements-list-plate .requirements-list-toolbar .form-control {
+    padding: 0.35rem 0.6rem;
+    font-size: 0.9rem;
+}
+
+.rulefile-requirements-list-plate .requirements-list-toolbar .toolbar-group {
+    gap: 0.15rem;
+}
+
+.rulefile-requirements-list-plate .requirements-list-toolbar .toolbar-group label {
+    font-size: 0.8rem;
+}
+
+.rulefile-requirements-list-plate .results-summary {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.9rem;
+}
+
+.rulefile-requirements-list-plate .item-list .item-list-item {
+    margin-bottom: 0.35rem;
+    padding: 0.4rem 0.6rem;
+}
+
+.rulefile-requirements-list-plate .rulefile-requirement-row {
+    column-gap: 0.5rem;
+}
+
+.rulefile-requirements-list-plate .rulefile-requirement-row__text {
+    gap: 0.1rem;
+}
+
+.rulefile-requirements-list-plate .rulefile-requirement-row__title {
+    font-size: 1rem;
+}
+
+.rulefile-requirements-list-plate .rulefile-requirement-row__reference {
+    font-size: 0.85rem;
+}
+
+.rulefile-requirements-list-plate .form-actions {
+    margin-top: 0.75rem;
+}
+
 /* Tvåspaltig rad: text (vänster) + knappar (höger) */
 .rulefile-requirement-row {
     display: grid;

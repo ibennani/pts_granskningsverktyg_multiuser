@@ -8,7 +8,7 @@
 .rulefile-sections-layout {
     display: flex;
     gap: 2rem;
-    margin-top: 2rem;
+    margin-top: 0.25rem;
     width: 100%;
 }
 
@@ -66,7 +66,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
-    margin-bottom: 2rem;
+    margin-bottom: 1rem;
 }
 
 .rulefile-sections-header-row {
@@ -75,10 +75,12 @@
     gap: 1rem;
 }
 
+.rulefile-sections-header-row h1,
 .rulefile-sections-header-row h2 {
     margin: 0;
 }
 
+.rulefile-sections-header h1,
 .rulefile-sections-header h2 {
     margin: 0;
     font-size: 1.5rem;
@@ -100,6 +102,43 @@
     line-height: 1.6;
 }
 
+/* Kompakt styling för Allmän information-redigeringsformuläret */
+.rulefile-section-edit-form-container .rulefile-metadata-edit-form {
+    gap: 0.75rem;
+}
+
+.rulefile-section-edit-form-container .form-section {
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+}
+
+.rulefile-section-edit-form-container .form-section h3 {
+    margin: 0 0 0.2rem 0;
+    font-size: 1.05rem;
+}
+
+.rulefile-section-edit-form-container .form-section + .form-section {
+    margin-top: 0;
+}
+
+.rulefile-section-edit-form-container .form-group {
+    gap: 0.2rem;
+}
+
+.rulefile-section-edit-form-container .form-control {
+    padding: 0.35rem 0.6rem;
+    font-size: 0.95rem;
+}
+
+.rulefile-section-edit-form-container textarea.form-control {
+    min-height: 4.5rem;
+}
+
+.rulefile-section-edit-form-container .metadata-edit-form-footer-actions {
+    margin-top: 0.5rem;
+    gap: 0.75rem;
+}
+
 /* Definition lists - förbättrad läsbarhet */
 .rulefile-section-content .metadata-definition-list {
     margin: 0;
@@ -109,7 +148,7 @@
 .rulefile-section-content .metadata-definition-list dt {
     font-weight: 600;
     color: var(--text-color);
-    margin: 1.5rem 0 0.1rem 0;
+    margin: 0.75rem 0 0.05rem 0;
     font-size: 0.95rem;
     letter-spacing: 0.01em;
 }
@@ -120,10 +159,10 @@
 
 
 .rulefile-section-content .metadata-definition-list dd {
-    margin: 0 0 1rem 0;
+    margin: 0 0 0.5rem 0;
     padding-left: 0;
     color: var(--text-color);
-    line-height: 1.7;
+    line-height: 1.5;
     margin-top: 0;
 }
 
@@ -152,11 +191,11 @@
 }
 
 .metadata-subsection {
-    margin-bottom: 2.5rem;
+    margin-bottom: 1.25rem;
 }
 
 .metadata-subsection:first-of-type {
-    margin-top: 2.5rem;
+    margin-top: 1.25rem;
 }
 
 .metadata-subsection:last-child {
@@ -165,7 +204,7 @@
 
 .metadata-subsection h2 {
     margin-top: 0;
-    margin-bottom: 1.25rem;
+    margin-bottom: 0.75rem;
     font-size: 1.3rem;
     font-weight: 600;
     color: var(--primary-color);

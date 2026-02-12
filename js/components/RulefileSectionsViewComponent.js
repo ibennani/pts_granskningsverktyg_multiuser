@@ -13,7 +13,11 @@ export const RulefileSectionsViewComponent = {
         this.Translation = deps.Translation;
         this.Helpers = deps.Helpers;
         this.NotificationComponent = deps.NotificationComponent;
+        this.AutosaveService = deps.AutosaveService;
         this.is_initial_render = true; // Flagga för att veta om detta är första render
+        this.info_blocks_autosave_session = null;
+        this.info_blocks_edit_baseline = null;
+        this.handle_info_blocks_autosave_input = this.handle_info_blocks_autosave_input.bind(this);
         this.general_form_initial_focus_set = false; // Flagga för att veta om fokus redan har satts på general-formuläret
         this.page_types_form_initial_focus_set = false; // Flagga för att veta om fokus redan har satts på page_types-formuläret
         this.content_types_form_initial_focus_set = false; // Flagga för att veta om fokus redan har satts på content_types-formuläret
@@ -73,52 +77,12 @@ export const RulefileSectionsViewComponent = {
         return sections[section_id] || sections.general;
     },
 
-    _create_left_menu(current_section_id) {
-        const t = this.Translation.t;
-        const menu = this.Helpers.create_element('nav', { 
-            class_name: 'rulefile-sections-menu',
-            attributes: { 'aria-label': t('rulefile_sections_menu_label') || 'Regelfilsektioner' }
-        });
-
-        const sections = [
-            { id: 'general', label: t('rulefile_section_general_title') || 'Allmän information' },
-            { id: 'page_types', label: t('rulefile_metadata_section_page_types') || 'Sidtyper' },
-            { id: 'content_types', label: t('rulefile_metadata_section_content_types') || 'Innehållstyper' },
-            { id: 'info_blocks_order', label: t('rulefile_section_info_blocks_order_title') || 'Informationsblock' },
-            { id: 'report_template', label: t('rulefile_section_report_template_title') || 'Rapportmall' },
-            { id: 'classifications', label: t('rulefile_section_classifications_title') || 'Klassificeringar' }
-        ];
-
-        const menu_list = this.Helpers.create_element('ul', { class_name: 'rulefile-sections-menu-list' });
-        
-        sections.forEach(section => {
-            const menu_item = this.Helpers.create_element('li', { class_name: 'rulefile-sections-menu-item' });
-            const menu_link = this.Helpers.create_element('a', {
-                class_name: current_section_id === section.id ? 'active' : '',
-                attributes: {
-                    href: `#rulefile_sections?section=${section.id}`,
-                    'aria-current': current_section_id === section.id ? 'page' : null
-                },
-                text_content: section.label
-            });
-            menu_link.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.router('rulefile_sections', { section: section.id });
-            });
-            menu_item.appendChild(menu_link);
-            menu_list.appendChild(menu_item);
-        });
-
-        menu.appendChild(menu_list);
-        return menu;
-    },
-
     _create_header(section_config, is_editing = false) {
         const t = this.Translation.t;
         const header_wrapper = this.Helpers.create_element('div', { class_name: 'rulefile-sections-header' });
         
         const heading_row = this.Helpers.create_element('div', { class_name: 'rulefile-sections-header-row' });
-        const heading = this.Helpers.create_element('h2', { text_content: section_config.title });
+        const heading = this.Helpers.create_element('h1', { text_content: section_config.title });
         heading_row.appendChild(heading);
         
         if (section_config.id === 'general' && !is_editing) {
@@ -413,7 +377,7 @@ export const RulefileSectionsViewComponent = {
             const categoriesWrapper = this.Helpers.create_element('div', { class_name: 'metadata-card-grid' });
             samples.sampleCategories.forEach(category => {
                 const card = this.Helpers.create_element('article', { class_name: 'metadata-card' });
-                card.appendChild(this.Helpers.create_element('h3', { 
+                card.appendChild(this.Helpers.create_element('h2', { 
                     text_content: category.text || category.id || t('rulefile_metadata_untitled_item') 
                 }));
                 if (typeof category.hasUrl === 'boolean') {
@@ -462,7 +426,7 @@ export const RulefileSectionsViewComponent = {
             const wrapper = this.Helpers.create_element('div', { class_name: 'metadata-card-grid' });
             taxonomies.forEach(taxonomy => {
                 const card = this.Helpers.create_element('article', { class_name: 'metadata-card' });
-                card.appendChild(this.Helpers.create_element('h3', { 
+                card.appendChild(this.Helpers.create_element('h2', { 
                     text_content: taxonomy.label || taxonomy.id || t('rulefile_metadata_untitled_item') 
                 }));
                 const infoList = this._create_definition_list([
@@ -685,7 +649,7 @@ export const RulefileSectionsViewComponent = {
 
                 const section_card = this.Helpers.create_element('article', { class_name: 'metadata-card' });
                 const header = this.Helpers.create_element('div', { class_name: 'report-section-header' });
-                header.appendChild(this.Helpers.create_element('h3', { text_content: section_data.name || section_id }));
+                header.appendChild(this.Helpers.create_element('h2', { text_content: section_data.name || section_id }));
                 if (section_data.required) {
                     const required_tag = this.Helpers.create_element('span', { 
                         class_name: 'metadata-tag', 
@@ -706,6 +670,26 @@ export const RulefileSectionsViewComponent = {
         }
 
         return section;
+    },
+
+    handle_info_blocks_autosave_input() {
+        this.info_blocks_autosave_session?.request_autosave?.();
+    },
+
+    _flush_info_blocks_order_from_dom() {
+        const root = this.root;
+        if (!root) return;
+        const list_el = root.querySelector('.info-blocks-order-list-editable');
+        if (!list_el) return;
+        this.info_blocks_autosave_session?.cancel_pending?.();
+        const inputs = list_el.querySelectorAll('.info-blocks-order-name-input');
+        const order_from_dom = Array.from(inputs).map(inp => inp.getAttribute('data-block-id')).filter(Boolean);
+        const block_names = Array.from(inputs).reduce((acc, inp) => {
+            const id = inp.getAttribute('data-block-id');
+            if (id) acc[id] = (inp.value || '').trim();
+            return acc;
+        }, {});
+        this._save_info_blocks_order(order_from_dom, block_names);
     },
 
     _get_block_display_name(block_id) {
@@ -744,6 +728,11 @@ export const RulefileSectionsViewComponent = {
         ];
 
         if (isEditing) {
+            // Spara baseline när vi första gången går in i redigeringsläge (för återställning vid "Stäng utan att spara")
+            if (!this.info_blocks_edit_baseline) {
+                const state = this.getState();
+                this.info_blocks_edit_baseline = JSON.parse(JSON.stringify(state?.ruleFileContent || {}));
+            }
             // Redigeringsläge: textfält, upp/ner-knappar, radera-knapp
             const editor = this.Helpers.create_element('div', { class_name: 'info-blocks-order-editor' });
             const info_text = this.Helpers.create_element('p', { 
@@ -792,6 +781,7 @@ export const RulefileSectionsViewComponent = {
                         'data-block-id': blockId
                     }
                 });
+                text_input.addEventListener('input', this.handle_info_blocks_autosave_input);
                 const input_wrapper = this.Helpers.create_element('div', { class_name: 'info-blocks-order-input-wrapper' });
                 input_wrapper.appendChild(name_label);
                 input_wrapper.appendChild(text_input);
@@ -908,6 +898,27 @@ export const RulefileSectionsViewComponent = {
             });
             
             editor.appendChild(list);
+
+            // Autospar för informationsblock: 250 ms debounce vid input
+            this.info_blocks_autosave_session?.destroy();
+            this.info_blocks_autosave_session = this.AutosaveService?.create_session?.({
+                form_element: editor,
+                focus_root: editor,
+                debounce_ms: 250,
+                on_save: () => {
+                    const list_el = editor.querySelector('.info-blocks-order-list-editable');
+                    if (list_el) {
+                        const order_from_dom = Array.from(list_el.querySelectorAll('.info-blocks-order-name-input'))
+                            .map(inp => inp.getAttribute('data-block-id')).filter(Boolean);
+                        const block_names = Array.from(list_el.querySelectorAll('.info-blocks-order-name-input')).reduce((acc, inp) => {
+                            const id = inp.getAttribute('data-block-id');
+                            if (id) acc[id] = (inp.value || '').trim();
+                            return acc;
+                        }, {});
+                        this._save_info_blocks_order(order_from_dom, block_names);
+                    }
+                }
+            }) || null;
             
             const save_button = this.Helpers.create_element('button', {
                 class_name: ['button', 'button-primary'],
@@ -951,6 +962,7 @@ export const RulefileSectionsViewComponent = {
                     return;
                 }
                 this._save_info_blocks_order(order_from_dom, block_names);
+                this.info_blocks_edit_baseline = null;
                 this.NotificationComponent.show_global_message?.(
                     t('rulefile_info_blocks_order_saved') || 'Informationsblock sparad',
                     'success'
@@ -964,6 +976,13 @@ export const RulefileSectionsViewComponent = {
                 html_content: `<span>${t('rulefile_info_blocks_back_to_view')}</span>`
             });
             cancel_button.addEventListener('click', () => {
+                if (this.info_blocks_edit_baseline) {
+                    this.dispatch({
+                        type: this.StoreActionTypes.SET_RULE_FILE_CONTENT,
+                        payload: { ruleFileContent: this.info_blocks_edit_baseline }
+                    });
+                    this.info_blocks_edit_baseline = null;
+                }
                 this.router('rulefile_sections', { section: 'info_blocks_order' });
             });
             
@@ -1431,6 +1450,14 @@ export const RulefileSectionsViewComponent = {
         const section_id = params.section || 'general';
         const is_editing = params.edit === 'true';
 
+        // Spara informationsblock från DOM innan vi rensar (vid navigering via sidomenyn)
+        if (section_id !== 'info_blocks_order') {
+            this._flush_info_blocks_order_from_dom();
+            this.info_blocks_edit_baseline = null;
+        } else if (!is_editing) {
+            this.info_blocks_edit_baseline = null;
+        }
+
         // Viktigt: Kontrollera att vi är i regelfilredigeringsläge
         if (state?.auditStatus !== 'rulefile_editing') {
             this.router('edit_rulefile_main');
@@ -1453,20 +1480,10 @@ export const RulefileSectionsViewComponent = {
             main_plate.appendChild(global_message);
         }
 
-        // Main heading
-        const main_heading = this.Helpers.create_element('h1', { 
-            text_content: t('rulefile_sections_title') || 'Regelfilens innehåll' 
-        });
-        main_plate.appendChild(main_heading);
-
-        // Main layout - flex container för meny och innehåll
+        // Main layout - innehåll (sektionsmenyn flyttad till sidomenyn)
         const layout = this.Helpers.create_element('div', { class_name: 'rulefile-sections-layout' });
-        
-        // Left menu - ligger i main-wrapper
-        const left_menu = this._create_left_menu(section_id);
-        layout.appendChild(left_menu);
 
-        // Right wrapper - egen wrapper för högerinnehållet
+        // Right wrapper - innehåll
         const right_wrapper = this.Helpers.create_element('div', { class_name: 'rulefile-sections-right-wrapper' });
         
         // Render section content
@@ -1534,7 +1551,6 @@ export const RulefileSectionsViewComponent = {
         }
         
         layout.appendChild(right_wrapper);
-
         main_plate.appendChild(layout);
 
         // Back button - längst ner i main wrapper
@@ -1543,7 +1559,13 @@ export const RulefileSectionsViewComponent = {
             html_content: `<span>${t('back_to_edit_options')}</span>` + 
                           (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('arrow_back') : '')
         });
-        back_button.addEventListener('click', () => this.router('edit_rulefile_main'));
+        back_button.addEventListener('click', () => {
+            if (section_id === 'info_blocks_order' && is_editing) {
+                this._flush_info_blocks_order_from_dom();
+                this.info_blocks_edit_baseline = null;
+            }
+            this.router('edit_rulefile_main');
+        });
         main_plate.appendChild(back_button);
 
         this.root.appendChild(main_plate);

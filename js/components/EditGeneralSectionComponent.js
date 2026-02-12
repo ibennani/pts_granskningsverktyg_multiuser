@@ -39,7 +39,7 @@ export const EditGeneralSectionComponent = {
                 attributes: { 
                     id: name, 
                     name, 
-                    rows: '4', 
+                    rows: '3', 
                     ...(required ? { required: 'required' } : {})
                 }
             });

@@ -137,10 +137,26 @@ export const SideMenuComponent = {
         }
     },
 
+    get_params_from_location_hash() {
+        try {
+            const raw = window.location?.hash || '';
+            const hash = raw.startsWith('#') ? raw.substring(1) : raw;
+            const query_part = hash.split('?')[1];
+            if (!query_part) return {};
+            return Object.fromEntries(new URLSearchParams(query_part));
+        } catch (e) {
+            return {};
+        }
+    },
+
     create_menu_link({ label, view_name, params = {} }) {
         const view_from_hash = this.get_view_name_from_location_hash();
         const active_view_name = view_from_hash || this.current_view_name;
-        const is_active = active_view_name === view_name;
+        const current_params = this.get_params_from_location_hash();
+        let is_active = active_view_name === view_name;
+        if (is_active && view_name === 'rulefile_sections' && params.section) {
+            is_active = current_params.section === params.section;
+        }
         const href = this.build_hash(view_name, params);
 
         const link = this.Helpers.create_element('a', {
@@ -224,9 +240,13 @@ export const SideMenuComponent = {
                 should_show: true,
                 aria_label: t('side_menu_aria_label'),
                 items: [
-                    { label: t('edit_rulefile_title'), view_name: 'edit_rulefile_main' },
-                    { label: t('rulefile_edit_requirements_title'), view_name: 'rulefile_requirements' },
-                    { label: t('rulefile_sections_title'), view_name: 'rulefile_sections' }
+                    { label: t('rulefile_section_general_title'), view_name: 'rulefile_sections', params: { section: 'general' } },
+                    { label: t('rulefile_requirements_menu_title'), view_name: 'rulefile_requirements' },
+                    { label: t('rulefile_metadata_section_page_types'), view_name: 'rulefile_sections', params: { section: 'page_types' } },
+                    { label: t('rulefile_metadata_section_content_types'), view_name: 'rulefile_sections', params: { section: 'content_types' } },
+                    { label: t('rulefile_section_info_blocks_order_title'), view_name: 'rulefile_sections', params: { section: 'info_blocks_order' } },
+                    { label: t('rulefile_section_classifications_title'), view_name: 'rulefile_sections', params: { section: 'classifications' } },
+                    { label: t('rulefile_section_report_template_title'), view_name: 'rulefile_sections', params: { section: 'report_template' } }
                 ]
             };
         }

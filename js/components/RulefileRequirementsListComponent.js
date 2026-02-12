@@ -150,16 +150,16 @@ export const RulefileRequirementsListComponent = {
     async _initialRender() {
         const t = this.Translation.t;
         this.root.innerHTML = '';
-        this.plate_element_ref = this.Helpers.create_element('div', { class_name: 'content-plate' });
+        this.plate_element_ref = this.Helpers.create_element('div', { class_name: 'content-plate rulefile-requirements-list-plate' });
         
         if (this.global_message_element_ref) {
             this.plate_element_ref.appendChild(this.global_message_element_ref);
         }
 
         // Skapa header-container med H1 och knapp på samma rad
-        const header_container = this.Helpers.create_element('div', { class_name: 'page-header-container', style: 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;' });
+        const header_container = this.Helpers.create_element('div', { class_name: 'page-header-container', style: 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;' });
         
-        const h1_element = this.Helpers.create_element('h1', { id: 'rulefile-list-h1', attributes: { tabindex: '-1' }, text_content: t('rulefile_edit_requirements_title') });
+        const h1_element = this.Helpers.create_element('h1', { id: 'rulefile-list-h1', attributes: { tabindex: '-1' }, text_content: t('rulefile_requirements_menu_title') });
         const add_requirement_button = this.Helpers.create_element('button', {
             class_name: ['button', 'button-primary'],
             html_content: `<span>${t('add_new_requirement_button')}</span>` + this.Helpers.get_icon_svg('add'),
@@ -224,7 +224,7 @@ export const RulefileRequirementsListComponent = {
         // Add keyboard support for accessibility
         this.plate_element_ref.addEventListener('keydown', this.handle_list_keydown);
 
-        const bottom_actions_div = this.Helpers.create_element('div', { class_name: 'form-actions', style: 'margin-top: 2rem; justify-content: flex-start;' });
+        const bottom_actions_div = this.Helpers.create_element('div', { class_name: 'form-actions', style: 'margin-top: 1rem; justify-content: flex-start;' });
         const return_button = this.Helpers.create_element('button', {
             class_name: ['button', 'button-default'],
             html_content: `<span>${t('back_to_edit_options')}</span>` + this.Helpers.get_icon_svg('arrow_back')
@@ -515,7 +515,7 @@ export const RulefileRequirementsListComponent = {
         // Update H1 title
         const h1_element = this.plate_element_ref.querySelector('#rulefile-list-h1');
         if (h1_element) {
-            h1_element.textContent = t('rulefile_edit_requirements_title');
+            h1_element.textContent = t('rulefile_requirements_menu_title');
         }
         
         // Update intro text

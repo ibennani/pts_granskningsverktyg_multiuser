@@ -311,7 +311,7 @@ window.DraftManager = DraftManager;
                     title_prefix = t('edit_rulefile_title');
                     break;
                 case 'rulefile_requirements':
-                    title_prefix = t('rulefile_edit_requirements_title');
+                    title_prefix = t('rulefile_requirements_menu_title');
                     break;
                 case 'rulefile_view_requirement':
                     title_prefix = t('rulefile_view_requirement_title');
@@ -751,6 +751,10 @@ window.DraftManager = DraftManager;
     }
 
     async function render_view(view_name_to_render, params_to_render = {}) {
+        if (view_name_to_render === 'edit_rulefile_main') {
+            view_name_to_render = 'rulefile_sections';
+            params_to_render = { ...params_to_render, section: 'general' };
+        }
         const t = get_t_fallback();
         const local_helpers_escape_html = (typeof window.Helpers !== 'undefined' && typeof window.Helpers.escape_html === 'function')
             ? window.Helpers.escape_html
@@ -993,8 +997,8 @@ window.DraftManager = DraftManager;
             target_view = 'audit_overview';
             target_params = {};
         } else if (current_global_state && current_global_state.ruleFileContent && current_global_state.auditStatus === 'rulefile_editing') {
-            target_view = 'edit_rulefile_main';
-            target_params = {};
+            target_view = 'rulefile_sections';
+            target_params = { section: 'general' };
         }
         render_view(target_view, target_params);
     }
