@@ -38,13 +38,14 @@
 }
 
 .requirement-audit-sidebar__mode {
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    padding: 0.5rem 0.75rem;
+    border: none;
+    padding: 0;
+    margin: 0;
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem 1rem;
-    align-items: center;
+    gap: 0.25rem 0.25rem;
+    align-items: flex-start;
+    width: 100%;
 }
 
 .requirement-audit-sidebar__mode legend {
@@ -55,9 +56,19 @@
 
 .requirement-audit-sidebar__mode-option {
     display: flex;
-    align-items: center;
-    gap: 0.5rem;
+    align-items: flex-start;
+    gap: 0.25rem;
     margin: 0;
+}
+
+.requirement-audit-sidebar__mode-option label {
+    line-height: 1.5;
+    margin: 0;
+}
+
+.requirement-audit-sidebar__mode-option input[type="radio"] {
+    margin-top: calc((1.5em - 1em) / 2);
+    flex-shrink: 0;
 }
 
 .requirement-audit-sidebar__filters {

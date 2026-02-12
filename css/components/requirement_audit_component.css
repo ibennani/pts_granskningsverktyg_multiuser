@@ -502,6 +502,12 @@
     display: block;
 }
 
+.pc-attach-media-row {
+    margin-top: 0.75rem;
+    display: flex;
+    align-items: center;
+}
+
 
 .requirement-audit-header-title-wrapper {
     display: block;

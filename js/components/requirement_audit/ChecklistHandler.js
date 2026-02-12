@@ -46,6 +46,12 @@ export const ChecklistHandler = {
         return parsed_markdown;
     },
 
+    _get_plain_text_from_html(html_string) {
+        const div = document.createElement('div');
+        div.innerHTML = html_string || '';
+        return (div.textContent || div.innerText || '').trim();
+    },
+
     init(_container, _callbacks, options = {}) {
         this.container_ref = _container;
         this.on_status_change_callback = _callbacks.onStatusChange;
@@ -60,6 +66,7 @@ export const ChecklistHandler = {
         this.handle_checklist_click = this.handle_checklist_click.bind(this);
         this.handle_textarea_input = this.handle_textarea_input.bind(this);
         this.handle_checklist_keydown = this.handle_checklist_keydown.bind(this);
+        this.handle_attach_media_click = this.handle_attach_media_click.bind(this);
 
         this.container_ref.addEventListener('click', this.handle_checklist_click);
         this.container_ref.addEventListener('input', this.handle_textarea_input);
@@ -69,6 +76,12 @@ export const ChecklistHandler = {
     },
     
     handle_checklist_click(event) {
+        const attach_btn = event.target.closest('button[data-action="attach-media"]');
+        if (attach_btn) {
+            this.handle_attach_media_click(event, attach_btn);
+            return;
+        }
+
         const target_button = event.target.closest('button[data-action]');
         if (!target_button) return;
 
@@ -114,6 +127,66 @@ export const ChecklistHandler = {
             // Trigger the same action as click
             this.handle_checklist_click(event);
         }
+    },
+
+    handle_attach_media_click(event, attach_btn) {
+        event.preventDefault();
+        const pc_item = attach_btn.closest('.pass-criterion-item[data-pc-id]');
+        const check_item = attach_btn.closest('.check-item[data-check-id]');
+        if (!pc_item || !check_item) return;
+
+        const pc_id = pc_item.dataset.pcId;
+        const check_id = check_item.dataset.checkId;
+
+        const ModalComponent = window.ModalComponent;
+        if (!ModalComponent?.show || !this.Helpers?.create_element) return;
+
+        const t = this.Translation.t;
+        ModalComponent.show(
+            {
+                h1_text: t('attach_media_modal_h1'),
+                message_text: t('attach_media_modal_intro')
+            },
+            (container, modal) => {
+                const form_group = this.Helpers.create_element('div', { class_name: 'form-group' });
+                const label = this.Helpers.create_element('label', {
+                    attributes: { for: 'attach-media-filenames' },
+                    text_content: t('attach_media_modal_filename_label')
+                });
+                form_group.appendChild(label);
+
+                const textarea = this.Helpers.create_element('textarea', {
+                    id: 'attach-media-filenames',
+                    class_name: 'form-control',
+                    attributes: { rows: '3' }
+                });
+                if (this.Helpers?.init_auto_resize_for_textarea) {
+                    this.Helpers.init_auto_resize_for_textarea(textarea);
+                }
+                form_group.appendChild(textarea);
+                container.appendChild(form_group);
+
+                const actions_wrapper = this.Helpers.create_element('div', { class_name: 'modal-attach-media-actions' });
+                const save_btn = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-primary'],
+                    text_content: t('attach_media_modal_save')
+                });
+                save_btn.addEventListener('click', () => {
+                    modal.close(attach_btn);
+                });
+                const discard_btn = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-default'],
+                    attributes: { type: 'button' },
+                    text_content: t('attach_media_modal_discard')
+                });
+                discard_btn.addEventListener('click', () => {
+                    modal.close(attach_btn);
+                });
+                actions_wrapper.appendChild(save_btn);
+                actions_wrapper.appendChild(discard_btn);
+                container.appendChild(actions_wrapper);
+            }
+        );
     },
     
     handle_textarea_input(event) {
@@ -240,7 +313,27 @@ export const ChecklistHandler = {
                     attributes: { rows: '4' }
                 });
                 observation_wrapper.appendChild(observation_textarea);
-                
+
+                const attach_media_row = this.Helpers.create_element('div', { class_name: 'pc-attach-media-row' });
+                const criterion_title = `${t('pass_criterion_label')} ${numbering}`;
+                const requirement_plain = this._get_plain_text_from_html(
+                    this._safe_parse_markdown_inline(pc_def.requirement)
+                );
+                const attach_aria_label = `${t('attach_media_button')} ${t('attach_media_aria_label_for')} ${criterion_title}: ${requirement_plain}`;
+                const attach_media_btn = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-default', 'button-small'],
+                    attributes: {
+                        'data-action': 'attach-media',
+                        'data-check-id': check_definition.id,
+                        'data-pc-id': pc_def.id,
+                        type: 'button',
+                        'aria-label': attach_aria_label
+                    },
+                    text_content: t('attach_media_button')
+                });
+                attach_media_row.appendChild(attach_media_btn);
+                observation_wrapper.appendChild(attach_media_row);
+
                 pc_item_li.appendChild(observation_wrapper);
                 pc_list.appendChild(pc_item_li);
             });

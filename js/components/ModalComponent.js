@@ -15,8 +15,32 @@ export const ModalComponent = {
         this.focus_before_open = null;
         this.previous_focusable_refs = null;
 
-        this.handle_backdrop_keydown = this.handle_backdrop_keydown.bind(this);
-        this.handle_focus_trap = this.handle_focus_trap.bind(this);
+        const self = this;
+        this._bound_handle_escape_keydown = (event) => {
+            if (!self.overlay_element_ref || !document.contains(self.overlay_element_ref)) return;
+            if (event.key !== 'Escape') return;
+            event.preventDefault();
+            event.stopPropagation();
+            self.close();
+        };
+        this._bound_handle_focus_trap = (event) => {
+            if (!self.overlay_element_ref || !document.contains(self.overlay_element_ref)) return;
+            if (event.key !== 'Tab') return;
+            const focusables = self.overlay_element_ref.querySelectorAll(
+                'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+            );
+            const focusable_list = Array.from(focusables).filter(el => !el.hasAttribute('aria-disabled'));
+            if (focusable_list.length === 0) return;
+            event.preventDefault();
+            const first = focusable_list[0];
+            const last = focusable_list[focusable_list.length - 1];
+            const idx = focusable_list.indexOf(document.activeElement);
+            if (event.shiftKey) {
+                (idx <= 0 ? last : focusable_list[idx - 1]).focus();
+            } else {
+                (idx < 0 || idx >= focusable_list.length - 1 ? first : focusable_list[idx + 1]).focus();
+            }
+        };
 
         if (this.Helpers?.load_css_safely && this.CSS_PATH) {
             this.Helpers.load_css_safely(this.CSS_PATH, 'ModalComponent', {
@@ -75,99 +99,87 @@ export const ModalComponent = {
         const app_wrapper = document.getElementById('app-wrapper');
         if (app_wrapper) {
             app_wrapper.setAttribute('inert', '');
+            app_wrapper.setAttribute('aria-hidden', 'true');
         }
+        document.querySelectorAll('.skip-link').forEach((el) => el.setAttribute('aria-hidden', 'true'));
 
         this.root.appendChild(this.overlay_element_ref);
         this.root.setAttribute('aria-hidden', 'false');
 
-        this.overlay_element_ref.addEventListener('keydown', this.handle_backdrop_keydown);
-        document.addEventListener('keydown', this.handle_focus_trap, true);
+        document.addEventListener('keydown', this._bound_handle_escape_keydown, true);
+        document.addEventListener('keydown', this._bound_handle_focus_trap, true);
 
         requestAnimationFrame(() => {
-            heading.focus({ preventScroll: true });
+            requestAnimationFrame(() => {
+                this.overlay_element_ref.classList.add('modal-overlay--visible');
+                heading.focus({ preventScroll: true });
+            });
         });
     },
 
     close(focus_element_override) {
         if (!this.overlay_element_ref) return;
 
-        this.overlay_element_ref.removeEventListener('keydown', this.handle_backdrop_keydown);
-        document.removeEventListener('keydown', this.handle_focus_trap, true);
-
-        const app_wrapper = document.getElementById('app-wrapper');
-        if (app_wrapper) {
-            app_wrapper.removeAttribute('inert');
-        }
-
-        this.root.removeChild(this.overlay_element_ref);
-        this.root.setAttribute('aria-hidden', 'true');
-
+        const overlay = this.overlay_element_ref;
         this.overlay_element_ref = null;
         this.dialog_element_ref = null;
-        this.content_container_ref = null;
 
-        const element_to_focus = focus_element_override ?? this.focus_before_open;
-        if (element_to_focus && document.contains(element_to_focus)) {
-            try {
-                element_to_focus.focus({ preventScroll: true });
-            } catch (e) {
-                element_to_focus.focus();
+        document.removeEventListener('keydown', this._bound_handle_escape_keydown, true);
+        document.removeEventListener('keydown', this._bound_handle_focus_trap, true);
+        const focus_element = focus_element_override ?? this.focus_before_open;
+
+        overlay.classList.remove('modal-overlay--visible');
+        overlay.classList.add('modal-overlay--closing');
+
+        const finish_close = () => {
+            overlay.removeEventListener('transitionend', on_transition_end);
+            clearTimeout(close_timeout);
+
+            const app_wrapper = document.getElementById('app-wrapper');
+            if (app_wrapper) {
+                app_wrapper.removeAttribute('inert');
+                app_wrapper.setAttribute('aria-hidden', 'false');
             }
-        }
-        this.focus_before_open = null;
-    },
+            document.querySelectorAll('.skip-link').forEach((el) => el.setAttribute('aria-hidden', 'false'));
 
-    handle_backdrop_keydown(event) {
-        if (event.key === 'Escape') {
-            event.preventDefault();
-            this.close();
-        }
-    },
-
-    handle_focus_trap(event) {
-        if (!this.overlay_element_ref || !document.contains(this.overlay_element_ref)) return;
-        if (this.overlay_element_ref.contains(document.activeElement)) return;
-
-        if (event.key !== 'Tab') return;
-
-        const focusables = this.overlay_element_ref.querySelectorAll(
-            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-        );
-        const focusable_list = Array.from(focusables).filter(el => !el.hasAttribute('aria-disabled'));
-
-        if (focusable_list.length === 0) return;
-
-        event.preventDefault();
-
-        const first = focusable_list[0];
-        const last = focusable_list[focusable_list.length - 1];
-
-        if (event.shiftKey) {
-            if (document.activeElement === first) {
-                last.focus();
-            } else {
-                const idx = focusable_list.indexOf(document.activeElement);
-                const prev = focusable_list[idx - 1] || last;
-                prev.focus();
+            if (this.root && overlay.parentNode === this.root) {
+                this.root.removeChild(overlay);
             }
-        } else {
-            if (document.activeElement === last) {
-                first.focus();
-            } else {
-                const idx = focusable_list.indexOf(document.activeElement);
-                const next = focusable_list[idx + 1] || first;
-                next.focus();
+            this.root?.setAttribute('aria-hidden', 'true');
+
+            this.content_container_ref = null;
+            this.focus_before_open = null;
+
+            if (focus_element && document.contains(focus_element)) {
+                try {
+                    focus_element.focus({ preventScroll: true });
+                } catch (e) {
+                    focus_element.focus();
+                }
             }
-        }
+        };
+
+        const on_transition_end = (e) => {
+            if (e.target === overlay && e.propertyName === 'opacity') {
+                finish_close();
+            }
+        };
+
+        overlay.addEventListener('transitionend', on_transition_end);
+        const prefers_reduced_motion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const close_timeout = setTimeout(finish_close, prefers_reduced_motion ? 50 : 200);
     },
 
     destroy() {
         if (this.overlay_element_ref && this.root?.contains(this.overlay_element_ref)) {
             this.close();
-        }
-        const app_wrapper = document.getElementById('app-wrapper');
-        if (app_wrapper) {
-            app_wrapper.removeAttribute('inert');
+        } else {
+            const app_wrapper = document.getElementById('app-wrapper');
+            if (app_wrapper) {
+                app_wrapper.removeAttribute('inert');
+                app_wrapper.setAttribute('aria-hidden', 'false');
+            }
+            document.querySelectorAll('.skip-link').forEach((el) => el.setAttribute('aria-hidden', 'false'));
         }
         this.root = null;
         this.deps = null;
