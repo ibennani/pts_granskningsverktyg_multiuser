@@ -20,11 +20,12 @@
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     padding: 1rem;
-    z-index: 100;
+    z-index: 1100;
     margin-top: 0.25rem;
     
     /* Animationsregler */
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: hidden;
     max-height: 0;
     opacity: 0;
     transform: translateY(-10px);
@@ -33,7 +34,8 @@
 }
 
 .FilterPanelComponent__panel--visible {
-    max-height: 500px;
+    max-height: min(80vh, 600px);
+    overflow: visible;
     opacity: 1;
     transform: translateY(0);
     visibility: visible;

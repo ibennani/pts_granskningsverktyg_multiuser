@@ -181,7 +181,7 @@ export const FilterPanelComponent = {
     _updateCheckboxes() {
         const filters = this.state.filters || {};
         const checkboxes = this._elements.checkboxes;
-        
+
         // "Visa alla" är ikryssad om alla individuella statusar är ikryssade
         const allChecked = STATUS_KEYS.every(key => filters[key]);
         if (checkboxes['all']) {
