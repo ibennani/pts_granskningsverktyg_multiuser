@@ -828,8 +828,7 @@ export const RulefileSectionsViewComponent = {
                         const items = Array.from(ol.children);
                         const idx = items.indexOf(li);
                         if (idx > 0) {
-                            ol.insertBefore(li, items[idx - 1]);
-                            this._refresh_info_block_move_buttons(ol, t);
+                            this._handle_info_block_order_move(ol, 'up', idx);
                         }
                     });
                     up_slot.appendChild(up_btn);
@@ -862,8 +861,7 @@ export const RulefileSectionsViewComponent = {
                         const items = Array.from(ol.children);
                         const idx = items.indexOf(li);
                         if (idx < items.length - 1) {
-                            ol.insertBefore(items[idx + 1], li);
-                            this._refresh_info_block_move_buttons(ol, t);
+                            this._handle_info_block_order_move(ol, 'down', idx);
                         }
                     });
                     down_slot.appendChild(down_btn);
@@ -1027,7 +1025,9 @@ export const RulefileSectionsViewComponent = {
             if (!ol || !li) return;
             const items = Array.from(ol.children);
             const idx = items.indexOf(li);
-            if (idx > 0) ol.insertBefore(li, items[idx - 1]);
+            if (idx > 0) {
+                this._handle_info_block_order_move(ol, 'up', idx);
+            }
         });
         up_slot.appendChild(up_btn);
         controls.appendChild(up_slot);
@@ -1085,8 +1085,7 @@ export const RulefileSectionsViewComponent = {
                     const items = Array.from(ol.children);
                     const idx = items.indexOf(li);
                     if (idx < items.length - 1) {
-                        ol.insertBefore(items[idx + 1], li);
-                        this._refresh_info_block_move_buttons(ol, t);
+                        this._handle_info_block_order_move(ol, 'down', idx);
                     }
                 });
                 prev_down_slot.appendChild(down_btn);
@@ -1136,8 +1135,7 @@ export const RulefileSectionsViewComponent = {
                         const items_el = Array.from(ol_el.children);
                         const idx_el = items_el.indexOf(li_el);
                         if (idx_el > 0) {
-                            ol_el.insertBefore(li_el, items_el[idx_el - 1]);
-                            this._refresh_info_block_move_buttons(ol_el, t);
+                            this._handle_info_block_order_move(ol_el, 'up', idx_el);
                         }
                     });
                     up_slot.appendChild(up_btn);
@@ -1167,8 +1165,7 @@ export const RulefileSectionsViewComponent = {
                         const items_el = Array.from(ol_el.children);
                         const idx_el = items_el.indexOf(li_el);
                         if (idx_el < items_el.length - 1) {
-                            ol_el.insertBefore(items_el[idx_el + 1], li_el);
-                            this._refresh_info_block_move_buttons(ol_el, t);
+                            this._handle_info_block_order_move(ol_el, 'down', idx_el);
                         }
                     });
                     down_slot.appendChild(down_btn);
@@ -1187,6 +1184,23 @@ export const RulefileSectionsViewComponent = {
             const down_slots = new_last.querySelectorAll('.info-blocks-order-btn-slot');
             if (down_slots[1]) down_slots[1].innerHTML = '';
         }
+    },
+
+    _handle_info_block_order_move(ol, direction, idx) {
+        const items = Array.from(ol.children);
+        const inputs = items.map(li => li.querySelector('.info-blocks-order-name-input'));
+        const order_from_dom = inputs.map(inp => inp?.getAttribute('data-block-id')).filter(Boolean);
+        const block_names = inputs.reduce((acc, inp) => {
+            const id = inp?.getAttribute('data-block-id');
+            if (id) acc[id] = (inp?.value || '').trim();
+            return acc;
+        }, {});
+        const new_order = [...order_from_dom];
+        const focus_index = direction === 'up' ? idx - 1 : idx + 1;
+        const old_index = direction === 'up' ? idx : idx;
+        [new_order[idx], new_order[focus_index]] = [new_order[focus_index], new_order[idx]];
+        this._save_info_blocks_order(new_order, block_names);
+        this.info_blocks_move_after_render = { focus_index, old_index, button_type: direction };
     },
 
     _add_info_block(new_block_id, new_order) {
@@ -1603,13 +1617,21 @@ export const RulefileSectionsViewComponent = {
                                     other_item.style.opacity = '';
                                     other_item.classList.remove('info-blocks-order-item-moving');
                                     const action = button_type === 'up' ? 'move-info-block-up' : 'move-info-block-down';
-                                    const btn = list_el.querySelector(`button[data-action="${action}"][data-index="${focus_index}"]`);
+                                    let btn = list_el.querySelector(`button[data-action="${action}"][data-index="${focus_index}"]`);
+                                    if (!btn) {
+                                        const other_action = button_type === 'up' ? 'move-info-block-down' : 'move-info-block-up';
+                                        btn = list_el.querySelector(`button[data-action="${other_action}"][data-index="${focus_index}"]`);
+                                    }
                                     if (btn) btn.focus();
                                 }, 1000);
                             });
                         } else {
                             const action = button_type === 'up' ? 'move-info-block-up' : 'move-info-block-down';
-                            const btn = list_el.querySelector(`button[data-action="${action}"][data-index="${focus_index}"]`);
+                            let btn = list_el.querySelector(`button[data-action="${action}"][data-index="${focus_index}"]`);
+                            if (!btn) {
+                                const other_action = button_type === 'up' ? 'move-info-block-down' : 'move-info-block-up';
+                                btn = list_el.querySelector(`button[data-action="${other_action}"][data-index="${focus_index}"]`);
+                            }
                             if (btn) btn.focus();
                         }
                     });
