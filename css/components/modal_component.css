@@ -7,15 +7,15 @@
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    padding-top: 25vh;
-    padding-left: 1rem;
-    padding-right: 1rem;
+    padding-top: 5vh;
+    padding-left: 2.5vw;
+    padding-right: 2.5vw;
     background-color: rgba(0, 0, 0, 0.5);
 }
 
 .modal-dialog {
-    width: max-content;
-    max-width: 50vw;
+    width: 95vw;
+    height: auto;
     background-color: var(--plate-background-color, #fff);
     border-radius: var(--border-radius, 12px);
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
@@ -23,17 +23,11 @@
     outline: none;
 }
 
-@media (max-width: 768px) {
-    .modal-overlay {
-        padding: 0;
-        align-items: stretch;
-    }
-
+@media (max-width: 799px) {
     .modal-dialog {
-        width: 100%;
-        max-width: none;
-        height: 100%;
-        border-radius: 0;
+        height: auto;
+        min-height: 0;
+        align-self: flex-start;
     }
 }
 

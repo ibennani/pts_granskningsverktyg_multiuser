@@ -55,6 +55,7 @@ export const ModalComponent = {
             id: 'modal-dialog-title',
             class_name: 'modal-heading',
             text_content: h1_text || '',
+            attributes: { tabindex: '-1' },
         });
         this.content_container_ref.appendChild(heading);
 
@@ -82,15 +83,9 @@ export const ModalComponent = {
         this.overlay_element_ref.addEventListener('keydown', this.handle_backdrop_keydown);
         document.addEventListener('keydown', this.handle_focus_trap, true);
 
-        const first_focusable = this.overlay_element_ref.querySelector(
-            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-        );
-        if (first_focusable) {
-            requestAnimationFrame(() => first_focusable.focus());
-        } else {
-            this.dialog_element_ref.setAttribute('tabindex', '-1');
-            requestAnimationFrame(() => this.dialog_element_ref.focus());
-        }
+        requestAnimationFrame(() => {
+            heading.focus({ preventScroll: true });
+        });
     },
 
     close(focus_element_override) {
