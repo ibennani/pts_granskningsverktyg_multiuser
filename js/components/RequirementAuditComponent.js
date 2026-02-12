@@ -598,7 +598,7 @@ export const RequirementAuditComponent = {
         return p;
     },
     
-    render() {
+    async render() {
         if (!this.load_and_prepare_view_data()) {
             this.NotificationComponent.show_global_message(this.Translation.t('error_loading_sample_or_requirement_data'), "error");
             this.router('audit_overview');
@@ -610,11 +610,11 @@ export const RequirementAuditComponent = {
         }
         
         this.populate_dom_with_data();
-        this.render_right_sidebar();
+        await this.render_right_sidebar();
         this.render_navigation_from_sidebar();
     },
 
-    render_right_sidebar() {
+    async render_right_sidebar() {
         if (!this.right_sidebar_component_instance || !this.right_sidebar_root) return;
         const state = this.getState();
         const sidebar_options = {
@@ -624,7 +624,7 @@ export const RequirementAuditComponent = {
             samples: state?.samples || [],
             requirement_id: this.params?.requirementId
         };
-        this.right_sidebar_component_instance.render(sidebar_options);
+        await this.right_sidebar_component_instance.render(sidebar_options);
         if (typeof this.right_sidebar_component_instance.get_navigation_payload === 'function') {
             this.sidebar_navigation_state = this.right_sidebar_component_instance.get_navigation_payload(sidebar_options);
         }

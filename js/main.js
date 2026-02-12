@@ -50,6 +50,8 @@ import { ErrorBoundaryComponent } from './components/ErrorBoundaryComponent.js';
 import { SideMenuComponent } from './components/SideMenuComponent.js';
 import { AuditActionsViewComponent } from './components/AuditActionsViewComponent.js';
 import { AllRequirementsViewComponent } from './components/AllRequirementsViewComponent.js';
+import { AuditProblemsViewComponent } from './components/AuditProblemsViewComponent.js';
+import { AuditImagesViewComponent } from './components/AuditImagesViewComponent.js';
 
 import { GlobalActionBarComponent } from './components/GlobalActionBarComponent.js';
 import { ModalComponent } from './components/ModalComponent.js';
@@ -295,6 +297,12 @@ window.DraftManager = DraftManager;
                     break;
                 case 'all_requirements':
                     title_prefix = t('left_menu_all_requirements');
+                    break;
+                case 'audit_problems':
+                    title_prefix = t('audit_problems_title');
+                    break;
+                case 'audit_images':
+                    title_prefix = t('audit_images_title');
                     break;
                 case 'requirement_list':
                     title_prefix = t('requirement_list_title_suffix');
@@ -785,6 +793,7 @@ window.DraftManager = DraftManager;
         
         current_view_name_rendered = view_name_to_render;
         current_view_params_rendered_json = JSON.stringify(params_to_render);
+        try { window.__gv_current_view_name = current_view_name_rendered; } catch (e) {}
 
         if (current_view_component_instance && typeof current_view_component_instance.destroy === 'function') {
             if (current_view_component_instance === RequirementListComponent && view_name_to_render === 'rulefile_requirements') {
@@ -834,6 +843,8 @@ window.DraftManager = DraftManager;
             case 'audit_overview': ComponentClass = AuditOverviewComponent; break;
             case 'audit_actions': ComponentClass = AuditActionsViewComponent; break;
             case 'all_requirements': ComponentClass = AllRequirementsViewComponent; break;
+            case 'audit_problems': ComponentClass = AuditProblemsViewComponent; break;
+            case 'audit_images': ComponentClass = AuditImagesViewComponent; break;
             case 'requirement_list': ComponentClass = RequirementListComponent; break;
             case 'requirement_audit': ComponentClass = RequirementAuditComponent; break;
             case 'update_rulefile': ComponentClass = UpdateRulefileViewComponent; break; 

@@ -10,14 +10,14 @@ export const RequirementListToolbarComponent = {
         this.Translation_t = deps.Translation.t;
         this.Helpers_create_element = deps.Helpers.create_element;
         
-        // Handle config
+        // Handle config – samma beteende som högerspalten (direkt sökning, ingen debounce)
         const _config = deps.config || {};
         this.component_config = {
             showStatusFilter: _config.showStatusFilter !== false,
-            sortOptions: _config.sortOptions || []
+            sortOptions: _config.sortOptions || [],
+            searchDebounceMs: _config.searchDebounceMs ?? 0  // 0 = direkt som högerspalten
         };
 
-        this.search_debounce_timer = null;
         this.is_dom_built = false;
         
         // Bind methods
@@ -33,17 +33,19 @@ export const RequirementListToolbarComponent = {
     },
 
     handle_search_input(event) {
-        if (window.MemoryManager) {
-            window.MemoryManager.clearTimeout(this.search_debounce_timer);
-            this.search_debounce_timer = window.MemoryManager.setTimeout(() => {
-                this.update_and_notify({ searchText: event.target.value });
-            }, 300);
-        } else {
-            clearTimeout(this.search_debounce_timer);
-            this.search_debounce_timer = setTimeout(() => {
-                this.update_and_notify({ searchText: event.target.value });
-            }, 300);
+        // Direkt uppdatering som standard (samma som högerspalten)
+        const debounce_ms = this.component_config?.searchDebounceMs ?? 0;
+        if (debounce_ms <= 0) {
+            this.update_and_notify({ searchText: event.target.value });
+            return;
         }
+        if (this._search_debounce_timer) {
+            clearTimeout(this._search_debounce_timer);
+        }
+        this._search_debounce_timer = setTimeout(() => {
+            this._search_debounce_timer = null;
+            this.update_and_notify({ searchText: event.target.value });
+        }, debounce_ms);
     },
 
     handle_sort_change(event) {
@@ -197,8 +199,10 @@ export const RequirementListToolbarComponent = {
     },
 
     destroy() {
-        clearTimeout(this.search_debounce_timer);
-        
+        if (this._search_debounce_timer) {
+            clearTimeout(this._search_debounce_timer);
+            this._search_debounce_timer = null;
+        }
         if (this.component_config && this.component_config.showStatusFilter) {
             FilterPanelComponent.destroy();
         }

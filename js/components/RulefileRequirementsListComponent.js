@@ -1,5 +1,6 @@
 // js/components/RulefileRequirementsListComponent.js
 import { RequirementListToolbarComponent } from './RequirementListToolbarComponent.js';
+import { get_searchable_text_for_requirement } from '../utils/requirement_search_utils.js';
 import { show_confirm_delete_modal, build_delete_warning_text } from '../logic/confirm_delete_modal_logic.js';
 
 export const RulefileRequirementsListComponent = {
@@ -237,24 +238,6 @@ export const RulefileRequirementsListComponent = {
         this.is_dom_initialized = true;
     },
 
-    extractSearchableText(value) {
-        if (!value) return '';
-        if (typeof value === 'string') return value;
-        if (Array.isArray(value)) {
-            return value.map(item => this.extractSearchableText(item)).join(' ');
-        }
-        if (typeof value === 'object') {
-            const candidateKeys = ['text', 'value', 'label', 'description', 'content'];
-            for (const key of candidateKeys) {
-                if (value[key]) {
-                    return this.extractSearchableText(value[key]);
-                }
-            }
-            return Object.values(value).map(item => this.extractSearchableText(item)).join(' ');
-        }
-        return String(value);
-    },
-
     _populate_dynamic_content(filter_settings_override = null) {
         console.log('[RulefileRequirementsListComponent] populate list start. Override:', JSON.stringify(filter_settings_override));
         const t = this.Translation.t;
@@ -296,42 +279,10 @@ export const RulefileRequirementsListComponent = {
 
         const filtered_requirements = all_requirements.filter(req => {
             if (!search_term) return true;
-
-            // Build searchable content array
-            const searchable_fields = [
-                req.title,
-                req.standardReference?.text,
-                req.standardReference?.description,
-                req.metadata?.mainCategory?.text,
-                req.metadata?.subCategory?.text,
-                req.examples,
-                req.classifications,
-                req.contentType,
-                req.checks
-            ];
-
-            // Support both old format (direct fields) and new format (infoBlocks)
-            const has_info_blocks = req.infoBlocks && typeof req.infoBlocks === 'object';
-            
-            if (has_info_blocks) {
-                // New format: extract text from all infoBlocks
-                const info_blocks_texts = Object.values(req.infoBlocks)
-                    .map(block => block.text)
-                    .filter(Boolean);
-                searchable_fields.push(...info_blocks_texts);
-            } else {
-                // Old format: use direct fields for backward compatibility
-                searchable_fields.push(
-                    req.expectedObservation,
-                    req.instructions,
-                    req.tips,
-                    req.exceptions,
-                    req.commonErrors
-                );
-            }
-
-            const normalized_content = this.extractSearchableText(searchable_fields).toLowerCase();
-
+            const normalized_content = get_searchable_text_for_requirement(req, {
+                includeInfoBlocks: true,
+                includeMetadata: true
+            });
             return normalized_content.includes(search_term);
         });
         console.log('[RulefileRequirementsListComponent] filtered count:', filtered_requirements.length, 'of', all_requirements.length);

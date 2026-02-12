@@ -1,5 +1,7 @@
 import "./FilterPanelComponent.css";
 
+const STATUS_KEYS = ['passed', 'failed', 'partially_audited', 'not_audited', 'updated'];
+
 export const FilterPanelComponent = {
     init({ root, deps }) {
         this.root = root;
@@ -151,9 +153,7 @@ export const FilterPanelComponent = {
         panel.appendChild(Helpers.create_element('hr', { class_name: 'FilterPanelComponent__separator' }));
 
         // Individual Statuses
-        const statuses = ['passed', 'failed', 'partially_audited', 'not_audited', 'updated'];
-        
-        statuses.forEach(status => {
+        STATUS_KEYS.forEach(status => {
             const wrapper = Helpers.create_element('div', { class_name: 'form-check FilterPanelComponent__item' });
             const input = Helpers.create_element('input', { 
                 class_name: 'form-check-input', 
@@ -182,16 +182,13 @@ export const FilterPanelComponent = {
         const filters = this.state.filters || {};
         const checkboxes = this._elements.checkboxes;
         
-        // Determine "All" state
-        // "All" is checked if all individual statuses are checked
-        const statusKeys = Object.keys(checkboxes).filter(k => k !== 'all');
-        const allChecked = statusKeys.every(key => filters[key]);
-        
+        // "Visa alla" är ikryssad om alla individuella statusar är ikryssade
+        const allChecked = STATUS_KEYS.every(key => filters[key]);
         if (checkboxes['all']) {
             checkboxes['all'].checked = allChecked;
         }
 
-        statusKeys.forEach(key => {
+        STATUS_KEYS.forEach(key => {
             if (checkboxes[key]) {
                 checkboxes[key].checked = !!filters[key];
             }
@@ -260,23 +257,22 @@ export const FilterPanelComponent = {
 
         const status = target.dataset.status;
         const isChecked = target.checked;
-        const newFilters = { ...this.state.filters };
-        
+        let newFilters;
+
         if (status === 'all') {
-            // Toggle all
-            Object.keys(this._elements.checkboxes).forEach(key => {
-                if (key !== 'all') {
-                    newFilters[key] = isChecked;
-                }
+            // Visa alla: sätt alla statusar till samma värde (samma som högerspalten)
+            newFilters = {};
+            STATUS_KEYS.forEach(key => {
+                newFilters[key] = isChecked;
             });
         } else {
+            newFilters = { ...this.state.filters };
             newFilters[status] = isChecked;
         }
 
         this.state.filters = newFilters;
-        this.render(); // Update UI (especially "All" checkbox)
+        this.render(); // Uppdatera UI (inkl. "Visa alla"-kryssrutan)
 
-        // Notify parent
         if (this.deps.onFilterChange) {
             this.deps.onFilterChange(newFilters);
         }

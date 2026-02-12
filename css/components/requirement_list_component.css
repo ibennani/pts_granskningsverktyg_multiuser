@@ -56,6 +56,18 @@
 }
 
 
+/* Filter section (samma som högerspalten) */
+.requirements-list-filter-section {
+    margin-bottom: 1.5rem;
+}
+
+.requirements-list-filter-section h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem 0;
+    color: var(--heading-color);
+}
+
 /* Navigationsfältet (Tillbaka-knapp) */
 .requirements-navigation-bar {
     margin-bottom: 1.5rem;

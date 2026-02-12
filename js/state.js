@@ -65,7 +65,14 @@ const initial_state = {
         },
         allRequirementsFilter: {
             searchText: '',
-            sortBy: 'default'
+            sortBy: 'default',
+            status: {
+                passed: true,
+                failed: true,
+                partially_audited: true,
+                not_audited: true,
+                updated: true
+            }
         },
         requirementAuditSidebar: {
             selectedMode: 'sample_requirements',

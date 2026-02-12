@@ -64,16 +64,16 @@
 }
 
 .side-menu__link {
-    display: block;
-    padding: 0.5rem 0.75rem;
-    border-radius: calc(var(--border-radius) - 4px);
     color: var(--link-color);
+    text-decoration: underline;
+}
+
+.side-menu__link:hover {
     text-decoration: underline;
 }
 
 .side-menu__link.active,
 .side-menu__link[aria-current="page"] {
-    background-color: color-mix(in srgb, var(--accent-color-light) 65%, transparent);
     font-weight: 700;
 }
 

@@ -1,4 +1,5 @@
-import { RequirementListToolbarComponent } from './RequirementListToolbarComponent.js';
+import { RequirementsFilterComponent } from './RequirementsFilterComponent.js';
+import { get_searchable_text_for_requirement as get_searchable_text_util } from '../utils/requirement_search_utils.js';
 import { ProgressBarComponent } from './ProgressBarComponent.js';
 
 export const RequirementsListViewComponent = {
@@ -28,10 +29,11 @@ export const RequirementsListViewComponent = {
         // Mode-specific constants
         this.RETURN_FOCUS_SESSION_KEY = this.mode === 'sample' ? 'gv_return_focus_requirement_list_v1' : null;
 
-        // Toolbar component
-        this.toolbar_component_instance = RequirementListToolbarComponent;
-        this.toolbar_container_element = null;
-        this.handle_toolbar_change = this.handle_toolbar_change.bind(this);
+        // Filter component (samma som högerspalten)
+        this.filter_component_instance = RequirementsFilterComponent;
+        this.filter_container_element = null;
+        this.filter_heading_ref = null;
+        this.handle_filter_change = this.handle_filter_change.bind(this);
 
         // DOM references
         this.is_dom_initialized = false;
@@ -44,18 +46,17 @@ export const RequirementsListViewComponent = {
         this.content_div_for_delegation = null;
         this.global_message_element_ref = null;
 
-        // Event handlers (only for sample mode)
-        if (this.mode === 'sample') {
-            this.handle_requirement_list_click = this.handle_requirement_list_click.bind(this);
-            this.handle_requirement_list_keydown = this.handle_requirement_list_keydown.bind(this);
-        }
+        // Event handlers för både sample och all mode
+        this.handle_requirement_list_click = this.handle_requirement_list_click.bind(this);
+        this.handle_requirement_list_keydown = this.handle_requirement_list_keydown.bind(this);
 
-        // Load CSS based on mode
+        // Load CSS – båda lägena använder samma kompakta kravlistformat
         if (this.Helpers?.load_css) {
+            if (this.CSS_PATH_SAMPLE) {
+                await this.Helpers.load_css(this.CSS_PATH_SAMPLE).catch(() => {});
+            }
             if (this.mode === 'all' && this.CSS_PATH_ALL) {
                 await this.Helpers.load_css(this.CSS_PATH_ALL).catch(() => {});
-            } else if (this.mode === 'sample' && this.CSS_PATH_SAMPLE) {
-                await this.Helpers.load_css(this.CSS_PATH_SAMPLE).catch(() => {});
             }
         }
 
@@ -66,32 +67,37 @@ export const RequirementsListViewComponent = {
         }
     },
 
-    handle_toolbar_change(new_toolbar_state) {
+    handle_filter_change(partial) {
         if (typeof this.dispatch !== 'function' || !this.StoreActionTypes) return;
+        const state = this.getState();
+        const current = state.uiSettings?.[this.state_filter_key] || {};
+        const merged = { ...current, ...partial };
         this.dispatch({
             type: this.action_type,
-            payload: new_toolbar_state,
+            payload: merged,
         });
     },
 
     handle_requirement_list_click(event) {
-        if (this.mode !== 'sample') return;
         const target_link = event.target.closest('a.list-title-link[data-requirement-id]');
-        if (target_link && this.router && this.params && this.params.sampleId) {
+        if (!target_link || !this.router) return;
+        const requirement_id = target_link.dataset.requirementId;
+        const sample_id = this.mode === 'sample' ? this.params?.sampleId : target_link.dataset.sampleId;
+        if (sample_id && requirement_id) {
             event.preventDefault();
-            const requirement_id = target_link.dataset.requirementId;
-            this.router('requirement_audit', { sampleId: this.params.sampleId, requirementId: requirement_id });
+            this.router('requirement_audit', { sampleId: sample_id, requirementId: requirement_id });
         }
     },
 
     handle_requirement_list_keydown(event) {
-        if (this.mode !== 'sample') return;
         if (event.key === 'Enter' || event.key === ' ') {
             const target_link = event.target.closest('a.list-title-link[data-requirement-id]');
-            if (target_link && this.router && this.params && this.params.sampleId) {
+            if (!target_link || !this.router) return;
+            const requirement_id = target_link.dataset.requirementId;
+            const sample_id = this.mode === 'sample' ? this.params?.sampleId : target_link.dataset.sampleId;
+            if (sample_id && requirement_id) {
                 event.preventDefault();
-                const requirement_id = target_link.dataset.requirementId;
-                this.router('requirement_audit', { sampleId: this.params.sampleId, requirementId: requirement_id });
+                this.router('requirement_audit', { sampleId: sample_id, requirementId: requirement_id });
             }
         }
     },
@@ -124,6 +130,7 @@ export const RequirementsListViewComponent = {
                 { value: 'ref_desc', textKey: 'sort_option_ref_desc_natural' },
                 { value: 'title_asc', textKey: 'sort_option_title_asc' },
                 { value: 'title_desc', textKey: 'sort_option_title_desc' },
+                { value: 'updated_first', textKey: 'sort_option_updated_first' }
             ];
         } else {
             return [
@@ -152,39 +159,7 @@ export const RequirementsListViewComponent = {
     },
 
     get_searchable_text_for_requirement(req) {
-        if (this.mode === 'all') {
-            const title = typeof req?.title === 'string' ? req.title : '';
-            const std_ref_text = typeof req?.standardReference?.text === 'string' ? req.standardReference.text : '';
-            const legacy_ref = typeof req?.reference === 'string' ? req.reference : '';
-            return `${title} ${std_ref_text} ${legacy_ref}`.toLowerCase();
-        } else {
-            // Sample mode: more comprehensive search
-            const searchable_fields = [req.title, req.standardReference?.text];
-            
-            const has_info_blocks = req.infoBlocks && typeof req.infoBlocks === 'object';
-            
-            if (has_info_blocks) {
-                const info_blocks_texts = Object.values(req.infoBlocks)
-                    .map(block => block.text)
-                    .filter(Boolean);
-                searchable_fields.push(...info_blocks_texts);
-            } else {
-                searchable_fields.push(
-                    req.expectedObservation,
-                    req.instructions,
-                    req.tips,
-                    req.exceptions,
-                    req.commonErrors
-                );
-            }
-            
-            return searchable_fields
-                .flat()
-                .filter(Boolean)
-                .map(item => (typeof item === 'object' ? item.text : String(item)))
-                .join(' ')
-                .toLowerCase();
-        }
+        return get_searchable_text_util(req, { includeInfoBlocks: true });
     },
 
     get_reference_string_for_sort(req) {
@@ -220,6 +195,32 @@ export const RequirementsListViewComponent = {
         }
     },
 
+    get_aggregated_display_status_for_requirement(req_id, req, samples) {
+        const candidates = new Set([String(req_id)]);
+        if (req?.key) candidates.add(String(req.key));
+        if (req?.id) candidates.add(String(req.id));
+
+        const matching_samples = samples.filter(sample => {
+            const sample_set = sample?.id ? this.relevant_ids_by_sample.get(sample.id) : null;
+            if (!sample_set) return false;
+            return [...candidates].some(id => sample_set.has(id));
+        });
+
+        const req_key = req?.key || req?.id || req_id;
+        let display_status = 'not_audited';
+
+        for (const sample of matching_samples) {
+            const req_result = (sample.requirementResults || {})[req_key];
+            if (!req_result) continue;
+            const status = req_result.needsReview ? 'updated' : this.AuditLogic.calculate_requirement_status(req, req_result);
+            if (status === 'failed') return 'failed';
+            if (status === 'updated') display_status = 'updated';
+            if (status === 'partially_audited' && display_status !== 'updated') display_status = 'partially_audited';
+            if (status === 'passed' && display_status === 'not_audited') display_status = 'passed';
+        }
+        return display_status;
+    },
+
     ensure_dom_initialized() {
         if (!this.root) return false;
 
@@ -233,8 +234,8 @@ export const RequirementsListViewComponent = {
 
         this.root.innerHTML = '';
 
-        // Create plate
-        const plate_class = this.mode === 'sample' ? 'content-plate requirement-list-plate' : 'content-plate';
+        // Create plate – samma styling för båda lägena (kompakt kravlista)
+        const plate_class = 'content-plate requirement-list-plate';
         this.plate_element_ref = this.Helpers.create_element('div', { class_name: plate_class });
 
         // Global message element (sample mode only)
@@ -257,10 +258,19 @@ export const RequirementsListViewComponent = {
             this.plate_element_ref.appendChild(this.h1_element_ref);
         }
 
-        // Toolbar container
-        const toolbar_id = this.mode === 'all' ? 'all-requirements-toolbar-container' : 'requirement-list-toolbar-container';
-        this.toolbar_container_element = this.Helpers.create_element('div', { id: toolbar_id });
-        this.plate_element_ref.appendChild(this.toolbar_container_element);
+        // Filter section (samma som högerspalten)
+        const filter_section_id = this.mode === 'all' ? 'all-requirements-filter-container' : 'requirement-list-filter-container';
+        const filter_wrapper = this.Helpers.create_element('div', {
+            id: filter_section_id,
+            class_name: 'requirements-list-filter-section'
+        });
+        this.filter_heading_ref = this.Helpers.create_element('h3', {
+            text_content: this.Translation.t('requirement_audit_sidebar_filter_heading_sample_requirements')
+        });
+        filter_wrapper.appendChild(this.filter_heading_ref);
+        this.filter_container_element = this.Helpers.create_element('div', { class_name: 'requirement-audit-sidebar__filters-wrapper' });
+        filter_wrapper.appendChild(this.filter_container_element);
+        this.plate_element_ref.appendChild(filter_wrapper);
 
         // Results summary
         const summary_id = this.mode === 'all' ? 'all-requirements-results-summary' : 'requirement-list-results-summary';
@@ -281,18 +291,11 @@ export const RequirementsListViewComponent = {
             this.plate_element_ref.appendChild(this.empty_message_element_ref);
         }
 
-        // Content container
-        if (this.mode === 'sample') {
-            this.content_div_for_delegation = this.Helpers.create_element('div', { class_name: 'requirements-list-content' });
-            this.content_div_for_delegation.addEventListener('click', this.handle_requirement_list_click);
-            this.content_div_for_delegation.addEventListener('keydown', this.handle_requirement_list_keydown);
-            this.plate_element_ref.appendChild(this.content_div_for_delegation);
-        } else {
-            this.list_element_ref = this.Helpers.create_element('ul', {
-                class_name: ['item-list', 'all-requirements__list'],
-            });
-            this.plate_element_ref.appendChild(this.list_element_ref);
-        }
+        // Content container – samma struktur för båda lägena (kompakt kravlista)
+        this.content_div_for_delegation = this.Helpers.create_element('div', { class_name: 'requirements-list-content' });
+        this.content_div_for_delegation.addEventListener('click', this.handle_requirement_list_click);
+        this.content_div_for_delegation.addEventListener('keydown', this.handle_requirement_list_keydown);
+        this.plate_element_ref.appendChild(this.content_div_for_delegation);
 
         // Bottom navigation bar (sample mode only)
         if (this.mode === 'sample') {
@@ -426,9 +429,10 @@ export const RequirementsListViewComponent = {
         // Get filter settings
         let current_ui_settings = state.uiSettings?.[this.state_filter_key] || {};
         
-        // Set default status filter for sample mode
-        if (this.mode === 'sample' && !current_ui_settings.status) {
-            current_ui_settings.status = { passed: true, failed: true, partially_audited: true, not_audited: true, updated: true };
+        // Default statusfilter (samma som högerspalten), används vid sessionStorage-återladdning utan status
+        const default_status = { passed: true, failed: true, partially_audited: true, not_audited: true, updated: true };
+        if (!current_ui_settings.status || Object.keys(current_ui_settings.status).length === 0) {
+            current_ui_settings = { ...current_ui_settings, status: default_status };
         }
 
         // Automatisk val av sortering första gången
@@ -454,32 +458,31 @@ export const RequirementsListViewComponent = {
             current_ui_settings = { ...current_ui_settings, sortBy: auto_sort_by };
         }
 
-        // Initialize toolbar
-        const initial_toolbar_state = {
-            searchText: current_ui_settings.searchText || '',
-            sortBy: current_ui_settings.sortBy,
+        // Initialize filter (samma som högerspalten)
+        const get_current_filters = () => {
+            const s = this.getState();
+            let ui = s.uiSettings?.[this.state_filter_key] || {};
+            if (!ui.status || Object.keys(ui.status).length === 0) {
+                ui = { ...ui, status: { passed: true, failed: true, partially_audited: true, not_audited: true, updated: true } };
+            }
+            return ui;
         };
-        if (this.mode === 'sample') {
-            initial_toolbar_state.status = current_ui_settings.status || { passed: true, failed: true, partially_audited: true, not_audited: true, updated: true };
-        }
 
-        if (this.toolbar_component_instance?.init && this.toolbar_component_instance?.render) {
-            if (!this.toolbar_component_instance.is_dom_built) {
-                await this.toolbar_component_instance.init({
-                    root: this.toolbar_container_element,
+        if (this.filter_component_instance?.init && this.filter_component_instance?.render) {
+            if (!this.filter_component_instance._filter_container_ref) {
+                await this.filter_component_instance.init({
+                    root: this.filter_container_element,
                     deps: {
-                        on_change: this.handle_toolbar_change,
-                        initial_state: initial_toolbar_state,
                         Translation: this.Translation,
                         Helpers: this.Helpers,
-                        config: {
-                            showStatusFilter: this.mode === 'sample',
-                            sortOptions: this.get_sort_options(),
-                        },
+                        idPrefix: this.mode === 'all' ? 'all-requirements-filter' : 'requirement-list-filter',
+                        getCurrentFilters: get_current_filters,
+                        getSortOptions: () => this.get_sort_options(),
+                        onFilterChange: this.handle_filter_change,
                     },
                 });
             }
-            this.toolbar_component_instance.render(current_ui_settings);
+            this.filter_component_instance.render();
         }
 
         // Update navigation bars (sample mode only)
@@ -491,22 +494,30 @@ export const RequirementsListViewComponent = {
         let filtered_items = [];
         let total_count = 0;
 
+        // Samma filterlogik som högerspalten: status_filters[display_status] === true
+        const status_filters = current_ui_settings.status || {};
+        const has_status_filters = Object.keys(status_filters).length > 0;
+
         if (this.mode === 'all') {
             total_count = entries.length;
             const search_term = (current_ui_settings.searchText || '').toLowerCase().trim();
-            filtered_items = entries.filter(([, req]) => {
-                if (!search_term) return true;
-                return this.get_searchable_text_for_requirement(req).includes(search_term);
+
+            filtered_items = entries.filter(([req_id, req]) => {
+                if (has_status_filters && status_filters[this.get_aggregated_display_status_for_requirement(req_id, req, samples)] !== true) return false;
+
+                if (search_term) {
+                    return this.get_searchable_text_for_requirement(req).includes(search_term);
+                }
+                return true;
             });
         } else {
             total_count = all_relevant_requirements.length;
             const search_term = (current_ui_settings.searchText || '').toLowerCase();
-            const active_status_filters = Object.keys(current_ui_settings.status || {}).filter(key => current_ui_settings.status[key]);
 
             filtered_items = all_relevant_requirements.filter(req => {
                 const result = (current_sample_object.requirementResults || {})[req.key];
                 const display_status = result?.needsReview ? 'updated' : this.AuditLogic.calculate_requirement_status(req, result);
-                if (!active_status_filters.includes(display_status)) return false;
+                if (has_status_filters && status_filters[display_status] !== true) return false;
 
                 if (search_term) {
                     return this.get_searchable_text_for_requirement(req).includes(search_term);
@@ -525,7 +536,7 @@ export const RequirementsListViewComponent = {
 
         // Sort items
         const sort_by = current_ui_settings.sortBy || 'ref_asc';
-        const sorted_items = this.sort_items(filtered_items, sort_by, current_sample_object);
+        const sorted_items = this.sort_items(filtered_items, sort_by, current_sample_object, samples);
 
         // Render items
         this.render_items(sorted_items, samples, current_sample_object, total_count, filtered_count);
@@ -615,7 +626,7 @@ export const RequirementsListViewComponent = {
         }
     },
 
-    sort_items(items, sort_by, current_sample_object) {
+    sort_items(items, sort_by, current_sample_object, samples = []) {
         const sorted = [...items];
 
         if (this.mode === 'all') {
@@ -640,6 +651,17 @@ export const RequirementsListViewComponent = {
                         return this.Helpers.natural_sort(ref_b || 'Z', ref_a || 'Z');
                     }
                     return this.compare_strings_locale(ref_b, ref_a);
+                });
+            } else if (sort_by === 'updated_first') {
+                sorted.sort((a, b) => {
+                    const status_a = this.get_aggregated_display_status_for_requirement(a?.[0], a?.[1], samples);
+                    const status_b = this.get_aggregated_display_status_for_requirement(b?.[0], b?.[1], samples);
+                    const a_updated = status_a === 'updated' ? 0 : 1;
+                    const b_updated = status_b === 'updated' ? 0 : 1;
+                    if (a_updated !== b_updated) return a_updated - b_updated;
+                    const ref_a = this.get_reference_string_for_sort(a?.[1]);
+                    const ref_b = this.get_reference_string_for_sort(b?.[1]);
+                    return this.Helpers?.natural_sort(ref_a || 'Z', ref_b || 'Z') || 0;
                 });
             }
         } else {
@@ -669,10 +691,11 @@ export const RequirementsListViewComponent = {
     render_items(sorted_items, samples, current_sample_object, total_count, filtered_count) {
         const t = this.Translation.t;
 
+        if (this.content_div_for_delegation) {
+            this.content_div_for_delegation.innerHTML = '';
+        }
+
         if (this.mode === 'all') {
-            if (this.list_element_ref) {
-                this.list_element_ref.innerHTML = '';
-            }
             if (this.empty_message_element_ref) {
                 this.empty_message_element_ref.style.display = 'none';
             }
@@ -689,77 +712,11 @@ export const RequirementsListViewComponent = {
                 return;
             }
 
+            const req_ul = this.Helpers.create_element('ul', { class_name: 'requirement-items-ul' });
             sorted_items.forEach(([req_id, req]) => {
-                const title = req?.title || t('unknown_value', { val: req_id });
-                const standard_ref = req?.standardReference || null;
-
-                const li = this.Helpers.create_element('li', { class_name: ['item-list-item'] });
-                const title_el = this.Helpers.create_element('h2', { class_name: 'all-requirements__title', text_content: title });
-
-                const meta_p = this.Helpers.create_element('p', { class_name: ['text-muted', 'all-requirements__meta'] });
-
-                if (standard_ref?.text) {
-                    if (standard_ref.url) {
-                        meta_p.appendChild(this.Helpers.create_element('a', {
-                            text_content: standard_ref.text,
-                            attributes: { href: standard_ref.url, target: '_blank', rel: 'noopener noreferrer' }
-                        }));
-                    } else {
-                        meta_p.appendChild(this.Helpers.create_element('span', { text_content: standard_ref.text }));
-                    }
-                }
-
-                if (!standard_ref?.text && typeof req?.reference === 'string' && req.reference.trim() !== '') {
-                    if (meta_p.textContent) meta_p.appendChild(document.createTextNode(' • '));
-                    meta_p.appendChild(this.Helpers.create_element('span', { text_content: req.reference }));
-                }
-
-                if (meta_p.textContent || meta_p.childNodes.length > 0) {
-                    li.appendChild(meta_p);
-                }
-
-                const candidates = new Set([String(req_id)]);
-                if (req?.key) candidates.add(String(req.key));
-                if (req?.id) candidates.add(String(req.id));
-
-                const matching_samples = samples.filter(sample => {
-                    const sample_set = sample?.id ? this.relevant_ids_by_sample.get(sample.id) : null;
-                    if (!sample_set) return false;
-                    return [...candidates].some(id => sample_set.has(id));
-                });
-                li.appendChild(this.Helpers.create_element('p', {
-                    class_name: ['all-requirements__occurs'],
-                    text_content: t('all_requirements_occurs_in_samples', { count: matching_samples.length })
-                }));
-
-                if (matching_samples.length > 0) {
-                    const ul = this.Helpers.create_element('ul', { class_name: 'all-requirements__samples' });
-                    matching_samples.forEach(sample => {
-                        const sample_label = sample?.description || t('undefined_description');
-                        const requirement_id = req?.key || req?.id || req_id;
-                        const href = `#requirement_audit?${new URLSearchParams({ sampleId: sample.id, requirementId: requirement_id }).toString()}`;
-
-                        const a = this.Helpers.create_element('a', {
-                            text_content: sample_label,
-                            attributes: { href }
-                        });
-                        a.addEventListener('click', (event) => {
-                            if (typeof this.router === 'function') {
-                                event.preventDefault();
-                                this.router('requirement_audit', { sampleId: sample.id, requirementId: requirement_id });
-                            }
-                        });
-
-                        const sample_li = this.Helpers.create_element('li', {});
-                        sample_li.appendChild(a);
-                        ul.appendChild(sample_li);
-                    });
-                    li.appendChild(ul);
-                }
-
-                li.insertBefore(title_el, li.firstChild);
-                this.list_element_ref.appendChild(li);
+                req_ul.appendChild(this.create_all_requirement_list_item(req_id, req, samples));
             });
+            this.content_div_for_delegation.appendChild(req_ul);
         } else {
             // Sample mode
             if (this.content_div_for_delegation) {
@@ -783,6 +740,88 @@ export const RequirementsListViewComponent = {
             // Apply return focus if needed (sample mode only)
             this._apply_return_focus_if_needed();
         }
+    },
+
+    create_all_requirement_list_item(req_id, req, samples) {
+        const t = this.Translation.t;
+        const candidates = new Set([String(req_id)]);
+        if (req?.key) candidates.add(String(req.key));
+        if (req?.id) candidates.add(String(req.id));
+
+        const matching_samples = samples.filter(sample => {
+            const sample_set = sample?.id ? this.relevant_ids_by_sample.get(sample.id) : null;
+            if (!sample_set) return false;
+            return [...candidates].some(id => sample_set.has(id));
+        });
+
+        const req_key = req?.key || req?.id || req_id;
+        const first_sample = matching_samples[0];
+        const display_status = this.get_aggregated_display_status_for_requirement(req_id, req, samples);
+
+        let first_req_result = null;
+        for (const sample of matching_samples) {
+            const req_result = (sample.requirementResults || {})[req_key];
+            if (req_result) {
+                first_req_result = req_result;
+                break;
+            }
+        }
+
+        const requirement_id = req_key;
+
+        const li = this.Helpers.create_element('li', { class_name: 'requirement-item compact-twoline' });
+
+        const title_row_div = this.Helpers.create_element('div', { class_name: 'requirement-title-container' });
+        const title_link = this.Helpers.create_element('a', {
+            class_name: 'list-title-link',
+            text_content: req?.title || t('unknown_value', { val: req_id }),
+            attributes: {
+                'data-requirement-id': requirement_id,
+                'data-sample-id': first_sample?.id || '',
+                href: '#'
+            }
+        });
+        title_row_div.appendChild(title_link);
+        li.appendChild(title_row_div);
+
+        const details_row_div = this.Helpers.create_element('div', { class_name: 'requirement-details-row' });
+        const status_text = t(display_status === 'updated' ? 'status_updated' : `audit_status_${display_status}`);
+        const status_span = this.Helpers.create_element('span', {
+            class_name: display_status === 'updated' ? 'status-text-updated' : '',
+            text_content: status_text
+        });
+        const status_icon = this.Helpers.create_element('span', {
+            class_name: `status-icon status-icon-${display_status.replace('_', '-')}`,
+            text_content: this.get_status_icon(display_status),
+            attributes: { 'aria-hidden': 'true' }
+        });
+        details_row_div.appendChild(status_icon);
+        details_row_div.appendChild(status_span);
+
+        const total_checks = req?.checks?.length || 0;
+        const audited_checks = first_req_result?.checkResults
+            ? Object.values(first_req_result.checkResults).filter(res => res.status === 'passed' || res.status === 'failed').length
+            : 0;
+        details_row_div.appendChild(this.Helpers.create_element('span', {
+            class_name: 'requirement-checks-info',
+            text_content: `(${audited_checks}/${total_checks} ${t('checks_short')})`
+        }));
+
+        if (req?.standardReference?.text) {
+            details_row_div.appendChild(req.standardReference.url
+                ? this.Helpers.create_element('a', {
+                    class_name: 'list-reference-link',
+                    text_content: req.standardReference.text,
+                    attributes: { href: req.standardReference.url, target: '_blank', rel: 'noopener noreferrer' }
+                })
+                : this.Helpers.create_element('span', { class_name: 'list-reference-text', text_content: req.standardReference.text })
+            );
+        } else if (typeof req?.reference === 'string' && req.reference.trim() !== '') {
+            details_row_div.appendChild(this.Helpers.create_element('span', { class_name: 'list-reference-text', text_content: req.reference }));
+        }
+
+        li.appendChild(details_row_div);
+        return li;
     },
 
     create_requirement_list_item(req, sample) {
@@ -893,11 +932,11 @@ export const RequirementsListViewComponent = {
     },
 
     destroy() {
-        if (this.toolbar_component_instance && typeof this.toolbar_component_instance.destroy === 'function') {
-            this.toolbar_component_instance.destroy();
+        if (this.filter_component_instance && typeof this.filter_component_instance.destroy === 'function') {
+            this.filter_component_instance.destroy();
         }
         
-        if (this.mode === 'sample' && this.content_div_for_delegation) {
+        if (this.content_div_for_delegation) {
             this.content_div_for_delegation.removeEventListener('click', this.handle_requirement_list_click);
             this.content_div_for_delegation.removeEventListener('keydown', this.handle_requirement_list_keydown);
             this.content_div_for_delegation = null;
@@ -907,7 +946,8 @@ export const RequirementsListViewComponent = {
         
         this.root = null;
         this.deps = null;
-        this.toolbar_container_element = null;
+        this.filter_container_element = null;
+        this.filter_heading_ref = null;
         this.is_dom_initialized = false;
         this.plate_element_ref = null;
         this.h1_element_ref = null;

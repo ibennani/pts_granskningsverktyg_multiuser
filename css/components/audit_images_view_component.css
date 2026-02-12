@@ -1,0 +1,75 @@
+/* css/components/audit_images_view_component.css */
+
+.audit-images-plate {
+    max-width: 900px;
+}
+
+.audit-images-intro {
+    margin-bottom: 1.5rem;
+    color: var(--text-color);
+}
+
+.audit-images-empty {
+    padding: 1.5rem;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.audit-images-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.audit-image-card {
+    background-color: var(--background-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 1rem;
+}
+
+.audit-image-card__row {
+    margin: 0.1rem 0;
+    font-size: 0.9rem;
+}
+
+.audit-image-card__requirement-row {
+    margin: 0 0 0.25rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.audit-image-card__label {
+    font-weight: 600;
+}
+
+.audit-image-card__count {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.audit-image-card__pc-section {
+    margin-top: 0.75rem;
+}
+
+.audit-image-card__checkpoint,
+.audit-image-card__pass-criterion {
+    margin: 0;
+    font-size: 0.875rem;
+}
+
+.audit-image-card__checkpoint-text,
+.audit-image-card__pass-criterion-text {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.875rem;
+}
+
+.audit-image-card__filenames {
+    margin: 0 0 0 1rem;
+    padding-left: 1rem;
+}
+
+.audit-images-attach-btn {
+    margin-top: 0.5rem;
+}

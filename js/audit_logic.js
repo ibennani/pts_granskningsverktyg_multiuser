@@ -442,3 +442,128 @@ export function recalculateAuditTimes(auditState) {
     
     return auditState;
 }
+
+/**
+ * Counts total number of attached images/media across all samples.
+ * Each filename in attachedMediaFilenames counts as one.
+ */
+export function count_attached_images(state) {
+    if (!state?.samples) return 0;
+    let count = 0;
+    (state.samples || []).forEach(sample => {
+        Object.values(sample.requirementResults || {}).forEach(reqResult => {
+            Object.values(reqResult.checkResults || {}).forEach(checkResult => {
+                Object.values(checkResult.passCriteria || {}).forEach(pcResult => {
+                    const filenames = pcResult.attachedMediaFilenames;
+                    if (Array.isArray(filenames)) {
+                        count += filenames.length;
+                    }
+                });
+            });
+        });
+    });
+    return count;
+}
+
+/**
+ * Collects all "problems" (pass criteria where user wrote text under "Jag har kört fast").
+ * Returns array of { requirement, sample, checkId, pcId, check_def, pc_def, check_index, pc_index, stuck_text }.
+ */
+export function collect_audit_problems(state) {
+    if (!state?.samples || !state?.ruleFileContent?.requirements) return [];
+    const problems = [];
+    const requirements = state.ruleFileContent.requirements;
+
+    (state.samples || []).forEach(sample => {
+        Object.entries(sample.requirementResults || {}).forEach(([reqId, reqResult]) => {
+            const requirement = (Array.isArray(requirements) ? requirements.find(r => (r?.key || r?.id) === reqId) : requirements[reqId]) || null;
+            if (!requirement) return;
+
+            const checks_arr = requirement.checks || [];
+            Object.entries(reqResult.checkResults || {}).forEach(([checkId, checkResult]) => {
+                const check_def = checks_arr.find(c => (c?.id || c?.key) === checkId);
+                if (!check_def?.passCriteria) return;
+
+                const check_index = checks_arr.indexOf(check_def);
+                const pc_arr = check_def.passCriteria || [];
+
+                Object.entries(checkResult.passCriteria || {}).forEach(([pcId, pcResult]) => {
+                    const stuck_text = (pcResult?.stuckProblemDescription || '').trim();
+                    if (!stuck_text) return;
+
+                    const observation_text = (pcResult?.observationDetail || '').trim();
+                    const pc_def = pc_arr.find(p => (p?.id || p?.key) === pcId) || {};
+                    const pc_index = pc_arr.indexOf(pc_def);
+
+                    problems.push({
+                        requirement,
+                        sample,
+                        reqId,
+                        checkId,
+                        pcId,
+                        check_def,
+                        pc_def,
+                        check_index,
+                        pc_index,
+                        observation_text,
+                        stuck_text
+                    });
+                });
+            });
+        });
+    });
+    return problems;
+}
+
+/**
+ * Counts total number of problems (failed pass criteria).
+ */
+export function count_audit_problems(state) {
+    return collect_audit_problems(state).length;
+}
+
+/**
+ * Collects all attached images with context (requirement, sample, check, pc).
+ */
+export function collect_attached_images(state) {
+    if (!state?.samples || !state?.ruleFileContent?.requirements) return [];
+    const images = [];
+    const requirements = state.ruleFileContent.requirements;
+
+    (state.samples || []).forEach(sample => {
+        Object.entries(sample.requirementResults || {}).forEach(([reqId, reqResult]) => {
+            const requirement = (Array.isArray(requirements) ? requirements.find(r => (r?.key || r?.id) === reqId) : requirements[reqId]) || null;
+            if (!requirement) return;
+
+            const checks_arr = requirement.checks || [];
+            Object.entries(reqResult.checkResults || {}).forEach(([checkId, checkResult]) => {
+                const check_def = checks_arr.find(c => (c?.id || c?.key) === checkId);
+                const check_index = check_def ? checks_arr.indexOf(check_def) : -1;
+                const pc_arr = check_def?.passCriteria || [];
+                Object.entries(checkResult.passCriteria || {}).forEach(([pcId, pcResult]) => {
+                    const filenames = pcResult?.attachedMediaFilenames;
+                    if (!Array.isArray(filenames) || filenames.length === 0) return;
+                    const pc_def = pc_arr.find(p => (p?.id || p?.key) === pcId) || {};
+                    const pc_index = pc_arr.indexOf(pc_def);
+                    filenames.forEach(filename => {
+                        if (filename && String(filename).trim()) {
+                            images.push({
+                                requirement,
+                                sample,
+                                reqId,
+                                checkId,
+                                pcId,
+                                check_def: check_def || null,
+                                pc_def,
+                                check_index,
+                                pc_index,
+                                filename: String(filename).trim()
+                            });
+                        }
+                    });
+                });
+            });
+        });
+    });
+    return images;
+}

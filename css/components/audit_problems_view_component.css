@@ -1,0 +1,166 @@
+/* css/components/audit_problems_view_component.css */
+
+.audit-problems-plate {
+    max-width: 900px;
+}
+
+.audit-problems-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.audit-problems-header-row h1 {
+    margin: 0;
+}
+
+.audit-problem-copy-all-btn {
+    flex-shrink: 0;
+}
+
+.audit-problem-copy-all-btn span[aria-hidden="true"] {
+    margin-left: 0.35em;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.audit-problems-intro {
+    margin-bottom: 1.5rem;
+    color: var(--text-color);
+}
+
+.audit-problems-empty {
+    padding: 1.5rem;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+.audit-problems-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.audit-problem-card {
+    background-color: var(--background-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 1rem;
+}
+
+.audit-problem-card__row {
+    margin: 0.1rem 0;
+    font-size: 0.9rem;
+}
+
+.audit-problem-card__requirement-row {
+    margin: 0 0 0.25rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.audit-problem-card__label {
+    font-weight: 600;
+}
+
+.audit-problem-card__observation-label {
+    margin: 0;
+    font-size: 0.875rem;
+}
+
+.audit-problem-card__description-label {
+    margin: 0.5rem 0 0 0;
+    font-size: 0.875rem;
+}
+
+.audit-problem-card__observation-text {
+    margin: 0;
+    padding-left: 0;
+    font-size: 0.875rem;
+}
+
+.audit-problem-card__observation-text p,
+.audit-problem-card__observation-text > * {
+    margin-left: 0;
+    padding-left: 0;
+}
+
+.audit-problem-card__pc-section {
+    margin-top: 0.75rem;
+}
+
+.audit-problem-card__checkpoint,
+.audit-problem-card__pass-criterion {
+    margin: 0;
+    font-size: 0.875rem;
+}
+
+.audit-problem-card__checkpoint-text,
+.audit-problem-card__pass-criterion-text {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.875rem;
+}
+
+.audit-problem-card__stuck-text {
+    margin: 0;
+    padding-left: 0;
+    font-size: 0.875rem;
+}
+
+.audit-problem-card__stuck-text p,
+.audit-problem-card__stuck-text > * {
+    margin-left: 0;
+    padding-left: 0;
+}
+
+.audit-problem-card__buttons-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.audit-problem-edit-btn {
+    margin-left: 0;
+}
+
+.audit-problem-copy-btn {
+    margin-left: auto;
+    font-size: 0.875rem;
+}
+
+.audit-problem-copy-btn span[aria-hidden="true"],
+.audit-problem-edit-btn span[aria-hidden="true"] {
+    margin-left: 0.35em;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.audit-problem-copy-btn--copied {
+    background-color: var(--button-success-bg);
+    border-color: var(--button-success-border);
+    color: var(--button-success-text);
+    animation: audit-problem-copy-feedback 0.3s ease-out;
+}
+
+.audit-problem-copy-btn--copied::after {
+    content: " ✓";
+    font-weight: 600;
+}
+
+@keyframes audit-problem-copy-feedback {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
