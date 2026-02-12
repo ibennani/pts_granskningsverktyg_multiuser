@@ -308,8 +308,11 @@ function root_reducer(current_state, action) {
                                         checkResult.passCriteria[pcId] = {
                                             status: pcValue,
                                             observationDetail: '',
-                                            timestamp: merged_state.startTime || null 
+                                            timestamp: merged_state.startTime || null,
+                                            attachedMediaFilenames: []
                                         };
+                                    } else if (typeof pcValue === 'object' && pcValue !== null && !Array.isArray(pcValue.attachedMediaFilenames)) {
+                                        pcValue.attachedMediaFilenames = [];
                                     }
                                 });
                             }

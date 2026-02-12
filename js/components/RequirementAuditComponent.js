@@ -144,8 +144,11 @@ export const RequirementAuditComponent = {
                     this.current_result.checkResults[check_def.id].passCriteria[pc_def.id] = {
                         status: typeof pc_data === 'string' ? pc_data : 'not_audited',
                         observationDetail: '',
-                        timestamp: null
+                        timestamp: null,
+                        attachedMediaFilenames: []
                     };
+                } else if (!Array.isArray(pc_data.attachedMediaFilenames)) {
+                    pc_data.attachedMediaFilenames = [];
                 }
             });
         });

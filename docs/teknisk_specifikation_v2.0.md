@@ -289,7 +289,11 @@ Varje objekt representerar resultatet för ett enskilt krav på ett enskilt stic
 *   `checkResults`: Ett objekt där nycklarna är id:n för kontrollpunkter (`check.id` från regelfilen) och värdena är objekt som innehåller:
     *   `overallStatus`: Sträng (`passed`, `failed`, `not_audited`) – manuellt satt för kontrollpunkten.
     *   `status`: Sträng (beräknad status för kontrollpunkten).
-    *   `passCriteria`: Ett objekt där nycklarna är id:n för godkännandekriterier (`passCriterion.id`) och värdena är deras status (`passed`, `failed`, `not_audited`).
+    *   `passCriteria`: Ett objekt där nycklarna är id:n för godkännandekriterier (`passCriterion.id`) och värdena är objekt med:
+        *   `status`: Sträng (`passed`, `failed`, `not_audited`).
+        *   `observationDetail`: Sträng (användarens observation för detta godkännandekriterium).
+        *   `timestamp`: Iso 8601 tidsstämpel för senaste ändring.
+        *   `attachedMediaFilenames`: Array av strängar (filnamn för bifogade bilder eller videor, ett per rad i modalen).
 
 ### 6.4 Lagringsmekanismer
 *   **Session storage:** För att automatiskt spara `current_audit`-objektet och behålla tillståndet vid sidomladdning.

@@ -508,6 +508,13 @@
     align-items: center;
 }
 
+.pc-attach-media-row .attach-media-button-icons {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25em;
+    margin-left: 0.25em;
+}
+
 
 .requirement-audit-header-title-wrapper {
     display: block;

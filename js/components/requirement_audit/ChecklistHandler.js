@@ -155,11 +155,14 @@ export const ChecklistHandler = {
                 });
                 form_group.appendChild(label);
 
+                const existing_filenames = this.requirement_result_ref?.checkResults?.[check_id]?.passCriteria?.[pc_id]?.attachedMediaFilenames;
+                const initial_text = Array.isArray(existing_filenames) ? existing_filenames.join('\n') : '';
                 const textarea = this.Helpers.create_element('textarea', {
                     id: 'attach-media-filenames',
                     class_name: 'form-control',
                     attributes: { rows: '3' }
                 });
+                textarea.value = initial_text;
                 if (this.Helpers?.init_auto_resize_for_textarea) {
                     this.Helpers.init_auto_resize_for_textarea(textarea);
                 }
@@ -172,6 +175,17 @@ export const ChecklistHandler = {
                     text_content: t('attach_media_modal_save')
                 });
                 save_btn.addEventListener('click', () => {
+                    const filenames = textarea.value
+                        .split('\n')
+                        .map(s => s.trim())
+                        .filter(Boolean);
+                    const check_result = this.requirement_result_ref?.checkResults?.[check_id];
+                    if (check_result?.passCriteria?.[pc_id]) {
+                        check_result.passCriteria[pc_id].attachedMediaFilenames = filenames;
+                        if (this.on_observation_change_callback) {
+                            this.on_observation_change_callback();
+                        }
+                    }
                     modal.close(attach_btn);
                 });
                 const discard_btn = this.Helpers.create_element('button', {
@@ -320,6 +334,11 @@ export const ChecklistHandler = {
                     this._safe_parse_markdown_inline(pc_def.requirement)
                 );
                 const attach_aria_label = `${t('attach_media_button')} ${t('attach_media_aria_label_for')} ${criterion_title}: ${requirement_plain}`;
+                const image_icon = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('image', ['currentColor'], 16) : '';
+                const video_icon = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('videocam', ['currentColor'], 16) : '';
+                const attach_icons_html = (image_icon || video_icon)
+                    ? `<span class="attach-media-button-icons" aria-hidden="true">${image_icon}${video_icon}</span>`
+                    : '';
                 const attach_media_btn = this.Helpers.create_element('button', {
                     class_name: ['button', 'button-default', 'button-small'],
                     attributes: {
@@ -329,7 +348,7 @@ export const ChecklistHandler = {
                         type: 'button',
                         'aria-label': attach_aria_label
                     },
-                    text_content: t('attach_media_button')
+                    html_content: `<span>${this.Helpers.escape_html(t('attach_media_button'))}</span>${attach_icons_html}`
                 });
                 attach_media_row.appendChild(attach_media_btn);
                 observation_wrapper.appendChild(attach_media_row);
