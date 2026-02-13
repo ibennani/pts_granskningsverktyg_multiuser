@@ -356,18 +356,24 @@ export const ChecklistHandler = {
             });
             check_wrapper.appendChild(condition_text_div);
             
-            const actions_div = this.Helpers.create_element('div', { class_name: 'condition-actions' });
+            const actions_div = this.Helpers.create_element('div', {
+                class_name: 'condition-actions',
+                attributes: {
+                    role: 'group',
+                    'aria-label': t('check_status_buttons_group_aria')
+                }
+            });
             const check_icon = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('check_circle', [], 16) : '';
             const cancel_icon = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('cancel', [], 16) : '';
             actions_div.append(
-                this.Helpers.create_element('button', { 
+                this.Helpers.create_element('button', {
                     class_name: ['button', 'button-success', 'button-small'],
-                    attributes: { 'data-action': 'set-check-complies' },
+                    attributes: { 'data-action': 'set-check-complies', 'aria-pressed': 'false' },
                     html_content: `<span>${t('check_complies')}</span>${check_icon}`
                 }),
                 this.Helpers.create_element('button', {
                     class_name: ['button', 'button-danger', 'button-small'],
-                    attributes: { 'data-action': 'set-check-not-complies' },
+                    attributes: { 'data-action': 'set-check-not-complies', 'aria-pressed': 'false' },
                     html_content: `<span>${t('check_does_not_comply')}</span>${cancel_icon}`
                 })
             );
@@ -397,18 +403,24 @@ export const ChecklistHandler = {
                 
                 pc_item_li.appendChild(this.Helpers.create_element('div', { class_name: 'pass-criterion-status' }));
                 
-                const pc_actions_div = this.Helpers.create_element('div', { class_name: 'pass-criterion-actions' });
+                const pc_actions_div = this.Helpers.create_element('div', {
+                    class_name: 'pass-criterion-actions',
+                    attributes: {
+                        role: 'group',
+                        'aria-label': t('pass_criterion_status_buttons_group_aria')
+                    }
+                });
                 const thumb_up_icon = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('thumb_up', [], 16) : '';
                 const thumb_down_icon = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('thumb_down', [], 16) : '';
                 pc_actions_div.append(
                     this.Helpers.create_element('button', {
                         class_name: ['button', 'button-success', 'button-small'],
-                        attributes: { 'data-action': 'set-pc-passed' },
+                        attributes: { 'data-action': 'set-pc-passed', 'aria-pressed': 'false' },
                         html_content: `<span>${t('pass_criterion_approved')}</span>${thumb_up_icon}`
                     }),
                     this.Helpers.create_element('button', {
                         class_name: ['button', 'button-danger', 'button-small'],
-                        attributes: { 'data-action': 'set-pc-failed' },
+                        attributes: { 'data-action': 'set-pc-failed', 'aria-pressed': 'false' },
                         html_content: `<span>${t('pass_criterion_failed')}</span>${thumb_down_icon}`
                     })
                 );
@@ -497,6 +509,8 @@ export const ChecklistHandler = {
             if (complies_btn && not_complies_btn) {
                 complies_btn.classList.toggle('active', overall_manual_status === 'passed');
                 not_complies_btn.classList.toggle('active', overall_manual_status === 'not_applicable');
+                complies_btn.setAttribute('aria-pressed', overall_manual_status === 'passed' ? 'true' : 'false');
+                not_complies_btn.setAttribute('aria-pressed', overall_manual_status === 'not_applicable' ? 'true' : 'false');
                 complies_btn.parentElement.style.display = this.is_audit_locked ? 'none' : 'flex';
             }
             
@@ -581,6 +595,8 @@ export const ChecklistHandler = {
                 if (passed_btn && failed_btn) {
                     passed_btn.classList.toggle('active', current_pc_status === 'passed');
                     failed_btn.classList.toggle('active', current_pc_status === 'failed');
+                    passed_btn.setAttribute('aria-pressed', current_pc_status === 'passed' ? 'true' : 'false');
+                    failed_btn.setAttribute('aria-pressed', current_pc_status === 'failed' ? 'true' : 'false');
                     passed_btn.parentElement.style.display = this.is_audit_locked ? 'none' : 'flex';
                 }
 
