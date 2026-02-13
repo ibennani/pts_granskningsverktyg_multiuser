@@ -213,17 +213,16 @@ export const ChecklistHandler = {
 
     handle_stuck_click(event, stuck_btn) {
         event.preventDefault();
-        const pc_item = stuck_btn.closest('.pass-criterion-item[data-pc-id]');
-        const check_item = stuck_btn.closest('.check-item[data-check-id]');
-        if (!pc_item || !check_item) return;
-
-        const pc_id = pc_item.dataset.pcId;
-        const check_id = check_item.dataset.checkId;
+        if (!this.requirement_result_ref) return;
 
         const ModalComponent = window.ModalComponent;
         if (!ModalComponent?.show || !this.Helpers?.create_element) return;
 
         const t = this.Translation.t;
+        const existing_description = (typeof this.requirement_result_ref.stuckProblemDescription === 'string')
+            ? this.requirement_result_ref.stuckProblemDescription
+            : '';
+
         ModalComponent.show(
             {
                 h1_text: t('stuck_modal_h1'),
@@ -237,7 +236,6 @@ export const ChecklistHandler = {
                 });
                 form_group.appendChild(label);
 
-                const existing_description = this.requirement_result_ref?.checkResults?.[check_id]?.passCriteria?.[pc_id]?.stuckProblemDescription || '';
                 const textarea = this.Helpers.create_element('textarea', {
                     id: 'stuck-problem-description',
                     class_name: 'form-control',
@@ -260,12 +258,9 @@ export const ChecklistHandler = {
                     const description = this.Helpers?.trim_textarea_preserve_lines
                         ? this.Helpers.trim_textarea_preserve_lines(raw)
                         : raw.trim();
-                    const check_result = this.requirement_result_ref?.checkResults?.[check_id];
-                    if (check_result?.passCriteria?.[pc_id]) {
-                        check_result.passCriteria[pc_id].stuckProblemDescription = description;
-                        if (this.on_observation_change_callback) {
-                            this.on_observation_change_callback();
-                        }
+                    this.requirement_result_ref.stuckProblemDescription = description;
+                    if (this.on_observation_change_callback) {
+                        this.on_observation_change_callback();
                     }
                     modal.close(stuck_btn);
                 });
@@ -286,12 +281,9 @@ export const ChecklistHandler = {
                         text_content: t('stuck_modal_problem_solved')
                     });
                     problem_solved_btn.addEventListener('click', () => {
-                        const check_result = this.requirement_result_ref?.checkResults?.[check_id];
-                        if (check_result?.passCriteria?.[pc_id]) {
-                            check_result.passCriteria[pc_id].stuckProblemDescription = '';
-                            if (this.on_observation_change_callback) {
-                                this.on_observation_change_callback();
-                            }
+                        this.requirement_result_ref.stuckProblemDescription = '';
+                        if (this.on_observation_change_callback) {
+                            this.on_observation_change_callback();
                         }
                         modal.close(stuck_btn);
                     });
@@ -335,8 +327,13 @@ export const ChecklistHandler = {
             return;
         }
 
-        this.container_ref.appendChild(this.Helpers.create_element('h2', { text_content: t('checks_title') }));
-        
+        const checks_header_row = this.Helpers.create_element('div', { class_name: 'checks-header-row' });
+        const checks_h2 = this.Helpers.create_element('h2', { text_content: t('checks_title') });
+        const checks_header_actions = this.Helpers.create_element('div', { class_name: 'checks-header-actions' });
+        checks_header_row.appendChild(checks_h2);
+        checks_header_row.appendChild(checks_header_actions);
+        this.container_ref.appendChild(checks_header_row);
+
         this.requirement_definition_ref.checks.forEach((check_definition, check_index) => {
             const check_wrapper = this.Helpers.create_element('div', { 
                 class_name: 'check-item',
@@ -463,20 +460,23 @@ export const ChecklistHandler = {
                 });
                 attach_media_row.appendChild(attach_media_btn);
 
-                const stuck_aria_label = `${t('stuck_button')} ${t('attach_media_aria_label_for')} ${criterion_title}: ${requirement_plain}`;
-                const warning_icon = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('warning', ['currentColor'], 16) : '';
-                const stuck_btn = this.Helpers.create_element('button', {
-                    class_name: ['button', 'button-default', 'button-small', 'stuck-button'],
-                    attributes: {
-                        'data-action': 'stuck',
-                        'data-check-id': check_definition.id,
-                        'data-pc-id': pc_def.id,
-                        type: 'button',
-                        'aria-label': stuck_aria_label
-                    },
-                    html_content: `<span>${this.Helpers.escape_html(t('stuck_button'))}</span>${warning_icon ? `<span class="stuck-button-icon" aria-hidden="true">${warning_icon}</span>` : ''}`
-                });
-                attach_media_row.appendChild(stuck_btn);
+                const is_first_criterion = check_index === 0 && pc_index === 0;
+                if (is_first_criterion) {
+                    const stuck_aria_label = `${t('stuck_button')} ${t('attach_media_aria_label_for')} ${criterion_title}: ${requirement_plain}`;
+                    const warning_icon = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('warning', ['currentColor'], 16) : '';
+                    const stuck_btn = this.Helpers.create_element('button', {
+                        class_name: ['button', 'button-default', 'button-small', 'stuck-button'],
+                        attributes: {
+                            'data-action': 'stuck',
+                            'data-check-id': check_definition.id,
+                            'data-pc-id': pc_def.id,
+                            type: 'button',
+                            'aria-label': stuck_aria_label
+                        },
+                        html_content: `<span>${this.Helpers.escape_html(t('stuck_button'))}</span>${warning_icon ? `<span class="stuck-button-icon" aria-hidden="true">${warning_icon}</span>` : ''}`
+                    });
+                    checks_header_actions.appendChild(stuck_btn);
+                }
                 observation_wrapper.appendChild(attach_media_row);
 
                 pc_item_li.appendChild(observation_wrapper);

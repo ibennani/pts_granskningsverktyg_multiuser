@@ -466,8 +466,8 @@ export function count_attached_images(state) {
 }
 
 /**
- * Collects all "problems" (pass criteria where user wrote text under "Jag har kört fast").
- * Returns array of { requirement, sample, checkId, pcId, check_def, pc_def, check_index, pc_index, stuck_text }.
+ * Collects all "problems" (requirements where user wrote text under "Jag har kört fast").
+ * Returns array of { requirement, sample, reqId, stuck_text }.
  */
 export function collect_audit_problems(state) {
     if (!state?.samples || !state?.ruleFileContent?.requirements) return [];
@@ -476,39 +476,17 @@ export function collect_audit_problems(state) {
 
     (state.samples || []).forEach(sample => {
         Object.entries(sample.requirementResults || {}).forEach(([reqId, reqResult]) => {
+            const stuck_text = (reqResult?.stuckProblemDescription || '').trim();
+            if (!stuck_text) return;
+
             const requirement = (Array.isArray(requirements) ? requirements.find(r => (r?.key || r?.id) === reqId) : requirements[reqId]) || null;
             if (!requirement) return;
 
-            const checks_arr = requirement.checks || [];
-            Object.entries(reqResult.checkResults || {}).forEach(([checkId, checkResult]) => {
-                const check_def = checks_arr.find(c => (c?.id || c?.key) === checkId);
-                if (!check_def?.passCriteria) return;
-
-                const check_index = checks_arr.indexOf(check_def);
-                const pc_arr = check_def.passCriteria || [];
-
-                Object.entries(checkResult.passCriteria || {}).forEach(([pcId, pcResult]) => {
-                    const stuck_text = (pcResult?.stuckProblemDescription || '').trim();
-                    if (!stuck_text) return;
-
-                    const observation_text = (pcResult?.observationDetail || '').trim();
-                    const pc_def = pc_arr.find(p => (p?.id || p?.key) === pcId) || {};
-                    const pc_index = pc_arr.indexOf(pc_def);
-
-                    problems.push({
-                        requirement,
-                        sample,
-                        reqId,
-                        checkId,
-                        pcId,
-                        check_def,
-                        pc_def,
-                        check_index,
-                        pc_index,
-                        observation_text,
-                        stuck_text
-                    });
-                });
+            problems.push({
+                requirement,
+                sample,
+                reqId,
+                stuck_text
             });
         });
     });
@@ -516,7 +494,7 @@ export function collect_audit_problems(state) {
 }
 
 /**
- * Counts total number of problems (failed pass criteria).
+ * Counts total number of problems (requirements with stuck text).
  */
 export function count_audit_problems(state) {
     return collect_audit_problems(state).length;

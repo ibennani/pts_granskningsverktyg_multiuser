@@ -32,6 +32,15 @@ export const SideMenuComponent = {
             await this.Helpers.load_css(this.CSS_PATH).catch(() => {});
         }
 
+        this.unsubscribe = null;
+        if (typeof deps.subscribe === 'function') {
+            this.unsubscribe = deps.subscribe(() => {
+                if (this.root && typeof this.render === 'function') {
+                    this.render();
+                }
+            });
+        }
+
         if (this.small_screen_media_query) {
             try {
                 this.small_screen_media_query.addEventListener('change', this.handle_media_query_change);
@@ -356,6 +365,11 @@ export const SideMenuComponent = {
 
     destroy() {
         this.remove_escape_listener();
+
+        if (typeof this.unsubscribe === 'function') {
+            this.unsubscribe();
+            this.unsubscribe = null;
+        }
 
         if (this.small_screen_media_query) {
             try {

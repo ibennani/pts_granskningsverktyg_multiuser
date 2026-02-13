@@ -129,10 +129,14 @@ export const RequirementAuditComponent = {
                     return JSON.parse(JSON.stringify(result_from_store));
                 } catch (error) {
                     console.warn('[RequirementAuditComponent] Failed to clone result from store:', error);
-                    return { status: 'not_audited', commentToAuditor: '', commentToActor: '', lastStatusUpdate: null, checkResults: {} };
+                    return { status: 'not_audited', commentToAuditor: '', commentToActor: '', lastStatusUpdate: null, stuckProblemDescription: '', checkResults: {} };
                 }
             })()
-            : { status: 'not_audited', commentToAuditor: '', commentToActor: '', lastStatusUpdate: null, checkResults: {} };
+            : { status: 'not_audited', commentToAuditor: '', commentToActor: '', lastStatusUpdate: null, stuckProblemDescription: '', checkResults: {} };
+
+        if (typeof this.current_result.stuckProblemDescription !== 'string') {
+            this.current_result.stuckProblemDescription = '';
+        }
 
         (this.current_requirement.checks || []).forEach(check_def => {
             if (!this.current_result.checkResults[check_def.id]) {
@@ -145,15 +149,11 @@ export const RequirementAuditComponent = {
                         status: typeof pc_data === 'string' ? pc_data : 'not_audited',
                         observationDetail: '',
                         timestamp: null,
-                        attachedMediaFilenames: [],
-                        stuckProblemDescription: ''
+                        attachedMediaFilenames: []
                     };
                 } else {
                     if (!Array.isArray(pc_data.attachedMediaFilenames)) {
                         pc_data.attachedMediaFilenames = [];
-                    }
-                    if (typeof pc_data.stuckProblemDescription !== 'string') {
-                        pc_data.stuckProblemDescription = '';
                     }
                 }
             });

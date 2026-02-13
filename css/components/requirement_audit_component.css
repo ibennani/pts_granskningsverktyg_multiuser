@@ -185,6 +185,31 @@
     margin-top: 1rem;
 }
 
+/* Header-rad: Kontrollpunkter (h2) + Jag har kört fast-knapp på samma rad */
+.checks-header-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.checks-header-row h2 {
+    width: fit-content;
+    flex: 0 1 auto;
+    min-width: 0;
+    margin-bottom: 0;
+}
+
+.checks-header-actions {
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.checks-header-actions .stuck-button {
+    white-space: nowrap;
+}
+
 .check-item {
     padding: 1.25rem;
     margin-bottom: 1.5rem;
@@ -330,7 +355,7 @@
 }
 
 .pass-criterion-item {
-    padding: 1rem;
+    padding: 1rem 1rem 0.5rem 1rem;
     margin-bottom: 1rem;
     border: 2px solid var(--border-color);
     border-radius: var(--border-radius);
@@ -503,8 +528,10 @@
 }
 
 .pc-attach-media-row {
-    margin-top: 0.75rem;
+    margin-top: 0.5rem;
+    margin-bottom: 0;
     display: flex;
+    justify-content: flex-end;
     align-items: center;
     gap: 0.5rem;
 }

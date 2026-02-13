@@ -286,6 +286,7 @@ Varje objekt representerar resultatet för ett enskilt krav på ett enskilt stic
 *   `commentToAuditor`: Sträng (intern kommentar).
 *   `commentToActor`: Sträng (kommentar för export).
 *   `lastStatusUpdate`: Iso 8601 tidsstämpel för senaste ändring av detta resultat.
+*   `stuckProblemDescription`: Sträng (användarens beskrivning av problem vid "Jag har kört fast").
 *   `checkResults`: Ett objekt där nycklarna är id:n för kontrollpunkter (`check.id` från regelfilen) och värdena är objekt som innehåller:
     *   `overallStatus`: Sträng (`passed`, `failed`, `not_audited`) – manuellt satt för kontrollpunkten.
     *   `status`: Sträng (beräknad status för kontrollpunkten).

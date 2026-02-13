@@ -316,20 +316,32 @@ function root_reducer(current_state, action) {
                                             status: pcValue,
                                             observationDetail: '',
                                             timestamp: merged_state.startTime || null,
-                                            attachedMediaFilenames: [],
-                                            stuckProblemDescription: ''
+                                            attachedMediaFilenames: []
                                         };
                                     } else if (typeof pcValue === 'object' && pcValue !== null) {
                                         if (!Array.isArray(pcValue.attachedMediaFilenames)) {
                                             pcValue.attachedMediaFilenames = [];
                                         }
-                                        if (typeof pcValue.stuckProblemDescription !== 'string') {
-                                            pcValue.stuckProblemDescription = '';
-                                        }
                                     }
                                 });
                             }
                         });
+                        const stuck_parts = [];
+                        Object.values(reqResult.checkResults || {}).forEach(checkResult => {
+                            Object.values(checkResult.passCriteria || {}).forEach(pcResult => {
+                                const s = (pcResult?.stuckProblemDescription || '').trim();
+                                if (s) stuck_parts.push(s);
+                                if (pcResult && typeof pcResult === 'object') {
+                                    delete pcResult.stuckProblemDescription;
+                                }
+                            });
+                        });
+                        if (stuck_parts.length > 0) {
+                            reqResult.stuckProblemDescription = stuck_parts.join('\n\n');
+                        }
+                        if (typeof reqResult.stuckProblemDescription !== 'string') {
+                            reqResult.stuckProblemDescription = '';
+                        }
                     });
                 });
                 if (!merged_state.deficiencyCounter) {

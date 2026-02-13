@@ -213,9 +213,7 @@ export const AuditProblemsViewComponent = {
         const btn = event.currentTarget;
         const sample_id = btn.dataset.sampleId;
         const req_id = btn.dataset.requirementId;
-        const check_id = btn.dataset.checkId;
-        const pc_id = btn.dataset.pcId;
-        if (!sample_id || !req_id || !check_id || !pc_id || !this.dispatch || !this.StoreActionTypes) return;
+        if (!sample_id || !req_id || !this.dispatch || !this.StoreActionTypes) return;
 
         const ModalComponent = window.ModalComponent;
         if (!ModalComponent?.show || !this.Helpers?.create_element) return;
@@ -223,12 +221,12 @@ export const AuditProblemsViewComponent = {
         const state = this.getState();
         const sample = (state?.samples || []).find(s => String(s.id) === String(sample_id));
         const req_result = sample?.requirementResults?.[req_id];
-        const check_result = req_result?.checkResults?.[check_id];
-        const pc_result = check_result?.passCriteria?.[pc_id];
-        if (!req_result || !check_result || !pc_result) return;
+        if (!req_result) return;
 
         const t = this.Translation.t;
-        const existing_description = pc_result?.stuckProblemDescription || '';
+        const existing_description = (typeof req_result.stuckProblemDescription === 'string')
+            ? req_result.stuckProblemDescription
+            : '';
 
         ModalComponent.show(
             {
@@ -267,9 +265,7 @@ export const AuditProblemsViewComponent = {
                         : raw.trim();
                     const req_def = (state?.ruleFileContent?.requirements || {})[req_id] || (Array.isArray(state?.ruleFileContent?.requirements) ? state.ruleFileContent.requirements.find(r => (r?.key || r?.id) === req_id) : null);
                     const modified_result = JSON.parse(JSON.stringify(req_result));
-                    if (modified_result.checkResults?.[check_id]?.passCriteria?.[pc_id]) {
-                        modified_result.checkResults[check_id].passCriteria[pc_id].stuckProblemDescription = description;
-                    }
+                    modified_result.stuckProblemDescription = description;
                     if (req_def && this.AuditLogic?.calculate_requirement_status) {
                         modified_result.status = this.AuditLogic.calculate_requirement_status(req_def, modified_result);
                     }
@@ -302,9 +298,7 @@ export const AuditProblemsViewComponent = {
                     });
                     problem_solved_btn.addEventListener('click', () => {
                         const modified_result = JSON.parse(JSON.stringify(req_result));
-                        if (modified_result.checkResults?.[check_id]?.passCriteria?.[pc_id]) {
-                            modified_result.checkResults[check_id].passCriteria[pc_id].stuckProblemDescription = '';
-                        }
+                        modified_result.stuckProblemDescription = '';
                         const req_def = (state?.ruleFileContent?.requirements || {})[req_id] || (Array.isArray(state?.ruleFileContent?.requirements) ? state.ruleFileContent.requirements.find(r => (r?.key || r?.id) === req_id) : null);
                         if (req_def && this.AuditLogic?.calculate_requirement_status) {
                             modified_result.status = this.AuditLogic.calculate_requirement_status(req_def, modified_result);
@@ -383,44 +377,26 @@ export const AuditProblemsViewComponent = {
             });
             list_wrapper.appendChild(empty_msg);
         } else {
-            const grouped = this.group_problems_by_requirement_sample(problems);
-            grouped.forEach((group) => {
-                const card = this.create_problem_card(group, t);
+            problems.forEach((item) => {
+                const card = this.create_problem_card(item, t);
                 list_wrapper.appendChild(card);
             });
         }
     },
 
-    group_problems_by_requirement_sample(problems) {
-        const map = new Map();
-        problems.forEach((item) => {
-            const key = `${item.reqId}::${item.sample?.id || ''}`;
-            if (!map.has(key)) {
-                map.set(key, {
-                    requirement: item.requirement,
-                    sample: item.sample,
-                    reqId: item.reqId,
-                    items: []
-                });
-            }
-            map.get(key).items.push(item);
-        });
-        return Array.from(map.values());
-    },
-
-    create_problem_card(group, t) {
+    create_problem_card(item, t) {
         const card = this.Helpers.create_element('article', { class_name: 'audit-problem-card' });
 
         const copyable_content = this.Helpers.create_element('div', { class_name: 'audit-problem-card__copyable-content' });
 
-        const req_title = group.requirement?.title || group.reqId || '';
-        const std_ref = group.requirement?.standardReference;
+        const req_title = item.requirement?.title || item.reqId || '';
+        const std_ref = item.requirement?.standardReference;
         const ref_text = std_ref?.text?.trim() || '';
         const ref_url = std_ref?.url?.trim() || '';
-        const sample_name = group.sample?.description || group.sample?.id || '';
-        const sample_url = group.sample?.url?.trim() || '';
-        const sample_id = group.sample?.id || '';
-        const req_id = group.reqId || '';
+        const sample_name = item.sample?.description || item.sample?.id || '';
+        const sample_url = item.sample?.url?.trim() || '';
+        const sample_id = item.sample?.id || '';
+        const req_id = item.reqId || '';
 
         const req_row = this.Helpers.create_element('h2', { class_name: 'audit-problem-card__row audit-problem-card__requirement-row' });
         const req_label = this.Helpers.create_element('span', {
@@ -485,85 +461,39 @@ export const AuditProblemsViewComponent = {
         }
         copyable_content.appendChild(sample_row);
 
-        const edit_icon = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('edit', ['currentColor'], 16) : '';
-        const copy_icon = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('content_copy', ['currentColor'], 16) : '';
-
-        group.items.forEach((item) => {
-            const section = this.Helpers.create_element('div', { class_name: 'audit-problem-card__pc-section' });
-            const { check_def, pc_def, check_index, pc_index, observation_text, stuck_text, checkId, pcId } = item;
-            const check_num = check_index >= 0 ? check_index + 1 : '';
-            const pc_num = check_index >= 0 && pc_index >= 0 ? `${check_index + 1}.${pc_index + 1}` : '';
-
-            if (check_def?.condition) {
-                const check_label_p = this.Helpers.create_element('p', {
-                    class_name: 'audit-problem-card__checkpoint',
-                    html_content: `<strong>${this.Helpers.escape_html(t('check_item_title'))} ${check_num}:</strong>`
-                });
-                section.appendChild(check_label_p);
-                const check_text_p = this.Helpers.create_element('p', {
-                    class_name: 'audit-problem-card__checkpoint-text',
-                    text_content: check_def.condition
-                });
-                section.appendChild(check_text_p);
-            }
-            if (pc_def?.requirement) {
-                const pc_label_p = this.Helpers.create_element('p', {
-                    class_name: 'audit-problem-card__pass-criterion',
-                    html_content: `<strong>${this.Helpers.escape_html(t('pass_criterion_label'))} ${pc_num}:</strong>`
-                });
-                section.appendChild(pc_label_p);
-                const pc_text_p = this.Helpers.create_element('p', {
-                    class_name: 'audit-problem-card__pass-criterion-text',
-                    text_content: pc_def.requirement
-                });
-                section.appendChild(pc_text_p);
-            }
-            if (observation_text) {
-                const obs_label_p = this.Helpers.create_element('p', {
-                    class_name: 'audit-problem-card__observation-label',
-                    html_content: `<strong>${this.Helpers.escape_html(t('audit_problems_card_observation_label'))}:</strong>`
-                });
-                section.appendChild(obs_label_p);
-                const obs_div = this.Helpers.create_element('div', {
-                    class_name: 'audit-problem-card__observation-text markdown-content',
-                    html_content: this._safe_parse_markdown(observation_text)
-                });
-                section.appendChild(obs_div);
-            }
-            const desc_label_p = this.Helpers.create_element('p', {
-                class_name: 'audit-problem-card__description-label',
-                html_content: `<strong>${this.Helpers.escape_html(t('audit_problems_card_description_label'))}:</strong>`
-            });
-            section.appendChild(desc_label_p);
-            const stuck_div = this.Helpers.create_element('div', {
-                class_name: 'audit-problem-card__stuck-text markdown-content',
-                html_content: this._safe_parse_markdown(stuck_text)
-            });
-            section.appendChild(stuck_div);
-            copyable_content.appendChild(section);
+        const section = this.Helpers.create_element('div', { class_name: 'audit-problem-card__pc-section' });
+        const desc_label_p = this.Helpers.create_element('p', {
+            class_name: 'audit-problem-card__description-label',
+            html_content: `<strong>${this.Helpers.escape_html(t('audit_problems_card_description_label'))}:</strong>`
         });
+        section.appendChild(desc_label_p);
+        const stuck_div = this.Helpers.create_element('div', {
+            class_name: 'audit-problem-card__stuck-text markdown-content',
+            html_content: this._safe_parse_markdown(item.stuck_text || '')
+        });
+        section.appendChild(stuck_div);
+        copyable_content.appendChild(section);
 
         card.appendChild(copyable_content);
 
+        const edit_icon = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('edit', ['currentColor'], 16) : '';
+        const copy_icon = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('content_copy', ['currentColor'], 16) : '';
         const buttons_row = this.Helpers.create_element('div', { class_name: 'audit-problem-card__buttons-row' });
-        group.items.forEach((item) => {
-            const edit_btn = this.Helpers.create_element('button', {
-                class_name: ['button', 'button-default', 'audit-problem-edit-btn'],
-                attributes: {
-                    type: 'button',
-                    'data-sample-id': sample_id,
-                    'data-requirement-id': req_id,
-                    'data-check-id': item.checkId || '',
-                    'data-pc-id': item.pcId || ''
-                },
-                html_content: `<span>${this.Helpers.escape_html(t('audit_problems_edit_button'))}</span>${edit_icon ? `<span aria-hidden="true">${edit_icon}</span>` : ''}`
-            });
-            edit_btn.addEventListener('click', this.handle_edit_click);
-            buttons_row.appendChild(edit_btn);
+        const edit_btn = this.Helpers.create_element('button', {
+            class_name: ['button', 'button-default', 'audit-problem-edit-btn'],
+            attributes: {
+                type: 'button',
+                'data-sample-id': sample_id,
+                'data-requirement-id': req_id
+            },
+            html_content: `<span>${this.Helpers.escape_html(t('audit_problems_edit_button'))}</span>${edit_icon ? `<span aria-hidden="true">${edit_icon}</span>` : ''}`
         });
+        edit_btn.addEventListener('click', this.handle_edit_click);
+        buttons_row.appendChild(edit_btn);
+        const copy_btn_aria_label = `${t('audit_problems_copy_button')}: ${req_title} - ${sample_name}`;
         const copy_btn = this.Helpers.create_element('button', {
             class_name: ['button', 'button-default', 'audit-problem-copy-btn'],
-            attributes: { type: 'button' },
+            attributes: { type: 'button', 'aria-label': copy_btn_aria_label },
             html_content: `<span>${this.Helpers.escape_html(t('audit_problems_copy_button'))}</span>${copy_icon ? `<span aria-hidden="true">${copy_icon}</span>` : ''}`
         });
         copy_btn.addEventListener('click', this.handle_copy_click);
