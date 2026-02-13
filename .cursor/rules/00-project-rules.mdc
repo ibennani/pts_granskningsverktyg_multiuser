@@ -32,11 +32,12 @@ Adhere to the following rules at all times.
 - Prefer `const` over `let`, and avoid `var`.
 - Use `snake_case` for variable and function names in JavaScript (legacy convention in this project), but `PascalCase` for component files/objects.
 
-### Commit Messages
+### Commit Messages (autogenererade och manuella)
 
-- **Language:** ALWAYS use **Swedish**.
-- **Målgrupp:** Commit-meddelanden ska vara begripliga för personer som inte har teknisk kunskap. Fokusera på **vad användaren kan göra** och **hur funktionerna fungerar**, inte på tekniska detaljer eller filnamn.
-- **Style:** Skriv kortfattat och tydligt. Beskriv **vilken funktion som ändrats** och **hur det påverkar användningen av verktyget**. Undvik att nämna filnamn, kodstrukturer eller tekniska termer som "refaktorera", "dispatch" eller "state-hantering".
+- **Språk:** Allt ska vara på **svenska** – hela meddelandet, alla ord.
+- **Innehåll:** Beskriv **funktionalitet som ändrats** – vad användaren upplever eller kan göra annorlunda. Nämn **aldrig** filnamn, funktionsnamn eller kodstrukturer.
+- **Målgrupp:** Commit-meddelanden ska vara begripliga för personer som inte har teknisk kunskap. Fokusera på **vad användaren kan göra** och **hur funktionerna fungerar**.
+- **Style:** Skriv kortfattat och tydligt. Beskriv **vilken funktion som ändrats** och **hur det påverkar användningen av verktyget**. Undvik tekniska termer som "refaktorera", "dispatch" eller "state-hantering".
 - **Coverage:** Meddelandet måste täcka ALLA ändringar som är staged eller i working directory. Analysera hela diffen innan meddelandet genereras.
 - **Format:** 
   - **En ändring:** `Verb [Imperativ]: [Vad användaren ser/upplever] så att [vad som händer eller förbättras]`
@@ -52,7 +53,8 @@ Adhere to the following rules at all times.
     - Fixat bristindex så att det visas korrekt när sidan laddas
     - Lagt till exportfunktion för rapporter så att användare kan exportera till Word
     ```
-  - **Dåligt:** `Uppdatera: Ändra beräkning i logic/score.js och uppdatera render i AuditOverview.js` (nämner filer som användaren inte känner till)
+  - **Dåligt:** `Uppdatera: Ändra beräkning i logic/score.js` (filnamn – beskriv istället vad som beräknas annorlunda)
+  - **Dåligt:** `Fixa: _generate_filename i save_audit_logic` (funktionsnamn – beskriv istället vilken funktionalitet som fixats)
   - **Dåligt:** `Refaktorera: Flytta state-hantering till Redux store` (tekniskt språk som inte säger något om vad användaren upplever)
   - **Dåligt:** `Fixa: Bristindex visas nu korrekt` (saknar kontext om vad som faktiskt ändrats eller när problemet uppstod)
 
