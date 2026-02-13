@@ -814,6 +814,11 @@ export const RequirementsListViewComponent = {
             }
 
             if (filtered_count === 0) {
+                const hint_p = this.Helpers.create_element('p', {
+                    class_name: 'view-intro-text no-match-hint',
+                    text_content: t('no_requirements_match_filter_all_hint')
+                });
+                this.content_div_for_delegation.appendChild(hint_p);
                 return;
             }
 

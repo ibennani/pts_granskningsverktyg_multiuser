@@ -7,6 +7,10 @@ alwaysApply: true
 
 Den här filen är projektets **enda** källa för Cursor-regler. Alla tidigare regelfiler har slagits ihop hit för att inga regler ska försvinna.
 
+## KRITISKT: Commit-meddelanden – ALLTID svenska
+
+**När du genererar commit-meddelanden (manuellt eller automatiskt):** Skriv ALLTID på svenska. Varje ord. Aldrig engelska. Detta är en hård regel som inte får brytas.
+
 ## Regel: Alltid följ denna fil
 
 (Tidigare regel från `.cursor/rules/00-pts-guidelines.md`, uppdaterad för ny filstruktur.)
@@ -34,7 +38,7 @@ Adhere to the following rules at all times.
 
 ### Commit Messages (autogenererade och manuella)
 
-- **Språk (obligatoriskt):** Commit-meddelanden ska alltid vara på svenska – vid både manuell skrivning och automatisk generering. Hela meddelandet, alla ord. Aldrig engelska.
+- **Språk (obligatoriskt, ingen undantag):** Commit-meddelanden ska ALLTID vara på svenska. Varje ord. Vid manuell skrivning OCH vid automatisk generering (t.ex. sparkle-ikonen i Git-fliken). ALDRIG engelska – inte ens "fix", "add" eller "update". Använd svenska verb: Fixa, Lägg till, Uppdatera, Ändra.
 - **Innehåll:** Beskriv **funktionalitet som ändrats** – vad användaren upplever eller kan göra annorlunda. Nämn **aldrig** filnamn, funktionsnamn eller kodstrukturer.
 - **Målgrupp:** Commit-meddelanden ska vara begripliga för personer som inte har teknisk kunskap. Fokusera på **vad användaren kan göra** och **hur funktionerna fungerar**.
 - **Style:** Skriv kortfattat och tydligt. Beskriv **vilken funktion som ändrats** och **hur det påverkar användningen av verktyget**. Undvik tekniska termer som "refaktorera", "dispatch" eller "state-hantering".

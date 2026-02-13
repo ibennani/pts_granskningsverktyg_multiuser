@@ -320,6 +320,7 @@
   "no_relevant_requirements_for_sample": "Inga relevanta krav hittades för detta stickprov baserat på valda innehållstyper",
   "no_relevant_requirements_for_sample_short": "Inga relevanta krav",
   "no_requirements_match_filter": "Inga krav matchar det nuvarande filtret.",
+  "no_requirements_match_filter_all_hint": "Inga krav matchar din filtrering. Ändra sökord eller kryssrutor ovan för att se fler krav.",
   "no_requirements_to_approve": "Det finns inga återstående icke-granskade krav att godkänna",
   "no_samples_added": "Inga stickprov har lagts till ännu",
   "not_started": "Ej påbörjad",

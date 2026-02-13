@@ -1,0 +1,15 @@
+---
+description: Commit-meddelanden ska alltid vara på svenska
+alwaysApply: true
+---
+
+# Commit-meddelanden – ALLTID svenska
+
+När du genererar eller föreslår commit-meddelanden:
+
+- **Språk:** Skriv ALLTID på svenska. Varje ord. Hela meddelandet.
+- **Aldrig engelska.** Inte ens enstaka ord som "fix", "add", "update".
+- **Exempel på korrekt:** "Fixa: Kryssrutan Visa alla uppdateras nu korrekt vid klick"
+- **Exempel på FEL:** "Fix: Checkbox updates correctly when clicked"
+
+Detta gäller vid automatisk generering (t.ex. sparkle-ikonen i Git-fliken) och vid manuell hjälp.

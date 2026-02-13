@@ -320,6 +320,7 @@
   "no_relevant_requirements_for_sample": "No relevant requirements were found for this sample based on the selected content types.",
   "no_relevant_requirements_for_sample_short": "No relevant requirements",
   "no_requirements_match_filter": "No requirements match the current filter.",
+  "no_requirements_match_filter_all_hint": "No requirements match your filtering. Change the search text or checkboxes above to see more requirements.",
   "no_requirements_to_approve": "There are no remaining unreviewed requirements to approve.",
   "no_samples_added": "No samples have been added yet.",
   "not_started": "Not started",
