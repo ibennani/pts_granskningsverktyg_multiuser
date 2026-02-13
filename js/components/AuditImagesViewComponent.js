@@ -99,7 +99,11 @@ export const AuditImagesViewComponent = {
                     text_content: t('attach_media_modal_save')
                 });
                 save_btn.addEventListener('click', () => {
-                    const filenames = textarea.value
+                    const raw = textarea.value || '';
+                    const trimmed_raw = this.Helpers?.trim_textarea_preserve_lines
+                        ? this.Helpers.trim_textarea_preserve_lines(raw)
+                        : raw;
+                    const filenames = trimmed_raw
                         .split('\n')
                         .map(s => s.trim())
                         .filter(Boolean);

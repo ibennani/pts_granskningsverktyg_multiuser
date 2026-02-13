@@ -103,7 +103,9 @@ export const EditRulefileRequirementComponent = {
         const normalize_textarea_value = (value) => {
             if (typeof value !== 'string') return value;
             if (!shouldTrim) return value;
-            return value.split('\n').map(line => line.trim()).join('\n');
+            return this.Helpers?.trim_textarea_preserve_lines
+                ? this.Helpers.trim_textarea_preserve_lines(value)
+                : value.split('\n').map(line => line.trim()).join('\n');
         };
         
         // Trim alla strängvärden när de läses från formulärfält
@@ -254,7 +256,7 @@ export const EditRulefileRequirementComponent = {
         this._update_local_data_from_form(shouldTrim);
         this.dispatch({
             type: this.StoreActionTypes.UPDATE_REQUIREMENT_DEFINITION,
-            payload: { requirementId: this.params.id, updatedRequirementData: this.local_requirement_data, skip_render: shouldTrim !== true }
+            payload: { requirementId: this.params.id, updatedRequirementData: this.local_requirement_data, skip_render: true }
         });
     },
 
@@ -298,7 +300,8 @@ export const EditRulefileRequirementComponent = {
                 type: this.StoreActionTypes.UPDATE_REQUIREMENT_DEFINITION,
                 payload: {
                     requirementId: this.params.id,
-                    updatedRequirementData: this.local_requirement_data
+                    updatedRequirementData: this.local_requirement_data,
+                    skip_render: true
                 }
             });
             if (window.DraftManager?.commitCurrentDraft) {
@@ -1562,7 +1565,7 @@ export const EditRulefileRequirementComponent = {
 
     destroy() {
         if (!this.skip_autosave_on_destroy && this.form_element_ref && this.local_requirement_data && this.params?.id !== 'new') {
-            this.autosave_session?.flush({ should_trim: true, skip_render: false });
+            this.autosave_session?.flush({ should_trim: true, skip_render: true });
         }
         this.autosave_session?.destroy();
         this.autosave_session = null;

@@ -21,6 +21,7 @@ export const RulefileSectionsViewComponent = {
         this.general_form_initial_focus_set = false; // Flagga för att veta om fokus redan har satts på general-formuläret
         this.page_types_form_initial_focus_set = false; // Flagga för att veta om fokus redan har satts på page_types-formuläret
         this.content_types_form_initial_focus_set = false; // Flagga för att veta om fokus redan har satts på content_types-formuläret
+        this.sample_types_form_initial_focus_set = false; // Flagga för att veta om fokus redan har satts på sample_types-formuläret
         
         if (this.Helpers?.load_css) {
             await this.Helpers.load_css(this.CSS_PATH).catch(err => console.warn('[RulefileSectionsViewComponent] Failed to load CSS', err));
@@ -71,6 +72,13 @@ export const RulefileSectionsViewComponent = {
                 title: t('rulefile_section_info_blocks_order_title') || 'Informationsblock',
                 editRoute: 'rulefile_sections',
                 editSection: 'info_blocks_order',
+                isEditable: true
+            },
+            sample_types: {
+                id: 'sample_types',
+                title: t('rulefile_section_sample_types_title') || 'Stickprov',
+                editRoute: 'rulefile_sections',
+                editSection: 'sample_types',
                 isEditable: true
             }
         };
@@ -145,6 +153,22 @@ export const RulefileSectionsViewComponent = {
             });
             edit_button.addEventListener('click', () => {
                 this.router('rulefile_sections', { section: 'info_blocks_order', edit: 'true' });
+            });
+            heading_row.appendChild(edit_button);
+        }
+
+        if (section_config.id === 'sample_types' && !is_editing) {
+            const edit_button = this.Helpers.create_element('button', {
+                class_name: ['button', 'button-secondary', 'rulefile-sections-edit-button'],
+                attributes: {
+                    type: 'button',
+                    'aria-label': t('rulefile_sections_edit_sample_types_aria') || 'Redigera stickprovstyper'
+                },
+                html_content: `<span>${t('edit_button_label')}</span>` +
+                              (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('edit') : '')
+            });
+            edit_button.addEventListener('click', () => {
+                this.router('rulefile_sections', { section: 'sample_types', edit: 'true' });
             });
             heading_row.appendChild(edit_button);
         }
@@ -620,6 +644,45 @@ export const RulefileSectionsViewComponent = {
             section.appendChild(root_list);
         }
 
+        return section;
+    },
+
+    _get_flattened_sample_types(metadata) {
+        const samples = metadata?.samples || {};
+        const vocabularies = metadata?.vocabularies || {};
+        let sample_categories = samples.sampleCategories || [];
+        if (!Array.isArray(sample_categories) || sample_categories.length === 0) {
+            const vocab_samples = vocabularies.sampleTypes || {};
+            if (Array.isArray(vocab_samples.sampleCategories)) {
+                sample_categories = vocab_samples.sampleCategories;
+            }
+        }
+        const types = [];
+        sample_categories.forEach(cat => {
+            types.push(cat.text || cat.id || '');
+            (cat.categories || []).forEach(sub => {
+                types.push(sub.text || sub.id || '');
+            });
+        });
+        return types.filter(Boolean);
+    },
+
+    _render_sample_types_section(metadata) {
+        const t = this.Translation.t;
+        const section = this.Helpers.create_element('section', { class_name: 'rulefile-section-content' });
+        const types = this._get_flattened_sample_types(metadata);
+        if (types.length === 0) {
+            section.appendChild(this.Helpers.create_element('p', {
+                class_name: 'metadata-empty',
+                text_content: t('rulefile_metadata_empty_value')
+            }));
+        } else {
+            const list = this.Helpers.create_element('ul', { class_name: 'metadata-list' });
+            types.forEach(type_text => {
+                list.appendChild(this.Helpers.create_element('li', { text_content: type_text }));
+            });
+            section.appendChild(list);
+        }
         return section;
     },
 
@@ -1442,6 +1505,36 @@ export const RulefileSectionsViewComponent = {
         this.content_types_edit_component = EditContentTypesSectionComponent;
     },
 
+    async _render_sample_types_edit_form(container, metadata) {
+        const is_first_render = !this.sample_types_edit_component;
+
+        if (this.sample_types_edit_component && container.children.length > 0) {
+            return;
+        }
+
+        const { EditSampleTypesSectionComponent } = await import('./EditSampleTypesSectionComponent.js');
+
+        await EditSampleTypesSectionComponent.init({
+            root: container,
+            deps: this.deps
+        });
+
+        EditSampleTypesSectionComponent.render();
+
+        if (is_first_render && !this.sample_types_form_initial_focus_set) {
+            setTimeout(() => {
+                const first_input = container.querySelector('textarea');
+                if (first_input) {
+                    first_input.setAttribute('tabindex', '-1');
+                    first_input.focus();
+                    this.sample_types_form_initial_focus_set = true;
+                }
+            }, 100);
+        }
+
+        this.sample_types_edit_component = EditSampleTypesSectionComponent;
+    },
+
     render() {
         if (!this.root) return;
         const t = this.Translation.t;
@@ -1491,8 +1584,8 @@ export const RulefileSectionsViewComponent = {
         let section_content;
         let header_section_config;
         
-        // Om vi är i redigeringsläge för general, page_types eller content_types, visa formuläret inline
-        if (is_editing && (section_id === 'general' || section_id === 'page_types' || section_id === 'content_types')) {
+        // Om vi är i redigeringsläge för general, page_types, content_types eller sample_types, visa formuläret inline
+        if (is_editing && (section_id === 'general' || section_id === 'page_types' || section_id === 'content_types' || section_id === 'sample_types')) {
             header_section_config = this._get_section_config(section_id);
             const header = this._create_header(header_section_config, is_editing);
             right_wrapper.appendChild(header);
@@ -1507,6 +1600,8 @@ export const RulefileSectionsViewComponent = {
                 this._render_page_types_edit_form(edit_form_container, metadata);
             } else if (section_id === 'content_types') {
                 this._render_content_types_edit_form(edit_form_container, metadata);
+            } else if (section_id === 'sample_types') {
+                this._render_sample_types_edit_form(edit_form_container, metadata);
             }
             
             right_wrapper.appendChild(edit_form_container);
@@ -1531,6 +1626,10 @@ export const RulefileSectionsViewComponent = {
                     header_section_config = this._get_section_config(section_id);
                     section_content = this._render_content_types_section(metadata);
                     break;
+                case 'sample_types':
+                    header_section_config = this._get_section_config(section_id);
+                    section_content = this._render_sample_types_section(metadata);
+                    break;
                 case 'report_template':
                     header_section_config = this._get_section_config(section_id);
                     section_content = this._render_report_template_section(state.ruleFileContent);
@@ -1552,21 +1651,6 @@ export const RulefileSectionsViewComponent = {
         
         layout.appendChild(right_wrapper);
         main_plate.appendChild(layout);
-
-        // Back button - längst ner i main wrapper
-        const back_button = this.Helpers.create_element('button', {
-            class_name: ['button', 'button-default'],
-            html_content: `<span>${t('back_to_edit_options')}</span>` + 
-                          (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('arrow_back') : '')
-        });
-        back_button.addEventListener('click', () => {
-            if (section_id === 'info_blocks_order' && is_editing) {
-                this._flush_info_blocks_order_from_dom();
-                this.info_blocks_edit_baseline = null;
-            }
-            this.router('edit_rulefile_main');
-        });
-        main_plate.appendChild(back_button);
 
         this.root.appendChild(main_plate);
 

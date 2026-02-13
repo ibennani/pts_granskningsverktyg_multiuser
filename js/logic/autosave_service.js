@@ -1,5 +1,7 @@
 // js/logic/autosave_service.js
 
+import { trim_textarea_preserve_lines } from '../utils/helpers.js';
+
 const DEFAULT_DEBOUNCE_MS = 250;
 const RESTORE_DELAY_MS = 50;
 
@@ -73,10 +75,7 @@ function restore_focus_state({ focus_root, focus_state, window_scroll }) {
 }
 
 export const AutosaveService = {
-    trim_text_preserve_lines(value) {
-        if (typeof value !== 'string') return value;
-        return value.split('\n').map(line => line.trim()).join('\n');
-    },
+    trim_text_preserve_lines: trim_textarea_preserve_lines,
 
     sanitize_text(value, { should_trim = false } = {}) {
         if (typeof value !== 'string') return '';

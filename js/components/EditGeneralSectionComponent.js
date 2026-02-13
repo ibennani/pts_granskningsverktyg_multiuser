@@ -213,7 +213,7 @@ export const EditGeneralSectionComponent = {
 
     _handle_submit(form, originalMetadata, workingMetadata) {
         const t = this.Translation.t;
-        this.autosave_session?.flush({ should_trim: true, skip_render: false });
+        this.autosave_session?.flush({ should_trim: true, skip_render: true });
         if (window.DraftManager?.commitCurrentDraft) {
             window.DraftManager.commitCurrentDraft();
         }
@@ -289,7 +289,7 @@ export const EditGeneralSectionComponent = {
     destroy() {
         // Spara autosparat data innan komponenten förstörs (vid navigering bort)
         if (!this.skip_autosave_on_destroy && this.form_element_ref && this.working_metadata) {
-            this.autosave_session?.flush({ should_trim: true, skip_render: false });
+            this.autosave_session?.flush({ should_trim: true, skip_render: true });
         }
         this.autosave_session?.destroy();
         this.autosave_session = null;

@@ -21,7 +21,7 @@ this.autosave_session = this.AutosaveService?.create_session({
     on_save: ({ is_autosave, should_trim, skip_render, trim_text }) => {
         // Hämta värden från formuläret
         // Vid autospar: should_trim=false, skip_render=true
-        // Vid manuell sparning: should_trim=true, skip_render=false
+        // Vid manuell sparning: should_trim=true, skip_render=true (undviker att textarea krymper pga trimning)
         this.dispatch({ type: '...', payload: { ..., skip_render } });
     }
 });
@@ -48,7 +48,7 @@ handle_autosave_input() {
 Vid Spara-knapp eller submit:
 
 ```javascript
-this.autosave_session?.flush({ should_trim: true, skip_render: false });
+this.autosave_session?.flush({ should_trim: true, skip_render: true });
 ```
 
 ### 6. "Tillbaka utan att spara"
@@ -65,7 +65,7 @@ this.autosave_session?.cancel_pending();
 ```javascript
 destroy() {
     if (!this.skip_autosave_on_destroy && this.form_element_ref && this.working_metadata) {
-        this.autosave_session?.flush({ should_trim: true, skip_render: false });
+        this.autosave_session?.flush({ should_trim: true, skip_render: true });
     }
     this.autosave_session?.destroy();
     this.autosave_session = null;
@@ -76,7 +76,7 @@ destroy() {
 ## Trimning
 
 - **Autospar:** Ingen trimning.
-- **Manuell sparning / lämna vy:** Använd `trim_text` från AutosaveService för text – den trimmar endast mellanslag före/efter varje rad och bevarar tomrader.
+- **Manuell sparning / lämna vy:** Använd `trim_text` från AutosaveService för text – trimmar mellanslag före/efter varje rad, tar bort tomrader först och sist, bevarar tomrader mitt i texten.
 
 ```javascript
 // Exempel i on_save

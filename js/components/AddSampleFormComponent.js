@@ -147,7 +147,7 @@ export const AddSampleFormComponent = {
         this.handle_autosave_input();
     },
 
-    save_form_data_immediately(is_autosave = false, should_trim = !is_autosave) {
+    save_form_data_immediately(is_autosave = false, should_trim = !is_autosave, skip_render = false) {
         if (!this.current_editing_sample_id) return;
 
         const selected_category_radio = this.form_element?.querySelector('input[name="sampleCategory"]:checked');
@@ -178,13 +178,13 @@ export const AddSampleFormComponent = {
         const are_sets_equal = original_set.size === new_set.size && [...original_set].every(value => new_set.has(value));
 
         if (are_sets_equal) {
-            this._perform_save(sample_payload_data, is_autosave);
+            this._perform_save(sample_payload_data, is_autosave, skip_render);
         } else {
-            this._stage_changes_and_navigate(sample_payload_data, is_autosave);
+            this._stage_changes_and_navigate(sample_payload_data, is_autosave, skip_render);
         }
     },
 
-    _stage_changes_and_navigate(sample_payload_data, is_autosave = false) {
+    _stage_changes_and_navigate(sample_payload_data, is_autosave = false, skip_render_for_trim = false) {
         const state = this.getState();
         const rule_file = state.ruleFileContent;
         const sample_being_edited = state.samples.find(s => s.id === this.current_editing_sample_id);
@@ -207,13 +207,14 @@ export const AddSampleFormComponent = {
 
         const data_will_be_lost = removed_req_ids.some(id => sample_being_edited.requirementResults[id]);
 
+        const should_skip_render = is_autosave === true || skip_render_for_trim === true;
         this.dispatch({
             type: this.StoreActionTypes.STAGE_SAMPLE_CHANGES,
             payload: {
                 sampleId: this.current_editing_sample_id,
                 updatedSampleData: sample_payload_data,
                 analysis: { added_reqs: added_req_ids, removed_reqs: removed_req_ids, data_will_be_lost },
-                skip_render: is_autosave === true
+                skip_render: should_skip_render
             }
         });
 
@@ -222,15 +223,16 @@ export const AddSampleFormComponent = {
         }
     },
 
-    _perform_save(sample_payload_data, is_autosave = false) {
+    _perform_save(sample_payload_data, is_autosave = false, skip_render_for_trim = false) {
         const t = this.get_t_internally();
+        const should_skip_render = is_autosave === true || skip_render_for_trim === true;
         if (this.current_editing_sample_id) {
             this.dispatch({
                 type: this.StoreActionTypes.UPDATE_SAMPLE,
                 payload: {
                     sampleId: this.current_editing_sample_id,
                     updatedSampleData: sample_payload_data,
-                    skip_render: is_autosave === true
+                    skip_render: should_skip_render
                 }
             });
 
@@ -249,7 +251,7 @@ export const AddSampleFormComponent = {
             const new_sample_object = { ...sample_payload_data, id: this.Helpers.generate_uuid_v4(), requirementResults: {} };
             this.dispatch({
                 type: this.StoreActionTypes.ADD_SAMPLE,
-                payload: { ...new_sample_object, skip_render: is_autosave === true }
+                payload: { ...new_sample_object, skip_render: should_skip_render }
             });
             if (!is_autosave && window.DraftManager?.commitCurrentDraft) {
                 window.DraftManager.commitCurrentDraft();
@@ -295,7 +297,7 @@ export const AddSampleFormComponent = {
         };
 
         if (!this.current_editing_sample_id) {
-            this._perform_save(sample_payload_data);
+            this._perform_save(sample_payload_data, false, false);
             return;
         }
 
@@ -304,7 +306,7 @@ export const AddSampleFormComponent = {
         const are_sets_equal = original_set.size === new_set.size && [...original_set].every(value => new_set.has(value));
 
         if (are_sets_equal) {
-            this._perform_save(sample_payload_data);
+            this._perform_save(sample_payload_data, false, true);
         } else {
             this._stage_changes_and_navigate(sample_payload_data);
         }
@@ -482,8 +484,8 @@ export const AddSampleFormComponent = {
                 form_element: this.form_element,
                 focus_root: this.form_element,
                 debounce_ms: 250,
-                on_save: ({ is_autosave }) => {
-                    this.save_form_data_immediately(is_autosave, !is_autosave);
+                on_save: ({ is_autosave, skip_render }) => {
+                    this.save_form_data_immediately(is_autosave, !is_autosave, skip_render);
                 }
             });
         }
@@ -503,7 +505,7 @@ export const AddSampleFormComponent = {
 
     destroy() {
         if (!this.skip_autosave_on_destroy && this.current_editing_sample_id && this.form_element) {
-            this.autosave_session?.flush({ should_trim: true, skip_render: false });
+            this.autosave_session?.flush({ should_trim: true, skip_render: true });
         }
         this.autosave_session?.destroy();
         this.autosave_session = null;

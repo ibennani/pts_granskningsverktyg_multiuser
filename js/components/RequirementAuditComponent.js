@@ -198,13 +198,16 @@ export const RequirementAuditComponent = {
         this.dispatch_result_update(modified_result);
     },
     
-    handle_comment_input() {
+    handle_comment_input(should_trim = false) {
         if (!this.current_result) return;
+        const trim_fn = this.Helpers?.trim_textarea_preserve_lines;
         if (this.comment_to_auditor_input) {
-            this.current_result.commentToAuditor = this.comment_to_auditor_input.value;
+            const val = this.comment_to_auditor_input.value || '';
+            this.current_result.commentToAuditor = should_trim && trim_fn ? trim_fn(val) : val;
         }
         if (this.comment_to_actor_input) {
-            this.current_result.commentToActor = this.comment_to_actor_input.value;
+            const val = this.comment_to_actor_input.value || '';
+            this.current_result.commentToActor = should_trim && trim_fn ? trim_fn(val) : val;
         }
     },
 
@@ -387,7 +390,8 @@ export const RequirementAuditComponent = {
     },
 
     handle_navigation(action) {
-        this.handle_comment_input();
+        this.handle_comment_input(true);
+        this.checklist_handler_instance?.flush_observations_before_destroy?.();
         clearTimeout(this.debounceTimerAudit);
         this.save_result_immediately({ skipRender: true });
 
@@ -632,6 +636,11 @@ export const RequirementAuditComponent = {
     
     destroy() { 
         clearTimeout(this.debounceTimerAudit);
+        this.handle_comment_input(true);
+        this.checklist_handler_instance?.flush_observations_before_destroy?.();
+        if (this.current_result) {
+            this.save_result_immediately({ skipRender: true });
+        }
         
         // Remove event listeners
         if (this.comment_to_auditor_input) {

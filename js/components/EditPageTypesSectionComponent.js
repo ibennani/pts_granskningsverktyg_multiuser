@@ -265,10 +265,9 @@ export const EditPageTypesSectionComponent = {
             
             if (dataIndex === 'new') {
                 // Hantera nya kategorier
-                // Vid autospar: behåll otrimmade värden, vid manuell sparning: trimma
-                // Tomrader bevaras; endast mellanslag före/efter varje rad trimmas vid manuell sparning
-                const category_lines = shouldTrim
-                    ? rawValue.split('\n').map(line => line.trim())
+                // Vid autospar: behåll otrimmade värden, vid manuell sparning: trimma (generell textarea-regel)
+                const category_lines = shouldTrim && this.Helpers?.trim_textarea_preserve_lines
+                    ? this.Helpers.trim_textarea_preserve_lines(rawValue).split('\n')
                     : rawValue.split('\n');
 
                 if (category_lines.length > 0) {
@@ -297,10 +296,9 @@ export const EditPageTypesSectionComponent = {
             } else {
                 const idx = parseInt(dataIndex, 10);
                 if (!isNaN(idx) && idx < sample_categories.length && sample_categories[idx]) {
-                    // Vid autospar: behåll otrimmade värden, vid manuell sparning: trimma
-                    // Tomrader bevaras; endast mellanslag före/efter varje rad trimmas vid manuell sparning
-                    const category_lines = shouldTrim
-                        ? rawValue.split('\n').map(line => line.trim())
+                    // Vid autospar: behåll otrimmade värden, vid manuell sparning: trimma (generell textarea-regel)
+                    const category_lines = shouldTrim && this.Helpers?.trim_textarea_preserve_lines
+                        ? this.Helpers.trim_textarea_preserve_lines(rawValue).split('\n')
                         : rawValue.split('\n');
                         
                     if (sample_categories[idx].categories) {
@@ -1045,7 +1043,7 @@ export const EditPageTypesSectionComponent = {
         });
         
         save_button.addEventListener('click', () => {
-            this.autosave_session?.flush({ should_trim: true, skip_render: false });
+            this.autosave_session?.flush({ should_trim: true, skip_render: true });
             if (window.DraftManager?.commitCurrentDraft) {
                 window.DraftManager.commitCurrentDraft();
             }
@@ -1144,7 +1142,7 @@ export const EditPageTypesSectionComponent = {
 
     destroy() {
         if (!this.skip_autosave_on_destroy && this.form_element_ref && this.working_metadata) {
-            this.autosave_session?.flush({ should_trim: true, skip_render: false });
+            this.autosave_session?.flush({ should_trim: true, skip_render: true });
         }
         this.autosave_session?.destroy();
         this.autosave_session = null;

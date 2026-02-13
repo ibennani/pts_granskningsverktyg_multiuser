@@ -552,8 +552,8 @@ export const EditContentTypesSectionComponent = {
                 (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('save') : '')
         });
         save_button.addEventListener('click', () => {
-            this.autosave_session?.flush({ should_trim: true, skip_render: false });
-            this._perform_save(true, false);
+            this.autosave_session?.flush({ should_trim: true, skip_render: true });
+            this._perform_save(true, true);
             this.NotificationComponent.show_global_message?.(t('rulefile_metadata_edit_saved'), 'success');
             sessionStorage.setItem('focusAfterLoad', '.rulefile-sections-header h2');
             this.router('rulefile_sections', { section: 'content_types' });
@@ -626,7 +626,7 @@ export const EditContentTypesSectionComponent = {
 
     destroy() {
         if (!this.skip_autosave_on_destroy && this.form_element_ref && this.working_metadata) {
-            this.autosave_session?.flush({ should_trim: true, skip_render: false });
+            this.autosave_session?.flush({ should_trim: true, skip_render: true });
         }
         this.autosave_session?.destroy();
         this.autosave_session = null;

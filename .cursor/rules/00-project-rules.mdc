@@ -215,12 +215,19 @@ När autospar sker måste följande bevaras för att autospar ska vara helt osyn
 
 #### Trimning av formulärfält vid sparning
 
-När formulär sparas (vid manuell sparning eller när användaren lämnar formulärvyn) måste alla inputfält och textarea-fält trimmas:
+Trimning ska **aldrig** ske medan användaren skriver. Trimning sker endast vid:
+
+- **Klick på Spara** – manuell sparning
+- **Navigering bort** – när användaren lämnar formulärvyn (destroy)
+
+Regler:
 
 - **Alla strängvärden:** Trimmas för att ta bort inledande och avslutande mellanslag
-- **När:** Vid sparning av formulärdata (i `_parse_form_data`, `_update_local_data_from_form`, `_save_form_values_to_metadata`, etc.)
+- **När:** Endast vid manuell sparning eller när formulärvyn lämnas (i `_parse_form_data`, `_update_local_data_from_form`, `_save_form_values_to_metadata`, etc.)
 - **Var:** I alla formulärkomponenter när data läses från formulärfält
-- **Autospar:** Trimmas INTE vid autospar (endast vid manuell sparning eller när formulärvyn lämnas)
+- **Autospar:** Trimmas ALDRIG vid autospar (debounced input)
+- **Textarea-storlek:** Textareor ska inte ändra storlek på grund av trimning – vid sparning med trim används `skip_render: true` så att formuläret inte re-renderas med trimmat innehåll
+- **Textarea trimning:** Per rad: ta bort inledande/avslutande mellanslag. Ta även bort tomma rader först och sist i texten – tomrader mitt i texten bevaras
 
 #### Implementation-exempel
 

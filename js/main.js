@@ -268,103 +268,139 @@ window.DraftManager = DraftManager;
         const title_suffix = ` | ${t('app_title_suffix')}`;
         let title_prefix = t('app_title');
         const current_state = getState();
+        const audit_status = current_state?.auditStatus;
 
         try {
-            switch (viewName) {
-                case 'upload':
-                    title_prefix = t('start_or_load_audit_title');
-                    break;
-                case 'metadata':
-                    title_prefix = t('audit_metadata_title');
-                    break;
-                case 'edit_metadata':
-                    title_prefix = t('edit_audit_metadata_title');
-                    break;
-                case 'sample_management':
-                    title_prefix = t('manage_samples_title');
-                    break;
-                case 'sample_form':
-                    title_prefix = params.editSampleId ? t('edit_sample') : t('add_new_sample');
-                    break;
-                case 'confirm_sample_edit': 
-                    title_prefix = t('sample_edit_confirm_dialog_title');
-                    break;
-                case 'audit_overview':
-                    title_prefix = t('audit_overview_title');
-                    break;
-                case 'audit_actions':
-                    title_prefix = t('audit_actions_title');
-                    break;
-                case 'all_requirements':
-                    title_prefix = t('left_menu_all_requirements');
-                    break;
-                case 'audit_problems':
-                    title_prefix = t('audit_problems_title');
-                    break;
-                case 'audit_images':
-                    title_prefix = t('audit_images_title');
-                    break;
-                case 'requirement_list':
-                    title_prefix = t('requirement_list_title_suffix');
-                    break;
-                case 'update_rulefile':
-                    title_prefix = t('update_rulefile_title');
-                    break;
-                case 'restore_session':
-                    title_prefix = t('restore_session_title');
-                    break;
-                case 'confirm_updates':
-                    title_prefix = t('handle_updated_assessments_title', {count: ''}).trim();
-                    break;
-                case 'final_confirm_updates':
-                    title_prefix = t('final_confirm_updates_title');
-                    break;
-                case 'edit_rulefile_main':
-                    title_prefix = t('edit_rulefile_title');
-                    break;
-                case 'rulefile_requirements':
+            // Vid regelfilsredigering: använd alltid menyalternativets titel (översatt)
+            if (audit_status === 'rulefile_editing') {
+                const section_to_menu_key = {
+                    general: 'rulefile_section_general_title',
+                    publisher_source: 'rulefile_section_general_title',
+                    page_types: 'rulefile_metadata_section_page_types',
+                    content_types: 'rulefile_metadata_section_content_types',
+                    sample_types: 'rulefile_section_sample_types_title',
+                    info_blocks_order: 'rulefile_section_info_blocks_order_title',
+                    classifications: 'rulefile_section_classifications_title',
+                    report_template: 'rulefile_section_report_template_title'
+                };
+                const section = params.section || params.editSection || 'general';
+                if (viewName === 'rulefile_sections' && section_to_menu_key[section]) {
+                    title_prefix = t(section_to_menu_key[section]);
+                } else if (['rulefile_requirements', 'rulefile_view_requirement', 'rulefile_edit_requirement', 'rulefile_add_requirement'].includes(viewName)) {
                     title_prefix = t('rulefile_requirements_menu_title');
-                    break;
-                case 'rulefile_view_requirement':
-                    title_prefix = t('rulefile_view_requirement_title');
-                    break;
-                case 'rulefile_edit_requirement':
-                    title_prefix = t('rulefile_edit_requirement_title');
-                    break;
-                case 'rulefile_add_requirement':
-                    title_prefix = t('rulefile_add_requirement_title');
-                    break;
-                case 'rulefile_metadata_edit':
-                    title_prefix = t('rulefile_metadata_edit_title');
-                    break;
-                case 'rulefile_sections_edit_general':
-                    title_prefix = t('rulefile_sections_edit_general_title');
-                    break;
-                case 'rulefile_sections_edit_page_types':
-                    title_prefix = t('rulefile_sections_edit_page_types_title');
-                    break;
-                case 'rulefile_sections':
-                    title_prefix = t('rulefile_sections_title');
-                    break;
-                case 'confirm_delete':
-                    switch(params.type) {
-                        case 'requirement': title_prefix = t('rulefile_confirm_delete_title'); break;
-                        case 'check': title_prefix = t('confirm_delete_check_title'); break;
-                        case 'criterion': title_prefix = t('confirm_delete_criterion_title'); break;
+                } else if (viewName === 'rulefile_metadata_edit') {
+                    title_prefix = t(section && section_to_menu_key[section] ? section_to_menu_key[section] : 'rulefile_section_general_title');
+                } else if (viewName === 'rulefile_sections_edit_general') {
+                    title_prefix = t('rulefile_section_general_title');
+                } else if (viewName === 'rulefile_sections_edit_page_types') {
+                    title_prefix = t('rulefile_metadata_section_page_types');
+                } else if (viewName === 'confirm_delete' && params.type === 'requirement') {
+                    title_prefix = t('rulefile_requirements_menu_title');
+                } else if (viewName === 'confirm_delete' && (params.type === 'check' || params.type === 'criterion')) {
+                    title_prefix = t('rulefile_requirements_menu_title');
+                } else if (viewName === 'edit_rulefile_main') {
+                    title_prefix = t('rulefile_section_general_title');
+                }
+            }
+
+            if (title_prefix === t('app_title')) {
+                switch (viewName) {
+                    case 'upload':
+                        title_prefix = t('start_or_load_audit_title');
+                        break;
+                    case 'metadata':
+                        title_prefix = t('audit_metadata_title');
+                        break;
+                    case 'edit_metadata':
+                        title_prefix = t('edit_audit_metadata_title');
+                        break;
+                    case 'sample_management':
+                        title_prefix = t('manage_samples_title');
+                        break;
+                    case 'sample_form':
+                        title_prefix = params.editSampleId ? t('edit_sample') : t('add_new_sample');
+                        break;
+                    case 'confirm_sample_edit':
+                        title_prefix = t('sample_edit_confirm_dialog_title');
+                        break;
+                    case 'audit_overview':
+                        title_prefix = t('audit_overview_title');
+                        break;
+                    case 'audit_actions':
+                        title_prefix = t('audit_actions_title');
+                        break;
+                    case 'all_requirements':
+                        title_prefix = t('left_menu_all_requirements');
+                        break;
+                    case 'audit_problems':
+                        title_prefix = t('audit_problems_title');
+                        break;
+                    case 'audit_images':
+                        title_prefix = t('audit_images_title');
+                        break;
+                    case 'requirement_list':
+                        title_prefix = t('requirement_list_title_suffix');
+                        break;
+                    case 'update_rulefile':
+                        title_prefix = t('update_rulefile_title');
+                        break;
+                    case 'restore_session':
+                        title_prefix = t('restore_session_title');
+                        break;
+                    case 'confirm_updates':
+                        title_prefix = t('handle_updated_assessments_title', {count: ''}).trim();
+                        break;
+                    case 'final_confirm_updates':
+                        title_prefix = t('final_confirm_updates_title');
+                        break;
+                    case 'edit_rulefile_main':
+                        title_prefix = t('edit_rulefile_title');
+                        break;
+                    case 'rulefile_requirements':
+                        title_prefix = t('rulefile_requirements_menu_title');
+                        break;
+                    case 'rulefile_view_requirement':
+                        title_prefix = t('rulefile_view_requirement_title');
+                        break;
+                    case 'rulefile_edit_requirement':
+                        title_prefix = t('rulefile_edit_requirement_title');
+                        break;
+                    case 'rulefile_add_requirement':
+                        title_prefix = t('rulefile_add_requirement_title');
+                        break;
+                    case 'rulefile_metadata_edit':
+                        title_prefix = t('rulefile_metadata_edit_title');
+                        break;
+                    case 'rulefile_sections_edit_general':
+                        title_prefix = t('rulefile_sections_edit_general_title');
+                        break;
+                    case 'rulefile_sections_edit_page_types':
+                        title_prefix = t('rulefile_sections_edit_page_types_title');
+                        break;
+                    case 'rulefile_sections':
+                        title_prefix = t('rulefile_sections_title');
+                        break;
+                    case 'confirm_delete':
+                        switch(params.type) {
+                            case 'requirement': title_prefix = t('rulefile_confirm_delete_title'); break;
+                            case 'check': title_prefix = t('confirm_delete_check_title'); break;
+                            case 'criterion': title_prefix = t('confirm_delete_criterion_title'); break;
+                        }
+                        break;
+                    case 'requirement_audit': {
+                        const requirement = current_state?.ruleFileContent?.requirements?.[params.requirementId];
+                        const requirementTitle = requirement?.title;
+                        const prefix = (current_state?.auditStatus === 'locked') ? t('view_prefix') : t('edit_prefix');
+                        if (requirementTitle) {
+                            title_prefix = `${prefix} ${requirementTitle}`;
+                        } else {
+                            title_prefix = t('audit_requirement_title');
+                        }
+                        break;
                     }
-                    break;
-                case 'requirement_audit':
-                    const requirement = current_state?.ruleFileContent?.requirements?.[params.requirementId];
-                    const requirementTitle = requirement?.title;
-                    const prefix = (current_state?.auditStatus === 'locked') ? t('view_prefix') : t('edit_prefix');
-                    if (requirementTitle) {
-                        title_prefix = `${prefix} ${requirementTitle}`;
-                    } else {
-                        title_prefix = t('audit_requirement_title');
-                    }
-                    break;
-                default:
-                    break;
+                    default:
+                        break;
+                }
             }
         } catch (e) {
             consoleManager.error("Error building page title:", e);

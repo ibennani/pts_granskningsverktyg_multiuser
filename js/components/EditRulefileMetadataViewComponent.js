@@ -1157,10 +1157,14 @@ export const EditRulefileMetadataViewComponent = {
                 const required_checkbox = card.querySelector(`input[data-field="required"][data-section-id="${section_id}"]`);
                 const content_textarea = card.querySelector(`textarea[data-field="content"][data-section-id="${section_id}"]`);
                 
+                const content_raw = content_textarea?.value || '';
+                const content_trimmed = this.Helpers?.trim_textarea_preserve_lines
+                    ? this.Helpers.trim_textarea_preserve_lines(content_raw)
+                    : content_raw.trim();
                 report_template_sections[section_id] = {
                     name: name_input?.value.trim() || '',
                     required: required_checkbox?.checked || false,
-                    content: content_textarea?.value.trim() || ''
+                    content: content_trimmed
                 };
                 report_section_order.push(section_id);
             });

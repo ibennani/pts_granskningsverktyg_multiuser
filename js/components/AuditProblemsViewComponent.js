@@ -261,7 +261,10 @@ export const AuditProblemsViewComponent = {
                     text_content: t('stuck_modal_save')
                 });
                 save_btn.addEventListener('click', () => {
-                    const description = (textarea.value || '').trim();
+                    const raw = textarea.value || '';
+                    const description = this.Helpers?.trim_textarea_preserve_lines
+                        ? this.Helpers.trim_textarea_preserve_lines(raw)
+                        : raw.trim();
                     const req_def = (state?.ruleFileContent?.requirements || {})[req_id] || (Array.isArray(state?.ruleFileContent?.requirements) ? state.ruleFileContent.requirements.find(r => (r?.key || r?.id) === req_id) : null);
                     const modified_result = JSON.parse(JSON.stringify(req_result));
                     if (modified_result.checkResults?.[check_id]?.passCriteria?.[pc_id]) {

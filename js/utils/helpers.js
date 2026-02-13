@@ -298,6 +298,18 @@ export function add_protocol_if_missing(url_string) {
     return /^(?:f|ht)tps?:\/\//i.test(trimmed_url) ? trimmed_url : `https://${trimmed_url}`;
 }
 
+/**
+ * Generell trimning för textarea-innehåll: trimmar varje rad, tar bort tomrader först och sist.
+ * Tomrader mitt i texten bevaras.
+ */
+export function trim_textarea_preserve_lines(value) {
+    if (typeof value !== 'string') return value;
+    const lines = value.split('\n').map(line => line.trim());
+    while (lines.length > 0 && lines[0] === '') lines.shift();
+    while (lines.length > 0 && lines[lines.length - 1] === '') lines.pop();
+    return lines.join('\n');
+}
+
 export function init_auto_resize_for_textarea(textarea_element) {
     if (!textarea_element || textarea_element.tagName.toLowerCase() !== 'textarea') return;
     const _perform_resize = () => {

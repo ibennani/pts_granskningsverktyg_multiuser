@@ -256,7 +256,10 @@ export const ChecklistHandler = {
                     text_content: t('stuck_modal_save')
                 });
                 save_btn.addEventListener('click', () => {
-                    const description = (textarea.value || '').trim();
+                    const raw = textarea.value || '';
+                    const description = this.Helpers?.trim_textarea_preserve_lines
+                        ? this.Helpers.trim_textarea_preserve_lines(raw)
+                        : raw.trim();
                     const check_result = this.requirement_result_ref?.checkResults?.[check_id];
                     if (check_result?.passCriteria?.[pc_id]) {
                         check_result.passCriteria[pc_id].stuckProblemDescription = description;
@@ -645,8 +648,29 @@ export const ChecklistHandler = {
         this.update_dom();
     },
 
+    flush_observations_before_destroy() {
+        if (!this.container_ref || !this.requirement_result_ref?.checkResults) return;
+        const textareas = this.container_ref.querySelectorAll('textarea.pc-observation-detail-textarea');
+        textareas.forEach((textarea) => {
+            const pc_item = textarea.closest('.pass-criterion-item[data-pc-id]');
+            const check_item = textarea.closest('.check-item[data-check-id]');
+            if (pc_item && check_item) {
+                const check_id = check_item.dataset.checkId;
+                const pc_id = pc_item.dataset.pcId;
+                const check_result = this.requirement_result_ref.checkResults[check_id];
+                if (check_result?.passCriteria?.[pc_id]) {
+                    const trimmed = this.Helpers?.trim_textarea_preserve_lines
+                        ? this.Helpers.trim_textarea_preserve_lines(textarea.value || '')
+                        : (textarea.value || '').trim();
+                    check_result.passCriteria[pc_id].observationDetail = trimmed;
+                }
+            }
+        });
+    },
+
     destroy() {
         if (this.container_ref) {
+            this.flush_observations_before_destroy();
             this.container_ref.removeEventListener('click', this.handle_checklist_click);
             this.container_ref.removeEventListener('input', this.handle_textarea_input);
             this.container_ref.removeEventListener('blur', this.handle_textarea_input, true);
