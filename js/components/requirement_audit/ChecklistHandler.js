@@ -441,7 +441,15 @@ export const ChecklistHandler = {
                 const requirement_plain = this._get_plain_text_from_html(
                     this._safe_parse_markdown_inline(pc_def.requirement)
                 );
-                const attach_aria_label = `${t('attach_media_button')} ${t('attach_media_aria_label_for')} ${criterion_title}: ${requirement_plain}`;
+                const pc_result = this.requirement_result_ref?.checkResults?.[check_definition.id]?.passCriteria?.[pc_def.id];
+                const attached_filenames = Array.isArray(pc_result?.attachedMediaFilenames)
+                    ? pc_result.attachedMediaFilenames.filter(f => f && String(f).trim())
+                    : [];
+                const attached_count = attached_filenames.length;
+                const attach_btn_label = attached_count > 0
+                    ? t('edit_attached_media_button', { count: attached_count })
+                    : t('attach_media_button');
+                const attach_aria_label = `${attach_btn_label} ${t('attach_media_aria_label_for')} ${criterion_title}: ${requirement_plain}`;
                 const image_icon = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('image', ['currentColor'], 16) : '';
                 const video_icon = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('videocam', ['currentColor'], 16) : '';
                 const attach_icons_html = (image_icon || video_icon)
@@ -456,16 +464,22 @@ export const ChecklistHandler = {
                         type: 'button',
                         'aria-label': attach_aria_label
                     },
-                    html_content: `<span>${this.Helpers.escape_html(t('attach_media_button'))}</span>${attach_icons_html}`
+                    html_content: `<span>${this.Helpers.escape_html(attach_btn_label)}</span>${attach_icons_html}`
                 });
                 attach_media_row.appendChild(attach_media_btn);
 
                 const is_first_criterion = check_index === 0 && pc_index === 0;
                 if (is_first_criterion) {
-                    const stuck_aria_label = `${t('stuck_button')} ${t('attach_media_aria_label_for')} ${criterion_title}: ${requirement_plain}`;
+                    const has_stuck_content = (this.requirement_result_ref?.stuckProblemDescription || '').trim() !== '';
+                    const stuck_aria_label = has_stuck_content
+                        ? `${t('stuck_button')} ${t('stuck_button_has_content')} ${t('attach_media_aria_label_for')} ${criterion_title}: ${requirement_plain}`
+                        : `${t('stuck_button')} ${t('attach_media_aria_label_for')} ${criterion_title}: ${requirement_plain}`;
                     const warning_icon = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('warning', ['currentColor'], 16) : '';
+                    const indicator_html = has_stuck_content
+                        ? ` <span class="stuck-button-indicator">${this.Helpers.escape_html(t('stuck_button_has_content'))}</span>`
+                        : '';
                     const stuck_btn = this.Helpers.create_element('button', {
-                        class_name: ['button', 'button-default', 'button-small', 'stuck-button'],
+                        class_name: ['button', 'button-default', 'button-small', 'stuck-button', ...(has_stuck_content ? ['stuck-button--has-content'] : [])],
                         attributes: {
                             'data-action': 'stuck',
                             'data-check-id': check_definition.id,
@@ -473,7 +487,7 @@ export const ChecklistHandler = {
                             type: 'button',
                             'aria-label': stuck_aria_label
                         },
-                        html_content: `<span>${this.Helpers.escape_html(t('stuck_button'))}</span>${warning_icon ? `<span class="stuck-button-icon" aria-hidden="true">${warning_icon}</span>` : ''}`
+                        html_content: `<span>${this.Helpers.escape_html(t('stuck_button'))}${indicator_html}</span>${warning_icon ? `<span class="stuck-button-icon" aria-hidden="true">${warning_icon}</span>` : ''}`
                     });
                     checks_header_actions.appendChild(stuck_btn);
                 }
@@ -640,8 +654,60 @@ export const ChecklistHandler = {
                 if (this.Helpers?.init_auto_resize_for_textarea) {
                     this.Helpers.init_auto_resize_for_textarea(observation_textarea);
                 }
+
+                const attach_media_btn = pc_item_li.querySelector('button[data-action="attach-media"]');
+                if (attach_media_btn) {
+                    const attached_filenames = Array.isArray(pc_data.attachedMediaFilenames)
+                        ? pc_data.attachedMediaFilenames.filter(f => f && String(f).trim())
+                        : [];
+                    const attached_count = attached_filenames.length;
+                    const attach_btn_label = attached_count > 0
+                        ? t('edit_attached_media_button', { count: attached_count })
+                        : t('attach_media_button');
+                    const check_def = this.requirement_definition_ref?.checks?.find(c => (c?.id || c?.key) === check_id);
+                    const pc_def = check_def?.passCriteria?.find(p => (p?.id || p?.key) === pc_id);
+                    const check_idx = check_def ? (this.requirement_definition_ref.checks?.indexOf(check_def) ?? 0) : 0;
+                    const pc_idx = pc_def ? (check_def?.passCriteria?.indexOf(pc_def) ?? 0) : 0;
+                    const numbering = `${check_idx + 1}.${pc_idx + 1}`;
+                    const criterion_title = `${t('pass_criterion_label')} ${numbering}`;
+                    const requirement_plain = this._get_plain_text_from_html(
+                        this._safe_parse_markdown_inline(pc_def?.requirement || '')
+                    );
+                    const attach_aria_label = `${attach_btn_label} ${t('attach_media_aria_label_for')} ${criterion_title}: ${requirement_plain}`;
+                    attach_media_btn.setAttribute('aria-label', attach_aria_label);
+                    const text_span = attach_media_btn.querySelector('span:first-child');
+                    if (text_span) {
+                        text_span.textContent = attach_btn_label;
+                    }
+                }
             });
         });
+
+        const stuck_btn = this.container_ref.querySelector('.stuck-button');
+        if (stuck_btn) {
+            const has_stuck_content = (this.requirement_result_ref?.stuckProblemDescription || '').trim() !== '';
+            const check_id = stuck_btn.getAttribute('data-check-id');
+            const pc_id = stuck_btn.getAttribute('data-pc-id');
+            const check_def = this.requirement_definition_ref?.checks?.find(c => (c?.id || c?.key) === check_id);
+            const pc_def = check_def?.passCriteria?.find(p => (p?.id || p?.key) === pc_id);
+            const numbering = check_def && pc_def ? `${(this.requirement_definition_ref.checks?.indexOf(check_def) ?? 0) + 1}.${(check_def.passCriteria?.indexOf(pc_def) ?? 0) + 1}` : '';
+            const criterion_title = `${t('pass_criterion_label')} ${numbering}`;
+            const requirement_plain = this._get_plain_text_from_html(
+                this._safe_parse_markdown_inline(this.requirement_definition_ref?.title || '')
+            );
+            const stuck_aria_label = has_stuck_content
+                ? `${t('stuck_button')} ${t('stuck_button_has_content')} ${t('attach_media_aria_label_for')} ${criterion_title}: ${requirement_plain}`
+                : `${t('stuck_button')} ${t('attach_media_aria_label_for')} ${criterion_title}: ${requirement_plain}`;
+            stuck_btn.setAttribute('aria-label', stuck_aria_label);
+            stuck_btn.classList.toggle('stuck-button--has-content', has_stuck_content);
+            const text_span = stuck_btn.querySelector('span:first-child');
+            if (text_span) {
+                const indicator_html = has_stuck_content
+                    ? ` <span class="stuck-button-indicator">${this.Helpers.escape_html(t('stuck_button_has_content'))}</span>`
+                    : '';
+                text_span.innerHTML = this.Helpers.escape_html(t('stuck_button')) + indicator_html;
+            }
+        }
     },
 
     render(requirement_definition, requirement_result, locked_status) {

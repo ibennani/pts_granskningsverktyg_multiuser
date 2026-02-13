@@ -339,6 +339,7 @@ export const AuditImagesViewComponent = {
                 const attach_icons_html = (image_icon || video_icon)
                     ? `<span class="attach-media-button-icons" aria-hidden="true">${image_icon}${video_icon}</span>`
                     : '';
+                const attach_btn_label = t('edit_attached_media_button', { count: filenames.length });
                 const attach_btn = this.Helpers.create_element('button', {
                     class_name: ['button', 'button-default', 'button-small', 'audit-images-attach-btn'],
                     attributes: {
@@ -348,9 +349,9 @@ export const AuditImagesViewComponent = {
                         'data-check-id': check_def.id,
                         'data-pc-id': pc_def.id,
                         type: 'button',
-                        'aria-label': `${t('audit_images_edit_media_button')} ${t('attach_media_aria_label_for')} ${t('pass_criterion_label')} ${check_index >= 0 && pc_index >= 0 ? `${check_index + 1}.${pc_index + 1}` : ''}`
+                        'aria-label': `${attach_btn_label} ${t('attach_media_aria_label_for')} ${t('pass_criterion_label')} ${check_index >= 0 && pc_index >= 0 ? `${check_index + 1}.${pc_index + 1}` : ''}`
                     },
-                    html_content: `<span>${this.Helpers.escape_html(t('audit_images_edit_media_button'))}</span>${attach_icons_html}`
+                    html_content: `<span>${this.Helpers.escape_html(attach_btn_label)}</span>${attach_icons_html}`
                 });
                 attach_btn.addEventListener('click', this.handle_attach_media_click);
                 section.appendChild(attach_btn);

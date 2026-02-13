@@ -466,6 +466,28 @@ export function count_attached_images(state) {
 }
 
 /**
+ * Counts number of control points (places) where media has been attached.
+ * Each unique sample+requirement+check+passCriterion combination with at least one attached file counts as one.
+ */
+export function count_attached_media_places(state) {
+    if (!state?.samples) return 0;
+    let count = 0;
+    (state.samples || []).forEach(sample => {
+        Object.values(sample.requirementResults || {}).forEach(reqResult => {
+            Object.values(reqResult.checkResults || {}).forEach(checkResult => {
+                Object.values(checkResult.passCriteria || {}).forEach(pcResult => {
+                    const filenames = pcResult?.attachedMediaFilenames;
+                    if (Array.isArray(filenames) && filenames.some(f => f && String(f).trim())) {
+                        count += 1;
+                    }
+                });
+            });
+        });
+    });
+    return count;
+}
+
+/**
  * Collects all "problems" (requirements where user wrote text under "Jag har kört fast").
  * Returns array of { requirement, sample, reqId, stuck_text }.
  */

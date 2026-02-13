@@ -276,8 +276,8 @@ export const SideMenuComponent = {
             const problems_count = (this.AuditLogic && typeof this.AuditLogic.count_audit_problems === 'function')
                 ? this.AuditLogic.count_audit_problems(state)
                 : 0;
-            const images_count = (this.AuditLogic && typeof this.AuditLogic.count_attached_images === 'function')
-                ? this.AuditLogic.count_attached_images(state)
+            const media_places_count = (this.AuditLogic && typeof this.AuditLogic.count_attached_media_places === 'function')
+                ? this.AuditLogic.count_attached_media_places(state)
                 : 0;
 
             return {
@@ -287,7 +287,7 @@ export const SideMenuComponent = {
                     { label: t('left_menu_audit_overview'), view_name: 'audit_overview' },
                     { label: t('left_menu_all_requirements_with_count', { count: requirement_count }), view_name: 'all_requirements' },
                     { label: t('left_menu_sample_list_with_count', { count: sample_count }), view_name: 'sample_management' },
-                    { label: t('left_menu_images_with_count', { count: images_count }), view_name: 'audit_images' },
+                    { label: t('left_menu_images_with_count', { count: media_places_count }), view_name: 'audit_images' },
                     { label: t('left_menu_problems_with_count', { count: problems_count }), view_name: 'audit_problems' },
                     { label: t('left_menu_actions'), view_name: 'audit_actions' }
                 ]

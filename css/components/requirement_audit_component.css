@@ -210,6 +210,10 @@
     white-space: nowrap;
 }
 
+.checks-header-actions .stuck-button--has-content .stuck-button-indicator {
+    opacity: 0.9;
+}
+
 .check-item {
     padding: 1.25rem;
     margin-bottom: 1.5rem;
