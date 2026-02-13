@@ -430,7 +430,7 @@ export const RequirementsListViewComponent = {
         let current_ui_settings = state.uiSettings?.[this.state_filter_key] || {};
         
         // Default statusfilter (samma som högerspalten), används vid sessionStorage-återladdning utan status
-        const default_status = { passed: true, failed: true, partially_audited: true, not_audited: true, updated: true };
+        const default_status = { needs_help: true, passed: true, failed: true, partially_audited: true, not_audited: true, updated: true };
         if (!current_ui_settings.status || Object.keys(current_ui_settings.status).length === 0) {
             current_ui_settings = { ...current_ui_settings, status: default_status };
         }
@@ -463,7 +463,7 @@ export const RequirementsListViewComponent = {
             const s = this.getState();
             let ui = s.uiSettings?.[this.state_filter_key] || {};
             if (!ui.status || Object.keys(ui.status).length === 0) {
-                ui = { ...ui, status: { passed: true, failed: true, partially_audited: true, not_audited: true, updated: true } };
+                ui = { ...ui, status: { needs_help: true, passed: true, failed: true, partially_audited: true, not_audited: true, updated: true } };
             }
             return ui;
         };
@@ -498,12 +498,20 @@ export const RequirementsListViewComponent = {
         const status_filters = current_ui_settings.status || {};
         const has_status_filters = Object.keys(status_filters).length > 0;
 
+        const requirement_needs_help_fn = this.AuditLogic?.requirement_needs_help || (() => false);
+
         if (this.mode === 'all') {
             total_count = entries.length;
             const search_term = (current_ui_settings.searchText || '').toLowerCase().trim();
 
             filtered_items = entries.filter(([req_id, req]) => {
-                if (has_status_filters && status_filters[this.get_aggregated_display_status_for_requirement(req_id, req, samples)] !== true) return false;
+                const agg_status = this.get_aggregated_display_status_for_requirement(req_id, req, samples);
+                const any_sample_needs_help = samples.some(s => requirement_needs_help_fn((s.requirementResults || {})[req_id]));
+                const status_match = !has_status_filters || status_filters[agg_status] === true;
+                const needs_help_checked = status_filters.needs_help === true;
+                const show_by_status = status_match || (needs_help_checked && any_sample_needs_help);
+                const hide_by_needs_help = status_filters.needs_help === false && any_sample_needs_help;
+                if (!show_by_status || hide_by_needs_help) return false;
 
                 if (search_term) {
                     return this.get_searchable_text_for_requirement(req).includes(search_term);
@@ -517,7 +525,12 @@ export const RequirementsListViewComponent = {
             filtered_items = all_relevant_requirements.filter(req => {
                 const result = (current_sample_object.requirementResults || {})[req.key];
                 const display_status = result?.needsReview ? 'updated' : this.AuditLogic.calculate_requirement_status(req, result);
-                if (has_status_filters && status_filters[display_status] !== true) return false;
+                const needs_help = requirement_needs_help_fn(result);
+                const status_match = !has_status_filters || status_filters[display_status] === true;
+                const needs_help_checked = status_filters.needs_help === true;
+                const show_by_status = status_match || (needs_help_checked && needs_help);
+                const hide_by_needs_help = status_filters.needs_help === false && needs_help;
+                if (!show_by_status || hide_by_needs_help) return false;
 
                 if (search_term) {
                     return this.get_searchable_text_for_requirement(req).includes(search_term);

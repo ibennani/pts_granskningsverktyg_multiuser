@@ -1,6 +1,6 @@
 import "./FilterPanelComponent.css";
 
-const STATUS_KEYS = ['passed', 'failed', 'partially_audited', 'not_audited', 'updated'];
+const STATUS_KEYS = ['needs_help', 'passed', 'failed', 'partially_audited', 'not_audited', 'updated'];
 
 export const FilterPanelComponent = {
     init({ root, deps }) {
@@ -152,27 +152,58 @@ export const FilterPanelComponent = {
         // Separator
         panel.appendChild(Helpers.create_element('hr', { class_name: 'FilterPanelComponent__separator' }));
 
-        // Individual Statuses
-        STATUS_KEYS.forEach(status => {
+        // Statusar: passed, failed, partially_audited, not_audited
+        ['passed', 'failed', 'partially_audited', 'not_audited'].forEach(status => {
             const wrapper = Helpers.create_element('div', { class_name: 'form-check FilterPanelComponent__item' });
             const input = Helpers.create_element('input', { 
                 class_name: 'form-check-input', 
                 id: `filter-panel-${status}`,
                 attributes: { type: 'checkbox', 'data-status': status } 
             });
-            
-            // Get text key based on status
-            let textKey = `audit_status_${status}`;
-            if (status === 'updated') textKey = 'filter_option_updated';
-            
             const label = Helpers.create_element('label', { 
-                attributes: { for: `filter-panel-${status}`, 'data-text-key': textKey },
-                text_content: t(textKey)
+                attributes: { for: `filter-panel-${status}`, 'data-text-key': `audit_status_${status}` },
+                text_content: t(`audit_status_${status}`)
             });
             wrapper.append(input, label);
             panel.appendChild(wrapper);
             this._elements.checkboxes[status] = input;
         });
+
+        // Linje mellan ej granskat och uppdaterat krav
+        panel.appendChild(Helpers.create_element('hr', { class_name: 'FilterPanelComponent__separator' }));
+
+        // Uppdaterat krav
+        const updatedWrapper = Helpers.create_element('div', { class_name: 'form-check FilterPanelComponent__item' });
+        const updatedInput = Helpers.create_element('input', { 
+            class_name: 'form-check-input', 
+            id: 'filter-panel-updated',
+            attributes: { type: 'checkbox', 'data-status': 'updated' } 
+        });
+        const updatedLabel = Helpers.create_element('label', { 
+            attributes: { for: 'filter-panel-updated', 'data-text-key': 'filter_option_updated' },
+            text_content: t('filter_option_updated')
+        });
+        updatedWrapper.append(updatedInput, updatedLabel);
+        panel.appendChild(updatedWrapper);
+        this._elements.checkboxes['updated'] = updatedInput;
+
+        // Linje mellan uppdaterat krav och behöver hjälp
+        panel.appendChild(Helpers.create_element('hr', { class_name: 'FilterPanelComponent__separator' }));
+
+        // "Behöver hjälp" – sist
+        const needsHelpWrapper = Helpers.create_element('div', { class_name: 'form-check FilterPanelComponent__item FilterPanelComponent__item--needs-help' });
+        const needsHelpInput = Helpers.create_element('input', { 
+            class_name: 'form-check-input', 
+            id: 'filter-panel-needs_help',
+            attributes: { type: 'checkbox', 'data-status': 'needs_help' } 
+        });
+        const needsHelpLabel = Helpers.create_element('label', { 
+            attributes: { for: 'filter-panel-needs_help', 'data-text-key': 'filter_option_needs_help' },
+            text_content: t('filter_option_needs_help')
+        });
+        needsHelpWrapper.append(needsHelpInput, needsHelpLabel);
+        panel.appendChild(needsHelpWrapper);
+        this._elements.checkboxes['needs_help'] = needsHelpInput;
 
         // Delegate change event
         panel.addEventListener('change', this._boundHandlers.onFilterChange);

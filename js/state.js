@@ -56,6 +56,7 @@ const initial_state = {
             searchText: '',
             sortBy: 'default',
             status: { 
+                needs_help: true, 
                 passed: true, 
                 failed: true, 
                 partially_audited: true, 
@@ -67,6 +68,7 @@ const initial_state = {
             searchText: '',
             sortBy: 'default',
             status: {
+                needs_help: true,
                 passed: true,
                 failed: true,
                 partially_audited: true,
@@ -80,12 +82,12 @@ const initial_state = {
                 sample_requirements: {
                     searchText: '',
                     sortBy: 'ref_asc',
-                    status: { passed: true, failed: true, partially_audited: true, not_audited: true, updated: true }
+                    status: { needs_help: true, passed: true, failed: true, partially_audited: true, not_audited: true, updated: true }
                 },
                 requirement_samples: {
                     searchText: '',
                     sortBy: 'creation_order',
-                    status: { passed: true, failed: true, partially_audited: true, not_audited: true, updated: true }
+                    status: { needs_help: true, passed: true, failed: true, partially_audited: true, not_audited: true, updated: true }
                 }
             }
         }

@@ -523,6 +523,14 @@ export function count_audit_problems(state) {
 }
 
 /**
+ * Returns true if the requirement result has "behöver hjälp" – sätts automatiskt när
+ * användaren fyllt i text i "Jag har kört fast" (stuckProblemDescription).
+ */
+export function requirement_needs_help(req_result) {
+    return ((req_result?.stuckProblemDescription || '').trim()) !== '';
+}
+
+/**
  * Collects all attached images with context (requirement, sample, check, pc).
  */
 export function collect_attached_images(state) {

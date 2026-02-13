@@ -33,12 +33,12 @@ export const RequirementAuditSidebarComponent = {
         sample_requirements: {
             searchText: '',
             sortBy: 'ref_asc',
-            status: { passed: true, failed: true, partially_audited: true, not_audited: true, updated: true }
+            status: { needs_help: true, passed: true, failed: true, partially_audited: true, not_audited: true, updated: true }
         },
         requirement_samples: {
             searchText: '',
             sortBy: 'creation_order',
-            status: { passed: true, failed: true, partially_audited: true, not_audited: true, updated: true }
+            status: { needs_help: true, passed: true, failed: true, partially_audited: true, not_audited: true, updated: true }
         }
     },
 
@@ -235,11 +235,20 @@ export const RequirementAuditSidebarComponent = {
             this.filter_heading_ref.textContent = this.Translation.t(filter_heading_key);
         }
 
+        let list_item_count = 0;
+        if (rule_file_content && current_sample && current_requirement) {
+            if (this.selected_mode === 'sample_requirements') {
+                list_item_count = this.get_filtered_requirement_items(rule_file_content, current_sample).length;
+            } else {
+                list_item_count = this.get_filtered_sample_items(rule_file_content, current_requirement, samples || [], requirement_id, current_sample?.id).length;
+            }
+        }
+
         if (this.list_heading_ref) {
             const list_heading_key = this.selected_mode === 'sample_requirements'
-                ? 'requirement_audit_sidebar_list_heading_sample_requirements'
-                : 'requirement_audit_sidebar_list_heading_requirement_samples';
-            this.list_heading_ref.textContent = this.Translation.t(list_heading_key);
+                ? 'requirement_audit_sidebar_list_heading_sample_requirements_with_count'
+                : 'requirement_audit_sidebar_list_heading_requirement_samples_with_count';
+            this.list_heading_ref.textContent = this.Translation.t(list_heading_key, { count: list_item_count });
         }
 
         if (!rule_file_content || !current_sample || !current_requirement) {
@@ -385,7 +394,7 @@ export const RequirementAuditSidebarComponent = {
     get_current_filters() {
         const current = this.filters_by_mode[this.selected_mode] || this.filters_by_mode.sample_requirements;
         if (!current.status) {
-            current.status = { passed: true, failed: true, partially_audited: true, not_audited: true, updated: true };
+            current.status = { needs_help: true, passed: true, failed: true, partially_audited: true, not_audited: true, updated: true };
         }
         return current;
     },
@@ -436,23 +445,32 @@ export const RequirementAuditSidebarComponent = {
         const status_filters = filters.status || {};
         const has_status_filters = Object.keys(status_filters).length > 0;
 
+        const requirement_needs_help_fn = this.AuditLogic?.requirement_needs_help || (() => false);
+
         const filtered_items = ordered_keys
             .map(req_key => {
                 const requirement = rule_file_content?.requirements?.[req_key];
                 if (!requirement) return null;
                 const req_result = current_sample.requirementResults?.[req_key];
                 const display_status = this.get_display_status(requirement, req_result);
+                const needs_help = requirement_needs_help_fn(req_result);
                 return {
                     req_key,
                     requirement,
+                    req_result,
                     display_status,
+                    needs_help,
                     link_text: requirement.title || this.Translation.t('unknown_value', { val: req_key }),
                     ref_text: requirement.standardReference?.text || ''
                 };
             })
             .filter(item => {
                 if (!item) return false;
-                if (has_status_filters && status_filters[item.display_status] !== true) return false;
+                const status_match = !has_status_filters || status_filters[item.display_status] === true;
+                const needs_help_checked = status_filters.needs_help === true;
+                const show_by_status = status_match || (needs_help_checked && item.needs_help);
+                const hide_by_needs_help = status_filters.needs_help === false && item.needs_help;
+                if (!show_by_status || hide_by_needs_help) return false;
                 if (!search_term) return true;
                 return this.get_searchable_text_for_requirement(item.requirement).includes(search_term);
             });
@@ -502,16 +520,22 @@ export const RequirementAuditSidebarComponent = {
                     || sample?.requirementResults?.[current_requirement?.id]
                     || sample?.requirementResults?.[requirement_id];
                 const display_status = this.get_display_status(current_requirement, req_result);
+                const needs_help = (this.AuditLogic?.requirement_needs_help || (() => false))(req_result);
                 const original_index = sample_index_map.get(sample.id) ?? Infinity;
                 return {
                     sample,
                     display_status,
+                    needs_help,
                     link_text: sample?.description || this.Translation.t('undefined_description'),
                     original_index
                 };
             })
             .filter(item => {
-                if (has_status_filters && status_filters[item.display_status] !== true) return false;
+                const status_match = !has_status_filters || status_filters[item.display_status] === true;
+                const needs_help_checked = status_filters.needs_help === true;
+                const show_by_status = status_match || (needs_help_checked && item.needs_help);
+                const hide_by_needs_help = status_filters.needs_help === false && item.needs_help;
+                if (!show_by_status || hide_by_needs_help) return false;
                 if (!search_term) return true;
                 const text = (item.sample?.description || '').toLowerCase();
                 return text.includes(search_term);
