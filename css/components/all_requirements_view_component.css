@@ -31,3 +31,12 @@
     font-size: 0.85rem;
 }
 
+/* Nästlad kravlista (all requirements-vyn) */
+.requirements-list-content .requirement-header-sub {
+    white-space: pre-line;
+}
+
+.requirements-list-content .requirement-samples-list {
+    list-style: none;
+}
+

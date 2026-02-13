@@ -264,7 +264,7 @@ export const RequirementsListViewComponent = {
             id: filter_section_id,
             class_name: 'requirements-list-filter-section'
         });
-        this.filter_heading_ref = this.Helpers.create_element('h3', {
+        this.filter_heading_ref = this.Helpers.create_element('h2', {
             text_content: this.Translation.t('requirement_audit_sidebar_filter_heading_sample_requirements')
         });
         filter_wrapper.appendChild(this.filter_heading_ref);
@@ -274,7 +274,7 @@ export const RequirementsListViewComponent = {
 
         // Results summary
         const summary_id = this.mode === 'all' ? 'all-requirements-results-summary' : 'requirement-list-results-summary';
-        this.results_summary_element_ref = this.Helpers.create_element('p', {
+        this.results_summary_element_ref = this.Helpers.create_element('h2', {
             class_name: 'results-summary',
             id: summary_id,
             text_content: '',
@@ -755,72 +755,57 @@ export const RequirementsListViewComponent = {
         });
 
         const req_key = req?.key || req?.id || req_id;
-        const first_sample = matching_samples[0];
-        const display_status = this.get_aggregated_display_status_for_requirement(req_id, req, samples);
-
-        let first_req_result = null;
-        for (const sample of matching_samples) {
-            const req_result = (sample.requirementResults || {})[req_key];
-            if (req_result) {
-                first_req_result = req_result;
-                break;
-            }
-        }
-
         const requirement_id = req_key;
+
+        const ref_text = req?.standardReference?.text || (typeof req?.reference === 'string' && req.reference.trim() !== '' ? req.reference : '');
+        const sub_lines = [ref_text, t('all_requirements_occurs_in_samples', { count: matching_samples.length })].filter(Boolean);
 
         const li = this.Helpers.create_element('li', { class_name: 'requirement-item compact-twoline' });
 
-        const title_row_div = this.Helpers.create_element('div', { class_name: 'requirement-title-container' });
-        const title_link = this.Helpers.create_element('a', {
-            class_name: 'list-title-link',
-            text_content: req?.title || t('unknown_value', { val: req_id }),
-            attributes: {
-                'data-requirement-id': requirement_id,
-                'data-sample-id': first_sample?.id || '',
-                href: '#'
-            }
+        const h3 = this.Helpers.create_element('h3', {
+            class_name: 'requirement-header-nested',
+            text_content: req?.title || t('unknown_value', { val: req_id })
         });
-        title_row_div.appendChild(title_link);
-        li.appendChild(title_row_div);
+        li.appendChild(h3);
 
-        const details_row_div = this.Helpers.create_element('div', { class_name: 'requirement-details-row' });
-        const status_text = t(display_status === 'updated' ? 'status_updated' : `audit_status_${display_status}`);
-        const status_span = this.Helpers.create_element('span', {
-            class_name: display_status === 'updated' ? 'status-text-updated' : '',
-            text_content: status_text
-        });
-        const status_icon = this.Helpers.create_element('span', {
-            class_name: `status-icon status-icon-${display_status.replace('_', '-')}`,
-            text_content: this.get_status_icon(display_status),
-            attributes: { 'aria-hidden': 'true' }
-        });
-        details_row_div.appendChild(status_icon);
-        details_row_div.appendChild(status_span);
-
-        const total_checks = req?.checks?.length || 0;
-        const audited_checks = first_req_result?.checkResults
-            ? Object.values(first_req_result.checkResults).filter(res => res.status === 'passed' || res.status === 'failed').length
-            : 0;
-        details_row_div.appendChild(this.Helpers.create_element('span', {
-            class_name: 'requirement-checks-info',
-            text_content: `(${audited_checks}/${total_checks} ${t('checks_short')})`
-        }));
-
-        if (req?.standardReference?.text) {
-            details_row_div.appendChild(req.standardReference.url
-                ? this.Helpers.create_element('a', {
-                    class_name: 'list-reference-link',
-                    text_content: req.standardReference.text,
-                    attributes: { href: req.standardReference.url, target: '_blank', rel: 'noopener noreferrer' }
-                })
-                : this.Helpers.create_element('span', { class_name: 'list-reference-text', text_content: req.standardReference.text })
-            );
-        } else if (typeof req?.reference === 'string' && req.reference.trim() !== '') {
-            details_row_div.appendChild(this.Helpers.create_element('span', { class_name: 'list-reference-text', text_content: req.reference }));
+        if (sub_lines.length > 0) {
+            const sub_text = this.Helpers.create_element('div', {
+                class_name: 'requirement-header-sub',
+                text_content: sub_lines.join('\n')
+            });
+            li.appendChild(sub_text);
         }
 
-        li.appendChild(details_row_div);
+        const samples_ol = this.Helpers.create_element('ol', { class_name: 'requirement-samples-list' });
+
+        for (const sample of matching_samples) {
+            const req_result = (sample.requirementResults || {})[req_key];
+            const display_status = req_result?.needsReview ? 'updated' : this.AuditLogic.calculate_requirement_status(req, req_result);
+            const status_text = t(display_status === 'updated' ? 'status_updated' : `audit_status_${display_status}`);
+
+            const sample_name = sample?.description || t('undefined_description');
+            const sample_li = this.Helpers.create_element('li', { class_name: 'requirement-sample-item' });
+            const status_icon = this.Helpers.create_element('span', {
+                class_name: `status-icon status-icon-${display_status.replace('_', '-')}`,
+                text_content: this.get_status_icon(display_status),
+                attributes: { 'aria-hidden': 'true' }
+            });
+            const sample_link = this.Helpers.create_element('a', {
+                class_name: 'list-title-link',
+                text_content: sample_name,
+                attributes: {
+                    'data-requirement-id': requirement_id,
+                    'data-sample-id': sample?.id || '',
+                    href: '#',
+                    'aria-label': `${sample_name} – ${status_text}`
+                }
+            });
+            sample_li.appendChild(status_icon);
+            sample_li.appendChild(sample_link);
+            samples_ol.appendChild(sample_li);
+        }
+
+        li.appendChild(samples_ol);
         return li;
     },
 

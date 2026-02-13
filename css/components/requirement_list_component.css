@@ -69,10 +69,18 @@
     overflow: visible;
 }
 
-.requirements-list-filter-section h3 {
+.requirements-list-filter-section h2 {
     font-size: 1rem;
     font-weight: 600;
     margin: 0 0 0.5rem 0;
+    color: var(--heading-color);
+}
+
+/* Results summary (h2) */
+.results-summary {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0 0 1rem 0;
     color: var(--heading-color);
 }
 
@@ -146,6 +154,54 @@
     border-left-color: var(--border-color);
     /* Samma färg som övriga kanter */
     background-color: color-mix(in srgb, var(--plate-background-color) 95%, black);
+}
+
+/* Nästlad struktur: h3 med kravnamn, sub-text med ref och antal, ul med stickprov (all requirements-vyn) */
+.requirements-list-content .requirement-header-nested {
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin: 0 0 0 0;
+    line-height: 1.4;
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .requirements-list-content .requirement-header-nested {
+    color: var(--heading-color);
+}
+
+.requirements-list-content .requirement-header-sub {
+    font-size: 0.9rem;
+    margin: 0;
+    white-space: pre-line;
+    line-height: 1.4;
+    color: var(--text-color-muted);
+}
+
+[data-theme="dark"] .requirements-list-content .requirement-header-sub {
+    color: var(--text-color);
+}
+
+.requirements-list-content .requirement-samples-list {
+    margin: 0;
+    padding-left: 0;
+    list-style: none;
+}
+
+.requirements-list-content .requirement-sample-item {
+    margin: 0.25rem 0;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.requirements-list-content .requirement-sample-item .list-title-link {
+    font-weight: 500;
+    font-size: 0.95rem;
+}
+
+.requirements-list-content .requirement-sample-item .status-icon {
+    margin-right: 0.25rem;
 }
 
 .requirements-list-content .requirement-title-row {
