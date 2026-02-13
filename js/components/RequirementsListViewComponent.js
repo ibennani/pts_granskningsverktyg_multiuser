@@ -27,7 +27,7 @@ export const RequirementsListViewComponent = {
             : this.StoreActionTypes.SET_UI_FILTER_SETTINGS;
 
         // Mode-specific constants
-        this.RETURN_FOCUS_SESSION_KEY = this.mode === 'sample' ? 'gv_return_focus_requirement_list_v1' : null;
+        this.RETURN_FOCUS_SESSION_KEY = this.mode === 'sample' ? 'gv_return_focus_requirement_list_v1' : 'gv_return_focus_all_requirements_v1';
 
         // Filter component (samma som högerspalten)
         this.filter_component_instance = RequirementsFilterComponent;
@@ -717,6 +717,8 @@ export const RequirementsListViewComponent = {
                 req_ul.appendChild(this.create_all_requirement_list_item(req_id, req, samples));
             });
             this.content_div_for_delegation.appendChild(req_ul);
+
+            this._apply_return_focus_if_needed();
         } else {
             // Sample mode
             if (this.content_div_for_delegation) {
@@ -862,7 +864,6 @@ export const RequirementsListViewComponent = {
     },
 
     _apply_return_focus_if_needed() {
-        if (this.mode !== 'sample') return;
         if (!this.content_div_for_delegation) return;
         if (!window.sessionStorage || !this.RETURN_FOCUS_SESSION_KEY) return;
 
@@ -882,18 +883,25 @@ export const RequirementsListViewComponent = {
             return;
         }
 
-        const current_sample_id = this.params?.sampleId || null;
         const requirement_id = focus_instruction?.requirementId || null;
         const sample_id = focus_instruction?.sampleId || null;
 
         try { window.sessionStorage.removeItem(this.RETURN_FOCUS_SESSION_KEY); } catch (e) {}
 
-        if (!current_sample_id || !requirement_id || !sample_id) return;
-        if (String(sample_id) !== String(current_sample_id)) return;
+        if (!requirement_id || !sample_id) return;
 
-        const target_link = this.content_div_for_delegation.querySelector(
-            `a.list-title-link[data-requirement-id="${CSS.escape(String(requirement_id))}"]`
-        );
+        let target_link = null;
+        if (this.mode === 'all') {
+            target_link = this.content_div_for_delegation.querySelector(
+                `a.list-title-link[data-requirement-id="${CSS.escape(String(requirement_id))}"][data-sample-id="${CSS.escape(String(sample_id))}"]`
+            );
+        } else {
+            const current_sample_id = this.params?.sampleId || null;
+            if (String(sample_id) !== String(current_sample_id)) return;
+            target_link = this.content_div_for_delegation.querySelector(
+                `a.list-title-link[data-requirement-id="${CSS.escape(String(requirement_id))}"]`
+            );
+        }
         if (!target_link) return;
 
         window.customFocusApplied = true;

@@ -411,13 +411,13 @@ export const RequirementAuditComponent = {
         switch (action) {
             case 'back_to_list':
                 try {
-                    window.sessionStorage?.setItem('gv_return_focus_requirement_list_v1', JSON.stringify({
+                    window.sessionStorage?.setItem('gv_return_focus_all_requirements_v1', JSON.stringify({
                         sampleId: this.params.sampleId,
                         requirementId: this.params.requirementId,
                         createdAt: Date.now()
                     }));
                 } catch (e) {}
-                this.router('requirement_list', { sampleId: this.params.sampleId });
+                this.router('all_requirements');
                 break;
             case 'previous':
                 navigate_to_item(prev_item);
@@ -443,13 +443,13 @@ export const RequirementAuditComponent = {
                 delete result.needsReview;
                 this.dispatch_result_update(result);
                 try {
-                    window.sessionStorage?.setItem('gv_return_focus_requirement_list_v1', JSON.stringify({
+                    window.sessionStorage?.setItem('gv_return_focus_all_requirements_v1', JSON.stringify({
                         sampleId: this.params.sampleId,
                         requirementId: this.params.requirementId,
                         createdAt: Date.now()
                     }));
                 } catch (e) {}
-                this.router('requirement_list', { sampleId: this.params.sampleId });
+                this.router('all_requirements');
                 break;
         }
     },
