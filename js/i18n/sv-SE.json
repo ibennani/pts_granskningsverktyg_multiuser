@@ -599,6 +599,7 @@
   "rulefile_section_report_template_title": "Rapportmall",
   "rulefile_section_info_blocks_order_title": "Informationsblock",
   "rulefile_section_sample_types_title": "Stickprov",
+  "rulefile_section_coming_soon": "Denna funktion kommer senare",
   "rulefile_sections_edit_button_aria": "Redigera {sectionName}",
   "rulefile_sections_edit_general_aria": "Redigera allmän information",
   "rulefile_sections_edit_general_title": "Redigera allmän information",

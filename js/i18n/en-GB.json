@@ -599,6 +599,7 @@
   "rulefile_section_report_template_title": "Report Template",
   "rulefile_section_info_blocks_order_title": "Information blocks",
   "rulefile_section_sample_types_title": "Sample types",
+  "rulefile_section_coming_soon": "This feature is coming later",
   "rulefile_sections_edit_button_aria": "Edit {sectionName}",
   "rulefile_sections_edit_general_aria": "Edit general information",
   "rulefile_sections_edit_general_title": "Edit General Information",

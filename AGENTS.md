@@ -100,5 +100,6 @@ Projektet är organiserat enligt följande struktur:
 ## Ytterligare resurser
 
 - Se `README.md` för allmän projektinformation
+- Se `docs/rulefile_editing_flow.md` för redigeringsflöde av regelfilsektioner
 - Se `package.json` för beroenden och scripts
 - Se `docs/` för detaljerad dokumentation
