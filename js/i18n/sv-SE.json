@@ -9,6 +9,7 @@
   "all_requirements_empty": "Inga krav hittades i regelfilen.",
   "all_requirements_empty_no_samples": "Inga krav ingår i något stickprov ännu.",
   "all_requirements_occurs_in_samples": "Kravet förekommer i {count} stickprov",
+  "all_requirements_occurs_in_samples_filtered": "Kravet förekommer i {count} stickprov som matchar din filtrering",
   "all_requirements_title_with_count": "Krav ({count} st)",
   "all_requirements_title_audit_with_count": "Krav i den här granskningen: {count} st",
   "all_remaining_approved": "Alla återstående icke-granskade krav har markerats som utan anmärkning",

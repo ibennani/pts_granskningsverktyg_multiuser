@@ -69,6 +69,18 @@
     overflow: visible;
 }
 
+/* Förhindra att filterpanelen orsakar scrollbar i content-plate vid 0 krav */
+#all-requirements-filter-container,
+#all-requirements-filter-container .requirements-list-toolbar,
+#all-requirements-filter-container .status-filter-group {
+    overflow: visible;
+}
+
+/* Säkerställ att content-plate inte får scrollbar när filterpanelen är öppen */
+.requirement-list-plate.content-plate {
+    overflow: visible;
+}
+
 .requirements-list-filter-section h2 {
     font-size: 1rem;
     font-weight: 600;

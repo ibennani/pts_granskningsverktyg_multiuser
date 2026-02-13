@@ -34,7 +34,7 @@ Adhere to the following rules at all times.
 
 ### Commit Messages (autogenererade och manuella)
 
-- **Språk:** Allt ska vara på **svenska** – hela meddelandet, alla ord.
+- **Språk (obligatoriskt):** Commit-meddelanden ska alltid vara på svenska – vid både manuell skrivning och automatisk generering. Hela meddelandet, alla ord. Aldrig engelska.
 - **Innehåll:** Beskriv **funktionalitet som ändrats** – vad användaren upplever eller kan göra annorlunda. Nämn **aldrig** filnamn, funktionsnamn eller kodstrukturer.
 - **Målgrupp:** Commit-meddelanden ska vara begripliga för personer som inte har teknisk kunskap. Fokusera på **vad användaren kan göra** och **hur funktionerna fungerar**.
 - **Style:** Skriv kortfattat och tydligt. Beskriv **vilken funktion som ändrats** och **hur det påverkar användningen av verktyget**. Undvik tekniska termer som "refaktorera", "dispatch" eller "state-hantering".

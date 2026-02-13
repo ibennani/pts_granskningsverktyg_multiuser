@@ -32,8 +32,18 @@ export const FilterPanelComponent = {
 
     render(state) {
         if (state) {
-            // Update internal state if provided
             this.state = { ...this.state, ...state };
+            // Vid filter-uppdatering: ersätt helt så att alla STATUS_KEYS sätts explicit (undvik partiell merge)
+            if (state.filters && typeof state.filters === 'object') {
+                if (this._last_dispatched_filters) {
+                    this.state.filters = { ...this._last_dispatched_filters };
+                } else {
+                    this.state.filters = {};
+                    STATUS_KEYS.forEach(key => {
+                        this.state.filters[key] = state.filters[key] === true;
+                    });
+                }
+            }
         }
 
         const { t } = this.deps.Translation;
@@ -47,6 +57,7 @@ export const FilterPanelComponent = {
         // Update Panel Visibility
         if (this._elements.panel) {
             if (this.state.isOpen) {
+                this._position_panel();
                 this._elements.panel.classList.add('FilterPanelComponent__panel--visible');
                 // Add global listeners when open
                 document.addEventListener('click', this._boundHandlers.onDocumentClick, true);
@@ -85,6 +96,7 @@ export const FilterPanelComponent = {
 
         this._elements = {};
         this._boundHandlers = {};
+        this._last_dispatched_filters = null;
         this.root = null;
         this.deps = null;
     },
@@ -211,19 +223,62 @@ export const FilterPanelComponent = {
 
     _updateCheckboxes() {
         const filters = this.state.filters || {};
-        const checkboxes = this._elements.checkboxes;
+        const panel = this._elements.panel;
+        if (!panel) return;
 
-        // "Visa alla" är ikryssad om alla individuella statusar är ikryssade
-        const allChecked = STATUS_KEYS.every(key => filters[key]);
-        if (checkboxes['all']) {
-            checkboxes['all'].checked = allChecked;
+        panel.removeEventListener('change', this._boundHandlers.onFilterChange);
+
+        // Visa alla: ikryssad om alla andra är ikryssade, annars okryssad
+        const allChecked = STATUS_KEYS.every(key => filters[key] === true);
+        const allInput = panel.querySelector('[data-status="all"]');
+        if (allInput) {
+            allInput.checked = allChecked;
         }
 
+        // Övriga kryssrutor: följer filters
         STATUS_KEYS.forEach(key => {
-            if (checkboxes[key]) {
-                checkboxes[key].checked = !!filters[key];
+            const input = panel.querySelector(`[data-status="${key}"]`);
+            if (input) {
+                input.checked = filters[key] === true;
             }
         });
+
+        panel.addEventListener('change', this._boundHandlers.onFilterChange);
+    },
+
+    _position_panel() {
+        const button = this._elements.button;
+        const panel = this._elements.panel;
+        if (!button || !panel) return;
+
+        const rect = button.getBoundingClientRect();
+        const panelWidth = Math.max(rect.width, 220);
+        let top = rect.bottom + 4;
+        let left = rect.left;
+
+        // Håll panelen inom viewport horisontellt
+        if (left + panelWidth > window.innerWidth) {
+            left = window.innerWidth - panelWidth - 8;
+        }
+        if (left < 8) {
+            left = 8;
+        }
+
+        // Om det inte finns plats under, visa ovanför knappen
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const panelMaxHeight = Math.min(window.innerHeight * 0.8, 400);
+        if (spaceBelow < panelMaxHeight && rect.top > spaceBelow) {
+            top = rect.top - 4;
+            panel.style.transform = 'translateY(-100%)';
+        } else {
+            panel.style.transform = '';
+        }
+
+        panel.style.position = 'fixed';
+        panel.style.top = `${top}px`;
+        panel.style.left = `${left}px`;
+        panel.style.width = `${panelWidth}px`;
+        panel.style.minWidth = '220px';
     },
 
     _handleToggle(e) {
@@ -287,26 +342,49 @@ export const FilterPanelComponent = {
         if (target.type !== 'checkbox') return;
 
         const status = target.dataset.status;
-        const isChecked = target.checked;
+        const isChecked = Boolean(target.checked);
         let newFilters;
 
         if (status === 'all') {
-            // Visa alla: sätt alla statusar till samma värde (samma som högerspalten)
+            // Visa alla ikryssad → alla andra ikryssade. Visa alla okryssad → alla andra okryssade.
             newFilters = {};
             STATUS_KEYS.forEach(key => {
                 newFilters[key] = isChecked;
             });
         } else {
-            newFilters = { ...this.state.filters };
-            newFilters[status] = isChecked;
+            // Enskild kryssruta: uppdatera den klickade, läs övriga från DOM (sann källa)
+            const panel = this._elements.panel;
+            newFilters = {};
+            STATUS_KEYS.forEach(key => {
+                if (key === status) {
+                    newFilters[key] = isChecked;
+                } else {
+                    const input = panel?.querySelector(`[data-status="${key}"]`);
+                    newFilters[key] = input ? input.checked : (this.state.filters[key] === true);
+                }
+            });
         }
 
         this.state.filters = newFilters;
-        this.render(); // Uppdatera UI (inkl. "Visa alla"-kryssrutan)
+        this._last_dispatched_filters = { ...newFilters };
+        this.render();
 
         if (this.deps.onFilterChange) {
             this.deps.onFilterChange(newFilters);
         }
+
+        // Parent re-render körs i setTimeout(0). Tvinga vår state efteråt så att alla kryssrutor
+        // inte återställs av eventuell gammal data från store. Dubbel setTimeout så vi kör efter parent.
+        const filtersToApply = { ...newFilters };
+        setTimeout(() => {
+            setTimeout(() => {
+                if (this._last_dispatched_filters && this._elements?.panel) {
+                    this.state.filters = { ...filtersToApply };
+                    this._updateCheckboxes();
+                }
+                this._last_dispatched_filters = null;
+            }, 0);
+        }, 0);
     }
 };
 

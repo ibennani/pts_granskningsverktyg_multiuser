@@ -1,4 +1,5 @@
 import { RequirementsFilterComponent } from './RequirementsFilterComponent.js';
+import { RequirementListToolbarComponent } from './RequirementListToolbarComponent.js';
 import { get_searchable_text_for_requirement as get_searchable_text_util } from '../utils/requirement_search_utils.js';
 import { ProgressBarComponent } from './ProgressBarComponent.js';
 
@@ -29,11 +30,13 @@ export const RequirementsListViewComponent = {
         // Mode-specific constants
         this.RETURN_FOCUS_SESSION_KEY = this.mode === 'sample' ? 'gv_return_focus_requirement_list_v1' : 'gv_return_focus_all_requirements_v1';
 
-        // Filter component (samma som högerspalten)
-        this.filter_component_instance = RequirementsFilterComponent;
+        // Filter component: RequirementListToolbarComponent för all-läget (fungerar), RequirementsFilterComponent för sample
+        this.filter_component_instance = this.mode === 'all' ? RequirementListToolbarComponent : RequirementsFilterComponent;
         this.filter_container_element = null;
         this.filter_heading_ref = null;
         this.handle_filter_change = this.handle_filter_change.bind(this);
+        this.handle_toolbar_change = this.handle_toolbar_change.bind(this);
+        this._toolbar_inited = false;
 
         // DOM references
         this.is_dom_initialized = false;
@@ -75,6 +78,18 @@ export const RequirementsListViewComponent = {
         this.dispatch({
             type: this.action_type,
             payload: merged,
+        });
+    },
+
+    handle_toolbar_change(new_state) {
+        if (typeof this.dispatch !== 'function' || !this.StoreActionTypes) return;
+        this.dispatch({
+            type: this.StoreActionTypes.SET_ALL_REQUIREMENTS_FILTER_SETTINGS,
+            payload: {
+                searchText: new_state.searchText,
+                sortBy: new_state.sortBy,
+                status: new_state.status
+            }
         });
     },
 
@@ -222,6 +237,22 @@ export const RequirementsListViewComponent = {
             if (status === 'passed' && display_status === 'not_audited') display_status = 'passed';
         }
         return display_status;
+    },
+
+    /**
+     * Kontrollerar om ett stickprov matchar statusfiltret för ett givet krav.
+     * Används för att filtrera både krav (minst ett matchande stickprov) och stickprov (endast matchande visas).
+     */
+    _sample_matches_status_filter(sample, req_id, req, status_filters, has_status_filters, requirement_needs_help_fn) {
+        const req_key = req?.key || req?.id || req_id;
+        const req_result = (sample.requirementResults || {})[req_key];
+        const display_status = req_result?.needsReview ? 'updated' : this.AuditLogic.calculate_requirement_status(req, req_result);
+        const needs_help = requirement_needs_help_fn(req_result);
+        const status_match = !has_status_filters || status_filters[display_status] === true;
+        const needs_help_checked = status_filters.needs_help === true;
+        const show_by_status = status_match || (needs_help_checked && needs_help);
+        const hide_by_needs_help = status_filters.needs_help === false && needs_help;
+        return show_by_status && !hide_by_needs_help;
     },
 
     ensure_dom_initialized() {
@@ -461,7 +492,7 @@ export const RequirementsListViewComponent = {
             current_ui_settings = { ...current_ui_settings, sortBy: auto_sort_by };
         }
 
-        // Initialize filter (samma som högerspalten)
+        // Initialize filter
         const get_current_filters = () => {
             const s = this.getState();
             let ui = s.uiSettings?.[this.state_filter_key] || {};
@@ -472,20 +503,60 @@ export const RequirementsListViewComponent = {
         };
 
         if (this.filter_component_instance?.init && this.filter_component_instance?.render) {
-            if (!this.filter_component_instance._filter_container_ref) {
-                await this.filter_component_instance.init({
-                    root: this.filter_container_element,
-                    deps: {
-                        Translation: this.Translation,
-                        Helpers: this.Helpers,
-                        idPrefix: this.mode === 'all' ? 'all-requirements-filter' : 'requirement-list-filter',
-                        getCurrentFilters: get_current_filters,
-                        getSortOptions: () => this.get_sort_options(),
-                        onFilterChange: this.handle_filter_change,
-                    },
+            if (this.mode === 'all') {
+                // RequirementListToolbarComponent – samma som regelfilens kravlista
+                if (!this._toolbar_inited) {
+                    const default_status = { needs_help: true, passed: true, failed: true, partially_audited: true, not_audited: true, updated: true };
+                    const initial_state = {
+                        searchText: current_ui_settings.searchText || '',
+                        sortBy: current_ui_settings.sortBy || 'ref_asc',
+                        status: { ...default_status, ...(current_ui_settings.status || {}) }
+                    };
+                    await this.filter_component_instance.init({
+                        root: this.filter_container_element,
+                        deps: {
+                            on_change: this.handle_toolbar_change,
+                            initial_state,
+                            Translation: this.Translation,
+                            Helpers: this.Helpers,
+                            config: {
+                                showStatusFilter: true,
+                                sortOptions: this.get_sort_options()
+                            }
+                        }
+                    });
+                    this._toolbar_inited = true;
+                }
+                const default_status = { needs_help: true, passed: true, failed: true, partially_audited: true, not_audited: true, updated: true };
+                const status_from_store = current_ui_settings.status || {};
+                const normalized_status = { ...default_status };
+                ['needs_help', 'passed', 'failed', 'partially_audited', 'not_audited', 'updated'].forEach(key => {
+                    if (status_from_store[key] !== undefined) {
+                        normalized_status[key] = status_from_store[key] === true;
+                    }
                 });
+                this.filter_component_instance.render({
+                    searchText: current_ui_settings.searchText || '',
+                    sortBy: current_ui_settings.sortBy || 'ref_asc',
+                    status: normalized_status
+                });
+            } else {
+                // RequirementsFilterComponent för sample-läget
+                if (!this.filter_component_instance._filter_container_ref) {
+                    await this.filter_component_instance.init({
+                        root: this.filter_container_element,
+                        deps: {
+                            Translation: this.Translation,
+                            Helpers: this.Helpers,
+                            idPrefix: 'requirement-list-filter',
+                            getCurrentFilters: get_current_filters,
+                            getSortOptions: () => this.get_sort_options(),
+                            onFilterChange: this.handle_filter_change,
+                        },
+                    });
+                }
+                this.filter_component_instance.render();
             }
-            this.filter_component_instance.render();
         }
 
         // Update navigation bars (sample mode only)
@@ -508,13 +579,20 @@ export const RequirementsListViewComponent = {
             const search_term = (current_ui_settings.searchText || '').toLowerCase().trim();
 
             filtered_items = entries.filter(([req_id, req]) => {
-                const agg_status = this.get_aggregated_display_status_for_requirement(req_id, req, samples);
-                const any_sample_needs_help = samples.some(s => requirement_needs_help_fn((s.requirementResults || {})[req_id]));
-                const status_match = !has_status_filters || status_filters[agg_status] === true;
-                const needs_help_checked = status_filters.needs_help === true;
-                const show_by_status = status_match || (needs_help_checked && any_sample_needs_help);
-                const hide_by_needs_help = status_filters.needs_help === false && any_sample_needs_help;
-                if (!show_by_status || hide_by_needs_help) return false;
+                const candidates = new Set([String(req_id)]);
+                if (req?.key) candidates.add(String(req.key));
+                if (req?.id) candidates.add(String(req.id));
+
+                const samples_for_req = samples.filter(sample => {
+                    const sample_set = sample?.id ? this.relevant_ids_by_sample.get(sample.id) : null;
+                    if (!sample_set) return false;
+                    return [...candidates].some(id => sample_set.has(id));
+                });
+
+                const at_least_one_sample_matches = samples_for_req.some(sample =>
+                    this._sample_matches_status_filter(sample, req_id, req, status_filters, has_status_filters, requirement_needs_help_fn)
+                );
+                if (!at_least_one_sample_matches) return false;
 
                 if (search_term) {
                     return this.get_searchable_text_for_requirement(req).includes(search_term);
@@ -554,8 +632,19 @@ export const RequirementsListViewComponent = {
         const sort_by = current_ui_settings.sortBy || 'ref_asc';
         const sorted_items = this.sort_items(filtered_items, sort_by, current_sample_object, samples);
 
+        const search_term = (current_ui_settings.searchText || '').toLowerCase().trim();
+        const status_keys_for_filter = ['needs_help', 'passed', 'failed', 'partially_audited', 'not_audited', 'updated'];
+        const has_search_filter = this.mode === 'all' && search_term.length > 0;
+        const has_status_filter_excluding = has_status_filters && status_keys_for_filter.some(key => status_filters[key] !== true);
+        const has_active_filter = has_search_filter || has_status_filter_excluding;
+
         // Render items
-        this.render_items(sorted_items, samples, current_sample_object, total_count, filtered_count);
+        this.render_items(sorted_items, samples, current_sample_object, total_count, filtered_count, {
+            status_filters,
+            has_status_filters,
+            requirement_needs_help_fn,
+            has_active_filter
+        });
     },
 
     render_sample_header(state, current_sample_object, all_relevant_requirements) {
@@ -704,7 +793,7 @@ export const RequirementsListViewComponent = {
         return sorted;
     },
 
-    render_items(sorted_items, samples, current_sample_object, total_count, filtered_count) {
+    render_items(sorted_items, samples, current_sample_object, total_count, filtered_count, filter_opts = {}) {
         const t = this.Translation.t;
 
         if (this.content_div_for_delegation) {
@@ -730,7 +819,7 @@ export const RequirementsListViewComponent = {
 
             const req_ul = this.Helpers.create_element('ul', { class_name: 'requirement-items-ul' });
             sorted_items.forEach(([req_id, req]) => {
-                req_ul.appendChild(this.create_all_requirement_list_item(req_id, req, samples));
+                req_ul.appendChild(this.create_all_requirement_list_item(req_id, req, samples, filter_opts));
             });
             this.content_div_for_delegation.appendChild(req_ul);
 
@@ -760,23 +849,31 @@ export const RequirementsListViewComponent = {
         }
     },
 
-    create_all_requirement_list_item(req_id, req, samples) {
+    create_all_requirement_list_item(req_id, req, samples, filter_opts = {}) {
         const t = this.Translation.t;
         const candidates = new Set([String(req_id)]);
         if (req?.key) candidates.add(String(req.key));
         if (req?.id) candidates.add(String(req.id));
 
-        const matching_samples = samples.filter(sample => {
+        let matching_samples = samples.filter(sample => {
             const sample_set = sample?.id ? this.relevant_ids_by_sample.get(sample.id) : null;
             if (!sample_set) return false;
             return [...candidates].some(id => sample_set.has(id));
         });
 
+        const { status_filters = {}, has_status_filters = false, requirement_needs_help_fn = () => false, has_active_filter = false } = filter_opts;
+        if (has_status_filters && Object.keys(status_filters).length > 0) {
+            matching_samples = matching_samples.filter(sample =>
+                this._sample_matches_status_filter(sample, req_id, req, status_filters, has_status_filters, requirement_needs_help_fn)
+            );
+        }
+
         const req_key = req?.key || req?.id || req_id;
         const requirement_id = req_key;
 
         const ref_text = req?.standardReference?.text || (typeof req?.reference === 'string' && req.reference.trim() !== '' ? req.reference : '');
-        const sub_lines = [ref_text, t('all_requirements_occurs_in_samples', { count: matching_samples.length })].filter(Boolean);
+        const occurs_text_key = has_active_filter ? 'all_requirements_occurs_in_samples_filtered' : 'all_requirements_occurs_in_samples';
+        const sub_lines = [ref_text, t(occurs_text_key, { count: matching_samples.length })].filter(Boolean);
 
         const li = this.Helpers.create_element('li', { class_name: 'requirement-item compact-twoline' });
 
@@ -796,11 +893,11 @@ export const RequirementsListViewComponent = {
 
         const samples_ol = this.Helpers.create_element('ol', { class_name: 'requirement-samples-list' });
 
-        const requirement_needs_help_fn = this.AuditLogic?.requirement_needs_help || (() => false);
+        const needs_help_fn = filter_opts.requirement_needs_help_fn ?? (this.AuditLogic?.requirement_needs_help || (() => false));
         for (const sample of matching_samples) {
             const req_result = (sample.requirementResults || {})[req_key];
             const base_status = req_result?.needsReview ? 'updated' : this.AuditLogic.calculate_requirement_status(req, req_result);
-            const needs_help = requirement_needs_help_fn(req_result);
+            const needs_help = needs_help_fn(req_result);
             const is_updated = req_result?.needsReview === true;
             const status_text = t(base_status === 'updated' ? 'status_updated' : `audit_status_${base_status}`) +
                 (needs_help ? ` (${t('filter_option_needs_help')})` : '') +
@@ -1044,7 +1141,8 @@ export const RequirementsListViewComponent = {
         if (this.filter_component_instance && typeof this.filter_component_instance.destroy === 'function') {
             this.filter_component_instance.destroy();
         }
-        
+        this._toolbar_inited = false;
+
         if (this.content_div_for_delegation) {
             this.content_div_for_delegation.removeEventListener('click', this.handle_requirement_list_click);
             this.content_div_for_delegation.removeEventListener('keydown', this.handle_requirement_list_keydown);

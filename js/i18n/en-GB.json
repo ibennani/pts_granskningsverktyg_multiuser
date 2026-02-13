@@ -9,6 +9,7 @@
   "all_requirements_empty": "No requirements were found in the rule file.",
   "all_requirements_empty_no_samples": "No requirements are included in any sample yet.",
   "all_requirements_occurs_in_samples": "This requirement occurs in {count} samples",
+  "all_requirements_occurs_in_samples_filtered": "This requirement occurs in {count} samples that match your filtering",
   "all_requirements_title_with_count": "Requirements ({count})",
   "all_requirements_title_audit_with_count": "Requirements in this audit: {count}",
   "all_remaining_approved": "All remaining unreviewed requirements have been marked as without remarks",
