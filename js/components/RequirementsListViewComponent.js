@@ -187,6 +187,7 @@ export const RequirementsListViewComponent = {
             case 'passed':
                 return '✓';
             case 'failed':
+            case 'needs_help':
                 return '✗';
             case 'updated':
                 return '↻';
@@ -209,9 +210,11 @@ export const RequirementsListViewComponent = {
         const req_key = req?.key || req?.id || req_id;
         let display_status = 'not_audited';
 
+        const requirement_needs_help_fn = this.AuditLogic?.requirement_needs_help || (() => false);
         for (const sample of matching_samples) {
             const req_result = (sample.requirementResults || {})[req_key];
             if (!req_result) continue;
+            if (requirement_needs_help_fn(req_result)) return 'needs_help';
             const status = req_result.needsReview ? 'updated' : this.AuditLogic.calculate_requirement_status(req, req_result);
             if (status === 'failed') return 'failed';
             if (status === 'updated') display_status = 'updated';
@@ -793,18 +796,49 @@ export const RequirementsListViewComponent = {
 
         const samples_ol = this.Helpers.create_element('ol', { class_name: 'requirement-samples-list' });
 
+        const requirement_needs_help_fn = this.AuditLogic?.requirement_needs_help || (() => false);
         for (const sample of matching_samples) {
             const req_result = (sample.requirementResults || {})[req_key];
-            const display_status = req_result?.needsReview ? 'updated' : this.AuditLogic.calculate_requirement_status(req, req_result);
-            const status_text = t(display_status === 'updated' ? 'status_updated' : `audit_status_${display_status}`);
+            const base_status = req_result?.needsReview ? 'updated' : this.AuditLogic.calculate_requirement_status(req, req_result);
+            const needs_help = requirement_needs_help_fn(req_result);
+            const status_text = t(base_status === 'updated' ? 'status_updated' : `audit_status_${base_status}`) +
+                (needs_help ? ` (${t('filter_option_needs_help')})` : '');
 
             const sample_name = sample?.description || t('undefined_description');
             const sample_li = this.Helpers.create_element('li', { class_name: 'requirement-sample-item' });
+            const status_tooltip_text = t(base_status === 'updated' ? 'status_updated' : `audit_status_${base_status}`);
+            const icons_wrapper = this.Helpers.create_element('span', { class_name: 'status-icons-wrapper' });
+            const status_icon_wrapper = this.Helpers.create_element('span', { class_name: 'status-icon-tooltip-wrapper' });
             const status_icon = this.Helpers.create_element('span', {
-                class_name: `status-icon status-icon-${display_status.replace('_', '-')}`,
-                text_content: this.get_status_icon(display_status),
+                class_name: `status-icon status-icon-${base_status.replace('_', '-')}`,
+                text_content: this.get_status_icon(base_status),
                 attributes: { 'aria-hidden': 'true' }
             });
+            const status_tooltip = this.Helpers.create_element('span', {
+                class_name: 'status-icon-tooltip',
+                text_content: status_tooltip_text,
+                attributes: { 'aria-hidden': 'true' }
+            });
+            status_icon_wrapper.appendChild(status_icon);
+            status_icon_wrapper.appendChild(status_tooltip);
+            icons_wrapper.appendChild(status_icon_wrapper);
+            if (needs_help) {
+                const warning_svg = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('warning', ['currentColor'], 14) : '';
+                const needs_help_wrapper = this.Helpers.create_element('span', { class_name: 'status-icon-tooltip-wrapper' });
+                const needs_help_icon = this.Helpers.create_element('span', {
+                    class_name: 'status-icon status-icon-needs-help-indicator',
+                    html_content: warning_svg,
+                    attributes: { 'aria-hidden': 'true' }
+                });
+                const needs_help_tooltip = this.Helpers.create_element('span', {
+                    class_name: 'status-icon-tooltip',
+                    text_content: t('filter_option_needs_help'),
+                    attributes: { 'aria-hidden': 'true' }
+                });
+                needs_help_wrapper.appendChild(needs_help_icon);
+                needs_help_wrapper.appendChild(needs_help_tooltip);
+                icons_wrapper.appendChild(needs_help_wrapper);
+            }
             const sample_link = this.Helpers.create_element('a', {
                 class_name: 'list-title-link',
                 text_content: sample_name,
@@ -815,7 +849,7 @@ export const RequirementsListViewComponent = {
                     'aria-label': `${sample_name} – ${status_text}`
                 }
             });
-            sample_li.appendChild(status_icon);
+            sample_li.appendChild(icons_wrapper);
             sample_li.appendChild(sample_link);
             samples_ol.appendChild(sample_li);
         }
@@ -827,7 +861,9 @@ export const RequirementsListViewComponent = {
     create_requirement_list_item(req, sample) {
         const t = this.Translation.t;
         const req_result = (sample.requirementResults || {})[req.key];
-        const display_status = req_result?.needsReview ? 'updated' : this.AuditLogic.calculate_requirement_status(req, req_result);
+        const requirement_needs_help_fn = this.AuditLogic?.requirement_needs_help || (() => false);
+        const base_status = req_result?.needsReview ? 'updated' : this.AuditLogic.calculate_requirement_status(req, req_result);
+        const needs_help = requirement_needs_help_fn(req_result);
 
         const li = this.Helpers.create_element('li', { class_name: 'requirement-item compact-twoline' });
         
@@ -845,20 +881,49 @@ export const RequirementsListViewComponent = {
         li.appendChild(title_row_div);
 
         const details_row_div = this.Helpers.create_element('div', { class_name: 'requirement-details-row' });
-        const status_text = t(display_status === 'updated' ? 'status_updated' : `audit_status_${display_status}`);
+        const status_text = t(base_status === 'updated' ? 'status_updated' : `audit_status_${base_status}`) +
+            (needs_help ? ` (${t('filter_option_needs_help')})` : '');
         
         const status_span = this.Helpers.create_element('span', { 
-            class_name: display_status === 'updated' ? 'status-text-updated' : '',
+            class_name: base_status === 'updated' ? 'status-text-updated' : needs_help ? 'status-text-needs-help' : '',
             text_content: status_text
         });
         
+        const status_tooltip_text = t(base_status === 'updated' ? 'status_updated' : `audit_status_${base_status}`);
+        const icons_wrapper = this.Helpers.create_element('span', { class_name: 'status-icons-wrapper' });
+        const status_icon_wrapper = this.Helpers.create_element('span', { class_name: 'status-icon-tooltip-wrapper' });
         const status_icon = this.Helpers.create_element('span', {
-            class_name: `status-icon status-icon-${display_status.replace('_', '-')}`,
-            text_content: this.get_status_icon(display_status),
+            class_name: `status-icon status-icon-${base_status.replace('_', '-')}`,
+            text_content: this.get_status_icon(base_status),
             attributes: { 'aria-hidden': 'true' }
         });
+        const status_tooltip = this.Helpers.create_element('span', {
+            class_name: 'status-icon-tooltip',
+            text_content: status_tooltip_text,
+            attributes: { 'aria-hidden': 'true' }
+        });
+        status_icon_wrapper.appendChild(status_icon);
+        status_icon_wrapper.appendChild(status_tooltip);
+        icons_wrapper.appendChild(status_icon_wrapper);
+        if (needs_help) {
+            const warning_svg = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('warning', ['currentColor'], 14) : '';
+            const needs_help_wrapper = this.Helpers.create_element('span', { class_name: 'status-icon-tooltip-wrapper' });
+            const needs_help_icon = this.Helpers.create_element('span', {
+                class_name: 'status-icon status-icon-needs-help-indicator',
+                html_content: warning_svg,
+                attributes: { 'aria-hidden': 'true' }
+            });
+            const needs_help_tooltip = this.Helpers.create_element('span', {
+                class_name: 'status-icon-tooltip',
+                text_content: t('filter_option_needs_help'),
+                attributes: { 'aria-hidden': 'true' }
+            });
+            needs_help_wrapper.appendChild(needs_help_icon);
+            needs_help_wrapper.appendChild(needs_help_tooltip);
+            icons_wrapper.appendChild(needs_help_wrapper);
+        }
         
-        details_row_div.appendChild(status_icon);
+        details_row_div.appendChild(icons_wrapper);
         details_row_div.appendChild(status_span);
 
         const total_checks = req.checks?.length || 0;

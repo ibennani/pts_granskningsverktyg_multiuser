@@ -200,8 +200,9 @@
     font-size: 0.95rem;
 }
 
-.requirements-list-content .requirement-sample-item .status-icon {
-    margin-right: 0.25rem;
+.requirements-list-content .requirement-sample-item .status-icons-wrapper .status-icon {
+    margin-right: 0;
+    cursor: default;
 }
 
 .requirements-list-content .requirement-title-row {
@@ -369,6 +370,82 @@
 .requirements-list-content .status-icon-updated {
     color: #007BFF;
     /* Blå */
+}
+
+.requirements-list-content .status-icons-wrapper {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15rem;
+    margin-right: 0.3rem;
+    cursor: default;
+}
+
+.requirements-list-content .status-icons-wrapper .status-icon {
+    margin-right: 0;
+    cursor: default;
+}
+
+/* Custom tooltip ovanför ikon – aldrig title-attribut */
+.requirements-list-content .status-icon-tooltip-wrapper {
+    position: relative;
+    display: inline-flex;
+    cursor: default;
+}
+
+.requirements-list-content .status-icon-tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 0.35rem;
+    padding: 0.35rem 0.5rem;
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.2;
+    white-space: nowrap;
+    color: #1a1a1a;
+    background-color: #fff;
+    border: 1px solid #333;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.15s ease, visibility 0.15s ease;
+    z-index: 100;
+    pointer-events: none;
+}
+
+.requirements-list-content .status-icon-tooltip-wrapper:hover .status-icon-tooltip,
+.requirements-list-content .status-icon-tooltip-wrapper:focus-within .status-icon-tooltip {
+    visibility: visible;
+    opacity: 1;
+}
+
+[data-theme="dark"] .requirements-list-content .status-icon-tooltip {
+    color: #f5f5f5;
+    background-color: #2d2d2d;
+    border-color: #666;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.requirements-list-content .status-icon-needs-help-indicator {
+    display: inline-flex;
+    align-items: center;
+    color: #E67E22;
+    /* Orange – samma varningsikon som "Jag har kört fast"-knappen */
+}
+
+.requirements-list-content .status-icon-needs-help-indicator svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    cursor: default;
+    pointer-events: none;
+}
+
+[data-theme="dark"] .requirements-list-content .status-icon-needs-help-indicator {
+    color: #F39C12;
+    /* Ljusare orange i mörkt läge */
 }
 
 /* *** SLUT PÅ NYA REGLER *** */
