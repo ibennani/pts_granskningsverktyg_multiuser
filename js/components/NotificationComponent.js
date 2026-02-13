@@ -67,7 +67,7 @@ export const NotificationComponent = {
             if (type === 'error' || type === 'warning') {
                 const close_button = create_element('button', {
                     class_name: 'global-message-close-btn', html_content: '×',
-                    attributes: { 'aria-label': t('close'), title: t('close') }
+                    attributes: { 'aria-label': t('close') }
                 });
                 const closeHandler = () => this.clear_global_message();
                 close_button.addEventListener('click', closeHandler, { once: true });

@@ -117,27 +117,6 @@ export const RequirementsListViewComponent = {
         }
     },
 
-    create_navigation_bar(is_bottom = false) {
-        if (this.mode !== 'sample') return null;
-        const t = this.Translation.t;
-        if (!this.Helpers.create_element || !t || !this.getState) return null;
-
-        const nav_bar = this.Helpers.create_element('div', { class_name: 'requirements-navigation-bar' });
-        if (is_bottom) nav_bar.classList.add('bottom');
-
-        const current_global_state = this.getState();
-        let target_view = (current_global_state && current_global_state.auditStatus !== 'not_started') ? 'audit_overview' : 'sample_management';
-        let back_button_text_key = (target_view === 'audit_overview') ? 'back_to_audit_overview' : 'back_to_sample_management';
-
-        const back_button = this.Helpers.create_element('button', {
-            class_name: ['button', 'button-default'],
-            html_content: `<span>${t(back_button_text_key)}</span>` + (this.Helpers.get_icon_svg('arrow_back', ['currentColor'], 18) || '')
-        });
-        back_button.addEventListener('click', () => this.router(target_view));
-        nav_bar.appendChild(back_button);
-        return nav_bar;
-    },
-
     get_sort_options() {
         if (this.mode === 'all') {
             return [
@@ -277,12 +256,6 @@ export const RequirementsListViewComponent = {
             this.plate_element_ref.appendChild(this.global_message_element_ref);
         }
 
-        // Navigation bars (sample mode only)
-        if (this.mode === 'sample') {
-            const top_nav_bar = this.create_navigation_bar();
-            if (top_nav_bar) this.plate_element_ref.appendChild(top_nav_bar);
-        }
-
         // Header container
         if (this.mode === 'sample') {
             this.header_element_ref = this.Helpers.create_element('div', { class_name: 'requirement-list-header' });
@@ -330,12 +303,6 @@ export const RequirementsListViewComponent = {
         this.content_div_for_delegation.addEventListener('click', this.handle_requirement_list_click);
         this.content_div_for_delegation.addEventListener('keydown', this.handle_requirement_list_keydown);
         this.plate_element_ref.appendChild(this.content_div_for_delegation);
-
-        // Bottom navigation bar (sample mode only)
-        if (this.mode === 'sample') {
-            const bottom_nav_bar = this.create_navigation_bar(true);
-            if (bottom_nav_bar) this.plate_element_ref.appendChild(bottom_nav_bar);
-        }
 
         this.root.appendChild(this.plate_element_ref);
         this.is_dom_initialized = true;
@@ -559,11 +526,6 @@ export const RequirementsListViewComponent = {
             }
         }
 
-        // Update navigation bars (sample mode only)
-        if (this.mode === 'sample') {
-            this.update_navigation_bars(state);
-        }
-
         // Filter and sort requirements
         let filtered_items = [];
         let total_count = 0;
@@ -700,37 +662,6 @@ export const RequirementsListViewComponent = {
         }
     },
 
-    update_navigation_bars(state) {
-        const t = this.Translation.t;
-        const current_global_state = state;
-        
-        const top_nav_bar = this.plate_element_ref.querySelector('.requirements-navigation-bar:not(.bottom)');
-        if (top_nav_bar) {
-            top_nav_bar.innerHTML = '';
-            let target_view = (current_global_state && current_global_state.auditStatus !== 'not_started') ? 'audit_overview' : 'sample_management';
-            let back_button_text_key = (target_view === 'audit_overview') ? 'back_to_audit_overview' : 'back_to_sample_management';
-            const back_button = this.Helpers.create_element('button', {
-                class_name: ['button', 'button-default'],
-                html_content: `<span>${t(back_button_text_key)}</span>` + (this.Helpers.get_icon_svg('arrow_back', ['currentColor'], 18) || '')
-            });
-            back_button.addEventListener('click', () => this.router(target_view));
-            top_nav_bar.appendChild(back_button);
-        }
-        
-        const bottom_nav_bar = this.plate_element_ref.querySelector('.requirements-navigation-bar.bottom');
-        if (bottom_nav_bar) {
-            bottom_nav_bar.innerHTML = '';
-            let target_view = (current_global_state && current_global_state.auditStatus !== 'not_started') ? 'audit_overview' : 'sample_management';
-            let back_button_text_key = (target_view === 'audit_overview') ? 'back_to_audit_overview' : 'back_to_sample_management';
-            const back_button = this.Helpers.create_element('button', {
-                class_name: ['button', 'button-default'],
-                html_content: `<span>${t(back_button_text_key)}</span>` + (this.Helpers.get_icon_svg('arrow_back', ['currentColor'], 18) || '')
-            });
-            back_button.addEventListener('click', () => this.router(target_view));
-            bottom_nav_bar.appendChild(back_button);
-        }
-    },
-
     sort_items(items, sort_by, current_sample_object, samples = []) {
         const sorted = [...items];
 
@@ -840,12 +771,12 @@ export const RequirementsListViewComponent = {
                     this.content_div_for_delegation.appendChild(this.Helpers.create_element('p', { text_content: t('no_requirements_match_filter') }));
                 }
             } else {
-                const req_ul = this.Helpers.create_element('ul', { class_name: 'requirement-items-ul' });
+                const req_ol = this.Helpers.create_element('ol', { class_name: 'requirement-items-ul' });
                 sorted_items.forEach(req => {
-                    req_ul.appendChild(this.create_requirement_list_item(req, current_sample_object));
+                    req_ol.appendChild(this.create_requirement_list_item(req, current_sample_object));
                 });
                 if (this.content_div_for_delegation) {
-                    this.content_div_for_delegation.appendChild(req_ul);
+                    this.content_div_for_delegation.appendChild(req_ol);
                 }
             }
 
@@ -989,29 +920,25 @@ export const RequirementsListViewComponent = {
 
         const li = this.Helpers.create_element('li', { class_name: 'requirement-item compact-twoline' });
         
-        const title_row_div = this.Helpers.create_element('div', { class_name: 'requirement-title-container' });
+        const status_parts = [t(base_status === 'updated' ? 'status_updated' : `audit_status_${base_status}`)];
+        if (needs_help) status_parts.push(t('filter_option_needs_help'));
+        const status_label = status_parts.join(', ');
+        const aria_label = `${req.title}. Status: ${status_label}`;
+
+        const h3 = this.Helpers.create_element('h3', { class_name: 'requirement-header-nested requirement-title-container' });
         const title_link = this.Helpers.create_element('a', {
             class_name: 'list-title-link',
             text_content: req.title,
-            attributes: { 
+            attributes: {
                 'data-requirement-id': req.key,
-                'href': '#'
+                'href': '#',
+                'aria-label': aria_label
             }
         });
-        
-        title_row_div.appendChild(title_link);
-        li.appendChild(title_row_div);
+        h3.appendChild(title_link);
+        li.appendChild(h3);
 
         const details_row_div = this.Helpers.create_element('div', { class_name: 'requirement-details-row' });
-        const status_text = t(base_status === 'updated' ? 'status_updated' : `audit_status_${base_status}`) +
-            (needs_help ? ` (${t('filter_option_needs_help')})` : '') +
-            (is_updated ? ` (${t('status_updated_tooltip')})` : '');
-        
-        const status_span = this.Helpers.create_element('span', { 
-            class_name: base_status === 'updated' ? 'status-text-updated' : needs_help ? 'status-text-needs-help' : '',
-            text_content: status_text
-        });
-        
         const status_tooltip_text = t(base_status === 'updated' ? 'status_updated' : `audit_status_${base_status}`);
         const icons_wrapper = this.Helpers.create_element('span', { class_name: 'status-icons-wrapper' });
         const status_icon_wrapper = this.Helpers.create_element('span', { class_name: 'status-icon-tooltip-wrapper' });
@@ -1064,7 +991,6 @@ export const RequirementsListViewComponent = {
         }
         
         details_row_div.appendChild(icons_wrapper);
-        details_row_div.appendChild(status_span);
 
         const total_checks = req.checks?.length || 0;
         const audited_checks = req_result?.checkResults ? Object.values(req_result.checkResults).filter(res => res.status === 'passed' || res.status === 'failed').length : 0;
