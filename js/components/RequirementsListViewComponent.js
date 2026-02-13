@@ -1,4 +1,3 @@
-import { RequirementsFilterComponent } from './RequirementsFilterComponent.js';
 import { RequirementListToolbarComponent } from './RequirementListToolbarComponent.js';
 import { get_searchable_text_for_requirement as get_searchable_text_util } from '../utils/requirement_search_utils.js';
 import { ProgressBarComponent } from './ProgressBarComponent.js';
@@ -30,8 +29,8 @@ export const RequirementsListViewComponent = {
         // Mode-specific constants
         this.RETURN_FOCUS_SESSION_KEY = this.mode === 'sample' ? 'gv_return_focus_requirement_list_v1' : 'gv_return_focus_all_requirements_v1';
 
-        // Filter component: RequirementListToolbarComponent för all-läget (fungerar), RequirementsFilterComponent för sample
-        this.filter_component_instance = this.mode === 'all' ? RequirementListToolbarComponent : RequirementsFilterComponent;
+        // Filter component: samma toolbar för båda lägena
+        this.filter_component_instance = RequirementListToolbarComponent;
         this.filter_container_element = null;
         this.filter_heading_ref = null;
         this.handle_filter_change = this.handle_filter_change.bind(this);
@@ -84,7 +83,7 @@ export const RequirementsListViewComponent = {
     handle_toolbar_change(new_state) {
         if (typeof this.dispatch !== 'function' || !this.StoreActionTypes) return;
         this.dispatch({
-            type: this.StoreActionTypes.SET_ALL_REQUIREMENTS_FILTER_SETTINGS,
+            type: this.action_type,
             payload: {
                 searchText: new_state.searchText,
                 sortBy: new_state.sortBy,
@@ -470,60 +469,41 @@ export const RequirementsListViewComponent = {
         };
 
         if (this.filter_component_instance?.init && this.filter_component_instance?.render) {
-            if (this.mode === 'all') {
-                // RequirementListToolbarComponent – samma som regelfilens kravlista
-                if (!this._toolbar_inited) {
-                    const default_status = { needs_help: true, passed: true, failed: true, partially_audited: true, not_audited: true, updated: true };
-                    const initial_state = {
-                        searchText: current_ui_settings.searchText || '',
-                        sortBy: current_ui_settings.sortBy || 'ref_asc',
-                        status: { ...default_status, ...(current_ui_settings.status || {}) }
-                    };
-                    await this.filter_component_instance.init({
-                        root: this.filter_container_element,
-                        deps: {
-                            on_change: this.handle_toolbar_change,
-                            initial_state,
-                            Translation: this.Translation,
-                            Helpers: this.Helpers,
-                            config: {
-                                showStatusFilter: true,
-                                sortOptions: this.get_sort_options()
-                            }
-                        }
-                    });
-                    this._toolbar_inited = true;
-                }
+            if (!this._toolbar_inited) {
                 const default_status = { needs_help: true, passed: true, failed: true, partially_audited: true, not_audited: true, updated: true };
-                const status_from_store = current_ui_settings.status || {};
-                const normalized_status = { ...default_status };
-                ['needs_help', 'passed', 'failed', 'partially_audited', 'not_audited', 'updated'].forEach(key => {
-                    if (status_from_store[key] !== undefined) {
-                        normalized_status[key] = status_from_store[key] === true;
-                    }
-                });
-                this.filter_component_instance.render({
+                const initial_state = {
                     searchText: current_ui_settings.searchText || '',
                     sortBy: current_ui_settings.sortBy || 'ref_asc',
-                    status: normalized_status
+                    status: { ...default_status, ...(current_ui_settings.status || {}) }
+                };
+                await this.filter_component_instance.init({
+                    root: this.filter_container_element,
+                    deps: {
+                        on_change: this.handle_toolbar_change,
+                        initial_state,
+                        Translation: this.Translation,
+                        Helpers: this.Helpers,
+                        config: {
+                            showStatusFilter: true,
+                            sortOptions: this.get_sort_options()
+                        }
+                    }
                 });
-            } else {
-                // RequirementsFilterComponent för sample-läget
-                if (!this.filter_component_instance._filter_container_ref) {
-                    await this.filter_component_instance.init({
-                        root: this.filter_container_element,
-                        deps: {
-                            Translation: this.Translation,
-                            Helpers: this.Helpers,
-                            idPrefix: 'requirement-list-filter',
-                            getCurrentFilters: get_current_filters,
-                            getSortOptions: () => this.get_sort_options(),
-                            onFilterChange: this.handle_filter_change,
-                        },
-                    });
-                }
-                this.filter_component_instance.render();
+                this._toolbar_inited = true;
             }
+            const default_status = { needs_help: true, passed: true, failed: true, partially_audited: true, not_audited: true, updated: true };
+            const status_from_store = current_ui_settings.status || {};
+            const normalized_status = { ...default_status };
+            ['needs_help', 'passed', 'failed', 'partially_audited', 'not_audited', 'updated'].forEach(key => {
+                if (status_from_store[key] !== undefined) {
+                    normalized_status[key] = status_from_store[key] === true;
+                }
+            });
+            this.filter_component_instance.render({
+                searchText: current_ui_settings.searchText || '',
+                sortBy: current_ui_settings.sortBy || 'ref_asc',
+                status: normalized_status
+            });
         }
 
         // Filter and sort requirements

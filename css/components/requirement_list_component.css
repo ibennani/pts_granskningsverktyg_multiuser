@@ -72,7 +72,10 @@
 /* Förhindra att filterpanelen orsakar scrollbar i content-plate vid 0 krav */
 #all-requirements-filter-container,
 #all-requirements-filter-container .requirements-list-toolbar,
-#all-requirements-filter-container .status-filter-group {
+#all-requirements-filter-container .status-filter-group,
+#requirement-list-filter-container,
+#requirement-list-filter-container .requirements-list-toolbar,
+#requirement-list-filter-container .status-filter-group {
     overflow: visible;
 }
 
