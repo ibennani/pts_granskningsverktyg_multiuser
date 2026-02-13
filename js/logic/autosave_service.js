@@ -18,6 +18,10 @@ function capture_focus_state(focus_root) {
     const active_element = document.activeElement;
     if (!active_element || !focus_root.contains(active_element)) return null;
 
+    const tag = active_element.tagName ? active_element.tagName.toLowerCase() : '';
+    const has_value = tag === 'input' || tag === 'textarea';
+    const captured_value = has_value && active_element.value !== undefined ? active_element.value : null;
+
     return {
         element_id: active_element.id || null,
         element_name: active_element.name || null,
@@ -25,7 +29,8 @@ function capture_focus_state(focus_root) {
         selection_start: typeof active_element.selectionStart === 'number' ? active_element.selectionStart : null,
         selection_end: typeof active_element.selectionEnd === 'number' ? active_element.selectionEnd : null,
         scroll_top: typeof active_element.scrollTop === 'number' ? active_element.scrollTop : null,
-        scroll_left: typeof active_element.scrollLeft === 'number' ? active_element.scrollLeft : null
+        scroll_left: typeof active_element.scrollLeft === 'number' ? active_element.scrollLeft : null,
+        captured_value
     };
 }
 
@@ -65,7 +70,13 @@ function restore_focus_state({ focus_root, focus_state, window_scroll }) {
         element_to_focus.focus();
     }
 
-    if (focus_state.selection_start !== null && focus_state.selection_end !== null && element_to_focus.setSelectionRange) {
+    // Återställ markör endast om innehållet inte har ändrats sedan capture.
+    // Om användaren skrivit under RESTORE_DELAY_MS skulle setSelectionRange flytta
+    // cursorn tillbaka och få bokstäver att hamna i fel ordning.
+    const value_unchanged = focus_state.captured_value === null ||
+        (element_to_focus.value !== undefined && element_to_focus.value === focus_state.captured_value);
+
+    if (value_unchanged && focus_state.selection_start !== null && focus_state.selection_end !== null && element_to_focus.setSelectionRange) {
         try {
             element_to_focus.setSelectionRange(focus_state.selection_start, focus_state.selection_end);
         } catch (e) {
