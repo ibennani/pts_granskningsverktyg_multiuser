@@ -444,6 +444,7 @@
   "status_filter_button_text": "Filter",
   "status_updated": "Updated",
   "status_updated_needs_review": "Updated, needs re-review",
+  "status_updated_tooltip": "Updated requirement - needs review",
   "sub_category": "Subcategory",
   "todo_next_requirement": "TODO Navigate to next requirement",
   "todo_next_unhandled_requirement": "TODO Navigate to next unhandled requirement",

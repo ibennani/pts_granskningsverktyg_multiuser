@@ -448,6 +448,26 @@
     /* Ljusare orange i mörkt läge */
 }
 
+.requirements-list-content .status-icon-updated-indicator {
+    display: inline-flex;
+    align-items: center;
+    color: #007BFF;
+    /* Blå – samma som status-icon-updated */
+}
+
+.requirements-list-content .status-icon-updated-indicator svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    cursor: default;
+    pointer-events: none;
+}
+
+[data-theme="dark"] .requirements-list-content .status-icon-updated-indicator {
+    color: #5BA3FF;
+    /* Ljusare blå i mörkt läge */
+}
+
 /* *** SLUT PÅ NYA REGLER *** */
 
 .requirements-list-content .requirement-checks-info {

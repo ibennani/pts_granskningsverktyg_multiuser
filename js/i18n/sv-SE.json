@@ -444,6 +444,7 @@
   "status_filter_button_text": "Filter",
   "status_updated": "Uppdaterat",
   "status_updated_needs_review": "Uppdaterat, behöver omgranskas",
+  "status_updated_tooltip": "Uppdaterat krav - behöver kontroll",
   "sub_category": "Underkategori",
   "todo_next_requirement": "TODO Navigera till nästa krav",
   "todo_next_unhandled_requirement": "TODO Navigera till nästa ohanterade krav",
