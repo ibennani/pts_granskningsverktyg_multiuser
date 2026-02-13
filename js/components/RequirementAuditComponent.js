@@ -285,7 +285,9 @@ export const RequirementAuditComponent = {
             items = this.sidebar_navigation_state?.requirement_items || [];
         }
 
-        if (!items.length) {
+        // När filtrerad lista har 0 eller 1 post: använd fullständig lista för navigering så att
+        // Föregående/Nästa/Nästa ohanterade alltid fungerar och tar användaren rätt.
+        if (items.length <= 1) {
             if (mode === 'requirement_samples') {
                 items = this.get_fallback_sample_items();
             } else {
@@ -329,7 +331,7 @@ export const RequirementAuditComponent = {
             this.current_sample,
             'default'
         );
-        return (ordered_keys || []).map(req_key => {
+        let items = (ordered_keys || []).map(req_key => {
             const requirement = rule_file_content.requirements?.[req_key];
             const req_result = this.current_sample.requirementResults?.[req_key];
             const display_status = req_result?.needsReview ? 'updated' : this.AuditLogic.calculate_requirement_status(requirement, req_result);
@@ -341,6 +343,12 @@ export const RequirementAuditComponent = {
                 ref_text: requirement?.standardReference?.text || ''
             };
         }).filter(item => item.requirement);
+
+        const sort_by = state?.uiSettings?.requirementAuditSidebar?.filtersByMode?.sample_requirements?.sortBy;
+        if (sort_by && this.right_sidebar_component_instance?.sort_requirement_items) {
+            items = this.right_sidebar_component_instance.sort_requirement_items(items, sort_by);
+        }
+        return items;
     },
 
     get_fallback_sample_items() {
@@ -349,20 +357,35 @@ export const RequirementAuditComponent = {
         const samples = state?.samples || [];
         if (!rule_file_content || !this.current_requirement) return [];
         const requirement_key = this.current_requirement?.key || this.params.requirementId;
+        const sample_index_map = new Map();
+        samples.forEach((s, idx) => { if (s?.id) sample_index_map.set(s.id, idx); });
         const matching = samples.filter(sample => {
             const relevant_requirements = this.AuditLogic.get_relevant_requirements_for_sample(rule_file_content, sample);
             return (relevant_requirements || []).some(req => String(req?.key || req?.id) === String(requirement_key));
         });
-        const sorted = matching.sort((a, b) => (a?.description || '').localeCompare(b?.description || '', 'sv', { numeric: true, sensitivity: 'base' }));
-        return sorted.map(sample => {
+        let items = matching.map(sample => {
             const req_result = sample?.requirementResults?.[requirement_key];
             const display_status = req_result?.needsReview ? 'updated' : this.AuditLogic.calculate_requirement_status(this.current_requirement, req_result);
             return {
                 sample,
                 display_status,
-                link_text: sample?.description || this.Translation.t('undefined_description')
+                link_text: sample?.description || this.Translation.t('undefined_description'),
+                original_index: sample_index_map.get(sample?.id) ?? Infinity
             };
         });
+
+        const sort_by = state?.uiSettings?.requirementAuditSidebar?.filtersByMode?.requirement_samples?.sortBy;
+        if (sort_by && this.right_sidebar_component_instance?.sort_sample_items) {
+            items = this.right_sidebar_component_instance.sort_sample_items(
+                items,
+                sort_by,
+                this.current_requirement,
+                rule_file_content
+            );
+        } else {
+            items.sort((a, b) => (a.sample?.description || '').localeCompare(b.sample?.description || '', 'sv', { numeric: true, sensitivity: 'base' }));
+        }
+        return items;
     },
 
     dispatch_result_update(modified_result_object, options = {}) {
