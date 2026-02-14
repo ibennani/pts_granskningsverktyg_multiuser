@@ -26,6 +26,7 @@ export const ActionTypes = {
     CONFIRM_SINGLE_REVIEWED_REQUIREMENT: 'CONFIRM_SINGLE_REVIEWED_REQUIREMENT',
     CONFIRM_ALL_REVIEWED_REQUIREMENTS: 'CONFIRM_ALL_REVIEWED_REQUIREMENTS',
     MARK_ALL_UNREVIEWED_AS_PASSED: 'MARK_ALL_UNREVIEWED_AS_PASSED',
+    MARK_REQUIREMENT_AS_PASSED_IN_ALL_SAMPLES: 'MARK_REQUIREMENT_AS_PASSED_IN_ALL_SAMPLES',
     UPDATE_REQUIREMENT_DEFINITION: 'UPDATE_REQUIREMENT_DEFINITION',
     ADD_REQUIREMENT_DEFINITION: 'ADD_REQUIREMENT_DEFINITION',
     DELETE_REQUIREMENT_DEFINITION: 'DELETE_REQUIREMENT_DEFINITION',
@@ -285,6 +286,34 @@ function root_reducer(current_state, action) {
                 });
 
                 return has_changed ? { ...sample, requirementResults: new_results } : sample;
+            });
+            new_state = { ...current_state, samples: new_samples };
+            new_state = AuditLogic.recalculateAuditTimes(new_state);
+            return AuditLogic.updateIncrementalDeficiencyIds(new_state);
+        }
+
+        case ActionTypes.MARK_REQUIREMENT_AS_PASSED_IN_ALL_SAMPLES: {
+            const requirement_id = action.payload?.requirementId;
+            if (!requirement_id || !current_state.ruleFileContent?.requirements || !current_state.samples?.length) {
+                return current_state;
+            }
+            const timestamp = get_current_iso_datetime_utc_internal();
+            const new_samples = current_state.samples.map(sample => {
+                const relevant_reqs = AuditLogic.get_relevant_requirements_for_sample(current_state.ruleFileContent, sample);
+                const req_def = relevant_reqs.find(r => (r.key || r.id) === requirement_id);
+                if (!req_def) return sample;
+
+                const req_key = req_def.key || req_def.id;
+                const existing = (sample.requirementResults || {})[req_key];
+                const status = AuditLogic.calculate_requirement_status(req_def, existing);
+
+                if (status !== 'not_audited' && status !== 'partially_audited') {
+                    return sample;
+                }
+
+                const new_results = { ...(sample.requirementResults || {}) };
+                new_results[req_key] = AuditLogic.build_not_applicable_requirement_result(req_def, existing, timestamp);
+                return { ...sample, requirementResults: new_results };
             });
             new_state = { ...current_state, samples: new_samples };
             new_state = AuditLogic.recalculateAuditTimes(new_state);

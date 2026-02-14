@@ -40,3 +40,17 @@
     list-style: none;
 }
 
+/* Knapp "Ingen anmärkning i alla stickprov" – uppe till höger i kravrutan */
+.requirements-list-content .requirement-item-with-actions {
+    position: relative;
+}
+
+.requirements-list-content .requirement-mark-all-passed-btn {
+    position: absolute;
+    top: 0;
+    right: 0;
+    padding: 0.35rem 0.6rem;
+    font-size: 0.85rem;
+    margin: 0.25rem;
+}
+
