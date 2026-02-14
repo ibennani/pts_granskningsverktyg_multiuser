@@ -76,6 +76,14 @@ export const ModalComponent = {
         this.root.appendChild(this.dialog_element_ref);
         this.root.setAttribute('aria-hidden', 'false');
 
+        this._scroll_y = window.scrollY;
+        document.documentElement.style.overflow = 'hidden';
+        document.body.style.overflow = 'hidden';
+        document.body.style.position = 'fixed';
+        document.body.style.top = `-${this._scroll_y}px`;
+        document.body.style.left = '0';
+        document.body.style.right = '0';
+
         this.dialog_element_ref.showModal();
         heading.focus({ preventScroll: true });
 
@@ -98,6 +106,14 @@ export const ModalComponent = {
         const focus_element = this.pending_focus_element ?? this.focus_before_open;
 
         const do_cleanup = () => {
+            document.documentElement.style.overflow = '';
+            document.body.style.overflow = '';
+            document.body.style.position = '';
+            document.body.style.top = '';
+            document.body.style.left = '';
+            document.body.style.right = '';
+            window.scrollTo(0, this._scroll_y ?? 0);
+            this._scroll_y = null;
             if (this.root && dialog.parentNode === this.root) {
                 this.root.removeChild(dialog);
             }

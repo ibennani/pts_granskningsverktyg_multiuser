@@ -57,11 +57,13 @@ export const ChecklistHandler = {
         this.container_ref = _container;
         this.on_status_change_callback = _callbacks.onStatusChange;
         this.on_observation_change_callback = _callbacks.onObservationChange;
+        this.on_observation_change_immediate_callback = _callbacks.onObservationChangeImmediate || null;
         this.is_dom_built = false;
 
         const deps = options.deps || {};
         this.Translation = deps.Translation || window.Translation;
         this.Helpers = deps.Helpers || window.Helpers;
+        this.get_observations_from_other_samples = options.getObservationsFromOtherSamples || (() => []);
 
         // Bind handlers to this instance
         this.handle_checklist_click = this.handle_checklist_click.bind(this);
@@ -69,6 +71,7 @@ export const ChecklistHandler = {
         this.handle_checklist_keydown = this.handle_checklist_keydown.bind(this);
         this.handle_attach_media_click = this.handle_attach_media_click.bind(this);
         this.handle_stuck_click = this.handle_stuck_click.bind(this);
+        this.handle_copy_observation_click = this.handle_copy_observation_click.bind(this);
 
         this.container_ref.addEventListener('click', this.handle_checklist_click);
         this.container_ref.addEventListener('input', this.handle_textarea_input);
@@ -87,6 +90,12 @@ export const ChecklistHandler = {
         const stuck_btn = event.target.closest('button[data-action="stuck"]');
         if (stuck_btn) {
             this.handle_stuck_click(event, stuck_btn);
+            return;
+        }
+
+        const copy_obs_btn = event.target.closest('button[data-action="copy-observation"]');
+        if (copy_obs_btn) {
+            this.handle_copy_observation_click(event, copy_obs_btn);
             return;
         }
 
@@ -293,6 +302,119 @@ export const ChecklistHandler = {
             }
         );
     },
+
+    handle_copy_observation_click(event, copy_btn) {
+        event.preventDefault();
+        const pc_item = copy_btn.closest('.pass-criterion-item[data-pc-id]');
+        const check_item = copy_btn.closest('.check-item[data-check-id]');
+        if (!pc_item || !check_item) return;
+
+        const pc_id = pc_item.dataset.pcId;
+        const check_id = check_item.dataset.checkId;
+        const observations = this.get_observations_from_other_samples(check_id, pc_id);
+
+        const ModalComponent = window.ModalComponent;
+        if (!ModalComponent?.show || !this.Helpers?.create_element) return;
+
+        const t = this.Translation.t;
+
+        if (observations.length === 0) {
+            ModalComponent.show(
+                {
+                    h1_text: t('copy_observation_modal_title'),
+                    message_text: t('copy_observation_modal_empty')
+                },
+                (container, modal) => {
+                    const close_btn = this.Helpers.create_element('button', {
+                        class_name: ['button', 'button-default'],
+                        attributes: { type: 'button' },
+                        text_content: t('copy_observation_modal_close')
+                    });
+                    close_btn.addEventListener('click', () => modal.close(copy_btn));
+                    container.appendChild(close_btn);
+                }
+            );
+            return;
+        }
+
+        ModalComponent.show(
+            {
+                h1_text: t('copy_observation_modal_title'),
+                message_text: ''
+            },
+            (container, modal) => {
+                const fieldset = this.Helpers.create_element('fieldset', {
+                    class_name: 'copy-observation-radio-group',
+                    attributes: { 'aria-label': t('copy_observation_modal_title') }
+                });
+                const radio_name = `copy-observation-${check_id}-${pc_id}`;
+                observations.forEach((text, index) => {
+                    const id = `copy-obs-${check_id}-${pc_id}-${index}`;
+                    const label = this.Helpers.create_element('label', {
+                        class_name: 'copy-observation-radio-option',
+                        attributes: { for: id }
+                    });
+                    const radio = this.Helpers.create_element('input', {
+                        attributes: {
+                            type: 'radio',
+                            name: radio_name,
+                            id,
+                            value: String(index),
+                            checked: index === 0
+                        }
+                    });
+                    const text_span = this.Helpers.create_element('span', { class_name: 'copy-observation-radio-text', text_content: text });
+                    label.appendChild(radio);
+                    label.appendChild(text_span);
+                    fieldset.appendChild(label);
+                });
+                container.appendChild(fieldset);
+
+                const actions_wrapper = this.Helpers.create_element('div', { class_name: 'modal-copy-observation-actions' });
+                const paste_btn = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-primary'],
+                    attributes: { type: 'button' },
+                    text_content: t('copy_observation_modal_paste')
+                });
+                paste_btn.addEventListener('click', () => {
+                    const selected = container.querySelector(`input[name="${CSS.escape(radio_name)}"]:checked`);
+                    if (selected) {
+                        const idx = parseInt(selected.value, 10);
+                        const text_to_paste = observations[idx];
+                        const textarea_id = `pc-observation-${check_id}-${pc_id}`;
+                        const textarea = this.container_ref.querySelector(`#${CSS.escape(textarea_id)}`);
+                        if (textarea && typeof text_to_paste === 'string') {
+                            const check_result = this.requirement_result_ref?.checkResults?.[check_id];
+                            if (check_result?.passCriteria?.[pc_id]) {
+                                check_result.passCriteria[pc_id].observationDetail = text_to_paste;
+                                const ts = this.Helpers?.get_current_iso_datetime_utc
+                                    ? this.Helpers.get_current_iso_datetime_utc()
+                                    : new Date().toISOString();
+                                check_result.passCriteria[pc_id].timestamp = ts;
+                            }
+                            textarea.value = text_to_paste;
+                            textarea.dispatchEvent(new Event('input', { bubbles: true }));
+                            if (this.on_observation_change_immediate_callback) {
+                                this.on_observation_change_immediate_callback();
+                            } else if (this.on_observation_change_callback) {
+                                this.on_observation_change_callback();
+                            }
+                        }
+                    }
+                    modal.close(copy_btn);
+                });
+                const close_btn = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-default'],
+                    attributes: { type: 'button' },
+                    text_content: t('copy_observation_modal_close')
+                });
+                close_btn.addEventListener('click', () => modal.close(copy_btn));
+                actions_wrapper.appendChild(paste_btn);
+                actions_wrapper.appendChild(close_btn);
+                container.appendChild(actions_wrapper);
+            }
+        );
+    },
     
     handle_textarea_input(event) {
         const textarea = event.target;
@@ -437,6 +559,20 @@ export const ChecklistHandler = {
                 observation_wrapper.appendChild(observation_textarea);
 
                 const attach_media_row = this.Helpers.create_element('div', { class_name: 'pc-attach-media-row' });
+                const copy_observation_row = this.Helpers.create_element('div', { class_name: 'pc-copy-observation-row', attributes: { hidden: 'hidden' } });
+                const copy_observation_btn = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-default', 'button-small'],
+                    attributes: {
+                        'data-action': 'copy-observation',
+                        'data-check-id': check_definition.id,
+                        'data-pc-id': pc_def.id,
+                        type: 'button',
+                        'aria-label': t('copy_observation_from_other_button')
+                    },
+                    text_content: t('copy_observation_from_other_button')
+                });
+                copy_observation_row.appendChild(copy_observation_btn);
+                attach_media_row.appendChild(copy_observation_row);
                 const criterion_title = `${t('pass_criterion_label')} ${numbering}`;
                 const requirement_plain = this._get_plain_text_from_html(
                     this._safe_parse_markdown_inline(pc_def.requirement)
@@ -468,6 +604,8 @@ export const ChecklistHandler = {
                 });
                 attach_media_row.appendChild(attach_media_btn);
 
+                observation_wrapper.appendChild(attach_media_row);
+
                 const is_first_criterion = check_index === 0 && pc_index === 0;
                 if (is_first_criterion) {
                     const has_stuck_content = (this.requirement_result_ref?.stuckProblemDescription || '').trim() !== '';
@@ -491,7 +629,6 @@ export const ChecklistHandler = {
                     });
                     checks_header_actions.appendChild(stuck_btn);
                 }
-                observation_wrapper.appendChild(attach_media_row);
 
                 pc_item_li.appendChild(observation_wrapper);
                 pc_list.appendChild(pc_item_li);
@@ -679,6 +816,13 @@ export const ChecklistHandler = {
                     if (text_span) {
                         text_span.textContent = attach_btn_label;
                     }
+                }
+
+                const copy_observation_row = pc_item_li.querySelector('.pc-copy-observation-row');
+                if (copy_observation_row) {
+                    const observations = this.get_observations_from_other_samples(check_id, pc_id);
+                    const should_show = observations.length > 0 && current_pc_status === 'failed' && !this.is_audit_locked;
+                    copy_observation_row.hidden = !should_show;
                 }
             });
         });

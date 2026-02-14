@@ -412,6 +412,36 @@ export const RequirementAuditComponent = {
         this.dispatch_result_update(this.current_result, { skipRender });
     },
 
+    get_observations_from_other_samples(check_id, pc_id) {
+        const state = this.getState();
+        const samples = state?.samples || [];
+        const rule_file_content = state?.ruleFileContent;
+        const requirement_id = this.params?.requirementId;
+        const current_sample_id = this.params?.sampleId;
+        if (!requirement_id || !current_sample_id || !rule_file_content || !this.AuditLogic?.get_relevant_requirements_for_sample) {
+            return [];
+        }
+        const requirement_key = this.current_requirement?.key || requirement_id;
+        const seen = new Set();
+        const result = [];
+        for (const sample of samples) {
+            if (String(sample?.id) === String(current_sample_id)) continue;
+            const relevant = this.AuditLogic.get_relevant_requirements_for_sample(rule_file_content, sample);
+            const has_requirement = (relevant || []).some(req => String(req?.key || req?.id) === String(requirement_key));
+            if (!has_requirement) continue;
+            const req_result = sample?.requirementResults?.[requirement_key] || sample?.requirementResults?.[requirement_id];
+            const pc_data = req_result?.checkResults?.[check_id]?.passCriteria?.[pc_id];
+            if (pc_data?.status !== 'failed') continue;
+            const obs = pc_data?.observationDetail;
+            const text = typeof obs === 'string' ? obs.trim() : '';
+            if (text && !seen.has(text)) {
+                seen.add(text);
+                result.push(text);
+            }
+        }
+        return result;
+    },
+
     handle_navigation(action) {
         this.handle_comment_input(true);
         this.checklist_handler_instance?.flush_observations_before_destroy?.();
@@ -503,9 +533,13 @@ export const RequirementAuditComponent = {
             checklist_container,
             {
                 onStatusChange: this.handle_checklist_status_change,
-                onObservationChange: this.debounced_autosave_result
+                onObservationChange: this.debounced_autosave_result,
+                onObservationChangeImmediate: () => this.save_result_immediately({ skipRender: true })
             },
-            { deps: this.deps }
+            {
+                deps: this.deps,
+                getObservationsFromOtherSamples: (check_id, pc_id) => this.get_observations_from_other_samples(check_id, pc_id)
+            }
         );
         
         this.plate_element_ref.append(
