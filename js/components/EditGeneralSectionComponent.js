@@ -140,6 +140,7 @@ export const EditGeneralSectionComponent = {
             this._restore_initial_state();
             this.skip_autosave_on_destroy = true;
             this.autosave_session?.cancel_pending();
+            sessionStorage.setItem('focusAfterLoad', '.rulefile-sections-header h1');
             this.router('rulefile_sections', { section: 'general' });
         });
 
@@ -221,7 +222,7 @@ export const EditGeneralSectionComponent = {
         this.NotificationComponent.show_global_message?.(t('rulefile_metadata_edit_saved'), 'success');
         
         // Navigera tillbaka till rulefile_sections med section=general (utan edit=true)
-        sessionStorage.setItem('focusAfterLoad', '.rulefile-sections-header h2');
+        sessionStorage.setItem('focusAfterLoad', '.rulefile-sections-header h1');
         this.router('rulefile_sections', { section: 'general' });
     },
 
@@ -238,7 +239,7 @@ export const EditGeneralSectionComponent = {
 
         this.dispatch({
             type: this.StoreActionTypes.UPDATE_RULEFILE_CONTENT,
-            payload: { ruleFileContent: restoredRulefileContent }
+            payload: { ruleFileContent: restoredRulefileContent, skip_render: true }
         });
     },
 

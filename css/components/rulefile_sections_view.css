@@ -98,6 +98,10 @@
     flex-shrink: 0;
 }
 
+.rulefile-sections-add-button-wrapper {
+    margin-top: 1rem;
+}
+
 .rulefile-section-content {
     line-height: 1.6;
 }
@@ -352,6 +356,14 @@
 }
 
 /* Styling för sidtyper */
+.page-types-list-heading {
+    margin: 0 0 0.25rem 0;
+}
+
+.page-types-list-intro {
+    margin: 0 0 2rem 0;
+}
+
 .rulefile-section-content .page-type-item {
     margin-bottom: 2rem;
 }

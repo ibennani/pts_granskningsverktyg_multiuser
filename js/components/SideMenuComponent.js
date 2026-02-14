@@ -251,7 +251,6 @@ export const SideMenuComponent = {
                 items: [
                     { label: t('rulefile_section_general_title'), view_name: 'rulefile_sections', params: { section: 'general' } },
                     { label: t('rulefile_requirements_menu_title'), view_name: 'rulefile_requirements' },
-                    { label: t('rulefile_section_sample_types_title'), view_name: 'rulefile_sections', params: { section: 'sample_types' } },
                     { label: t('rulefile_metadata_section_page_types'), view_name: 'rulefile_sections', params: { section: 'page_types' } },
                     { label: t('rulefile_metadata_section_content_types'), view_name: 'rulefile_sections', params: { section: 'content_types' } },
                     { label: t('rulefile_section_info_blocks_order_title'), view_name: 'rulefile_sections', params: { section: 'info_blocks_order' } },

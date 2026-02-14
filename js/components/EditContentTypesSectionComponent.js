@@ -553,9 +553,8 @@ export const EditContentTypesSectionComponent = {
         });
         save_button.addEventListener('click', () => {
             this.autosave_session?.flush({ should_trim: true, skip_render: true });
-            this._perform_save(true, true);
             this.NotificationComponent.show_global_message?.(t('rulefile_metadata_edit_saved'), 'success');
-            sessionStorage.setItem('focusAfterLoad', '.rulefile-sections-header h2');
+            sessionStorage.setItem('focusAfterLoad', '.rulefile-sections-header h1');
             this.router('rulefile_sections', { section: 'content_types' });
         });
 
@@ -568,7 +567,7 @@ export const EditContentTypesSectionComponent = {
             this._restore_initial_state();
             this.skip_autosave_on_destroy = true;
             this.autosave_session?.cancel_pending();
-            sessionStorage.setItem('focusAfterLoad', '.rulefile-sections-header h2');
+            sessionStorage.setItem('focusAfterLoad', '.rulefile-sections-header h1');
             this.router('rulefile_sections', { section: 'content_types' });
         });
 
@@ -590,7 +589,7 @@ export const EditContentTypesSectionComponent = {
         };
         this.dispatch({
             type: this.StoreActionTypes.UPDATE_RULEFILE_CONTENT,
-            payload: { ruleFileContent: restoredRulefileContent }
+            payload: { ruleFileContent: restoredRulefileContent, skip_render: true }
         });
     },
 

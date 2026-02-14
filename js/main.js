@@ -827,9 +827,33 @@ window.DraftManager = DraftManager;
             return;
         }
         
+        const prev_view = current_view_name_rendered;
+        const prev_params_json = current_view_params_rendered_json;
         current_view_name_rendered = view_name_to_render;
         current_view_params_rendered_json = JSON.stringify(params_to_render);
         try { window.__gv_current_view_name = current_view_name_rendered; } catch (e) {}
+
+        const prev_params = prev_params_json ? (() => { try { return JSON.parse(prev_params_json); } catch (_) { return {}; } })() : {};
+        const is_rulefile_sections_edit_toggle = view_name_to_render === 'rulefile_sections' &&
+            prev_view === 'rulefile_sections' &&
+            prev_params.section === (params_to_render?.section || 'general') &&
+            (prev_params.edit === 'true') !== (params_to_render?.edit === 'true') &&
+            current_view_component_instance === RulefileSectionsViewComponent &&
+            typeof current_view_component_instance.render === 'function';
+
+        if (is_rulefile_sections_edit_toggle) {
+            current_view_component_instance.deps.params = params_to_render;
+            const renderPromise = current_view_component_instance.render();
+            if (renderPromise && typeof renderPromise.then === 'function') {
+                await renderPromise;
+            }
+            ensure_skip_link_target(view_root);
+            if (DraftManager?.restoreIntoDom) DraftManager.restoreIntoDom(view_root);
+            update_restore_position(view_name_to_render, params_to_render, null);
+            updateBackupRestorePosition(window.__gv_get_restore_position?.());
+            apply_post_render_focus_instruction({ view_name: view_name_to_render, view_root });
+            return;
+        }
 
         if (current_view_component_instance && typeof current_view_component_instance.destroy === 'function') {
             if (current_view_component_instance === RequirementListComponent && view_name_to_render === 'rulefile_requirements') {

@@ -531,6 +531,83 @@ export function requirement_needs_help(req_result) {
 }
 
 /**
+ * Bygger ett komplett "passed" (Ingen anmärkning) requirement result utifrån kravdefinitionen.
+ * @param {object} requirement_definition - Kravdefinitionen från regelfilen
+ * @param {object} [existing_result] - Befintligt resultat (bevarar commentToAuditor, commentToActor)
+ * @param {string} timestamp - ISO-datumsträng för timestamps
+ * @returns {object} Ett requirement result med alla checks och pass criteria satta till passed
+ */
+export function build_passed_requirement_result(requirement_definition, existing_result, timestamp) {
+    const checks = requirement_definition?.checks || [];
+    const checkResults = {};
+
+    checks.forEach(check_def => {
+        const passCriteria = {};
+        (check_def.passCriteria || []).forEach(pc_def => {
+            passCriteria[pc_def.id] = {
+                status: 'passed',
+                observationDetail: '',
+                timestamp: timestamp,
+                attachedMediaFilenames: []
+            };
+        });
+        checkResults[check_def.id] = {
+            status: 'passed',
+            overallStatus: 'passed',
+            passCriteria
+        };
+    });
+
+    return {
+        status: 'passed',
+        commentToAuditor: (existing_result?.commentToAuditor !== undefined) ? existing_result.commentToAuditor : '',
+        commentToActor: (existing_result?.commentToActor !== undefined) ? existing_result.commentToActor : '',
+        lastStatusUpdate: timestamp,
+        stuckProblemDescription: (existing_result?.stuckProblemDescription !== undefined) ? existing_result.stuckProblemDescription : '',
+        checkResults
+    };
+}
+
+/**
+ * Bygger ett requirement result där alla kontrollpunkter sätts till "Stämmer inte" (not_applicable).
+ * Används för "Markera alla icke-granskade som Ingen anmärkning". Raderar bifogade bilder och "Jag har kört fast".
+ * @param {object} requirement_definition - Kravdefinitionen från regelfilen
+ * @param {object} [existing_result] - Befintligt resultat (bevarar commentToAuditor, commentToActor)
+ * @param {string} timestamp - ISO-datumsträng för timestamps
+ * @returns {object} Ett requirement result med alla checks satta till not_applicable, kravet blir "passed"
+ */
+export function build_not_applicable_requirement_result(requirement_definition, existing_result, timestamp) {
+    const checks = requirement_definition?.checks || [];
+    const checkResults = {};
+
+    checks.forEach(check_def => {
+        const passCriteria = {};
+        (check_def.passCriteria || []).forEach(pc_def => {
+            passCriteria[pc_def.id] = {
+                status: 'passed',
+                observationDetail: '',
+                timestamp: timestamp,
+                attachedMediaFilenames: []
+            };
+        });
+        checkResults[check_def.id] = {
+            status: 'passed',
+            overallStatus: 'not_applicable',
+            passCriteria
+        };
+    });
+
+    return {
+        status: 'passed',
+        commentToAuditor: (existing_result?.commentToAuditor !== undefined) ? existing_result.commentToAuditor : '',
+        commentToActor: (existing_result?.commentToActor !== undefined) ? existing_result.commentToActor : '',
+        lastStatusUpdate: timestamp,
+        stuckProblemDescription: '',
+        checkResults
+    };
+}
+
+/**
  * Collects all attached images with context (requirement, sample, check, pc).
  */
 export function collect_attached_images(state) {

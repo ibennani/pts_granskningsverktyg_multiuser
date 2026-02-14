@@ -9,38 +9,12 @@ export const ModalComponent = {
         this.Helpers = deps.Helpers;
         this.Translation = deps.Translation;
 
-        this.overlay_element_ref = null;
         this.dialog_element_ref = null;
         this.content_container_ref = null;
         this.focus_before_open = null;
-        this.previous_focusable_refs = null;
-
-        const self = this;
-        this._bound_handle_escape_keydown = (event) => {
-            if (!self.overlay_element_ref || !document.contains(self.overlay_element_ref)) return;
-            if (event.key !== 'Escape') return;
-            event.preventDefault();
-            event.stopPropagation();
-            self.close();
-        };
-        this._bound_handle_focus_trap = (event) => {
-            if (!self.overlay_element_ref || !document.contains(self.overlay_element_ref)) return;
-            if (event.key !== 'Tab') return;
-            const focusables = self.overlay_element_ref.querySelectorAll(
-                'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-            );
-            const focusable_list = Array.from(focusables).filter(el => !el.hasAttribute('aria-disabled'));
-            if (focusable_list.length === 0) return;
-            event.preventDefault();
-            const first = focusable_list[0];
-            const last = focusable_list[focusable_list.length - 1];
-            const idx = focusable_list.indexOf(document.activeElement);
-            if (event.shiftKey) {
-                (idx <= 0 ? last : focusable_list[idx - 1]).focus();
-            } else {
-                (idx < 0 || idx >= focusable_list.length - 1 ? first : focusable_list[idx + 1]).focus();
-            }
-        };
+        this.pending_focus_element = null;
+        this._bound_handle_close = null;
+        this._bound_handle_cancel = null;
 
         if (this.Helpers?.load_css_safely && this.CSS_PATH) {
             this.Helpers.load_css_safely(this.CSS_PATH, 'ModalComponent', {
@@ -56,18 +30,13 @@ export const ModalComponent = {
         if (!this.root || !this.Helpers?.create_element) return;
 
         this.focus_before_open = document.activeElement;
+        this.pending_focus_element = null;
 
-        this.overlay_element_ref = this.Helpers.create_element('div', {
-            class_name: 'modal-overlay',
+        this.dialog_element_ref = this.Helpers.create_element('dialog', {
+            class_name: 'modal-dialog',
             attributes: {
-                'role': 'dialog',
-                'aria-modal': 'true',
                 'aria-labelledby': 'modal-dialog-title',
             },
-        });
-
-        this.dialog_element_ref = this.Helpers.create_element('div', {
-            class_name: 'modal-dialog',
         });
 
         this.content_container_ref = this.Helpers.create_element('div', {
@@ -94,61 +63,50 @@ export const ModalComponent = {
         }
 
         this.dialog_element_ref.appendChild(this.content_container_ref);
-        this.overlay_element_ref.appendChild(this.dialog_element_ref);
 
-        const app_wrapper = document.getElementById('app-wrapper');
-        if (app_wrapper) {
-            app_wrapper.setAttribute('inert', '');
-            app_wrapper.setAttribute('aria-hidden', 'true');
-        }
-        document.querySelectorAll('.skip-link').forEach((el) => el.setAttribute('aria-hidden', 'true'));
+        this._bound_handle_close = () => this._finish_close();
+        this._bound_handle_cancel = (e) => {
+            e.preventDefault();
+            this.close();
+        };
 
-        this.root.appendChild(this.overlay_element_ref);
+        this.dialog_element_ref.addEventListener('close', this._bound_handle_close);
+        this.dialog_element_ref.addEventListener('cancel', this._bound_handle_cancel);
+
+        this.root.appendChild(this.dialog_element_ref);
         this.root.setAttribute('aria-hidden', 'false');
 
-        document.addEventListener('keydown', this._bound_handle_escape_keydown, true);
-        document.addEventListener('keydown', this._bound_handle_focus_trap, true);
+        this.dialog_element_ref.showModal();
+        heading.focus({ preventScroll: true });
 
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
-                this.overlay_element_ref.classList.add('modal-overlay--visible');
-                heading.focus({ preventScroll: true });
+                this.dialog_element_ref.classList.add('modal-dialog--visible');
             });
         });
     },
 
-    close(focus_element_override) {
-        if (!this.overlay_element_ref) return;
+    _finish_close() {
+        const dialog = this.dialog_element_ref;
+        if (!dialog) return;
 
-        const overlay = this.overlay_element_ref;
-        this.overlay_element_ref = null;
-        this.dialog_element_ref = null;
+        dialog.removeEventListener('close', this._bound_handle_close);
+        dialog.removeEventListener('cancel', this._bound_handle_cancel);
+        this._bound_handle_close = null;
+        this._bound_handle_cancel = null;
 
-        document.removeEventListener('keydown', this._bound_handle_escape_keydown, true);
-        document.removeEventListener('keydown', this._bound_handle_focus_trap, true);
-        const focus_element = focus_element_override ?? this.focus_before_open;
+        const focus_element = this.pending_focus_element ?? this.focus_before_open;
 
-        overlay.classList.remove('modal-overlay--visible');
-        overlay.classList.add('modal-overlay--closing');
-
-        const finish_close = () => {
-            overlay.removeEventListener('transitionend', on_transition_end);
-            clearTimeout(close_timeout);
-
-            const app_wrapper = document.getElementById('app-wrapper');
-            if (app_wrapper) {
-                app_wrapper.removeAttribute('inert');
-                app_wrapper.setAttribute('aria-hidden', 'false');
-            }
-            document.querySelectorAll('.skip-link').forEach((el) => el.setAttribute('aria-hidden', 'false'));
-
-            if (this.root && overlay.parentNode === this.root) {
-                this.root.removeChild(overlay);
+        const do_cleanup = () => {
+            if (this.root && dialog.parentNode === this.root) {
+                this.root.removeChild(dialog);
             }
             this.root?.setAttribute('aria-hidden', 'true');
 
+            this.dialog_element_ref = null;
             this.content_container_ref = null;
             this.focus_before_open = null;
+            this.pending_focus_element = null;
 
             if (focus_element && document.contains(focus_element)) {
                 try {
@@ -159,27 +117,47 @@ export const ModalComponent = {
             }
         };
 
-        const on_transition_end = (e) => {
-            if (e.target === overlay && e.propertyName === 'opacity') {
-                finish_close();
-            }
-        };
+        do_cleanup();
+    },
 
-        overlay.addEventListener('transitionend', on_transition_end);
+    _do_animated_close() {
+        const dialog = this.dialog_element_ref;
+        if (!dialog) return;
+
         const prefers_reduced_motion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        const close_timeout = setTimeout(finish_close, prefers_reduced_motion ? 50 : 200);
+        const transition_duration = prefers_reduced_motion ? 0 : 200;
+
+        if (transition_duration > 0) {
+            dialog.classList.remove('modal-dialog--visible');
+            dialog.classList.add('modal-dialog--closing');
+
+            const on_transition_end = (e) => {
+                if (e.target === dialog && e.propertyName === 'opacity') {
+                    dialog.removeEventListener('transitionend', on_transition_end);
+                    clearTimeout(close_timeout);
+                    dialog.close();
+                }
+            };
+            dialog.addEventListener('transitionend', on_transition_end);
+            const close_timeout = setTimeout(() => {
+                dialog.removeEventListener('transitionend', on_transition_end);
+                dialog.close();
+            }, transition_duration + 50);
+        } else {
+            dialog.close();
+        }
+    },
+
+    close(focus_element_override) {
+        if (!this.dialog_element_ref) return;
+
+        this.pending_focus_element = focus_element_override ?? this.focus_before_open;
+        this._do_animated_close();
     },
 
     destroy() {
-        if (this.overlay_element_ref && this.root?.contains(this.overlay_element_ref)) {
+        if (this.dialog_element_ref && this.root?.contains(this.dialog_element_ref)) {
             this.close();
-        } else {
-            const app_wrapper = document.getElementById('app-wrapper');
-            if (app_wrapper) {
-                app_wrapper.removeAttribute('inert');
-                app_wrapper.setAttribute('aria-hidden', 'false');
-            }
-            document.querySelectorAll('.skip-link').forEach((el) => el.setAttribute('aria-hidden', 'false'));
         }
         this.root = null;
         this.deps = null;

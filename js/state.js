@@ -25,6 +25,7 @@ export const ActionTypes = {
     CLEAR_STAGED_SAMPLE_CHANGES: 'CLEAR_STAGED_SAMPLE_CHANGES',
     CONFIRM_SINGLE_REVIEWED_REQUIREMENT: 'CONFIRM_SINGLE_REVIEWED_REQUIREMENT',
     CONFIRM_ALL_REVIEWED_REQUIREMENTS: 'CONFIRM_ALL_REVIEWED_REQUIREMENTS',
+    MARK_ALL_UNREVIEWED_AS_PASSED: 'MARK_ALL_UNREVIEWED_AS_PASSED',
     UPDATE_REQUIREMENT_DEFINITION: 'UPDATE_REQUIREMENT_DEFINITION',
     ADD_REQUIREMENT_DEFINITION: 'ADD_REQUIREMENT_DEFINITION',
     DELETE_REQUIREMENT_DEFINITION: 'DELETE_REQUIREMENT_DEFINITION',
@@ -261,6 +262,34 @@ function root_reducer(current_state, action) {
                     return hasChanged ? { ...sample, requirementResults: newResults } : sample;
                 })
             };
+
+        case ActionTypes.MARK_ALL_UNREVIEWED_AS_PASSED: {
+            if (!current_state.ruleFileContent?.requirements || !current_state.samples?.length) {
+                return current_state;
+            }
+            const timestamp = get_current_iso_datetime_utc_internal();
+            const new_samples = current_state.samples.map(sample => {
+                const relevant_reqs = AuditLogic.get_relevant_requirements_for_sample(current_state.ruleFileContent, sample);
+                const new_results = { ...(sample.requirementResults || {}) };
+                let has_changed = false;
+
+                relevant_reqs.forEach(req_def => {
+                    const req_key = req_def.key || req_def.id;
+                    const existing = new_results[req_key];
+                    const status = AuditLogic.calculate_requirement_status(req_def, existing);
+
+                    if (status === 'not_audited' || status === 'partially_audited') {
+                        new_results[req_key] = AuditLogic.build_not_applicable_requirement_result(req_def, existing, timestamp);
+                        has_changed = true;
+                    }
+                });
+
+                return has_changed ? { ...sample, requirementResults: new_results } : sample;
+            });
+            new_state = { ...current_state, samples: new_samples };
+            new_state = AuditLogic.recalculateAuditTimes(new_state);
+            return AuditLogic.updateIncrementalDeficiencyIds(new_state);
+        }
 
         case ActionTypes.STAGE_SAMPLE_CHANGES:
             return {

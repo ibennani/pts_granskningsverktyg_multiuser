@@ -61,7 +61,7 @@ export const EditInfoBlocksSectionComponent = {
         return count;
     },
 
-    _save_info_blocks_order(new_order, block_names = {}) {
+    _save_info_blocks_order(new_order, block_names = {}, skip_render = false) {
         const state = this.getState();
         const currentRulefile = state?.ruleFileContent || {};
         const metadata = currentRulefile.metadata || {};
@@ -96,7 +96,7 @@ export const EditInfoBlocksSectionComponent = {
 
         this.dispatch({
             type: this.StoreActionTypes.UPDATE_RULEFILE_CONTENT,
-            payload: { ruleFileContent: updatedRulefileContent }
+            payload: { ruleFileContent: updatedRulefileContent, skip_render }
         });
     },
 
@@ -312,7 +312,20 @@ export const EditInfoBlocksSectionComponent = {
         }
 
         list.appendChild(list_item);
-        requestAnimationFrame(() => text_input.focus());
+
+        const fade_duration_ms = 250;
+        list_item.style.opacity = '0';
+        list_item.style.transition = `opacity ${fade_duration_ms}ms ease-out`;
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                list_item.style.opacity = '1';
+            });
+        });
+        setTimeout(() => {
+            list_item.style.transition = '';
+            list_item.style.opacity = '';
+            text_input.focus();
+        }, fade_duration_ms);
     },
 
     render() {
@@ -527,7 +540,7 @@ export const EditInfoBlocksSectionComponent = {
         });
         save_button.addEventListener('click', () => {
             const inputs = list.querySelectorAll('.info-blocks-order-name-input');
-            const order_from_dom = Array.from(inputs).map(inp => inp.getAttribute('data-block-id'));
+            const order_from_dom = Array.from(inputs).map(inp => inp.getAttribute('data-block-id')).filter(Boolean);
             const block_names = Array.from(inputs).reduce((acc, inp) => {
                 const id = inp.getAttribute('data-block-id');
                 if (id) acc[id] = (inp.value || '').trim();
@@ -560,12 +573,13 @@ export const EditInfoBlocksSectionComponent = {
                 }
                 return;
             }
-            this._save_info_blocks_order(order_from_dom, block_names);
+            this._save_info_blocks_order(order_from_dom, block_names, true);
             this.edit_baseline = null;
             this.NotificationComponent.show_global_message?.(
                 t('rulefile_info_blocks_order_saved') || 'Informationsblock sparad',
                 'success'
             );
+            sessionStorage.setItem('focusAfterLoad', '.rulefile-sections-header h1');
             this.router('rulefile_sections', { section: 'info_blocks_order' });
         });
 
@@ -578,10 +592,11 @@ export const EditInfoBlocksSectionComponent = {
             if (this.edit_baseline) {
                 this.dispatch({
                     type: this.StoreActionTypes.SET_RULE_FILE_CONTENT,
-                    payload: { ruleFileContent: this.edit_baseline }
+                    payload: { ruleFileContent: this.edit_baseline, skip_render: true }
                 });
                 this.edit_baseline = null;
             }
+            sessionStorage.setItem('focusAfterLoad', '.rulefile-sections-header h1');
             this.router('rulefile_sections', { section: 'info_blocks_order' });
         });
 

@@ -1,83 +1,70 @@
-/* ModalComponent: overlay och dialog */
+/* ModalComponent: dialog-element med ::backdrop och klass-baserad animation */
 
-.modal-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 10000;
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    padding-top: 25vh;
-    padding-left: 1rem;
-    padding-right: 1rem;
+/* Backdrop – mörk overlay bakom dialogen */
+dialog.modal-dialog::backdrop {
+    background-color: transparent;
+    transition: background-color 0.2s ease;
+}
+
+dialog.modal-dialog.modal-dialog--visible::backdrop {
     background-color: rgba(0, 0, 0, 0.5);
-    opacity: 0;
-    transition: opacity 0.1s ease;
 }
 
-.modal-overlay.modal-overlay--visible {
-    opacity: 1;
+dialog.modal-dialog.modal-dialog--closing::backdrop {
+    background-color: transparent;
+    transition: background-color 0.2s ease;
 }
 
-.modal-overlay.modal-overlay--visible .modal-dialog {
-    opacity: 1;
-}
-
-.modal-overlay.modal-overlay--closing .modal-dialog {
-    opacity: 0;
-    transition: opacity 0.1s ease;
-}
-
-.modal-overlay.modal-overlay--closing {
-    opacity: 0;
-    transition: opacity 0.1s ease 0.1s;
-}
-
-.modal-dialog {
+/* Dialog-rutan */
+dialog.modal-dialog {
     width: max-content;
     max-width: 600px;
-    background-color: var(--plate-background-color, #fff);
+    margin: 25vh auto 0;
+    padding: 1.5rem;
+    border: none;
     border-radius: var(--border-radius, 12px);
     box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
-    padding: 1.5rem;
+    background-color: var(--plate-background-color, #fff);
     outline: none;
     opacity: 0;
-    transition: opacity 0.1s ease 0.1s;
+    transition: opacity 0.2s ease;
+}
+
+dialog.modal-dialog.modal-dialog--visible {
+    opacity: 1;
+}
+
+dialog.modal-dialog.modal-dialog--closing {
+    opacity: 0;
+    transition: opacity 0.2s ease;
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .modal-overlay,
-    .modal-overlay.modal-overlay--visible,
-    .modal-overlay.modal-overlay--closing,
-    .modal-overlay.modal-overlay--closing .modal-dialog,
-    .modal-dialog {
+    dialog.modal-dialog,
+    dialog.modal-dialog::backdrop {
         transition: none;
     }
 
-    .modal-overlay.modal-overlay--visible,
-    .modal-overlay.modal-overlay--visible .modal-dialog {
+    dialog.modal-dialog.modal-dialog--visible,
+    dialog.modal-dialog.modal-dialog--visible::backdrop {
         opacity: 1;
+        background-color: rgba(0, 0, 0, 0.5);
     }
 
-    .modal-overlay.modal-overlay--closing,
-    .modal-overlay.modal-overlay--closing .modal-dialog {
+    dialog.modal-dialog.modal-dialog--closing,
+    dialog.modal-dialog.modal-dialog--closing::backdrop {
         opacity: 0;
+        background-color: transparent;
     }
 }
 
 @media (max-width: 799px) {
-    .modal-overlay {
-        padding-top: 5vh;
-        padding-left: 2.5vw;
-        padding-right: 2.5vw;
-    }
-
-    .modal-dialog {
+    dialog.modal-dialog {
+        margin-top: 5vh;
         width: 95vw;
         max-width: none;
         height: auto;
         min-height: 0;
-        align-self: flex-start;
     }
 }
 
@@ -96,6 +83,20 @@
     margin-top: 0;
     margin-bottom: 1rem;
     white-space: pre-line;
+}
+
+.modal-message-block {
+    margin-top: 0;
+    margin-bottom: 1rem;
+}
+
+.modal-message-block p {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+}
+
+.modal-message-block p:last-child {
+    margin-bottom: 0;
 }
 
 .modal-content .button {
@@ -129,6 +130,6 @@
     margin-left: auto;
 }
 
-[data-theme="dark"] .modal-dialog {
+[data-theme="dark"] dialog.modal-dialog {
     background-color: var(--plate-background-color);
 }

@@ -67,8 +67,9 @@ function get_previous_focusable(delete_button) {
  * @param {string} opts.warning_text - Varningstexten i modalen
  * @param {HTMLElement} opts.delete_button - Ta bort-knappen (fokus återgår hit vid "Nej, behåll")
  * @param {Function} opts.on_confirm - Callback vid "Ja, ta bort"
+ * @param {HTMLElement} [opts.focusOnConfirm] - Element att fokusera vid bekräftelse (t.ex. när raderat innehåll tas bort)
  */
-export function show_confirm_delete_modal({ h1_text, warning_text, delete_button, on_confirm }) {
+export function show_confirm_delete_modal({ h1_text, warning_text, delete_button, on_confirm, focusOnConfirm }) {
     const ModalComponent = window.ModalComponent;
     const Helpers = window.Helpers;
     const t = window.Translation?.t || (k => k);
@@ -76,6 +77,7 @@ export function show_confirm_delete_modal({ h1_text, warning_text, delete_button
     if (!ModalComponent?.show || !Helpers?.create_element) return;
 
     const previous_focusable = get_previous_focusable(delete_button);
+    const focus_on_confirm = focusOnConfirm && document.contains(focusOnConfirm) ? focusOnConfirm : previous_focusable;
     const title_text = h1_text || t('confirm_delete_modal_title');
 
     ModalComponent.show(
@@ -94,7 +96,7 @@ export function show_confirm_delete_modal({ h1_text, warning_text, delete_button
             });
             yes_btn.addEventListener('click', () => {
                 if (typeof on_confirm === 'function') on_confirm();
-                modal.close(previous_focusable);
+                modal.close(focusOnConfirm ? focus_on_confirm : previous_focusable);
             });
 
             const no_btn = Helpers.create_element('button', {
