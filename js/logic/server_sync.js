@@ -1,7 +1,7 @@
 // js/logic/server_sync.js
-// Debounced sync av state till server när auditId finns.
+// Debounced sync av state till server. Om auditId saknas importeras granskningen först.
 
-import { update_audit } from '../api/client.js';
+import { update_audit, import_audit } from '../api/client.js';
 
 let debounce_timer = null;
 const DEBOUNCE_MS = 500;
@@ -14,15 +14,41 @@ function state_to_patch(state) {
     };
 }
 
-export function schedule_sync_to_server(state) {
-    if (!state || !state.auditId) return;
-    if (typeof window === 'undefined' || !window.__GV_CURRENT_USER_NAME__) return;
+function state_to_import(state) {
+    return {
+        ruleFileContent: state.ruleFileContent,
+        auditMetadata: state.auditMetadata || {},
+        auditStatus: state.auditStatus || 'not_started',
+        samples: state.samples || []
+    };
+}
+
+export function schedule_sync_to_server(state, dispatch_fn) {
+    if (!state) return;
+    if (!state.ruleFileContent) return;
+    if (typeof window === 'undefined') return;
 
     if (debounce_timer) clearTimeout(debounce_timer);
     debounce_timer = setTimeout(async () => {
         debounce_timer = null;
         try {
-            await update_audit(state.auditId, state_to_patch(state));
+            if (state.auditId) {
+                await update_audit(state.auditId, state_to_patch(state));
+            } else {
+                const full_state = await import_audit(state_to_import(state));
+                if (dispatch_fn && full_state?.auditId) {
+                    setTimeout(() => {
+                        dispatch_fn({
+                            type: 'SET_REMOTE_AUDIT_ID',
+                            payload: {
+                                auditId: full_state.auditId,
+                                ruleSetId: full_state.ruleSetId ?? null,
+                                version: full_state.version ?? null
+                            }
+                        });
+                    }, 0);
+                }
+            }
         } catch (err) {
             if (window.NotificationComponent?.show_global_message && window.Translation?.t) {
                 window.NotificationComponent.show_global_message(

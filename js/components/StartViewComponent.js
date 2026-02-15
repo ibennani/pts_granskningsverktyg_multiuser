@@ -111,10 +111,12 @@ export const StartViewComponent = {
             const thead = this.Helpers.create_element('thead');
             const header_row = this.Helpers.create_element('tr');
             const headers = [
+                t('start_view_col_case_number'),
                 t('start_view_col_actor'),
                 t('start_view_col_status'),
                 t('start_view_col_progress'),
-                t('start_view_col_deficiency')
+                t('start_view_col_deficiency'),
+                t('start_view_col_auditor')
             ];
             headers.forEach((text) => {
                 const th = this.Helpers.create_element('th', { text_content: text });
@@ -128,15 +130,29 @@ export const StartViewComponent = {
                 const empty_row = this.Helpers.create_element('tr');
                 const empty_cell = this.Helpers.create_element('td', {
                     text_content: t('start_view_no_audits'),
-                    attributes: { colspan: '4' }
+                    attributes: { colspan: '6' }
                 });
                 empty_row.appendChild(empty_cell);
                 tbody.appendChild(empty_row);
             } else {
-                this.audits.forEach((audit) => {
+                const sorted_audits = [...this.audits].sort((a, b) => {
+                    const ca = (a.metadata?.caseNumber ?? '').toString().trim();
+                    const cb = (b.metadata?.caseNumber ?? '').toString().trim();
+                    if (!ca && !cb) return 0;
+                    if (!ca) return 1;
+                    if (!cb) return -1;
+                    return ca.localeCompare(cb, undefined, { numeric: true });
+                });
+                sorted_audits.forEach((audit) => {
                     const row = this.Helpers.create_element('tr');
                     const actor_name = audit.metadata?.actorName || '';
                     const display_actor = actor_name || `Granskning ${audit.id}`;
+                    const case_number = audit.metadata?.caseNumber || '';
+                    const auditor = audit.last_updated_by || audit.metadata?.auditorName || '';
+
+                    const case_cell = this.Helpers.create_element('td', {
+                        text_content: case_number || '—'
+                    });
 
                     const actor_cell = this.Helpers.create_element('td');
                     const link = this.Helpers.create_element('a', {
@@ -158,13 +174,21 @@ export const StartViewComponent = {
                     });
 
                     const deficiency_cell = this.Helpers.create_element('td', {
-                        text_content: audit.deficiency_index != null ? String(audit.deficiency_index) : '—'
+                        text_content: audit.deficiency_index != null
+                            ? (this.Helpers.format_number_locally?.(audit.deficiency_index, this.Translation?.get_current_language_code?.() || 'sv-SE', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) ?? Number(audit.deficiency_index).toFixed(1))
+                            : '—'
                     });
 
+                    const auditor_cell = this.Helpers.create_element('td', {
+                        text_content: auditor || '—'
+                    });
+
+                    row.appendChild(case_cell);
                     row.appendChild(actor_cell);
                     row.appendChild(status_cell);
                     row.appendChild(progress_cell);
                     row.appendChild(deficiency_cell);
+                    row.appendChild(auditor_cell);
                     tbody.appendChild(row);
                 });
             }

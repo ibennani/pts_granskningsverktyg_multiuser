@@ -1,7 +1,7 @@
 /* css/components/start_view_component.css */
 
 .start-view-plate {
-    max-width: 60rem;
+    width: 100%;
 }
 
 .start-view-intro {
@@ -23,26 +23,31 @@
 }
 
 .start-view-table th:nth-child(1),
-.start-view-table td:nth-child(1) { min-width: 10rem; }
+.start-view-table td:nth-child(1) { min-width: 6rem; }
 .start-view-table th:nth-child(2),
-.start-view-table td:nth-child(2) { min-width: 7rem; }
+.start-view-table td:nth-child(2) { min-width: 9rem; }
 .start-view-table th:nth-child(3),
-.start-view-table td:nth-child(3) { min-width: 5rem; }
+.start-view-table td:nth-child(3) { min-width: 5.5rem; }
 .start-view-table th:nth-child(4),
-.start-view-table td:nth-child(4) { min-width: 5rem; }
+.start-view-table td:nth-child(4) { min-width: 4rem; }
+.start-view-table th:nth-child(5),
+.start-view-table td:nth-child(5) { min-width: 4rem; }
+.start-view-table th:nth-child(6),
+.start-view-table td:nth-child(6) { min-width: 6rem; }
 
 .start-view-table th,
 .start-view-table td {
-    padding: 1rem 1.5rem;
+    padding: 0.5rem 0.75rem;
     text-align: left;
     border: none;
     vertical-align: middle;
+    font-size: 0.875rem;
 }
 
 .start-view-table th {
     font-weight: 600;
     white-space: nowrap;
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     letter-spacing: 0.02em;
     text-transform: uppercase;
     color: var(--text-color-muted);
@@ -54,7 +59,7 @@
 }
 
 .start-view-table thead th {
-    padding: 1rem 1.5rem;
+    padding: 0.5rem 0.75rem;
 }
 
 .start-view-table tbody tr {
@@ -70,7 +75,7 @@
     background-color: color-mix(in srgb, var(--primary-color) 6%, var(--input-background-color));
 }
 
-.start-view-table td:nth-child(1) {
+.start-view-table td:nth-child(2) {
     font-weight: 500;
 }
 

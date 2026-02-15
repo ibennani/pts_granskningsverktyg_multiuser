@@ -60,6 +60,7 @@ router.get('/', async (req, res) => {
                 metadata: row.metadata || {},
                 version: row.version,
                 rule_set_name: row.rule_set_name,
+                last_updated_by: row.last_updated_by || null,
                 created_at: row.created_at,
                 updated_at: row.updated_at
             };
@@ -80,7 +81,7 @@ router.get('/', async (req, res) => {
                         : null;
                     const score = calculateQualityScore(full_state);
                     out.deficiency_index = score != null && typeof score.totalScore === 'number'
-                        ? Math.round(score.totalScore)
+                        ? Math.round(score.totalScore * 10) / 10
                         : null;
                 } catch (e) {
                     console.warn('[audits] Beräkning progress/bristindex misslyckades för audit', row.id, ':', e.message);

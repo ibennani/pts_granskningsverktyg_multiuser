@@ -33,7 +33,8 @@ export const ActionTypes = {
     DELETE_REQUIREMENT_DEFINITION: 'DELETE_REQUIREMENT_DEFINITION',
     DELETE_CHECK_FROM_REQUIREMENT: 'DELETE_CHECK_FROM_REQUIREMENT',
     DELETE_CRITERION_FROM_CHECK: 'DELETE_CRITERION_FROM_CHECK',
-    SET_RULEFILE_EDIT_BASELINE: 'SET_RULEFILE_EDIT_BASELINE'
+    SET_RULEFILE_EDIT_BASELINE: 'SET_RULEFILE_EDIT_BASELINE',
+    SET_REMOTE_AUDIT_ID: 'SET_REMOTE_AUDIT_ID'
 };
 
 const initial_state = {
@@ -526,6 +527,14 @@ function root_reducer(current_state, action) {
                 ruleFileOriginalContentString: action.payload.originalRuleFileContentString,
                 ruleFileOriginalFilename: action.payload.originalRuleFileFilename
             };
+
+        case ActionTypes.SET_REMOTE_AUDIT_ID:
+            return {
+                ...current_state,
+                auditId: action.payload.auditId,
+                ruleSetId: action.payload.ruleSetId ?? current_state.ruleSetId,
+                version: action.payload.version ?? current_state.version
+            };
         
         case ActionTypes.SET_UI_FILTER_SETTINGS:
             // Synkronisera sortBy till allRequirementsFilter om det finns i payload
@@ -609,13 +618,13 @@ async function process_dispatch(action) {
     is_dispatching = true;
     
     try {
-        await execute_single_dispatch(action);
+        await execute_single_dispatch(action, dispatch);
         
         // Processa alla väntande actions i kön
         while (dispatch_queue.length > 0) {
             const { action: queuedAction, resolve, reject } = dispatch_queue.shift();
             try {
-                await execute_single_dispatch(queuedAction);
+                await execute_single_dispatch(queuedAction, dispatch);
                 resolve();
             } catch (error) {
                 reject(error);
@@ -626,7 +635,7 @@ async function process_dispatch(action) {
     }
 }
 
-function execute_single_dispatch(action) {
+function execute_single_dispatch(action, dispatch_fn) {
     return new Promise((resolve, reject) => {
         let state_before_dispatch = null;
         let state_after_reducer = null;
@@ -660,9 +669,9 @@ function execute_single_dispatch(action) {
                     // Fortsätt ändå, detta är inte kritiskt
                 }
 
-                // Schemalägg sync till server om auditId finns
+                // Schemalägg sync till server (import om auditId saknas, annars PATCH)
                 try {
-                    schedule_sync_to_server(internal_state);
+                    schedule_sync_to_server(internal_state, dispatch_fn);
                 } catch (syncError) {
                     // Ignorera - server sync är inte kritiskt
                 }
