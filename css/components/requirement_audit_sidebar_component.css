@@ -108,8 +108,8 @@
 }
 
 .requirement-audit-sidebar__filters .FilterPanelComponent__toggle {
-    padding: 0.35rem 0.6rem;
     font-size: 0.95rem;
+    padding: 0.35rem 0.6rem;
 }
 
 .requirement-audit-sidebar__list {

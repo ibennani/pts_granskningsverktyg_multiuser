@@ -63,6 +63,7 @@
   "mark_requirement_passed_in_all_samples_confirm_p2": "This means that all samples where the requirement has status \"Not audited\" or \"Partially audited\" will be changed to \"No remarks\". All attached images will be deleted and all notes under \"I am stuck\" will be removed.",
   "mark_requirement_passed_in_all_samples_confirm_p3": "This cannot be undone.",
   "mark_requirement_passed_in_all_samples_confirm_p4": "Are you sure you want to continue? Have you read this warning carefully?",
+  "mark_requirement_passed_in_all_samples_affected_list": "Affected samples:",
   "mark_requirement_passed_in_all_samples_toast": "Requirement has been set to No remarks in all samples.",
   "audit_already_started_or_locked": "Audit has already started or is locked",
   "audit_info_title": "Audit information",

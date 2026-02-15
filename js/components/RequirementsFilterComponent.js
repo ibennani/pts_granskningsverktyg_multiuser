@@ -10,6 +10,7 @@ export const RequirementsFilterComponent = {
         this.root = root;
         this.deps = deps;
         this.Translation = deps.Translation;
+        this._search_debounce_timer = null;
         this.Helpers = deps.Helpers;
         this.get_current_filters = deps.getCurrentFilters;
         this.on_filter_change = deps.onFilterChange;
@@ -58,7 +59,9 @@ export const RequirementsFilterComponent = {
         this._filter_container_ref.appendChild(search_group);
 
         const status_group = this.Helpers.create_element('div', { class_name: 'requirement-audit-sidebar__filter-group' });
+        const filter_button_id = `${this.id_prefix}-filter-button`;
         const status_label = this.Helpers.create_element('label', {
+            attributes: { for: filter_button_id },
             text_content: t('filter_by_status_label')
         });
         status_group.appendChild(status_label);
@@ -67,6 +70,7 @@ export const RequirementsFilterComponent = {
         FilterPanelComponent.init({
             root: status_group,
             deps: {
+                idPrefix: this.id_prefix,
                 Translation: { t: this.Translation.t },
                 Helpers: { create_element: this.Helpers.create_element },
                 onFilterChange: (new_filters) => {
@@ -105,9 +109,15 @@ export const RequirementsFilterComponent = {
 
     _handle_search_input(event) {
         const value = event?.target?.value || '';
-        if (this.on_filter_change) {
-            this.on_filter_change({ searchText: value });
+        if (this._search_debounce_timer) {
+            clearTimeout(this._search_debounce_timer);
         }
+        this._search_debounce_timer = setTimeout(() => {
+            this._search_debounce_timer = null;
+            if (this.on_filter_change) {
+                this.on_filter_change({ searchText: value });
+            }
+        }, 400);
     },
 
     _handle_sort_change(event) {
@@ -127,7 +137,9 @@ export const RequirementsFilterComponent = {
         const sort_by = valid_sort ? current.sortBy : (sort_options[0]?.value || '');
 
         if (this._search_input_ref) {
-            this._search_input_ref.value = current.searchText || '';
+            if (!this._search_debounce_timer) {
+                this._search_input_ref.value = current.searchText || '';
+            }
         }
         if (this._sort_select_ref) {
             this._sort_select_ref.innerHTML = '';
@@ -144,6 +156,10 @@ export const RequirementsFilterComponent = {
     },
 
     destroy() {
+        if (this._search_debounce_timer) {
+            clearTimeout(this._search_debounce_timer);
+            this._search_debounce_timer = null;
+        }
         if (this._search_input_ref) {
             this._search_input_ref.removeEventListener('input', this._handle_search_input);
             this._search_input_ref = null;

@@ -104,6 +104,20 @@ dialog.modal-dialog.modal-dialog--closing {
     margin-bottom: 0;
 }
 
+.modal-affected-samples-list {
+    margin: 0.75rem 0;
+}
+
+.modal-affected-samples-label {
+    margin: 0 0 0.5rem 0;
+    font-weight: 600;
+}
+
+.modal-affected-samples-ul {
+    margin: 0;
+    padding-left: 1.5rem;
+}
+
 .modal-content .button {
     align-self: flex-start;
 }

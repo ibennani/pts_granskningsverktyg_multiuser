@@ -15,7 +15,8 @@ export const RequirementListToolbarComponent = {
         this.component_config = {
             showStatusFilter: _config.showStatusFilter !== false,
             sortOptions: _config.sortOptions || [],
-            searchDebounceMs: _config.searchDebounceMs ?? 0  // 0 = direkt som högerspalten
+            searchDebounceMs: _config.searchDebounceMs ?? 0,  // 0 = direkt som högerspalten
+            idPrefix: _config.idPrefix || deps.idPrefix || 'requirement-list-toolbar'
         };
 
         this.is_dom_built = false;
@@ -72,14 +73,19 @@ export const RequirementListToolbarComponent = {
 
         // Filter Group
         if (this.component_config.showStatusFilter) {
+            const id_prefix = this.component_config.idPrefix;
+            const filter_button_id = `${id_prefix}-filter-button`;
             const filter_group = this.Helpers_create_element('div', { class_name: 'toolbar-group status-filter-group' });
-            const filter_label = this.Helpers_create_element('label', { text_content: t('filter_by_status_label') });
+            const filter_label = this.Helpers_create_element('label', {
+                attributes: { for: filter_button_id },
+                text_content: t('filter_by_status_label')
+            });
             filter_group.appendChild(filter_label);
-            
-            // Initialize FilterPanelComponent attached to filter_group
+
             FilterPanelComponent.init({
                 root: filter_group,
                 deps: {
+                    idPrefix: id_prefix,
                     Translation: { t: this.Translation_t },
                     Helpers: { create_element: this.Helpers_create_element },
                     onFilterChange: (newFilters) => {
@@ -122,7 +128,7 @@ export const RequirementListToolbarComponent = {
         const t = this.Translation_t;
         
         const searchInput = this.root.querySelector('#req-list-search');
-        if (searchInput) {
+        if (searchInput && !this._search_debounce_timer) {
             searchInput.value = this.component_state.searchText;
         }
         
@@ -169,7 +175,6 @@ export const RequirementListToolbarComponent = {
             if (filter_label) {
                 filter_label.textContent = t('filter_by_status_label');
             }
-            // FilterPanelComponent handles its own text updates in its render
         }
         
         // Update sort label and options

@@ -176,7 +176,11 @@ export const RulefileRequirementsListComponent = {
         const toolbar_container_element = this.Helpers.create_element('div', { id: 'rulefile-list-toolbar-container' });
         this.plate_element_ref.appendChild(toolbar_container_element);
 
-        this.results_summary_element = this.Helpers.create_element('p', { id: 'rulefile-list-results-summary', class_name: 'results-summary' });
+        this.results_summary_element = this.Helpers.create_element('p', {
+            id: 'rulefile-list-results-summary',
+            class_name: 'results-summary',
+            attributes: { 'aria-live': 'polite' }
+        });
         this.plate_element_ref.appendChild(this.results_summary_element);
         
         let current_state_for_init = this.getState();

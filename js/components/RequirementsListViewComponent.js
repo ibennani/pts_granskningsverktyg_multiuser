@@ -127,7 +127,7 @@ export const RequirementsListViewComponent = {
             : requirements?.[requirement_id];
         const requirement_title = req_def?.title || requirement_id;
 
-        let sample_count = 0;
+        const affected_samples = [];
         if (this.AuditLogic?.get_relevant_requirements_for_sample) {
             samples.forEach(sample => {
                 const relevant_reqs = this.AuditLogic.get_relevant_requirements_for_sample(rule_file, sample);
@@ -136,11 +136,12 @@ export const RequirementsListViewComponent = {
                     const existing = (sample.requirementResults || {})[requirement_id];
                     const status = this.AuditLogic.calculate_requirement_status(req, existing);
                     if (status === 'not_audited' || status === 'partially_audited') {
-                        sample_count++;
+                        affected_samples.push(sample);
                     }
                 }
             });
         }
+        const sample_count = affected_samples.length;
 
         ModalComponent.show(
             {
@@ -161,7 +162,22 @@ export const RequirementsListViewComponent = {
                 const p4 = this.Helpers.create_element('p', {
                     text_content: t('mark_requirement_passed_in_all_samples_confirm_p4')
                 });
-                msg_wrapper.append(p1, p2, p3, p4);
+
+                const samples_list_wrapper = this.Helpers.create_element('div', { class_name: 'modal-affected-samples-list' });
+                const samples_list_label = this.Helpers.create_element('p', {
+                    class_name: 'modal-affected-samples-label',
+                    text_content: t('mark_requirement_passed_in_all_samples_affected_list')
+                });
+                const samples_ul = this.Helpers.create_element('ul', { class_name: 'modal-affected-samples-ul' });
+                affected_samples.forEach(sample => {
+                    const sample_name = sample?.description || t('undefined_description');
+                    const li = this.Helpers.create_element('li', { text_content: sample_name });
+                    samples_ul.appendChild(li);
+                });
+                samples_list_wrapper.appendChild(samples_list_label);
+                samples_list_wrapper.appendChild(samples_ul);
+
+                msg_wrapper.append(p1, samples_list_wrapper, p2, p3, p4);
                 const existing_msg = container.querySelector('.modal-message');
                 if (existing_msg) existing_msg.replaceWith(msg_wrapper);
 
@@ -368,6 +384,7 @@ export const RequirementsListViewComponent = {
             class_name: 'results-summary',
             id: summary_id,
             text_content: '',
+            attributes: { 'aria-live': 'polite' }
         });
         this.plate_element_ref.appendChild(this.results_summary_element_ref);
 
@@ -569,7 +586,9 @@ export const RequirementsListViewComponent = {
                         Helpers: this.Helpers,
                         config: {
                             showStatusFilter: true,
-                            sortOptions: this.get_sort_options()
+                            sortOptions: this.get_sort_options(),
+                            idPrefix: this.state_filter_key === 'allRequirementsFilter' ? 'all-requirements-filter' : 'requirement-list-filter',
+                            searchDebounceMs: 400
                         }
                     }
                 });

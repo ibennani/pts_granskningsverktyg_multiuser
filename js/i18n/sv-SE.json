@@ -63,6 +63,7 @@
   "mark_requirement_passed_in_all_samples_confirm_p2": "Det betyder att alla stickprov där kravet har status \"Ogranskad\" eller \"Delvis granskad\" kommer ändras till \"Ingen anmärkning\". Alla bifogade bilder raderas och alla anteckningar under \"Jag har kört fast\" tas bort.",
   "mark_requirement_passed_in_all_samples_confirm_p3": "Detta går inte att ångra.",
   "mark_requirement_passed_in_all_samples_confirm_p4": "Är du säker på att du vill fortsätta? Har du läst den här varningen noga?",
+  "mark_requirement_passed_in_all_samples_affected_list": "Berörda stickprov:",
   "mark_requirement_passed_in_all_samples_toast": "Kravet har satts till Ingen anmärkning i alla stickprov.",
   "audit_already_started_or_locked": "Granskningen är redan påbörjad eller låst",
   "audit_info_title": "Granskningsinformation",
