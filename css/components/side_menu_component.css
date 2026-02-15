@@ -73,6 +73,12 @@
     text-decoration: underline;
 }
 
+.side-menu__item--back-to-start {
+    margin-top: 1.25rem;
+    padding-top: 1rem;
+    border-top: 1px solid color-mix(in srgb, var(--border-color) 40%, transparent);
+}
+
 .side-menu__link.active,
 .side-menu__link[aria-current="page"] {
     font-weight: 700;

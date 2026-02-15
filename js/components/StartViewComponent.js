@@ -56,10 +56,6 @@ export const StartViewComponent = {
         return map[status] || status;
     },
 
-    handle_open_audit(audit_id) {
-        this.router('upload', { auditId: audit_id });
-    },
-
     render() {
         if (!this.root || !this.Helpers?.create_element) return;
 
@@ -144,14 +140,12 @@ export const StartViewComponent = {
 
                     const actor_cell = this.Helpers.create_element('td');
                     const link = this.Helpers.create_element('a', {
-                        href: `#upload?auditId=${audit.id}`,
                         class_name: 'start-view-audit-link',
                         text_content: display_actor,
-                        attributes: { 'aria-label': t('start_view_open_audit_aria', { name: display_actor }) }
-                    });
-                    link.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        this.handle_open_audit(audit.id);
+                        attributes: {
+                            href: `#audit_overview?auditId=${audit.id}`,
+                            'aria-label': t('start_view_open_audit_aria', { name: display_actor })
+                        }
                     });
                     actor_cell.appendChild(link);
 

@@ -303,7 +303,8 @@ export const SideMenuComponent = {
                     { label: t('left_menu_sample_list_with_count', { count: sample_count }), view_name: 'sample_management' },
                     { label: t('left_menu_images_with_count', { count: media_places_count }), view_name: 'audit_images' },
                     { label: t('left_menu_problems_with_count', { count: problems_count }), view_name: 'audit_problems' },
-                    { label: t('left_menu_actions'), view_name: 'audit_actions' }
+                    { label: t('left_menu_actions'), view_name: 'audit_actions' },
+                    { label: t('admin_back_to_start'), view_name: 'start', back_to_start: true }
                 ]
             };
         }
@@ -360,7 +361,9 @@ export const SideMenuComponent = {
 
         const list = this.Helpers.create_element('ul', { class_name: 'side-menu__list' });
         menu_model.items.forEach((item, idx) => {
-            const li = this.Helpers.create_element('li', { class_name: 'side-menu__item' });
+            const li = this.Helpers.create_element('li', {
+                class_name: ['side-menu__item', ...(item.back_to_start ? ['side-menu__item--back-to-start'] : [])]
+            });
             const link = this.create_menu_link(item);
             if (idx === 0) {
                 this.first_link_ref = link;

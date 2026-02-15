@@ -1086,17 +1086,17 @@ window.DraftManager = DraftManager;
         let target_params = params;
         const current_global_state = getState();
 
-        if (effective_view_name === 'upload' && params.auditId) {
+        const load_audit_and_navigate = async (auditId) => {
             try {
                 const { get_audit } = await import('./api/client.js');
-                const full_state = await get_audit(params.auditId);
+                const full_state = await get_audit(auditId);
                 const validation = window.ValidationLogic?.validate_saved_audit_file?.(full_state);
                 if (full_state && validation?.isValid) {
                     dispatch({ type: StoreActionTypes.LOAD_AUDIT_FROM_FILE, payload: full_state });
                     const status = full_state.auditStatus || 'not_started';
                     const next_view = status === 'not_started' ? 'metadata' : 'audit_overview';
                     navigate_and_set_hash(next_view, {});
-                    return;
+                    return true;
                 }
             } catch (err) {
                 if (window.NotificationComponent?.show_global_message) {
@@ -1107,6 +1107,17 @@ window.DraftManager = DraftManager;
                     );
                 }
             }
+            return false;
+        };
+
+        if (effective_view_name === 'upload' && params.auditId) {
+            if (await load_audit_and_navigate(params.auditId)) return;
+        }
+
+        if (effective_view_name === 'audit_overview' && params.auditId) {
+            if (await load_audit_and_navigate(params.auditId)) return;
+            navigate_and_set_hash('start', {});
+            return;
         }
 
         if (effective_view_name) {

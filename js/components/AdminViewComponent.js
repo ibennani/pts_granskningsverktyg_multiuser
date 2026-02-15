@@ -32,7 +32,7 @@ export const AdminViewComponent = {
         this.handle_upload_audit_click = this.handle_upload_audit_click.bind(this);
         this.handle_rule_file_select = this.handle_rule_file_select.bind(this);
         this.handle_audit_file_select = this.handle_audit_file_select.bind(this);
-        this.handle_go_to_upload = this.handle_go_to_upload.bind(this);
+        this.handle_go_to_start = this.handle_go_to_start.bind(this);
         this.handle_delete_rule = this.handle_delete_rule.bind(this);
         this.handle_delete_audit = this.handle_delete_audit.bind(this);
 
@@ -163,8 +163,8 @@ export const AdminViewComponent = {
         reader.readAsText(file);
     },
 
-    handle_go_to_upload() {
-        this.router('upload');
+    handle_go_to_start() {
+        this.router('start');
     },
 
     async handle_delete_rule(rule_id) {
