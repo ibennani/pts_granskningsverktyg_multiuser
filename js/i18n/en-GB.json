@@ -234,6 +234,7 @@
   "error_internal_cannot_start_audit_deps_missing": "Internal error: Cannot start audit due to missing dependencies.",
   "error_internal_data_structure_pc": "Internal error: Invalid data structure for updating pass criterion.",
   "error_invalid_saved_audit_file": "The selected file is not a valid saved audit file or is corrupt.",
+  "error_audit_missing_rulefile": "The audit is missing its linked rule file. Re-upload the audit via Admin.",
   "error_loading_data_for_view": "Could not load data for view: {viewName}",
   "error_loading_sample_list_for_overview": "Error: The sample list could not be loaded for the overview.",
   "error_loading_sample_or_requirement_data": "Error: Could not load data for the sample or requirement.",

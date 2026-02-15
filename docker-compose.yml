@@ -1,5 +1,8 @@
 # PostgreSQL för Granskningsverktyget
 # Startas automatiskt vid npm run dev
+# Data sparas i volymen pgdata mellan omstarter (använd INTE docker compose down -v)
+
+name: granskningsverktyget
 
 services:
   postgres:

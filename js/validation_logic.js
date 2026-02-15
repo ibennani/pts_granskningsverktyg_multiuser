@@ -217,5 +217,9 @@ export function validate_saved_audit_file(json_object) {
         return { isValid: false, message: `${t('error_invalid_saved_audit_file')} (Missing: ${missing_keys.join(', ')})` };
     }
 
+    if (!json_object.ruleFileContent || typeof json_object.ruleFileContent !== 'object') {
+        return { isValid: false, message: t('error_audit_missing_rulefile') };
+    }
+
     return { isValid: true, message: "Validation of saved audit file OK." };
 }

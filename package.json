@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "node scripts/dev-with-docker.js",
     "dev:client": "vite",
-    "dev:db": "docker compose up -d",
+    "dev:db": "docker compose up -d --wait",
+    "dev:stop": "docker compose stop",
+    "db:status": "node scripts/db-status.js",
     "dev:full": "node scripts/dev-with-docker.js",
     "dev:server": "node server/index.js",
     "dev:app": "docker compose up -d && wait-on tcp:localhost:5432 && node server/scripts/migrate.js && concurrently \"node server/index.js\" \"vite\"",

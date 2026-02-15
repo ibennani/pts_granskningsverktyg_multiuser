@@ -18,7 +18,11 @@ CREATE TABLE IF NOT EXISTS rule_sets (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TYPE audit_status AS ENUM ('not_started', 'in_progress', 'locked', 'archived');
+DO $$ BEGIN
+    CREATE TYPE audit_status AS ENUM ('not_started', 'in_progress', 'locked', 'archived');
+EXCEPTION
+    WHEN duplicate_object THEN NULL;
+END $$;
 
 CREATE TABLE IF NOT EXISTS audits (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

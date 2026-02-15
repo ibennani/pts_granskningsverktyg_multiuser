@@ -8,7 +8,7 @@ function startApp() {
     if (started) return;
     started = true;
 
-    const backend = spawn('npx', ['nodemon', '--watch', 'server', '--ext', 'js', '--exec', 'node', 'server/index.js'], {
+    const backend = spawn('npx', ['nodemon'], {
         stdio: 'inherit',
         shell: true
     });
@@ -35,7 +35,7 @@ function startApp() {
     });
 }
 
-const docker = spawn('docker', ['compose', 'up', '-d'], {
+const docker = spawn('docker', ['compose', 'up', '-d', '--wait'], {
     stdio: 'inherit',
     shell: true
 });

@@ -234,6 +234,7 @@
   "error_internal_cannot_start_audit_deps_missing": "Internt fel Kan inte starta granskning på grund av saknade beroenden",
   "error_internal_data_structure_pc": "Internt fel Felaktig datastruktur för att uppdatera godkännandekriterium",
   "error_invalid_saved_audit_file": "Den valda filen är inte en giltig sparad granskningsfil eller är korrupt",
+  "error_audit_missing_rulefile": "Granskningen saknar kopplad regelfil. Ladda upp granskningen igen via Admin.",
   "error_loading_data_for_view": "Kunde inte ladda data för vyn: {viewName}",
   "error_loading_sample_list_for_overview": "Fel Stickprovslistan kunde inte laddas för översikten",
   "error_loading_sample_or_requirement_data": "Fel Kunde inte ladda data för stickprov eller krav",

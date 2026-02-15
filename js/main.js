@@ -1098,6 +1098,10 @@ window.DraftManager = DraftManager;
                     navigate_and_set_hash(next_view, {});
                     return true;
                 }
+                if (validation && !validation.isValid && window.NotificationComponent?.show_global_message) {
+                    const t = window.Translation?.t || (k => k);
+                    window.NotificationComponent.show_global_message(validation.message || t('error_invalid_saved_audit_file'), 'error');
+                }
             } catch (err) {
                 if (window.NotificationComponent?.show_global_message) {
                     const t = window.Translation?.t || (k => k);

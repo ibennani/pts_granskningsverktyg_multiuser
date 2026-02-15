@@ -7,7 +7,18 @@ import { calculateQualityScore } from '../../js/logic/ScoreCalculator.js';
 const router = express.Router();
 
 function build_full_state(audit_row, rule_set_row) {
-    const ruleFileContent = rule_set_row ? rule_set_row.content : null;
+    let ruleFileContent = rule_set_row ? rule_set_row.content : null;
+    if (ruleFileContent && typeof ruleFileContent === 'string') {
+        try {
+            ruleFileContent = JSON.parse(ruleFileContent);
+        } catch (e) {
+            console.warn('[audits] build_full_state: Kunde inte parsa rule content för audit', audit_row?.id);
+            ruleFileContent = null;
+        }
+    }
+    if (!ruleFileContent && audit_row?.rule_set_id) {
+        console.warn('[audits] build_full_state: Regeluppsättning saknas för audit', audit_row.id, '(rule_set_id:', audit_row.rule_set_id, ')');
+    }
     const samples = audit_row.samples || [];
     return {
         saveFileVersion: '2.1.0',
@@ -54,8 +65,12 @@ router.get('/', async (req, res) => {
             };
             if (row.rule_content && row.samples) {
                 try {
+                    let rule_content = row.rule_content;
+                    if (typeof rule_content === 'string') {
+                        rule_content = JSON.parse(rule_content);
+                    }
                     const full_state = {
-                        ruleFileContent: row.rule_content,
+                        ruleFileContent: rule_content,
                         auditStatus: row.status,
                         samples: row.samples
                     };
@@ -68,6 +83,7 @@ router.get('/', async (req, res) => {
                         ? Math.round(score.totalScore)
                         : null;
                 } catch (e) {
+                    console.warn('[audits] Beräkning progress/bristindex misslyckades för audit', row.id, ':', e.message);
                     out.progress = null;
                     out.deficiency_index = null;
                 }
