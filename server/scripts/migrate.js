@@ -1,4 +1,5 @@
 // server/scripts/migrate.js
+import 'dotenv/config';
 import pg from 'pg';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';

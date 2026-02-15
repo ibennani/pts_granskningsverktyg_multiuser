@@ -1,4 +1,5 @@
 // server/index.js
+import 'dotenv/config';
 import express from 'express';
 import { query } from './db.js';
 import usersRouter from './routes/users.js';

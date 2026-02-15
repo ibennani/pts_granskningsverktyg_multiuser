@@ -1,0 +1,2 @@
+# Shell-skript ska ha Unix-radbrytningar (LF) för att fungera på Linux-servrar
+*.sh text eol=lf
