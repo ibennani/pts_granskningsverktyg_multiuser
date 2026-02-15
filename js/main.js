@@ -52,6 +52,7 @@ import { AuditActionsViewComponent } from './components/AuditActionsViewComponen
 import { AllRequirementsViewComponent } from './components/AllRequirementsViewComponent.js';
 import { AuditProblemsViewComponent } from './components/AuditProblemsViewComponent.js';
 import { AuditImagesViewComponent } from './components/AuditImagesViewComponent.js';
+import { AdminViewComponent } from './components/AdminViewComponent.js';
 
 import { GlobalActionBarComponent } from './components/GlobalActionBarComponent.js';
 import { ModalComponent } from './components/ModalComponent.js';
@@ -216,9 +217,8 @@ window.DraftManager = DraftManager;
     function update_side_menu(view_name, params = {}) {
         if (!side_menu_component_instance || typeof side_menu_component_instance.render !== 'function') return;
 
-        // Vid återställning av session ska vänstermenyn aldrig renderas.
-        // Vi tömmer/döljer containern och lämnar utan att anropa render().
-        if (view_name === 'restore_session') {
+        // Vid återställning av session eller admin ska vänstermenyn aldrig renderas.
+        if (view_name === 'restore_session' || view_name === 'admin') {
             if (side_menu_root) {
                 side_menu_root.innerHTML = '';
                 side_menu_root.classList.add('hidden');
@@ -307,6 +307,9 @@ window.DraftManager = DraftManager;
                 switch (viewName) {
                     case 'upload':
                         title_prefix = t('start_or_load_audit_title');
+                        break;
+                    case 'admin':
+                        title_prefix = t('admin_title');
                         break;
                     case 'metadata':
                         title_prefix = t('audit_metadata_title');
@@ -895,6 +898,7 @@ window.DraftManager = DraftManager;
         
         switch (view_name_to_render) {
             case 'upload': ComponentClass = UploadViewComponent; break;
+            case 'admin': ComponentClass = AdminViewComponent; break;
             case 'metadata': ComponentClass = EditMetadataViewComponent; break;
             case 'edit_metadata': ComponentClass = EditMetadataViewComponent; break;
             case 'sample_management': ComponentClass = SampleManagementViewComponent; break;

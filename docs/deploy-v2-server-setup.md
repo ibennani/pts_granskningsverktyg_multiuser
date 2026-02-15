@@ -45,7 +45,17 @@ Om du uppdaterar nginx-konfigurationen: `sudo nginx -t && sudo systemctl reload 
 
 **Migration från dist/ till v2/:** Om du tidigare deployade till `dist/` måste nginx-konfigurationen uppdateras (byta `alias` mot `root` som ovan) och en ny deploy körs. Den gamla `dist/`-mappen tas bort vid nästa deploy.
 
-## 4. PM2 (Node process manager)
+## 4. SELinux (RHEL/CentOS)
+
+Om nginx får 502 vid API-anrop:
+
+```bash
+sudo setsebool -P httpd_can_network_connect 1
+```
+
+## 5. PM2 (Node process manager)
+
+För att backend ska starta om vid deploy och överleva serveromstart:
 
 ```bash
 npm install -g pm2
@@ -53,6 +63,8 @@ npm install -g pm2
 # pm2 save && pm2 startup  # för att starta vid omstart
 ```
 
-## 5. Deploy
+## 6. Deploy
 
 Efter detta kan du köra `npm run deploy:v2` från din lokala maskin.
+
+Se `docs/deploy-v2-workflow.md` för daglig deploy-workflow.

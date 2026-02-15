@@ -396,6 +396,21 @@ export const UploadViewComponent = {
       text_content: t('upload_view_intro'),
     });
 
+    const admin_link = this.Helpers.create_element('a', {
+      href: '#admin',
+      class_name: 'upload-admin-link',
+      text_content: t('admin_link'),
+      attributes: { 'aria-label': t('admin_link') }
+    });
+    admin_link.addEventListener('click', (e) => {
+      e.preventDefault();
+      this.router('admin');
+    });
+
+    const header_block = this.Helpers.create_element('div', { class_name: 'upload-header-block' });
+    header_block.append(title, intro_text, admin_link);
+    plate_element.appendChild(header_block);
+
     let retry_block = null;
     if (this._api_checked && !this.api_available) {
       retry_block = this.Helpers.create_element('div', { class_name: 'upload-server-retry-block' });
@@ -564,7 +579,7 @@ export const UploadViewComponent = {
       attributes: { type: 'file', accept: '.json', style: 'display: none;' },
     });
 
-    const main_content = [title, intro_text];
+    const main_content = [header_block];
     if (retry_block) main_content.push(retry_block);
     plate_element.append(
       ...main_content,

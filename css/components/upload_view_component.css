@@ -1,5 +1,15 @@
 /* Styles for UploadViewComponent */
 
+.upload-header-block {
+    margin-bottom: 0.5rem;
+}
+
+.upload-admin-link {
+    display: inline-block;
+    margin-top: 0.5rem;
+    text-decoration: underline;
+}
+
 .upload-view-container { /* Om du vill ha en specifik container-styling */
     /* padding: 1rem; */
 }

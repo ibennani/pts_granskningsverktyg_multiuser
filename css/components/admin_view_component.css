@@ -1,0 +1,116 @@
+/* AdminViewComponent - Administrationsvy */
+
+.admin-plate {
+    max-width: 1200px;
+}
+
+.admin-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.admin-header h1 {
+    margin: 0;
+}
+
+.admin-back-link {
+    text-decoration: underline;
+    color: var(--link-color, #0066cc);
+}
+
+.admin-back-link:hover,
+.admin-back-link:focus {
+    text-decoration: underline;
+}
+
+.admin-loading {
+    margin: 2rem 0;
+    opacity: 0.8;
+}
+
+.admin-no-api {
+    margin: 2rem 0;
+    padding: 1rem;
+    background: var(--message-warning-bg, #fff3cd);
+    border-radius: 4px;
+}
+
+.admin-two-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-top: 1.5rem;
+}
+
+@media (max-width: 768px) {
+    .admin-two-columns {
+        grid-template-columns: 1fr;
+    }
+}
+
+.admin-column {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: var(--content-plate-bg, #f8f9fa);
+    border-radius: 8px;
+    border: 1px solid var(--border-color, #dee2e6);
+}
+
+.admin-column h2 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.admin-upload-btn {
+    align-self: flex-start;
+}
+
+.admin-hidden-file-input {
+    position: absolute;
+    width: 0.1px;
+    height: 0.1px;
+    opacity: 0;
+    overflow: hidden;
+    z-index: -1;
+}
+
+.admin-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.admin-list-item {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border-color, #dee2e6);
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.admin-list-item:last-child {
+    border-bottom: none;
+}
+
+.admin-item-label {
+    font-weight: 500;
+}
+
+.admin-item-meta {
+    font-size: 0.85rem;
+    opacity: 0.8;
+}
+
+.admin-list-empty {
+    padding: 1rem 0;
+    opacity: 0.7;
+    font-style: italic;
+}

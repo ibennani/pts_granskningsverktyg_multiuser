@@ -84,6 +84,10 @@ export async function create_rule(data) {
     return api_post('/rules', data);
 }
 
+export async function import_rule(name, content) {
+    return api_post('/rules/import', { name, content });
+}
+
 export async function get_audits(status) {
     const q = status ? `?status=${encodeURIComponent(status)}` : '';
     return api_get(`/audits${q}`);
@@ -95,6 +99,10 @@ export async function get_audit(id) {
 
 export async function create_audit(rule_set_id) {
     return api_post('/audits', { rule_set_id });
+}
+
+export async function import_audit(audit_data) {
+    return api_post('/audits/import', audit_data);
 }
 
 export async function update_audit(id, data) {
