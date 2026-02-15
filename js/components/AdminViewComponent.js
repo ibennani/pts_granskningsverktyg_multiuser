@@ -5,7 +5,9 @@ import {
     get_rules,
     get_audits,
     import_rule,
-    import_audit
+    import_audit,
+    delete_rule,
+    delete_audit
 } from '../api/client.js';
 
 export const AdminViewComponent = {
@@ -31,6 +33,8 @@ export const AdminViewComponent = {
         this.handle_rule_file_select = this.handle_rule_file_select.bind(this);
         this.handle_audit_file_select = this.handle_audit_file_select.bind(this);
         this.handle_go_to_upload = this.handle_go_to_upload.bind(this);
+        this.handle_delete_rule = this.handle_delete_rule.bind(this);
+        this.handle_delete_audit = this.handle_delete_audit.bind(this);
 
         if (this.Helpers?.load_css_safely) {
             await this.Helpers.load_css_safely(this.CSS_PATH, 'AdminViewComponent', {
@@ -95,7 +99,7 @@ export const AdminViewComponent = {
                     return;
                 }
 
-                const name = file.name?.replace(/\.json$/i, '') || 'Importerad regelfil';
+                const name = migrated_content?.metadata?.title?.trim() || 'Importerad regelfil';
                 await import_rule(name, migrated_content);
                 this.NotificationComponent?.show_global_message(
                     t('admin_rule_uploaded_success'),
@@ -161,6 +165,42 @@ export const AdminViewComponent = {
 
     handle_go_to_upload() {
         this.router('upload');
+    },
+
+    async handle_delete_rule(rule_id) {
+        const t = this.get_t_func();
+        try {
+            await delete_rule(rule_id);
+            this.NotificationComponent?.show_global_message(
+                t('admin_rule_deleted_success'),
+                'success'
+            );
+            await this.ensure_api_data();
+            this.render();
+        } catch (error) {
+            this.NotificationComponent?.show_global_message(
+                error.message || t('admin_delete_error'),
+                'error'
+            );
+        }
+    },
+
+    async handle_delete_audit(audit_id) {
+        const t = this.get_t_func();
+        try {
+            await delete_audit(audit_id);
+            this.NotificationComponent?.show_global_message(
+                t('admin_audit_deleted_success'),
+                'success'
+            );
+            await this.ensure_api_data();
+            this.render();
+        } catch (error) {
+            this.NotificationComponent?.show_global_message(
+                error.message || t('admin_delete_error'),
+                'error'
+            );
+        }
     },
 
     render() {
@@ -258,12 +298,17 @@ export const AdminViewComponent = {
                     text_content: r.name || `Regelfil ${r.id}`,
                     class_name: 'admin-item-label'
                 });
-                const meta = this.Helpers.create_element('span', {
-                    text_content: r.version ? `v${r.version}` : '',
-                    class_name: 'admin-item-meta'
+                const delete_btn = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-default', 'admin-delete-btn'],
+                    text_content: t('delete'),
+                    attributes: {
+                        type: 'button',
+                        'aria-label': t('admin_delete_rule_aria', { name: r.name || `Regelfil ${r.id}` })
+                    }
                 });
+                delete_btn.addEventListener('click', () => this.handle_delete_rule(r.id));
                 li.appendChild(label);
-                if (r.version) li.appendChild(meta);
+                li.appendChild(delete_btn);
                 rules_list.appendChild(li);
             });
         }
@@ -307,17 +352,23 @@ export const AdminViewComponent = {
         } else {
             this.audits.forEach((a) => {
                 const li = this.Helpers.create_element('li', { class_name: 'admin-list-item' });
-                const display_name = (a.metadata?.actorName || a.metadata?.caseNumber) || a.rule_set_name || `Granskning ${a.id}`;
+                const actor_name = a.metadata?.actorName || '';
+                const display_name = actor_name || `Granskning ${a.id}`;
                 const label = this.Helpers.create_element('span', {
                     text_content: display_name,
                     class_name: 'admin-item-label'
                 });
-                const meta = this.Helpers.create_element('span', {
-                    text_content: a.status || '',
-                    class_name: 'admin-item-meta'
+                const delete_btn = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-default', 'admin-delete-btn'],
+                    text_content: t('delete'),
+                    attributes: {
+                        type: 'button',
+                        'aria-label': t('admin_delete_audit_aria', { name: display_name })
+                    }
                 });
+                delete_btn.addEventListener('click', () => this.handle_delete_audit(a.id));
                 li.appendChild(label);
-                if (a.status) li.appendChild(meta);
+                li.appendChild(delete_btn);
                 audits_list.appendChild(li);
             });
         }

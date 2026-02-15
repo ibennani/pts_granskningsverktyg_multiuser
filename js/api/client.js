@@ -52,6 +52,22 @@ export async function api_put(path, body) {
     return res.json();
 }
 
+export async function api_delete(path) {
+    const res = await fetch(`${get_base_url()}${path}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-User-Name': window.__GV_CURRENT_USER_NAME__ || ''
+        }
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: res.statusText }));
+        throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    if (res.status === 204) return null;
+    return res.json();
+}
+
 export async function api_patch(path, body) {
     const res = await fetch(`${get_base_url()}${path}`, {
         method: 'PATCH',
@@ -88,6 +104,10 @@ export async function import_rule(name, content) {
     return api_post('/rules/import', { name, content });
 }
 
+export async function delete_rule(id) {
+    return api_delete(`/rules/${id}`);
+}
+
 export async function get_audits(status) {
     const q = status ? `?status=${encodeURIComponent(status)}` : '';
     return api_get(`/audits${q}`);
@@ -103,6 +123,10 @@ export async function create_audit(rule_set_id) {
 
 export async function import_audit(audit_data) {
     return api_post('/audits/import', audit_data);
+}
+
+export async function delete_audit(id) {
+    return api_delete(`/audits/${id}`);
 }
 
 export async function update_audit(id, data) {

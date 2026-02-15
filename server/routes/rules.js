@@ -7,7 +7,10 @@ const router = express.Router();
 router.get('/', async (_req, res) => {
     try {
         const result = await query(
-            'SELECT id, name, version, created_at, updated_at FROM rule_sets ORDER BY updated_at DESC'
+            `SELECT id,
+                COALESCE(NULLIF(TRIM(content->'metadata'->>'title'), ''), name) AS name,
+                version, created_at, updated_at
+             FROM rule_sets ORDER BY updated_at DESC`
         );
         res.json(result.rows);
     } catch (err) {
@@ -51,7 +54,8 @@ router.post('/', async (req, res) => {
         if (!content || typeof content !== 'object') {
             return res.status(400).json({ error: 'Content krävs' });
         }
-        const ruleName = name || 'Regelfil ' + new Date().toISOString().slice(0, 10);
+        const title_from_content = content?.metadata?.title?.trim?.();
+        const ruleName = title_from_content || name || 'Regelfil ' + new Date().toISOString().slice(0, 10);
         const result = await query(
             'INSERT INTO rule_sets (name, content) VALUES ($1, $2) RETURNING *',
             [ruleName, JSON.stringify(content)]
@@ -69,7 +73,8 @@ router.post('/import', async (req, res) => {
         if (!content || typeof content !== 'object') {
             return res.status(400).json({ error: 'Content krävs' });
         }
-        const ruleName = name || 'Importerad ' + new Date().toISOString().slice(0, 10);
+        const title_from_content = content?.metadata?.title?.trim?.();
+        const ruleName = title_from_content || name || 'Importerad ' + new Date().toISOString().slice(0, 10);
         const result = await query(
             'INSERT INTO rule_sets (name, content) VALUES ($1, $2) RETURNING *',
             [ruleName, JSON.stringify(content)]
@@ -78,6 +83,20 @@ router.post('/import', async (req, res) => {
     } catch (err) {
         console.error('[rules] import error:', err);
         res.status(500).json({ error: 'Kunde inte importera' });
+    }
+});
+
+router.delete('/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await query('DELETE FROM rule_sets WHERE id = $1 RETURNING id', [id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Regelfil hittades inte' });
+        }
+        res.status(204).send();
+    } catch (err) {
+        console.error('[rules] DELETE error:', err);
+        res.status(500).json({ error: 'Kunde inte radera regelfil' });
     }
 });
 

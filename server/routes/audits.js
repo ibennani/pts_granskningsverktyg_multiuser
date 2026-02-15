@@ -27,7 +27,9 @@ function build_full_state(audit_row, rule_set_row) {
 router.get('/', async (req, res) => {
     try {
         const { status } = req.query;
-        let sql = 'SELECT a.id, a.rule_set_id, a.status, a.metadata, a.version, a.last_updated_by, a.created_at, a.updated_at, r.name as rule_set_name FROM audits a LEFT JOIN rule_sets r ON a.rule_set_id = r.id';
+        let sql = `SELECT a.id, a.rule_set_id, a.status, a.metadata, a.version, a.last_updated_by, a.created_at, a.updated_at,
+            COALESCE(NULLIF(TRIM(r.content->'metadata'->>'title'), ''), r.name) as rule_set_name
+            FROM audits a LEFT JOIN rule_sets r ON a.rule_set_id = r.id`;
         const params = [];
         if (status) {
             params.push(status);
@@ -135,6 +137,20 @@ router.post('/import', async (req, res) => {
     } catch (err) {
         console.error('[audits] import error:', err);
         res.status(500).json({ error: 'Kunde inte importera' });
+    }
+});
+
+router.delete('/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await query('DELETE FROM audits WHERE id = $1 RETURNING id', [id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Granskning hittades inte' });
+        }
+        res.status(204).send();
+    } catch (err) {
+        console.error('[audits] DELETE error:', err);
+        res.status(500).json({ error: 'Kunde inte radera granskning' });
     }
 });
 

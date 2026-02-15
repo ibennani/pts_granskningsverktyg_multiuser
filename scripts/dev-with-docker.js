@@ -8,7 +8,7 @@ function startApp() {
     if (started) return;
     started = true;
 
-    const backend = spawn('node', ['server/index.js'], {
+    const backend = spawn('npx', ['nodemon', '--watch', 'server', '--ext', 'js', '--exec', 'node', 'server/index.js'], {
         stdio: 'inherit',
         shell: true
     });
