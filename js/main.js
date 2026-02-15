@@ -1060,7 +1060,7 @@ window.DraftManager = DraftManager;
 
     const SKIP_LINK_ANCHOR_ID = 'main-content-heading';
 
-    function handle_hash_change() { 
+    async function handle_hash_change() {
         const hash = window.location.hash.substring(1);
         const [view_name_from_hash, ...param_pairs] = hash.split('?');
         /* Ignorera #main-content-heading – det är en intern ankare för skiplänken, inte ett vynamn */
@@ -1072,10 +1072,34 @@ window.DraftManager = DraftManager;
             const query_string = param_pairs.join('?');
             const url_params = new URLSearchParams(query_string);
             for (const [key, value] of url_params) { params[key] = value; }
-         }
+        }
         let target_view = 'upload';
         let target_params = params;
         const current_global_state = getState();
+
+        if (effective_view_name === 'upload' && params.auditId) {
+            try {
+                const { get_audit } = await import('./api/client.js');
+                const full_state = await get_audit(params.auditId);
+                const validation = window.ValidationLogic?.validate_saved_audit_file?.(full_state);
+                if (full_state && validation?.isValid) {
+                    dispatch({ type: StoreActionTypes.LOAD_AUDIT_FROM_FILE, payload: full_state });
+                    const status = full_state.auditStatus || 'not_started';
+                    const next_view = status === 'not_started' ? 'metadata' : 'audit_overview';
+                    navigate_and_set_hash(next_view, {});
+                    return;
+                }
+            } catch (err) {
+                if (window.NotificationComponent?.show_global_message) {
+                    const t = window.Translation?.t || (k => k);
+                    window.NotificationComponent.show_global_message(
+                        t('server_load_audit_error', { message: err.message }) || err.message,
+                        'error'
+                    );
+                }
+            }
+        }
+
         if (effective_view_name) {
             target_view = effective_view_name;
         } else if (current_global_state && current_global_state.ruleFileContent && current_global_state.auditStatus !== 'rulefile_editing') {

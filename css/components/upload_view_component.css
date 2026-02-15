@@ -33,3 +33,51 @@
     opacity: 0.8;
     margin: 0;
 }
+
+.upload-server-section {
+    margin-bottom: 1rem;
+}
+
+.upload-server-section label {
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.upload-server-section select {
+    min-width: 12rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.upload-audits-list {
+    list-style: none;
+    padding: 0;
+    margin: 0.5rem 0 0;
+}
+
+.upload-audits-list li {
+    margin-bottom: 0.25rem;
+}
+
+.upload-audits-empty {
+    margin: 0.5rem 0 0;
+    opacity: 0.8;
+}
+
+.upload-rules-list {
+    list-style: none;
+    padding: 0;
+    margin: 0.5rem 0 0;
+}
+
+.upload-rules-list li {
+    margin-bottom: 0.25rem;
+}
+
+.button-link-style {
+    background: none;
+    border: none;
+    text-decoration: underline;
+    cursor: pointer;
+    font: inherit;
+    color: inherit;
+}

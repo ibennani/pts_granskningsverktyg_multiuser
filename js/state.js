@@ -1,5 +1,6 @@
 // js/state.js
 import * as AuditLogic from './audit_logic.js';
+import { schedule_sync_to_server } from './logic/server_sync.js';
 
 const APP_STATE_KEY = 'digitalTillsynAppCentralState';
 const APP_STATE_BACKUP_KEY = 'digitalTillsynAppStateBackup';
@@ -657,6 +658,13 @@ function execute_single_dispatch(action) {
                 } catch (saveError) {
                     console.warn('[State.js] Failed to save state to sessionStorage:', saveError);
                     // Fortsätt ändå, detta är inte kritiskt
+                }
+
+                // Schemalägg sync till server om auditId finns
+                try {
+                    schedule_sync_to_server(internal_state);
+                } catch (syncError) {
+                    // Ignorera - server sync är inte kritiskt
                 }
 
                 // Notifiera listeners med felhantering

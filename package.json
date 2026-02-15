@@ -4,9 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "docker-compose up -d && vite",
+    "dev": "node scripts/dev-with-docker.js",
     "dev:client": "vite",
-    "dev:db": "docker-compose up -d",
+    "dev:db": "docker compose up -d",
+    "dev:full": "node scripts/dev-with-docker.js",
+    "dev:server": "node server/index.js",
+    "dev:app": "docker compose up -d && wait-on tcp:localhost:5432 && node server/scripts/migrate.js && concurrently \"node server/index.js\" \"vite\"",
+    "db:migrate": "node server/scripts/migrate.js",
     "dev:fixedport": "vite --port 5173 --strictPort",
     "prebuild": "npm run lint && npm run validate:imports && npm run validate:components && npm run validate:css",
     "build": "npm run prebuild && vite build && node scripts/postbuild-final.js",
@@ -25,7 +29,6 @@
     "validate:css": "node scripts/validate-css.js"
   },
   "devDependencies": {
-    "wait-on": "^7.2.0",
     "@playwright/test": "^1.56.0",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
@@ -38,7 +41,8 @@
     "jest-axe": "^9.0.0",
     "jest-environment-jsdom": "^29.7.0",
     "prettier": "^3.6.2",
-    "vite": "^7.1.7"
+    "vite": "^7.1.7",
+    "wait-on": "^7.2.0"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -50,7 +54,9 @@
     "codex": "^0.0.6",
     "docx": "^9.5.1",
     "exceljs": "^4.4.0",
+    "express": "^5.2.1",
     "jsdom": "^27.0.0",
-    "marked": "^16.3.0"
+    "marked": "^16.3.0",
+    "pg": "^8.18.0"
   }
 }
