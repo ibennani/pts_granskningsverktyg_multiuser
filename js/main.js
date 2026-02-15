@@ -53,6 +53,7 @@ import { AllRequirementsViewComponent } from './components/AllRequirementsViewCo
 import { AuditProblemsViewComponent } from './components/AuditProblemsViewComponent.js';
 import { AuditImagesViewComponent } from './components/AuditImagesViewComponent.js';
 import { AdminViewComponent } from './components/AdminViewComponent.js';
+import { StartViewComponent } from './components/StartViewComponent.js';
 
 import { GlobalActionBarComponent } from './components/GlobalActionBarComponent.js';
 import { ModalComponent } from './components/ModalComponent.js';
@@ -197,7 +198,7 @@ window.DraftManager = DraftManager;
 
         main_view_root = document.createElement('main');
         main_view_root.id = 'app-main-view-root';
-        main_view_root.className = 'app-main-view-root';
+        main_view_root.className = 'app-main-view-root main-wrapper';
         main_view_root.setAttribute('tabindex', '-1');
 
         const right_sidebar = document.createElement('aside');
@@ -217,8 +218,8 @@ window.DraftManager = DraftManager;
     function update_side_menu(view_name, params = {}) {
         if (!side_menu_component_instance || typeof side_menu_component_instance.render !== 'function') return;
 
-        // Vid återställning av session eller admin ska vänstermenyn aldrig renderas.
-        if (view_name === 'restore_session' || view_name === 'admin') {
+        // Vid återställning av session ska vänstermenyn aldrig renderas.
+        if (view_name === 'restore_session') {
             if (side_menu_root) {
                 side_menu_root.innerHTML = '';
                 side_menu_root.classList.add('hidden');
@@ -305,6 +306,9 @@ window.DraftManager = DraftManager;
 
             if (title_prefix === t('app_title')) {
                 switch (viewName) {
+                    case 'start':
+                        title_prefix = t('start_view_h1');
+                        break;
                     case 'upload':
                         title_prefix = t('start_or_load_audit_title');
                         break;
@@ -582,7 +586,7 @@ window.DraftManager = DraftManager;
         const hash = window.location.hash || '';
         const raw = hash.startsWith('#') ? hash.slice(1) : hash;
         const [view_name] = raw.split('?');
-        return view_name || 'upload';
+        return view_name || 'start';
     }
 
     function get_scope_key_from_hash() {
@@ -897,6 +901,7 @@ window.DraftManager = DraftManager;
         let ComponentClass;
         
         switch (view_name_to_render) {
+            case 'start': ComponentClass = StartViewComponent; break;
             case 'upload': ComponentClass = UploadViewComponent; break;
             case 'admin': ComponentClass = AdminViewComponent; break;
             case 'metadata': ComponentClass = EditMetadataViewComponent; break;
@@ -1077,7 +1082,7 @@ window.DraftManager = DraftManager;
             const url_params = new URLSearchParams(query_string);
             for (const [key, value] of url_params) { params[key] = value; }
         }
-        let target_view = 'upload';
+        let target_view = 'start';
         let target_params = params;
         const current_global_state = getState();
 
@@ -1112,6 +1117,9 @@ window.DraftManager = DraftManager;
         } else if (current_global_state && current_global_state.ruleFileContent && current_global_state.auditStatus === 'rulefile_editing') {
             target_view = 'rulefile_sections';
             target_params = { section: 'general' };
+        } else {
+            target_view = 'start';
+            target_params = {};
         }
         if (is_skip_link_anchor) {
             const target_hash_part = target_params && Object.keys(target_params).length > 0 ?
@@ -1269,7 +1277,7 @@ window.DraftManager = DraftManager;
             };
             const on_discard = () => {
                 clearLocalStorageBackup();
-                window.location.hash = '#upload';
+                window.location.hash = '#start';
                 handle_hash_change();
             };
             await render_view('restore_session', {

@@ -1,6 +1,8 @@
 // server/routes/audits.js
 import express from 'express';
 import { query } from '../db.js';
+import { calculate_overall_audit_progress } from '../../js/audit_logic.js';
+import { calculateQualityScore } from '../../js/logic/ScoreCalculator.js';
 
 const router = express.Router();
 
@@ -27,8 +29,9 @@ function build_full_state(audit_row, rule_set_row) {
 router.get('/', async (req, res) => {
     try {
         const { status } = req.query;
-        let sql = `SELECT a.id, a.rule_set_id, a.status, a.metadata, a.version, a.last_updated_by, a.created_at, a.updated_at,
-            COALESCE(NULLIF(TRIM(r.content->'metadata'->>'title'), ''), r.name) as rule_set_name
+        let sql = `SELECT a.id, a.rule_set_id, a.status, a.metadata, a.samples, a.version, a.last_updated_by, a.created_at, a.updated_at,
+            COALESCE(NULLIF(TRIM(r.content->'metadata'->>'title'), ''), r.name) as rule_set_name,
+            r.content as rule_content
             FROM audits a LEFT JOIN rule_sets r ON a.rule_set_id = r.id`;
         const params = [];
         if (status) {
@@ -37,7 +40,45 @@ router.get('/', async (req, res) => {
         }
         sql += ' ORDER BY a.updated_at DESC';
         const result = await query(sql, params);
-        res.json(result.rows);
+
+        const rows = result.rows.map((row) => {
+            const out = {
+                id: row.id,
+                rule_set_id: row.rule_set_id,
+                status: row.status,
+                metadata: row.metadata || {},
+                version: row.version,
+                rule_set_name: row.rule_set_name,
+                created_at: row.created_at,
+                updated_at: row.updated_at
+            };
+            if (row.rule_content && row.samples) {
+                try {
+                    const full_state = {
+                        ruleFileContent: row.rule_content,
+                        auditStatus: row.status,
+                        samples: row.samples
+                    };
+                    const progress = calculate_overall_audit_progress(full_state);
+                    out.progress = progress.total > 0
+                        ? Math.round((100 * progress.audited) / progress.total)
+                        : null;
+                    const score = calculateQualityScore(full_state);
+                    out.deficiency_index = score != null && typeof score.totalScore === 'number'
+                        ? Math.round(score.totalScore)
+                        : null;
+                } catch (e) {
+                    out.progress = null;
+                    out.deficiency_index = null;
+                }
+            } else {
+                out.progress = null;
+                out.deficiency_index = null;
+            }
+            return out;
+        });
+
+        res.json(rows);
     } catch (err) {
         console.error('[audits] GET list error:', err);
         res.status(500).json({ error: 'Kunde inte hämta granskningar' });

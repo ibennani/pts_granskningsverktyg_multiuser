@@ -240,7 +240,22 @@ export const SideMenuComponent = {
             ? [...requirement_ids_in_samples].filter(req_id => requirement_ids_in_rulefile.has(req_id)).length
             : requirement_ids_in_samples.size;
 
-        if (this.current_view_name === 'upload' || this.current_view_name === 'restore_session') {
+        if (this.current_view_name === 'restore_session') {
+            return { should_show: false, items: [], aria_label: t('side_menu_aria_label') };
+        }
+
+        if (this.current_view_name === 'start' || this.current_view_name === 'admin') {
+            return {
+                should_show: true,
+                aria_label: t('side_menu_aria_label'),
+                items: [
+                    { label: t('menu_link_start'), view_name: 'start' },
+                    { label: t('menu_link_admin'), view_name: 'admin' }
+                ]
+            };
+        }
+
+        if (this.current_view_name === 'upload') {
             return { should_show: false, items: [], aria_label: t('side_menu_aria_label') };
         }
 

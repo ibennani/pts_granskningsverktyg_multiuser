@@ -309,6 +309,22 @@ body {
     overflow-x: hidden;
 }
 
+/* Topp- och bottennavigering som tydliga horisontella barer */
+#global-action-bar-top,
+#global-action-bar-bottom {
+    display: block;
+    margin: 0;
+    padding: 0;
+}
+
+#global-action-bar-top {
+    margin-bottom: 1.5rem;
+}
+
+#global-action-bar-bottom {
+    margin-top: 1.5rem;
+}
+
 .view-container,
 .content-plate {
     background-color: var(--plate-background-color);

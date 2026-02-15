@@ -1,0 +1,49 @@
+/* css/components/start_view_component.css */
+
+.start-view-plate {
+    max-width: 60rem;
+}
+
+.start-view-intro {
+    margin-bottom: 1.5rem;
+}
+
+.start-view-table-wrapper {
+    overflow-x: auto;
+}
+
+.start-view-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: none;
+}
+
+.start-view-table th,
+.start-view-table td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border: none;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.start-view-table thead th {
+    font-weight: 600;
+}
+
+.start-view-table tbody tr:hover {
+    background-color: var(--button-default-hover-bg);
+}
+
+.start-view-audit-link {
+    color: var(--link-color);
+    text-decoration: underline;
+}
+
+.start-view-audit-link:hover {
+    text-decoration: underline;
+}
+
+.start-view-loading,
+.start-view-no-api {
+    margin-top: 1rem;
+}

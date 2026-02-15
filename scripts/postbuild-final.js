@@ -112,7 +112,9 @@ window.BUILD_INFO = ${JSON.stringify(buildInfo, null, 2)};
       /<title>.*?<\/title>/,
       `$&
     <link rel="stylesheet" href="./css/style.css">
-    <link rel="stylesheet" href="./css/features/markdown_toolbar.css">`
+    <link rel="stylesheet" href="./css/features/markdown_toolbar.css">
+    <link rel="stylesheet" href="./css/components/side_menu_component.css">
+    <link rel="stylesheet" href="./css/components/global_action_bar_component.css">`
     );
     
     // Update build timestamp

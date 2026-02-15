@@ -234,14 +234,14 @@ export const AdminViewComponent = {
         const header = this.Helpers.create_element('div', { class_name: 'admin-header' });
         const title = this.Helpers.create_element('h1', { text_content: t('admin_title') });
         const back_link = this.Helpers.create_element('a', {
-            href: '#upload',
+            href: '#start',
             class_name: ['admin-back-link'],
             text_content: t('admin_back_to_start'),
             attributes: { 'aria-label': t('admin_back_to_start') }
         });
         back_link.addEventListener('click', (e) => {
             e.preventDefault();
-            this.handle_go_to_upload();
+            this.handle_go_to_start();
         });
         header.appendChild(title);
         header.appendChild(back_link);

@@ -10,7 +10,8 @@
     min-width: 240px;
 }
 
-.app-main-view-root {
+.app-main-view-root,
+.main-wrapper {
     flex: 1 1 auto;
     min-width: 0;
 }
