@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "docker-compose up -d && vite",
+    "dev:client": "vite",
+    "dev:db": "docker-compose up -d",
     "dev:fixedport": "vite --port 5173 --strictPort",
     "prebuild": "npm run lint && npm run validate:imports && npm run validate:components && npm run validate:css",
     "build": "npm run prebuild && vite build && node scripts/postbuild-final.js",
@@ -23,6 +25,7 @@
     "validate:css": "node scripts/validate-css.js"
   },
   "devDependencies": {
+    "wait-on": "^7.2.0",
     "@playwright/test": "^1.56.0",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",

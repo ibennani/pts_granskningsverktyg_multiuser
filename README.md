@@ -22,7 +22,7 @@ Granskningsverktyget är en modern webbapplikation som stöder hela processen fr
 
 - Node.js 18.0.0 eller senare
 - Modern webbläsare (Chrome, Firefox, Edge)
-- Lokal HTTP-server (för utveckling)
+- Docker (för PostgreSQL vid serverbaserad utveckling – startas automatiskt vid `npm run dev`)
 
 ### Installation
 
@@ -41,6 +41,7 @@ Granskningsverktyget är en modern webbapplikation som stöder hela processen fr
    ```bash
    npm run dev
    ```
+   (PostgreSQL startas automatiskt i Docker. Utan Docker: `npm run dev:client` för endast frontend.)
 
 4. **Öppna i webbläsare**
    ```

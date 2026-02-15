@@ -168,7 +168,43 @@ Om `version` inte matchar databasen → `409 Conflict`.
 
 ---
 
-## 7. Nginx-konfiguration
+## 7. Utvecklingsmiljö (Docker)
+
+### Förutsättningar
+
+- Node.js 18+
+- Docker
+
+### Starta utveckling
+
+```bash
+npm install
+npm run dev
+```
+
+PostgreSQL startas automatiskt i Docker (`docker-compose up -d`). Frontend körs på port 5173.
+
+### Filer i repot
+
+| Fil | Beskrivning |
+|-----|-------------|
+| `docker-compose.yml` | PostgreSQL 16, port 5432, volume pgdata |
+| `.env.example` | Mall för miljövariabler. Kopiera till `.env` |
+| `package.json` | `dev` startar Docker + Vite. `dev:db` startar endast databasen. `dev:client` startar endast Vite. |
+
+### När backend är implementerad
+
+Scripts som kan läggas till:
+
+- `dev:app`: `wait-on tcp:localhost:5432 && npm run db:migrate && concurrently "npm run dev:server" "vite"`
+- `db:migrate`: Kör migrations mot PostgreSQL
+- `dev:server`: Startar Express-backend
+
+`wait-on` är redan tillagt som dev-dependency.
+
+---
+
+## 8. Nginx-konfiguration
 
 ```nginx
 server {
@@ -197,7 +233,7 @@ server {
 
 ---
 
-## 8. Frontend – nya vyer
+## 9. Frontend – nya vyer
 
 | Route | Beskrivning |
 |-------|-------------|
