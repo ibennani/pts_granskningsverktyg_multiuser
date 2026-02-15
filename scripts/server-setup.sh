@@ -5,26 +5,23 @@
 
 set -e
 
-echo "=== 1. Installerar Podman (Docker-kompatibel på RHEL) ==="
-dnf install -y podman podman-docker
-systemctl enable podman
-systemctl start podman
+echo "=== 1. Installerar Docker ==="
+dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
+dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+systemctl enable docker
+systemctl start docker
+usermod -aG docker localiliben 2>/dev/null || true
 
-# Skapa alias så docker-kommandon fungerar
-ln -sf /usr/bin/podman /usr/local/bin/docker 2>/dev/null || true
-
-echo "=== 2. Installerar Podman Compose ==="
-dnf install -y podman-compose 2>/dev/null || pip3 install podman-compose 2>/dev/null || true
-
-echo "=== 3. Uppgraderar Node.js till 20.x ==="
+echo "=== 2. Uppgraderar Node.js till 20.x ==="
 dnf module reset nodejs -y 2>/dev/null || true
 curl -fsSL https://rpm.nodesource.com/setup_20.x -o /tmp/nodesource-setup.sh
 bash /tmp/nodesource-setup.sh
 dnf install -y nodejs
 rm -f /tmp/nodesource-setup.sh
 
-echo "=== 4. Verifierar installation ==="
-podman --version
+echo "=== 3. Verifierar installation ==="
+docker --version
+docker compose version
 node --version
 npm --version
 
