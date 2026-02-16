@@ -1,22 +1,32 @@
 /* Styles for SampleManagementViewComponent */
-.sample-management-view-plate { /* "Plattan" för denna vy */
-    background-color: var(--plate-background-color); /* Ändrad från var(--background-color) */
-    padding: 1.5rem;
-    border: 1px solid var(--border-color); /* Ändrad från 2px solid var(--primary-color) */
+.sample-management-view-plate {
+    background-color: var(--plate-background-color);
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
-    /* Skugga hanteras av global CSS för .content-plate */
     margin-top: 0;
 }
 
 .sample-management-view-plate h1 {
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
 }
+
 .sample-management-view-plate .view-intro-text {
-     margin-bottom: 1.5rem;
-    font-size: 1rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
     color: var(--text-color-muted);
 }
 
-.sample-management-actions { /* För knappar som "Lägg till nytt stickprov" */
-    margin-bottom: 1.5rem;
+.sample-management-actions {
+    margin-bottom: 0.75rem;
+}
+
+.sample-management-actions .button {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.9rem;
+}
+
+.sample-management-view-plate .form-actions .button {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.9rem;
 }

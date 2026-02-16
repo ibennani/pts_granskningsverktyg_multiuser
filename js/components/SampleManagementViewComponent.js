@@ -122,7 +122,7 @@ export const SampleManagementViewComponent = {
         
         // Render bottom actions (endast vid första flödet: ny granskning som ännu inte påbörjats)
         if (current_state.auditStatus === 'not_started') {
-            const bottom_actions_div = this.Helpers.create_element('div', { class_name: ['form-actions', 'space-between-groups'], style: 'margin-top: 2rem; width: 100%;' });
+            const bottom_actions_div = this.Helpers.create_element('div', { class_name: ['form-actions', 'space-between-groups'], style: 'margin-top: 1rem; width: 100%;' });
             
             const left_group_bottom = this.Helpers.create_element('div', { class_name: 'action-group-left' });
             const back_to_metadata_btn = this.Helpers.create_element('button', {
@@ -131,6 +131,13 @@ export const SampleManagementViewComponent = {
             });
             back_to_metadata_btn.addEventListener('click', () => this.router('metadata'));
             left_group_bottom.appendChild(back_to_metadata_btn);
+
+            const back_to_admin_btn = this.Helpers.create_element('button', {
+                class_name: ['button', 'button-default'],
+                html_content: `<span>${t('back_to_admin')}</span>` + (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('arrow_back') : '')
+            });
+            back_to_admin_btn.addEventListener('click', () => this.router('admin'));
+            left_group_bottom.appendChild(back_to_admin_btn);
             bottom_actions_div.appendChild(left_group_bottom);
 
             if (current_state.samples.length > 0) {

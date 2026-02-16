@@ -1137,7 +1137,13 @@ window.DraftManager = DraftManager;
                 if (full_state && validation?.isValid) {
                     dispatch({ type: StoreActionTypes.LOAD_AUDIT_FROM_FILE, payload: full_state });
                     const status = full_state.auditStatus || 'not_started';
-                    const next_view = status === 'not_started' ? 'metadata' : 'audit_overview';
+                    const samples = full_state.samples || [];
+                    let next_view = 'audit_overview';
+                    if (status === 'not_started' && samples.length === 0) {
+                        next_view = 'sample_management';
+                    } else if (status === 'not_started') {
+                        next_view = 'metadata';
+                    }
                     navigate_and_set_hash(next_view, {});
                     return true;
                 }

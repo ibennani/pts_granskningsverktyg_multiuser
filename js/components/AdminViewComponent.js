@@ -430,7 +430,10 @@ export const AdminViewComponent = {
                 if (this.NotificationComponent) {
                     this.NotificationComponent.show_global_message(t('saved_audit_loaded_successfully'), 'success');
                 }
-                this.router('audit_overview');
+                const status = full_state.auditStatus || 'not_started';
+                const samples = full_state.samples || [];
+                const next_view = (status === 'not_started' && samples.length === 0) ? 'sample_management' : 'audit_overview';
+                this.router(next_view);
             } else {
                 if (this.NotificationComponent) {
                     this.NotificationComponent.show_global_message(t('error_invalid_saved_audit_file'), 'error');

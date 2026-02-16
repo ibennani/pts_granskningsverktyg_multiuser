@@ -155,6 +155,13 @@ export const MetadataFormComponent = {
 
         const form_actions_wrapper = this.Helpers.create_element('div', { class_name: 'form-actions' });
 
+        const submit_button = this.Helpers.create_element('button', {
+            class_name: ['button', 'button-primary'],
+            attributes: { type: 'submit' },
+            html_content: `<span>${submitButtonText}</span>` + (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('arrow_forward') : '')
+        });
+        form_actions_wrapper.appendChild(submit_button);
+
         if (cancelButtonText && typeof this.on_cancel_callback === 'function') {
             const cancel_button = this.Helpers.create_element('button', {
                 class_name: ['button', 'button-default'],
@@ -164,13 +171,6 @@ export const MetadataFormComponent = {
             cancel_button.addEventListener('click', this.on_cancel_callback);
             form_actions_wrapper.appendChild(cancel_button);
         }
-
-        const submit_button = this.Helpers.create_element('button', {
-            class_name: ['button', 'button-primary'],
-            attributes: { type: 'submit' },
-            html_content: `<span>${submitButtonText}</span>` + (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('arrow_forward') : '')
-        });
-        form_actions_wrapper.appendChild(submit_button);
 
         this.form_element_ref.appendChild(form_actions_wrapper);
         form_wrapper.appendChild(this.form_element_ref);

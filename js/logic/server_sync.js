@@ -85,6 +85,21 @@ export function schedule_sync_to_server(state, dispatch_fn) {
 }
 
 /**
+ * Kör omedelbar sync till server med aktuell state (t.ex. vid "Fortsätt till stickprov").
+ * Används när state.js inte triggar sync automatiskt (t.ex. auditStatus not_started).
+ */
+export async function sync_to_server_now(get_state_fn, dispatch_fn) {
+    if (debounce_timer) {
+        clearTimeout(debounce_timer);
+        debounce_timer = null;
+    }
+    const state = typeof get_state_fn === 'function' ? get_state_fn() : null;
+    if (state) {
+        await run_sync(state, dispatch_fn);
+    }
+}
+
+/**
  * Kör omedelbar sync till server (t.ex. vid navigering bort från granskning).
  * Rensar väntande debounce och sparar direkt.
  */

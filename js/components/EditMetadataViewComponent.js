@@ -1,5 +1,6 @@
 import { MetadataFormComponent } from './MetadataFormComponent.js';
 import { get_current_user_name } from '../utils/helpers.js';
+import { sync_to_server_now } from '../logic/server_sync.js';
 
 export const EditMetadataViewComponent = {
     init({ root, deps }) {
@@ -39,8 +40,8 @@ export const EditMetadataViewComponent = {
         window.customFocusApplied = true;
     },
 
-    handle_form_submit(form_data) {
-        this.dispatch({
+    async handle_form_submit(form_data) {
+        await this.dispatch({
             type: this.StoreActionTypes.UPDATE_METADATA,
             payload: form_data
         });
@@ -51,6 +52,11 @@ export const EditMetadataViewComponent = {
         const current_status = this.getState().auditStatus;
         
         if (current_status === 'not_started') {
+            try {
+                await sync_to_server_now(this.getState, this.dispatch);
+            } catch (err) {
+                // Fel visas redan av run_sync via NotificationComponent
+            }
             this.router('sample_management');
         } else {
             this.NotificationComponent.show_global_message(this.Translation.t('metadata_updated_successfully'), 'success');
@@ -113,7 +119,7 @@ export const EditMetadataViewComponent = {
         const form_options = {
             initialData: metadata,
             submitButtonText: is_new_audit ? t('continue_to_samples') : t('save_changes_button'),
-            cancelButtonText: is_new_audit ? t('metadata_back_to_admin') : t('return_without_saving_button_text')
+            cancelButtonText: t('return_without_saving_button_text')
         };
         
         this.metadata_form_component_instance.render(form_options);
