@@ -1104,8 +1104,8 @@ window.DraftManager = DraftManager;
 
         const load_audit_and_navigate = async (auditId) => {
             try {
-                const { get_audit } = await import('./api/client.js');
-                const full_state = await get_audit(auditId);
+                const { load_audit_with_rule_file } = await import('./api/client.js');
+                const full_state = await load_audit_with_rule_file(auditId);
                 const validation = window.ValidationLogic?.validate_saved_audit_file?.(full_state);
                 if (full_state && validation?.isValid) {
                     dispatch({ type: StoreActionTypes.LOAD_AUDIT_FROM_FILE, payload: full_state });

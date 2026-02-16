@@ -79,3 +79,5 @@ Om du bara ändrat `server/`:
 | "Servern svarar inte" | Backend eller API-proxy – kolla Docker, Postgres, PM2, SELinux |
 | 502 Bad Gateway | Nginx kan inte nå backend – kolla `setsebool httpd_can_network_connect 1` |
 | Permission denied | `chmod -R o+rX /var/www/granskningsverktyget-v2/v2` |
+| **Radering fungerar inte** | Nginx: `location /v2/api/` måste komma FÖRE `location /v2/` i config. Annars kan try_files fånga DELETE/PUT och ge 405. Uppdatera enligt `scripts/ux-granskning-with-v2.conf` |
+| **Regelfil kan inte raderas** | Regelfiler som används av granskningar blockeras (409). Radera granskningarna först, sedan regelfilen |

@@ -62,7 +62,10 @@ export async function api_delete(path) {
     });
     if (!res.ok) {
         const err = await res.json().catch(() => ({ error: res.statusText }));
-        throw new Error(err.error || `HTTP ${res.status}`);
+        const msg = err?.error || `HTTP ${res.status}`;
+        const e = new Error(msg);
+        e.status = res.status;
+        throw e;
     }
     if (res.status === 204) return null;
     return res.json();
@@ -115,6 +118,27 @@ export async function get_audits(status) {
 
 export async function get_audit(id) {
     return api_get(`/audits/${id}`);
+}
+
+/**
+ * Hämtar granskning med regelfil. Om svaret saknar ruleFileContent men har ruleSetId,
+ * hämtas regelfilen separat via rules-API och slås ihop. Regelfilen läggs inte till separat.
+ */
+export async function load_audit_with_rule_file(id) {
+    const audit_data = await get_audit(id);
+    if (audit_data.ruleFileContent) {
+        return audit_data;
+    }
+    const rule_set_id = audit_data.ruleSetId ?? audit_data.rule_set_id;
+    if (!rule_set_id) {
+        return audit_data;
+    }
+    const rule = await get_rule(rule_set_id);
+    const rule_content = rule?.content;
+    if (rule_content) {
+        return { ...audit_data, ruleFileContent: rule_content };
+    }
+    return audit_data;
 }
 
 export async function create_audit(rule_set_id) {

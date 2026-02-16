@@ -83,6 +83,25 @@ function build_full_state(audit_row, rule_set_row) {
     };
 }
 
+/** Returnerar audit-data UTAN ruleFileContent – regelfilen hämtas separat via rule_set_id. */
+function build_audit_state_without_rule_file(audit_row) {
+    const samples = audit_row.samples || [];
+    return {
+        saveFileVersion: '2.1.0',
+        auditMetadata: audit_row.metadata || {},
+        auditStatus: audit_row.status,
+        startTime: audit_row.metadata?.startTime || null,
+        endTime: audit_row.metadata?.endTime || null,
+        samples,
+        deficiencyCounter: 1,
+        ruleFileOriginalContentString: null,
+        ruleFileOriginalFilename: '',
+        version: audit_row.version,
+        auditId: audit_row.id,
+        ruleSetId: audit_row.rule_set_id
+    };
+}
+
 router.get('/', async (req, res) => {
     try {
         const { status } = req.query;
@@ -163,13 +182,14 @@ router.get('/:id', async (req, res) => {
             return res.status(404).json({ error: 'Granskning hittades inte' });
         }
         const audit = auditResult.rows[0];
-        let ruleSet = null;
         if (audit.rule_set_id) {
-            const ruleResult = await query('SELECT * FROM rule_sets WHERE id = $1', [audit.rule_set_id]);
-            ruleSet = ruleResult.rows[0] || null;
+            const state = build_audit_state_without_rule_file(audit);
+            res.json(state);
+        } else {
+            const ruleSet = null;
+            const fullState = build_full_state(audit, ruleSet);
+            res.json(fullState);
         }
-        const fullState = build_full_state(audit, ruleSet);
-        res.json(fullState);
     } catch (err) {
         console.error('[audits] GET one error:', err);
         res.status(500).json({ error: 'Kunde inte hämta granskning' });

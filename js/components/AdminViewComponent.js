@@ -5,7 +5,7 @@ import {
     get_rules,
     get_rule,
     get_audits,
-    get_audit,
+    load_audit_with_rule_file,
     import_rule,
     import_audit,
     delete_rule,
@@ -231,7 +231,7 @@ export const AdminViewComponent = {
     async handle_open_audit(audit_id) {
         const t = this.get_t_func();
         try {
-            const full_state = await get_audit(audit_id);
+            const full_state = await load_audit_with_rule_file(audit_id);
             if (full_state.ruleFileContent && this.ValidationLogic?.validate_saved_audit_file?.(full_state)?.isValid) {
                 this.dispatch({
                     type: this.StoreActionTypes.LOAD_AUDIT_FROM_FILE,
