@@ -58,6 +58,7 @@ export const MarkdownToolbar = {
 
         const existingInstance = instanceMap.get(textarea.id);
         const wasPreviewVisible = existingInstance ? existingInstance.previewVisible : false;
+        const wasToolbarVisible = existingInstance ? existingInstance.toolbarVisible : false;
 
         const wrapper = document.createElement('div');
         wrapper.className = 'markdown-editor-wrapper';
@@ -65,28 +66,47 @@ export const MarkdownToolbar = {
         const toolbar = this.createToolbar(textarea, wasPreviewVisible);
         const previewDiv = document.createElement('div');
         previewDiv.className = 'md-preview markdown-content';
-        previewDiv.style.display = wasPreviewVisible ? 'block' : 'none';
 
         textarea.parentNode.insertBefore(wrapper, textarea);
         wrapper.appendChild(toolbar);
         wrapper.appendChild(textarea);
         wrapper.appendChild(previewDiv);
 
+        const toggle_btn = this.createFormatToggleButton(textarea, wrapper, wasToolbarVisible);
+        const label = wrapper.previousElementSibling;
+        const label_row = document.createElement('div');
+        label_row.className = 'markdown-editor-label-row';
+        if (label && label.tagName === 'LABEL') {
+            label_row.appendChild(label);
+        }
+        label_row.appendChild(toggle_btn);
+        const parent = wrapper.parentNode;
+        parent.insertBefore(label_row, wrapper);
+
+        this.applyToolbarVisibility(toolbar, wrapper, toggle_btn, label_row, previewDiv, wasToolbarVisible, wasPreviewVisible);
+
         instanceMap.set(textarea.id, {
             previewVisible: wasPreviewVisible,
+            toolbarVisible: wasToolbarVisible,
             previewDiv: previewDiv,
             toolbar: toolbar,
+            toggleBtn: toggle_btn,
+            labelRow: label_row,
             debouncedUpdate: this.debounce(() => this.updatePreview(textarea, previewDiv), 250)
         });
 
-        // Hantera Shift+Tab från textarean för att gå tillbaka till verktygsfältet
+        // Hantera Shift+Tab från textarean – fokusera toggle-knapp eller verktygsfält beroende på state
         textarea.addEventListener('keydown', (e) => {
             if (e.key === 'Tab' && e.shiftKey) {
-                // Hitta första knappen i verktygsfältet och fokusera den
-                const firstButton = toolbar.querySelector('.md-toolbar-btn');
-                if (firstButton) {
-                    e.preventDefault();
-                    firstButton.focus();
+                e.preventDefault();
+                const instance = instanceMap.get(textarea.id);
+                if (instance) {
+                    if (instance.toolbarVisible) {
+                        const firstButton = toolbar.querySelector('.md-toolbar-btn');
+                        if (firstButton) firstButton.focus();
+                    } else {
+                        instance.toggleBtn.focus();
+                    }
                 }
             }
         });
@@ -166,8 +186,8 @@ export const MarkdownToolbar = {
                     const instance = instanceMap.get(textarea.id);
                     if (instance) {
                         instance.previewVisible = !instance.previewVisible;
-                        instance.previewDiv.style.display = instance.previewVisible ? 'block' : 'none';
                         button.setAttribute('aria-pressed', instance.previewVisible);
+                        this.applyPreviewVisibility(instance.previewDiv, instance.toolbarVisible, instance.previewVisible);
                         if (instance.previewVisible) {
                             this.updatePreview(textarea, instance.previewDiv);
                         }
@@ -206,6 +226,81 @@ export const MarkdownToolbar = {
         });
 
         return toolbar;
+    },
+
+    createFormatToggleButton(textarea, wrapper, is_toolbar_visible) {
+        const t = window.Translation?.t || ((k) => k);
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'md-format-toggle-btn';
+        btn.setAttribute('aria-expanded', String(is_toolbar_visible));
+        const label_el = wrapper.previousElementSibling;
+        const label_text = (label_el && label_el.tagName === 'LABEL') ? (label_el.textContent?.trim() || t('markdown_toolbar_format_button')) : t('markdown_toolbar_format_button');
+        const state_text = is_toolbar_visible ? t('markdown_toolbar_toolbar_visible') : t('markdown_toolbar_toolbar_hidden');
+        btn.setAttribute('aria-label', `${label_text}. ${state_text}`);
+        btn.appendChild(document.createTextNode(t('markdown_toolbar_format_button')));
+        const icon = document.createElement('span');
+        icon.className = 'md-format-toggle-icon';
+        icon.setAttribute('aria-hidden', 'true');
+        icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M18.37 2.63L14 7l-1.59-1.59a2 2 0 0 0-2.82 0L8 7l9 9 1.59-1.59a2 2 0 0 0 0-2.82L17 10l4.37-4.37a2.12 2.12 0 1 0-3-3Z"/><path d="M9 8c-2 3-4 3.5-7 4l8 10c2-1 6-5 6-7"/></svg>';
+        btn.appendChild(icon);
+        btn.addEventListener('click', () => {
+            const instance = instanceMap.get(textarea.id);
+            if (!instance) return;
+            instance.toolbarVisible = !instance.toolbarVisible;
+            this.applyToolbarVisibility(instance.toolbar, wrapper, instance.toggleBtn, instance.labelRow, instance.previewDiv, instance.toolbarVisible, instance.previewVisible);
+        });
+        btn.addEventListener('keydown', (e) => {
+            if (e.key === 'Tab' && !e.shiftKey) {
+                const instance = instanceMap.get(textarea.id);
+                if (instance) {
+                    e.preventDefault();
+                    if (instance.toolbarVisible) {
+                        const firstButton = instance.toolbar.querySelector('.md-toolbar-btn');
+                        if (firstButton) firstButton.focus();
+                    } else {
+                        textarea.focus();
+                    }
+                }
+            }
+        });
+        return btn;
+    },
+
+    applyToolbarVisibility(toolbar, wrapper, toggle_btn, label_row, preview_div, toolbar_visible, preview_visible) {
+        const t = window.Translation?.t || ((k) => k);
+        const label_el = label_row?.querySelector?.('label');
+        const label_text = label_el?.textContent?.trim() || t('markdown_toolbar_format_button');
+        const state_text = toolbar_visible ? t('markdown_toolbar_toolbar_visible') : t('markdown_toolbar_toolbar_hidden');
+        toggle_btn.setAttribute('aria-expanded', String(toolbar_visible));
+        toggle_btn.setAttribute('aria-label', `${label_text}. ${state_text}`);
+        if (toolbar_visible) {
+            toolbar.classList.remove('md-toolbar-collapsed');
+            toolbar.removeAttribute('aria-hidden');
+            toolbar.querySelectorAll('.md-toolbar-btn').forEach((b, idx) => {
+                b.setAttribute('tabindex', idx === 0 ? '0' : '-1');
+            });
+            wrapper.classList.remove('md-toolbar-collapsed');
+        } else {
+            toolbar.classList.add('md-toolbar-collapsed');
+            toolbar.setAttribute('aria-hidden', 'true');
+            toolbar.querySelectorAll('.md-toolbar-btn').forEach((b) => {
+                b.setAttribute('tabindex', '-1');
+            });
+            wrapper.classList.add('md-toolbar-collapsed');
+        }
+        this.applyPreviewVisibility(preview_div, toolbar_visible, preview_visible);
+    },
+
+    applyPreviewVisibility(preview_div, toolbar_visible, preview_visible) {
+        const should_collapse = !toolbar_visible || !preview_visible;
+        if (should_collapse) {
+            preview_div.classList.add('md-preview-collapsed');
+            preview_div.setAttribute('aria-hidden', 'true');
+        } else {
+            preview_div.classList.remove('md-preview-collapsed');
+            preview_div.removeAttribute('aria-hidden');
+        }
     },
 
     handleToolbarKeydown(e, buttons, textarea) {
