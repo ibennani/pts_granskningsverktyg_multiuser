@@ -318,7 +318,7 @@ window.DraftManager = DraftManager;
             if (title_prefix === t('app_title')) {
                 switch (viewName) {
                     case 'start':
-                        title_prefix = t('start_view_h1');
+                        title_prefix = t('menu_link_start');
                         break;
                     case 'upload':
                         title_prefix = t('start_or_load_audit_title');
@@ -837,23 +837,22 @@ window.DraftManager = DraftManager;
         updatePageTitle(view_name_to_render, params_to_render);
         update_side_menu(view_name_to_render, params_to_render);
 
+        const prev_view = current_view_name_rendered;
+        const prev_params_json = current_view_params_rendered_json;
         current_view_name_rendered = view_name_to_render;
         try { window.__gv_current_view_name = current_view_name_rendered; } catch (e) {}
         top_action_bar_instance.render();
         bottom_action_bar_container.style.display = '';
         bottom_action_bar_instance.render();
 
-        if (current_view_name_rendered === view_name_to_render && 
-            current_view_params_rendered_json === JSON.stringify(params_to_render) &&
+        if (prev_view === view_name_to_render && 
+            prev_params_json === JSON.stringify(params_to_render) &&
             current_view_component_instance && typeof current_view_component_instance.render === 'function') {
             
             current_view_component_instance.render();
             ensure_skip_link_target(view_root);
             return;
         }
-        
-        const prev_view = current_view_name_rendered;
-        const prev_params_json = current_view_params_rendered_json;
         current_view_params_rendered_json = JSON.stringify(params_to_render);
 
         const prev_params = prev_params_json ? (() => { try { return JSON.parse(prev_params_json); } catch (_) { return {}; } })() : {};
@@ -1188,6 +1187,7 @@ window.DraftManager = DraftManager;
             hash_change_handler(...args);
         };
         memoryManager.addEventListener(window, 'hashchange', hash_change_wrapper);
+        memoryManager.addEventListener(document, 'languageChanged', language_changed_handler);
 
         let focus_capture_timer = null;
         const focus_in_handler = (e) => {
