@@ -4,9 +4,9 @@
 .overview-dashboard {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); /* Responsiv grid */
-    gap: 1.5rem;
-    margin-top: 1rem;
-    margin-bottom: 2rem;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+    margin-bottom: 0.5rem;
 }
 
 .dashboard-panel {
@@ -22,8 +22,8 @@
     font-size: 1.5rem;
     color: var(--primary-color-dark);
     margin-top: 0;
-    margin-bottom: 1.5rem;
-    padding-bottom: 0.5rem;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.25rem;
     border-bottom: 1px dashed var(--secondary-color);
 }
 
@@ -33,9 +33,9 @@
 
 /* --- ALLMÄNNA SEKTIONSSTILAR --- */
 .audit-overview-section {
-    margin-bottom: 2rem;
+    margin-bottom: 0.75rem;
     border-top: 1px solid var(--border-color);
-    padding-top: 1.5rem;
+    padding-top: 0.5rem;
 }
 .audit-overview-section:last-child {
     border-bottom: none;
@@ -74,10 +74,10 @@
     display: flex;
     align-items: baseline;
     justify-content: flex-start;
-    gap: 1rem;
+    gap: 0.5rem;
     padding-bottom: 0; 
     border-bottom: none; 
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
 }
 
 .sample-list-header h2 {

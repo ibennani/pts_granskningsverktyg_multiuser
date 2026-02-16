@@ -3,7 +3,7 @@
 .global-action-bar {
     width: 100%;
     padding: 0.75rem 1rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.25rem;
     background-color: var(--plate-background-color);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
@@ -15,7 +15,7 @@
 }
 
 #global-action-bar-bottom .global-action-bar {
-    margin-top: 1.5rem;
+    margin-top: 0.25rem;
     margin-bottom: 0;
 }
 
