@@ -1370,14 +1370,12 @@ export const EditRulefileRequirementComponent = {
         const numbered_label_text = `${t('pass_criterion_label')} ${numbering}`;
 
         const header_wrapper = this.Helpers.create_element('div', { class_name: 'form-group-header' });
-        header_wrapper.appendChild(this.Helpers.create_element('span', {
+        header_wrapper.appendChild(this.Helpers.create_element('h4', {
             class_name: 'form-group-header-title',
             text_content: numbered_label_text,
             attributes: {
                 tabindex: '-1',
-                'data-focus-target': 'criterion-heading',
-                role: 'heading',
-                'aria-level': '4'
+                'data-focus-target': 'criterion-heading'
             }
         }));
 

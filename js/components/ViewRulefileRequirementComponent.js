@@ -240,7 +240,7 @@ export const ViewRulefileRequirementComponent = {
                 check.passCriteria.forEach((pc, pc_index) => {
                     const pc_item = this.Helpers.create_element('li', { class_name: 'pass-criterion-item' });
                     const numbering = `${check_index + 1}.${pc_index + 1}`;
-                    const numbering_label = this.Helpers.create_element('p', {
+                    const numbering_label = this.Helpers.create_element('h4', {
                         class_name: 'pass-criterion-number-label',
                         text_content: `${t('pass_criterion_label')} ${numbering}`
                     });

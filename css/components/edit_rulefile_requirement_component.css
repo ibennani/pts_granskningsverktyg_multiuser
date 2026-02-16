@@ -67,7 +67,8 @@
     flex-wrap: wrap;
 }
 
-.form-group-header label {
+.form-group-header label,
+.form-group-header h4 {
     margin: 0;
 }
 

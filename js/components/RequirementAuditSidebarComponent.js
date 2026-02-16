@@ -73,11 +73,14 @@ export const RequirementAuditSidebarComponent = {
         this.root.innerHTML = '';
 
         const container = this.Helpers.create_element('div', { class_name: 'requirement-audit-sidebar' });
-        this.heading_ref = this.Helpers.create_element('h2', { text_content: '' });
+        this.heading_ref = this.Helpers.create_element('h1', { text_content: '' });
         container.appendChild(this.heading_ref);
 
         const fieldset = this.Helpers.create_element('fieldset', { class_name: 'requirement-audit-sidebar__mode' });
-        const legend = this.Helpers.create_element('legend', { text_content: this.Translation.t('requirement_audit_sidebar_mode_label') });
+        const legend = this.Helpers.create_element('legend', {
+            text_content: this.Translation.t('requirement_audit_sidebar_mode_label'),
+            attributes: { role: 'heading', 'aria-level': '2' }
+        });
         fieldset.appendChild(legend);
         this.mode_legend_ref = legend;
         this.mode_label_refs = {};
@@ -120,7 +123,7 @@ export const RequirementAuditSidebarComponent = {
         container.appendChild(fieldset);
         this.mode_fieldset_ref = fieldset;
 
-        this.filter_heading_ref = this.Helpers.create_element('h3', { text_content: '' });
+        this.filter_heading_ref = this.Helpers.create_element('h2', { text_content: '' });
         container.appendChild(this.filter_heading_ref);
 
         this.filter_container_ref = this.Helpers.create_element('div', { class_name: 'requirement-audit-sidebar__filters' });
@@ -146,7 +149,7 @@ export const RequirementAuditSidebarComponent = {
         });
         container.appendChild(this.filter_container_ref);
 
-        this.list_heading_ref = this.Helpers.create_element('h3', { text_content: '' });
+        this.list_heading_ref = this.Helpers.create_element('h2', { text_content: '' });
         container.appendChild(this.list_heading_ref);
 
         this.list_container_ref = this.Helpers.create_element('div', {
@@ -290,7 +293,7 @@ export const RequirementAuditSidebarComponent = {
             const status_text = status_parts.join(', ');
 
             const li = this.Helpers.create_element('li', { class_name: 'requirement-audit-sidebar__item' });
-            const h4 = this.Helpers.create_element('h4', { class_name: 'requirement-audit-sidebar__link-wrapper' });
+            const h3 = this.Helpers.create_element('h3', { class_name: 'requirement-audit-sidebar__link-wrapper' });
             const link = this.Helpers.create_element('a', {
                 class_name: 'requirement-audit-sidebar__link',
                 text_content: requirement.title || this.Translation.t('unknown_value', { val: req_key }),
@@ -301,7 +304,7 @@ export const RequirementAuditSidebarComponent = {
                     'data-requirement-id': req_key
                 }
             });
-            h4.appendChild(link);
+            h3.appendChild(link);
 
             if (String(req_key) === String(requirement_id)) {
                 link.setAttribute('aria-current', 'page');
@@ -342,7 +345,7 @@ export const RequirementAuditSidebarComponent = {
             meta.appendChild(icons_wrapper);
             meta.appendChild(status_text_span);
 
-            li.appendChild(h4);
+            li.appendChild(h3);
             if (requirement.standardReference?.text) {
                 li.appendChild(this.Helpers.create_element('span', {
                     class_name: 'requirement-audit-sidebar__reference',
@@ -381,7 +384,7 @@ export const RequirementAuditSidebarComponent = {
             const status_text = status_parts.join(', ');
 
             const li = this.Helpers.create_element('li', { class_name: 'requirement-audit-sidebar__item' });
-            const h4 = this.Helpers.create_element('h4', { class_name: 'requirement-audit-sidebar__link-wrapper' });
+            const h3 = this.Helpers.create_element('h3', { class_name: 'requirement-audit-sidebar__link-wrapper' });
             const link = this.Helpers.create_element('a', {
                 class_name: 'requirement-audit-sidebar__link',
                 text_content: sample?.description || this.Translation.t('undefined_description'),
@@ -392,7 +395,7 @@ export const RequirementAuditSidebarComponent = {
                     'data-requirement-id': requirement_key
                 }
             });
-            h4.appendChild(link);
+            h3.appendChild(link);
 
             if (String(sample?.id) === String(current_sample_id)) {
                 link.setAttribute('aria-current', 'page');
@@ -433,7 +436,7 @@ export const RequirementAuditSidebarComponent = {
             meta.appendChild(icons_wrapper);
             meta.appendChild(status_text_span);
 
-            li.appendChild(h4);
+            li.appendChild(h3);
             // Ingen referenstext i listläget "Alla stickprov för samma krav"
             li.appendChild(meta);
             list.appendChild(li);

@@ -508,11 +508,11 @@ export const ChecklistHandler = {
                 });
 
                 const numbering = `${check_index + 1}.${pc_index + 1}`;
-                const pc_title_div = this.Helpers.create_element('div', {
+                const pc_title_h4 = this.Helpers.create_element('h4', {
                     class_name: 'pass-criterion-title',
                     html_content: `<strong>${this.Helpers.escape_html(t('pass_criterion_label'))} ${this.Helpers.escape_html(numbering)}</strong>`
                 });
-                pc_item_li.appendChild(pc_title_div);
+                pc_item_li.appendChild(pc_title_h4);
 
                 const requirement_content_div = this.Helpers.create_element('div', { 
                     class_name: ['pass-criterion-requirement', 'markdown-content'],
