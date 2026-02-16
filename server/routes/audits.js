@@ -287,17 +287,12 @@ router.post('/import', async (req, res) => {
         const rule_name = title_from_content || 'Importerad regelfil';
 
         let ruleSet;
-        const existing = await query(
-            'SELECT * FROM rule_sets WHERE content @> $1::jsonb AND content <@ $1::jsonb LIMIT 1',
-            [contentJson]
-        );
-        if (existing.rows.length > 0) {
-            ruleSet = existing.rows[0];
-        } else if (title_from_content && version_from_content) {
+        // 1. Först: match på namn + version (om båda finns)
+        if (title_from_content && version_from_content) {
             const by_meta = await query(
                 `SELECT * FROM rule_sets WHERE
-                    content->'metadata'->>'title' = $1 AND
-                    content->'metadata'->>'version' = $2
+                    TRIM(COALESCE(content->'metadata'->>'title','')) = $1 AND
+                    TRIM(COALESCE(content->'metadata'->>'version','')) = $2
                 LIMIT 1`,
                 [title_from_content, version_from_content]
             );
@@ -305,6 +300,17 @@ router.post('/import', async (req, res) => {
                 ruleSet = by_meta.rows[0];
             }
         }
+        // 2. Annars: exakt content-match
+        if (!ruleSet) {
+            const existing = await query(
+                'SELECT * FROM rule_sets WHERE content @> $1::jsonb AND content <@ $1::jsonb LIMIT 1',
+                [contentJson]
+            );
+            if (existing.rows.length > 0) {
+                ruleSet = existing.rows[0];
+            }
+        }
+        // 3. Annars: skapa ny
         if (!ruleSet) {
             const ruleResult = await query(
                 'INSERT INTO rule_sets (name, content) VALUES ($1, $2) RETURNING *',
