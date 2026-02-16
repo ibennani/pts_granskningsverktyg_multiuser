@@ -878,6 +878,7 @@ window.DraftManager = DraftManager;
         }
 
         if (current_view_component_instance && typeof current_view_component_instance.destroy === 'function') {
+            NotificationComponent?.clear_global_message?.();
             if (current_view_component_instance === RequirementListComponent && view_name_to_render === 'rulefile_requirements') {
                 try {
                     current_view_component_instance.destroy();

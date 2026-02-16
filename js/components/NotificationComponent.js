@@ -5,8 +5,7 @@ const GLOBAL_MESSAGE_CONTAINER_ID = 'global-message-area';
 export const NotificationComponent = {
     init() {
         this.global_message_element = null;
-        this.event_listeners = new Set(); 
-        
+
         // Defer DOM access
         return Promise.resolve().then(() => {
             this.global_message_element = document.getElementById(GLOBAL_MESSAGE_CONTAINER_ID);
@@ -27,11 +26,7 @@ export const NotificationComponent = {
     },
 
     _update_global_message_content(message, type) {
-        if (!this.event_listeners) {
-            this.event_listeners = new Set();
-        }
-
-        if (!this.global_message_element || !window.Translation || !window.Helpers) {
+        if (!this.global_message_element) {
             // Try to get element if it was created after init
             this.global_message_element = document.getElementById(GLOBAL_MESSAGE_CONTAINER_ID);
             if (!this.global_message_element) {
@@ -45,9 +40,6 @@ export const NotificationComponent = {
             this.global_message_element.setAttribute('aria-live', 'polite');
         }
         
-        const { t } = window.Translation;
-        const { create_element } = window.Helpers;
-
         // Sätt role="alert" INNAN innehållet ändras för error/warning
         // Detta säkerställer att skärmläsare meddelar ändringen korrekt
         if (type === 'error' || type === 'warning') {
@@ -64,17 +56,6 @@ export const NotificationComponent = {
             this.global_message_element.classList.add('global-message-content');
             this.global_message_element.classList.add(`message-${type}`);
 
-            if (type === 'error' || type === 'warning') {
-                const close_button = create_element('button', {
-                    class_name: 'global-message-close-btn', html_content: '×',
-                    attributes: { 'aria-label': t('close') }
-                });
-                const closeHandler = () => this.clear_global_message();
-                close_button.addEventListener('click', closeHandler, { once: true });
-                // Track the event listener for cleanup
-                this.event_listeners.add({ element: close_button, event: 'click', handler: closeHandler });
-                this.global_message_element.appendChild(close_button);
-            }
             this.global_message_element.removeAttribute('hidden');
         } else {
             this.clear_global_message();
@@ -94,19 +75,6 @@ export const NotificationComponent = {
 
     clear_global_message() {
         if (this.global_message_element) {
-            // Clean up any existing event listeners
-            const btn = this.global_message_element.querySelector('.global-message-close-btn');
-            if(btn) {
-                // Remove from tracked listeners
-                for (const listener of this.event_listeners) {
-                    if (listener.element === btn) {
-                        btn.removeEventListener(listener.event, listener.handler);
-                        this.event_listeners.delete(listener);
-                    }
-                }
-                btn.remove();
-            }
-            
             this.global_message_element.textContent = '';
             this.global_message_element.setAttribute('hidden', 'true');
             this.global_message_element.className = 'global-message-content';
@@ -138,17 +106,6 @@ export const NotificationComponent = {
     },
 
     cleanup() {
-        // Clean up all tracked event listeners
-        if (this.event_listeners) {
-            for (const listener of this.event_listeners) {
-                if (listener.element && listener.element.removeEventListener) {
-                    listener.element.removeEventListener(listener.event, listener.handler);
-                }
-            }
-            this.event_listeners.clear();
-        }
-        
-        // Clear global message element reference
         if (this.global_message_element) {
             this.global_message_element.innerHTML = '';
             this.global_message_element = null;
