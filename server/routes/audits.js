@@ -251,17 +251,33 @@ router.post('/import', async (req, res) => {
             return res.status(400).json({ error: 'ruleFileContent krävs' });
         }
         const contentJson = JSON.stringify(data.ruleFileContent);
+        const title_from_content = data.ruleFileContent?.metadata?.title?.trim?.();
+        const version_from_content = data.ruleFileContent?.metadata?.version?.trim?.();
+        const rule_name = title_from_content || 'Importerad regelfil';
+
         let ruleSet;
         const existing = await query(
-            'SELECT * FROM rule_sets WHERE content = $1::jsonb LIMIT 1',
+            'SELECT * FROM rule_sets WHERE content @> $1::jsonb AND content <@ $1::jsonb LIMIT 1',
             [contentJson]
         );
         if (existing.rows.length > 0) {
             ruleSet = existing.rows[0];
-        } else {
+        } else if (title_from_content && version_from_content) {
+            const by_meta = await query(
+                `SELECT * FROM rule_sets WHERE
+                    content->'metadata'->>'title' = $1 AND
+                    content->'metadata'->>'version' = $2
+                LIMIT 1`,
+                [title_from_content, version_from_content]
+            );
+            if (by_meta.rows.length > 0) {
+                ruleSet = by_meta.rows[0];
+            }
+        }
+        if (!ruleSet) {
             const ruleResult = await query(
                 'INSERT INTO rule_sets (name, content) VALUES ($1, $2) RETURNING *',
-                ['Importerad regelfil', contentJson]
+                [rule_name, contentJson]
             );
             ruleSet = ruleResult.rows[0];
         }
