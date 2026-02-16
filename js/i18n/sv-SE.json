@@ -226,6 +226,7 @@
   "dark_mode": "Mörkt läge",
   "date_formatting_error": "Formateringsfel",
   "deficiency_index_for_principle": "Bristindex för {principle}: {score} av 100",
+  "deficiency_index_principle_screen_reader": "{principle}; Bristindex {score}",
   "deficiency_index_title": "Bristindex",
   "deficiency_prefix": "B",
   "delete_sample": "Radera stickprov",

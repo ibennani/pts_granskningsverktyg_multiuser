@@ -226,6 +226,7 @@
   "dark_mode": "Dark mode",
   "date_formatting_error": "Date formatting error",
   "deficiency_index_for_principle": "Deficiency index for {principle}: {score} out of 100",
+  "deficiency_index_principle_screen_reader": "{principle}; Deficiency Index {score}",
   "deficiency_index_title": "Deficiency Index",
   "deficiency_prefix": "B",
   "delete_sample": "Delete sample",

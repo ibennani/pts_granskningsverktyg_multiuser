@@ -107,6 +107,13 @@ export const ScoreAnalysisComponent = {
             text_content: t('deficiency_index_title', {defaultValue: "Deficiency Index"})
         }));
 
+        const formatted_total_score = this.Helpers.format_number_locally(analysis.totalScore, lang_code);
+        const screen_reader_value = `${t('deficiency_index_title', {defaultValue: "Deficiency Index"})}: ${formatted_total_score}`;
+        totalScoreContainer.appendChild(this.Helpers.create_element('span', {
+            class_name: 'visually-hidden',
+            text_content: screen_reader_value
+        }));
+
         const scoreVisualization = this.Helpers.create_element('div', { class_name: 'score-analysis-total__visualization' });
         
         const gaugeWrapper = this.Helpers.create_element('div', { class_name: 'score-gauge-wrapper' });
@@ -142,24 +149,25 @@ export const ScoreAnalysisComponent = {
             const label_text = data?.labelKey ? t(data.labelKey) : (data?.label || '');
             const dt = this.Helpers.create_element('dt', { class_name: 'principle-row__name', text_content: label_text });
             
-            const dd = this.Helpers.create_element('dd', { class_name: 'principle-row__bar-container', attributes: { 'aria-hidden': 'true' } });
-            
-            const formattedScoreForAria = this.Helpers.format_number_locally(data.score, lang_code);
-            
+            const dd = this.Helpers.create_element('dd', { class_name: 'principle-row__bar-container' });
+
+            const formattedScore = this.Helpers.format_number_locally(data.score, lang_code);
             const bar = this.Helpers.create_element('div', {
                 class_name: 'principle-row__bar',
                 attributes: {
                     style: `width: ${Math.min(data.score, 100)}%;`,
-                    role: 'meter',
-                    'aria-valuenow': data.score,
-                    'aria-valuemin': '0',
-                    'aria-valuemax': '100',
-                    'aria-label': t('deficiency_index_for_principle', { principle: label_text, score: formattedScoreForAria, defaultValue: `Deficiency index for ${label_text}: ${formattedScoreForAria} out of 100` })
+                    'aria-hidden': 'true'
                 }
             });
             bar.style.setProperty('--score-percent', data.score);
 
-            const valueSpan = this.Helpers.create_element('span', { class_name: 'principle-row__value', text_content: this.Helpers.format_number_locally(data.score, lang_code) });
+            const valueSpan = this.Helpers.create_element('span', {
+                class_name: 'principle-row__value',
+                text_content: formattedScore,
+                attributes: {
+                    'aria-label': t('deficiency_index_principle_screen_reader', { principle: label_text, score: formattedScore, defaultValue: `${label_text}; Deficiency Index ${formattedScore}` })
+                }
+            });
             
             dd.appendChild(bar);
             dd.appendChild(valueSpan);
