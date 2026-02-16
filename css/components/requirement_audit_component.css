@@ -277,7 +277,6 @@
 
 .check-status-display {
     font-size: 0.9rem;
-    font-style: italic;
     color: var(--text-color-muted);
     margin-bottom: 1rem;
     padding: 0.3rem 0.6rem;
