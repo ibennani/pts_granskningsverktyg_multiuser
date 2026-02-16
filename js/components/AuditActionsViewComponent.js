@@ -14,6 +14,7 @@ export const AuditActionsViewComponent = {
         this.NotificationComponent = deps.NotificationComponent;
         this.ExportLogic = deps.ExportLogic;
         this.AuditLogic = deps.AuditLogic;
+        this.SaveAuditLogic = deps.SaveAuditLogic || window.SaveAuditLogic;
 
         if (this.Helpers?.load_css && this.CSS_PATH) {
             await this.Helpers.load_css(this.CSS_PATH).catch(() => {});
@@ -27,18 +28,46 @@ export const AuditActionsViewComponent = {
         this.handle_export_word = this.handle_export_word.bind(this);
         this.handle_export_word_samples = this.handle_export_word_samples.bind(this);
         this.handle_export_html = this.handle_export_html.bind(this);
+        this.handle_download_audit = this.handle_download_audit.bind(this);
     },
 
-    handle_lock_audit() {
+    handle_download_audit() {
         const t = this.Translation.t;
-        this.dispatch({ type: this.StoreActionTypes.SET_AUDIT_STATUS, payload: { status: 'locked' } });
-        this.NotificationComponent.show_global_message(t('audit_locked_successfully'), 'success');
+        const current_state = this.getState();
+        const show_msg = this.NotificationComponent?.show_global_message?.bind(this.NotificationComponent);
+        if (this.SaveAuditLogic?.save_audit_to_json_file) {
+            this.SaveAuditLogic.save_audit_to_json_file(current_state, t, show_msg);
+        } else if (show_msg) {
+            show_msg(t('error_internal'), 'error');
+        }
     },
 
-    handle_unlock_audit() {
+    handle_lock_audit(event) {
         const t = this.Translation.t;
-        this.dispatch({ type: this.StoreActionTypes.SET_AUDIT_STATUS, payload: { status: 'in_progress' } });
-        this.NotificationComponent.show_global_message(t('audit_unlocked_successfully'), 'success');
+        const btn = event?.currentTarget;
+        if (btn) {
+            btn.classList.add('audit-actions__btn--animating');
+            btn.setAttribute('aria-busy', 'true');
+        }
+        setTimeout(() => {
+            if (btn) btn.removeAttribute('aria-busy');
+            this.dispatch({ type: this.StoreActionTypes.SET_AUDIT_STATUS, payload: { status: 'locked' } });
+            this.NotificationComponent.show_global_message(t('audit_locked_successfully'), 'success');
+        }, 500);
+    },
+
+    handle_unlock_audit(event) {
+        const t = this.Translation.t;
+        const btn = event?.currentTarget;
+        if (btn) {
+            btn.classList.add('audit-actions__btn--animating');
+            btn.setAttribute('aria-busy', 'true');
+        }
+        setTimeout(() => {
+            if (btn) btn.removeAttribute('aria-busy');
+            this.dispatch({ type: this.StoreActionTypes.SET_AUDIT_STATUS, payload: { status: 'in_progress' } });
+            this.NotificationComponent.show_global_message(t('audit_unlocked_successfully'), 'success');
+        }, 500);
     },
 
     handle_export_csv() {
@@ -160,7 +189,7 @@ export const AuditActionsViewComponent = {
 
     create_action_button({ label, on_click, variant = 'button-default', icon_name = null, id = null, aria_describedby = null }) {
         const icon = (icon_name && this.Helpers.get_icon_svg)
-            ? this.Helpers.get_icon_svg(icon_name, ['currentColor'], 18)
+            ? this.Helpers.get_icon_svg(icon_name, ['currentColor'], 16)
             : '';
 
         const attributes = {};
@@ -168,7 +197,7 @@ export const AuditActionsViewComponent = {
         if (aria_describedby) attributes['aria-describedby'] = aria_describedby;
 
         return this.Helpers.create_element('button', {
-            class_name: ['button', variant],
+            class_name: ['button', 'button-small', variant],
             html_content: `<span>${label}</span>${icon}`,
             attributes,
             event_listeners: { click: on_click }
@@ -247,6 +276,15 @@ export const AuditActionsViewComponent = {
         status_section.appendChild(this.Helpers.create_element('h2', { class_name: 'audit-actions__section-title', text_content: t('audit_actions_status_section_title') }));
 
         const status_actions = this.Helpers.create_element('div', { class_name: 'audit-actions__status-list' });
+
+        status_actions.appendChild(this.create_status_action_item({
+            label: t('audit_actions_download_label'),
+            description: t('audit_actions_download_description'),
+            on_click: this.handle_download_audit,
+            variant: 'button-default',
+            icon_name: 'save',
+            id_suffix: 'download-audit'
+        }));
 
         if (state.auditStatus !== 'locked') {
             status_actions.appendChild(this.create_status_action_item({

@@ -82,6 +82,8 @@
   "audit_actions_unlock_audit_description": "Gör att du kan ändra bedömningar och kommentarer igen.",
   "audit_actions_update_rulefile_description": "Byter till en nyare regelfil om kraven har uppdaterats.",
   "audit_actions_handle_updated_description": "Vissa krav har uppdaterats. Här granskar du ändringarna och godkänner.",
+  "audit_actions_download_label": "Ladda ner granskningen",
+  "audit_actions_download_description": "Sparar granskningen som JSON-fil som du kan öppna eller ladda upp senare.",
   "mark_all_unreviewed_passed_button": "Markera alla ogranskade som \"Ingen anmärkning\"",
   "mark_all_unreviewed_passed_description": "Sätter alla ogranskade och delvis granskade krav till Ingen anmärkning.",
   "mark_all_unreviewed_passed_confirm_title": "Markera alla ogranskade som \"Ingen anmärkning\"",

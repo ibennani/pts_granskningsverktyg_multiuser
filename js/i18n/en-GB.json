@@ -82,6 +82,8 @@
   "audit_actions_unlock_audit_description": "Lets you change assessments and comments again.",
   "audit_actions_update_rulefile_description": "Switch to a newer rule file if the requirements have been updated.",
   "audit_actions_handle_updated_description": "Some requirements have been updated. Here you review the changes and approve them.",
+  "audit_actions_download_label": "Download audit",
+  "audit_actions_download_description": "Saves the audit as a JSON file that you can open or upload later.",
   "mark_all_unreviewed_passed_button": "Mark all unreviewed as \"No remarks\"",
   "mark_all_unreviewed_passed_description": "Sets all unreviewed and partially audited requirements to No remarks.",
   "mark_all_unreviewed_passed_confirm_title": "Mark all unreviewed as \"No remarks\"",
