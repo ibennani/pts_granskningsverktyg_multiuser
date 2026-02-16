@@ -328,9 +328,10 @@ export class GlobalActionBarComponent {
     
     // Om inget har ändrats som påverkar action bar visuellt, hoppa över re-rendering
     // Detta förhindrar onödiga re-renderingar vid autospar av metadata
-    if (this.last_audit_status === audit_status && 
+    if (this.last_audit_status === audit_status &&
         this.last_has_rulefile_loaded === has_rulefile_loaded &&
         this.last_language_code === current_language_code &&
+        this.last_current_view === current_view &&
         this.root.children.length > 0) {
       return; // Inget visuellt har ändrats, hoppa över re-rendering
     }

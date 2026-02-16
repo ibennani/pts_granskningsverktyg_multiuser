@@ -841,19 +841,24 @@ window.DraftManager = DraftManager;
         const prev_params_json = current_view_params_rendered_json;
         current_view_name_rendered = view_name_to_render;
         try { window.__gv_current_view_name = current_view_name_rendered; } catch (e) {}
-        top_action_bar_instance.render();
-        bottom_action_bar_container.style.display = '';
-        bottom_action_bar_instance.render();
 
-        if (prev_view === view_name_to_render && 
+        const is_same_view_quick_render = prev_view === view_name_to_render &&
             prev_params_json === JSON.stringify(params_to_render) &&
-            current_view_component_instance && typeof current_view_component_instance.render === 'function') {
-            
+            current_view_component_instance && typeof current_view_component_instance.render === 'function';
+
+        if (is_same_view_quick_render) {
+            top_action_bar_instance.render();
+            bottom_action_bar_container.style.display = '';
+            bottom_action_bar_instance.render();
             current_view_component_instance.render();
             ensure_skip_link_target(view_root);
             return;
         }
+
         current_view_params_rendered_json = JSON.stringify(params_to_render);
+        top_action_bar_instance.render();
+        bottom_action_bar_container.style.display = '';
+        bottom_action_bar_instance.render();
 
         const prev_params = prev_params_json ? (() => { try { return JSON.parse(prev_params_json); } catch (_) { return {}; } })() : {};
         const is_rulefile_sections_edit_toggle = view_name_to_render === 'rulefile_sections' &&

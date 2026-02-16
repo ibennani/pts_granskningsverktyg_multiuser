@@ -711,8 +711,8 @@ export const RequirementAuditSidebarComponent = {
             sorted.sort((a, b) => this.Helpers.natural_sort(b.requirement.standardReference?.text || 'Z', a.requirement.standardReference?.text || 'Z'));
         } else if (sort_by === 'updated_first') {
             sorted.sort((a, b) => {
-                const a_updated = a.display_status === 'updated' ? 0 : 1;
-                const b_updated = b.display_status === 'updated' ? 0 : 1;
+                const a_updated = a.req_result?.needsReview === true ? 0 : 1;
+                const b_updated = b.req_result?.needsReview === true ? 0 : 1;
                 if (a_updated !== b_updated) return a_updated - b_updated;
                 return this.Helpers.natural_sort(a.requirement.standardReference?.text || 'Z', b.requirement.standardReference?.text || 'Z');
             });
