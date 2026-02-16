@@ -381,48 +381,59 @@ export class GlobalActionBarComponent {
       class_name: ['action-bar-group', 'right'],
     });
 
-    const language_selector_container = this.Helpers.create_element('div', {
-      class_name: 'language-selector-container',
-    });
-    const language_label = this.Helpers.create_element('label', {
-      attributes: { for: `language-selector-${this.root.id}` },
-      text_content: t('language_switcher_label'),
-      class_name: 'visually-hidden',
-    });
-    language_selector_container.appendChild(language_label);
-
-    const language_selector = this.Helpers.create_element('select', {
-      id: `language-selector-${this.root.id}`,
-      class_name: ['form-control', 'form-control-small'],
-    });
-    const supported_languages = this.Translation.get_supported_languages();
-    for (const lang_code in supported_languages) {
-      const option = this.Helpers.create_element('option', {
-        value: lang_code,
-        text_content: supported_languages[lang_code],
+    // Språk- och temaväljare: kod behålls men renderas aldrig (gäller alla vyer)
+    const RENDER_LANGUAGE_AND_THEME = false;
+    if (RENDER_LANGUAGE_AND_THEME) {
+      const language_selector_container = this.Helpers.create_element('div', {
+        class_name: 'language-selector-container',
       });
-      language_selector.appendChild(option);
+      const language_label = this.Helpers.create_element('label', {
+        attributes: { for: `language-selector-${this.root.id}` },
+        text_content: t('language_switcher_label'),
+        class_name: 'visually-hidden',
+      });
+      language_selector_container.appendChild(language_label);
+
+      const language_selector = this.Helpers.create_element('select', {
+        id: `language-selector-${this.root.id}`,
+        class_name: ['form-control', 'form-control-small'],
+      });
+      const supported_languages = this.Translation.get_supported_languages();
+      for (const lang_code in supported_languages) {
+        const option = this.Helpers.create_element('option', {
+          value: lang_code,
+          text_content: supported_languages[lang_code],
+        });
+        language_selector.appendChild(option);
+      }
+      language_selector.value = this.Translation.get_current_language_code();
+      language_selector.addEventListener('change', this.handle_language_change);
+      language_selector_container.appendChild(language_selector);
+      right_group.appendChild(language_selector_container);
+
+      this.theme_toggle_button = this.Helpers.create_element('button', {
+        class_name: ['button', 'button-default'],
+        attributes: { 'aria-live': 'polite' },
+      });
+
+      this.theme_toggle_button.addEventListener('click', this.toggle_theme);
+
+      const current_theme = document.documentElement.getAttribute('data-theme') || 'light';
+      this.update_theme_button_content(current_theme);
+
+      right_group.appendChild(this.theme_toggle_button);
     }
-    language_selector.value = this.Translation.get_current_language_code();
-    language_selector.addEventListener('change', this.handle_language_change);
-    language_selector_container.appendChild(language_selector);
-    right_group.appendChild(language_selector_container);
-
-    this.theme_toggle_button = this.Helpers.create_element('button', {
-      class_name: ['button', 'button-default'],
-      attributes: { 'aria-live': 'polite' },
-    });
-
-    this.theme_toggle_button.addEventListener('click', this.toggle_theme);
-
-    // Initial content set (will also be handled by observer, but good for initial render)
-    const current_theme = document.documentElement.getAttribute('data-theme') || 'light';
-    this.update_theme_button_content(current_theme);
-
-    right_group.appendChild(this.theme_toggle_button);
 
     bar_element.appendChild(right_group);
-    this.root.appendChild(bar_element);
+
+    // Global action bar renderas aldrig (samma som språk/tema – behålls i kod men visas inte)
+    const RENDER_GLOBAL_ACTION_BAR = false;
+    if (RENDER_GLOBAL_ACTION_BAR) {
+      const has_content = left_group.hasChildNodes() || right_group.hasChildNodes();
+      if (has_content) {
+        this.root.appendChild(bar_element);
+      }
+    }
     
     // Spara state för nästa render
     this.last_audit_status = audit_status;
