@@ -73,11 +73,19 @@ router.post('/import', async (req, res) => {
         if (!content || typeof content !== 'object') {
             return res.status(400).json({ error: 'Content krävs' });
         }
+        const contentJson = JSON.stringify(content);
+        const existing = await query(
+            'SELECT * FROM rule_sets WHERE content = $1::jsonb LIMIT 1',
+            [contentJson]
+        );
+        if (existing.rows.length > 0) {
+            return res.status(200).json(existing.rows[0]);
+        }
         const title_from_content = content?.metadata?.title?.trim?.();
         const ruleName = title_from_content || name || 'Importerad ' + new Date().toISOString().slice(0, 10);
         const result = await query(
             'INSERT INTO rule_sets (name, content) VALUES ($1, $2) RETURNING *',
-            [ruleName, JSON.stringify(content)]
+            [ruleName, contentJson]
         );
         res.status(201).json(result.rows[0]);
     } catch (err) {
@@ -89,6 +97,15 @@ router.post('/import', async (req, res) => {
 router.delete('/:id', async (req, res) => {
     try {
         const { id } = req.params;
+        const inUse = await query(
+            'SELECT id FROM audits WHERE rule_set_id = $1 LIMIT 1',
+            [id]
+        );
+        if (inUse.rows.length > 0) {
+            return res.status(409).json({
+                error: 'Regelfilen används av minst en granskning och kan inte raderas. Radera granskningarna först.'
+            });
+        }
         const result = await query('DELETE FROM rule_sets WHERE id = $1 RETURNING id', [id]);
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Regelfil hittades inte' });

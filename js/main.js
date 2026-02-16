@@ -86,6 +86,17 @@ window.DraftManager = DraftManager;
 (function () {
     'use-strict';
 
+    // Debug-navigering: sätt window.__GV_DEBUG_NAV = true i konsolen ELLER lägg till ?debug=nav i URL
+    if (typeof window !== 'undefined' && window.location.search.includes('debug=nav')) {
+        window.__GV_DEBUG_NAV = true;
+        console.log('[GV-NAV] Debug aktiverad via URL (?debug=nav). Klicka Admin från Start och titta i konsolen.');
+    }
+    const nav_debug = (msg, data) => {
+        if (window.__GV_DEBUG_NAV) {
+            console.log(`[GV-NAV] ${msg}`, data !== undefined ? data : '');
+        }
+    };
+
     // Robust DOM-element kontroll med fallback-alternativ
     let app_wrapper = document.getElementById('app-wrapper');
     let app_container = document.getElementById('app-container');
@@ -547,16 +558,19 @@ window.DraftManager = DraftManager;
     }
 
     function navigate_and_set_hash(target_view_name, target_params = {}) {
+        nav_debug('navigate_and_set_hash anropad', { target_view_name, target_params, current_hash: window.location.hash });
         const target_hash_part = target_params && Object.keys(target_params).length > 0 ?
             `${target_view_name}?${new URLSearchParams(target_params).toString()}` :
             target_view_name;
         const new_hash = `#${target_hash_part}`;
         if (window.location.hash === new_hash) {
+            nav_debug('Hash oförändrad – endast render', { new_hash });
             if (current_view_component_instance && typeof current_view_component_instance.render === 'function') {
                 current_view_component_instance.render();
             }
         } else {
-            window.location.hash = new_hash; 
+            nav_debug('Sätter hash', { from: window.location.hash, to: new_hash });
+            window.location.hash = new_hash;
         }
     }
 
@@ -806,6 +820,7 @@ window.DraftManager = DraftManager;
     }
 
     async function render_view(view_name_to_render, params_to_render = {}) {
+        nav_debug('render_view startar', { view_name_to_render, params_to_render });
         if (view_name_to_render === 'edit_rulefile_main') {
             view_name_to_render = 'rulefile_sections';
             params_to_render = { ...params_to_render, section: 'general' };
@@ -1071,6 +1086,7 @@ window.DraftManager = DraftManager;
 
     async function handle_hash_change() {
         const hash = window.location.hash.substring(1);
+        nav_debug('handle_hash_change anropad', { hash, full_url: window.location.href });
         const [view_name_from_hash, ...param_pairs] = hash.split('?');
         /* Ignorera #main-content-heading – det är en intern ankare för skiplänken, inte ett vynamn */
         const is_skip_link_anchor = view_name_from_hash === SKIP_LINK_ANCHOR_ID;
@@ -1126,17 +1142,12 @@ window.DraftManager = DraftManager;
 
         if (effective_view_name) {
             target_view = effective_view_name;
-        } else if (current_global_state && current_global_state.ruleFileContent && current_global_state.auditStatus !== 'rulefile_editing') {
-            target_view = 'audit_overview';
-            target_params = {};
-        } else if (current_global_state && current_global_state.ruleFileContent && current_global_state.auditStatus === 'rulefile_editing') {
-            target_view = 'rulefile_sections';
-            target_params = { section: 'general' };
         } else {
             target_view = 'start';
             target_params = {};
         }
-        if (is_skip_link_anchor) {
+        nav_debug('handle_hash_change -> render_view', { target_view, target_params, effective_view_name });
+        if (is_skip_link_anchor || !effective_view_name) {
             const target_hash_part = target_params && Object.keys(target_params).length > 0 ?
                 `${target_view}?${new URLSearchParams(target_params).toString()}` :
                 target_view;
@@ -1170,8 +1181,11 @@ window.DraftManager = DraftManager;
         // Lagra referenser till event listeners för senare cleanup
         const language_changed_handler = on_language_changed_event;
         const hash_change_handler = handle_hash_change;
-        memoryManager.addEventListener(document, 'languageChanged', language_changed_handler);
-        memoryManager.addEventListener(window, 'hashchange', hash_change_handler);
+        const hash_change_wrapper = (...args) => {
+            nav_debug('hashchange-event triggat', { hash: window.location.hash });
+            hash_change_handler(...args);
+        };
+        memoryManager.addEventListener(window, 'hashchange', hash_change_wrapper);
 
         let focus_capture_timer = null;
         const focus_in_handler = (e) => {
@@ -1193,7 +1207,7 @@ window.DraftManager = DraftManager;
         // Exponera cleanup-funktion globalt
         window.cleanupGlobalEventListeners = () => {
             memoryManager.removeEventListener(document, 'languageChanged', language_changed_handler);
-            memoryManager.removeEventListener(window, 'hashchange', hash_change_handler);
+            memoryManager.removeEventListener(window, 'hashchange', hash_change_wrapper);
             const fr = main_view_root || app_container;
             if (fr) fr.removeEventListener('focusin', focus_in_handler);
             
@@ -1251,6 +1265,9 @@ window.DraftManager = DraftManager;
             if (current_view_name_rendered === view_name_from_hash && 
                 current_view_component_instance && typeof current_view_component_instance.render === 'function') {
                 if (current_view_name_rendered !== 'confirm_sample_edit') {
+                    if (current_view_name_rendered === 'admin' && current_view_component_instance._api_load_started && !current_view_component_instance._api_checked) {
+                        return;
+                    }
                     if (current_view_name_rendered === 'rulefile_edit_requirement' || current_view_name_rendered === 'rulefile_add_requirement') {
                         const skip_count = Number(window.skipRulefileRequirementRender) || 0;
                         if (skip_count > 0) {

@@ -35,7 +35,11 @@ function startApp() {
     });
 }
 
-const docker = spawn('docker', ['compose', 'up', '-d', '--wait'], {
+const dockerCmd = process.platform === 'win32'
+    ? 'docker rm -f granskningsverktyget-db 2>nul & docker compose up -d --wait'
+    : 'docker rm -f granskningsverktyget-db 2>/dev/null; docker compose up -d --wait';
+
+const docker = spawn(dockerCmd, [], {
     stdio: 'inherit',
     shell: true
 });

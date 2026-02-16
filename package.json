@@ -13,6 +13,7 @@
     "dev:server": "node server/index.js",
     "dev:app": "docker compose up -d && wait-on tcp:localhost:5432 && node server/scripts/migrate.js && concurrently \"node server/index.js\" \"vite\"",
     "db:migrate": "node server/scripts/migrate.js",
+    "db:dedupe": "node server/scripts/dedupe-rules.js",
     "deploy:v2": "node scripts/deploy-v2.js",
     "dev:fixedport": "vite --port 5173 --strictPort",
     "prebuild": "npm run lint && npm run validate:imports && npm run validate:components && npm run validate:css",

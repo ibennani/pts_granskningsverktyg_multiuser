@@ -14,9 +14,12 @@ async function migrate() {
     const client = new pg.Client({ connectionString });
     try {
         await client.connect();
-        const sql = readFileSync(join(__dirname, '../migrations/001_initial.sql'), 'utf8');
-        await client.query(sql);
+        const sql1 = readFileSync(join(__dirname, '../migrations/001_initial.sql'), 'utf8');
+        await client.query(sql1);
         console.log('[Migrate] Migration 001 kördes.');
+        const sql2 = readFileSync(join(__dirname, '../migrations/002_add_rule_file_content_to_audits.sql'), 'utf8');
+        await client.query(sql2);
+        console.log('[Migrate] Migration 002 kördes.');
     } catch (err) {
         console.error('[Migrate] Fel:', err.message);
         process.exit(1);

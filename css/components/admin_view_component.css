@@ -8,13 +8,16 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    justify-content: space-between;
     gap: 1rem;
     margin-bottom: 1.5rem;
 }
 
 .admin-header h1 {
     margin: 0;
+}
+
+.admin-header .admin-upload-btn {
+    flex-shrink: 0;
 }
 
 .admin-back-link {
@@ -114,6 +117,34 @@
 
 .admin-item-label {
     font-weight: 500;
+}
+
+.admin-rule-link {
+    color: var(--link-color);
+    text-decoration: underline;
+}
+
+.admin-rule-link:hover,
+.admin-rule-link:focus {
+    color: var(--link-hover-color);
+    text-decoration: underline;
+}
+
+.admin-audit-case-number {
+    flex-shrink: 0;
+    margin-right: 0.25rem;
+    color: var(--text-color-muted);
+}
+
+.admin-audit-link {
+    color: var(--link-color);
+    text-decoration: underline;
+}
+
+.admin-audit-link:hover,
+.admin-audit-link:focus {
+    color: var(--link-hover-color);
+    text-decoration: underline;
 }
 
 .admin-item-meta {

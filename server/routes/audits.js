@@ -7,7 +7,7 @@ import { calculateQualityScore } from '../../js/logic/ScoreCalculator.js';
 const router = express.Router();
 
 function build_full_state(audit_row, rule_set_row) {
-    let ruleFileContent = rule_set_row ? rule_set_row.content : null;
+    let ruleFileContent = audit_row?.rule_file_content ?? (rule_set_row ? rule_set_row.content : null);
     if (ruleFileContent && typeof ruleFileContent === 'string') {
         try {
             ruleFileContent = JSON.parse(ruleFileContent);
@@ -15,9 +15,6 @@ function build_full_state(audit_row, rule_set_row) {
             console.warn('[audits] build_full_state: Kunde inte parsa rule content för audit', audit_row?.id);
             ruleFileContent = null;
         }
-    }
-    if (!ruleFileContent && audit_row?.rule_set_id) {
-        console.warn('[audits] build_full_state: Regeluppsättning saknas för audit', audit_row.id, '(rule_set_id:', audit_row.rule_set_id, ')');
     }
     const samples = audit_row.samples || [];
     return {
@@ -40,9 +37,9 @@ function build_full_state(audit_row, rule_set_row) {
 router.get('/', async (req, res) => {
     try {
         const { status } = req.query;
-        let sql = `SELECT a.id, a.rule_set_id, a.status, a.metadata, a.samples, a.version, a.last_updated_by, a.created_at, a.updated_at,
-            COALESCE(NULLIF(TRIM(r.content->'metadata'->>'title'), ''), r.name) as rule_set_name,
-            r.content as rule_content
+        let sql = `SELECT a.id, a.rule_set_id, a.rule_file_content, a.status, a.metadata, a.samples, a.version, a.last_updated_by, a.created_at, a.updated_at,
+            COALESCE(NULLIF(TRIM(COALESCE(a.rule_file_content, r.content)->'metadata'->>'title'), ''), r.name) as rule_set_name,
+            COALESCE(a.rule_file_content, r.content) as rule_content
             FROM audits a LEFT JOIN rule_sets r ON a.rule_set_id = r.id`;
         const params = [];
         if (status) {
@@ -158,8 +155,8 @@ router.post('/', async (req, res) => {
         }
         const ruleSet = ruleResult.rows[0];
         const result = await query(
-            'INSERT INTO audits (rule_set_id, status, metadata, samples, last_updated_by) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-            [rule_set_id, 'not_started', '{}', '[]', last_updated_by]
+            'INSERT INTO audits (rule_set_id, rule_file_content, status, metadata, samples, last_updated_by) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+            [rule_set_id, ruleSet.content, 'not_started', '{}', '[]', last_updated_by]
         );
         const audit = result.rows[0];
         const fullState = build_full_state(audit, ruleSet);
@@ -177,17 +174,27 @@ router.post('/import', async (req, res) => {
         if (!data.ruleFileContent) {
             return res.status(400).json({ error: 'ruleFileContent krävs' });
         }
-        const ruleResult = await query(
-            'INSERT INTO rule_sets (name, content) VALUES ($1, $2) RETURNING *',
-            ['Importerad regelfil', JSON.stringify(data.ruleFileContent)]
+        const contentJson = JSON.stringify(data.ruleFileContent);
+        let ruleSet;
+        const existing = await query(
+            'SELECT * FROM rule_sets WHERE content = $1::jsonb LIMIT 1',
+            [contentJson]
         );
-        const ruleSet = ruleResult.rows[0];
+        if (existing.rows.length > 0) {
+            ruleSet = existing.rows[0];
+        } else {
+            const ruleResult = await query(
+                'INSERT INTO rule_sets (name, content) VALUES ($1, $2) RETURNING *',
+                ['Importerad regelfil', contentJson]
+            );
+            ruleSet = ruleResult.rows[0];
+        }
         const metadata = data.auditMetadata || {};
         const samples = data.samples || [];
         const status = data.auditStatus || 'not_started';
         const result = await query(
-            'INSERT INTO audits (rule_set_id, status, metadata, samples, last_updated_by) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-            [ruleSet.id, status, JSON.stringify(metadata), JSON.stringify(samples), last_updated_by]
+            'INSERT INTO audits (rule_set_id, rule_file_content, status, metadata, samples, last_updated_by) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+            [ruleSet.id, data.ruleFileContent, status, JSON.stringify(metadata), JSON.stringify(samples), last_updated_by]
         );
         const audit = result.rows[0];
         const fullState = build_full_state(audit, ruleSet);

@@ -24,3 +24,4 @@ services:
 
 volumes:
   pgdata:
+    name: sessionversion_pgdata

@@ -669,9 +669,12 @@ function execute_single_dispatch(action, dispatch_fn) {
                     // Fortsätt ändå, detta är inte kritiskt
                 }
 
-                // Schemalägg sync till server (import om auditId saknas, annars PATCH)
+                // Schemalägg sync till server (import om auditId saknas, annars PATCH).
+                // Hoppa över för CLEAR_STAGED_SAMPLE_CHANGES – körs vid init och ska inte skapa phantom-granskningar.
                 try {
-                    schedule_sync_to_server(internal_state, dispatch_fn);
+                    if (action.type !== ActionTypes.CLEAR_STAGED_SAMPLE_CHANGES) {
+                        schedule_sync_to_server(internal_state, dispatch_fn);
+                    }
                 } catch (syncError) {
                     // Ignorera - server sync är inte kritiskt
                 }
