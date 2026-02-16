@@ -6,6 +6,55 @@ import { calculateQualityScore } from '../../js/logic/ScoreCalculator.js';
 
 const router = express.Router();
 
+function extract_min_max_timestamps(samples) {
+    let minTime = null;
+    let maxTime = null;
+    if (!samples || !Array.isArray(samples)) return { minTime, maxTime };
+    samples.forEach((sample) => {
+        const reqResults = sample?.requirementResults || {};
+        Object.values(reqResults).forEach((reqResult) => {
+            if (reqResult?.lastStatusUpdate) {
+                const t = reqResult.lastStatusUpdate;
+                if (!minTime || t < minTime) minTime = t;
+                if (!maxTime || t > maxTime) maxTime = t;
+            }
+            Object.values(reqResult?.checkResults || {}).forEach((checkResult) => {
+                if (checkResult?.timestamp) {
+                    const t = checkResult.timestamp;
+                    if (!minTime || t < minTime) minTime = t;
+                    if (!maxTime || t > maxTime) maxTime = t;
+                }
+                Object.values(checkResult?.passCriteria || {}).forEach((pcResult) => {
+                    if (pcResult?.timestamp) {
+                        const t = pcResult.timestamp;
+                        if (!minTime || t < minTime) minTime = t;
+                        if (!maxTime || t > maxTime) maxTime = t;
+                    }
+                });
+            });
+        });
+    });
+    return { minTime, maxTime };
+}
+
+function count_business_days(startDate, endDate) {
+    if (!startDate || !endDate) return null;
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) return null;
+    let count = 0;
+    const d = new Date(start);
+    d.setHours(0, 0, 0, 0);
+    const endNorm = new Date(end);
+    endNorm.setHours(0, 0, 0, 0);
+    while (d <= endNorm) {
+        const day = d.getDay();
+        if (day !== 0 && day !== 6) count++;
+        d.setDate(d.getDate() + 1);
+    }
+    return count;
+}
+
 function build_full_state(audit_row, rule_set_row) {
     let ruleFileContent = audit_row?.rule_file_content ?? (rule_set_row ? rule_set_row.content : null);
     if (ruleFileContent && typeof ruleFileContent === 'string') {
@@ -61,6 +110,13 @@ router.get('/', async (req, res) => {
                 created_at: row.created_at,
                 updated_at: row.updated_at
             };
+            const metadata = row.metadata || {};
+            const samples = row.samples;
+            const { minTime, maxTime } = extract_min_max_timestamps(samples);
+            const firstTs = minTime || metadata.startTime || row.created_at;
+            const lastTs = maxTime || metadata.endTime || (row.status === 'locked' ? row.updated_at : null);
+            const endForCalc = lastTs || new Date().toISOString();
+            out.business_days = firstTs ? count_business_days(firstTs, endForCalc) : null;
             if (row.rule_content && row.samples) {
                 try {
                     let rule_content = row.rule_content;

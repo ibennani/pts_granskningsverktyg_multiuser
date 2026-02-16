@@ -116,7 +116,8 @@ export const StartViewComponent = {
                 t('start_view_col_status'),
                 t('start_view_col_progress'),
                 t('start_view_col_deficiency'),
-                t('start_view_col_auditor')
+                t('start_view_col_auditor'),
+                t('start_view_col_duration')
             ];
             headers.forEach((text) => {
                 const th = this.Helpers.create_element('th', { text_content: text });
@@ -130,7 +131,7 @@ export const StartViewComponent = {
                 const empty_row = this.Helpers.create_element('tr');
                 const empty_cell = this.Helpers.create_element('td', {
                     text_content: t('start_view_no_audits'),
-                    attributes: { colspan: '6' }
+                    attributes: { colspan: '7' }
                 });
                 empty_row.appendChild(empty_cell);
                 tbody.appendChild(empty_row);
@@ -183,12 +184,20 @@ export const StartViewComponent = {
                         text_content: auditor || '—'
                     });
 
+                    const duration_text = audit.business_days != null
+                        ? t('start_view_duration_days', { count: audit.business_days })
+                        : '—';
+                    const duration_cell = this.Helpers.create_element('td', {
+                        text_content: duration_text
+                    });
+
                     row.appendChild(case_cell);
                     row.appendChild(actor_cell);
                     row.appendChild(status_cell);
                     row.appendChild(progress_cell);
                     row.appendChild(deficiency_cell);
                     row.appendChild(auditor_cell);
+                    row.appendChild(duration_cell);
                     tbody.appendChild(row);
                 });
             }
