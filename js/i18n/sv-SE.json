@@ -613,6 +613,7 @@
   "server_load_audit_error": "Kunde inte ladda granskning: {message}",
   "server_sync_error": "Kunde inte spara till servern: {message}",
   "realtime_sync_updated": "Granskningen har uppdaterats av en annan enhet",
+  "realtime_sync_rulefile_updated": "Regelfilen har uppdaterats av en annan enhet",
   "realtime_sync_error": "Kunde inte hämta uppdatering: {message}",
   "new_version_available": "En ny version är tillgänglig.",
   "reload_page": "Ladda om sidan",

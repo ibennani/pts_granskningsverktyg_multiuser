@@ -19,6 +19,7 @@ import * as RulefileEditorLogic from './logic/rulefile_editor_logic.js';
 import { AutosaveService } from './logic/autosave_service.js';
 import { init_version_check_service } from './logic/version_check_service.js';
 import { init_audit_view_poll_service } from './logic/audit_view_poll_service.js';
+import { init_rulefile_view_poll_service } from './logic/rulefile_view_poll_service.js';
 import { MarkdownToolbar } from './features/markdown_toolbar.js';
 import './utils/dependency_manager.js';
 import './utils/console_manager.js';
@@ -1196,6 +1197,7 @@ window.DraftManager = DraftManager;
         if (MarkdownToolbar?.init) { MarkdownToolbar.init(); }
         init_version_check_service();
         const audit_view_poll_instance = init_audit_view_poll_service({ getState, dispatch, StoreActionTypes });
+        const rulefile_view_poll_instance = init_rulefile_view_poll_service({ getState, dispatch, StoreActionTypes });
         // Lagra referenser till event listeners för senare cleanup
         const language_changed_handler = on_language_changed_event;
         const hash_change_handler = handle_hash_change;
@@ -1226,6 +1228,7 @@ window.DraftManager = DraftManager;
         // Exponera cleanup-funktion globalt
         window.cleanupGlobalEventListeners = () => {
             if (audit_view_poll_instance?.disconnect) audit_view_poll_instance.disconnect();
+            if (rulefile_view_poll_instance?.disconnect) rulefile_view_poll_instance.disconnect();
             memoryManager.removeEventListener(document, 'languageChanged', language_changed_handler);
             memoryManager.removeEventListener(window, 'hashchange', hash_change_wrapper);
             const fr = main_view_root || app_container;

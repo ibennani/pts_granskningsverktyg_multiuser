@@ -115,6 +115,10 @@ export async function get_rule(id) {
     return api_get(`/rules/${id}`);
 }
 
+export async function get_rule_version(id) {
+    return api_get(`/rules/${id}/version`);
+}
+
 export async function create_rule(data) {
     return api_post('/rules', data);
 }

@@ -35,7 +35,8 @@ export const ActionTypes = {
     DELETE_CRITERION_FROM_CHECK: 'DELETE_CRITERION_FROM_CHECK',
     SET_RULEFILE_EDIT_BASELINE: 'SET_RULEFILE_EDIT_BASELINE',
     SET_REMOTE_AUDIT_ID: 'SET_REMOTE_AUDIT_ID',
-    REPLACE_STATE_FROM_REMOTE: 'REPLACE_STATE_FROM_REMOTE'
+    REPLACE_STATE_FROM_REMOTE: 'REPLACE_STATE_FROM_REMOTE',
+    REPLACE_RULEFILE_FROM_REMOTE: 'REPLACE_RULEFILE_FROM_REMOTE'
 };
 
 const initial_state = {
@@ -352,7 +353,9 @@ function root_reducer(current_state, action) {
                 uiSettings: JSON.parse(JSON.stringify(initial_state.uiSettings)),
                 auditStatus: 'rulefile_editing',
                 ruleFileOriginalContentString: action.payload.originalRuleFileContentString || null,
-                ruleFileOriginalFilename: action.payload.originalRuleFileFilename || ''
+                ruleFileOriginalFilename: action.payload.originalRuleFileFilename || '',
+                ruleSetId: action.payload.ruleSetId ?? null,
+                ruleFileServerVersion: action.payload.ruleFileServerVersion ?? 0
             };
 
         case ActionTypes.LOAD_AUDIT_FROM_FILE:
@@ -603,6 +606,16 @@ function root_reducer(current_state, action) {
                 uiSettings: current_state.uiSettings || remote.uiSettings || {}
             };
 
+        case ActionTypes.REPLACE_RULEFILE_FROM_REMOTE:
+            // Ersätt endast ruleFileContent med serverdata (vid regelfilsredigering)
+            const remote_content = action.payload?.ruleFileContent;
+            if (!remote_content || typeof remote_content !== 'object') return current_state;
+            return {
+                ...current_state,
+                ruleFileContent: remote_content,
+                ruleFileServerVersion: action.payload.version ?? current_state.ruleFileServerVersion ?? 0
+            };
+
         default:
             return current_state;
     }
@@ -682,10 +695,11 @@ function execute_single_dispatch(action, dispatch_fn) {
 
                 // Schemalägg sync till server (import om auditId saknas, annars PATCH).
                 // Hoppa över för CLEAR_STAGED_SAMPLE_CHANGES – körs vid init och ska inte skapa phantom-granskningar.
-                // Hoppa över för REPLACE_STATE_FROM_REMOTE – data kommer redan från servern.
+                // Hoppa över för REPLACE_STATE_FROM_REMOTE och REPLACE_RULEFILE_FROM_REMOTE – data kommer redan från servern.
                 try {
                     if (action.type !== ActionTypes.CLEAR_STAGED_SAMPLE_CHANGES &&
-                        action.type !== ActionTypes.REPLACE_STATE_FROM_REMOTE) {
+                        action.type !== ActionTypes.REPLACE_STATE_FROM_REMOTE &&
+                        action.type !== ActionTypes.REPLACE_RULEFILE_FROM_REMOTE) {
                         schedule_sync_to_server(internal_state, dispatch_fn);
                     }
                 } catch (syncError) {

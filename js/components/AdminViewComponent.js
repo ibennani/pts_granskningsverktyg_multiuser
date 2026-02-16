@@ -289,7 +289,9 @@ export const AdminViewComponent = {
                 payload: {
                     ruleFileContent: migrated_content,
                     originalRuleFileContentString: migrated_content_string,
-                    originalRuleFileFilename: rule_row?.name || `regelfil_${rule_id}.json`
+                    originalRuleFileFilename: rule_row?.name || `regelfil_${rule_id}.json`,
+                    ruleSetId: rule_id,
+                    ruleFileServerVersion: rule_row?.version ?? 0
                 }
             });
             this.router('edit_rulefile_main');
