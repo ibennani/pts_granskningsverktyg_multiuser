@@ -300,6 +300,10 @@ body {
     padding: 0 var(--spacing-unit);
     margin-inline: auto;
     overflow-x: hidden;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
 }
 
 #app-container,
@@ -307,6 +311,17 @@ body {
 #global-action-bar-bottom {
     width: 100%;
     overflow-x: hidden;
+}
+
+#app-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    justify-content: safe center;
+    align-items: stretch;
+    min-height: 0;
+    overflow-y: auto;
 }
 
 /* Topp- och bottennavigering som tydliga horisontella barer */

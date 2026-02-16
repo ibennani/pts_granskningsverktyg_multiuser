@@ -1,7 +1,53 @@
 /* LoginViewComponent */
 
+/* Login-container: centrerad i viewport */
+/* När vi använder app-layout structuren (standard) */
+body.view-login #app-wrapper {
+    justify-content: center;
+    align-items: center;
+}
+
+body.view-login #app-container {
+    flex: 0 0 auto; /* Låt container anpassa sig efter innehåll */
+    width: auto;
+    max-width: 100%;
+    overflow: visible; /* Tillåt innehåll att synas utan scrollbar om möjligt */
+}
+
+body.view-login .app-layout {
+    justify-content: center;
+    align-items: center;
+    width: auto;
+}
+
+body.view-login .app-side-menu-root,
+body.view-login .app-right-sidebar-root {
+    display: none !important;
+}
+
+body.view-login .app-main-view-root {
+    flex: 0 0 auto;
+    width: auto; /* Anpassa bredd efter innehåll */
+    max-width: 100%;
+    min-width: 0; /* Override default min-width */
+}
+
+/* Fallback för separat container om det används */
+#login-view-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+}
+
 .login-plate {
     max-width: 28rem;
+    width: 100%;
 }
 
 .login-plate label {

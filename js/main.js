@@ -843,8 +843,19 @@ window.DraftManager = DraftManager;
             ? window.Helpers.escape_html
             : (s) => s; 
 
-        ensure_app_layout();
-        const view_root = main_view_root || app_container;
+        if (view_name_to_render !== 'login') {
+            ensure_app_layout();
+        }
+
+        let view_root;
+        if (view_name_to_render === 'login') {
+            document.body.classList.add('view-login');
+            ensure_app_layout();
+            view_root = main_view_root || app_container;
+        } else {
+            document.body.classList.remove('view-login');
+            view_root = main_view_root || app_container;
+        }
 
         updatePageTitle(view_name_to_render, params_to_render);
         update_side_menu(view_name_to_render, params_to_render);
