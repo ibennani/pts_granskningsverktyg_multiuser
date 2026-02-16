@@ -34,6 +34,24 @@
     opacity: 1;
 }
 
+.global-message-action-btn {
+    margin-left: 0.75rem;
+    padding: 0.25rem 0.75rem;
+    font-size: inherit;
+    cursor: pointer;
+    border: 1px solid currentColor;
+    border-radius: var(--border-radius, 4px);
+    background: transparent;
+}
+.global-message-action-btn:hover,
+.global-message-action-btn:focus {
+    background: rgba(0, 0, 0, 0.1);
+}
+[data-theme="dark"] .global-message-action-btn:hover,
+[data-theme="dark"] .global-message-action-btn:focus {
+    background: rgba(255, 255, 255, 0.15);
+}
+
 /* Message types - Kontrastjusterade färger */
 
 /* Info */

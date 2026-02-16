@@ -25,7 +25,7 @@ export const NotificationComponent = {
         });
     },
 
-    _update_global_message_content(message, type) {
+    _update_global_message_content(message, type, action = null) {
         if (!this.global_message_element) {
             // Try to get element if it was created after init
             this.global_message_element = document.getElementById(GLOBAL_MESSAGE_CONTAINER_ID);
@@ -51,7 +51,20 @@ export const NotificationComponent = {
         this.global_message_element.innerHTML = '';
 
         if (message && message.trim() !== '') {
-            this.global_message_element.textContent = message;
+            const textNode = document.createTextNode(message);
+            this.global_message_element.appendChild(textNode);
+            if (action && typeof action.callback === 'function') {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'global-message-action-btn';
+                btn.textContent = action.label || 'Ok';
+                btn.addEventListener('click', () => {
+                    this.clear_global_message();
+                    action.callback();
+                });
+                this.global_message_element.appendChild(document.createTextNode(' '));
+                this.global_message_element.appendChild(btn);
+            }
             this.global_message_element.className = '';
             this.global_message_element.classList.add('global-message-content');
             this.global_message_element.classList.add(`message-${type}`);
@@ -62,15 +75,26 @@ export const NotificationComponent = {
         }
     },
 
-    show_global_message(message, type = 'info') {
+    show_global_message(message, type = 'info', _duration, action) {
         if (!this.global_message_element) {
             this.init().then(() => { 
-                if(this.global_message_element) this._update_global_message_content(message, type);
+                if (this.global_message_element) this._update_global_message_content(message, type, action || null);
                 else console.error("NotificationComponent: Still cannot show message, container not established after re-init.");
             });
             return;
         }
-        this._update_global_message_content(message, type);
+        this._update_global_message_content(message, type, action || null);
+    },
+
+    show_global_message_with_action(message, type = 'info', action) {
+        if (!this.global_message_element) {
+            this.init().then(() => { 
+                if (this.global_message_element) this._update_global_message_content(message, type, action);
+                else console.error("NotificationComponent: Still cannot show message, container not established after re-init.");
+            });
+            return;
+        }
+        this._update_global_message_content(message, type, action);
     },
 
     clear_global_message() {

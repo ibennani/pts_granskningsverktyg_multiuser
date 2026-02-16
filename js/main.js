@@ -17,6 +17,7 @@ import * as ScoreCalculator from './logic/ScoreCalculator.js';
 import * as RuleDataProcessor from './logic/RuleDataProcessor.js';
 import * as RulefileEditorLogic from './logic/rulefile_editor_logic.js';
 import { AutosaveService } from './logic/autosave_service.js';
+import { init_version_check_service } from './logic/version_check_service.js';
 import { MarkdownToolbar } from './features/markdown_toolbar.js';
 import './utils/dependency_manager.js';
 import './utils/console_manager.js';
@@ -58,6 +59,7 @@ import { StartViewComponent } from './components/StartViewComponent.js';
 import { GlobalActionBarComponent } from './components/GlobalActionBarComponent.js';
 import { ModalComponent } from './components/ModalComponent.js';
 import { show_confirm_delete_modal } from './logic/confirm_delete_modal_logic.js';
+import { flush_sync_to_server } from './logic/server_sync.js';
 
 import { DraftManager } from './draft_manager.js';
 import { getState, dispatch, subscribe, initState, StoreActionTypes, StoreInitialState, loadStateFromLocalStorageBackup, clearLocalStorageBackup, updateBackupRestorePosition, APP_STATE_KEY } from './state.js';
@@ -882,6 +884,13 @@ window.DraftManager = DraftManager;
             return;
         }
 
+        // Spara väntande ändringar till servern innan vi lämnar vyn (undviker förlust vid snabb navigering)
+        try {
+            await flush_sync_to_server(getState, dispatch);
+        } catch (flushErr) {
+            consoleManager.warn('[Main.js] flush_sync_to_server:', flushErr?.message || flushErr);
+        }
+
         if (current_view_component_instance && typeof current_view_component_instance.destroy === 'function') {
             NotificationComponent?.clear_global_message?.();
             if (current_view_component_instance === RequirementListComponent && view_name_to_render === 'rulefile_requirements') {
@@ -1184,6 +1193,7 @@ window.DraftManager = DraftManager;
         await init_global_components(); 
         if (window.ScoreManager?.init) { window.ScoreManager.init(subscribe, getState, dispatch, StoreActionTypes); }
         if (MarkdownToolbar?.init) { MarkdownToolbar.init(); }
+        init_version_check_service();
         // Lagra referenser till event listeners för senare cleanup
         const language_changed_handler = on_language_changed_event;
         const hash_change_handler = handle_hash_change;

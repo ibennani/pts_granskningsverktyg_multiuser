@@ -56,6 +56,8 @@ export const RequirementAuditComponent = {
         this.NotificationComponent = deps.NotificationComponent;
         this.AuditLogic = deps.AuditLogic;
         this.right_sidebar_root = deps.rightSidebarRoot || null;
+        this.subscribe = deps.subscribe;
+        this.unsubscribe_from_store = null;
 
         // Bind methods
         this.handle_checklist_status_change = this.handle_checklist_status_change.bind(this);
@@ -77,6 +79,15 @@ export const RequirementAuditComponent = {
                     dispatch: this.dispatch,
                     StoreActionTypes: this.StoreActionTypes,
                     onSidebarFiltersChange: this.handle_sidebar_filters_change
+                }
+            });
+        }
+
+        if (typeof this.subscribe === 'function') {
+            this.unsubscribe_from_store = this.subscribe((_new_state, listener_meta) => {
+                if (listener_meta?.skip_render) return;
+                if (this.root && typeof this.render === 'function') {
+                    this.render();
                 }
             });
         }
@@ -735,6 +746,10 @@ export const RequirementAuditComponent = {
     },
     
     destroy() {
+        if (typeof this.unsubscribe_from_store === 'function') {
+            this.unsubscribe_from_store();
+            this.unsubscribe_from_store = null;
+        }
         document.removeEventListener('keydown', this.handle_audit_keydown);
         clearTimeout(this.debounceTimerAudit);
         this.handle_comment_input(true);

@@ -6,6 +6,19 @@ const get_base_url = () => {
     return base.replace(/\/$/, '');
 };
 
+/**
+ * Returnerar WebSocket-URL för realtidssynkronisering.
+ * Använder samma host som API, path /v2/ws (eller /ws om API är /api).
+ */
+export function get_websocket_url() {
+    if (typeof window === 'undefined') return 'ws://localhost:3000/ws';
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.host;
+    const base = window.__GV_API_BASE__ || '/v2/api';
+    const ws_path = base.replace(/\/api\/?$/, '/ws').replace(/\/$/, '') || '/v2/ws';
+    return `${protocol}//${host}${ws_path}`;
+}
+
 export async function api_get(path) {
     const res = await fetch(`${get_base_url()}${path}`, {
         headers: {
@@ -121,6 +134,10 @@ export async function get_audits(status) {
 
 export async function get_audit(id) {
     return api_get(`/audits/${id}`);
+}
+
+export async function get_audit_version(id) {
+    return api_get(`/audits/${id}/version`);
 }
 
 /**

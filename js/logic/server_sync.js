@@ -30,6 +30,47 @@ function state_to_import(state) {
     };
 }
 
+async function run_sync(state, dispatch_fn) {
+    if (!state || !state.ruleFileContent || typeof window === 'undefined') return;
+    if (state.auditStatus === 'rulefile_editing') return;
+
+    try {
+        if (state.auditId) {
+            await update_audit(state.auditId, state_to_patch(state));
+        } else {
+            const full_state = await import_audit(state_to_import(state));
+            if (dispatch_fn && full_state?.auditId) {
+                setTimeout(() => {
+                    dispatch_fn({
+                        type: 'SET_REMOTE_AUDIT_ID',
+                        payload: {
+                            auditId: full_state.auditId,
+                            ruleSetId: full_state.ruleSetId ?? null,
+                            version: full_state.version ?? null
+                        }
+                    });
+                }, 0);
+            }
+        }
+    } catch (err) {
+        if (err.status === 409 && err.existingAuditId && dispatch_fn) {
+            dispatch_fn({
+                type: 'SET_REMOTE_AUDIT_ID',
+                payload: {
+                    auditId: err.existingAuditId,
+                    ruleSetId: null,
+                    version: null
+                }
+            });
+        } else if (window.NotificationComponent?.show_global_message && window.Translation?.t) {
+            window.NotificationComponent.show_global_message(
+                window.Translation.t('server_sync_error', { message: err.message }) || `Kunde inte spara till servern: ${err.message}`,
+                'error'
+            );
+        }
+    }
+}
+
 export function schedule_sync_to_server(state, dispatch_fn) {
     if (!state) return;
     if (!state.ruleFileContent) return;
@@ -39,40 +80,21 @@ export function schedule_sync_to_server(state, dispatch_fn) {
     if (debounce_timer) clearTimeout(debounce_timer);
     debounce_timer = setTimeout(async () => {
         debounce_timer = null;
-        try {
-            if (state.auditId) {
-                await update_audit(state.auditId, state_to_patch(state));
-            } else {
-                const full_state = await import_audit(state_to_import(state));
-                if (dispatch_fn && full_state?.auditId) {
-                    setTimeout(() => {
-                        dispatch_fn({
-                            type: 'SET_REMOTE_AUDIT_ID',
-                            payload: {
-                                auditId: full_state.auditId,
-                                ruleSetId: full_state.ruleSetId ?? null,
-                                version: full_state.version ?? null
-                            }
-                        });
-                    }, 0);
-                }
-            }
-        } catch (err) {
-            if (err.status === 409 && err.existingAuditId && dispatch_fn) {
-                dispatch_fn({
-                    type: 'SET_REMOTE_AUDIT_ID',
-                    payload: {
-                        auditId: err.existingAuditId,
-                        ruleSetId: null,
-                        version: null
-                    }
-                });
-            } else if (window.NotificationComponent?.show_global_message && window.Translation?.t) {
-                window.NotificationComponent.show_global_message(
-                    window.Translation.t('server_sync_error', { message: err.message }) || `Kunde inte spara till servern: ${err.message}`,
-                    'error'
-                );
-            }
-        }
+        await run_sync(state, dispatch_fn);
     }, DEBOUNCE_MS);
+}
+
+/**
+ * Kör omedelbar sync till server (t.ex. vid navigering bort från granskning).
+ * Rensar väntande debounce och sparar direkt.
+ */
+export async function flush_sync_to_server(get_state_fn, dispatch_fn) {
+    if (debounce_timer) {
+        clearTimeout(debounce_timer);
+        debounce_timer = null;
+        const state = typeof get_state_fn === 'function' ? get_state_fn() : null;
+        if (state) {
+            await run_sync(state, dispatch_fn);
+        }
+    }
 }

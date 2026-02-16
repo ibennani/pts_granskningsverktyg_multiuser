@@ -1,8 +1,8 @@
 // server/index.js
 import 'dotenv/config';
+import http from 'http';
 import express from 'express';
 import { query } from './db.js';
-
 process.on('uncaughtException', (err) => {
     console.error('[Server] Uncaught exception:', err);
 });
@@ -16,6 +16,7 @@ import auditsRouter from './routes/audits.js';
 
 const app = express();
 const PORT = process.env.API_PORT || 3000;
+const http_server = http.createServer(app);
 
 app.use(express.json({ limit: '10mb' }));
 
@@ -68,6 +69,6 @@ app.use((err, _req, res, _next) => {
     res.status(500).json({ error: 'Ett serverfel inträffade' });
 });
 
-app.listen(PORT, () => {
+http_server.listen(PORT, () => {
     console.log(`[Server] Kör på port ${PORT}`);
 });

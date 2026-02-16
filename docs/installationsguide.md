@@ -101,9 +101,12 @@ npm run validate:css
 ### Steg 5: Starta utvecklingsserver
 
 ```bash
-# Starta utvecklingsserver
+# Starta utvecklingsserver (inkl. backend och WebSocket för realtidssynk)
 npm run dev
+# Eller för full stack med databas: npm run dev:app
 ```
+
+WebSocket för realtidssynkronisering mellan flera webbläsare/enheter fungerar lokalt via Vites proxy (`/v2/ws` → backend). Både Vite (port 5173) och backend (port 3000) måste köras.
 
 **Förväntad utdata:**
 ```
@@ -174,11 +177,28 @@ server {
         try_files $uri $uri/ /index.html;
     }
 
+    # API-proxy
+    location /api/ {
+        proxy_pass http://localhost:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    # WebSocket för realtidssynkronisering av granskningar (flera webbläsare/enheter)
+    location /v2/ws {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "Upgrade";
+    }
+
     # Gzip-komprimering
     gzip on;
     gzip_types text/plain text/css application/json application/javascript text/xml application/xml;
 }
 ```
+
+Backend måste köras med WebSocket-stöd (ingår i `npm run dev:server`). Paketet `ws` installeras via `npm install`.
 
 **Apache-konfiguration (exempel):**
 ```apache

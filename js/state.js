@@ -34,7 +34,8 @@ export const ActionTypes = {
     DELETE_CHECK_FROM_REQUIREMENT: 'DELETE_CHECK_FROM_REQUIREMENT',
     DELETE_CRITERION_FROM_CHECK: 'DELETE_CRITERION_FROM_CHECK',
     SET_RULEFILE_EDIT_BASELINE: 'SET_RULEFILE_EDIT_BASELINE',
-    SET_REMOTE_AUDIT_ID: 'SET_REMOTE_AUDIT_ID'
+    SET_REMOTE_AUDIT_ID: 'SET_REMOTE_AUDIT_ID',
+    REPLACE_STATE_FROM_REMOTE: 'REPLACE_STATE_FROM_REMOTE'
 };
 
 const initial_state = {
@@ -593,6 +594,15 @@ function root_reducer(current_state, action) {
                 }
             };
 
+        case ActionTypes.REPLACE_STATE_FROM_REMOTE:
+            // Ersätt state med serverdata, behåll uiSettings
+            const remote = action.payload;
+            if (!remote || typeof remote !== 'object') return current_state;
+            return {
+                ...remote,
+                uiSettings: current_state.uiSettings || remote.uiSettings || {}
+            };
+
         default:
             return current_state;
     }
@@ -672,8 +682,10 @@ function execute_single_dispatch(action, dispatch_fn) {
 
                 // Schemalägg sync till server (import om auditId saknas, annars PATCH).
                 // Hoppa över för CLEAR_STAGED_SAMPLE_CHANGES – körs vid init och ska inte skapa phantom-granskningar.
+                // Hoppa över för REPLACE_STATE_FROM_REMOTE – data kommer redan från servern.
                 try {
-                    if (action.type !== ActionTypes.CLEAR_STAGED_SAMPLE_CHANGES) {
+                    if (action.type !== ActionTypes.CLEAR_STAGED_SAMPLE_CHANGES &&
+                        action.type !== ActionTypes.REPLACE_STATE_FROM_REMOTE) {
                         schedule_sync_to_server(internal_state, dispatch_fn);
                     }
                 } catch (syncError) {

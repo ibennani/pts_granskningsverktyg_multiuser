@@ -66,6 +66,12 @@ async function main() {
         await scpFile(join(projectRoot, 'package.json'), `${remotePath}/package.json`);
         await scpFile(join(projectRoot, 'package-lock.json'), `${remotePath}/package-lock.json`);
 
+        const nginxConf = join(projectRoot, 'scripts', 'ux-granskning-with-v2.conf');
+        if (existsSync(nginxConf)) {
+            console.log('[deploy] Laddar upp Nginx-konfiguration...');
+            await scpFile(nginxConf, `${remotePath}/nginx-ux-granskning.conf`);
+        }
+
         const envPath = join(projectRoot, '.env');
         if (existsSync(envPath)) {
             console.log('[deploy] Kopierar .env till servern (utan DEPLOY_*)...');
@@ -93,6 +99,21 @@ async function main() {
             `npm install --omit=dev --ignore-scripts && npm run db:migrate && ${pm2Start}`,
             ['ssh', [host, `cd ${remotePath} && npm install --omit=dev --ignore-scripts && npm run db:migrate && ${pm2Start}`]]
         );
+
+        const nginxConfigPath = process.env.DEPLOY_NGINX_CONF || '/etc/nginx/conf.d/ux-granskning.conf';
+        const sudoPassword = process.env.DEPLOY_SUDO_PASSWORD || '';
+        const nginxCopyAndReload = `cp ${remotePath}/nginx-ux-granskning.conf ${nginxConfigPath} && nginx -t && systemctl reload nginx`;
+        const nginxCmd = sudoPassword
+            ? `echo ${JSON.stringify(Buffer.from(sudoPassword, 'utf8').toString('base64'))} | base64 -d | sudo -S bash -c ${JSON.stringify(nginxCopyAndReload)}`
+            : `sudo cp ${remotePath}/nginx-ux-granskning.conf ${nginxConfigPath} && sudo nginx -t && sudo systemctl reload nginx`;
+        try {
+            console.log('[deploy] Uppdaterar Nginx och laddar om...');
+            await exec(nginxCmd, { cwd: false });
+            console.log('[deploy] Nginx uppdaterad.');
+        } catch (err) {
+            console.warn('[deploy] Nginx-uppdatering misslyckades (kräver sudo):', err.message);
+            console.warn('[deploy] Kör manuellt på servern: sudo cp', `${remotePath}/nginx-ux-granskning.conf`, nginxConfigPath, '&& sudo nginx -t && sudo systemctl reload nginx');
+        }
 
         console.log('[deploy] Klart! https://ux-granskningsverktyg.pts.ad/v2/');
     } finally {

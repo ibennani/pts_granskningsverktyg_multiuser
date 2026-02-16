@@ -16,6 +16,8 @@ export const StartViewComponent = {
         this.audits = [];
         this.api_available = false;
         this._api_checked = false;
+        this._poll_timer = null;
+        this.POLL_INTERVAL_MS = 3000;
 
         if (this.Helpers?.load_css_safely) {
             await this.Helpers.load_css_safely(this.CSS_PATH, 'StartViewComponent', {
@@ -23,6 +25,31 @@ export const StartViewComponent = {
                 maxRetries: 2
             }).catch(() => {});
         }
+
+        this._start_list_polling = () => {
+            this._stop_list_polling();
+            const poll = async () => {
+                if (!this.root || !this.api_available) return;
+                try {
+                    const fresh = await get_audits();
+                    const fp = (arr) => JSON.stringify(arr.map(a => ({ id: a.id, status: a.status, updated_at: a.updated_at })));
+                    if (fp(fresh) !== fp(this.audits)) {
+                        this.audits = fresh;
+                        if (this.root) this.render();
+                    }
+                } catch {
+                    /* tyst vid poll-fel */
+                }
+                this._poll_timer = setTimeout(poll, this.POLL_INTERVAL_MS);
+            };
+            this._poll_timer = setTimeout(poll, this.POLL_INTERVAL_MS);
+        };
+        this._stop_list_polling = () => {
+            if (this._poll_timer) {
+                clearTimeout(this._poll_timer);
+                this._poll_timer = null;
+            }
+        };
     },
 
     get_t_func() {
@@ -207,9 +234,14 @@ export const StartViewComponent = {
         }
 
         this.root.appendChild(plate);
+
+        if (this._api_checked && this.api_available && typeof this._start_list_polling === 'function') {
+            this._start_list_polling();
+        }
     },
 
     destroy() {
+        this._stop_list_polling?.();
         this.root = null;
         this.deps = null;
     }

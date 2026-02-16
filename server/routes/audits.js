@@ -174,6 +174,21 @@ router.get('/', async (req, res) => {
     }
 });
 
+router.get('/:id/version', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await query('SELECT version, updated_at FROM audits WHERE id = $1', [id]);
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Granskning hittades inte' });
+        }
+        const row = result.rows[0];
+        res.json({ version: row.version, updated_at: row.updated_at });
+    } catch (err) {
+        console.error('[audits] GET version error:', err);
+        res.status(500).json({ error: 'Kunde inte hämta version' });
+    }
+});
+
 router.get('/:id', async (req, res) => {
     try {
         const { id } = req.params;
@@ -366,9 +381,9 @@ router.patch('/:id', async (req, res) => {
         }
         if (samples !== undefined) {
             updates.push(`samples = $${i++}`);
-            updates.push(`version = version + 1`);
             values.push(JSON.stringify(samples));
         }
+        updates.push(`version = version + 1`);
         if (last_updated_by !== null) {
             updates.push(`last_updated_by = $${i++}`);
             values.push(last_updated_by);

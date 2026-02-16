@@ -19,6 +19,18 @@ export default defineConfig({
             }
           });
         }
+      },
+      '/v2/ws': {
+        target: 'http://localhost:3000',
+        ws: true,
+        rewrite: (path) => path.replace(/^\/v2/, ''),
+        configure: (proxy) => {
+          proxy.on('error', (err, _req, _res) => {
+            if (err?.code !== 'ECONNREFUSED' && err?.code !== 'ECONNRESET') {
+              console.warn('[vite] ws proxy:', err?.message || err);
+            }
+          });
+        }
       }
     },
     watch: {

@@ -15,10 +15,12 @@ export const RequirementsListViewComponent = {
         this.getState = deps.getState;
         this.dispatch = deps.dispatch;
         this.StoreActionTypes = deps.StoreActionTypes;
+        this.subscribe = deps.subscribe;
         this.Translation = deps.Translation;
         this.Helpers = deps.Helpers;
         this.AuditLogic = deps.AuditLogic;
         this.params = deps.params || {};
+        this.unsubscribe_from_store = null;
 
         // Mode-specific state keys
         this.state_filter_key = this.mode === 'all' ? 'allRequirementsFilter' : 'requirementListFilter';
@@ -65,6 +67,15 @@ export const RequirementsListViewComponent = {
         this.NotificationComponent = deps.NotificationComponent;
         if (this.mode === 'sample' && this.NotificationComponent?.get_global_message_element_reference) {
             this.global_message_element_ref = this.NotificationComponent.get_global_message_element_reference();
+        }
+
+        if (typeof this.subscribe === 'function') {
+            this.unsubscribe_from_store = this.subscribe((_new_state, listener_meta) => {
+                if (listener_meta?.skip_render) return;
+                if (this.root && typeof this.render === 'function') {
+                    this.render();
+                }
+            });
         }
     },
 
@@ -1183,6 +1194,10 @@ export const RequirementsListViewComponent = {
     },
 
     destroy() {
+        if (typeof this.unsubscribe_from_store === 'function') {
+            this.unsubscribe_from_store();
+            this.unsubscribe_from_store = null;
+        }
         if (this.filter_component_instance && typeof this.filter_component_instance.destroy === 'function') {
             this.filter_component_instance.destroy();
         }
