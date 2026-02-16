@@ -26,6 +26,15 @@ async function migrate() {
         const sql4 = readFileSync(join(__dirname, '../migrations/004_remove_admin_user.sql'), 'utf8');
         await client.query(sql4);
         console.log('[Migrate] Migration 004 kördes.');
+        const sql5 = readFileSync(join(__dirname, '../migrations/005_add_user_preferences.sql'), 'utf8');
+        await client.query(sql5);
+        console.log('[Migrate] Migration 005 kördes.');
+        const sql6 = readFileSync(join(__dirname, '../migrations/006_add_review_sort_preference.sql'), 'utf8');
+        await client.query(sql6);
+        console.log('[Migrate] Migration 006 kördes.');
+        const sql7 = readFileSync(join(__dirname, '../migrations/007_review_sort_default_by_criteria.sql'), 'utf8');
+        await client.query(sql7);
+        console.log('[Migrate] Migration 007 kördes.');
     } catch (err) {
         console.error('[Migrate] Fel:', err.message);
         process.exit(1);

@@ -247,13 +247,14 @@ export const SideMenuComponent = {
             return { should_show: false, items: [], aria_label: t('side_menu_aria_label') };
         }
 
-        if (this.current_view_name === 'start' || this.current_view_name === 'admin' || this.current_view_name === 'manage_users') {
+        if (this.current_view_name === 'start' || this.current_view_name === 'admin' || this.current_view_name === 'manage_users' || this.current_view_name === 'my_settings') {
             return {
                 should_show: true,
                 aria_label: t('side_menu_aria_label'),
                 items: [
                     { label: t('menu_link_start'), view_name: 'start' },
                     { label: t('menu_link_admin'), view_name: 'admin' },
+                    { label: t('menu_link_my_settings'), view_name: 'my_settings' },
                     { label: t('menu_link_manage_users'), view_name: 'manage_users' }
                 ]
             };
@@ -362,8 +363,13 @@ export const SideMenuComponent = {
 
         const list = this.Helpers.create_element('ul', { class_name: 'side-menu__list' });
         menu_model.items.forEach((item, idx) => {
+            const is_manage_users = item.view_name === 'manage_users';
             const li = this.Helpers.create_element('li', {
-                class_name: ['side-menu__item', ...(item.back_to_start ? ['side-menu__item--back-to-start'] : [])]
+                class_name: [
+                    'side-menu__item',
+                    ...(item.back_to_start ? ['side-menu__item--back-to-start'] : []),
+                    ...(is_manage_users ? ['side-menu__item--separated'] : [])
+                ]
             });
             const link = this.create_menu_link(item);
             if (idx === 0) {

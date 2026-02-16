@@ -84,7 +84,7 @@ const initial_state = {
             }
         },
         requirementAuditSidebar: {
-            selectedMode: 'sample_requirements',
+            selectedMode: 'requirement_samples',
             filtersByMode: {
                 sample_requirements: {
                     searchText: '',
@@ -697,10 +697,13 @@ function execute_single_dispatch(action, dispatch_fn) {
                 // Schemalägg sync till server (import om auditId saknas, annars PATCH).
                 // Hoppa över för CLEAR_STAGED_SAMPLE_CHANGES – körs vid init och ska inte skapa phantom-granskningar.
                 // Hoppa över för REPLACE_STATE_FROM_REMOTE och REPLACE_RULEFILE_FROM_REMOTE – data kommer redan från servern.
+                // Hoppa över när auditStatus är not_started – spara inte förrän användaren klickat "Fortsätt till stickprov"
+                // och sedan "Starta granskning", så att granskningar inte skapas med tomma/konstiga namn.
                 try {
                     if (action.type !== ActionTypes.CLEAR_STAGED_SAMPLE_CHANGES &&
                         action.type !== ActionTypes.REPLACE_STATE_FROM_REMOTE &&
-                        action.type !== ActionTypes.REPLACE_RULEFILE_FROM_REMOTE) {
+                        action.type !== ActionTypes.REPLACE_RULEFILE_FROM_REMOTE &&
+                        internal_state.auditStatus !== 'not_started') {
                         schedule_sync_to_server(internal_state, dispatch_fn);
                     }
                 } catch (syncError) {

@@ -58,6 +58,7 @@ import { AdminViewComponent } from './components/AdminViewComponent.js';
 import { StartViewComponent } from './components/StartViewComponent.js';
 import { LoginViewComponent } from './components/LoginViewComponent.js';
 import { ManageUsersViewComponent } from './components/ManageUsersViewComponent.js';
+import { SettingsViewComponent } from './components/SettingsViewComponent.js';
 
 import { GlobalActionBarComponent } from './components/GlobalActionBarComponent.js';
 import { ModalComponent } from './components/ModalComponent.js';
@@ -331,6 +332,9 @@ window.DraftManager = DraftManager;
                     case 'manage_users':
                         title_prefix = t('manage_users_title');
                         break;
+                    case 'my_settings':
+                        title_prefix = t('menu_link_my_settings');
+                        break;
                     case 'login':
                         title_prefix = t('login_title');
                         break;
@@ -557,7 +561,7 @@ window.DraftManager = DraftManager;
     
     function set_initial_theme() {
         const saved_theme = localStorage.getItem('theme_preference');
-        if (saved_theme) {
+        if (saved_theme && saved_theme !== 'system') {
             document.documentElement.setAttribute('data-theme', saved_theme);
         } else {
             const prefers_dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -940,6 +944,7 @@ window.DraftManager = DraftManager;
             case 'start': ComponentClass = StartViewComponent; break;
             case 'admin': ComponentClass = AdminViewComponent; break;
             case 'manage_users': ComponentClass = ManageUsersViewComponent; break;
+            case 'my_settings': ComponentClass = SettingsViewComponent; break;
             case 'login': ComponentClass = LoginViewComponent; break;
             case 'metadata': ComponentClass = EditMetadataViewComponent; break;
             case 'edit_metadata': ComponentClass = EditMetadataViewComponent; break;
@@ -1196,9 +1201,39 @@ window.DraftManager = DraftManager;
         }
     }
     
+    async function apply_user_preferences_from_server() {
+        if (!window.__GV_CURRENT_USER_NAME__) return;
+        try {
+            const { get_current_user_preferences } = await import('./api/client.js');
+            const user = await get_current_user_preferences();
+            if (user?.language_preference && typeof window.Translation?.set_language === 'function') {
+                await window.Translation.set_language(user.language_preference);
+            }
+            if (user?.theme_preference === 'light' || user?.theme_preference === 'dark') {
+                localStorage.setItem('theme_preference', user.theme_preference);
+                document.documentElement.setAttribute('data-theme', user.theme_preference);
+            } else if (user?.theme_preference === 'system' || user?.theme_preference === null || user?.theme_preference === '') {
+                localStorage.removeItem('theme_preference');
+                const prefers_dark = window.matchMedia?.('(prefers-color-scheme: dark)')?.matches;
+                document.documentElement.setAttribute('data-theme', prefers_dark ? 'dark' : 'light');
+            }
+            const pref = user?.review_sort_preference || 'by_criteria';
+            if (pref === 'by_criteria' || pref === 'by_sample') {
+                const mode = pref === 'by_criteria' ? 'requirement_samples' : 'sample_requirements';
+                dispatch({
+                    type: StoreActionTypes.SET_REQUIREMENT_AUDIT_SIDEBAR_SETTINGS,
+                    payload: { selectedMode: mode }
+                });
+            }
+        } catch {
+            /* ignorerar – användaren kanske inte finns i DB */
+        }
+    }
+
     async function start_normal_session(options = {}) {
         const { restore_pending } = options;
         ensure_app_layout();
+        await apply_user_preferences_from_server();
         await init_global_components(); 
         if (window.ScoreManager?.init) { window.ScoreManager.init(subscribe, getState, dispatch, StoreActionTypes); }
         if (MarkdownToolbar?.init) { MarkdownToolbar.init(); }

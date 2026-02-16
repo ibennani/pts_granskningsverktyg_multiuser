@@ -107,6 +107,14 @@ export async function get_users() {
     return api_get('/users');
 }
 
+export async function get_current_user_preferences() {
+    return api_get('/users/me');
+}
+
+export async function update_current_user_preferences(prefs) {
+    return api_patch('/users/me', prefs);
+}
+
 export async function get_rules() {
     return api_get('/rules');
 }

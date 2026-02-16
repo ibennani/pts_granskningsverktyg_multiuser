@@ -10,6 +10,9 @@ router.get('/', async (_req, res) => {
             `SELECT id,
                 COALESCE(NULLIF(TRIM(content->'metadata'->>'title'), ''), name) AS name,
                 COALESCE(NULLIF(TRIM(content->'metadata'->>'version'), ''), version::text) AS version_display,
+                content->'metadata'->>'version' AS metadata_version,
+                COALESCE(NULLIF(TRIM(content->'metadata'->'monitoringType'->>'text'), ''),
+                    NULLIF(TRIM(content->'metadata'->'monitoringType'->>'label'), '')) AS monitoring_type_text,
                 version, created_at, updated_at
              FROM rule_sets ORDER BY updated_at DESC`
         );

@@ -190,6 +190,21 @@ export const AdminViewComponent = {
         this._show_rule_picker_for_new_audit();
     },
 
+    _parse_version_for_compare(version_str) {
+        if (!version_str || typeof version_str !== 'string') return [0, 0, 0];
+        const m = version_str.trim().match(/^(\d{4})\.(\d{1,2})\.r(\d+)$/i);
+        if (!m) return [0, 0, 0];
+        return [parseInt(m[1], 10), parseInt(m[2], 10), parseInt(m[3], 10)];
+    },
+
+    _version_greater_than(a_str, b_str) {
+        const a = this._parse_version_for_compare(a_str);
+        const b = this._parse_version_for_compare(b_str);
+        if (a[0] !== b[0]) return a[0] > b[0];
+        if (a[1] !== b[1]) return a[1] > b[1];
+        return a[2] > b[2];
+    },
+
     async _show_rule_picker_for_new_audit() {
         const t = this.get_t_func();
         const ModalComponent = window.ModalComponent;
@@ -199,20 +214,29 @@ export const AdminViewComponent = {
             this.NotificationComponent?.show_global_message(t('server_no_rules'), 'error');
             return;
         }
+        const type_to_rule = new Map();
+        for (const r of this.rules) {
+            const type_key = (r.monitoring_type_text || r.name || `Regelfil ${r.id}`).trim();
+            const existing = type_to_rule.get(type_key);
+            if (!existing || this._version_greater_than(r.metadata_version || '', existing.metadata_version || '')) {
+                type_to_rule.set(type_key, r);
+            }
+        }
+        const rules_to_show = [...type_to_rule.values()].sort((a, b) => {
+            const ta = (a.monitoring_type_text || a.name || `Regelfil ${a.id}`).trim();
+            const tb = (b.monitoring_type_text || b.name || `Regelfil ${b.id}`).trim();
+            return ta.localeCompare(tb, 'sv');
+        });
         ModalComponent.show(
-            { h1_text: t('server_select_rule'), message_text: t('server_select_rule_intro') },
+            { h1_text: t('rulefile_metadata_field_monitoring_type_label'), message_text: '' },
             (container, modal_instance) => {
                 const ul = this.Helpers.create_element('ul', { class_name: 'admin-rules-picker-list' });
-                const sorted_rules = [...this.rules].sort((a, b) => {
-                    const na = (a.name || `Regelfil ${a.id}`).trim();
-                    const nb = (b.name || `Regelfil ${b.id}`).trim();
-                    return na.localeCompare(nb, undefined, { sensitivity: 'base' });
-                });
-                sorted_rules.forEach((r) => {
+                rules_to_show.forEach((r) => {
+                    const btn_text = (r.monitoring_type_text || r.name || `Regelfil ${r.id}`).trim();
                     const li = this.Helpers.create_element('li');
                     const btn = this.Helpers.create_element('button', {
                         class_name: ['button', 'button-default', 'button-link-style'],
-                        text_content: r.name || `Regelfil ${r.id}`
+                        text_content: btn_text
                     });
                     btn.addEventListener('click', () => {
                         modal_instance.close();
@@ -222,6 +246,14 @@ export const AdminViewComponent = {
                     ul.appendChild(li);
                 });
                 container.appendChild(ul);
+                const close_wrapper = this.Helpers.create_element('div', { class_name: 'modal-confirm-actions' });
+                const close_btn = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-primary', 'admin-modal-close-btn'],
+                    text_content: t('select_rule_modal_close')
+                });
+                close_btn.addEventListener('click', () => modal_instance.close());
+                close_wrapper.appendChild(close_btn);
+                container.appendChild(close_wrapper);
             }
         );
     },

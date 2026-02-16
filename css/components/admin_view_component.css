@@ -86,10 +86,14 @@
 
 .admin-start-new-audit-btn {
     flex-shrink: 0;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.9rem;
 }
 
 .admin-upload-btn {
     align-self: flex-start;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.9rem;
 }
 
 .admin-hidden-file-input {
@@ -196,4 +200,9 @@
 
 .admin-rules-picker-list li {
     margin-bottom: 0.25rem;
+}
+
+.admin-modal-close-btn {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.9rem;
 }

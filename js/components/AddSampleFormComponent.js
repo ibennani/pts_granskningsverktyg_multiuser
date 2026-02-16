@@ -375,6 +375,15 @@ export const AddSampleFormComponent = {
         this.description_input.addEventListener('input', this.handle_autosave_input);
         this.url_input = this.Helpers.create_element('input', { id: 'sampleUrlInput', class_name: 'form-control', attributes: { type: 'url' } });
         this.url_input.addEventListener('input', this.handle_autosave_input);
+        this.url_input.addEventListener('blur', () => {
+            const val = (this.url_input?.value || '').trim();
+            if (val && this.Helpers?.add_protocol_if_missing) {
+                const fixed = this.Helpers.add_protocol_if_missing(val);
+                if (fixed !== val) {
+                    this.url_input.value = fixed;
+                }
+            }
+        });
         this.url_form_group_ref = this.Helpers.create_element('div', { class_name: 'form-group', children: [this.Helpers.create_element('label', { attributes: { for: 'sampleUrlInput' }, text_content: t('url') }), this.url_input] });
         this.form_element.append(
             this.Helpers.create_element('div', { class_name: 'form-group', children: [this.Helpers.create_element('label', { attributes: { for: 'sampleTypeSelect' }, text_content: t('sample_type_label') + '*' }), this.sample_type_select] }),

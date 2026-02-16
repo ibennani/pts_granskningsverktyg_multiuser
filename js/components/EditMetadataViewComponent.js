@@ -1,4 +1,5 @@
 import { MetadataFormComponent } from './MetadataFormComponent.js';
+import { get_current_user_name } from '../utils/helpers.js';
 
 export const EditMetadataViewComponent = {
     init({ root, deps }) {
@@ -18,6 +19,7 @@ export const EditMetadataViewComponent = {
 
         this.handle_form_submit = this.handle_form_submit.bind(this);
         this.handle_cancel = this.handle_cancel.bind(this);
+        this.handle_cancel_new_audit = this.handle_cancel_new_audit.bind(this);
 
         this.RETURN_FOCUS_SESSION_KEY = 'gv_return_focus_audit_info_h2_v1';
     },
@@ -49,7 +51,6 @@ export const EditMetadataViewComponent = {
         const current_status = this.getState().auditStatus;
         
         if (current_status === 'not_started') {
-            this.NotificationComponent.show_global_message(this.Translation.t('metadata_form_intro'), 'info');
             this.router('sample_management');
         } else {
             this.NotificationComponent.show_global_message(this.Translation.t('metadata_updated_successfully'), 'success');
@@ -61,6 +62,10 @@ export const EditMetadataViewComponent = {
     handle_cancel() {
         this._request_focus_on_audit_info_h2();
         this.router('audit_overview');
+    },
+
+    handle_cancel_new_audit() {
+        this.router('admin');
     },
 
     async render() {
@@ -83,10 +88,6 @@ export const EditMetadataViewComponent = {
             plate_element.appendChild(global_message_element);
         }
         
-        if (is_new_audit) {
-            this.NotificationComponent.show_global_message(t('metadata_form_intro'), "info");
-        }
-
         const title = is_new_audit ? t('audit_metadata_title') : t('edit_audit_metadata_title');
         const intro_text = is_new_audit ? t('metadata_form_instruction') : t('edit_metadata_form_instruction');
         
@@ -101,14 +102,18 @@ export const EditMetadataViewComponent = {
             deps: this.deps,
             options: {
                 onSubmit: this.handle_form_submit,
-                onCancel: this.handle_cancel
+                onCancel: is_new_audit ? this.handle_cancel_new_audit : this.handle_cancel
             }
         });
 
+        const metadata = { ...current_state.auditMetadata };
+        if (is_new_audit && !metadata.auditorName) {
+            metadata.auditorName = get_current_user_name() || '';
+        }
         const form_options = {
-            initialData: current_state.auditMetadata,
+            initialData: metadata,
             submitButtonText: is_new_audit ? t('continue_to_samples') : t('save_changes_button'),
-            cancelButtonText: is_new_audit ? null : t('return_without_saving_button_text')
+            cancelButtonText: is_new_audit ? t('metadata_back_to_admin') : t('return_without_saving_button_text')
         };
         
         this.metadata_form_component_instance.render(form_options);

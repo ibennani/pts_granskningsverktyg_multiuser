@@ -17,7 +17,7 @@ export const RequirementAuditSidebarComponent = {
     on_filters_change_callback: null,
 
     is_dom_initialized: false,
-    selected_mode: 'sample_requirements',
+    selected_mode: 'requirement_samples',
     last_render_options: null,
     _last_rendered_fingerprint: null,
 

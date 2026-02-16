@@ -126,6 +126,15 @@ export const MetadataFormComponent = {
 
         const actor_link_field = this.create_form_field('actorLink', 'actor_link', 'url', initialData.actorLink);
         this.actor_link_input = actor_link_field.input_element;
+        this.actor_link_input.addEventListener('blur', () => {
+            const val = (this.actor_link_input?.value || '').trim();
+            if (val && this.Helpers?.add_protocol_if_missing) {
+                const fixed = this.Helpers.add_protocol_if_missing(val);
+                if (fixed !== val) {
+                    this.actor_link_input.value = fixed;
+                }
+            }
+        });
         this.form_element_ref.appendChild(actor_link_field.form_group);
 
         const auditor_field = this.create_form_field('auditorName', 'auditor_name', 'text', initialData.auditorName);
@@ -145,7 +154,7 @@ export const MetadataFormComponent = {
         }
 
         const form_actions_wrapper = this.Helpers.create_element('div', { class_name: 'form-actions' });
-        
+
         if (cancelButtonText && typeof this.on_cancel_callback === 'function') {
             const cancel_button = this.Helpers.create_element('button', {
                 class_name: ['button', 'button-default'],
