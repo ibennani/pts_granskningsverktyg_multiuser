@@ -23,6 +23,9 @@ async function migrate() {
         const sql3 = readFileSync(join(__dirname, '../migrations/003_add_default_users.sql'), 'utf8');
         await client.query(sql3);
         console.log('[Migrate] Migration 003 kördes.');
+        const sql4 = readFileSync(join(__dirname, '../migrations/004_remove_admin_user.sql'), 'utf8');
+        await client.query(sql4);
+        console.log('[Migrate] Migration 004 kördes.');
     } catch (err) {
         console.error('[Migrate] Fel:', err.message);
         process.exit(1);

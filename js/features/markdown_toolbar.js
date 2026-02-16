@@ -42,6 +42,9 @@ export const MarkdownToolbar = {
         if (textarea.closest('.markdown-editor-wrapper')) {
             return;
         }
+        if (textarea.closest('.manage-users-plate') || textarea.id === 'manage-users-textarea') {
+            return;
+        }
         
         // Check if focus protection is active - if so, delay processing
         if (window.focusProtectionActive || window.customFocusApplied) {

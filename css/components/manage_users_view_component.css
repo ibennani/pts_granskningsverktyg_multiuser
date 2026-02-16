@@ -1,0 +1,13 @@
+/* ManageUsersViewComponent */
+
+.manage-users-plate textarea {
+    display: block;
+    width: 100%;
+    max-width: 40rem;
+    margin-top: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.manage-users-plate .button {
+    margin-top: 0.5rem;
+}

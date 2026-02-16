@@ -56,6 +56,8 @@ import { AuditProblemsViewComponent } from './components/AuditProblemsViewCompon
 import { AuditImagesViewComponent } from './components/AuditImagesViewComponent.js';
 import { AdminViewComponent } from './components/AdminViewComponent.js';
 import { StartViewComponent } from './components/StartViewComponent.js';
+import { LoginViewComponent } from './components/LoginViewComponent.js';
+import { ManageUsersViewComponent } from './components/ManageUsersViewComponent.js';
 
 import { GlobalActionBarComponent } from './components/GlobalActionBarComponent.js';
 import { ModalComponent } from './components/ModalComponent.js';
@@ -232,8 +234,8 @@ window.DraftManager = DraftManager;
     function update_side_menu(view_name, params = {}) {
         if (!side_menu_component_instance || typeof side_menu_component_instance.render !== 'function') return;
 
-        // Vid återställning av session ska vänstermenyn aldrig renderas.
-        if (view_name === 'restore_session') {
+        // Vid återställning av session eller inloggning ska vänstermenyn aldrig renderas.
+        if (view_name === 'restore_session' || view_name === 'login') {
             if (side_menu_root) {
                 side_menu_root.innerHTML = '';
                 side_menu_root.classList.add('hidden');
@@ -325,6 +327,12 @@ window.DraftManager = DraftManager;
                         break;
                     case 'admin':
                         title_prefix = t('admin_title');
+                        break;
+                    case 'manage_users':
+                        title_prefix = t('manage_users_title');
+                        break;
+                    case 'login':
+                        title_prefix = t('login_title');
                         break;
                     case 'metadata':
                         title_prefix = t('audit_metadata_title');
@@ -931,6 +939,8 @@ window.DraftManager = DraftManager;
         switch (view_name_to_render) {
             case 'start': ComponentClass = StartViewComponent; break;
             case 'admin': ComponentClass = AdminViewComponent; break;
+            case 'manage_users': ComponentClass = ManageUsersViewComponent; break;
+            case 'login': ComponentClass = LoginViewComponent; break;
             case 'metadata': ComponentClass = EditMetadataViewComponent; break;
             case 'edit_metadata': ComponentClass = EditMetadataViewComponent; break;
             case 'sample_management': ComponentClass = SampleManagementViewComponent; break;
@@ -1440,6 +1450,34 @@ window.DraftManager = DraftManager;
             if (restore_pending) {
                 consoleManager.log("[Main.js] Session was cleared (e.g. tab closed) but backup found in localStorage. Showing restore prompt.");
             }
+        }
+
+        const is_logged_in = () => {
+            if (typeof window === 'undefined') return true;
+            return !!(window.__GV_CURRENT_USER_NAME__ ||
+                (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('gv_current_user_name')));
+        };
+
+        if (!is_logged_in()) {
+            ensure_app_layout();
+            await init_global_components();
+            if (side_menu_root) {
+                side_menu_root.innerHTML = '';
+                side_menu_root.classList.add('hidden');
+            }
+            await render_view('login', {
+                on_login: () => {
+                    if (side_menu_root) side_menu_root.classList.remove('hidden');
+                    start_normal_session({ restore_pending }).catch((err) =>
+                        consoleManager.error('Error starting session:', err)
+                    );
+                }
+            });
+            return;
+        }
+
+        if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('gv_current_user_name')) {
+            window.__GV_CURRENT_USER_NAME__ = sessionStorage.getItem('gv_current_user_name');
         }
 
         const active_session_state = getState();

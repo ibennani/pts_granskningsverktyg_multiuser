@@ -1,0 +1,22 @@
+/* LoginViewComponent */
+
+.login-plate {
+    max-width: 28rem;
+}
+
+.login-plate label {
+    display: block;
+    margin-top: 1rem;
+    margin-bottom: 0.25rem;
+}
+
+.login-plate select {
+    display: block;
+    width: 100%;
+    min-width: 12rem;
+    margin-bottom: 1rem;
+}
+
+.login-plate .button {
+    margin-top: 0.5rem;
+}

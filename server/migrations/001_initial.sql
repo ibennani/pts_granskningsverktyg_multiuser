@@ -35,8 +35,3 @@ CREATE TABLE IF NOT EXISTS audits (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
--- Bootstrap admin user (om ingen admin finns)
-INSERT INTO users (name, is_admin)
-SELECT 'Admin', true
-WHERE NOT EXISTS (SELECT 1 FROM users WHERE is_admin = true LIMIT 1);

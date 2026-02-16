@@ -247,13 +247,14 @@ export const SideMenuComponent = {
             return { should_show: false, items: [], aria_label: t('side_menu_aria_label') };
         }
 
-        if (this.current_view_name === 'start' || this.current_view_name === 'admin') {
+        if (this.current_view_name === 'start' || this.current_view_name === 'admin' || this.current_view_name === 'manage_users') {
             return {
                 should_show: true,
                 aria_label: t('side_menu_aria_label'),
                 items: [
                     { label: t('menu_link_start'), view_name: 'start' },
-                    { label: t('menu_link_admin'), view_name: 'admin' }
+                    { label: t('menu_link_admin'), view_name: 'admin' },
+                    { label: t('menu_link_manage_users'), view_name: 'manage_users' }
                 ]
             };
         }
