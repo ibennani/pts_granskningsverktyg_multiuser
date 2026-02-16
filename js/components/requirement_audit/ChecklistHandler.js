@@ -498,7 +498,7 @@ export const ChecklistHandler = {
             );
             check_wrapper.appendChild(actions_div);
             
-            check_wrapper.appendChild(this.Helpers.create_element('p', { class_name: 'check-status-display' }));
+            check_wrapper.appendChild(this.Helpers.create_element('p', { class_name: 'check-status-display', attributes: { 'aria-hidden': 'true' } }));
             
             const pc_list = this.Helpers.create_element('ul', { class_name: 'pass-criteria-list' });
             (check_definition.passCriteria || []).forEach((pc_def, pc_index) => {
@@ -665,9 +665,13 @@ export const ChecklistHandler = {
                 complies_btn.parentElement.style.display = this.is_audit_locked ? 'none' : 'flex';
             }
             
+            const condition_h3 = check_wrapper.querySelector('.check-condition-title');
+            const status_text = t(`audit_status_${calculated_check_status}`);
+            const title_text = condition_h3.textContent.trim();
+            condition_h3.setAttribute('aria-label', `${title_text}. ${t('status')}: ${status_text.toLowerCase()}`);
+
             const status_text_container = check_wrapper.querySelector('.check-status-display');
             status_text_container.innerHTML = '';
-            const status_text = t(`audit_status_${calculated_check_status}`);
             const strong_element = this.Helpers.create_element('strong', { text_content: t('check_status') });
             status_text_container.appendChild(strong_element);
             status_text_container.appendChild(document.createTextNode(': '));
