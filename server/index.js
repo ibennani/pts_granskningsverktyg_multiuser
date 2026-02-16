@@ -19,14 +19,16 @@ const PORT = process.env.API_PORT || 3000;
 
 app.use(express.json({ limit: '10mb' }));
 
+app.use((req, res, next) => {
+    if (req.path === '/api/debug-delete') {
+        return res.json({ debug: true, method: req.method, path: req.path });
+    }
+    next();
+});
+
 app.use('/api/users', usersRouter);
 app.use('/api/rules', rulesRouter);
 app.use('/api/audits', auditsRouter);
-
-app.use((err, _req, res, _next) => {
-    console.error('[Server] Ohanterat fel i route:', err);
-    res.status(500).json({ error: 'Ett serverfel inträffade' });
-});
 
 app.get('/api/health', async (_req, res) => {
     try {
@@ -35,6 +37,11 @@ app.get('/api/health', async (_req, res) => {
     } catch (err) {
         res.status(503).json({ ok: false, error: 'Databas ej tillgänglig' });
     }
+});
+
+app.use((err, _req, res, _next) => {
+    console.error('[Server] Ohanterat fel i route:', err);
+    res.status(500).json({ error: 'Ett serverfel inträffade' });
 });
 
 app.listen(PORT, () => {

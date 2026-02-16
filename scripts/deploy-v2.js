@@ -43,7 +43,10 @@ async function main() {
 
     console.log(`[deploy] Laddar upp till ${host}:${remotePath}...`);
 
-    await run('ssh', [host, `mkdir -p ${remotePath}/v2 ${remotePath}/server`]);
+    await run('ssh', [host, `mkdir -p ${remotePath}/v2 ${remotePath}/server ${remotePath}/js`]);
+
+    // Kopiera js/ (server importerar audit_logic, ScoreCalculator m.fl.)
+    await run('scp', ['-r', join(projectRoot, 'js'), `${host}:${remotePath}/`]);
 
     // Kopiera dist-innehåll till v2/ (root istället för alias kräver v2/ under remotePath)
     // Använder temp-mapp och mv för att undvika scp path-problem på Windows
