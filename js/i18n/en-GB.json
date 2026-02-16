@@ -27,6 +27,8 @@
   "admin_delete_error": "Could not delete.",
   "admin_delete_rule_aria": "Delete rule file {name}",
   "admin_delete_audit_aria": "Delete audit {name}",
+  "admin_download_audit_aria": "Download audit {name}",
+  "admin_download_label": "Download",
   "admin_edit_rule_aria": "Edit rule file {name}",
   "admin_load_rule_error": "Could not load rule file.",
   "admin_link": "Administration",

@@ -31,6 +31,7 @@ export const AdminViewComponent = {
         this.Helpers = deps.Helpers;
         this.NotificationComponent = deps.NotificationComponent;
         this.ValidationLogic = deps.ValidationLogic || window.ValidationLogic;
+        this.SaveAuditLogic = deps.SaveAuditLogic || window.SaveAuditLogic;
 
         this.upload_file_input = null;
 
@@ -39,6 +40,7 @@ export const AdminViewComponent = {
         this.handle_go_to_start = this.handle_go_to_start.bind(this);
         this.handle_delete_rule = this.handle_delete_rule.bind(this);
         this.handle_delete_audit = this.handle_delete_audit.bind(this);
+        this.handle_download_audit = this.handle_download_audit.bind(this);
         this.handle_edit_rule = this.handle_edit_rule.bind(this);
         this.handle_open_audit = this.handle_open_audit.bind(this);
         this.handle_start_new_audit = this.handle_start_new_audit.bind(this);
@@ -444,6 +446,27 @@ export const AdminViewComponent = {
         }
     },
 
+    async handle_download_audit(audit_id) {
+        const t = this.get_t_func();
+        const show_msg = this.NotificationComponent?.show_global_message?.bind(this.NotificationComponent);
+        try {
+            const full_state = await load_audit_with_rule_file(audit_id);
+            if (full_state?.ruleFileContent && this.ValidationLogic?.validate_saved_audit_file?.(full_state)?.isValid) {
+                if (this.SaveAuditLogic?.save_audit_to_json_file) {
+                    this.SaveAuditLogic.save_audit_to_json_file(full_state, t, show_msg);
+                } else {
+                    if (show_msg) show_msg(t('error_internal'), 'error');
+                }
+            } else {
+                if (show_msg) show_msg(t('error_invalid_saved_audit_file'), 'error');
+            }
+        } catch (err) {
+            if (show_msg) {
+                show_msg(t('server_load_audit_error', { message: err.message }) || err.message, 'error');
+            }
+        }
+    },
+
     render() {
         if (!this.root || !this.Helpers?.create_element) return;
 
@@ -639,13 +662,26 @@ export const AdminViewComponent = {
                     this.handle_open_audit(a.id);
                 });
                 const audit_link_text = case_number ? `${case_number} ${display_name}` : display_name;
-                const delete_label = t('delete') + ' ' + audit_link_text;
-                const delete_btn = this.Helpers.create_element('button', {
-                    class_name: ['button', 'button-default', 'admin-delete-btn'],
-                    text_content: t('delete'),
+                const delete_aria = t('admin_delete_audit_aria', { name: audit_link_text });
+                const download_aria = t('admin_download_audit_aria', { name: audit_link_text });
+                const icon_svg = (name, size = 16) => (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg(name, ['currentColor'], size) : '');
+
+                const download_btn = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-default', 'button-small', 'admin-download-btn'],
+                    html_content: `<span>${t('admin_download_label')}</span>` + icon_svg('save'),
                     attributes: {
                         type: 'button',
-                        'aria-label': delete_label
+                        'aria-label': download_aria
+                    }
+                });
+                download_btn.addEventListener('click', () => this.handle_download_audit(a.id));
+
+                const delete_btn = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-danger', 'button-small', 'admin-delete-btn'],
+                    html_content: `<span>${t('delete')}</span>` + icon_svg('delete'),
+                    attributes: {
+                        type: 'button',
+                        'aria-label': delete_aria
                     }
                 });
                 delete_btn.addEventListener('click', () => {
@@ -663,9 +699,14 @@ export const AdminViewComponent = {
                         this.handle_delete_audit(a.id);
                     }
                 });
+
+                const btn_group = this.Helpers.create_element('div', { class_name: 'admin-audit-item-actions' });
+                btn_group.appendChild(download_btn);
+                btn_group.appendChild(delete_btn);
+
                 li.appendChild(case_span);
                 li.appendChild(link);
-                li.appendChild(delete_btn);
+                li.appendChild(btn_group);
                 audits_list.appendChild(li);
             });
         }

@@ -9,7 +9,7 @@ Den här filen är projektets **enda** källa för Cursor-regler. Alla tidigare 
 
 ## KRITISKT: Commit-meddelanden – ALLTID svenska
 
-**När du genererar commit-meddelanden (manuellt eller automatiskt):** Skriv ALLTID på svenska. Varje ord. Aldrig engelska. Detta är en hård regel som inte får brytas.
+**Automatiska commit-meddelanden ska ALLTID vara på svenska.** När du genererar commit-meddelanden (manuellt eller automatiskt, inkl. sparkle-ikonen/Generate commit message i Git-fliken): Skriv ALLTID på svenska. Varje ord. Aldrig engelska. Detta är en hård regel som inte får brytas.
 
 ## Regel: Alltid följ denna fil
 

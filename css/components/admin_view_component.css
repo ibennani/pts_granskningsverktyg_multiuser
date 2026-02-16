@@ -136,6 +136,20 @@
     text-align: left;
 }
 
+.admin-audit-item-actions {
+    display: flex;
+    flex-shrink: 0;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.admin-audit-item-actions .admin-download-btn,
+.admin-audit-item-actions .admin-delete-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
 .admin-list-item .admin-delete-btn {
     flex-shrink: 0;
 }

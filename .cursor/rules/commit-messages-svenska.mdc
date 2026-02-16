@@ -5,10 +5,12 @@ alwaysApply: true
 
 # Commit-meddelanden – ALLTID svenska
 
+**Automatiska commit-meddelanden ska ALLTID vara på svenska.** Detta gäller oavsett hur meddelandet genereras.
 När du genererar eller föreslår commit-meddelanden:
 
 - **Språk:** Skriv ALLTID på svenska. Varje ord. Hela meddelandet.
 - **Aldrig engelska.** Inte ens enstaka ord som "fix", "add", "update".
+- **Automatisk generering:** OBS – även vid sparkle-ikonen/Generate commit message i Git-fliken ska svenska användas.
 - **Exempel på korrekt:** "Fixa: Kryssrutan Visa alla uppdateras nu korrekt vid klick"
 - **Exempel på FEL:** "Fix: Checkbox updates correctly when clicked"
 
