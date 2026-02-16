@@ -2,6 +2,7 @@
 
 import { RequirementsFilterComponent } from './RequirementsFilterComponent.js';
 import { get_searchable_text_for_requirement as get_searchable_text_util } from '../utils/requirement_search_utils.js';
+import { fingerprint_item_keys, can_incremental_update } from '../utils/incremental_list_update.js';
 
 export const RequirementAuditSidebarComponent = {
     CSS_PATH: 'css/components/requirement_audit_sidebar_component.css',
@@ -18,6 +19,7 @@ export const RequirementAuditSidebarComponent = {
     is_dom_initialized: false,
     selected_mode: 'sample_requirements',
     last_render_options: null,
+    _last_rendered_fingerprint: null,
 
     mode_fieldset_ref: null,
     mode_legend_ref: null,
@@ -222,8 +224,6 @@ export const RequirementAuditSidebarComponent = {
 
         this.update_filter_texts_and_values();
 
-        this.list_container_ref.innerHTML = '';
-
         if (this.heading_ref) {
             const heading_key = this.selected_mode === 'sample_requirements'
                 ? 'requirement_audit_sidebar_title_sample_requirements'
@@ -255,20 +255,117 @@ export const RequirementAuditSidebarComponent = {
         }
 
         if (!rule_file_content || !current_sample || !current_requirement) {
+            this.list_container_ref.innerHTML = '';
             this.list_container_ref.appendChild(this.Helpers.create_element('p', {
                 class_name: 'requirement-audit-sidebar__empty',
                 text_content: this.Translation.t('requirement_audit_sidebar_empty_requirements')
             }));
+            this._last_rendered_fingerprint = null;
+            this.notify_filters_changed();
             return;
         }
 
+        let sorted_items;
+        let item_keys;
         if (this.selected_mode === 'sample_requirements') {
-            this.render_requirements_for_sample(rule_file_content, current_sample, requirement_id);
+            sorted_items = this.get_filtered_requirement_items(rule_file_content, current_sample);
+            item_keys = sorted_items.map(item => item.req_key);
         } else {
-            this.render_samples_for_requirement(rule_file_content, current_requirement, samples || [], requirement_id, current_sample?.id);
+            sorted_items = this.get_filtered_sample_items(rule_file_content, current_requirement, samples || [], requirement_id, current_sample?.id);
+            item_keys = sorted_items.map(item => item.sample?.id || '');
         }
 
+        const fingerprint = fingerprint_item_keys(item_keys);
+        if (can_incremental_update(this._last_rendered_fingerprint, fingerprint) && sorted_items.length > 0) {
+            this._update_list_items_status_only(sorted_items, rule_file_content, current_sample, current_requirement, requirement_id);
+        } else {
+            this.list_container_ref.innerHTML = '';
+            if (this.selected_mode === 'sample_requirements') {
+                this.render_requirements_for_sample(rule_file_content, current_sample, requirement_id);
+            } else {
+                this.render_samples_for_requirement(rule_file_content, current_requirement, samples || [], requirement_id, current_sample?.id);
+            }
+        }
+        this._last_rendered_fingerprint = fingerprint;
         this.notify_filters_changed();
+    },
+
+    _update_list_items_status_only(sorted_items, rule_file_content, current_sample, current_requirement, requirement_id) {
+        const t = this.Translation.t;
+        const items = this.list_container_ref?.querySelectorAll?.('ul.requirement-audit-sidebar__items > li.requirement-audit-sidebar__item');
+        if (!items || items.length !== sorted_items.length) return;
+
+        if (this.selected_mode === 'sample_requirements') {
+            sorted_items.forEach((item, i) => {
+                const li = items[i];
+                if (!li) return;
+                const { req_key, requirement, req_result } = item;
+                const base_status = this.AuditLogic.calculate_requirement_status(requirement, req_result);
+                const needs_help = item.needs_help;
+                const is_updated = req_result?.needsReview === true;
+                const status_parts = [t(`audit_status_${base_status}`)];
+                if (needs_help) status_parts.push(t('filter_option_needs_help'));
+                if (is_updated) status_parts.push(t('status_updated_tooltip'));
+                const status_text = status_parts.join(', ');
+
+                const meta = li.querySelector('.requirement-audit-sidebar__meta');
+                if (meta) {
+                    const old_icons = meta.querySelector('.status-icons-wrapper');
+                    const new_icons = this._create_sidebar_status_icons(base_status, needs_help, is_updated);
+                    if (old_icons && new_icons) old_icons.replaceWith(new_icons);
+                    const status_span = meta.querySelector('.requirement-audit-sidebar__status-text');
+                    if (status_span) status_span.textContent = status_text;
+                }
+            });
+        } else {
+            sorted_items.forEach((item, i) => {
+                const li = items[i];
+                if (!li) return;
+                const base_status = this.AuditLogic.calculate_requirement_status(current_requirement, item.req_result);
+                const needs_help = item.needs_help;
+                const is_updated = item.req_result?.needsReview === true;
+                const status_parts = [t(`audit_status_${base_status}`)];
+                if (needs_help) status_parts.push(t('filter_option_needs_help'));
+                if (is_updated) status_parts.push(t('status_updated_tooltip'));
+                const status_text = status_parts.join(', ');
+
+                const meta = li.querySelector('.requirement-audit-sidebar__meta');
+                if (meta) {
+                    const old_icons = meta.querySelector('.status-icons-wrapper');
+                    const new_icons = this._create_sidebar_status_icons(base_status, needs_help, is_updated);
+                    if (old_icons && new_icons) old_icons.replaceWith(new_icons);
+                    const status_span = meta.querySelector('.requirement-audit-sidebar__status-text');
+                    if (status_span) status_span.textContent = status_text;
+                }
+            });
+        }
+    },
+
+    _create_sidebar_status_icons(base_status, needs_help, is_updated) {
+        const t = this.Translation.t;
+        const icons_wrapper = this.Helpers.create_element('span', { class_name: 'status-icons-wrapper' });
+        icons_wrapper.appendChild(this.Helpers.create_element('span', {
+            class_name: `requirement-audit-sidebar__status-icon status-icon status-icon-${base_status.replace('_', '-')}`,
+            text_content: this.get_status_icon(base_status),
+            attributes: { 'aria-hidden': 'true' }
+        }));
+        if (needs_help) {
+            const warning_svg = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('warning', ['currentColor'], 14) : '';
+            icons_wrapper.appendChild(this.Helpers.create_element('span', {
+                class_name: 'status-icon status-icon-needs-help-indicator',
+                html_content: warning_svg,
+                attributes: { 'aria-hidden': 'true' }
+            }));
+        }
+        if (is_updated) {
+            const update_svg = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('update', ['currentColor'], 14) : '';
+            icons_wrapper.appendChild(this.Helpers.create_element('span', {
+                class_name: 'status-icon status-icon-updated-indicator',
+                html_content: update_svg,
+                attributes: { 'aria-hidden': 'true' }
+            }));
+        }
+        return icons_wrapper;
     },
 
     render_requirements_for_sample(rule_file_content, current_sample, requirement_id) {

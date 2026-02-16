@@ -1,6 +1,7 @@
 import { RequirementListToolbarComponent } from './RequirementListToolbarComponent.js';
 import { get_searchable_text_for_requirement as get_searchable_text_util } from '../utils/requirement_search_utils.js';
 import { ProgressBarComponent } from './ProgressBarComponent.js';
+import { fingerprint_item_keys, can_incremental_update } from '../utils/incremental_list_update.js';
 
 export const RequirementsListViewComponent = {
     CSS_PATH_ALL: 'css/components/all_requirements_view_component.css',
@@ -49,6 +50,8 @@ export const RequirementsListViewComponent = {
         this.list_element_ref = null;
         this.content_div_for_delegation = null;
         this.global_message_element_ref = null;
+
+        this._last_rendered_fingerprint = null;
 
         // Event handlers för både sample och all mode
         this.handle_requirement_list_click = this.handle_requirement_list_click.bind(this);
@@ -297,6 +300,140 @@ export const RequirementsListViewComponent = {
                 return '↻';
             default:
                 return '○';
+        }
+    },
+
+    _create_status_icons_wrapper(base_status, needs_help, is_updated) {
+        const t = this.Translation.t;
+        const icons_wrapper = this.Helpers.create_element('span', { class_name: 'status-icons-wrapper' });
+        const status_tooltip_text = t(`audit_status_${base_status}`);
+        const status_icon_wrapper = this.Helpers.create_element('span', { class_name: 'status-icon-tooltip-wrapper' });
+        status_icon_wrapper.appendChild(this.Helpers.create_element('span', {
+            class_name: `status-icon status-icon-${base_status.replace('_', '-')}`,
+            text_content: this.get_status_icon(base_status),
+            attributes: { 'aria-hidden': 'true' }
+        }));
+        status_icon_wrapper.appendChild(this.Helpers.create_element('span', {
+            class_name: 'status-icon-tooltip',
+            text_content: status_tooltip_text,
+            attributes: { 'aria-hidden': 'true' }
+        }));
+        icons_wrapper.appendChild(status_icon_wrapper);
+        if (needs_help) {
+            const warning_svg = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('warning', ['currentColor'], 14) : '';
+            const wh = this.Helpers.create_element('span', { class_name: 'status-icon-tooltip-wrapper' });
+            wh.appendChild(this.Helpers.create_element('span', { class_name: 'status-icon status-icon-needs-help-indicator', html_content: warning_svg, attributes: { 'aria-hidden': 'true' } }));
+            wh.appendChild(this.Helpers.create_element('span', { class_name: 'status-icon-tooltip', text_content: t('filter_option_needs_help'), attributes: { 'aria-hidden': 'true' } }));
+            icons_wrapper.appendChild(wh);
+        }
+        if (is_updated) {
+            const update_svg = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('update', ['currentColor'], 14) : '';
+            const uw = this.Helpers.create_element('span', { class_name: 'status-icon-tooltip-wrapper' });
+            uw.appendChild(this.Helpers.create_element('span', { class_name: 'status-icon status-icon-updated-indicator', html_content: update_svg, attributes: { 'aria-hidden': 'true' } }));
+            uw.appendChild(this.Helpers.create_element('span', { class_name: 'status-icon-tooltip', text_content: t('status_updated_tooltip'), attributes: { 'aria-hidden': 'true' } }));
+            icons_wrapper.appendChild(uw);
+        }
+        return icons_wrapper;
+    },
+
+    _build_item_keys(sorted_items, samples, current_sample_object, filter_opts = {}) {
+        if (this.mode === 'sample') {
+            return sorted_items.map(req => req?.key || req?.id || '');
+        }
+        const keys = [];
+        const { status_filters = {}, has_status_filters = false, requirement_needs_help_fn = () => false } = filter_opts;
+        const candidates = (req_id, req) => new Set([String(req_id), ...(req?.key ? [String(req.key)] : []), ...(req?.id ? [String(req.id)] : [])]);
+
+        sorted_items.forEach(([req_id, req]) => {
+            const req_key = req?.key || req?.id || req_id;
+            let matching = samples.filter(sample => {
+                const sample_set = sample?.id ? this.relevant_ids_by_sample?.get(sample.id) : null;
+                if (!sample_set) return false;
+                return [...candidates(req_id, req)].some(id => sample_set.has(id));
+            });
+            if (has_status_filters && Object.keys(status_filters).length > 0) {
+                matching = matching.filter(sample =>
+                    this._sample_matches_status_filter(sample, req_id, req, status_filters, has_status_filters, requirement_needs_help_fn)
+                );
+            }
+            matching.forEach(s => keys.push(`${req_key}:${s?.id || ''}`));
+        });
+        return keys;
+    },
+
+    _update_items_status_only(sorted_items, samples, current_sample_object, filter_opts) {
+        const t = this.Translation.t;
+        const needs_help_fn = filter_opts.requirement_needs_help_fn ?? (this.AuditLogic?.requirement_needs_help || (() => false));
+
+        if (this.mode === 'sample') {
+            const items = this.content_div_for_delegation?.querySelectorAll?.('ol.requirement-items-ul > li.requirement-item');
+            if (!items || items.length !== sorted_items.length) return;
+            sorted_items.forEach((req, i) => {
+                const li = items[i];
+                if (!li) return;
+                const req_result = (current_sample_object.requirementResults || {})[req.key];
+                const base_status = this.AuditLogic.calculate_requirement_status(req, req_result);
+                const needs_help = needs_help_fn(req_result);
+                const is_updated = req_result?.needsReview === true;
+                const status_parts = [t(`audit_status_${base_status}`)];
+                if (needs_help) status_parts.push(t('filter_option_needs_help'));
+                if (is_updated) status_parts.push(t('status_updated_tooltip'));
+                const status_label = status_parts.join(', ');
+                const aria_label = `${req.title}. Status: ${status_label}`;
+
+                const link = li.querySelector('a.list-title-link');
+                const details_row = li.querySelector('.requirement-details-row');
+                if (link) link.setAttribute('aria-label', aria_label);
+                if (details_row) {
+                    const old_icons = details_row.querySelector('.status-icons-wrapper');
+                    const new_icons = this._create_status_icons_wrapper(base_status, needs_help, is_updated);
+                    if (old_icons && new_icons) old_icons.replaceWith(new_icons);
+                    const checks_span = details_row.querySelector('.requirement-checks-info');
+                    if (checks_span) {
+                        const total_checks = req.checks?.length || 0;
+                        const audited_checks = req_result?.checkResults ? Object.values(req_result.checkResults).filter(res => res.status === 'passed' || res.status === 'failed').length : 0;
+                        checks_span.textContent = `(${audited_checks}/${total_checks} ${t('checks_short')})`;
+                    }
+                }
+            });
+        } else {
+            const req_lis = this.content_div_for_delegation?.querySelectorAll?.('ul.requirement-items-ul > li.requirement-item-with-actions');
+            if (!req_lis || req_lis.length !== sorted_items.length) return;
+            sorted_items.forEach(([req_id, req], ri) => {
+                const req_li = req_lis[ri];
+                if (!req_li) return;
+                const req_key = req?.key || req?.id || req_id;
+                const cand = new Set([String(req_id), ...(req?.key ? [String(req.key)] : []), ...(req?.id ? [String(req.id)] : [])]);
+                let matching_samples = samples.filter(sample => {
+                    const sample_set = sample?.id ? this.relevant_ids_by_sample?.get(sample.id) : null;
+                    if (!sample_set) return false;
+                    return [...cand].some(id => sample_set.has(id));
+                });
+                if (filter_opts.has_status_filters && Object.keys(filter_opts.status_filters || {}).length > 0) {
+                    matching_samples = matching_samples.filter(sample =>
+                        this._sample_matches_status_filter(sample, req_id, req, filter_opts.status_filters, filter_opts.has_status_filters, needs_help_fn)
+                    );
+                }
+                const sample_lis = req_li.querySelectorAll('ol.requirement-samples-list > li.requirement-sample-item');
+                matching_samples.forEach((sample, si) => {
+                    const sample_li = sample_lis[si];
+                    if (!sample_li) return;
+                    const req_result = (sample.requirementResults || {})[req_key];
+                    const base_status = this.AuditLogic.calculate_requirement_status(req, req_result);
+                    const needs_help = needs_help_fn(req_result);
+                    const is_updated = req_result?.needsReview === true;
+                    const status_text = t(`audit_status_${base_status}`) +
+                        (needs_help ? ` (${t('filter_option_needs_help')})` : '') +
+                        (is_updated ? ` (${t('status_updated_tooltip')})` : '');
+                    const sample_name = sample?.description || t('undefined_description');
+
+                    const link = sample_li.querySelector('a.list-title-link');
+                    const old_icons = sample_li.querySelector('.status-icons-wrapper');
+                    const new_icons = this._create_status_icons_wrapper(base_status, needs_help, is_updated);
+                    if (link) link.setAttribute('aria-label', `${sample_name} – ${status_text}`);
+                    if (old_icons && new_icons) old_icons.replaceWith(new_icons);
+                });
+            });
         }
     },
 
@@ -694,13 +831,16 @@ export const RequirementsListViewComponent = {
         const has_status_filter_excluding = has_status_filters && status_keys_for_filter.some(key => status_filters[key] !== true);
         const has_active_filter = has_search_filter || has_status_filter_excluding;
 
-        // Render items
-        this.render_items(sorted_items, samples, current_sample_object, total_count, filtered_count, {
-            status_filters,
-            has_status_filters,
-            requirement_needs_help_fn,
-            has_active_filter
-        });
+        // Render items eller inkrementell uppdatering
+        const filter_opts = { status_filters, has_status_filters, requirement_needs_help_fn, has_active_filter };
+        const item_keys = this._build_item_keys(sorted_items, samples, current_sample_object, filter_opts);
+
+        if (can_incremental_update(this._last_rendered_fingerprint, fingerprint_item_keys(item_keys))) {
+            this._update_items_status_only(sorted_items, samples, current_sample_object, filter_opts);
+        } else {
+            this.render_items(sorted_items, samples, current_sample_object, total_count, filtered_count, filter_opts);
+        }
+        this._last_rendered_fingerprint = fingerprint_item_keys(item_keys);
     },
 
     render_sample_header(state, current_sample_object, all_relevant_requirements) {
