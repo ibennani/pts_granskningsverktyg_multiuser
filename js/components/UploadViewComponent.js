@@ -1,4 +1,5 @@
 import { migrate_rulefile_to_new_structure } from '../logic/rulefile_migration_logic.js';
+import { get_last_activity_timestamp } from '../audit_logic.js';
 import {
     check_api_available,
     get_users,
@@ -154,17 +155,44 @@ export const UploadViewComponent = {
         const validation_result = this.ValidationLogic.validate_saved_audit_file(file_content_object);
 
         if (validation_result.isValid) {
-          this.dispatch({
-            type: this.StoreActionTypes.LOAD_AUDIT_FROM_FILE,
-            payload: file_content_object,
-          });
+          const current_state = this.getState();
+          const current_ts = current_state?.ruleFileContent
+            ? get_last_activity_timestamp(current_state)
+            : null;
+          const new_ts = get_last_activity_timestamp(file_content_object);
 
-          if (this.NotificationComponent)
-            this.NotificationComponent.show_global_message(
-              t('saved_audit_loaded_successfully'),
-              'success'
-            );
-          this.router('audit_overview');
+          const should_warn =
+            current_ts &&
+            new_ts &&
+            new_ts < current_ts;
+
+          if (should_warn) {
+            this._show_older_audit_warning_modal(current_ts, new_ts, () => {
+              this.dispatch({
+                type: this.StoreActionTypes.LOAD_AUDIT_FROM_FILE,
+                payload: file_content_object,
+              });
+              if (this.NotificationComponent) {
+                this.NotificationComponent.show_global_message(
+                  t('saved_audit_loaded_successfully'),
+                  'success'
+                );
+              }
+              this.router('audit_overview');
+            });
+          } else {
+            this.dispatch({
+              type: this.StoreActionTypes.LOAD_AUDIT_FROM_FILE,
+              payload: file_content_object,
+            });
+
+            if (this.NotificationComponent)
+              this.NotificationComponent.show_global_message(
+                t('saved_audit_loaded_successfully'),
+                'success'
+              );
+            this.router('audit_overview');
+          }
         } else {
           if (this.NotificationComponent)
             this.NotificationComponent.show_global_message(
@@ -258,14 +286,38 @@ export const UploadViewComponent = {
     try {
       const full_state = await load_audit_with_rule_file(audit_id);
       if (full_state.ruleFileContent && this.ValidationLogic?.validate_saved_audit_file?.(full_state)?.isValid) {
-        this.dispatch({
-          type: this.StoreActionTypes.LOAD_AUDIT_FROM_FILE,
-          payload: full_state
-        });
-        if (this.NotificationComponent) {
-          this.NotificationComponent.show_global_message(t('saved_audit_loaded_successfully'), 'success');
+        const current_state = this.getState();
+        const current_ts = current_state?.ruleFileContent
+          ? get_last_activity_timestamp(current_state)
+          : null;
+        const new_ts = get_last_activity_timestamp(full_state);
+
+        const should_warn =
+          current_ts &&
+          new_ts &&
+          new_ts < current_ts;
+
+        if (should_warn) {
+          this._show_older_audit_warning_modal(current_ts, new_ts, () => {
+            this.dispatch({
+              type: this.StoreActionTypes.LOAD_AUDIT_FROM_FILE,
+              payload: full_state
+            });
+            if (this.NotificationComponent) {
+              this.NotificationComponent.show_global_message(t('saved_audit_loaded_successfully'), 'success');
+            }
+            this.router('audit_overview');
+          });
+        } else {
+          this.dispatch({
+            type: this.StoreActionTypes.LOAD_AUDIT_FROM_FILE,
+            payload: full_state
+          });
+          if (this.NotificationComponent) {
+            this.NotificationComponent.show_global_message(t('saved_audit_loaded_successfully'), 'success');
+          }
+          this.router('audit_overview');
         }
-        this.router('audit_overview');
       } else {
         if (this.NotificationComponent) {
           this.NotificationComponent.show_global_message(t('error_invalid_saved_audit_file'), 'error');
@@ -276,6 +328,57 @@ export const UploadViewComponent = {
         this.NotificationComponent.show_global_message(t('server_load_audit_error', { message: err.message }) || err.message, 'error');
       }
     }
+  },
+
+  _show_older_audit_warning_modal(current_ts, new_ts, on_confirm) {
+    const t = this.get_t_func();
+    const ModalComponent = window.ModalComponent;
+    if (!ModalComponent?.show || !this.Helpers?.create_element) return;
+
+    const lang_code = this.Translation?.get_current_language_code?.() || 'sv-SE';
+    const format_ts = (ts) =>
+      this.Helpers?.format_iso_to_local_datetime
+        ? this.Helpers.format_iso_to_local_datetime(ts, lang_code)
+        : ts;
+
+    ModalComponent.show(
+      {
+        h1_text: t('upload_older_audit_warning_title'),
+        message_text: t('upload_older_audit_warning_message')
+      },
+      (container, modal_instance) => {
+        const ul = this.Helpers.create_element('ul', { class_name: 'upload-rules-list' });
+        const li_current = this.Helpers.create_element('li');
+        li_current.textContent = `${t('upload_older_audit_current_label')}: ${format_ts(current_ts)}`;
+        const li_new = this.Helpers.create_element('li');
+        li_new.textContent = `${t('upload_older_audit_new_label')}: ${format_ts(new_ts)}`;
+        ul.appendChild(li_current);
+        ul.appendChild(li_new);
+        container.appendChild(ul);
+
+        const buttons_wrapper = this.Helpers.create_element('div', {
+          class_name: 'modal-confirm-actions'
+        });
+
+        const confirm_btn = this.Helpers.create_element('button', {
+          class_name: ['button', 'button-primary'],
+          text_content: t('upload_older_audit_confirm_button')
+        });
+        confirm_btn.addEventListener('click', () => {
+          if (typeof on_confirm === 'function') on_confirm();
+          modal_instance.close();
+        });
+
+        const keep_btn = this.Helpers.create_element('button', {
+          class_name: ['button', 'button-default'],
+          text_content: t('upload_older_audit_keep_button')
+        });
+        keep_btn.addEventListener('click', () => modal_instance.close());
+
+        buttons_wrapper.append(confirm_btn, keep_btn);
+        container.appendChild(buttons_wrapper);
+      }
+    );
   },
 
   async show_rule_picker() {

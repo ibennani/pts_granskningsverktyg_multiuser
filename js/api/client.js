@@ -31,7 +31,10 @@ export async function api_post(path, body) {
     });
     if (!res.ok) {
         const err = await res.json().catch(() => ({ error: res.statusText }));
-        throw new Error(err.error || `HTTP ${res.status}`);
+        const e = new Error(err.error || `HTTP ${res.status}`);
+        e.status = res.status;
+        e.existingAuditId = err.existingAuditId;
+        throw e;
     }
     return res.json();
 }

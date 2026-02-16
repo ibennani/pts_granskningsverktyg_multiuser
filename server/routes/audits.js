@@ -243,6 +243,8 @@ router.post('/', async (req, res) => {
     }
 });
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 router.post('/import', async (req, res) => {
     try {
         const data = req.body;
@@ -250,6 +252,35 @@ router.post('/import', async (req, res) => {
         if (!data.ruleFileContent) {
             return res.status(400).json({ error: 'ruleFileContent krävs' });
         }
+
+        if (data.auditId && UUID_REGEX.test(data.auditId)) {
+            const existingById = await query('SELECT id FROM audits WHERE id = $1', [data.auditId]);
+            if (existingById.rows.length > 0) {
+                return res.status(409).json({
+                    error: 'Granskningen finns redan i databasen.',
+                    existingAuditId: data.auditId
+                });
+            }
+        }
+
+        const sample_ids = (data.samples || [])
+            .map(s => s?.id)
+            .filter(id => id && UUID_REGEX.test(id));
+        if (sample_ids.length > 0) {
+            const first_sample_id = sample_ids[0];
+            const existingBySample = await query(
+                `SELECT a.id FROM audits a, jsonb_array_elements(COALESCE(a.samples, '[]'::jsonb)) AS s
+                 WHERE s->>'id' = $1 LIMIT 1`,
+                [first_sample_id]
+            );
+            if (existingBySample.rows.length > 0) {
+                return res.status(409).json({
+                    error: 'Granskningen finns redan i databasen.',
+                    existingAuditId: existingBySample.rows[0].id
+                });
+            }
+        }
+
         const contentJson = JSON.stringify(data.ruleFileContent);
         const title_from_content = data.ruleFileContent?.metadata?.title?.trim?.();
         const version_from_content = data.ruleFileContent?.metadata?.version?.trim?.();

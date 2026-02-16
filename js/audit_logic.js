@@ -444,6 +444,44 @@ export function recalculateAuditTimes(auditState) {
 }
 
 /**
+ * Returns the most recent activity timestamp from an audit state.
+ * Traverses samples -> requirementResults -> checkResults -> passCriteria.
+ * @param {Object} audit_state - Audit state object with samples
+ * @returns {string|null} ISO timestamp of last activity, or null if none
+ */
+export function get_last_activity_timestamp(audit_state) {
+    if (!audit_state || !audit_state.samples) {
+        return null;
+    }
+
+    let maxTime = null;
+
+    (audit_state.samples || []).forEach(sample => {
+        Object.values(sample.requirementResults || {}).forEach(reqResult => {
+            if (reqResult.lastStatusUpdate) {
+                if (!maxTime || reqResult.lastStatusUpdate > maxTime) maxTime = reqResult.lastStatusUpdate;
+            }
+
+            Object.values(reqResult.checkResults || {}).forEach(checkResult => {
+                if (checkResult.timestamp) {
+                    if (!maxTime || checkResult.timestamp > maxTime) maxTime = checkResult.timestamp;
+                }
+
+                if (checkResult.passCriteria) {
+                    Object.values(checkResult.passCriteria).forEach(pcResult => {
+                        if (pcResult.timestamp) {
+                            if (!maxTime || pcResult.timestamp > maxTime) maxTime = pcResult.timestamp;
+                        }
+                    });
+                }
+            });
+        });
+    });
+
+    return maxTime;
+}
+
+/**
  * Counts total number of attached images/media across all samples.
  * Each filename in attachedMediaFilenames counts as one.
  */

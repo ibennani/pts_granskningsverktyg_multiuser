@@ -35,7 +35,31 @@ app.get('/api/health', async (_req, res) => {
         await query('SELECT 1');
         res.json({ ok: true, timestamp: new Date().toISOString() });
     } catch (err) {
-        res.status(503).json({ ok: false, error: 'Databas ej tillgänglig' });
+        res.status(503).json({ ok: false, error: 'Databas ej tillgänglig', detail: err.message });
+    }
+});
+
+// Diagnostik för felsökning av 500 – returnerar status utan känslig info
+app.get('/api/debug-status', async (_req, res) => {
+    try {
+        await query('SELECT 1');
+        const cols = await query(`
+            SELECT column_name FROM information_schema.columns
+            WHERE table_name = 'audits' AND column_name = 'rule_file_content'
+        `);
+        res.json({
+            ok: true,
+            db: 'connected',
+            migration_rule_file_content: cols.rows.length > 0,
+            timestamp: new Date().toISOString()
+        });
+    } catch (err) {
+        res.status(503).json({
+            ok: false,
+            db: 'error',
+            detail: err.message,
+            timestamp: new Date().toISOString()
+        });
     }
 });
 

@@ -96,7 +96,18 @@ export const AdminViewComponent = {
                             { Translation: this.Translation }
                         );
                     }
-                    await import_audit(file_content_object);
+                    try {
+                        await import_audit(file_content_object);
+                    } catch (err) {
+                        if (err.status === 409) {
+                            this._show_audit_duplicate_modal(
+                                file_content_object?.auditMetadata,
+                                () => { if (event.target) event.target.value = ''; }
+                            );
+                            return;
+                        }
+                        throw err;
+                    }
                     this.NotificationComponent?.show_global_message(
                         t('admin_audit_uploaded_success'),
                         'success'
@@ -142,6 +153,38 @@ export const AdminViewComponent = {
 
     handle_go_to_start() {
         this.router('start');
+    },
+
+    _show_audit_duplicate_modal(metadata, on_close) {
+        const t = this.get_t_func();
+        const ModalComponent = window.ModalComponent;
+        if (!ModalComponent?.show || !this.Helpers?.create_element) {
+            this.NotificationComponent?.show_global_message(t('admin_audit_already_exists'), 'error');
+            if (typeof on_close === 'function') on_close();
+            return;
+        }
+        const case_number = (metadata?.caseNumber ?? '').toString().trim() || '—';
+        const actor_name = (metadata?.actorName ?? '').toString().trim() || t('admin_audit_duplicate_unknown_actor');
+        const message = t('admin_audit_duplicate_modal_message', { caseNumber: case_number, actorName: actor_name });
+        ModalComponent.show(
+            {
+                h1_text: t('admin_audit_duplicate_modal_title'),
+                message_text: message
+            },
+            (container, modal_instance) => {
+                const buttons_wrapper = this.Helpers.create_element('div', { class_name: 'modal-confirm-actions' });
+                const ok_btn = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-primary'],
+                    text_content: t('admin_audit_duplicate_modal_ok')
+                });
+                ok_btn.addEventListener('click', () => {
+                    modal_instance.close();
+                    if (typeof on_close === 'function') on_close();
+                });
+                buttons_wrapper.appendChild(ok_btn);
+                container.appendChild(buttons_wrapper);
+            }
+        );
     },
 
     async handle_delete_rule(rule_id) {
@@ -368,7 +411,21 @@ export const AdminViewComponent = {
                         'aria-label': delete_label
                     }
                 });
-                delete_btn.addEventListener('click', () => this.handle_delete_rule(r.id));
+                delete_btn.addEventListener('click', () => {
+                    const show_modal = window.show_confirm_delete_modal;
+                    if (show_modal) {
+                        show_modal({
+                            h1_text: t('admin_confirm_delete_rule_title'),
+                            warning_text: t('admin_confirm_delete_rule_warning', { name: link_text }),
+                            delete_button: delete_btn,
+                            yes_label: t('admin_confirm_delete_radera'),
+                            no_label: t('admin_confirm_delete_behall'),
+                            on_confirm: () => this.handle_delete_rule(r.id)
+                        });
+                    } else {
+                        this.handle_delete_rule(r.id);
+                    }
+                });
                 li.appendChild(label);
                 li.appendChild(delete_btn);
                 rules_list.appendChild(li);
@@ -432,7 +489,21 @@ export const AdminViewComponent = {
                         'aria-label': delete_label
                     }
                 });
-                delete_btn.addEventListener('click', () => this.handle_delete_audit(a.id));
+                delete_btn.addEventListener('click', () => {
+                    const show_modal = window.show_confirm_delete_modal;
+                    if (show_modal) {
+                        show_modal({
+                            h1_text: t('admin_confirm_delete_audit_title'),
+                            warning_text: t('admin_confirm_delete_audit_warning', { name: audit_link_text }),
+                            delete_button: delete_btn,
+                            yes_label: t('admin_confirm_delete_radera'),
+                            no_label: t('admin_confirm_delete_behall'),
+                            on_confirm: () => this.handle_delete_audit(a.id)
+                        });
+                    } else {
+                        this.handle_delete_audit(a.id);
+                    }
+                });
                 li.appendChild(case_span);
                 li.appendChild(link);
                 li.appendChild(delete_btn);

@@ -15,6 +15,8 @@
     "db:migrate": "node server/scripts/migrate.js",
     "db:dedupe": "node server/scripts/dedupe-rules.js",
     "deploy:v2": "node scripts/deploy-v2.js",
+    "deploy:debug": "node scripts/deploy-debug.js",
+    "deploy:fix-env": "node scripts/deploy-fix-env.js",
     "dev:fixedport": "vite --port 5173 --strictPort",
     "prebuild": "npm run lint && npm run validate:imports && npm run validate:components && npm run validate:css",
     "build": "npm run prebuild && vite build && node scripts/postbuild-final.js",
@@ -63,6 +65,7 @@
     "express": "^5.2.1",
     "jsdom": "^27.0.0",
     "marked": "^16.3.0",
+    "node-ssh": "^13.2.1",
     "pg": "^8.18.0"
   }
 }

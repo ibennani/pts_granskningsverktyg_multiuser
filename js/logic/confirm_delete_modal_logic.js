@@ -68,8 +68,10 @@ function get_previous_focusable(delete_button) {
  * @param {HTMLElement} opts.delete_button - Ta bort-knappen (fokus återgår hit vid "Nej, behåll")
  * @param {Function} opts.on_confirm - Callback vid "Ja, ta bort"
  * @param {HTMLElement} [opts.focusOnConfirm] - Element att fokusera vid bekräftelse (t.ex. när raderat innehåll tas bort)
+ * @param {string} [opts.yes_label] - Anpassad text för bekräftelseknappen (t.ex. "Radera")
+ * @param {string} [opts.no_label] - Anpassad text för avbryt-knappen (t.ex. "Behåll")
  */
-export function show_confirm_delete_modal({ h1_text, warning_text, delete_button, on_confirm, focusOnConfirm }) {
+export function show_confirm_delete_modal({ h1_text, warning_text, delete_button, on_confirm, focusOnConfirm, yes_label, no_label }) {
     const ModalComponent = window.ModalComponent;
     const Helpers = window.Helpers;
     const t = window.Translation?.t || (k => k);
@@ -92,7 +94,7 @@ export function show_confirm_delete_modal({ h1_text, warning_text, delete_button
 
             const yes_btn = Helpers.create_element('button', {
                 class_name: ['button', 'button-danger'],
-                text_content: t('confirm_delete_modal_yes'),
+                text_content: yes_label ?? t('confirm_delete_modal_yes'),
             });
             yes_btn.addEventListener('click', () => {
                 if (typeof on_confirm === 'function') on_confirm();
@@ -101,9 +103,9 @@ export function show_confirm_delete_modal({ h1_text, warning_text, delete_button
 
             const no_btn = Helpers.create_element('button', {
                 class_name: ['button', 'button-default'],
-                text_content: t('confirm_delete_modal_no'),
+                text_content: no_label ?? t('confirm_delete_modal_no'),
             });
-            no_btn.addEventListener('click', () => modal.close());
+            no_btn.addEventListener('click', () => modal.close(delete_button));
 
             buttons_wrapper.append(yes_btn, no_btn);
             container.appendChild(buttons_wrapper);

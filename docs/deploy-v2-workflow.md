@@ -10,6 +10,28 @@ npm run deploy:v2
 
 Detta bygger, laddar upp och startar om allt på servern.
 
+## Automatisk SSH-inloggning
+
+För att bara behöva skriva `npm run deploy:v2` utan lösenordsfråga:
+
+1. Lägg till i din lokala `.env` (filen är gitignorerad):
+   ```
+   DEPLOY_SSH_PASSWORD=ditt_ssh_lösenord
+   ```
+   Om ditt SSH-användarnamn skiljer sig från Windows-användarnamnet:
+   ```
+   DEPLOY_USER=användarnamn
+   ```
+
+2. Därefter körs `npm run deploy:v2`, `deploy:debug` och `deploy:fix-env` utan lösenordsfråga. Fungerar på Windows, Linux och Mac (använder node-ssh).
+
+**Alternativ: SSH-nycklar (ingen lösenordsfil):**
+```bash
+ssh-keygen -t ed25519 -N "" -f ~/.ssh/id_ed25519_granskning
+ssh-copy-id -i ~/.ssh/id_ed25519_granskning.pub ux-granskningsverktyg.pts.ad
+# Lägg till i ~/.ssh/config: Host ux-granskningsverktyg.pts.ad IdentityFile ~/.ssh/id_ed25519_granskning
+```
+
 ## Vad deploy gör
 
 | Komponent | Vad som händer |
@@ -81,3 +103,39 @@ Om du bara ändrat `server/`:
 | Permission denied | `chmod -R o+rX /var/www/granskningsverktyget-v2/v2` |
 | **Radering fungerar inte** | Nginx: `location /v2/api/` måste komma FÖRE `location /v2/` i config. Annars kan try_files fånga DELETE/PUT och ge 405. Uppdatera enligt `scripts/ux-granskning-with-v2.conf` |
 | **Regelfil kan inte raderas** | Regelfiler som används av granskningar blockeras (409). Radera granskningarna först, sedan regelfilen |
+| **500 Internal Server Error** | Se nedan |
+
+### Felsökning av 500 Internal Server Error
+
+500 betyder att backend svarar men något fel inträffar i en route. Kör dessa kommandon på servern:
+
+```bash
+# 1. Kolla PM2-loggar (här syns felmeddelanden)
+pm2 logs granskningsverktyget-v2 --lines 50
+
+# 2. Testa backend direkt (kringgår nginx)
+curl -s http://localhost:3000/api/health
+# Eller diagnostik (visar om migrationer körts):
+curl -s http://localhost:3000/api/debug-status
+
+# 3. Om health ger 503: databasen kör inte. Starta Docker:
+cd /var/www/granskningsverktyget-v2 && docker compose up -d
+
+# 4. Kontrollera att .env finns på servern
+ls -la /var/www/granskningsverktyget-v2/.env
+
+# 5. Om .env saknas – skapa den (enligt deploy-v2-server-setup.md):
+echo 'DATABASE_URL=postgresql://granskning:granskning@localhost:5432/granskningsverktyget' > .env
+echo 'API_PORT=3000' >> .env
+
+# 6. Kör migrationer manuellt om det behövs
+cd /var/www/granskningsverktyget-v2 && npm run db:migrate
+
+# 7. Starta om backend
+pm2 restart granskningsverktyget-v2
+```
+
+**Vanliga orsaker till 500:**
+- **Databas ej startad** – `docker compose up -d` i projektmappen
+- **Saknad .env** – deploy kopierar inte .env (av säkerhetsskäl). Skapa den manuellt på servern
+- **Migrationer ej körda** – kolumnen `rule_file_content` saknas i `audits` → `npm run db:migrate`
