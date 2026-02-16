@@ -57,10 +57,14 @@ export const AdminViewComponent = {
             const poll = async () => {
                 if (!this.root || !this.api_available) return;
                 try {
-                    const fresh = await get_audits();
-                    const fp = (arr) => JSON.stringify(arr.map(a => ({ id: a.id, status: a.status, updated_at: a.updated_at })));
-                    if (fp(fresh) !== fp(this.audits)) {
-                        this.audits = fresh;
+                    const [fresh_audits, fresh_rules] = await Promise.all([get_audits(), get_rules()]);
+                    const fp_audits = (arr) => JSON.stringify(arr.map(a => ({ id: a.id, status: a.status, updated_at: a.updated_at })));
+                    const fp_rules = (arr) => JSON.stringify(arr.map(r => ({ id: r.id, updated_at: r.updated_at })));
+                    const audits_changed = fp_audits(fresh_audits) !== fp_audits(this.audits);
+                    const rules_changed = fp_rules(fresh_rules) !== fp_rules(this.rules);
+                    if (audits_changed || rules_changed) {
+                        this.audits = fresh_audits;
+                        this.rules = fresh_rules;
                         if (this.root) this.render();
                     }
                 } catch {
