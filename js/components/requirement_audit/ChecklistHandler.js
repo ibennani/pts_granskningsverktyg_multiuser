@@ -520,13 +520,16 @@ export const ChecklistHandler = {
                 });
                 pc_item_li.appendChild(requirement_content_div);
                 
-                pc_item_li.appendChild(this.Helpers.create_element('div', { class_name: 'pass-criterion-status' }));
-                
+                pc_item_li.appendChild(this.Helpers.create_element('div', {
+                    class_name: 'pass-criterion-status',
+                    attributes: { 'aria-live': 'polite', 'aria-atomic': 'true' }
+                }));
+
                 const pc_actions_div = this.Helpers.create_element('div', {
                     class_name: 'pass-criterion-actions',
                     attributes: {
                         role: 'group',
-                        'aria-label': t('pass_criterion_status_buttons_group_aria')
+                        'aria-label': `${t('pass_criterion_status_buttons_group_aria')} ${numbering}`
                     }
                 });
                 const thumb_up_icon = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('thumb_up', [], 16) : '';
