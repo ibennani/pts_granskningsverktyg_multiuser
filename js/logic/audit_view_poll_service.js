@@ -1,5 +1,11 @@
 // js/logic/audit_view_poll_service.js
 // Pollar granskningsversion när användaren har en granskning öppen. Uppdaterar state om annan enhet ändrat.
+//
+// Vyer som INTE ingår (avsiktligt):
+// - start, upload, admin: inte i en granskning
+// - restore_session: återställningsflöde, polling skulle skriva över backup
+// - confirm_sample_edit: REPLACE_STATE_FROM_REMOTE skulle förlora pendingSampleChanges
+// - rulefile_*: auditStatus === 'rulefile_editing' stoppar polling automatiskt
 
 import { get_audit_version, load_audit_with_rule_file } from '../api/client.js';
 
@@ -11,8 +17,12 @@ const AUDIT_VIEWS = new Set([
     'all_requirements',
     'audit_images',
     'audit_problems',
+    'metadata',
     'edit_metadata',
     'sample_management',
+    'sample_form',
+    'audit_actions',
+    'update_rulefile',
     'confirm_updates',
     'final_confirm_updates'
 ]);
