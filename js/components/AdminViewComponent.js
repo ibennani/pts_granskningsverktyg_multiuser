@@ -575,7 +575,7 @@ export const AdminViewComponent = {
                 });
                 const delete_label = t('delete') + ' ' + link_text;
                 const delete_btn = this.Helpers.create_element('button', {
-                    class_name: ['button', 'button-default', 'admin-delete-btn'],
+                    class_name: ['button', 'button-danger', 'button-small', 'admin-delete-btn'],
                     text_content: t('delete'),
                     attributes: {
                         type: 'button',
