@@ -1,5 +1,6 @@
 // js/state.js
 import * as AuditLogic from './audit_logic.js';
+import { get_current_user_name } from './utils/helpers.js';
 import { schedule_sync_to_server } from './logic/server_sync.js';
 
 const APP_STATE_KEY = 'digitalTillsynAppCentralState';
@@ -284,7 +285,7 @@ function root_reducer(current_state, action) {
                     const status = AuditLogic.calculate_requirement_status(req_def, existing);
 
                     if (status === 'not_audited' || status === 'partially_audited') {
-                        new_results[req_key] = AuditLogic.build_not_applicable_requirement_result(req_def, existing, timestamp);
+                        new_results[req_key] = AuditLogic.build_not_applicable_requirement_result(req_def, existing, timestamp, get_current_user_name());
                         has_changed = true;
                     }
                 });
@@ -316,7 +317,7 @@ function root_reducer(current_state, action) {
                 }
 
                 const new_results = { ...(sample.requirementResults || {}) };
-                new_results[req_key] = AuditLogic.build_not_applicable_requirement_result(req_def, existing, timestamp);
+                new_results[req_key] = AuditLogic.build_not_applicable_requirement_result(req_def, existing, timestamp, get_current_user_name());
                 return { ...sample, requirementResults: new_results };
             });
             new_state = { ...current_state, samples: new_samples };

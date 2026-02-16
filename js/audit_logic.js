@@ -573,21 +573,24 @@ export function requirement_needs_help(req_result) {
  * @param {object} requirement_definition - Kravdefinitionen från regelfilen
  * @param {object} [existing_result] - Befintligt resultat (bevarar commentToAuditor, commentToActor)
  * @param {string} timestamp - ISO-datumsträng för timestamps
+ * @param {string} [updatedBy] - Namn på användaren som gjorde ändringen
  * @returns {object} Ett requirement result med alla checks och pass criteria satta till passed
  */
-export function build_passed_requirement_result(requirement_definition, existing_result, timestamp) {
+export function build_passed_requirement_result(requirement_definition, existing_result, timestamp, updatedBy) {
     const checks = requirement_definition?.checks || [];
     const checkResults = {};
 
     checks.forEach(check_def => {
         const passCriteria = {};
         (check_def.passCriteria || []).forEach(pc_def => {
-            passCriteria[pc_def.id] = {
+            const pc = {
                 status: 'passed',
                 observationDetail: '',
                 timestamp: timestamp,
                 attachedMediaFilenames: []
             };
+            if (updatedBy) pc.updatedBy = updatedBy;
+            passCriteria[pc_def.id] = pc;
         });
         checkResults[check_def.id] = {
             status: 'passed',
@@ -596,7 +599,7 @@ export function build_passed_requirement_result(requirement_definition, existing
         };
     });
 
-    return {
+    const result = {
         status: 'passed',
         commentToAuditor: (existing_result?.commentToAuditor !== undefined) ? existing_result.commentToAuditor : '',
         commentToActor: (existing_result?.commentToActor !== undefined) ? existing_result.commentToActor : '',
@@ -604,6 +607,8 @@ export function build_passed_requirement_result(requirement_definition, existing
         stuckProblemDescription: (existing_result?.stuckProblemDescription !== undefined) ? existing_result.stuckProblemDescription : '',
         checkResults
     };
+    if (updatedBy) result.lastStatusUpdateBy = updatedBy;
+    return result;
 }
 
 /**
@@ -612,21 +617,24 @@ export function build_passed_requirement_result(requirement_definition, existing
  * @param {object} requirement_definition - Kravdefinitionen från regelfilen
  * @param {object} [existing_result] - Befintligt resultat (bevarar commentToAuditor, commentToActor)
  * @param {string} timestamp - ISO-datumsträng för timestamps
+ * @param {string} [updatedBy] - Namn på användaren som gjorde ändringen
  * @returns {object} Ett requirement result med alla checks satta till not_applicable, kravet blir "passed"
  */
-export function build_not_applicable_requirement_result(requirement_definition, existing_result, timestamp) {
+export function build_not_applicable_requirement_result(requirement_definition, existing_result, timestamp, updatedBy) {
     const checks = requirement_definition?.checks || [];
     const checkResults = {};
 
     checks.forEach(check_def => {
         const passCriteria = {};
         (check_def.passCriteria || []).forEach(pc_def => {
-            passCriteria[pc_def.id] = {
+            const pc = {
                 status: 'passed',
                 observationDetail: '',
                 timestamp: timestamp,
                 attachedMediaFilenames: []
             };
+            if (updatedBy) pc.updatedBy = updatedBy;
+            passCriteria[pc_def.id] = pc;
         });
         checkResults[check_def.id] = {
             status: 'passed',
@@ -635,7 +643,7 @@ export function build_not_applicable_requirement_result(requirement_definition, 
         };
     });
 
-    return {
+    const result = {
         status: 'passed',
         commentToAuditor: (existing_result?.commentToAuditor !== undefined) ? existing_result.commentToAuditor : '',
         commentToActor: (existing_result?.commentToActor !== undefined) ? existing_result.commentToActor : '',
@@ -643,6 +651,8 @@ export function build_not_applicable_requirement_result(requirement_definition, 
         stuckProblemDescription: '',
         checkResults
     };
+    if (updatedBy) result.lastStatusUpdateBy = updatedBy;
+    return result;
 }
 
 /**

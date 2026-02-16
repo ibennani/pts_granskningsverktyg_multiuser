@@ -1,3 +1,4 @@
+import { get_current_user_name } from '../utils/helpers.js';
 import { marked } from '../utils/markdown.js';
 
 export const AuditProblemsViewComponent = {
@@ -266,6 +267,8 @@ export const AuditProblemsViewComponent = {
                     const req_def = (state?.ruleFileContent?.requirements || {})[req_id] || (Array.isArray(state?.ruleFileContent?.requirements) ? state.ruleFileContent.requirements.find(r => (r?.key || r?.id) === req_id) : null);
                     const modified_result = JSON.parse(JSON.stringify(req_result));
                     modified_result.stuckProblemDescription = description;
+                    modified_result.lastStatusUpdate = this.Helpers?.get_current_iso_datetime_utc?.() || new Date().toISOString();
+                    modified_result.lastStatusUpdateBy = get_current_user_name();
                     if (req_def && this.AuditLogic?.calculate_requirement_status) {
                         modified_result.status = this.AuditLogic.calculate_requirement_status(req_def, modified_result);
                     }
@@ -299,6 +302,8 @@ export const AuditProblemsViewComponent = {
                     problem_solved_btn.addEventListener('click', () => {
                         const modified_result = JSON.parse(JSON.stringify(req_result));
                         modified_result.stuckProblemDescription = '';
+                        modified_result.lastStatusUpdate = this.Helpers?.get_current_iso_datetime_utc?.() || new Date().toISOString();
+                        modified_result.lastStatusUpdateBy = get_current_user_name();
                         const req_def = (state?.ruleFileContent?.requirements || {})[req_id] || (Array.isArray(state?.ruleFileContent?.requirements) ? state.ruleFileContent.requirements.find(r => (r?.key || r?.id) === req_id) : null);
                         if (req_def && this.AuditLogic?.calculate_requirement_status) {
                             modified_result.status = this.AuditLogic.calculate_requirement_status(req_def, modified_result);

@@ -1,5 +1,6 @@
 // js/components/RequirementAuditComponent.js
 
+import { get_current_user_name } from '../utils/helpers.js';
 import { ChecklistHandler } from './requirement_audit/ChecklistHandler.js';
 import { RequirementInfoSections } from './requirement_audit/RequirementInfoSections.js';
 import { RequirementAuditNavigationComponent } from './requirement_audit/RequirementAuditNavigation.js';
@@ -189,9 +190,11 @@ export const RequirementAuditComponent = {
         const check_definition = this.current_requirement.checks.find(c => c.id === change_info.checkId);
         const current_time = this.Helpers.get_current_iso_datetime_utc();
 
+        const current_user = get_current_user_name();
         if (change_info.type === 'check_overall_status_change') {
             check_result.overallStatus = check_result.overallStatus === change_info.newStatus ? 'not_audited' : change_info.newStatus;
             check_result.timestamp = current_time;
+            check_result.updatedBy = current_user;
         } else if (change_info.type === 'pc_status_change') {
             if (check_result.overallStatus !== 'passed') {
                 this.NotificationComponent.show_global_message(this.Translation.t('error_set_check_status_first'), 'warning');
@@ -200,6 +203,7 @@ export const RequirementAuditComponent = {
             const pc_result = check_result.passCriteria[change_info.pcId];
             pc_result.status = pc_result.status === change_info.newStatus ? 'not_audited' : change_info.newStatus;
             pc_result.timestamp = current_time;
+            pc_result.updatedBy = current_user;
             
             if (pc_result.status === 'failed' && (!pc_result.observationDetail || pc_result.observationDetail.trim() === '')) {
                 const pc_def = check_definition.passCriteria.find(pc => pc.id === change_info.pcId);
@@ -409,6 +413,7 @@ export const RequirementAuditComponent = {
         });
         modified_result_object.status = this.AuditLogic.calculate_requirement_status(this.current_requirement, modified_result_object);
         modified_result_object.lastStatusUpdate = this.Helpers.get_current_iso_datetime_utc();
+        modified_result_object.lastStatusUpdateBy = get_current_user_name();
 
         this.dispatch({
             type: this.StoreActionTypes.UPDATE_REQUIREMENT_RESULT,

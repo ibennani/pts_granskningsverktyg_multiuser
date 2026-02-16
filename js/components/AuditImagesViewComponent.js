@@ -1,3 +1,5 @@
+import { get_current_user_name } from '../utils/helpers.js';
+
 export const AuditImagesViewComponent = {
     CSS_PATH: 'css/components/audit_images_view_component.css',
 
@@ -124,6 +126,7 @@ export const AuditImagesViewComponent = {
                             });
                             requirement_result_ref.status = this.AuditLogic.calculate_requirement_status(requirement, requirement_result_ref);
                             requirement_result_ref.lastStatusUpdate = this.Helpers.get_current_iso_datetime_utc?.() || new Date().toISOString();
+                            requirement_result_ref.lastStatusUpdateBy = get_current_user_name();
                         }
 
                         this.dispatch({

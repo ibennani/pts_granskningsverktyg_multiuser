@@ -8,6 +8,12 @@ export function generate_uuid_v4() {
     });
 }
 
+export function get_current_user_name() {
+    if (typeof window === 'undefined') return '';
+    return (window.__GV_CURRENT_USER_NAME__ ||
+        (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('gv_current_user_name'))) || '';
+}
+
 export function load_css(href, options = {}) {
     return new Promise((resolve, reject) => {
         if (document.querySelector(`link[href="${href}"]`)) {

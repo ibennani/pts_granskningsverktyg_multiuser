@@ -1,5 +1,6 @@
 // js/components/requirement_audit/ChecklistHandler.js
 
+import { get_current_user_name } from '../../utils/helpers.js';
 import { marked } from '../../utils/markdown.js';
 
 export const ChecklistHandler = {
@@ -391,6 +392,7 @@ export const ChecklistHandler = {
                                     ? this.Helpers.get_current_iso_datetime_utc()
                                     : new Date().toISOString();
                                 check_result.passCriteria[pc_id].timestamp = ts;
+                                check_result.passCriteria[pc_id].updatedBy = get_current_user_name();
                             }
                             textarea.value = text_to_paste;
                             textarea.dispatchEvent(new Event('input', { bubbles: true }));
@@ -432,6 +434,7 @@ export const ChecklistHandler = {
                     ? this.Helpers.get_current_iso_datetime_utc()
                     : new Date().toISOString();
                 check_result.passCriteria[pc_id].timestamp = ts;
+                check_result.passCriteria[pc_id].updatedBy = get_current_user_name();
             }
             if (event.type === 'input' && this.on_observation_change_callback) {
                 this.on_observation_change_callback();
