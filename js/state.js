@@ -446,7 +446,8 @@ function root_reducer(current_state, action) {
         case ActionTypes.UPDATE_REQUIREMENT_RESULT:
             const { sampleId: updateSampleId, requirementId: updateRequirementId, newRequirementResult } = action.payload;
             const result_to_save = { ...newRequirementResult };
-            delete result_to_save.needsReview;
+            /* needsReview bevaras vid vanliga uppdateringar (t.ex. stuckProblemDescription).
+               Tas endast bort när användaren explicit bekräftar (CONFIRM_SINGLE_REVIEWED_REQUIREMENT). */
             new_state = {
                 ...current_state,
                 samples: current_state.samples.map(sample => 

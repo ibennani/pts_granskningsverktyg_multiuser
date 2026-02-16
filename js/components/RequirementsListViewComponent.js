@@ -915,16 +915,16 @@ export const RequirementsListViewComponent = {
         const needs_help_fn = filter_opts.requirement_needs_help_fn ?? (this.AuditLogic?.requirement_needs_help || (() => false));
         for (const sample of matching_samples) {
             const req_result = (sample.requirementResults || {})[req_key];
-            const base_status = req_result?.needsReview ? 'updated' : this.AuditLogic.calculate_requirement_status(req, req_result);
+            const base_status = this.AuditLogic.calculate_requirement_status(req, req_result);
             const needs_help = needs_help_fn(req_result);
             const is_updated = req_result?.needsReview === true;
-            const status_text = t(base_status === 'updated' ? 'status_updated' : `audit_status_${base_status}`) +
+            const status_text = t(`audit_status_${base_status}`) +
                 (needs_help ? ` (${t('filter_option_needs_help')})` : '') +
                 (is_updated ? ` (${t('status_updated_tooltip')})` : '');
 
             const sample_name = sample?.description || t('undefined_description');
             const sample_li = this.Helpers.create_element('li', { class_name: 'requirement-sample-item' });
-            const status_tooltip_text = t(base_status === 'updated' ? 'status_updated' : `audit_status_${base_status}`);
+            const status_tooltip_text = t(`audit_status_${base_status}`);
             const icons_wrapper = this.Helpers.create_element('span', { class_name: 'status-icons-wrapper' });
             const status_icon_wrapper = this.Helpers.create_element('span', { class_name: 'status-icon-tooltip-wrapper' });
             const status_icon = this.Helpers.create_element('span', {
@@ -1025,14 +1025,15 @@ export const RequirementsListViewComponent = {
         const t = this.Translation.t;
         const req_result = (sample.requirementResults || {})[req.key];
         const requirement_needs_help_fn = this.AuditLogic?.requirement_needs_help || (() => false);
-        const base_status = req_result?.needsReview ? 'updated' : this.AuditLogic.calculate_requirement_status(req, req_result);
+        const base_status = this.AuditLogic.calculate_requirement_status(req, req_result);
         const needs_help = requirement_needs_help_fn(req_result);
         const is_updated = req_result?.needsReview === true;
 
         const li = this.Helpers.create_element('li', { class_name: 'requirement-item compact-twoline' });
         
-        const status_parts = [t(base_status === 'updated' ? 'status_updated' : `audit_status_${base_status}`)];
+        const status_parts = [t(`audit_status_${base_status}`)];
         if (needs_help) status_parts.push(t('filter_option_needs_help'));
+        if (is_updated) status_parts.push(t('status_updated_tooltip'));
         const status_label = status_parts.join(', ');
         const aria_label = `${req.title}. Status: ${status_label}`;
 
@@ -1050,7 +1051,7 @@ export const RequirementsListViewComponent = {
         li.appendChild(h3);
 
         const details_row_div = this.Helpers.create_element('div', { class_name: 'requirement-details-row' });
-        const status_tooltip_text = t(base_status === 'updated' ? 'status_updated' : `audit_status_${base_status}`);
+        const status_tooltip_text = t(`audit_status_${base_status}`);
         const icons_wrapper = this.Helpers.create_element('span', { class_name: 'status-icons-wrapper' });
         const status_icon_wrapper = this.Helpers.create_element('span', { class_name: 'status-icon-tooltip-wrapper' });
         const status_icon = this.Helpers.create_element('span', {

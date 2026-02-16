@@ -232,6 +232,46 @@
     color: #007BFF;
 }
 
+.requirement-audit-sidebar .status-icons-wrapper {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15rem;
+    margin-right: 0.2rem;
+    flex-shrink: 0;
+}
+
+.requirement-audit-sidebar .status-icon-needs-help-indicator {
+    display: inline-flex;
+    align-items: center;
+    color: #E67E22;
+}
+
+.requirement-audit-sidebar .status-icon-needs-help-indicator svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+}
+
+.requirement-audit-sidebar .status-icon-updated-indicator {
+    display: inline-flex;
+    align-items: center;
+    color: #007BFF;
+}
+
+.requirement-audit-sidebar .status-icon-updated-indicator svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+}
+
+[data-theme="dark"] .requirement-audit-sidebar .status-icon-needs-help-indicator {
+    color: #F39C12;
+}
+
+[data-theme="dark"] .requirement-audit-sidebar .status-icon-updated-indicator {
+    color: #5BA3FF;
+}
+
 .requirement-audit-sidebar__meta {
     font-size: 0.9rem;
     color: var(--text-color-muted);

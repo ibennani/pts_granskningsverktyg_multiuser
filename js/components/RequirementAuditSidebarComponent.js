@@ -281,8 +281,13 @@ export const RequirementAuditSidebarComponent = {
         const list = this.Helpers.create_element('ul', { class_name: 'requirement-audit-sidebar__items' });
 
         sorted_items.forEach(item => {
-            const { req_key, requirement, display_status } = item;
-            const status_text = this.Translation.t(display_status === 'updated' ? 'status_updated' : `audit_status_${display_status}`);
+            const { req_key, requirement, req_result, display_status, needs_help } = item;
+            const base_status = this.AuditLogic.calculate_requirement_status(requirement, req_result);
+            const is_updated = req_result?.needsReview === true;
+            const status_parts = [this.Translation.t(`audit_status_${base_status}`)];
+            if (needs_help) status_parts.push(this.Translation.t('filter_option_needs_help'));
+            if (is_updated) status_parts.push(this.Translation.t('status_updated_tooltip'));
+            const status_text = status_parts.join(', ');
 
             const li = this.Helpers.create_element('li', { class_name: 'requirement-audit-sidebar__item' });
             const h4 = this.Helpers.create_element('h4', { class_name: 'requirement-audit-sidebar__link-wrapper' });
@@ -304,17 +309,37 @@ export const RequirementAuditSidebarComponent = {
                 li.classList.add('is-active');
             }
 
+            const icons_wrapper = this.Helpers.create_element('span', { class_name: 'status-icons-wrapper' });
             const status_icon = this.Helpers.create_element('span', {
-                class_name: `requirement-audit-sidebar__status-icon status-icon status-icon-${display_status.replace('_', '-')}`,
-                text_content: this.get_status_icon(display_status),
+                class_name: `requirement-audit-sidebar__status-icon status-icon status-icon-${base_status.replace('_', '-')}`,
+                text_content: this.get_status_icon(base_status),
                 attributes: { 'aria-hidden': 'true' }
             });
+            icons_wrapper.appendChild(status_icon);
+            if (needs_help) {
+                const warning_svg = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('warning', ['currentColor'], 14) : '';
+                const needs_help_icon = this.Helpers.create_element('span', {
+                    class_name: 'status-icon status-icon-needs-help-indicator',
+                    html_content: warning_svg,
+                    attributes: { 'aria-hidden': 'true' }
+                });
+                icons_wrapper.appendChild(needs_help_icon);
+            }
+            if (is_updated) {
+                const update_svg = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('update', ['currentColor'], 14) : '';
+                const updated_icon = this.Helpers.create_element('span', {
+                    class_name: 'status-icon status-icon-updated-indicator',
+                    html_content: update_svg,
+                    attributes: { 'aria-hidden': 'true' }
+                });
+                icons_wrapper.appendChild(updated_icon);
+            }
             const status_text_span = this.Helpers.create_element('span', {
                 class_name: 'requirement-audit-sidebar__status-text',
                 text_content: status_text
             });
             const meta = this.Helpers.create_element('span', { class_name: 'requirement-audit-sidebar__meta' });
-            meta.appendChild(status_icon);
+            meta.appendChild(icons_wrapper);
             meta.appendChild(status_text_span);
 
             li.appendChild(h4);
@@ -346,8 +371,14 @@ export const RequirementAuditSidebarComponent = {
 
         sorted_samples.forEach(item => {
             const sample = item.sample;
-            const display_status = item.display_status;
-            const status_text = this.Translation.t(display_status === 'updated' ? 'status_updated' : `audit_status_${display_status}`);
+            const req_result = item.req_result;
+            const needs_help = item.needs_help;
+            const base_status = this.AuditLogic.calculate_requirement_status(current_requirement, req_result);
+            const is_updated = req_result?.needsReview === true;
+            const status_parts = [this.Translation.t(`audit_status_${base_status}`)];
+            if (needs_help) status_parts.push(this.Translation.t('filter_option_needs_help'));
+            if (is_updated) status_parts.push(this.Translation.t('status_updated_tooltip'));
+            const status_text = status_parts.join(', ');
 
             const li = this.Helpers.create_element('li', { class_name: 'requirement-audit-sidebar__item' });
             const h4 = this.Helpers.create_element('h4', { class_name: 'requirement-audit-sidebar__link-wrapper' });
@@ -369,17 +400,37 @@ export const RequirementAuditSidebarComponent = {
                 li.classList.add('is-active');
             }
 
+            const icons_wrapper = this.Helpers.create_element('span', { class_name: 'status-icons-wrapper' });
             const status_icon = this.Helpers.create_element('span', {
-                class_name: `requirement-audit-sidebar__status-icon status-icon status-icon-${display_status.replace('_', '-')}`,
-                text_content: this.get_status_icon(display_status),
+                class_name: `requirement-audit-sidebar__status-icon status-icon status-icon-${base_status.replace('_', '-')}`,
+                text_content: this.get_status_icon(base_status),
                 attributes: { 'aria-hidden': 'true' }
             });
+            icons_wrapper.appendChild(status_icon);
+            if (needs_help) {
+                const warning_svg = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('warning', ['currentColor'], 14) : '';
+                const needs_help_icon = this.Helpers.create_element('span', {
+                    class_name: 'status-icon status-icon-needs-help-indicator',
+                    html_content: warning_svg,
+                    attributes: { 'aria-hidden': 'true' }
+                });
+                icons_wrapper.appendChild(needs_help_icon);
+            }
+            if (is_updated) {
+                const update_svg = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('update', ['currentColor'], 14) : '';
+                const updated_icon = this.Helpers.create_element('span', {
+                    class_name: 'status-icon status-icon-updated-indicator',
+                    html_content: update_svg,
+                    attributes: { 'aria-hidden': 'true' }
+                });
+                icons_wrapper.appendChild(updated_icon);
+            }
             const status_text_span = this.Helpers.create_element('span', {
                 class_name: 'requirement-audit-sidebar__status-text',
                 text_content: status_text
             });
             const meta = this.Helpers.create_element('span', { class_name: 'requirement-audit-sidebar__meta' });
-            meta.appendChild(status_icon);
+            meta.appendChild(icons_wrapper);
             meta.appendChild(status_text_span);
 
             li.appendChild(h4);
@@ -524,6 +575,7 @@ export const RequirementAuditSidebarComponent = {
                 const original_index = sample_index_map.get(sample.id) ?? Infinity;
                 return {
                     sample,
+                    req_result,
                     display_status,
                     needs_help,
                     link_text: sample?.description || this.Translation.t('undefined_description'),
