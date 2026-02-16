@@ -37,7 +37,7 @@ async function main() {
         }
 
         console.log('[fix-env] Startar om backend...');
-        const pm2Cmd = 'chmod 600 .env && (npx pm2 restart granskningsverktyget-v2 2>/dev/null || npx pm2 start server/index.js --name granskningsverktyget-v2)';
+        const pm2Cmd = 'chmod 600 .env && (npx pm2 restart granskningsverktyget-v2 2>/dev/null || npx pm2 start server/index.js --name granskningsverktyget-v2) && (npx pm2 restart granskningsverktyget-watchdog 2>/dev/null || npx pm2 start scripts/healthcheck-watchdog.js --name granskningsverktyget-watchdog)';
         if (sshPassword) {
             await exec(pm2Cmd);
         } else {

@@ -17,6 +17,7 @@
     "deploy:v2": "node scripts/deploy-v2.js",
     "deploy:debug": "node scripts/deploy-debug.js",
     "deploy:fix-env": "node scripts/deploy-fix-env.js",
+    "deploy:setup-cron": "node scripts/deploy-setup-cron.js",
     "dev:fixedport": "vite --port 5173 --strictPort",
     "prebuild": "npm run lint && npm run validate:imports && npm run validate:components && npm run validate:css",
     "build": "npm run prebuild && vite build && node scripts/postbuild-final.js",

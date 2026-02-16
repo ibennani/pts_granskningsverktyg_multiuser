@@ -48,6 +48,14 @@ ssh-copy-id -i ~/.ssh/id_ed25519_granskning.pub ux-granskningsverktyg.pts.ad
 - **SELinux** – `sudo setsebool -P httpd_can_network_connect 1` (om inte redan gjort)
 - **Nginx** – Konfigurerad enligt `scripts/ux-granskning-with-v2.conf`
 
+## Automatisk omstart vid nere-server
+
+En watchdog-process kontrollerar var minut om backend svarar. Om inte – startas PM2 om automatiskt.
+
+**Startas automatiskt vid `npm run deploy:v2`** – ingen manuell konfiguration behövs. Watchdog körs som PM2-process (`granskningsverktyget-watchdog`).
+
+Shell-scriptet `scripts/health-check-and-restart.sh` finns kvar för manuell körning eller cron-fallback.
+
 ## Om deploy misslyckas på Windows
 
 SSH-kommandot med `&&` kan ge "The syntax of the command is incorrect". Kör då stegen manuellt:

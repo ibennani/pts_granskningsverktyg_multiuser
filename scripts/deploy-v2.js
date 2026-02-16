@@ -48,7 +48,7 @@ async function main() {
 
         console.log(`[deploy] Laddar upp till ${host}:${remotePath}...`);
 
-        await sshOrRun(`mkdir -p ${remotePath}/v2 ${remotePath}/server ${remotePath}/js`, ['ssh', [host, `mkdir -p ${remotePath}/v2 ${remotePath}/server ${remotePath}/js`]], { cwd: false });
+        await sshOrRun(`mkdir -p ${remotePath}/v2 ${remotePath}/server ${remotePath}/js ${remotePath}/scripts`, ['ssh', [host, `mkdir -p ${remotePath}/v2 ${remotePath}/server ${remotePath}/js ${remotePath}/scripts`]], { cwd: false });
 
         await scpDir(join(projectRoot, 'js'), `${remotePath}/js`);
         await scpDir(distDir, `${remotePath}/temp-dist`);
@@ -59,6 +59,9 @@ async function main() {
         );
 
         await scpDir(serverDir, `${remotePath}/server`);
+        await scpFile(join(projectRoot, 'scripts', 'health-check-and-restart.sh'), `${remotePath}/scripts/health-check-and-restart.sh`);
+        await scpFile(join(projectRoot, 'scripts', 'healthcheck-watchdog.js'), `${remotePath}/scripts/healthcheck-watchdog.js`);
+        await sshOrRun(`chmod +x ${remotePath}/scripts/health-check-and-restart.sh`, ['ssh', [host, `chmod +x ${remotePath}/scripts/health-check-and-restart.sh`]], { cwd: false });
         await scpFile(join(projectRoot, 'docker-compose.yml'), `${remotePath}/docker-compose.yml`);
         await scpFile(join(projectRoot, 'package.json'), `${remotePath}/package.json`);
         await scpFile(join(projectRoot, 'package-lock.json'), `${remotePath}/package-lock.json`);
@@ -82,9 +85,13 @@ async function main() {
         }
 
         console.log('[deploy] Kör kommandon på servern...');
+        const pm2Start = [
+            '(npx pm2 restart granskningsverktyget-v2 2>/dev/null || npx pm2 start server/index.js --name granskningsverktyget-v2)',
+            '(npx pm2 restart granskningsverktyget-watchdog 2>/dev/null || npx pm2 start scripts/healthcheck-watchdog.js --name granskningsverktyget-watchdog)'
+        ].join(' && ');
         await sshOrRun(
-            'npm install --omit=dev --ignore-scripts && npm run db:migrate && (npx pm2 restart granskningsverktyget-v2 2>/dev/null || npx pm2 start server/index.js --name granskningsverktyget-v2)',
-            ['ssh', [host, `cd ${remotePath} && npm install --omit=dev --ignore-scripts && npm run db:migrate && (npx pm2 restart granskningsverktyget-v2 2>/dev/null || npx pm2 start server/index.js --name granskningsverktyget-v2)`]]
+            `npm install --omit=dev --ignore-scripts && npm run db:migrate && ${pm2Start}`,
+            ['ssh', [host, `cd ${remotePath} && npm install --omit=dev --ignore-scripts && npm run db:migrate && ${pm2Start}`]]
         );
 
         console.log('[deploy] Klart! https://ux-granskningsverktyg.pts.ad/v2/');

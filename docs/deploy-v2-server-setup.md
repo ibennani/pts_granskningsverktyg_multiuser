@@ -59,8 +59,8 @@ För att backend ska starta om vid deploy och överleva serveromstart:
 
 ```bash
 npm install -g pm2
-# Efter första deploy: pm2 start server/index.js --name granskningsverktyget-v2
-# pm2 save && pm2 startup  # för att starta vid omstart
+# Deploy startar automatiskt: granskningsverktyget-v2 (backend) + granskningsverktyget-watchdog (health-check var minut)
+# pm2 save && pm2 startup  # för att starta vid serveromstart
 ```
 
 ## 6. Deploy
