@@ -704,10 +704,10 @@ export const RequirementsListViewComponent = {
 
         const h1 = this.Helpers.create_element('h1');
         if (current_sample_object.url) {
+            const icon_html = this.Helpers.get_external_link_icon_html ? this.Helpers.get_external_link_icon_html(t) : ' ↗';
             h1.appendChild(this.Helpers.create_element('a', {
-                href: this.Helpers.add_protocol_if_missing(current_sample_object.url),
-                text_content: title_text,
-                attributes: { target: '_blank', rel: 'noopener noreferrer' }
+                html_content: (this.Helpers.escape_html ? this.Helpers.escape_html(title_text) : title_text) + icon_html,
+                attributes: { href: this.Helpers.add_protocol_if_missing(current_sample_object.url), target: '_blank', rel: 'noopener noreferrer' }
             }));
         } else {
             h1.textContent = title_text;
@@ -1109,8 +1109,10 @@ export const RequirementsListViewComponent = {
         details_row_div.appendChild(this.Helpers.create_element('span', { class_name: 'requirement-checks-info', text_content: `(${audited_checks}/${total_checks} ${t('checks_short')})` }));
         
         if (req.standardReference?.text) {
+            const t = this.Translation?.t || (k => (k === 'opens_in_new_tab' ? '(Öppnas i ny flik)' : k));
+            const icon_html = this.Helpers.get_external_link_icon_html ? this.Helpers.get_external_link_icon_html(t) : ' ↗';
             details_row_div.appendChild(req.standardReference.url 
-                ? this.Helpers.create_element('a', { class_name: 'list-reference-link', text_content: req.standardReference.text, attributes: { href: req.standardReference.url, target: '_blank', rel: 'noopener noreferrer' } })
+                ? this.Helpers.create_element('a', { class_name: 'list-reference-link', html_content: (this.Helpers.escape_html ? this.Helpers.escape_html(req.standardReference.text) : req.standardReference.text) + icon_html, attributes: { href: req.standardReference.url, target: '_blank', rel: 'noopener noreferrer' } })
                 : this.Helpers.create_element('span', { class_name: 'list-reference-text', text_content: req.standardReference.text })
             );
         }

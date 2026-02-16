@@ -634,9 +634,11 @@ export const RequirementAuditComponent = {
         if (isSampleLink) {
             const context_text = `${this.getState().auditMetadata?.actorName || ''}: ${this.current_sample.description}`;
             if (this.current_sample.url) {
+                const t = this.Translation?.t || (k => (k === 'opens_in_new_tab' ? '(Öppnas i ny flik)' : k));
+                const icon_html = this.Helpers.get_external_link_icon_html ? this.Helpers.get_external_link_icon_html(t) : ' ↗';
                 p.appendChild(this.Helpers.create_element('a', {
-                    text_content: context_text,
-                    attributes: { href: this.Helpers.add_protocol_if_missing(this.current_sample.url), target: '_blank' }
+                    html_content: (this.Helpers.escape_html ? this.Helpers.escape_html(context_text) : context_text) + icon_html,
+                    attributes: { href: this.Helpers.add_protocol_if_missing(this.current_sample.url), target: '_blank', rel: 'noopener noreferrer' }
                 }));
             } else {
                 p.appendChild(document.createTextNode(context_text));
@@ -648,9 +650,11 @@ export const RequirementAuditComponent = {
             p.appendChild(span);
         } else if (data?.text) {
             if (data.url) {
+                const t = this.Translation?.t || (k => (k === 'opens_in_new_tab' ? '(Öppnas i ny flik)' : k));
+                const icon_html = this.Helpers.get_external_link_icon_html ? this.Helpers.get_external_link_icon_html(t) : ' ↗';
                 p.appendChild(this.Helpers.create_element('a', {
-                    text_content: data.text,
-                    attributes: { href: this.Helpers.add_protocol_if_missing(data.url), target: '_blank' }
+                    html_content: (this.Helpers.escape_html ? this.Helpers.escape_html(data.text) : data.text) + icon_html,
+                    attributes: { href: this.Helpers.add_protocol_if_missing(data.url), target: '_blank', rel: 'noopener noreferrer' }
                 }));
             } else {
                 p.appendChild(document.createTextNode(data.text));

@@ -425,13 +425,14 @@ export const AuditProblemsViewComponent = {
             });
             ref_row.appendChild(ref_label);
             if (ref_url && this.Helpers.add_protocol_if_missing) {
+                const icon_html = this.Helpers.get_external_link_icon_html ? this.Helpers.get_external_link_icon_html(t) : ' ↗';
                 const ref_link = this.Helpers.create_element('a', {
                     attributes: {
                         href: this.Helpers.add_protocol_if_missing(ref_url),
                         target: '_blank',
                         rel: 'noopener noreferrer'
                     },
-                    text_content: ref_text
+                    html_content: (this.Helpers.escape_html ? this.Helpers.escape_html(ref_text) : ref_text) + icon_html
                 });
                 ref_row.appendChild(ref_link);
             } else {
@@ -447,13 +448,14 @@ export const AuditProblemsViewComponent = {
         });
         sample_row.appendChild(sample_label);
         if (sample_url && this.Helpers.add_protocol_if_missing) {
+            const icon_html = this.Helpers.get_external_link_icon_html ? this.Helpers.get_external_link_icon_html(t) : ' ↗';
             const sample_link = this.Helpers.create_element('a', {
                 attributes: {
                     href: this.Helpers.add_protocol_if_missing(sample_url),
                     target: '_blank',
                     rel: 'noopener noreferrer'
                 },
-                text_content: sample_name || sample_url
+                html_content: (this.Helpers.escape_html ? this.Helpers.escape_html(sample_name || sample_url) : (sample_name || sample_url)) + icon_html
             });
             sample_row.appendChild(sample_link);
         } else {

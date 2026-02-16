@@ -137,9 +137,10 @@ export const ViewRulefileRequirementComponent = {
              const p = this.Helpers.create_element('p', { class_name: 'standard-reference' });
              p.appendChild(this.Helpers.create_element('strong', { text_content: `${t('requirement_standard_reference_label')} ` }));
              if (requirement.standardReference.url) {
+                 const icon_html = this.Helpers.get_external_link_icon_html ? this.Helpers.get_external_link_icon_html(t) : ' ↗';
                  p.appendChild(this.Helpers.create_element('a', {
-                     text_content: requirement.standardReference.text,
-                     attributes: { href: this.Helpers.add_protocol_if_missing(requirement.standardReference.url), target: '_blank' }
+                     html_content: (this.Helpers.escape_html ? this.Helpers.escape_html(requirement.standardReference.text) : requirement.standardReference.text) + icon_html,
+                     attributes: { href: this.Helpers.add_protocol_if_missing(requirement.standardReference.url), target: '_blank', rel: 'noopener noreferrer' }
                  }));
              } else {
                  p.appendChild(document.createTextNode(requirement.standardReference.text));

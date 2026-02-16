@@ -166,6 +166,19 @@ export function escape_html(unsafe_input) {
         .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
+/**
+ * Returnerar HTML för extern-länk-ikon (mellanslag + ikon med aria-label).
+ * Används i slutet av länkar som öppnas i ny flik.
+ * Ikonen är en ruta med pil utåt (samma stil som Noun Project "new tab").
+ * @param {function} t - Översättningsfunktion (t('opens_in_new_tab'))
+ * @returns {string} HTML-sträng
+ */
+export function get_external_link_icon_html(t) {
+    const aria_label = (typeof t === 'function') ? t('opens_in_new_tab') : '(Öppnas i ny flik)';
+    const svg_icon = get_icon_svg('visit_url', ['currentColor'], 12);
+    return ` <span class="external-link-icon" aria-label="${escape_html(aria_label)}" role="img">${svg_icon}</span>`;
+}
+
 export function sanitize_html(html_string) {
     if (typeof html_string !== 'string' || !html_string) return '';
     
@@ -187,10 +200,12 @@ export function sanitize_html(html_string) {
                 el.removeAttribute(attr);
             }
         });
-        // Ensure all links open in new tab safely
+        // Ensure all links open in new tab safely and add external link icon
         if (el.tagName === 'A') {
             el.setAttribute('target', '_blank');
             el.setAttribute('rel', 'noopener noreferrer');
+            const t = (typeof window.Translation?.t === 'function') ? window.Translation.t : (k) => (k === 'opens_in_new_tab' ? '(Öppnas i ny flik)' : k);
+            el.innerHTML = (el.innerHTML || '').trim() + get_external_link_icon_html(t);
         }
     });
     
@@ -329,6 +344,8 @@ export function sanitize_and_linkify_html(raw_html_string) {
     content.querySelectorAll('a').forEach(link => {
         link.setAttribute('target', '_blank');
         link.setAttribute('rel', 'noopener noreferrer');
+        const t = (typeof window.Translation?.t === 'function') ? window.Translation.t : (k) => (k === 'opens_in_new_tab' ? '(Öppnas i ny flik)' : k);
+        link.innerHTML = (link.innerHTML || '').trim() + get_external_link_icon_html(t);
     });
     const temp_div = document.createElement('div');
     temp_div.appendChild(content);

@@ -398,6 +398,18 @@ a {
     text-decoration: underline;
 }
 
+/* Ikon för externa länkar (ruta med pil) – visas i slutet av länkar som öppnas i ny flik */
+.external-link-icon {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 0.2em;
+    vertical-align: middle;
+}
+
+.external-link-icon svg {
+    display: block;
+}
+
 a:hover,
 a:focus-visible {
     color: var(--link-hover-color);

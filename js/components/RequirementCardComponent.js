@@ -46,6 +46,8 @@ export const RequirementCardComponent = {
 
         const create_element = Helpers.create_element;
         const add_protocol_if_missing = Helpers.add_protocol_if_missing || ((url) => url);
+        const escape_html = Helpers.escape_html || ((s) => String(s || ''));
+        const get_external_link_icon_html = Helpers.get_external_link_icon_html || (() => ' ↗');
 
         const card_li = create_element('li', { class_name: 'requirement-card' });
         const card_content_wrapper = create_element('div', { class_name: 'requirement-card-inner-content' });
@@ -79,7 +81,7 @@ export const RequirementCardComponent = {
                 const url_to_use = add_protocol_if_missing(requirement.standardReference.url);
                 reference_element = create_element('a', {
                     class_name: 'requirement-card-reference-link',
-                    text_content: requirement.standardReference.text,
+                    html_content: escape_html(requirement.standardReference.text) + get_external_link_icon_html(t),
                     attributes: {
                         href: url_to_use,
                         target: '_blank',

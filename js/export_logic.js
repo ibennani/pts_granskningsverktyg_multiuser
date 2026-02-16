@@ -2065,7 +2065,8 @@ function create_html_metadata(requirement, current_audit, deficiencyIds, t) {
         const ref_url = requirement.standardReference.url;
         if (ref_url) {
             const safe_url = escape_html_internal(window.Helpers?.add_protocol_if_missing ? window.Helpers.add_protocol_if_missing(ref_url) : ref_url);
-            html += `<p class="metadata-compact"><strong>Referens: </strong><a href="${safe_url}" target="_blank" rel="noopener noreferrer">${ref_text}</a></p>`;
+            const icon_html = (typeof window.Helpers?.get_external_link_icon_html === 'function') ? window.Helpers.get_external_link_icon_html(t) : '';
+            html += `<p class="metadata-compact"><strong>Referens: </strong><a href="${safe_url}" target="_blank" rel="noopener noreferrer">${ref_text}${icon_html}</a></p>`;
         } else {
             html += `<p class="metadata-compact"><strong>Referens: </strong>${ref_text}</p>`;
         }
@@ -2288,7 +2289,8 @@ function build_content_sorted_by_requirement(current_audit, t) {
 
             if (sample.url) {
                 const safe_url = escape_html_internal(window.Helpers?.add_protocol_if_missing ? window.Helpers.add_protocol_if_missing(sample.url) : sample.url);
-                content_html += `<h3 id="${h3_sample_anchor_id}">Stickprov: <a href="${safe_url}" target="_blank" rel="noopener noreferrer">${escape_html_internal(sampleName)}</a></h3>`;
+                const icon_html = (typeof window.Helpers?.get_external_link_icon_html === 'function') ? window.Helpers.get_external_link_icon_html(t) : '';
+                content_html += `<h3 id="${h3_sample_anchor_id}">Stickprov: <a href="${safe_url}" target="_blank" rel="noopener noreferrer">${escape_html_internal(sampleName)}${icon_html}</a></h3>`;
             } else {
                 content_html += `<h3 id="${h3_sample_anchor_id}">Stickprov: ${escape_html_internal(sampleName)}</h3>`;
             }
@@ -2335,7 +2337,8 @@ function build_content_sorted_by_sample(current_audit, t) {
 
         if (sample.url) {
             const safe_url = escape_html_internal(window.Helpers?.add_protocol_if_missing ? window.Helpers.add_protocol_if_missing(sample.url) : sample.url);
-            content_html += `<h2 id="${h2_anchor_id}">Stickprov: <a href="${safe_url}" target="_blank" rel="noopener noreferrer">${escape_html_internal(sampleName)}</a></h2>`;
+            const icon_html = (typeof window.Helpers?.get_external_link_icon_html === 'function') ? window.Helpers.get_external_link_icon_html(t) : '';
+            content_html += `<h2 id="${h2_anchor_id}">Stickprov: <a href="${safe_url}" target="_blank" rel="noopener noreferrer">${escape_html_internal(sampleName)}${icon_html}</a></h2>`;
         } else {
             content_html += `<h2 id="${h2_anchor_id}">Stickprov: ${escape_html_internal(sampleName)}</h2>`;
         }

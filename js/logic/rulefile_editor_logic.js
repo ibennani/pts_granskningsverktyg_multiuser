@@ -108,8 +108,9 @@ export function buildRequirementsEditor(requirements, allContentTypes, onSaveCal
         // Detaljer-rad (motsvarar requirement-details-row)
         const details_row_div = Helpers.create_element('div', { class_name: 'requirement-details-row' });
         if (req.standardReference?.text) {
+            const icon_html = Helpers.get_external_link_icon_html ? Helpers.get_external_link_icon_html(t) : ' ↗';
             details_row_div.appendChild(req.standardReference.url 
-                ? Helpers.create_element('a', { class_name: 'list-reference-link', text_content: req.standardReference.text, attributes: { href: req.standardReference.url, target: '_blank', rel: 'noopener noreferrer' } })
+                ? Helpers.create_element('a', { class_name: 'list-reference-link', html_content: (Helpers.escape_html ? Helpers.escape_html(req.standardReference.text) : req.standardReference.text) + icon_html, attributes: { href: req.standardReference.url, target: '_blank', rel: 'noopener noreferrer' } })
                 : Helpers.create_element('span', { class_name: 'list-reference-text', text_content: req.standardReference.text })
             );
         } else {

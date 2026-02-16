@@ -71,7 +71,7 @@ export const SampleListComponent = {
         const t = this.get_t_internally();
         const state = this.getState(); 
 
-        const { create_element, get_icon_svg, escape_html, add_protocol_if_missing } = this.Helpers;
+        const { create_element, get_icon_svg, escape_html, add_protocol_if_missing, get_external_link_icon_html } = this.Helpers;
         const { get_relevant_requirements_for_sample, find_first_incomplete_requirement_key_for_sample, calculate_requirement_status } = this.AuditLogic;
         
         this.root.innerHTML = '';
@@ -123,8 +123,9 @@ export const SampleListComponent = {
             
             const sample_description_text = sample.description || t('undefined_description');
             if (sample.url) {
+                const icon_html = get_external_link_icon_html ? get_external_link_icon_html(t) : ' ↗';
                 desc_h2.appendChild(create_element('a', {
-                    text_content: sample_description_text,
+                    html_content: escape_html(sample_description_text) + icon_html,
                     attributes: { href: add_protocol_if_missing(sample.url), target: '_blank', rel: 'noopener noreferrer' }
                 }));
             } else {

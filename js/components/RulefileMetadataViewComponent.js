@@ -220,8 +220,10 @@ export const RulefileMetadataViewComponent = {
     _create_source_link(source_url) {
         const clean_url = this.Helpers.add_protocol_if_missing ? this.Helpers.add_protocol_if_missing(source_url) : source_url;
         if (!clean_url) return null;
+        const t = this.Translation?.t || (k => (k === 'opens_in_new_tab' ? '(Öppnas i ny flik)' : k));
+        const icon_html = this.Helpers.get_external_link_icon_html ? this.Helpers.get_external_link_icon_html(t) : ' ↗';
         return this.Helpers.create_element('a', {
-            text_content: source_url,
+            html_content: (this.Helpers.escape_html ? this.Helpers.escape_html(source_url) : source_url) + icon_html,
             attributes: {
                 href: clean_url,
                 target: '_blank',
