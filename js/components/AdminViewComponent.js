@@ -345,24 +345,27 @@ export const AdminViewComponent = {
             sorted_rules.forEach((r) => {
                 const li = this.Helpers.create_element('li', { class_name: 'admin-list-item' });
                 const rule_name = r.name || `Regelfil ${r.id}`;
+                const version_display = r.version_display ? ` (${r.version_display})` : '';
+                const link_text = rule_name + version_display;
                 const label = this.Helpers.create_element('a', {
-                    text_content: rule_name,
+                    text_content: link_text,
                     class_name: 'admin-item-label admin-rule-link',
                     attributes: {
                         href: '#edit_rulefile_main',
-                        'aria-label': t('admin_edit_rule_aria', { name: rule_name })
+                        'aria-label': t('admin_edit_rule_aria', { name: link_text })
                     }
                 });
                 label.addEventListener('click', (e) => {
                     e.preventDefault();
                     this.handle_edit_rule(r.id);
                 });
+                const delete_label = t('delete') + ' ' + link_text;
                 const delete_btn = this.Helpers.create_element('button', {
                     class_name: ['button', 'button-default', 'admin-delete-btn'],
                     text_content: t('delete'),
                     attributes: {
                         type: 'button',
-                        'aria-label': t('admin_delete_rule_aria', { name: r.name || `Regelfil ${r.id}` })
+                        'aria-label': delete_label
                     }
                 });
                 delete_btn.addEventListener('click', () => this.handle_delete_rule(r.id));
@@ -419,12 +422,14 @@ export const AdminViewComponent = {
                     e.preventDefault();
                     this.handle_open_audit(a.id);
                 });
+                const audit_link_text = case_number ? `${case_number} ${display_name}` : display_name;
+                const delete_label = t('delete') + ' ' + audit_link_text;
                 const delete_btn = this.Helpers.create_element('button', {
                     class_name: ['button', 'button-default', 'admin-delete-btn'],
                     text_content: t('delete'),
                     attributes: {
                         type: 'button',
-                        'aria-label': t('admin_delete_audit_aria', { name: display_name })
+                        'aria-label': delete_label
                     }
                 });
                 delete_btn.addEventListener('click', () => this.handle_delete_audit(a.id));

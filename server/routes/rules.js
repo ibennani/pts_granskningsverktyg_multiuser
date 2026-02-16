@@ -9,6 +9,7 @@ router.get('/', async (_req, res) => {
         const result = await query(
             `SELECT id,
                 COALESCE(NULLIF(TRIM(content->'metadata'->>'title'), ''), name) AS name,
+                COALESCE(NULLIF(TRIM(content->'metadata'->>'version'), ''), version::text) AS version_display,
                 version, created_at, updated_at
              FROM rule_sets ORDER BY updated_at DESC`
         );
