@@ -28,7 +28,6 @@ import { dependencyManager } from './utils/dependency_manager.js';
 import { consoleManager } from './utils/console_manager.js';
 import { memoryManager } from './utils/memory_manager.js';
 
-import { UploadViewComponent } from './components/UploadViewComponent.js';
 import { EditMetadataViewComponent } from './components/EditMetadataViewComponent.js'; 
 import { SampleManagementViewComponent } from './components/SampleManagementViewComponent.js';
 import { SampleFormViewComponent } from './components/SampleFormViewComponent.js';
@@ -323,9 +322,6 @@ window.DraftManager = DraftManager;
                 switch (viewName) {
                     case 'start':
                         title_prefix = t('menu_link_start');
-                        break;
-                    case 'upload':
-                        title_prefix = t('start_or_load_audit_title');
                         break;
                     case 'admin':
                         title_prefix = t('admin_title');
@@ -934,7 +930,6 @@ window.DraftManager = DraftManager;
         
         switch (view_name_to_render) {
             case 'start': ComponentClass = StartViewComponent; break;
-            case 'upload': ComponentClass = UploadViewComponent; break;
             case 'admin': ComponentClass = AdminViewComponent; break;
             case 'metadata': ComponentClass = EditMetadataViewComponent; break;
             case 'edit_metadata': ComponentClass = EditMetadataViewComponent; break;
@@ -1147,8 +1142,10 @@ window.DraftManager = DraftManager;
             return false;
         };
 
-        if (effective_view_name === 'upload' && params.auditId) {
-            if (await load_audit_and_navigate(params.auditId)) return;
+        if (effective_view_name === 'upload') {
+            if (params.auditId && (await load_audit_and_navigate(params.auditId))) return;
+            navigate_and_set_hash('start', {});
+            return;
         }
 
         if (effective_view_name === 'audit_overview' && params.auditId) {

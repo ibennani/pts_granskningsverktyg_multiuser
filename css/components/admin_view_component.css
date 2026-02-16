@@ -72,6 +72,22 @@
     font-size: 1rem;
 }
 
+.admin-column-heading-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.admin-column-heading-row h2 {
+    margin: 0 0 0.25rem 0;
+}
+
+.admin-start-new-audit-btn {
+    flex-shrink: 0;
+}
+
 .admin-upload-btn {
     align-self: flex-start;
 }
@@ -170,4 +186,14 @@
     padding: 0.25rem 0.5rem;
     font-size: 0.8rem;
     min-height: 24px;
+}
+
+.admin-rules-picker-list {
+    list-style: none;
+    padding: 0;
+    margin: 0.5rem 0 0;
+}
+
+.admin-rules-picker-list li {
+    margin-bottom: 0.25rem;
 }

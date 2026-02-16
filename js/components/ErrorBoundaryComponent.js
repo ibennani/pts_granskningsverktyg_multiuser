@@ -152,7 +152,7 @@ export const ErrorBoundaryComponent = {
             if (window.history.length > 1) {
                 window.history.back();
             } else {
-                window.location.hash = '#upload';
+                window.location.hash = '#start';
             }
         });
         actions_container.appendChild(back_button);

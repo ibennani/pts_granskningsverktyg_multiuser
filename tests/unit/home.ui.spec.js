@@ -12,20 +12,11 @@ const __dirname = path.dirname(__filename);
 const indexHtmlPath = path.resolve(__dirname, '..', '..', 'index.html');
 
 const translations = {
-  app_title: 'Verktyg för tillsyn av tillgänglighet',
-  upload_view_intro:
-    'Välkommen! Ladda upp en sparad granskning eller starta en ny granskning genom att ladda upp en regelfil',
-  upload_view_actions_title: 'Vad vill du göra?',
-  upload_ongoing_audit: 'Ladda upp pågående granskning',
-  upload_view_description_resume_audit:
-    'Återuppta en tidigare granskning genom att ladda upp den sparade filen.',
-  start_new_audit: 'Starta ny granskning',
-  upload_view_description_start_new:
-    'Börja en ny tillgänglighetsgranskning från början genom att ladda upp en regelfil.',
-  upload_view_title_edit: 'Redigera en regelfil',
-  upload_view_button_edit: 'Redigera regelfil',
-  upload_view_description_edit_rulefile:
-    'Gör ändringar i en befintlig regelfil eller skapa en ny version.',
+  start_view_h1: 'Granskningsverktyget',
+  start_view_intro: 'Välkommen till Granskningsverktyget.',
+  start_view_audits_heading: 'Aktuella ärenden',
+  start_view_no_audits: 'Inga granskningar finns ännu.',
+  admin_loading: 'Laddar...',
 };
 
 async function renderStartView() {
@@ -58,12 +49,12 @@ async function renderStartView() {
     show_global_message: jest.fn(),
   };
 
-  const { UploadViewComponent } = await import(
-    '../../js/components/UploadViewComponent.js'
+  const { StartViewComponent } = await import(
+    '../../js/components/StartViewComponent.js'
   );
   const appContainer = document.getElementById('app-container');
 
-  await UploadViewComponent.init({
+  await StartViewComponent.init({
     root: appContainer,
     deps: {
       router: jest.fn(),
@@ -73,65 +64,41 @@ async function renderStartView() {
       Translation: window.Translation,
       Helpers: window.Helpers,
       NotificationComponent: window.NotificationComponent,
-      ValidationLogic: {
-        validate_rule_file_json: jest.fn(),
-        validate_saved_audit_file: jest.fn(),
-      },
     },
   });
-  UploadViewComponent.render();
 
-  return { UploadViewComponent, appContainer };
+  // Mock API
+  const originalFetch = global.fetch;
+  global.fetch = jest.fn().mockResolvedValue({
+    ok: true,
+    json: () => Promise.resolve([]),
+  });
+
+  StartViewComponent.render();
+
+  return { StartViewComponent, appContainer };
 }
 
 afterEach(() => {
   jest.resetModules();
   document.body.innerHTML = '';
+  if (global.fetch?.mockRestore) global.fetch.mockRestore();
 });
 
-test('renders start view buttons and infotexts in correct order with aria descriptors', async () => {
-  const { UploadViewComponent, appContainer } = await renderStartView();
+test('renders start view with heading and audits section', async () => {
+  const { StartViewComponent, appContainer } = await renderStartView();
 
-  const loadButton = screen.getByRole('button', {
-    name: 'Ladda upp pågående granskning',
-  });
-  const startButton = screen.getByRole('button', {
-    name: 'Starta ny granskning',
-  });
-  const editButton = screen.getByRole('button', { name: 'Redigera regelfil' });
+  const h1 = screen.getByRole('heading', { level: 1 });
+  expect(h1).toHaveTextContent('Granskningsverktyget');
 
-  const buttonOrder = Array.from(
-    appContainer.querySelectorAll('.upload-action-block button')
-  ).map((button) => button.id);
+  const h2 = screen.getByRole('heading', { name: 'Aktuella ärenden' });
+  expect(h2).toBeInTheDocument();
 
-  expect(buttonOrder).toEqual([
-    'load-ongoing-audit-btn',
-    'start-new-audit-btn',
-    'edit-rulefile-btn',
-  ]);
-
-  const separator = appContainer.querySelector('hr');
-  expect(separator).toBeInTheDocument();
-
-  const loadDescriptionId = loadButton.getAttribute('aria-describedby');
-  const startDescriptionId = startButton.getAttribute('aria-describedby');
-  const editDescriptionId = editButton.getAttribute('aria-describedby');
-
-  expect(document.getElementById(loadDescriptionId)).toHaveTextContent(
-    'Återuppta en tidigare granskning genom att ladda upp den sparade filen.'
-  );
-  expect(document.getElementById(startDescriptionId)).toHaveTextContent(
-    'Börja en ny tillgänglighetsgranskning från början genom att ladda upp en regelfil.'
-  );
-  expect(document.getElementById(editDescriptionId)).toHaveTextContent(
-    'Gör ändringar i en befintlig regelfil eller skapa en ny version.'
-  );
-
-  UploadViewComponent.destroy();
+  StartViewComponent.destroy();
 });
 
 test('start view has no obvious accessibility violations', async () => {
-  const { UploadViewComponent } = await renderStartView();
+  const { StartViewComponent } = await renderStartView();
 
   const results = await axe(document.body, {
     rules: {
@@ -142,5 +109,5 @@ test('start view has no obvious accessibility violations', async () => {
   });
   expect(results).toHaveNoViolations();
 
-  UploadViewComponent.destroy();
+  StartViewComponent.destroy();
 });

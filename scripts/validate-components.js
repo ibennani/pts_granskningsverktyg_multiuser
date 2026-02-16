@@ -36,7 +36,6 @@ if (existsSync(mainJsPath)) {
 
 // Check for components that are imported but don't exist
 const expectedComponents = [
-    'UploadViewComponent.js',
     'EditMetadataViewComponent.js',
     'SampleManagementViewComponent.js',
     'SampleFormViewComponent.js',

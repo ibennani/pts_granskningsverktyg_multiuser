@@ -72,7 +72,7 @@ export const EditMetadataViewComponent = {
         const is_new_audit = current_state.auditStatus === 'not_started';
 
         if (!current_state.ruleFileContent) {
-            this.router('upload');
+            this.router('admin');
             return;
         }
 

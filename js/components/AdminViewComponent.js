@@ -41,6 +41,7 @@ export const AdminViewComponent = {
         this.handle_delete_audit = this.handle_delete_audit.bind(this);
         this.handle_edit_rule = this.handle_edit_rule.bind(this);
         this.handle_open_audit = this.handle_open_audit.bind(this);
+        this.handle_start_new_audit = this.handle_start_new_audit.bind(this);
 
         if (this.Helpers?.load_css_safely) {
             await this.Helpers.load_css_safely(this.CSS_PATH, 'AdminViewComponent', {
@@ -183,6 +184,86 @@ export const AdminViewComponent = {
 
     handle_go_to_start() {
         this.router('start');
+    },
+
+    handle_start_new_audit() {
+        this._show_rule_picker_for_new_audit();
+    },
+
+    async _show_rule_picker_for_new_audit() {
+        const t = this.get_t_func();
+        const ModalComponent = window.ModalComponent;
+        if (!ModalComponent?.show || !this.Helpers?.create_element) return;
+        await this.ensure_api_data();
+        if (this.rules.length === 0) {
+            this.NotificationComponent?.show_global_message(t('server_no_rules'), 'error');
+            return;
+        }
+        ModalComponent.show(
+            { h1_text: t('server_select_rule'), message_text: t('server_select_rule_intro') },
+            (container, modal_instance) => {
+                const ul = this.Helpers.create_element('ul', { class_name: 'admin-rules-picker-list' });
+                const sorted_rules = [...this.rules].sort((a, b) => {
+                    const na = (a.name || `Regelfil ${a.id}`).trim();
+                    const nb = (b.name || `Regelfil ${b.id}`).trim();
+                    return na.localeCompare(nb, undefined, { sensitivity: 'base' });
+                });
+                sorted_rules.forEach((r) => {
+                    const li = this.Helpers.create_element('li');
+                    const btn = this.Helpers.create_element('button', {
+                        class_name: ['button', 'button-default', 'button-link-style'],
+                        text_content: r.name || `Regelfil ${r.id}`
+                    });
+                    btn.addEventListener('click', () => {
+                        modal_instance.close();
+                        this._load_rule_and_start_new_audit(r.id);
+                    });
+                    li.appendChild(btn);
+                    ul.appendChild(li);
+                });
+                container.appendChild(ul);
+            }
+        );
+    },
+
+    async _load_rule_and_start_new_audit(rule_id) {
+        const t = this.get_t_func();
+        try {
+            const rule_row = await get_rule(rule_id);
+            let content = rule_row?.content;
+            if (typeof content === 'string') {
+                try {
+                    content = JSON.parse(content);
+                } catch {
+                    content = null;
+                }
+            }
+            if (!content || typeof content !== 'object') {
+                this.NotificationComponent?.show_global_message(t('rule_file_invalid_json'), 'error');
+                return;
+            }
+            const migrated_content = migrate_rulefile_to_new_structure(content, {
+                Translation: this.Translation
+            });
+            const validation_result = this.ValidationLogic?.validate_rule_file_json?.(migrated_content);
+            if (!validation_result?.isValid) {
+                this.NotificationComponent?.show_global_message(
+                    validation_result?.message || t('rule_file_invalid_json'),
+                    'error'
+                );
+                return;
+            }
+            this.dispatch({
+                type: this.StoreActionTypes.INITIALIZE_NEW_AUDIT,
+                payload: { ruleFileContent: migrated_content }
+            });
+            this.router('metadata');
+        } catch (error) {
+            this.NotificationComponent?.show_global_message(
+                error.message || t('admin_load_rule_error'),
+                'error'
+            );
+        }
     },
 
     _show_audit_duplicate_modal(metadata, on_close) {
@@ -470,10 +551,24 @@ export const AdminViewComponent = {
             class_name: 'admin-column',
             attributes: { 'aria-labelledby': 'admin-audits-heading' }
         });
+        const audits_heading_row = this.Helpers.create_element('div', {
+            class_name: 'admin-column-heading-row'
+        });
         const audits_heading = this.Helpers.create_element('h2', {
             id: 'admin-audits-heading',
             text_content: t('admin_audits_title')
         });
+        const start_new_audit_btn = this.Helpers.create_element('button', {
+            class_name: ['button', 'button-primary', 'admin-start-new-audit-btn'],
+            text_content: t('start_new_audit'),
+            attributes: {
+                type: 'button',
+                'aria-label': t('start_new_audit')
+            }
+        });
+        start_new_audit_btn.addEventListener('click', this.handle_start_new_audit);
+        audits_heading_row.appendChild(audits_heading);
+        audits_heading_row.appendChild(start_new_audit_btn);
         const audits_list = this.Helpers.create_element('ul', { class_name: 'admin-list' });
         if (this.audits.length === 0) {
             const empty = this.Helpers.create_element('li', {
@@ -542,7 +637,7 @@ export const AdminViewComponent = {
                 audits_list.appendChild(li);
             });
         }
-        right_col.appendChild(audits_heading);
+        right_col.appendChild(audits_heading_row);
         right_col.appendChild(audits_list);
 
         two_col.appendChild(left_col);

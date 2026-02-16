@@ -11,7 +11,7 @@ export const SideMenuComponent = {
         this.Helpers = deps.Helpers;
         this.AuditLogic = deps.AuditLogic;
 
-        this.current_view_name = 'upload';
+        this.current_view_name = 'start';
         this.current_view_params = {};
         this.is_menu_open = false;
 
@@ -52,7 +52,7 @@ export const SideMenuComponent = {
     },
 
     set_current_view(view_name, params = {}) {
-        this.current_view_name = view_name || 'upload';
+        this.current_view_name = view_name || 'start';
         this.current_view_params = params || {};
     },
 
@@ -256,10 +256,6 @@ export const SideMenuComponent = {
                     { label: t('menu_link_admin'), view_name: 'admin' }
                 ]
             };
-        }
-
-        if (this.current_view_name === 'upload') {
-            return { should_show: false, items: [], aria_label: t('side_menu_aria_label') };
         }
 
         if (audit_status === 'rulefile_editing') {
