@@ -24,6 +24,7 @@ export class GlobalActionBarComponent {
     this.last_audit_status = null;
     this.last_has_rulefile_loaded = null;
     this.last_language_code = null;
+    this.last_current_view = null;
 
     // Bind methods
     this.handle_save_rulefile = this.handle_save_rulefile.bind(this);
@@ -301,6 +302,25 @@ export class GlobalActionBarComponent {
     const current_state = this.getState();
     const audit_status = current_state?.auditStatus;
     const has_rulefile_loaded = Boolean(current_state?.ruleFileContent);
+    const current_view = typeof this.deps?.get_current_view_name === 'function'
+      ? this.deps.get_current_view_name()
+      : null;
+    const audit_or_rulefile_views = [
+      'rulefile_sections', 'rulefile_requirements', 'rulefile_edit_requirement',
+      'rulefile_add_requirement', 'rulefile_view_requirement', 'rulefile_metadata_edit',
+      'rulefile_sections_edit_general', 'rulefile_sections_edit_page_types',
+      'edit_rulefile_main', 'audit_overview', 'metadata', 'edit_metadata',
+      'sample_management', 'sample_form', 'requirement_list', 'requirement_audit',
+      'audit_actions', 'all_requirements', 'audit_images', 'audit_problems',
+      'confirm_sample_edit', 'final_confirm_updates', 'update_rulefile',
+      'confirm_updates'
+    ];
+    const is_in_audit_or_rulefile_edit =
+      current_view !== 'start' &&
+      current_view !== 'admin' &&
+      current_view !== 'upload' &&
+      current_view !== 'restore_session' &&
+      audit_or_rulefile_views.includes(current_view);
     const current_language_code =
       typeof this.Translation?.get_current_language_code === 'function'
         ? this.Translation.get_current_language_code()
@@ -337,12 +357,12 @@ export class GlobalActionBarComponent {
       class_name: ['action-bar-group', 'left'],
     });
 
-    if (audit_status !== 'rulefile_editing' && has_rulefile_loaded) {
+    if (is_in_audit_or_rulefile_edit && audit_status !== 'rulefile_editing' && has_rulefile_loaded) {
       if (this.save_audit_button_instance) {
         this.save_audit_button_instance.render();
         left_group.appendChild(this.save_audit_button_container_element);
       }
-    } else if (audit_status === 'rulefile_editing' && has_rulefile_loaded) {
+    } else if (is_in_audit_or_rulefile_edit && audit_status === 'rulefile_editing' && has_rulefile_loaded) {
       const save_rulefile_button = this.Helpers.create_element('button', {
         class_name: ['button', 'button-primary'],
         html_content:
@@ -408,6 +428,7 @@ export class GlobalActionBarComponent {
     this.last_audit_status = audit_status;
     this.last_has_rulefile_loaded = has_rulefile_loaded;
     this.last_language_code = current_language_code;
+    this.last_current_view = current_view;
     
     // Återställ fokus om det var i action bar innan re-rendering
     if (focusInfo && focusInfo.element && document.contains(focusInfo.element)) {

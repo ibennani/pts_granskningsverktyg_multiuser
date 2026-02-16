@@ -483,7 +483,8 @@ window.DraftManager = DraftManager;
             SaveAuditLogic: window.SaveAuditLogic,
             AuditLogic: AuditLogic,
             ValidationLogic: ValidationLogic,
-            AutosaveService: AutosaveService
+            AutosaveService: AutosaveService,
+            get_current_view_name: () => current_view_name_rendered
         };
 
         // Initialize side menu (persistent)
@@ -836,6 +837,8 @@ window.DraftManager = DraftManager;
         updatePageTitle(view_name_to_render, params_to_render);
         update_side_menu(view_name_to_render, params_to_render);
 
+        current_view_name_rendered = view_name_to_render;
+        try { window.__gv_current_view_name = current_view_name_rendered; } catch (e) {}
         top_action_bar_instance.render();
         bottom_action_bar_container.style.display = '';
         bottom_action_bar_instance.render();
@@ -851,9 +854,7 @@ window.DraftManager = DraftManager;
         
         const prev_view = current_view_name_rendered;
         const prev_params_json = current_view_params_rendered_json;
-        current_view_name_rendered = view_name_to_render;
         current_view_params_rendered_json = JSON.stringify(params_to_render);
-        try { window.__gv_current_view_name = current_view_name_rendered; } catch (e) {}
 
         const prev_params = prev_params_json ? (() => { try { return JSON.parse(prev_params_json); } catch (_) { return {}; } })() : {};
         const is_rulefile_sections_edit_toggle = view_name_to_render === 'rulefile_sections' &&
