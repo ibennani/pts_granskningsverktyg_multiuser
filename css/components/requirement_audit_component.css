@@ -532,6 +532,49 @@
     align-items: center;
 }
 
+/* Tooltip för navigeringsknappar – samma mönster som kravlistan */
+.audit-navigation-buttons .status-icon-tooltip-wrapper {
+    position: relative;
+    display: inline-flex;
+    cursor: default;
+}
+
+.audit-navigation-buttons .status-icon-tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 0.35rem;
+    padding: 0.35rem 0.5rem;
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.2;
+    white-space: nowrap;
+    color: #1a1a1a;
+    background-color: #fff;
+    border: 1px solid #333;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.15s ease, visibility 0.15s ease;
+    z-index: 100;
+    pointer-events: none;
+}
+
+.audit-navigation-buttons .status-icon-tooltip-wrapper:hover .status-icon-tooltip,
+.audit-navigation-buttons .status-icon-tooltip-wrapper:focus-within .status-icon-tooltip {
+    visibility: visible;
+    opacity: 1;
+}
+
+[data-theme="dark"] .audit-navigation-buttons .status-icon-tooltip {
+    color: #f5f5f5;
+    background-color: #2d2d2d;
+    border-color: #666;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
 .pc-observation-detail-wrapper label[for^="pc-observation-"] {
     margin-top: 0.75rem;
     display: block;

@@ -64,6 +64,7 @@ export const RequirementAuditComponent = {
         this.handle_comment_input_with_autosave = this.handle_comment_input_with_autosave.bind(this);
         this.debounced_autosave_result = this.debounced_autosave_result.bind(this);
         this.handle_sidebar_filters_change = this.handle_sidebar_filters_change.bind(this);
+        this.handle_audit_keydown = this.handle_audit_keydown.bind(this);
 
         this.global_message_element_ref = this.NotificationComponent.get_global_message_element_reference();
 
@@ -79,6 +80,8 @@ export const RequirementAuditComponent = {
                 }
             });
         }
+
+        document.addEventListener('keydown', this.handle_audit_keydown);
     },
 
     load_and_prepare_view_data() {
@@ -506,6 +509,42 @@ export const RequirementAuditComponent = {
                 break;
         }
     },
+
+    handle_audit_keydown(event) {
+        if (!event.shiftKey || !event.altKey) return;
+
+        const active = document.activeElement;
+        const tag = active?.tagName?.toLowerCase();
+        if (tag === 'input' || tag === 'textarea' || active?.getAttribute?.('contenteditable') === 'true') {
+            return;
+        }
+
+        const t = this.Translation.t;
+        const key_lower = (event.key || '').toLowerCase();
+        const shortcut_key = (k) => ((t(k) || k).toString().charAt(0) || '').toLowerCase();
+
+        const nav = this.get_navigation_state();
+        const state = this.getState();
+        const is_locked = state?.auditStatus === 'locked';
+
+        let action = null;
+        if (key_lower === shortcut_key('shortcut_key_back_to_list')) {
+            action = 'back_to_list';
+        } else if (!is_locked) {
+            if (key_lower === shortcut_key('shortcut_key_previous') && !nav.is_first) {
+                action = 'previous';
+            } else if (key_lower === shortcut_key('shortcut_key_next') && !nav.is_last) {
+                action = 'next';
+            } else if (key_lower === shortcut_key('shortcut_key_next_unhandled') && nav.next_unhandled_item) {
+                action = 'next_unhandled';
+            }
+        }
+
+        if (action) {
+            event.preventDefault();
+            this.handle_navigation(action);
+        }
+    },
     
     build_initial_dom() {
         this.root.innerHTML = '';
@@ -695,7 +734,8 @@ export const RequirementAuditComponent = {
         }
     },
     
-    destroy() { 
+    destroy() {
+        document.removeEventListener('keydown', this.handle_audit_keydown);
         clearTimeout(this.debounceTimerAudit);
         this.handle_comment_input(true);
         this.checklist_handler_instance?.flush_observations_before_destroy?.();

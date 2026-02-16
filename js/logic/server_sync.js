@@ -58,7 +58,16 @@ export function schedule_sync_to_server(state, dispatch_fn) {
                 }
             }
         } catch (err) {
-            if (window.NotificationComponent?.show_global_message && window.Translation?.t) {
+            if (err.status === 409 && err.existingAuditId && dispatch_fn) {
+                dispatch_fn({
+                    type: 'SET_REMOTE_AUDIT_ID',
+                    payload: {
+                        auditId: err.existingAuditId,
+                        ruleSetId: null,
+                        version: null
+                    }
+                });
+            } else if (window.NotificationComponent?.show_global_message && window.Translation?.t) {
                 window.NotificationComponent.show_global_message(
                     window.Translation.t('server_sync_error', { message: err.message }) || `Kunde inte spara till servern: ${err.message}`,
                     'error'

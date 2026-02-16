@@ -56,16 +56,29 @@ export class RequirementAuditNavigationComponent {
         const t = this.Translation.t;
         this.container_ref.innerHTML = '';
 
+        const shortcut_display = (key) => (t(key) || key).toString().charAt(0).toUpperCase();
+        const aria_keyshortcuts = (key) => `Shift+Alt+${shortcut_display(key)}`;
+
         const nav_group_left = this.Helpers.create_element('div', { class_name: 'nav-group-left' });
         const nav_group_right = this.Helpers.create_element('div', { class_name: 'nav-group-right' });
 
         // "Back to list" button
+        const back_key = 'shortcut_key_back_to_list';
         const back_btn = this.Helpers.create_element('button', {
             class_name: 'button button-default',
-            html_content: `<span>${t('back_to_requirement_list')}</span>` + this.Helpers.get_icon_svg('arrow_back', [], 18)
+            html_content: `<span>${t('back_to_requirement_list')}</span>` + this.Helpers.get_icon_svg('arrow_back', [], 18),
+            attributes: { 'aria-keyshortcuts': aria_keyshortcuts(back_key) }
         });
         back_btn.addEventListener('click', this.handle_back_click);
-        nav_group_left.appendChild(back_btn);
+        const back_wrapper = this.Helpers.create_element('span', { class_name: 'status-icon-tooltip-wrapper' });
+        const back_tooltip = this.Helpers.create_element('span', {
+            class_name: 'status-icon-tooltip',
+            text_content: `${t('back_to_requirement_list')} (Shift+Alt+${shortcut_display(back_key)})`,
+            attributes: { 'aria-hidden': 'true' }
+        });
+        back_wrapper.appendChild(back_btn);
+        back_wrapper.appendChild(back_tooltip);
+        nav_group_left.appendChild(back_wrapper);
 
         // "Confirm status" button for updated requirements
         if (requirement_result?.needsReview === true) {
@@ -86,45 +99,75 @@ export class RequirementAuditNavigationComponent {
         if (!is_audit_locked) {
             // Previous button
             if (!is_first_requirement) {
-                const prev_btn = this.Helpers.create_element('button', { 
+                const prev_shortcut_key = 'shortcut_key_previous';
+                const prev_btn = this.Helpers.create_element('button', {
                     class_name: 'button button-secondary',
-                    html_content: `<span>${t(previous_text_key)}</span>` + this.Helpers.get_icon_svg('arrow_back', [], 18)
+                    html_content: `<span>${t(previous_text_key)}</span>` + this.Helpers.get_icon_svg('arrow_back', [], 18),
+                    attributes: { 'aria-keyshortcuts': aria_keyshortcuts(prev_shortcut_key) }
                 });
                 if (previous_aria_label) {
                     prev_btn.setAttribute('aria-label', previous_aria_label);
                 }
                 prev_btn.addEventListener('click', this.handle_prev_click);
-                nav_group_right.appendChild(prev_btn);
+                const prev_wrapper = this.Helpers.create_element('span', { class_name: 'status-icon-tooltip-wrapper' });
+                const prev_tooltip = this.Helpers.create_element('span', {
+                    class_name: 'status-icon-tooltip',
+                    text_content: `${t(previous_text_key)} (Shift+Alt+${shortcut_display(prev_shortcut_key)})`,
+                    attributes: { 'aria-hidden': 'true' }
+                });
+                prev_wrapper.appendChild(prev_btn);
+                prev_wrapper.appendChild(prev_tooltip);
+                nav_group_right.appendChild(prev_wrapper);
             }
 
             // Next button
             if (!is_last_requirement) {
-                const next_btn = this.Helpers.create_element('button', { 
+                const next_shortcut_key = 'shortcut_key_next';
+                const next_btn = this.Helpers.create_element('button', {
                     class_name: 'button button-secondary',
-                    html_content: `<span>${t(next_text_key)}</span>` + this.Helpers.get_icon_svg('arrow_forward', [], 18)
+                    html_content: `<span>${t(next_text_key)}</span>` + this.Helpers.get_icon_svg('arrow_forward', [], 18),
+                    attributes: { 'aria-keyshortcuts': aria_keyshortcuts(next_shortcut_key) }
                 });
                 if (next_aria_label) {
                     next_btn.setAttribute('aria-label', next_aria_label);
                 }
                 next_btn.addEventListener('click', this.handle_next_click);
-                nav_group_right.appendChild(next_btn);
+                const next_wrapper = this.Helpers.create_element('span', { class_name: 'status-icon-tooltip-wrapper' });
+                const next_tooltip = this.Helpers.create_element('span', {
+                    class_name: 'status-icon-tooltip',
+                    text_content: `${t(next_text_key)} (Shift+Alt+${shortcut_display(next_shortcut_key)})`,
+                    attributes: { 'aria-hidden': 'true' }
+                });
+                next_wrapper.appendChild(next_btn);
+                next_wrapper.appendChild(next_tooltip);
+                nav_group_right.appendChild(next_wrapper);
             }
 
             // Next unhandled button
-            const next_unhandled_key = this.AuditLogic.find_first_incomplete_requirement_key_for_sample(rule_file_content, sample_object, current_requirement_id);
+            const next_unhandled_req_key = this.AuditLogic.find_first_incomplete_requirement_key_for_sample(rule_file_content, sample_object, current_requirement_id);
             const should_show_next_unhandled = (typeof next_unhandled_available === 'boolean')
                 ? next_unhandled_available
-                : (next_unhandled_key !== null);
+                : (next_unhandled_req_key !== null);
             if (should_show_next_unhandled) {
-                const next_unhandled_btn = this.Helpers.create_element('button', { 
+                const next_unhandled_shortcut_key = 'shortcut_key_next_unhandled';
+                const next_unhandled_btn = this.Helpers.create_element('button', {
                     class_name: 'button button-primary',
-                    html_content: `<span>${t(next_unhandled_text_key)}</span>` + this.Helpers.get_icon_svg('arrow_forward_alt', [], 18)
+                    html_content: `<span>${t(next_unhandled_text_key)}</span>` + this.Helpers.get_icon_svg('arrow_forward_alt', [], 18),
+                    attributes: { 'aria-keyshortcuts': aria_keyshortcuts(next_unhandled_shortcut_key) }
                 });
                 if (next_unhandled_aria_label) {
                     next_unhandled_btn.setAttribute('aria-label', next_unhandled_aria_label);
                 }
                 next_unhandled_btn.addEventListener('click', this.handle_next_unhandled_click);
-                nav_group_right.appendChild(next_unhandled_btn);
+                const next_unhandled_wrapper = this.Helpers.create_element('span', { class_name: 'status-icon-tooltip-wrapper' });
+                const next_unhandled_tooltip = this.Helpers.create_element('span', {
+                    class_name: 'status-icon-tooltip',
+                    text_content: `${t(next_unhandled_text_key)} (Shift+Alt+${shortcut_display(next_unhandled_shortcut_key)})`,
+                    attributes: { 'aria-hidden': 'true' }
+                });
+                next_unhandled_wrapper.appendChild(next_unhandled_btn);
+                next_unhandled_wrapper.appendChild(next_unhandled_tooltip);
+                nav_group_right.appendChild(next_unhandled_wrapper);
             }
         }
         
