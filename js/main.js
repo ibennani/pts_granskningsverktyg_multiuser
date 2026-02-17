@@ -27,6 +27,7 @@ import './utils/memory_manager.js';
 import { dependencyManager } from './utils/dependency_manager.js';
 import { consoleManager } from './utils/console_manager.js';
 import { memoryManager } from './utils/memory_manager.js';
+import { LayoutManager } from './utils/layout_manager.js';
 
 import { EditMetadataViewComponent } from './components/EditMetadataViewComponent.js'; 
 import { SampleManagementViewComponent } from './components/SampleManagementViewComponent.js';
@@ -1250,6 +1251,10 @@ window.DraftManager = DraftManager;
     async function start_normal_session(options = {}) {
         const { restore_pending } = options;
         ensure_app_layout();
+        // Initialize layout manager to handle dynamic vertical positioning
+        if (LayoutManager && typeof LayoutManager.init === 'function') {
+            LayoutManager.init();
+        }
         await apply_user_preferences_from_server();
         await init_global_components(); 
         if (window.ScoreManager?.init) { window.ScoreManager.init(subscribe, getState, dispatch, StoreActionTypes); }
