@@ -88,6 +88,7 @@ export const RequirementAuditComponent = {
             this.unsubscribe_from_store = this.subscribe((_new_state, listener_meta) => {
                 if (listener_meta?.skip_render) return;
                 if (this.root && typeof this.render === 'function') {
+                    if (window.__GV_DEBUG_MODAL_SCROLL) console.log('[GV-ModalDebug] RequirementAuditComponent: render');
                     this.render();
                 }
             });

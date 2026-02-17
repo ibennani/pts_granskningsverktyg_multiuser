@@ -46,7 +46,8 @@ async function run_sync(state, dispatch_fn) {
                         payload: {
                             auditId: full_state.auditId,
                             ruleSetId: full_state.ruleSetId ?? null,
-                            version: full_state.version ?? null
+                            version: full_state.version ?? null,
+                            skip_render: true
                         }
                     });
                 }, 0);
@@ -59,7 +60,8 @@ async function run_sync(state, dispatch_fn) {
                 payload: {
                     auditId: err.existingAuditId,
                     ruleSetId: null,
-                    version: null
+                    version: null,
+                    skip_render: true
                 }
             });
         } else if (window.NotificationComponent?.show_global_message && window.Translation?.t) {

@@ -76,11 +76,44 @@ export const ModalComponent = {
         this.root.appendChild(this.dialog_element_ref);
         this.root.setAttribute('aria-hidden', 'false');
 
-        this._scroll_y = window.scrollY;
+        this._scroll_state = {
+            windowY: window.scrollY,
+            appContainer: null,
+            mainViewRoot: null
+        };
+        const app_container = document.getElementById('app-container');
+        const main_view_root = document.getElementById('app-main-view-root');
+        if (app_container && app_container.scrollTop !== undefined) {
+            this._scroll_state.appContainer = app_container.scrollTop;
+        }
+        if (main_view_root && main_view_root.scrollTop !== undefined) {
+            this._scroll_state.mainViewRoot = main_view_root.scrollTop;
+        }
+
+        if (window.__GV_DEBUG_MODAL_SCROLL) {
+            const debug_count = { n: 0 };
+            this._debug_observer = new MutationObserver((mutations) => {
+                debug_count.n += mutations.length;
+                const has_structure = mutations.some(m => m.type === 'childList' && (m.addedNodes.length || m.removedNodes.length));
+                if (has_structure) {
+                    const ac = document.getElementById('app-container');
+                    const mvr = document.getElementById('app-main-view-root');
+                    console.log('[GV-ModalDebug] DOM ändrad', {
+                        mutations: debug_count.n,
+                        scroll: { w: window.scrollY, ac: ac?.scrollTop, mvr: mvr?.scrollTop }
+                    });
+                }
+            });
+            this._debug_mutation_count = debug_count;
+            const target = main_view_root || app_container;
+            if (target) this._debug_observer.observe(target, { childList: true, subtree: true });
+            console.log('[GV-ModalDebug] Modal ÖPPNAS – scroll:', this._scroll_state);
+        }
+
         document.documentElement.style.overflow = 'hidden';
         document.body.style.overflow = 'hidden';
         document.body.style.position = 'fixed';
-        document.body.style.top = `-${this._scroll_y}px`;
+        document.body.style.top = `-${this._scroll_state.windowY}px`;
         document.body.style.left = '0';
         document.body.style.right = '0';
 
@@ -105,6 +138,21 @@ export const ModalComponent = {
 
         const focus_element = this.pending_focus_element ?? this.focus_before_open;
 
+        const scroll_state = this._scroll_state || { windowY: 0, appContainer: null, mainViewRoot: null };
+        this._scroll_state = null;
+
+        const debug_observer = this._debug_observer;
+        const debug_mutation_count = this._debug_mutation_count?.n ?? 0;
+
+        if (window.__GV_DEBUG_MODAL_SCROLL) {
+            console.log('[GV-ModalDebug] _finish_close – sparad scroll:', scroll_state);
+            console.log('[GV-ModalDebug] _finish_close – scroll FÖRE cleanup:', {
+                w: window.scrollY,
+                ac: document.getElementById('app-container')?.scrollTop,
+                mvr: document.getElementById('app-main-view-root')?.scrollTop
+            });
+        }
+
         const do_cleanup = () => {
             document.documentElement.style.overflow = '';
             document.body.style.overflow = '';
@@ -112,8 +160,6 @@ export const ModalComponent = {
             document.body.style.top = '';
             document.body.style.left = '';
             document.body.style.right = '';
-            window.scrollTo(0, this._scroll_y ?? 0);
-            this._scroll_y = null;
             if (this.root && dialog.parentNode === this.root) {
                 this.root.removeChild(dialog);
             }
@@ -123,14 +169,79 @@ export const ModalComponent = {
             this.content_container_ref = null;
             this.focus_before_open = null;
             this.pending_focus_element = null;
+            this._debug_observer = null;
 
-            if (focus_element && document.contains(focus_element)) {
-                try {
-                    focus_element.focus({ preventScroll: true });
-                } catch (e) {
-                    focus_element.focus();
-                }
+            const app_container = document.getElementById('app-container');
+            const main_view_root = document.getElementById('app-main-view-root');
+            if (app_container && scroll_state.appContainer !== null) {
+                app_container.scrollTop = scroll_state.appContainer;
             }
+            if (main_view_root && scroll_state.mainViewRoot !== null) {
+                main_view_root.scrollTop = scroll_state.mainViewRoot;
+            }
+
+            window.scrollTo(0, scroll_state.windowY);
+            document.documentElement.scrollTop = scroll_state.windowY;
+            document.body.scrollTop = scroll_state.windowY;
+
+            if (window.__GV_DEBUG_MODAL_SCROLL) {
+                console.log('[GV-ModalDebug] Efter sync restore:', {
+                    w: window.scrollY,
+                    ac: app_container?.scrollTop,
+                    mvr: main_view_root?.scrollTop
+                });
+            }
+
+            requestAnimationFrame(() => {
+                window.scrollTo(0, scroll_state.windowY);
+                document.documentElement.scrollTop = scroll_state.windowY;
+                document.body.scrollTop = scroll_state.windowY;
+                if (app_container && scroll_state.appContainer !== null) {
+                    app_container.scrollTop = scroll_state.appContainer;
+                }
+                if (main_view_root && scroll_state.mainViewRoot !== null) {
+                    main_view_root.scrollTop = scroll_state.mainViewRoot;
+                }
+            });
+
+            setTimeout(() => {
+                window.scrollTo(0, scroll_state.windowY);
+                document.documentElement.scrollTop = scroll_state.windowY;
+                document.body.scrollTop = scroll_state.windowY;
+                if (app_container && scroll_state.appContainer !== null) {
+                    app_container.scrollTop = scroll_state.appContainer;
+                }
+                if (main_view_root && scroll_state.mainViewRoot !== null) {
+                    main_view_root.scrollTop = scroll_state.mainViewRoot;
+                }
+                if (window.__GV_DEBUG_MODAL_SCROLL) {
+                    console.log('[GV-ModalDebug] Efter setTimeout(0) restore:', {
+                        w: window.scrollY,
+                        ac: app_container?.scrollTop,
+                        mvr: main_view_root?.scrollTop
+                    });
+                }
+                requestAnimationFrame(() => {
+                    if (focus_element && document.contains(focus_element)) {
+                        try {
+                            focus_element.focus({ preventScroll: true });
+                        } catch (e) {
+                            focus_element.focus();
+                        }
+                    }
+                    if (window.__GV_DEBUG_MODAL_SCROLL) {
+                        console.log('[GV-ModalDebug] Efter fokus:', {
+                            w: window.scrollY,
+                            ac: document.getElementById('app-container')?.scrollTop,
+                            mvr: document.getElementById('app-main-view-root')?.scrollTop
+                        });
+                        if (debug_observer) {
+                            debug_observer.disconnect();
+                            console.log('[GV-ModalDebug] MutationObserver stoppad. Totalt mutationer:', debug_mutation_count);
+                        }
+                    }
+                });
+            });
         };
 
         do_cleanup();

@@ -1323,9 +1323,15 @@ window.DraftManager = DraftManager;
             
             consoleManager.info('[Main.js] Global event listeners cleaned up');
         };
-        subscribe((new_state, listener_meta) => { 
+        subscribe((new_state, listener_meta) => {
             if (listener_meta?.skip_render) {
+                if (window.__GV_DEBUG_MODAL_SCROLL) {
+                    console.log('[GV-ModalDebug] subscribe: skip_render – ingen render');
+                }
                 return;
+            }
+            if (window.__GV_DEBUG_MODAL_SCROLL) {
+                console.log('[GV-ModalDebug] subscribe: RENDERAR top_action_bar, bottom_action_bar, current_view');
             }
             try {
                 top_action_bar_instance.render();
@@ -1376,9 +1382,30 @@ window.DraftManager = DraftManager;
                         }
                     }
                     try {
-                        current_view_component_instance.render();
+                        const scroll_before = {
+                            windowY: window.scrollY,
+                            appContainer: document.getElementById('app-container')?.scrollTop ?? 0,
+                            mainViewRoot: document.getElementById('app-main-view-root')?.scrollTop ?? 0
+                        };
+                        const render_promise = current_view_component_instance.render();
                         if (DraftManager?.restoreIntoDom) {
                             DraftManager.restoreIntoDom(main_view_root || app_container);
+                        }
+                        const restore_scroll = () => {
+                            requestAnimationFrame(() => {
+                                window.scrollTo(0, scroll_before.windowY);
+                                document.documentElement.scrollTop = scroll_before.windowY;
+                                document.body.scrollTop = scroll_before.windowY;
+                                const ac = document.getElementById('app-container');
+                                const mvr = document.getElementById('app-main-view-root');
+                                if (ac) ac.scrollTop = scroll_before.appContainer;
+                                if (mvr) mvr.scrollTop = scroll_before.mainViewRoot;
+                            });
+                        };
+                        if (render_promise && typeof render_promise.then === 'function') {
+                            render_promise.then(restore_scroll).catch(() => restore_scroll());
+                        } else {
+                            restore_scroll();
                         }
                     } catch (error) {
                         consoleManager.error("[Main.js] Error in subscription current view render:", error);

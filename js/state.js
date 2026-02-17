@@ -712,7 +712,10 @@ function execute_single_dispatch(action, dispatch_fn) {
 
                 // Notifiera listeners med felhantering
                 try {
-                    notify_listeners({ skip_render: action?.payload?.skip_render === true });
+                    notify_listeners({
+                        skip_render: action?.payload?.skip_render === true,
+                        _debug_action_type: window.__GV_DEBUG_MODAL_SCROLL ? action?.type : undefined
+                    });
                 } catch (listenerError) {
                     console.warn('[State.js] Error notifying state listeners:', listenerError);
                     // Listener-fel ska inte stoppa state-uppdateringen
@@ -776,6 +779,13 @@ function subscribe(listener_function) {
 
 function notify_listeners(listener_meta = null) {
     const currentSnapshot = getState();
+    if (window.__GV_DEBUG_MODAL_SCROLL) {
+        console.log('[GV-ModalDebug] notify_listeners', {
+            skip_render: listener_meta?.skip_render,
+            action_type: listener_meta?._debug_action_type,
+            listenerCount: listeners.length
+        });
+    }
     setTimeout(() => {
         listeners.forEach(listener => {
             try {

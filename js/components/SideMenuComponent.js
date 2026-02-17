@@ -18,6 +18,8 @@ export const SideMenuComponent = {
         this.menu_button_ref = null;
         this.nav_ref = null;
         this.first_link_ref = null;
+        this.last_menu_counts = null;
+        this.last_menu_structure_key = null;
 
         this.small_screen_media_query = window.matchMedia
             ? window.matchMedia('(max-width: 768px)')
@@ -34,10 +36,22 @@ export const SideMenuComponent = {
 
         this.unsubscribe = null;
         if (typeof deps.subscribe === 'function') {
-            this.unsubscribe = deps.subscribe(() => {
-                if (this.root && typeof this.render === 'function') {
+            this.unsubscribe = deps.subscribe((_new_state, listener_meta) => {
+                if (listener_meta?.skip_render) return;
+                if (!this.root || typeof this.render !== 'function') return;
+
+                const menu_model = this.get_menu_model();
+                if (!menu_model.should_show) {
+                    if (window.__GV_DEBUG_MODAL_SCROLL) console.log('[GV-ModalDebug] SideMenu: full render (hidden)');
                     this.render();
+                    return;
                 }
+                if (this.update_counts_only(menu_model)) {
+                    if (window.__GV_DEBUG_MODAL_SCROLL) console.log('[GV-ModalDebug] SideMenu: update_counts_only');
+                    return;
+                }
+                if (window.__GV_DEBUG_MODAL_SCROLL) console.log('[GV-ModalDebug] SideMenu: full render');
+                this.render();
             });
         }
 
@@ -158,7 +172,7 @@ export const SideMenuComponent = {
         }
     },
 
-    create_menu_link({ label, view_name, params = {} }) {
+    create_menu_link({ label, view_name, params = {}, count_id, count_value }) {
         const view_from_hash = this.get_view_name_from_location_hash();
         const active_view_name = view_from_hash || this.current_view_name;
         const current_params = this.get_params_from_location_hash();
@@ -173,9 +187,27 @@ export const SideMenuComponent = {
                 href,
                 ...(is_active ? { 'aria-current': 'page' } : {})
             },
-            class_name: ['side-menu__link', ...(is_active ? ['active'] : [])],
-            text_content: label
+            class_name: ['side-menu__link', ...(is_active ? ['active'] : [])]
         });
+
+        if (count_id != null && count_value != null) {
+            const count_str = String(count_value);
+            const parts = label.split(count_str);
+            if (parts.length === 2) {
+                link.appendChild(document.createTextNode(parts[0]));
+                const count_span = this.Helpers.create_element('span', {
+                    class_name: 'side-menu__count',
+                    attributes: { 'data-count-id': count_id },
+                    text_content: count_str
+                });
+                link.appendChild(count_span);
+                link.appendChild(document.createTextNode(parts[1]));
+            } else {
+                link.textContent = label;
+            }
+        } else {
+            link.textContent = label;
+        }
 
         link.addEventListener('click', (event) => {
             if (window.__GV_DEBUG_NAV) {
@@ -283,7 +315,7 @@ export const SideMenuComponent = {
                 aria_label: t('side_menu_aria_label'),
                 items: [
                     { label: t('audit_metadata_title'), view_name: 'metadata' },
-                    { label: t('left_menu_sample_list_with_count', { count: sample_count }), view_name: 'sample_management' }
+                    { label: t('left_menu_sample_list_with_count', { count: sample_count }), view_name: 'sample_management', count_id: 'sample_count', count_value: sample_count }
                 ]
             };
         }
@@ -301,10 +333,10 @@ export const SideMenuComponent = {
                 aria_label: t('side_menu_aria_label'),
                 items: [
                     { label: t('left_menu_audit_overview'), view_name: 'audit_overview' },
-                    { label: t('left_menu_all_requirements_with_count', { count: requirement_count }), view_name: 'all_requirements' },
-                    { label: t('left_menu_sample_list_with_count', { count: sample_count }), view_name: 'sample_management' },
-                    { label: t('left_menu_images_with_count', { count: media_places_count }), view_name: 'audit_images' },
-                    { label: t('left_menu_problems_with_count', { count: problems_count }), view_name: 'audit_problems' },
+                    { label: t('left_menu_all_requirements_with_count', { count: requirement_count }), view_name: 'all_requirements', count_id: 'requirement_count', count_value: requirement_count },
+                    { label: t('left_menu_sample_list_with_count', { count: sample_count }), view_name: 'sample_management', count_id: 'sample_count', count_value: sample_count },
+                    { label: t('left_menu_images_with_count', { count: media_places_count }), view_name: 'audit_images', count_id: 'media_places_count', count_value: media_places_count },
+                    { label: t('left_menu_problems_with_count', { count: problems_count }), view_name: 'audit_problems', count_id: 'problems_count', count_value: problems_count },
                     { label: t('left_menu_actions'), view_name: 'audit_actions' },
                     { label: t('admin_back_to_start'), view_name: 'start', back_to_start: true }
                 ]
@@ -317,9 +349,54 @@ export const SideMenuComponent = {
             aria_label: t('side_menu_aria_label'),
             items: [
                 { label: t('audit_metadata_title'), view_name: 'metadata' },
-                { label: t('left_menu_sample_list_with_count', { count: sample_count }), view_name: 'sample_management' }
+                { label: t('left_menu_sample_list_with_count', { count: sample_count }), view_name: 'sample_management', count_id: 'sample_count', count_value: sample_count }
             ]
         };
+    },
+
+    _get_structure_key(menu_model) {
+        if (!menu_model?.items) return '';
+        return `${menu_model.should_show}-${menu_model.items.map(i => i.view_name).join(',')}`;
+    },
+
+    _get_counts_from_model(menu_model) {
+        const counts = {};
+        (menu_model?.items || []).forEach(item => {
+            if (item.count_id != null) {
+                counts[item.count_id] = item.count_value;
+            }
+        });
+        return counts;
+    },
+
+    _counts_equal(a, b) {
+        const keys = new Set([...(Object.keys(a || {})), ...(Object.keys(b || {}))]);
+        for (const k of keys) {
+            if ((a?.[k] ?? null) !== (b?.[k] ?? null)) return false;
+        }
+        return true;
+    },
+
+    update_counts_only(menu_model) {
+        if (!this.root || !this.nav_ref) return false;
+
+        const structure_key = this._get_structure_key(menu_model);
+        if (structure_key !== this.last_menu_structure_key) return false;
+
+        const new_counts = this._get_counts_from_model(menu_model);
+        if (this._counts_equal(new_counts, this.last_menu_counts)) return true;
+
+        let changed = false;
+        for (const [count_id, new_value] of Object.entries(new_counts)) {
+            const span = this.nav_ref.querySelector(`[data-count-id="${CSS.escape(count_id)}"]`);
+            if (span && span.textContent !== String(new_value)) {
+                span.textContent = String(new_value);
+                changed = true;
+            }
+        }
+
+        this.last_menu_counts = new_counts;
+        return true;
     },
 
     render() {
@@ -331,6 +408,7 @@ export const SideMenuComponent = {
             this.root.innerHTML = '';
             this.root.classList.add('hidden');
             this.is_menu_open = false;
+            this.nav_ref = null;
             this.remove_escape_listener();
             return;
         }
@@ -385,6 +463,9 @@ export const SideMenuComponent = {
 
         wrapper.appendChild(nav);
         this.root.appendChild(wrapper);
+
+        this.last_menu_structure_key = this._get_structure_key(menu_model);
+        this.last_menu_counts = this._get_counts_from_model(menu_model);
     },
 
     destroy() {
