@@ -178,7 +178,7 @@ export function calculate_check_status(check_object, pass_criteria_statuses_map,
         const all_audited_and_failed = !pc_statuses.some(s => s === 'not_audited') && !has_passed;
         
         if (has_passed) return "passed";
-        if (all_not_audited) return "not_audited";
+        if (all_not_audited) return "partially_audited";
         if (all_audited_and_failed) return "failed";
         if (has_not_audited && !has_passed) return "partially_audited";
         return "failed"; // Fallback
@@ -208,7 +208,7 @@ export function calculate_requirement_status(requirement_object, requirement_res
     }
     
     try {
-        let has_failed_check = false, has_partially_audited_check = false, has_not_audited_check = false;
+        let has_failed_check = false, has_partially_audited_check = false, has_not_audited_check = false, has_any_button_pressed = false;
         
         for (const check_definition of requirement_object.checks) {
             // Validera check_definition
@@ -220,6 +220,11 @@ export function calculate_requirement_status(requirement_object, requirement_res
             
             const checkResultForDef = requirement_result_object.checkResults[check_definition.id];
             let status = 'not_audited';
+            
+            const overall = checkResultForDef?.overallStatus;
+            if (overall === 'passed' || overall === 'not_applicable') {
+                has_any_button_pressed = true;
+            }
             
             if (checkResultForDef) {
                 try {
@@ -239,9 +244,9 @@ export function calculate_requirement_status(requirement_object, requirement_res
         }
 
         if (has_failed_check) return "failed";
-        if (has_partially_audited_check) return "partially_audited";
-        if (has_not_audited_check) return "not_audited";
-        return "passed";
+        if (!has_not_audited_check && !has_partially_audited_check) return "passed";
+        if (has_any_button_pressed) return "partially_audited";
+        return "not_audited";
     } catch (error) {
         console.error('[AuditLogic] calculate_requirement_status: Error processing requirement:', error);
         return "not_audited";

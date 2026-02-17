@@ -98,12 +98,12 @@ describe('AuditLogic', () => {
                 expect(calculate_check_status(checkDef, pcStatuses, 'passed')).toBe('partially_audited');
             });
 
-            test('returns "not_audited" if all are not_audited', () => {
+            test('returns "partially_audited" if all criteria not_audited but user selected Stämmer (at least one button selected)', () => {
                 const pcStatuses = {
                     'pc1': { status: 'not_audited' },
                     'pc2': { status: 'not_audited' }
                 };
-                expect(calculate_check_status(checkDef, pcStatuses, 'passed')).toBe('not_audited');
+                expect(calculate_check_status(checkDef, pcStatuses, 'passed')).toBe('partially_audited');
             });
         });
     });
@@ -149,6 +149,28 @@ describe('AuditLogic', () => {
                 }
             };
             expect(calculate_requirement_status(reqDef, reqResult)).toBe('passed');
+        });
+
+        test('returns "partially_audited" when user selected Stämmer but no pass criteria assessed', () => {
+            const reqDef = {
+                checks: [{
+                    id: 'check1',
+                    logic: 'OR',
+                    passCriteria: [{ id: 'pc1' }, { id: 'pc2' }]
+                }]
+            };
+            const reqResult = {
+                checkResults: {
+                    'check1': {
+                        overallStatus: 'passed',
+                        passCriteria: {
+                            'pc1': { status: 'not_audited' },
+                            'pc2': { status: 'not_audited' }
+                        }
+                    }
+                }
+            };
+            expect(calculate_requirement_status(reqDef, reqResult)).toBe('partially_audited');
         });
     });
 
