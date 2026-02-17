@@ -532,6 +532,11 @@
     align-items: center;
 }
 
+.confirm-btn-fade-out {
+    transition: opacity 0.25s;
+    opacity: 0;
+}
+
 /* Tooltip för navigeringsknappar – samma mönster som kravlistan */
 .audit-navigation-buttons .status-icon-tooltip-wrapper {
     position: relative;

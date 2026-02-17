@@ -213,6 +213,7 @@ export const RequirementAuditComponent = {
             }
         }
         
+        delete modified_result.needsReview;
         this.dispatch_result_update(modified_result);
     },
     
@@ -504,7 +505,11 @@ export const RequirementAuditComponent = {
                      this.NotificationComponent.show_global_message(this.Translation.t('all_requirements_handled_for_sample'), 'info');
                  }
                 break;
-            case 'confirm_reviewed_status':
+            case 'confirm_reviewed_status': {
+                const back_btn = this.plate_element_ref?.querySelector('button[data-action="back-to-list"]');
+                if (back_btn) back_btn.focus();
+                const confirm_btn = this.plate_element_ref?.querySelector('button[data-action="confirm-reviewed-status"]');
+                if (confirm_btn) confirm_btn.classList.add('confirm-btn-fade-out');
                 let result;
                 try {
                     result = JSON.parse(JSON.stringify(this.current_result));
@@ -513,16 +518,11 @@ export const RequirementAuditComponent = {
                     return;
                 }
                 delete result.needsReview;
-                this.dispatch_result_update(result);
-                try {
-                    window.sessionStorage?.setItem('gv_return_focus_all_requirements_v1', JSON.stringify({
-                        sampleId: this.params.sampleId,
-                        requirementId: this.params.requirementId,
-                        createdAt: Date.now()
-                    }));
-                } catch (e) {}
-                this.router('all_requirements');
+                setTimeout(() => {
+                    this.dispatch_result_update(result);
+                }, 250);
                 break;
+            }
         }
     },
 

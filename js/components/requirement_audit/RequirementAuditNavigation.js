@@ -67,7 +67,7 @@ export class RequirementAuditNavigationComponent {
         const back_btn = this.Helpers.create_element('button', {
             class_name: 'button button-default',
             html_content: `<span>${t('back_to_requirement_list')}</span>` + this.Helpers.get_icon_svg('arrow_back', [], 18),
-            attributes: { 'aria-keyshortcuts': aria_keyshortcuts(back_key) }
+            attributes: { 'aria-keyshortcuts': aria_keyshortcuts(back_key), 'data-action': 'back-to-list' }
         });
         back_btn.addEventListener('click', this.handle_back_click);
         const back_wrapper = this.Helpers.create_element('span', { class_name: 'status-icon-tooltip-wrapper' });
@@ -90,7 +90,8 @@ export class RequirementAuditNavigationComponent {
             
             const confirm_btn = this.Helpers.create_element('button', {
                 class_name: ['button', btn_class],
-                html_content: `<span>${t(btn_text_key)}</span>` + this.Helpers.get_icon_svg('check', [], 18)
+                html_content: `<span>${t(btn_text_key)}</span>` + this.Helpers.get_icon_svg('check', [], 18),
+                attributes: { 'data-action': 'confirm-reviewed-status' }
             });
             confirm_btn.addEventListener('click', this.handle_confirm_click);
             nav_group_left.appendChild(confirm_btn);
