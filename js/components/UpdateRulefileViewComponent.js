@@ -1,5 +1,6 @@
 // js/components/UpdateRulefileViewComponent.js
 import { migrate_rulefile_to_new_structure } from '../logic/rulefile_migration_logic.js';
+import { get_rule } from '../api/client.js';
 
 export const UpdateRulefileViewComponent = {
     CSS_PATH: 'css/components/update_rulefile_view.css',
@@ -21,6 +22,13 @@ export const UpdateRulefileViewComponent = {
         this.NotificationComponent = deps.NotificationComponent;
         this.SaveAuditLogic = deps.SaveAuditLogic;
         this.ValidationLogic = deps.ValidationLogic || window.ValidationLogic;
+
+        const rule_id = deps.params?.ruleId;
+        if (!rule_id) {
+            this.router('audit_overview');
+            return;
+        }
+        this.rule_id_from_params = rule_id;
 
         this.current_step = this.VIEW_STEPS.WARNING;
         this.staged_new_rule_file_content = null;
@@ -58,55 +66,47 @@ export const UpdateRulefileViewComponent = {
         }
     },
 
-    handle_new_rule_file_upload(event) {
+    async handle_use_rule_from_server_click() {
         const t = this.get_t_internally();
-        const file = event.target.files[0];
-        if (!file) return;
-        
         if (!window.RulefileUpdaterLogic) {
             console.error("CRITICAL: RulefileUpdaterLogic is not available on the window object.");
             this.NotificationComponent?.show_global_message(t('error_internal_reload'), 'error');
             return;
         }
-
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const json_content = JSON.parse(e.target.result);
-                
-                // Konvertera från gammal struktur till ny struktur om nödvändigt
-                const new_rule_content = migrate_rulefile_to_new_structure(json_content, {
-                    Translation: this.Translation
-                });
-                
-                // Assuming ValidationLogic is available globally as in original code
-                const validation = this.ValidationLogic?.validate_rule_file_json(new_rule_content);
-
-                if (validation && !validation.isValid) {
-                    this.NotificationComponent?.show_global_message(validation.message, 'error');
-                    return;
+        try {
+            const rule_row = await get_rule(this.rule_id_from_params);
+            let content = rule_row?.content;
+            if (typeof content === 'string') {
+                try {
+                    content = JSON.parse(content);
+                } catch {
+                    content = null;
                 }
-
-                const report = window.RulefileUpdaterLogic.analyze_rule_file_changes(this.getState(), new_rule_content);
-                this.staged_analysis_report = report;
-                this.staged_new_rule_file_content = new_rule_content;
-
-                this.current_step = this.VIEW_STEPS.CONFIRM;
-                this.render();
-
-            } catch (error) {
-                const t = this.get_t_internally();
-                const errorMsg = t('error_rulefile_update_failed');
-                console.error(`${errorMsg}:`, error);
-                this.NotificationComponent?.show_global_message(
-                    t('rule_file_invalid_json_with_detail', { errorMessage: error.message }),
-                    'error'
-                );
-            } finally {
-                if (event.target) event.target.value = '';
             }
-        };
-        reader.readAsText(file);
+            if (!content || typeof content !== 'object') {
+                this.NotificationComponent?.show_global_message(t('rule_file_invalid_json'), 'error');
+                return;
+            }
+            const new_rule_content = migrate_rulefile_to_new_structure(content, {
+                Translation: this.Translation
+            });
+            const validation = this.ValidationLogic?.validate_rule_file_json(new_rule_content);
+            if (validation && !validation.isValid) {
+                this.NotificationComponent?.show_global_message(validation.message, 'error');
+                return;
+            }
+            const report = window.RulefileUpdaterLogic.analyze_rule_file_changes(this.getState(), new_rule_content);
+            this.staged_analysis_report = report;
+            this.staged_new_rule_file_content = new_rule_content;
+            this.current_step = this.VIEW_STEPS.CONFIRM;
+            this.render();
+        } catch (error) {
+            console.error('[UpdateRulefileViewComponent] handle_use_rule_from_server_click:', error);
+            this.NotificationComponent?.show_global_message(
+                t('error_rulefile_update_failed') + (error?.message ? `: ${error.message}` : ''),
+                'error'
+            );
+        }
     },
     
     handle_confirm_update_click() {
@@ -193,28 +193,24 @@ export const UpdateRulefileViewComponent = {
     
     render_upload_step() {
         const t = this.get_t_internally();
-        
+
         this.plate_element_ref.appendChild(this.Helpers.create_element('div', {
             class_name: 'backup-confirmation',
             html_content: (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('check_circle') : '✔') + ` <span>${t('update_rulefile_backup_saved')}</span>`
         }));
-        
+
         this.plate_element_ref.appendChild(this.Helpers.create_element('h2', { style: { 'font-size': '1.2rem', 'margin-top': '1.5rem' }, text_content: t('update_rulefile_step2_title') }));
-        this.plate_element_ref.appendChild(this.Helpers.create_element('p', { text_content: t('update_rulefile_step2_text') }));
+        this.plate_element_ref.appendChild(this.Helpers.create_element('p', { text_content: t('update_rulefile_use_from_server') }));
 
-        const file_input = this.Helpers.create_element('input', { id: 'new-rule-file-input', attributes: { type: 'file', accept: '.json', style: 'display: none;' } });
-        file_input.addEventListener('change', (e) => this.handle_new_rule_file_upload(e));
-
-        const upload_button = this.Helpers.create_element('button', {
+        const use_server_button = this.Helpers.create_element('button', {
             class_name: ['button', 'button-primary'],
-            html_content: `<span>${t('upload_new_rulefile_btn')}</span>` + (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('upload_file') : '')
+            html_content: `<span>${t('update_rulefile_use_from_server')}</span>` + (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('upload_file') : '')
         });
-        upload_button.addEventListener('click', () => file_input.click());
-        
+        use_server_button.addEventListener('click', () => this.handle_use_rule_from_server_click());
+
         const actions_div = this.Helpers.create_element('div', { class_name: 'form-actions', style: { 'margin-top': '2rem' } });
-        actions_div.appendChild(upload_button);
-        
-        this.plate_element_ref.appendChild(file_input);
+        actions_div.appendChild(use_server_button);
+
         this.plate_element_ref.appendChild(actions_div);
     },
 

@@ -1,5 +1,6 @@
 // js/components/AdminViewComponent.js
 import { migrate_rulefile_to_new_structure } from '../logic/rulefile_migration_logic.js';
+import { version_greater_than } from '../utils/version_utils.js';
 import {
     check_api_available,
     get_rules,
@@ -192,21 +193,6 @@ export const AdminViewComponent = {
         this._show_rule_picker_for_new_audit();
     },
 
-    _parse_version_for_compare(version_str) {
-        if (!version_str || typeof version_str !== 'string') return [0, 0, 0];
-        const m = version_str.trim().match(/^(\d{4})\.(\d{1,2})\.r(\d+)$/i);
-        if (!m) return [0, 0, 0];
-        return [parseInt(m[1], 10), parseInt(m[2], 10), parseInt(m[3], 10)];
-    },
-
-    _version_greater_than(a_str, b_str) {
-        const a = this._parse_version_for_compare(a_str);
-        const b = this._parse_version_for_compare(b_str);
-        if (a[0] !== b[0]) return a[0] > b[0];
-        if (a[1] !== b[1]) return a[1] > b[1];
-        return a[2] > b[2];
-    },
-
     async _show_rule_picker_for_new_audit() {
         const t = this.get_t_func();
         const ModalComponent = window.ModalComponent;
@@ -220,7 +206,7 @@ export const AdminViewComponent = {
         for (const r of this.rules) {
             const type_key = (r.monitoring_type_text || r.name || `Regelfil ${r.id}`).trim();
             const existing = type_to_rule.get(type_key);
-            if (!existing || this._version_greater_than(r.metadata_version || '', existing.metadata_version || '')) {
+            if (!existing || version_greater_than(r.metadata_version || '', existing.metadata_version || '')) {
                 type_to_rule.set(type_key, r);
             }
         }

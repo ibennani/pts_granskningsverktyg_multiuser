@@ -37,7 +37,8 @@ export const ActionTypes = {
     SET_RULEFILE_EDIT_BASELINE: 'SET_RULEFILE_EDIT_BASELINE',
     SET_REMOTE_AUDIT_ID: 'SET_REMOTE_AUDIT_ID',
     REPLACE_STATE_FROM_REMOTE: 'REPLACE_STATE_FROM_REMOTE',
-    REPLACE_RULEFILE_FROM_REMOTE: 'REPLACE_RULEFILE_FROM_REMOTE'
+    REPLACE_RULEFILE_FROM_REMOTE: 'REPLACE_RULEFILE_FROM_REMOTE',
+    SET_NEWER_RULE_AVAILABLE: 'SET_NEWER_RULE_AVAILABLE'
 };
 
 const initial_state = {
@@ -99,8 +100,9 @@ const initial_state = {
             }
         }
     },
-    auditCalculations: {}, 
-    pendingSampleChanges: null
+    auditCalculations: {},
+    pendingSampleChanges: null,
+    newerRuleAvailable: null
 };
 
 let internal_state = { ...initial_state };
@@ -509,7 +511,14 @@ function root_reducer(current_state, action) {
                 ...action.payload,
                 saveFileVersion: APP_STATE_VERSION,
                 ruleFileOriginalContentString: null,
-                ruleFileOriginalFilename: ''
+                ruleFileOriginalFilename: '',
+                newerRuleAvailable: null
+            };
+
+        case ActionTypes.SET_NEWER_RULE_AVAILABLE:
+            return {
+                ...current_state,
+                newerRuleAvailable: action.payload ?? null
             };
 
         case ActionTypes.SET_RULE_FILE_CONTENT:
@@ -604,7 +613,8 @@ function root_reducer(current_state, action) {
             if (!remote || typeof remote !== 'object') return current_state;
             return {
                 ...remote,
-                uiSettings: current_state.uiSettings || remote.uiSettings || {}
+                uiSettings: current_state.uiSettings || remote.uiSettings || {},
+                newerRuleAvailable: null
             };
 
         case ActionTypes.REPLACE_RULEFILE_FROM_REMOTE:

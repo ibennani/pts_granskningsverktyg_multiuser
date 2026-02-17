@@ -296,52 +296,15 @@ router.post('/import', async (req, res) => {
             }
         }
 
-        const contentJson = JSON.stringify(data.ruleFileContent);
-        const title_from_content = data.ruleFileContent?.metadata?.title?.trim?.();
-        const version_from_content = data.ruleFileContent?.metadata?.version?.trim?.();
-        const rule_name = title_from_content || 'Importerad regelfil';
-
-        let ruleSet;
-        // 1. Först: match på namn + version (om båda finns)
-        if (title_from_content && version_from_content) {
-            const by_meta = await query(
-                `SELECT * FROM rule_sets WHERE
-                    TRIM(COALESCE(content->'metadata'->>'title','')) = $1 AND
-                    TRIM(COALESCE(content->'metadata'->>'version','')) = $2
-                LIMIT 1`,
-                [title_from_content, version_from_content]
-            );
-            if (by_meta.rows.length > 0) {
-                ruleSet = by_meta.rows[0];
-            }
-        }
-        // 2. Annars: exakt content-match
-        if (!ruleSet) {
-            const existing = await query(
-                'SELECT * FROM rule_sets WHERE content @> $1::jsonb AND content <@ $1::jsonb LIMIT 1',
-                [contentJson]
-            );
-            if (existing.rows.length > 0) {
-                ruleSet = existing.rows[0];
-            }
-        }
-        // 3. Annars: skapa ny
-        if (!ruleSet) {
-            const ruleResult = await query(
-                'INSERT INTO rule_sets (name, content) VALUES ($1, $2) RETURNING *',
-                [rule_name, contentJson]
-            );
-            ruleSet = ruleResult.rows[0];
-        }
         const metadata = data.auditMetadata || {};
         const samples = data.samples || [];
         const status = data.auditStatus || 'not_started';
         const result = await query(
             'INSERT INTO audits (rule_set_id, rule_file_content, status, metadata, samples, last_updated_by) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-            [ruleSet.id, data.ruleFileContent, status, JSON.stringify(metadata), JSON.stringify(samples), last_updated_by]
+            [null, data.ruleFileContent, status, JSON.stringify(metadata), JSON.stringify(samples), last_updated_by]
         );
         const audit = result.rows[0];
-        const fullState = build_full_state(audit, ruleSet);
+        const fullState = build_full_state(audit, null);
         res.status(201).json(fullState);
     } catch (err) {
         console.error('[audits] import error:', err);
