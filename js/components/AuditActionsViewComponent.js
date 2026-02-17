@@ -1,9 +1,16 @@
+import { get_rules, get_websocket_url } from '../api/client.js';
+import { version_greater_than } from '../utils/version_utils.js';
+import { find_newer_rule_for_audit } from '../logic/newer_rule_check.js';
+
 export const AuditActionsViewComponent = {
     CSS_PATH: 'css/components/audit_actions_view_component.css',
 
     async init({ root, deps }) {
         this.root = root;
         this.deps = deps;
+        this.newerRuleAvailable = null;
+        this._newerRuleCheckInProgress = false;
+        this._ws = null;
 
         this.router = deps.router;
         this.getState = deps.getState;
@@ -29,6 +36,84 @@ export const AuditActionsViewComponent = {
         this.handle_export_word_samples = this.handle_export_word_samples.bind(this);
         this.handle_export_html = this.handle_export_html.bind(this);
         this.handle_download_audit = this.handle_download_audit.bind(this);
+    },
+
+    _populate_update_rulefile_slot(slot_element, state) {
+        const newer_rule = this.newerRuleAvailable;
+        const should_show = state?.auditStatus !== 'locked' && newer_rule?.ruleId && newer_rule?.version;
+        const has_content = slot_element.children.length > 0;
+
+        if (should_show) {
+            slot_element.classList.remove('audit-actions__update-rulefile-slot--hidden');
+            slot_element.innerHTML = '';
+            const t = this.Translation.t;
+            slot_element.appendChild(this.create_status_action_item({
+                label: t('update_rulefile_button_with_version', { version: newer_rule.version }),
+                description: t('audit_actions_update_rulefile_description'),
+                on_click: () => this.router('update_rulefile', { ruleId: newer_rule.ruleId }),
+                variant: 'button-default',
+                icon_name: 'update',
+                id_suffix: 'update-rulefile'
+            }));
+        } else if (has_content) {
+            slot_element.classList.add('audit-actions__update-rulefile-slot--hidden');
+            setTimeout(() => {
+                if (slot_element.classList.contains('audit-actions__update-rulefile-slot--hidden')) {
+                    slot_element.innerHTML = '';
+                    slot_element.classList.remove('audit-actions__update-rulefile-slot--hidden');
+                }
+            }, 500);
+        }
+    },
+
+    _render_update_rulefile_slot() {
+        if (!this.root) return;
+        const slot = this.root.querySelector('[data-audit-action="update-rulefile-slot"]');
+        if (slot) this._populate_update_rulefile_slot(slot, this.getState());
+    },
+
+    _ensure_ws_subscription() {
+        if (this._ws) return;
+        try {
+            const url = get_websocket_url();
+            const ws = new WebSocket(url);
+            ws.onmessage = (e) => {
+                try {
+                    const msg = JSON.parse(e.data);
+                    if (msg?.type === 'rules:changed') this._refresh_newer_rule_check();
+                } catch (err) {
+                    // Ignorera ogiltiga meddelanden
+                }
+            };
+            ws.onclose = () => { this._ws = null; };
+            this._ws = ws;
+        } catch (err) {
+            // WebSocket ej tillgänglig
+        }
+    },
+
+    _close_ws() {
+        if (this._ws) {
+            try { this._ws.close(); } catch (err) { /* ignore */ }
+            this._ws = null;
+        }
+    },
+
+    _refresh_newer_rule_check() {
+        if (this._newerRuleCheckInProgress) return;
+        const state = this.getState();
+        if (!state?.ruleFileContent || state.auditStatus === 'locked') return;
+        this._newerRuleCheckInProgress = true;
+        get_rules()
+            .then((rules) => {
+                const result = find_newer_rule_for_audit(state.ruleFileContent, rules, version_greater_than);
+                this.newerRuleAvailable = result;
+                this._newerRuleCheckInProgress = false;
+                if (this.root) this._render_update_rulefile_slot();
+            })
+            .catch(() => {
+                this._newerRuleCheckInProgress = false;
+            });
     },
 
     handle_download_audit() {
@@ -271,6 +356,16 @@ export const AuditActionsViewComponent = {
         const plate = this.Helpers.create_element('div', { class_name: 'content-plate' });
         plate.appendChild(this.Helpers.create_element('h1', { text_content: t('audit_actions_title') }));
 
+        if (state.auditStatus !== 'locked') {
+            if (this.newerRuleAvailable === null && !this._newerRuleCheckInProgress) {
+                this._refresh_newer_rule_check();
+            }
+            this._ensure_ws_subscription();
+        } else {
+            this._close_ws();
+            this.newerRuleAvailable = null;
+        }
+
         // Statusåtgärder
         const status_section = this.Helpers.create_element('section', {});
         status_section.appendChild(this.Helpers.create_element('h2', { class_name: 'audit-actions__section-title', text_content: t('audit_actions_status_section_title') }));
@@ -286,17 +381,12 @@ export const AuditActionsViewComponent = {
             id_suffix: 'download-audit'
         }));
 
-        const newer_rule = state.newerRuleAvailable;
-        if (state.auditStatus !== 'locked' && newer_rule?.ruleId && newer_rule?.version) {
-            status_actions.appendChild(this.create_status_action_item({
-                label: t('update_rulefile_button_with_version', { version: newer_rule.version }),
-                description: t('audit_actions_update_rulefile_description'),
-                on_click: () => this.router('update_rulefile', { ruleId: newer_rule.ruleId }),
-                variant: 'button-default',
-                icon_name: 'update',
-                id_suffix: 'update-rulefile'
-            }));
-        }
+        const update_rulefile_slot = this.Helpers.create_element('div', {
+            class_name: 'audit-actions__update-rulefile-slot',
+            attributes: { 'data-audit-action': 'update-rulefile-slot' }
+        });
+        this._populate_update_rulefile_slot(update_rulefile_slot, state);
+        status_actions.appendChild(update_rulefile_slot);
 
         const { req_count: unreviewed_count } = this.count_unreviewed_requirements();
         if (state.auditStatus === 'in_progress' && unreviewed_count > 0) {
@@ -408,9 +498,12 @@ export const AuditActionsViewComponent = {
     },
 
     destroy() {
+        this._close_ws();
         if (this.root) this.root.innerHTML = '';
         this.root = null;
         this.deps = null;
+        this.newerRuleAvailable = null;
+        this._newerRuleCheckInProgress = false;
     }
 };
 

@@ -1,5 +1,5 @@
 /**
- * Versionsjämförelse för regelfiler (format: 2026.2.r27).
+ * Versionsjämförelse för regelfiler (format: år.månad.rX, t.ex. 2026.2.r27).
  * @param {string} version_str - Versionssträng
  * @returns {[number, number, number]} [år, månad, r]
  */

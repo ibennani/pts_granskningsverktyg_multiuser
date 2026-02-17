@@ -3,6 +3,7 @@ import 'dotenv/config';
 import http from 'http';
 import express from 'express';
 import { query } from './db.js';
+import { init_ws } from './ws.js';
 process.on('uncaughtException', (err) => {
     console.error('[Server] Uncaught exception:', err);
 });
@@ -68,6 +69,8 @@ app.use((err, _req, res, _next) => {
     console.error('[Server] Ohanterat fel i route:', err);
     res.status(500).json({ error: 'Ett serverfel inträffade' });
 });
+
+init_ws(http_server);
 
 http_server.listen(PORT, () => {
     console.log(`[Server] Kör på port ${PORT}`);

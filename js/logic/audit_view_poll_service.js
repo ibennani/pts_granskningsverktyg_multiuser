@@ -7,8 +7,7 @@
 // - confirm_sample_edit: REPLACE_STATE_FROM_REMOTE skulle förlora pendingSampleChanges
 // - rulefile_*: auditStatus === 'rulefile_editing' stoppar polling automatiskt
 
-import { get_audit_version, load_audit_with_rule_file, get_rules } from '../api/client.js';
-import { version_greater_than } from '../utils/version_utils.js';
+import { get_audit_version, load_audit_with_rule_file } from '../api/client.js';
 
 const POLL_INTERVAL_MS = 3000;
 const AUDIT_VIEWS = new Set([
@@ -56,11 +55,7 @@ export function init_audit_view_poll_service({ getState, dispatch, StoreActionTy
         }
 
         try {
-            const [version_result, rules_result] = await Promise.all([
-                get_audit_version(audit_id),
-                get_rules().catch(() => [])
-            ]);
-            const { version } = version_result;
+            const { version } = await get_audit_version(audit_id);
             const local_version = state?.version ?? 0;
             if (version != null && version > local_version) {
                 const full_state = await load_audit_with_rule_file(audit_id);
@@ -78,28 +73,6 @@ export function init_audit_view_poll_service({ getState, dispatch, StoreActionTy
                     }
                 }
             }
-
-            const rules = Array.isArray(rules_result) ? rules_result : [];
-            const audit_title = state?.ruleFileContent?.metadata?.title?.trim?.() ||
-                state?.ruleFileContent?.metadata?.monitoringType?.text?.trim?.() || '';
-            const audit_version = state?.ruleFileContent?.metadata?.version?.trim?.() || '';
-            let best_newer = null;
-            if (audit_title && rules.length > 0) {
-                for (const r of rules) {
-                    const rule_key = (r.monitoring_type_text || r.name || `Regelfil ${r.id}`).trim();
-                    if (rule_key !== audit_title) continue;
-                    const server_version = r.metadata_version || '';
-                    if (version_greater_than(server_version, audit_version)) {
-                        if (!best_newer || version_greater_than(server_version, best_newer.version)) {
-                            best_newer = { ruleId: r.id, version: server_version };
-                        }
-                    }
-                }
-            }
-            dispatch({
-                type: StoreActionTypes.SET_NEWER_RULE_AVAILABLE,
-                payload: best_newer ? { ruleId: best_newer.ruleId, version: best_newer.version } : null
-            });
         } catch {
             /* tyst vid poll-fel */
         }

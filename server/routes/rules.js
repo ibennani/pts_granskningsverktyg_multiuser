@@ -1,8 +1,13 @@
 // server/routes/rules.js
 import express from 'express';
 import { query } from '../db.js';
+import { broadcast } from '../ws.js';
 
 const router = express.Router();
+
+function broadcast_rules_changed() {
+    broadcast({ type: 'rules:changed' });
+}
 
 router.get('/', async (_req, res) => {
     try {
@@ -79,6 +84,7 @@ router.post('/', async (req, res) => {
             'INSERT INTO rule_sets (name, content) VALUES ($1, $2) RETURNING *',
             [ruleName, JSON.stringify(content)]
         );
+        broadcast_rules_changed();
         res.status(201).json(result.rows[0]);
     } catch (err) {
         console.error('[rules] POST error:', err);
@@ -98,6 +104,7 @@ router.post('/import', async (req, res) => {
             [contentJson]
         );
         if (existing.rows.length > 0) {
+            broadcast_rules_changed();
             return res.status(200).json(existing.rows[0]);
         }
         const title_from_content = content?.metadata?.title?.trim?.();
@@ -106,6 +113,7 @@ router.post('/import', async (req, res) => {
             'INSERT INTO rule_sets (name, content) VALUES ($1, $2) RETURNING *',
             [ruleName, contentJson]
         );
+        broadcast_rules_changed();
         res.status(201).json(result.rows[0]);
     } catch (err) {
         console.error('[rules] import error:', err);
@@ -129,6 +137,7 @@ router.delete('/:id', async (req, res) => {
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Regelfil hittades inte' });
         }
+        broadcast_rules_changed();
         res.status(204).send();
     } catch (err) {
         console.error('[rules] DELETE error:', err);
@@ -164,6 +173,7 @@ router.put('/:id', async (req, res) => {
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Regelfil hittades inte' });
         }
+        broadcast_rules_changed();
         res.json(result.rows[0]);
     } catch (err) {
         console.error('[rules] PUT error:', err);
