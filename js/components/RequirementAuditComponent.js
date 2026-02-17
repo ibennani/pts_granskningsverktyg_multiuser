@@ -179,6 +179,10 @@ export const RequirementAuditComponent = {
     },
 
     handle_checklist_status_change(change_info) {
+        // Rensa väntande debounced autosave så att den inte skriver över statusändringen med gammal data
+        clearTimeout(this.debounceTimerAudit);
+        this.debounceTimerAudit = null;
+
         let modified_result;
         try {
             modified_result = JSON.parse(JSON.stringify(this.current_result));

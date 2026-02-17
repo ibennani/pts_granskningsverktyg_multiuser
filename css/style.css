@@ -300,10 +300,11 @@ body {
     padding: 0 var(--spacing-unit);
     margin-inline: auto;
     overflow-x: hidden;
-    flex: 1;
+    flex: 0 0 auto;
     display: flex;
     flex-direction: column;
-    min-height: 0;
+    justify-content: flex-start;
+    align-items: stretch;
 }
 
 #app-container,

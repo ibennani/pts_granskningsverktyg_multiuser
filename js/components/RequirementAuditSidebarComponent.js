@@ -276,9 +276,9 @@ export const RequirementAuditSidebarComponent = {
         }
 
         const fingerprint = fingerprint_item_keys(item_keys);
-        if (can_incremental_update(this._last_rendered_fingerprint, fingerprint) && sorted_items.length > 0) {
-            this._update_list_items_status_only(sorted_items, rule_file_content, current_sample, current_requirement, requirement_id);
-        } else {
+        const can_incremental = can_incremental_update(this._last_rendered_fingerprint, fingerprint) && sorted_items.length > 0;
+        const incremental_ok = can_incremental && this._update_list_items_status_only(sorted_items, rule_file_content, current_sample, current_requirement, requirement_id);
+        if (!incremental_ok) {
             this.list_container_ref.innerHTML = '';
             if (this.selected_mode === 'sample_requirements') {
                 this.render_requirements_for_sample(rule_file_content, current_sample, requirement_id);
@@ -293,7 +293,7 @@ export const RequirementAuditSidebarComponent = {
     _update_list_items_status_only(sorted_items, rule_file_content, current_sample, current_requirement, requirement_id) {
         const t = this.Translation.t;
         const items = this.list_container_ref?.querySelectorAll?.('ul.requirement-audit-sidebar__items > li.requirement-audit-sidebar__item');
-        if (!items || items.length !== sorted_items.length) return;
+        if (!items || items.length !== sorted_items.length) return false;
 
         if (this.selected_mode === 'sample_requirements') {
             sorted_items.forEach((item, i) => {
@@ -339,6 +339,7 @@ export const RequirementAuditSidebarComponent = {
                 }
             });
         }
+        return true;
     },
 
     _create_sidebar_status_icons(base_status, needs_help, is_updated) {
@@ -457,7 +458,9 @@ export const RequirementAuditSidebarComponent = {
     },
 
     render_samples_for_requirement(rule_file_content, current_requirement, samples, requirement_id, current_sample_id) {
-        const requirement_key = current_requirement?.key || requirement_id;
+        // Behåll requirement_id från aktuell route för att säkerställa
+        // att sidtitel-uppslag i main.js alltid använder samma nyckel.
+        const requirement_key = requirement_id || current_requirement?.key || current_requirement?.id || '';
         const sorted_samples = this.get_filtered_sample_items(rule_file_content, current_requirement, samples, requirement_id, current_sample_id);
         if (!sorted_samples.length) {
             this.list_container_ref.appendChild(this.Helpers.create_element('p', {
@@ -883,6 +886,7 @@ export const RequirementAuditSidebarComponent = {
         this.AuditLogic = null;
         this.on_filters_change_callback = null;
         this.is_dom_initialized = false;
+        this._last_rendered_fingerprint = null;
         this.mode_fieldset_ref = null;
         this.mode_legend_ref = null;
         this.mode_label_refs = null;
