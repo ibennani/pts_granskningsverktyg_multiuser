@@ -23,7 +23,7 @@ Projektet är organiserat enligt följande struktur:
 ## Kodningskonventioner
 
 ### Namngivning
-- Komponenter: PascalCase (`UploadViewComponent.js`)
+- Komponenter: PascalCase (`StartViewComponent.js`)
 - Funktioner och variabler: snake_case (`handle_export_word`, `export_to_word_criterias`)
 - Filer: matchar komponent/funktionsnamn
 
@@ -99,6 +99,7 @@ Projektet är organiserat enligt följande struktur:
 
 ## Ytterligare resurser
 
+- Se `docs/snabbstart_nyborjare.md` för snabb introduktion för nya användare
 - Se `README.md` för allmän projektinformation
 - Se `docs/rulefile_editing_flow.md` för redigeringsflöde av regelfilsektioner
 - Se `docs/metadata_flow.md` för hur granskningsmetadata lagras och uppdateras

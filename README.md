@@ -133,6 +133,7 @@ Autospar sker globalt via `js/draft_manager.js` och sparar endast fältutkast i 
 
 All dokumentation finns i `/docs`-mappen:
 
+- **[Snabbstart för nybörjare](docs/snabbstart_nyborjare.md)** - Kom igång snabbt utan att läsa allt
 - **[Användarmanual](docs/anvandarmanual.md)** - Detaljerad guide för slutanvändare
 - **[Teknisk specifikation](docs/teknisk_specifikation_v2.0.md)** - Systemkrav och funktionalitet
 - **[Systemdokumentation](docs/systemdokumentation.md)** - Intern arkitektur och implementation

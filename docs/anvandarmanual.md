@@ -86,21 +86,25 @@ Applikationen körs helt i din webbläsare och kräver ingen installation av pro
 
 ## 2. Komma igång
 
-När du öppnar applikationen möts du av startvyn. Här har du två huvudsakliga val:
+När du öppnar applikationen möts du av startvyn. Om applikationen är ansluten till en server visas en tabell över alla granskningar. Annars visas information om att servern inte är tillgänglig.
 
-### 2.1 Starta en ny granskning
-Om du vill påbörja en helt ny granskning:
-1.  Klicka på knappen **"Starta ny granskning"**.
-2.  Du kommer att uppmanas att välja en **regelfil** från din dator. Denna fil måste vara i json-format och innehålla de regler och kriterier som granskningen ska baseras på.
-3.  Om regelfilen är giltig, laddas den in och du navigeras automatiskt till vyn för att mata in metadata för din nya granskning.
-4.  Om filen är ogiltig visas ett felmeddelande. Försök med en annan fil eller kontrollera att filen har korrekt format.
+### 2.1 Öppna en befintlig granskning
+När servern är tillgänglig visas en tabell med kolumnerna Diarienummer, Aktörens namn, Status, Progress, Bristindex, Granskare och Ladda ner:
+1.  Klicka på aktörens namn (eller diarienumret om aktörens namn saknas) för att öppna granskningen.
+2.  Du navigeras till granskningsöversikten.
+3.  Kolumnen **"Ladda ner"** innehåller en knapp för att ladda ner granskningen som JSON-fil till din dator. Saknad data i tabellen visas som "—".
 
-### 2.2 Ladda en tidigare sparad granskning
-Om du tidigare har sparat en pågående eller avslutad granskning som en json-fil:
-1.  Klicka på knappen **"Ladda upp pågående granskning"**.
-2.  Välj den sparade granskningsfilen (`.json`) från din dator.
-3.  Om filen är en giltig sparad granskning, återställs hela ditt tidigare arbete och du navigeras till granskningsöversikten.
+### 2.2 Starta en ny granskning
+1.  Gå till **Admin** via sidomenyn.
+2.  Klicka på **"Starta ny granskning"** och välj en regelfil från listan (eller ladda upp en ny regelfil först via knappen "Ladda upp").
+3.  Om regelfilen är giltig skapas en ny granskning och du navigeras till vyn för att mata in metadata.
 4.  Om filen är ogiltig visas ett felmeddelande.
+
+### 2.3 Ladda upp en sparad granskning
+Om du har en sparad granskning som JSON-fil:
+1.  Gå till **Admin** via sidomenyn.
+2.  Klicka på **"Ladda upp"** och välj den sparade granskningsfilen (`.json`).
+3.  Om filen är giltig importeras granskningen och du kan öppna den från startvyns lista.
 
 ## 3. Mata in metadata
 
@@ -113,7 +117,7 @@ Följande fält finns (alla är frivilliga):
 *   **Intern kommentar:** Ett fält för dina egna anteckningar om granskningen. Denna kommentar inkluderas inte i exporterade rapporter till aktören.
 
 När du är klar, klicka på **"Fortsätt till stickprov"**.
-**Notera:** Metadata kan bara redigeras innan du formellt startar granskningen.
+**Notera:** Metadata kan redigeras när som helst – både innan granskningen startats och under pågående granskning. På granskningsöversikten finns en knapp **"Redigera"** i granskningsinfopanelens header som öppnar metadataformuläret.
 
 ## 4. Hantera stickprov (innan granskning startas)
 
@@ -144,15 +148,14 @@ När du har lagt till alla önskade stickprov och är nöjd med metadata:
 1.  Från vyn "Hantera stickprov", klicka på knappen **"Starta granskning"**.
     *   Denna knapp är endast aktiv om du har lagt till minst ett stickprov.
 2.  Granskningens status ändras nu till "Pågående".
-3.  Metadata blir skrivskyddad.
-4.  Du navigeras till **granskningsöversikten**.
+3.  Du navigeras till **granskningsöversikten**. Metadata kan fortfarande redigeras via knappen "Redigera" i granskningsinfopanelens header.
 
 ## 6. Granskningsöversikten
 
 Detta är din centrala vy när en granskning är pågående eller har avslutats (låsts).
 
 ### 6.1 Granskningsinformation
-Högst upp visas allmän information om granskningen, såsom ärendenummer, aktör, ansvarig granskare, regelfilens titel och version, samt starttid och aktuell status för granskningen. Du ser även en progressbar som visar den totala framstegen för alla stickprov.
+Högst upp visas allmän information om granskningen, såsom ärendenummer, aktör, ansvarig granskare, regelfilens titel och version, samt starttid och aktuell status för granskningen. Du ser även en progressbar som visar den totala framstegen för alla stickprov. Knappen **"Redigera"** i panelens header öppnar metadataformuläret så att du kan ändra ärendenummer, aktör, granskare m.m. även under pågående granskning.
 
 ### 6.2 Stickprovslista och progress
 *   Rubriken **"Tillagda stickprov: X st"** visar hur många stickprov som ingår i granskningen.
@@ -247,7 +250,7 @@ När du har gått igenom alla krav för alla stickprov och är klar med dina bed
 
 Eftersom applikationen körs helt i din webbläsare sparas ditt arbete i den aktuella webbläsarsessionen (`sessionStorage`). Om du stänger webbläsarfliken eller webbläsaren kan arbetet gå förlorat om det inte sparats till fil.
 *   **Spara till fil:** Från **granskningsöversikten**, klicka på **"Spara granskning till fil"**. En json-fil med hela din granskningsdata kommer att laddas ner till din dator. Spara denna fil på en säker plats. Gör detta regelbundet under längre granskningssessioner.
-*   **Ladda från fil:** Använd alternativet **"Ladda upp pågående granskning"** på applikationens startvy för att återuppta en tidigare sparad granskning.
+*   **Ladda från fil:** Gå till **Admin** via sidomenyn och klicka på **"Ladda upp"** för att importera en sparad granskning. Du kan också använda **"Ladda ner"**-knappen i startvyns tabell för att ladda ner en granskning som JSON-fil.
 
 ## 10. Exportera resultat
 

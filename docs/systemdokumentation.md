@@ -22,7 +22,7 @@ Applikationen följer en Single Page Application (SPA) modell.
 *   **Struktur:** Koden är organiserad i moduler. Kärnlogik (tillstånd, validering, översättning, etc.) finns i egna moduler, medan användargränssnittet är uppbyggt av återanvändbara komponenter. Varje komponent hanterar sin egen rendering, logik och ofta sin egen CSS.
 *   **Rendering:** Dynamisk rendering sker helt på klientsidan. `index.html` agerar som en tom behållare (`<div id="app-container"></div>`) där JavaScript-komponenter renderar sitt innehåll.
 *   **Datahantering:**
-    *   Applikationens huvudsakliga tillstånd (`current_audit`) hanteras av `state.js` och sparas i webbläsarens `sessionStorage` för att överleva sidomladdningar inom samma session.
+    *   Applikationens huvudsakliga tillstånd hanteras av `state.js` med Redux-liknande pattern. Vid varje `dispatch()` sparas state direkt till `sessionStorage` (ingen debounce) för att överleva sidomladdningar inom samma session. En backup sparas till `localStorage`.
     *   Användarpreferenser (tema, språk) sparas i `localStorage`.
     *   Manuell export och import av hela granskningstillståndet sker via JSON-filer.
 *   **Navigering:** Klient-sidans routing hanteras via URL-hash (`#`-fragment). `main.js` lyssnar på `hashchange`-händelser för att byta vyer.
@@ -72,8 +72,8 @@ Projektet följer en standardiserad struktur för webbapplikationer:
 *   **Ansvar:** Hanterar det globala applikationstillståndet med Redux-liknande pattern. Exporterar funktioner för state-hantering.
 *   **State-struktur:** State-objektet innehåller `ruleFileContent`, `auditMetadata`, `auditStatus`, `samples`, `uiSettings`, `auditCalculations`, etc. Strukturen är detaljerad i den tekniska specifikationen (avsnitt 6.1-6.3).
 *   **Lagringsmekanism:** 
-    *   Använder `localStorage` för att spara state med autospar (3 sekunders debounce).
-    *   Använder `sessionStorage` som backup.
+    *   Vid varje `dispatch()` sparas state direkt till `sessionStorage` (ingen debounce).
+    *   En backup sparas till `localStorage` för återställning vid fel.
     *   State serialiseras till JSON innan lagring och deserialiseras vid läsning.
 *   **Exporterade funktioner:**
     *   `getState()`: Returnerar en kopia av det aktuella state-objektet.
@@ -152,16 +152,15 @@ export const ComponentName = {
 };
 ```
 
-*   **`UploadViewComponent.js`**
-    *   **Syfte:** Applikationens startvy. Tillåter användaren att antingen ladda upp en JSON-regelfil för att starta en ny granskning, eller ladda upp en tidigare sparad JSON-granskningsfil.
-    *   **Internt tillstånd:** Håller referenser till filinput-elementen.
-    *   **Interaktioner:** Använder `FileReader` API för att läsa filinnehåll. Anropar `ValidationLogic` för att validera filerna. Vid lyckad validering/laddning, uppdateras state via `deps.dispatch()` och `deps.router()` anropas för att navigera till nästa vy (`EditMetadataViewComponent` för ny granskning, `AuditOverviewComponent` för laddad granskning). Använder `NotificationComponent` för att visa statusmeddelanden.
-    *   **CSS:** `css/components/upload_view_component.css`.
+*   **`StartViewComponent.js`**
+    *   **Syfte:** Applikationens startvy. När servern är tillgänglig visar den en tabell över alla granskningar. Tabellen visar Diarienummer, Aktörens namn, Status, Progress, Bristindex, Granskare och Ladda ner. Kolumnerna hämtar data från granskningsmetadata; saknad data visas som "—".
+    *   **Internt tillstånd:** `audits`, `api_available`, poll-timer för att uppdatera listan.
+    *   **Interaktioner:** Använder `get_audits()` API för att hämta listan. Klick på aktörens namn navigerar till granskningen. "Ladda ner"-knappen använder `load_audit_with_rule_file()` och `SaveAuditLogic.save_audit_to_json_file()` för nedladdning.
+    *   **CSS:** `css/components/start_view_component.css`.
 
 *   **`EditMetadataViewComponent.js`**
-    *   **Syfte:** Tillåter användaren att mata in eller visa metadata för den aktuella granskningen (t.ex. ärendenummer, aktör).
-    *   **Internt tillstånd:** Håller referenser till formulärfälten.
-    *   **Interaktioner:** Läser initial metadata från `deps.getState().auditMetadata`. Om granskningens status är `not_started`, är fälten redigerbara. Vid submit sparas datan via `deps.dispatch()` och `deps.router()` navigerar till `SampleManagementViewComponent`. Om status inte är `not_started`, visas datan som skrivskyddad. Använder `NotificationComponent`.
+    *   **Syfte:** Tillåter användaren att mata in eller redigera metadata för den aktuella granskningen (t.ex. ärendenummer, aktör, granskare).
+    *   **Interaktioner:** Läser metadata från `deps.getState().auditMetadata`. Om granskningens status är `not_started`, är fälten redigerbara. Vid submit sparas datan via `deps.dispatch()` och `sync_to_server_now()` anropas för befintliga granskningar så att servern uppdateras innan navigering. Metadata kan redigeras även under pågående granskning via knappen "Redigera" i granskningsinfopanelens header.
     *   **CSS:** `css/components/edit_metadata_view_component.css`.
 
 *   **`SampleManagementViewComponent.js`**
@@ -216,7 +215,7 @@ export const ComponentName = {
     *   **CSS:** `css/components/progress_bar_component.css`.
 
 ## 5. Arbetsflöden och datacykler
-_(Se föregående svar för detaljerad beskrivning av flödena: Starta ny granskning, Genomföra granskning, Låsa och exportera). Viktigt är att dataändringar (t.ex. i `RequirementAuditComponent` eller `AddSampleFormComponent`) uppdaterar `current_audit`-objektet via `State.setCurrentAudit()`, vilket i sin tur sparar till `sessionStorage`. När en vy renderas om (antingen via `router` eller ett explicit anrop till `render()`), hämtar den den senaste versionen från `State.getCurrentAudit()`._
+_(Se föregående svar för detaljerad beskrivning av flödena: Starta ny granskning, Genomföra granskning, Låsa och exportera). Viktigt är att dataändringar (t.ex. i `RequirementAuditComponent` eller `AddSampleFormComponent`) uppdaterar state via `dispatch()`, vilket sparar direkt till `sessionStorage`. När en vy renderas om (antingen via `router` eller ett explicit anrop till `render()`), hämtar den den senaste versionen från `getState()`._
 
 ## 6. Tillgänglighetsaspekter (intern implementation)
 *   **Ikoner:** Alla SVG-ikoner som genereras via `Helpers.get_icon_svg` inkluderar `aria-hidden="true"`, eftersom de alltid används i kontexten av en textbeskrivande knapp eller länk. I de flesta fall placeras ikoner till höger om knapptexten.
@@ -227,7 +226,7 @@ _(Se föregående svar för detaljerad beskrivning av flödena: Starta ny gransk
     *   **Förbättringsområde:** Den nuvarande `confirm()`-dialogen för radering har begränsad fokuskontroll. En anpassad modal skulle ge bättre möjligheter för fokusfångst (trapping) och mer precis återställning.
 *   **Semantik:** Applikationen strävar efter att använda semantiskt korrekt HTML (rubriker `<h1>`-`<h4>`, listor `<ul>`/`<li>`, knappar `<button>`, formulärelement `<form>`, `<label>`, `<input>`, `<select>`, `<textarea>`, `<fieldset>`, `<legend>`).
 *   **Dynamiska meddelanden:** `NotificationComponent` använder en `div` med `aria-live="polite"` för att meddela statusuppdateringar och felmeddelanden på ett tillgängligt sätt.
-*   **ARIA-attribut:** `aria-pressed` används på växlingsknappar (t.ex. för "Stämmer"/"Stämmer inte"). `aria-label` används på knappar i `SampleListComponent` för att ge unik kontext när flera likadana knappar finns.
+*   **ARIA-attribut:** `aria-pressed` används på växlingsknappar (t.ex. för "Stämmer"/"Stämmer inte"). `aria-label` används på knappar i `SampleListComponent` för att ge unik kontext när flera likadana knappar finns. I `ChecklistHandler` har kontrollpunkter (h3) aria-label i formatet "Kontrollpunkt X. {status}" och godkännandekriterier (h4) aria-label i formatet "Godkännandekriterium X.Y. {status}". Nedladdningsknappar i `StartViewComponent` har aria-label "Ladda ner {diarienummer} {aktörens namn}".
 
 ## 7. Utvecklingsmiljö och byggprocess
 Systemet använder **Vite** som byggsystem och utvecklingsserver. Vite hanterar:

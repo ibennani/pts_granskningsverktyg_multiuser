@@ -174,25 +174,22 @@ interface Component {
 }
 ```
 
-### Exempel: UploadViewComponent
+### Exempel: StartViewComponent
 
 ```javascript
-// js/components/UploadViewComponent.js
-export const UploadViewComponent = {
+// js/components/StartViewComponent.js
+export const StartViewComponent = {
     async init({ root, deps }) {
         this.root = root;
         this.deps = deps;
         this.router = deps.router;
-        this.getState = deps.getState;
-        this.dispatch = deps.dispatch;
-        this.StoreActionTypes = deps.StoreActionTypes;
         this.Translation = deps.Translation;
         this.Helpers = deps.Helpers;
         this.NotificationComponent = deps.NotificationComponent;
         
         // Ladda CSS
         if (this.Helpers?.load_css_safely) {
-            await this.Helpers.load_css_safely(this.CSS_PATH, 'UploadViewComponent');
+            await this.Helpers.load_css_safely(this.CSS_PATH, 'StartViewComponent');
         }
     },
     
