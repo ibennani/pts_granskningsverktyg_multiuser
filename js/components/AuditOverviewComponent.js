@@ -25,6 +25,7 @@ export const AuditOverviewComponent = {
         this.audit_info_container_element = null;
         this.scoreAnalysisContainerElement = null;
         this.previously_focused_element = null;
+        this._last_audit_metadata_snapshot = null;
 
         this.global_message_element_ref = this.NotificationComponent.get_global_message_element_reference();
 
@@ -62,8 +63,17 @@ export const AuditOverviewComponent = {
         });
     },
 
-    handle_store_update(new_state) {
-        // Handled by main.js subscription triggering render()
+    handle_store_update(new_state, listener_meta) {
+        if (listener_meta?.skip_render) return;
+        if (!this.root || typeof this.render !== 'function') return;
+
+        const new_meta = new_state?.auditMetadata || {};
+        const prev_meta = this._last_audit_metadata_snapshot || {};
+        const metadata_changed = JSON.stringify(new_meta) !== JSON.stringify(prev_meta);
+
+        if (metadata_changed) {
+            this.render();
+        }
     },
 
 
@@ -81,6 +91,7 @@ export const AuditOverviewComponent = {
                 error_div.textContent = t("error_no_active_audit");
                 this.root.appendChild(error_div);
             }
+            this._last_audit_metadata_snapshot = null;
             return;
         }
 
@@ -139,6 +150,8 @@ export const AuditOverviewComponent = {
         dashboard_container.appendChild(score_panel);
 
         plate_element.appendChild(dashboard_container);
+
+        this._last_audit_metadata_snapshot = JSON.parse(JSON.stringify(current_global_state.auditMetadata || {}));
     },
 
     destroy() {
@@ -152,6 +165,7 @@ export const AuditOverviewComponent = {
         this.scoreAnalysisContainerElement = null;
         this.audit_info_container_element = null;
         this.previously_focused_element = null;
+        this._last_audit_metadata_snapshot = null;
 
         this.root = null;
         this.deps = null;

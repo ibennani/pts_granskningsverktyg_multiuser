@@ -59,6 +59,11 @@ export const EditMetadataViewComponent = {
             }
             this.router('sample_management');
         } else {
+            try {
+                await sync_to_server_now(this.getState, this.dispatch);
+            } catch (err) {
+                // Fel visas redan av run_sync via NotificationComponent
+            }
             this.NotificationComponent.show_global_message(this.Translation.t('metadata_updated_successfully'), 'success');
             this._request_focus_on_audit_info_h2();
             this.router('audit_overview');

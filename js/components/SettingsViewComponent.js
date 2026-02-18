@@ -1,6 +1,7 @@
 // js/components/SettingsViewComponent.js
 
 import { get_current_user_preferences, update_current_user_preferences } from '../api/client.js';
+import { get_current_user_name } from '../utils/helpers.js';
 
 export const SettingsViewComponent = {
     CSS_PATH: 'css/components/settings_view_component.css',
@@ -95,6 +96,15 @@ export const SettingsViewComponent = {
             id: 'main-content-heading',
             text_content: t('menu_link_my_settings'),
             attributes: { tabindex: '-1' }
+        }));
+
+        const user_name = get_current_user_name();
+        const greeting_text = user_name
+            ? t('settings_greeting').replace('{name}', user_name)
+            : t('settings_greeting_guest');
+        plate.appendChild(this.Helpers.create_element('p', {
+            class_name: 'settings-greeting',
+            text_content: greeting_text
         }));
 
         plate.appendChild(this.Helpers.create_element('p', {

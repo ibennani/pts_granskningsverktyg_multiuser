@@ -674,13 +674,10 @@ export const ChecklistHandler = {
             const condition_h3 = check_wrapper.querySelector('.check-condition-title');
             const status_text = t(`audit_status_${calculated_check_status}`);
             const title_text = condition_h3.textContent.trim();
-            condition_h3.setAttribute('aria-label', `${title_text}. ${t('status')}: ${status_text.toLowerCase()}`);
+            condition_h3.setAttribute('aria-label', `${title_text}. ${status_text.toLowerCase()}`);
 
             const status_text_container = check_wrapper.querySelector('.check-status-display');
             status_text_container.innerHTML = '';
-            const strong_element = this.Helpers.create_element('strong', { text_content: t('check_status') });
-            status_text_container.appendChild(strong_element);
-            status_text_container.appendChild(document.createTextNode(': '));
             const status_span = this.Helpers.create_element('span', { 
                 class_name: `status-text status-${calculated_check_status}`, 
                 text_content: status_text 
@@ -741,14 +738,22 @@ export const ChecklistHandler = {
                 const pc_status_text_container = pc_item_li.querySelector('.pass-criterion-status');
                 pc_status_text_container.innerHTML = '';
                 const pc_status_text = t(`audit_status_${current_pc_status}`);
-                const pc_strong_element = this.Helpers.create_element('strong', { text_content: t('status') });
-                pc_status_text_container.appendChild(pc_strong_element);
-                pc_status_text_container.appendChild(document.createTextNode(': '));
                 const pc_status_span = this.Helpers.create_element('span', { 
                     class_name: `status-text status-${current_pc_status}`, 
                     text_content: pc_status_text 
                 });
                 pc_status_text_container.appendChild(pc_status_span);
+
+                const pc_title_h4 = pc_item_li.querySelector('.pass-criterion-title');
+                if (pc_title_h4) {
+                    const check_def = this.requirement_definition_ref?.checks?.find(c => (c?.id || c?.key) === check_id);
+                    const pc_def = check_def?.passCriteria?.find(p => (p?.id || p?.key) === pc_id);
+                    const check_idx = check_def ? (this.requirement_definition_ref.checks?.indexOf(check_def) ?? 0) : 0;
+                    const pc_idx = pc_def ? (check_def?.passCriteria?.indexOf(pc_def) ?? 0) : 0;
+                    const numbering = `${check_idx + 1}.${pc_idx + 1}`;
+                    const criterion_title = `${t('pass_criterion_label')} ${numbering}`;
+                    pc_title_h4.setAttribute('aria-label', `${criterion_title}. ${pc_status_text}`);
+                }
 
                 const passed_btn = pc_item_li.querySelector('button[data-action="set-pc-passed"]');
                 const failed_btn = pc_item_li.querySelector('button[data-action="set-pc-failed"]');

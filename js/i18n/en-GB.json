@@ -569,6 +569,8 @@
   "start_view_col_deficiency": "Deficiency index",
   "start_view_col_auditor": "Auditor",
   "start_view_col_duration": "Duration",
+  "start_view_col_download": "Download",
+  "start_view_download_audit_aria": "Download {details}",
   "start_view_duration_days": "{count} business days",
   "start_view_no_audits": "No audits yet.",
   "start_view_open_audit_aria": "Open audit {name}",

@@ -569,6 +569,8 @@
   "start_view_col_deficiency": "Bristindex",
   "start_view_col_auditor": "Granskare",
   "start_view_col_duration": "Tidsåtgång",
+  "start_view_col_download": "Ladda ner",
+  "start_view_download_audit_aria": "Ladda ner {details}",
   "start_view_duration_days": "{count} arbetsdagar",
   "start_view_no_audits": "Inga granskningar finns ännu.",
   "start_view_open_audit_aria": "Öppna granskningen {name}",
