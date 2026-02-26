@@ -10,7 +10,8 @@ import {
     import_rule,
     import_audit,
     delete_rule,
-    delete_audit
+    delete_audit,
+    export_rule
 } from '../api/client.js';
 
 export const AdminViewComponent = {
@@ -42,6 +43,7 @@ export const AdminViewComponent = {
         this.handle_delete_rule = this.handle_delete_rule.bind(this);
         this.handle_delete_audit = this.handle_delete_audit.bind(this);
         this.handle_download_audit = this.handle_download_audit.bind(this);
+        this.handle_download_rule = this.handle_download_rule.bind(this);
         this.handle_edit_rule = this.handle_edit_rule.bind(this);
         this.handle_open_audit = this.handle_open_audit.bind(this);
         this.handle_start_new_audit = this.handle_start_new_audit.bind(this);
@@ -456,6 +458,36 @@ export const AdminViewComponent = {
         }
     },
 
+    async handle_download_rule(rule_id) {
+        const t = this.get_t_func();
+        const show_msg = this.NotificationComponent?.show_global_message?.bind(this.NotificationComponent);
+        try {
+            const rule = await export_rule(rule_id);
+            if (!rule || !rule.content) {
+                if (show_msg) show_msg(t('error_internal'), 'error');
+                return;
+            }
+            const json_string = JSON.stringify(rule, null, 2);
+            const blob = new Blob([json_string], { type: 'application/json' });
+            const safe_name = (rule.name || 'regelfil').replace(/[\s\\/:*?"<>|]/g, '_').trim() || 'regelfil';
+            const version_suffix = rule.version != null ? `_v${rule.version}` : '';
+            const filename = `${safe_name}${version_suffix}.json`;
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.setAttribute('aria-hidden', 'true');
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } catch (err) {
+            if (show_msg) {
+                show_msg(t('admin_load_rule_error') + ' ' + (err.message || ''), 'error');
+            }
+        }
+    },
+
     render() {
         if (!this.root || !this.Helpers?.create_element) return;
 
@@ -559,10 +591,21 @@ export const AdminViewComponent = {
                     e.preventDefault();
                     this.handle_edit_rule(r.id);
                 });
+                const download_aria = t('admin_download_rule_aria', { name: link_text });
+                const icon_svg = (name, size = 16) => (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg(name, ['currentColor'], size) : '');
+                const download_btn = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-default', 'button-small', 'admin-download-btn'],
+                    html_content: `<span>${t('admin_download_label')}</span>` + icon_svg('save'),
+                    attributes: {
+                        type: 'button',
+                        'aria-label': download_aria
+                    }
+                });
+                download_btn.addEventListener('click', () => this.handle_download_rule(r.id));
                 const delete_label = t('delete') + ' ' + link_text;
                 const delete_btn = this.Helpers.create_element('button', {
                     class_name: ['button', 'button-danger', 'button-small', 'admin-delete-btn'],
-                    text_content: t('delete'),
+                    html_content: `<span>${t('delete')}</span>` + icon_svg('delete'),
                     attributes: {
                         type: 'button',
                         'aria-label': delete_label
@@ -583,8 +626,11 @@ export const AdminViewComponent = {
                         this.handle_delete_rule(r.id);
                     }
                 });
+                const btn_group = this.Helpers.create_element('div', { class_name: 'admin-rule-item-actions' });
+                btn_group.appendChild(download_btn);
+                btn_group.appendChild(delete_btn);
                 li.appendChild(label);
-                li.appendChild(delete_btn);
+                li.appendChild(btn_group);
                 rules_list.appendChild(li);
             });
         }

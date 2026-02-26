@@ -139,6 +139,14 @@ export async function delete_rule(id) {
     return api_delete(`/rules/${id}`);
 }
 
+/**
+ * Hämtar regelfil för nedladdning (samma data som export-endpointen returnerar).
+ * Returnerar { id, name, content, version } för att skapa blob och filnamn i UI.
+ */
+export async function export_rule(id) {
+    return api_get(`/rules/${id}/export`);
+}
+
 export async function get_audits(status) {
     const q = status ? `?status=${encodeURIComponent(status)}` : '';
     return api_get(`/audits${q}`);

@@ -14,7 +14,7 @@ const indexHtmlPath = path.resolve(__dirname, '..', '..', 'index.html');
 const translations = {
   start_view_h1: 'Granskningsverktyget',
   start_view_intro: 'Välkommen till Granskningsverktyget.',
-  start_view_audits_heading: 'Aktuella ärenden',
+  start_view_audits_heading: 'Pågående granskningar',
   start_view_no_audits: 'Inga granskningar finns ännu.',
   admin_loading: 'Laddar...',
   // Matchar nycklar i js/i18n/*.json så att även skiplänk och landmarks testas med översättningar
@@ -104,7 +104,7 @@ test('renders start view with heading and audits section', async () => {
   const h1 = screen.getByRole('heading', { level: 1 });
   expect(h1).toHaveTextContent('Granskningsverktyget');
 
-  const h2 = screen.getByRole('heading', { name: 'Aktuella ärenden' });
+  const h2 = screen.getByRole('heading', { name: 'Pågående granskningar' });
   expect(h2).toBeInTheDocument();
 
   StartViewComponent.destroy();
