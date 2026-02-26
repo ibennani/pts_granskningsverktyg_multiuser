@@ -15,7 +15,7 @@ export const EditRulefileMetadataViewComponent = {
         this.NotificationComponent = deps.NotificationComponent;
         
         if (this.Helpers?.load_css) {
-            await this.Helpers.load_css(this.CSS_PATH).catch(err => console.warn('[EditRulefileMetadataView] Failed to load CSS', err));
+            await this.Helpers.load_css(this.CSS_PATH).catch(err => { if (window.ConsoleManager) window.ConsoleManager.warn('[EditRulefileMetadataView] Failed to load CSS', err); });
         }
     },
 

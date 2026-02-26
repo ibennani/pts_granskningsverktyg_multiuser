@@ -96,12 +96,12 @@ window.DraftManager = DraftManager;
     // Debug-navigering: sätt window.__GV_DEBUG_NAV = true i konsolen ELLER lägg till ?debug=nav i URL
     if (typeof window !== 'undefined' && window.location.search.includes('debug=nav')) {
         window.__GV_DEBUG_NAV = true;
-        console.log('[GV-NAV] Debug aktiverad via URL (?debug=nav). Klicka Admin från Start och titta i konsolen.');
+        consoleManager.log('[GV-NAV] Debug aktiverad via URL (?debug=nav). Klicka Admin från Start och titta i konsolen.');
     }
 
     const nav_debug = (msg, data) => {
         if (window.__GV_DEBUG_NAV) {
-            console.log(`[GV-NAV] ${msg}`, data !== undefined ? data : '');
+            consoleManager.log(`[GV-NAV] ${msg}`, data !== undefined ? data : '');
         }
     };
 
@@ -1287,12 +1287,12 @@ window.DraftManager = DraftManager;
         subscribe((new_state, listener_meta) => {
             if (listener_meta?.skip_render) {
                 if (window.__GV_DEBUG_MODAL_SCROLL) {
-                    console.log('[GV-ModalDebug] subscribe: skip_render – ingen render');
+                    consoleManager.log('[GV-ModalDebug] subscribe: skip_render – ingen render');
                 }
                 return;
             }
             if (window.__GV_DEBUG_MODAL_SCROLL) {
-                console.log('[GV-ModalDebug] subscribe: RENDERAR top_action_bar, bottom_action_bar, current_view');
+                consoleManager.log('[GV-ModalDebug] subscribe: RENDERAR top_action_bar, bottom_action_bar, current_view');
             }
             try {
                 top_action_bar_instance.render();

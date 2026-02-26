@@ -88,7 +88,7 @@ export const RequirementAuditComponent = {
             this.unsubscribe_from_store = this.subscribe((_new_state, listener_meta) => {
                 if (listener_meta?.skip_render) return;
                 if (this.root && typeof this.render === 'function') {
-                    if (window.__GV_DEBUG_MODAL_SCROLL) console.log('[GV-ModalDebug] RequirementAuditComponent: render');
+                    if (window.__GV_DEBUG_MODAL_SCROLL && window.ConsoleManager) window.ConsoleManager.log('[GV-ModalDebug] RequirementAuditComponent: render');
                     this.render();
                 }
             });
@@ -101,39 +101,39 @@ export const RequirementAuditComponent = {
         const state = this.getState();
         
         if (!state || typeof state !== 'object') {
-            console.warn('[RequirementAuditComponent] No valid state available for data loading');
+            if (window.ConsoleManager) window.ConsoleManager.warn('[RequirementAuditComponent] No valid state available for data loading');
             return false;
         }
         
         if (!state.ruleFileContent || typeof state.ruleFileContent !== 'object') {
-            console.warn('[RequirementAuditComponent] No valid ruleFileContent available for data loading');
+            if (window.ConsoleManager) window.ConsoleManager.warn('[RequirementAuditComponent] No valid ruleFileContent available for data loading');
             return false;
         }
         
         if (!this.params?.sampleId) {
-            console.warn('[RequirementAuditComponent] No sampleId available for data loading');
+            if (window.ConsoleManager) window.ConsoleManager.warn('[RequirementAuditComponent] No sampleId available for data loading');
             return false;
         }
         
         if (!this.params?.requirementId) {
-            console.warn('[RequirementAuditComponent] No requirementId available for data loading');
+            if (window.ConsoleManager) window.ConsoleManager.warn('[RequirementAuditComponent] No requirementId available for data loading');
             return false;
         }
         
         if (!Array.isArray(state.samples)) {
-            console.warn('[RequirementAuditComponent] No valid samples array available for data loading');
+            if (window.ConsoleManager) window.ConsoleManager.warn('[RequirementAuditComponent] No valid samples array available for data loading');
             return false;
         }
         
         this.current_sample = state.samples.find(s => s && s.id === this.params.sampleId);
         if (!this.current_sample) {
-            console.warn('[RequirementAuditComponent] Sample not found:', this.params.sampleId);
+            if (window.ConsoleManager) window.ConsoleManager.warn('[RequirementAuditComponent] Sample not found:', this.params.sampleId);
             return false;
         }
         
         this.current_requirement = state.ruleFileContent.requirements?.[this.params.requirementId];
         if (!this.current_requirement) {
-            console.warn('[RequirementAuditComponent] Requirement not found:', this.params.requirementId);
+            if (window.ConsoleManager) window.ConsoleManager.warn('[RequirementAuditComponent] Requirement not found:', this.params.requirementId);
             return false;
         }
         
@@ -144,7 +144,7 @@ export const RequirementAuditComponent = {
                 try {
                     return JSON.parse(JSON.stringify(result_from_store));
                 } catch (error) {
-                    console.warn('[RequirementAuditComponent] Failed to clone result from store:', error);
+                    if (window.ConsoleManager) window.ConsoleManager.warn('[RequirementAuditComponent] Failed to clone result from store:', error);
                     return { status: 'not_audited', commentToAuditor: '', commentToActor: '', lastStatusUpdate: null, stuckProblemDescription: '', checkResults: {} };
                 }
             })()
@@ -188,7 +188,7 @@ export const RequirementAuditComponent = {
         try {
             modified_result = JSON.parse(JSON.stringify(this.current_result));
         } catch (error) {
-            console.warn('[RequirementAuditComponent] Failed to clone current result for status change:', error);
+            if (window.ConsoleManager) window.ConsoleManager.warn('[RequirementAuditComponent] Failed to clone current result for status change:', error);
             return;
         }
         const check_result = modified_result.checkResults[change_info.checkId];
@@ -519,7 +519,7 @@ export const RequirementAuditComponent = {
                 try {
                     result = JSON.parse(JSON.stringify(this.current_result));
                 } catch (error) {
-                    console.warn('[RequirementAuditComponent] Failed to clone current result for confirm status:', error);
+                    if (window.ConsoleManager) window.ConsoleManager.warn('[RequirementAuditComponent] Failed to clone current result for confirm status:', error);
                     return;
                 }
                 delete result.needsReview;

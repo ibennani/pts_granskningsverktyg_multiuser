@@ -23,7 +23,7 @@ export function formatDeficiencyId(number, totalCount) {
 }
 
 export function removeAllDeficiencyIds(auditState) {
-    console.log("[AuditLogic] Removing all deficiency IDs...");
+    if (window.ConsoleManager) window.ConsoleManager.log("[AuditLogic] Removing all deficiency IDs...");
     const newState = JSON.parse(JSON.stringify(auditState));
     
     (newState.samples || []).forEach(sample => {
@@ -41,7 +41,7 @@ export function removeAllDeficiencyIds(auditState) {
 }
 
 export function assignSortedDeficiencyIdsOnLock(auditState) {
-    console.log("[AuditLogic] Running assignSortedDeficiencyIdsOnLock...");
+    if (window.ConsoleManager) window.ConsoleManager.log("[AuditLogic] Running assignSortedDeficiencyIdsOnLock...");
     const newState = JSON.parse(JSON.stringify(auditState));
     newState.deficiencyCounter = 1;
 
@@ -195,7 +195,7 @@ export function calculate_check_status(check_object, pass_criteria_statuses_map,
 export function calculate_requirement_status(requirement_object, requirement_result_object) {
     // Förbättrad null-säkerhet och validering
     if (!requirement_object || typeof requirement_object !== 'object') {
-        console.warn('[AuditLogic] calculate_requirement_status: Invalid requirement_object');
+        if (window.ConsoleManager) window.ConsoleManager.warn('[AuditLogic] calculate_requirement_status: Invalid requirement_object');
         return "not_audited";
     }
     
@@ -213,7 +213,7 @@ export function calculate_requirement_status(requirement_object, requirement_res
         for (const check_definition of requirement_object.checks) {
             // Validera check_definition
             if (!check_definition || typeof check_definition !== 'object' || !check_definition.id) {
-                console.warn('[AuditLogic] calculate_requirement_status: Invalid check_definition:', check_definition);
+                if (window.ConsoleManager) window.ConsoleManager.warn('[AuditLogic] calculate_requirement_status: Invalid check_definition:', check_definition);
                 has_not_audited_check = true;
                 continue;
             }
@@ -230,7 +230,7 @@ export function calculate_requirement_status(requirement_object, requirement_res
                 try {
                     status = calculate_check_status(check_definition, checkResultForDef.passCriteria, checkResultForDef.overallStatus);
                 } catch (error) {
-                    console.warn('[AuditLogic] calculate_requirement_status: Error calculating check status:', error);
+                    if (window.ConsoleManager) window.ConsoleManager.warn('[AuditLogic] calculate_requirement_status: Error calculating check status:', error);
                     status = 'not_audited';
                 }
             }
@@ -248,7 +248,7 @@ export function calculate_requirement_status(requirement_object, requirement_res
         if (has_any_button_pressed) return "partially_audited";
         return "not_audited";
     } catch (error) {
-        console.error('[AuditLogic] calculate_requirement_status: Error processing requirement:', error);
+        if (window.ConsoleManager) window.ConsoleManager.warn('[AuditLogic] calculate_requirement_status: Error processing requirement:', error);
         return "not_audited";
     }
 }
@@ -256,17 +256,17 @@ export function calculate_requirement_status(requirement_object, requirement_res
 export function get_relevant_requirements_for_sample(rule_file_content, sample) {
     // Förbättrad null-säkerhet och validering
     if (!rule_file_content || typeof rule_file_content !== 'object') {
-        console.warn('[AuditLogic] get_relevant_requirements_for_sample: Invalid rule_file_content');
+        if (window.ConsoleManager) window.ConsoleManager.warn('[AuditLogic] get_relevant_requirements_for_sample: Invalid rule_file_content');
         return [];
     }
     
     if (!rule_file_content.requirements || typeof rule_file_content.requirements !== 'object') {
-        console.warn('[AuditLogic] get_relevant_requirements_for_sample: Invalid or missing requirements object');
+        if (window.ConsoleManager) window.ConsoleManager.warn('[AuditLogic] get_relevant_requirements_for_sample: Invalid or missing requirements object');
         return [];
     }
     
     if (!sample || typeof sample !== 'object') {
-        console.warn('[AuditLogic] get_relevant_requirements_for_sample: Invalid sample object');
+        if (window.ConsoleManager) window.ConsoleManager.warn('[AuditLogic] get_relevant_requirements_for_sample: Invalid sample object');
         return [];
     }
     
@@ -288,7 +288,7 @@ export function get_relevant_requirements_for_sample(rule_file_content, sample) 
             return req.contentType.some(ct => sample.selectedContentTypes.includes(ct));
         });
     } catch (error) {
-        console.error('[AuditLogic] get_relevant_requirements_for_sample: Error processing requirements:', error);
+        if (window.ConsoleManager) window.ConsoleManager.warn('[AuditLogic] get_relevant_requirements_for_sample: Error processing requirements:', error);
         return [];
     }
 }

@@ -47,7 +47,7 @@ export class GlobalActionBarComponent {
         const link_tag = document.querySelector(`link[href="${this.CSS_PATH}"]`);
         if (!link_tag) await this.Helpers.load_css(this.CSS_PATH);
       } catch (error) {
-        console.warn('Failed to load CSS for GlobalActionBarComponent:', error);
+        if (window.ConsoleManager) window.ConsoleManager.warn('Failed to load CSS for GlobalActionBarComponent:', error);
       }
     }
 

@@ -51,7 +51,7 @@ export const AdminViewComponent = {
                 timeout: 5000,
                 maxRetries: 2
             }).catch(() => {
-                console.warn('[AdminViewComponent] Continuing without CSS due to loading failure');
+                if (window.ConsoleManager) window.ConsoleManager.warn('[AdminViewComponent] Continuing without CSS due to loading failure');
             });
         }
         this._poll_timer = null;

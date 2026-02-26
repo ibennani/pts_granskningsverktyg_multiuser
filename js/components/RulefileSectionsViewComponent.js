@@ -23,7 +23,7 @@ export const RulefileSectionsViewComponent = {
         this.content_types_form_initial_focus_set = false; // Flagga för att veta om fokus redan har satts på content_types-formuläret
         
         if (this.Helpers?.load_css) {
-            await this.Helpers.load_css(this.CSS_PATH).catch(err => console.warn('[RulefileSectionsViewComponent] Failed to load CSS', err));
+            await this.Helpers.load_css(this.CSS_PATH).catch(err => { if (window.ConsoleManager) window.ConsoleManager.warn('[RulefileSectionsViewComponent] Failed to load CSS', err); });
         }
     },
 
@@ -213,7 +213,7 @@ export const RulefileSectionsViewComponent = {
             try {
                 return JSON.stringify(value);
             } catch (error) {
-                console.warn('[RulefileSectionsViewComponent] Could not stringify value', value, error);
+                if (window.ConsoleManager) window.ConsoleManager.warn('[RulefileSectionsViewComponent] Could not stringify value', value, error);
                 return '';
             }
         }
@@ -250,7 +250,7 @@ export const RulefileSectionsViewComponent = {
                 || (typeof navigator !== 'undefined' ? navigator.language : 'en-GB');
             return date.toLocaleDateString(locale, { year: 'numeric', month: '2-digit', day: '2-digit' });
         } catch (error) {
-            console.warn('[RulefileSectionsViewComponent] Failed to format date', iso_string, error);
+            if (window.ConsoleManager) window.ConsoleManager.warn('[RulefileSectionsViewComponent] Failed to format date', iso_string, error);
             return iso_string;
         }
     },
@@ -556,9 +556,9 @@ export const RulefileSectionsViewComponent = {
             
             // Debug: logga om matchning misslyckas (kan tas bort senare)
             if (!matching_category) {
-                console.warn('[RulefileSectionsViewComponent] No matching category found for page type:', page_type_str, 'Available categories:', sample_categories.map(c => c.text || c.id));
+                if (window.ConsoleManager) window.ConsoleManager.warn('[RulefileSectionsViewComponent] No matching category found for page type:', page_type_str, 'Available categories:', sample_categories.map(c => c.text || c.id));
             } else if (!Array.isArray(matching_category.categories) || matching_category.categories.length === 0) {
-                console.warn('[RulefileSectionsViewComponent] Matching category found but no categories array:', matching_category);
+                if (window.ConsoleManager) window.ConsoleManager.warn('[RulefileSectionsViewComponent] Matching category found but no categories array:', matching_category);
             }
 
             // Skapa wrapper för varje sidtyp med korrekt styling

@@ -42,15 +42,15 @@ export const SideMenuComponent = {
 
                 const menu_model = this.get_menu_model();
                 if (!menu_model.should_show) {
-                    if (window.__GV_DEBUG_MODAL_SCROLL) console.log('[GV-ModalDebug] SideMenu: full render (hidden)');
+                    if (window.__GV_DEBUG_MODAL_SCROLL && window.ConsoleManager) window.ConsoleManager.log('[GV-ModalDebug] SideMenu: full render (hidden)');
                     this.render();
                     return;
                 }
                 if (this.update_counts_only(menu_model)) {
-                    if (window.__GV_DEBUG_MODAL_SCROLL) console.log('[GV-ModalDebug] SideMenu: update_counts_only');
+                    if (window.__GV_DEBUG_MODAL_SCROLL && window.ConsoleManager) window.ConsoleManager.log('[GV-ModalDebug] SideMenu: update_counts_only');
                     return;
                 }
-                if (window.__GV_DEBUG_MODAL_SCROLL) console.log('[GV-ModalDebug] SideMenu: full render');
+                if (window.__GV_DEBUG_MODAL_SCROLL && window.ConsoleManager) window.ConsoleManager.log('[GV-ModalDebug] SideMenu: full render');
                 this.render();
             });
         }
@@ -211,7 +211,7 @@ export const SideMenuComponent = {
 
         link.addEventListener('click', (event) => {
             if (window.__GV_DEBUG_NAV) {
-                console.log('[GV-NAV] Sidomeny-länk klickad', { view_name, params, has_router: typeof this.router === 'function' });
+                if (window.ConsoleManager) window.ConsoleManager.log('[GV-NAV] Sidomeny-länk klickad', { view_name, params, has_router: typeof this.router === 'function' });
             }
             if (typeof this.router === 'function') {
                 event.preventDefault();

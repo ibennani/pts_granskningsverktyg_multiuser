@@ -3,6 +3,7 @@
 
 import * as Helpers from '../utils/helpers.js';
 import * as Translation from '../translation_logic.js';
+import { consoleManager } from '../utils/console_manager.js';
 
 // --- GENERIC FORM HELPERS ---
 function _createFormField(labelTextKey, name, value, type = 'text', instructionTextKey = null, isRequired = false) {
@@ -61,7 +62,7 @@ export function buildMetadataEditor(metadata, onSaveCallback) {
 // --- REQUIREMENTS EDITOR LOGIC ---
 export function buildRequirementsEditor(requirements, allContentTypes, onSaveCallback, onDeleteCallback) {
     const t = Translation.t;
-    console.log('%c[DEBUG] buildRequirementsEditor called', 'color: #0000FF; font-weight: bold;', { 
+    consoleManager.log('%c[DEBUG] buildRequirementsEditor called', 'color: #0000FF; font-weight: bold;', { 
         requirements, 
         allContentTypes, 
         onSaveCallback: typeof onSaveCallback, 
@@ -88,7 +89,7 @@ export function buildRequirementsEditor(requirements, allContentTypes, onSaveCal
     };
     const list = Helpers.create_element('ul', { class_name: 'requirement-items-ul' });
     const requirementsList = Object.values(requirements || {});
-    console.log('%c[DEBUG] Rendering requirements list:', 'color: #0000FF; font-weight: bold;', requirementsList);
+    consoleManager.log('%c[DEBUG] Rendering requirements list:', 'color: #0000FF; font-weight: bold;', requirementsList);
     requirementsList.sort((a,b) => Helpers.natural_sort(a.title, b.title)).forEach(req => {
         const li = Helpers.create_element('li', { class_name: 'requirement-item compact-twoline' });
         
@@ -388,13 +389,13 @@ function _parseRequirementForm(form, originalReq, isNew) {
         try {
             const conditionElement = checkFS.querySelector('[name="condition"]');
             if (!conditionElement) {
-                console.warn('Check fieldset missing condition element, skipping');
+                consoleManager.warn('Check fieldset missing condition element, skipping');
                 return null;
             }
             
             const condition = conditionElement.value.trim();
             if (!condition) {
-                console.warn('Check fieldset has empty condition, skipping');
+                consoleManager.warn('Check fieldset has empty condition, skipping');
                 return null;
             }
             
@@ -403,13 +404,13 @@ function _parseRequirementForm(form, originalReq, isNew) {
                 const templateElement = pcLi.querySelector('[name="passCriterionTemplate"]');
                 
                 if (!requirementElement) {
-                    console.warn('Pass criterion missing requirement element, skipping');
+                    consoleManager.warn('Pass criterion missing requirement element, skipping');
                     return null;
                 }
                 
                 const requirement = requirementElement.value.trim();
                 if (!requirement) {
-                    console.warn('Pass criterion has empty requirement, skipping');
+                    consoleManager.warn('Pass criterion has empty requirement, skipping');
                     return null;
                 }
                 
@@ -428,7 +429,7 @@ function _parseRequirementForm(form, originalReq, isNew) {
                 ifNo: []
             };
         } catch (error) {
-            console.warn('Error parsing check fieldset:', error);
+            consoleManager.warn('Error parsing check fieldset:', error);
             return null;
         }
     }).filter(c => c && c.condition && c.condition.trim() !== '');

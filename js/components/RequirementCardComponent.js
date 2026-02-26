@@ -23,7 +23,7 @@ export const RequirementCardComponent = {
 
         // Check for required dependencies
         if (!Helpers || typeof Helpers.create_element !== 'function') {
-            console.error("RequirementCardComponent: Helpers.create_element not available!");
+            if (window.ConsoleManager) window.ConsoleManager.warn("RequirementCardComponent: Helpers.create_element not available!");
             const el = document.createElement('li');
             el.textContent = `Error: Helpers missing for ${requirement?.title || 'Unknown Requirement'}`;
             return el;
@@ -69,7 +69,7 @@ export const RequirementCardComponent = {
             if (router_cb && typeof router_cb === 'function') {
                 router_cb('requirement_audit', { sampleId: sample_id, requirementId: requirement.key });
             } else {
-                console.warn("RequirementCard: router_cb not provided or not a function for title navigation.");
+                if (window.ConsoleManager) window.ConsoleManager.warn("RequirementCard: router_cb not provided or not a function for title navigation.");
             }
         });
         title_h_container.appendChild(title_button);
@@ -115,7 +115,7 @@ export const RequirementCardComponent = {
                     await Helpers.load_css(this.CSS_PATH);
                     this.css_loaded = true;
                 } catch (error) {
-                    console.warn("Failed to load CSS for RequirementCardComponent:", error);
+                    if (window.ConsoleManager) window.ConsoleManager.warn("Failed to load CSS for RequirementCardComponent:", error);
                 }
             } else {
                 this.css_loaded = true; // CSS already in DOM

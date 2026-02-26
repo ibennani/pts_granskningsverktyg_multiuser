@@ -291,7 +291,7 @@ export const DraftManager = {
         const empty_only = !is_fresh;
 
         if (!is_fresh) {
-            console.warn('[DraftManager] Utkast ar aldre an auto-restore, aterstaller endast tomma falt.');
+            if (window.ConsoleManager) window.ConsoleManager.warn('[DraftManager] Utkast ar aldre an auto-restore, aterstaller endast tomma falt.');
         }
 
         this.suspend_capture = true;
@@ -361,7 +361,7 @@ export const DraftManager = {
         const current_time = Number(current?.updatedAt || 0);
         if (incoming_time > current_time) {
             this.has_conflict_flag = true;
-            console.warn('[DraftManager] Utkast uppdaterades i en annan flik.');
+            if (window.ConsoleManager) window.ConsoleManager.warn('[DraftManager] Utkast uppdaterades i en annan flik.');
             if (this.on_conflict) {
                 this.on_conflict(incoming);
             }
@@ -389,7 +389,7 @@ export const DraftManager = {
         const serialized = JSON.stringify(this.current_draft);
         const session_ok = this._write_to_storage(sessionStorage, storage_key, serialized);
         if (!session_ok) {
-            console.warn('[DraftManager] Kunde inte spara utkast i sessionStorage.');
+            if (window.ConsoleManager) window.ConsoleManager.warn('[DraftManager] Kunde inte spara utkast i sessionStorage.');
         }
 
         const local_payload = this._strip_sensitive_fields(this.current_draft);
@@ -397,7 +397,7 @@ export const DraftManager = {
             const local_serialized = JSON.stringify(local_payload);
             const local_ok = this._write_to_storage(localStorage, storage_key, local_serialized);
             if (!local_ok) {
-                console.warn('[DraftManager] Kunde inte spara utkast i localStorage.');
+                if (window.ConsoleManager) window.ConsoleManager.warn('[DraftManager] Kunde inte spara utkast i localStorage.');
             }
         }
 

@@ -10,7 +10,7 @@ export const LayoutManager = {
         this.appContainer = document.getElementById('app-container');
 
         if (!this.appContainer) {
-            console.warn('LayoutManager: #app-container hittades inte.');
+            if (typeof window !== 'undefined' && window.ConsoleManager) window.ConsoleManager.warn('LayoutManager: #app-container hittades inte.');
             return;
         }
 

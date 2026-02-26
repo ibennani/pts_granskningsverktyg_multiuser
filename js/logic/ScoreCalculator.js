@@ -53,7 +53,7 @@ export function calculateQualityScore(auditState) {
     const safe_sample_count = Array.isArray(auditState?.samples) ? auditState.samples.length : 0;
 
     if (!auditState) {
-        console.warn('[ScoreCalculator] auditState is null or undefined');
+        if (window.ConsoleManager) window.ConsoleManager.warn('[ScoreCalculator] auditState is null or undefined');
         return {
             totalScore: 0,
             principles: {
@@ -67,7 +67,7 @@ export function calculateQualityScore(auditState) {
     }
 
     if (!auditState.ruleFileContent?.requirements) {
-        console.warn('[ScoreCalculator] Missing requirements in ruleFileContent');
+        if (window.ConsoleManager) window.ConsoleManager.warn('[ScoreCalculator] Missing requirements in ruleFileContent');
         return {
             totalScore: 0,
             principles: {
@@ -165,4 +165,4 @@ export function calculateQualityScore(auditState) {
     };
 }
 
-console.log("[ScoreCalculator.js] ScoreCalculator loaded.");
+if (typeof window !== 'undefined' && window.ConsoleManager) window.ConsoleManager.log("[ScoreCalculator.js] ScoreCalculator loaded.");

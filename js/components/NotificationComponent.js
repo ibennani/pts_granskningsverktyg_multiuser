@@ -15,7 +15,7 @@ export const NotificationComponent = {
                     attributes: { 'aria-live': 'polite', hidden: 'true' }
                 });
             } else if (!window.Helpers && !this.global_message_element) {
-                console.error("NotificationComponent: Helpers module not available to create message container.");
+                if (window.ConsoleManager) window.ConsoleManager.warn("NotificationComponent: Helpers module not available to create message container.");
             } else if (this.global_message_element) {
                 // Säkerställ att aria-live alltid finns på elementet
                 if (!this.global_message_element.getAttribute('aria-live')) {
@@ -30,7 +30,7 @@ export const NotificationComponent = {
             // Try to get element if it was created after init
             this.global_message_element = document.getElementById(GLOBAL_MESSAGE_CONTAINER_ID);
             if (!this.global_message_element) {
-                console.error("NotificationComponent: Cannot update message, core dependencies missing or element not ready.");
+                if (window.ConsoleManager) window.ConsoleManager.warn("NotificationComponent: Cannot update message, core dependencies missing or element not ready.");
                 return;
             }
         }
@@ -80,7 +80,7 @@ export const NotificationComponent = {
         if (!this.global_message_element) {
             this.init().then(() => { 
                 if (this.global_message_element) this._update_global_message_content(message, type, action || null);
-                else console.error("NotificationComponent: Still cannot show message, container not established after re-init.");
+                else if (window.ConsoleManager) window.ConsoleManager.warn("NotificationComponent: Still cannot show message, container not established after re-init.");
             });
             return;
         }
@@ -91,7 +91,7 @@ export const NotificationComponent = {
         if (!this.global_message_element) {
             this.init().then(() => { 
                 if (this.global_message_element) this._update_global_message_content(message, type, action);
-                else console.error("NotificationComponent: Still cannot show message, container not established after re-init.");
+                else if (window.ConsoleManager) window.ConsoleManager.warn("NotificationComponent: Still cannot show message, container not established after re-init.");
             });
             return;
         }

@@ -17,7 +17,7 @@ export const ViewRulefileRequirementComponent = {
         
         this.plate_element_ref = null;
 
-        await this.Helpers.load_css(this.CSS_PATH).catch(e => console.warn(e));
+        await this.Helpers.load_css(this.CSS_PATH).catch(e => { if (window.ConsoleManager) window.ConsoleManager.warn(e); });
     },
 
     _safe_parse_markdown(markdown_string, is_inline = false) {

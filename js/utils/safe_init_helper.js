@@ -34,12 +34,12 @@ export async function safeAssignGlobals(target, dependencyNames, maxRetries = 10
         }
         
         if (attempt < maxRetries - 1) {
-            console.warn(`SafeAssignGlobals: Attempt ${attempt + 1} failed, retrying in ${retryDelay}ms...`);
+            if (window.ConsoleManager) window.ConsoleManager.warn(`SafeAssignGlobals: Attempt ${attempt + 1} failed, retrying in ${retryDelay}ms...`);
             await new Promise(resolve => setTimeout(resolve, retryDelay));
         }
     }
     
-    console.error('SafeAssignGlobals: Failed to assign all dependencies after maximum retries');
+    if (window.ConsoleManager) window.ConsoleManager.warn('SafeAssignGlobals: Failed to assign all dependencies after maximum retries');
     return false;
 }
 
@@ -71,7 +71,7 @@ function getDependencyValue(depName) {
         try {
             return getter();
         } catch (error) {
-            console.warn(`SafeInitHelper: Failed to get dependency '${depName}':`, error);
+            if (window.ConsoleManager) window.ConsoleManager.warn(`SafeInitHelper: Failed to get dependency '${depName}':`, error);
         }
     }
     
@@ -157,11 +157,11 @@ export function safeAssignDependencies(target, dependencyMap) {
             if (value) {
                 target[`${name}_ref`] = value;
             } else {
-                console.warn(`SafeAssignDependencies: Dependency '${name}' not available`);
+                if (window.ConsoleManager) window.ConsoleManager.warn(`SafeAssignDependencies: Dependency '${name}' not available`);
                 allAssigned = false;
             }
         } catch (error) {
-            console.warn(`SafeAssignDependencies: Error getting dependency '${name}':`, error);
+            if (window.ConsoleManager) window.ConsoleManager.warn(`SafeAssignDependencies: Error getting dependency '${name}':`, error);
             allAssigned = false;
         }
     }

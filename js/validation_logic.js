@@ -1,8 +1,10 @@
 // js/validation_logic.js
 
+import { consoleManager } from './utils/console_manager.js';
+
 export function validate_rule_file_json(json_object, options = {}) {
     const t = typeof options.t === 'function' ? options.t : ((key) => `**${key}**`);
-    console.log("[ValidationLogic] Running validation for new rule file (hierarchical structure)...");
+    consoleManager.log("[ValidationLogic] Running validation for new rule file (hierarchical structure)...");
 
     if (typeof json_object !== 'object' || json_object === null) {
         return { isValid: false, message: t('rule_file_invalid_json') };
@@ -199,7 +201,7 @@ export function validate_rule_file_json(json_object, options = {}) {
         }
     }
 
-    console.log("[ValidationLogic] Validation passed for hierarchical structure.");
+    consoleManager.log("[ValidationLogic] Validation passed for hierarchical structure.");
     return { isValid: true, message: t('rule_file_loaded_successfully') };
 }
 
@@ -213,7 +215,7 @@ export function validate_saved_audit_file(json_object, options = {}) {
     const missing_keys = required_keys.filter(key => !(key in json_object));
 
     if (missing_keys.length > 0) {
-        console.warn(`[ValidationLogic] Saved audit file is missing keys: ${missing_keys.join(', ')}`);
+        consoleManager.warn(`[ValidationLogic] Saved audit file is missing keys: ${missing_keys.join(', ')}`);
         return { isValid: false, message: `${t('error_invalid_saved_audit_file')} (Missing: ${missing_keys.join(', ')})` };
     }
 

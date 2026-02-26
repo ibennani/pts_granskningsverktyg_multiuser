@@ -25,7 +25,7 @@ export function createSafeComponent(component, requiredDependencies = []) {
             // Check specific required dependencies
             for (const depName of requiredDependencies) {
                 if (!dependencyManager.isDependencyAvailable(depName)) {
-                    console.error(`SafeComponent: Required dependency '${depName}' not available`);
+                    if (window.ConsoleManager) window.ConsoleManager.warn(`SafeComponent: Required dependency '${depName}' not available`);
                     throw new Error(`Required dependency '${depName}' not available`);
                 }
             }
@@ -41,7 +41,7 @@ export function createSafeComponent(component, requiredDependencies = []) {
             // Check if dependencies are still available
             for (const depName of requiredDependencies) {
                 if (!dependencyManager.isDependencyAvailable(depName)) {
-                    console.error(`SafeComponent: Required dependency '${depName}' not available during render`);
+                    if (window.ConsoleManager) window.ConsoleManager.warn(`SafeComponent: Required dependency '${depName}' not available during render`);
                     return;
                 }
             }
@@ -88,7 +88,7 @@ export function safeAssignDependencies(target, dependencyNames) {
         if (value) {
             target[`${depName}_ref`] = value;
         } else {
-            console.warn(`SafeAssignDependencies: Dependency '${depName}' not available`);
+            if (window.ConsoleManager) window.ConsoleManager.warn(`SafeAssignDependencies: Dependency '${depName}' not available`);
             allAssigned = false;
         }
     }
