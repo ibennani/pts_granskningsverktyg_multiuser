@@ -76,7 +76,6 @@ export const ChecklistHandler = {
 
         this.container_ref.addEventListener('click', this.handle_checklist_click);
         this.container_ref.addEventListener('input', this.handle_textarea_input);
-        this.container_ref.addEventListener('blur', this.handle_textarea_input, true);
         // Add keyboard support for accessibility
         this.container_ref.addEventListener('keydown', this.handle_checklist_keydown);
     },
@@ -914,7 +913,6 @@ export const ChecklistHandler = {
             this.flush_observations_before_destroy();
             this.container_ref.removeEventListener('click', this.handle_checklist_click);
             this.container_ref.removeEventListener('input', this.handle_textarea_input);
-            this.container_ref.removeEventListener('blur', this.handle_textarea_input, true);
             this.container_ref.removeEventListener('keydown', this.handle_checklist_keydown);
             this.container_ref.innerHTML = '';
         }

@@ -624,7 +624,6 @@ export const RequirementAuditComponent = {
         fg1.appendChild(label1);
         this.comment_to_auditor_input = this.Helpers.create_element('textarea', { id: 'commentToAuditor', class_name: 'form-control', attributes: { rows: '4' } });
         this.comment_to_auditor_input.addEventListener('input', this.handle_comment_input_with_autosave);
-        this.comment_to_auditor_input.addEventListener('blur', this.handle_comment_input);
         fg1.appendChild(this.comment_to_auditor_input);
 
         const fg2 = this.Helpers.create_element('div', { class_name: 'form-group' });
@@ -632,7 +631,6 @@ export const RequirementAuditComponent = {
         fg2.appendChild(label2);
         this.comment_to_actor_input = this.Helpers.create_element('textarea', { id: 'commentToActor', class_name: 'form-control', attributes: { rows: '4' } });
         this.comment_to_actor_input.addEventListener('input', this.handle_comment_input_with_autosave);
-        this.comment_to_actor_input.addEventListener('blur', this.handle_comment_input);
         fg2.appendChild(this.comment_to_actor_input);
         
         container.append(fg1, fg2);
@@ -771,12 +769,10 @@ export const RequirementAuditComponent = {
         // Remove event listeners
         if (this.comment_to_auditor_input) {
             this.comment_to_auditor_input.removeEventListener('input', this.handle_comment_input_with_autosave);
-            this.comment_to_auditor_input.removeEventListener('blur', this.handle_comment_input);
             this.comment_to_auditor_input = null;
         }
         if (this.comment_to_actor_input) {
             this.comment_to_actor_input.removeEventListener('input', this.handle_comment_input_with_autosave);
-            this.comment_to_actor_input.removeEventListener('blur', this.handle_comment_input);
             this.comment_to_actor_input = null;
         }
         
