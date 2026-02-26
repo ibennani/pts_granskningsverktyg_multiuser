@@ -16,7 +16,7 @@ import * as RulefileUpdaterLogic from './logic/rulefile_updater_logic.js';
 import * as ScoreCalculator from './logic/ScoreCalculator.js';
 import * as RuleDataProcessor from './logic/RuleDataProcessor.js';
 import * as RulefileEditorLogic from './logic/rulefile_editor_logic.js';
-import { AutosaveService } from './logic/autosave_service.js';
+import { AutosaveService, capture_focus_state, restore_focus_state } from './logic/autosave_service.js';
 import { init_version_check_service } from './logic/version_check_service.js';
 import { init_audit_view_poll_service } from './logic/audit_view_poll_service.js';
 import { init_rulefile_view_poll_service } from './logic/rulefile_view_poll_service.js';
@@ -881,7 +881,9 @@ window.DraftManager = DraftManager;
             top_action_bar_instance.render();
             bottom_action_bar_container.style.display = '';
             bottom_action_bar_instance.render();
-            current_view_component_instance.render();
+            if (!is_focus_in_editable_field(view_root)) {
+                current_view_component_instance.render();
+            }
             ensure_skip_link_target(view_root);
             return;
         }
@@ -1284,6 +1286,15 @@ window.DraftManager = DraftManager;
             
             consoleManager.info('[Main.js] Global event listeners cleaned up');
         };
+
+        function is_focus_in_editable_field(view_root) {
+            if (!view_root) return false;
+            const active = document.activeElement;
+            if (!active || !view_root.contains(active)) return false;
+            const tag = active.tagName ? active.tagName.toLowerCase() : '';
+            return tag === 'input' || tag === 'textarea' || tag === 'select';
+        }
+
         subscribe((new_state, listener_meta) => {
             if (listener_meta?.skip_render) {
                 if (window.__GV_DEBUG_MODAL_SCROLL) {
@@ -1342,32 +1353,31 @@ window.DraftManager = DraftManager;
                             return;
                         }
                     }
-                    // Hoppa över omrendering av kravvyn när användaren har fokus i ett av textfälten
-                    // (observation, kommentar till revisor/aktör). Förhindrar att sidan ritas om och
-                    // fokus flyttas till h1 vid t.ex. poll eller andra state-uppdateringar.
-                    if (current_view_name_rendered === 'requirement_audit') {
-                        const active = document.activeElement;
-                        if (active && active.tagName && active.tagName.toLowerCase() === 'textarea') {
-                            const id = active.id || '';
-                            const is_audit_textarea = id === 'commentToAuditor' || id === 'commentToActor' ||
-                                (active.classList && active.classList.contains('pc-observation-detail-textarea'));
-                            if (is_audit_textarea) {
-                                return;
-                            }
-                        }
+                    const view_root = main_view_root || app_container;
+                    if (is_focus_in_editable_field(view_root)) {
+                        return;
                     }
+                    const scroll_before = {
+                        windowY: window.scrollY,
+                        appContainer: document.getElementById('app-container')?.scrollTop ?? 0,
+                        mainViewRoot: document.getElementById('app-main-view-root')?.scrollTop ?? 0
+                    };
+                    const focus_state = capture_focus_state(view_root);
+                    const window_scroll = focus_state ? { x: window.scrollX, y: window.scrollY } : null;
                     try {
-                        const scroll_before = {
-                            windowY: window.scrollY,
-                            appContainer: document.getElementById('app-container')?.scrollTop ?? 0,
-                            mainViewRoot: document.getElementById('app-main-view-root')?.scrollTop ?? 0
-                        };
                         const render_promise = current_view_component_instance.render();
                         if (DraftManager?.restoreIntoDom) {
                             DraftManager.restoreIntoDom(main_view_root || app_container);
                         }
                         const restore_scroll = () => {
                             requestAnimationFrame(() => {
+                                if (focus_state && view_root) {
+                                    restore_focus_state({
+                                        focus_root: view_root,
+                                        focus_state,
+                                        window_scroll
+                                    });
+                                }
                                 window.scrollTo(0, scroll_before.windowY);
                                 document.documentElement.scrollTop = scroll_before.windowY;
                                 document.body.scrollTop = scroll_before.windowY;
