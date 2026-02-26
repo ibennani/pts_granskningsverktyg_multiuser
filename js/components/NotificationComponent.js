@@ -57,7 +57,8 @@ export const NotificationComponent = {
                 const btn = document.createElement('button');
                 btn.type = 'button';
                 btn.className = 'global-message-action-btn';
-                btn.textContent = action.label || 'Ok';
+                const okLabel = (typeof window.Translation?.t === 'function') ? window.Translation.t('generic_ok') : 'Ok';
+                btn.textContent = action.label || okLabel;
                 btn.addEventListener('click', () => {
                     this.clear_global_message();
                     action.callback();

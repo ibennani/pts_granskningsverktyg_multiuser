@@ -107,9 +107,10 @@ export const MetadataFormComponent = {
     },
 
     render(options = {}) {
+        const t = this.Translation?.t || (k => k);
         const {
             initialData = {},
-            submitButtonText = 'Submit',
+            submitButtonText = t('metadata_form_submit'),
             cancelButtonText = null
         } = options;
 

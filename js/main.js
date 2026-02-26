@@ -664,7 +664,7 @@ window.DraftManager = DraftManager;
             restorePolicy: { max_auto_restore_age_ms: 2 * 60 * 60 * 1000 },
             onConflict: () => {
                 if (NotificationComponent?.show_global_message) {
-                    NotificationComponent.show_global_message('Utkast uppdaterades i annan flik.', 'info');
+                    NotificationComponent.show_global_message((window.Translation?.t && window.Translation.t('draft_updated_other_tab')) || 'Utkast uppdaterades i annan flik.', 'info');
                 } else {
                     consoleManager.warn('[Main.js] Draft conflict detected.');
                 }
