@@ -42,7 +42,7 @@ export const UpdateRulefileViewComponent = {
                     await this.Helpers.load_css(this.CSS_PATH);
                 }
             } catch (error) {
-                if (window.ConsoleManager) window.ConsoleManager.warn("CSS for UpdateRulefileViewComponent not found yet, skipping load.", error);
+                if (window.ConsoleManager?.warn) window.ConsoleManager.warn("CSS for UpdateRulefileViewComponent not found yet, skipping load.", error);
             }
         }
     },
@@ -59,7 +59,7 @@ export const UpdateRulefileViewComponent = {
             this.current_step = this.VIEW_STEPS.UPLOAD;
             this.render();
         } else {
-            if (window.ConsoleManager) window.ConsoleManager.warn("SaveAuditLogic not available to perform backup.");
+            if (window.ConsoleManager?.warn) window.ConsoleManager.warn("SaveAuditLogic not available to perform backup.");
             if (this.NotificationComponent?.show_global_message) {
                 this.NotificationComponent.show_global_message(t('error_saving_audit'), 'error');
             }
@@ -69,7 +69,7 @@ export const UpdateRulefileViewComponent = {
     async handle_use_rule_from_server_click() {
         const t = this.get_t_internally();
         if (!window.RulefileUpdaterLogic) {
-            if (window.ConsoleManager) window.ConsoleManager.warn("CRITICAL: RulefileUpdaterLogic is not available on the window object.");
+            if (window.ConsoleManager?.warn) window.ConsoleManager.warn("CRITICAL: RulefileUpdaterLogic is not available on the window object.");
             this.NotificationComponent?.show_global_message(t('error_internal_reload'), 'error');
             return;
         }
@@ -103,7 +103,7 @@ export const UpdateRulefileViewComponent = {
             this.current_step = this.VIEW_STEPS.CONFIRM;
             this.render();
         } catch (error) {
-            if (window.ConsoleManager) window.ConsoleManager.warn('[UpdateRulefileViewComponent] handle_use_rule_from_server_click:', error);
+            if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[UpdateRulefileViewComponent] handle_use_rule_from_server_click:', error);
             this.NotificationComponent?.show_global_message(
                 t('error_rulefile_update_failed') + (error?.message ? `: ${error.message}` : ''),
                 'error'
@@ -115,7 +115,7 @@ export const UpdateRulefileViewComponent = {
         const t = this.get_t_internally();
         if (!this.staged_new_rule_file_content || !this.staged_analysis_report) {
             const errorMsg = t('error_confirm_failed_temp_data_missing');
-            if (window.ConsoleManager) window.ConsoleManager.warn(errorMsg);
+            if (window.ConsoleManager?.warn) window.ConsoleManager.warn(errorMsg);
             this.NotificationComponent?.show_global_message(t('error_internal'), 'error');
             return;
         }

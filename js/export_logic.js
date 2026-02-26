@@ -179,7 +179,7 @@ async function export_to_excel(current_audit) {
 
     if (!ExcelJS) {
         show_global_message_internal(t('excel_library_not_loaded'), 'error');
-        console.error("ExcelJS library is not loaded.");
+        if (window.ConsoleManager?.warn) window.ConsoleManager.warn("ExcelJS library is not loaded.");
         return;
     }
 
@@ -334,7 +334,7 @@ async function export_to_excel(current_audit) {
         show_global_message_internal(t('audit_saved_as_file', { filename: filename }), 'success');
 
     } catch (error) {
-        console.error("Error exporting to Excel with ExcelJS:", error);
+        if (window.ConsoleManager?.warn) window.ConsoleManager.warn("Error exporting to Excel with ExcelJS:", error);
         show_global_message_internal(t('error_exporting_excel') + ` ${error.message}`, 'error');
     }
 }
@@ -690,7 +690,7 @@ async function export_to_word_wrapper(current_audit, sortBy) {
                     new Paragraph({
                         children: [
                             new TextRun({
-                                text: sample.description || sample.url || "Ospecificerat stickprov"
+                                text: sample.description || sample.url || t('export_unspecified_sample')
                             })
                         ],
                         heading: "Heading2",
@@ -881,7 +881,7 @@ async function export_to_word_wrapper(current_audit, sortBy) {
         show_global_message_internal(t('audit_saved_as_file', { filename: filename }), 'success');
 
     } catch (error) {
-        console.error("Error exporting to Word:", error);
+        if (window.ConsoleManager?.warn) window.ConsoleManager.warn("Error exporting to Word:", error);
         show_global_message_internal(t('error_exporting_word') + ` ${error.message}`, 'error');
     }
 }
@@ -1636,7 +1636,7 @@ async function export_to_text_export_deprecated(current_audit) {
                 new Paragraph({
                     children: [
                         new TextRun({
-                            text: sample.description || sample.url || "Namnlöst stickprov"
+                            text: sample.description || sample.url || get_t_internal()('export_unnamed_sample')
                         })
                     ],
                     heading: "Heading2",
@@ -1974,7 +1974,7 @@ async function export_to_text_export_deprecated(current_audit) {
         show_global_message_internal(t('audit_saved_as_file', { filename: filename }), 'success');
 
     } catch (error) {
-        console.error("Error exporting to Word (Textexport):", error);
+        if (window.ConsoleManager?.warn) window.ConsoleManager.warn("Error exporting to Word (Textexport):", error);
         show_global_message_internal(t('error_exporting_word') + ` ${error.message}`, 'error');
     }
 }
@@ -2140,7 +2140,7 @@ function render_markdown_to_html(markdown_text) {
         
         return parsed_markdown;
     } catch (error) {
-        console.warn('Error rendering markdown:', error);
+        if (window.ConsoleManager?.warn) window.ConsoleManager.warn('Error rendering markdown:', error);
         return escape_html_internal(markdown_text);
     }
 }
@@ -2510,7 +2510,7 @@ async function calculate_audit_hash(audit_data) {
             return Math.abs(hash).toString(16);
         }
     } catch (error) {
-        console.warn('[ExportLogic] Error calculating hash:', error);
+        if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[ExportLogic] Error calculating hash:', error);
         return null;
     }
 }
@@ -2520,7 +2520,7 @@ async function export_to_html(current_audit) {
     console.log('[ExportLogic] export_to_html called');
     const t = get_t_internal();
     if (!current_audit) {
-        console.error('[ExportLogic] No audit data provided');
+        if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[ExportLogic] No audit data provided');
         show_global_message_internal(t('no_audit_data_to_save'), 'error');
         return;
     }
@@ -3249,14 +3249,14 @@ async function export_to_html(current_audit) {
                                                             window.initialContentHash = hash_array.map(b => b.toString(16).padStart(2, '0')).join('');
                                                             console.log('[HTML Export] Initial content hash satt för MutationObserver');
                                                         } catch (e) {
-                                                            console.warn('[HTML Export] Error setting initial hash:', e);
+                                                            if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[HTML Export] Error setting initial hash:', e);
                                                         }
                                                     })();
                                                 }
                                             }
                                     }
                                     } catch (e) {
-                                        console.warn('[HTML Export] Kunde inte dekodera textinnehåll, använder hash-jämförelse:', e);
+                                        if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[HTML Export] Kunde inte dekodera textinnehåll, använder hash-jämförelse:', e);
                                         // Fallback till hash-jämförelse med textinnehåll
                                         const requirementSection = document.querySelector('.content-section[data-sort-type="requirement"]');
                                         const sampleSection = document.querySelector('.content-section[data-sort-type="sample"]');
@@ -3291,7 +3291,7 @@ async function export_to_html(current_audit) {
                                                         }
                                                     }
                                                 } catch (e) {
-                                                    console.warn('[HTML Export] Error in hash check:', e);
+                                                    if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[HTML Export] Error in hash check:', e);
                                                 }
                                             })();
                                         }
@@ -3399,7 +3399,7 @@ async function export_to_html(current_audit) {
                             }
                         } catch (e) {
                             // Ignorera fel vid läsning av storage
-                            console.warn('[HTML Export] Could not read from storage:', e);
+                            if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[HTML Export] Could not read from storage:', e);
                         }
                         
                         // Om vi har aktuell data, jämför hash
@@ -3425,7 +3425,7 @@ async function export_to_html(current_audit) {
                                             showChangeWarning('granskningsdata har ändrats');
                                         }
                                     } catch (e) {
-                                        console.warn('[HTML Export] Error comparing hash:', e);
+                                        if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[HTML Export] Error comparing hash:', e);
                                     }
                                 })();
                             } else {
@@ -3548,7 +3548,7 @@ async function export_to_html(current_audit) {
                                                 showChangeWarning('innehållet har ändrats');
                                             }
                                         } catch (e) {
-                                            console.warn('[HTML Export] Error in MutationObserver hash check:', e);
+                                            if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[HTML Export] Error in MutationObserver hash check:', e);
                                         }
                                     })();
                                 }
@@ -3564,7 +3564,7 @@ async function export_to_html(current_audit) {
                         }, 800); // Starta observer efter 800ms (snabbare än tidigare)
                     }
                 } catch (e) {
-                    console.warn('[HTML Export] Error in change detection:', e);
+                    if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[HTML Export] Error in change detection:', e);
                 }
             })();
             
@@ -3704,8 +3704,8 @@ async function export_to_html(current_audit) {
         show_global_message_internal(t('audit_saved_as_file', { filename: filename }), 'success');
 
     } catch (error) {
-        console.error("[ExportLogic] Error exporting to HTML:", error);
-        console.error("[ExportLogic] Error stack:", error.stack);
+        if (window.ConsoleManager?.warn) window.ConsoleManager.warn("[ExportLogic] Error exporting to HTML:", error);
+        if (window.ConsoleManager?.warn) window.ConsoleManager.warn("[ExportLogic] Error stack:", error?.stack);
         show_global_message_internal(t('error_exporting_html') + ` ${error.message}`, 'error');
     }
 }

@@ -1,8 +1,6 @@
 // js/utils/helpers.js
 'use-strict';
 
-import { consoleManager } from './console_manager.js';
-
 export function generate_uuid_v4() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
         const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
@@ -64,11 +62,11 @@ export async function load_css_with_retry(href, options = {}) {
             await load_css(href, options);
             return; // Framgång!
         } catch (error) {
-            consoleManager.warn(`CSS load attempt ${attempt}/${maxRetries} failed for ${href}:`, error.message);
+            if (window.ConsoleManager?.warn) window.ConsoleManager.warn(`CSS load attempt ${attempt}/${maxRetries} failed for ${href}:`, error.message);
             
             if (attempt === maxRetries) {
                 // Sista försöket misslyckades
-                consoleManager.warn(`All CSS load attempts failed for ${href}. Component may render without proper styling.`);
+                if (window.ConsoleManager?.warn) window.ConsoleManager.warn(`All CSS load attempts failed for ${href}. Component may render without proper styling.`);
                 throw error;
             }
             
@@ -83,7 +81,7 @@ export async function load_css_safely(href, componentName = 'Unknown', options =
     try {
         await load_css_with_retry(href, options);
     } catch (error) {
-        consoleManager.warn(`[${componentName}] Critical CSS loading failed:`, error);
+        if (window.ConsoleManager?.warn) window.ConsoleManager.warn(`[${componentName}] Critical CSS loading failed:`, error);
         
         // Visa varning till användaren om styling kan vara fel
         if (window.NotificationComponent?.show_global_message) {
@@ -112,7 +110,7 @@ export function format_iso_to_local_datetime(iso_string, lang_code = 'en-GB') {
         return date.toLocaleString(lang_code, options);
 
     } catch (e) {
-        consoleManager.warn("Error formatting date:", iso_string, e);
+        if (window.ConsoleManager?.warn) window.ConsoleManager.warn("Error formatting date:", iso_string, e);
         const t_func = (typeof window.Translation?.t === 'function') ? window.Translation.t : (key) => `**${key}**`;
         return t_func('date_formatting_error');
     }
@@ -153,7 +151,7 @@ export function format_iso_to_relative_time(iso_string, lang_code = 'en-GB') {
         return t('relative_time_date_format', { date: date_part });
 
     } catch (e) {
-        consoleManager.warn("Error formatting relative date:", iso_string, e);
+        if (window.ConsoleManager?.warn) window.ConsoleManager.warn("Error formatting relative date:", iso_string, e);
         return t('date_formatting_error');
     }
 }
@@ -166,7 +164,7 @@ export function get_current_iso_datetime_utc() {
 export function escape_html(unsafe_input) {
     const safe_string = String(unsafe_input || '');
     if (safe_string === '[object Object]') {
-        consoleManager.warn(`[Helpers.escape_html] Received an object that could not be converted to a meaningful string. Input was:`, unsafe_input);
+        if (window.ConsoleManager?.warn) window.ConsoleManager.warn(`[Helpers.escape_html] Received an object that could not be converted to a meaningful string. Input was:`, unsafe_input);
         return '';
     }
     return safe_string
@@ -422,7 +420,7 @@ export function format_number_locally(number, lang_code = 'en-GB', options = {})
     try {
         return new Intl.NumberFormat(lang_code, finalOptions).format(number);
     } catch (e) {
-        consoleManager.warn(`[Helpers] Error formatting number for locale "${lang_code}":`, e);
+        if (window.ConsoleManager?.warn) window.ConsoleManager.warn(`[Helpers] Error formatting number for locale "${lang_code}":`, e);
         return number.toFixed(finalOptions.maximumFractionDigits);
     }
 }

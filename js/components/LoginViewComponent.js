@@ -73,7 +73,7 @@ export const LoginViewComponent = {
 
         users.forEach((u) => {
             const opt = this.Helpers.create_element('option', {
-                text_content: u.name || `Användare ${u.id}`,
+                text_content: u.name || t('user_fallback_name', { id: u.id }),
                 attributes: { value: u.name || '' }
             });
             select.appendChild(opt);

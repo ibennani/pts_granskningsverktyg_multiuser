@@ -44,7 +44,7 @@ class DependencyManager {
                 dep.value = dep.getter();
                 dep.available = dep.value != null;
             } catch (error) {
-                console.warn(`DependencyManager: Failed to get dependency '${name}':`, error);
+                if (window.ConsoleManager?.warn) window.ConsoleManager.warn(`DependencyManager: Failed to get dependency '${name}':`, error);
                 dep.available = false;
             }
         }
@@ -101,7 +101,7 @@ class DependencyManager {
                 }
                 
                 if (Date.now() - startTime > timeout) {
-                    console.warn('DependencyManager: Timeout waiting for dependencies');
+                    if (window.ConsoleManager?.warn) window.ConsoleManager.warn('DependencyManager: Timeout waiting for dependencies');
                     resolve(false);
                     return;
                 }
@@ -132,7 +132,7 @@ class DependencyManager {
         const ready = await this.waitForDependencies();
         
         if (!ready) {
-            console.error('DependencyManager: Failed to initialize - required dependencies not available');
+            if (window.ConsoleManager?.warn) window.ConsoleManager.warn('DependencyManager: Failed to initialize - required dependencies not available');
             return false;
         }
 
@@ -144,7 +144,7 @@ class DependencyManager {
             try {
                 callback();
             } catch (error) {
-                console.error('DependencyManager: Error in ready callback:', error);
+                if (window.ConsoleManager?.warn) window.ConsoleManager.warn('DependencyManager: Error in ready callback:', error);
             }
         });
         this.readyCallbacks.clear();
@@ -180,7 +180,7 @@ class DependencyManager {
             // Check specific required dependencies
             for (const depName of requiredDeps) {
                 if (!this.isDependencyAvailable(depName)) {
-                    console.error(`DependencyManager: Required dependency '${depName}' not available for component initialization`);
+                    if (window.ConsoleManager?.warn) window.ConsoleManager.warn(`DependencyManager: Required dependency '${depName}' not available for component initialization`);
                     throw new Error(`Required dependency '${depName}' not available`);
                 }
             }

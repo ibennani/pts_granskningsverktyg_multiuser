@@ -248,7 +248,7 @@ export function calculate_requirement_status(requirement_object, requirement_res
         if (has_any_button_pressed) return "partially_audited";
         return "not_audited";
     } catch (error) {
-        console.error('[AuditLogic] calculate_requirement_status: Error processing requirement:', error);
+        if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[AuditLogic] calculate_requirement_status: Error processing requirement:', error);
         return "not_audited";
     }
 }
@@ -256,17 +256,17 @@ export function calculate_requirement_status(requirement_object, requirement_res
 export function get_relevant_requirements_for_sample(rule_file_content, sample) {
     // Förbättrad null-säkerhet och validering
     if (!rule_file_content || typeof rule_file_content !== 'object') {
-        console.warn('[AuditLogic] get_relevant_requirements_for_sample: Invalid rule_file_content');
+        if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[AuditLogic] get_relevant_requirements_for_sample: Invalid rule_file_content');
         return [];
     }
     
     if (!rule_file_content.requirements || typeof rule_file_content.requirements !== 'object') {
-        console.warn('[AuditLogic] get_relevant_requirements_for_sample: Invalid or missing requirements object');
+        if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[AuditLogic] get_relevant_requirements_for_sample: Invalid or missing requirements object');
         return [];
     }
     
     if (!sample || typeof sample !== 'object') {
-        console.warn('[AuditLogic] get_relevant_requirements_for_sample: Invalid sample object');
+        if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[AuditLogic] get_relevant_requirements_for_sample: Invalid sample object');
         return [];
     }
     
@@ -288,7 +288,7 @@ export function get_relevant_requirements_for_sample(rule_file_content, sample) 
             return req.contentType.some(ct => sample.selectedContentTypes.includes(ct));
         });
     } catch (error) {
-        console.error('[AuditLogic] get_relevant_requirements_for_sample: Error processing requirements:', error);
+        if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[AuditLogic] get_relevant_requirements_for_sample: Error processing requirements:', error);
         return [];
     }
 }

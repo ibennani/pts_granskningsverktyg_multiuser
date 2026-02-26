@@ -590,7 +590,7 @@ export const RequirementsListViewComponent = {
                 this.root.innerHTML = '';
                 const plate = this.Helpers.create_element('div', { class_name: 'content-plate' });
                 plate.appendChild(this.Helpers.create_element('h1', { text_content: t('requirement_list_title_suffix') }));
-                plate.appendChild(this.Helpers.create_element('p', { text_content: t('error_no_sample_selected') || 'No sample selected' }));
+                plate.appendChild(this.Helpers.create_element('p', { text_content: t('error_no_sample_selected') }));
                 this.root.appendChild(plate);
                 this.is_dom_initialized = false;
                 return;
@@ -657,7 +657,7 @@ export const RequirementsListViewComponent = {
                 this.root.innerHTML = '';
                 const plate = this.Helpers.create_element('div', { class_name: 'content-plate' });
                 plate.appendChild(this.Helpers.create_element('h1', { text_content: t('requirement_list_title_suffix') }));
-                plate.appendChild(this.Helpers.create_element('p', { text_content: t('error_sample_not_found') || 'Sample not found' }));
+                plate.appendChild(this.Helpers.create_element('p', { text_content: t('error_sample_not_found') }));
                 this.root.appendChild(plate);
                 this.is_dom_initialized = false;
                 return;
