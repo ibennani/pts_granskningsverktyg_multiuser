@@ -1017,65 +1017,27 @@ window.DraftManager = DraftManager;
             if (!current_view_component_instance || typeof current_view_component_instance.init !== 'function' || typeof current_view_component_instance.render !== 'function') {
                 throw new Error("Component is invalid or missing required methods.");
             }
-
-            if (view_name_to_render === 'restore_session') {
-                await current_view_component_instance.init({
-                    root: view_root,
-                    deps: {
-                        router: navigate_and_set_hash,
-                        params: params_to_render, // Contains on_restore, on_discard, autosaved_state
-                        getState,
-                        dispatch,
-                        StoreActionTypes,
-                        subscribe,
-                        Translation: window.Translation,
-                        Helpers: window.Helpers,
-                        NotificationComponent: NotificationComponent,
-                        SaveAuditLogic: window.SaveAuditLogic,
-                        AuditLogic: AuditLogic,
-                        ExportLogic: window.ExportLogic,
-                        ValidationLogic: ValidationLogic,
-                        AutosaveService: AutosaveService,
-                        rightSidebarRoot: right_sidebar_root
-                    }
-                });
-            } else {
-                // Support new component standard (init({ root, deps }))
-                // We assume if length is 1, it's the new standard
-                if (current_view_component_instance.init.length === 1) {
-                    await current_view_component_instance.init({
-                        root: view_root,
-                        deps: {
-                            router: navigate_and_set_hash,
-                            params: params_to_render,
-                            getState,
-                            dispatch,
-                            StoreActionTypes,
-                            subscribe,
-                            Translation: window.Translation,
-                            Helpers: window.Helpers,
-                            NotificationComponent: NotificationComponent,
-                            SaveAuditLogic: window.SaveAuditLogic,
-                            AuditLogic: AuditLogic,
-                            ExportLogic: window.ExportLogic,
-                            ValidationLogic: ValidationLogic,
-                            AutosaveService: AutosaveService,
-                            rightSidebarRoot: right_sidebar_root
-                        }
-                    });
-                } else {
-                    // Legacy component support
-                    await current_view_component_instance.init(
-                        view_root, 
-                        navigate_and_set_hash, 
-                        params_to_render,
-                        getState, 
-                        dispatch,
-                        StoreActionTypes,
-                        subscribe
-                    );
+            
+            await current_view_component_instance.init({
+                root: view_root,
+                deps: {
+                    router: navigate_and_set_hash,
+                    params: params_to_render,
+                    getState,
+                    dispatch,
+                    StoreActionTypes,
+                    subscribe,
+                    Translation: window.Translation,
+                    Helpers: window.Helpers,
+                    NotificationComponent: NotificationComponent,
+                    SaveAuditLogic: window.SaveAuditLogic,
+                    AuditLogic: AuditLogic,
+                    ExportLogic: window.ExportLogic,
+                    ValidationLogic: ValidationLogic,
+                    AutosaveService: AutosaveService,
+                    rightSidebarRoot: right_sidebar_root
                 }
-            }
+            });
             
             const render_promise = current_view_component_instance.render();
             if (render_promise && typeof render_promise.then === 'function') {
