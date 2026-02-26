@@ -23,7 +23,7 @@ export const RequirementCardComponent = {
 
         // Check for required dependencies
         if (!Helpers || typeof Helpers.create_element !== 'function') {
-            console.error("RequirementCardComponent: Helpers.create_element not available!");
+            if (window.ConsoleManager?.warn) window.ConsoleManager.warn("RequirementCardComponent: Helpers.create_element not available!");
             const el = document.createElement('li');
             el.textContent = `Error: Helpers missing for ${requirement?.title || 'Unknown Requirement'}`;
             return el;

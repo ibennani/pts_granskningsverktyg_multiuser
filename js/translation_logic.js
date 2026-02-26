@@ -25,7 +25,9 @@ function warn(...args) {
 }
 
 function error(...args) {
-    console.error('[Translation]', ...args);
+    if (typeof window !== 'undefined' && window.ConsoleManager?.warn) {
+        window.ConsoleManager.warn('[Translation]', ...args);
+    }
 }
 
 function getModuleKey(lang_tag) {

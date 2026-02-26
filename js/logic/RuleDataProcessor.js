@@ -36,7 +36,7 @@ export function precalculateRuleData(ruleFileContent) {
     };
 
     if (!ruleFileContent || !ruleFileContent.requirements || !ruleFileContent.metadata?.taxonomies) {
-        console.error("[RuleDataProcessor] Rule file is missing requirements or taxonomies for pre-calculation.");
+        if (window.ConsoleManager?.warn) window.ConsoleManager.warn("[RuleDataProcessor] Rule file is missing requirements or taxonomies for pre-calculation.");
         return precalculatedData; // Return empty object
     }
     
@@ -45,7 +45,7 @@ export function precalculateRuleData(ruleFileContent) {
     const classifications = taxonomies.find(tax => tax.id === 'wcag22-pour');
     
     if (!classifications) {
-        console.error("[RuleDataProcessor] 'wcag22-pour' taxonomy not found in rule file.");
+        if (window.ConsoleManager?.warn) window.ConsoleManager.warn("[RuleDataProcessor] 'wcag22-pour' taxonomy not found in rule file.");
         return precalculatedData;
     }
 

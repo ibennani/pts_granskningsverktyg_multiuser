@@ -14,7 +14,7 @@ export const RestoreSessionViewComponent = {
 
     render() {
         if (!this.root || !this.Translation || !this.Helpers || !this.autosaved_state_ref) {
-            console.error("[RestoreSessionView] Cannot render, core dependencies or autosaved state missing.");
+            if (window.ConsoleManager?.warn) window.ConsoleManager.warn("[RestoreSessionView] Cannot render, core dependencies or autosaved state missing.");
             const t = (this.Translation && this.Translation.t) ? this.Translation.t : ((key) => key);
             const errorMessage = t('restore_session_error_display');
             if (this.root) {
@@ -40,7 +40,7 @@ export const RestoreSessionViewComponent = {
             } 
         });
         
-        const actor_name = this.autosaved_state_ref.auditMetadata?.actorName || 'Okänd';
+        const actor_name = this.autosaved_state_ref.auditMetadata?.actorName || t('unknown_actor');
         info_box.appendChild(this.Helpers.create_element('p', { 
             html_content: t('restore_session_info', { actorName: actor_name }),
             style: { fontWeight: '500', fontSize: '1.1rem' }

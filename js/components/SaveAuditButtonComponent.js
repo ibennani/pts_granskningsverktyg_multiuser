@@ -33,7 +33,7 @@ export class SaveAuditButtonComponent {
 
     handle_save_click() {
         if (!this.getState || !this.SaveAuditLogic || !this.Translation || !this.NotificationComponent) {
-            console.error("[SaveAuditButtonComponent] Dependencies not initialized for handle_save_click.");
+            if (window.ConsoleManager?.warn) window.ConsoleManager.warn("[SaveAuditButtonComponent] Dependencies not initialized for handle_save_click.");
             if (this.NotificationComponent && this.Translation) {
                  this.NotificationComponent.show_global_message(this.Translation.t('error_saving_audit'), 'error');
             }
@@ -52,13 +52,13 @@ export class SaveAuditButtonComponent {
              const show_msg = (msg, type) => this.NotificationComponent?.show_global_message?.(msg, type);
              this.SaveAuditLogic.save_audit_to_json_file(current_audit_data, t, show_msg);
         } else {
-             console.error("[SaveAuditButtonComponent] SaveAuditLogic.save_audit_to_json_file is not a function");
+             if (window.ConsoleManager?.warn) window.ConsoleManager.warn("[SaveAuditButtonComponent] SaveAuditLogic.save_audit_to_json_file is not a function");
         }
     }
 
     render() {
         if (!this.root || !this.deps || !this.Helpers || !this.Translation) {
-            console.error("[SaveAuditButtonComponent] Container or core render dependencies missing.");
+            if (window.ConsoleManager?.warn) window.ConsoleManager.warn("[SaveAuditButtonComponent] Container or core render dependencies missing.");
             return;
         }
         

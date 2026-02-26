@@ -25,7 +25,7 @@ export const ProgressBarComponent = {
         this.load_styles_if_needed();
 
         if (typeof window.Helpers === 'undefined' || typeof window.Helpers.create_element !== 'function') {
-            console.error("ProgressBarComponent: Helpers.create_element not available!");
+            if (window.ConsoleManager?.warn) window.ConsoleManager.warn("ProgressBarComponent: Helpers.create_element not available!");
             const fallback_progress = document.createElement('div');
             const t = (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function')
                 ? window.Translation.t

@@ -126,7 +126,7 @@ export const ErrorBoundaryComponent = {
                 try {
                     this.retry_callback();
                 } catch (retry_error) {
-                    console.error('[ErrorBoundaryComponent] Retry failed:', retry_error);
+                    if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[ErrorBoundaryComponent] Retry failed:', retry_error);
                     this.show_error({
                         message: t('error_boundary_retry_failed'),
                         stack: retry_error.stack,
@@ -163,12 +163,9 @@ export const ErrorBoundaryComponent = {
     },
 
     log_error(error_data) {
-        console.group('[ErrorBoundaryComponent] Component Error');
-        console.error('Error:', error_data.message);
-        console.error('Component:', error_data.component);
-        console.error('Stack:', error_data.stack);
-        console.error('Timestamp:', new Date().toISOString());
-        console.groupEnd();
+        if (window.ConsoleManager?.warn) {
+            window.ConsoleManager.warn('[ErrorBoundaryComponent] Component Error:', error_data.message, 'Component:', error_data.component, 'Stack:', error_data.stack, 'Timestamp:', new Date().toISOString());
+        }
 
         if (this.deps.NotificationComponent && this.deps.NotificationComponent.show_global_message) {
             const t = this.get_t();
@@ -181,7 +178,7 @@ export const ErrorBoundaryComponent = {
 
     show_error(error_data, retry_callback = null) {
         if (!this.root) {
-            console.error('[ErrorBoundaryComponent] Container not initialized');
+            if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[ErrorBoundaryComponent] Container not initialized');
             return;
         }
 
