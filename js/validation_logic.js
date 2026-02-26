@@ -1,7 +1,7 @@
 // js/validation_logic.js
 
-export function validate_rule_file_json(json_object) {
-    const t = window.Translation?.t || ((key) => `**${key}**`);
+export function validate_rule_file_json(json_object, options = {}) {
+    const t = typeof options.t === 'function' ? options.t : ((key) => `**${key}**`);
     console.log("[ValidationLogic] Running validation for new rule file (hierarchical structure)...");
 
     if (typeof json_object !== 'object' || json_object === null) {
@@ -203,8 +203,8 @@ export function validate_rule_file_json(json_object) {
     return { isValid: true, message: t('rule_file_loaded_successfully') };
 }
 
-export function validate_saved_audit_file(json_object) {
-    const t = window.Translation?.t || ((key) => `**${key}**`);
+export function validate_saved_audit_file(json_object, options = {}) {
+    const t = typeof options.t === 'function' ? options.t : ((key) => `**${key}**`);
     if (typeof json_object !== 'object' || json_object === null) {
         return { isValid: false, message: t('error_invalid_saved_audit_file') };
     }

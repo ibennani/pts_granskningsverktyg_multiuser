@@ -90,7 +90,9 @@ export const UpdateRulefileViewComponent = {
             const new_rule_content = migrate_rulefile_to_new_structure(content, {
                 Translation: this.Translation
             });
-            const validation = this.ValidationLogic?.validate_rule_file_json(new_rule_content);
+            const validation = this.ValidationLogic?.validate_rule_file_json(new_rule_content, {
+                t
+            });
             if (validation && !validation.isValid) {
                 this.NotificationComponent?.show_global_message(validation.message, 'error');
                 return;

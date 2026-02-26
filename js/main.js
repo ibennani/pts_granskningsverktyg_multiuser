@@ -1156,10 +1156,11 @@ window.DraftManager = DraftManager;
         const current_global_state = getState();
 
         const load_audit_and_navigate = async (auditId) => {
+            const t = window.Translation?.t || (k => k);
             try {
                 const { load_audit_with_rule_file } = await import('./api/client.js');
                 const full_state = await load_audit_with_rule_file(auditId);
-                const validation = window.ValidationLogic?.validate_saved_audit_file?.(full_state);
+                const validation = ValidationLogic?.validate_saved_audit_file?.(full_state, { t });
                 if (full_state && validation?.isValid) {
                     dispatch({ type: StoreActionTypes.LOAD_AUDIT_FROM_FILE, payload: full_state });
                     const status = full_state.auditStatus || 'not_started';
@@ -1174,12 +1175,10 @@ window.DraftManager = DraftManager;
                     return true;
                 }
                 if (validation && !validation.isValid && window.NotificationComponent?.show_global_message) {
-                    const t = window.Translation?.t || (k => k);
                     window.NotificationComponent.show_global_message(validation.message || t('error_invalid_saved_audit_file'), 'error');
                 }
             } catch (err) {
                 if (window.NotificationComponent?.show_global_message) {
-                    const t = window.Translation?.t || (k => k);
                     window.NotificationComponent.show_global_message(
                         t('server_load_audit_error', { message: err.message }) || err.message,
                         'error'
