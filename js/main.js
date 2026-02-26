@@ -343,6 +343,8 @@ window.DraftManager = DraftManager;
                 switch (view_name) {
                     case 'start': title_prefix = t('menu_link_start'); break;
                     case 'admin': title_prefix = t('admin_title'); break;
+                    case 'admin_audits': title_prefix = t('admin_title_audits'); break;
+                    case 'admin_rules': title_prefix = t('admin_title_rules'); break;
                     case 'manage_users': title_prefix = t('manage_users_title'); break;
                     case 'my_settings': title_prefix = t('menu_link_my_settings'); break;
                     case 'login': title_prefix = t('login_title'); break;
@@ -416,7 +418,7 @@ window.DraftManager = DraftManager;
 
         let final_title = `${title_prefix}${title_suffix}`;
         const is_inside_audit = audit_status !== 'rulefile_editing'
-            && !['start', 'admin', 'login', 'manage_users', 'my_settings'].includes(view_name);
+            && !['start', 'admin', 'admin_audits', 'admin_rules', 'login', 'manage_users', 'my_settings'].includes(view_name);
         const actor_name = (is_inside_audit && current_state?.auditMetadata?.actorName)
             ? String(current_state.auditMetadata.actorName).trim()
             : '';
@@ -844,6 +846,9 @@ window.DraftManager = DraftManager;
             view_name_to_render = 'rulefile_sections';
             params_to_render = { ...params_to_render, section: 'general' };
         }
+        if (view_name_to_render === 'admin') {
+            view_name_to_render = 'admin_audits';
+        }
         const t = get_t_fallback();
         const local_helpers_escape_html = (typeof window.Helpers !== 'undefined' && typeof window.Helpers.escape_html === 'function')
             ? window.Helpers.escape_html
@@ -970,6 +975,8 @@ window.DraftManager = DraftManager;
         switch (view_name_to_render) {
             case 'start': ComponentClass = StartViewComponent; break;
             case 'admin': ComponentClass = AdminViewComponent; break;
+            case 'admin_audits': ComponentClass = AdminViewComponent; break;
+            case 'admin_rules': ComponentClass = AdminViewComponent; break;
             case 'manage_users': ComponentClass = ManageUsersViewComponent; break;
             case 'my_settings': ComponentClass = SettingsViewComponent; break;
             case 'login': ComponentClass = LoginViewComponent; break;
@@ -1033,6 +1040,7 @@ window.DraftManager = DraftManager;
                 deps: {
                     router: navigate_and_set_hash,
                     params: params_to_render,
+                    view_name: view_name_to_render,
                     getState,
                     dispatch,
                     StoreActionTypes,
@@ -1351,7 +1359,7 @@ window.DraftManager = DraftManager;
             if (current_view_name_rendered === view_name_from_hash && 
                 current_view_component_instance && typeof current_view_component_instance.render === 'function') {
                 if (current_view_name_rendered !== 'confirm_sample_edit') {
-                    if (current_view_name_rendered === 'admin' && current_view_component_instance._api_load_started && !current_view_component_instance._api_checked) {
+                    if ((current_view_name_rendered === 'admin' || current_view_name_rendered === 'admin_audits' || current_view_name_rendered === 'admin_rules') && current_view_component_instance._api_load_started && !current_view_component_instance._api_checked) {
                         return;
                     }
                     if (current_view_name_rendered === 'rulefile_edit_requirement' || current_view_name_rendered === 'rulefile_add_requirement') {

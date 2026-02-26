@@ -6,13 +6,20 @@ export const MetadataFormComponent = {
         // Callbacks from options
         this.on_submit_callback = options.onSubmit;
         this.on_cancel_callback = options.onCancel;
+        this.on_go_to_list_callback = options.onGoToList;
 
         // Dependencies
         this.Translation = deps.Translation;
         this.Helpers = deps.Helpers;
         this.NotificationComponent = deps.NotificationComponent;
-        
+        this.AutosaveService = deps.AutosaveService;
+        this.getState = deps.getState;
+        this.dispatch = deps.dispatch;
+        this.StoreActionTypes = deps.StoreActionTypes;
+
         // Internal state
+        this.autosave_session = null;
+        this.skip_autosave_on_destroy = false;
         this.case_number_input = null;
         this.actor_name_input = null;
         this.actor_link_input = null;
@@ -26,15 +33,59 @@ export const MetadataFormComponent = {
         if (this.Helpers && this.Helpers.load_css) {
             this.Helpers.load_css(CSS_PATH);
         }
+
+        this.handle_autosave_input = this.handle_autosave_input.bind(this);
+    },
+
+    _get_form_data(should_trim, trim_text) {
+        let actor_link_value = (this.actor_link_input?.value || '').trim();
+        if (actor_link_value && this.Helpers?.add_protocol_if_missing) {
+            actor_link_value = this.Helpers.add_protocol_if_missing(actor_link_value);
+        }
+        const raw_comment = (this.internal_comment_input?.value ?? '');
+        const internal_comment = should_trim && typeof trim_text === 'function'
+            ? trim_text(raw_comment)
+            : (this.Helpers?.sanitize_plain_input ? this.Helpers.sanitize_plain_input(raw_comment) : raw_comment);
+        const sanitize = (val) => (this.Helpers?.sanitize_plain_input ? this.Helpers.sanitize_plain_input(val) : (val || '').trim());
+        return {
+            caseNumber: sanitize(this.case_number_input?.value ?? ''),
+            actorName: sanitize(this.actor_name_input?.value ?? ''),
+            actorLink: sanitize(actor_link_value),
+            auditorName: sanitize(this.auditor_name_input?.value ?? ''),
+            caseHandler: sanitize(this.case_handler_input?.value ?? ''),
+            internalComment: internal_comment
+        };
+    },
+
+    handle_autosave_input() {
+        this.autosave_session?.request_autosave();
+    },
+
+    handle_go_to_list_click() {
+        this.autosave_session?.flush({ should_trim: true, skip_render: true });
+        if (typeof this.on_go_to_list_callback === 'function') {
+            this.on_go_to_list_callback();
+        }
+    },
+
+    handle_cancel_click() {
+        this.skip_autosave_on_destroy = true;
+        this.autosave_session?.cancel_pending();
+        if (typeof this.on_cancel_callback === 'function') {
+            this.on_cancel_callback();
+        }
     },
 
     handle_form_submit(event) {
         event.preventDefault();
-        
-        const actor_name_value = this.actor_name_input.value.trim();
+
+        this.autosave_session?.flush({ should_trim: true, skip_render: true });
+
+        const trim_text_fn = this.AutosaveService?.trim_text_preserve_lines;
+        const form_data = this._get_form_data(true, trim_text_fn);
         const t = this.Translation.t;
 
-        if (!actor_name_value) {
+        if (!form_data.actorName) {
             if (this.NotificationComponent) {
                 this.NotificationComponent.show_global_message(t('field_is_required', { fieldName: t('actor_name') }), 'error');
             }
@@ -42,32 +93,6 @@ export const MetadataFormComponent = {
             this.actor_name_input.scrollIntoView({ behavior: 'smooth', block: 'center' });
             return;
         }
-
-        let actor_link_value = this.actor_link_input.value.trim();
-        if (actor_link_value && this.Helpers.add_protocol_if_missing) {
-            actor_link_value = this.Helpers.add_protocol_if_missing(actor_link_value);
-        }
-
-        const form_data = {
-            caseNumber: this.Helpers?.sanitize_plain_input
-                ? this.Helpers.sanitize_plain_input(this.case_number_input.value)
-                : this.case_number_input.value.trim(),
-            actorName: this.Helpers?.sanitize_plain_input
-                ? this.Helpers.sanitize_plain_input(actor_name_value)
-                : actor_name_value,
-            actorLink: this.Helpers?.sanitize_plain_input
-                ? this.Helpers.sanitize_plain_input(actor_link_value)
-                : actor_link_value,
-            auditorName: this.Helpers?.sanitize_plain_input
-                ? this.Helpers.sanitize_plain_input(this.auditor_name_input.value)
-                : this.auditor_name_input.value.trim(),
-            caseHandler: this.Helpers?.sanitize_plain_input
-                ? this.Helpers.sanitize_plain_input(this.case_handler_input.value)
-                : this.case_handler_input.value.trim(),
-            internalComment: this.Helpers?.sanitize_plain_input
-                ? this.Helpers.sanitize_plain_input(this.internal_comment_input.value)
-                : this.internal_comment_input.value.trim()
-        };
 
         if (typeof this.on_submit_callback === 'function') {
             this.on_submit_callback(form_data);
@@ -111,7 +136,8 @@ export const MetadataFormComponent = {
         const {
             initialData = {},
             submitButtonText = t('metadata_form_submit'),
-            cancelButtonText = null
+            cancelButtonText = null,
+            goToListButtonText = null
         } = options;
 
         this.root.innerHTML = '';
@@ -161,6 +187,32 @@ export const MetadataFormComponent = {
             this.Helpers.init_auto_resize_for_textarea(this.internal_comment_input);
         }
 
+        this.autosave_session?.destroy();
+        this.autosave_session = null;
+        if (this.AutosaveService && this.dispatch && this.StoreActionTypes) {
+            this.autosave_session = this.AutosaveService.create_session({
+                form_element: this.form_element_ref,
+                focus_root: this.form_element_ref,
+                debounce_ms: 250,
+                on_save: ({ should_trim, trim_text }) => {
+                    const payload = this._get_form_data(should_trim, trim_text);
+                    this.dispatch({ type: this.StoreActionTypes.UPDATE_METADATA, payload });
+                }
+            });
+        }
+
+        const inputs_for_autosave = [
+            this.case_number_input,
+            this.actor_name_input,
+            this.actor_link_input,
+            this.auditor_name_input,
+            this.case_handler_input,
+            this.internal_comment_input
+        ];
+        inputs_for_autosave.forEach((el) => {
+            if (el) el.addEventListener('input', this.handle_autosave_input);
+        });
+
         const form_actions_wrapper = this.Helpers.create_element('div', { class_name: 'form-actions' });
 
         const submit_button = this.Helpers.create_element('button', {
@@ -170,13 +222,23 @@ export const MetadataFormComponent = {
         });
         form_actions_wrapper.appendChild(submit_button);
 
+        if (goToListButtonText && typeof this.on_go_to_list_callback === 'function') {
+            const go_to_list_button = this.Helpers.create_element('button', {
+                class_name: ['button', 'button-default'],
+                attributes: { type: 'button' },
+                text_content: goToListButtonText
+            });
+            go_to_list_button.addEventListener('click', () => this.handle_go_to_list_click());
+            form_actions_wrapper.appendChild(go_to_list_button);
+        }
+
         if (cancelButtonText && typeof this.on_cancel_callback === 'function') {
             const cancel_button = this.Helpers.create_element('button', {
                 class_name: ['button', 'button-default'],
                 attributes: { type: 'button' },
                 text_content: cancelButtonText
             });
-            cancel_button.addEventListener('click', this.on_cancel_callback);
+            cancel_button.addEventListener('click', () => this.handle_cancel_click());
             form_actions_wrapper.appendChild(cancel_button);
         }
 
@@ -186,17 +248,21 @@ export const MetadataFormComponent = {
     },
 
     destroy() {
+        if (!this.skip_autosave_on_destroy && this.form_element_ref && this.AutosaveService) {
+            this.autosave_session?.flush({ should_trim: true, skip_render: true });
+        }
+        this.autosave_session?.destroy();
+        this.autosave_session = null;
+
         if (this.form_element_ref) {
             this.form_element_ref.removeEventListener('submit', this.handle_form_submit);
         }
-        
-        // No strict need to remove other listeners as we are clearing innerHTML and dropping references, 
-        // but for completeness one could track them.
-        
+
         if (this.root) this.root.innerHTML = '';
         this.form_element_ref = null;
         this.on_submit_callback = null;
         this.on_cancel_callback = null;
+        this.on_go_to_list_callback = null;
         this.root = null;
         this.deps = null;
     }

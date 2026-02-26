@@ -26,6 +26,24 @@
     margin-bottom: 0.5rem;
 }
 
+.start-view-section-heading-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.start-view-section-heading-row h2 {
+    margin: 0;
+}
+
+.start-view-audits-section .admin-start-new-audit-btn {
+    flex-shrink: 0;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.9rem;
+}
+
 .start-view-table-wrapper {
     overflow-x: auto;
     border-radius: var(--border-radius);

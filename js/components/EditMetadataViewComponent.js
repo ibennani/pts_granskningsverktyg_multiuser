@@ -21,6 +21,7 @@ export const EditMetadataViewComponent = {
         this.handle_form_submit = this.handle_form_submit.bind(this);
         this.handle_cancel = this.handle_cancel.bind(this);
         this.handle_cancel_new_audit = this.handle_cancel_new_audit.bind(this);
+        this.handle_go_to_list = this.handle_go_to_list.bind(this);
 
         this.RETURN_FOCUS_SESSION_KEY = 'gv_return_focus_audit_info_h2_v1';
     },
@@ -79,6 +80,15 @@ export const EditMetadataViewComponent = {
         this.router('admin');
     },
 
+    async handle_go_to_list() {
+        try {
+            await sync_to_server_now(this.getState, this.dispatch);
+        } catch (err) {
+            // Fel visas redan av run_sync via NotificationComponent
+        }
+        this.router('admin');
+    },
+
     async render() {
         if (!this.root) return;
         this.root.innerHTML = '';
@@ -113,18 +123,51 @@ export const EditMetadataViewComponent = {
             deps: this.deps,
             options: {
                 onSubmit: this.handle_form_submit,
-                onCancel: is_new_audit ? this.handle_cancel_new_audit : this.handle_cancel
+                onCancel: is_new_audit ? this.handle_cancel_new_audit : this.handle_cancel,
+                onGoToList: is_new_audit ? this.handle_go_to_list : null
             }
         });
 
-        const metadata = { ...current_state.auditMetadata };
-        if (is_new_audit && !metadata.auditorName) {
-            metadata.auditorName = get_current_user_name() || '';
-        }
+        const metadata = (() => {
+            const show_empty = is_new_audit && typeof window !== 'undefined' && window.__GV_SHOW_EMPTY_METADATA_FORM === true;
+            if (show_empty) {
+                if (typeof window !== 'undefined') {
+                    window.__GV_SHOW_EMPTY_METADATA_FORM = false;
+                }
+                return {
+                    caseNumber: '',
+                    actorName: '',
+                    actorLink: '',
+                    auditorName: get_current_user_name() || '',
+                    caseHandler: '',
+                    internalComment: ''
+                };
+            }
+            const from = current_state.auditMetadata || {};
+            const str = (v) => (v != null && String(v).trim() !== '' ? String(v).trim() : '');
+            const cleaned = {
+                caseNumber: str(from.caseNumber),
+                actorName: str(from.actorName),
+                actorLink: str(from.actorLink),
+                auditorName: str(from.auditorName) || get_current_user_name() || '',
+                caseHandler: str(from.caseHandler),
+                internalComment: (from.internalComment != null ? String(from.internalComment) : '').trim()
+            };
+            if (is_new_audit) {
+                const keys = ['caseNumber', 'actorName', 'actorLink', 'auditorName', 'caseHandler', 'internalComment'];
+                const state_matches = keys.every(k => (from[k] === cleaned[k] || (str(from[k]) === cleaned[k])));
+                const no_extra_keys = Object.keys(from).every(k => keys.includes(k));
+                if (!state_matches || !no_extra_keys) {
+                    this.dispatch({ type: this.StoreActionTypes.UPDATE_METADATA, payload: cleaned });
+                }
+            }
+            return cleaned;
+        })();
         const form_options = {
             initialData: metadata,
             submitButtonText: is_new_audit ? t('continue_to_samples') : t('save_changes_button'),
-            cancelButtonText: t('return_without_saving_button_text')
+            cancelButtonText: t('return_without_saving_button_text'),
+            goToListButtonText: is_new_audit ? t('go_to_audit_list_button') : null
         };
         
         this.metadata_form_component_instance.render(form_options);

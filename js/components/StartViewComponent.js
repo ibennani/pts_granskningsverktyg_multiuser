@@ -246,8 +246,26 @@ export const StartViewComponent = {
                 const section = this.Helpers.create_element('section', {
                     class_name: index === 0 ? 'start-view-audits-section' : 'start-view-audits-section start-view-audits-section-following'
                 });
-                const section_heading = this.Helpers.create_element('h2', { text_content: t(config.heading_key) });
-                section.appendChild(section_heading);
+                const is_new_audits_section = config.heading_key === 'start_view_new_audits_heading';
+                if (is_new_audits_section) {
+                    const heading_row = this.Helpers.create_element('div', { class_name: 'start-view-section-heading-row' });
+                    const section_heading = this.Helpers.create_element('h2', { text_content: t(config.heading_key) });
+                    const start_new_btn = this.Helpers.create_element('button', {
+                        class_name: ['button', 'button-primary', 'admin-start-new-audit-btn'],
+                        text_content: t('start_new_audit'),
+                        attributes: {
+                            type: 'button',
+                            'aria-label': t('start_new_audit')
+                        }
+                    });
+                    start_new_btn.addEventListener('click', () => this.router('admin_audits', { startNew: '1' }));
+                    heading_row.appendChild(section_heading);
+                    heading_row.appendChild(start_new_btn);
+                    section.appendChild(heading_row);
+                } else {
+                    const section_heading = this.Helpers.create_element('h2', { text_content: t(config.heading_key) });
+                    section.appendChild(section_heading);
+                }
 
                 const table_wrapper = this.Helpers.create_element('div', { class_name: 'start-view-table-wrapper' });
                 const table = this.Helpers.create_element('table', {

@@ -6,6 +6,7 @@
 // - restore_session: återställningsflöde, polling skulle skriva över backup
 // - confirm_sample_edit: REPLACE_STATE_FROM_REMOTE skulle förlora pendingSampleChanges
 // - rulefile_*: auditStatus === 'rulefile_editing' stoppar polling automatiskt
+// - auditStatus === 'not_started': granskningen är inte synkad till servern än → undviker 404
 
 import { get_audit_version, load_audit_with_rule_file } from '../api/client.js';
 
@@ -48,8 +49,13 @@ export function init_audit_view_poll_service({ getState, dispatch, StoreActionTy
         const state = getState();
         const audit_id = state?.auditId;
         const is_rulefile_editing = state?.auditStatus === 'rulefile_editing';
+        const is_new_audit_not_synced = state?.auditStatus === 'not_started';
 
         if (!is_audit_view() || !audit_id || is_rulefile_editing) {
+            poll_timer = setTimeout(poll_once, POLL_INTERVAL_MS);
+            return;
+        }
+        if (is_new_audit_not_synced) {
             poll_timer = setTimeout(poll_once, POLL_INTERVAL_MS);
             return;
         }

@@ -88,5 +88,6 @@ const value = trim_text ? trim_text(rawValue) : rawValue;
 
 - `EditGeneralSectionComponent` – regelfilsmetadata (allmän sektion)
 - `EditPageTypesSectionComponent` – sidtyper
+- `MetadataFormComponent` – granskningsmetadata
 - `AddSampleFormComponent` – stickprovsformulär (vid redigering)
 - `EditRulefileRequirementComponent` – kravredigering

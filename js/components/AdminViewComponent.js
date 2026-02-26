@@ -35,6 +35,8 @@ export const AdminViewComponent = {
         this.ValidationLogic = deps.ValidationLogic || window.ValidationLogic;
         this.SaveAuditLogic = deps.SaveAuditLogic || window.SaveAuditLogic;
 
+        this.admin_mode = (deps.view_name === 'admin_rules') ? 'rules' : (deps.view_name === 'admin_audits') ? 'audits' : 'both';
+
         this.upload_file_input = null;
 
         this.handle_upload_click = this.handle_upload_click.bind(this);
@@ -275,10 +277,13 @@ export const AdminViewComponent = {
                 );
                 return;
             }
-            this.dispatch({
+            await this.dispatch({
                 type: this.StoreActionTypes.INITIALIZE_NEW_AUDIT,
                 payload: { ruleFileContent: migrated_content }
             });
+            if (typeof window !== 'undefined') {
+                window.__GV_SHOW_EMPTY_METADATA_FORM = true;
+            }
             this.router('metadata');
         } catch (error) {
             this.NotificationComponent?.show_global_message(
@@ -520,25 +525,40 @@ export const AdminViewComponent = {
         }
 
         const header = this.Helpers.create_element('div', { class_name: 'admin-header' });
-        const title = this.Helpers.create_element('h1', { text_content: t('admin_title') });
-        const upload_btn = this.Helpers.create_element('button', {
-            class_name: ['button', 'button-primary', 'admin-upload-btn'],
-            text_content: t('admin_upload'),
-            attributes: { type: 'button' }
-        });
-        upload_btn.addEventListener('click', this.handle_upload_click);
-        this.upload_file_input = this.Helpers.create_element('input', {
-            class_name: 'admin-hidden-file-input',
-            attributes: {
-                type: 'file',
-                accept: '.json,application/json',
-                'aria-label': t('admin_upload')
-            }
-        });
-        this.upload_file_input.addEventListener('change', this.handle_file_select);
-        header.appendChild(title);
-        header.appendChild(upload_btn);
-        header.appendChild(this.upload_file_input);
+        const title_text = this.admin_mode === 'rules' ? t('admin_title_rules') : this.admin_mode === 'audits' ? t('admin_title_audits') : t('admin_title');
+        const title = this.Helpers.create_element('h1', { text_content: title_text });
+        if (this.admin_mode !== 'audits') {
+            const upload_btn = this.Helpers.create_element('button', {
+                class_name: ['button', 'button-primary', 'admin-upload-btn'],
+                text_content: t('admin_upload'),
+                attributes: { type: 'button' }
+            });
+            upload_btn.addEventListener('click', this.handle_upload_click);
+            this.upload_file_input = this.Helpers.create_element('input', {
+                class_name: 'admin-hidden-file-input',
+                attributes: {
+                    type: 'file',
+                    accept: '.json,application/json',
+                    'aria-label': t('admin_upload')
+                }
+            });
+            this.upload_file_input.addEventListener('change', this.handle_file_select);
+            header.appendChild(title);
+            header.appendChild(upload_btn);
+            header.appendChild(this.upload_file_input);
+        } else {
+            const start_new_audit_btn = this.Helpers.create_element('button', {
+                class_name: ['button', 'button-primary', 'admin-start-new-audit-btn'],
+                text_content: t('start_new_audit'),
+                attributes: {
+                    type: 'button',
+                    'aria-label': t('start_new_audit')
+                }
+            });
+            start_new_audit_btn.addEventListener('click', this.handle_start_new_audit);
+            header.appendChild(title);
+            header.appendChild(start_new_audit_btn);
+        }
         plate.appendChild(header);
 
         if (!this.api_available) {
@@ -648,17 +668,19 @@ export const AdminViewComponent = {
             id: 'admin-audits-heading',
             text_content: t('admin_audits_title')
         });
-        const start_new_audit_btn = this.Helpers.create_element('button', {
-            class_name: ['button', 'button-primary', 'admin-start-new-audit-btn'],
-            text_content: t('start_new_audit'),
-            attributes: {
-                type: 'button',
-                'aria-label': t('start_new_audit')
-            }
-        });
-        start_new_audit_btn.addEventListener('click', this.handle_start_new_audit);
         audits_heading_row.appendChild(audits_heading);
-        audits_heading_row.appendChild(start_new_audit_btn);
+        if (this.admin_mode !== 'audits') {
+            const start_new_audit_btn = this.Helpers.create_element('button', {
+                class_name: ['button', 'button-primary', 'admin-start-new-audit-btn'],
+                text_content: t('start_new_audit'),
+                attributes: {
+                    type: 'button',
+                    'aria-label': t('start_new_audit')
+                }
+            });
+            start_new_audit_btn.addEventListener('click', this.handle_start_new_audit);
+            audits_heading_row.appendChild(start_new_audit_btn);
+        }
         const audits_list = this.Helpers.create_element('ul', { class_name: 'admin-list' });
         if (this.audits.length === 0) {
             const empty = this.Helpers.create_element('li', {
@@ -748,11 +770,31 @@ export const AdminViewComponent = {
         right_col.appendChild(audits_heading_row);
         right_col.appendChild(audits_list);
 
-        two_col.appendChild(left_col);
-        two_col.appendChild(right_col);
-        plate.appendChild(two_col);
+        if (this.admin_mode === 'rules') {
+            plate.appendChild(left_col);
+        } else if (this.admin_mode === 'audits') {
+            plate.appendChild(right_col);
+        } else {
+            two_col.appendChild(left_col);
+            two_col.appendChild(right_col);
+            plate.appendChild(two_col);
+        }
 
         this.root.appendChild(plate);
+
+        if (this.admin_mode === 'audits' && this.deps.params?.startNew === '1') {
+            setTimeout(() => {
+                if (typeof this.handle_start_new_audit === 'function') {
+                    this.handle_start_new_audit();
+                }
+                try {
+                    const base = window.location.pathname + (window.location.search || '');
+                    window.history.replaceState(null, '', base + '#admin_audits');
+                } catch (e) {
+                    /* ignorerar */
+                }
+            }, 0);
+        }
 
         if (this._api_checked && this.api_available && typeof this._start_list_polling === 'function') {
             this._start_list_polling();

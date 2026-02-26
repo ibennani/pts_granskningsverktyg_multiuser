@@ -342,6 +342,14 @@ function root_reducer(current_state, action) {
                 ...initial_state,
                 saveFileVersion: APP_STATE_VERSION,
                 ruleFileContent: action.payload.ruleFileContent,
+                auditMetadata: {
+                    caseNumber: '',
+                    actorName: '',
+                    actorLink: '',
+                    auditorName: '',
+                    caseHandler: '',
+                    internalComment: ''
+                },
                 uiSettings: JSON.parse(JSON.stringify(initial_state.uiSettings)),
                 auditStatus: 'not_started'
             };
