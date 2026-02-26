@@ -1,0 +1,22 @@
+{
+  "metadata": {
+    "title": "Minimal test rule file",
+    "pageTypes": ["Startsida"],
+    "contentTypes": [
+      {
+        "id": "text",
+        "text": "Text",
+        "types": [{ "id": "plain", "text": "Plain" }]
+      }
+    ],
+    "samples": {
+      "sampleTypes": ["Webbsida"]
+    }
+  },
+  "requirements": {
+    "req1": {
+      "id": "req1",
+      "title": "Minimal requirement"
+    }
+  }
+}
