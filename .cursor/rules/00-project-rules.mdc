@@ -85,8 +85,8 @@ Adhere to the following rules at all times.
 
 ### Hårda Regler
 
-- Aldrig `disabled`-attribut på interaktiva element.  
-  Använd `aria-disabled="true"` endast vid tillfälliga tillstånd där funktionen väntar på data.
+- Inga `disabled`-attribut och inga `aria-disabled`-attribut på interaktiva element.  
+  Gränssnittet ska aldrig rendera komponenter som skulle kunna vara inaktiva – om något inte ska kunna användas ska det inte visas alls, eller så ska vy/state justeras så att situationen aldrig uppstår.
 - **Alla formulärfält ska vara redigerbara** – aldrig använd `readonly`-attribut på formulärfält i redigeringsläge. Om ett fält inte ska kunna redigeras ska det inte visas eller ska formuläret inte vara i redigeringsläge.
 - Inga inaktiva komponenter någonsin – rendera bara komponenter som ska visas och användas i aktuellt tillstånd.
 - Inga placeholders – använd alltid synliga `<label>`-element.
@@ -140,7 +140,7 @@ Utöver WCAG:s formella krav gäller följande projektspecifika regler:
 #### Struktur och semantik
 
 - Rubriker ska använda korrekt hierarki (`h1–h6`).
-- Det ska finnas exakt ett `<h1>` per sida.
+- En vy kan ha en eller flera `<h1>`-rubriker. Under varje `<h1>` ska rubrikerna följa korrekt hierarki (t.ex. `h2` under respektive `h1`, osv.) så att strukturen inom varje avsnitt är konsekvent.
 - Länkar ska beskriva målet tydligt (inte "Klicka här").
 - Länkar som öppnar nytt fönster eller ny flik ska tydligt indikera det.
 - **Alla länkar (`<a>`) ska alltid vara understrukna (`text-decoration: underline`).** Detta gäller både normala länkar och länkar i menyer. Undvik att ta bort understrykning med CSS.
@@ -162,10 +162,16 @@ Utöver WCAG:s formella krav gäller följande projektspecifika regler:
 
 #### Egna tillägg utöver WCAG
 
-- Inga element får vara dolda eller inaktiva genom `disabled`; använd `aria-disabled="true"` endast tillfälligt.
+- Inga element får vara dolda eller inaktiva genom `disabled` eller `aria-disabled`.
 - Undvik att gömma innehåll visuellt utan korrekt ARIA-hantering (`sr-only` eller `aria-hidden`).
 - Text som indikerar tillstånd (t.ex. "Sparar...", "Klar") ska kunna uppfattas av skärmläsare.
 - Använd alltid HTML-komponenter. Använd endast aria-attribut när standard-html inte räcker till.
+
+#### Särskilda regler för AI-agenter (ARIA och inaktivering)
+
+- AI-agenter (t.ex. Cursor) måste alltid fråga användaren uttryckligen innan de föreslår eller inför någon form av inaktiverande tillstånd för en interaktiv komponent, inklusive alla varianter av `disabled` och `aria-disabled`.
+- AI-agenter måste alltid fråga användaren innan aria-attribut (`aria-*`) läggs till, ändras eller tas bort i koden.
+- Placeholders får aldrig användas i några inmatningsfält. AI-agenter ska varken skapa nya `placeholder`-attribut eller lämna befintliga kvar; all information ska ges via synliga `<label>`-element och eventuella hjälptexter.
 
 ### Byggtext-regel
 
