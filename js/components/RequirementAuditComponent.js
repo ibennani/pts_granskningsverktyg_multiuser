@@ -1,6 +1,7 @@
 // js/components/RequirementAuditComponent.js
 
 import { get_current_user_name } from '../utils/helpers.js';
+import { capture_focus_state, restore_focus_state, AutosaveService } from '../logic/autosave_service.js';
 import { ChecklistHandler } from './requirement_audit/ChecklistHandler.js';
 import { RequirementInfoSections } from './requirement_audit/RequirementInfoSections.js';
 import { RequirementAuditNavigationComponent } from './requirement_audit/RequirementAuditNavigation.js';
@@ -41,7 +42,7 @@ export const RequirementAuditComponent = {
     ordered_requirement_keys: [],
     right_sidebar_root: null,
     sidebar_navigation_state: null,
-    debounceTimerAudit: null,
+    autosave_session: null,
 
     async init({ root, deps }) {
         this.root = root;
@@ -56,6 +57,7 @@ export const RequirementAuditComponent = {
         this.Helpers = deps.Helpers;
         this.NotificationComponent = deps.NotificationComponent;
         this.AuditLogic = deps.AuditLogic;
+        this.AutosaveService = deps.AutosaveService || AutosaveService;
         this.right_sidebar_root = deps.rightSidebarRoot || null;
         this.subscribe = deps.subscribe;
         this.unsubscribe_from_store = null;
@@ -65,7 +67,6 @@ export const RequirementAuditComponent = {
         this.handle_navigation = this.handle_navigation.bind(this);
         this.handle_comment_input = this.handle_comment_input.bind(this);
         this.handle_comment_input_with_autosave = this.handle_comment_input_with_autosave.bind(this);
-        this.debounced_autosave_result = this.debounced_autosave_result.bind(this);
         this.handle_sidebar_filters_change = this.handle_sidebar_filters_change.bind(this);
         this.handle_audit_keydown = this.handle_audit_keydown.bind(this);
 
@@ -88,7 +89,7 @@ export const RequirementAuditComponent = {
             this.unsubscribe_from_store = this.subscribe((_new_state, listener_meta) => {
                 if (listener_meta?.skip_render) return;
                 if (this.root && typeof this.render === 'function') {
-                    if (window.__GV_DEBUG_MODAL_SCROLL) console.log('[GV-ModalDebug] RequirementAuditComponent: render');
+                    if (window.__GV_DEBUG_MODAL_SCROLL && window.ConsoleManager) window.ConsoleManager.log('[GV-ModalDebug] RequirementAuditComponent: render');
                     this.render();
                 }
             });
@@ -101,39 +102,39 @@ export const RequirementAuditComponent = {
         const state = this.getState();
         
         if (!state || typeof state !== 'object') {
-            console.warn('[RequirementAuditComponent] No valid state available for data loading');
+            if (window.ConsoleManager) window.ConsoleManager.warn('[RequirementAuditComponent] No valid state available for data loading');
             return false;
         }
         
         if (!state.ruleFileContent || typeof state.ruleFileContent !== 'object') {
-            console.warn('[RequirementAuditComponent] No valid ruleFileContent available for data loading');
+            if (window.ConsoleManager) window.ConsoleManager.warn('[RequirementAuditComponent] No valid ruleFileContent available for data loading');
             return false;
         }
         
         if (!this.params?.sampleId) {
-            console.warn('[RequirementAuditComponent] No sampleId available for data loading');
+            if (window.ConsoleManager) window.ConsoleManager.warn('[RequirementAuditComponent] No sampleId available for data loading');
             return false;
         }
         
         if (!this.params?.requirementId) {
-            console.warn('[RequirementAuditComponent] No requirementId available for data loading');
+            if (window.ConsoleManager) window.ConsoleManager.warn('[RequirementAuditComponent] No requirementId available for data loading');
             return false;
         }
         
         if (!Array.isArray(state.samples)) {
-            console.warn('[RequirementAuditComponent] No valid samples array available for data loading');
+            if (window.ConsoleManager) window.ConsoleManager.warn('[RequirementAuditComponent] No valid samples array available for data loading');
             return false;
         }
         
         this.current_sample = state.samples.find(s => s && s.id === this.params.sampleId);
         if (!this.current_sample) {
-            console.warn('[RequirementAuditComponent] Sample not found:', this.params.sampleId);
+            if (window.ConsoleManager) window.ConsoleManager.warn('[RequirementAuditComponent] Sample not found:', this.params.sampleId);
             return false;
         }
         
         this.current_requirement = state.ruleFileContent.requirements?.[this.params.requirementId];
         if (!this.current_requirement) {
-            console.warn('[RequirementAuditComponent] Requirement not found:', this.params.requirementId);
+            if (window.ConsoleManager) window.ConsoleManager.warn('[RequirementAuditComponent] Requirement not found:', this.params.requirementId);
             return false;
         }
         
@@ -144,7 +145,7 @@ export const RequirementAuditComponent = {
                 try {
                     return JSON.parse(JSON.stringify(result_from_store));
                 } catch (error) {
-                    console.warn('[RequirementAuditComponent] Failed to clone result from store:', error);
+                    if (window.ConsoleManager) window.ConsoleManager.warn('[RequirementAuditComponent] Failed to clone result from store:', error);
                     return { status: 'not_audited', commentToAuditor: '', commentToActor: '', lastStatusUpdate: null, stuckProblemDescription: '', checkResults: {} };
                 }
             })()
@@ -180,15 +181,13 @@ export const RequirementAuditComponent = {
     },
 
     handle_checklist_status_change(change_info) {
-        // Rensa väntande debounced autosave så att den inte skriver över statusändringen med gammal data
-        clearTimeout(this.debounceTimerAudit);
-        this.debounceTimerAudit = null;
+        this.autosave_session?.cancel_pending?.();
 
         let modified_result;
         try {
             modified_result = JSON.parse(JSON.stringify(this.current_result));
         } catch (error) {
-            console.warn('[RequirementAuditComponent] Failed to clone current result for status change:', error);
+            if (window.ConsoleManager) window.ConsoleManager.warn('[RequirementAuditComponent] Failed to clone current result for status change:', error);
             return;
         }
         const check_result = modified_result.checkResults[change_info.checkId];
@@ -237,14 +236,7 @@ export const RequirementAuditComponent = {
 
     handle_comment_input_with_autosave() {
         this.handle_comment_input();
-        this.debounced_autosave_result();
-    },
-
-    debounced_autosave_result() {
-        clearTimeout(this.debounceTimerAudit);
-        this.debounceTimerAudit = setTimeout(() => {
-            this.save_result_immediately({ skipRender: true });
-        }, 250);
+        this.autosave_session?.request_autosave?.();
     },
 
     handle_sidebar_filters_change(payload) {
@@ -468,10 +460,9 @@ export const RequirementAuditComponent = {
     },
 
     handle_navigation(action) {
-        this.handle_comment_input(true);
+        this.autosave_session?.cancel_pending?.();
+        this.autosave_session?.flush?.({ should_trim: true, skip_render: true });
         this.checklist_handler_instance?.flush_observations_before_destroy?.();
-        clearTimeout(this.debounceTimerAudit);
-        this.save_result_immediately({ skipRender: true });
 
         const navigation_state = this.get_navigation_state();
         const mode = navigation_state.mode;
@@ -519,7 +510,7 @@ export const RequirementAuditComponent = {
                 try {
                     result = JSON.parse(JSON.stringify(this.current_result));
                 } catch (error) {
-                    console.warn('[RequirementAuditComponent] Failed to clone current result for confirm status:', error);
+                    if (window.ConsoleManager) window.ConsoleManager.warn('[RequirementAuditComponent] Failed to clone current result for confirm status:', error);
                     return;
                 }
                 delete result.needsReview;
@@ -593,7 +584,7 @@ export const RequirementAuditComponent = {
             checklist_container,
             {
                 onStatusChange: this.handle_checklist_status_change,
-                onObservationChange: this.debounced_autosave_result,
+                onObservationChange: () => this.autosave_session?.request_autosave?.(),
                 onObservationChangeImmediate: () => this.save_result_immediately({ skipRender: true })
             },
             {
@@ -624,7 +615,6 @@ export const RequirementAuditComponent = {
         fg1.appendChild(label1);
         this.comment_to_auditor_input = this.Helpers.create_element('textarea', { id: 'commentToAuditor', class_name: 'form-control', attributes: { rows: '4' } });
         this.comment_to_auditor_input.addEventListener('input', this.handle_comment_input_with_autosave);
-        this.comment_to_auditor_input.addEventListener('blur', this.handle_comment_input);
         fg1.appendChild(this.comment_to_auditor_input);
 
         const fg2 = this.Helpers.create_element('div', { class_name: 'form-group' });
@@ -632,7 +622,6 @@ export const RequirementAuditComponent = {
         fg2.appendChild(label2);
         this.comment_to_actor_input = this.Helpers.create_element('textarea', { id: 'commentToActor', class_name: 'form-control', attributes: { rows: '4' } });
         this.comment_to_actor_input.addEventListener('input', this.handle_comment_input_with_autosave);
-        this.comment_to_actor_input.addEventListener('blur', this.handle_comment_input);
         fg2.appendChild(this.comment_to_actor_input);
         
         container.append(fg1, fg2);
@@ -643,6 +632,10 @@ export const RequirementAuditComponent = {
         const t = this.Translation.t;
         const state = this.getState();
         const is_locked = state.auditStatus === 'locked';
+
+        const focus_root = this.plate_element_ref;
+        const focus_state = focus_root ? capture_focus_state(focus_root) : null;
+        const window_scroll = focus_state ? { x: window.scrollX, y: window.scrollY } : null;
 
         const header = this.plate_element_ref.querySelector('.requirement-audit-header');
         header.innerHTML = '';
@@ -670,8 +663,22 @@ export const RequirementAuditComponent = {
             if (label2) label2.textContent = t('comment_to_actor');
         }
         
-        this.comment_to_auditor_input.value = this.current_result.commentToAuditor || '';
-        this.comment_to_actor_input.value = this.current_result.commentToActor || '';
+        const target_auditor_value = this.current_result.commentToAuditor || '';
+        const target_actor_value = this.current_result.commentToActor || '';
+
+        if (this.comment_to_auditor_input) {
+            if (document.activeElement !== this.comment_to_auditor_input &&
+                this.comment_to_auditor_input.value !== target_auditor_value) {
+                this.comment_to_auditor_input.value = target_auditor_value;
+            }
+        }
+        if (this.comment_to_actor_input) {
+            if (document.activeElement !== this.comment_to_actor_input &&
+                this.comment_to_actor_input.value !== target_actor_value) {
+                this.comment_to_actor_input.value = target_actor_value;
+            }
+        }
+
         [this.comment_to_auditor_input, this.comment_to_actor_input].forEach(input => {
             input.readOnly = is_locked;
             input.classList.toggle('readonly-textarea', is_locked);
@@ -679,7 +686,19 @@ export const RequirementAuditComponent = {
                 this.Helpers.init_auto_resize_for_textarea(input);
             }
         });
-        
+
+        if (focus_state && focus_root) {
+            setTimeout(() => {
+                requestAnimationFrame(() => {
+                    restore_focus_state({
+                        focus_root,
+                        focus_state,
+                        window_scroll
+                    });
+                });
+            }, 0);
+        }
+
         if (this.current_result?.needsReview === true) {
             this.NotificationComponent.show_global_message(t('requirement_updated_needs_review'), 'info');
         } else {
@@ -733,6 +752,20 @@ export const RequirementAuditComponent = {
         if (!this.plate_element_ref || !this.root.contains(this.plate_element_ref)) {
             this.build_initial_dom();
         }
+
+        this.autosave_session?.destroy?.();
+        this.autosave_session = null;
+        if (this.plate_element_ref && this.AutosaveService?.create_session) {
+            this.autosave_session = this.AutosaveService.create_session({
+                form_element: this.plate_element_ref,
+                focus_root: this.plate_element_ref,
+                debounce_ms: 250,
+                on_save: ({ is_autosave, should_trim, skip_render }) => {
+                    this.handle_comment_input(should_trim);
+                    this.save_result_immediately({ skipRender: skip_render });
+                }
+            });
+        }
         
         this.populate_dom_with_data();
         await this.render_right_sidebar();
@@ -761,22 +794,23 @@ export const RequirementAuditComponent = {
             this.unsubscribe_from_store = null;
         }
         document.removeEventListener('keydown', this.handle_audit_keydown);
-        clearTimeout(this.debounceTimerAudit);
-        this.handle_comment_input(true);
         this.checklist_handler_instance?.flush_observations_before_destroy?.();
-        if (this.current_result) {
+        if (this.autosave_session) {
+            this.autosave_session.flush({ should_trim: true, skip_render: true });
+            this.autosave_session.destroy();
+            this.autosave_session = null;
+        } else if (this.current_result) {
+            this.handle_comment_input(true);
             this.save_result_immediately({ skipRender: true });
         }
         
         // Remove event listeners
         if (this.comment_to_auditor_input) {
             this.comment_to_auditor_input.removeEventListener('input', this.handle_comment_input_with_autosave);
-            this.comment_to_auditor_input.removeEventListener('blur', this.handle_comment_input);
             this.comment_to_auditor_input = null;
         }
         if (this.comment_to_actor_input) {
             this.comment_to_actor_input.removeEventListener('input', this.handle_comment_input_with_autosave);
-            this.comment_to_actor_input.removeEventListener('blur', this.handle_comment_input);
             this.comment_to_actor_input = null;
         }
         
