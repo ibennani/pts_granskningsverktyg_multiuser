@@ -865,6 +865,14 @@ window.DraftManager = DraftManager;
 
         update_side_menu(view_name_to_render, params_to_render);
 
+        if (main_view_root) {
+            if (view_name_to_render === 'start') {
+                main_view_root.classList.add('start-view-active');
+            } else {
+                main_view_root.classList.remove('start-view-active');
+            }
+        }
+
         const prev_view = current_view_name_rendered;
         const prev_params_json = current_view_params_rendered_json;
         current_view_name_rendered = view_name_to_render;

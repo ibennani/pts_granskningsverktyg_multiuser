@@ -24,6 +24,12 @@
     overflow-y: auto;
 }
 
+/* Startvyn: ingen scrollbar i main – höjden anpassas efter innehållet, scroll sker i app-container */
+.app-main-view-root.start-view-active {
+    overflow: visible;
+    min-height: auto;
+}
+
 .app-right-sidebar-root {
     flex: 0 0 300px;
     width: 300px;

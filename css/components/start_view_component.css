@@ -1,7 +1,11 @@
 /* css/components/start_view_component.css */
 
+/* Plattan ska alltid anpassa höjd efter innehållet; ingen scrollbar på eller innanför plattan */
 .start-view-plate {
     width: 100%;
+    height: auto;
+    min-height: 0;
+    overflow: visible;
 }
 
 .start-view-intro {
