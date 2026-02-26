@@ -34,7 +34,7 @@ function _generate_filename(audit_data, t_func) {
 export function save_audit_to_json_file(current_audit_data, t_func, show_notification_func) {
     if (!current_audit_data) {
         if (show_notification_func) show_notification_func(t_func('no_audit_data_to_save'), 'error');
-        if (window.ConsoleManager) window.ConsoleManager.warn("[SaveAuditLogic] No audit data provided to save.");
+        console.error("[SaveAuditLogic] No audit data provided to save.");
         return;
     }
 
@@ -57,11 +57,11 @@ export function save_audit_to_json_file(current_audit_data, t_func, show_notific
             window.DraftManager.commitCurrentDraft();
         }
     } catch (e) {
-        if (window.ConsoleManager) window.ConsoleManager.warn("[SaveAuditLogic] Could not commit draft after save:", e);
+        console.warn("[SaveAuditLogic] Could not commit draft after save:", e);
     }
 
     if (show_notification_func) show_notification_func(t_func('audit_saved_as_file', { filename: filename }), 'success');
-    if (window.ConsoleManager) window.ConsoleManager.log(`[SaveAuditLogic] Audit saved as ${filename}`);
+    console.log(`[SaveAuditLogic] Audit saved as ${filename}`);
 }
 
-if (typeof window !== 'undefined' && window.ConsoleManager) window.ConsoleManager.log("[save_audit_logic.js] SaveAuditLogic loaded.");
+console.log("[save_audit_logic.js] SaveAuditLogic loaded.");

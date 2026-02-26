@@ -19,7 +19,7 @@ export const RulefileMetadataViewComponent = {
                 await this.Helpers.load_css(this.CSS_PATH);
                 this.is_css_loaded = true;
             } catch (error) {
-                if (window.ConsoleManager) window.ConsoleManager.warn('[RulefileMetadataViewComponent] Failed to load CSS. Continuing without dedicated styles.', error);
+                console.warn('[RulefileMetadataViewComponent] Failed to load CSS. Continuing without dedicated styles.', error);
             }
         }
     },
@@ -40,7 +40,7 @@ export const RulefileMetadataViewComponent = {
             try {
                 return JSON.stringify(value);
             } catch (error) {
-                if (window.ConsoleManager) window.ConsoleManager.warn('[RulefileMetadataViewComponent] Could not stringify value', value, error);
+                console.warn('[RulefileMetadataViewComponent] Could not stringify value', value, error);
                 return '';
             }
         }
@@ -242,7 +242,7 @@ export const RulefileMetadataViewComponent = {
                 || (typeof navigator !== 'undefined' ? navigator.language : 'en-GB');
             return date.toLocaleDateString(locale, { year: 'numeric', month: '2-digit', day: '2-digit' });
         } catch (error) {
-            if (window.ConsoleManager) window.ConsoleManager.warn('[RulefileMetadataViewComponent] Failed to format date', iso_string, error);
+            console.warn('[RulefileMetadataViewComponent] Failed to format date', iso_string, error);
             return iso_string;
         }
     },

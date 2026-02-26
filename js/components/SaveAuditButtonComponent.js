@@ -26,14 +26,14 @@ export class SaveAuditButtonComponent {
                 const link_tag = document.querySelector(`link[href="${this.CSS_PATH}"]`);
                 if (!link_tag) await this.Helpers.load_css(this.CSS_PATH);
             } catch (error) {
-                if (window.ConsoleManager) window.ConsoleManager.warn("Failed to load CSS for SaveAuditButtonComponent:", error);
+                console.warn("Failed to load CSS for SaveAuditButtonComponent:", error);
             }
         }
     }
 
     handle_save_click() {
         if (!this.getState || !this.SaveAuditLogic || !this.Translation || !this.NotificationComponent) {
-            if (window.ConsoleManager) window.ConsoleManager.warn("[SaveAuditButtonComponent] Dependencies not initialized for handle_save_click.");
+            console.error("[SaveAuditButtonComponent] Dependencies not initialized for handle_save_click.");
             if (this.NotificationComponent && this.Translation) {
                  this.NotificationComponent.show_global_message(this.Translation.t('error_saving_audit'), 'error');
             }
@@ -52,13 +52,13 @@ export class SaveAuditButtonComponent {
              const show_msg = (msg, type) => this.NotificationComponent?.show_global_message?.(msg, type);
              this.SaveAuditLogic.save_audit_to_json_file(current_audit_data, t, show_msg);
         } else {
-             if (window.ConsoleManager) window.ConsoleManager.warn("[SaveAuditButtonComponent] SaveAuditLogic.save_audit_to_json_file is not a function");
+             console.error("[SaveAuditButtonComponent] SaveAuditLogic.save_audit_to_json_file is not a function");
         }
     }
 
     render() {
         if (!this.root || !this.deps || !this.Helpers || !this.Translation) {
-            if (window.ConsoleManager) window.ConsoleManager.warn("[SaveAuditButtonComponent] Container or core render dependencies missing.");
+            console.error("[SaveAuditButtonComponent] Container or core render dependencies missing.");
             return;
         }
         

@@ -17,6 +17,9 @@ const translations = {
   start_view_audits_heading: 'Aktuella ärenden',
   start_view_no_audits: 'Inga granskningar finns ännu.',
   admin_loading: 'Laddar...',
+  // Matchar nycklar i js/i18n/*.json så att även skiplänk och landmarks testas med översättningar
+  skip_to_content: 'Hoppa till innehållet',
+  landmark_top_navigation: 'Övre navigering',
 };
 
 async function renderStartView() {
@@ -42,6 +45,16 @@ async function renderStartView() {
       );
     },
   };
+
+  // Applicera samma logik som i main.js:update_landmarks_and_skip_link
+  const skipLink = document.getElementById('skip-to-content');
+  if (skipLink) {
+    skipLink.textContent = window.Translation.t('skip_to_content');
+  }
+  const topNav = document.getElementById('global-action-bar-top');
+  if (topNav) {
+    topNav.setAttribute('aria-label', window.Translation.t('landmark_top_navigation'));
+  }
 
   window.NotificationComponent = {
     get_global_message_element_reference: jest.fn().mockReturnValue(document.createElement('div')),

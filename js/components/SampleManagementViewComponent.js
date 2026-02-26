@@ -29,7 +29,7 @@ export const SampleManagementViewComponent = {
         // Initialize sub-components and CSS
         this.init_sub_components();
         if (this.Helpers && this.Helpers.load_css) {
-            this.Helpers.load_css(this.CSS_PATH).catch(e => { if (window.ConsoleManager) window.ConsoleManager.warn(e); });
+            this.Helpers.load_css(this.CSS_PATH).catch(e => console.warn(e));
         }
     },
 

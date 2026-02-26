@@ -31,8 +31,8 @@ export const EditRulefileRequirementComponent = {
         this._handle_content_type_change = this._handle_content_type_change.bind(this);
         this.handle_autosave_input = this.handle_autosave_input.bind(this);
         
-        await this.Helpers.load_css(this.CSS_PATH_SHARED).catch(e => { if (window.ConsoleManager) window.ConsoleManager.warn(e); });
-        await this.Helpers.load_css(this.CSS_PATH_SPECIFIC).catch(e => { if (window.ConsoleManager) window.ConsoleManager.warn(e); });
+        await this.Helpers.load_css(this.CSS_PATH_SHARED).catch(e => console.warn(e));
+        await this.Helpers.load_css(this.CSS_PATH_SPECIFIC).catch(e => console.warn(e));
     },
 
     _create_move_check_button(direction, check) {

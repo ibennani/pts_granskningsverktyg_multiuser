@@ -21,7 +21,7 @@ export const ModalComponent = {
                 timeout: 5000,
                 maxRetries: 2,
             }).catch(() => {
-                if (window.ConsoleManager) window.ConsoleManager.warn('[ModalComponent] Continuing without CSS due to loading failure');
+                console.warn('[ModalComponent] Continuing without CSS due to loading failure');
             });
         }
     },
@@ -98,7 +98,7 @@ export const ModalComponent = {
                 if (has_structure) {
                     const ac = document.getElementById('app-container');
                     const mvr = document.getElementById('app-main-view-root');
-                    if (window.ConsoleManager) window.ConsoleManager.log('[GV-ModalDebug] DOM ändrad', {
+                    console.log('[GV-ModalDebug] DOM ändrad', {
                         mutations: debug_count.n,
                         scroll: { w: window.scrollY, ac: ac?.scrollTop, mvr: mvr?.scrollTop }
                     });
@@ -107,7 +107,7 @@ export const ModalComponent = {
             this._debug_mutation_count = debug_count;
             const target = main_view_root || app_container;
             if (target) this._debug_observer.observe(target, { childList: true, subtree: true });
-            if (window.ConsoleManager) window.ConsoleManager.log('[GV-ModalDebug] Modal ÖPPNAS – scroll:', this._scroll_state);
+            console.log('[GV-ModalDebug] Modal ÖPPNAS – scroll:', this._scroll_state);
         }
 
         document.documentElement.style.overflow = 'hidden';
@@ -145,8 +145,8 @@ export const ModalComponent = {
         const debug_mutation_count = this._debug_mutation_count?.n ?? 0;
 
         if (window.__GV_DEBUG_MODAL_SCROLL) {
-            if (window.ConsoleManager) window.ConsoleManager.log('[GV-ModalDebug] _finish_close – sparad scroll:', scroll_state);
-            if (window.ConsoleManager) window.ConsoleManager.log('[GV-ModalDebug] _finish_close – scroll FÖRE cleanup:', {
+            console.log('[GV-ModalDebug] _finish_close – sparad scroll:', scroll_state);
+            console.log('[GV-ModalDebug] _finish_close – scroll FÖRE cleanup:', {
                 w: window.scrollY,
                 ac: document.getElementById('app-container')?.scrollTop,
                 mvr: document.getElementById('app-main-view-root')?.scrollTop
@@ -185,7 +185,7 @@ export const ModalComponent = {
             document.body.scrollTop = scroll_state.windowY;
 
             if (window.__GV_DEBUG_MODAL_SCROLL) {
-                if (window.ConsoleManager) window.ConsoleManager.log('[GV-ModalDebug] Efter sync restore:', {
+                console.log('[GV-ModalDebug] Efter sync restore:', {
                     w: window.scrollY,
                     ac: app_container?.scrollTop,
                     mvr: main_view_root?.scrollTop
@@ -215,7 +215,7 @@ export const ModalComponent = {
                     main_view_root.scrollTop = scroll_state.mainViewRoot;
                 }
                 if (window.__GV_DEBUG_MODAL_SCROLL) {
-                    if (window.ConsoleManager) window.ConsoleManager.log('[GV-ModalDebug] Efter setTimeout(0) restore:', {
+                    console.log('[GV-ModalDebug] Efter setTimeout(0) restore:', {
                         w: window.scrollY,
                         ac: app_container?.scrollTop,
                         mvr: main_view_root?.scrollTop
@@ -230,14 +230,14 @@ export const ModalComponent = {
                         }
                     }
                     if (window.__GV_DEBUG_MODAL_SCROLL) {
-                        if (window.ConsoleManager) window.ConsoleManager.log('[GV-ModalDebug] Efter fokus:', {
+                        console.log('[GV-ModalDebug] Efter fokus:', {
                             w: window.scrollY,
                             ac: document.getElementById('app-container')?.scrollTop,
                             mvr: document.getElementById('app-main-view-root')?.scrollTop
                         });
                         if (debug_observer) {
                             debug_observer.disconnect();
-                            if (window.ConsoleManager) window.ConsoleManager.log('[GV-ModalDebug] MutationObserver stoppad. Totalt mutationer:', debug_mutation_count);
+                            console.log('[GV-ModalDebug] MutationObserver stoppad. Totalt mutationer:', debug_mutation_count);
                         }
                     }
                 });

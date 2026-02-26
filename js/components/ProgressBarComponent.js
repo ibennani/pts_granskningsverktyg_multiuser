@@ -11,7 +11,7 @@ export const ProgressBarComponent = {
                     await window.Helpers.load_css('css/components/progress_bar_component.css');
                     this.css_loaded = true;
                 } catch (error) {
-                    if (window.ConsoleManager) window.ConsoleManager.warn("Failed to load CSS for ProgressBarComponent:", error);
+                    console.warn("Failed to load CSS for ProgressBarComponent:", error);
                 }
             } else {
                 this.css_loaded = true; // Already in DOM
@@ -25,7 +25,7 @@ export const ProgressBarComponent = {
         this.load_styles_if_needed();
 
         if (typeof window.Helpers === 'undefined' || typeof window.Helpers.create_element !== 'function') {
-            if (window.ConsoleManager) window.ConsoleManager.warn("ProgressBarComponent: Helpers.create_element not available!");
+            console.error("ProgressBarComponent: Helpers.create_element not available!");
             const fallback_progress = document.createElement('div');
             const t = (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function')
                 ? window.Translation.t

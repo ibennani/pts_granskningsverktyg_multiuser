@@ -2,7 +2,6 @@
 import * as AuditLogic from './audit_logic.js';
 import { get_current_user_name } from './utils/helpers.js';
 import { schedule_sync_to_server } from './logic/server_sync.js';
-import { consoleManager } from './utils/console_manager.js';
 
 const APP_STATE_KEY = 'digitalTillsynAppCentralState';
 const APP_STATE_BACKUP_KEY = 'digitalTillsynAppStateBackup';
@@ -124,7 +123,7 @@ function root_reducer(current_state, action) {
             
             // Säkerställ att ruleFileContent finns och har requirements
             if (!current_state.ruleFileContent || !current_state.ruleFileContent.requirements) {
-                consoleManager.warn('[State.js] Cannot delete check: ruleFileContent or requirements is null/undefined');
+                console.warn('[State.js] Cannot delete check: ruleFileContent or requirements is null/undefined');
                 return current_state;
             }
             
@@ -142,7 +141,7 @@ function root_reducer(current_state, action) {
             
             // Säkerställ att ruleFileContent finns och har requirements
             if (!current_state.ruleFileContent || !current_state.ruleFileContent.requirements) {
-                consoleManager.warn('[State.js] Cannot delete criterion: ruleFileContent or requirements is null/undefined');
+                console.warn('[State.js] Cannot delete criterion: ruleFileContent or requirements is null/undefined');
                 return current_state;
             }
             
@@ -164,8 +163,8 @@ function root_reducer(current_state, action) {
         case ActionTypes.UPDATE_REQUIREMENT_DEFINITION:
             const { requirementId: updateReqId, updatedRequirementData } = action.payload;
             // --- DEBUG START ---
-            consoleManager.log(`%c[DEBUG] Reducer: Received UPDATE_REQUIREMENT_DEFINITION for ID '${updateReqId}'.`, 'color: #FF69B4;');
-            consoleManager.log(`%c[DEBUG] Reducer: INCOMING classifications data:`, 'color: #FF69B4;', JSON.parse(JSON.stringify(updatedRequirementData.classifications)));
+            console.log(`%c[DEBUG] Reducer: Received UPDATE_REQUIREMENT_DEFINITION for ID '${updateReqId}'.`, 'color: #FF69B4;');
+            console.log(`%c[DEBUG] Reducer: INCOMING classifications data:`, 'color: #FF69B4;', JSON.parse(JSON.stringify(updatedRequirementData.classifications)));
             // --- DEBUG END ---
             if (current_state.ruleFileContent?.requirements?.[updateReqId]) {
                 const newRequirements = {
@@ -180,7 +179,7 @@ function root_reducer(current_state, action) {
                     }
                 };
                 // --- DEBUG START ---
-                consoleManager.log(`%c[DEBUG] Reducer: FINAL classifications in new state for '${updateReqId}':`, 'color: #FF69B4; font-weight: bold;', JSON.parse(JSON.stringify(final_state.ruleFileContent.requirements[updateReqId].classifications)));
+                console.log(`%c[DEBUG] Reducer: FINAL classifications in new state for '${updateReqId}':`, 'color: #FF69B4; font-weight: bold;', JSON.parse(JSON.stringify(final_state.ruleFileContent.requirements[updateReqId].classifications)));
                 // --- DEBUG END ---
                 return final_state;
             }
@@ -188,7 +187,7 @@ function root_reducer(current_state, action) {
 
         case ActionTypes.ADD_REQUIREMENT_DEFINITION:
             const { requirementId: addReqId, newRequirementData } = action.payload;
-            consoleManager.log(`%c[DEBUG] Reducer: Received ADD_REQUIREMENT_DEFINITION for ID '${addReqId}'.`, 'color: #00FF00;');
+            console.log(`%c[DEBUG] Reducer: Received ADD_REQUIREMENT_DEFINITION for ID '${addReqId}'.`, 'color: #00FF00;');
             if (current_state.ruleFileContent?.requirements && newRequirementData) {
                 const newRequirements = {
                     ...current_state.ruleFileContent.requirements,
@@ -209,7 +208,7 @@ function root_reducer(current_state, action) {
             
             // Säkerställ att ruleFileContent finns och har requirements
             if (!current_state.ruleFileContent || !current_state.ruleFileContent.requirements) {
-                consoleManager.warn('[State.js] Cannot delete requirement: ruleFileContent or requirements is null/undefined');
+                console.warn('[State.js] Cannot delete requirement: ruleFileContent or requirements is null/undefined');
                 return current_state;
             }
             
@@ -422,7 +421,7 @@ function root_reducer(current_state, action) {
                 // Beräkna om statusar med korrekt logik (t.ex. OR-logik) och uppdatera bristindex om granskningen är låst
                 return AuditLogic.recalculateStatusesOnLoad(merged_state);
             }
-            consoleManager.warn('[State.js] LOAD_AUDIT_FROM_FILE: Invalid payload.', action.payload);
+            console.warn('[State.js] LOAD_AUDIT_FROM_FILE: Invalid payload.', action.payload);
             return current_state;
 
         case ActionTypes.UPDATE_METADATA:
@@ -503,7 +502,7 @@ function root_reducer(current_state, action) {
 
         case ActionTypes.REPLACE_RULEFILE_AND_RECONCILE:
             if (!action.payload || !action.payload.ruleFileContent || !action.payload.samples) {
-                consoleManager.warn('[State.js] REPLACE_RULEFILE_AND_RECONCILE: Invalid payload.');
+                console.error('[State.js] REPLACE_RULEFILE_AND_RECONCILE: Invalid payload.');
                 return current_state;
             }
             return {
@@ -626,7 +625,7 @@ function root_reducer(current_state, action) {
 
 function dispatch(action) {
     if (!action || typeof action.type !== 'string') {
-        consoleManager.warn('[State.js] Invalid action dispatched. Action must be an object with a "type" property.', action);
+        console.error('[State.js] Invalid action dispatched. Action must be an object with a "type" property.', action);
         return Promise.reject(new Error('Invalid action'));
     }
     
@@ -691,7 +690,7 @@ function execute_single_dispatch(action, dispatch_fn) {
                 try {
                     saveStateToSessionStorage(internal_state);
                 } catch (saveError) {
-                    consoleManager.warn('[State.js] Failed to save state to sessionStorage:', saveError);
+                    console.warn('[State.js] Failed to save state to sessionStorage:', saveError);
                     // Fortsätt ändå, detta är inte kritiskt
                 }
 
@@ -718,7 +717,7 @@ function execute_single_dispatch(action, dispatch_fn) {
                         _debug_action_type: window.__GV_DEBUG_MODAL_SCROLL ? action?.type : undefined
                     });
                 } catch (listenerError) {
-                    consoleManager.warn('[State.js] Error notifying state listeners:', listenerError);
+                    console.warn('[State.js] Error notifying state listeners:', listenerError);
                     // Listener-fel ska inte stoppa state-uppdateringen
                 }
             }
@@ -726,11 +725,11 @@ function execute_single_dispatch(action, dispatch_fn) {
             resolve();
             
         } catch (error) {
-            consoleManager.warn('[State.js] Critical error in dispatch or reducer:', error, 'Action:', action);
+            console.error('[State.js] Critical error in dispatch or reducer:', error, 'Action:', action);
             
             // Om state blev korrupt, försök återställa från backup
             if (state_before_dispatch && state_before_dispatch !== internal_state) {
-                consoleManager.warn('[State.js] Attempting to restore state from backup due to reducer error');
+                console.warn('[State.js] Attempting to restore state from backup due to reducer error');
                 try {
                     internal_state = state_before_dispatch;
                     
@@ -740,9 +739,9 @@ function execute_single_dispatch(action, dispatch_fn) {
                     // Notifiera listeners om återställningen
                     notify_listeners();
                     
-                    consoleManager.info('[State.js] State successfully restored from backup');
+                    console.info('[State.js] State successfully restored from backup');
                 } catch (restoreError) {
-                    consoleManager.warn('[State.js] Failed to restore state from backup:', restoreError);
+                    console.error('[State.js] Failed to restore state from backup:', restoreError);
                     // Om återställning misslyckas, logga felet men låt applikationen fortsätta
                 }
             }
@@ -757,7 +756,7 @@ function getState() {
     try {
         return JSON.parse(JSON.stringify(internal_state));
     } catch (error) {
-        consoleManager.warn('[State.js] Failed to serialize state in getState:', error);
+        console.error('[State.js] Failed to serialize state in getState:', error);
         // Returnera en minimal säker state om serialisering misslyckas
         return {
             ...initial_state,
@@ -769,7 +768,7 @@ function getState() {
 
 function subscribe(listener_function) {
     if (typeof listener_function !== 'function') {
-        consoleManager.warn('[State.js] Listener must be a function.');
+        console.error('[State.js] Listener must be a function.');
         return () => {};
     }
     listeners.push(listener_function);
@@ -781,7 +780,7 @@ function subscribe(listener_function) {
 function notify_listeners(listener_meta = null) {
     const currentSnapshot = getState();
     if (window.__GV_DEBUG_MODAL_SCROLL) {
-        consoleManager.log('[GV-ModalDebug] notify_listeners', {
+        console.log('[GV-ModalDebug] notify_listeners', {
             skip_render: listener_meta?.skip_render,
             action_type: listener_meta?._debug_action_type,
             listenerCount: listeners.length
@@ -792,7 +791,7 @@ function notify_listeners(listener_meta = null) {
             try {
                 listener(currentSnapshot, listener_meta);
             } catch (error) {
-                consoleManager.warn('[State.js] Error in listener function:', error);
+                console.error('[State.js] Error in listener function:', error);
             }
         });
     }, 0);
@@ -852,7 +851,7 @@ function clearLocalStorageBackup() {
     try {
         localStorage.removeItem(APP_STATE_BACKUP_KEY);
     } catch (e) {
-        consoleManager.warn('[State.js] Could not clear localStorage backup:', e);
+        console.warn('[State.js] Could not clear localStorage backup:', e);
     }
 }
 
@@ -865,7 +864,7 @@ function updateBackupRestorePosition(restore_position) {
         backup.restorePosition = restore_position;
         localStorage.setItem(APP_STATE_BACKUP_KEY, JSON.stringify(backup));
     } catch (e) {
-        consoleManager.warn('[State.js] Could not update backup restore position:', e);
+        console.warn('[State.js] Could not update backup restore position:', e);
     }
 }
 
@@ -906,11 +905,11 @@ function saveStateToSessionStorage(state_to_save) {
                 const backup = { state: complete_state_to_save, restorePosition: restore_position };
                 localStorage.setItem(APP_STATE_BACKUP_KEY, JSON.stringify(backup));
             } catch (localE) {
-                consoleManager.warn('[State.js] Could not save state backup to localStorage:', localE);
+                console.warn('[State.js] Could not save state backup to localStorage:', localE);
             }
         }
     } catch (e) {
-        consoleManager.warn("[State.js] Could not save state to sessionStorage:", e);
+        console.error("[State.js] Could not save state to sessionStorage:", e);
         if (window.NotificationComponent && typeof window.NotificationComponent.show_global_message === 'function' && typeof window.Translation?.t === 'function') {
             window.NotificationComponent.show_global_message(window.Translation.t('critical_error_saving_session_data_lost'), 'error');
         }
@@ -923,7 +922,7 @@ function initState() {
         internal_state = AuditLogic.updateIncrementalDeficiencyIds(internal_state);
         saveStateToSessionStorage(internal_state);
     } else {
-        consoleManager.warn("[State.js] AuditLogic not available during initState. State may be inconsistent.");
+        console.error("[State.js] AuditLogic not available during initState. State may be inconsistent.");
     }
 }
 

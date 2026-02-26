@@ -28,7 +28,7 @@ export const EditContentTypesSectionComponent = {
         this.handle_autosave_input = this.handle_autosave_input.bind(this);
 
         if (this.Helpers?.load_css) {
-            await this.Helpers.load_css(this.CSS_PATH).catch(err => { if (window.ConsoleManager) window.ConsoleManager.warn('[EditContentTypesSectionComponent] Failed to load CSS', err); });
+            await this.Helpers.load_css(this.CSS_PATH).catch(err => console.warn('[EditContentTypesSectionComponent] Failed to load CSS', err));
         }
     },
 

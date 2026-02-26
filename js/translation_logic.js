@@ -17,18 +17,15 @@ let loaded_translations = {};
 let initial_load_promise = null;
 
 function log(...args) {
-    if (typeof window !== 'undefined' && window.ConsoleManager) window.ConsoleManager.log('[Translation]', ...args);
-    else console.log('[Translation]', ...args);
+    console.log('[Translation]', ...args);
 }
 
 function warn(...args) {
-    if (typeof window !== 'undefined' && window.ConsoleManager) window.ConsoleManager.warn('[Translation]', ...args);
-    else console.warn('[Translation]', ...args);
+    console.warn('[Translation]', ...args);
 }
 
 function error(...args) {
-    if (typeof window !== 'undefined' && window.ConsoleManager) window.ConsoleManager.warn('[Translation]', ...args);
-    else console.warn('[Translation]', ...args);
+    console.error('[Translation]', ...args);
 }
 
 function getModuleKey(lang_tag) {

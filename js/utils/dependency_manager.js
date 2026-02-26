@@ -44,7 +44,7 @@ class DependencyManager {
                 dep.value = dep.getter();
                 dep.available = dep.value != null;
             } catch (error) {
-                if (window.ConsoleManager) window.ConsoleManager.warn(`DependencyManager: Failed to get dependency '${name}':`, error);
+                console.warn(`DependencyManager: Failed to get dependency '${name}':`, error);
                 dep.available = false;
             }
         }
@@ -101,7 +101,7 @@ class DependencyManager {
                 }
                 
                 if (Date.now() - startTime > timeout) {
-                    if (window.ConsoleManager) window.ConsoleManager.warn('DependencyManager: Timeout waiting for dependencies');
+                    console.warn('DependencyManager: Timeout waiting for dependencies');
                     resolve(false);
                     return;
                 }
@@ -132,19 +132,19 @@ class DependencyManager {
         const ready = await this.waitForDependencies();
         
         if (!ready) {
-            if (window.ConsoleManager) window.ConsoleManager.warn('DependencyManager: Failed to initialize - required dependencies not available');
+            console.error('DependencyManager: Failed to initialize - required dependencies not available');
             return false;
         }
 
         this.isInitialized = true;
-        if (window.ConsoleManager) window.ConsoleManager.log('DependencyManager: All dependencies initialized successfully');
+        console.log('DependencyManager: All dependencies initialized successfully');
         
         // Notify waiting callbacks
         this.readyCallbacks.forEach(callback => {
             try {
                 callback();
             } catch (error) {
-                if (window.ConsoleManager) window.ConsoleManager.warn('DependencyManager: Error in ready callback:', error);
+                console.error('DependencyManager: Error in ready callback:', error);
             }
         });
         this.readyCallbacks.clear();
@@ -180,7 +180,7 @@ class DependencyManager {
             // Check specific required dependencies
             for (const depName of requiredDeps) {
                 if (!this.isDependencyAvailable(depName)) {
-                    if (window.ConsoleManager) window.ConsoleManager.warn(`DependencyManager: Required dependency '${depName}' not available for component initialization`);
+                    console.error(`DependencyManager: Required dependency '${depName}' not available for component initialization`);
                     throw new Error(`Required dependency '${depName}' not available`);
                 }
             }

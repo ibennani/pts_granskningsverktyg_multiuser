@@ -1,6 +1,5 @@
 // js/export_logic.js
 
-import { consoleManager } from './utils/console_manager.js';
 import ExcelJS from 'exceljs/dist/exceljs.min.js';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle, UnderlineType, ExternalHyperlink, InternalHyperlink, ShadingType, TabStopType, SectionType, PageOrientation } from 'docx';
 import { marked } from './utils/markdown.js';
@@ -180,7 +179,7 @@ async function export_to_excel(current_audit) {
 
     if (!ExcelJS) {
         show_global_message_internal(t('excel_library_not_loaded'), 'error');
-        consoleManager.warn("ExcelJS library is not loaded.");
+        console.error("ExcelJS library is not loaded.");
         return;
     }
 
@@ -335,7 +334,7 @@ async function export_to_excel(current_audit) {
         show_global_message_internal(t('audit_saved_as_file', { filename: filename }), 'success');
 
     } catch (error) {
-        consoleManager.warn("Error exporting to Excel with ExcelJS:", error);
+        console.error("Error exporting to Excel with ExcelJS:", error);
         show_global_message_internal(t('error_exporting_excel') + ` ${error.message}`, 'error');
     }
 }
@@ -565,7 +564,7 @@ async function export_to_word_wrapper(current_audit, sortBy) {
     }
 
     const isSortByRequirements = sortBy === 'requirements';
-    consoleManager.log(`[Word Export] Starting export_to_word_wrapper with sortBy=${sortBy}`);
+    console.log(`[Word Export] Starting export_to_word_wrapper with sortBy=${sortBy}`);
 
     try {
         const children = [];
@@ -606,7 +605,7 @@ async function export_to_word_wrapper(current_audit, sortBy) {
         if (isSortByRequirements) {
             // Sortera på krav först
             const requirements_with_deficiencies = get_requirements_with_deficiencies(current_audit);
-            consoleManager.log('[Word Export] Found requirements with deficiencies:', requirements_with_deficiencies.length);
+            console.log('[Word Export] Found requirements with deficiencies:', requirements_with_deficiencies.length);
 
             const sorted_requirements = requirements_with_deficiencies.sort((a, b) => {
                 const ref_a = a.standardReference?.text || '';
@@ -683,7 +682,7 @@ async function export_to_word_wrapper(current_audit, sortBy) {
                 return defs.length > 0;
             });
 
-            consoleManager.log('[Word Export] Found samples with deficiencies:', samples_with_deficiencies.length);
+            console.log('[Word Export] Found samples with deficiencies:', samples_with_deficiencies.length);
 
             for (const sample of samples_with_deficiencies) {
                 // H2 Sample Name
@@ -882,7 +881,7 @@ async function export_to_word_wrapper(current_audit, sortBy) {
         show_global_message_internal(t('audit_saved_as_file', { filename: filename }), 'success');
 
     } catch (error) {
-        consoleManager.warn("Error exporting to Word:", error);
+        console.error("Error exporting to Word:", error);
         show_global_message_internal(t('error_exporting_word') + ` ${error.message}`, 'error');
     }
 }
@@ -1601,7 +1600,7 @@ function get_deficiencies_for_sample(requirement, sample, current_audit, t) {
 
 // --- STICKPROVSBASERAD TEXTEXPORT (NY) ---
 async function export_to_text_export_deprecated(current_audit) {
-    consoleManager.log('[Text Export] Starting export_to_text_export function');
+    console.log('[Text Export] Starting export_to_text_export function');
     const t = get_t_internal();
     if (!current_audit) {
         show_global_message_internal(t('no_audit_data_to_save'), 'error');
@@ -1975,7 +1974,7 @@ async function export_to_text_export_deprecated(current_audit) {
         show_global_message_internal(t('audit_saved_as_file', { filename: filename }), 'success');
 
     } catch (error) {
-        consoleManager.warn("Error exporting to Word (Textexport):", error);
+        console.error("Error exporting to Word (Textexport):", error);
         show_global_message_internal(t('error_exporting_word') + ` ${error.message}`, 'error');
     }
 }
@@ -2141,7 +2140,7 @@ function render_markdown_to_html(markdown_text) {
         
         return parsed_markdown;
     } catch (error) {
-        consoleManager.warn('Error rendering markdown:', error);
+        console.warn('Error rendering markdown:', error);
         return escape_html_internal(markdown_text);
     }
 }
@@ -2511,34 +2510,34 @@ async function calculate_audit_hash(audit_data) {
             return Math.abs(hash).toString(16);
         }
     } catch (error) {
-        consoleManager.warn('[ExportLogic] Error calculating hash:', error);
+        console.warn('[ExportLogic] Error calculating hash:', error);
         return null;
     }
 }
 
 // HTML-exportfunktion (sorterar på krav)
 async function export_to_html(current_audit) {
-    consoleManager.log('[ExportLogic] export_to_html called');
+    console.log('[ExportLogic] export_to_html called');
     const t = get_t_internal();
     if (!current_audit) {
-        consoleManager.warn('[ExportLogic] No audit data provided');
+        console.error('[ExportLogic] No audit data provided');
         show_global_message_internal(t('no_audit_data_to_save'), 'error');
         return;
     }
 
     try {
-        consoleManager.log('[ExportLogic] Starting HTML export...');
+        console.log('[ExportLogic] Starting HTML export...');
         // Beräkna hash och timestamp för ändringsdetektering
-        consoleManager.log('[ExportLogic] Calculating hash and timestamp...');
+        console.log('[ExportLogic] Calculating hash and timestamp...');
         const export_timestamp = new Date().toISOString();
         const audit_hash = await calculate_audit_hash(current_audit);
-        consoleManager.log('[ExportLogic] Audit hash calculated:', audit_hash ? audit_hash.substring(0, 16) + '...' : 'null');
+        console.log('[ExportLogic] Audit hash calculated:', audit_hash ? audit_hash.substring(0, 16) + '...' : 'null');
         
         // Bygg innehåll sorterat på krav (default)
-        consoleManager.log('[ExportLogic] Building content...');
+        console.log('[ExportLogic] Building content...');
         const { sidebar_html: sidebar_html_requirement, content_html: content_html_requirement } = build_content_sorted_by_requirement(current_audit, t);
         const { sidebar_html: sidebar_html_sample, content_html: content_html_sample } = build_content_sorted_by_sample(current_audit, t);
-        consoleManager.log('[ExportLogic] Content built successfully');
+        console.log('[ExportLogic] Content built successfully');
 
         // Bygg sidebar med länkar (nested structure) inklusive sorteringsalternativ
         let sidebar_html = '<nav class="html-export-sidebar" aria-label="Innehållsförteckning" role="navigation"><h2>Innehållsförteckning</h2>';
@@ -2571,8 +2570,8 @@ async function export_to_html(current_audit) {
         // Detta är mer robust än att jämföra HTML-struktur eftersom webbläsarens parsing inte påverkar texten
         const content_for_text_extraction = content_html_requirement + content_html_sample;
         const text_content = extract_text_content(content_for_text_extraction);
-        consoleManager.log('[ExportLogic] Text content extracted (first 200 chars):', text_content.substring(0, 200));
-        consoleManager.log('[ExportLogic] Text content length:', text_content.length);
+        console.log('[ExportLogic] Text content extracted (first 200 chars):', text_content.substring(0, 200));
+        console.log('[ExportLogic] Text content length:', text_content.length);
         
         // Beräkna hash av textinnehållet
         let content_hash = null;
@@ -2592,8 +2591,8 @@ async function export_to_html(current_audit) {
             }
             content_hash = Math.abs(hash).toString(16);
         }
-        consoleManager.log('[ExportLogic] Content hash calculated:', content_hash ? content_hash.substring(0, 16) + '...' : 'null');
-        consoleManager.log('[ExportLogic] Full hash:', content_hash);
+        console.log('[ExportLogic] Content hash calculated:', content_hash ? content_hash.substring(0, 16) + '...' : 'null');
+        console.log('[ExportLogic] Full hash:', content_hash);
         
         // Bädda in textinnehållet i filen för jämförelse vid laddning
         // Detta undviker CORS-problem och säkerställer att vi jämför exakt samma innehåll
@@ -3140,11 +3139,11 @@ async function export_to_html(current_audit) {
                     const contentHashMeta = document.querySelector('meta[name="content-hash"]');
                     
                     if (!exportTimestampMeta) {
-                        consoleManager.log('[HTML Export] Ingen export-timestamp hittad, hoppar över ändringsdetektering');
+                        console.log('[HTML Export] Ingen export-timestamp hittad, hoppar över ändringsdetektering');
                         return; // Ingen timestamp finns, hoppa över kontrollen
                     }
                     
-                    consoleManager.log('[HTML Export] Startar ändringsdetektering...');
+                    console.log('[HTML Export] Startar ändringsdetektering...');
                     
                     const exportedTimestamp = exportTimestampMeta.getAttribute('content');
                     const exportedHash = auditHashMeta ? auditHashMeta.getAttribute('content') : null;
@@ -3160,10 +3159,10 @@ async function export_to_html(current_audit) {
                             const delay = useDelay ? 300 : 0; // Kort fördröjning vid bekräftande kontroll
                             
                             setTimeout(function() {
-                                consoleManager.log('[HTML Export] Kontrollerar innehållshash...');
+                                console.log('[HTML Export] Kontrollerar innehållshash...');
                                 const contentSections = document.querySelectorAll('.content-section');
                                 if (contentSections.length === 0) {
-                                    consoleManager.log('[HTML Export] Inga content-sektioner hittade ännu');
+                                    console.log('[HTML Export] Inga content-sektioner hittade ännu');
                                     return;
                                 }
                                 
@@ -3190,8 +3189,8 @@ async function export_to_html(current_audit) {
                                         // Extrahera textinnehåll från nuvarande HTML (samma som vid export)
                                         const currentTextContent = extract_text_content(currentContent);
                                         
-                                        consoleManager.log('[HTML Export] Exporterad text längd:', exportedTextContent.length);
-                                        consoleManager.log('[HTML Export] Nuvarande text längd:', currentTextContent.length);
+                                        console.log('[HTML Export] Exporterad text längd:', exportedTextContent.length);
+                                        console.log('[HTML Export] Nuvarande text längd:', currentTextContent.length);
                                         
                                         // Jämför textinnehåll direkt (mer robust än HTML-struktur)
                                         if (currentTextContent !== exportedTextContent) {
@@ -3215,7 +3214,7 @@ async function export_to_html(current_audit) {
                                             const totalDiff = diffCount + lengthDiff;
                                             const totalDiffPercent = maxLength > 0 ? (totalDiff / maxLength) * 100 : 0;
                                             
-                                            consoleManager.log('[HTML Export] Skillnadsanalys (textinnehåll):', JSON.stringify({
+                                            console.log('[HTML Export] Skillnadsanalys (textinnehåll):', JSON.stringify({
                                                 lengthDiff: lengthDiff,
                                                 lengthDiffPercent: lengthDiffPercent.toFixed(2) + '%',
                                                 diffCount: diffCount,
@@ -3227,18 +3226,18 @@ async function export_to_html(current_audit) {
                                             // Eftersom vi nu jämför textinnehåll istället för HTML-struktur,
                                             // är skillnader alltid verkliga ändringar (inte parsing-skillnader)
                                             if (totalDiff > 0) {
-                                                consoleManager.log('[HTML Export] ÄNDRING DETEKTERAD - textinnehållet har ändrats!');
+                                                console.log('[HTML Export] ÄNDRING DETEKTERAD - textinnehållet har ändrats!');
                                                 if (firstDiff >= 0) {
                                                     const contextStart = Math.max(0, firstDiff - 50);
                                                     const contextEnd = Math.min(minLength, firstDiff + 100);
-                                                    consoleManager.log('[HTML Export] Första skillnaden vid position', firstDiff);
-                                                    consoleManager.log('[HTML Export] Exporterad kontext:', exportedTextContent.substring(contextStart, contextEnd));
-                                                    consoleManager.log('[HTML Export] Nuvarande kontext:', currentTextContent.substring(contextStart, contextEnd));
+                                                    console.log('[HTML Export] Första skillnaden vid position', firstDiff);
+                                                    console.log('[HTML Export] Exporterad kontext:', exportedTextContent.substring(contextStart, contextEnd));
+                                                    console.log('[HTML Export] Nuvarande kontext:', currentTextContent.substring(contextStart, contextEnd));
                                                 }
                                                 changesDetected = true;
                                                 showChangeWarning('innehållet har ändrats');
                                             } else {
-                                                consoleManager.log('[HTML Export] Textinnehållet är oförändrat - matchar exakt!');
+                                                console.log('[HTML Export] Textinnehållet är oförändrat - matchar exakt!');
                                                 // Sätt initial hash för MutationObserver (efter text-extraktion)
                                                 if (window.crypto && window.crypto.subtle && !window.initialContentHash) {
                                                     (async function() {
@@ -3248,16 +3247,16 @@ async function export_to_html(current_audit) {
                                                             const hash_buffer = await window.crypto.subtle.digest('SHA-256', content_data);
                                                             const hash_array = Array.from(new Uint8Array(hash_buffer));
                                                             window.initialContentHash = hash_array.map(b => b.toString(16).padStart(2, '0')).join('');
-                                                            consoleManager.log('[HTML Export] Initial content hash satt för MutationObserver');
+                                                            console.log('[HTML Export] Initial content hash satt för MutationObserver');
                                                         } catch (e) {
-                                                            consoleManager.warn('[HTML Export] Error setting initial hash:', e);
+                                                            console.warn('[HTML Export] Error setting initial hash:', e);
                                                         }
                                                     })();
                                                 }
                                             }
                                     }
                                     } catch (e) {
-                                        consoleManager.warn('[HTML Export] Kunde inte dekodera textinnehåll, använder hash-jämförelse:', e);
+                                        console.warn('[HTML Export] Kunde inte dekodera textinnehåll, använder hash-jämförelse:', e);
                                         // Fallback till hash-jämförelse med textinnehåll
                                         const requirementSection = document.querySelector('.content-section[data-sort-type="requirement"]');
                                         const sampleSection = document.querySelector('.content-section[data-sort-type="sample"]');
@@ -3288,18 +3287,18 @@ async function export_to_html(current_audit) {
                                                         // Sätt initial hash när inga ändringar detekteras
                                                         if (!window.initialContentHash) {
                                                             window.initialContentHash = hash_hex;
-                                                            consoleManager.log('[HTML Export] Initial content hash satt för MutationObserver (fallback 1)');
+                                                            console.log('[HTML Export] Initial content hash satt för MutationObserver (fallback 1)');
                                                         }
                                                     }
                                                 } catch (e) {
-                                                    consoleManager.warn('[HTML Export] Error in hash check:', e);
+                                                    console.warn('[HTML Export] Error in hash check:', e);
                                                 }
                                             })();
                                         }
                                     }
                                 } else {
                                     // Fallback: använd hash-jämförelse om textinnehåll inte finns
-                                    consoleManager.log('[HTML Export] Ingen textinnehåll hittat, använder hash-jämförelse');
+                                    console.log('[HTML Export] Ingen textinnehåll hittat, använder hash-jämförelse');
                                     const requirementSection = document.querySelector('.content-section[data-sort-type="requirement"]');
                                     const sampleSection = document.querySelector('.content-section[data-sort-type="sample"]');
                                     
@@ -3329,11 +3328,11 @@ async function export_to_html(current_audit) {
                                                     // Sätt initial hash när inga ändringar detekteras
                                                     if (!window.initialContentHash) {
                                                         window.initialContentHash = hash_hex;
-                                                        consoleManager.log('[HTML Export] Initial content hash satt för MutationObserver (fallback 2)');
+                                                        console.log('[HTML Export] Initial content hash satt för MutationObserver (fallback 2)');
                                                     }
                                                 }
                                             } catch (e) {
-                                                consoleManager.warn('[HTML Export] Error in hash check:', e);
+                                                console.warn('[HTML Export] Error in hash check:', e);
                                             }
                                         })();
                                     }
@@ -3356,7 +3355,7 @@ async function export_to_html(current_audit) {
                             checkContentHash(true);
                         });
                     } else {
-                        consoleManager.log('[HTML Export] Ingen content-hash hittad, hoppar över innehållskontroll');
+                        console.log('[HTML Export] Ingen content-hash hittad, hoppar över innehållskontroll');
                     }
                     
                     // 2. Kontrollera om audit-data i appen har ändrats (om tillgängligt)
@@ -3400,7 +3399,7 @@ async function export_to_html(current_audit) {
                             }
                         } catch (e) {
                             // Ignorera fel vid läsning av storage
-                            consoleManager.warn('[HTML Export] Could not read from storage:', e);
+                            console.warn('[HTML Export] Could not read from storage:', e);
                         }
                         
                         // Om vi har aktuell data, jämför hash
@@ -3426,7 +3425,7 @@ async function export_to_html(current_audit) {
                                             showChangeWarning('granskningsdata har ändrats');
                                         }
                                     } catch (e) {
-                                        consoleManager.warn('[HTML Export] Error comparing hash:', e);
+                                        console.warn('[HTML Export] Error comparing hash:', e);
                                     }
                                 })();
                             } else {
@@ -3458,7 +3457,7 @@ async function export_to_html(current_audit) {
                                 warningText.textContent = '⚠️ Varning: ';
                             }
                             warningBanner.classList.add('show');
-                            consoleManager.log('[HTML Export] Varning visas:', changeType || 'okänd ändring');
+                            console.log('[HTML Export] Varning visas:', changeType || 'okänd ändring');
                             
                             // Justera top-position för sidebar och content när varning visas
                             const sidebar = document.querySelector('.html-export-sidebar');
@@ -3542,14 +3541,14 @@ async function export_to_html(current_audit) {
                                             // Jämför med initial hash, inte bara exported hash
                                             // Detta förhindrar falska positiva från DOM-manipulationer vid laddning
                                             if (window.initialContentHash && hash_hex !== window.initialContentHash) {
-                                                consoleManager.log('[HTML Export] Text content changed after initial load');
+                                                console.log('[HTML Export] Text content changed after initial load');
                                                 showChangeWarning('innehållet har ändrats');
                                             } else if (!window.initialContentHash && hash_hex !== exportedContentHash) {
                                                 // Fallback om initial hash inte är satt
                                                 showChangeWarning('innehållet har ändrats');
                                             }
                                         } catch (e) {
-                                            consoleManager.warn('[HTML Export] Error in MutationObserver hash check:', e);
+                                            console.warn('[HTML Export] Error in MutationObserver hash check:', e);
                                         }
                                     })();
                                 }
@@ -3565,7 +3564,7 @@ async function export_to_html(current_audit) {
                         }, 800); // Starta observer efter 800ms (snabbare än tidigare)
                     }
                 } catch (e) {
-                    consoleManager.warn('[HTML Export] Error in change detection:', e);
+                    console.warn('[HTML Export] Error in change detection:', e);
                 }
             })();
             
@@ -3697,16 +3696,16 @@ async function export_to_html(current_audit) {
         link.href = url;
         link.download = filename;
         document.body.appendChild(link);
-        consoleManager.log('[ExportLogic] Triggering download:', filename);
+        console.log('[ExportLogic] Triggering download:', filename);
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
-        consoleManager.log('[ExportLogic] HTML export completed successfully');
+        console.log('[ExportLogic] HTML export completed successfully');
         show_global_message_internal(t('audit_saved_as_file', { filename: filename }), 'success');
 
     } catch (error) {
-        consoleManager.warn("[ExportLogic] Error exporting to HTML:", error);
-        consoleManager.warn("[ExportLogic] Error stack:", error.stack);
+        console.error("[ExportLogic] Error exporting to HTML:", error);
+        console.error("[ExportLogic] Error stack:", error.stack);
         show_global_message_internal(t('error_exporting_html') + ` ${error.message}`, 'error');
     }
 }

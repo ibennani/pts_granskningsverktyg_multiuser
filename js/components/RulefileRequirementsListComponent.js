@@ -43,7 +43,7 @@ export const RulefileRequirementsListComponent = {
         this.handle_toolbar_change = this.handle_toolbar_change.bind(this);
         this.handle_state_update = this.handle_state_update.bind(this);
         
-        await this.Helpers.load_css(this.CSS_PATH).catch(e => { if (window.ConsoleManager) window.ConsoleManager.warn(e); });
+        await this.Helpers.load_css(this.CSS_PATH).catch(e => console.warn(e));
         
         if (typeof this.subscribe === 'function') {
             this.unsubscribe_from_store_function = this.subscribe(this.handle_state_update);
@@ -113,9 +113,9 @@ export const RulefileRequirementsListComponent = {
     },
 
     handle_toolbar_change(new_toolbar_state) {
-        if (window.ConsoleManager) window.ConsoleManager.log('[RulefileRequirementsListComponent] toolbar change received:', JSON.stringify(new_toolbar_state));
+        console.log('[RulefileRequirementsListComponent] toolbar change received:', JSON.stringify(new_toolbar_state));
         const current_state_snapshot = this.getState();
-        if (window.ConsoleManager) window.ConsoleManager.log('[RulefileRequirementsListComponent] current state snapshot filter:', JSON.stringify(current_state_snapshot.uiSettings?.requirementListFilter));
+        console.log('[RulefileRequirementsListComponent] current state snapshot filter:', JSON.stringify(current_state_snapshot.uiSettings?.requirementListFilter));
         const existing_status_state = current_state_snapshot.uiSettings?.requirementListFilter?.status || {
             passed: true,
             failed: true,
@@ -135,7 +135,7 @@ export const RulefileRequirementsListComponent = {
             type: this.StoreActionTypes.SET_UI_FILTER_SETTINGS,
             payload
         });
-        if (window.ConsoleManager) window.ConsoleManager.log('[RulefileRequirementsListComponent] dispatched payload:', JSON.stringify(payload));
+        console.log('[RulefileRequirementsListComponent] dispatched payload:', JSON.stringify(payload));
         // Note: render is triggered by subscription, but explicit render call in old code existed.
         // The subscription handler calls _populate_dynamic_content, so we might not need full render.
         // But original code called render(), so let's call it to be safe, though it might be redundant with subscription.
@@ -243,16 +243,16 @@ export const RulefileRequirementsListComponent = {
     },
 
     _populate_dynamic_content(filter_settings_override = null) {
-        if (window.ConsoleManager) window.ConsoleManager.log('[RulefileRequirementsListComponent] populate list start. Override:', JSON.stringify(filter_settings_override));
+        console.log('[RulefileRequirementsListComponent] populate list start. Override:', JSON.stringify(filter_settings_override));
         const t = this.Translation.t;
         const current_global_state = this.getState();
-        if (window.ConsoleManager) window.ConsoleManager.log('[RulefileRequirementsListComponent] current state filter:', JSON.stringify(current_global_state.uiSettings?.requirementListFilter));
+        console.log('[RulefileRequirementsListComponent] current state filter:', JSON.stringify(current_global_state.uiSettings?.requirementListFilter));
 
         if (this.root && this.plate_element_ref) {
             const siblings = Array.from(this.root.children);
             const removed = siblings.filter(child => child !== this.plate_element_ref);
             if (removed.length > 0) {
-                if (window.ConsoleManager) window.ConsoleManager.warn('[RulefileRequirementsListComponent] Removing sibling content plates:', removed.length);
+                console.warn('[RulefileRequirementsListComponent] Removing sibling content plates:', removed.length);
                 removed.forEach(node => node.remove());
             }
         }
@@ -289,7 +289,7 @@ export const RulefileRequirementsListComponent = {
             });
             return normalized_content.includes(search_term);
         });
-        if (window.ConsoleManager) window.ConsoleManager.log('[RulefileRequirementsListComponent] filtered count:', filtered_requirements.length, 'of', all_requirements.length);
+        console.log('[RulefileRequirementsListComponent] filtered count:', filtered_requirements.length, 'of', all_requirements.length);
         if (this.results_summary_element) {
             this.results_summary_element.textContent = t('rulefile_requirements_summary', {
                 filteredCount: filtered_requirements.length,

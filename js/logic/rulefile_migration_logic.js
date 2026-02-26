@@ -11,7 +11,7 @@
  */
 export function migrate_rulefile_to_new_structure(ruleFileContent, options = {}) {
     if (!ruleFileContent || typeof ruleFileContent !== 'object') {
-        if (window.ConsoleManager) window.ConsoleManager.warn('[MigrationLogic] Invalid ruleFileContent, returning as-is');
+        console.warn('[MigrationLogic] Invalid ruleFileContent, returning as-is');
         return ruleFileContent;
     }
 
@@ -138,7 +138,7 @@ export function migrate_rulefile_to_new_structure(ruleFileContent, options = {})
         });
 
         if (converted_count > 0) {
-            if (window.ConsoleManager) window.ConsoleManager.log(`[MigrationLogic] Konverterade ${converted_count} requirements från gammal struktur till ny struktur`);
+            console.log(`[MigrationLogic] Konverterade ${converted_count} requirements från gammal struktur till ny struktur`);
         }
     }
 

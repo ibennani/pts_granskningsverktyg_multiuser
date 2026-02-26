@@ -14,7 +14,7 @@ export const RestoreSessionViewComponent = {
 
     render() {
         if (!this.root || !this.Translation || !this.Helpers || !this.autosaved_state_ref) {
-            if (window.ConsoleManager) window.ConsoleManager.warn("[RestoreSessionView] Cannot render, core dependencies or autosaved state missing.");
+            console.error("[RestoreSessionView] Cannot render, core dependencies or autosaved state missing.");
             const t = (this.Translation && this.Translation.t) ? this.Translation.t : ((key) => key);
             const errorMessage = t('restore_session_error_display');
             if (this.root) {

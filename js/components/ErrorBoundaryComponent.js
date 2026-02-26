@@ -23,7 +23,7 @@ export const ErrorBoundaryComponent = {
         
         // Try to use helper if available
         if (this.deps.Helpers && typeof this.deps.Helpers.load_css === 'function') {
-            this.deps.Helpers.load_css(css_path).catch(err => { if (window.ConsoleManager) window.ConsoleManager.warn('Failed to load CSS via Helpers:', err); });
+            this.deps.Helpers.load_css(css_path).catch(err => console.warn('Failed to load CSS via Helpers:', err));
             this.css_loaded = true;
             return;
         }
@@ -126,7 +126,7 @@ export const ErrorBoundaryComponent = {
                 try {
                     this.retry_callback();
                 } catch (retry_error) {
-                    if (window.ConsoleManager) window.ConsoleManager.warn('[ErrorBoundaryComponent] Retry failed:', retry_error);
+                    console.error('[ErrorBoundaryComponent] Retry failed:', retry_error);
                     this.show_error({
                         message: t('error_boundary_retry_failed'),
                         stack: retry_error.stack,
@@ -164,12 +164,10 @@ export const ErrorBoundaryComponent = {
 
     log_error(error_data) {
         console.group('[ErrorBoundaryComponent] Component Error');
-        if (window.ConsoleManager) {
-            window.ConsoleManager.warn('Error:', error_data.message);
-            window.ConsoleManager.warn('Component:', error_data.component);
-            window.ConsoleManager.warn('Stack:', error_data.stack);
-            window.ConsoleManager.warn('Timestamp:', new Date().toISOString());
-        }
+        console.error('Error:', error_data.message);
+        console.error('Component:', error_data.component);
+        console.error('Stack:', error_data.stack);
+        console.error('Timestamp:', new Date().toISOString());
         console.groupEnd();
 
         if (this.deps.NotificationComponent && this.deps.NotificationComponent.show_global_message) {
@@ -183,7 +181,7 @@ export const ErrorBoundaryComponent = {
 
     show_error(error_data, retry_callback = null) {
         if (!this.root) {
-            if (window.ConsoleManager) window.ConsoleManager.warn('[ErrorBoundaryComponent] Container not initialized');
+            console.error('[ErrorBoundaryComponent] Container not initialized');
             return;
         }
 

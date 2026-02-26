@@ -135,7 +135,7 @@ class MemoryManager {
             try {
                 callback();
             } catch (error) {
-                if (window.ConsoleManager) window.ConsoleManager.warn('Error in cleanup callback:', error);
+                console.error('Error in cleanup callback:', error);
             }
         }
         this.cleanupCallbacks.clear();
@@ -197,7 +197,7 @@ if (process.env.NODE_ENV === 'development' || window.location.hostname === 'loca
     setInterval(() => {
         const warnings = memoryManager.checkForLeaks();
         if (warnings.length > 0) {
-            if (window.ConsoleManager) window.ConsoleManager.warn('Potential memory leaks detected:', warnings);
+            console.warn('Potential memory leaks detected:', warnings);
         }
     }, 30000); // Check every 30 seconds
 }

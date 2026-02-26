@@ -27,7 +27,7 @@ function _calculateRequirementWeight(requirement) {
  * @returns {object} An object containing pre-calculated data maps and totals.
  */
 export function precalculateRuleData(ruleFileContent) {
-    if (typeof window !== 'undefined' && window.ConsoleManager) window.ConsoleManager.log("[RuleDataProcessor] Pre-calculating rule data for scoring...");
+    console.log("[RuleDataProcessor] Pre-calculating rule data for scoring...");
     
     const precalculatedData = {
         requirementWeights: {},          // Map of requirement ID to its calculated weight
@@ -36,7 +36,7 @@ export function precalculateRuleData(ruleFileContent) {
     };
 
     if (!ruleFileContent || !ruleFileContent.requirements || !ruleFileContent.metadata?.taxonomies) {
-        if (window.ConsoleManager) window.ConsoleManager.warn("[RuleDataProcessor] Rule file is missing requirements or taxonomies for pre-calculation.");
+        console.error("[RuleDataProcessor] Rule file is missing requirements or taxonomies for pre-calculation.");
         return precalculatedData; // Return empty object
     }
     
@@ -45,7 +45,7 @@ export function precalculateRuleData(ruleFileContent) {
     const classifications = taxonomies.find(tax => tax.id === 'wcag22-pour');
     
     if (!classifications) {
-        if (window.ConsoleManager) window.ConsoleManager.warn("[RuleDataProcessor] 'wcag22-pour' taxonomy not found in rule file.");
+        console.error("[RuleDataProcessor] 'wcag22-pour' taxonomy not found in rule file.");
         return precalculatedData;
     }
 
@@ -71,8 +71,8 @@ export function precalculateRuleData(ruleFileContent) {
         }
     }
     
-    if (typeof window !== 'undefined' && window.ConsoleManager) window.ConsoleManager.log("[RuleDataProcessor] Pre-calculation complete:", JSON.parse(JSON.stringify(precalculatedData)));
+    console.log("[RuleDataProcessor] Pre-calculation complete:", JSON.parse(JSON.stringify(precalculatedData)));
     return precalculatedData;
 }
 
-if (typeof window !== 'undefined' && window.ConsoleManager) window.ConsoleManager.log("[RuleDataProcessor.js] RuleDataProcessor loaded.");
+console.log("[RuleDataProcessor.js] RuleDataProcessor loaded.");
