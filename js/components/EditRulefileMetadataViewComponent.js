@@ -713,39 +713,51 @@ export const EditRulefileMetadataViewComponent = {
                 header.appendChild(move_down_btn);
             }
             
-            // Section name input
+            // Section name: synlig label (ingen placeholder). Fältet hade ingen label – texten används som label.
+            const name_label = this.Helpers.create_element('label', {
+                attributes: { for: `section_${section_id}_name` },
+                text_content: t('report_section_name_placeholder') || 'Sektionsnamn'
+            });
             const name_input = this.Helpers.create_element('input', {
+                id: `section_${section_id}_name`,
                 class_name: 'form-control',
                 attributes: {
                     type: 'text',
                     'data-section-id': section_id,
                     'data-field': 'name',
-                    value: section_data.name || '',
-                    placeholder: t('report_section_name_placeholder') || 'Sektionsnamn'
+                    value: section_data.name || ''
                 }
             });
             name_input.style.width = '200px';
             name_input.style.display = 'inline-block';
+            header.appendChild(name_label);
             header.appendChild(name_input);
             
-            // Required checkbox
-            const required_label = this.Helpers.create_element('label', {
-                class_name: 'checkbox-label',
-                attributes: { 'for': `section_${section_id}_required` }
-            });
-            const required_checkbox = this.Helpers.create_element('input', {
-                attributes: {
-                    id: `section_${section_id}_required`,
-                    type: 'checkbox',
-                    'data-section-id': section_id,
-                    'data-field': 'required',
-                    checked: section_data.required === true,
-                    disabled: section_data.required === true // Can't uncheck if required
-                }
-            });
-            required_label.appendChild(required_checkbox);
-            required_label.appendChild(document.createTextNode(' ' + (t('report_section_required') || 'Obligatorisk')));
-            header.appendChild(required_label);
+            // Obligatorisk: rendera inte en checkbox som inte får ändras – visa endast text för obligatoriska sektioner.
+            if (section_data.required === true) {
+                const required_text = this.Helpers.create_element('span', {
+                    class_name: 'report-section-required-static',
+                    text_content: t('report_section_required') || 'Obligatorisk'
+                });
+                header.appendChild(required_text);
+            } else {
+                const required_label = this.Helpers.create_element('label', {
+                    class_name: 'checkbox-label',
+                    attributes: { 'for': `section_${section_id}_required` }
+                });
+                const required_checkbox = this.Helpers.create_element('input', {
+                    attributes: {
+                        id: `section_${section_id}_required`,
+                        type: 'checkbox',
+                        'data-section-id': section_id,
+                        'data-field': 'required',
+                        checked: section_data.required === true
+                    }
+                });
+                required_label.appendChild(required_checkbox);
+                required_label.appendChild(document.createTextNode(' ' + (t('report_section_required') || 'Obligatorisk')));
+                header.appendChild(required_label);
+            }
             
             // Delete button (only if not required)
             if (!section_data.required) {
@@ -1156,14 +1168,18 @@ export const EditRulefileMetadataViewComponent = {
                 const name_input = card.querySelector(`input[data-field="name"][data-section-id="${section_id}"]`);
                 const required_checkbox = card.querySelector(`input[data-field="required"][data-section-id="${section_id}"]`);
                 const content_textarea = card.querySelector(`textarea[data-field="content"][data-section-id="${section_id}"]`);
-                
+                // Obligatoriska sektioner har ingen checkbox – använd befintlig sektionsdata
+                const required = required_checkbox
+                    ? required_checkbox.checked
+                    : (this._report_template_ref?.sections?.[section_id]?.required ?? false);
+
                 const content_raw = content_textarea?.value || '';
                 const content_trimmed = this.Helpers?.trim_textarea_preserve_lines
                     ? this.Helpers.trim_textarea_preserve_lines(content_raw)
                     : content_raw.trim();
                 report_template_sections[section_id] = {
                     name: name_input?.value.trim() || '',
-                    required: required_checkbox?.checked || false,
+                    required,
                     content: content_trimmed
                 };
                 report_section_order.push(section_id);
