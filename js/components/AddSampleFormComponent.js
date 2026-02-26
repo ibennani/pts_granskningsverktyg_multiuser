@@ -81,23 +81,23 @@ export const AddSampleFormComponent = {
 
         if (!selected_category) return;
 
-        // Byt kategori: bygg om dropdownen från början
-        if (this.sample_type_select) {
-            this.sample_type_select.innerHTML = '';
-        }
-
-        const default_option = this.Helpers.create_element('option', {
-            value: '',
-            text_content: this.get_t_internally()('select_option')
-        });
+        // Rendera stickprovstyp-fältet först när en kategori är vald (inga disabled-fält)
+        if (!this.sample_type_container) return;
+        this.sample_type_container.innerHTML = '';
+        const t = this.get_t_internally();
+        const label = this.Helpers.create_element('label', { attributes: { for: 'sampleTypeSelect' }, text_content: t('sample_type_label') + '*' });
+        this.sample_type_select = this.Helpers.create_element('select', { id: 'sampleTypeSelect', class_name: 'form-control', attributes: { required: true } });
+        this.sample_type_select.addEventListener('change', this.update_description_from_sample_type);
+        const default_option = this.Helpers.create_element('option', { value: '', text_content: t('select_option') });
         this.sample_type_select.appendChild(default_option);
         (selected_category.categories || []).forEach(subcat => {
             this.sample_type_select.appendChild(this.Helpers.create_element('option', { value: subcat.id, text_content: subcat.text }));
         });
-
         if (preselected_sample_type_id) {
             this.sample_type_select.value = preselected_sample_type_id;
         }
+        this.sample_type_container.appendChild(label);
+        this.sample_type_container.appendChild(this.sample_type_select);
 
         if (this.url_form_group_ref) {
             this.url_form_group_ref.style.display = selected_category.hasUrl ? '' : 'none';
@@ -385,8 +385,8 @@ export const AddSampleFormComponent = {
 
         // --- Sample Info Section ---
         this.form_element.appendChild(this.Helpers.create_element('h2', { text_content: t('sample_info_title') }));
-        this.sample_type_select = this.Helpers.create_element('select', { id: 'sampleTypeSelect', class_name: 'form-control', attributes: { required: true } });
-        this.sample_type_select.addEventListener('change', this.update_description_from_sample_type);
+        // Container för stickprovstyp – fylls i när användaren valt kategori (on_category_change). Ingen disabled, fältet renderas inte förrän det ska användas.
+        this.sample_type_container = this.Helpers.create_element('div', { class_name: 'form-group' });
         this.description_input = this.Helpers.create_element('input', { id: 'sampleDescriptionInput', class_name: 'form-control', attributes: { type: 'text', required: true } });
         this.description_input.addEventListener('input', this.handle_autosave_input);
         this.url_input = this.Helpers.create_element('input', { id: 'sampleUrlInput', class_name: 'form-control', attributes: { type: 'url' } });
@@ -402,7 +402,7 @@ export const AddSampleFormComponent = {
         });
         this.url_form_group_ref = this.Helpers.create_element('div', { class_name: 'form-group', children: [this.Helpers.create_element('label', { attributes: { for: 'sampleUrlInput' }, text_content: t('url') }), this.url_input] });
         this.form_element.append(
-            this.Helpers.create_element('div', { class_name: 'form-group', children: [this.Helpers.create_element('label', { attributes: { for: 'sampleTypeSelect' }, text_content: t('sample_type_label') + '*' }), this.sample_type_select] }),
+            this.sample_type_container,
             this.Helpers.create_element('div', { class_name: 'form-group', children: [this.Helpers.create_element('label', { attributes: { for: 'sampleDescriptionInput' }, text_content: t('description') + '*' }), this.description_input] }),
             this.url_form_group_ref
         );

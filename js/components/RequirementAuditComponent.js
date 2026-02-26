@@ -1,7 +1,7 @@
 // js/components/RequirementAuditComponent.js
 
 import { get_current_user_name } from '../utils/helpers.js';
-import { capture_focus_state, restore_focus_state } from '../logic/autosave_service.js';
+import { capture_focus_state, restore_focus_state, AutosaveService } from '../logic/autosave_service.js';
 import { ChecklistHandler } from './requirement_audit/ChecklistHandler.js';
 import { RequirementInfoSections } from './requirement_audit/RequirementInfoSections.js';
 import { RequirementAuditNavigationComponent } from './requirement_audit/RequirementAuditNavigation.js';
@@ -42,7 +42,7 @@ export const RequirementAuditComponent = {
     ordered_requirement_keys: [],
     right_sidebar_root: null,
     sidebar_navigation_state: null,
-    debounceTimerAudit: null,
+    autosave_session: null,
 
     async init({ root, deps }) {
         this.root = root;
@@ -57,6 +57,7 @@ export const RequirementAuditComponent = {
         this.Helpers = deps.Helpers;
         this.NotificationComponent = deps.NotificationComponent;
         this.AuditLogic = deps.AuditLogic;
+        this.AutosaveService = deps.AutosaveService || AutosaveService;
         this.right_sidebar_root = deps.rightSidebarRoot || null;
         this.subscribe = deps.subscribe;
         this.unsubscribe_from_store = null;
@@ -66,7 +67,6 @@ export const RequirementAuditComponent = {
         this.handle_navigation = this.handle_navigation.bind(this);
         this.handle_comment_input = this.handle_comment_input.bind(this);
         this.handle_comment_input_with_autosave = this.handle_comment_input_with_autosave.bind(this);
-        this.debounced_autosave_result = this.debounced_autosave_result.bind(this);
         this.handle_sidebar_filters_change = this.handle_sidebar_filters_change.bind(this);
         this.handle_audit_keydown = this.handle_audit_keydown.bind(this);
 
@@ -181,9 +181,7 @@ export const RequirementAuditComponent = {
     },
 
     handle_checklist_status_change(change_info) {
-        // Rensa väntande debounced autosave så att den inte skriver över statusändringen med gammal data
-        clearTimeout(this.debounceTimerAudit);
-        this.debounceTimerAudit = null;
+        this.autosave_session?.cancel_pending?.();
 
         let modified_result;
         try {
@@ -238,14 +236,7 @@ export const RequirementAuditComponent = {
 
     handle_comment_input_with_autosave() {
         this.handle_comment_input();
-        this.debounced_autosave_result();
-    },
-
-    debounced_autosave_result() {
-        clearTimeout(this.debounceTimerAudit);
-        this.debounceTimerAudit = setTimeout(() => {
-            this.save_result_immediately({ skipRender: true });
-        }, 250);
+        this.autosave_session?.request_autosave?.();
     },
 
     handle_sidebar_filters_change(payload) {
@@ -469,10 +460,9 @@ export const RequirementAuditComponent = {
     },
 
     handle_navigation(action) {
-        this.handle_comment_input(true);
+        this.autosave_session?.cancel_pending?.();
+        this.autosave_session?.flush?.({ should_trim: true, skip_render: true });
         this.checklist_handler_instance?.flush_observations_before_destroy?.();
-        clearTimeout(this.debounceTimerAudit);
-        this.save_result_immediately({ skipRender: true });
 
         const navigation_state = this.get_navigation_state();
         const mode = navigation_state.mode;
@@ -594,7 +584,7 @@ export const RequirementAuditComponent = {
             checklist_container,
             {
                 onStatusChange: this.handle_checklist_status_change,
-                onObservationChange: this.debounced_autosave_result,
+                onObservationChange: () => this.autosave_session?.request_autosave?.(),
                 onObservationChangeImmediate: () => this.save_result_immediately({ skipRender: true })
             },
             {
@@ -762,6 +752,20 @@ export const RequirementAuditComponent = {
         if (!this.plate_element_ref || !this.root.contains(this.plate_element_ref)) {
             this.build_initial_dom();
         }
+
+        this.autosave_session?.destroy?.();
+        this.autosave_session = null;
+        if (this.plate_element_ref && this.AutosaveService?.create_session) {
+            this.autosave_session = this.AutosaveService.create_session({
+                form_element: this.plate_element_ref,
+                focus_root: this.plate_element_ref,
+                debounce_ms: 250,
+                on_save: ({ is_autosave, should_trim, skip_render }) => {
+                    this.handle_comment_input(should_trim);
+                    this.save_result_immediately({ skipRender: skip_render });
+                }
+            });
+        }
         
         this.populate_dom_with_data();
         await this.render_right_sidebar();
@@ -790,10 +794,13 @@ export const RequirementAuditComponent = {
             this.unsubscribe_from_store = null;
         }
         document.removeEventListener('keydown', this.handle_audit_keydown);
-        clearTimeout(this.debounceTimerAudit);
-        this.handle_comment_input(true);
         this.checklist_handler_instance?.flush_observations_before_destroy?.();
-        if (this.current_result) {
+        if (this.autosave_session) {
+            this.autosave_session.flush({ should_trim: true, skip_render: true });
+            this.autosave_session.destroy();
+            this.autosave_session = null;
+        } else if (this.current_result) {
+            this.handle_comment_input(true);
             this.save_result_immediately({ skipRender: true });
         }
         

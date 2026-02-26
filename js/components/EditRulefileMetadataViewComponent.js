@@ -713,8 +713,13 @@ export const EditRulefileMetadataViewComponent = {
                 header.appendChild(move_down_btn);
             }
             
-            // Section name input (utan placeholder enligt projektets regler)
+            // Section name: synlig label (ingen placeholder). Fältet hade ingen label – texten används som label.
+            const name_label = this.Helpers.create_element('label', {
+                attributes: { for: `section_${section_id}_name` },
+                text_content: t('report_section_name_placeholder') || 'Sektionsnamn'
+            });
             const name_input = this.Helpers.create_element('input', {
+                id: `section_${section_id}_name`,
                 class_name: 'form-control',
                 attributes: {
                     type: 'text',
@@ -725,6 +730,7 @@ export const EditRulefileMetadataViewComponent = {
             });
             name_input.style.width = '200px';
             name_input.style.display = 'inline-block';
+            header.appendChild(name_label);
             header.appendChild(name_input);
             
             // Required-indikering: checkbox för redigerbara sektioner, ren text för sektioner som alltid är obligatoriska
@@ -1162,18 +1168,18 @@ export const EditRulefileMetadataViewComponent = {
                 const name_input = card.querySelector(`input[data-field="name"][data-section-id="${section_id}"]`);
                 const required_checkbox = card.querySelector(`input[data-field="required"][data-section-id="${section_id}"]`);
                 const content_textarea = card.querySelector(`textarea[data-field="content"][data-section-id="${section_id}"]`);
-                
+                // Obligatoriska sektioner har ingen checkbox – använd befintlig sektionsdata
+                const required = required_checkbox
+                    ? required_checkbox.checked
+                    : (this._report_template_ref?.sections?.[section_id]?.required ?? false);
+
                 const content_raw = content_textarea?.value || '';
                 const content_trimmed = this.Helpers?.trim_textarea_preserve_lines
                     ? this.Helpers.trim_textarea_preserve_lines(content_raw)
                     : content_raw.trim();
-                const original_section = this._report_template_ref?.sections?.[section_id];
-                const is_required = typeof required_checkbox?.checked === 'boolean'
-                    ? required_checkbox.checked
-                    : !!original_section?.required;
                 report_template_sections[section_id] = {
                     name: name_input?.value.trim() || '',
-                    required: is_required,
+                    required,
                     content: content_trimmed
                 };
                 report_section_order.push(section_id);
