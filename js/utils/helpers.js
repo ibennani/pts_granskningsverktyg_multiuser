@@ -173,6 +173,32 @@ export function escape_html(unsafe_input) {
 }
 
 /**
+ * Sanerar vanlig textinmatning (ej HTML) genom att trimma, ta bort farliga script-taggar
+ * och säkerställa att resultatet alltid är en sträng.
+ * Denna funktion ska användas för vanliga formulärfält där vi inte ska tolka HTML.
+ * @param {string} input
+ * @param {{ trim?: boolean }} options
+ * @returns {string}
+ */
+export function sanitize_plain_input(input, options = {}) {
+    const { trim = true } = options;
+    if (typeof input !== 'string') return '';
+    const without_scripts = input.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+    return trim ? without_scripts.trim() : without_scripts;
+}
+
+/**
+ * Sanerar en array av vanliga textvärden (ej HTML) med samma regler som sanitize_plain_input.
+ * @param {string[]} values
+ * @param {{ trim?: boolean }} options
+ * @returns {string[]}
+ */
+export function sanitize_plain_array(values, options = {}) {
+    if (!Array.isArray(values)) return [];
+    return values.map(v => sanitize_plain_input(v, options));
+}
+
+/**
  * Returnerar HTML för extern-länk-ikon (mellanslag + ikon med aria-label).
  * Används i slutet av länkar som öppnas i ny flik.
  * Ikonen är en ruta med pil utåt (samma stil som Noun Project "new tab").

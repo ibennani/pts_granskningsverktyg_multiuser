@@ -48,18 +48,25 @@ export const MetadataFormComponent = {
             actor_link_value = this.Helpers.add_protocol_if_missing(actor_link_value);
         }
 
-        const sanitize_input = (input) => {
-            if (typeof input !== 'string') return '';
-            return input.trim().replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-        };
-
         const form_data = {
-            caseNumber: sanitize_input(this.case_number_input.value),
-            actorName: sanitize_input(actor_name_value),
-            actorLink: sanitize_input(actor_link_value),
-            auditorName: sanitize_input(this.auditor_name_input.value),
-            caseHandler: sanitize_input(this.case_handler_input.value),
-            internalComment: sanitize_input(this.internal_comment_input.value)
+            caseNumber: this.Helpers?.sanitize_plain_input
+                ? this.Helpers.sanitize_plain_input(this.case_number_input.value)
+                : this.case_number_input.value.trim(),
+            actorName: this.Helpers?.sanitize_plain_input
+                ? this.Helpers.sanitize_plain_input(actor_name_value)
+                : actor_name_value,
+            actorLink: this.Helpers?.sanitize_plain_input
+                ? this.Helpers.sanitize_plain_input(actor_link_value)
+                : actor_link_value,
+            auditorName: this.Helpers?.sanitize_plain_input
+                ? this.Helpers.sanitize_plain_input(this.auditor_name_input.value)
+                : this.auditor_name_input.value.trim(),
+            caseHandler: this.Helpers?.sanitize_plain_input
+                ? this.Helpers.sanitize_plain_input(this.case_handler_input.value)
+                : this.case_handler_input.value.trim(),
+            internalComment: this.Helpers?.sanitize_plain_input
+                ? this.Helpers.sanitize_plain_input(this.internal_comment_input.value)
+                : this.internal_comment_input.value.trim()
         };
 
         if (typeof this.on_submit_callback === 'function') {

@@ -153,15 +153,23 @@ export const AddSampleFormComponent = {
         const selected_category_radio = this.form_element?.querySelector('input[name="sampleCategory"]:checked');
         const sample_category_id = selected_category_radio ? selected_category_radio.value : null;
         const sample_type_id = this.sample_type_select?.value;
-        const sanitize_input = (input) => {
-            if (typeof input !== 'string') return '';
-            const stripped = input.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-            return should_trim ? stripped.trim() : stripped;
-        };
+        const description_raw = this.description_input?.value || '';
+        const url_raw = this.url_input?.value || '';
+        const selected_raw_values = Array.from(
+            this.content_types_container_element?.querySelectorAll('input[name="selectedContentTypes"]:checked') || []
+        ).map(cb => cb.value);
 
-        const description = sanitize_input(this.description_input?.value || '');
-        let url_val = sanitize_input(this.url_input?.value || '');
-        const selected_content_types = Array.from(this.content_types_container_element?.querySelectorAll('input[name="selectedContentTypes"]:checked') || []).map(cb => sanitize_input(cb.value));
+        const description = this.Helpers?.sanitize_plain_input
+            ? this.Helpers.sanitize_plain_input(description_raw, { trim: should_trim })
+            : (should_trim ? description_raw.trim() : description_raw.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ''));
+
+        let url_val = this.Helpers?.sanitize_plain_input
+            ? this.Helpers.sanitize_plain_input(url_raw, { trim: should_trim })
+            : (should_trim ? url_raw.trim() : url_raw.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ''));
+
+        const selected_content_types = this.Helpers?.sanitize_plain_array
+            ? this.Helpers.sanitize_plain_array(selected_raw_values, { trim: should_trim })
+            : selected_raw_values.map(v => (should_trim ? v.trim() : v.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')));
 
         if (url_val) url_val = this.Helpers.add_protocol_if_missing(url_val);
 
@@ -273,14 +281,23 @@ export const AddSampleFormComponent = {
         const sample_category_id = selected_category_radio ? selected_category_radio.value : null;
         const sample_type_id = this.sample_type_select.value;
 
-        const sanitize_input = (input) => {
-            if (typeof input !== 'string') return '';
-            return input.trim().replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
-        };
+        const description_raw = this.description_input.value;
+        const url_raw = this.url_input.value;
+        const selected_raw_values = Array.from(
+            this.content_types_container_element.querySelectorAll('input[name="selectedContentTypes"]:checked')
+        ).map(cb => cb.value);
 
-        const description = sanitize_input(this.description_input.value);
-        let url_val = sanitize_input(this.url_input.value);
-        const selected_content_types = Array.from(this.content_types_container_element.querySelectorAll('input[name="selectedContentTypes"]:checked')).map(cb => sanitize_input(cb.value));
+        const description = this.Helpers?.sanitize_plain_input
+            ? this.Helpers.sanitize_plain_input(description_raw, { trim: true })
+            : description_raw.trim().replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+
+        let url_val = this.Helpers?.sanitize_plain_input
+            ? this.Helpers.sanitize_plain_input(url_raw, { trim: true })
+            : url_raw.trim().replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+
+        const selected_content_types = this.Helpers?.sanitize_plain_array
+            ? this.Helpers.sanitize_plain_array(selected_raw_values, { trim: true })
+            : selected_raw_values.map(v => v.trim().replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ''));
 
         if (!sample_category_id) { this.NotificationComponent.show_global_message(t('field_is_required', { fieldName: t('sample_category_title') }), 'error'); return; }
         if (!sample_type_id) { this.NotificationComponent.show_global_message(t('field_is_required', { fieldName: t('sample_type_label') }), 'error'); this.sample_type_select.focus(); return; }
