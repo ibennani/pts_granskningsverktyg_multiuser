@@ -781,9 +781,15 @@ export const ChecklistHandler = {
                     
                     if (was_hidden && !this.is_audit_locked) {
                         setTimeout(() => {
-                            if (!window.focusProtectionActive && !window.customFocusApplied) {
-                                observation_textarea.focus();
+                            if (window.focusProtectionActive || window.customFocusApplied) return;
+                            const active = document.activeElement;
+                            if (active && active.tagName && active.tagName.toLowerCase() === 'textarea') {
+                                const id = active.id || '';
+                                const is_comment_field = id === 'commentToAuditor' || id === 'commentToActor';
+                                const is_observation_field = active.classList.contains('pc-observation-detail-textarea');
+                                if (is_comment_field || is_observation_field) return;
                             }
+                            observation_textarea.focus();
                         }, 500);
                     }
                 } else {
@@ -799,8 +805,10 @@ export const ChecklistHandler = {
                 }
                 
                 observation_textarea.readOnly = this.is_audit_locked;
-                if (observation_textarea.value !== (pc_data.observationDetail || '')) {
-                    observation_textarea.value = pc_data.observationDetail || '';
+                const target_observation_value = pc_data.observationDetail || '';
+                if (document.activeElement !== observation_textarea &&
+                    observation_textarea.value !== target_observation_value) {
+                    observation_textarea.value = target_observation_value;
                 }
                 if (this.Helpers?.init_auto_resize_for_textarea) {
                     this.Helpers.init_auto_resize_for_textarea(observation_textarea);

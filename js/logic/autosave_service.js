@@ -13,7 +13,7 @@ function safe_css_escape(value) {
     return value.replace(/["\\]/g, '\\$&');
 }
 
-function capture_focus_state(focus_root) {
+export function capture_focus_state(focus_root) {
     if (!focus_root) return null;
     const active_element = document.activeElement;
     if (!active_element || !focus_root.contains(active_element)) return null;
@@ -34,7 +34,7 @@ function capture_focus_state(focus_root) {
     };
 }
 
-function restore_focus_state({ focus_root, focus_state, window_scroll }) {
+export function restore_focus_state({ focus_root, focus_state, window_scroll }) {
     if (!focus_root || !focus_state) return;
 
     let element_to_focus = null;

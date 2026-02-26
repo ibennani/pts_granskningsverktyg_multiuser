@@ -1342,6 +1342,20 @@ window.DraftManager = DraftManager;
                             return;
                         }
                     }
+                    // Hoppa över omrendering av kravvyn när användaren har fokus i ett av textfälten
+                    // (observation, kommentar till revisor/aktör). Förhindrar att sidan ritas om och
+                    // fokus flyttas till h1 vid t.ex. poll eller andra state-uppdateringar.
+                    if (current_view_name_rendered === 'requirement_audit') {
+                        const active = document.activeElement;
+                        if (active && active.tagName && active.tagName.toLowerCase() === 'textarea') {
+                            const id = active.id || '';
+                            const is_audit_textarea = id === 'commentToAuditor' || id === 'commentToActor' ||
+                                (active.classList && active.classList.contains('pc-observation-detail-textarea'));
+                            if (is_audit_textarea) {
+                                return;
+                            }
+                        }
+                    }
                     try {
                         const scroll_before = {
                             windowY: window.scrollY,

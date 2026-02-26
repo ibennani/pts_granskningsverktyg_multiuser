@@ -1,6 +1,7 @@
 // js/components/RequirementAuditComponent.js
 
 import { get_current_user_name } from '../utils/helpers.js';
+import { capture_focus_state, restore_focus_state } from '../logic/autosave_service.js';
 import { ChecklistHandler } from './requirement_audit/ChecklistHandler.js';
 import { RequirementInfoSections } from './requirement_audit/RequirementInfoSections.js';
 import { RequirementAuditNavigationComponent } from './requirement_audit/RequirementAuditNavigation.js';
@@ -642,6 +643,10 @@ export const RequirementAuditComponent = {
         const state = this.getState();
         const is_locked = state.auditStatus === 'locked';
 
+        const focus_root = this.plate_element_ref;
+        const focus_state = focus_root ? capture_focus_state(focus_root) : null;
+        const window_scroll = focus_state ? { x: window.scrollX, y: window.scrollY } : null;
+
         const header = this.plate_element_ref.querySelector('.requirement-audit-header');
         header.innerHTML = '';
         header.append(
@@ -668,8 +673,22 @@ export const RequirementAuditComponent = {
             if (label2) label2.textContent = t('comment_to_actor');
         }
         
-        this.comment_to_auditor_input.value = this.current_result.commentToAuditor || '';
-        this.comment_to_actor_input.value = this.current_result.commentToActor || '';
+        const target_auditor_value = this.current_result.commentToAuditor || '';
+        const target_actor_value = this.current_result.commentToActor || '';
+
+        if (this.comment_to_auditor_input) {
+            if (document.activeElement !== this.comment_to_auditor_input &&
+                this.comment_to_auditor_input.value !== target_auditor_value) {
+                this.comment_to_auditor_input.value = target_auditor_value;
+            }
+        }
+        if (this.comment_to_actor_input) {
+            if (document.activeElement !== this.comment_to_actor_input &&
+                this.comment_to_actor_input.value !== target_actor_value) {
+                this.comment_to_actor_input.value = target_actor_value;
+            }
+        }
+
         [this.comment_to_auditor_input, this.comment_to_actor_input].forEach(input => {
             input.readOnly = is_locked;
             input.classList.toggle('readonly-textarea', is_locked);
@@ -677,7 +696,19 @@ export const RequirementAuditComponent = {
                 this.Helpers.init_auto_resize_for_textarea(input);
             }
         });
-        
+
+        if (focus_state && focus_root) {
+            setTimeout(() => {
+                requestAnimationFrame(() => {
+                    restore_focus_state({
+                        focus_root,
+                        focus_state,
+                        window_scroll
+                    });
+                });
+            }, 0);
+        }
+
         if (this.current_result?.needsReview === true) {
             this.NotificationComponent.show_global_message(t('requirement_updated_needs_review'), 'info');
         } else {
