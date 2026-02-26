@@ -4,3 +4,10 @@
 **/*.key
 node_modules/
 dist/
+.next/
+.turbo/
+out/
+build/
+*.log
+*.sqlite
+.git/
