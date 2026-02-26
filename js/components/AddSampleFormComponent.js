@@ -94,7 +94,6 @@ export const AddSampleFormComponent = {
         (selected_category.categories || []).forEach(subcat => {
             this.sample_type_select.appendChild(this.Helpers.create_element('option', { value: subcat.id, text_content: subcat.text }));
         });
-        this.sample_type_select.disabled = false;
 
         if (preselected_sample_type_id) {
             this.sample_type_select.value = preselected_sample_type_id;
@@ -386,7 +385,7 @@ export const AddSampleFormComponent = {
 
         // --- Sample Info Section ---
         this.form_element.appendChild(this.Helpers.create_element('h2', { text_content: t('sample_info_title') }));
-        this.sample_type_select = this.Helpers.create_element('select', { id: 'sampleTypeSelect', class_name: 'form-control', attributes: { required: true, disabled: true } });
+        this.sample_type_select = this.Helpers.create_element('select', { id: 'sampleTypeSelect', class_name: 'form-control', attributes: { required: true } });
         this.sample_type_select.addEventListener('change', this.update_description_from_sample_type);
         this.description_input = this.Helpers.create_element('input', { id: 'sampleDescriptionInput', class_name: 'form-control', attributes: { type: 'text', required: true } });
         this.description_input.addEventListener('input', this.handle_autosave_input);
