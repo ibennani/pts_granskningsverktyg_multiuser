@@ -36,7 +36,18 @@ async function run_sync(state, dispatch_fn) {
 
     try {
         if (state.auditId) {
-            await update_audit(state.auditId, state_to_patch(state));
+            const full_state = await update_audit(state.auditId, state_to_patch(state));
+            if (dispatch_fn && full_state && full_state.version != null) {
+                dispatch_fn({
+                    type: 'SET_REMOTE_AUDIT_ID',
+                    payload: {
+                        auditId: state.auditId,
+                        ruleSetId: state.ruleSetId ?? full_state.ruleSetId ?? null,
+                        version: full_state.version,
+                        skip_render: true
+                    }
+                });
+            }
         } else {
             const full_state = await import_audit(state_to_import(state));
             if (dispatch_fn && full_state?.auditId) {
