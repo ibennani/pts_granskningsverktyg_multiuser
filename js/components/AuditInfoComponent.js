@@ -82,7 +82,8 @@ export const AuditInfoComponent = {
 
         if (md.actorLink) {
             const safe_link = this.Helpers.add_protocol_if_missing(md.actorLink);
-            const link_html = `<a href="${this.Helpers.escape_html(safe_link)}" target="_blank" rel="noopener noreferrer">${this.Helpers.escape_html(md.actorLink)}</a>`;
+            const icon_html = this.Helpers.get_external_link_icon_html ? this.Helpers.get_external_link_icon_html(t) : ' ↗';
+            const link_html = `<a href="${this.Helpers.escape_html(safe_link)}" target="_blank" rel="noopener noreferrer">${this.Helpers.escape_html(md.actorLink)}${icon_html}</a>`;
             info_panel.appendChild(this.create_info_item('actor_link', link_html, { is_html: true }));
         }
 
