@@ -20,22 +20,46 @@ export const GenericTableComponent = {
     /**
      * @param {Object} opts
      * @param {HTMLElement} [opts.root] - Om angiven används denna istället för this.root (för flera tabeller från samma vy).
-     * @param {Array<{ headerLabel: string, getContent: (row: any) => string | HTMLElement }>} opts.columns
+     * @param {Array<{ headerLabel: string, getContent: (row: any) => string | HTMLElement, getSortValue?: (row: any) => string | number }>} opts.columns
      * @param {Array<any>} opts.data
      * @param {string} opts.emptyMessage - Text när data är tom.
      * @param {string} opts.ariaLabel
      * @param {string} [opts.wrapperClassName] - T.ex. 'generic-table-wrapper'.
      * @param {string} [opts.tableClassName] - T.ex. 'generic-table generic-table--audit-list'.
+     * @param {{ columnIndex: number, direction: 'asc'|'desc' }} [opts.sortState] - Aktiv sortering.
+     * @param {function(number, 'asc'|'desc')} [opts.onSort] - Anropas vid klick på rubrik (columnIndex, direction). Krävs för sorterbara rubriker.
+     * @param {function(string): string} [opts.t] - Översättningsfunktion för sorteringsknappar (aria-label).
      */
     render(opts) {
         const root_el = opts.root ?? this.root;
         if (!root_el || !this.Helpers?.create_element) return;
 
-        const { columns, data, emptyMessage, ariaLabel } = opts;
+        const { columns, data, emptyMessage, ariaLabel, sortState, onSort } = opts;
+        const t = opts.t || (() => '');
         const wrapper_class = opts.wrapperClassName ?? 'generic-table-wrapper';
         const table_class = opts.tableClassName ?? 'generic-table';
 
         root_el.innerHTML = '';
+
+        let data_to_render = data && data.length > 0 ? [...data] : [];
+        const active_sort_col = sortState && columns[sortState.columnIndex];
+        const get_sort_value = active_sort_col?.getSortValue;
+        if (get_sort_value && data_to_render.length > 0 && typeof sortState.direction === 'string') {
+            const dir = sortState.direction === 'desc' ? -1 : 1;
+            data_to_render.sort((a, b) => {
+                const va = get_sort_value(a);
+                const vb = get_sort_value(b);
+                const a_empty = va === '' || va === null || va === undefined;
+                const b_empty = vb === '' || vb === null || vb === undefined;
+                if (a_empty && b_empty) return 0;
+                if (a_empty) return 1;
+                if (b_empty) return -1;
+                if (typeof va === 'number' && typeof vb === 'number') return (va - vb) * dir;
+                const sa = String(va);
+                const sb = String(vb);
+                return sa.localeCompare(sb, undefined, { numeric: true }) * dir;
+            });
+        }
 
         const wrapper = this.Helpers.create_element('div', { class_name: wrapper_class });
         const table = this.Helpers.create_element('table', {
@@ -50,14 +74,41 @@ export const GenericTableComponent = {
 
         const thead = this.Helpers.create_element('thead');
         const header_row = this.Helpers.create_element('tr');
-        columns.forEach((col) => {
-            header_row.appendChild(this.Helpers.create_element('th', { text_content: col.headerLabel }));
+        columns.forEach((col, col_index) => {
+            const is_sortable = typeof col.getSortValue === 'function' && typeof onSort === 'function';
+            const is_active = sortState && sortState.columnIndex === col_index;
+            const direction = is_active ? sortState.direction : 'asc';
+
+            const th = this.Helpers.create_element('th', {
+                attributes: is_sortable ? { 'aria-sort': is_active ? (direction === 'asc' ? 'ascending' : 'descending') : 'none' } : {}
+            });
+
+            if (is_sortable) {
+                const btn = this.Helpers.create_element('button', {
+                    type: 'button',
+                    class_name: 'generic-table-header-sort-btn',
+                    text_content: col.headerLabel,
+                    attributes: {
+                        'aria-label': is_active
+                            ? t('generic_table_sort_aria_active', { label: col.headerLabel, direction: direction === 'asc' ? t('generic_table_sort_asc') : t('generic_table_sort_desc') })
+                            : t('generic_table_sort_aria', { label: col.headerLabel })
+                    }
+                });
+                btn.addEventListener('click', () => {
+                    const next_dir = is_active && direction === 'asc' ? 'desc' : 'asc';
+                    onSort(col_index, next_dir);
+                });
+                th.appendChild(btn);
+            } else {
+                th.textContent = col.headerLabel;
+            }
+            header_row.appendChild(th);
         });
         thead.appendChild(header_row);
         table.appendChild(thead);
 
         const tbody = this.Helpers.create_element('tbody');
-        if (!data || data.length === 0) {
+        if (data_to_render.length === 0) {
             const empty_row = this.Helpers.create_element('tr');
             empty_row.appendChild(
                 this.Helpers.create_element('td', {
@@ -67,7 +118,7 @@ export const GenericTableComponent = {
             );
             tbody.appendChild(empty_row);
         } else {
-            data.forEach((row) => {
+            data_to_render.forEach((row) => {
                 const tr = this.Helpers.create_element('tr');
                 columns.forEach((col) => {
                     const content = col.getContent(row);

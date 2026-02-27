@@ -216,6 +216,7 @@ export const StartViewComponent = {
                         : config.heading_key === 'start_view_new_audits_heading'
                             ? 'start_view_no_new_audits'
                             : 'start_view_no_completed_audits';
+                this._startTableSortState = this._startTableSortState ?? { columnIndex: 0, direction: 'asc' };
                 this._genericTable.render({
                     root: table_wrapper,
                     columns: audit_columns,
@@ -223,7 +224,13 @@ export const StartViewComponent = {
                     emptyMessage: t(empty_key),
                     ariaLabel: t(config.heading_key),
                     wrapperClassName: 'generic-table-wrapper',
-                    tableClassName: 'generic-table generic-table--audit-list'
+                    tableClassName: 'generic-table generic-table--audit-list',
+                    sortState: this._startTableSortState,
+                    onSort: (columnIndex, direction) => {
+                        this._startTableSortState = { columnIndex, direction };
+                        this.render();
+                    },
+                    t: this.Translation.t.bind(this.Translation)
                 });
                 section.appendChild(table_wrapper);
                 plate.appendChild(section);

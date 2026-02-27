@@ -857,11 +857,7 @@ export const AuditViewComponent = {
         audits_heading_row.appendChild(audits_heading);
 
         if (this.audit_mode === 'audits') {
-            const sorted_audits = [...this.audits].sort((a, b) => {
-                const ta = Number(a.created_at ?? a.updated_at ?? 0);
-                const tb = Number(b.created_at ?? b.updated_at ?? 0);
-                return tb - ta;
-            });
+            this._auditTableSortState = this._auditTableSortState ?? { columnIndex: 0, direction: 'asc' };
             const table_wrapper = this.Helpers.create_element('div');
             const table_deps = {
                 t: this.get_t_func(),
@@ -878,11 +874,17 @@ export const AuditViewComponent = {
             this._auditsTable.render({
                 root: table_wrapper,
                 columns: audit_columns,
-                data: sorted_audits,
+                data: this.audits,
                 emptyMessage: t('audit_audits_empty'),
                 ariaLabel: t('audit_audits_title'),
                 wrapperClassName: 'generic-table-wrapper',
-                tableClassName: 'generic-table generic-table--audit-list'
+                tableClassName: 'generic-table generic-table--audit-list',
+                sortState: this._auditTableSortState,
+                onSort: (columnIndex, direction) => {
+                    this._auditTableSortState = { columnIndex, direction };
+                    this.render();
+                },
+                t: this.Translation.t.bind(this.Translation)
             });
             right_col.appendChild(audits_heading_row);
             right_col.appendChild(table_wrapper);

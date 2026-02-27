@@ -26,10 +26,12 @@ export function create_audit_table_columns(deps, handlers, opts = {}) {
     const columns = [
         {
             headerLabel: t('start_view_col_case_number'),
+            getSortValue: (row) => (row.metadata?.caseNumber ?? '').toString().trim(),
             getContent: (row) => (row.metadata?.caseNumber ?? '').toString().trim() || EMPTY_PLACEHOLDER
         },
         {
             headerLabel: t('start_view_col_actor'),
+            getSortValue: (row) => (row.metadata?.actorName ?? row.metadata?.caseNumber ?? '').toString().trim(),
             getContent: (row) => {
                 const case_number = (row.metadata?.caseNumber ?? '').toString().trim();
                 const actor_name = (row.metadata?.actorName ?? '').toString().trim();
@@ -51,19 +53,23 @@ export function create_audit_table_columns(deps, handlers, opts = {}) {
         },
         {
             headerLabel: t('start_view_col_status'),
+            getSortValue: (row) => (row.status ?? '').toString(),
             getContent: (row) => (row.status ? get_status_label(row.status) : EMPTY_PLACEHOLDER)
         },
         {
             headerLabel: t('start_view_col_progress'),
+            getSortValue: (row) => row.progress != null ? Number(row.progress) : -1,
             getContent: (row) => (row.progress != null ? `${row.progress}%` : EMPTY_PLACEHOLDER)
         },
         {
             headerLabel: t('start_view_col_deficiency'),
+            getSortValue: (row) => (row.deficiency_index != null ? Number(row.deficiency_index) : -Infinity),
             getContent: (row) =>
                 row.deficiency_index != null ? format_num(row.deficiency_index) : EMPTY_PLACEHOLDER
         },
         {
             headerLabel: t('start_view_col_auditor'),
+            getSortValue: (row) => (row.metadata?.auditorName ?? '').toString().trim(),
             getContent: (row) => (row.metadata?.auditorName ?? '').toString().trim() || EMPTY_PLACEHOLDER
         },
         {
