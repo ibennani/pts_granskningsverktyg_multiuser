@@ -1,0 +1,100 @@
+/* css/components/generic_table_component.css */
+/* Generell tabell – återanvänds i startvy, admin-vy m.fl. */
+
+.generic-table-wrapper {
+    overflow-x: auto;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    background-color: var(--input-background-color);
+    box-shadow: none;
+}
+
+.generic-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: none;
+    box-shadow: none;
+}
+
+.generic-table th,
+.generic-table td {
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    border: none;
+    vertical-align: middle;
+    font-size: 0.875rem;
+}
+
+.generic-table th {
+    font-weight: 600;
+    white-space: nowrap;
+    font-size: 0.75rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--text-color-muted);
+}
+
+.generic-table thead tr {
+    background: linear-gradient(135deg, color-mix(in srgb, var(--primary-color) 8%, var(--input-background-color)), color-mix(in srgb, var(--primary-color) 4%, var(--input-background-color)));
+    border-bottom: 2px solid color-mix(in srgb, var(--border-color) 50%, transparent);
+}
+
+.generic-table thead th {
+    padding: 0.5rem 0.75rem;
+}
+
+.generic-table tbody tr {
+    border-bottom: 1px solid color-mix(in srgb, var(--border-color) 35%, transparent);
+    transition: background-color 0.2s ease;
+}
+
+.generic-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.generic-table tbody tr:hover {
+    background-color: color-mix(in srgb, var(--primary-color) 6%, var(--input-background-color));
+}
+
+/* Variant: granskningslistan (kolumnbredder + länk/knapp-stilar) */
+.generic-table--audit-list th:nth-child(1),
+.generic-table--audit-list td:nth-child(1) { min-width: 6rem; }
+.generic-table--audit-list th:nth-child(2),
+.generic-table--audit-list td:nth-child(2) { min-width: 9rem; }
+.generic-table--audit-list th:nth-child(3),
+.generic-table--audit-list td:nth-child(3) { min-width: 5.5rem; }
+.generic-table--audit-list th:nth-child(4),
+.generic-table--audit-list td:nth-child(4) { min-width: 4rem; }
+.generic-table--audit-list th:nth-child(5),
+.generic-table--audit-list td:nth-child(5) { min-width: 4rem; }
+.generic-table--audit-list th:nth-child(6),
+.generic-table--audit-list td:nth-child(6) { min-width: 6rem; }
+.generic-table--audit-list th:nth-child(7),
+.generic-table--audit-list td:nth-child(7) { min-width: 5rem; }
+.generic-table--audit-list th:nth-child(8),
+.generic-table--audit-list td:nth-child(8) { min-width: 5rem; }
+
+.generic-table--audit-list td:nth-child(2) {
+    font-weight: 500;
+}
+
+.generic-table--audit-list .generic-table-audit-link {
+    color: var(--link-color);
+    text-decoration: underline;
+    transition: color 0.2s ease;
+}
+
+.generic-table--audit-list .generic-table-audit-link:hover {
+    text-decoration: underline;
+    color: var(--link-hover-color);
+}
+
+.generic-table--audit-list .generic-table-download-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+[data-theme="dark"] .generic-table thead tr {
+    background: linear-gradient(135deg, color-mix(in srgb, var(--primary-color) 15%, var(--input-background-color)), color-mix(in srgb, var(--primary-color) 8%, var(--input-background-color)));
+}

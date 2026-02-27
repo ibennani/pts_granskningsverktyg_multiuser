@@ -1,6 +1,8 @@
 // js/components/StartViewComponent.js
 
 import { check_api_available, get_audits, load_audit_with_rule_file } from '../api/client.js';
+import { GenericTableComponent } from './GenericTableComponent.js';
+import { create_audit_table_columns } from '../utils/audit_table_columns.js';
 
 export const StartViewComponent = {
     CSS_PATH: './css/components/start_view_component.css',
@@ -54,6 +56,9 @@ export const StartViewComponent = {
                 this._poll_timer = null;
             }
         };
+
+        this._genericTable = Object.create(GenericTableComponent);
+        await this._genericTable.init({ deps });
     },
 
     get_t_func() {
@@ -167,80 +172,17 @@ export const StartViewComponent = {
                 { heading_key: 'start_view_completed_audits_heading', audits: sort_audits(completed) }
             ];
 
-            const EMPTY_PLACEHOLDER = '—';
-            const render_table_body = (audits, empty_text_key) => {
-                const tbody = this.Helpers.create_element('tbody');
-                if (audits.length === 0) {
-                    const empty_row = this.Helpers.create_element('tr');
-                    const empty_cell = this.Helpers.create_element('td', {
-                        text_content: t(empty_text_key),
-                        attributes: { colspan: '7' }
-                    });
-                    empty_row.appendChild(empty_cell);
-                    tbody.appendChild(empty_row);
-                } else {
-                    audits.forEach((audit) => {
-                        const row = this.Helpers.create_element('tr');
-                        const case_number = (audit.metadata?.caseNumber ?? '').toString().trim();
-                        const actor_name = (audit.metadata?.actorName ?? '').toString().trim();
-                        const auditor = (audit.metadata?.auditorName ?? '').toString().trim();
-                        const link_label = actor_name || case_number || EMPTY_PLACEHOLDER;
-
-                        const case_cell = this.Helpers.create_element('td', { text_content: case_number || EMPTY_PLACEHOLDER });
-                        const actor_cell = this.Helpers.create_element('td');
-                        const link = this.Helpers.create_element('a', {
-                            class_name: 'start-view-audit-link',
-                            text_content: actor_name || EMPTY_PLACEHOLDER,
-                            attributes: {
-                                href: `#audit_overview?auditId=${audit.id}`,
-                                'aria-label': t('start_view_open_audit_aria', { name: link_label })
-                            }
-                        });
-                        actor_cell.appendChild(link);
-                        const status_cell = this.Helpers.create_element('td', {
-                            text_content: audit.status ? this.get_status_label(audit.status) : EMPTY_PLACEHOLDER
-                        });
-                        const progress_cell = this.Helpers.create_element('td', {
-                            text_content: audit.progress != null ? `${audit.progress}%` : EMPTY_PLACEHOLDER
-                        });
-                        const deficiency_cell = this.Helpers.create_element('td', {
-                            text_content: audit.deficiency_index != null
-                                ? (this.Helpers.format_number_locally?.(audit.deficiency_index, this.Translation?.get_current_language_code?.() || 'sv-SE', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) ?? Number(audit.deficiency_index).toFixed(1))
-                                : EMPTY_PLACEHOLDER
-                        });
-                        const auditor_cell = this.Helpers.create_element('td', { text_content: auditor || EMPTY_PLACEHOLDER });
-                        const download_details = [case_number, actor_name].filter(Boolean).join(' ') || EMPTY_PLACEHOLDER;
-                        const download_btn = this.Helpers.create_element('button', {
-                            class_name: ['button', 'button-default', 'button-small', 'start-view-download-btn'],
-                            html_content: `<span>${t('admin_download_label')}</span>` + (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('save', ['currentColor'], 16) : ''),
-                            attributes: { type: 'button', 'aria-label': t('start_view_download_audit_aria', { details: download_details }) }
-                        });
-                        download_btn.addEventListener('click', () => this.handle_download_audit(audit.id));
-                        const download_cell = this.Helpers.create_element('td');
-                        download_cell.appendChild(download_btn);
-
-                        row.appendChild(case_cell);
-                        row.appendChild(actor_cell);
-                        row.appendChild(status_cell);
-                        row.appendChild(progress_cell);
-                        row.appendChild(deficiency_cell);
-                        row.appendChild(auditor_cell);
-                        row.appendChild(download_cell);
-                        tbody.appendChild(row);
-                    });
-                }
-                return tbody;
+            const table_deps = {
+                t: this.get_t_func(),
+                Helpers: this.Helpers,
+                Translation: this.Translation,
+                get_status_label: this.get_status_label.bind(this)
             };
-
-            const headers = [
-                t('start_view_col_case_number'),
-                t('start_view_col_actor'),
-                t('start_view_col_status'),
-                t('start_view_col_progress'),
-                t('start_view_col_deficiency'),
-                t('start_view_col_auditor'),
-                t('start_view_col_download')
-            ];
+            const table_handlers = {
+                onOpenAudit: (id) => this.router('audit_overview', { auditId: id }),
+                onDownloadAudit: (id) => this.handle_download_audit(id)
+            };
+            const audit_columns = create_audit_table_columns(table_deps, table_handlers, { includeDelete: false });
 
             section_configs.forEach((config, index) => {
                 const section = this.Helpers.create_element('section', {
@@ -267,31 +209,22 @@ export const StartViewComponent = {
                     section.appendChild(section_heading);
                 }
 
-                const table_wrapper = this.Helpers.create_element('div', { class_name: 'start-view-table-wrapper' });
-                const table = this.Helpers.create_element('table', {
-                    class_name: 'start-view-table',
-                    attributes: { 'aria-label': t(config.heading_key) }
+                const table_wrapper = this.Helpers.create_element('div');
+                const empty_key =
+                    config.heading_key === 'start_view_audits_heading'
+                        ? 'start_view_no_audits'
+                        : config.heading_key === 'start_view_new_audits_heading'
+                            ? 'start_view_no_new_audits'
+                            : 'start_view_no_completed_audits';
+                this._genericTable.render({
+                    root: table_wrapper,
+                    columns: audit_columns,
+                    data: config.audits,
+                    emptyMessage: t(empty_key),
+                    ariaLabel: t(config.heading_key),
+                    wrapperClassName: 'generic-table-wrapper',
+                    tableClassName: 'generic-table generic-table--audit-list'
                 });
-                const caption = this.Helpers.create_element('caption', {
-                    class_name: 'visually-hidden',
-                    text_content: t(config.heading_key)
-                });
-                table.appendChild(caption);
-                const thead = this.Helpers.create_element('thead');
-                const header_row = this.Helpers.create_element('tr');
-                headers.forEach((text) => {
-                    header_row.appendChild(this.Helpers.create_element('th', { text_content: text }));
-                });
-                thead.appendChild(header_row);
-                table.appendChild(thead);
-
-                const empty_key = config.heading_key === 'start_view_audits_heading'
-                    ? 'start_view_no_audits'
-                    : config.heading_key === 'start_view_new_audits_heading'
-                        ? 'start_view_no_new_audits'
-                        : 'start_view_no_completed_audits';
-                table.appendChild(render_table_body(config.audits, empty_key));
-                table_wrapper.appendChild(table);
                 section.appendChild(table_wrapper);
                 plate.appendChild(section);
             });
@@ -306,6 +239,7 @@ export const StartViewComponent = {
 
     destroy() {
         this._stop_list_polling?.();
+        this._genericTable?.destroy?.();
         this.root = null;
         this.deps = null;
     }
