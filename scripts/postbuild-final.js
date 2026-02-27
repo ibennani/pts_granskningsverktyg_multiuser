@@ -115,7 +115,7 @@ window.BUILD_INFO = ${JSON.stringify(buildInfo, null, 2)};
     <link rel="stylesheet" href="./css/features/markdown_toolbar.css">
     <link rel="stylesheet" href="./css/components/side_menu_component.css">
     <link rel="stylesheet" href="./css/components/global_action_bar_component.css">
-    <link rel="stylesheet" href="./css/components/admin_view_component.css">
+    <link rel="stylesheet" href="./css/components/audit_view_component.css">
     <link rel="stylesheet" href="./css/components/start_view_component.css">`
     );
     

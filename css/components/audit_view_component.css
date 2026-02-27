@@ -1,10 +1,10 @@
-/* AdminViewComponent - Administrationsvy */
+/* AuditViewComponent - Hantera granskningar och regelfiler */
 
-.admin-plate {
+.audit-plate {
     max-width: 100%;
 }
 
-.admin-header {
+.audit-header {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -12,30 +12,30 @@
     margin-bottom: 1.5rem;
 }
 
-.admin-header h1 {
+.audit-header h1 {
     margin: 0;
 }
 
-.admin-header .admin-upload-btn {
+.audit-header .audit-upload-btn {
     flex-shrink: 0;
 }
 
-.admin-back-link {
+.audit-back-link {
     text-decoration: underline;
     color: var(--link-color);
 }
 
-.admin-back-link:hover,
-.admin-back-link:focus {
+.audit-back-link:hover,
+.audit-back-link:focus {
     text-decoration: underline;
 }
 
-.admin-loading {
+.audit-loading {
     margin: 2rem 0;
     opacity: 0.8;
 }
 
-.admin-no-api {
+.audit-no-api {
     margin: 2rem 0;
     padding: 1rem;
     background: var(--warning-color-light, rgba(201, 149, 61, 0.15));
@@ -43,7 +43,7 @@
     border-radius: var(--border-radius);
 }
 
-.admin-two-columns {
+.audit-two-columns {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 1.25rem;
@@ -51,12 +51,12 @@
 }
 
 @media (max-width: 768px) {
-    .admin-two-columns {
+    .audit-two-columns {
         grid-template-columns: 1fr;
     }
 }
 
-.admin-column {
+.audit-column {
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
@@ -67,12 +67,12 @@
     text-align: left;
 }
 
-.admin-column h2 {
+.audit-column h2 {
     margin: 0 0 0.25rem 0;
     font-size: 1rem;
 }
 
-.admin-column-heading-row {
+.audit-column-heading-row {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -80,29 +80,29 @@
     gap: 0.75rem;
 }
 
-.admin-column-heading-row h2 {
+.audit-column-heading-row h2 {
     margin: 0 0 0.25rem 0;
 }
 
-.admin-start-new-audit-btn {
+.audit-start-new-audit-btn {
     flex-shrink: 0;
     padding: 0.35rem 0.75rem;
     font-size: 0.9rem;
 }
 
-.admin-upload-audit-btn {
+.audit-upload-audit-btn {
     flex-shrink: 0;
     padding: 0.35rem 0.75rem;
     font-size: 0.9rem;
 }
 
-.admin-upload-btn {
+.audit-upload-btn {
     align-self: flex-start;
     padding: 0.35rem 0.75rem;
     font-size: 0.9rem;
 }
 
-.admin-hidden-file-input {
+.audit-hidden-file-input {
     position: absolute;
     width: 0.1px;
     height: 0.1px;
@@ -111,7 +111,7 @@
     z-index: -1;
 }
 
-.admin-list {
+.audit-list {
     list-style: none;
     padding-left: 0;
     margin: 0;
@@ -120,7 +120,7 @@
     text-align: left;
 }
 
-.admin-list-item {
+.audit-list-item {
     padding: 0.25rem 0;
     border-bottom: 1px solid var(--border-color);
     display: flex;
@@ -132,82 +132,82 @@
     text-align: left;
 }
 
-.admin-list-item:last-child {
+.audit-list-item:last-child {
     border-bottom: none;
 }
 
-.admin-list-item .admin-item-label {
+.audit-list-item .audit-item-label {
     flex: 1;
     min-width: 0;
     text-align: left;
 }
 
-.admin-audit-item-actions {
+.audit-audit-item-actions {
     display: flex;
     flex-shrink: 0;
     gap: 0.5rem;
     align-items: center;
 }
 
-.admin-rule-item-actions {
+.audit-rule-item-actions {
     display: flex;
     flex-shrink: 0;
     gap: 0.5rem;
     align-items: center;
 }
 
-.admin-audit-item-actions .admin-download-btn,
-.admin-audit-item-actions .admin-delete-btn,
-.admin-rule-item-actions .admin-download-btn,
-.admin-rule-item-actions .admin-delete-btn {
+.audit-audit-item-actions .audit-download-btn,
+.audit-audit-item-actions .audit-delete-btn,
+.audit-rule-item-actions .audit-download-btn,
+.audit-rule-item-actions .audit-delete-btn {
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
 }
 
-.admin-list-item .admin-delete-btn {
+.audit-list-item .audit-delete-btn {
     flex-shrink: 0;
 }
 
-.admin-item-label {
+.audit-item-label {
     font-weight: 500;
 }
 
-.admin-rule-link {
+.audit-rule-link {
     color: var(--link-color);
     text-decoration: underline;
 }
 
-.admin-rule-link:hover,
-.admin-rule-link:focus {
+.audit-rule-link:hover,
+.audit-rule-link:focus {
     color: var(--link-hover-color);
     text-decoration: underline;
 }
 
-.admin-audit-case-number {
+.audit-audit-case-number {
     flex-shrink: 0;
     margin-right: 0.35rem;
     color: var(--text-color-muted);
     font-size: 0.9rem;
 }
 
-.admin-audit-link {
+.audit-audit-link {
     color: var(--link-color);
     text-decoration: underline;
 }
 
-.admin-audit-link:hover,
-.admin-audit-link:focus {
+.audit-audit-link:hover,
+.audit-audit-link:focus {
     color: var(--link-hover-color);
     text-decoration: underline;
 }
 
-.admin-item-meta {
+.audit-item-meta {
     font-size: 0.85rem;
     opacity: 0.8;
 }
 
-.admin-list-empty {
+.audit-list-empty {
     padding: 0.5rem 0;
     opacity: 0.7;
     font-style: italic;
@@ -215,23 +215,23 @@
     font-size: 0.9rem;
 }
 
-.admin-delete-btn {
+.audit-delete-btn {
     padding: 0.25rem 0.5rem;
     font-size: 0.8rem;
     min-height: 24px;
 }
 
-.admin-rules-picker-list {
+.audit-rules-picker-list {
     list-style: none;
     padding: 0;
     margin: 0.5rem 0 0;
 }
 
-.admin-rules-picker-list li {
+.audit-rules-picker-list li {
     margin-bottom: 0.25rem;
 }
 
-.admin-modal-close-btn {
+.audit-modal-close-btn {
     padding: 0.35rem 0.75rem;
     font-size: 0.9rem;
 }

@@ -144,13 +144,13 @@ export const StartViewComponent = {
         if (!this._api_checked) {
             const loading = this.Helpers.create_element('p', {
                 class_name: 'start-view-loading',
-                text_content: t('admin_loading')
+                text_content: t('audit_loading')
             });
             plate.appendChild(loading);
         } else if (!this.api_available) {
             const no_api = this.Helpers.create_element('p', {
                 class_name: 'start-view-no-api',
-                text_content: t('admin_api_unavailable')
+                text_content: t('audit_api_unavailable')
             });
             plate.appendChild(no_api);
         } else {
@@ -193,14 +193,14 @@ export const StartViewComponent = {
                     const heading_row = this.Helpers.create_element('div', { class_name: 'start-view-section-heading-row' });
                     const section_heading = this.Helpers.create_element('h2', { text_content: t(config.heading_key) });
                     const start_new_btn = this.Helpers.create_element('button', {
-                        class_name: ['button', 'button-primary', 'admin-start-new-audit-btn'],
+                        class_name: ['button', 'button-primary', 'audit-start-new-audit-btn'],
                         text_content: t('start_new_audit'),
                         attributes: {
                             type: 'button',
                             'aria-label': t('start_new_audit')
                         }
                     });
-                    start_new_btn.addEventListener('click', () => this.router('admin_audits', { startNew: '1' }));
+                    start_new_btn.addEventListener('click', () => this.router('audit_audits', { startNew: '1' }));
                     heading_row.appendChild(section_heading);
                     heading_row.appendChild(start_new_btn);
                     section.appendChild(heading_row);

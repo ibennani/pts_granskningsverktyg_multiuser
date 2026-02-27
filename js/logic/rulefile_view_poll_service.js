@@ -1,7 +1,7 @@
 // js/logic/rulefile_view_poll_service.js
 // Pollar regelfilversion när användaren redigerar en regelfil. Uppdaterar state om annan enhet ändrat.
 //
-// Kräver ruleSetId i state (sätts vid redigering från Admin). Vid redigering från lokal fil
+// Kräver ruleSetId i state (sätts vid redigering från audit-vyn). Vid redigering från lokal fil
 // (Upload) finns ingen ruleSetId och polling körs inte.
 
 import { get_rule_version, get_rule } from '../api/client.js';

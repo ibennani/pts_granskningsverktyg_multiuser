@@ -38,7 +38,7 @@
     margin: 0;
 }
 
-.start-view-audits-section .admin-start-new-audit-btn {
+.start-view-audits-section .audit-start-new-audit-btn {
     flex-shrink: 0;
     padding: 0.35rem 0.75rem;
     font-size: 0.9rem;

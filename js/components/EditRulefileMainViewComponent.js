@@ -51,7 +51,7 @@ export const EditRulefileMainViewComponent = {
             class_name: ['button', 'button-default'],
             html_content: `<span>${t('back_to_start_view')}</span>` + this.Helpers.get_icon_svg('arrow_back')
         });
-        back_button.addEventListener('click', () => this.router('admin'));
+        back_button.addEventListener('click', () => this.router('audit'));
         
         actions_div.append(back_button);
         plate_element.appendChild(actions_div);

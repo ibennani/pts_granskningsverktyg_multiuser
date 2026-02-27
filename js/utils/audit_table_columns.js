@@ -7,7 +7,7 @@ const EMPTY_PLACEHOLDER = '—';
  * Skapar kolumndefinitioner för granskningstabellen.
  * @param {Object} deps - { t, Helpers, Translation, get_status_label }
  * @param {Object} handlers - { onOpenAudit(auditId), onDownloadAudit(auditId), onDeleteAudit?(auditId) }
- * @param {{ includeDelete: boolean }} [opts] - includeDelete true för admin-vyn (kolumn Radera).
+ * @param {{ includeDelete: boolean }} [opts] - includeDelete true för audit-vyn (kolumn Radera).
  * @returns {Array<{ headerLabel: string, getContent: (row: any) => string | HTMLElement }>}
  */
 export function create_audit_table_columns(deps, handlers, opts = {}) {
@@ -74,7 +74,7 @@ export function create_audit_table_columns(deps, handlers, opts = {}) {
                 const download_details = [case_number, actor_name].filter(Boolean).join(' ') || EMPTY_PLACEHOLDER;
                 const btn = Helpers.create_element('button', {
                     class_name: ['button', 'button-default', 'button-small', 'generic-table-download-btn'],
-                    html_content: `<span>${t('admin_download_label')}</span>` + icon_svg('save'),
+                    html_content: `<span>${t('audit_download_label')}</span>` + icon_svg('save'),
                     attributes: {
                         type: 'button',
                         'aria-label': t('start_view_download_audit_aria', { details: download_details })
@@ -96,17 +96,17 @@ export function create_audit_table_columns(deps, handlers, opts = {}) {
                 const delete_btn = Helpers.create_element('button', {
                     class_name: ['button', 'button-danger', 'button-small'],
                     html_content: `<span>${t('delete')}</span>` + icon_svg('delete'),
-                    attributes: { type: 'button', 'aria-label': t('admin_delete_audit_aria', { name: audit_link_text }) }
+                    attributes: { type: 'button', 'aria-label': t('audit_delete_audit_aria', { name: audit_link_text }) }
                 });
                 delete_btn.addEventListener('click', () => {
                     const show_modal = window.show_confirm_delete_modal;
                     if (show_modal) {
                         show_modal({
-                            h1_text: t('admin_confirm_delete_audit_title'),
-                            warning_text: t('admin_confirm_delete_audit_warning', { name: audit_link_text }),
+                            h1_text: t('audit_confirm_delete_audit_title'),
+                            warning_text: t('audit_confirm_delete_audit_warning', { name: audit_link_text }),
                             delete_button: delete_btn,
-                            yes_label: t('admin_confirm_delete_radera'),
-                            no_label: t('admin_confirm_delete_behall'),
+                            yes_label: t('audit_confirm_delete_radera'),
+                            no_label: t('audit_confirm_delete_behall'),
                             on_confirm: () => onDeleteAudit(row.id)
                         });
                     } else {

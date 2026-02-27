@@ -2,7 +2,7 @@
 // Pollar granskningsversion när användaren har en granskning öppen. Uppdaterar state om annan enhet ändrat.
 //
 // Vyer som INTE ingår (avsiktligt):
-// - start, upload, admin: inte i en granskning
+// - start, upload, audit: inte i en granskning
 // - restore_session: återställningsflöde, polling skulle skriva över backup
 // - confirm_sample_edit: REPLACE_STATE_FROM_REMOTE skulle förlora pendingSampleChanges
 // - rulefile_*: auditStatus === 'rulefile_editing' stoppar polling automatiskt

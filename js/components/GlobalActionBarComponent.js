@@ -317,9 +317,9 @@ export class GlobalActionBarComponent {
     ];
     const is_in_audit_or_rulefile_edit =
       current_view !== 'start' &&
-      current_view !== 'admin' &&
-      current_view !== 'admin_audits' &&
-      current_view !== 'admin_rules' &&
+      current_view !== 'audit' &&
+      current_view !== 'audit_audits' &&
+      current_view !== 'audit_rules' &&
       current_view !== 'restore_session' &&
       audit_or_rulefile_views.includes(current_view);
     const current_language_code =

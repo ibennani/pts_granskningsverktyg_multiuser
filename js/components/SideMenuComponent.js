@@ -279,14 +279,14 @@ export const SideMenuComponent = {
             return { should_show: false, items: [], aria_label: t('side_menu_aria_label') };
         }
 
-        if (this.current_view_name === 'start' || this.current_view_name === 'admin' || this.current_view_name === 'admin_audits' || this.current_view_name === 'admin_rules' || this.current_view_name === 'manage_users' || this.current_view_name === 'my_settings') {
+        if (this.current_view_name === 'start' || this.current_view_name === 'audit' || this.current_view_name === 'audit_audits' || this.current_view_name === 'audit_rules' || this.current_view_name === 'manage_users' || this.current_view_name === 'my_settings') {
             return {
                 should_show: true,
                 aria_label: t('side_menu_aria_label'),
                 items: [
                     { label: t('menu_link_start'), view_name: 'start' },
-                    { label: t('menu_link_manage_audits'), view_name: 'admin_audits' },
-                    { label: t('menu_link_manage_rules'), view_name: 'admin_rules' },
+                    { label: t('menu_link_manage_audits'), view_name: 'audit_audits' },
+                    { label: t('menu_link_manage_rules'), view_name: 'audit_rules' },
                     { label: t('menu_link_my_settings'), view_name: 'my_settings' },
                     { label: t('menu_link_manage_users'), view_name: 'manage_users' }
                 ]
@@ -305,7 +305,7 @@ export const SideMenuComponent = {
                     { label: t('rulefile_section_info_blocks_order_title'), view_name: 'rulefile_sections', params: { section: 'info_blocks_order' } },
                     { label: t('rulefile_section_classifications_title'), view_name: 'rulefile_sections', params: { section: 'classifications' } },
                     { label: t('rulefile_section_report_template_title'), view_name: 'rulefile_sections', params: { section: 'report_template' } },
-                    { label: t('side_menu_back_to_admin'), view_name: 'admin', back_to_start: true }
+                    { label: t('side_menu_back_to_audit'), view_name: 'audit', back_to_start: true }
                 ]
             };
         }
@@ -339,7 +339,7 @@ export const SideMenuComponent = {
                     { label: t('left_menu_images_with_count', { count: media_places_count }), view_name: 'audit_images', count_id: 'media_places_count', count_value: media_places_count },
                     { label: t('left_menu_problems_with_count', { count: problems_count }), view_name: 'audit_problems', count_id: 'problems_count', count_value: problems_count },
                     { label: t('left_menu_actions'), view_name: 'audit_actions' },
-                    { label: t('admin_back_to_start'), view_name: 'start', back_to_start: true }
+                    { label: t('audit_back_to_start'), view_name: 'start', back_to_start: true }
                 ]
             };
         }

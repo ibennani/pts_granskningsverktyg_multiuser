@@ -77,7 +77,7 @@ export const EditMetadataViewComponent = {
     },
 
     handle_cancel_new_audit() {
-        this.router('admin');
+        this.router('audit');
     },
 
     _is_metadata_empty_or_only_auditor(form_data) {
@@ -154,7 +154,7 @@ export const EditMetadataViewComponent = {
     },
 
     _do_go_to_list() {
-        this.router('admin');
+        this.router('audit');
     },
 
     async _save_and_go_to_list(form_data) {
@@ -170,7 +170,7 @@ export const EditMetadataViewComponent = {
         } catch (err) {
             // Fel visas redan av run_sync via NotificationComponent
         }
-        this.router('admin');
+        this._do_go_to_list();
     },
 
     _show_empty_metadata_modal(form_data, action, on_proceed) {
@@ -219,6 +219,10 @@ export const EditMetadataViewComponent = {
             this._show_required_fields_modal(form_data, 'go_to_list', () => this._do_go_to_list());
             return;
         }
+        if (is_new_audit && this._is_metadata_empty_or_only_auditor(form_data)) {
+            this._show_empty_metadata_modal(form_data, 'go_to_list', () => this._do_go_to_list());
+            return;
+        }
         if (is_new_audit && this._has_required_metadata(form_data)) {
             await this._save_and_go_to_list(form_data);
             return;
@@ -235,7 +239,7 @@ export const EditMetadataViewComponent = {
         const is_new_audit = current_state.auditStatus === 'not_started';
 
         if (!current_state.ruleFileContent) {
-            this.router('admin');
+            this.router('audit');
             return;
         }
 

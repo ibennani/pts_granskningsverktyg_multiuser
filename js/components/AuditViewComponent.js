@@ -1,4 +1,4 @@
-// js/components/AdminViewComponent.js
+// js/components/AuditViewComponent.js
 import { migrate_rulefile_to_new_structure } from '../logic/rulefile_migration_logic.js';
 import { version_greater_than } from '../utils/version_utils.js';
 import {
@@ -16,8 +16,8 @@ import {
 import { GenericTableComponent } from './GenericTableComponent.js';
 import { create_audit_table_columns } from '../utils/audit_table_columns.js';
 
-export const AdminViewComponent = {
-    CSS_PATH: './css/components/admin_view_component.css',
+export const AuditViewComponent = {
+    CSS_PATH: './css/components/audit_view_component.css',
 
     async init({ root, deps }) {
         this.root = root;
@@ -37,7 +37,7 @@ export const AdminViewComponent = {
         this.ValidationLogic = deps.ValidationLogic || window.ValidationLogic;
         this.SaveAuditLogic = deps.SaveAuditLogic || window.SaveAuditLogic;
 
-        this.admin_mode = (deps.view_name === 'admin_rules') ? 'rules' : (deps.view_name === 'admin_audits') ? 'audits' : 'both';
+        this.audit_mode = (deps.view_name === 'audit_rules') ? 'rules' : (deps.view_name === 'audit_audits') ? 'audits' : 'both';
 
         this.upload_file_input = null;
         this.upload_audit_file_input = null;
@@ -56,11 +56,11 @@ export const AdminViewComponent = {
         this.handle_start_new_audit = this.handle_start_new_audit.bind(this);
 
         if (this.Helpers?.load_css_safely) {
-            await this.Helpers.load_css_safely(this.CSS_PATH, 'AdminViewComponent', {
+            await this.Helpers.load_css_safely(this.CSS_PATH, 'AuditViewComponent', {
                 timeout: 5000,
                 maxRetries: 2
             }).catch(() => {
-                console.warn('[AdminViewComponent] Continuing without CSS due to loading failure');
+                console.warn('[AuditViewComponent] Continuing without CSS due to loading failure');
             });
         }
         this._poll_timer = null;
@@ -166,7 +166,7 @@ export const AdminViewComponent = {
                         throw err;
                     }
                     this.NotificationComponent?.show_global_message(
-                        t('admin_audit_uploaded_success'),
+                        t('audit_audit_uploaded_success'),
                         'success'
                     );
                     await this.ensure_api_data();
@@ -183,7 +183,7 @@ export const AdminViewComponent = {
                     const name = migrated_content?.metadata?.title?.trim() || 'Importerad regelfil';
                     await import_rule(name, migrated_content);
                     this.NotificationComponent?.show_global_message(
-                        t('admin_rule_uploaded_success'),
+                        t('audit_rule_uploaded_success'),
                         'success'
                     );
                     await this.ensure_api_data();
@@ -193,12 +193,12 @@ export const AdminViewComponent = {
                 }
 
                 this.NotificationComponent?.show_global_message(
-                    t('admin_upload_invalid_file'),
+                    t('audit_upload_invalid_file'),
                     'error'
                 );
             } catch (error) {
                 this.NotificationComponent?.show_global_message(
-                    t('admin_upload_invalid_file') + (error.message ? ` (${error.message})` : ''),
+                    t('audit_upload_invalid_file') + (error.message ? ` (${error.message})` : ''),
                     'error'
                 );
             } finally {
@@ -227,7 +227,7 @@ export const AdminViewComponent = {
                 const audit_validation = this.ValidationLogic?.validate_saved_audit_file?.(json_content);
                 if (!audit_validation?.isValid) {
                     this.NotificationComponent?.show_global_message(
-                        t('admin_upload_invalid_file') + (audit_validation?.message ? ` (${audit_validation.message})` : ''),
+                        t('audit_upload_invalid_file') + (audit_validation?.message ? ` (${audit_validation.message})` : ''),
                         'error'
                     );
                     if (event.target) event.target.value = '';
@@ -270,7 +270,7 @@ export const AdminViewComponent = {
                 await this._do_import_audit_and_refresh(file_content_object, event.target);
             } catch (err) {
                 this.NotificationComponent?.show_global_message(
-                    t('admin_upload_invalid_file') + (err?.message ? ` (${err.message})` : ''),
+                    t('audit_upload_invalid_file') + (err?.message ? ` (${err.message})` : ''),
                     'error'
                 );
                 if (event.target) event.target.value = '';
@@ -283,7 +283,7 @@ export const AdminViewComponent = {
         const t = this.get_t_func();
         try {
             await import_audit(file_content_object);
-            this.NotificationComponent?.show_global_message(t('admin_audit_uploaded_success'), 'success');
+            this.NotificationComponent?.show_global_message(t('audit_audit_uploaded_success'), 'success');
             await this.ensure_api_data();
             this.render();
             if (input_element) input_element.value = '';
@@ -296,7 +296,7 @@ export const AdminViewComponent = {
                 return;
             }
             this.NotificationComponent?.show_global_message(
-                err?.message || t('admin_upload_invalid_file'),
+                err?.message || t('audit_upload_invalid_file'),
                 'error'
             );
             if (input_element) input_element.value = '';
@@ -312,18 +312,18 @@ export const AdminViewComponent = {
         }
         const meta = file_content_object?.auditMetadata || {};
         const case_number = (meta.caseNumber ?? '').toString().trim() || '—';
-        const actor_name = (meta.actorName ?? '').toString().trim() || t('admin_audit_duplicate_unknown_actor');
-        const message = t('admin_audit_server_newer_modal_message', { caseNumber: case_number, actorName: actor_name });
+        const actor_name = (meta.actorName ?? '').toString().trim() || t('audit_audit_duplicate_unknown_actor');
+        const message = t('audit_audit_server_newer_modal_message', { caseNumber: case_number, actorName: actor_name });
         ModalComponent.show(
             {
-                h1_text: t('admin_audit_server_newer_modal_title'),
+                h1_text: t('audit_audit_server_newer_modal_title'),
                 message_text: message
             },
             (container, modal_instance) => {
                 const buttons_wrapper = this.Helpers.create_element('div', { class_name: 'modal-confirm-actions' });
                 const upload_btn = this.Helpers.create_element('button', {
                     class_name: ['button', 'button-primary'],
-                    text_content: t('admin_audit_server_newer_modal_upload_anyway')
+                    text_content: t('audit_audit_server_newer_modal_upload_anyway')
                 });
                 upload_btn.addEventListener('click', () => {
                     modal_instance.close();
@@ -331,7 +331,7 @@ export const AdminViewComponent = {
                 });
                 const close_btn = this.Helpers.create_element('button', {
                     class_name: ['button', 'button-default'],
-                    text_content: t('admin_audit_server_newer_modal_close')
+                    text_content: t('audit_audit_server_newer_modal_close')
                 });
                 close_btn.addEventListener('click', () => {
                     modal_instance.close();
@@ -377,7 +377,7 @@ export const AdminViewComponent = {
         ModalComponent.show(
             { h1_text: t('rulefile_metadata_field_monitoring_type_label'), message_text: '' },
             (container, modal_instance) => {
-                const ul = this.Helpers.create_element('ul', { class_name: 'admin-rules-picker-list' });
+                const ul = this.Helpers.create_element('ul', { class_name: 'audit-rules-picker-list' });
                 rules_to_show.forEach((r) => {
                     const btn_text = (r.monitoring_type_text || r.name || `Regelfil ${r.id}`).trim();
                     const li = this.Helpers.create_element('li');
@@ -395,7 +395,7 @@ export const AdminViewComponent = {
                 container.appendChild(ul);
                 const close_wrapper = this.Helpers.create_element('div', { class_name: 'modal-confirm-actions' });
                 const close_btn = this.Helpers.create_element('button', {
-                    class_name: ['button', 'button-primary', 'admin-modal-close-btn'],
+                    class_name: ['button', 'button-primary', 'audit-modal-close-btn'],
                     text_content: t('select_rule_modal_close')
                 });
                 close_btn.addEventListener('click', () => modal_instance.close());
@@ -442,7 +442,7 @@ export const AdminViewComponent = {
             this.router('metadata');
         } catch (error) {
             this.NotificationComponent?.show_global_message(
-                error.message || t('admin_load_rule_error'),
+                error.message || t('audit_load_rule_error'),
                 'error'
             );
         }
@@ -452,23 +452,23 @@ export const AdminViewComponent = {
         const t = this.get_t_func();
         const ModalComponent = window.ModalComponent;
         if (!ModalComponent?.show || !this.Helpers?.create_element) {
-            this.NotificationComponent?.show_global_message(t('admin_audit_already_exists'), 'error');
+            this.NotificationComponent?.show_global_message(t('audit_audit_already_exists'), 'error');
             if (typeof on_close === 'function') on_close();
             return;
         }
         const case_number = (metadata?.caseNumber ?? '').toString().trim() || '—';
-        const actor_name = (metadata?.actorName ?? '').toString().trim() || t('admin_audit_duplicate_unknown_actor');
-        const message = t('admin_audit_duplicate_modal_message', { caseNumber: case_number, actorName: actor_name });
+        const actor_name = (metadata?.actorName ?? '').toString().trim() || t('audit_audit_duplicate_unknown_actor');
+        const message = t('audit_audit_duplicate_modal_message', { caseNumber: case_number, actorName: actor_name });
         ModalComponent.show(
             {
-                h1_text: t('admin_audit_duplicate_modal_title'),
+                h1_text: t('audit_audit_duplicate_modal_title'),
                 message_text: message
             },
             (container, modal_instance) => {
                 const buttons_wrapper = this.Helpers.create_element('div', { class_name: 'modal-confirm-actions' });
                 const ok_btn = this.Helpers.create_element('button', {
                     class_name: ['button', 'button-primary'],
-                    text_content: t('admin_audit_duplicate_modal_ok')
+                    text_content: t('audit_audit_duplicate_modal_ok')
                 });
                 ok_btn.addEventListener('click', () => {
                     modal_instance.close();
@@ -485,14 +485,14 @@ export const AdminViewComponent = {
         try {
             await delete_rule(rule_id);
             this.NotificationComponent?.show_global_message(
-                t('admin_rule_deleted_success'),
+                t('audit_rule_deleted_success'),
                 'success'
             );
             await this.ensure_api_data();
             this.render();
         } catch (error) {
             this.NotificationComponent?.show_global_message(
-                error.message || t('admin_delete_error'),
+                error.message || t('audit_delete_error'),
                 'error'
             );
         }
@@ -503,14 +503,14 @@ export const AdminViewComponent = {
         try {
             await delete_audit(audit_id);
             this.NotificationComponent?.show_global_message(
-                t('admin_audit_deleted_success'),
+                t('audit_audit_deleted_success'),
                 'success'
             );
             await this.ensure_api_data();
             this.render();
         } catch (error) {
             this.NotificationComponent?.show_global_message(
-                error.message || t('admin_delete_error'),
+                error.message || t('audit_delete_error'),
                 'error'
             );
         }
@@ -560,7 +560,7 @@ export const AdminViewComponent = {
             this.router('edit_rulefile_main');
         } catch (error) {
             this.NotificationComponent?.show_global_message(
-                error.message || t('admin_load_rule_error'),
+                error.message || t('audit_load_rule_error'),
                 'error'
             );
         }
@@ -643,7 +643,7 @@ export const AdminViewComponent = {
             URL.revokeObjectURL(url);
         } catch (err) {
             if (show_msg) {
-                show_msg(t('admin_load_rule_error') + ' ' + (err.message || ''), 'error');
+                show_msg(t('audit_load_rule_error') + ' ' + (err.message || ''), 'error');
             }
         }
     },
@@ -662,8 +662,8 @@ export const AdminViewComponent = {
             this.root.innerHTML = '';
             const t = this.get_t_func();
             const loading = this.Helpers.create_element('p', {
-                text_content: t('admin_loading'),
-                class_name: 'admin-loading'
+                text_content: t('audit_loading'),
+                class_name: 'audit-loading'
             });
             this.root.appendChild(loading);
             return;
@@ -672,38 +672,38 @@ export const AdminViewComponent = {
         this.root.innerHTML = '';
         const t = this.get_t_func();
 
-        const plate = this.Helpers.create_element('div', { class_name: 'content-plate admin-plate' });
+        const plate = this.Helpers.create_element('div', { class_name: 'content-plate audit-plate' });
 
         if (this.NotificationComponent?.get_global_message_element_reference) {
             const msg_el = this.NotificationComponent.get_global_message_element_reference();
             plate.appendChild(msg_el);
         }
 
-        const header = this.Helpers.create_element('div', { class_name: 'admin-header' });
-        const title_text = this.admin_mode === 'rules' ? t('admin_title_rules') : this.admin_mode === 'audits' ? t('admin_title_audits') : t('admin_title');
+        const header = this.Helpers.create_element('div', { class_name: 'audit-header' });
+        const title_text = this.audit_mode === 'rules' ? t('audit_title_rules') : this.audit_mode === 'audits' ? t('audit_title_audits') : t('audit_title');
         const title = this.Helpers.create_element('h1', { text_content: title_text });
-        if (this.admin_mode !== 'audits') {
+        if (this.audit_mode !== 'audits') {
             const upload_btn = this.Helpers.create_element('button', {
-                class_name: ['button', 'button-primary', 'admin-upload-btn'],
-                text_content: t('admin_upload'),
+                class_name: ['button', 'button-primary', 'audit-upload-btn'],
+                text_content: t('audit_upload'),
                 attributes: { type: 'button' }
             });
             upload_btn.addEventListener('click', this.handle_upload_click);
             this.upload_file_input = this.Helpers.create_element('input', {
-                class_name: 'admin-hidden-file-input',
+                class_name: 'audit-hidden-file-input',
                 attributes: {
                     type: 'file',
                     accept: '.json,application/json',
-                    'aria-label': t('admin_upload')
+                    'aria-label': t('audit_upload')
                 }
             });
             this.upload_file_input.addEventListener('change', this.handle_file_select);
             header.appendChild(title);
             header.appendChild(upload_btn);
             header.appendChild(this.upload_file_input);
-            if (this.admin_mode === 'both') {
+            if (this.audit_mode === 'both') {
                 const start_new_audit_btn = this.Helpers.create_element('button', {
-                    class_name: ['button', 'button-default', 'admin-start-new-audit-btn'],
+                    class_name: ['button', 'button-default', 'audit-start-new-audit-btn'],
                     text_content: t('start_new_audit'),
                     attributes: { type: 'button', 'aria-label': t('start_new_audit') }
                 });
@@ -712,25 +712,25 @@ export const AdminViewComponent = {
             }
         } else {
             const upload_audit_btn = this.Helpers.create_element('button', {
-                class_name: ['button', 'button-primary', 'admin-upload-audit-btn'],
-                text_content: t('admin_upload_saved_audit'),
+                class_name: ['button', 'button-primary', 'audit-upload-audit-btn'],
+                text_content: t('audit_upload_saved_audit'),
                 attributes: {
                     type: 'button',
-                    'aria-label': t('admin_upload_saved_audit')
+                    'aria-label': t('audit_upload_saved_audit')
                 }
             });
             upload_audit_btn.addEventListener('click', this.handle_audit_upload_click);
             this.upload_audit_file_input = this.Helpers.create_element('input', {
-                class_name: 'admin-hidden-file-input',
+                class_name: 'audit-hidden-file-input',
                 attributes: {
                     type: 'file',
                     accept: '.json,application/json',
-                    'aria-label': t('admin_upload_saved_audit')
+                    'aria-label': t('audit_upload_saved_audit')
                 }
             });
             this.upload_audit_file_input.addEventListener('change', this.handle_audit_file_select);
             const start_new_audit_btn = this.Helpers.create_element('button', {
-                class_name: ['button', 'button-default', 'admin-start-new-audit-btn'],
+                class_name: ['button', 'button-default', 'audit-start-new-audit-btn'],
                 text_content: t('start_new_audit'),
                 attributes: {
                     type: 'button',
@@ -747,29 +747,29 @@ export const AdminViewComponent = {
 
         if (!this.api_available) {
             const no_api = this.Helpers.create_element('p', {
-                class_name: 'admin-no-api',
-                text_content: t('admin_api_unavailable')
+                class_name: 'audit-no-api',
+                text_content: t('audit_api_unavailable')
             });
             plate.appendChild(no_api);
             this.root.appendChild(plate);
             return;
         }
 
-        const two_col = this.Helpers.create_element('div', { class_name: 'admin-two-columns' });
+        const two_col = this.Helpers.create_element('div', { class_name: 'audit-two-columns' });
 
         const left_col = this.Helpers.create_element('section', {
-            class_name: 'admin-column',
-            attributes: { 'aria-labelledby': 'admin-rules-heading' }
+            class_name: 'audit-column',
+            attributes: { 'aria-labelledby': 'audit-rules-heading' }
         });
         const rules_heading = this.Helpers.create_element('h2', {
-            id: 'admin-rules-heading',
-            text_content: t('admin_rules_title')
+            id: 'audit-rules-heading',
+            text_content: t('audit_rules_title')
         });
-        const rules_list = this.Helpers.create_element('ul', { class_name: 'admin-list' });
+        const rules_list = this.Helpers.create_element('ul', { class_name: 'audit-list' });
         if (this.rules.length === 0) {
             const empty = this.Helpers.create_element('li', {
-                class_name: 'admin-list-empty',
-                text_content: t('admin_rules_empty')
+                class_name: 'audit-list-empty',
+                text_content: t('audit_rules_empty')
             });
             rules_list.appendChild(empty);
         } else {
@@ -779,27 +779,27 @@ export const AdminViewComponent = {
                 return na.localeCompare(nb, undefined, { sensitivity: 'base' });
             });
             sorted_rules.forEach((r) => {
-                const li = this.Helpers.create_element('li', { class_name: 'admin-list-item' });
+                const li = this.Helpers.create_element('li', { class_name: 'audit-list-item' });
                 const rule_name = r.name || `Regelfil ${r.id}`;
                 const version_display = r.version_display ? ` (${r.version_display})` : '';
                 const link_text = rule_name + version_display;
                 const label = this.Helpers.create_element('a', {
                     text_content: link_text,
-                    class_name: 'admin-item-label admin-rule-link',
+                    class_name: 'audit-item-label audit-rule-link',
                     attributes: {
                         href: '#edit_rulefile_main',
-                        'aria-label': t('admin_edit_rule_aria', { name: link_text })
+                        'aria-label': t('audit_edit_rule_aria', { name: link_text })
                     }
                 });
                 label.addEventListener('click', (e) => {
                     e.preventDefault();
                     this.handle_edit_rule(r.id);
                 });
-                const download_aria = t('admin_download_rule_aria', { name: link_text });
+                const download_aria = t('audit_download_rule_aria', { name: link_text });
                 const icon_svg = (name, size = 16) => (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg(name, ['currentColor'], size) : '');
                 const download_btn = this.Helpers.create_element('button', {
-                    class_name: ['button', 'button-default', 'button-small', 'admin-download-btn'],
-                    html_content: `<span>${t('admin_download_label')}</span>` + icon_svg('save'),
+                    class_name: ['button', 'button-default', 'button-small', 'audit-download-btn'],
+                    html_content: `<span>${t('audit_download_label')}</span>` + icon_svg('save'),
                     attributes: {
                         type: 'button',
                         'aria-label': download_aria
@@ -808,7 +808,7 @@ export const AdminViewComponent = {
                 download_btn.addEventListener('click', () => this.handle_download_rule(r.id));
                 const delete_label = t('delete') + ' ' + link_text;
                 const delete_btn = this.Helpers.create_element('button', {
-                    class_name: ['button', 'button-danger', 'button-small', 'admin-delete-btn'],
+                    class_name: ['button', 'button-danger', 'button-small', 'audit-delete-btn'],
                     html_content: `<span>${t('delete')}</span>` + icon_svg('delete'),
                     attributes: {
                         type: 'button',
@@ -819,18 +819,18 @@ export const AdminViewComponent = {
                     const show_modal = window.show_confirm_delete_modal;
                     if (show_modal) {
                         show_modal({
-                            h1_text: t('admin_confirm_delete_rule_title'),
-                            warning_text: t('admin_confirm_delete_rule_warning', { name: link_text }),
+                            h1_text: t('audit_confirm_delete_rule_title'),
+                            warning_text: t('audit_confirm_delete_rule_warning', { name: link_text }),
                             delete_button: delete_btn,
-                            yes_label: t('admin_confirm_delete_radera'),
-                            no_label: t('admin_confirm_delete_behall'),
+                            yes_label: t('audit_confirm_delete_radera'),
+                            no_label: t('audit_confirm_delete_behall'),
                             on_confirm: () => this.handle_delete_rule(r.id)
                         });
                     } else {
                         this.handle_delete_rule(r.id);
                     }
                 });
-                const btn_group = this.Helpers.create_element('div', { class_name: 'admin-rule-item-actions' });
+                const btn_group = this.Helpers.create_element('div', { class_name: 'audit-rule-item-actions' });
                 btn_group.appendChild(download_btn);
                 btn_group.appendChild(delete_btn);
                 li.appendChild(label);
@@ -842,21 +842,21 @@ export const AdminViewComponent = {
         left_col.appendChild(rules_list);
 
         const right_col = this.Helpers.create_element(
-            this.admin_mode === 'audits' ? 'div' : 'section',
-            this.admin_mode === 'audits'
+            this.audit_mode === 'audits' ? 'div' : 'section',
+            this.audit_mode === 'audits'
                 ? {}
-                : { class_name: 'admin-column', attributes: { 'aria-labelledby': 'admin-audits-heading' } }
+                : { class_name: 'audit-column', attributes: { 'aria-labelledby': 'audit-audits-heading' } }
         );
         const audits_heading_row = this.Helpers.create_element('div', {
-            class_name: 'admin-column-heading-row'
+            class_name: 'audit-column-heading-row'
         });
         const audits_heading = this.Helpers.create_element('h2', {
-            id: 'admin-audits-heading',
-            text_content: t('admin_audits_title')
+            id: 'audit-audits-heading',
+            text_content: t('audit_audits_title')
         });
         audits_heading_row.appendChild(audits_heading);
 
-        if (this.admin_mode === 'audits') {
+        if (this.audit_mode === 'audits') {
             const sorted_audits = [...this.audits].sort((a, b) => {
                 const ta = Number(a.created_at ?? a.updated_at ?? 0);
                 const tb = Number(b.created_at ?? b.updated_at ?? 0);
@@ -879,19 +879,19 @@ export const AdminViewComponent = {
                 root: table_wrapper,
                 columns: audit_columns,
                 data: sorted_audits,
-                emptyMessage: t('admin_audits_empty'),
-                ariaLabel: t('admin_audits_title'),
+                emptyMessage: t('audit_audits_empty'),
+                ariaLabel: t('audit_audits_title'),
                 wrapperClassName: 'generic-table-wrapper',
                 tableClassName: 'generic-table generic-table--audit-list'
             });
             right_col.appendChild(audits_heading_row);
             right_col.appendChild(table_wrapper);
         } else {
-            const audits_list = this.Helpers.create_element('ul', { class_name: 'admin-list' });
+            const audits_list = this.Helpers.create_element('ul', { class_name: 'audit-list' });
             if (this.audits.length === 0) {
                 const empty = this.Helpers.create_element('li', {
-                    class_name: 'admin-list-empty',
-                    text_content: t('admin_audits_empty')
+                    class_name: 'audit-list-empty',
+                    text_content: t('audit_audits_empty')
                 });
                 audits_list.appendChild(empty);
             } else {
@@ -904,17 +904,17 @@ export const AdminViewComponent = {
                     return ca.localeCompare(cb, undefined, { numeric: true });
                 });
                 sorted_audits.forEach((a) => {
-                    const li = this.Helpers.create_element('li', { class_name: 'admin-list-item admin-audit-item' });
+                    const li = this.Helpers.create_element('li', { class_name: 'audit-list-item audit-audit-item' });
                     const actor_name = a.metadata?.actorName || '';
                     const display_name = actor_name || `Granskning ${a.id}`;
                     const case_number = a.metadata?.caseNumber || '';
                     const case_span = this.Helpers.create_element('span', {
                         text_content: case_number ? `${case_number} ` : '',
-                        class_name: 'admin-audit-case-number'
+                        class_name: 'audit-audit-case-number'
                     });
                     const link = this.Helpers.create_element('a', {
                         text_content: display_name,
-                        class_name: 'admin-item-label admin-audit-link',
+                        class_name: 'audit-item-label audit-audit-link',
                         attributes: {
                             href: `#audit_overview?auditId=${a.id}`,
                             'aria-label': t('start_view_open_audit_aria', { name: display_name })
@@ -925,19 +925,19 @@ export const AdminViewComponent = {
                         this.handle_open_audit(a.id);
                     });
                     const audit_link_text = case_number ? `${case_number} ${display_name}` : display_name;
-                    const delete_aria = t('admin_delete_audit_aria', { name: audit_link_text });
-                    const download_aria = t('admin_download_audit_aria', { name: audit_link_text });
+                    const delete_aria = t('audit_delete_audit_aria', { name: audit_link_text });
+                    const download_aria = t('audit_download_audit_aria', { name: audit_link_text });
                     const icon_svg_li = (name, size = 16) => (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg(name, ['currentColor'], size) : '');
 
                     const download_btn = this.Helpers.create_element('button', {
-                        class_name: ['button', 'button-default', 'button-small', 'admin-download-btn'],
-                        html_content: `<span>${t('admin_download_label')}</span>` + icon_svg_li('save'),
+                        class_name: ['button', 'button-default', 'button-small', 'audit-download-btn'],
+                        html_content: `<span>${t('audit_download_label')}</span>` + icon_svg_li('save'),
                         attributes: { type: 'button', 'aria-label': download_aria }
                     });
                     download_btn.addEventListener('click', () => this.handle_download_audit(a.id));
 
                     const delete_btn = this.Helpers.create_element('button', {
-                        class_name: ['button', 'button-danger', 'button-small', 'admin-delete-btn'],
+                        class_name: ['button', 'button-danger', 'button-small', 'audit-delete-btn'],
                         html_content: `<span>${t('delete')}</span>` + icon_svg_li('delete'),
                         attributes: { type: 'button', 'aria-label': delete_aria }
                     });
@@ -945,11 +945,11 @@ export const AdminViewComponent = {
                         const show_modal = window.show_confirm_delete_modal;
                         if (show_modal) {
                             show_modal({
-                                h1_text: t('admin_confirm_delete_audit_title'),
-                                warning_text: t('admin_confirm_delete_audit_warning', { name: audit_link_text }),
+                                h1_text: t('audit_confirm_delete_audit_title'),
+                                warning_text: t('audit_confirm_delete_audit_warning', { name: audit_link_text }),
                                 delete_button: delete_btn,
-                                yes_label: t('admin_confirm_delete_radera'),
-                                no_label: t('admin_confirm_delete_behall'),
+                                yes_label: t('audit_confirm_delete_radera'),
+                                no_label: t('audit_confirm_delete_behall'),
                                 on_confirm: () => this.handle_delete_audit(a.id)
                             });
                         } else {
@@ -957,7 +957,7 @@ export const AdminViewComponent = {
                         }
                     });
 
-                    const btn_group = this.Helpers.create_element('div', { class_name: 'admin-audit-item-actions' });
+                    const btn_group = this.Helpers.create_element('div', { class_name: 'audit-audit-item-actions' });
                     btn_group.appendChild(download_btn);
                     btn_group.appendChild(delete_btn);
 
@@ -971,9 +971,9 @@ export const AdminViewComponent = {
             right_col.appendChild(audits_list);
         }
 
-        if (this.admin_mode === 'rules') {
+        if (this.audit_mode === 'rules') {
             plate.appendChild(left_col);
-        } else if (this.admin_mode === 'audits') {
+        } else if (this.audit_mode === 'audits') {
             plate.appendChild(right_col);
         } else {
             two_col.appendChild(left_col);
@@ -983,14 +983,14 @@ export const AdminViewComponent = {
 
         this.root.appendChild(plate);
 
-        if (this.admin_mode === 'audits' && this.deps.params?.startNew === '1') {
+        if (this.audit_mode === 'audits' && this.deps.params?.startNew === '1') {
             setTimeout(() => {
                 if (typeof this.handle_start_new_audit === 'function') {
                     this.handle_start_new_audit();
                 }
                 try {
                     const base = window.location.pathname + (window.location.search || '');
-                    window.history.replaceState(null, '', base + '#admin_audits');
+                    window.history.replaceState(null, '', base + '#audit_audits');
                 } catch (e) {
                     /* ignorerar */
                 }

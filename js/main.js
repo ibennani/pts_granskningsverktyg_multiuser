@@ -55,7 +55,7 @@ import { AuditActionsViewComponent } from './components/AuditActionsViewComponen
 import { AllRequirementsViewComponent } from './components/AllRequirementsViewComponent.js';
 import { AuditProblemsViewComponent } from './components/AuditProblemsViewComponent.js';
 import { AuditImagesViewComponent } from './components/AuditImagesViewComponent.js';
-import { AdminViewComponent } from './components/AdminViewComponent.js';
+import { AuditViewComponent } from './components/AuditViewComponent.js';
 import { StartViewComponent } from './components/StartViewComponent.js';
 import { LoginViewComponent } from './components/LoginViewComponent.js';
 import { ManageUsersViewComponent } from './components/ManageUsersViewComponent.js';
@@ -96,7 +96,7 @@ window.DraftManager = DraftManager;
     // Debug-navigering: sätt window.__GV_DEBUG_NAV = true i konsolen ELLER lägg till ?debug=nav i URL
     if (typeof window !== 'undefined' && window.location.search.includes('debug=nav')) {
         window.__GV_DEBUG_NAV = true;
-        consoleManager.log('[GV-NAV] Debug aktiverad via URL (?debug=nav). Klicka Admin från Start och titta i konsolen.');
+        consoleManager.log('[GV-NAV] Debug aktiverad via URL (?debug=nav). Klicka Granskningar från Start och titta i konsolen.');
     }
 
     const nav_debug = (msg, data) => {
@@ -342,9 +342,9 @@ window.DraftManager = DraftManager;
             if (title_prefix === t('app_title')) {
                 switch (view_name) {
                     case 'start': title_prefix = t('menu_link_start'); break;
-                    case 'admin': title_prefix = t('admin_title'); break;
-                    case 'admin_audits': title_prefix = t('admin_title_audits'); break;
-                    case 'admin_rules': title_prefix = t('admin_title_rules'); break;
+                    case 'audit': title_prefix = t('audit_title'); break;
+                    case 'audit_audits': title_prefix = t('audit_title_audits'); break;
+                    case 'audit_rules': title_prefix = t('audit_title_rules'); break;
                     case 'manage_users': title_prefix = t('manage_users_title'); break;
                     case 'my_settings': title_prefix = t('menu_link_my_settings'); break;
                     case 'login': title_prefix = t('login_title'); break;
@@ -417,8 +417,8 @@ window.DraftManager = DraftManager;
         }
 
         let final_title = `${title_prefix}${title_suffix}`;
-        const is_inside_audit = audit_status !== 'rulefile_editing'
-            && !['start', 'admin', 'admin_audits', 'admin_rules', 'login', 'manage_users', 'my_settings'].includes(view_name);
+        const is_inside_audit = audit_status !== 'rulefile_editing' &&
+            !['start', 'audit', 'audit_audits', 'audit_rules', 'login', 'manage_users', 'my_settings'].includes(view_name);
         const actor_name = (is_inside_audit && current_state?.auditMetadata?.actorName)
             ? String(current_state.auditMetadata.actorName).trim()
             : '';
@@ -971,9 +971,9 @@ window.DraftManager = DraftManager;
         
         switch (view_name_to_render) {
             case 'start': ComponentClass = StartViewComponent; break;
-            case 'admin': ComponentClass = AdminViewComponent; break;
-            case 'admin_audits': ComponentClass = AdminViewComponent; break;
-            case 'admin_rules': ComponentClass = AdminViewComponent; break;
+            case 'audit': ComponentClass = AuditViewComponent; break;
+            case 'audit_audits': ComponentClass = AuditViewComponent; break;
+            case 'audit_rules': ComponentClass = AuditViewComponent; break;
             case 'manage_users': ComponentClass = ManageUsersViewComponent; break;
             case 'my_settings': ComponentClass = SettingsViewComponent; break;
             case 'login': ComponentClass = LoginViewComponent; break;
@@ -1356,7 +1356,7 @@ window.DraftManager = DraftManager;
             if (current_view_name_rendered === view_name_from_hash && 
                 current_view_component_instance && typeof current_view_component_instance.render === 'function') {
                 if (current_view_name_rendered !== 'confirm_sample_edit') {
-                    if ((current_view_name_rendered === 'admin' || current_view_name_rendered === 'admin_audits' || current_view_name_rendered === 'admin_rules') && current_view_component_instance._api_load_started && !current_view_component_instance._api_checked) {
+                    if ((current_view_name_rendered === 'audit' || current_view_name_rendered === 'audit_audits' || current_view_name_rendered === 'audit_rules') && current_view_component_instance._api_load_started && !current_view_component_instance._api_checked) {
                         return;
                     }
                     if (current_view_name_rendered === 'rulefile_edit_requirement' || current_view_name_rendered === 'rulefile_add_requirement') {
