@@ -610,7 +610,7 @@
   "start_view_no_audits": "Inga granskningar finns ännu.",
   "start_view_no_new_audits": "Inga nya granskningar.",
   "start_view_no_completed_audits": "Inga avslutade granskningar.",
-  "start_view_open_audit_aria": "Öppna granskningen {name}",
+  "start_view_open_audit_aria": "{name} - Till granskningen",
   "menu_link_start": "Start",
   "menu_link_manage_audits": "Hantera granskningar",
   "menu_link_manage_rules": "Hantera regelfiler",
