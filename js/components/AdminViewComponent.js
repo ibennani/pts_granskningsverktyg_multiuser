@@ -38,9 +38,12 @@ export const AdminViewComponent = {
         this.admin_mode = (deps.view_name === 'admin_rules') ? 'rules' : (deps.view_name === 'admin_audits') ? 'audits' : 'both';
 
         this.upload_file_input = null;
+        this.upload_audit_file_input = null;
 
         this.handle_upload_click = this.handle_upload_click.bind(this);
         this.handle_file_select = this.handle_file_select.bind(this);
+        this.handle_audit_upload_click = this.handle_audit_upload_click.bind(this);
+        this.handle_audit_file_select = this.handle_audit_file_select.bind(this);
         this.handle_go_to_start = this.handle_go_to_start.bind(this);
         this.handle_delete_rule = this.handle_delete_rule.bind(this);
         this.handle_delete_audit = this.handle_delete_audit.bind(this);
@@ -94,6 +97,17 @@ export const AdminViewComponent = {
         return (this.Translation && typeof this.Translation.t === 'function')
             ? this.Translation.t
             : (key) => `**${key}**`;
+    },
+
+    get_status_label(status) {
+        const t = this.get_t_func();
+        const map = {
+            not_started: t('audit_status_not_started'),
+            in_progress: t('audit_status_in_progress'),
+            locked: t('audit_status_locked'),
+            archived: t('audit_status_archived')
+        };
+        return map[status] || status;
     },
 
     async ensure_api_data() {
@@ -187,6 +201,142 @@ export const AdminViewComponent = {
             }
         };
         reader.readAsText(file);
+    },
+
+    handle_audit_upload_click() {
+        if (this.upload_audit_file_input) {
+            this.upload_audit_file_input.click();
+        }
+    },
+
+    async handle_audit_file_select(event) {
+        const t = this.get_t_func();
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            let file_content_object = null;
+            try {
+                const json_content = JSON.parse(e.target.result);
+                const audit_validation = this.ValidationLogic?.validate_saved_audit_file?.(json_content);
+                if (!audit_validation?.isValid) {
+                    this.NotificationComponent?.show_global_message(
+                        t('admin_upload_invalid_file') + (audit_validation?.message ? ` (${audit_validation.message})` : ''),
+                        'error'
+                    );
+                    if (event.target) event.target.value = '';
+                    return;
+                }
+                file_content_object = { ...json_content };
+                if (file_content_object.ruleFileContent) {
+                    file_content_object.ruleFileContent = migrate_rulefile_to_new_structure(
+                        file_content_object.ruleFileContent,
+                        { Translation: this.Translation }
+                    );
+                }
+
+                const file_id = file_content_object.auditId ?? file_content_object.audit_id ?? null;
+                const file_meta = file_content_object.auditMetadata || {};
+                const file_case = (file_meta.caseNumber ?? '').toString().trim();
+                const file_actor = (file_meta.actorName ?? '').toString().trim();
+                const file_updated = Number(file_content_object.updated_at ?? file_content_object.updatedAt ?? 0);
+
+                const existing = this.audits.find((a) => {
+                    if (file_id != null && String(a.id) === String(file_id)) return true;
+                    const sc = (a.metadata?.caseNumber ?? '').toString().trim();
+                    const sa = (a.metadata?.actorName ?? '').toString().trim();
+                    return sc === file_case && sa === file_actor;
+                });
+
+                if (existing) {
+                    const server_updated = Number(existing.updated_at ?? 0);
+                    // Visa modal endast om servern har en strikt nyare version. Om filen är nyare eller samma tid → ladda upp direkt.
+                    if (server_updated > file_updated) {
+                        this._show_audit_server_newer_modal(
+                            file_content_object,
+                            () => this._do_import_audit_and_refresh(file_content_object, event.target),
+                            () => { if (event.target) event.target.value = ''; }
+                        );
+                        return;
+                    }
+                }
+
+                await this._do_import_audit_and_refresh(file_content_object, event.target);
+            } catch (err) {
+                this.NotificationComponent?.show_global_message(
+                    t('admin_upload_invalid_file') + (err?.message ? ` (${err.message})` : ''),
+                    'error'
+                );
+                if (event.target) event.target.value = '';
+            }
+        };
+        reader.readAsText(file);
+    },
+
+    async _do_import_audit_and_refresh(file_content_object, input_element) {
+        const t = this.get_t_func();
+        try {
+            await import_audit(file_content_object);
+            this.NotificationComponent?.show_global_message(t('admin_audit_uploaded_success'), 'success');
+            await this.ensure_api_data();
+            this.render();
+            if (input_element) input_element.value = '';
+        } catch (err) {
+            if (err.status === 409) {
+                this._show_audit_duplicate_modal(
+                    file_content_object?.auditMetadata,
+                    () => { if (input_element) input_element.value = ''; }
+                );
+                return;
+            }
+            this.NotificationComponent?.show_global_message(
+                err?.message || t('admin_upload_invalid_file'),
+                'error'
+            );
+            if (input_element) input_element.value = '';
+        }
+    },
+
+    _show_audit_server_newer_modal(file_content_object, on_upload_anyway, on_close) {
+        const t = this.get_t_func();
+        const ModalComponent = window.ModalComponent;
+        if (!ModalComponent?.show || !this.Helpers?.create_element) {
+            if (typeof on_close === 'function') on_close();
+            return;
+        }
+        const meta = file_content_object?.auditMetadata || {};
+        const case_number = (meta.caseNumber ?? '').toString().trim() || '—';
+        const actor_name = (meta.actorName ?? '').toString().trim() || t('admin_audit_duplicate_unknown_actor');
+        const message = t('admin_audit_server_newer_modal_message', { caseNumber: case_number, actorName: actor_name });
+        ModalComponent.show(
+            {
+                h1_text: t('admin_audit_server_newer_modal_title'),
+                message_text: message
+            },
+            (container, modal_instance) => {
+                const buttons_wrapper = this.Helpers.create_element('div', { class_name: 'modal-confirm-actions' });
+                const upload_btn = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-primary'],
+                    text_content: t('admin_audit_server_newer_modal_upload_anyway')
+                });
+                upload_btn.addEventListener('click', () => {
+                    modal_instance.close();
+                    if (typeof on_upload_anyway === 'function') on_upload_anyway();
+                });
+                const close_btn = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-default'],
+                    text_content: t('admin_audit_server_newer_modal_close')
+                });
+                close_btn.addEventListener('click', () => {
+                    modal_instance.close();
+                    if (typeof on_close === 'function') on_close();
+                });
+                buttons_wrapper.appendChild(upload_btn);
+                buttons_wrapper.appendChild(close_btn);
+                container.appendChild(buttons_wrapper);
+            }
+        );
     },
 
     handle_go_to_start() {
@@ -546,9 +696,36 @@ export const AdminViewComponent = {
             header.appendChild(title);
             header.appendChild(upload_btn);
             header.appendChild(this.upload_file_input);
+            if (this.admin_mode === 'both') {
+                const start_new_audit_btn = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-default', 'admin-start-new-audit-btn'],
+                    text_content: t('start_new_audit'),
+                    attributes: { type: 'button', 'aria-label': t('start_new_audit') }
+                });
+                start_new_audit_btn.addEventListener('click', this.handle_start_new_audit);
+                header.appendChild(start_new_audit_btn);
+            }
         } else {
+            const upload_audit_btn = this.Helpers.create_element('button', {
+                class_name: ['button', 'button-primary', 'admin-upload-audit-btn'],
+                text_content: t('admin_upload_saved_audit'),
+                attributes: {
+                    type: 'button',
+                    'aria-label': t('admin_upload_saved_audit')
+                }
+            });
+            upload_audit_btn.addEventListener('click', this.handle_audit_upload_click);
+            this.upload_audit_file_input = this.Helpers.create_element('input', {
+                class_name: 'admin-hidden-file-input',
+                attributes: {
+                    type: 'file',
+                    accept: '.json,application/json',
+                    'aria-label': t('admin_upload_saved_audit')
+                }
+            });
+            this.upload_audit_file_input.addEventListener('change', this.handle_audit_file_select);
             const start_new_audit_btn = this.Helpers.create_element('button', {
-                class_name: ['button', 'button-primary', 'admin-start-new-audit-btn'],
+                class_name: ['button', 'button-default', 'admin-start-new-audit-btn'],
                 text_content: t('start_new_audit'),
                 attributes: {
                     type: 'button',
@@ -557,6 +734,8 @@ export const AdminViewComponent = {
             });
             start_new_audit_btn.addEventListener('click', this.handle_start_new_audit);
             header.appendChild(title);
+            header.appendChild(upload_audit_btn);
+            header.appendChild(this.upload_audit_file_input);
             header.appendChild(start_new_audit_btn);
         }
         plate.appendChild(header);
@@ -657,10 +836,12 @@ export const AdminViewComponent = {
         left_col.appendChild(rules_heading);
         left_col.appendChild(rules_list);
 
-        const right_col = this.Helpers.create_element('section', {
-            class_name: 'admin-column',
-            attributes: { 'aria-labelledby': 'admin-audits-heading' }
-        });
+        const right_col = this.Helpers.create_element(
+            this.admin_mode === 'audits' ? 'div' : 'section',
+            this.admin_mode === 'audits'
+                ? {}
+                : { class_name: 'admin-column', attributes: { 'aria-labelledby': 'admin-audits-heading' } }
+        );
         const audits_heading_row = this.Helpers.create_element('div', {
             class_name: 'admin-column-heading-row'
         });
@@ -669,106 +850,184 @@ export const AdminViewComponent = {
             text_content: t('admin_audits_title')
         });
         audits_heading_row.appendChild(audits_heading);
-        if (this.admin_mode !== 'audits') {
-            const start_new_audit_btn = this.Helpers.create_element('button', {
-                class_name: ['button', 'button-primary', 'admin-start-new-audit-btn'],
-                text_content: t('start_new_audit'),
-                attributes: {
-                    type: 'button',
-                    'aria-label': t('start_new_audit')
-                }
-            });
-            start_new_audit_btn.addEventListener('click', this.handle_start_new_audit);
-            audits_heading_row.appendChild(start_new_audit_btn);
-        }
-        const audits_list = this.Helpers.create_element('ul', { class_name: 'admin-list' });
-        if (this.audits.length === 0) {
-            const empty = this.Helpers.create_element('li', {
-                class_name: 'admin-list-empty',
-                text_content: t('admin_audits_empty')
-            });
-            audits_list.appendChild(empty);
-        } else {
+        const EMPTY_PLACEHOLDER = '—';
+        const icon_svg = (name, size = 16) => (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg(name, ['currentColor'], size) : '');
+
+        if (this.admin_mode === 'audits') {
             const sorted_audits = [...this.audits].sort((a, b) => {
-                const ca = (a.metadata?.caseNumber ?? '').toString().trim();
-                const cb = (b.metadata?.caseNumber ?? '').toString().trim();
-                if (!ca && !cb) return 0;
-                if (!ca) return 1;
-                if (!cb) return -1;
-                return ca.localeCompare(cb, undefined, { numeric: true });
+                const ta = Number(a.created_at ?? a.updated_at ?? 0);
+                const tb = Number(b.created_at ?? b.updated_at ?? 0);
+                return tb - ta;
             });
-            sorted_audits.forEach((a) => {
-                const li = this.Helpers.create_element('li', { class_name: 'admin-list-item admin-audit-item' });
-                const actor_name = a.metadata?.actorName || '';
-                const display_name = actor_name || `Granskning ${a.id}`;
-                const case_number = a.metadata?.caseNumber || '';
-                const case_span = this.Helpers.create_element('span', {
-                    text_content: case_number ? `${case_number} ` : '',
-                    class_name: 'admin-audit-case-number'
-                });
-                const link = this.Helpers.create_element('a', {
-                    text_content: display_name,
-                    class_name: 'admin-item-label admin-audit-link',
-                    attributes: {
-                        href: `#audit_overview?auditId=${a.id}`,
-                        'aria-label': t('start_view_open_audit_aria', { name: display_name })
-                    }
-                });
-                link.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    this.handle_open_audit(a.id);
-                });
-                const audit_link_text = case_number ? `${case_number} ${display_name}` : display_name;
-                const delete_aria = t('admin_delete_audit_aria', { name: audit_link_text });
-                const download_aria = t('admin_download_audit_aria', { name: audit_link_text });
-                const icon_svg = (name, size = 16) => (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg(name, ['currentColor'], size) : '');
-
-                const download_btn = this.Helpers.create_element('button', {
-                    class_name: ['button', 'button-default', 'button-small', 'admin-download-btn'],
-                    html_content: `<span>${t('admin_download_label')}</span>` + icon_svg('save'),
-                    attributes: {
-                        type: 'button',
-                        'aria-label': download_aria
-                    }
-                });
-                download_btn.addEventListener('click', () => this.handle_download_audit(a.id));
-
-                const delete_btn = this.Helpers.create_element('button', {
-                    class_name: ['button', 'button-danger', 'button-small', 'admin-delete-btn'],
-                    html_content: `<span>${t('delete')}</span>` + icon_svg('delete'),
-                    attributes: {
-                        type: 'button',
-                        'aria-label': delete_aria
-                    }
-                });
-                delete_btn.addEventListener('click', () => {
-                    const show_modal = window.show_confirm_delete_modal;
-                    if (show_modal) {
-                        show_modal({
-                            h1_text: t('admin_confirm_delete_audit_title'),
-                            warning_text: t('admin_confirm_delete_audit_warning', { name: audit_link_text }),
-                            delete_button: delete_btn,
-                            yes_label: t('admin_confirm_delete_radera'),
-                            no_label: t('admin_confirm_delete_behall'),
-                            on_confirm: () => this.handle_delete_audit(a.id)
-                        });
-                    } else {
-                        this.handle_delete_audit(a.id);
-                    }
-                });
-
-                const btn_group = this.Helpers.create_element('div', { class_name: 'admin-audit-item-actions' });
-                btn_group.appendChild(download_btn);
-                btn_group.appendChild(delete_btn);
-
-                li.appendChild(case_span);
-                li.appendChild(link);
-                li.appendChild(btn_group);
-                audits_list.appendChild(li);
+            const table_wrapper = this.Helpers.create_element('div', { class_name: 'start-view-table-wrapper' });
+            const table = this.Helpers.create_element('table', {
+                class_name: 'start-view-table',
+                attributes: { 'aria-label': t('admin_audits_title') }
             });
+            const caption = this.Helpers.create_element('caption', { class_name: 'visually-hidden', text_content: t('admin_audits_title') });
+            table.appendChild(caption);
+            const thead = this.Helpers.create_element('thead');
+            const header_row = this.Helpers.create_element('tr');
+            [t('start_view_col_case_number'), t('start_view_col_actor'), t('start_view_col_status'), t('start_view_col_progress'), t('start_view_col_deficiency'), t('start_view_col_auditor'), t('start_view_col_download'), t('delete')].forEach((text) => {
+                header_row.appendChild(this.Helpers.create_element('th', { text_content: text }));
+            });
+            thead.appendChild(header_row);
+            table.appendChild(thead);
+            const tbody = this.Helpers.create_element('tbody');
+            if (sorted_audits.length === 0) {
+                const empty_row = this.Helpers.create_element('tr');
+                empty_row.appendChild(this.Helpers.create_element('td', { text_content: t('admin_audits_empty'), attributes: { colspan: '8' } }));
+                tbody.appendChild(empty_row);
+            } else {
+                sorted_audits.forEach((a) => {
+                    const row = this.Helpers.create_element('tr');
+                    const case_number = (a.metadata?.caseNumber ?? '').toString().trim();
+                    const actor_name = (a.metadata?.actorName ?? '').toString().trim();
+                    const auditor = (a.metadata?.auditorName ?? '').toString().trim();
+                    const link_label = actor_name || case_number || EMPTY_PLACEHOLDER;
+                    row.appendChild(this.Helpers.create_element('td', { text_content: case_number || EMPTY_PLACEHOLDER }));
+                    const actor_cell = this.Helpers.create_element('td');
+                    const link = this.Helpers.create_element('a', {
+                        class_name: 'start-view-audit-link',
+                        text_content: actor_name || EMPTY_PLACEHOLDER,
+                        attributes: { href: `#audit_overview?auditId=${a.id}`, 'aria-label': t('start_view_open_audit_aria', { name: link_label }) }
+                    });
+                    link.addEventListener('click', (e) => { e.preventDefault(); this.handle_open_audit(a.id); });
+                    actor_cell.appendChild(link);
+                    row.appendChild(actor_cell);
+                    row.appendChild(this.Helpers.create_element('td', { text_content: a.status ? this.get_status_label(a.status) : EMPTY_PLACEHOLDER }));
+                    row.appendChild(this.Helpers.create_element('td', { text_content: a.progress != null ? `${a.progress}%` : EMPTY_PLACEHOLDER }));
+                    row.appendChild(this.Helpers.create_element('td', {
+                        text_content: a.deficiency_index != null
+                            ? (this.Helpers.format_number_locally?.(a.deficiency_index, this.Translation?.get_current_language_code?.() || 'sv-SE', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) ?? Number(a.deficiency_index).toFixed(1))
+                            : EMPTY_PLACEHOLDER
+                    }));
+                    row.appendChild(this.Helpers.create_element('td', { text_content: auditor || EMPTY_PLACEHOLDER }));
+                    const download_details = [case_number, actor_name].filter(Boolean).join(' ') || EMPTY_PLACEHOLDER;
+                    const download_btn = this.Helpers.create_element('button', {
+                        class_name: ['button', 'button-default', 'button-small', 'start-view-download-btn'],
+                        html_content: `<span>${t('admin_download_label')}</span>` + icon_svg('save'),
+                        attributes: { type: 'button', 'aria-label': t('start_view_download_audit_aria', { details: download_details }) }
+                    });
+                    download_btn.addEventListener('click', () => this.handle_download_audit(a.id));
+                    const download_cell = this.Helpers.create_element('td');
+                    download_cell.appendChild(download_btn);
+                    row.appendChild(download_cell);
+                    const audit_link_text = actor_name || case_number || `Granskning ${a.id}`;
+                    const delete_btn = this.Helpers.create_element('button', {
+                        class_name: ['button', 'button-danger', 'button-small'],
+                        html_content: `<span>${t('delete')}</span>` + icon_svg('delete'),
+                        attributes: { type: 'button', 'aria-label': t('admin_delete_audit_aria', { name: audit_link_text }) }
+                    });
+                    delete_btn.addEventListener('click', () => {
+                        const show_modal = window.show_confirm_delete_modal;
+                        if (show_modal) {
+                            show_modal({
+                                h1_text: t('admin_confirm_delete_audit_title'),
+                                warning_text: t('admin_confirm_delete_audit_warning', { name: audit_link_text }),
+                                delete_button: delete_btn,
+                                yes_label: t('admin_confirm_delete_radera'),
+                                no_label: t('admin_confirm_delete_behall'),
+                                on_confirm: () => this.handle_delete_audit(a.id)
+                            });
+                        } else {
+                            this.handle_delete_audit(a.id);
+                        }
+                    });
+                    const delete_cell = this.Helpers.create_element('td');
+                    delete_cell.appendChild(delete_btn);
+                    row.appendChild(delete_cell);
+                    tbody.appendChild(row);
+                });
+            }
+            table.appendChild(tbody);
+            table_wrapper.appendChild(table);
+            right_col.appendChild(audits_heading_row);
+            right_col.appendChild(table_wrapper);
+        } else {
+            const audits_list = this.Helpers.create_element('ul', { class_name: 'admin-list' });
+            if (this.audits.length === 0) {
+                const empty = this.Helpers.create_element('li', {
+                    class_name: 'admin-list-empty',
+                    text_content: t('admin_audits_empty')
+                });
+                audits_list.appendChild(empty);
+            } else {
+                const sorted_audits = [...this.audits].sort((a, b) => {
+                    const ca = (a.metadata?.caseNumber ?? '').toString().trim();
+                    const cb = (b.metadata?.caseNumber ?? '').toString().trim();
+                    if (!ca && !cb) return 0;
+                    if (!ca) return 1;
+                    if (!cb) return -1;
+                    return ca.localeCompare(cb, undefined, { numeric: true });
+                });
+                sorted_audits.forEach((a) => {
+                    const li = this.Helpers.create_element('li', { class_name: 'admin-list-item admin-audit-item' });
+                    const actor_name = a.metadata?.actorName || '';
+                    const display_name = actor_name || `Granskning ${a.id}`;
+                    const case_number = a.metadata?.caseNumber || '';
+                    const case_span = this.Helpers.create_element('span', {
+                        text_content: case_number ? `${case_number} ` : '',
+                        class_name: 'admin-audit-case-number'
+                    });
+                    const link = this.Helpers.create_element('a', {
+                        text_content: display_name,
+                        class_name: 'admin-item-label admin-audit-link',
+                        attributes: {
+                            href: `#audit_overview?auditId=${a.id}`,
+                            'aria-label': t('start_view_open_audit_aria', { name: display_name })
+                        }
+                    });
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        this.handle_open_audit(a.id);
+                    });
+                    const audit_link_text = case_number ? `${case_number} ${display_name}` : display_name;
+                    const delete_aria = t('admin_delete_audit_aria', { name: audit_link_text });
+                    const download_aria = t('admin_download_audit_aria', { name: audit_link_text });
+                    const icon_svg_li = (name, size = 16) => (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg(name, ['currentColor'], size) : '');
+
+                    const download_btn = this.Helpers.create_element('button', {
+                        class_name: ['button', 'button-default', 'button-small', 'admin-download-btn'],
+                        html_content: `<span>${t('admin_download_label')}</span>` + icon_svg_li('save'),
+                        attributes: { type: 'button', 'aria-label': download_aria }
+                    });
+                    download_btn.addEventListener('click', () => this.handle_download_audit(a.id));
+
+                    const delete_btn = this.Helpers.create_element('button', {
+                        class_name: ['button', 'button-danger', 'button-small', 'admin-delete-btn'],
+                        html_content: `<span>${t('delete')}</span>` + icon_svg_li('delete'),
+                        attributes: { type: 'button', 'aria-label': delete_aria }
+                    });
+                    delete_btn.addEventListener('click', () => {
+                        const show_modal = window.show_confirm_delete_modal;
+                        if (show_modal) {
+                            show_modal({
+                                h1_text: t('admin_confirm_delete_audit_title'),
+                                warning_text: t('admin_confirm_delete_audit_warning', { name: audit_link_text }),
+                                delete_button: delete_btn,
+                                yes_label: t('admin_confirm_delete_radera'),
+                                no_label: t('admin_confirm_delete_behall'),
+                                on_confirm: () => this.handle_delete_audit(a.id)
+                            });
+                        } else {
+                            this.handle_delete_audit(a.id);
+                        }
+                    });
+
+                    const btn_group = this.Helpers.create_element('div', { class_name: 'admin-audit-item-actions' });
+                    btn_group.appendChild(download_btn);
+                    btn_group.appendChild(delete_btn);
+
+                    li.appendChild(case_span);
+                    li.appendChild(link);
+                    li.appendChild(btn_group);
+                    audits_list.appendChild(li);
+                });
+            }
+            right_col.appendChild(audits_heading_row);
+            right_col.appendChild(audits_list);
         }
-        right_col.appendChild(audits_heading_row);
-        right_col.appendChild(audits_list);
 
         if (this.admin_mode === 'rules') {
             plate.appendChild(left_col);
@@ -804,6 +1063,7 @@ export const AdminViewComponent = {
     destroy() {
         this._stop_list_polling?.();
         this.upload_file_input = null;
+        this.upload_audit_file_input = null;
         this.root = null;
         this.deps = null;
     }

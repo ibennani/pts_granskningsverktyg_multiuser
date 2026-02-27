@@ -846,9 +846,6 @@ window.DraftManager = DraftManager;
             view_name_to_render = 'rulefile_sections';
             params_to_render = { ...params_to_render, section: 'general' };
         }
-        if (view_name_to_render === 'admin') {
-            view_name_to_render = 'admin_audits';
-        }
         const t = get_t_fallback();
         const local_helpers_escape_html = (typeof window.Helpers !== 'undefined' && typeof window.Helpers.escape_html === 'function')
             ? window.Helpers.escape_html

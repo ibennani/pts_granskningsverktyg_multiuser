@@ -90,6 +90,12 @@
     font-size: 0.9rem;
 }
 
+.admin-upload-audit-btn {
+    flex-shrink: 0;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.9rem;
+}
+
 .admin-upload-btn {
     align-self: flex-start;
     padding: 0.35rem 0.75rem;
@@ -228,4 +234,102 @@
 .admin-modal-close-btn {
     padding: 0.35rem 0.75rem;
     font-size: 0.9rem;
+}
+
+/* Tabell på Hantera granskningar (samma utseende som startsidan) */
+.start-view-table-wrapper {
+    overflow-x: auto;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    background-color: var(--input-background-color);
+    box-shadow: none;
+}
+
+.start-view-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: none;
+    box-shadow: none;
+}
+
+.start-view-table th:nth-child(1),
+.start-view-table td:nth-child(1) { min-width: 6rem; }
+.start-view-table th:nth-child(2),
+.start-view-table td:nth-child(2) { min-width: 9rem; }
+.start-view-table th:nth-child(3),
+.start-view-table td:nth-child(3) { min-width: 5.5rem; }
+.start-view-table th:nth-child(4),
+.start-view-table td:nth-child(4) { min-width: 4rem; }
+.start-view-table th:nth-child(5),
+.start-view-table td:nth-child(5) { min-width: 4rem; }
+.start-view-table th:nth-child(6),
+.start-view-table td:nth-child(6) { min-width: 6rem; }
+.start-view-table th:nth-child(7),
+.start-view-table td:nth-child(7) { min-width: 5rem; }
+.start-view-table th:nth-child(8),
+.start-view-table td:nth-child(8) { min-width: 5rem; }
+
+.start-view-table th,
+.start-view-table td {
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    border: none;
+    vertical-align: middle;
+    font-size: 0.875rem;
+}
+
+.start-view-table th {
+    font-weight: 600;
+    white-space: nowrap;
+    font-size: 0.75rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--text-color-muted);
+}
+
+.start-view-table thead tr {
+    background: linear-gradient(135deg, color-mix(in srgb, var(--primary-color) 8%, var(--input-background-color)), color-mix(in srgb, var(--primary-color) 4%, var(--input-background-color)));
+    border-bottom: 2px solid color-mix(in srgb, var(--border-color) 50%, transparent);
+}
+
+.start-view-table thead th {
+    padding: 0.5rem 0.75rem;
+}
+
+.start-view-table tbody tr {
+    border-bottom: 1px solid color-mix(in srgb, var(--border-color) 35%, transparent);
+    transition: background-color 0.2s ease;
+}
+
+.start-view-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.start-view-table tbody tr:hover {
+    background-color: color-mix(in srgb, var(--primary-color) 6%, var(--input-background-color));
+}
+
+.start-view-table td:nth-child(2) {
+    font-weight: 500;
+}
+
+.start-view-table .start-view-audit-link {
+    color: var(--link-color);
+    text-decoration: underline;
+    transition: color 0.2s ease;
+}
+
+.start-view-table .start-view-audit-link:hover {
+    text-decoration: underline;
+    color: var(--link-hover-color);
+}
+
+.start-view-table .start-view-download-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+[data-theme="dark"] .start-view-table thead tr {
+    background: linear-gradient(135deg, color-mix(in srgb, var(--primary-color) 15%, var(--input-background-color)), color-mix(in srgb, var(--primary-color) 8%, var(--input-background-color)));
 }

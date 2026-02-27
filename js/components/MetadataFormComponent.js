@@ -62,9 +62,10 @@ export const MetadataFormComponent = {
     },
 
     handle_go_to_list_click() {
-        this.autosave_session?.flush({ should_trim: true, skip_render: true });
+        const trim_text_fn = this.AutosaveService?.trim_text_preserve_lines;
+        const form_data = this._get_form_data(true, trim_text_fn);
         if (typeof this.on_go_to_list_callback === 'function') {
-            this.on_go_to_list_callback();
+            this.on_go_to_list_callback(form_data);
         }
     },
 
@@ -83,16 +84,6 @@ export const MetadataFormComponent = {
 
         const trim_text_fn = this.AutosaveService?.trim_text_preserve_lines;
         const form_data = this._get_form_data(true, trim_text_fn);
-        const t = this.Translation.t;
-
-        if (!form_data.actorName) {
-            if (this.NotificationComponent) {
-                this.NotificationComponent.show_global_message(t('field_is_required', { fieldName: t('actor_name') }), 'error');
-            }
-            this.actor_name_input.focus();
-            this.actor_name_input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            return;
-        }
 
         if (typeof this.on_submit_callback === 'function') {
             this.on_submit_callback(form_data);
@@ -154,7 +145,7 @@ export const MetadataFormComponent = {
         this.case_number_input = case_field.input_element;
         this.form_element_ref.appendChild(case_field.form_group);
 
-        const actor_field = this.create_form_field('actorName', 'actor_name', 'text', initialData.actorName, true);
+        const actor_field = this.create_form_field('actorName', 'actor_name', 'text', initialData.actorName);
         this.actor_name_input = actor_field.input_element;
         this.form_element_ref.appendChild(actor_field.form_group);
 

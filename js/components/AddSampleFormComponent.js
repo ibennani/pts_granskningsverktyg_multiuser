@@ -108,7 +108,12 @@ export const AddSampleFormComponent = {
     _updateParentCheckboxState(parentCheckbox) {
         const parentId = parentCheckbox.dataset.parentId;
         const children = this.content_types_container_element.querySelectorAll(`input[data-child-for="${parentId}"]`);
-        if (children.length === 0) return;
+        if (children.length === 0) {
+            parentCheckbox.checked = false;
+            parentCheckbox.indeterminate = false;
+            parentCheckbox.setAttribute('aria-checked', 'false');
+            return;
+        }
         const allChecked = Array.from(children).every(child => child.checked);
         const someChecked = Array.from(children).some(child => child.checked);
         parentCheckbox.checked = allChecked;
@@ -341,8 +346,9 @@ export const AddSampleFormComponent = {
     },
 
     render(sample_id_to_edit = null) {
-        // Prevent re-rendering (and resetting form state) if we are already editing this sample and the form is mounted.
-        if (this.current_editing_sample_id === sample_id_to_edit && this.form_element && this.root && this.root.contains(this.form_element)) {
+        // Prevent re-rendering (and resetting form state) only when editing the same existing sample and the form is mounted.
+        // For "add new sample" (null) we always re-render so that checkboxes start unchecked.
+        if (sample_id_to_edit !== null && this.current_editing_sample_id === sample_id_to_edit && this.form_element && this.root && this.root.contains(this.form_element)) {
             return;
         }
 
@@ -481,8 +487,19 @@ export const AddSampleFormComponent = {
         });
         this.content_types_container_element.addEventListener('change', this.handle_content_type_change);
         const all_child_checkboxes = this.content_types_container_element.querySelectorAll('input[data-child-for]');
-        all_child_checkboxes.forEach(cb => { cb.checked = sample_data?.selectedContentTypes?.includes(cb.value) || false; });
-        this.content_types_container_element.querySelectorAll('input[data-parent-id]').forEach(pc => this._updateParentCheckboxState(pc));
+        all_child_checkboxes.forEach(cb => {
+            cb.checked = sample_data ? (sample_data.selectedContentTypes?.includes(cb.value) || false) : false;
+        });
+        const all_parent_checkboxes = this.content_types_container_element.querySelectorAll('input[data-parent-id]');
+        if (sample_data) {
+            all_parent_checkboxes.forEach(pc => this._updateParentCheckboxState(pc));
+        } else {
+            all_parent_checkboxes.forEach(pc => {
+                pc.checked = false;
+                pc.indeterminate = false;
+                pc.setAttribute('aria-checked', 'false');
+            });
+        }
         this.form_element.appendChild(this.content_types_container_element);
 
         // --- Actions ---
