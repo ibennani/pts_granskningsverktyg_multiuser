@@ -696,7 +696,38 @@ export const AuditViewComponent = {
             const json_string = JSON.stringify(rule, null, 2);
             const blob = new Blob([json_string], { type: 'application/json' });
             const safe_name = (rule.name || 'regelfil').replace(/[\s\\/:*?"<>|]/g, '_').trim() || 'regelfil';
-            const version_suffix = rule.version != null ? `_v${rule.version}` : '';
+
+            let version_suffix = '';
+            let content_obj = rule.content;
+            if (typeof content_obj === 'string') {
+                try {
+                    content_obj = JSON.parse(content_obj);
+                } catch {
+                    content_obj = null;
+                }
+            }
+
+            const meta_version = content_obj?.metadata?.version
+                ? String(content_obj.metadata.version).trim()
+                : '';
+
+            if (rule.is_published && meta_version) {
+                // Publicerad: använd befintligt år.månad.rX-system i suffix, med understreck.
+                const safe_version = meta_version.replace(/[^0-9A-Za-z]+/g, '_');
+                version_suffix = `_${safe_version}`;
+            } else if (!rule.is_published && rule.updated_at) {
+                // Arbetskopia: använd datum + klockslag för senaste ändring.
+                const dt = new Date(rule.updated_at);
+                if (!Number.isNaN(dt.getTime())) {
+                    const yyyy = dt.getFullYear();
+                    const mm = String(dt.getMonth() + 1).padStart(2, '0');
+                    const dd = String(dt.getDate()).padStart(2, '0');
+                    const hh = String(dt.getHours()).padStart(2, '0');
+                    const mi = String(dt.getMinutes()).padStart(2, '0');
+                    version_suffix = `_${yyyy}-${mm}-${dd}_${hh}${mi}`;
+                }
+            }
+
             const filename = `${safe_name}${version_suffix}.json`;
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');

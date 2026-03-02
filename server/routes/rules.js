@@ -113,8 +113,22 @@ router.get('/:id/export', async (req, res) => {
         const { id } = req.params;
         const hasPublished = await ensure_published_column_flag();
         const sql = hasPublished
-            ? 'SELECT id, name, COALESCE(published_content, content) AS content, version FROM rule_sets WHERE id = $1'
-            : 'SELECT id, name, content, version FROM rule_sets WHERE id = $1';
+            ? `SELECT id,
+                      name,
+                      COALESCE(published_content, content) AS content,
+                      version,
+                      updated_at,
+                      (published_content IS NOT NULL) AS is_published
+                 FROM rule_sets
+                WHERE id = $1`
+            : `SELECT id,
+                      name,
+                      content,
+                      version,
+                      updated_at,
+                      false AS is_published
+                 FROM rule_sets
+                WHERE id = $1`;
         const result = await query(sql, [id]);
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Regelfil hittades inte' });
