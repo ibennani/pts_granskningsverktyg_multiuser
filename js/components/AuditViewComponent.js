@@ -701,7 +701,8 @@ export const AuditViewComponent = {
                 attributes: {
                     type: 'file',
                     accept: '.json,application/json',
-                    'aria-label': t('audit_upload')
+                    'aria-label': t('audit_upload'),
+                    tabindex: '-1'
                 }
             });
             this.upload_file_input.addEventListener('change', this.handle_file_select);
