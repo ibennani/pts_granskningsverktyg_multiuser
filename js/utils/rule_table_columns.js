@@ -48,6 +48,7 @@ export function create_rule_table_columns(deps, handlers) {
         },
         {
             headerLabel: t('audit_rules_col_actions'),
+            isAction: true,
             getContent: (row) => {
                 const rule_name = (row.name || `Regelfil ${row.id}`).trim();
                 const version_parts = [];
@@ -60,8 +61,7 @@ export function create_rule_table_columns(deps, handlers) {
                 const version_suffix = version_parts.length > 0 ? ` (${version_parts.join(' · ')})` : '';
                 const link_text = rule_name + version_suffix;
 
-                const outer = Helpers.create_element('div', { class_name: 'generic-table-action-cell' });
-                const container = Helpers.create_element('div', { class_name: 'generic-table-rule-actions' });
+                const container = Helpers.create_element('div');
 
                 if (typeof onDownloadRule === 'function') {
                     const download_aria = t('audit_download_rule_aria', { name: link_text });
@@ -119,8 +119,7 @@ export function create_rule_table_columns(deps, handlers) {
                     container.appendChild(delete_btn);
                 }
 
-                outer.appendChild(container);
-                return outer;
+                return container;
             }
         }
     ];

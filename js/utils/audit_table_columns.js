@@ -74,6 +74,7 @@ export function create_audit_table_columns(deps, handlers, opts = {}) {
         },
         {
             headerLabel: t('start_view_col_download'),
+            isAction: true,
             getContent: (row) => {
                 const case_number = (row.metadata?.caseNumber ?? '').toString().trim();
                 const actor_name = (row.metadata?.actorName ?? '').toString().trim();
@@ -87,9 +88,7 @@ export function create_audit_table_columns(deps, handlers, opts = {}) {
                     }
                 });
                 btn.addEventListener('click', () => onDownloadAudit(row.id));
-                const container = Helpers.create_element('div', { class_name: 'generic-table-action-cell' });
-                container.appendChild(btn);
-                return container;
+                return btn;
             }
         }
     ];
@@ -97,6 +96,7 @@ export function create_audit_table_columns(deps, handlers, opts = {}) {
     if (include_delete && typeof onDeleteAudit === 'function') {
         columns.push({
             headerLabel: t('delete'),
+            isAction: true,
             getContent: (row) => {
                 const actor_name = (row.metadata?.actorName ?? '').toString().trim();
                 const case_number = (row.metadata?.caseNumber ?? '').toString().trim();
@@ -121,9 +121,7 @@ export function create_audit_table_columns(deps, handlers, opts = {}) {
                         onDeleteAudit(row.id);
                     }
                 });
-                const container = Helpers.create_element('div', { class_name: 'generic-table-action-cell' });
-                container.appendChild(delete_btn);
-                return container;
+                return delete_btn;
             }
         });
     }

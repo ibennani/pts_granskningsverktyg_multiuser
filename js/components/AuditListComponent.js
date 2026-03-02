@@ -70,7 +70,7 @@ export const AuditListComponent = {
             emptyMessage: opts.emptyMessage,
             ariaLabel: opts.ariaLabel,
             wrapperClassName: 'generic-table-wrapper',
-            tableClassName: `generic-table generic-table--audit-list${opts.includeDelete === true ? ' generic-table--audit-list--with-delete' : ''}`,
+            tableClassName: 'generic-table generic-table--audit-list',
             sortState: opts.sortState,
             onSort: opts.onSort,
             t

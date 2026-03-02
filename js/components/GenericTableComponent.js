@@ -20,7 +20,7 @@ export const GenericTableComponent = {
     /**
      * @param {Object} opts
      * @param {HTMLElement} [opts.root] - Om angiven används denna istället för this.root (för flera tabeller från samma vy).
-     * @param {Array<{ headerLabel: string, getContent: (row: any) => string | HTMLElement, getSortValue?: (row: any) => string | number }>} opts.columns
+     * @param {Array<{ headerLabel: string, getContent: (row: any) => string | HTMLElement, getSortValue?: (row: any) => string | number, isAction?: boolean }>} opts.columns
      * @param {Array<any>} opts.data
      * @param {string} opts.emptyMessage - Text när data är tom.
      * @param {string} opts.ariaLabel
@@ -96,6 +96,7 @@ export const GenericTableComponent = {
                 });
                 btn.addEventListener('click', () => {
                     const next_dir = is_active && direction === 'asc' ? 'desc' : 'asc';
+                    this._pendingSortFocusIndex = col_index;
                     onSort(col_index, next_dir);
                 });
                 th.appendChild(btn);
@@ -123,10 +124,28 @@ export const GenericTableComponent = {
                 columns.forEach((col) => {
                     const content = col.getContent(row);
                     const td = this.Helpers.create_element('td');
+                    const is_action = col && col.isAction === true;
+                    if (is_action) {
+                        td.classList.add('generic-table-col-actions');
+                    }
                     if (typeof content === 'string') {
                         td.textContent = content;
                     } else if (content && content instanceof HTMLElement) {
-                        td.appendChild(content);
+                        if (is_action) {
+                            const is_cell_container = content.classList && content.classList.contains('generic-table-action-cell');
+                            if (is_cell_container) {
+                                td.appendChild(content);
+                            } else if (content.tagName === 'BUTTON') {
+                                const container = this.Helpers.create_element('div', { class_name: 'generic-table-action-cell' });
+                                container.appendChild(content);
+                                td.appendChild(container);
+                            } else {
+                                content.classList.add('generic-table-action-cell');
+                                td.appendChild(content);
+                            }
+                        } else {
+                            td.appendChild(content);
+                        }
                     }
                     tr.appendChild(td);
                 });
@@ -136,6 +155,29 @@ export const GenericTableComponent = {
         table.appendChild(tbody);
         wrapper.appendChild(table);
         root_el.appendChild(wrapper);
+
+        if (typeof this._pendingSortFocusIndex === 'number') {
+            const focus_index = this._pendingSortFocusIndex;
+            this._pendingSortFocusIndex = undefined;
+            if (focus_index >= 0) {
+                const apply_focus = () => {
+                    const header_buttons = wrapper.querySelectorAll('thead .generic-table-header-sort-btn');
+                    const target = header_buttons[focus_index];
+                    if (target && typeof target.focus === 'function') {
+                        try {
+                            target.focus({ preventScroll: true });
+                        } catch {
+                            target.focus();
+                        }
+                    }
+                };
+                if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+                    window.requestAnimationFrame(apply_focus);
+                } else {
+                    apply_focus();
+                }
+            }
+        }
     },
 
     destroy() {
