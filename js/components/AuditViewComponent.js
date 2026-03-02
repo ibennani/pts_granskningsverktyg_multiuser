@@ -668,13 +668,27 @@ export const AuditViewComponent = {
             const migrated_content = migrate_rulefile_to_new_structure(content, {
                 Translation: this.Translation
             });
-            const validation_result = this.ValidationLogic?.validate_rule_file_json?.(migrated_content);
-            if (!validation_result?.isValid) {
-                this.NotificationComponent?.show_global_message(
-                    validation_result?.message || t('rule_file_invalid_json'),
-                    'error'
-                );
-                return;
+            const is_arbetskopia = !!rule_row?.production_base_id || rule_row?.published_content == null;
+            if (is_arbetskopia) {
+                if (!migrated_content?.metadata || typeof migrated_content.metadata !== 'object') {
+                    this.NotificationComponent?.show_global_message(
+                        t('rule_file_invalid_json'),
+                        'error'
+                    );
+                    return;
+                }
+                if (!migrated_content.requirements || typeof migrated_content.requirements !== 'object') {
+                    migrated_content.requirements = {};
+                }
+            } else {
+                const validation_result = this.ValidationLogic?.validate_rule_file_json?.(migrated_content);
+                if (!validation_result?.isValid) {
+                    this.NotificationComponent?.show_global_message(
+                        validation_result?.message || t('rule_file_invalid_json'),
+                        'error'
+                    );
+                    return;
+                }
             }
             const migrated_content_string = JSON.stringify(migrated_content, null, 2);
             this.dispatch({
