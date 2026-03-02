@@ -1,7 +1,7 @@
 name: sessionversion
 
 services:
-  # Databasen (PostgreSQL)
+  # Databasen
   postgres:
     image: postgres:16-alpine
     container_name: granskningsverktyget-db
@@ -13,16 +13,11 @@ services:
       - "127.0.0.1:5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U granskning -d granskningsverktyget"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
     networks:
       - private-net
     restart: always
 
-  # Ollama med GPU-stöd - Isolerad till localhost
+  # Ollama (Din befintliga motor)
   ollama:
     image: ollama/ollama
     container_name: ollama-final
@@ -31,7 +26,6 @@ services:
     environment:
       - OLLAMA_HOST=0.0.0.0
       - OLLAMA_ORIGINS=http://localhost:*,https://*.ngrok-free.app,https://*.ngrok-free.dev
-      - OLLAMA_KEEP_ALIVE=24h
     deploy:
       resources:
         reservations:
@@ -45,6 +39,23 @@ services:
       - private-net
     restart: always
 
+  # Open WebUI (Det grafiska gränssnittet)
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    ports:
+      - "127.0.0.1:3000:8080" # Nås på http://localhost:3000
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434 # Viktigt: pekar på containernamnet
+      - WEBUI_SECRET_KEY=din_hemliga_nyckel_här
+    volumes:
+      - webui_data:/app/backend/data
+    networks:
+      - private-net
+    depends_on:
+      - ollama
+    restart: always
+
 networks:
   private-net:
     driver: bridge
@@ -52,3 +63,4 @@ networks:
 volumes:
   pgdata:
   ollama_data:
+  webui_data:
