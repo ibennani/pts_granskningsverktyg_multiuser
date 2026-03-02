@@ -852,6 +852,24 @@ window.DraftManager = DraftManager;
             ? window.Helpers.escape_html
             : (s) => s; 
 
+        // Om en publicerad regelfil är laddad ska vi aldrig gå in i redigeringsvyerna
+        // för enskilda krav. Skicka i stället användaren till visningsläget eller kravlistan.
+        try {
+            const state_for_view = typeof getState === 'function' ? getState() : null;
+            const is_published_rulefile = state_for_view?.ruleFileIsPublished === true;
+            if (is_published_rulefile &&
+                (view_name_to_render === 'rulefile_edit_requirement' || view_name_to_render === 'rulefile_add_requirement')) {
+                if (view_name_to_render === 'rulefile_edit_requirement' && params_to_render?.id) {
+                    view_name_to_render = 'rulefile_view_requirement';
+                } else {
+                    view_name_to_render = 'rulefile_requirements';
+                    params_to_render = {};
+                }
+            }
+        } catch (e) {
+            consoleManager.warn('[Main.js] Kunde inte kontrollera ruleFileIsPublished vid vybyte:', e?.message || e);
+        }
+
         if (view_name_to_render !== 'login') {
             ensure_app_layout();
         }
