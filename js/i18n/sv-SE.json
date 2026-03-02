@@ -8,6 +8,8 @@
   "audit_title_rules": "Hantera regelfiler",
   "audit_back_to_start": "Tillbaka till start",
   "audit_rules_title": "Regelfiler",
+  "audit_rules_col_name": "Regelfil",
+  "audit_rules_col_actions": "Åtgärder",
   "audit_audits_title": "Granskningar",
   "audit_upload": "Ladda upp",
   "audit_upload_invalid_file": "Filen är varken en giltig regelfil eller granskning.",

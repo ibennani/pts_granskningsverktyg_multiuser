@@ -15,6 +15,7 @@ import {
 } from '../api/client.js';
 import { GenericTableComponent } from './GenericTableComponent.js';
 import { create_audit_table_columns } from '../utils/audit_table_columns.js';
+import { create_rule_table_columns } from '../utils/rule_table_columns.js';
 
 export const AuditViewComponent = {
     CSS_PATH: './css/components/audit_view_component.css',
@@ -96,6 +97,8 @@ export const AuditViewComponent = {
 
         this._auditsTable = Object.create(GenericTableComponent);
         await this._auditsTable.init({ deps });
+        this._rulesTable = Object.create(GenericTableComponent);
+        await this._rulesTable.init({ deps });
     },
 
     get_t_func() {
@@ -765,81 +768,37 @@ export const AuditViewComponent = {
             id: 'audit-rules-heading',
             text_content: t('audit_rules_title')
         });
-        const rules_list = this.Helpers.create_element('ul', { class_name: 'audit-list' });
-        if (this.rules.length === 0) {
-            const empty = this.Helpers.create_element('li', {
-                class_name: 'audit-list-empty',
-                text_content: t('audit_rules_empty')
-            });
-            rules_list.appendChild(empty);
-        } else {
-            const sorted_rules = [...this.rules].sort((a, b) => {
-                const na = (a.name || `Regelfil ${a.id}`).trim();
-                const nb = (b.name || `Regelfil ${b.id}`).trim();
-                return na.localeCompare(nb, undefined, { sensitivity: 'base' });
-            });
-            sorted_rules.forEach((r) => {
-                const li = this.Helpers.create_element('li', { class_name: 'audit-list-item' });
-                const rule_name = r.name || `Regelfil ${r.id}`;
-                const version_display = r.version_display ? ` (${r.version_display})` : '';
-                const link_text = rule_name + version_display;
-                const label = this.Helpers.create_element('a', {
-                    text_content: link_text,
-                    class_name: 'audit-item-label audit-rule-link',
-                    attributes: {
-                        href: '#edit_rulefile_main',
-                        'aria-label': t('audit_edit_rule_aria', { name: link_text })
-                    }
-                });
-                label.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    this.handle_edit_rule(r.id);
-                });
-                const download_aria = t('audit_download_rule_aria', { name: link_text });
-                const icon_svg = (name, size = 16) => (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg(name, ['currentColor'], size) : '');
-                const download_btn = this.Helpers.create_element('button', {
-                    class_name: ['button', 'button-default', 'button-small', 'audit-download-btn'],
-                    html_content: `<span>${t('audit_download_label')}</span>` + icon_svg('save'),
-                    attributes: {
-                        type: 'button',
-                        'aria-label': download_aria
-                    }
-                });
-                download_btn.addEventListener('click', () => this.handle_download_rule(r.id));
-                const delete_label = t('delete') + ' ' + link_text;
-                const delete_btn = this.Helpers.create_element('button', {
-                    class_name: ['button', 'button-danger', 'button-small', 'audit-delete-btn'],
-                    html_content: `<span>${t('delete')}</span>` + icon_svg('delete'),
-                    attributes: {
-                        type: 'button',
-                        'aria-label': delete_label
-                    }
-                });
-                delete_btn.addEventListener('click', () => {
-                    const show_modal = window.show_confirm_delete_modal;
-                    if (show_modal) {
-                        show_modal({
-                            h1_text: t('audit_confirm_delete_rule_title'),
-                            warning_text: t('audit_confirm_delete_rule_warning', { name: link_text }),
-                            delete_button: delete_btn,
-                            yes_label: t('audit_confirm_delete_radera'),
-                            no_label: t('audit_confirm_delete_behall'),
-                            on_confirm: () => this.handle_delete_rule(r.id)
-                        });
-                    } else {
-                        this.handle_delete_rule(r.id);
-                    }
-                });
-                const btn_group = this.Helpers.create_element('div', { class_name: 'audit-rule-item-actions' });
-                btn_group.appendChild(download_btn);
-                btn_group.appendChild(delete_btn);
-                li.appendChild(label);
-                li.appendChild(btn_group);
-                rules_list.appendChild(li);
-            });
-        }
         left_col.appendChild(rules_heading);
-        left_col.appendChild(rules_list);
+
+        const rules_table_wrapper = this.Helpers.create_element('div');
+        this._rulesTableSortState = this._rulesTableSortState ?? { columnIndex: 0, direction: 'asc' };
+        const rules_table_deps = {
+            t: this.get_t_func(),
+            Helpers: this.Helpers,
+            Translation: this.Translation
+        };
+        const rules_table_handlers = {
+            onEditRule: (id) => this.handle_edit_rule(id),
+            onDownloadRule: (id) => this.handle_download_rule(id),
+            onDeleteRule: (id) => this.handle_delete_rule(id)
+        };
+        const rule_columns = create_rule_table_columns(rules_table_deps, rules_table_handlers);
+        this._rulesTable?.render({
+            root: rules_table_wrapper,
+            columns: rule_columns,
+            data: this.rules,
+            emptyMessage: t('audit_rules_empty'),
+            ariaLabel: t('audit_rules_title'),
+            wrapperClassName: 'generic-table-wrapper',
+            tableClassName: 'generic-table generic-table--rules-list',
+            sortState: this._rulesTableSortState,
+            onSort: (columnIndex, direction) => {
+                this._rulesTableSortState = { columnIndex, direction };
+                this.render();
+            },
+            t: this.Translation.t.bind(this.Translation)
+        });
+        left_col.appendChild(rules_table_wrapper);
 
         const right_col = this.Helpers.create_element(
             this.audit_mode === 'audits' ? 'div' : 'section',
@@ -1009,6 +968,7 @@ export const AuditViewComponent = {
         this.upload_file_input = null;
         this.upload_audit_file_input = null;
         this._auditsTable?.destroy?.();
+        this._rulesTable?.destroy?.();
         this.root = null;
         this.deps = null;
     }

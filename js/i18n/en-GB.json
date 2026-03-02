@@ -8,6 +8,8 @@
   "audit_title_rules": "Manage rule files",
   "audit_back_to_start": "Back to start",
   "audit_rules_title": "Rule files",
+  "audit_rules_col_name": "Rule file",
+  "audit_rules_col_actions": "Actions",
   "audit_audits_title": "Audits",
   "audit_upload": "Upload",
   "audit_upload_invalid_file": "The file is neither a valid rule file nor an audit.",
