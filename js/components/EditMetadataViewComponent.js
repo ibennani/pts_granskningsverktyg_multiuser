@@ -77,7 +77,7 @@ export const EditMetadataViewComponent = {
     },
 
     handle_cancel_new_audit() {
-        this.router('audit');
+        this.router('start');
     },
 
     _is_metadata_empty_or_only_auditor(form_data) {
@@ -154,7 +154,7 @@ export const EditMetadataViewComponent = {
     },
 
     _do_go_to_list() {
-        this.router('audit');
+        this.router('start');
     },
 
     async _save_and_go_to_list(form_data) {
@@ -239,7 +239,7 @@ export const EditMetadataViewComponent = {
         const is_new_audit = current_state.auditStatus === 'not_started';
 
         if (!current_state.ruleFileContent) {
-            this.router('audit');
+            this.router('start');
             return;
         }
 

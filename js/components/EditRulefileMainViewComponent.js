@@ -49,9 +49,9 @@ export const EditRulefileMainViewComponent = {
 
         const back_button = this.Helpers.create_element('button', {
             class_name: ['button', 'button-default'],
-            html_content: `<span>${t('back_to_start_view')}</span>` + this.Helpers.get_icon_svg('arrow_back')
+            html_content: `<span>${t('side_menu_back_to_audit')}</span>` + this.Helpers.get_icon_svg('arrow_back')
         });
-        back_button.addEventListener('click', () => this.router('audit'));
+        back_button.addEventListener('click', () => this.router('audit_rules'));
         
         actions_div.append(back_button);
         plate_element.appendChild(actions_div);

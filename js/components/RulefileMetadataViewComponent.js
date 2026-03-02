@@ -357,9 +357,9 @@ export const RulefileMetadataViewComponent = {
         const actions_div = this.Helpers.create_element('div', { class_name: 'form-actions', style: 'margin-top: 2rem; justify-content: flex-start;' });
         const back_button = this.Helpers.create_element('button', {
             class_name: ['button', 'button-default'],
-            html_content: `<span>${t('back_to_admin')}</span>` + (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('arrow_back') : '')
+            html_content: `<span>${t('side_menu_back_to_audit')}</span>` + (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('arrow_back') : '')
         });
-        back_button.addEventListener('click', () => this.router('audit'));
+        back_button.addEventListener('click', () => this.router('audit_rules'));
         actions_div.appendChild(back_button);
         plate.appendChild(actions_div);
 

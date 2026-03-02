@@ -304,7 +304,7 @@ export const SideMenuComponent = {
                     { label: t('rulefile_section_info_blocks_order_title'), view_name: 'rulefile_sections', params: { section: 'info_blocks_order' } },
                     { label: t('rulefile_section_classifications_title'), view_name: 'rulefile_sections', params: { section: 'classifications' } },
                     { label: t('rulefile_section_report_template_title'), view_name: 'rulefile_sections', params: { section: 'report_template' } },
-                    { label: t('side_menu_back_to_audit'), view_name: 'audit', back_to_start: true }
+                    { label: t('side_menu_back_to_audit'), view_name: 'audit_rules', back_to_start: true }
                 ]
             };
         }

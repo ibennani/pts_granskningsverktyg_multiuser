@@ -810,7 +810,10 @@ export const AuditViewComponent = {
         const rules_table_deps = {
             t: this.get_t_func(),
             Helpers: this.Helpers,
-            Translation: this.Translation
+            Translation: this.Translation,
+            production_rules_with_base_ids: (this.production_rules || [])
+                .map((r) => r.production_base_id)
+                .filter((id) => !!id)
         };
         const rules_table_handlers = {
             onEditRule: (id) => this.handle_edit_rule(id),

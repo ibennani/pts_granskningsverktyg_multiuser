@@ -20,15 +20,16 @@ export function create_rule_table_columns(deps, handlers) {
             getSortValue: (row) => (row.name || `Regelfil ${row.id}`).toString().trim(),
             getContent: (row) => {
                 const rule_name = (row.name || `Regelfil ${row.id}`).trim();
-                const version_parts = [];
-                if (row.version_display) {
-                    version_parts.push(t('rulefile_version_published_label', { version: row.version_display }));
+                const is_production_row = !!row.production_base_id;
+
+                let link_text = rule_name;
+                if (row.version_display && !is_production_row) {
+                    // Publicerad rad: visa version + (Publicerad)
+                    link_text = `${rule_name} ${row.version_display} (${t('rulefile_status_published_label')})`;
+                } else if (is_production_row) {
+                    // Produktionsrad: ingen version, bara (Arbetskopia)
+                    link_text = `${rule_name} (${t('rulefile_status_production_label')})`;
                 }
-                if (row.has_draft && row.draft_version) {
-                    version_parts.push(t('rulefile_version_draft_label', { version: row.draft_version }));
-                }
-                const version_suffix = version_parts.length > 0 ? ` (${version_parts.join(' · ')})` : '';
-                const link_text = rule_name + version_suffix;
                 const link = Helpers.create_element('a', {
                     class_name: 'generic-table-audit-link',
                     text_content: link_text,
@@ -51,32 +52,33 @@ export function create_rule_table_columns(deps, handlers) {
             isAction: true,
             getContent: (row) => {
                 const rule_name = (row.name || `Regelfil ${row.id}`).trim();
-                const version_parts = [];
-                if (row.version_display) {
-                    version_parts.push(t('rulefile_version_published_label', { version: row.version_display }));
+                const is_production_row = !!row.production_base_id;
+
+                let link_text = rule_name;
+                if (row.version_display && !is_production_row) {
+                    link_text = `${rule_name} ${row.version_display} (${t('rulefile_status_published_label')})`;
+                } else if (is_production_row) {
+                    link_text = `${rule_name} (${t('rulefile_status_production_label')})`;
                 }
-                if (row.has_draft && row.draft_version) {
-                    version_parts.push(t('rulefile_version_draft_label', { version: row.draft_version }));
-                }
-                const version_suffix = version_parts.length > 0 ? ` (${version_parts.join(' · ')})` : '';
-                const link_text = rule_name + version_suffix;
 
                 const container = Helpers.create_element('div', { class_name: 'generic-table-action-cell' });
 
-                const is_production_row = !!row.production_base_id;
+                const has_production_copy_for_base = Array.isArray(deps.production_rules_with_base_ids)
+                    ? deps.production_rules_with_base_ids.includes(row.id)
+                    : false;
 
-                if (!is_production_row && typeof onCopyRule === 'function') {
-                    const edit_aria = t('audit_edit_rule_aria', { name: link_text });
-                    const edit_btn = Helpers.create_element('button', {
+                if (!is_production_row && !has_production_copy_for_base && typeof onCopyRule === 'function') {
+                    const copy_aria = t('audit_create_working_copy_aria', { name: link_text });
+                    const copy_btn = Helpers.create_element('button', {
                         class_name: ['button', 'button-default', 'button-small', 'generic-table-edit-btn'],
-                        html_content: `<span>${t('edit_button_label')}</span>` + icon_svg('edit'),
+                        html_content: `<span>${t('audit_create_working_copy_label')}</span>` + icon_svg('edit'),
                         attributes: {
                             type: 'button',
-                            'aria-label': edit_aria
+                            'aria-label': copy_aria
                         }
                     });
-                    edit_btn.addEventListener('click', () => onCopyRule(row.id));
-                    container.appendChild(edit_btn);
+                    copy_btn.addEventListener('click', () => onCopyRule(row.id));
+                    container.appendChild(copy_btn);
                 }
 
                 if (typeof onDownloadRule === 'function') {

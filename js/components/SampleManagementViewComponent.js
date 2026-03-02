@@ -136,7 +136,7 @@ export const SampleManagementViewComponent = {
                 class_name: ['button', 'button-default'],
                 html_content: `<span>${t('back_to_audit')}</span>` + (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('arrow_back') : '')
             });
-            back_to_audit_btn.addEventListener('click', () => this.router('audit'));
+            back_to_audit_btn.addEventListener('click', () => this.router('start'));
             left_group_bottom.appendChild(back_to_audit_btn);
             bottom_actions_div.appendChild(left_group_bottom);
 
