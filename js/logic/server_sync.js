@@ -1,10 +1,13 @@
 // js/logic/server_sync.js
 // Debounced sync av state till server. Om auditId saknas importeras granskningen först.
+// Vid regelfilsredigering synkas innehållet till rule_sets så att updated_at = senast ändrad.
 
-import { update_audit, import_audit } from '../api/client.js';
+import { update_audit, import_audit, update_rule } from '../api/client.js';
 
 let debounce_timer = null;
+let rulefile_debounce_timer = null;
 const DEBOUNCE_MS = 500;
+const RULEFILE_DEBOUNCE_MS = 500;
 
 const SERVER_STATUS_VALUES = ['not_started', 'in_progress', 'locked', 'archived'];
 
@@ -81,6 +84,53 @@ async function run_sync(state, dispatch_fn) {
                 'error'
             );
         }
+    }
+}
+
+async function run_sync_rulefile(state) {
+    if (!state?.ruleSetId || !state?.ruleFileContent || typeof window === 'undefined') return;
+    try {
+        await update_rule(state.ruleSetId, { content: state.ruleFileContent });
+    } catch (err) {
+        if (window.NotificationComponent?.show_global_message && window.Translation?.t) {
+            window.NotificationComponent.show_global_message(
+                window.Translation.t('server_sync_error', { message: err.message }) || `Kunde inte spara regelfilen: ${err.message}`,
+                'error'
+            );
+        }
+    }
+}
+
+/**
+ * Schemalägg debounced sparande av regelfilinnehåll till servern.
+ * Anropas vid UPDATE_RULEFILE_CONTENT när användaren redigerar regelfil (metadata, krav, etc.).
+ * Serverns updated_at blir då "senast ändrad (något redigerbart)".
+ * @param {function} get_state_fn - Funktion som returnerar aktuell state (anropas när timern går).
+ */
+export function schedule_sync_rulefile_to_server(get_state_fn) {
+    if (typeof get_state_fn !== 'function' || typeof window === 'undefined') return;
+
+    if (rulefile_debounce_timer) clearTimeout(rulefile_debounce_timer);
+    rulefile_debounce_timer = setTimeout(async () => {
+        rulefile_debounce_timer = null;
+        const state = get_state_fn();
+        if (state?.auditStatus === 'rulefile_editing' && state.ruleSetId && state.ruleFileContent) {
+            await run_sync_rulefile(state);
+        }
+    }, RULEFILE_DEBOUNCE_MS);
+}
+
+/**
+ * Sparar regelfilinnehåll till servern omedelbart (t.ex. vid navigering bort från redigeringsvyn).
+ */
+export async function flush_sync_rulefile_to_server(get_state_fn) {
+    if (rulefile_debounce_timer) {
+        clearTimeout(rulefile_debounce_timer);
+        rulefile_debounce_timer = null;
+    }
+    const state = typeof get_state_fn === 'function' ? get_state_fn() : null;
+    if (state?.auditStatus === 'rulefile_editing' && state.ruleSetId && state.ruleFileContent) {
+        await run_sync_rulefile(state);
     }
 }
 

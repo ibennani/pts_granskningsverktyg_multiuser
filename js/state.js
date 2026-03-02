@@ -1,7 +1,7 @@
 // js/state.js
 import * as AuditLogic from './audit_logic.js';
 import { get_current_user_name } from './utils/helpers.js';
-import { schedule_sync_to_server } from './logic/server_sync.js';
+import { schedule_sync_to_server, schedule_sync_rulefile_to_server } from './logic/server_sync.js';
 
 const APP_STATE_KEY = 'digitalTillsynAppCentralState';
 const APP_STATE_BACKUP_KEY = 'digitalTillsynAppStateBackup';
@@ -716,6 +716,17 @@ function execute_single_dispatch(action, dispatch_fn) {
                     }
                 } catch (syncError) {
                     // Ignorera - server sync är inte kritiskt
+                }
+
+                // Vid regelfilsredigering: spara innehåll till servern (debounced) så att updated_at = senast ändrad.
+                try {
+                    if (action.type === ActionTypes.UPDATE_RULEFILE_CONTENT &&
+                        internal_state.auditStatus === 'rulefile_editing' &&
+                        internal_state.ruleSetId) {
+                        schedule_sync_rulefile_to_server(getState);
+                    }
+                } catch (rulefileSyncError) {
+                    // Ignorera - regelfilsync är inte kritiskt
                 }
 
                 // Notifiera listeners med felhantering

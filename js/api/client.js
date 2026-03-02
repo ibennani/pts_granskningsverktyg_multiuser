@@ -135,6 +135,10 @@ export async function import_rule(name, content) {
     return api_post('/rules/import', { name, content });
 }
 
+export async function update_rule(id, body) {
+    return api_put(`/rules/${id}`, body);
+}
+
 export async function delete_rule(id) {
     return api_delete(`/rules/${id}`);
 }

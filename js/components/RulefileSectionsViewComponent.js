@@ -295,7 +295,7 @@ export const RulefileSectionsViewComponent = {
         section.appendChild(this._create_definition_list([
             [t('rulefile_metadata_field_title'), metadata.title],
             [t('rulefile_metadata_field_description'), metadata.description],
-            [t('rulefile_metadata_field_version'), metadata.version],
+            [t('rulefile_metadata_version_based_on_published'), metadata.version],
             [t('rulefile_metadata_field_language'), metadata.language],
             [t('rulefile_metadata_field_monitoring_type'), monitoringDisplay],
             [t('rulefile_metadata_field_date_created'), this._format_date_display(metadata.dateCreated)],

@@ -13,7 +13,8 @@ import {
     export_rule,
     publish_rule,
     copy_rule,
-    publish_production_rule
+    publish_production_rule,
+    update_rule
 } from '../api/client.js';
 import { GenericTableComponent } from './GenericTableComponent.js';
 import { AuditListComponent } from './AuditListComponent.js';
@@ -35,6 +36,7 @@ export const AuditViewComponent = {
         this.production_rules = [];
         this.audits = [];
         this.router = deps.router;
+        this.getState = deps.getState;
         this.NotificationComponent?.clear_global_message?.();
         this.dispatch = deps.dispatch;
         this.StoreActionTypes = deps.StoreActionTypes;
@@ -243,6 +245,16 @@ export const AuditViewComponent = {
     handle_audit_upload_click() {
         if (this.upload_audit_file_input) {
             this.upload_audit_file_input.click();
+        }
+    },
+
+    handle_create_new_rule() {
+        const t = this.get_t_func();
+        if (this.NotificationComponent?.show_global_message) {
+            this.NotificationComponent.show_global_message(
+                t('audit_create_new_rule_not_implemented'),
+                'info'
+            );
         }
     },
 
@@ -559,7 +571,16 @@ export const AuditViewComponent = {
             await this.ensure_api_data();
             this.render();
             if (created?.id) {
-                await this.handle_edit_rule(created.id);
+                requestAnimationFrame(() => {
+                    const link = this.root?.querySelector(`a.generic-table-audit-link[data-rule-id="${created.id}"]`);
+                    if (link && typeof link.focus === 'function') {
+                        try {
+                            link.focus({ preventScroll: false });
+                        } catch {
+                            link.focus();
+                        }
+                    }
+                });
             }
         } catch (error) {
             this.NotificationComponent?.show_global_message(
@@ -688,6 +709,28 @@ export const AuditViewComponent = {
         const t = this.get_t_func();
         const show_msg = this.NotificationComponent?.show_global_message?.bind(this.NotificationComponent);
         try {
+            // Om vi just nu redigerar denna regelfil som arbetskopia:
+            // synka innehållet till servern först så att updated_at speglar "senast ändrad".
+            const current_state = typeof this.getState === 'function' ? this.getState() : null;
+            const is_editing_current_rule =
+                current_state?.auditStatus === 'rulefile_editing' &&
+                current_state?.ruleSetId === rule_id &&
+                current_state?.ruleFileContent;
+
+            if (is_editing_current_rule) {
+                try {
+                    await update_rule(rule_id, { content: current_state.ruleFileContent });
+                } catch (sync_err) {
+                    if (show_msg) {
+                        const msg =
+                            t('server_sync_error', { message: sync_err.message }) ||
+                            `Kunde inte spara regelfilen: ${sync_err.message}`;
+                        show_msg(msg, 'error');
+                    }
+                    // Fortsätt ändå och försök exportera nuvarande serverversion.
+                }
+            }
+
             const rule = await export_rule(rule_id);
             if (!rule || !rule.content) {
                 if (show_msg) show_msg(t('error_internal'), 'error');
@@ -715,16 +758,19 @@ export const AuditViewComponent = {
                 // Publicerad: använd befintligt år.månad.rX-system i suffix, med understreck.
                 const safe_version = meta_version.replace(/[^0-9A-Za-z]+/g, '_');
                 version_suffix = `_${safe_version}`;
-            } else if (!rule.is_published && rule.updated_at) {
-                // Arbetskopia: använd datum + klockslag för senaste ändring.
-                const dt = new Date(rule.updated_at);
+            } else if (!rule.is_published) {
+                // Arbetskopia: använd serverns updated_at = när innehållet (krav, metadata osv) senast uppdaterades.
+                const ts = rule.updated_at;
+                const dt = ts ? new Date(ts) : new Date();
                 if (!Number.isNaN(dt.getTime())) {
                     const yyyy = dt.getFullYear();
                     const mm = String(dt.getMonth() + 1).padStart(2, '0');
                     const dd = String(dt.getDate()).padStart(2, '0');
                     const hh = String(dt.getHours()).padStart(2, '0');
                     const mi = String(dt.getMinutes()).padStart(2, '0');
-                    version_suffix = `_${yyyy}-${mm}-${dd}_${hh}${mi}`;
+                    const label = t('rulefile_status_production_label') || 'Arbetskopia';
+                    const safe_label = String(label).replace(/[^0-9A-Za-z]+/g, '_');
+                    version_suffix = `_${safe_label}_${yyyy}-${mm}-${dd}_${hh}${mi}`;
                 }
             }
 
@@ -779,26 +825,19 @@ export const AuditViewComponent = {
         const header = this.Helpers.create_element('div', { class_name: 'audit-header' });
         const title_text = this.audit_mode === 'rules' ? t('audit_title_rules') : this.audit_mode === 'audits' ? t('audit_title_audits') : t('audit_title');
         const title = this.Helpers.create_element('h1', { text_content: title_text });
+        header.appendChild(title);
         if (this.audit_mode !== 'audits') {
-            const upload_btn = this.Helpers.create_element('button', {
-                class_name: ['button', 'button-primary', 'audit-upload-btn'],
-                text_content: t('audit_upload'),
-                attributes: { type: 'button' }
-            });
-            upload_btn.addEventListener('click', this.handle_upload_click);
             this.upload_file_input = this.Helpers.create_element('input', {
                 class_name: 'audit-hidden-file-input',
                 attributes: {
                     type: 'file',
                     accept: '.json,application/json',
-                    'aria-label': t('audit_upload'),
+                    'aria-label': t('audit_upload_rule'),
                     tabindex: '-1',
                     'aria-hidden': 'true'
                 }
             });
             this.upload_file_input.addEventListener('change', this.handle_file_select);
-            header.appendChild(title);
-            header.appendChild(upload_btn);
             header.appendChild(this.upload_file_input);
             if (this.audit_mode === 'both') {
                 const start_new_audit_btn = this.Helpers.create_element('button', {
@@ -809,8 +848,6 @@ export const AuditViewComponent = {
                 start_new_audit_btn.addEventListener('click', this.handle_start_new_audit);
                 header.appendChild(start_new_audit_btn);
             }
-        } else {
-            header.appendChild(title);
         }
         plate.appendChild(header);
 
@@ -875,10 +912,31 @@ export const AuditViewComponent = {
         const draft_section = this.Helpers.create_element('section', {
             class_name: 'start-view-audits-section start-view-audits-section-following'
         });
+        const draft_heading_row = this.Helpers.create_element('div', { class_name: 'start-view-section-heading-row' });
         const draft_rules_heading = this.Helpers.create_element('h2', {
             text_content: t('audit_rules_draft_title')
         });
-        draft_section.appendChild(draft_rules_heading);
+        draft_heading_row.appendChild(draft_rules_heading);
+
+        if (this.audit_mode !== 'audits') {
+            const upload_rule_btn = this.Helpers.create_element('button', {
+                class_name: ['button', 'button-primary', 'audit-upload-btn'],
+                html_content: `<span>${t('audit_upload_saved_rule')}</span>` + (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('upload_file') : ''),
+                attributes: { type: 'button', 'aria-label': t('audit_upload_saved_rule') }
+            });
+            upload_rule_btn.addEventListener('click', this.handle_upload_click);
+            draft_heading_row.appendChild(upload_rule_btn);
+
+            const create_rule_btn = this.Helpers.create_element('button', {
+                class_name: ['button', 'button-default', 'audit-create-rule-btn'],
+                html_content: `<span>${t('audit_create_new_rule')}</span>` + (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('add') : ''),
+                attributes: { type: 'button', 'aria-label': t('audit_create_new_rule') }
+            });
+            create_rule_btn.addEventListener('click', this.handle_create_new_rule.bind(this));
+            draft_heading_row.appendChild(create_rule_btn);
+        }
+
+        draft_section.appendChild(draft_heading_row);
 
         const draft_rules_table_wrapper = this.Helpers.create_element('div');
         this._draftRulesTableSortState = this._draftRulesTableSortState ?? { columnIndex: 0, direction: 'asc' };

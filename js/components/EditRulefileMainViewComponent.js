@@ -1,3 +1,5 @@
+import { flush_sync_rulefile_to_server } from '../logic/server_sync.js';
+
 export const EditRulefileMainViewComponent = {
     init({ root, deps }) {
         this.root = root;
@@ -59,7 +61,10 @@ export const EditRulefileMainViewComponent = {
         this.root.appendChild(plate_element);
     },
 
-    destroy() {
+    async destroy() {
+        if (this.getState && typeof this.getState === 'function') {
+            await flush_sync_rulefile_to_server(this.getState);
+        }
         if (this.root) this.root.innerHTML = '';
         this.root = null;
         this.deps = null;

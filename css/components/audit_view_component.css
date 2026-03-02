@@ -102,6 +102,16 @@
     font-size: 0.9rem;
 }
 
+/* Samma höjd och vertikal linjering för knapparna i Arbetskopior-rubrikraden */
+.start-view-section-heading-row .audit-upload-btn,
+.start-view-section-heading-row .audit-create-rule-btn {
+    height: 2.25rem;
+    min-height: 2.25rem;
+    display: inline-flex;
+    align-items: center;
+    box-sizing: border-box;
+}
+
 .audit-hidden-file-input {
     position: absolute;
     width: 0.1px;

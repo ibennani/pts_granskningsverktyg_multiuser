@@ -35,11 +35,47 @@ export const EditRulefileMetadataViewComponent = {
             container.appendChild(textarea);
             this.Helpers.init_auto_resize_for_textarea?.(textarea);
         } else {
+            let input_value = value ?? '';
+            if (type === 'date' && input_value) {
+                // Normalisera till YYYY-MM-DD så att browserns datumkontroll kan visa korrekt
+                const iso_like = String(input_value);
+                let parsed = null;
+
+                // Om värdet innehåller tid eller full ISO-sträng, parsa som Date
+                if (/[T ]\d{2}:\d{2}/.test(iso_like) || iso_like.includes('T')) {
+                    const d = new Date(iso_like);
+                    if (!Number.isNaN(d.getTime())) parsed = d;
+                } else if (/^\d{4}-\d{2}-\d{2}$/.test(iso_like)) {
+                    // Redan i rätt format
+                    parsed = null;
+                } else {
+                    const d = new Date(iso_like);
+                    if (!Number.isNaN(d.getTime())) parsed = d;
+                }
+
+                if (parsed) {
+                    const yyyy = parsed.getFullYear();
+                    const mm = String(parsed.getMonth() + 1).padStart(2, '0');
+                    const dd = String(parsed.getDate()).padStart(2, '0');
+                    input_value = `${yyyy}-${mm}-${dd}`;
+                } else if (!/^\d{4}-\d{2}-\d{2}$/.test(iso_like)) {
+                    // Ogiltigt datum i annat format – visa hellre tomt fält än felaktig text
+                    input_value = '';
+                }
+            }
+
+            const input_type = type === 'date' ? 'text' : type;
+            const attributes = { id: name, name, type: input_type, ...(required ? { required: 'required' } : {}) };
+            if (type === 'date') {
+                attributes.inputmode = 'numeric';
+                attributes.autocomplete = 'off';
+            }
+
             const input = this.Helpers.create_element('input', {
                 class_name: 'form-control',
-                attributes: { id: name, name, type, ...(required ? { required: 'required' } : {}) }
+                attributes
             });
-            input.value = value ?? '';
+            input.value = input_value;
             container.appendChild(input);
         }
 

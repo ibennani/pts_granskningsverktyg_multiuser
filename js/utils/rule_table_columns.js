@@ -35,7 +35,8 @@ export function create_rule_table_columns(deps, handlers) {
                     text_content: link_text,
                     attributes: {
                         href: '#edit_rulefile_main',
-                        'aria-label': t('audit_edit_rule_aria', { name: link_text })
+                        'aria-label': t('audit_edit_rule_aria', { name: link_text }),
+                        'data-rule-id': row.id
                     }
                 });
                 if (typeof onEditRule === 'function') {
