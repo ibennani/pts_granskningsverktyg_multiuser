@@ -191,6 +191,27 @@ router.post('/import', async (req, res) => {
     }
 });
 
+router.post('/production', async (req, res) => {
+    try {
+        const { name, content } = req.body;
+        if (!content || typeof content !== 'object') {
+            return res.status(400).json({ error: 'Content krävs' });
+        }
+        const title_from_content = content?.metadata?.title?.trim?.();
+        const ruleName = title_from_content || name || 'Arbetskopia ' + new Date().toISOString().slice(0, 10);
+        const content_json = JSON.stringify(content);
+        const result = await query(
+            'INSERT INTO rule_sets (name, content, published_content) VALUES ($1, $2, NULL) RETURNING *',
+            [ruleName, content_json]
+        );
+        broadcast_rules_changed();
+        res.status(201).json(result.rows[0]);
+    } catch (err) {
+        console.error('[rules] POST production error:', err);
+        res.status(500).json({ error: 'Kunde inte skapa arbetskopia' });
+    }
+});
+
 router.delete('/:id', async (req, res) => {
     try {
         const { id } = req.params;
