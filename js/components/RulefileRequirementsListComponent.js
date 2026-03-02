@@ -2,6 +2,7 @@
 import { RequirementListToolbarComponent } from './RequirementListToolbarComponent.js';
 import { get_searchable_text_for_requirement } from '../utils/requirement_search_utils.js';
 import { show_confirm_delete_modal, build_delete_warning_text } from '../logic/confirm_delete_modal_logic.js';
+import { can_edit_rulefile } from '../utils/helpers.js';
 
 export const RulefileRequirementsListComponent = {
     CSS_PATH: 'css/components/rulefile_requirements_list_component.css',
@@ -161,14 +162,17 @@ export const RulefileRequirementsListComponent = {
         const header_container = this.Helpers.create_element('div', { class_name: 'page-header-container', style: 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;' });
         
         const h1_element = this.Helpers.create_element('h1', { id: 'main-content-heading', attributes: { tabindex: '-1' }, text_content: t('rulefile_requirements_menu_title') });
-        const add_requirement_button = this.Helpers.create_element('button', {
-            class_name: ['button', 'button-primary'],
-            html_content: `<span>${t('add_new_requirement_button')}</span>` + this.Helpers.get_icon_svg('add'),
-            attributes: { 'data-action': 'add-req', 'aria-label': t('add_new_requirement_button') }
-        });
-        
         header_container.appendChild(h1_element);
-        header_container.appendChild(add_requirement_button);
+
+        const state_for_header = typeof this.getState === 'function' ? this.getState() : null;
+        if (can_edit_rulefile(state_for_header)) {
+            const add_requirement_button = this.Helpers.create_element('button', {
+                class_name: ['button', 'button-primary'],
+                html_content: `<span>${t('add_new_requirement_button')}</span>` + this.Helpers.get_icon_svg('add'),
+                attributes: { 'data-action': 'add-req', 'aria-label': t('add_new_requirement_button') }
+            });
+            header_container.appendChild(add_requirement_button);
+        }
         this.plate_element_ref.appendChild(header_container);
         
         this.plate_element_ref.appendChild(this.Helpers.create_element('p', { class_name: 'view-intro-text', text_content: t('rulefile_edit_requirements_intro') }));
@@ -228,15 +232,6 @@ export const RulefileRequirementsListComponent = {
         this.plate_element_ref.addEventListener('click', this.handle_list_click);
         // Add keyboard support for accessibility
         this.plate_element_ref.addEventListener('keydown', this.handle_list_keydown);
-
-        const bottom_actions_div = this.Helpers.create_element('div', { class_name: 'form-actions', style: 'margin-top: 1rem; justify-content: flex-start;' });
-        const return_button = this.Helpers.create_element('button', {
-            class_name: ['button', 'button-default'],
-            html_content: `<span>${t('back_to_edit_options')}</span>` + this.Helpers.get_icon_svg('arrow_back')
-        });
-        return_button.addEventListener('click', () => this.router('edit_rulefile_main'));
-        bottom_actions_div.appendChild(return_button);
-        this.plate_element_ref.appendChild(bottom_actions_div);
 
         this.root.appendChild(this.plate_element_ref);
         this.is_dom_initialized = true;
@@ -433,20 +428,24 @@ export const RulefileRequirementsListComponent = {
             attributes: { 'data-action': 'view-req', 'data-requirement-id': req.key, 'aria-label': `${t('view_prefix')} ${req.title}` },
             html_content: `<span>${t('view_prefix')}</span>` + this.Helpers.get_icon_svg('visibility', [], 16)
         });
+        button_group.appendChild(view_button);
 
-        const edit_button = this.Helpers.create_element('button', {
-            class_name: ['button', 'button-secondary', 'button-small'],
-            attributes: { 'data-action': 'edit-req', 'data-requirement-id': req.key, 'aria-label': `${t('edit_prefix')} ${req.title}` },
-            html_content: `<span>${t('edit_prefix')}</span>` + this.Helpers.get_icon_svg('edit', [], 16)
-        });
-        
-        const delete_button = this.Helpers.create_element('button', {
-            class_name: ['button', 'button-danger', 'button-small'],
-            attributes: { 'data-action': 'delete-req', 'data-requirement-id': req.key, 'aria-label': `${t('delete_prefix')} ${req.title}` },
-            html_content: `<span>${t('delete_prefix')}</span>` + this.Helpers.get_icon_svg('delete', [], 16)
-        });
+        const state_for_row = typeof this.getState === 'function' ? this.getState() : null;
+        if (can_edit_rulefile(state_for_row)) {
+            const edit_button = this.Helpers.create_element('button', {
+                class_name: ['button', 'button-secondary', 'button-small'],
+                attributes: { 'data-action': 'edit-req', 'data-requirement-id': req.key, 'aria-label': `${t('edit_prefix')} ${req.title}` },
+                html_content: `<span>${t('edit_prefix')}</span>` + this.Helpers.get_icon_svg('edit', [], 16)
+            });
+            
+            const delete_button = this.Helpers.create_element('button', {
+                class_name: ['button', 'button-danger', 'button-small'],
+                attributes: { 'data-action': 'delete-req', 'data-requirement-id': req.key, 'aria-label': `${t('delete_prefix')} ${req.title}` },
+                html_content: `<span>${t('delete_prefix')}</span>` + this.Helpers.get_icon_svg('delete', [], 16)
+            });
 
-        button_group.append(view_button, edit_button, delete_button);
+            button_group.append(edit_button, delete_button);
+        }
         li.append(text_div, button_group);
         return li;
     },
@@ -487,15 +486,6 @@ export const RulefileRequirementsListComponent = {
                 button_text.textContent = t('add_new_requirement_button');
             }
             add_button.setAttribute('aria-label', t('add_new_requirement_button'));
-        }
-        
-        // Update "Back to edit options" button
-        const back_button = this.plate_element_ref.querySelector('.form-actions button');
-        if (back_button && !back_button.querySelector('[data-action="add-req"]')) {
-            const back_button_text = back_button.querySelector('span');
-            if (back_button_text) {
-                back_button_text.textContent = t('back_to_edit_options');
-            }
         }
     },
 
