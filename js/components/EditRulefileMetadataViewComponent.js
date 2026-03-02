@@ -1,4 +1,5 @@
 // js/components/EditRulefileMetadataViewComponent.js
+import { create_production_rule } from '../api/client.js';
 
 export const EditRulefileMetadataViewComponent = {
     CSS_PATH: 'css/components/edit_rulefile_metadata_view.css',
@@ -6,6 +7,7 @@ export const EditRulefileMetadataViewComponent = {
     async init({ root, deps }) {
         this.root = root;
         this.deps = deps;
+        this.params = deps.params || {};
         this.router = deps.router;
         this.getState = deps.getState;
         this.dispatch = deps.dispatch;
@@ -898,21 +900,29 @@ export const EditRulefileMetadataViewComponent = {
         }
     },
 
-    _create_form(metadata) {
-        const workingMetadata = this._ensure_metadata_defaults(this._clone_metadata(metadata));
+    _create_form(metadata, is_create_mode = false) {
+        const workingMetadata = is_create_mode
+            ? this._clone_metadata(metadata)
+            : this._ensure_metadata_defaults(this._clone_metadata(metadata));
         const form = this.Helpers.create_element('form', { class_name: 'rulefile-metadata-edit-form' });
 
         const general_section = this.Helpers.create_element('section', { class_name: 'form-section' });
         general_section.appendChild(this.Helpers.create_element('h2', { text_content: this.Translation.t('rulefile_metadata_section_general') }));
         general_section.appendChild(this._create_field('rulefile_metadata_field_title', 'metadata.title', metadata.title || '', 'text', { required: true }));
         general_section.appendChild(this._create_field('rulefile_metadata_field_description', 'metadata.description', metadata.description || '', 'textarea'));
-        general_section.appendChild(this._create_field('rulefile_metadata_field_version', 'metadata.version', metadata.version || ''));
+        if (!is_create_mode) {
+            general_section.appendChild(this._create_field('rulefile_metadata_field_version', 'metadata.version', metadata.version || ''));
+        }
         general_section.appendChild(this._create_field('rulefile_metadata_field_language', 'metadata.language', metadata.language || ''));
-        general_section.appendChild(this._create_field('rulefile_metadata_field_monitoring_type_key', 'metadata.monitoringType.type', metadata.monitoringType?.type || ''));
+        if (!is_create_mode) {
+            general_section.appendChild(this._create_field('rulefile_metadata_field_monitoring_type_key', 'metadata.monitoringType.type', metadata.monitoringType?.type || ''));
+        }
         general_section.appendChild(this._create_field('rulefile_metadata_field_monitoring_type_label', 'metadata.monitoringType.text', metadata.monitoringType?.text || ''));
-        general_section.appendChild(this._create_field('rulefile_metadata_field_date_created', 'metadata.dateCreated', metadata.dateCreated || '', 'date'));
-        general_section.appendChild(this._create_field('rulefile_metadata_field_date_modified', 'metadata.dateModified', metadata.dateModified || '', 'date'));
-        general_section.appendChild(this._create_field('rulefile_metadata_field_license', 'metadata.license', metadata.license || ''));
+        if (!is_create_mode) {
+            general_section.appendChild(this._create_field('rulefile_metadata_field_date_created', 'metadata.dateCreated', metadata.dateCreated || '', 'date'));
+            general_section.appendChild(this._create_field('rulefile_metadata_field_date_modified', 'metadata.dateModified', metadata.dateModified || '', 'date'));
+            general_section.appendChild(this._create_field('rulefile_metadata_field_license', 'metadata.license', metadata.license || ''));
+        }
 
         const publisher_section = this.Helpers.create_element('section', { class_name: 'form-section' });
         publisher_section.appendChild(this.Helpers.create_element('h2', { text_content: this.Translation.t('rulefile_metadata_section_publisher') }));
@@ -923,8 +933,37 @@ export const EditRulefileMetadataViewComponent = {
         source_section.appendChild(this.Helpers.create_element('h2', { text_content: this.Translation.t('rulefile_metadata_section_source') }));
         source_section.appendChild(this._create_field('rulefile_metadata_field_source_url', 'metadata.source.url', metadata.source?.url || '', 'url'));
         source_section.appendChild(this._create_field('rulefile_metadata_field_source_title', 'metadata.source.title', metadata.source?.title || ''));
-        source_section.appendChild(this._create_field('rulefile_metadata_field_source_retrieved', 'metadata.source.retrievedDate', metadata.source?.retrievedDate || '', 'date'));
-        source_section.appendChild(this._create_field('rulefile_metadata_field_source_format', 'metadata.source.format', metadata.source?.format || ''));
+        if (!is_create_mode) {
+            source_section.appendChild(this._create_field('rulefile_metadata_field_source_retrieved', 'metadata.source.retrievedDate', metadata.source?.retrievedDate || '', 'date'));
+            source_section.appendChild(this._create_field('rulefile_metadata_field_source_format', 'metadata.source.format', metadata.source?.format || ''));
+        }
+
+        if (is_create_mode) {
+            form.append(general_section, publisher_section, source_section);
+            form.addEventListener('submit', event => {
+                event.preventDefault();
+                this._handle_submit_create(form);
+            });
+            const footerActions = this.Helpers.create_element('div', { class_name: 'metadata-edit-form-footer-actions' });
+            const footerSaveButton = this.Helpers.create_element('button', {
+                class_name: ['button', 'button-primary'],
+                attributes: { type: 'button' },
+                html_content: `<span>${this.Translation.t('rulefile_metadata_save_metadata')}</span>` + (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('save') : '')
+            });
+            footerSaveButton.addEventListener('click', () => form.requestSubmit());
+
+            const footerCancelButton = this.Helpers.create_element('button', {
+                class_name: ['button', 'button-default'],
+                attributes: { type: 'button' },
+                html_content: `<span>${this.Translation.t('back_without_saving')}</span>` + (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('arrow_back') : '')
+            });
+            footerCancelButton.addEventListener('click', () => this.router('audit_rules'));
+
+            footerActions.append(footerSaveButton, footerCancelButton);
+            form.appendChild(footerActions);
+
+            return { form, workingMetadata };
+        }
 
         const keywords_section = this.Helpers.create_element('section', { class_name: 'form-section' });
         keywords_section.appendChild(this.Helpers.create_element('h2', { text_content: this.Translation.t('rulefile_metadata_section_keywords') }));
@@ -1011,6 +1050,69 @@ export const EditRulefileMetadataViewComponent = {
         form.appendChild(footerActions);
 
         return { form, workingMetadata };
+    },
+
+    async _handle_submit_create(form) {
+        const t = this.Translation.t;
+        const formData = new FormData(form);
+        const getValue = name => (formData.get(name) || '').toString().trim();
+
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        const date_str = `${yyyy}-${mm}-${dd}`;
+
+        const rule_set_id = this.getState()?.ruleFileContent?.metadata?.ruleSetId
+            || (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : null)
+            || (this.Helpers?.generate_uuid_v4 ? this.Helpers.generate_uuid_v4() : null);
+        const uuid = rule_set_id || `gen-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
+        const content = {
+            metadata: {
+                title: getValue('metadata.title'),
+                description: getValue('metadata.description'),
+                language: getValue('metadata.language'),
+                monitoringType: { text: getValue('metadata.monitoringType.text') },
+                publisher: {
+                    name: getValue('metadata.publisher.name'),
+                    contactPoint: getValue('metadata.publisher.contactPoint')
+                },
+                source: {
+                    url: getValue('metadata.source.url'),
+                    title: getValue('metadata.source.title')
+                },
+                dateCreated: date_str,
+                dateModified: date_str,
+                ruleSetId: uuid
+            },
+            requirements: {}
+        };
+
+        try {
+            const created = await create_production_rule({ content });
+            const stored_content = created?.content || content;
+            if (stored_content?.metadata) {
+                stored_content.metadata.ruleSetId = created?.id || stored_content.metadata.ruleSetId;
+            }
+            this.dispatch({
+                type: this.StoreActionTypes.INITIALIZE_RULEFILE_EDITING,
+                payload: {
+                    ruleFileContent: stored_content,
+                    originalRuleFileContentString: JSON.stringify(stored_content, null, 2),
+                    originalRuleFileFilename: stored_content?.metadata?.title || '',
+                    ruleSetId: created?.id,
+                    ruleFileServerVersion: created?.version ?? 0
+                }
+            });
+            this.NotificationComponent.show_global_message?.(t('rulefile_metadata_edit_saved'), 'success');
+            this.router('rulefile_metadata_view');
+        } catch (err) {
+            this.NotificationComponent.show_global_message?.(
+                err?.message || t('rulefile_metadata_edit_save_error') || 'Kunde inte spara',
+                'error'
+            );
+        }
     },
 
     _handle_submit(form, originalMetadata, workingMetadata) {
@@ -1263,6 +1365,8 @@ export const EditRulefileMetadataViewComponent = {
             return;
         }
 
+        const is_create_mode = this.params?.mode === 'create' || !state?.ruleSetId;
+
         this.root.innerHTML = '';
         const plate = this.Helpers.create_element('div', { class_name: ['content-plate', 'rulefile-metadata-edit-plate'] });
 
@@ -1275,7 +1379,7 @@ export const EditRulefileMetadataViewComponent = {
         headingWrapper.appendChild(introParagraph);
         plate.appendChild(headingWrapper);
 
-        const { form } = this._create_form(state.ruleFileContent.metadata);
+        const { form } = this._create_form(state.ruleFileContent.metadata, is_create_mode);
 
         const actionRow = this.Helpers.create_element('div', { class_name: 'metadata-edit-actions' });
         const saveTopButton = this.Helpers.create_element('button', {
@@ -1285,14 +1389,20 @@ export const EditRulefileMetadataViewComponent = {
         });
         saveTopButton.addEventListener('click', () => form.requestSubmit());
 
-        const viewWithoutSaveButton = this.Helpers.create_element('button', {
+        const backButton = this.Helpers.create_element('button', {
             class_name: ['button', 'button-default'],
             attributes: { type: 'button' },
-            html_content: `<span>${t('rulefile_metadata_view_without_saving')}</span>` + (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('visibility') : '')
+            html_content: `<span>${is_create_mode ? t('back_without_saving') : t('rulefile_metadata_view_without_saving')}</span>` + (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg(is_create_mode ? 'arrow_back' : 'visibility') : '')
         });
-        viewWithoutSaveButton.addEventListener('click', () => this.router('edit_rulefile_main'));
+        backButton.addEventListener('click', () => {
+            if (is_create_mode) {
+                this.router('audit_rules');
+            } else {
+                this.router('edit_rulefile_main');
+            }
+        });
 
-        actionRow.append(saveTopButton, viewWithoutSaveButton);
+        actionRow.append(saveTopButton, backButton);
 
         plate.appendChild(actionRow);
         plate.appendChild(form);

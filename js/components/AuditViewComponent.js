@@ -14,7 +14,8 @@ import {
     publish_rule,
     copy_rule,
     publish_production_rule,
-    update_rule
+    update_rule,
+    create_production_rule
 } from '../api/client.js';
 import { GenericTableComponent } from './GenericTableComponent.js';
 import { AuditListComponent } from './AuditListComponent.js';
@@ -249,13 +250,31 @@ export const AuditViewComponent = {
     },
 
     handle_create_new_rule() {
-        const t = this.get_t_func();
-        if (this.NotificationComponent?.show_global_message) {
-            this.NotificationComponent.show_global_message(
-                t('audit_create_new_rule_not_implemented'),
-                'info'
-            );
-        }
+        const minimal_rulefile = {
+            metadata: {
+                title: '',
+                description: '',
+                language: '',
+                monitoringType: { text: '' },
+                publisher: { name: '', contactPoint: '' },
+                source: { url: '', title: '' }
+            },
+            requirements: {}
+        };
+        const migrated_content = migrate_rulefile_to_new_structure(minimal_rulefile, {
+            Translation: this.Translation
+        });
+        this.dispatch({
+            type: this.StoreActionTypes.INITIALIZE_RULEFILE_EDITING,
+            payload: {
+                ruleFileContent: migrated_content,
+                originalRuleFileContentString: JSON.stringify(migrated_content, null, 2),
+                originalRuleFileFilename: '',
+                ruleSetId: null,
+                ruleFileServerVersion: 0
+            }
+        });
+        this.router('rulefile_metadata_edit', { mode: 'create' });
     },
 
     async handle_audit_file_select(event) {
