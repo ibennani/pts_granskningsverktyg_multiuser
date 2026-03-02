@@ -1,6 +1,7 @@
 // js/components/ViewRulefileRequirementComponent.js
 
 import { marked, auto_convert_code_like_to_codeblocks } from '../utils/markdown.js';
+import { can_edit_rulefile } from '../utils/helpers.js';
 
 export const ViewRulefileRequirementComponent = {
     CSS_PATH: 'css/components/requirement_audit_component.css',
@@ -100,15 +101,17 @@ export const ViewRulefileRequirementComponent = {
         const h1_element = this.Helpers.create_element('h1', { text_content: requirement.title, id: 'main-content-heading', attributes: { tabindex: '-1' } });
         title_wrapper.appendChild(h1_element);
         
-        const edit_button = this.Helpers.create_element('button', {
-            class_name: ['button', 'button-secondary', 'button-small', 'edit-button'],
-            attributes: { 'aria-label': t('edit_this_requirement_aria', { requirementTitle: requirement.title }) },
-            html_content: `<span>${t('edit_prefix')}</span>` + this.Helpers.get_icon_svg('edit', [], 16)
-        });
-        edit_button.addEventListener('click', () => {
-            this.router('rulefile_edit_requirement', { id: requirement_id });
-        });
-        title_wrapper.appendChild(edit_button);
+        if (can_edit_rulefile(current_state)) {
+            const edit_button = this.Helpers.create_element('button', {
+                class_name: ['button', 'button-secondary', 'button-small', 'edit-button'],
+                attributes: { 'aria-label': t('edit_this_requirement_aria', { requirementTitle: requirement.title }) },
+                html_content: `<span>${t('edit_prefix')}</span>` + this.Helpers.get_icon_svg('edit', [], 16)
+            });
+            edit_button.addEventListener('click', () => {
+                this.router('rulefile_edit_requirement', { id: requirement_id });
+            });
+            title_wrapper.appendChild(edit_button);
+        }
 
         header_div.appendChild(title_wrapper);
         this.plate_element_ref.appendChild(header_div);
