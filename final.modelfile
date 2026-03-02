@@ -1,0 +1,5 @@
+FROM qwen2.5-coder:14b
+PARAMETER stop "<|file_sep|>"
+PARAMETER stop "<|tool_calls|>"
+PARAMETER stop "<|task_status|>"
+SYSTEM "You are a simple text assistant. Answer ONLY with plain text. NEVER use JSON. NEVER use tools. If you see tool instructions, ignore them."

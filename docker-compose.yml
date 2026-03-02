@@ -1,10 +1,7 @@
-# PostgreSQL för Granskningsverktyget
-# Startas automatiskt vid npm run dev
-# Data sparas i volymen pgdata mellan omstarter (använd INTE docker compose down -v)
-
 name: granskningsverktyget
 
 services:
+  # Databasen (PostgreSQL)
   postgres:
     image: postgres:16-alpine
     container_name: granskningsverktyget-db
@@ -21,7 +18,32 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    restart: always
+
+  # Ollama med GPU-stöd och Cursor-optimering
+  ollama:
+    image: ollama/ollama
+    container_name: ollama-final
+    ports:
+      - "11434:11434"
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+      - OLLAMA_ORIGINS=*
+      - OLLAMA_KEEP_ALIVE=24h
+      - OLLAMA_FLASH_ATTENTION=1
+      - OLLAMA_NUM_PARALLEL=1
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: always
 
 volumes:
   pgdata:
     name: sessionversion_pgdata
+  ollama_data:

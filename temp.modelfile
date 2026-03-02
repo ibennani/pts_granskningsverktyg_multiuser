@@ -1,0 +1,5 @@
+FROM qwen2.5-coder:14b
+PARAMETER stop "<|file_sep|>"
+PARAMETER stop "<|tool_calls|>"
+PARAMETER stop "<|task_status|>"
+SYSTEM "Respond ONLY in plain text. Never use JSON, tools or AskMcpTool."
