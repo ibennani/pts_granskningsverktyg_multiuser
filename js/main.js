@@ -1519,11 +1519,15 @@ window.DraftManager = DraftManager;
         if (!skip_link || skip_link.hasAttribute('data-skip-handler-bound')) return;
         skip_link.setAttribute('data-skip-handler-bound', 'true');
         skip_link.addEventListener('click', (e) => {
-            const target = document.getElementById(SKIP_LINK_ANCHOR_ID);
-            if (target) {
-                e.preventDefault();
-                target.focus({ preventScroll: false });
-                target.scrollIntoView({ block: 'start', behavior: 'smooth' });
+            e.preventDefault();
+            const main_root = document.getElementById('app-main-view-root');
+            const first_h1 = main_root?.querySelector('h1');
+            if (first_h1) {
+                if (first_h1.getAttribute('tabindex') === null) {
+                    first_h1.setAttribute('tabindex', '-1');
+                }
+                first_h1.focus({ preventScroll: false });
+                first_h1.scrollIntoView({ block: 'start', behavior: 'smooth' });
             }
         });
     }
