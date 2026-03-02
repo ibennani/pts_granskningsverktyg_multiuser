@@ -264,18 +264,8 @@ export const RulefileMetadataViewComponent = {
 
         const header_wrapper = this.Helpers.create_element('div', { class_name: 'metadata-header' });
         const heading = this.Helpers.create_element('h1', { text_content: t('rulefile_metadata_title') });
-        const edit_button = this.Helpers.create_element('button', {
-            class_name: ['button', 'button-secondary', 'metadata-edit-button'],
-            attributes: {
-                type: 'button',
-                'aria-label': t('rulefile_metadata_edit_button_aria')
-            },
-            html_content: `<span>${t('rulefile_metadata_edit_button')}</span>` + (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('edit') : '')
-        });
-        edit_button.addEventListener('click', () => this.router('rulefile_metadata_edit'));
 
         header_wrapper.appendChild(heading);
-        header_wrapper.appendChild(edit_button);
 
         plate.appendChild(header_wrapper);
         plate.appendChild(this.Helpers.create_element('p', { class_name: 'view-intro-text', text_content: t('rulefile_metadata_intro') }));
@@ -367,9 +357,9 @@ export const RulefileMetadataViewComponent = {
         const actions_div = this.Helpers.create_element('div', { class_name: 'form-actions', style: 'margin-top: 2rem; justify-content: flex-start;' });
         const back_button = this.Helpers.create_element('button', {
             class_name: ['button', 'button-default'],
-            html_content: `<span>${t('back_to_edit_options')}</span>` + (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('arrow_back') : '')
+            html_content: `<span>${t('back_to_admin')}</span>` + (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('arrow_back') : '')
         });
-        back_button.addEventListener('click', () => this.router('edit_rulefile_main'));
+        back_button.addEventListener('click', () => this.router('audit'));
         actions_div.appendChild(back_button);
         plate.appendChild(actions_div);
 

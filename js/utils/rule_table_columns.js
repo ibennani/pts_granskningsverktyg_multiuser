@@ -4,12 +4,12 @@
 /**
  * Skapar kolumndefinitioner för regelfilstabellen.
  * @param {Object} deps - { t, Helpers, Translation }
- * @param {Object} handlers - { onEditRule(id), onDownloadRule(id), onDeleteRule(id), onPublishRule(id) }
+ * @param {Object} handlers - { onEditRule(id), onDownloadRule(id), onDeleteRule(id), onPublishRule(id), onCopyRule(id), onPublishProductionRule(id) }
  * @returns {Array<{ headerLabel: string, getContent: (row: any) => string | HTMLElement }>}
  */
 export function create_rule_table_columns(deps, handlers) {
     const { t, Helpers, Translation } = deps;
-    const { onEditRule, onDownloadRule, onDeleteRule, onPublishRule } = handlers;
+    const { onEditRule, onDownloadRule, onDeleteRule, onPublishRule, onCopyRule, onPublishProductionRule } = handlers;
 
     const icon_svg = (name, size = 16) =>
         Helpers?.get_icon_svg ? Helpers.get_icon_svg(name, ['currentColor'], size) : '';
@@ -61,7 +61,23 @@ export function create_rule_table_columns(deps, handlers) {
                 const version_suffix = version_parts.length > 0 ? ` (${version_parts.join(' · ')})` : '';
                 const link_text = rule_name + version_suffix;
 
-                const container = Helpers.create_element('div');
+                const container = Helpers.create_element('div', { class_name: 'generic-table-action-cell' });
+
+                const is_production_row = !!row.production_base_id;
+
+                if (!is_production_row && typeof onCopyRule === 'function') {
+                    const edit_aria = t('audit_edit_rule_aria', { name: link_text });
+                    const edit_btn = Helpers.create_element('button', {
+                        class_name: ['button', 'button-default', 'button-small', 'generic-table-edit-btn'],
+                        html_content: `<span>${t('edit_button_label')}</span>` + icon_svg('edit'),
+                        attributes: {
+                            type: 'button',
+                            'aria-label': edit_aria
+                        }
+                    });
+                    edit_btn.addEventListener('click', () => onCopyRule(row.id));
+                    container.appendChild(edit_btn);
+                }
 
                 if (typeof onDownloadRule === 'function') {
                     const download_aria = t('audit_download_rule_aria', { name: link_text });
@@ -77,7 +93,7 @@ export function create_rule_table_columns(deps, handlers) {
                     container.appendChild(download_btn);
                 }
 
-                if (row.has_draft && typeof onPublishRule === 'function') {
+                if (row.has_draft && !is_production_row && typeof onPublishRule === 'function') {
                     const publish_aria = t('rulefile_publish_rule_aria', { name: link_text });
                     const publish_btn = Helpers.create_element('button', {
                         class_name: ['button', 'button-success', 'button-small', 'generic-table-publish-btn'],
@@ -89,6 +105,20 @@ export function create_rule_table_columns(deps, handlers) {
                     });
                     publish_btn.addEventListener('click', () => onPublishRule(row.id));
                     container.appendChild(publish_btn);
+                }
+
+                if (is_production_row && typeof onPublishProductionRule === 'function') {
+                    const publish_prod_aria = t('rulefile_publish_rule_aria', { name: link_text });
+                    const publish_prod_btn = Helpers.create_element('button', {
+                        class_name: ['button', 'button-success', 'button-small', 'generic-table-publish-btn'],
+                        html_content: `<span>${t('rulefile_publish_button')}</span>` + icon_svg('publish'),
+                        attributes: {
+                            type: 'button',
+                            'aria-label': publish_prod_aria
+                        }
+                    });
+                    publish_prod_btn.addEventListener('click', () => onPublishProductionRule(row.id));
+                    container.appendChild(publish_prod_btn);
                 }
 
                 if (typeof onDeleteRule === 'function') {

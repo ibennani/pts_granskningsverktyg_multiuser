@@ -143,6 +143,14 @@ export async function publish_rule(id) {
     return api_post(`/rules/${id}/publish`, {});
 }
 
+export async function copy_rule(id) {
+    return api_post(`/rules/${id}/copy`, {});
+}
+
+export async function publish_production_rule(id) {
+    return api_post(`/rules/${id}/publish_production`, {});
+}
+
 /**
  * Hämtar regelfil för nedladdning (samma data som export-endpointen returnerar).
  * Returnerar { id, name, content, version } för att skapa blob och filnamn i UI.

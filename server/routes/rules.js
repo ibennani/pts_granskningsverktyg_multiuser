@@ -32,6 +32,7 @@ router.get('/', async (_req, res) => {
         const hasPublished = await ensure_published_column_flag();
         const sql = hasPublished
             ? `SELECT id,
+                    published_content IS NOT NULL AS is_published,
                     COALESCE(
                         NULLIF(TRIM(COALESCE(published_content, content)->'metadata'->>'title'), ''),
                         name
@@ -51,10 +52,12 @@ router.get('/', async (_req, res) => {
                         THEN content->'metadata'->>'version'
                         ELSE NULL
                     END AS draft_version,
-                    version, created_at, updated_at
+                    version, created_at, updated_at,
+                    production_base_id
                FROM rule_sets
                ORDER BY updated_at DESC`
             : `SELECT id,
+                    false AS is_published,
                     COALESCE(NULLIF(TRIM(content->'metadata'->>'title'), ''), name) AS name,
                     COALESCE(NULLIF(TRIM(content->'metadata'->>'version'), ''), version::text) AS version_display,
                     content->'metadata'->>'version' AS metadata_version,
@@ -64,7 +67,8 @@ router.get('/', async (_req, res) => {
                     ) AS monitoring_type_text,
                     false AS has_draft,
                     NULL AS draft_version,
-                    version, created_at, updated_at
+                    version, created_at, updated_at,
+                    production_base_id
                FROM rule_sets
                ORDER BY updated_at DESC`;
         const result = await query(sql);
@@ -265,6 +269,113 @@ router.post('/:id/publish', async (req, res) => {
     } catch (err) {
         console.error('[rules] PUBLISH error:', err);
         res.status(500).json({ error: 'Kunde inte publicera regelfil' });
+    }
+});
+
+// Skapa en produktionskopia av en regelfil.
+router.post('/:id/copy', async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const hasPublished = await ensure_published_column_flag();
+        if (!hasPublished) {
+            return res.status(400).json({ error: 'Publiceringsstöd saknas för regelfiler i denna databas.' });
+        }
+
+        const sourceResult = await query('SELECT * FROM rule_sets WHERE id = $1', [id]);
+        if (sourceResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Regelfil hittades inte' });
+        }
+        const source = sourceResult.rows[0];
+
+        const base_content = source.published_content || source.content;
+        if (!base_content) {
+            return res.status(400).json({ error: 'Regelfilen saknar innehåll att kopiera.' });
+        }
+
+        const existingProduction = await query(
+            'SELECT * FROM rule_sets WHERE production_base_id = $1 LIMIT 1',
+            [id]
+        );
+        if (existingProduction.rows.length > 0) {
+            return res.status(409).json({
+                error: 'Produktionskopia finns redan för denna regelfil.',
+                existingId: existingProduction.rows[0].id
+            });
+        }
+
+        const insertResult = await query(
+            `INSERT INTO rule_sets (name, content, published_content, version, production_base_id)
+             VALUES ($1, $2, NULL, $3, $4)
+             RETURNING *`,
+            [
+                source.name,
+                JSON.stringify(base_content),
+                source.version,
+                id
+            ]
+        );
+        const created = insertResult.rows[0];
+        broadcast_rules_changed();
+        res.status(201).json(created);
+    } catch (err) {
+        console.error('[rules] COPY production error:', err);
+        res.status(500).json({ error: 'Kunde inte skapa produktionskopia' });
+    }
+});
+
+// Publicera en produktionskopia tillbaka till sin basregelfil.
+router.post('/:id/publish_production', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const productionResult = await query('SELECT * FROM rule_sets WHERE id = $1', [id]);
+        if (productionResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Produktionskopia hittades inte' });
+        }
+        const production = productionResult.rows[0];
+        const base_id = production.production_base_id;
+        if (!base_id) {
+            return res.status(400).json({ error: 'Denna regelfil är inte markerad som produktionskopia.' });
+        }
+
+        const content = production.content;
+        if (!content) {
+            return res.status(400).json({ error: 'Produktionskopian saknar innehåll att publicera.' });
+        }
+
+        const updateBaseResult = await query(
+            `UPDATE rule_sets
+             SET published_content = $1::jsonb,
+                 content = $1::jsonb,
+                 version = version + 1,
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE id = $2
+             RETURNING *`,
+            [JSON.stringify(content), base_id]
+        );
+        if (updateBaseResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Basregelfilen hittades inte' });
+        }
+        const updatedBase = updateBaseResult.rows[0];
+
+        const syncProductionResult = await query(
+            `UPDATE rule_sets
+             SET content = $1::jsonb,
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE id = $2
+             RETURNING *`,
+            [JSON.stringify(content), id]
+        );
+        const updatedProduction = syncProductionResult.rows[0] || production;
+
+        broadcast_rules_changed();
+        res.json({
+            base: updatedBase,
+            production: updatedProduction
+        });
+    } catch (err) {
+        console.error('[rules] publish_production error:', err);
+        res.status(500).json({ error: 'Kunde inte publicera produktionskopia' });
     }
 });
 

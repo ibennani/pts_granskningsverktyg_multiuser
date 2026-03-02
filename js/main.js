@@ -46,6 +46,7 @@ import { ViewRulefileRequirementComponent } from './components/ViewRulefileRequi
 import { EditRulefileRequirementComponent } from './components/EditRulefileRequirementComponent.js';
 import { ConfirmDeleteViewComponent } from './components/ConfirmDeleteViewComponent.js';
 import { EditRulefileMetadataViewComponent } from './components/EditRulefileMetadataViewComponent.js';
+import { RulefileMetadataViewComponent } from './components/RulefileMetadataViewComponent.js';
 import { EditGeneralSectionComponent } from './components/EditGeneralSectionComponent.js';
 import { EditPageTypesSectionComponent } from './components/EditPageTypesSectionComponent.js';
 import { RulefileSectionsViewComponent } from './components/RulefileSectionsViewComponent.js';
@@ -999,6 +1000,7 @@ window.DraftManager = DraftManager;
             case 'rulefile_edit_requirement': ComponentClass = EditRulefileRequirementComponent; break;
             case 'rulefile_add_requirement': ComponentClass = EditRulefileRequirementComponent; break;
             case 'rulefile_metadata_edit': ComponentClass = EditRulefileMetadataViewComponent; break;
+            case 'rulefile_metadata_view': ComponentClass = RulefileMetadataViewComponent; break;
             case 'rulefile_sections_edit_general': ComponentClass = EditGeneralSectionComponent; break;
             case 'rulefile_sections_edit_page_types': ComponentClass = EditPageTypesSectionComponent; break;
             case 'rulefile_sections': ComponentClass = RulefileSectionsViewComponent; break;

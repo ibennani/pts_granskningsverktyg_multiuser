@@ -11,7 +11,9 @@ import {
     delete_rule,
     delete_audit,
     export_rule,
-    publish_rule
+    publish_rule,
+    copy_rule,
+    publish_production_rule
 } from '../api/client.js';
 import { GenericTableComponent } from './GenericTableComponent.js';
 import { AuditListComponent } from './AuditListComponent.js';
@@ -29,6 +31,8 @@ export const AuditViewComponent = {
         this._api_load_started = false;
         this.api_available = false;
         this.rules = [];
+        this.published_rules = [];
+        this.production_rules = [];
         this.audits = [];
         this.router = deps.router;
         this.NotificationComponent?.clear_global_message?.();
@@ -62,6 +66,8 @@ export const AuditViewComponent = {
         this.handle_download_audit = this.handle_download_audit.bind(this);
         this.handle_download_rule = this.handle_download_rule.bind(this);
         this.handle_publish_rule = this.handle_publish_rule.bind(this);
+        this.handle_copy_rule = this.handle_copy_rule.bind(this);
+        this.handle_publish_production_rule = this.handle_publish_production_rule.bind(this);
         this.handle_edit_rule = this.handle_edit_rule.bind(this);
         this.handle_open_audit = this.handle_open_audit.bind(this);
         this.handle_start_new_audit = this.handle_start_new_audit.bind(this);
@@ -89,6 +95,7 @@ export const AuditViewComponent = {
                     if (audits_changed || rules_changed) {
                         this.audits = fresh_audits;
                         this.rules = fresh_rules;
+                        this._split_rules_for_views();
                         if (this.root) this.render();
                     }
                 } catch {
@@ -131,14 +138,23 @@ export const AuditViewComponent = {
         return map[status] || status;
     },
 
+    _split_rules_for_views() {
+        const all_rules = Array.isArray(this.rules) ? this.rules : [];
+        this.published_rules = all_rules.filter((r) => r.is_published);
+        this.production_rules = all_rules.filter((r) => !r.is_published);
+    },
+
     async ensure_api_data() {
         this.api_available = await check_api_available();
         if (this.api_available) {
             try {
                 this.rules = await get_rules();
                 this.audits = await get_audits();
+                this._split_rules_for_views();
             } catch {
                 this.rules = [];
+                this.published_rules = [];
+                this.production_rules = [];
                 this.audits = [];
             }
         }
@@ -373,12 +389,15 @@ export const AuditViewComponent = {
         const ModalComponent = window.ModalComponent;
         if (!ModalComponent?.show || !this.Helpers?.create_element) return;
         await this.ensure_api_data();
-        if (this.rules.length === 0) {
+        const available_rules = (this.published_rules && this.published_rules.length > 0)
+            ? this.published_rules
+            : this.rules;
+        if (!available_rules || available_rules.length === 0) {
             this.NotificationComponent?.show_global_message(t('server_no_rules'), 'error');
             return;
         }
         const type_to_rule = new Map();
-        for (const r of this.rules) {
+        for (const r of available_rules) {
             const type_key = (r.monitoring_type_text || r.name || `Regelfil ${r.id}`).trim();
             const existing = type_to_rule.get(type_key);
             if (!existing || version_greater_than(r.metadata_version || '', existing.metadata_version || '')) {
@@ -533,6 +552,41 @@ export const AuditViewComponent = {
         }
     },
 
+    async handle_copy_rule(rule_id) {
+        const t = this.get_t_func();
+        try {
+            const created = await copy_rule(rule_id);
+            await this.ensure_api_data();
+            this.render();
+            if (created?.id) {
+                await this.handle_edit_rule(created.id);
+            }
+        } catch (error) {
+            this.NotificationComponent?.show_global_message(
+                error.message || t('audit_load_rule_error'),
+                'error'
+            );
+        }
+    },
+
+    async handle_publish_production_rule(rule_id) {
+        const t = this.get_t_func();
+        try {
+            await publish_production_rule(rule_id);
+            this.NotificationComponent?.show_global_message(
+                t('rulefile_publish_success'),
+                'success'
+            );
+            await this.ensure_api_data();
+            this.render();
+        } catch (error) {
+            this.NotificationComponent?.show_global_message(
+                error.message || t('rulefile_publish_error'),
+                'error'
+            );
+        }
+    },
+
     async handle_delete_audit(audit_id) {
         const t = this.get_t_func();
         try {
@@ -555,6 +609,7 @@ export const AuditViewComponent = {
         const t = this.get_t_func();
         try {
             const rule_row = await get_rule(rule_id);
+            const is_production_copy = !!rule_row?.production_base_id;
             let content = rule_row?.content;
             if (typeof content === 'string') {
                 try {
@@ -592,7 +647,11 @@ export const AuditViewComponent = {
                     ruleFileServerVersion: rule_row?.version ?? 0
                 }
             });
-            this.router('edit_rulefile_main');
+            if (is_production_copy) {
+                this.router('edit_rulefile_main');
+            } else {
+                this.router('rulefile_metadata_view');
+            }
         } catch (error) {
             this.NotificationComponent?.show_global_message(
                 error.message || t('audit_load_rule_error'),
@@ -757,13 +816,15 @@ export const AuditViewComponent = {
             onEditRule: (id) => this.handle_edit_rule(id),
             onDownloadRule: (id) => this.handle_download_rule(id),
             onDeleteRule: (id) => this.handle_delete_rule(id),
-            onPublishRule: (id) => this.handle_publish_rule(id)
+            onPublishRule: (id) => this.handle_publish_rule(id),
+            onCopyRule: (id) => this.handle_copy_rule(id),
+            onPublishProductionRule: (id) => this.handle_publish_production_rule(id)
         };
         const rule_columns = create_rule_table_columns(rules_table_deps, rules_table_handlers);
         this._rulesTable?.render({
             root: rules_table_wrapper,
             columns: rule_columns,
-            data: this.rules,
+            data: this.published_rules || [],
             emptyMessage: t('audit_rules_empty'),
             ariaLabel: t('audit_rules_title'),
             wrapperClassName: 'generic-table-wrapper',
@@ -790,7 +851,7 @@ export const AuditViewComponent = {
         this._rulesTable?.render({
             root: draft_rules_table_wrapper,
             columns: rule_columns,
-            data: this.draft_rules || [],
+            data: this.production_rules || [],
             emptyMessage: t('audit_rules_draft_empty') || '',
             ariaLabel: t('audit_rules_draft_title'),
             wrapperClassName: 'generic-table-wrapper',
