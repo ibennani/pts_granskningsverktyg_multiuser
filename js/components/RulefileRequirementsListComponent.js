@@ -423,13 +423,6 @@ export const RulefileRequirementsListComponent = {
 
         const button_group = this.Helpers.create_element('div', { class_name: ['sample-actions-main', 'rulefile-requirement-row__actions'] });
 
-        const view_button = this.Helpers.create_element('button', {
-            class_name: ['button', 'button-default', 'button-small'],
-            attributes: { 'data-action': 'view-req', 'data-requirement-id': req.key, 'aria-label': `${t('view_prefix')} ${req.title}` },
-            html_content: `<span>${t('view_prefix')}</span>` + this.Helpers.get_icon_svg('visibility', [], 16)
-        });
-        button_group.appendChild(view_button);
-
         const state_for_row = typeof this.getState === 'function' ? this.getState() : null;
         if (can_edit_rulefile(state_for_row)) {
             const edit_button = this.Helpers.create_element('button', {
@@ -446,7 +439,10 @@ export const RulefileRequirementsListComponent = {
 
             button_group.append(edit_button, delete_button);
         }
-        li.append(text_div, button_group);
+        li.appendChild(text_div);
+        if (button_group.childNodes.length > 0) {
+            li.appendChild(button_group);
+        }
         return li;
     },
 

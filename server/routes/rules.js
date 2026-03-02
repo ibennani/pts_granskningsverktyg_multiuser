@@ -248,8 +248,17 @@ router.put('/:id', async (req, res) => {
             values.push(name);
         }
         if (content !== undefined) {
+            const content_with_date = typeof content === 'object' && content !== null
+                ? {
+                    ...content,
+                    metadata: {
+                        ...(content.metadata || {}),
+                        dateModified: new Date().toISOString()
+                    }
+                }
+                : content;
             updates.push(`content = $${i++}`);
-            values.push(JSON.stringify(content));
+            values.push(JSON.stringify(content_with_date));
         }
         if (updates.length === 0) {
             return res.status(400).json({ error: 'Ingen data att uppdatera' });
@@ -378,6 +387,50 @@ router.post('/:id/publish_production', async (req, res) => {
             return res.status(400).json({ error: 'Produktionskopian saknar innehåll att publicera.' });
         }
 
+        const baseResult = await query(
+            'SELECT published_content FROM rule_sets WHERE id = $1',
+            [base_id]
+        );
+        const current_published_version =
+            baseResult.rows.length > 0 && baseResult.rows[0].published_content?.metadata?.version
+                ? String(baseResult.rows[0].published_content.metadata.version).trim()
+                : null;
+
+        const now = new Date();
+        const current_year = now.getFullYear();
+        const current_month = now.getMonth() + 1;
+        const version_match =
+            typeof current_published_version === 'string' && current_published_version
+                ? current_published_version.match(/^(\d{4})\.(\d{1,2})\.r(\d+)$/)
+                : null;
+
+        let version_str;
+        if (version_match) {
+            const [, version_year, version_month, release] = version_match;
+            const version_year_number = parseInt(version_year, 10);
+            const version_month_number = parseInt(version_month, 10);
+            if (
+                version_year_number === current_year &&
+                version_month_number === current_month
+            ) {
+                version_str = `${current_year}.${current_month}.r${parseInt(release, 10) + 1}`;
+            } else {
+                version_str = `${current_year}.${current_month}.r1`;
+            }
+        } else {
+            version_str = `${current_year}.${current_month}.r1`;
+        }
+
+        const content_with_version = typeof content === 'object' && content !== null
+            ? {
+                ...content,
+                metadata: {
+                    ...(content.metadata || {}),
+                    version: version_str
+                }
+            }
+            : content;
+
         const updateBaseResult = await query(
             `UPDATE rule_sets
              SET published_content = $1::jsonb,
@@ -386,27 +439,18 @@ router.post('/:id/publish_production', async (req, res) => {
                  updated_at = CURRENT_TIMESTAMP
              WHERE id = $2
              RETURNING *`,
-            [JSON.stringify(content), base_id]
+            [JSON.stringify(content_with_version), base_id]
         );
         if (updateBaseResult.rows.length === 0) {
             return res.status(404).json({ error: 'Basregelfilen hittades inte' });
         }
         const updatedBase = updateBaseResult.rows[0];
 
-        const syncProductionResult = await query(
-            `UPDATE rule_sets
-             SET content = $1::jsonb,
-                 updated_at = CURRENT_TIMESTAMP
-             WHERE id = $2
-             RETURNING *`,
-            [JSON.stringify(content), id]
-        );
-        const updatedProduction = syncProductionResult.rows[0] || production;
+        await query('DELETE FROM rule_sets WHERE id = $1', [id]);
 
         broadcast_rules_changed();
         res.json({
-            base: updatedBase,
-            production: updatedProduction
+            base: updatedBase
         });
     } catch (err) {
         console.error('[rules] publish_production error:', err);

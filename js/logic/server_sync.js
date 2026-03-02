@@ -87,10 +87,19 @@ async function run_sync(state, dispatch_fn) {
     }
 }
 
-async function run_sync_rulefile(state) {
+async function run_sync_rulefile(state, dispatch_fn) {
     if (!state?.ruleSetId || !state?.ruleFileContent || typeof window === 'undefined') return;
     try {
-        await update_rule(state.ruleSetId, { content: state.ruleFileContent });
+        const updated = await update_rule(state.ruleSetId, { content: state.ruleFileContent });
+        if (updated?.content && typeof dispatch_fn === 'function') {
+            dispatch_fn({
+                type: 'REPLACE_RULEFILE_FROM_REMOTE',
+                payload: {
+                    ruleFileContent: updated.content,
+                    version: updated.version
+                }
+            });
+        }
     } catch (err) {
         if (window.NotificationComponent?.show_global_message && window.Translation?.t) {
             window.NotificationComponent.show_global_message(
@@ -104,10 +113,11 @@ async function run_sync_rulefile(state) {
 /**
  * Schemalägg debounced sparande av regelfilinnehåll till servern.
  * Anropas vid UPDATE_RULEFILE_CONTENT när användaren redigerar regelfil (metadata, krav, etc.).
- * Serverns updated_at blir då "senast ändrad (något redigerbart)".
+ * Serverns updated_at och metadata.dateModified blir då "senast ändrad (något redigerbart)".
  * @param {function} get_state_fn - Funktion som returnerar aktuell state (anropas när timern går).
+ * @param {function} [dispatch_fn] - Om angiven anropas efter lyckad sync med serverns svar så att state får uppdaterad dateModified.
  */
-export function schedule_sync_rulefile_to_server(get_state_fn) {
+export function schedule_sync_rulefile_to_server(get_state_fn, dispatch_fn) {
     if (typeof get_state_fn !== 'function' || typeof window === 'undefined') return;
 
     if (rulefile_debounce_timer) clearTimeout(rulefile_debounce_timer);
@@ -117,15 +127,17 @@ export function schedule_sync_rulefile_to_server(get_state_fn) {
         // Synka aldrig publicerad regelfil – endast arbetskopior ska uppdateras automatiskt.
         if (state?.ruleFileIsPublished) return;
         if (state?.auditStatus === 'rulefile_editing' && state.ruleSetId && state.ruleFileContent) {
-            await run_sync_rulefile(state);
+            await run_sync_rulefile(state, dispatch_fn);
         }
     }, RULEFILE_DEBOUNCE_MS);
 }
 
 /**
  * Sparar regelfilinnehåll till servern omedelbart (t.ex. vid navigering bort från redigeringsvyn).
+ * @param {function} get_state_fn - Funktion som returnerar aktuell state.
+ * @param {function} [dispatch_fn] - Om angiven anropas efter lyckad sync med serverns svar så att state får uppdaterad dateModified.
  */
-export async function flush_sync_rulefile_to_server(get_state_fn) {
+export async function flush_sync_rulefile_to_server(get_state_fn, dispatch_fn) {
     if (rulefile_debounce_timer) {
         clearTimeout(rulefile_debounce_timer);
         rulefile_debounce_timer = null;
@@ -134,7 +146,7 @@ export async function flush_sync_rulefile_to_server(get_state_fn) {
     // Synka aldrig publicerad regelfil – endast arbetskopior ska uppdateras.
     if (state?.ruleFileIsPublished) return;
     if (state?.auditStatus === 'rulefile_editing' && state.ruleSetId && state.ruleFileContent) {
-        await run_sync_rulefile(state);
+        await run_sync_rulefile(state, dispatch_fn);
     }
 }
 

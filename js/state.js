@@ -722,12 +722,12 @@ function execute_single_dispatch(action, dispatch_fn) {
                     // Ignorera - server sync är inte kritiskt
                 }
 
-                // Vid regelfilsredigering: spara innehåll till servern (debounced) så att updated_at = senast ändrad.
+                // Vid regelfilsredigering: spara innehåll till servern (debounced) så att updated_at och dateModified = senast ändrad.
                 try {
                     if (action.type === ActionTypes.UPDATE_RULEFILE_CONTENT &&
                         internal_state.auditStatus === 'rulefile_editing' &&
                         internal_state.ruleSetId) {
-                        schedule_sync_rulefile_to_server(getState);
+                        schedule_sync_rulefile_to_server(getState, dispatch);
                     }
                 } catch (rulefileSyncError) {
                     // Ignorera - regelfilsync är inte kritiskt

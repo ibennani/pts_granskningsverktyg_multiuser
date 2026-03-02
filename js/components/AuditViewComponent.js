@@ -556,6 +556,13 @@ export const AuditViewComponent = {
         return base;
     },
 
+    _get_rule_base_name(rule_id) {
+        const all_rules = Array.isArray(this.rules) ? this.rules : [];
+        const r = all_rules.find((row) => String(row.id) === String(rule_id));
+        if (!r) return `Regelfil ${rule_id}`;
+        return (r.name || `Regelfil ${r.id}`).trim();
+    },
+
     _is_uploaded_file_older(file_date_modified, server_updated_at) {
         if (!file_date_modified || !server_updated_at) return false;
         const file_date = new Date(file_date_modified);
@@ -629,28 +636,52 @@ export const AuditViewComponent = {
         );
     },
 
-    _show_publish_rule_confirm_modal(rule_name, on_confirm, on_cancel) {
+    _show_publish_rule_confirm_modal(rule_base_name, on_confirm, on_cancel) {
         const t = this.get_t_func();
         const ModalComponent = window.ModalComponent;
         if (!ModalComponent?.show || !this.Helpers?.create_element) {
             if (typeof on_cancel === 'function') on_cancel();
             return;
         }
-        const message = t('rulefile_publish_confirm_modal_message', { name: rule_name });
         ModalComponent.show(
             {
                 h1_text: t('rulefile_publish_confirm_modal_title'),
-                message_text: message
+                message_text: ''
             },
             (container, modal_instance) => {
+                const message_el = container.querySelector('.modal-message');
+                if (message_el) {
+                    const wrapper = this.Helpers.create_element('div', { class_name: 'modal-message' });
+                    const p1 = this.Helpers.create_element('p');
+                    p1.appendChild(document.createTextNode(t('rulefile_publish_confirm_modal_para1_before')));
+                    const strong = this.Helpers.create_element('strong');
+                    strong.textContent = rule_base_name;
+                    p1.appendChild(strong);
+                    p1.appendChild(document.createTextNode(t('rulefile_publish_confirm_modal_para1_after')));
+                    const p2 = this.Helpers.create_element('p', {
+                        text_content: t('rulefile_publish_confirm_modal_para2')
+                    });
+                    wrapper.appendChild(p1);
+                    wrapper.appendChild(p2);
+                    message_el.replaceWith(wrapper);
+                }
+                const question_p = this.Helpers.create_element('p', {
+                    text_content: t('rulefile_publish_confirm_modal_question')
+                });
+                container.appendChild(question_p);
                 const buttons_wrapper = this.Helpers.create_element('div', { class_name: 'modal-confirm-actions' });
                 const confirm_btn = this.Helpers.create_element('button', {
                     class_name: ['button', 'button-primary'],
                     text_content: t('rulefile_publish_confirm_modal_confirm_btn')
                 });
-                confirm_btn.addEventListener('click', () => {
+                confirm_btn.addEventListener('click', async () => {
+                    if (typeof on_confirm === 'function') {
+                        const result = on_confirm();
+                        if (result && typeof result.then === 'function') {
+                            await result;
+                        }
+                    }
                     modal_instance.close();
-                    if (typeof on_confirm === 'function') on_confirm();
                 });
                 const cancel_btn = this.Helpers.create_element('button', {
                     class_name: ['button', 'button-default'],
@@ -718,9 +749,9 @@ export const AuditViewComponent = {
     },
 
     handle_publish_rule(rule_id) {
-        const rule_name = this._get_rule_display_name(rule_id);
+        const rule_base_name = this._get_rule_base_name(rule_id);
         this._show_publish_rule_confirm_modal(
-            rule_name,
+            rule_base_name,
             () => this._do_publish_rule(rule_id),
             () => {}
         );
@@ -771,9 +802,9 @@ export const AuditViewComponent = {
     },
 
     handle_publish_production_rule(rule_id) {
-        const rule_name = this._get_rule_display_name(rule_id);
+        const rule_base_name = this._get_rule_base_name(rule_id);
         this._show_publish_rule_confirm_modal(
-            rule_name,
+            rule_base_name,
             () => this._do_publish_production_rule(rule_id),
             () => {}
         );

@@ -63,7 +63,7 @@ export const EditRulefileMainViewComponent = {
 
     async destroy() {
         if (this.getState && typeof this.getState === 'function') {
-            await flush_sync_rulefile_to_server(this.getState);
+            await flush_sync_rulefile_to_server(this.getState, this.deps?.dispatch);
         }
         if (this.root) this.root.innerHTML = '';
         this.root = null;
