@@ -43,6 +43,9 @@ export const ActionTypes = {
 const initial_state = {
     saveFileVersion: APP_STATE_VERSION,
     ruleFileContent: null,
+    // Anger om aktuell regelfil är publicerad (endast visning) eller arbetskopia (redigerbar).
+    // Default är false så att äldre sparade tillstånd utan denna flagga behandlas som arbetskopior.
+    ruleFileIsPublished: false,
     auditMetadata: {
         caseNumber: '',
         actorName: '',
@@ -359,6 +362,7 @@ function root_reducer(current_state, action) {
                 ...initial_state,
                 saveFileVersion: APP_STATE_VERSION,
                 ruleFileContent: action.payload.ruleFileContent,
+                ruleFileIsPublished: action.payload.ruleFileIsPublished ?? false,
                 uiSettings: JSON.parse(JSON.stringify(initial_state.uiSettings)),
                 auditStatus: 'rulefile_editing',
                 ruleFileOriginalContentString: action.payload.originalRuleFileContentString || null,

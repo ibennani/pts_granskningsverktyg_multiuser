@@ -430,3 +430,17 @@ export function sanitize_id_for_css_selector(id_string) {
     return id_string.replace(/[^a-zA-Z0-9_-]/g, '-');
 }
 
+/**
+ * Hjälpfunktion för att avgöra om aktuell regelfil kan redigeras.
+ * En regelfil är redigerbar endast när vi är i regelfilsredigeringsläge
+ * och den inte är markerad som publicerad i state.
+ * @param {object} state - Hela appens state från getState()
+ * @returns {boolean}
+ */
+export function can_edit_rulefile(state) {
+    if (!state || typeof state !== 'object') return false;
+    if (state.auditStatus !== 'rulefile_editing') return false;
+    if (state.ruleFileIsPublished === true) return false;
+    return true;
+}
+
