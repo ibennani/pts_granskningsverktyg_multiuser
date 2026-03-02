@@ -540,6 +540,7 @@
   "show_all": "Show all",
   "show_existing_samples": "Don't save and continue to the audit overview",
   "sort_by_label": "Sort by:",
+  "generic_table_sort_announced": "Table sorted by {label}, {direction}.",
   "generic_table_sort_aria": "Sort by {label}",
   "generic_table_sort_aria_active": "{label}, {direction}",
   "generic_table_sort_asc": "ascending",

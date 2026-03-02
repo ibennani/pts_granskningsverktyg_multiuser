@@ -62,6 +62,11 @@ export const GenericTableComponent = {
         }
 
         const wrapper = this.Helpers.create_element('div', { class_name: wrapper_class });
+        const live_region = this.Helpers.create_element('div', {
+            class_name: 'visually-hidden',
+            attributes: { 'aria-live': 'polite', 'aria-atomic': 'true' }
+        });
+        wrapper.appendChild(live_region);
         const table = this.Helpers.create_element('table', {
             class_name: table_class,
             attributes: { 'aria-label': ariaLabel }
@@ -79,8 +84,12 @@ export const GenericTableComponent = {
             const is_active = sortState && sortState.columnIndex === col_index;
             const direction = is_active ? sortState.direction : 'asc';
 
+            const th_attrs = { 'scope': 'col' };
+            if (is_sortable) {
+                th_attrs['aria-sort'] = is_active ? (direction === 'asc' ? 'ascending' : 'descending') : 'none';
+            }
             const th = this.Helpers.create_element('th', {
-                attributes: is_sortable ? { 'aria-sort': is_active ? (direction === 'asc' ? 'ascending' : 'descending') : 'none' } : {}
+                attributes: th_attrs
             });
 
             if (is_sortable) {
@@ -159,7 +168,15 @@ export const GenericTableComponent = {
         if (typeof this._pendingSortFocusIndex === 'number') {
             const focus_index = this._pendingSortFocusIndex;
             this._pendingSortFocusIndex = undefined;
-            if (focus_index >= 0) {
+            if (focus_index >= 0 && sortState && columns[sortState.columnIndex]) {
+                const sort_label = columns[sortState.columnIndex].headerLabel;
+                const sort_dir_text = sortState.direction === 'asc' ? t('generic_table_sort_asc') : t('generic_table_sort_desc');
+                const announcement = t('generic_table_sort_announced', { label: sort_label, direction: sort_dir_text });
+                live_region.textContent = announcement;
+                const clear_after_ms = 800;
+                setTimeout(() => {
+                    live_region.textContent = '';
+                }, clear_after_ms);
                 const apply_focus = () => {
                     const header_buttons = wrapper.querySelectorAll('thead .generic-table-header-sort-btn');
                     const target = header_buttons[focus_index];

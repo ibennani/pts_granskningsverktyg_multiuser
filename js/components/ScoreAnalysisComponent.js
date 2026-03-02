@@ -129,12 +129,12 @@ export const ScoreAnalysisComponent = {
         main_container.appendChild(totalScoreContainer);
 
         const principlesContainer = this.Helpers.create_element('div', { class_name: 'score-analysis-principles' });
-        principlesContainer.appendChild(this.Helpers.create_element('h3', { 
+        principlesContainer.appendChild(this.Helpers.create_element('h3', {
             class_name: 'score-analysis-principles__title',
             text_content: t('score_by_principle_deficiency', {defaultValue: "Breakdown by Principle"})
         }));
 
-        const dl = this.Helpers.create_element('dl', { class_name: 'score-analysis-principles__list' });
+        const list_container = this.Helpers.create_element('div', { class_name: 'score-analysis-principles__list' });
 
         const default_order = ['perceivable', 'operable', 'understandable', 'robust'];
         const principle_ids = Object.keys(analysis.principles || {});
@@ -144,14 +144,20 @@ export const ScoreAnalysisComponent = {
 
         for (const principleId of ordered_principle_ids) {
             const data = analysis.principles[principleId];
-            
-            const row = this.Helpers.create_element('div', { class_name: 'principle-row' });
-            const label_text = data?.labelKey ? t(data.labelKey) : (data?.label || '');
-            const dt = this.Helpers.create_element('dt', { class_name: 'principle-row__name', text_content: label_text });
-            
-            const dd = this.Helpers.create_element('dd', { class_name: 'principle-row__bar-container' });
 
+            const label_text = data?.labelKey ? t(data.labelKey) : (data?.label || '');
             const formattedScore = this.Helpers.format_number_locally(data.score, lang_code);
+            const row_aria_label = t('deficiency_index_principle_screen_reader', { principle: label_text, score: formattedScore, defaultValue: `${label_text}; Deficiency Index ${formattedScore}` });
+
+            const row = this.Helpers.create_element('div', {
+                class_name: 'principle-row',
+                attributes: { role: 'group', 'aria-label': row_aria_label }
+            });
+
+            const name_div = this.Helpers.create_element('div', { class_name: 'principle-row__name', text_content: label_text });
+
+            const bar_container = this.Helpers.create_element('div', { class_name: 'principle-row__bar-container' });
+
             const bar = this.Helpers.create_element('div', {
                 class_name: 'principle-row__bar',
                 attributes: {
@@ -164,19 +170,17 @@ export const ScoreAnalysisComponent = {
             const valueSpan = this.Helpers.create_element('span', {
                 class_name: 'principle-row__value',
                 text_content: formattedScore,
-                attributes: {
-                    'aria-label': t('deficiency_index_principle_screen_reader', { principle: label_text, score: formattedScore, defaultValue: `${label_text}; Deficiency Index ${formattedScore}` })
-                }
+                attributes: { 'aria-hidden': 'true' }
             });
-            
-            dd.appendChild(bar);
-            dd.appendChild(valueSpan);
-            row.appendChild(dt);
-            row.appendChild(dd);
-            dl.appendChild(row);
+
+            bar_container.appendChild(bar);
+            bar_container.appendChild(valueSpan);
+            row.appendChild(name_div);
+            row.appendChild(bar_container);
+            list_container.appendChild(row);
         }
-        
-        principlesContainer.appendChild(dl);
+
+        principlesContainer.appendChild(list_container);
         main_container.appendChild(principlesContainer);
         this.root.appendChild(main_container);
     },

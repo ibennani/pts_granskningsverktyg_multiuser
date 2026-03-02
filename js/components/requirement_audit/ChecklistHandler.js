@@ -677,6 +677,7 @@ export const ChecklistHandler = {
 
             const status_text_container = check_wrapper.querySelector('.check-status-display');
             status_text_container.innerHTML = '';
+            status_text_container.setAttribute('aria-hidden', 'true');
             const status_span = this.Helpers.create_element('span', { 
                 class_name: `status-text status-${calculated_check_status}`, 
                 text_content: status_text 
@@ -736,6 +737,7 @@ export const ChecklistHandler = {
 
                 const pc_status_text_container = pc_item_li.querySelector('.pass-criterion-status');
                 pc_status_text_container.innerHTML = '';
+                pc_status_text_container.setAttribute('aria-hidden', 'true');
                 const pc_status_text = t(`audit_status_${current_pc_status}`);
                 const pc_status_span = this.Helpers.create_element('span', { 
                     class_name: `status-text status-${current_pc_status}`, 

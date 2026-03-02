@@ -709,7 +709,11 @@ export const RequirementAuditComponent = {
         } else if (className === 'overall-requirement-status-display') {
             const status_key = this.current_result?.status || 'not_audited';
             const status_text = this.Translation.t(`audit_status_${status_key}`);
-            const span = this.Helpers.create_element('span', { class_name: `status-text status-${status_key}`, text_content: status_text });
+            const span = this.Helpers.create_element('span', {
+                class_name: `status-text status-${status_key}`,
+                text_content: status_text,
+                attributes: { 'aria-hidden': 'true' }
+            });
             p.appendChild(span);
         } else if (data?.text) {
             if (data.url) {

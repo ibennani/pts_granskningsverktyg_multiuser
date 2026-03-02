@@ -185,6 +185,7 @@ export const SideMenuComponent = {
         const link = this.Helpers.create_element('a', {
             attributes: {
                 href,
+                'aria-label': label,
                 ...(is_active ? { 'aria-current': 'page' } : {})
             },
             class_name: ['side-menu__link', ...(is_active ? ['active'] : [])]

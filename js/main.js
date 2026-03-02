@@ -910,6 +910,7 @@ window.DraftManager = DraftManager;
             top_action_bar_instance.render();
             bottom_action_bar_container.style.display = '';
             bottom_action_bar_instance.render();
+            update_landmarks_and_skip_link();
             if (!is_focus_in_editable_field(view_root)) {
                 current_view_component_instance.render();
             }
@@ -919,6 +920,7 @@ window.DraftManager = DraftManager;
         top_action_bar_instance.render();
         bottom_action_bar_container.style.display = '';
         bottom_action_bar_instance.render();
+        update_landmarks_and_skip_link();
 
         const prev_params = prev_params_json ? (() => { try { return JSON.parse(prev_params_json); } catch (_) { return {}; } })() : {};
         const is_rulefile_sections_edit_toggle = view_name_to_render === 'rulefile_sections' &&
@@ -1539,9 +1541,27 @@ window.DraftManager = DraftManager;
         const skip_link = document.querySelector('.skip-link');
         if (skip_link) skip_link.textContent = t('skip_to_content');
         const top_nav = document.getElementById('global-action-bar-top');
-        if (top_nav) top_nav.setAttribute('aria-label', t('landmark_top_navigation'));
+        if (top_nav) {
+            const top_has_content = top_nav.childElementCount > 0;
+            if (top_has_content) {
+                top_nav.setAttribute('aria-label', t('landmark_top_navigation'));
+                top_nav.removeAttribute('aria-hidden');
+            } else {
+                top_nav.removeAttribute('aria-label');
+                top_nav.setAttribute('aria-hidden', 'true');
+            }
+        }
         const bottom_nav = document.getElementById('global-action-bar-bottom');
-        if (bottom_nav) bottom_nav.setAttribute('aria-label', t('landmark_bottom_navigation'));
+        if (bottom_nav) {
+            const bottom_has_content = bottom_nav.childElementCount > 0;
+            if (bottom_has_content) {
+                bottom_nav.setAttribute('aria-label', t('landmark_bottom_navigation'));
+                bottom_nav.removeAttribute('aria-hidden');
+            } else {
+                bottom_nav.removeAttribute('aria-label');
+                bottom_nav.setAttribute('aria-hidden', 'true');
+            }
+        }
         const right_sidebar = document.getElementById('app-right-sidebar-root');
         if (right_sidebar) right_sidebar.setAttribute('aria-label', t('landmark_right_sidebar'));
     }

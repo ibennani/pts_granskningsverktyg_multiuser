@@ -379,7 +379,7 @@ export const RequirementsListViewComponent = {
                 if (needs_help) status_parts.push(t('filter_option_needs_help'));
                 if (is_updated) status_parts.push(t('status_updated_tooltip'));
                 const status_label = status_parts.join(', ');
-                const aria_label = `${req.title}. Status: ${status_label}`;
+                const aria_label = `${req.title}. ${status_label}`;
 
                 const link = li.querySelector('a.list-title-link');
                 const details_row = li.querySelector('.requirement-details-row');
@@ -1186,7 +1186,7 @@ export const RequirementsListViewComponent = {
         if (needs_help) status_parts.push(t('filter_option_needs_help'));
         if (is_updated) status_parts.push(t('status_updated_tooltip'));
         const status_label = status_parts.join(', ');
-        const aria_label = `${req.title}. Status: ${status_label}`;
+        const aria_label = `${req.title}. ${status_label}`;
 
         const h3 = this.Helpers.create_element('h3', { class_name: 'requirement-header-nested requirement-title-container' });
         const title_link = this.Helpers.create_element('a', {
@@ -1324,13 +1324,32 @@ export const RequirementsListViewComponent = {
 
         window.scrollTo({ top: scroll_position, behavior: 'smooth' });
 
-        setTimeout(() => {
-            try {
-                target_link.focus({ preventScroll: true });
-            } catch (e) {
-                target_link.focus();
-            }
-        }, 150);
+        const content_div = this.content_div_for_delegation;
+        const mode = this.mode;
+        const params_sample_id = this.params?.sampleId || null;
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                if (!content_div || !document.contains(content_div)) return;
+                let link = null;
+                if (mode === 'all') {
+                    link = content_div.querySelector(
+                        `a.list-title-link[data-requirement-id="${CSS.escape(String(requirement_id))}"][data-sample-id="${CSS.escape(String(sample_id))}"]`
+                    );
+                } else {
+                    if (String(sample_id) !== String(params_sample_id)) return;
+                    link = content_div.querySelector(
+                        `a.list-title-link[data-requirement-id="${CSS.escape(String(requirement_id))}"]`
+                    );
+                }
+                if (link && document.contains(link)) {
+                    try {
+                        link.focus({ preventScroll: true });
+                    } catch (e) {
+                        link.focus();
+                    }
+                }
+            }, 300);
+        });
     },
 
     destroy() {

@@ -1400,7 +1400,7 @@ export const AuditViewComponent = {
                         class_name: 'audit-item-label audit-audit-link',
                         attributes: {
                             href: `#audit_overview?auditId=${a.id}`,
-                            'aria-label': t('start_view_open_audit_aria', { name: display_name })
+                            'aria-label': display_name
                         }
                     });
                     link.addEventListener('click', (e) => {
