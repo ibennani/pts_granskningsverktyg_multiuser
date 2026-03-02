@@ -702,7 +702,8 @@ export const AuditViewComponent = {
                     type: 'file',
                     accept: '.json,application/json',
                     'aria-label': t('audit_upload'),
-                    tabindex: '-1'
+                    tabindex: '-1',
+                    'aria-hidden': 'true'
                 }
             });
             this.upload_file_input.addEventListener('change', this.handle_file_select);
@@ -861,7 +862,9 @@ export const AuditViewComponent = {
                         attributes: {
                             type: 'file',
                             accept: '.json,application/json',
-                            'aria-label': t('audit_upload_saved_audit')
+                            'aria-label': t('audit_upload_saved_audit'),
+                            tabindex: '-1',
+                            'aria-hidden': 'true'
                         }
                     });
                     this.upload_audit_file_input.addEventListener('change', this.handle_audit_file_select);
