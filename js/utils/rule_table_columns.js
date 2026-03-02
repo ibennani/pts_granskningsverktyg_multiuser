@@ -23,7 +23,7 @@ export function create_rule_table_columns(deps, handlers) {
                 const version_display = row.version_display ? ` (${row.version_display})` : '';
                 const link_text = rule_name + version_display;
                 const link = Helpers.create_element('a', {
-                    class_name: 'generic-table-rule-link',
+                    class_name: 'generic-table-audit-link',
                     text_content: link_text,
                     attributes: {
                         href: '#edit_rulefile_main',

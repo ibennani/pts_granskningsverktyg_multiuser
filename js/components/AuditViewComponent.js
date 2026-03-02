@@ -99,6 +99,7 @@ export const AuditViewComponent = {
         await this._auditsTable.init({ deps });
         this._rulesTable = Object.create(GenericTableComponent);
         await this._rulesTable.init({ deps });
+        this.draft_rules = [];
     },
 
     get_t_func() {
@@ -761,7 +762,7 @@ export const AuditViewComponent = {
         const two_col = this.Helpers.create_element('div', { class_name: 'audit-two-columns' });
 
         const left_col = this.Helpers.create_element('section', {
-            class_name: 'audit-column',
+            class_name: 'start-view-audits-section',
             attributes: { 'aria-labelledby': 'audit-rules-heading' }
         });
         const rules_heading = this.Helpers.create_element('h2', {
@@ -790,7 +791,7 @@ export const AuditViewComponent = {
             emptyMessage: t('audit_rules_empty'),
             ariaLabel: t('audit_rules_title'),
             wrapperClassName: 'generic-table-wrapper',
-            tableClassName: 'generic-table generic-table--rules-list',
+            tableClassName: 'generic-table generic-table--audit-list',
             sortState: this._rulesTableSortState,
             onSort: (columnIndex, direction) => {
                 this._rulesTableSortState = { columnIndex, direction };
@@ -799,6 +800,34 @@ export const AuditViewComponent = {
             t: this.Translation.t.bind(this.Translation)
         });
         left_col.appendChild(rules_table_wrapper);
+
+        const draft_section = this.Helpers.create_element('section', {
+            class_name: 'start-view-audits-section start-view-audits-section-following'
+        });
+        const draft_rules_heading = this.Helpers.create_element('h2', {
+            text_content: t('audit_rules_draft_title')
+        });
+        draft_section.appendChild(draft_rules_heading);
+
+        const draft_rules_table_wrapper = this.Helpers.create_element('div');
+        this._draftRulesTableSortState = this._draftRulesTableSortState ?? { columnIndex: 0, direction: 'asc' };
+        this._rulesTable?.render({
+            root: draft_rules_table_wrapper,
+            columns: rule_columns,
+            data: this.draft_rules || [],
+            emptyMessage: t('audit_rules_draft_empty') || '',
+            ariaLabel: t('audit_rules_draft_title'),
+            wrapperClassName: 'generic-table-wrapper',
+            tableClassName: 'generic-table generic-table--audit-list',
+            sortState: this._draftRulesTableSortState,
+            onSort: (columnIndex, direction) => {
+                this._draftRulesTableSortState = { columnIndex, direction };
+                this.render();
+            },
+            t: this.Translation.t.bind(this.Translation)
+        });
+        draft_section.appendChild(draft_rules_table_wrapper);
+        left_col.appendChild(draft_section);
 
         const right_col = this.Helpers.create_element(
             this.audit_mode === 'audits' ? 'div' : 'section',
