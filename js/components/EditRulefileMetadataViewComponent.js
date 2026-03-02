@@ -21,6 +21,17 @@ export const EditRulefileMetadataViewComponent = {
         }
     },
 
+    REQUIRED_METADATA_FIELDS: [
+        { name: 'metadata.title', labelKey: 'rulefile_metadata_field_title' },
+        { name: 'metadata.description', labelKey: 'rulefile_metadata_field_description' },
+        { name: 'metadata.language', labelKey: 'rulefile_metadata_field_language' },
+        { name: 'metadata.monitoringType.text', labelKey: 'rulefile_metadata_field_monitoring_type_label' },
+        { name: 'metadata.publisher.name', labelKey: 'rulefile_metadata_field_publisher_name' },
+        { name: 'metadata.publisher.contactPoint', labelKey: 'rulefile_metadata_field_publisher_contact' },
+        { name: 'metadata.source.url', labelKey: 'rulefile_metadata_field_source_url' },
+        { name: 'metadata.source.title', labelKey: 'rulefile_metadata_field_source_title' }
+    ],
+
     _create_field(label_key, name, value = '', type = 'text', options = {}) {
         const { required = false } = options;
         const container = this.Helpers.create_element('div', { class_name: 'form-group' });
@@ -81,6 +92,54 @@ export const EditRulefileMetadataViewComponent = {
             container.appendChild(input);
         }
 
+        return container;
+    },
+
+    _create_language_select_field(name, value) {
+        const container = this.Helpers.create_element('div', { class_name: 'form-group' });
+        const t = this.Translation.t;
+        const labelText = t('rulefile_metadata_field_language');
+        const label = this.Helpers.create_element('label', { attributes: { for: name }, text_content: labelText });
+        container.appendChild(label);
+
+        const select = this.Helpers.create_element('select', {
+            class_name: 'form-control',
+            attributes: { id: name, name }
+        });
+
+        const supported =
+            (this.Translation?.get_supported_languages && this.Translation.get_supported_languages()) ||
+            (window.Translation?.get_supported_languages && window.Translation.get_supported_languages()) ||
+            {};
+        const codes = Object.keys(supported);
+
+        const current_lang_code =
+            (this.Translation?.get_current_language_code && this.Translation.get_current_language_code()) ||
+            (window.Translation?.get_current_language_code && window.Translation.get_current_language_code()) ||
+            null;
+
+        let initial = (value || '').toString().trim();
+        if (!initial) {
+            if (current_lang_code && codes.includes(current_lang_code)) {
+                initial = current_lang_code;
+            } else if (codes.length > 0) {
+                initial = codes[0];
+            }
+        }
+
+        codes.forEach((code) => {
+            const option = this.Helpers.create_element('option', {
+                attributes: { value: code },
+                text_content: supported[code] || code
+            });
+            select.appendChild(option);
+        });
+
+        if (initial) {
+            select.value = initial;
+        }
+
+        container.appendChild(select);
         return container;
     },
 
@@ -908,12 +967,17 @@ export const EditRulefileMetadataViewComponent = {
 
         const general_section = this.Helpers.create_element('section', { class_name: 'form-section' });
         general_section.appendChild(this.Helpers.create_element('h2', { text_content: this.Translation.t('rulefile_metadata_section_general') }));
-        general_section.appendChild(this._create_field('rulefile_metadata_field_title', 'metadata.title', metadata.title || '', 'text', { required: true }));
+        general_section.appendChild(this._create_field('rulefile_metadata_field_title', 'metadata.title', metadata.title || '', 'text'));
         general_section.appendChild(this._create_field('rulefile_metadata_field_description', 'metadata.description', metadata.description || '', 'textarea'));
         if (!is_create_mode) {
             general_section.appendChild(this._create_field('rulefile_metadata_field_version', 'metadata.version', metadata.version || ''));
         }
-        general_section.appendChild(this._create_field('rulefile_metadata_field_language', 'metadata.language', metadata.language || ''));
+        const initial_language =
+            metadata.language ||
+            (this.Translation?.get_current_language_code && this.Translation.get_current_language_code()) ||
+            (window.Translation?.get_current_language_code && window.Translation.get_current_language_code()) ||
+            '';
+        general_section.appendChild(this._create_language_select_field('metadata.language', initial_language));
         if (!is_create_mode) {
             general_section.appendChild(this._create_field('rulefile_metadata_field_monitoring_type_key', 'metadata.monitoringType.type', metadata.monitoringType?.type || ''));
         }
@@ -1102,7 +1166,8 @@ export const EditRulefileMetadataViewComponent = {
                     originalRuleFileContentString: JSON.stringify(stored_content, null, 2),
                     originalRuleFileFilename: stored_content?.metadata?.title || '',
                     ruleSetId: created?.id,
-                    ruleFileServerVersion: created?.version ?? 0
+                    ruleFileServerVersion: created?.version ?? 0,
+                    ruleFileIsPublished: false
                 }
             });
             this.NotificationComponent.show_global_message?.(t('rulefile_metadata_edit_saved'), 'success');

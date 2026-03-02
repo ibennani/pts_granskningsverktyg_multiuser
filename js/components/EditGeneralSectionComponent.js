@@ -65,6 +65,54 @@ export const EditGeneralSectionComponent = {
         return container;
     },
 
+    _create_language_select_field(name, value) {
+        const container = this.Helpers.create_element('div', { class_name: 'form-group' });
+        const t = this.Translation.t;
+        const labelText = t('rulefile_metadata_field_language');
+        const label = this.Helpers.create_element('label', { attributes: { for: name }, text_content: labelText });
+        container.appendChild(label);
+
+        const select = this.Helpers.create_element('select', {
+            class_name: 'form-control',
+            attributes: { id: name, name }
+        });
+
+        const supported =
+            (this.Translation?.get_supported_languages && this.Translation.get_supported_languages()) ||
+            (window.Translation?.get_supported_languages && window.Translation.get_supported_languages()) ||
+            {};
+        const codes = Object.keys(supported);
+
+        const current_lang_code =
+            (this.Translation?.get_current_language_code && this.Translation.get_current_language_code()) ||
+            (window.Translation?.get_current_language_code && window.Translation.get_current_language_code()) ||
+            null;
+
+        let initial = (value || '').toString().trim();
+        if (!initial) {
+            if (current_lang_code && codes.includes(current_lang_code)) {
+                initial = current_lang_code;
+            } else if (codes.length > 0) {
+                initial = codes[0];
+            }
+        }
+
+        codes.forEach((code) => {
+            const option = this.Helpers.create_element('option', {
+                attributes: { value: code },
+                text_content: supported[code] || code
+            });
+            select.appendChild(option);
+        });
+
+        if (initial) {
+            select.value = initial;
+        }
+
+        container.appendChild(select);
+        return container;
+    },
+
     _clone_metadata(metadata) {
         return JSON.parse(JSON.stringify(metadata || {}));
     },
@@ -92,10 +140,15 @@ export const EditGeneralSectionComponent = {
         // General section
         const general_section = this.Helpers.create_element('section', { class_name: 'form-section' });
         general_section.appendChild(this.Helpers.create_element('h3', { text_content: this.Translation.t('rulefile_metadata_section_general') }));
-        general_section.appendChild(this._create_field('rulefile_metadata_field_title', 'metadata.title', metadata.title || '', 'text', { required: true }));
+        general_section.appendChild(this._create_field('rulefile_metadata_field_title', 'metadata.title', metadata.title || '', 'text'));
         general_section.appendChild(this._create_field('rulefile_metadata_field_description', 'metadata.description', metadata.description || '', 'textarea'));
         general_section.appendChild(this._create_field('rulefile_metadata_field_version', 'metadata.version', metadata.version || ''));
-        general_section.appendChild(this._create_field('rulefile_metadata_field_language', 'metadata.language', metadata.language || ''));
+        const initial_language =
+            metadata.language ||
+            (this.Translation?.get_current_language_code && this.Translation.get_current_language_code()) ||
+            (window.Translation?.get_current_language_code && window.Translation.get_current_language_code()) ||
+            '';
+        general_section.appendChild(this._create_language_select_field('metadata.language', initial_language));
         // monitoringType.type (nyckeln) visas inte - den är en intern identifierare och ska inte redigeras direkt
         general_section.appendChild(this._create_field('rulefile_metadata_field_monitoring_type_label', 'metadata.monitoringType.text', metadata.monitoringType?.text || ''));
         general_section.appendChild(this._create_field('rulefile_metadata_field_date_created', 'metadata.dateCreated', metadata.dateCreated || '', 'date'));
