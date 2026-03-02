@@ -143,6 +143,83 @@ export const EditRulefileMetadataViewComponent = {
         return container;
     },
 
+    _collect_missing_required_metadata_fields(formData) {
+        const fields = Array.isArray(this.REQUIRED_METADATA_FIELDS) ? this.REQUIRED_METADATA_FIELDS : [];
+        const missing = [];
+        fields.forEach((field) => {
+            const raw = formData.get(field.name);
+            const value = (raw || '').toString().trim();
+            if (!value) {
+                missing.push(field);
+            }
+        });
+        return missing;
+    },
+
+    _show_rulefile_required_fields_modal(missingFields, form, focusFieldName) {
+        const ModalComponent = window.ModalComponent;
+        const t = this.Translation.t;
+        if (!ModalComponent?.show || !this.Helpers?.create_element) {
+            const labels = (missingFields || []).map((f) => t(f.labelKey || '')).join(', ');
+            if (this.NotificationComponent?.show_global_message) {
+                this.NotificationComponent.show_global_message(
+                    `${t('rulefile_metadata_required_modal_title')}: ${labels}`,
+                    'error'
+                );
+            }
+            const el = focusFieldName ? form.elements[focusFieldName] : null;
+            if (el && typeof el.focus === 'function') {
+                try { el.focus(); } catch (e) {}
+            }
+            return;
+        }
+
+        const Helpers = this.Helpers;
+        const intro = t('rulefile_metadata_required_modal_intro');
+        let message_html = '';
+        if (intro) {
+            const safe_intro = Helpers.escape_html ? Helpers.escape_html(intro) : intro;
+            message_html += `<p>${safe_intro}</p>`;
+        }
+        if (Array.isArray(missingFields) && missingFields.length > 0) {
+            message_html += '<ul>';
+            missingFields.forEach((field) => {
+                const labelText = t(field.labelKey || '');
+                const safeLabel = Helpers.escape_html ? Helpers.escape_html(labelText) : labelText;
+                message_html += `<li>${safeLabel}</li>`;
+            });
+            message_html += '</ul>';
+        }
+
+        ModalComponent.show(
+            {
+                h1_text: t('rulefile_metadata_required_modal_title'),
+                message_text: ''
+            },
+            (container, modal_instance) => {
+                const message_el = container.querySelector('.modal-message');
+                if (message_el) {
+                    message_el.innerHTML = message_html;
+                }
+                const buttons_wrapper = Helpers.create_element('div', { class_name: 'modal-confirm-actions' });
+                const ok_btn = Helpers.create_element('button', {
+                    class_name: ['button', 'button-primary'],
+                    attributes: { type: 'button' },
+                    text_content: t('rulefile_metadata_required_modal_acknowledge')
+                });
+                ok_btn.addEventListener('click', () => {
+                    modal_instance.close();
+                    const el = focusFieldName ? form.elements[focusFieldName] : null;
+                    if (el && typeof el.focus === 'function') {
+                        try { el.focus(); } catch (e) {}
+                    }
+                });
+                buttons_wrapper.appendChild(ok_btn);
+                container.appendChild(buttons_wrapper);
+            }
+        );
+    },
+
     _clone_metadata(metadata) {
         return JSON.parse(JSON.stringify(metadata || {}));
     },
@@ -1121,6 +1198,13 @@ export const EditRulefileMetadataViewComponent = {
         const formData = new FormData(form);
         const getValue = name => (formData.get(name) || '').toString().trim();
 
+        const missingFields = this._collect_missing_required_metadata_fields(formData);
+        if (missingFields.length > 0) {
+            const firstName = missingFields[0]?.name || null;
+            this._show_rulefile_required_fields_modal(missingFields, form, firstName);
+            return;
+        }
+
         const today = new Date();
         const yyyy = today.getFullYear();
         const mm = String(today.getMonth() + 1).padStart(2, '0');
@@ -1184,6 +1268,13 @@ export const EditRulefileMetadataViewComponent = {
         const t = this.Translation.t;
         const formData = new FormData(form);
         const getValue = name => (formData.get(name) || '').toString().trim();
+
+        const missingFields = this._collect_missing_required_metadata_fields(formData);
+        if (missingFields.length > 0) {
+            const firstName = missingFields[0]?.name || null;
+            this._show_rulefile_required_fields_modal(missingFields, form, firstName);
+            return;
+        }
 
         const keywords_input = getValue('metadata.keywords');
         const keywords = keywords_input

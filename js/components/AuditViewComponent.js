@@ -287,7 +287,8 @@ export const AuditViewComponent = {
                 originalRuleFileContentString: JSON.stringify(migrated_content, null, 2),
                 originalRuleFileFilename: '',
                 ruleSetId: null,
-                ruleFileServerVersion: 0
+                ruleFileServerVersion: 0,
+                ruleFileIsPublished: false
             }
         });
         this.router('rulefile_metadata_edit', { mode: 'create' });
@@ -799,7 +800,8 @@ export const AuditViewComponent = {
                     originalRuleFileContentString: migrated_content_string,
                     originalRuleFileFilename: rule_row?.name || `regelfil_${rule_id}.json`,
                     ruleSetId: rule_id,
-                    ruleFileServerVersion: rule_row?.version ?? 0
+                    ruleFileServerVersion: rule_row?.version ?? 0,
+                    ruleFileIsPublished: !is_arbetskopia
                 }
             });
             if (is_production_copy) {
