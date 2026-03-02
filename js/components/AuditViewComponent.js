@@ -553,8 +553,18 @@ export const AuditViewComponent = {
 
     async _do_import_rule_and_refresh(migrated_content, event) {
         const t = this.get_t_func();
-        const name = migrated_content?.metadata?.title?.trim() || 'Importerad regelfil';
-        await import_rule(name, migrated_content);
+        const content_to_import = { ...migrated_content };
+        if (!content_to_import.metadata) {
+            content_to_import.metadata = {};
+        }
+        if (!content_to_import.metadata.ruleSetId) {
+            const uuid = (typeof crypto !== 'undefined' && crypto?.randomUUID ? crypto.randomUUID() : null)
+                || (this.Helpers?.generate_uuid_v4 ? this.Helpers.generate_uuid_v4() : null)
+                || `gen-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+            content_to_import.metadata = { ...content_to_import.metadata, ruleSetId: uuid };
+        }
+        const name = content_to_import?.metadata?.title?.trim() || 'Importerad regelfil';
+        await import_rule(name, content_to_import);
         this.NotificationComponent?.show_global_message(
             t('audit_rule_uploaded_success'),
             'success'

@@ -152,10 +152,15 @@ export class GlobalActionBarComponent {
         current_metadata.version,
         today
       );
+      const rule_set_id = current_state.ruleSetId ?? current_metadata.ruleSetId ??
+        (this.Helpers?.generate_uuid_v4 ? this.Helpers.generate_uuid_v4() : null) ??
+        (typeof crypto !== 'undefined' && crypto?.randomUUID ? crypto.randomUUID() : null) ??
+        `gen-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
       updated_rulefile_content.metadata = {
         ...current_metadata,
         dateModified: today_iso_date,
         version: next_version,
+        ruleSetId: rule_set_id,
       };
 
       data_string_for_download = JSON.stringify(
@@ -183,8 +188,22 @@ export class GlobalActionBarComponent {
         });
       }
     } else if (is_edit_mode && !has_changes && original_string) {
-      data_string_for_download = original_string;
-      // Generera filnamn baserat på titel även när det inte finns ändringar
+      try {
+        const parsed = JSON.parse(original_string);
+        const meta = parsed?.metadata || {};
+        const rule_set_id = current_state.ruleSetId ?? meta.ruleSetId ??
+          (this.Helpers?.generate_uuid_v4 ? this.Helpers.generate_uuid_v4() : null) ??
+          (typeof crypto !== 'undefined' && crypto?.randomUUID ? crypto.randomUUID() : null) ??
+          `gen-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+        if (!meta.ruleSetId) {
+          parsed.metadata = { ...meta, ruleSetId: rule_set_id };
+          data_string_for_download = JSON.stringify(parsed, null, 2);
+        } else {
+          data_string_for_download = original_string;
+        }
+      } catch {
+        data_string_for_download = original_string;
+      }
       const current_metadata = current_state.ruleFileContent?.metadata || {};
       const current_version = current_metadata.version || null;
       const title = current_metadata.title || 'rulefile';
