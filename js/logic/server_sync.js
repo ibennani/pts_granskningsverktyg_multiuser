@@ -114,6 +114,8 @@ export function schedule_sync_rulefile_to_server(get_state_fn) {
     rulefile_debounce_timer = setTimeout(async () => {
         rulefile_debounce_timer = null;
         const state = get_state_fn();
+        // Synka aldrig publicerad regelfil – endast arbetskopior ska uppdateras automatiskt.
+        if (state?.ruleFileIsPublished) return;
         if (state?.auditStatus === 'rulefile_editing' && state.ruleSetId && state.ruleFileContent) {
             await run_sync_rulefile(state);
         }
@@ -129,6 +131,8 @@ export async function flush_sync_rulefile_to_server(get_state_fn) {
         rulefile_debounce_timer = null;
     }
     const state = typeof get_state_fn === 'function' ? get_state_fn() : null;
+    // Synka aldrig publicerad regelfil – endast arbetskopior ska uppdateras.
+    if (state?.ruleFileIsPublished) return;
     if (state?.auditStatus === 'rulefile_editing' && state.ruleSetId && state.ruleFileContent) {
         await run_sync_rulefile(state);
     }

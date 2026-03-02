@@ -1024,5 +1024,9 @@
   "rulefile_publish_button": "Publish",
   "rulefile_publish_rule_aria": "Publish rule file {name}",
   "rulefile_publish_success": "The rule file has been published. New audits will now use the updated version.",
-  "rulefile_publish_error": "Could not publish the rule file."
+  "rulefile_publish_error": "Could not publish the rule file.",
+  "rulefile_publish_confirm_modal_title": "Publish new version of rule file",
+  "rulefile_publish_confirm_modal_message": "You are about to publish a new version of the rule file \"{name}\". This will overwrite the current published version. After publishing, each audit can be updated with the new rule file from within the respective audit.",
+  "rulefile_publish_confirm_modal_confirm_btn": "Publish",
+  "rulefile_publish_confirm_modal_cancel_btn": "Do not publish"
 }

@@ -1024,5 +1024,9 @@
   "rulefile_publish_button": "Publicera",
   "rulefile_publish_rule_aria": "Publicera {name}",
   "rulefile_publish_success": "Regelfilen har publicerats. Nya granskningar använder nu den uppdaterade versionen.",
-  "rulefile_publish_error": "Kunde inte publicera regelfilen."
+  "rulefile_publish_error": "Kunde inte publicera regelfilen.",
+  "rulefile_publish_confirm_modal_title": "Publicera ny version av regelfilen",
+  "rulefile_publish_confirm_modal_message": "Du är på väg att publicera en ny version av regelfilen \"{name}\". Det skriver över den nuvarande publicerade versionen. Efter publicering kan var och en av granskningarna uppdateras med den nya regelfilen inifrån respektive granskning.",
+  "rulefile_publish_confirm_modal_confirm_btn": "Publicera",
+  "rulefile_publish_confirm_modal_cancel_btn": "Vill inte publicera"
 }
