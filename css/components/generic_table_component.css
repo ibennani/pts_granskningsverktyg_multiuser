@@ -180,6 +180,13 @@
     justify-content: flex-end;
 }
 
+.generic-table--audit-list .generic-table-rule-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    flex-wrap: nowrap;
+}
+
 [data-theme="dark"] .generic-table thead tr {
     background: linear-gradient(135deg, color-mix(in srgb, var(--primary-color) 15%, var(--input-background-color)), color-mix(in srgb, var(--primary-color) 8%, var(--input-background-color)));
 }

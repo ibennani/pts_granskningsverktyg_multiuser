@@ -60,6 +60,7 @@ export function create_rule_table_columns(deps, handlers) {
                 const version_suffix = version_parts.length > 0 ? ` (${version_parts.join(' · ')})` : '';
                 const link_text = rule_name + version_suffix;
 
+                const outer = Helpers.create_element('div', { class_name: 'generic-table-action-cell' });
                 const container = Helpers.create_element('div', { class_name: 'generic-table-rule-actions' });
 
                 if (typeof onDownloadRule === 'function') {
@@ -118,7 +119,8 @@ export function create_rule_table_columns(deps, handlers) {
                     container.appendChild(delete_btn);
                 }
 
-                return container;
+                outer.appendChild(container);
+                return outer;
             }
         }
     ];
