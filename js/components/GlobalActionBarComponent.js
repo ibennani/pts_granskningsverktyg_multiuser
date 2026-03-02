@@ -1,4 +1,5 @@
 import { SaveAuditButtonComponent } from './SaveAuditButtonComponent.js';
+import { can_edit_rulefile } from '../utils/helpers.js';
 
 export class GlobalActionBarComponent {
   constructor() {
@@ -383,7 +384,7 @@ export class GlobalActionBarComponent {
         this.save_audit_button_instance.render();
         left_group.appendChild(this.save_audit_button_container_element);
       }
-    } else if (is_in_audit_or_rulefile_edit && audit_status === 'rulefile_editing' && has_rulefile_loaded) {
+    } else if (is_in_audit_or_rulefile_edit && has_rulefile_loaded && can_edit_rulefile(current_state)) {
       const save_rulefile_button = this.Helpers.create_element('button', {
         class_name: ['button', 'button-primary'],
         html_content:

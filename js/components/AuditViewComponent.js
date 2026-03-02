@@ -544,6 +544,18 @@ export const AuditViewComponent = {
         return null;
     },
 
+    _get_rule_display_name(rule_id) {
+        const all_rules = Array.isArray(this.rules) ? this.rules : [];
+        const r = all_rules.find((row) => String(row.id) === String(rule_id));
+        if (!r) return `Regelfil ${rule_id}`;
+        const t = this.get_t_func();
+        const base = (r.name || `Regelfil ${r.id}`).trim();
+        const is_production = !!r.production_base_id;
+        if (is_production) return `${base} (${t('rulefile_status_production_label')})`;
+        if (r.version_display) return `${base} ${r.version_display} (${t('rulefile_status_published_label')})`;
+        return base;
+    },
+
     _is_uploaded_file_older(file_date_modified, server_updated_at) {
         if (!file_date_modified || !server_updated_at) return false;
         const file_date = new Date(file_date_modified);
@@ -617,6 +629,44 @@ export const AuditViewComponent = {
         );
     },
 
+    _show_publish_rule_confirm_modal(rule_name, on_confirm, on_cancel) {
+        const t = this.get_t_func();
+        const ModalComponent = window.ModalComponent;
+        if (!ModalComponent?.show || !this.Helpers?.create_element) {
+            if (typeof on_cancel === 'function') on_cancel();
+            return;
+        }
+        const message = t('rulefile_publish_confirm_modal_message', { name: rule_name });
+        ModalComponent.show(
+            {
+                h1_text: t('rulefile_publish_confirm_modal_title'),
+                message_text: message
+            },
+            (container, modal_instance) => {
+                const buttons_wrapper = this.Helpers.create_element('div', { class_name: 'modal-confirm-actions' });
+                const confirm_btn = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-primary'],
+                    text_content: t('rulefile_publish_confirm_modal_confirm_btn')
+                });
+                confirm_btn.addEventListener('click', () => {
+                    modal_instance.close();
+                    if (typeof on_confirm === 'function') on_confirm();
+                });
+                const cancel_btn = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-default'],
+                    text_content: t('rulefile_publish_confirm_modal_cancel_btn')
+                });
+                cancel_btn.addEventListener('click', () => {
+                    modal_instance.close();
+                    if (typeof on_cancel === 'function') on_cancel();
+                });
+                buttons_wrapper.appendChild(confirm_btn);
+                buttons_wrapper.appendChild(cancel_btn);
+                container.appendChild(buttons_wrapper);
+            }
+        );
+    },
+
     _show_audit_duplicate_modal(metadata, on_close) {
         const t = this.get_t_func();
         const ModalComponent = window.ModalComponent;
@@ -667,7 +717,16 @@ export const AuditViewComponent = {
         }
     },
 
-    async handle_publish_rule(rule_id) {
+    handle_publish_rule(rule_id) {
+        const rule_name = this._get_rule_display_name(rule_id);
+        this._show_publish_rule_confirm_modal(
+            rule_name,
+            () => this._do_publish_rule(rule_id),
+            () => {}
+        );
+    },
+
+    async _do_publish_rule(rule_id) {
         const t = this.get_t_func();
         try {
             await publish_rule(rule_id);
@@ -711,7 +770,16 @@ export const AuditViewComponent = {
         }
     },
 
-    async handle_publish_production_rule(rule_id) {
+    handle_publish_production_rule(rule_id) {
+        const rule_name = this._get_rule_display_name(rule_id);
+        this._show_publish_rule_confirm_modal(
+            rule_name,
+            () => this._do_publish_production_rule(rule_id),
+            () => {}
+        );
+    },
+
+    async _do_publish_production_rule(rule_id) {
         const t = this.get_t_func();
         try {
             await publish_production_rule(rule_id);
