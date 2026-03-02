@@ -563,6 +563,22 @@ export const AuditViewComponent = {
         return (r.name || `Regelfil ${r.id}`).trim();
     },
 
+    _focus_rule_link(rule_id, section) {
+        if (!rule_id || !this.root) return;
+        const wrapper_id = section === 'draft' ? 'audit-draft-rules-wrapper' : 'audit-published-rules-wrapper';
+        const wrapper = this.root.querySelector(`#${wrapper_id}`);
+        const link = wrapper?.querySelector(`a.generic-table-audit-link[data-rule-id="${CSS.escape(String(rule_id))}"]`);
+        if (link && typeof link.focus === 'function') {
+            requestAnimationFrame(() => {
+                try {
+                    link.focus({ preventScroll: false });
+                } catch {
+                    link.focus();
+                }
+            });
+        }
+    },
+
     _is_uploaded_file_older(file_date_modified, server_updated_at) {
         if (!file_date_modified || !server_updated_at) return false;
         const file_date = new Date(file_date_modified);
@@ -767,6 +783,7 @@ export const AuditViewComponent = {
             );
             await this.ensure_api_data();
             this.render();
+            this._focus_rule_link(rule_id, 'published');
         } catch (error) {
             this.NotificationComponent?.show_global_message(
                 error.message || t('rulefile_publish_error'),
@@ -782,16 +799,7 @@ export const AuditViewComponent = {
             await this.ensure_api_data();
             this.render();
             if (created?.id) {
-                requestAnimationFrame(() => {
-                    const link = this.root?.querySelector(`a.generic-table-audit-link[data-rule-id="${created.id}"]`);
-                    if (link && typeof link.focus === 'function') {
-                        try {
-                            link.focus({ preventScroll: false });
-                        } catch {
-                            link.focus();
-                        }
-                    }
-                });
+                this._focus_rule_link(created.id, 'draft');
             }
         } catch (error) {
             this.NotificationComponent?.show_global_message(
@@ -813,13 +821,15 @@ export const AuditViewComponent = {
     async _do_publish_production_rule(rule_id) {
         const t = this.get_t_func();
         try {
-            await publish_production_rule(rule_id);
+            const result = await publish_production_rule(rule_id);
             this.NotificationComponent?.show_global_message(
                 t('rulefile_publish_success'),
                 'success'
             );
             await this.ensure_api_data();
             this.render();
+            const focus_id = result?.base?.id ?? rule_id;
+            this._focus_rule_link(focus_id, 'published');
         } catch (error) {
             this.NotificationComponent?.show_global_message(
                 error.message || t('rulefile_publish_error'),
@@ -1108,7 +1118,9 @@ export const AuditViewComponent = {
         });
         left_col.appendChild(rules_heading);
 
-        const rules_table_wrapper = this.Helpers.create_element('div');
+        const rules_table_wrapper = this.Helpers.create_element('div', {
+            attributes: { id: 'audit-published-rules-wrapper' }
+        });
         this._rulesTableSortState = this._rulesTableSortState ?? { columnIndex: 0, direction: 'asc' };
         const rules_table_deps = {
             t: this.get_t_func(),
@@ -1173,7 +1185,9 @@ export const AuditViewComponent = {
 
         draft_section.appendChild(draft_heading_row);
 
-        const draft_rules_table_wrapper = this.Helpers.create_element('div');
+        const draft_rules_table_wrapper = this.Helpers.create_element('div', {
+            attributes: { id: 'audit-draft-rules-wrapper' }
+        });
         this._draftRulesTableSortState = this._draftRulesTableSortState ?? { columnIndex: 0, direction: 'asc' };
         this._rulesTable?.render({
             root: draft_rules_table_wrapper,

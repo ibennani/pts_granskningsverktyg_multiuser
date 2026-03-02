@@ -1,0 +1,3 @@
+Fokus sätts på regelfilens länk efter publicering och efter skapa arbetskopia
+
+Efter att användaren klickat Publicera i modalen sätts fokus på länken till den publicerade regelfilen i listan. Efter att användaren klickat Skapa arbetskopia sätts fokus på länken till den nya arbetskopian under Arbetskopior.
