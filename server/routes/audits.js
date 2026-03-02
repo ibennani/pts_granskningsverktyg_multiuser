@@ -56,7 +56,10 @@ function count_business_days(startDate, endDate) {
 }
 
 function build_full_state(audit_row, rule_set_row) {
-    let ruleFileContent = audit_row?.rule_file_content ?? (rule_set_row ? rule_set_row.content : null);
+    let ruleFileContent = audit_row?.rule_file_content
+        ?? (rule_set_row
+            ? (rule_set_row.published_content ?? rule_set_row.content)
+            : null);
     if (ruleFileContent && typeof ruleFileContent === 'string') {
         try {
             ruleFileContent = JSON.parse(ruleFileContent);
@@ -83,6 +86,24 @@ function build_full_state(audit_row, rule_set_row) {
     };
 }
 
+let has_rule_sets_published_column = null;
+
+async function ensure_rule_sets_published_column() {
+    if (has_rule_sets_published_column !== null) return has_rule_sets_published_column;
+    try {
+        const result = await query(
+            `SELECT 1 FROM information_schema.columns
+             WHERE table_name = 'rule_sets' AND column_name = 'published_content'
+             LIMIT 1`
+        );
+        has_rule_sets_published_column = result.rows.length > 0;
+    } catch (err) {
+        console.warn('[audits] Kunde inte kontrollera published_content-kolumn på rule_sets:', err.message);
+        has_rule_sets_published_column = false;
+    }
+    return has_rule_sets_published_column;
+}
+
 /** Returnerar audit-data UTAN ruleFileContent – regelfilen hämtas separat via rule_set_id. */
 function build_audit_state_without_rule_file(audit_row) {
     const samples = audit_row.samples || [];
@@ -105,10 +126,25 @@ function build_audit_state_without_rule_file(audit_row) {
 router.get('/', async (req, res) => {
     try {
         const { status } = req.query;
-        let sql = `SELECT a.id, a.rule_set_id, a.rule_file_content, a.status, a.metadata, a.samples, a.version, a.last_updated_by, a.created_at, a.updated_at,
-            COALESCE(NULLIF(TRIM(COALESCE(a.rule_file_content, r.content)->'metadata'->>'title'), ''), r.name) as rule_set_name,
+        const hasPublished = await ensure_rule_sets_published_column();
+        let sql;
+        if (hasPublished) {
+            sql = `SELECT a.id, a.rule_set_id, a.rule_file_content, a.status, a.metadata, a.samples, a.version, a.last_updated_by, a.created_at, a.updated_at,
+            COALESCE(
+                NULLIF(TRIM(COALESCE(a.rule_file_content, COALESCE(r.published_content, r.content))->'metadata'->>'title'), ''),
+                r.name
+            ) as rule_set_name,
+            COALESCE(a.rule_file_content, COALESCE(r.published_content, r.content)) as rule_content
+            FROM audits a LEFT JOIN rule_sets r ON a.rule_set_id = r.id`;
+        } else {
+            sql = `SELECT a.id, a.rule_set_id, a.rule_file_content, a.status, a.metadata, a.samples, a.version, a.last_updated_by, a.created_at, a.updated_at,
+            COALESCE(
+                NULLIF(TRIM(COALESCE(a.rule_file_content, r.content)->'metadata'->>'title'), ''),
+                r.name
+            ) as rule_set_name,
             COALESCE(a.rule_file_content, r.content) as rule_content
             FROM audits a LEFT JOIN rule_sets r ON a.rule_set_id = r.id`;
+        }
         const params = [];
         if (status) {
             params.push(status);
@@ -245,9 +281,10 @@ router.post('/', async (req, res) => {
             return res.status(404).json({ error: 'Regelfil hittades inte' });
         }
         const ruleSet = ruleResult.rows[0];
+        const rule_content_for_audit = ruleSet.published_content ?? ruleSet.content;
         const result = await query(
             'INSERT INTO audits (rule_set_id, rule_file_content, status, metadata, samples, last_updated_by) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-            [rule_set_id, ruleSet.content, 'not_started', '{}', '[]', last_updated_by]
+            [rule_set_id, rule_content_for_audit, 'not_started', '{}', '[]', last_updated_by]
         );
         const audit = result.rows[0];
         const fullState = build_full_state(audit, ruleSet);

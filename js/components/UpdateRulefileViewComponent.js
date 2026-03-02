@@ -75,7 +75,8 @@ export const UpdateRulefileViewComponent = {
         }
         try {
             const rule_row = await get_rule(this.rule_id_from_params);
-            let content = rule_row?.content;
+            // Uppdatering av regelfil i en granskning ska alltid använda publicerad version.
+            let content = rule_row?.published_content ?? rule_row?.content;
             if (typeof content === 'string') {
                 try {
                     content = JSON.parse(content);

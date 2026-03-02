@@ -6,16 +6,18 @@ import {
     get_rules,
     get_rule,
     get_audits,
-    load_audit_with_rule_file,
     import_rule,
     import_audit,
     delete_rule,
     delete_audit,
-    export_rule
+    export_rule,
+    publish_rule
 } from '../api/client.js';
 import { GenericTableComponent } from './GenericTableComponent.js';
+import { AuditListComponent } from './AuditListComponent.js';
 import { create_audit_table_columns } from '../utils/audit_table_columns.js';
 import { create_rule_table_columns } from '../utils/rule_table_columns.js';
+import { open_audit_by_id, download_audit_by_id } from '../logic/audit_open_logic.js';
 
 export const AuditViewComponent = {
     CSS_PATH: './css/components/audit_view_component.css',
@@ -38,7 +40,14 @@ export const AuditViewComponent = {
         this.ValidationLogic = deps.ValidationLogic || window.ValidationLogic;
         this.SaveAuditLogic = deps.SaveAuditLogic || window.SaveAuditLogic;
 
-        this.audit_mode = (deps.view_name === 'audit_rules') ? 'rules' : (deps.view_name === 'audit_audits') ? 'audits' : 'both';
+        const view_name = deps.view_name;
+        if (view_name === 'audit_rules') {
+            this.audit_mode = 'rules';
+        } else if (view_name === 'audit_audits' || view_name === 'start') {
+            this.audit_mode = 'audits';
+        } else {
+            this.audit_mode = 'both';
+        }
 
         this.upload_file_input = null;
         this.upload_audit_file_input = null;
@@ -52,6 +61,7 @@ export const AuditViewComponent = {
         this.handle_delete_audit = this.handle_delete_audit.bind(this);
         this.handle_download_audit = this.handle_download_audit.bind(this);
         this.handle_download_rule = this.handle_download_rule.bind(this);
+        this.handle_publish_rule = this.handle_publish_rule.bind(this);
         this.handle_edit_rule = this.handle_edit_rule.bind(this);
         this.handle_open_audit = this.handle_open_audit.bind(this);
         this.handle_start_new_audit = this.handle_start_new_audit.bind(this);
@@ -99,6 +109,8 @@ export const AuditViewComponent = {
         await this._auditsTable.init({ deps });
         this._rulesTable = Object.create(GenericTableComponent);
         await this._rulesTable.init({ deps });
+        this._auditListComponent = Object.create(AuditListComponent);
+        await this._auditListComponent.init({ deps });
         this.draft_rules = [];
     },
 
@@ -413,7 +425,8 @@ export const AuditViewComponent = {
         const t = this.get_t_func();
         try {
             const rule_row = await get_rule(rule_id);
-            let content = rule_row?.content;
+            // Nya granskningar ska alltid utgå från publicerad version av regelfilen.
+            let content = rule_row?.published_content ?? rule_row?.content;
             if (typeof content === 'string') {
                 try {
                     content = JSON.parse(content);
@@ -502,6 +515,24 @@ export const AuditViewComponent = {
         }
     },
 
+    async handle_publish_rule(rule_id) {
+        const t = this.get_t_func();
+        try {
+            await publish_rule(rule_id);
+            this.NotificationComponent?.show_global_message(
+                t('rulefile_publish_success'),
+                'success'
+            );
+            await this.ensure_api_data();
+            this.render();
+        } catch (error) {
+            this.NotificationComponent?.show_global_message(
+                error.message || t('rulefile_publish_error'),
+                'error'
+            );
+        }
+    },
+
     async handle_delete_audit(audit_id) {
         const t = this.get_t_func();
         try {
@@ -572,54 +603,26 @@ export const AuditViewComponent = {
 
     async handle_open_audit(audit_id) {
         const t = this.get_t_func();
-        try {
-            const full_state = await load_audit_with_rule_file(audit_id);
-            if (full_state.ruleFileContent && this.ValidationLogic?.validate_saved_audit_file?.(full_state)?.isValid) {
-                this.dispatch({
-                    type: this.StoreActionTypes.LOAD_AUDIT_FROM_FILE,
-                    payload: full_state
-                });
-                if (this.NotificationComponent) {
-                    this.NotificationComponent.show_global_message(t('saved_audit_loaded_successfully'), 'success');
-                }
-                const status = full_state.auditStatus || 'not_started';
-                const samples = full_state.samples || [];
-                const next_view = (status === 'not_started' && samples.length === 0) ? 'sample_management' : 'audit_overview';
-                this.router(next_view);
-            } else {
-                if (this.NotificationComponent) {
-                    this.NotificationComponent.show_global_message(t('error_invalid_saved_audit_file'), 'error');
-                }
-            }
-        } catch (err) {
-            if (this.NotificationComponent) {
-                this.NotificationComponent.show_global_message(
-                    t('server_load_audit_error', { message: err.message }) || err.message,
-                    'error'
-                );
-            }
-        }
+        await open_audit_by_id({
+            audit_id,
+            dispatch: this.dispatch,
+            StoreActionTypes: this.StoreActionTypes,
+            ValidationLogic: this.ValidationLogic,
+            router: this.router,
+            NotificationComponent: this.NotificationComponent,
+            t
+        });
     },
 
     async handle_download_audit(audit_id) {
         const t = this.get_t_func();
-        const show_msg = this.NotificationComponent?.show_global_message?.bind(this.NotificationComponent);
-        try {
-            const full_state = await load_audit_with_rule_file(audit_id);
-            if (full_state?.ruleFileContent && this.ValidationLogic?.validate_saved_audit_file?.(full_state)?.isValid) {
-                if (this.SaveAuditLogic?.save_audit_to_json_file) {
-                    this.SaveAuditLogic.save_audit_to_json_file(full_state, t, show_msg);
-                } else {
-                    if (show_msg) show_msg(t('error_internal'), 'error');
-                }
-            } else {
-                if (show_msg) show_msg(t('error_invalid_saved_audit_file'), 'error');
-            }
-        } catch (err) {
-            if (show_msg) {
-                show_msg(t('server_load_audit_error', { message: err.message }) || err.message, 'error');
-            }
-        }
+        await download_audit_by_id({
+            audit_id,
+            ValidationLogic: this.ValidationLogic,
+            SaveAuditLogic: this.SaveAuditLogic,
+            NotificationComponent: this.NotificationComponent,
+            t
+        });
     },
 
     async handle_download_rule(rule_id) {
@@ -715,37 +718,7 @@ export const AuditViewComponent = {
                 header.appendChild(start_new_audit_btn);
             }
         } else {
-            const upload_audit_btn = this.Helpers.create_element('button', {
-                class_name: ['button', 'button-primary', 'audit-upload-audit-btn'],
-                text_content: t('audit_upload_saved_audit'),
-                attributes: {
-                    type: 'button',
-                    'aria-label': t('audit_upload_saved_audit')
-                }
-            });
-            upload_audit_btn.addEventListener('click', this.handle_audit_upload_click);
-            this.upload_audit_file_input = this.Helpers.create_element('input', {
-                class_name: 'audit-hidden-file-input',
-                attributes: {
-                    type: 'file',
-                    accept: '.json,application/json',
-                    'aria-label': t('audit_upload_saved_audit')
-                }
-            });
-            this.upload_audit_file_input.addEventListener('change', this.handle_audit_file_select);
-            const start_new_audit_btn = this.Helpers.create_element('button', {
-                class_name: ['button', 'button-default', 'audit-start-new-audit-btn'],
-                text_content: t('start_new_audit'),
-                attributes: {
-                    type: 'button',
-                    'aria-label': t('start_new_audit')
-                }
-            });
-            start_new_audit_btn.addEventListener('click', this.handle_start_new_audit);
             header.appendChild(title);
-            header.appendChild(upload_audit_btn);
-            header.appendChild(this.upload_audit_file_input);
-            header.appendChild(start_new_audit_btn);
         }
         plate.appendChild(header);
 
@@ -781,7 +754,8 @@ export const AuditViewComponent = {
         const rules_table_handlers = {
             onEditRule: (id) => this.handle_edit_rule(id),
             onDownloadRule: (id) => this.handle_download_rule(id),
-            onDeleteRule: (id) => this.handle_delete_rule(id)
+            onDeleteRule: (id) => this.handle_delete_rule(id),
+            onPublishRule: (id) => this.handle_publish_rule(id)
         };
         const rule_columns = create_rule_table_columns(rules_table_deps, rules_table_handlers);
         this._rulesTable?.render({
@@ -835,48 +809,129 @@ export const AuditViewComponent = {
                 ? {}
                 : { class_name: 'audit-column', attributes: { 'aria-labelledby': 'audit-audits-heading' } }
         );
-        const audits_heading_row = this.Helpers.create_element('div', {
-            class_name: 'audit-column-heading-row'
-        });
-        const audits_heading = this.Helpers.create_element('h2', {
-            id: 'audit-audits-heading',
-            text_content: t('audit_audits_title')
-        });
-        audits_heading_row.appendChild(audits_heading);
 
         if (this.audit_mode === 'audits') {
-            this._auditTableSortState = this._auditTableSortState ?? { columnIndex: 0, direction: 'asc' };
-            const table_wrapper = this.Helpers.create_element('div');
-            const table_deps = {
-                t: this.get_t_func(),
-                Helpers: this.Helpers,
-                Translation: this.Translation,
-                get_status_label: this.get_status_label.bind(this)
-            };
-            const table_handlers = {
-                onOpenAudit: (id) => this.handle_open_audit(id),
-                onDownloadAudit: (id) => this.handle_download_audit(id),
-                onDeleteAudit: (id) => this.handle_delete_audit(id)
-            };
-            const audit_columns = create_audit_table_columns(table_deps, table_handlers, { includeDelete: true });
-            this._auditsTable.render({
-                root: table_wrapper,
-                columns: audit_columns,
-                data: this.audits,
-                emptyMessage: t('audit_audits_empty'),
-                ariaLabel: t('audit_audits_title'),
-                wrapperClassName: 'generic-table-wrapper',
-                tableClassName: 'generic-table generic-table--audit-list',
-                sortState: this._auditTableSortState,
-                onSort: (columnIndex, direction) => {
-                    this._auditTableSortState = { columnIndex, direction };
-                    this.render();
-                },
-                t: this.Translation.t.bind(this.Translation)
+            const sort_audits = (list) => [...list].sort((a, b) => {
+                const ca = (a.metadata?.caseNumber ?? '').toString().trim();
+                const cb = (b.metadata?.caseNumber ?? '').toString().trim();
+                if (!ca && !cb) return 0;
+                if (!ca) return 1;
+                if (!cb) return -1;
+                return ca.localeCompare(cb, undefined, { numeric: true });
             });
-            right_col.appendChild(audits_heading_row);
-            right_col.appendChild(table_wrapper);
+
+            const in_progress = this.audits.filter((a) => a.status === 'in_progress');
+            const not_started = this.audits.filter((a) => a.status === 'not_started');
+            const completed = this.audits.filter((a) => a.status === 'locked' || a.status === 'archived');
+
+            const section_configs = [
+                { heading_key: 'start_view_audits_heading', audits: sort_audits(in_progress) },
+                { heading_key: 'start_view_new_audits_heading', audits: sort_audits(not_started) },
+                { heading_key: 'start_view_completed_audits_heading', audits: sort_audits(completed) }
+            ];
+
+            right_col.classList.add('audit-audits-sections-container');
+
+            section_configs.forEach((config, index) => {
+                const section = this.Helpers.create_element('section', {
+                    class_name: index === 0 ? 'start-view-audits-section' : 'start-view-audits-section start-view-audits-section-following',
+                    attributes: { 'aria-labelledby': `${config.heading_key}-heading` }
+                });
+
+                const heading_row = this.Helpers.create_element('div', { class_name: 'start-view-section-heading-row' });
+                const section_heading = this.Helpers.create_element('h2', {
+                    id: `${config.heading_key}-heading`,
+                    text_content: t(config.heading_key)
+                });
+                heading_row.appendChild(section_heading);
+
+                if (config.heading_key === 'start_view_audits_heading') {
+                    const upload_audit_btn = this.Helpers.create_element('button', {
+                        class_name: ['button', 'button-primary', 'audit-upload-audit-btn'],
+                        text_content: t('audit_upload_saved_audit'),
+                        attributes: {
+                            type: 'button',
+                            'aria-label': t('audit_upload_saved_audit')
+                        }
+                    });
+                    upload_audit_btn.addEventListener('click', this.handle_audit_upload_click);
+                    this.upload_audit_file_input = this.Helpers.create_element('input', {
+                        class_name: 'audit-hidden-file-input',
+                        attributes: {
+                            type: 'file',
+                            accept: '.json,application/json',
+                            'aria-label': t('audit_upload_saved_audit')
+                        }
+                    });
+                    this.upload_audit_file_input.addEventListener('change', this.handle_audit_file_select);
+                    heading_row.appendChild(upload_audit_btn);
+                    heading_row.appendChild(this.upload_audit_file_input);
+                }
+
+                // "Starta ny granskning"-knapp i sektionen för nya granskningar
+                if (config.heading_key === 'start_view_new_audits_heading') {
+                    const start_new_btn = this.Helpers.create_element('button', {
+                        class_name: ['button', 'button-primary', 'audit-start-new-audit-btn'],
+                        text_content: t('start_new_audit'),
+                        attributes: {
+                            type: 'button',
+                            'aria-label': t('start_new_audit')
+                        }
+                    });
+                    start_new_btn.addEventListener('click', this.handle_start_new_audit);
+                    heading_row.appendChild(start_new_btn);
+                }
+
+                section.appendChild(heading_row);
+
+                const table_wrapper = this.Helpers.create_element('div');
+                const empty_key =
+                    config.heading_key === 'start_view_audits_heading'
+                        ? 'start_view_no_audits'
+                        : config.heading_key === 'start_view_new_audits_heading'
+                            ? 'start_view_no_new_audits'
+                            : 'start_view_no_completed_audits';
+
+                const sort_state_key =
+                    config.heading_key === 'start_view_audits_heading'
+                        ? '_inProgressTableSortState'
+                        : config.heading_key === 'start_view_new_audits_heading'
+                            ? '_newTableSortState'
+                            : '_completedTableSortState';
+
+                this[sort_state_key] = this[sort_state_key] ?? { columnIndex: 0, direction: 'asc' };
+
+                this._auditListComponent.render({
+                    root: table_wrapper,
+                    audits: config.audits,
+                    emptyMessage: t(empty_key),
+                    ariaLabel: t(config.heading_key),
+                    includeDelete: true,
+                    sortState: this[sort_state_key],
+                    onSort: (columnIndex, direction) => {
+                        this[sort_state_key] = { columnIndex, direction };
+                        this.render();
+                    },
+                    onOpenAudit: (id) => this.handle_open_audit(id),
+                    onDownloadAudit: (id) => this.handle_download_audit(id),
+                    onDeleteAudit: (id) => this.handle_delete_audit(id),
+                    get_status_label: this.get_status_label.bind(this)
+                });
+
+                section.appendChild(table_wrapper);
+                right_col.appendChild(section);
+            });
         } else {
+            const audits_heading_row = this.Helpers.create_element('div', {
+                class_name: 'audit-column-heading-row'
+            });
+            const audits_heading = this.Helpers.create_element('h2', {
+                id: 'audit-audits-heading',
+                text_content: t('audit_audits_title')
+            });
+            audits_heading_row.appendChild(audits_heading);
+            right_col.appendChild(audits_heading_row);
+
             const audits_list = this.Helpers.create_element('ul', { class_name: 'audit-list' });
             if (this.audits.length === 0) {
                 const empty = this.Helpers.create_element('li', {
@@ -957,7 +1012,6 @@ export const AuditViewComponent = {
                     audits_list.appendChild(li);
                 });
             }
-            right_col.appendChild(audits_heading_row);
             right_col.appendChild(audits_list);
         }
 
@@ -998,6 +1052,7 @@ export const AuditViewComponent = {
         this.upload_audit_file_input = null;
         this._auditsTable?.destroy?.();
         this._rulesTable?.destroy?.();
+        this._auditListComponent?.destroy?.();
         this.root = null;
         this.deps = null;
     }

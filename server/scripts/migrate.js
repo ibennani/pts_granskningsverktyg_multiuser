@@ -38,6 +38,9 @@ async function migrate() {
         const sql8 = readFileSync(join(__dirname, '../migrations/008_disconnect_audits_from_rule_sets.sql'), 'utf8');
         await client.query(sql8);
         console.log('[Migrate] Migration 008 kördes.');
+        const sql9 = readFileSync(join(__dirname, '../migrations/009_add_published_content_to_rule_sets.sql'), 'utf8');
+        await client.query(sql9);
+        console.log('[Migrate] Migration 009 kördes.');
     } catch (err) {
         console.error('[Migrate] Fel:', err.message);
         process.exit(1);

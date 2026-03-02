@@ -139,6 +139,10 @@ export async function delete_rule(id) {
     return api_delete(`/rules/${id}`);
 }
 
+export async function publish_rule(id) {
+    return api_post(`/rules/${id}/publish`, {});
+}
+
 /**
  * Hämtar regelfil för nedladdning (samma data som export-endpointen returnerar).
  * Returnerar { id, name, content, version } för att skapa blob och filnamn i UI.
@@ -174,7 +178,8 @@ export async function load_audit_with_rule_file(id) {
         return audit_data;
     }
     const rule = await get_rule(rule_set_id);
-    const rule_content = rule?.content;
+    // Använd alltid publicerad regelfil som källa för granskningar.
+    const rule_content = rule?.published_content ?? rule?.content;
     if (rule_content) {
         return { ...audit_data, ruleFileContent: rule_content };
     }

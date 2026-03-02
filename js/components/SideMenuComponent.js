@@ -284,8 +284,7 @@ export const SideMenuComponent = {
                 should_show: true,
                 aria_label: t('side_menu_aria_label'),
                 items: [
-                    { label: t('menu_link_start'), view_name: 'start' },
-                    { label: t('menu_link_manage_audits'), view_name: 'audit_audits' },
+                    { label: t('menu_link_manage_audits'), view_name: 'start' },
                     { label: t('menu_link_manage_rules'), view_name: 'audit_rules' },
                     { label: t('menu_link_my_settings'), view_name: 'my_settings' },
                     { label: t('menu_link_manage_users'), view_name: 'manage_users' }

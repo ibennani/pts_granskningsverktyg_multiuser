@@ -9,18 +9,65 @@ function broadcast_rules_changed() {
     broadcast({ type: 'rules:changed' });
 }
 
-router.get('/', async (_req, res) => {
+let has_published_content_column = null;
+
+async function ensure_published_column_flag() {
+    if (has_published_content_column !== null) return has_published_content_column;
     try {
         const result = await query(
-            `SELECT id,
-                COALESCE(NULLIF(TRIM(content->'metadata'->>'title'), ''), name) AS name,
-                COALESCE(NULLIF(TRIM(content->'metadata'->>'version'), ''), version::text) AS version_display,
-                content->'metadata'->>'version' AS metadata_version,
-                COALESCE(NULLIF(TRIM(content->'metadata'->'monitoringType'->>'text'), ''),
-                    NULLIF(TRIM(content->'metadata'->'monitoringType'->>'label'), '')) AS monitoring_type_text,
-                version, created_at, updated_at
-             FROM rule_sets ORDER BY updated_at DESC`
+            `SELECT 1 FROM information_schema.columns
+             WHERE table_name = 'rule_sets' AND column_name = 'published_content'
+             LIMIT 1`
         );
+        has_published_content_column = result.rows.length > 0;
+    } catch (err) {
+        console.warn('[rules] Kunde inte kontrollera published_content-kolumn:', err.message);
+        has_published_content_column = false;
+    }
+    return has_published_content_column;
+}
+
+router.get('/', async (_req, res) => {
+    try {
+        const hasPublished = await ensure_published_column_flag();
+        const sql = hasPublished
+            ? `SELECT id,
+                    COALESCE(
+                        NULLIF(TRIM(COALESCE(published_content, content)->'metadata'->>'title'), ''),
+                        name
+                    ) AS name,
+                    COALESCE(
+                        NULLIF(TRIM(COALESCE(published_content, content)->'metadata'->>'version'), ''),
+                        version::text
+                    ) AS version_display,
+                    COALESCE(published_content, content)->'metadata'->>'version' AS metadata_version,
+                    COALESCE(
+                        NULLIF(TRIM(COALESCE(published_content, content)->'metadata'->'monitoringType'->>'text'), ''),
+                        NULLIF(TRIM(COALESCE(published_content, content)->'metadata'->'monitoringType'->>'label'), '')
+                    ) AS monitoring_type_text,
+                    (published_content IS NOT NULL AND content::text <> published_content::text) AS has_draft,
+                    CASE
+                        WHEN published_content IS NOT NULL AND content::text <> published_content::text
+                        THEN content->'metadata'->>'version'
+                        ELSE NULL
+                    END AS draft_version,
+                    version, created_at, updated_at
+               FROM rule_sets
+               ORDER BY updated_at DESC`
+            : `SELECT id,
+                    COALESCE(NULLIF(TRIM(content->'metadata'->>'title'), ''), name) AS name,
+                    COALESCE(NULLIF(TRIM(content->'metadata'->>'version'), ''), version::text) AS version_display,
+                    content->'metadata'->>'version' AS metadata_version,
+                    COALESCE(
+                        NULLIF(TRIM(content->'metadata'->'monitoringType'->>'text'), ''),
+                        NULLIF(TRIM(content->'metadata'->'monitoringType'->>'label'), '')
+                    ) AS monitoring_type_text,
+                    false AS has_draft,
+                    NULL AS draft_version,
+                    version, created_at, updated_at
+               FROM rule_sets
+               ORDER BY updated_at DESC`;
+        const result = await query(sql);
         res.json(result.rows);
     } catch (err) {
         console.error('[rules] GET list error:', err);
@@ -60,7 +107,11 @@ router.get('/:id', async (req, res) => {
 router.get('/:id/export', async (req, res) => {
     try {
         const { id } = req.params;
-        const result = await query('SELECT id, name, content, version FROM rule_sets WHERE id = $1', [id]);
+        const hasPublished = await ensure_published_column_flag();
+        const sql = hasPublished
+            ? 'SELECT id, name, COALESCE(published_content, content) AS content, version FROM rule_sets WHERE id = $1'
+            : 'SELECT id, name, content, version FROM rule_sets WHERE id = $1';
+        const result = await query(sql, [id]);
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Regelfil hittades inte' });
         }
@@ -80,9 +131,10 @@ router.post('/', async (req, res) => {
         }
         const title_from_content = content?.metadata?.title?.trim?.();
         const ruleName = title_from_content || name || 'Regelfil ' + new Date().toISOString().slice(0, 10);
+        const content_json = JSON.stringify(content);
         const result = await query(
-            'INSERT INTO rule_sets (name, content) VALUES ($1, $2) RETURNING *',
-            [ruleName, JSON.stringify(content)]
+            'INSERT INTO rule_sets (name, content, published_content) VALUES ($1, $2, $2) RETURNING *',
+            [ruleName, content_json]
         );
         broadcast_rules_changed();
         res.status(201).json(result.rows[0]);
@@ -110,7 +162,7 @@ router.post('/import', async (req, res) => {
         const title_from_content = content?.metadata?.title?.trim?.();
         const ruleName = title_from_content || name || 'Importerad ' + new Date().toISOString().slice(0, 10);
         const result = await query(
-            'INSERT INTO rule_sets (name, content) VALUES ($1, $2) RETURNING *',
+            'INSERT INTO rule_sets (name, content, published_content) VALUES ($1, $2, $2) RETURNING *',
             [ruleName, contentJson]
         );
         broadcast_rules_changed();
@@ -178,6 +230,41 @@ router.put('/:id', async (req, res) => {
     } catch (err) {
         console.error('[rules] PUT error:', err);
         res.status(500).json({ error: 'Kunde inte uppdatera regelfil' });
+    }
+});
+
+// Publicera en regelfil: kopiera nuvarande utkast (content) till published_content.
+router.post('/:id/publish', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const selectResult = await query('SELECT content, published_content, version FROM rule_sets WHERE id = $1', [id]);
+        if (selectResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Regelfil hittades inte' });
+        }
+        const row = selectResult.rows[0];
+        const current_content = row.content;
+        const current_published = row.published_content;
+
+        // Om inget utkast skiljer sig från publicerad version finns inget att publicera.
+        if (current_published && JSON.stringify(current_published) === JSON.stringify(current_content)) {
+            return res.status(400).json({ error: 'Det finns inga ändringar att publicera för denna regelfil.' });
+        }
+
+        const updateResult = await query(
+            `UPDATE rule_sets
+             SET published_content = content,
+                 version = version + 1,
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE id = $1
+             RETURNING *`,
+            [id]
+        );
+        const updated = updateResult.rows[0];
+        broadcast_rules_changed();
+        res.json(updated);
+    } catch (err) {
+        console.error('[rules] PUBLISH error:', err);
+        res.status(500).json({ error: 'Kunde inte publicera regelfil' });
     }
 });
 

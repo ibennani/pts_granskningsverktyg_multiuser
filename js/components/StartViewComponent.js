@@ -1,8 +1,9 @@
 // js/components/StartViewComponent.js
 
-import { check_api_available, get_audits, load_audit_with_rule_file } from '../api/client.js';
+import { check_api_available, get_audits } from '../api/client.js';
 import { GenericTableComponent } from './GenericTableComponent.js';
 import { create_audit_table_columns } from '../utils/audit_table_columns.js';
+import { open_audit_by_id, download_audit_by_id } from '../logic/audit_open_logic.js';
 
 export const StartViewComponent = {
     CSS_PATH: './css/components/start_view_component.css',
@@ -11,6 +12,8 @@ export const StartViewComponent = {
         this.root = root;
         this.deps = deps;
         this.router = deps.router;
+        this.dispatch = deps.dispatch;
+        this.StoreActionTypes = deps.StoreActionTypes;
         this.Translation = deps.Translation;
         this.Helpers = deps.Helpers;
         this.NotificationComponent = deps.NotificationComponent;
@@ -18,6 +21,7 @@ export const StartViewComponent = {
         this.ValidationLogic = deps.ValidationLogic || window.ValidationLogic;
 
         this.handle_download_audit = this.handle_download_audit.bind(this);
+        this.handle_open_audit = this.handle_open_audit.bind(this);
 
         this.audits = [];
         this.api_available = false;
@@ -80,23 +84,26 @@ export const StartViewComponent = {
 
     async handle_download_audit(audit_id) {
         const t = this.get_t_func();
-        const show_msg = this.NotificationComponent?.show_global_message?.bind(this.NotificationComponent);
-        try {
-            const full_state = await load_audit_with_rule_file(audit_id);
-            if (full_state?.ruleFileContent && this.ValidationLogic?.validate_saved_audit_file?.(full_state)?.isValid) {
-                if (this.SaveAuditLogic?.save_audit_to_json_file) {
-                    this.SaveAuditLogic.save_audit_to_json_file(full_state, t, show_msg);
-                } else {
-                    if (show_msg) show_msg(t('error_internal'), 'error');
-                }
-            } else {
-                if (show_msg) show_msg(t('error_invalid_saved_audit_file'), 'error');
-            }
-        } catch (err) {
-            if (show_msg) {
-                show_msg(t('server_load_audit_error', { message: err.message }) || err.message, 'error');
-            }
-        }
+        await download_audit_by_id({
+            audit_id,
+            ValidationLogic: this.ValidationLogic,
+            SaveAuditLogic: this.SaveAuditLogic,
+            NotificationComponent: this.NotificationComponent,
+            t
+        });
+    },
+
+    async handle_open_audit(audit_id) {
+        const t = this.get_t_func();
+        await open_audit_by_id({
+            audit_id,
+            dispatch: this.dispatch,
+            StoreActionTypes: this.StoreActionTypes,
+            ValidationLogic: this.ValidationLogic,
+            router: this.router,
+            NotificationComponent: this.NotificationComponent,
+            t
+        });
     },
 
     async ensure_api_data(force = false) {
@@ -179,7 +186,7 @@ export const StartViewComponent = {
                 get_status_label: this.get_status_label.bind(this)
             };
             const table_handlers = {
-                onOpenAudit: (id) => this.router('audit_overview', { auditId: id }),
+                onOpenAudit: (id) => this.handle_open_audit(id),
                 onDownloadAudit: (id) => this.handle_download_audit(id)
             };
             const audit_columns = create_audit_table_columns(table_deps, table_handlers, { includeDelete: false });

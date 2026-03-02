@@ -620,8 +620,8 @@
   "start_view_no_completed_audits": "No completed audits.",
   "start_view_open_audit_aria": "{name} - To the audit",
   "menu_link_start": "Start",
-  "menu_link_manage_audits": "Manage audits",
-  "menu_link_manage_rules": "Manage rule files",
+  "menu_link_manage_audits": "Audits",
+  "menu_link_manage_rules": "Rule files",
   "menu_link_admin": "Rule files & Audits",
   "menu_link_manage_users": "Manage users",
   "menu_link_my_settings": "My settings",
@@ -1002,5 +1002,11 @@
   "report_section_content": "Content (Markdown)",
   "confirm_delete_report_section": "Are you sure you want to delete this section?",
   "add_report_section": "Add report section",
-  "new_report_section": "New section"
+  "new_report_section": "New section",
+  "rulefile_version_published_label": "Published {version}",
+  "rulefile_version_draft_label": "Draft {version}",
+  "rulefile_publish_button": "Publish",
+  "rulefile_publish_rule_aria": "Publish rule file {name}",
+  "rulefile_publish_success": "The rule file has been published. New audits will now use the updated version.",
+  "rulefile_publish_error": "Could not publish the rule file."
 }

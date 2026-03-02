@@ -340,8 +340,8 @@ window.DraftManager = DraftManager;
             }
 
             if (title_prefix === t('app_title')) {
-                switch (view_name) {
-                    case 'start': title_prefix = t('menu_link_start'); break;
+            switch (view_name) {
+                case 'start': title_prefix = t('menu_link_manage_audits'); break;
                     case 'audit': title_prefix = t('audit_title'); break;
                     case 'audit_audits': title_prefix = t('audit_title_audits'); break;
                     case 'audit_rules': title_prefix = t('audit_title_rules'); break;
@@ -970,7 +970,7 @@ window.DraftManager = DraftManager;
         let ComponentClass;
         
         switch (view_name_to_render) {
-            case 'start': ComponentClass = StartViewComponent; break;
+            case 'start': ComponentClass = AuditViewComponent; break;
             case 'audit': ComponentClass = AuditViewComponent; break;
             case 'audit_audits': ComponentClass = AuditViewComponent; break;
             case 'audit_rules': ComponentClass = AuditViewComponent; break;

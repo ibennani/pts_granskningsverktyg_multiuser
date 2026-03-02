@@ -620,8 +620,8 @@
   "start_view_no_completed_audits": "Inga avslutade granskningar.",
   "start_view_open_audit_aria": "{name} - Till granskningen",
   "menu_link_start": "Start",
-  "menu_link_manage_audits": "Hantera granskningar",
-  "menu_link_manage_rules": "Hantera regelfiler",
+  "menu_link_manage_audits": "Granskningar",
+  "menu_link_manage_rules": "Regelfiler",
   "menu_link_admin": "Regelfiler & Granskningar",
   "menu_link_manage_users": "Hantera användare",
   "menu_link_my_settings": "Mina inställningar",
@@ -1002,5 +1002,11 @@
   "report_section_content": "Innehåll (Markdown)",
   "confirm_delete_report_section": "Är du säker på att du vill ta bort denna sektion?",
   "add_report_section": "Lägg till rapportsektion",
-  "new_report_section": "Ny sektion"
+  "new_report_section": "Ny sektion",
+  "rulefile_version_published_label": "Publicerad {version}",
+  "rulefile_version_draft_label": "Utkast {version}",
+  "rulefile_publish_button": "Publicera",
+  "rulefile_publish_rule_aria": "Publicera regelfilen {name}",
+  "rulefile_publish_success": "Regelfilen har publicerats. Nya granskningar använder nu den uppdaterade versionen.",
+  "rulefile_publish_error": "Kunde inte publicera regelfilen."
 }
