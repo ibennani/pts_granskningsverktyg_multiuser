@@ -794,13 +794,45 @@ export const AuditViewComponent = {
 
     async handle_copy_rule(rule_id) {
         const t = this.get_t_func();
+        const COPY_ANIMATION_MS = 250;
+        let button_rect = null;
+        const published_wrapper = this.root?.querySelector('#audit-published-rules-wrapper');
+        const link_el = published_wrapper?.querySelector(`a.generic-table-audit-link[data-rule-id="${CSS.escape(String(rule_id))}"]`);
+        const copy_button = link_el?.closest('tr')?.querySelector('button.generic-table-edit-btn');
+        if (copy_button) {
+            button_rect = copy_button.getBoundingClientRect();
+        }
         try {
             const created = await copy_rule(rule_id);
             await this.ensure_api_data();
-            this.render();
-            if (created?.id) {
-                this._focus_rule_link(created.id, 'draft');
+            let clone_el = null;
+            if (button_rect && copy_button) {
+                clone_el = copy_button.cloneNode(true);
+                clone_el.classList.add('audit-copy-button-fade-out');
+                clone_el.setAttribute('aria-hidden', 'true');
+                clone_el.style.cssText = `position:fixed;left:${button_rect.left}px;top:${button_rect.top}px;width:${button_rect.width}px;height:${button_rect.height}px;z-index:9999;margin:0;`;
+                document.body.appendChild(clone_el);
             }
+            this.render();
+            const draft_wrapper = this.root?.querySelector('#audit-draft-rules-wrapper');
+            const new_link = draft_wrapper?.querySelector(`a.generic-table-audit-link[data-rule-id="${CSS.escape(String(created?.id || ''))}"]`);
+            const new_row = new_link?.closest('tr');
+            if (new_row) {
+                new_row.classList.add('audit-copy-row-fade-in');
+                new_row.style.opacity = '0';
+            }
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    if (clone_el) clone_el.style.opacity = '0';
+                    if (new_row) new_row.style.opacity = '1';
+                    setTimeout(() => {
+                        if (clone_el?.parentNode) clone_el.parentNode.removeChild(clone_el);
+                        if (created?.id) {
+                            this._focus_rule_link(created.id, 'draft');
+                        }
+                    }, COPY_ANIMATION_MS);
+                });
+            });
         } catch (error) {
             this.NotificationComponent?.show_global_message(
                 error.message || t('audit_load_rule_error'),

@@ -245,3 +245,13 @@
     padding: 0.35rem 0.75rem;
     font-size: 0.9rem;
 }
+
+/* Animationer vid Skapa arbetskopia (0,25 s) */
+.audit-copy-button-fade-out {
+    transition: opacity 0.25s ease-out;
+    pointer-events: none;
+}
+
+.audit-copy-row-fade-in {
+    transition: opacity 0.25s ease-out;
+}
