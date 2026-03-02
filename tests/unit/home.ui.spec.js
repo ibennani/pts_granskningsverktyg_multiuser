@@ -25,7 +25,7 @@ const translations = {
   audit_list_empty_completed: 'Inga avslutade granskningar finns ännu.',
   // Matchar nycklar i js/i18n/*.json så att även skiplänk och landmarks testas med översättningar
   skip_to_content: 'Hoppa till innehållet',
-  landmark_top_navigation: 'Övre navigering',
+  landmark_toolbar: 'Åtgärdsfält',
 };
 
 async function renderStartView() {
@@ -58,8 +58,8 @@ async function renderStartView() {
     skipLink.textContent = window.Translation.t('skip_to_content');
   }
   const topNav = document.getElementById('global-action-bar-top');
-  if (topNav) {
-    topNav.setAttribute('aria-label', window.Translation.t('landmark_top_navigation'));
+  if (topNav && topNav.childElementCount > 0) {
+    topNav.setAttribute('aria-label', window.Translation.t('landmark_toolbar'));
   }
 
   window.NotificationComponent = {

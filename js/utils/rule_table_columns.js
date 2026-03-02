@@ -96,20 +96,7 @@ export function create_rule_table_columns(deps, handlers) {
                     container.appendChild(download_btn);
                 }
 
-                if (row.has_draft && !is_production_row && typeof onPublishRule === 'function') {
-                    const publish_aria = t('rulefile_publish_rule_aria', { name: link_text });
-                    const publish_btn = Helpers.create_element('button', {
-                        class_name: ['button', 'button-success', 'button-small', 'generic-table-publish-btn'],
-                        html_content: `<span>${t('rulefile_publish_button')}</span>` + icon_svg('publish'),
-                        attributes: {
-                            type: 'button',
-                            'aria-label': publish_aria
-                        }
-                    });
-                    publish_btn.addEventListener('click', () => onPublishRule(row.id));
-                    container.appendChild(publish_btn);
-                }
-
+                // Publicera-knapp visas endast i Arbetskopior-tabellen (produktionsrader), inte under Publicerade regelfiler.
                 if (is_production_row && typeof onPublishProductionRule === 'function') {
                     const publish_prod_aria = t('rulefile_publish_rule_aria', { name: link_text });
                     const publish_prod_btn = Helpers.create_element('button', {

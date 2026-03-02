@@ -1189,10 +1189,12 @@ export const AuditViewComponent = {
         left_col.appendChild(rules_table_wrapper);
 
         const draft_section = this.Helpers.create_element('section', {
-            class_name: 'start-view-audits-section start-view-audits-section-following'
+            class_name: 'start-view-audits-section start-view-audits-section-following',
+            attributes: { 'aria-labelledby': 'audit-rules-draft-heading' }
         });
         const draft_heading_row = this.Helpers.create_element('div', { class_name: 'start-view-section-heading-row' });
         const draft_rules_heading = this.Helpers.create_element('h2', {
+            id: 'audit-rules-draft-heading',
             text_content: t('audit_rules_draft_title')
         });
         draft_heading_row.appendChild(draft_rules_heading);

@@ -226,7 +226,12 @@ export const RulefileRequirementsListComponent = {
         });
 
         this.content_div_for_delegation = this.Helpers.create_element('div', { class_name: 'requirements-list-content' });
-        this.plate_element_ref.appendChild(this.content_div_for_delegation);
+        const list_section = this.Helpers.create_element('section', {
+            class_name: 'rulefile-requirements-list-section',
+            attributes: { 'aria-labelledby': 'main-content-heading' }
+        });
+        list_section.appendChild(this.content_div_for_delegation);
+        this.plate_element_ref.appendChild(list_section);
         
         // Flytta event delegation till plate_element_ref så den fångar alla klick inklusive header-knappen
         this.plate_element_ref.addEventListener('click', this.handle_list_click);

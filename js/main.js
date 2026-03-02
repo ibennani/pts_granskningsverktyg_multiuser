@@ -300,14 +300,11 @@ window.DraftManager = DraftManager;
         };
     }
 
-    function build_page_title(view_name, params) {
+    function get_page_title_prefix(view_name, params) {
         const t = get_t_fallback();
-        const title_suffix = ` | ${t('app_title_suffix')}`;
         const current_state = getState();
         const audit_status = current_state?.auditStatus;
-
         let title_prefix = t('app_title');
-
         try {
             if (audit_status === 'rulefile_editing') {
                 const section_to_menu_key = {
@@ -416,6 +413,15 @@ window.DraftManager = DraftManager;
         } catch (e) {
             consoleManager.error("Error building page title:", e);
         }
+        return (title_prefix && String(title_prefix).trim()) || t('app_title');
+    }
+
+    function build_page_title(view_name, params) {
+        const t = get_t_fallback();
+        const title_suffix = ` | ${t('app_title_suffix')}`;
+        const current_state = getState();
+        const audit_status = current_state?.auditStatus;
+        const title_prefix = get_page_title_prefix(view_name || 'start', params || {});
 
         let final_title = `${title_prefix}${title_suffix}`;
         const is_inside_audit = audit_status !== 'rulefile_editing' &&
@@ -1534,17 +1540,29 @@ window.DraftManager = DraftManager;
         });
     }
 
-    function update_landmarks_and_skip_link() {
+    function update_landmarks_and_skip_link(view_name, params) {
         const t = typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function'
             ? window.Translation.t.bind(window.Translation)
             : (key) => key;
         const skip_link = document.querySelector('.skip-link');
         if (skip_link) skip_link.textContent = t('skip_to_content');
+
+        const main_el = document.getElementById('app-main-view-root');
+        if (main_el && typeof get_page_title_prefix === 'function') {
+            const v = view_name ?? current_view_name_rendered ?? 'start';
+            let p = params;
+            if (p == null && current_view_params_rendered_json) {
+                try { p = JSON.parse(current_view_params_rendered_json); } catch (_) { p = {}; }
+            }
+            const main_label = get_page_title_prefix(v, p || {});
+            main_el.setAttribute('aria-label', main_label || t('landmark_main_default'));
+        }
+
         const top_nav = document.getElementById('global-action-bar-top');
         if (top_nav) {
             const top_has_content = top_nav.childElementCount > 0;
             if (top_has_content) {
-                top_nav.setAttribute('aria-label', t('landmark_top_navigation'));
+                top_nav.setAttribute('aria-label', t('landmark_toolbar'));
                 top_nav.removeAttribute('aria-hidden');
             } else {
                 top_nav.removeAttribute('aria-label');
@@ -1555,7 +1573,7 @@ window.DraftManager = DraftManager;
         if (bottom_nav) {
             const bottom_has_content = bottom_nav.childElementCount > 0;
             if (bottom_has_content) {
-                bottom_nav.setAttribute('aria-label', t('landmark_bottom_navigation'));
+                bottom_nav.setAttribute('aria-label', t('landmark_toolbar'));
                 bottom_nav.removeAttribute('aria-hidden');
             } else {
                 bottom_nav.removeAttribute('aria-label');
@@ -1563,7 +1581,16 @@ window.DraftManager = DraftManager;
             }
         }
         const right_sidebar = document.getElementById('app-right-sidebar-root');
-        if (right_sidebar) right_sidebar.setAttribute('aria-label', t('landmark_right_sidebar'));
+        if (right_sidebar) {
+            const sidebar_has_content = right_sidebar.childElementCount > 0;
+            if (sidebar_has_content) {
+                right_sidebar.setAttribute('aria-label', t('landmark_sidebar'));
+                right_sidebar.removeAttribute('aria-hidden');
+            } else {
+                right_sidebar.removeAttribute('aria-label');
+                right_sidebar.setAttribute('aria-hidden', 'true');
+            }
+        }
     }
 
     async function init_app() { 

@@ -87,7 +87,11 @@ export const RulefileSectionsViewComponent = {
         const header_wrapper = this.Helpers.create_element('div', { class_name: 'rulefile-sections-header' });
         
         const heading_row = this.Helpers.create_element('div', { class_name: 'rulefile-sections-header-row' });
-        const heading = this.Helpers.create_element('h1', { text_content: section_config.title });
+        const heading_id = `rulefile-section-${section_config.id}-heading`;
+        const heading = this.Helpers.create_element('h1', {
+            text_content: section_config.title,
+            attributes: { id: heading_id }
+        });
         heading_row.appendChild(heading);
 
         const state_for_header = typeof this.getState === 'function' ? this.getState() : null;
@@ -972,6 +976,7 @@ export const RulefileSectionsViewComponent = {
         const right_wrapper = this.Helpers.create_element('div', { class_name: 'rulefile-sections-right-wrapper' });
         let section_content;
         let header_section_config;
+        const section_heading_id = `rulefile-section-${section_id}-heading`;
         if (is_editing && (section_id === 'general' || section_id === 'page_types' || section_id === 'content_types' || section_id === 'info_blocks_order')) {
             header_section_config = this._get_section_config(section_id);
             right_wrapper.appendChild(this._create_header(header_section_config, is_editing));
@@ -980,7 +985,12 @@ export const RulefileSectionsViewComponent = {
             else if (section_id === 'page_types') await this._render_page_types_edit_form(edit_form_container, metadata);
             else if (section_id === 'content_types') await this._render_content_types_edit_form(edit_form_container, metadata);
             else if (section_id === 'info_blocks_order') await this._render_info_blocks_edit_form(edit_form_container, metadata);
-            right_wrapper.appendChild(edit_form_container);
+            const edit_section = this.Helpers.create_element('section', {
+                class_name: 'rulefile-section-content',
+                attributes: { 'aria-labelledby': section_heading_id }
+            });
+            edit_section.appendChild(edit_form_container);
+            right_wrapper.appendChild(edit_section);
         } else {
             switch (section_id) {
                 case 'general':
@@ -1013,6 +1023,9 @@ export const RulefileSectionsViewComponent = {
                     section_content = this._render_general_section(metadata);
             }
             right_wrapper.appendChild(this._create_header(header_section_config, is_editing));
+            if (section_content && header_section_config) {
+                section_content.setAttribute('aria-labelledby', `rulefile-section-${header_section_config.id}-heading`);
+            }
             right_wrapper.appendChild(section_content);
         }
         layout.appendChild(right_wrapper);
