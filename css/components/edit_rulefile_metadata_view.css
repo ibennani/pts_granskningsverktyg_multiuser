@@ -1,7 +1,7 @@
 .rulefile-metadata-edit-plate {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 0.75rem;
 }
 
 .metadata-edit-header {
@@ -9,7 +9,7 @@
 }
 
 .metadata-edit-header h1 {
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.15rem;
 }
 
 .metadata-edit-header .view-intro-text {
@@ -18,27 +18,28 @@
 }
 
 .rulefile-metadata-edit-plate > .metadata-edit-header + .rulefile-metadata-edit-form {
-    margin-top: -1.5rem;
+    margin-top: -0.5rem;
 }
 
 .rulefile-metadata-edit-form {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 0.75rem;
 }
 
 .form-section {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.5rem;
     border: 1px solid var(--surface-emphasis-border);
-    border-radius: 10px;
+    border-radius: 8px;
     background: var(--surface-emphasis-bg);
-    padding: 1.25rem;
+    padding: 0.75rem 1rem;
 }
 
 .form-section h2 {
-    margin: 0 0 0.25rem 0;
+    margin: 0 0 0.15rem 0;
+    font-size: 1.05rem;
 }
 
 .page-types-section-header {
@@ -61,25 +62,31 @@
     margin-bottom: 0;
 }
 
-.form-group {
+.rulefile-metadata-edit-form .form-group {
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
+    gap: 0.2rem;
 }
 
-.form-group label {
+.rulefile-metadata-edit-form .form-group label {
     font-weight: 600;
     color: var(--text-color);
+    font-size: 0.9rem;
 }
 
-.form-control {
+.rulefile-metadata-edit-form .form-control {
     width: 100%;
-    padding: 0.5rem 0.75rem;
+    padding: 0.35rem 0.6rem;
     border-radius: 6px;
     border: 1px solid var(--border-color);
     background: var(--input-background-color);
     color: var(--text-color);
-    font-size: 1rem;
+    font-size: 0.95rem;
+    min-height: 2rem;
+}
+
+.rulefile-metadata-edit-form .form-group textarea.form-control {
+    min-height: 4rem;
 }
 
 
@@ -97,15 +104,15 @@
 }
 
 .rulefile-metadata-edit-form .form-actions {
-    margin-top: 0.75rem;
+    margin-top: 0.5rem;
 }
 
 .metadata-edit-actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 1rem;
+    gap: 0.75rem;
     align-items: center;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
 }
 
 
@@ -251,8 +258,9 @@
 .metadata-edit-form-footer-actions {
     display: flex;
     flex-wrap: wrap;
-    gap: 1rem;
+    gap: 0.75rem;
     align-items: center;
+    margin-top: 0.5rem;
 }
 
 /* Kompakt styling för innehållstyper-formuläret */

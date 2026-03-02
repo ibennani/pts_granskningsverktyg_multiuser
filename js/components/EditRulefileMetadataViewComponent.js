@@ -31,7 +31,7 @@ export const EditRulefileMetadataViewComponent = {
         if (type === 'textarea') {
             const textarea = this.Helpers.create_element('textarea', {
                 class_name: 'form-control',
-                attributes: { id: name, name, rows: '4', ...(required ? { required: 'required' } : {}) }
+                attributes: { id: name, name, rows: '3', ...(required ? { required: 'required' } : {}) }
             });
             textarea.value = value ?? '';
             container.appendChild(textarea);
