@@ -12,11 +12,17 @@ const __dirname = path.dirname(__filename);
 const indexHtmlPath = path.resolve(__dirname, '..', '..', 'index.html');
 
 const translations = {
-  start_view_h1: 'Granskningsverktyget',
-  start_view_intro: 'Välkommen till Granskningsverktyget.',
+  audit_title_audits: 'Hantera granskningar',
   start_view_audits_heading: 'Pågående granskningar',
+  start_view_new_audits_heading: 'Ej påbörjade granskningar',
+  start_view_completed_audits_heading: 'Avslutade granskningar',
   start_view_no_audits: 'Inga granskningar finns ännu.',
-  admin_loading: 'Laddar...',
+  audit_loading: 'Laddar...',
+  audit_api_unavailable: 'audit_api_unavailable',
+  audit_upload_saved_audit: 'Ladda upp sparad granskning',
+  audit_list_empty_in_progress: 'Inga pågående granskningar finns ännu.',
+  audit_list_empty_not_started: 'Inga ej påbörjade granskningar finns ännu.',
+  audit_list_empty_completed: 'Inga avslutade granskningar finns ännu.',
   // Matchar nycklar i js/i18n/*.json så att även skiplänk och landmarks testas med översättningar
   skip_to_content: 'Hoppa till innehållet',
   landmark_top_navigation: 'Övre navigering',
@@ -62,47 +68,59 @@ async function renderStartView() {
     show_global_message: jest.fn(),
   };
 
-  const { StartViewComponent } = await import(
-    '../../js/components/StartViewComponent.js'
-  );
+  const { AuditViewComponent } = await import('../../js/components/AuditViewComponent.js');
   const appContainer = document.getElementById('app-container');
 
-  await StartViewComponent.init({
+  await AuditViewComponent.init({
     root: appContainer,
     deps: {
       router: jest.fn(),
+      view_name: 'start',
       getState: () => ({}),
       dispatch: jest.fn(),
       StoreActionTypes: {},
       Translation: window.Translation,
       Helpers: window.Helpers,
       NotificationComponent: window.NotificationComponent,
+      ValidationLogic: {
+        validate_saved_audit_file: jest.fn().mockReturnValue({ isValid: false }),
+        validate_rule_file_json: jest.fn().mockReturnValue({ isValid: false }),
+      },
+      SaveAuditLogic: {},
     },
   });
 
-  // Mock API
-  const originalFetch = global.fetch;
-  global.fetch = jest.fn().mockResolvedValue({
-    ok: true,
-    json: () => Promise.resolve([]),
+  global.fetch = jest.fn(async (url) => {
+    const u = typeof url === 'string' ? url : (url?.url || '');
+    if (u.includes('/health')) {
+      return { ok: true, json: async () => ({}) };
+    }
+    if (u.includes('/audits')) {
+      return { ok: true, json: async () => ([]) };
+    }
+    if (u.includes('/rules')) {
+      return { ok: true, json: async () => ([]) };
+    }
+    return { ok: true, json: async () => ({}) };
   });
 
-  StartViewComponent.render();
+  await AuditViewComponent.ensure_api_data();
+  AuditViewComponent._api_checked = true;
+  AuditViewComponent.render();
 
-  return { StartViewComponent, appContainer };
+  return { StartViewComponent: AuditViewComponent, appContainer };
 }
 
 afterEach(() => {
   jest.resetModules();
   document.body.innerHTML = '';
-  if (global.fetch?.mockRestore) global.fetch.mockRestore();
 });
 
 test('renders start view with heading and audits section', async () => {
   const { StartViewComponent, appContainer } = await renderStartView();
 
   const h1 = screen.getByRole('heading', { level: 1 });
-  expect(h1).toHaveTextContent('Granskningsverktyget');
+  expect(h1).toHaveTextContent('Hantera granskningar');
 
   const h2 = screen.getByRole('heading', { name: 'Pågående granskningar' });
   expect(h2).toBeInTheDocument();

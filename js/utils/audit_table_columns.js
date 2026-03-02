@@ -87,7 +87,9 @@ export function create_audit_table_columns(deps, handlers, opts = {}) {
                     }
                 });
                 btn.addEventListener('click', () => onDownloadAudit(row.id));
-                return btn;
+                const container = Helpers.create_element('div', { class_name: 'generic-table-action-cell' });
+                container.appendChild(btn);
+                return container;
             }
         }
     ];
@@ -119,7 +121,9 @@ export function create_audit_table_columns(deps, handlers, opts = {}) {
                         onDeleteAudit(row.id);
                     }
                 });
-                return delete_btn;
+                const container = Helpers.create_element('div', { class_name: 'generic-table-action-cell' });
+                container.appendChild(delete_btn);
+                return container;
             }
         });
     }
