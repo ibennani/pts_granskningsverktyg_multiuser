@@ -112,20 +112,20 @@
     line-height: 1.7;
 }
 
-.audit-section ul:not(.requirement-metadata-list):not(.pass-criteria-list):not(.instructions-list),
-.audit-section ol:not(.instructions-list) {
+.audit-section:not(.info-block-section):not(.instructions-section) ul:not(.requirement-metadata-list):not(.pass-criteria-list):not(.instructions-list),
+.audit-section:not(.info-block-section):not(.instructions-section) ol:not(.instructions-list) {
     list-style: none;
     padding: 0;
     margin: 0 0 1rem 0;
 }
 
-.audit-section ul:not(.requirement-metadata-list):not(.pass-criteria-list):not(.instructions-list) > li,
-.audit-section ol:not(.instructions-list) > li {
+.audit-section:not(.info-block-section):not(.instructions-section) ul:not(.requirement-metadata-list):not(.pass-criteria-list):not(.instructions-list) > li,
+.audit-section:not(.info-block-section):not(.instructions-section) ol:not(.instructions-list) > li {
     position: relative;
     padding-left: 1.25rem;
 }
 
-.audit-section ul:not(.requirement-metadata-list):not(.pass-criteria-list):not(.instructions-list) > li::before {
+.audit-section:not(.info-block-section):not(.instructions-section) ul:not(.requirement-metadata-list):not(.pass-criteria-list):not(.instructions-list) > li::before {
     content: "•";
     position: absolute;
     left: 0;
@@ -133,9 +133,9 @@
     line-height: 1;
 }
 
-.audit-section ol:not(.instructions-list) { counter-reset: audit-ol; }
-.audit-section ol:not(.instructions-list) > li { counter-increment: audit-ol; }
-.audit-section ol:not(.instructions-list) > li::before {
+.audit-section:not(.info-block-section):not(.instructions-section) ol:not(.instructions-list) { counter-reset: audit-ol; }
+.audit-section:not(.info-block-section):not(.instructions-section) ol:not(.instructions-list) > li { counter-increment: audit-ol; }
+.audit-section:not(.info-block-section):not(.instructions-section) ol:not(.instructions-list) > li::before {
     content: counter(audit-ol) ".";
     position: absolute;
     left: 0;

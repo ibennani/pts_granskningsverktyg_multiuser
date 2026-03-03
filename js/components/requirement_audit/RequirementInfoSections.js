@@ -22,7 +22,11 @@ export const RequirementInfoSections = {
             return null; // Return nothing if there's no content
         }
         
-        const section_div = this.Helpers.create_element('div', { class_name: 'audit-section' });
+        const section_classes = ['audit-section'];
+        if (title_key === 'requirement_instructions') {
+            section_classes.push('instructions-section');
+        }
+        const section_div = this.Helpers.create_element('div', { class_name: section_classes });
         section_div.appendChild(this.Helpers.create_element('h2', { text_content: t(title_key) }));
         
         const content_element = this.Helpers.create_element('div', { class_name: ['audit-section-content', 'markdown-content'] });
