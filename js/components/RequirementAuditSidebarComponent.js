@@ -369,10 +369,13 @@ export const RequirementAuditSidebarComponent = {
             const is_updated = req_result?.needsReview === true;
 
             const li = this.Helpers.create_element('li', { class_name: 'requirement-audit-sidebar__item' });
-            const h3 = this.Helpers.create_element('h3', { class_name: 'requirement-audit-sidebar__link-wrapper' });
+
+            // Länken överst: div.wrapper > a > h3
+            const link_wrapper = this.Helpers.create_element('div', { class_name: 'requirement-audit-sidebar__link-wrapper' });
+            const link_heading = this.Helpers.create_element('h3', {});
             const link = this.Helpers.create_element('a', {
                 class_name: 'requirement-audit-sidebar__link',
-                text_content: requirement.title || this.Translation.t('unknown_value', { val: req_key }),
+                text_content: '',
                 attributes: {
                     href: `#requirement_audit?${new URLSearchParams({ sampleId: current_sample.id, requirementId: req_key }).toString()}`,
                     'data-requirement-sidebar-link': 'true',
@@ -380,8 +383,10 @@ export const RequirementAuditSidebarComponent = {
                     'data-requirement-id': req_key
                 }
             });
-            h3.appendChild(link);
-            li.appendChild(h3);
+            link_heading.textContent = requirement.title || this.Translation.t('unknown_value', { val: req_key });
+            link.appendChild(link_heading);
+            link_wrapper.appendChild(link);
+            li.appendChild(link_wrapper);
 
             if (String(req_key) === String(requirement_id)) {
                 link.setAttribute('aria-current', 'page');
@@ -473,10 +478,13 @@ export const RequirementAuditSidebarComponent = {
             const is_updated = req_result?.needsReview === true;
 
             const li = this.Helpers.create_element('li', { class_name: 'requirement-audit-sidebar__item' });
-            const h3 = this.Helpers.create_element('h3', { class_name: 'requirement-audit-sidebar__link-wrapper' });
+
+            // Länken överst: div.wrapper > a > h3
+            const link_wrapper = this.Helpers.create_element('div', { class_name: 'requirement-audit-sidebar__link-wrapper' });
+            const link_heading = this.Helpers.create_element('h3', {});
             const link = this.Helpers.create_element('a', {
                 class_name: 'requirement-audit-sidebar__link',
-                text_content: sample?.description || this.Translation.t('undefined_description'),
+                text_content: '',
                 attributes: {
                     href: `#requirement_audit?${new URLSearchParams({ sampleId: sample.id, requirementId: requirement_key }).toString()}`,
                     'data-requirement-sidebar-link': 'true',
@@ -484,8 +492,10 @@ export const RequirementAuditSidebarComponent = {
                     'data-requirement-id': requirement_key
                 }
             });
-            h3.appendChild(link);
-            li.appendChild(h3);
+            link_heading.textContent = sample?.description || this.Translation.t('undefined_description');
+            link.appendChild(link_heading);
+            link_wrapper.appendChild(link);
+            li.appendChild(link_wrapper);
 
             if (String(sample?.id) === String(current_sample_id)) {
                 link.setAttribute('aria-current', 'page');
