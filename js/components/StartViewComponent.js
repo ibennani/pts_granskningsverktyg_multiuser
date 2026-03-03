@@ -4,6 +4,7 @@ import { check_api_available, get_audits } from '../api/client.js';
 import { GenericTableComponent } from './GenericTableComponent.js';
 import { create_audit_table_columns } from '../utils/audit_table_columns.js';
 import { open_audit_by_id, download_audit_by_id } from '../logic/audit_open_logic.js';
+import { subscribe_audits } from '../logic/list_push_service.js';
 
 export const StartViewComponent = {
     CSS_PATH: './css/components/start_view_component.css',
@@ -26,8 +27,7 @@ export const StartViewComponent = {
         this.audits = [];
         this.api_available = false;
         this._api_checked = false;
-        this._poll_timer = null;
-        this.POLL_INTERVAL_MS = 3000;
+        this._unsubscribe_audits = null;
 
         if (this.Helpers?.load_css_safely) {
             await this.Helpers.load_css_safely(this.CSS_PATH, 'StartViewComponent', {
@@ -36,33 +36,69 @@ export const StartViewComponent = {
             }).catch(() => {});
         }
 
-        this._start_list_polling = () => {
-            this._stop_list_polling();
-            const poll = async () => {
-                if (!this.root || !this.api_available) return;
-                try {
-                    const fresh = await get_audits();
-                    const fp = (arr) => JSON.stringify(arr.map(a => ({ id: a.id, status: a.status, updated_at: a.updated_at })));
-                    if (fp(fresh) !== fp(this.audits)) {
-                        this.audits = fresh;
-                        if (this.root) this.render();
-                    }
-                } catch {
-                    /* tyst vid poll-fel */
-                }
-                this._poll_timer = setTimeout(poll, this.POLL_INTERVAL_MS);
-            };
-            this._poll_timer = setTimeout(poll, this.POLL_INTERVAL_MS);
-        };
-        this._stop_list_polling = () => {
-            if (this._poll_timer) {
-                clearTimeout(this._poll_timer);
-                this._poll_timer = null;
-            }
-        };
+        this._genericTables = [
+            Object.create(GenericTableComponent),
+            Object.create(GenericTableComponent),
+            Object.create(GenericTableComponent)
+        ];
+        for (const tbl of this._genericTables) {
+            await tbl.init({ deps });
+        }
+    },
 
-        this._genericTable = Object.create(GenericTableComponent);
-        await this._genericTable.init({ deps });
+    _audit_fingerprint(a) {
+        return JSON.stringify({
+            id: a?.id,
+            status: a?.status,
+            updated_at: a?.updated_at,
+            metadata: a?.metadata
+        });
+    },
+
+    _section_index_for_audit(audit) {
+        const s = audit?.status;
+        if (s === 'in_progress') return 0;
+        if (s === 'not_started') return 1;
+        if (s === 'locked' || s === 'archived') return 2;
+        return 1;
+    },
+
+    async _on_audits_changed() {
+        if (!this.root || !this.api_available) return;
+        try {
+            const fresh = await get_audits();
+            const old_ids = (this.audits || []).map((a) => a.id);
+            const new_ids = (fresh || []).map((a) => a.id);
+            const same_length = old_ids.length === new_ids.length;
+            const same_order = same_length && old_ids.every((id, i) => id === new_ids[i]);
+            const same_sections = same_length && (this.audits || []).every((a, i) => {
+                const b = fresh[i];
+                return b && this._section_index_for_audit(a) === this._section_index_for_audit(b);
+            });
+            if (!same_order || !same_sections) {
+                this.audits = fresh;
+                if (this.root) this.render();
+                return;
+            }
+            const changed = [];
+            for (let i = 0; i < fresh.length; i++) {
+                if (this._audit_fingerprint(this.audits[i]) !== this._audit_fingerprint(fresh[i])) {
+                    changed.push(fresh[i]);
+                }
+            }
+            this.audits = fresh;
+            if (changed.length === 0) return;
+            for (const audit of changed) {
+                const section_index = this._section_index_for_audit(audit);
+                const table = this._genericTables[section_index];
+                if (table && typeof table.updateRow === 'function') {
+                    table.updateRow(audit.id, audit);
+                }
+            }
+        } catch {
+            // Vid t.ex. DOM-avvikelse eller kast i updateRow: fall tillbaka till full render
+            if (this.root) this.render();
+        }
     },
 
     get_t_func() {
@@ -224,7 +260,8 @@ export const StartViewComponent = {
                             ? 'start_view_no_new_audits'
                             : 'start_view_no_completed_audits';
                 this._startTableSortState = this._startTableSortState ?? { columnIndex: 0, direction: 'asc' };
-                this._genericTable.render({
+                const table_instance = this._genericTables[index];
+                table_instance.render({
                     root: table_wrapper,
                     columns: audit_columns,
                     data: config.audits,
@@ -237,7 +274,8 @@ export const StartViewComponent = {
                         this._startTableSortState = { columnIndex, direction };
                         this.render();
                     },
-                    t: this.Translation.t.bind(this.Translation)
+                    t: this.Translation.t.bind(this.Translation),
+                    getRowId: (row) => row?.id
                 });
                 section.appendChild(table_wrapper);
                 plate.appendChild(section);
@@ -246,14 +284,20 @@ export const StartViewComponent = {
 
         this.root.appendChild(plate);
 
-        if (this._api_checked && this.api_available && typeof this._start_list_polling === 'function') {
-            this._start_list_polling();
+        if (this._api_checked && this.api_available && !this._unsubscribe_audits) {
+            this._unsubscribe_audits = subscribe_audits(() => this._on_audits_changed());
         }
     },
 
     destroy() {
-        this._stop_list_polling?.();
-        this._genericTable?.destroy?.();
+        if (typeof this._unsubscribe_audits === 'function') {
+            this._unsubscribe_audits();
+            this._unsubscribe_audits = null;
+        }
+        for (const tbl of this._genericTables || []) {
+            tbl?.destroy?.();
+        }
+        this._genericTables = null;
         this.root = null;
         this.deps = null;
     }

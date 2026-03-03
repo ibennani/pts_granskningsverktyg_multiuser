@@ -58,8 +58,14 @@ async function renderStartView() {
     skipLink.textContent = window.Translation.t('skip_to_content');
   }
   const topNav = document.getElementById('global-action-bar-top');
-  if (topNav && topNav.childElementCount > 0) {
-    topNav.setAttribute('aria-label', window.Translation.t('landmark_toolbar'));
+  if (topNav) {
+    if (topNav.childElementCount > 0) {
+      topNav.setAttribute('aria-label', window.Translation.t('landmark_toolbar'));
+      topNav.removeAttribute('aria-hidden');
+    } else {
+      topNav.removeAttribute('aria-label');
+      topNav.setAttribute('aria-hidden', 'true');
+    }
   }
 
   window.NotificationComponent = {

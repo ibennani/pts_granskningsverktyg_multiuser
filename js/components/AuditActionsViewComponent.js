@@ -1,4 +1,5 @@
-import { get_rules, get_websocket_url } from '../api/client.js';
+import { get_rules } from '../api/client.js';
+import { subscribe_rules } from '../logic/list_push_service.js';
 import { version_greater_than } from '../utils/version_utils.js';
 import { find_newer_rule_for_audit } from '../logic/newer_rule_check.js';
 
@@ -10,7 +11,7 @@ export const AuditActionsViewComponent = {
         this.deps = deps;
         this.newerRuleAvailable = null;
         this._newerRuleCheckInProgress = false;
-        this._ws = null;
+        this._unsubscribe_rules = null;
 
         this.router = deps.router;
         this.getState = deps.getState;
@@ -72,30 +73,15 @@ export const AuditActionsViewComponent = {
         if (slot) this._populate_update_rulefile_slot(slot, this.getState());
     },
 
-    _ensure_ws_subscription() {
-        if (this._ws) return;
-        try {
-            const url = get_websocket_url();
-            const ws = new WebSocket(url);
-            ws.onmessage = (e) => {
-                try {
-                    const msg = JSON.parse(e.data);
-                    if (msg?.type === 'rules:changed') this._refresh_newer_rule_check();
-                } catch (err) {
-                    // Ignorera ogiltiga meddelanden
-                }
-            };
-            ws.onclose = () => { this._ws = null; };
-            this._ws = ws;
-        } catch (err) {
-            // WebSocket ej tillgänglig
-        }
+    _ensure_rules_push_subscription() {
+        if (this._unsubscribe_rules) return;
+        this._unsubscribe_rules = subscribe_rules(() => this._refresh_newer_rule_check());
     },
 
-    _close_ws() {
-        if (this._ws) {
-            try { this._ws.close(); } catch (err) { /* ignore */ }
-            this._ws = null;
+    _close_rules_push_subscription() {
+        if (typeof this._unsubscribe_rules === 'function') {
+            this._unsubscribe_rules();
+            this._unsubscribe_rules = null;
         }
     },
 
@@ -360,9 +346,9 @@ export const AuditActionsViewComponent = {
             if (this.newerRuleAvailable === null && !this._newerRuleCheckInProgress) {
                 this._refresh_newer_rule_check();
             }
-            this._ensure_ws_subscription();
+            this._ensure_rules_push_subscription();
         } else {
-            this._close_ws();
+            this._close_rules_push_subscription();
             this.newerRuleAvailable = null;
         }
 
@@ -498,7 +484,7 @@ export const AuditActionsViewComponent = {
     },
 
     destroy() {
-        this._close_ws();
+        this._close_rules_push_subscription();
         if (this.root) this.root.innerHTML = '';
         this.root = null;
         this.deps = null;

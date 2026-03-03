@@ -17,6 +17,7 @@ import {
     update_rule,
     create_production_rule
 } from '../api/client.js';
+import { subscribe_audits, subscribe_rules } from '../logic/list_push_service.js';
 import { GenericTableComponent } from './GenericTableComponent.js';
 import { AuditListComponent } from './AuditListComponent.js';
 import { create_audit_table_columns } from '../utils/audit_table_columns.js';
@@ -83,45 +84,67 @@ export const AuditViewComponent = {
                 console.warn('[AuditViewComponent] Continuing without CSS due to loading failure');
             });
         }
-        this._poll_timer = null;
-        this.POLL_INTERVAL_MS = 3000;
-        this._start_list_polling = () => {
-            this._stop_list_polling();
-            const poll = async () => {
-                if (!this.root || !this.api_available) return;
-                try {
-                    const [fresh_audits, fresh_rules] = await Promise.all([get_audits(), get_rules()]);
-                    const fp_audits = (arr) => JSON.stringify(arr.map(a => ({ id: a.id, status: a.status, updated_at: a.updated_at })));
-                    const fp_rules = (arr) => JSON.stringify(arr.map(r => ({ id: r.id, updated_at: r.updated_at })));
-                    const audits_changed = fp_audits(fresh_audits) !== fp_audits(this.audits);
-                    const rules_changed = fp_rules(fresh_rules) !== fp_rules(this.rules);
-                    if (audits_changed || rules_changed) {
-                        this.audits = fresh_audits;
-                        this.rules = fresh_rules;
-                        this._split_rules_for_views();
-                        if (this.root) this.render();
-                    }
-                } catch {
-                    /* tyst vid poll-fel */
-                }
-                this._poll_timer = setTimeout(poll, this.POLL_INTERVAL_MS);
-            };
-            this._poll_timer = setTimeout(poll, this.POLL_INTERVAL_MS);
-        };
-        this._stop_list_polling = () => {
-            if (this._poll_timer) {
-                clearTimeout(this._poll_timer);
-                this._poll_timer = null;
-            }
-        };
+        this._unsubscribe_audits = null;
+        this._unsubscribe_rules = null;
 
         this._auditsTable = Object.create(GenericTableComponent);
         await this._auditsTable.init({ deps });
-        this._rulesTable = Object.create(GenericTableComponent);
-        await this._rulesTable.init({ deps });
+        this._publishedRulesTable = Object.create(GenericTableComponent);
+        await this._publishedRulesTable.init({ deps });
+        this._draftRulesTable = Object.create(GenericTableComponent);
+        await this._draftRulesTable.init({ deps });
         this._auditListComponent = Object.create(AuditListComponent);
         await this._auditListComponent.init({ deps });
         this.draft_rules = [];
+    },
+
+    _rule_fingerprint(r) {
+        return JSON.stringify({ id: r?.id, updated_at: r?.updated_at, is_published: r?.is_published });
+    },
+
+    async _on_audits_changed() {
+        if (!this.root || !this.api_available) return;
+        try {
+            const fresh = await get_audits();
+            this.audits = fresh;
+            if (this.root) this.render();
+        } catch {
+            /* tyst vid fel */
+        }
+    },
+
+    async _on_rules_changed() {
+        if (!this.root || !this.api_available) return;
+        try {
+            const old_published = [...(this.published_rules || [])];
+            const old_production = [...(this.production_rules || [])];
+            const fresh_rules = await get_rules();
+            this.rules = fresh_rules;
+            this._split_rules_for_views();
+            const new_pub_ids = (this.published_rules || []).map((r) => r.id);
+            const new_prod_ids = (this.production_rules || []).map((r) => r.id);
+            const old_pub_ids = old_published.map((r) => r.id);
+            const old_prod_ids = old_production.map((r) => r.id);
+            const pub_same = old_pub_ids.length === new_pub_ids.length && old_pub_ids.every((id, i) => id === new_pub_ids[i]);
+            const prod_same = old_prod_ids.length === new_prod_ids.length && old_prod_ids.every((id, i) => id === new_prod_ids[i]);
+            if (pub_same && prod_same) {
+                const old_pub_map = new Map(old_published.map((r) => [r.id, r]));
+                const old_prod_map = new Map(old_production.map((r) => [r.id, r]));
+                const changed_pub = (this.published_rules || []).filter((r) => this._rule_fingerprint(r) !== this._rule_fingerprint(old_pub_map.get(r.id)));
+                const changed_prod = (this.production_rules || []).filter((r) => this._rule_fingerprint(r) !== this._rule_fingerprint(old_prod_map.get(r.id)));
+                changed_pub.forEach((rule) => {
+                    this._publishedRulesTable?.updateRow?.(rule.id, rule);
+                });
+                changed_prod.forEach((rule) => {
+                    this._draftRulesTable?.updateRow?.(rule.id, rule);
+                });
+            } else {
+                if (this.root) this.render();
+            }
+        } catch {
+            // Vid t.ex. DOM-avvikelse eller kast i updateRow: fall tillbaka till full render
+            if (this.root) this.render();
+        }
     },
 
     get_t_func() {
@@ -1171,7 +1194,7 @@ export const AuditViewComponent = {
             onPublishProductionRule: (id) => this.handle_publish_production_rule(id)
         };
         const rule_columns = create_rule_table_columns(rules_table_deps, rules_table_handlers);
-        this._rulesTable?.render({
+        this._publishedRulesTable?.render({
             root: rules_table_wrapper,
             columns: rule_columns,
             data: this.published_rules || [],
@@ -1184,7 +1207,8 @@ export const AuditViewComponent = {
                 this._rulesTableSortState = { columnIndex, direction };
                 this.render();
             },
-            t: this.Translation.t.bind(this.Translation)
+            t: this.Translation.t.bind(this.Translation),
+            getRowId: (row) => row?.id
         });
         left_col.appendChild(rules_table_wrapper);
 
@@ -1223,7 +1247,7 @@ export const AuditViewComponent = {
             attributes: { id: 'audit-draft-rules-wrapper' }
         });
         this._draftRulesTableSortState = this._draftRulesTableSortState ?? { columnIndex: 0, direction: 'asc' };
-        this._rulesTable?.render({
+        this._draftRulesTable?.render({
             root: draft_rules_table_wrapper,
             columns: rule_columns,
             data: this.production_rules || [],
@@ -1236,7 +1260,8 @@ export const AuditViewComponent = {
                 this._draftRulesTableSortState = { columnIndex, direction };
                 this.render();
             },
-            t: this.Translation.t.bind(this.Translation)
+            t: this.Translation.t.bind(this.Translation),
+            getRowId: (row) => row?.id
         });
         draft_section.appendChild(draft_rules_table_wrapper);
         left_col.appendChild(draft_section);
@@ -1481,17 +1506,30 @@ export const AuditViewComponent = {
             }, 0);
         }
 
-        if (this._api_checked && this.api_available && typeof this._start_list_polling === 'function') {
-            this._start_list_polling();
+        if (this._api_checked && this.api_available) {
+            if (!this._unsubscribe_audits) {
+                this._unsubscribe_audits = subscribe_audits(() => this._on_audits_changed());
+            }
+            if (!this._unsubscribe_rules) {
+                this._unsubscribe_rules = subscribe_rules(() => this._on_rules_changed());
+            }
         }
     },
 
     destroy() {
-        this._stop_list_polling?.();
+        if (typeof this._unsubscribe_audits === 'function') {
+            this._unsubscribe_audits();
+            this._unsubscribe_audits = null;
+        }
+        if (typeof this._unsubscribe_rules === 'function') {
+            this._unsubscribe_rules();
+            this._unsubscribe_rules = null;
+        }
         this.upload_file_input = null;
         this.upload_audit_file_input = null;
         this._auditsTable?.destroy?.();
-        this._rulesTable?.destroy?.();
+        this._publishedRulesTable?.destroy?.();
+        this._draftRulesTable?.destroy?.();
         this._auditListComponent?.destroy?.();
         this.root = null;
         this.deps = null;

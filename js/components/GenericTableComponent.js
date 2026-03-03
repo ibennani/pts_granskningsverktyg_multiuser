@@ -29,6 +29,7 @@ export const GenericTableComponent = {
      * @param {{ columnIndex: number, direction: 'asc'|'desc' }} [opts.sortState] - Aktiv sortering.
      * @param {function(number, 'asc'|'desc')} [opts.onSort] - Anropas vid klick på rubrik (columnIndex, direction). Krävs för sorterbara rubriker.
      * @param {function(string): string} [opts.t] - Översättningsfunktion för sorteringsknappar (aria-label).
+     * @param {function(any): string|number} [opts.getRowId] - Returnerar rad-id för data-row-id (för updateRow). Default: row => row?.id.
      */
     render(opts) {
         const root_el = opts.root ?? this.root;
@@ -36,9 +37,11 @@ export const GenericTableComponent = {
 
         const { columns, data, emptyMessage, ariaLabel, sortState, onSort } = opts;
         const t = opts.t || (() => '');
+        const get_row_id = opts.getRowId || ((row) => row?.id);
         const wrapper_class = opts.wrapperClassName ?? 'generic-table-wrapper';
         const table_class = opts.tableClassName ?? 'generic-table';
 
+        const focus_restore = this._lastFocusPosition || null;
         root_el.innerHTML = '';
 
         let data_to_render = data && data.length > 0 ? [...data] : [];
@@ -119,6 +122,10 @@ export const GenericTableComponent = {
 
         const tbody = this.Helpers.create_element('tbody');
         if (data_to_render.length === 0) {
+            this._lastColumns = null;
+            this._lastRoot = null;
+            this._lastWrapper = null;
+            this._lastOpts = null;
             const empty_row = this.Helpers.create_element('tr');
             empty_row.appendChild(
                 this.Helpers.create_element('td', {
@@ -128,8 +135,17 @@ export const GenericTableComponent = {
             );
             tbody.appendChild(empty_row);
         } else {
+            this._lastColumns = columns;
+            this._lastOpts = { getRowId: get_row_id, t };
+            this._lastRoot = root_el;
+            this._lastWrapper = wrapper;
+
             data_to_render.forEach((row) => {
                 const tr = this.Helpers.create_element('tr');
+                const row_id = get_row_id(row);
+                if (row_id !== undefined && row_id !== null) {
+                    tr.setAttribute('data-row-id', String(row_id));
+                }
                 columns.forEach((col) => {
                     const content = col.getContent(row);
                     const td = this.Helpers.create_element('td');
@@ -165,6 +181,35 @@ export const GenericTableComponent = {
         wrapper.appendChild(table);
         root_el.appendChild(wrapper);
 
+        wrapper.addEventListener('focusin', (e) => {
+            const cell = e.target.closest('td') || e.target.closest('th');
+            const tr = cell?.closest('tr');
+            const tbody_el = wrapper.querySelector('tbody');
+            if (!tr || !cell) return;
+            if (tr.parentElement?.tagName === 'THEAD') {
+                const col_index = Array.from(tr.children).indexOf(cell);
+                if (col_index >= 0) this._lastFocusPosition = { in_header: true, col_index };
+            } else if (tbody_el && tr.parentElement === tbody_el) {
+                const row_index = Array.from(tbody_el.rows).indexOf(tr);
+                const col_index = Array.from(tr.cells).indexOf(cell);
+                if (row_index >= 0 && col_index >= 0) this._lastFocusPosition = { in_header: false, row_index, col_index };
+            }
+        });
+
+        const apply_restore_focus = (target_el) => {
+            if (!target_el || typeof target_el.focus !== 'function') return;
+            const raf = typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function';
+            const run = () => {
+                try {
+                    target_el.focus({ preventScroll: true });
+                } catch {
+                    target_el.focus();
+                }
+            };
+            if (raf) window.requestAnimationFrame(run);
+            else run();
+        };
+
         if (typeof this._pendingSortFocusIndex === 'number') {
             const focus_index = this._pendingSortFocusIndex;
             this._pendingSortFocusIndex = undefined;
@@ -177,24 +222,82 @@ export const GenericTableComponent = {
                 setTimeout(() => {
                     live_region.textContent = '';
                 }, clear_after_ms);
-                const apply_focus = () => {
-                    const header_buttons = wrapper.querySelectorAll('thead .generic-table-header-sort-btn');
-                    const target = header_buttons[focus_index];
-                    if (target && typeof target.focus === 'function') {
-                        try {
-                            target.focus({ preventScroll: true });
-                        } catch {
-                            target.focus();
-                        }
-                    }
-                };
-                if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
-                    window.requestAnimationFrame(apply_focus);
-                } else {
-                    apply_focus();
-                }
+                const header_buttons = wrapper.querySelectorAll('thead .generic-table-header-sort-btn');
+                const target = header_buttons[focus_index];
+                apply_restore_focus(target);
+            }
+        } else if (focus_restore) {
+            if (focus_restore.in_header) {
+                const header_row = wrapper.querySelector('thead tr');
+                const th = header_row?.children[focus_restore.col_index];
+                const target = th?.querySelector('.generic-table-header-sort-btn');
+                if (target) apply_restore_focus(target);
+            } else {
+                const rows = wrapper.querySelectorAll('tbody tr');
+                const tr = rows[focus_restore.row_index];
+                const cell = tr?.cells[focus_restore.col_index];
+                const focusable = cell?.querySelector('a[href], button, [tabindex="0"]');
+                if (focusable) apply_restore_focus(focusable);
             }
         }
+    },
+
+    /**
+     * Uppdaterar innehållet i en befintlig rad (endast celler). Använd efter push när bara innehållet i raden ändrats.
+     * Kräver att render() anropats med getRowId och att raden finns i tabellen.
+     * @param {string|number} rowId - Samma id som getRowId(row) returnerar.
+     * @param {*} rowData - Uppdaterat radobjekt (skickas till getContent för varje kolumn).
+     */
+    updateRow(rowId, rowData) {
+        if (!this._lastWrapper || !this._lastColumns || !this._lastOpts) return;
+        const tbody = this._lastWrapper.querySelector('tbody');
+        if (!tbody) return;
+        const row_id_str = String(rowId);
+        const tr = tbody.querySelector(`tr[data-row-id="${CSS.escape(row_id_str)}"]`);
+        if (!tr) return;
+
+        const columns = this._lastColumns;
+        columns.forEach((col, col_index) => {
+            const td = tr.cells[col_index];
+            if (!td) return;
+            const content = col.getContent(rowData);
+            const is_action = col && col.isAction === true;
+            td.innerHTML = '';
+            td.classList.remove('generic-table-col-actions');
+            if (is_action) {
+                td.classList.add('generic-table-col-actions');
+            }
+            if (typeof content === 'string') {
+                td.textContent = content;
+            } else if (content && content instanceof HTMLElement) {
+                if (is_action) {
+                    const is_cell_container = content.classList && content.classList.contains('generic-table-action-cell');
+                    if (is_cell_container) {
+                        td.appendChild(content);
+                    } else if (content.tagName === 'BUTTON') {
+                        const container = this.Helpers.create_element('div', { class_name: 'generic-table-action-cell' });
+                        container.appendChild(content);
+                        td.appendChild(container);
+                    } else {
+                        content.classList.add('generic-table-action-cell');
+                        td.appendChild(content);
+                    }
+                } else {
+                    td.appendChild(content);
+                }
+            }
+        });
+    },
+
+    /**
+     * Uppdaterar flera rader. Anropar updateRow för varje { id, row }.
+     * @param {Array<{ id: string|number, row: * }>} changed_rows
+     */
+    updateRows(changed_rows) {
+        if (!Array.isArray(changed_rows)) return;
+        changed_rows.forEach(({ id, row }) => {
+            this.updateRow(id, row);
+        });
     },
 
     destroy() {
@@ -202,6 +305,10 @@ export const GenericTableComponent = {
             this.root.innerHTML = '';
         }
         this.root = null;
+        this._lastColumns = null;
+        this._lastWrapper = null;
+        this._lastRoot = null;
+        this._lastOpts = null;
         this.deps = null;
     }
 };
