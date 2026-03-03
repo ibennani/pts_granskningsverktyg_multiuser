@@ -387,7 +387,7 @@ router.delete('/:id', async (req, res) => {
 router.patch('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { metadata, status, samples } = req.body;
+        const { metadata, status, samples, ruleFileContent } = req.body;
         const last_updated_by = req.headers['x-user-name'] || req.headers['x-user-id'] || null;
         const updates = [];
         const values = [];
@@ -407,6 +407,10 @@ router.patch('/:id', async (req, res) => {
             }
             updates.push(`samples = $${i++}`);
             values.push(JSON.stringify(samples));
+        }
+        if (ruleFileContent !== undefined) {
+            updates.push(`rule_file_content = $${i++}`);
+            values.push(JSON.stringify(ruleFileContent));
         }
         updates.push(`version = version + 1`);
         if (last_updated_by !== null) {

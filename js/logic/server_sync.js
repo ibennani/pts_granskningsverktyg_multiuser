@@ -17,11 +17,16 @@ function normalize_status_for_server(status) {
 }
 
 function state_to_patch(state) {
-    return {
+    const patch = {
         metadata: state.auditMetadata || {},
         status: normalize_status_for_server(state.auditStatus || 'not_started'),
         samples: state.samples || []
     };
+    // Inkludera regelfilinnehåll så att "Uppdatera regelfil" och liknande persisteras i audits.rule_file_content
+    if (state.ruleFileContent) {
+        patch.ruleFileContent = state.ruleFileContent;
+    }
+    return patch;
 }
 
 function state_to_import(state) {
