@@ -9,9 +9,10 @@ export function find_newer_rule_for_audit(ruleFileContent, rules, version_greate
     if (!ruleFileContent || !Array.isArray(rules) || rules.length === 0) return null;
     const audit_title = (ruleFileContent?.metadata?.title?.trim?.() || '').toLowerCase();
     const audit_monitoring = (ruleFileContent?.metadata?.monitoringType?.text?.trim?.() || '').toLowerCase();
-    const audit_version = ruleFileContent?.metadata?.version?.trim?.() || '';
+    const audit_version = (ruleFileContent?.metadata?.version?.trim?.() || '').trim();
     const audit_ids = [audit_title, audit_monitoring].filter(Boolean);
     if (audit_ids.length === 0) return null;
+    if (audit_version === '') return null;
     let best_newer = null;
     for (const r of rules) {
         const rule_name = (r.name || '').trim().toLowerCase();
