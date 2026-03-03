@@ -215,13 +215,15 @@ router.post('/production', async (req, res) => {
 router.delete('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const inUse = await query(
-            'SELECT id FROM audits WHERE rule_set_id = $1 LIMIT 1',
+        const countResult = await query(
+            'SELECT COUNT(*) AS count FROM audits WHERE rule_set_id = $1',
             [id]
         );
-        if (inUse.rows.length > 0) {
+        const inUseCount = parseInt(countResult.rows[0]?.count ?? '0', 10);
+        if (inUseCount > 0) {
             return res.status(409).json({
-                error: 'Regelfilen används av minst en granskning och kan inte raderas. Radera granskningarna först.'
+                error: 'Regelfilen används av minst en granskning och kan inte raderas. Radera granskningarna först.',
+                inUseCount
             });
         }
         const result = await query('DELETE FROM rule_sets WHERE id = $1 RETURNING id', [id]);

@@ -605,14 +605,18 @@ export const AuditViewComponent = {
 
     _find_matching_rule(file_id, file_title) {
         const all_rules = Array.isArray(this.rules) ? this.rules : [];
+        let matched = null;
         if (file_id) {
-            const by_id = all_rules.find((r) => String(r.id) === String(file_id));
-            if (by_id) return by_id;
+            matched = all_rules.find((r) => String(r.id) === String(file_id));
         }
-        if (file_title) {
-            return all_rules.find((r) => (r.name || '').trim() === file_title);
+        if (!matched && file_title) {
+            matched = all_rules.find((r) => (r.name || '').trim() === file_title);
         }
-        return null;
+        if (!matched) return null;
+        const production = all_rules.find(
+            (r) => r.production_base_id != null && String(r.production_base_id) === String(matched.id)
+        );
+        return production || matched;
     },
 
     _get_rule_display_name(rule_id) {
@@ -659,44 +663,50 @@ export const AuditViewComponent = {
     },
 
     async _do_import_rule_and_refresh(migrated_content, event, options = {}) {
+        if (this._importInProgress) return;
+        this._importInProgress = true;
         const t = this.get_t_func();
-        const content_to_import = { ...migrated_content };
-        if (!content_to_import.metadata) {
-            content_to_import.metadata = {};
-        }
-        if (!content_to_import.metadata.ruleSetId) {
-            const uuid = (typeof crypto !== 'undefined' && crypto?.randomUUID ? crypto.randomUUID() : null)
-                || (this.Helpers?.generate_uuid_v4 ? this.Helpers.generate_uuid_v4() : null)
-                || `gen-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-            content_to_import.metadata = { ...content_to_import.metadata, ruleSetId: uuid };
-        }
-        const name = content_to_import?.metadata?.title?.trim() || 'Importerad regelfil';
-        const opts = options || {};
-
-        if (opts.target_rule_id) {
-            await update_rule(opts.target_rule_id, { content: content_to_import });
-        } else if (opts.create_production_copy_from_base_id) {
-            const base_id = opts.create_production_copy_from_base_id;
-            const created = await copy_rule(base_id);
-            const target_id = created?.id;
-            if (!target_id) {
-                throw new Error(t('audit_upload_invalid_file'));
+        try {
+            const content_to_import = { ...migrated_content };
+            if (!content_to_import.metadata) {
+                content_to_import.metadata = {};
             }
-            await update_rule(target_id, { content: content_to_import });
-        } else {
-            await create_production_rule({
-                name,
-                content: content_to_import
-            });
-        }
+            if (!content_to_import.metadata.ruleSetId) {
+                const uuid = (typeof crypto !== 'undefined' && crypto?.randomUUID ? crypto.randomUUID() : null)
+                    || (this.Helpers?.generate_uuid_v4 ? this.Helpers.generate_uuid_v4() : null)
+                    || `gen-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+                content_to_import.metadata = { ...content_to_import.metadata, ruleSetId: uuid };
+            }
+            const name = content_to_import?.metadata?.title?.trim() || 'Importerad regelfil';
+            const opts = options || {};
 
-        this.NotificationComponent?.show_global_message(
-            t('audit_rule_uploaded_success'),
-            'success'
-        );
-        await this.ensure_api_data();
-        this.render();
-        if (event?.target) event.target.value = '';
+            if (opts.target_rule_id) {
+                await update_rule(opts.target_rule_id, { content: content_to_import });
+            } else if (opts.create_production_copy_from_base_id) {
+                const base_id = opts.create_production_copy_from_base_id;
+                const created = await copy_rule(base_id);
+                const target_id = created?.id;
+                if (!target_id) {
+                    throw new Error(t('audit_upload_invalid_file'));
+                }
+                await update_rule(target_id, { content: content_to_import });
+            } else {
+                await create_production_rule({
+                    name,
+                    content: content_to_import
+                });
+            }
+
+            this.NotificationComponent?.show_global_message(
+                t('audit_rule_uploaded_success'),
+                'success'
+            );
+            await this.ensure_api_data();
+            this.render();
+        } finally {
+            this._importInProgress = false;
+            if (event?.target) event.target.value = '';
+        }
     },
 
     _show_rulefile_duplicate_modal(is_older, on_upload_anyway, on_close, options = {}) {
@@ -872,11 +882,48 @@ export const AuditViewComponent = {
             await this.ensure_api_data();
             this.render();
         } catch (error) {
-            this.NotificationComponent?.show_global_message(
-                error.message || t('audit_delete_error'),
-                'error'
-            );
+            if (error.status === 409 && error.responseBody?.inUseCount != null) {
+                const rule_name = this._get_rule_base_name(rule_id);
+                this._show_rule_in_use_modal(rule_name, error.responseBody.inUseCount);
+            } else {
+                this.NotificationComponent?.show_global_message(
+                    error.message || t('audit_delete_error'),
+                    'error'
+                );
+            }
         }
+    },
+
+    _show_rule_in_use_modal(rule_name, in_use_count) {
+        const t = this.get_t_func();
+        const ModalComponent = window.ModalComponent;
+        if (!ModalComponent?.show || !this.Helpers?.create_element) return;
+        ModalComponent.show(
+            {
+                h1_text: t('audit_rule_in_use_modal_title'),
+                message_text: ''
+            },
+            (container, modal_instance) => {
+                const p = this.Helpers.create_element('p');
+                p.appendChild(document.createTextNode(t('audit_rule_in_use_modal_prefix')));
+                const strong_title = this.Helpers.create_element('strong', { text_content: rule_name });
+                p.appendChild(strong_title);
+                p.appendChild(document.createTextNode(t('audit_rule_in_use_modal_used')));
+                const strong_count = this.Helpers.create_element('strong', { text_content: String(in_use_count) });
+                p.appendChild(strong_count);
+                p.appendChild(document.createTextNode(t('audit_rule_in_use_modal_suffix')));
+                container.appendChild(p);
+                const btn = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-primary'],
+                    text_content: t('audit_rule_in_use_modal_understand'),
+                    attributes: { type: 'button' }
+                });
+                btn.addEventListener('click', () => modal_instance.close());
+                const wrapper = this.Helpers.create_element('div', { class_name: 'modal-confirm-actions' });
+                wrapper.appendChild(btn);
+                container.appendChild(wrapper);
+            }
+        );
     },
 
     handle_publish_rule(rule_id) {
@@ -889,6 +936,8 @@ export const AuditViewComponent = {
     },
 
     async _do_publish_rule(rule_id) {
+        if (this._publishInProgress) return;
+        this._publishInProgress = true;
         const t = this.get_t_func();
         try {
             await publish_rule(rule_id);
@@ -904,10 +953,14 @@ export const AuditViewComponent = {
                 error.message || t('rulefile_publish_error'),
                 'error'
             );
+        } finally {
+            this._publishInProgress = false;
         }
     },
 
     async handle_copy_rule(rule_id) {
+        if (this._copyInProgress) return;
+        this._copyInProgress = true;
         const t = this.get_t_func();
         const COPY_ANIMATION_MS = 250;
         let button_rect = null;
@@ -953,6 +1006,8 @@ export const AuditViewComponent = {
                 error.message || t('audit_load_rule_error'),
                 'error'
             );
+        } finally {
+            this._copyInProgress = false;
         }
     },
 
@@ -966,6 +1021,8 @@ export const AuditViewComponent = {
     },
 
     async _do_publish_production_rule(rule_id) {
+        if (this._publishProductionInProgress) return;
+        this._publishProductionInProgress = true;
         const t = this.get_t_func();
         try {
             const result = await publish_production_rule(rule_id);
@@ -982,6 +1039,8 @@ export const AuditViewComponent = {
                 error.message || t('rulefile_publish_error'),
                 'error'
             );
+        } finally {
+            this._publishProductionInProgress = false;
         }
     },
 

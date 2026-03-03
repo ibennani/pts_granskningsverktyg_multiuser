@@ -82,6 +82,7 @@ export async function api_delete(path) {
         const msg = err?.error || `HTTP ${res.status}`;
         const e = new Error(msg);
         e.status = res.status;
+        if (err && typeof err === 'object') e.responseBody = err;
         throw e;
     }
     if (res.status === 204) return null;
