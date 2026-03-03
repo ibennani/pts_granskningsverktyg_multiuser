@@ -58,6 +58,18 @@ Alla redigeringsformulär följer projektets autospar-regler:
 - Bevarar fokus och scroll vid autospar
 - Trimning endast vid manuell sparning eller när vyn lämnas
 
+## Relaterat: Uppdatera regelfil i pågående granskning
+
+Det finns ett separat flöde för att **byta till en nyare regelfil** (från servern) i en pågående granskning, utan att redigera innehållet i gränssnittet:
+
+1. **Ingång:** Granskning öppen. Knappen "Uppdatera regelfil (version X)" visas när en nyare version av samma regelfil finns på servern. Synlighet: i **Granskningsåtgärder** (AuditActionsViewComponent) och på **Granskningsöversikten** (AuditOverviewComponent, liten banner med länk). "Nyare version" bestäms i `js/logic/newer_rule_check.js` (`find_newer_rule_for_audit`): om granskningen har `ruleSetId` jämförs endast den regeluppsättningens `metadata_version` mot granskningens `ruleFileContent.metadata.version`; saknas `ruleSetId` matchas på regelfilens titel och monitoring-typ. Om granskningens regelfil saknar `metadata.version` visas inte knappen.
+2. **UpdateRulefileViewComponent:** Steg 1 – varning och rekommendation att spara säkerhetskopia. Användaren kan **spara säkerhetskopia**, **hoppa över** ("Fortsätt utan säkerhetskopia") eller **gå tillbaka** till granskningsöversikten. Steg 2 – "Använd regelfil från servern" (med laddningsindikator) hämtar publicerad version via `get_rule(ruleId)`, migrerar och validerar, kör `RulefileUpdaterLogic.analyze_rule_file_changes`. Steg 3 – användaren ser rapport: **uppdaterade krav** (markerade för omgranskning), **borttagna krav** och **nya krav** (som finns i nya regelfilen men inte i den gamla). Bekräfta eller "Fortsätt med gammal regelfil".
+3. **Efter bekräftelse:** `RulefileUpdaterLogic.apply_rule_file_update` bygger nytt state (ny regelfil, samples med mappade krav-nycklar, borttagna borttagna, ändrade märkta `needsReview`). Dispatch `REPLACE_RULEFILE_AND_RECONCILE`. Om minst ett krav har `needsReview` skickas användaren till vyn **Hantera uppdaterade bedömningar** (`confirm_updates`); annars till granskningsöversikten.
+4. **Omgranskning:** ConfirmUpdatesViewComponent listar alla krav med `needsReview`. Användaren kan gå till respektive krav (requirement_audit) och bekräfta bedömningen, eller "Bekräfta alla" → FinalConfirmUpdatesViewComponent → godkänn alla på en gång.
+5. **Persistens:** Efter dispatch triggas vanlig `schedule_sync_to_server`. PATCH till `/audits/:id` skickar även `ruleFileContent` så att granskningens kopia (`audits.rule_file_content`) uppdateras på servern. Vid nästa laddning används denna sparade kopia.
+
+Skillnad mot "regelfilsredigering" ovan: här ersätts hela regelfilen med serverns version; det är ingen sektion-för-sektion-redigering.
+
 ## Platshållarsektioner
 
 Klassificeringar och Rapportmall visar för närvarande:
