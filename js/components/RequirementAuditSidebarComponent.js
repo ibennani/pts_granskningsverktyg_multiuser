@@ -291,83 +291,65 @@ export const RequirementAuditSidebarComponent = {
     },
 
     _update_list_items_status_only(sorted_items, rule_file_content, current_sample, current_requirement, requirement_id) {
-        const t = this.Translation.t;
-        const items = this.list_container_ref?.querySelectorAll?.('ul.requirement-audit-sidebar__items > li.requirement-audit-sidebar__item');
-        if (!items || items.length !== sorted_items.length) return false;
-
-        if (this.selected_mode === 'sample_requirements') {
-            sorted_items.forEach((item, i) => {
-                const li = items[i];
-                if (!li) return;
-                const { req_key, requirement, req_result } = item;
-                const base_status = this.AuditLogic.calculate_requirement_status(requirement, req_result);
-                const needs_help = item.needs_help;
-                const is_updated = req_result?.needsReview === true;
-                const status_parts = [t(`audit_status_${base_status}`)];
-                if (needs_help) status_parts.push(t('filter_option_needs_help'));
-                if (is_updated) status_parts.push(t('status_updated_tooltip'));
-                const status_text = status_parts.join(', ');
-
-                const meta = li.querySelector('.requirement-audit-sidebar__meta');
-                if (meta) {
-                    const old_icons = meta.querySelector('.status-icons-wrapper');
-                    const new_icons = this._create_sidebar_status_icons(base_status, needs_help, is_updated);
-                    if (old_icons && new_icons) old_icons.replaceWith(new_icons);
-                    const status_span = meta.querySelector('.requirement-audit-sidebar__status-text');
-                    if (status_span) status_span.textContent = status_text;
-                }
-            });
-        } else {
-            sorted_items.forEach((item, i) => {
-                const li = items[i];
-                if (!li) return;
-                const base_status = this.AuditLogic.calculate_requirement_status(current_requirement, item.req_result);
-                const needs_help = item.needs_help;
-                const is_updated = item.req_result?.needsReview === true;
-                const status_parts = [t(`audit_status_${base_status}`)];
-                if (needs_help) status_parts.push(t('filter_option_needs_help'));
-                if (is_updated) status_parts.push(t('status_updated_tooltip'));
-                const status_text = status_parts.join(', ');
-
-                const meta = li.querySelector('.requirement-audit-sidebar__meta');
-                if (meta) {
-                    const old_icons = meta.querySelector('.status-icons-wrapper');
-                    const new_icons = this._create_sidebar_status_icons(base_status, needs_help, is_updated);
-                    if (old_icons && new_icons) old_icons.replaceWith(new_icons);
-                    const status_span = meta.querySelector('.requirement-audit-sidebar__status-text');
-                    if (status_span) status_span.textContent = status_text;
-                }
-            });
+        // Vi vill rita om hela listan med den nya, förenklade strukturen.
+        if (this.list_container_ref) {
+            this.list_container_ref.innerHTML = '';
         }
-        return true;
+        return false;
     },
 
     _create_sidebar_status_icons(base_status, needs_help, is_updated) {
         const t = this.Translation.t;
         const icons_wrapper = this.Helpers.create_element('span', { class_name: 'status-icons-wrapper' });
-        icons_wrapper.appendChild(this.Helpers.create_element('span', {
+
+        const status_tooltip_text = t(`audit_status_${base_status}`);
+        const status_icon_wrapper = this.Helpers.create_element('span', { class_name: 'status-icon-tooltip-wrapper' });
+        status_icon_wrapper.appendChild(this.Helpers.create_element('span', {
             class_name: `requirement-audit-sidebar__status-icon status-icon status-icon-${base_status.replace('_', '-')}`,
             text_content: this.get_status_icon(base_status),
             attributes: { 'aria-hidden': 'true' }
         }));
+        status_icon_wrapper.appendChild(this.Helpers.create_element('span', {
+            class_name: 'status-icon-tooltip',
+            text_content: status_tooltip_text,
+            attributes: { 'aria-hidden': 'true' }
+        }));
+        icons_wrapper.appendChild(status_icon_wrapper);
+
         if (needs_help) {
             const warning_svg = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('warning', ['currentColor'], 14) : '';
-            icons_wrapper.appendChild(this.Helpers.create_element('span', {
+            const needs_help_wrapper = this.Helpers.create_element('span', { class_name: 'status-icon-tooltip-wrapper' });
+            needs_help_wrapper.appendChild(this.Helpers.create_element('span', {
                 class_name: 'status-icon status-icon-needs-help-indicator',
                 html_content: warning_svg,
                 attributes: { 'aria-hidden': 'true' }
             }));
+            needs_help_wrapper.appendChild(this.Helpers.create_element('span', {
+                class_name: 'status-icon-tooltip',
+                text_content: t('filter_option_needs_help'),
+                attributes: { 'aria-hidden': 'true' }
+            }));
+            icons_wrapper.appendChild(needs_help_wrapper);
         }
         if (is_updated) {
             const update_svg = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('update', ['currentColor'], 14) : '';
-            icons_wrapper.appendChild(this.Helpers.create_element('span', {
+            const updated_wrapper = this.Helpers.create_element('span', { class_name: 'status-icon-tooltip-wrapper' });
+            updated_wrapper.appendChild(this.Helpers.create_element('span', {
                 class_name: 'status-icon status-icon-updated-indicator',
                 html_content: update_svg,
                 attributes: { 'aria-hidden': 'true' }
             }));
+            updated_wrapper.appendChild(this.Helpers.create_element('span', {
+                class_name: 'status-icon-tooltip',
+                text_content: t('status_updated_tooltip'),
+                attributes: { 'aria-hidden': 'true' }
+            }));
+            icons_wrapper.appendChild(updated_wrapper);
         }
         return icons_wrapper;
     },
+
+    // _build_sidebar_status_rows togs bort – vi använder en mer kompakt struktur
 
     render_requirements_for_sample(rule_file_content, current_sample, requirement_id) {
         const sorted_items = this.get_filtered_requirement_items(rule_file_content, current_sample);
@@ -382,13 +364,9 @@ export const RequirementAuditSidebarComponent = {
         const list = this.Helpers.create_element('ul', { class_name: 'requirement-audit-sidebar__items' });
 
         sorted_items.forEach(item => {
-            const { req_key, requirement, req_result, display_status, needs_help } = item;
+            const { req_key, requirement, req_result, needs_help } = item;
             const base_status = this.AuditLogic.calculate_requirement_status(requirement, req_result);
             const is_updated = req_result?.needsReview === true;
-            const status_parts = [this.Translation.t(`audit_status_${base_status}`)];
-            if (needs_help) status_parts.push(this.Translation.t('filter_option_needs_help'));
-            if (is_updated) status_parts.push(this.Translation.t('status_updated_tooltip'));
-            const status_text = status_parts.join(', ');
 
             const li = this.Helpers.create_element('li', { class_name: 'requirement-audit-sidebar__item' });
             const h3 = this.Helpers.create_element('h3', { class_name: 'requirement-audit-sidebar__link-wrapper' });
@@ -403,6 +381,7 @@ export const RequirementAuditSidebarComponent = {
                 }
             });
             h3.appendChild(link);
+            li.appendChild(h3);
 
             if (String(req_key) === String(requirement_id)) {
                 link.setAttribute('aria-current', 'page');
@@ -410,47 +389,61 @@ export const RequirementAuditSidebarComponent = {
                 li.classList.add('is-active');
             }
 
-            const icons_wrapper = this.Helpers.create_element('span', { class_name: 'status-icons-wrapper' });
-            const status_icon = this.Helpers.create_element('span', {
+            // Punktlista med statusrader under länken
+            const t = this.Translation.t;
+            const status_list = this.Helpers.create_element('ul', { class_name: 'requirement-audit-sidebar__item-inner' });
+
+            const add_status_row = (icon_node, text) => {
+                const row = this.Helpers.create_element('li', { class_name: 'requirement-audit-sidebar__item-status-row' });
+                const wrapper = this.Helpers.create_element('span', { class_name: 'status-icon-tooltip-wrapper' });
+                wrapper.appendChild(icon_node);
+                wrapper.appendChild(this.Helpers.create_element('span', {
+                    class_name: 'status-icon-tooltip',
+                    text_content: text,
+                    attributes: { 'aria-hidden': 'true' }
+                }));
+                row.appendChild(wrapper);
+                row.appendChild(this.Helpers.create_element('span', {
+                    class_name: 'requirement-audit-sidebar__status-text',
+                    text_content: text
+                }));
+                status_list.appendChild(row);
+            };
+
+            // Grundstatus
+            const base_text = t(`audit_status_${base_status}`);
+            const base_icon = this.Helpers.create_element('span', {
                 class_name: `requirement-audit-sidebar__status-icon status-icon status-icon-${base_status.replace('_', '-')}`,
                 text_content: this.get_status_icon(base_status),
                 attributes: { 'aria-hidden': 'true' }
             });
-            icons_wrapper.appendChild(status_icon);
+            add_status_row(base_icon, base_text);
+
+            // Behöver hjälp
             if (needs_help) {
+                const help_text = t('filter_option_needs_help');
                 const warning_svg = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('warning', ['currentColor'], 14) : '';
-                const needs_help_icon = this.Helpers.create_element('span', {
+                const help_icon = this.Helpers.create_element('span', {
                     class_name: 'status-icon status-icon-needs-help-indicator',
                     html_content: warning_svg,
                     attributes: { 'aria-hidden': 'true' }
                 });
-                icons_wrapper.appendChild(needs_help_icon);
+                add_status_row(help_icon, help_text);
             }
+
+            // Uppdaterat krav
             if (is_updated) {
+                const updated_text = t('status_updated_tooltip');
                 const update_svg = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('update', ['currentColor'], 14) : '';
                 const updated_icon = this.Helpers.create_element('span', {
                     class_name: 'status-icon status-icon-updated-indicator',
                     html_content: update_svg,
                     attributes: { 'aria-hidden': 'true' }
                 });
-                icons_wrapper.appendChild(updated_icon);
+                add_status_row(updated_icon, updated_text);
             }
-            const status_text_span = this.Helpers.create_element('span', {
-                class_name: 'requirement-audit-sidebar__status-text',
-                text_content: status_text
-            });
-            const meta = this.Helpers.create_element('span', { class_name: 'requirement-audit-sidebar__meta' });
-            meta.appendChild(icons_wrapper);
-            meta.appendChild(status_text_span);
 
-            li.appendChild(h3);
-            if (requirement.standardReference?.text) {
-                li.appendChild(this.Helpers.create_element('span', {
-                    class_name: 'requirement-audit-sidebar__reference',
-                    text_content: requirement.standardReference.text
-                }));
-            }
-            li.appendChild(meta);
+            li.appendChild(status_list);
             list.appendChild(li);
         });
 
@@ -478,10 +471,6 @@ export const RequirementAuditSidebarComponent = {
             const needs_help = item.needs_help;
             const base_status = this.AuditLogic.calculate_requirement_status(current_requirement, req_result);
             const is_updated = req_result?.needsReview === true;
-            const status_parts = [this.Translation.t(`audit_status_${base_status}`)];
-            if (needs_help) status_parts.push(this.Translation.t('filter_option_needs_help'));
-            if (is_updated) status_parts.push(this.Translation.t('status_updated_tooltip'));
-            const status_text = status_parts.join(', ');
 
             const li = this.Helpers.create_element('li', { class_name: 'requirement-audit-sidebar__item' });
             const h3 = this.Helpers.create_element('h3', { class_name: 'requirement-audit-sidebar__link-wrapper' });
@@ -496,6 +485,7 @@ export const RequirementAuditSidebarComponent = {
                 }
             });
             h3.appendChild(link);
+            li.appendChild(h3);
 
             if (String(sample?.id) === String(current_sample_id)) {
                 link.setAttribute('aria-current', 'page');
@@ -503,42 +493,61 @@ export const RequirementAuditSidebarComponent = {
                 li.classList.add('is-active');
             }
 
-            const icons_wrapper = this.Helpers.create_element('span', { class_name: 'status-icons-wrapper' });
-            const status_icon = this.Helpers.create_element('span', {
+            // Punktlista med statusrader under länken
+            const t = this.Translation.t;
+            const status_list = this.Helpers.create_element('ul', { class_name: 'requirement-audit-sidebar__item-inner' });
+
+            const add_status_row = (icon_node, text) => {
+                const row = this.Helpers.create_element('li', { class_name: 'requirement-audit-sidebar__item-status-row' });
+                const wrapper = this.Helpers.create_element('span', { class_name: 'status-icon-tooltip-wrapper' });
+                wrapper.appendChild(icon_node);
+                wrapper.appendChild(this.Helpers.create_element('span', {
+                    class_name: 'status-icon-tooltip',
+                    text_content: text,
+                    attributes: { 'aria-hidden': 'true' }
+                }));
+                row.appendChild(wrapper);
+                row.appendChild(this.Helpers.create_element('span', {
+                    class_name: 'requirement-audit-sidebar__status-text',
+                    text_content: text
+                }));
+                status_list.appendChild(row);
+            };
+
+            // Grundstatus
+            const base_text = t(`audit_status_${base_status}`);
+            const base_icon = this.Helpers.create_element('span', {
                 class_name: `requirement-audit-sidebar__status-icon status-icon status-icon-${base_status.replace('_', '-')}`,
                 text_content: this.get_status_icon(base_status),
                 attributes: { 'aria-hidden': 'true' }
             });
-            icons_wrapper.appendChild(status_icon);
+            add_status_row(base_icon, base_text);
+
+            // Behöver hjälp
             if (needs_help) {
+                const help_text = t('filter_option_needs_help');
                 const warning_svg = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('warning', ['currentColor'], 14) : '';
-                const needs_help_icon = this.Helpers.create_element('span', {
+                const help_icon = this.Helpers.create_element('span', {
                     class_name: 'status-icon status-icon-needs-help-indicator',
                     html_content: warning_svg,
                     attributes: { 'aria-hidden': 'true' }
                 });
-                icons_wrapper.appendChild(needs_help_icon);
+                add_status_row(help_icon, help_text);
             }
+
+            // Uppdaterat krav
             if (is_updated) {
+                const updated_text = t('status_updated_tooltip');
                 const update_svg = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('update', ['currentColor'], 14) : '';
                 const updated_icon = this.Helpers.create_element('span', {
                     class_name: 'status-icon status-icon-updated-indicator',
                     html_content: update_svg,
                     attributes: { 'aria-hidden': 'true' }
                 });
-                icons_wrapper.appendChild(updated_icon);
+                add_status_row(updated_icon, updated_text);
             }
-            const status_text_span = this.Helpers.create_element('span', {
-                class_name: 'requirement-audit-sidebar__status-text',
-                text_content: status_text
-            });
-            const meta = this.Helpers.create_element('span', { class_name: 'requirement-audit-sidebar__meta' });
-            meta.appendChild(icons_wrapper);
-            meta.appendChild(status_text_span);
 
-            li.appendChild(h3);
-            // Ingen referenstext i listläget "Alla stickprov för samma krav"
-            li.appendChild(meta);
+            li.appendChild(status_list);
             list.appendChild(li);
         });
 

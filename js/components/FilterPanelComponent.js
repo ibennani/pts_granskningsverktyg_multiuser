@@ -84,7 +84,9 @@ export const FilterPanelComponent = {
         if (this._elements.panel) {
             this._elements.panel.querySelectorAll('label[data-text-key]').forEach(labelEl => {
                 const key = labelEl.getAttribute('data-text-key');
-                if (key) labelEl.textContent = t(key);
+                if (!key) return;
+                const text_span = labelEl.querySelector('.FilterPanelComponent__item-label-text') || labelEl;
+                text_span.textContent = t(key);
             });
         }
 
@@ -181,8 +183,12 @@ export const FilterPanelComponent = {
         });
         const allLabel = Helpers.create_element('label', {
             attributes: { for: `${p}-filter-all`, 'data-text-key': 'show_all' },
+        });
+        const allLabelText = Helpers.create_element('span', {
+            class_name: 'FilterPanelComponent__item-label-text',
             text_content: t('show_all')
         });
+        allLabel.appendChild(allLabelText);
         allWrapper.append(allInput, allLabel);
         panel.appendChild(allWrapper);
         this._elements.checkboxes['all'] = allInput;
@@ -197,9 +203,18 @@ export const FilterPanelComponent = {
                 attributes: { type: 'checkbox', 'data-status': status }
             });
             const label = Helpers.create_element('label', {
-                attributes: { for: `${p}-filter-${status}`, 'data-text-key': `audit_status_${status}` },
+                attributes: { for: `${p}-filter-${status}`, 'data-text-key': `audit_status_${status}` }
+            });
+            const icon_span = Helpers.create_element('span', {
+                class_name: `FilterPanelComponent__status-icon status-icon status-icon-${status.replace('_', '-')}`,
+                attributes: { 'aria-hidden': 'true' },
+                text_content: this._get_status_icon_char(status)
+            });
+            const label_text_span = Helpers.create_element('span', {
+                class_name: 'FilterPanelComponent__item-label-text',
                 text_content: t(`audit_status_${status}`)
             });
+            label.append(icon_span, label_text_span);
             wrapper.append(input, label);
             panel.appendChild(wrapper);
             this._elements.checkboxes[status] = input;
@@ -214,9 +229,18 @@ export const FilterPanelComponent = {
             attributes: { type: 'checkbox', 'data-status': 'updated' }
         });
         const updatedLabel = Helpers.create_element('label', {
-            attributes: { for: `${p}-filter-updated`, 'data-text-key': 'filter_option_updated' },
+            attributes: { for: `${p}-filter-updated`, 'data-text-key': 'filter_option_updated' }
+        });
+        const updatedIcon = Helpers.create_element('span', {
+            class_name: 'FilterPanelComponent__status-icon status-icon status-icon-updated',
+            attributes: { 'aria-hidden': 'true' },
+            text_content: this._get_status_icon_char('updated')
+        });
+        const updatedLabelText = Helpers.create_element('span', {
+            class_name: 'FilterPanelComponent__item-label-text',
             text_content: t('filter_option_updated')
         });
+        updatedLabel.append(updatedIcon, updatedLabelText);
         updatedWrapper.append(updatedInput, updatedLabel);
         panel.appendChild(updatedWrapper);
         this._elements.checkboxes['updated'] = updatedInput;
@@ -230,14 +254,42 @@ export const FilterPanelComponent = {
             attributes: { type: 'checkbox', 'data-status': 'needs_help' }
         });
         const needsHelpLabel = Helpers.create_element('label', {
-            attributes: { for: `${p}-filter-needs_help`, 'data-text-key': 'filter_option_needs_help' },
+            attributes: { for: `${p}-filter-needs_help`, 'data-text-key': 'filter_option_needs_help' }
+        });
+        const needsHelpIcon = Helpers.create_element('span', {
+            class_name: 'FilterPanelComponent__status-icon status-icon status-icon-needs-help',
+            attributes: { 'aria-hidden': 'true' },
+            text_content: this._get_status_icon_char('needs_help')
+        });
+        const needsHelpLabelText = Helpers.create_element('span', {
+            class_name: 'FilterPanelComponent__item-label-text',
             text_content: t('filter_option_needs_help')
         });
+        needsHelpLabel.append(needsHelpIcon, needsHelpLabelText);
         needsHelpWrapper.append(needsHelpInput, needsHelpLabel);
         panel.appendChild(needsHelpWrapper);
         this._elements.checkboxes['needs_help'] = needsHelpInput;
 
         panel.addEventListener('change', this._boundHandlers.onFilterChange);
+    },
+
+    _get_status_icon_char(status) {
+        switch (status) {
+            case 'not_audited':
+                return '○';
+            case 'partially_audited':
+                return '◐';
+            case 'passed':
+                return '✓';
+            case 'failed':
+                return '✗';
+            case 'updated':
+                return '↻';
+            case 'needs_help':
+                return '⚠';
+            default:
+                return '○';
+        }
     },
 
     _handleToggle(e) {

@@ -58,6 +58,60 @@
     font-weight: bold;
 }
 
+.FilterPanelComponent__item label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15rem;
+}
+
+.FilterPanelComponent__status-icon {
+    display: inline-block;
+    margin-right: 0;
+    font-size: 1rem;
+    line-height: 1;
+    vertical-align: middle;
+    font-weight: normal;
+    font-family: Arial, sans-serif;
+    text-rendering: optimizeLegibility;
+}
+
+.FilterPanelComponent__status-icon.status-icon-not-audited {
+    color: #000000;
+    font-weight: bold;
+    opacity: 1;
+    text-stroke: 2px currentColor;
+    -webkit-text-stroke: 2px currentColor;
+}
+
+[data-theme="dark"] .FilterPanelComponent__status-icon.status-icon-not-audited {
+    color: #FFFFFF;
+    opacity: 1;
+    text-stroke: 2px currentColor;
+    -webkit-text-stroke: 2px currentColor;
+}
+
+.FilterPanelComponent__status-icon.status-icon-partially-audited {
+    color: #FF8C00;
+}
+
+.FilterPanelComponent__status-icon.status-icon-passed {
+    color: #28A745;
+    font-weight: bold;
+}
+
+.FilterPanelComponent__status-icon.status-icon-failed {
+    color: #DC3545;
+    font-weight: bold;
+}
+
+.FilterPanelComponent__status-icon.status-icon-updated {
+    color: #007BFF;
+}
+
+.FilterPanelComponent__status-icon.status-icon-needs-help {
+    color: #E67E22;
+}
+
 .FilterPanelComponent__separator {
     border: none;
     border-top: 1px solid var(--border-color);
