@@ -6,7 +6,6 @@ import {
     get_rules,
     get_rule,
     get_audits,
-    import_rule,
     import_audit,
     delete_rule,
     delete_audit,
@@ -240,29 +239,74 @@ export const AuditViewComponent = {
                 const rule_validation = this.ValidationLogic?.validate_rule_file_json?.(migrated_content);
                 if (rule_validation?.isValid) {
                     await this.ensure_api_data();
-                    const file_id = json_content.id ?? raw_content?.metadata?.ruleSetId ?? migrated_content?.metadata?.ruleSetId ?? null;
+                    const file_id =
+                        json_content.id ??
+                        raw_content?.metadata?.ruleSetId ??
+                        migrated_content?.metadata?.ruleSetId ??
+                        null;
                     const file_title = (migrated_content?.metadata?.title ?? '').toString().trim();
                     const file_date_modified = migrated_content?.metadata?.dateModified;
+                    const uploaded_version = (migrated_content?.metadata?.version ?? '').toString().trim();
                     const matched = this._find_matching_rule(file_id, file_title);
                     if (matched) {
                         let server_updated_at = matched.updated_at;
-                        if (matched.is_published && this.production_rules?.length) {
-                            const production_copy = this.production_rules.find(
-                                (r) => String(r.production_base_id) === String(matched.id)
-                            );
-                            if (production_copy?.updated_at) {
-                                server_updated_at = production_copy.updated_at;
-                            }
+                        let server_version = (matched.metadata_version ?? '').toString().trim();
+
+                        let production_copy = null;
+                        if (matched.production_base_id) {
+                            production_copy = matched;
+                        } else if (matched.is_published && Array.isArray(this.production_rules) && this.production_rules.length) {
+                            production_copy =
+                                this.production_rules.find(
+                                    (r) => String(r.production_base_id) === String(matched.id)
+                                ) || null;
                         }
-                        const is_older = this._is_uploaded_file_older(file_date_modified, server_updated_at);
-                        this._show_rulefile_duplicate_modal(is_older, () => {
-                            this._do_import_rule_and_refresh(migrated_content, event);
-                        }, () => {
-                            if (event.target) event.target.value = '';
-                        });
+
+                        if (production_copy?.updated_at) {
+                            server_updated_at = production_copy.updated_at;
+                        }
+                        if (production_copy?.metadata_version) {
+                            server_version = (production_copy.metadata_version ?? '').toString().trim();
+                        }
+
+                        let is_older = false;
+                        const has_distinct_versions =
+                            uploaded_version && server_version && uploaded_version !== server_version;
+
+                        if (has_distinct_versions) {
+                            const uploaded_is_newer = version_greater_than(uploaded_version, server_version);
+                            is_older = !uploaded_is_newer;
+                        } else {
+                            is_older = this._is_uploaded_file_older(file_date_modified, server_updated_at);
+                        }
+
+                        let import_options = null;
+                        if (production_copy?.id) {
+                            import_options = { target_rule_id: production_copy.id };
+                        } else if (matched.is_published) {
+                            import_options = { create_production_copy_from_base_id: matched.id };
+                        } else {
+                            import_options = { target_rule_id: matched.id };
+                        }
+
+                        this._show_rulefile_duplicate_modal(
+                            is_older,
+                            () => {
+                                this._do_import_rule_and_refresh(migrated_content, event, import_options);
+                            },
+                            () => {
+                                if (event.target) event.target.value = '';
+                            },
+                            {
+                                server_version,
+                                uploaded_version
+                            }
+                        );
                         return;
                     }
-                    await this._do_import_rule_and_refresh(migrated_content, event);
+                    await this._do_import_rule_and_refresh(migrated_content, event, {
+                        create_standalone_production: true
+                    });
                     return;
                 }
 
@@ -610,7 +654,7 @@ export const AuditViewComponent = {
         return file_date.getTime() < server_date.getTime();
     },
 
-    async _do_import_rule_and_refresh(migrated_content, event) {
+    async _do_import_rule_and_refresh(migrated_content, event, options = {}) {
         const t = this.get_t_func();
         const content_to_import = { ...migrated_content };
         if (!content_to_import.metadata) {
@@ -623,7 +667,25 @@ export const AuditViewComponent = {
             content_to_import.metadata = { ...content_to_import.metadata, ruleSetId: uuid };
         }
         const name = content_to_import?.metadata?.title?.trim() || 'Importerad regelfil';
-        await import_rule(name, content_to_import);
+        const opts = options || {};
+
+        if (opts.target_rule_id) {
+            await update_rule(opts.target_rule_id, { content: content_to_import });
+        } else if (opts.create_production_copy_from_base_id) {
+            const base_id = opts.create_production_copy_from_base_id;
+            const created = await copy_rule(base_id);
+            const target_id = created?.id;
+            if (!target_id) {
+                throw new Error(t('audit_upload_invalid_file'));
+            }
+            await update_rule(target_id, { content: content_to_import });
+        } else {
+            await create_production_rule({
+                name,
+                content: content_to_import
+            });
+        }
+
         this.NotificationComponent?.show_global_message(
             t('audit_rule_uploaded_success'),
             'success'
@@ -633,7 +695,7 @@ export const AuditViewComponent = {
         if (event?.target) event.target.value = '';
     },
 
-    _show_rulefile_duplicate_modal(is_older, on_upload_anyway, on_close) {
+    _show_rulefile_duplicate_modal(is_older, on_upload_anyway, on_close, options = {}) {
         const t = this.get_t_func();
         const ModalComponent = window.ModalComponent;
         if (!ModalComponent?.show || !this.Helpers?.create_element) {
@@ -642,8 +704,30 @@ export const AuditViewComponent = {
             return;
         }
         let message = t('rulefile_duplicate_modal_message');
+        const { server_version, uploaded_version } = options || {};
+        const extra_lines = [];
+        if (server_version || uploaded_version) {
+            extra_lines.push(t('rulefile_duplicate_modal_versions_heading'));
+            if (server_version) {
+                extra_lines.push(
+                    t('rulefile_duplicate_modal_server_version_label', {
+                        version: server_version
+                    })
+                );
+            }
+            if (uploaded_version) {
+                extra_lines.push(
+                    t('rulefile_duplicate_modal_uploaded_version_label', {
+                        version: uploaded_version
+                    })
+                );
+            }
+        }
         if (is_older) {
-            message += ' ' + t('rulefile_duplicate_modal_older_warning');
+            extra_lines.push(t('rulefile_duplicate_modal_older_warning'));
+        }
+        if (extra_lines.length > 0) {
+            message += '\n\n' + extra_lines.join('\n');
         }
         ModalComponent.show(
             {

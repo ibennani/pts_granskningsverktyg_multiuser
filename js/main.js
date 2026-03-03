@@ -1110,6 +1110,11 @@ window.DraftManager = DraftManager;
                 set_focus_to_h1();
             }
 
+            // Uppdatera landmärken och skiplänk efter att vyn (inklusive sidokolumn) har renderats klart
+            if (typeof update_landmarks_and_skip_link === 'function') {
+                update_landmarks_and_skip_link(view_name_to_render, params_to_render);
+            }
+
         } catch (error) {
             consoleManager.error(`[Main.js] CATCH BLOCK: Error during view ${view_name_to_render} lifecycle:`, error);
             
