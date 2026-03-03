@@ -116,10 +116,12 @@ export const UpdateRulefileViewComponent = {
             this._loading_server_rule = false;
             this.render();
             if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[UpdateRulefileViewComponent] handle_use_rule_from_server_click:', error);
-            this.NotificationComponent?.show_global_message(
-                t('error_rulefile_update_failed') + (error?.message ? `: ${error.message}` : ''),
-                'error'
-            );
+            const is_network_error = /failed to fetch|networkerror|network error|load failed/i.test(error?.message || '') ||
+                (error?.name && /network|typeerror/i.test(error.name));
+            const message = is_network_error
+                ? t('error_rulefile_update_network')
+                : t('error_rulefile_update_failed') + (error?.message ? `: ${error.message}` : '');
+            this.NotificationComponent?.show_global_message(message, 'error');
         }
     },
     

@@ -1027,6 +1027,7 @@
   "progress_bar_fallback_text": "Framsteg: {current} / {max}",
   "translation_missing_translations": "Verktyg för tillsyn av tillgänglighet - Översättningar saknas",
   "error_rulefile_update_failed": "Fel vid uppdatering av regelfil",
+  "error_rulefile_update_network": "Kunde inte hämta regelfil. Kontrollera nätverket och försök igen.",
   "error_confirm_failed_temp_data_missing": "Bekräftelse misslyckades: temporär data saknas.",
   "error_no_pending_sample_changes": "Inga väntande ändringar av stickprovet hittades.",
   "info_block_expanded_label": "Initialt expanderad",

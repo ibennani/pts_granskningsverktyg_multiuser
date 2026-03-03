@@ -1027,6 +1027,7 @@
   "progress_bar_fallback_text": "Progress: {current} / {max}",
   "translation_missing_translations": "Accessibility Audit Tool - Missing translations",
   "error_rulefile_update_failed": "Error updating rule file",
+  "error_rulefile_update_network": "Could not fetch rule file. Check your network connection and try again.",
   "error_confirm_failed_temp_data_missing": "Confirmation failed: temporary data missing.",
   "error_no_pending_sample_changes": "No pending sample changes were found.",
   "info_block_expanded_label": "Initially expanded",
