@@ -1,0 +1,36 @@
+---
+description: Automatisk commit och push vid kommandot "Pusha"
+alwaysApply: true
+---
+
+# Automatisk commit och push vid "Pusha"
+
+Den här regeln styr hur agenten ska bete sig när du skriver exakt ordet `Pusha` i chatten.
+
+## Beteende
+
+När användaren skriver `Pusha` ska agenten:
+
+- Tolka detta som en uttrycklig begäran att skapa en git-commit och köra `git push` för den aktuella branchen.
+- Alltid följa commit-reglerna i `00-project-rules.mdc`:
+  - Commit-meddelanden ska vara på svenska och beskriva vad användaren upplever, inte tekniska detaljer.
+  - Meddelandet ska täcka alla ändringar som ingår i commiten.
+
+## Arbetsflöde vid `Pusha`
+
+1. Kör `git status`, `git diff` och `git log -5` för att förstå alla ändringar.
+2. Analysera alla staged och unstaged ändringar.
+3. Generera ett commit-meddelande på svenska:
+   - Om det bara är en tydlig åtgärd: skriv en kort sammanfattande rad.
+   - Om det finns fler än en tydlig åtgärd: använd en numrerad lista i brödtexten (`1. ...`, `2. ...`) där varje punkt beskriver en användarsynlig ändring.
+4. Lägg till relevanta filer med `git add` (utelämna uppenbara hemligheter som `.env`, nycklar, lösenord).
+5. Kör `git commit` med det genererade meddelandet.
+6. Kontrollera med `git status` att arbetskatalogen är ren.
+7. Kör `git push` till aktuell remote-branch.
+
+## Säkerhet och begränsningar
+
+- Skapa aldrig en commit om det inte finns några ändringar att committa.
+- Pusha inte filer som uppenbart kan innehålla hemligheter (t.ex. `.env`, nyckelfiler, lösenord).
+- Om commit eller push misslyckas ska agenten redovisa felet i klartext och inte försöka forcera igenom ändringen.
+
