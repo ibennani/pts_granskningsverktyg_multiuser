@@ -48,15 +48,6 @@ export const AuditProblemsViewComponent = {
         this.handle_copy_all_click = this.handle_copy_all_click.bind(this);
         this.handle_edit_click = this.handle_edit_click.bind(this);
         this.handle_problem_solved_click = this.handle_problem_solved_click.bind(this);
-
-        this.unsubscribe = null;
-        if (typeof deps.subscribe === 'function') {
-            this.unsubscribe = deps.subscribe(() => {
-                if (this.root && window.__gv_current_view_name === 'audit_problems' && typeof this.render === 'function') {
-                    this.render();
-                }
-            });
-        }
     },
 
     build_hash(view_name, params = {}) {
@@ -575,18 +566,20 @@ export const AuditProblemsViewComponent = {
         const edit_icon = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('edit', ['currentColor'], 16) : '';
         const copy_icon = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('content_copy', ['currentColor'], 16) : '';
         const buttons_row = this.Helpers.create_element('div', { class_name: 'audit-problem-card__buttons-row' });
+        const edit_btn_aria_label = `${t('audit_problems_edit_button')}: ${req_title}`;
         const edit_btn = this.Helpers.create_element('button', {
             class_name: ['button', 'button-default', 'audit-problem-edit-btn'],
             attributes: {
                 type: 'button',
                 'data-sample-id': sample_id,
-                'data-requirement-id': req_id
+                'data-requirement-id': req_id,
+                'aria-label': edit_btn_aria_label
             },
             html_content: `<span>${this.Helpers.escape_html(t('audit_problems_edit_button'))}</span>${edit_icon ? `<span aria-hidden="true">${edit_icon}</span>` : ''}`
         });
         edit_btn.addEventListener('click', this.handle_edit_click);
         buttons_row.appendChild(edit_btn);
-        const copy_btn_aria_label = `${t('audit_problems_copy_button')}: ${req_title} - ${sample_name}`;
+        const copy_btn_aria_label = `${t('audit_problems_copy_button')}: ${req_title}`;
         const copy_btn = this.Helpers.create_element('button', {
             class_name: ['button', 'button-default', 'audit-problem-copy-btn'],
             attributes: { type: 'button', 'aria-label': copy_btn_aria_label },
@@ -598,12 +591,14 @@ export const AuditProblemsViewComponent = {
         const has_stuck_text = (item.stuck_text || '').trim() !== '';
         if (has_stuck_text) {
             const delete_icon = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('delete', ['currentColor'], 16) : '';
+            const solved_btn_aria_label = `${t('stuck_modal_problem_solved')}: ${req_title}`;
             const solved_btn = this.Helpers.create_element('button', {
                 class_name: ['button', 'button-danger', 'audit-problem-solved-btn'],
                 attributes: {
                     type: 'button',
                     'data-sample-id': sample_id,
-                    'data-requirement-id': req_id
+                    'data-requirement-id': req_id,
+                    'aria-label': solved_btn_aria_label
                 },
                 html_content: `<span>${this.Helpers.escape_html(t('stuck_modal_problem_solved'))}</span>${delete_icon ? `<span aria-hidden="true">${delete_icon}</span>` : ''}`
             });
@@ -617,10 +612,6 @@ export const AuditProblemsViewComponent = {
     },
 
     destroy() {
-        if (typeof this.unsubscribe === 'function') {
-            this.unsubscribe();
-            this.unsubscribe = null;
-        }
         if (this.root) {
             this.root.innerHTML = '';
         }
