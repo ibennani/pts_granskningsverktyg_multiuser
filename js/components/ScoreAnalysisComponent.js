@@ -134,7 +134,7 @@ export const ScoreAnalysisComponent = {
             text_content: t('score_by_principle_deficiency', {defaultValue: "Breakdown by Principle"})
         }));
 
-        const list_container = this.Helpers.create_element('div', { class_name: 'score-analysis-principles__list' });
+        const list_container = this.Helpers.create_element('ul', { class_name: 'score-analysis-principles__list' });
 
         const default_order = ['perceivable', 'operable', 'understandable', 'robust'];
         const principle_ids = Object.keys(analysis.principles || {});
@@ -147,11 +147,9 @@ export const ScoreAnalysisComponent = {
 
             const label_text = data?.labelKey ? t(data.labelKey) : (data?.label || '');
             const formattedScore = this.Helpers.format_number_locally(data.score, lang_code);
-            const row_aria_label = t('deficiency_index_principle_screen_reader', { principle: label_text, score: formattedScore, defaultValue: `${label_text}; Deficiency Index ${formattedScore}` });
 
-            const row = this.Helpers.create_element('div', {
-                class_name: 'principle-row',
-                attributes: { role: 'group', 'aria-label': row_aria_label }
+            const row = this.Helpers.create_element('li', {
+                class_name: 'principle-row'
             });
 
             const name_div = this.Helpers.create_element('div', { class_name: 'principle-row__name', text_content: label_text });
@@ -169,8 +167,7 @@ export const ScoreAnalysisComponent = {
 
             const valueSpan = this.Helpers.create_element('span', {
                 class_name: 'principle-row__value',
-                text_content: formattedScore,
-                attributes: { 'aria-hidden': 'true' }
+                text_content: formattedScore
             });
 
             bar_container.appendChild(bar);
