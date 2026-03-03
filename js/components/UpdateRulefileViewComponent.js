@@ -137,14 +137,23 @@ export const UpdateRulefileViewComponent = {
             this.staged_new_rule_file_content,
             this.staged_analysis_report
         );
-        
+
+        const needs_review_count = (final_reconciled_state.samples || []).reduce((n, s) => {
+            return n + Object.values(s.requirementResults || {}).filter(r => r.needsReview === true).length;
+        }, 0);
+
         this.dispatch({
             type: this.StoreActionTypes.REPLACE_RULEFILE_AND_RECONCILE,
             payload: final_reconciled_state
         });
 
-        this.NotificationComponent?.show_global_message(t('update_rulefile_success'), 'success');
-        this.router('audit_overview');
+        if (needs_review_count > 0) {
+            this.NotificationComponent?.show_global_message(t('update_rulefile_success_needs_review', { count: needs_review_count }), 'success');
+            this.router('confirm_updates');
+        } else {
+            this.NotificationComponent?.show_global_message(t('update_rulefile_success'), 'success');
+            this.router('audit_overview');
+        }
     },
 
     render() {

@@ -621,6 +621,7 @@
   "update_rulefile_use_from_server": "Använd regelfil från servern",
   "update_rulefile_loading_server": "Hämtar och analyserar regelfil…",
   "update_rulefile_success": "Regelfilen har uppdaterats.",
+  "update_rulefile_success_needs_review": "Regelfilen har uppdaterats. {count} krav behöver omgranskas.",
   "update_rulefile_title": "Uppdatera regelfil",
   "update_rulefile_warning_intro": "Du är på väg att uppdatera regelfilen för en pågående granskning. Detta är en avancerad åtgärd med följande konsekvenser:",
   "update_rulefile_warning_li1": "Resultat för krav som tas bort i den nya regelfilen kommer att raderas permanent.",
