@@ -603,6 +603,7 @@
   "user_fallback_name": "User {id}",
   "ok": "OK",
   "update_report_invalid_samples_title": "Samples Requiring Action",
+  "update_report_added_reqs_title": "New requirements",
   "update_report_removed_reqs_title": "Removed Requirements",
   "update_report_updated_reqs_title": "Updated Requirements (marked for re-review)",
   "update_rulefile_backup_saved": "Backup saved.",

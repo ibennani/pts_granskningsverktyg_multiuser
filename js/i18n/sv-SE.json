@@ -603,6 +603,7 @@
   "user_fallback_name": "Användare {id}",
   "ok": "Ok",
   "update_report_invalid_samples_title": "Stickprov som kräver åtgärd",
+  "update_report_added_reqs_title": "Nya krav",
   "update_report_removed_reqs_title": "Borttagna krav",
   "update_report_updated_reqs_title": "Uppdaterade krav (markerade för omgranskning)",
   "update_rulefile_backup_saved": "Säkerhetskopia sparad.",

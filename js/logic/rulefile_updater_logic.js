@@ -23,7 +23,7 @@ function deep_equals(obj1, obj2) {
 export function analyze_rule_file_changes(current_audit_state, new_rule_file_content) {
     console.log("%c--- Startar analys av regelfilsändringar (metod: sorterad fält-för-fält) ---", "color: blue; font-weight: bold;");
 
-    const report = { updated_requirements: [], removed_requirements: [] };
+    const report = { updated_requirements: [], removed_requirements: [], added_requirements: [] };
     if (!current_audit_state?.ruleFileContent?.requirements || !new_rule_file_content?.requirements) {
         throw new Error("Analysfel: 'requirements' saknas i gamla eller nya regelfilen.");
     }
@@ -32,7 +32,8 @@ export function analyze_rule_file_changes(current_audit_state, new_rule_file_con
     const new_reqs = new_rule_file_content.requirements;
     
     const old_req_keys = Object.keys(old_reqs);
-    const new_req_keys = new Set(Object.keys(new_reqs));
+    const new_req_keys = Object.keys(new_reqs);
+    const new_req_keys_set = new Set(new_req_keys);
     
     const new_req_map_by_title_ref = new Map();
     for (const key of new_req_keys) {
@@ -47,15 +48,18 @@ export function analyze_rule_file_changes(current_audit_state, new_rule_file_con
         const old_req = old_reqs[old_key];
         let new_req_match = null;
 
-        if (new_req_keys.has(old_key)) {
+        if (new_req_keys_set.has(old_key)) {
             new_req_match = new_reqs[old_key];
             matched_new_keys.add(old_key);
         } else {
             const old_map_key = `${old_req.title}::${old_req.standardReference?.text || ''}`;
             const potential_match = new_req_map_by_title_ref.get(old_map_key);
-            if (potential_match && !matched_new_keys.has(potential_match.key || potential_match.id)) {
-                new_req_match = potential_match;
-                matched_new_keys.add(potential_match.key || potential_match.id);
+            if (potential_match) {
+                const new_key = Object.keys(new_reqs).find(k => new_reqs[k] === potential_match) || potential_match.key || potential_match.id;
+                if (new_key && !matched_new_keys.has(new_key)) {
+                    new_req_match = potential_match;
+                    matched_new_keys.add(new_key);
+                }
             }
         }
 
@@ -68,8 +72,13 @@ export function analyze_rule_file_changes(current_audit_state, new_rule_file_con
         }
     }
 
-    console.log("%c--- Analys klar ---", "color: blue; font-weight: bold;");
-    console.log("Rapport:", report);
+    for (const new_key of new_req_keys) {
+        if (!matched_new_keys.has(new_key)) {
+            const req = new_reqs[new_key];
+            report.added_requirements.push({ id: new_key, title: req?.title || new_key });
+        }
+    }
+
     return report;
 }
 

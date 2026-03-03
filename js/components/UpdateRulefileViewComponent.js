@@ -256,20 +256,19 @@ export const UpdateRulefileViewComponent = {
 
         this.plate_element_ref.appendChild(this.Helpers.create_element('p', { class_name: 'view-intro-text', text_content: t('update_rulefile_confirm_intro') }));
 
-        const render_report_section = (title_key, items) => {
+        const new_reqs = this.staged_new_rule_file_content?.requirements || {};
+        const render_report_section = (title_key, items, use_old_reqs = true) => {
             const section = this.Helpers.create_element('div', { class_name: 'report-section' });
             section.appendChild(this.Helpers.create_element('h3', { text_content: `${t(title_key)} (${items.length})` }));
             if (items.length > 0) {
                 const ul = this.Helpers.create_element('ul', { class_name: 'report-list' });
                 items.forEach(item => {
-                    const old_req_def = old_reqs[item.id];
-                    const ref_text = old_req_def?.standardReference?.text;
-                    
-                    let display_text = item.title;
+                    const ref_source = use_old_reqs ? old_reqs[item.id] : new_reqs[item.id];
+                    const ref_text = ref_source?.standardReference?.text;
+                    let display_text = item.title || item.id;
                     if (ref_text) {
                         display_text += ` (${ref_text})`;
                     }
-                    
                     ul.appendChild(this.Helpers.create_element('li', { text_content: this.Helpers.escape_html(display_text) }));
                 });
                 section.appendChild(ul);
@@ -278,9 +277,10 @@ export const UpdateRulefileViewComponent = {
             }
             return section;
         };
-        
-        this.plate_element_ref.appendChild(render_report_section('update_report_updated_reqs_title', report.updated_requirements));
-        this.plate_element_ref.appendChild(render_report_section('update_report_removed_reqs_title', report.removed_requirements));
+
+        this.plate_element_ref.appendChild(render_report_section('update_report_updated_reqs_title', report.updated_requirements || []));
+        this.plate_element_ref.appendChild(render_report_section('update_report_removed_reqs_title', report.removed_requirements || []));
+        this.plate_element_ref.appendChild(render_report_section('update_report_added_reqs_title', report.added_requirements || [], false));
 
         const confirm_button = this.Helpers.create_element('button', {
             class_name: ['button', 'button-success'],
