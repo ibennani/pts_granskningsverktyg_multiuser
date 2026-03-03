@@ -733,8 +733,7 @@ export const RequirementAuditComponent = {
             const status_text = this.Translation.t(`audit_status_${status_key}`);
             const span = this.Helpers.create_element('span', {
                 class_name: `status-text status-${status_key}`,
-                text_content: status_text,
-                attributes: { 'aria-hidden': 'true' }
+                text_content: status_text
             });
             p.appendChild(span);
         } else if (data?.text) {
