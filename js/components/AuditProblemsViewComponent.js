@@ -319,6 +319,7 @@ export const AuditProblemsViewComponent = {
             );
         }
         if (!target) {
+            // Om inga kort kvar eller ingen matchande rubrik – fokusera huvudrubriken för vyn
             target = plate.querySelector('.audit-problems-header-row h1');
         }
         if (target && typeof target.focus === 'function') {
@@ -353,31 +354,53 @@ export const AuditProblemsViewComponent = {
         const prev_ids = current_index > 0 ? get_link_ids(cards[current_index - 1]) : null;
         this._focus_after_problem_solved = { next: next_ids, prev: prev_ids };
 
-        const state = this.getState();
-        const sample = (state?.samples || []).find(s => String(s.id) === String(sample_id));
-        const req_result = sample?.requirementResults?.[req_id];
-        if (!req_result) return;
+        const show_confirm_delete_modal = window.show_confirm_delete_modal;
+        const t = this.Translation.t;
 
-        const modified_result = JSON.parse(JSON.stringify(req_result));
-        modified_result.stuckProblemDescription = '';
-        modified_result.lastStatusUpdate = this.Helpers?.get_current_iso_datetime_utc?.() || new Date().toISOString();
-        modified_result.lastStatusUpdateBy = get_current_user_name();
-        const req_def = (state?.ruleFileContent?.requirements || {})[req_id] || (Array.isArray(state?.ruleFileContent?.requirements) ? state.ruleFileContent.requirements.find(r => (r?.key || r?.id) === req_id) : null);
-        if (req_def && this.AuditLogic?.calculate_requirement_status) {
-            modified_result.status = this.AuditLogic.calculate_requirement_status(req_def, modified_result);
-        }
-        this.dispatch({
-            type: this.StoreActionTypes.UPDATE_REQUIREMENT_RESULT,
-            payload: {
-                sampleId: sample_id,
-                requirementId: req_id,
-                newRequirementResult: modified_result
+        const perform_delete = () => {
+            const state = this.getState();
+            const sample = (state?.samples || []).find(s => String(s.id) === String(sample_id));
+            const req_result = sample?.requirementResults?.[req_id];
+            if (!req_result) return;
+
+            const modified_result = JSON.parse(JSON.stringify(req_result));
+            modified_result.stuckProblemDescription = '';
+            modified_result.lastStatusUpdate = this.Helpers?.get_current_iso_datetime_utc?.() || new Date().toISOString();
+            modified_result.lastStatusUpdateBy = get_current_user_name();
+            const req_def = (state?.ruleFileContent?.requirements || {})[req_id]
+                || (Array.isArray(state?.ruleFileContent?.requirements)
+                    ? state.ruleFileContent.requirements.find(r => (r?.key || r?.id) === req_id)
+                    : null);
+            if (req_def && this.AuditLogic?.calculate_requirement_status) {
+                modified_result.status = this.AuditLogic.calculate_requirement_status(req_def, modified_result);
             }
-        });
-        this.render();
-        setTimeout(() => {
-            requestAnimationFrame(() => this._apply_focus_after_problem_solved());
-        }, 50);
+            this.dispatch({
+                type: this.StoreActionTypes.UPDATE_REQUIREMENT_RESULT,
+                payload: {
+                    sampleId: sample_id,
+                    requirementId: req_id,
+                    newRequirementResult: modified_result
+                }
+            });
+            this.render();
+            setTimeout(() => {
+                requestAnimationFrame(() => this._apply_focus_after_problem_solved());
+            }, 50);
+        };
+
+        if (typeof show_confirm_delete_modal === 'function') {
+            show_confirm_delete_modal({
+                h1_text: t('problem_solved_confirm_modal_title'),
+                warning_text: t('problem_solved_confirm_modal_message'),
+                delete_button: btn,
+                on_confirm: perform_delete,
+                yes_label: t('problem_solved_confirm_modal_confirm_btn'),
+                no_label: t('problem_solved_confirm_modal_cancel_btn')
+            });
+        } else {
+            // Fallback om modalkomponenten inte finns – utför borttagning direkt
+            perform_delete();
+        }
     },
 
     handle_edit_click(event) {
@@ -527,8 +550,12 @@ export const AuditProblemsViewComponent = {
         }
 
         const header_row = this.Helpers.create_element('div', { class_name: 'audit-problems-header-row' });
+        const problems_count = problems.length;
+        const heading_text = problems_count > 1
+            ? t('audit_problems_title_with_count', { count: problems_count })
+            : t('audit_problems_title');
         const h1 = this.Helpers.create_element('h1', {
-            text_content: t('audit_problems_title'),
+            text_content: heading_text,
             attributes: { tabindex: '-1' }
         });
         header_row.appendChild(h1);
