@@ -613,6 +613,7 @@
   "update_rulefile_confirm_intro": "The new rule file has been analysed. Please review the changes below before confirming.",
   "update_rulefile_continue_with_old": "Continue with current rule file",
   "update_rulefile_recommendation": "Step 1: Save a backup",
+  "update_rulefile_skip_backup": "Continue without backup",
   "update_rulefile_report_intro": "The rule file has been updated. Below is a summary of the changes.",
   "update_rulefile_step2_text": "Select the new, updated JSON rule file from your computer.",
   "update_rulefile_step2_title": "Step 2: Use rule file from server",

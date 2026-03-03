@@ -613,6 +613,7 @@
   "update_rulefile_confirm_intro": "Den nya regelfilen har analyserats. Granska ändringarna nedan innan du bekräftar.",
   "update_rulefile_continue_with_old": "Fortsätt med gammal regelfil",
   "update_rulefile_recommendation": "Steg 1: Spara en säkerhetskopia",
+  "update_rulefile_skip_backup": "Fortsätt utan säkerhetskopia",
   "update_rulefile_report_intro": "Regelfilen har uppdaterats. Nedan är en sammanfattning av ändringarna.",
   "update_rulefile_step2_text": "Välj den nya, uppdaterade JSON-regelfilen från din dator.",
   "update_rulefile_step2_title": "Steg 2: Använd regelfil från servern",

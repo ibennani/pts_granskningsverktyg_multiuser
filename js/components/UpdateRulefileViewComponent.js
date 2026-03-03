@@ -66,6 +66,11 @@ export const UpdateRulefileViewComponent = {
         }
     },
 
+    handle_skip_backup_click() {
+        this.current_step = this.VIEW_STEPS.UPLOAD;
+        this.render();
+    },
+
     async handle_use_rule_from_server_click() {
         const t = this.get_t_internally();
         if (!window.RulefileUpdaterLogic) {
@@ -188,9 +193,21 @@ export const UpdateRulefileViewComponent = {
             html_content: `<span>${t('save_audit_to_file')}</span>` + (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('save') : '')
         });
         backup_button.addEventListener('click', () => this.handle_backup_click());
-        
+
+        const skip_backup_button = this.Helpers.create_element('button', {
+            class_name: ['button', 'button-default'],
+            text_content: t('update_rulefile_skip_backup')
+        });
+        skip_backup_button.addEventListener('click', () => this.handle_skip_backup_click());
+
+        const back_button = this.Helpers.create_element('button', {
+            class_name: ['button', 'button-default'],
+            text_content: t('back_to_audit_overview')
+        });
+        back_button.addEventListener('click', () => this.router('audit_overview'));
+
         const actions_div = this.Helpers.create_element('div', { class_name: 'form-actions', style: { 'margin-top': '2rem' } });
-        actions_div.append(backup_button);
+        actions_div.append(backup_button, skip_backup_button, back_button);
         this.plate_element_ref.appendChild(actions_div);
     },
     
