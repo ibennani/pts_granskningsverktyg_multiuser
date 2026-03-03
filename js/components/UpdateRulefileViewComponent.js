@@ -36,6 +36,7 @@ export const UpdateRulefileViewComponent = {
         this.staged_analysis_report = null;
         this.plate_element_ref = null;
         this._loading_server_rule = false;
+        this._backup_saved = false;
 
         if (this.Helpers?.load_css && this.CSS_PATH) {
             try {
@@ -58,6 +59,7 @@ export const UpdateRulefileViewComponent = {
         if (this.SaveAuditLogic?.save_audit_to_json_file) {
             const show_msg = (msg, type) => this.NotificationComponent?.show_global_message?.(msg, type);
             this.SaveAuditLogic.save_audit_to_json_file(this.getState(), t, show_msg);
+            this._backup_saved = true;
             this.current_step = this.VIEW_STEPS.UPLOAD;
             this.render();
         } else {
@@ -69,6 +71,7 @@ export const UpdateRulefileViewComponent = {
     },
 
     handle_skip_backup_click() {
+        this._backup_saved = false;
         this.current_step = this.VIEW_STEPS.UPLOAD;
         this.render();
     },
@@ -234,7 +237,7 @@ export const UpdateRulefileViewComponent = {
         const current_version = (this.getState()?.ruleFileContent?.metadata?.version || '').trim() || t('update_rulefile_version_unknown');
         const new_version = (this.new_rule_version_from_params || '').trim() || t('update_rulefile_version_unknown');
 
-        if (!this._loading_server_rule) {
+        if (this._backup_saved === true && !this._loading_server_rule) {
             this.plate_element_ref.appendChild(this.Helpers.create_element('div', {
                 class_name: 'backup-confirmation',
                 html_content: (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('check_circle') : '✔') + ` <span>${t('update_rulefile_backup_saved')}</span>`
@@ -330,6 +333,7 @@ export const UpdateRulefileViewComponent = {
         this.staged_analysis_report = null;
         this.staged_new_rule_file_content = null;
         this._loading_server_rule = false;
+        this._backup_saved = false;
         this.root = null;
         this.deps = null;
     }
