@@ -21,8 +21,6 @@ function deep_equals(obj1, obj2) {
  * @returns {object} Rapportobjekt.
  */
 export function analyze_rule_file_changes(current_audit_state, new_rule_file_content) {
-    console.log("%c--- Startar analys av regelfilsändringar (metod: sorterad fält-för-fält) ---", "color: blue; font-weight: bold;");
-
     const report = { updated_requirements: [], removed_requirements: [], added_requirements: [] };
     if (!current_audit_state?.ruleFileContent?.requirements || !new_rule_file_content?.requirements) {
         throw new Error("Analysfel: 'requirements' saknas i gamla eller nya regelfilen.");
@@ -186,8 +184,6 @@ function has_requirement_content_changed(old_req, new_req) {
  * @returns {object} Det nya, uppdaterade state-objektet.
  */
 export function apply_rule_file_update(current_audit_state, new_rule_file_content, report) {
-    console.log("%c--- Verkställer regelfilsuppdatering ---", "color: green; font-weight: bold;");
-
     const new_reconciled_state = JSON.parse(JSON.stringify(current_audit_state));
     new_reconciled_state.ruleFileContent = new_rule_file_content;
     new_reconciled_state.uiSettings = current_audit_state.uiSettings;
