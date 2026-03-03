@@ -161,7 +161,7 @@
   "left_menu_problems_with_count": "I'm stuck ({count})",
   "left_menu_images_with_count": "Attached media ({count})",
   "left_menu_actions": "Actions",
-  "audit_problems_title": "Problems",
+  "audit_problems_title": "I'm stuck",
   "audit_problems_intro": "Here are the texts you wrote under \"I'm stuck\" during the audit.",
   "audit_problems_empty": "You have not written anything under \"I'm stuck\" yet.",
   "audit_problems_card_observation_label": "Observation",

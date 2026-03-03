@@ -6,6 +6,19 @@ import { calculateQualityScore } from '../../js/logic/ScoreCalculator.js';
 
 const router = express.Router();
 
+function count_stuck_in_samples(samples) {
+    if (!samples || !Array.isArray(samples)) return 0;
+    let n = 0;
+    samples.forEach((s) => {
+        const results = s?.requirementResults || {};
+        Object.values(results).forEach((r) => {
+            const t = (r?.stuckProblemDescription || '').trim();
+            if (t !== '') n += 1;
+        });
+    });
+    return n;
+}
+
 function extract_min_max_timestamps(samples) {
     let minTime = null;
     let maxTime = null;
@@ -233,12 +246,20 @@ router.get('/:id', async (req, res) => {
             return res.status(404).json({ error: 'Granskning hittades inte' });
         }
         const audit = auditResult.rows[0];
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
         if (audit.rule_set_id) {
             const state = build_audit_state_without_rule_file(audit);
+            if (process.env.GV_DEBUG_STUCK_SYNC) {
+                console.log('[audits] GET', id, 'kört-fast i svar:', count_stuck_in_samples(state.samples));
+            }
             res.json(state);
         } else {
             const ruleSet = null;
             const fullState = build_full_state(audit, ruleSet);
+            if (process.env.GV_DEBUG_STUCK_SYNC) {
+                console.log('[audits] GET', id, 'kört-fast i svar:', count_stuck_in_samples(fullState.samples));
+            }
             res.json(fullState);
         }
     } catch (err) {
@@ -380,6 +401,10 @@ router.patch('/:id', async (req, res) => {
             values.push(status);
         }
         if (samples !== undefined) {
+            const stuck_count = count_stuck_in_samples(samples);
+            if (process.env.GV_DEBUG_STUCK_SYNC) {
+                console.log('[GV-Debug] PATCH audit', id, 'samples:', Array.isArray(samples) ? samples.length : 0, 'kört-fast i payload:', stuck_count);
+            }
             updates.push(`samples = $${i++}`);
             values.push(JSON.stringify(samples));
         }

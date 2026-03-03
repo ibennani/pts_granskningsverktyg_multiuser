@@ -21,6 +21,7 @@ export function get_websocket_url() {
 
 export async function api_get(path) {
     const res = await fetch(`${get_base_url()}${path}`, {
+        cache: 'no-store',
         headers: {
             'Content-Type': 'application/json',
             'X-User-Name': window.__GV_CURRENT_USER_NAME__ || ''

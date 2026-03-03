@@ -25,6 +25,7 @@ export const AuditProblemsViewComponent = {
     },
 
     async init({ root, deps }) {
+        if (window.__GV_DEBUG_PROBLEMS_UPDATE__) console.log('[GV-Debug problems] init: start');
         this.root = root;
         this.deps = deps;
 
@@ -39,6 +40,43 @@ export const AuditProblemsViewComponent = {
 
         this.global_message_element_ref = this.NotificationComponent?.get_global_message_element_reference?.();
 
+        // Hämta senaste granskningen från servern så att antal och lista stämmer med DB (t.ex. vid återbesök eller flik med gammal session).
+        const state = this.getState();
+        if (window.__GV_DEBUG_PROBLEMS_UPDATE__) {
+            const before_count = this.AuditLogic?.count_audit_problems ? this.AuditLogic.count_audit_problems(state) : -1;
+            console.log('[GV-Debug problems] init: state innan fetch, kört-fast i state:', before_count, 'auditId:', state?.auditId || 'saknas');
+        }
+        if (state?.auditId && typeof this.dispatch === 'function') {
+            try {
+                const { load_audit_with_rule_file } = await import('../api/client.js');
+                const full_state = await load_audit_with_rule_file(state.auditId);
+                if (window.__GV_DEBUG_PROBLEMS_UPDATE__ && full_state?.samples) {
+                    const stuck_from_server = (full_state.samples || []).reduce((n, s) => {
+                        return n + Object.values(s?.requirementResults || {}).filter((r) => (r?.stuckProblemDescription || '').trim() !== '').length;
+                    }, 0);
+                    console.log('[GV-Debug problems] init: från servern, kört-fast i samples:', stuck_from_server, 'samples.length:', full_state.samples?.length);
+                }
+                if (full_state && full_state.samples) {
+                    await this.dispatch({
+                        type: this.StoreActionTypes.REPLACE_STATE_FROM_REMOTE,
+                        payload: { ...full_state, saveFileVersion: full_state.saveFileVersion || '2.1.0' }
+                    });
+                    if (window.__GV_DEBUG_PROBLEMS_UPDATE__) {
+                        const after_state = this.getState();
+                        const after_count = this.AuditLogic?.count_audit_problems ? this.AuditLogic.count_audit_problems(after_state) : -1;
+                        console.log('[GV-Debug problems] init: efter dispatch, kört-fast i state:', after_count);
+                    }
+                } else if (window.__GV_DEBUG_PROBLEMS_UPDATE__) {
+                    console.log('[GV-Debug problems] init: full_state saknas eller samples saknas', { has_full_state: !!full_state, has_samples: !!full_state?.samples });
+                }
+            } catch (e) {
+                if (window.__GV_DEBUG_PROBLEMS_UPDATE__) console.warn('[GV-Debug problems] init: fetch/dispatch fel', e);
+                if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[AuditProblemsViewComponent] Kunde inte hämta granskning från servern:', e);
+            }
+        } else if (window.__GV_DEBUG_PROBLEMS_UPDATE__) {
+            console.log('[GV-Debug problems] init: hoppar över fetch', { has_auditId: !!state?.auditId, has_dispatch: typeof this.dispatch === 'function' });
+        }
+
         if (this.Helpers?.load_css && this.CSS_PATH) {
             await this.Helpers.load_css(this.CSS_PATH).catch(() => {});
         }
@@ -48,6 +86,67 @@ export const AuditProblemsViewComponent = {
         this.handle_copy_all_click = this.handle_copy_all_click.bind(this);
         this.handle_edit_click = this.handle_edit_click.bind(this);
         this.handle_problem_solved_click = this.handle_problem_solved_click.bind(this);
+
+        this._problems_signature = null;
+        this._previous_problems_keys = null;
+        this.unsubscribe = null;
+        if (typeof deps.subscribe === 'function') {
+            this.unsubscribe = deps.subscribe(() => {
+                if (!this.root || window.__gv_current_view_name !== 'audit_problems' || typeof this.render !== 'function') return;
+                const state = this.getState();
+                const problems = this.AuditLogic?.collect_audit_problems ? this.AuditLogic.collect_audit_problems(state) : [];
+                const signature = JSON.stringify(problems.map((p) => ({ s: p.sample?.id, r: p.reqId, l: (p.stuck_text || '').length })));
+                if (this._problems_signature === signature) return;
+                const new_keys = new Set(problems.map((p) => `${p.sample?.id ?? ''}|${p.reqId ?? ''}`));
+                const prev_keys = this._previous_problems_keys || new Set();
+                const added_keys = new Set([...new_keys].filter((k) => !prev_keys.has(k)));
+                const removed_keys = new Set([...prev_keys].filter((k) => !new_keys.has(k)));
+                const content_only_change = added_keys.size === 0 && removed_keys.size === 0;
+                if (content_only_change) {
+                    this._problems_signature = signature;
+                    this._previous_problems_keys = new Set(new_keys);
+                    this.render();
+                    return;
+                }
+                const list_wrapper = this.root.querySelector('.audit-problems-list');
+                if (!list_wrapper) {
+                    this._problems_signature = signature;
+                    this._previous_problems_keys = new Set(new_keys);
+                    this.render();
+                    return;
+                }
+                const t = this.Translation.t;
+                if (added_keys.size > 0) {
+                    const empty_el = list_wrapper.querySelector('.audit-problems-empty');
+                    if (empty_el) empty_el.remove();
+                    problems.forEach((item) => {
+                        const key = `${item.sample?.id ?? ''}|${item.reqId ?? ''}`;
+                        if (added_keys.has(key)) {
+                            list_wrapper.appendChild(this.create_problem_card(item, t));
+                        }
+                    });
+                }
+                if (removed_keys.size > 0) {
+                    removed_keys.forEach((key) => {
+                        const [sample_id, req_id] = key.split('|');
+                        const card = list_wrapper.querySelector(
+                            `.audit-problem-card[data-sample-id="${CSS.escape(sample_id)}"][data-requirement-id="${CSS.escape(req_id)}"]`
+                        );
+                        if (card) card.remove();
+                    });
+                    const remaining = list_wrapper.querySelectorAll('.audit-problem-card');
+                    if (remaining.length === 0) {
+                        const empty_msg = this.Helpers.create_element('p', {
+                            class_name: 'audit-problems-empty',
+                            text_content: t('audit_problems_empty')
+                        });
+                        list_wrapper.appendChild(empty_msg);
+                    }
+                }
+                this._problems_signature = signature;
+                this._previous_problems_keys = new Set(new_keys);
+            });
+        }
     },
 
     build_hash(view_name, params = {}) {
@@ -404,6 +503,8 @@ export const AuditProblemsViewComponent = {
 
         const state = this.getState();
         if (!state?.ruleFileContent) {
+            this._problems_signature = 'no-rulefile';
+            this._previous_problems_keys = new Set();
             const plate = this.Helpers.create_element('div', { class_name: 'content-plate' });
             plate.appendChild(this.Helpers.create_element('h1', { text_content: t('audit_problems_title') }));
             plate.appendChild(this.Helpers.create_element('p', { text_content: t('error_no_active_audit') }));
@@ -412,6 +513,11 @@ export const AuditProblemsViewComponent = {
         }
 
         const problems = this.AuditLogic?.collect_audit_problems ? this.AuditLogic.collect_audit_problems(state) : [];
+        if (window.__GV_DEBUG_PROBLEMS_UPDATE__) {
+            console.log('[GV-Debug problems] render: antal problem att rita:', problems.length, 'ruleFileContent.requirements:', state?.ruleFileContent?.requirements ? 'finns' : 'saknas');
+        }
+        this._problems_signature = JSON.stringify(problems.map((p) => ({ s: p.sample?.id, r: p.reqId, l: (p.stuck_text || '').length })));
+        this._previous_problems_keys = new Set(problems.map((p) => `${p.sample?.id ?? ''}|${p.reqId ?? ''}`));
 
         const plate = this.Helpers.create_element('div', { class_name: 'content-plate audit-problems-plate' });
         this.root.appendChild(plate);
@@ -470,7 +576,12 @@ export const AuditProblemsViewComponent = {
     },
 
     create_problem_card(item, t) {
-        const card = this.Helpers.create_element('article', { class_name: 'audit-problem-card' });
+        const sample_id = item.sample?.id ?? '';
+        const req_id = item.reqId ?? '';
+        const card = this.Helpers.create_element('article', {
+            class_name: 'audit-problem-card',
+            attributes: { 'data-sample-id': String(sample_id), 'data-requirement-id': String(req_id) }
+        });
 
         const copyable_content = this.Helpers.create_element('div', { class_name: 'audit-problem-card__copyable-content' });
 
@@ -480,8 +591,6 @@ export const AuditProblemsViewComponent = {
         const ref_url = std_ref?.url?.trim() || '';
         const sample_name = item.sample?.description || item.sample?.id || '';
         const sample_url = item.sample?.url?.trim() || '';
-        const sample_id = item.sample?.id || '';
-        const req_id = item.reqId || '';
 
         const req_row = this.Helpers.create_element('h2', { class_name: 'audit-problem-card__row audit-problem-card__requirement-row' });
         const req_label = this.Helpers.create_element('span', {
@@ -612,6 +721,12 @@ export const AuditProblemsViewComponent = {
     },
 
     destroy() {
+        if (typeof this.unsubscribe === 'function') {
+            this.unsubscribe();
+            this.unsubscribe = null;
+        }
+        this._problems_signature = null;
+        this._previous_problems_keys = null;
         if (this.root) {
             this.root.innerHTML = '';
         }

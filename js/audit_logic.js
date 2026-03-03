@@ -534,6 +534,19 @@ export function count_attached_media_places(state) {
  * Collects all "problems" (requirements where user wrote text under "Jag har kört fast").
  * Returns array of { requirement, sample, reqId, stuck_text }.
  */
+function find_requirement_by_id(requirements, reqId) {
+    if (!requirements || reqId == null) return null;
+    const reqIdStr = String(reqId);
+    if (Array.isArray(requirements)) {
+        return requirements.find((r) => {
+            const k = r?.key != null ? String(r.key) : null;
+            const i = r?.id != null ? String(r.id) : null;
+            return (k !== null && k === reqIdStr) || (i !== null && i === reqIdStr);
+        }) || null;
+    }
+    return requirements[reqId] ?? requirements[reqIdStr] ?? null;
+}
+
 export function collect_audit_problems(state) {
     if (!state?.samples || !state?.ruleFileContent?.requirements) return [];
     const problems = [];
@@ -544,16 +557,21 @@ export function collect_audit_problems(state) {
             const stuck_text = (reqResult?.stuckProblemDescription || '').trim();
             if (!stuck_text) return;
 
-            const requirement = (Array.isArray(requirements) ? requirements.find(r => (r?.key || r?.id) === reqId) : requirements[reqId]) || null;
-            if (!requirement) return;
+            const requirement = find_requirement_by_id(requirements, reqId) || { id: reqId, key: reqId, title: String(reqId) };
 
             problems.push({
                 requirement,
                 sample,
                 reqId,
-                stuck_text
+                stuck_text,
+                lastStatusUpdate: reqResult?.lastStatusUpdate || null
             });
         });
+    });
+    problems.sort((a, b) => {
+        const ta = a.lastStatusUpdate || '';
+        const tb = b.lastStatusUpdate || '';
+        return ta < tb ? -1 : ta > tb ? 1 : 0;
     });
     return problems;
 }

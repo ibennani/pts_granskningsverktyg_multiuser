@@ -60,6 +60,7 @@ export const RequirementAuditComponent = {
         this.AutosaveService = deps.AutosaveService || AutosaveService;
         this.right_sidebar_root = deps.rightSidebarRoot || null;
         this.subscribe = deps.subscribe;
+        this.flush_sync_to_server = deps.flush_sync_to_server || null;
         this.unsubscribe_from_store = null;
 
         // Bind methods
@@ -585,7 +586,28 @@ export const RequirementAuditComponent = {
             {
                 onStatusChange: this.handle_checklist_status_change,
                 onObservationChange: () => this.autosave_session?.request_autosave?.(),
-                onObservationChangeImmediate: () => this.save_result_immediately({ skipRender: true })
+                onObservationChangeImmediate: () => this.save_result_immediately({ skipRender: true }),
+                onStuckDescriptionSaved: async () => {
+                    if (window.__GV_DEBUG_STUCK_SYNC__) {
+                        console.log('[GV-Debug] onStuckDescriptionSaved: sparar, anropar save_result_immediately + flush_sync_to_server');
+                    }
+                    this.save_result_immediately({ skipRender: false });
+                    if (typeof this.flush_sync_to_server === 'function' && this.getState && this.dispatch) {
+                        try {
+                            await this.flush_sync_to_server(this.getState, this.dispatch);
+                            if (window.__GV_DEBUG_STUCK_SYNC__) {
+                                console.log('[GV-Debug] onStuckDescriptionSaved: flush_sync_to_server klar');
+                            }
+                        } catch (e) {
+                            if (window.__GV_DEBUG_STUCK_SYNC__) {
+                                console.warn('[GV-Debug] onStuckDescriptionSaved: flush_sync_to_server fel', e);
+                            }
+                            if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[RequirementAuditComponent] flush_sync_to_server efter kört fast:', e);
+                        }
+                    } else if (window.__GV_DEBUG_STUCK_SYNC__) {
+                        console.warn('[GV-Debug] onStuckDescriptionSaved: flush_sync_to_server inte tillgänglig');
+                    }
+                }
             },
             {
                 deps: this.deps,

@@ -33,13 +33,41 @@ function state_to_import(state) {
     };
 }
 
+function count_stuck_in_samples(samples) {
+    if (!Array.isArray(samples)) return 0;
+    let n = 0;
+    samples.forEach((sample) => {
+        const results = sample?.requirementResults || {};
+        Object.values(results).forEach((r) => {
+            const t = (r?.stuckProblemDescription || '').trim();
+            if (t !== '') n += 1;
+        });
+    });
+    return n;
+}
+
 async function run_sync(state, dispatch_fn) {
     if (!state || !state.ruleFileContent || typeof window === 'undefined') return;
     if (state.auditStatus === 'rulefile_editing') return;
 
     try {
         if (state.auditId) {
-            const full_state = await update_audit(state.auditId, state_to_patch(state));
+            const patch = state_to_patch(state);
+            const stuck_count = count_stuck_in_samples(patch.samples);
+            if (window.__GV_DEBUG_STUCK_SYNC__) {
+                console.log('[GV-Debug] run_sync: skickar PATCH till servern,', stuck_count, 'kört-fast i payload, auditId:', state.auditId);
+            }
+            const full_state = await update_audit(state.auditId, patch);
+            if (window.__GV_DEBUG_STUCK_SYNC__) {
+                console.log('[GV-Debug] run_sync: PATCH lyckades, version:', full_state?.version);
+            }
+            try {
+                if (typeof BroadcastChannel !== 'undefined') {
+                    const ch = new BroadcastChannel('granskningsverktyget-audit-updates');
+                    ch.postMessage({ type: 'audit-updated', auditId: state.auditId });
+                    ch.close();
+                }
+            } catch (_) {}
             if (dispatch_fn && full_state && full_state.version != null) {
                 dispatch_fn({
                     type: 'SET_REMOTE_AUDIT_ID',
@@ -53,6 +81,13 @@ async function run_sync(state, dispatch_fn) {
             }
         } else {
             const full_state = await import_audit(state_to_import(state));
+            try {
+                if (full_state?.auditId && typeof BroadcastChannel !== 'undefined') {
+                    const ch = new BroadcastChannel('granskningsverktyget-audit-updates');
+                    ch.postMessage({ type: 'audit-updated', auditId: full_state.auditId });
+                    ch.close();
+                }
+            } catch (_) {}
             if (dispatch_fn && full_state?.auditId) {
                 setTimeout(() => {
                     dispatch_fn({
@@ -68,6 +103,9 @@ async function run_sync(state, dispatch_fn) {
             }
         }
     } catch (err) {
+        if (window.__GV_DEBUG_STUCK_SYNC__) {
+            console.warn('[GV-Debug] run_sync: PATCH misslyckades', err?.message || err, err);
+        }
         if (err.status === 409 && err.existingAuditId && dispatch_fn) {
             dispatch_fn({
                 type: 'SET_REMOTE_AUDIT_ID',
@@ -179,16 +217,16 @@ export async function sync_to_server_now(get_state_fn, dispatch_fn) {
 }
 
 /**
- * Kör omedelbar sync till server (t.ex. vid navigering bort från granskning).
- * Rensar väntande debounce och sparar direkt.
+ * Kör omedelbar sync till server (t.ex. vid navigering bort från granskning eller efter sparning av kört fast-text).
+ * Rensar väntande debounce och sparar aktuell state direkt.
  */
 export async function flush_sync_to_server(get_state_fn, dispatch_fn) {
     if (debounce_timer) {
         clearTimeout(debounce_timer);
         debounce_timer = null;
-        const state = typeof get_state_fn === 'function' ? get_state_fn() : null;
-        if (state) {
-            await run_sync(state, dispatch_fn);
-        }
+    }
+    const state = typeof get_state_fn === 'function' ? get_state_fn() : null;
+    if (state) {
+        await run_sync(state, dispatch_fn);
     }
 }

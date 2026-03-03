@@ -1070,6 +1070,7 @@ window.DraftManager = DraftManager;
                     dispatch,
                     StoreActionTypes,
                     subscribe,
+                    flush_sync_to_server,
                     Translation: window.Translation,
                     Helpers: window.Helpers,
                     NotificationComponent: NotificationComponent,
@@ -1606,6 +1607,56 @@ window.DraftManager = DraftManager;
         const had_session_storage = typeof sessionStorage !== 'undefined' && sessionStorage.getItem(APP_STATE_KEY) !== null;
         initState();
         init_draft_manager();
+
+        let visibility_was_hidden = document.hidden;
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                visibility_was_hidden = true;
+                return;
+            }
+            if (!visibility_was_hidden) return;
+            visibility_was_hidden = false;
+            const state = getState();
+            if (!state?.auditId || state.auditStatus === 'rulefile_editing') return;
+            (async () => {
+                try {
+                    const { load_audit_with_rule_file } = await import('./api/client.js');
+                    const full_state = await load_audit_with_rule_file(state.auditId);
+                    if (full_state?.samples) {
+                        dispatch({
+                            type: StoreActionTypes.REPLACE_STATE_FROM_REMOTE,
+                            payload: { ...full_state, saveFileVersion: full_state.saveFileVersion || '2.1.0' }
+                        });
+                    }
+                } catch (e) {
+                    if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[Main.js] Synk vid flikbyte:', e);
+                }
+            })();
+        });
+
+        if (typeof BroadcastChannel !== 'undefined') {
+            const audit_updates_channel = new BroadcastChannel('granskningsverktyget-audit-updates');
+            audit_updates_channel.onmessage = (event) => {
+                const msg = event?.data;
+                if (msg?.type !== 'audit-updated' || !msg.auditId) return;
+                const state = getState();
+                if (!state?.auditId || state.auditId !== msg.auditId || state.auditStatus === 'rulefile_editing') return;
+                (async () => {
+                    try {
+                        const { load_audit_with_rule_file } = await import('./api/client.js');
+                        const full_state = await load_audit_with_rule_file(msg.auditId);
+                        if (full_state?.samples) {
+                            dispatch({
+                                type: StoreActionTypes.REPLACE_STATE_FROM_REMOTE,
+                                payload: { ...full_state, saveFileVersion: full_state.saveFileVersion || '2.1.0' }
+                            });
+                        }
+                    } catch (e) {
+                        if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[Main.js] Synk från annan flik:', e);
+                    }
+                })();
+            };
+        }
 
         dispatch({ type: StoreActionTypes.CLEAR_STAGED_SAMPLE_CHANGES });
 

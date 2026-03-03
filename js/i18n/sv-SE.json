@@ -161,7 +161,7 @@
   "left_menu_problems_with_count": "Jag har kört fast ({count} st)",
   "left_menu_images_with_count": "Bifogad media ({count} st)",
   "left_menu_actions": "Åtgärder",
-  "audit_problems_title": "Problem",
+  "audit_problems_title": "Jag har kört fast",
   "audit_problems_intro": "Här listas de texter du skrivit under \"Jag har kört fast\" under granskningen.",
   "audit_problems_empty": "Du har inte skrivit något under \"Jag har kört fast\" ännu.",
   "audit_problems_card_observation_label": "Observation",
