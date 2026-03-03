@@ -3,13 +3,22 @@
 .audit-overview__newer-rule-banner {
     margin: 0.75rem 0;
     padding: 0.5rem 0.75rem;
-    background: var(--secondary-color, #e8e8e8);
+    background: #FFB000;
+    color: #111;
+    border: 1px solid var(--border-color, #ddd);
     border-radius: var(--border-radius, 4px);
     font-size: 0.95rem;
 }
 
 .audit-overview__newer-rule-banner a {
     text-decoration: underline;
+    color: #111;
+}
+
+[data-theme="dark"] .audit-overview__newer-rule-banner {
+    background: #FFB000;
+    color: #111;
+    border-color: #8a5a00;
 }
 
 /* --- NY LAYOUT FÖR DASHBOARD --- */
