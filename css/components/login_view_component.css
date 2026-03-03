@@ -47,7 +47,15 @@ body.view-login .app-main-view-root {
 
 .login-plate {
     max-width: 28rem;
-    width: 100%;
+    width: auto;
+    margin: 0 auto;
+}
+
+@media (max-width: 480px) {
+    .login-plate {
+        width: 100%;
+        max-width: 100%;
+    }
 }
 
 .login-plate label {

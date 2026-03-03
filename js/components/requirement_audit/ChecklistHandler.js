@@ -7,6 +7,7 @@ export const ChecklistHandler = {
     container_ref: null,
     on_status_change_callback: null,
     on_observation_change_callback: null,
+    on_stuck_description_saved_callback: null,
 
     Translation: null,
     Helpers: null,
@@ -59,6 +60,7 @@ export const ChecklistHandler = {
         this.on_status_change_callback = _callbacks.onStatusChange;
         this.on_observation_change_callback = _callbacks.onObservationChange;
         this.on_observation_change_immediate_callback = _callbacks.onObservationChangeImmediate || null;
+        this.on_stuck_description_saved_callback = _callbacks.onStuckDescriptionSaved || null;
         this.is_dom_built = false;
 
         const deps = options.deps || {};
@@ -268,7 +270,14 @@ export const ChecklistHandler = {
                         ? this.Helpers.trim_textarea_preserve_lines(raw)
                         : raw.trim();
                     this.requirement_result_ref.stuckProblemDescription = description;
-                    if (this.on_observation_change_callback) {
+                    this.requirement_result_ref.lastStatusUpdate = this.Helpers?.get_current_iso_datetime_utc?.() || new Date().toISOString();
+                    this.requirement_result_ref.lastStatusUpdateBy = get_current_user_name();
+                    if (window.__GV_DEBUG_STUCK_SYNC__) {
+                        console.log('[GV-Debug] Modal: Spara klickad, textlängd:', description.length);
+                    }
+                    if (this.on_stuck_description_saved_callback) {
+                        this.on_stuck_description_saved_callback();
+                    } else if (this.on_observation_change_callback) {
                         this.on_observation_change_callback();
                     }
                     modal.close(stuck_btn);
@@ -291,7 +300,14 @@ export const ChecklistHandler = {
                     });
                     problem_solved_btn.addEventListener('click', () => {
                         this.requirement_result_ref.stuckProblemDescription = '';
-                        if (this.on_observation_change_callback) {
+                        this.requirement_result_ref.lastStatusUpdate = this.Helpers?.get_current_iso_datetime_utc?.() || new Date().toISOString();
+                        this.requirement_result_ref.lastStatusUpdateBy = get_current_user_name();
+                        if (window.__GV_DEBUG_STUCK_SYNC__) {
+                            console.log('[GV-Debug] Modal: Problemet är löst klickad');
+                        }
+                        if (this.on_stuck_description_saved_callback) {
+                            this.on_stuck_description_saved_callback();
+                        } else if (this.on_observation_change_callback) {
                             this.on_observation_change_callback();
                         }
                         modal.close(stuck_btn);

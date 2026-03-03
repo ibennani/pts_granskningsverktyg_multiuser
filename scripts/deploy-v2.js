@@ -48,15 +48,34 @@ async function main() {
 
         console.log(`[deploy] Laddar upp till ${host}:${remotePath}...`);
 
-        await sshOrRun(`mkdir -p ${remotePath}/v2 ${remotePath}/server ${remotePath}/js ${remotePath}/scripts`, ['ssh', [host, `mkdir -p ${remotePath}/v2 ${remotePath}/server ${remotePath}/js ${remotePath}/scripts`]], { cwd: false });
+        // Säkerställ mappstruktur för backend + statiska filer
+        await sshOrRun(
+            `mkdir -p ${remotePath} ${remotePath}/server ${remotePath}/js ${remotePath}/scripts`,
+            ['ssh', [host, `mkdir -p ${remotePath} ${remotePath}/server ${remotePath}/js ${remotePath}/scripts`]],
+            { cwd: false }
+        );
 
-        await scpDir(join(projectRoot, 'js'), `${remotePath}/js`);
+        // Ladda upp frontend-bygget till temporär katalog
         await scpDir(distDir, `${remotePath}/temp-dist`);
 
+        // Byt ut tidigare frontend-filer (index.html, assets, build-info) men lämna server/js/scripts/intakta
         await sshOrRun(
-            `rm -rf ${remotePath}/v2 ${remotePath}/dist && mkdir -p ${remotePath}/v2 && cp -r ${remotePath}/temp-dist/* ${remotePath}/v2/ && chmod -R o+rX ${remotePath}/v2 && rm -rf ${remotePath}/temp-dist`,
-            ['ssh', [host, `rm -rf ${remotePath}/v2 ${remotePath}/dist && mkdir -p ${remotePath}/v2 && cp -r ${remotePath}/temp-dist/* ${remotePath}/v2/ && chmod -R o+rX ${remotePath}/v2 && rm -rf ${remotePath}/temp-dist`]]
+            [
+                `rm -rf ${remotePath}/assets`,
+                `rm -f ${remotePath}/index.html`,
+                `rm -f ${remotePath}/build-info.js`,
+                `cp -r ${remotePath}/temp-dist/* ${remotePath}/`,
+                `chmod -R o+rX ${remotePath}`,
+                `rm -rf ${remotePath}/temp-dist`
+            ].join(' && '),
+            ['ssh', [host, `rm -rf ${remotePath}/assets && rm -f ${remotePath}/index.html && rm -f ${remotePath}/build-info.js && cp -r ${remotePath}/temp-dist/* ${remotePath}/ && chmod -R o+rX ${remotePath} && rm -rf ${remotePath}/temp-dist`]]
         );
+
+        // Kopiera CSS-mappen så att /v2/css/... pekar på /var/www/granskningsverktyget-v2/css/...
+        await scpDir(join(projectRoot, 'css'), `${remotePath}/css`);
+
+        // Ladda upp JS-källor (används av servern / bundlade moduler)
+        await scpDir(join(projectRoot, 'js'), `${remotePath}/js`);
 
         await scpDir(serverDir, `${remotePath}/server`);
         await scpFile(join(projectRoot, 'scripts', 'health-check-and-restart.sh'), `${remotePath}/scripts/health-check-and-restart.sh`);
