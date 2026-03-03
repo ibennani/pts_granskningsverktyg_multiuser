@@ -112,7 +112,7 @@ export const AuditOverviewComponent = {
             this._newerRuleCheckRequested = true;
             get_rules()
                 .then((rules) => {
-                    const result = find_newer_rule_for_audit(current_global_state.ruleFileContent, rules, version_greater_than);
+                    const result = find_newer_rule_for_audit(current_global_state.ruleFileContent, rules, version_greater_than, current_global_state.ruleSetId);
                     this.newerRuleAvailable = result;
                     if (this.root && result?.ruleId && result?.version) {
                         this.render();

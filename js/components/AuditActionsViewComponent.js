@@ -92,7 +92,7 @@ export const AuditActionsViewComponent = {
         this._newerRuleCheckInProgress = true;
         get_rules()
             .then((rules) => {
-                const result = find_newer_rule_for_audit(state.ruleFileContent, rules, version_greater_than);
+                const result = find_newer_rule_for_audit(state.ruleFileContent, rules, version_greater_than, state.ruleSetId);
                 this.newerRuleAvailable = result;
                 this._newerRuleCheckInProgress = false;
                 if (this.root) this._render_update_rulefile_slot();
