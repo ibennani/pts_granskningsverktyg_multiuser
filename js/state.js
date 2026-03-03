@@ -37,7 +37,8 @@ export const ActionTypes = {
     SET_RULEFILE_EDIT_BASELINE: 'SET_RULEFILE_EDIT_BASELINE',
     SET_REMOTE_AUDIT_ID: 'SET_REMOTE_AUDIT_ID',
     REPLACE_STATE_FROM_REMOTE: 'REPLACE_STATE_FROM_REMOTE',
-    REPLACE_RULEFILE_FROM_REMOTE: 'REPLACE_RULEFILE_FROM_REMOTE'
+    REPLACE_RULEFILE_FROM_REMOTE: 'REPLACE_RULEFILE_FROM_REMOTE',
+    SET_MANAGE_USERS_TEXT: 'SET_MANAGE_USERS_TEXT'
 };
 
 const initial_state = {
@@ -103,7 +104,8 @@ const initial_state = {
         }
     },
     auditCalculations: {},
-    pendingSampleChanges: null
+    pendingSampleChanges: null,
+    manageUsersText: ''
 };
 
 let internal_state = { ...initial_state };
@@ -430,6 +432,9 @@ function root_reducer(current_state, action) {
                 // Beräkna om tider baserat på timestamps i resultaten
                 merged_state = AuditLogic.recalculateAuditTimes(merged_state);
 
+                // Behåll lokala fält som inte finns i laddad/imported state (t.ex. användarlistan)
+                merged_state.manageUsersText = current_state.manageUsersText ?? '';
+
                 // Beräkna om statusar med korrekt logik (t.ex. OR-logik) och uppdatera bristindex om granskningen är låst
                 return AuditLogic.recalculateStatusesOnLoad(merged_state);
             }
@@ -611,12 +616,13 @@ function root_reducer(current_state, action) {
             };
 
         case ActionTypes.REPLACE_STATE_FROM_REMOTE:
-            // Ersätt state med serverdata, behåll uiSettings
+            // Ersätt state med serverdata, behåll uiSettings och lokala fält (t.ex. manageUsersText)
             const remote = action.payload;
             if (!remote || typeof remote !== 'object') return current_state;
             return {
                 ...remote,
-                uiSettings: current_state.uiSettings || remote.uiSettings || {}
+                uiSettings: current_state.uiSettings || remote.uiSettings || {},
+                manageUsersText: current_state.manageUsersText ?? ''
             };
 
         case ActionTypes.REPLACE_RULEFILE_FROM_REMOTE:
@@ -627,6 +633,12 @@ function root_reducer(current_state, action) {
                 ...current_state,
                 ruleFileContent: remote_content,
                 ruleFileServerVersion: action.payload.version ?? current_state.ruleFileServerVersion ?? 0
+            };
+
+        case ActionTypes.SET_MANAGE_USERS_TEXT:
+            return {
+                ...current_state,
+                manageUsersText: typeof action.payload === 'string' ? action.payload : ''
             };
 
         default:
