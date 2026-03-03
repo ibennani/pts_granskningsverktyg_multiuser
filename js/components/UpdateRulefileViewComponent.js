@@ -265,7 +265,9 @@ export const UpdateRulefileViewComponent = {
         const t = this.get_t_internally();
         const old_reqs = this.getState().ruleFileContent.requirements;
 
-        this.plate_element_ref.appendChild(this.Helpers.create_element('p', { class_name: 'view-intro-text', text_content: t('update_rulefile_confirm_intro') }));
+        const confirm_intro = this.Helpers.create_element('p', { class_name: 'view-intro-text', text_content: t('update_rulefile_confirm_intro') });
+        confirm_intro.setAttribute('aria-live', 'polite');
+        this.plate_element_ref.appendChild(confirm_intro);
 
         const new_reqs = this.staged_new_rule_file_content?.requirements || {};
         const render_report_section = (title_key, items, use_old_reqs = true) => {
