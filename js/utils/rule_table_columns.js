@@ -27,8 +27,10 @@ export function create_rule_table_columns(deps, handlers) {
                     // Publicerad rad: visa version + (Publicerad)
                     link_text = `${rule_name} ${row.version_display} (${t('rulefile_status_published_label')})`;
                 } else if (is_production_row) {
-                    // Produktionsrad: ingen version, bara (Arbetskopia)
-                    link_text = `${rule_name} (${t('rulefile_status_production_label')})`;
+                    // Produktionsrad: visa version + (Arbetskopia), samma upplägg som publicerad
+                    link_text = row.version_display
+                        ? `${rule_name} ${row.version_display} (${t('rulefile_status_production_label')})`
+                        : `${rule_name} (${t('rulefile_status_production_label')})`;
                 }
                 const link = Helpers.create_element('a', {
                     class_name: 'generic-table-audit-link',
@@ -59,7 +61,9 @@ export function create_rule_table_columns(deps, handlers) {
                 if (row.version_display && !is_production_row) {
                     link_text = `${rule_name} ${row.version_display} (${t('rulefile_status_published_label')})`;
                 } else if (is_production_row) {
-                    link_text = `${rule_name} (${t('rulefile_status_production_label')})`;
+                    link_text = row.version_display
+                        ? `${rule_name} ${row.version_display} (${t('rulefile_status_production_label')})`
+                        : `${rule_name} (${t('rulefile_status_production_label')})`;
                 }
 
                 const container = Helpers.create_element('div', { class_name: 'generic-table-action-cell' });

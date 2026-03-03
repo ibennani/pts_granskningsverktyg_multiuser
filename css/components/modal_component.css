@@ -118,6 +118,17 @@ dialog.modal-dialog.modal-dialog--closing {
     padding-left: 1.5rem;
 }
 
+.modal-versions-heading {
+    margin: 0 0 0.5rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.modal-versions-list {
+    margin: 0 0 1rem 0;
+    padding-left: 1.5rem;
+}
+
 .modal-content .button {
     align-self: flex-start;
 }

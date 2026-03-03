@@ -707,38 +707,42 @@ export const AuditViewComponent = {
             if (typeof on_close === 'function') on_close();
             return;
         }
-        let message = t('rulefile_duplicate_modal_message');
+        const message = t('rulefile_duplicate_modal_message');
         const { server_version, uploaded_version } = options || {};
-        const extra_lines = [];
-        if (server_version || uploaded_version) {
-            extra_lines.push(t('rulefile_duplicate_modal_versions_heading'));
-            if (server_version) {
-                extra_lines.push(
-                    t('rulefile_duplicate_modal_server_version_label', {
-                        version: server_version
-                    })
-                );
-            }
-            if (uploaded_version) {
-                extra_lines.push(
-                    t('rulefile_duplicate_modal_uploaded_version_label', {
-                        version: uploaded_version
-                    })
-                );
-            }
-        }
-        if (is_older) {
-            extra_lines.push(t('rulefile_duplicate_modal_older_warning'));
-        }
-        if (extra_lines.length > 0) {
-            message += '\n\n' + extra_lines.join('\n');
-        }
         ModalComponent.show(
             {
                 h1_text: t('rulefile_duplicate_modal_title'),
                 message_text: message
             },
             (container, modal_instance) => {
+                if (server_version || uploaded_version) {
+                    const versions_heading = this.Helpers.create_element('h2', {
+                        class_name: 'modal-versions-heading',
+                        text_content: t('rulefile_duplicate_modal_versions_heading')
+                    });
+                    container.appendChild(versions_heading);
+                    const ul = this.Helpers.create_element('ul', { class_name: 'modal-versions-list' });
+                    if (server_version) {
+                        const li = this.Helpers.create_element('li');
+                        li.appendChild(document.createTextNode(t('rulefile_duplicate_modal_list_current') + ' '));
+                        const strong = this.Helpers.create_element('strong', { text_content: server_version });
+                        li.appendChild(strong);
+                        ul.appendChild(li);
+                    }
+                    if (uploaded_version) {
+                        const li = this.Helpers.create_element('li');
+                        li.appendChild(document.createTextNode(t('rulefile_duplicate_modal_list_uploaded') + ' '));
+                        const strong = this.Helpers.create_element('strong', { text_content: uploaded_version });
+                        li.appendChild(strong);
+                        ul.appendChild(li);
+                    }
+                    container.appendChild(ul);
+                }
+                const what_to_do = this.Helpers.create_element('p', {
+                    class_name: 'modal-what-to-do',
+                    text_content: t('rulefile_duplicate_modal_what_to_do')
+                });
+                container.appendChild(what_to_do);
                 const buttons_wrapper = this.Helpers.create_element('div', { class_name: 'modal-confirm-actions' });
                 const upload_btn = this.Helpers.create_element('button', {
                     class_name: ['button', 'button-primary'],
