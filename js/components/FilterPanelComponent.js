@@ -1,6 +1,8 @@
 import "./FilterPanelComponent.css";
+import { get_overlay_container, render_in_overlay, remove_from_overlay } from '../utils/overlay_portal.js';
 
 const STATUS_KEYS = ['needs_help', 'passed', 'failed', 'partially_audited', 'not_audited', 'updated'];
+const PANEL_OFFSET_PX = 4;
 
 export const FilterPanelComponent = {
     init({ root, deps }) {
@@ -23,7 +25,8 @@ export const FilterPanelComponent = {
             onToggle: this._handleToggle.bind(this),
             onDocumentClick: this._handleDocumentClick.bind(this),
             onDocumentKeydown: this._handleDocumentKeydown.bind(this),
-            onFilterChange: this._handleFilterChange.bind(this)
+            onFilterChange: this._handleFilterChange.bind(this),
+            onScrollResize: this._update_panel_position.bind(this)
         };
 
         this._buildDom();
@@ -59,10 +62,20 @@ export const FilterPanelComponent = {
             this._elements.panel.setAttribute('aria-hidden', this.state.isOpen ? 'false' : 'true');
             if (this.state.isOpen) {
                 this._elements.panel.removeAttribute('inert');
+                render_in_overlay(this._elements.panel);
+                this._update_panel_position();
+                window.addEventListener('scroll', this._boundHandlers.onScrollResize, true);
+                window.addEventListener('resize', this._boundHandlers.onScrollResize);
                 document.addEventListener('click', this._boundHandlers.onDocumentClick, true);
                 document.addEventListener('keydown', this._boundHandlers.onDocumentKeydown);
             } else {
                 this._elements.panel.setAttribute('inert', '');
+                remove_from_overlay(this._elements.panel);
+                if (this._elements.wrapper && !this._elements.wrapper.contains(this._elements.panel)) {
+                    this._elements.wrapper.appendChild(this._elements.panel);
+                }
+                window.removeEventListener('scroll', this._boundHandlers.onScrollResize, true);
+                window.removeEventListener('resize', this._boundHandlers.onScrollResize);
                 document.removeEventListener('click', this._boundHandlers.onDocumentClick, true);
                 document.removeEventListener('keydown', this._boundHandlers.onDocumentKeydown);
             }
@@ -81,6 +94,11 @@ export const FilterPanelComponent = {
     destroy() {
         document.removeEventListener('click', this._boundHandlers.onDocumentClick, true);
         document.removeEventListener('keydown', this._boundHandlers.onDocumentKeydown);
+        window.removeEventListener('scroll', this._boundHandlers.onScrollResize, true);
+        window.removeEventListener('resize', this._boundHandlers.onScrollResize);
+        if (this._elements.panel && this._elements.panel.parentNode && this._elements.panel.parentNode.id === 'app-overlay') {
+            remove_from_overlay(this._elements.panel);
+        }
         if (this.root && this._elements.wrapper) {
             this.root.removeChild(this._elements.wrapper);
         }
@@ -90,6 +108,16 @@ export const FilterPanelComponent = {
         this._last_dispatched_filters = null;
         this.root = null;
         this.deps = null;
+    },
+
+    _update_panel_position() {
+        const panel = this._elements.panel;
+        const btn = this._elements.toggleButton;
+        if (!panel || !btn || !this.state.isOpen) return;
+        const rect = btn.getBoundingClientRect();
+        panel.style.top = `${rect.bottom + PANEL_OFFSET_PX}px`;
+        panel.style.left = `${rect.left}px`;
+        panel.style.minWidth = `${Math.max(rect.width, 220)}px`;
     },
 
     _buildDom() {
@@ -225,7 +253,9 @@ export const FilterPanelComponent = {
     _handleDocumentClick(e) {
         if (!this.state.isOpen) return;
         const wrapper = this._elements.wrapper;
-        if (wrapper && !wrapper.contains(e.target)) {
+        const panel = this._elements.panel;
+        const inside = (wrapper && wrapper.contains(e.target)) || (panel && panel.contains(e.target));
+        if (!inside) {
             this.state.isOpen = false;
             this.render();
             if (this._elements.toggleButton) this._elements.toggleButton.focus();

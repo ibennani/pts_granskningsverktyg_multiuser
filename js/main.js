@@ -28,6 +28,7 @@ import { dependencyManager } from './utils/dependency_manager.js';
 import { consoleManager } from './utils/console_manager.js';
 import { memoryManager } from './utils/memory_manager.js';
 import { LayoutManager } from './utils/layout_manager.js';
+import { setup_tooltip_overlay } from './utils/overlay_portal.js';
 
 import { EditMetadataViewComponent } from './components/EditMetadataViewComponent.js'; 
 import { SampleManagementViewComponent } from './components/SampleManagementViewComponent.js';
@@ -1269,6 +1270,7 @@ window.DraftManager = DraftManager;
     async function start_normal_session(options = {}) {
         const { restore_pending } = options;
         ensure_app_layout();
+        setup_tooltip_overlay();
         // Initialize layout manager to handle dynamic vertical positioning
         if (LayoutManager && typeof LayoutManager.init === 'function') {
             LayoutManager.init();

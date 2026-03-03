@@ -796,6 +796,46 @@ select:-webkit-autofill:focus {
     outline-offset: 2px;
 }
 
+/* Overlay-portal: dropdowns och tooltips renderas här så att de inte klipps av overflow */
+#app-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 5000;
+    pointer-events: none;
+}
+#app-overlay > * {
+    pointer-events: auto;
+}
+
+/* Tooltip i overlay: samma utseende som inline, position fixed så att den inte klipps */
+#app-overlay .status-icon-tooltip.status-icon-tooltip--in-overlay {
+    position: fixed;
+    visibility: visible;
+    opacity: 1;
+    margin-bottom: 0;
+    padding: 0.35rem 0.5rem;
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.2;
+    white-space: nowrap;
+    color: #1a1a1a;
+    background-color: #fff;
+    border: 1px solid #333;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    z-index: 100;
+    pointer-events: none;
+}
+[data-theme="dark"] #app-overlay .status-icon-tooltip.status-icon-tooltip--in-overlay {
+    color: #f5f5f5;
+    background-color: #2d2d2d;
+    border-color: #666;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
 .text-danger {
     color: var(--danger-color);
 }
