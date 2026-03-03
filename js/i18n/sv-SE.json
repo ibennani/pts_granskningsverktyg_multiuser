@@ -162,6 +162,7 @@
   "audit_next_incomplete_requirement": "Granska nästa",
   "audit_not_locked_for_export": "Lås granskningen först innan du kan exportera.",
   "audit_not_started_yet": "Granskningen har inte startats än",
+  "audit_overview_newer_rule_available": "En nyare regelfil finns tillgänglig.",
   "audit_overview_title": "Granskningsöversikt",
   "landmark_toolbar": "Åtgärdsfält",
   "landmark_sidebar": "Högerspalt",

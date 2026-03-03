@@ -1,6 +1,9 @@
 import { ScoreAnalysisComponent } from './ScoreAnalysisComponent.js';
 import { AuditInfoComponent } from './AuditInfoComponent.js';
 import { ProgressBarComponent } from './ProgressBarComponent.js';
+import { get_rules } from '../api/client.js';
+import { find_newer_rule_for_audit } from '../logic/newer_rule_check.js';
+import { version_greater_than } from '../utils/version_utils.js';
 import "../../css/components/audit_overview_component.css";
 
 export const AuditOverviewComponent = {
@@ -26,6 +29,8 @@ export const AuditOverviewComponent = {
         this.scoreAnalysisContainerElement = null;
         this.previously_focused_element = null;
         this._last_audit_metadata_snapshot = null;
+        this.newerRuleAvailable = null;
+        this._newerRuleCheckRequested = false;
 
         this.global_message_element_ref = this.NotificationComponent.get_global_message_element_reference();
 
@@ -102,6 +107,34 @@ export const AuditOverviewComponent = {
             plate_element.appendChild(this.global_message_element_ref);
         }
         plate_element.appendChild(this.Helpers.create_element('h1', { text_content: t('audit_overview_title') }));
+
+        if (current_global_state.auditStatus !== 'locked' && !this._newerRuleCheckRequested) {
+            this._newerRuleCheckRequested = true;
+            get_rules()
+                .then((rules) => {
+                    const result = find_newer_rule_for_audit(current_global_state.ruleFileContent, rules, version_greater_than);
+                    this.newerRuleAvailable = result;
+                    if (this.root && result?.ruleId && result?.version) {
+                        this.render();
+                    }
+                })
+                .catch(() => {});
+        }
+
+        if (this.newerRuleAvailable?.ruleId && this.newerRuleAvailable?.version) {
+            const banner = this.Helpers.create_element('div', { class_name: 'audit-overview__newer-rule-banner' });
+            const link = this.Helpers.create_element('a', {
+                text_content: t('update_rulefile_button_with_version', { version: this.newerRuleAvailable.version }),
+                attributes: { href: '#', 'aria-live': 'polite' }
+            });
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.router('update_rulefile', { ruleId: this.newerRuleAvailable.ruleId });
+            });
+            banner.appendChild(this.Helpers.create_element('span', { text_content: t('audit_overview_newer_rule_available') + ' ' }));
+            banner.appendChild(link);
+            plate_element.appendChild(banner);
+        }
 
         const dashboard_container = this.Helpers.create_element('div', { class_name: 'overview-dashboard' });
 

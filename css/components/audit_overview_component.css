@@ -1,5 +1,17 @@
 /* css/components/audit_overview_component.css */
 
+.audit-overview__newer-rule-banner {
+    margin: 0.75rem 0;
+    padding: 0.5rem 0.75rem;
+    background: var(--secondary-color, #e8e8e8);
+    border-radius: var(--border-radius, 4px);
+    font-size: 0.95rem;
+}
+
+.audit-overview__newer-rule-banner a {
+    text-decoration: underline;
+}
+
 /* --- NY LAYOUT FÖR DASHBOARD --- */
 .overview-dashboard {
     display: grid;
