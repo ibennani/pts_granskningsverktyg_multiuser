@@ -247,7 +247,7 @@ export const UpdateRulefileViewComponent = {
         this.plate_element_ref.appendChild(this.Helpers.create_element('h2', { style: { 'font-size': '1.2rem', 'margin-top': '1.5rem' }, text_content: t('update_rulefile_step2_title') }));
         this.plate_element_ref.appendChild(this.Helpers.create_element('p', { text_content: t('update_rulefile_step2_intro') }));
 
-        const versions_ul = this.Helpers.create_element('ul', { class_name: 'warning-list' });
+        const versions_ul = this.Helpers.create_element('ul', { class_name: 'version-list' });
         versions_ul.appendChild(this.Helpers.create_element('li', { text_content: t('update_rulefile_version_current', { version: current_version }) }));
         versions_ul.appendChild(this.Helpers.create_element('li', { text_content: t('update_rulefile_version_new', { version: new_version }) }));
         this.plate_element_ref.appendChild(versions_ul);
