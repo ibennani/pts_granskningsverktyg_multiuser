@@ -29,6 +29,7 @@ export const UpdateRulefileViewComponent = {
             return;
         }
         this.rule_id_from_params = rule_id;
+        this.new_rule_version_from_params = (deps.params?.version || '').trim() || null;
 
         this.current_step = this.VIEW_STEPS.WARNING;
         this.staged_new_rule_file_content = null;
@@ -230,6 +231,8 @@ export const UpdateRulefileViewComponent = {
     
     render_upload_step() {
         const t = this.get_t_internally();
+        const current_version = (this.getState()?.ruleFileContent?.metadata?.version || '').trim() || t('update_rulefile_version_unknown');
+        const new_version = (this.new_rule_version_from_params || '').trim() || t('update_rulefile_version_unknown');
 
         if (!this._loading_server_rule) {
             this.plate_element_ref.appendChild(this.Helpers.create_element('div', {
@@ -239,7 +242,14 @@ export const UpdateRulefileViewComponent = {
         }
 
         this.plate_element_ref.appendChild(this.Helpers.create_element('h2', { style: { 'font-size': '1.2rem', 'margin-top': '1.5rem' }, text_content: t('update_rulefile_step2_title') }));
-        this.plate_element_ref.appendChild(this.Helpers.create_element('p', { text_content: t('update_rulefile_use_from_server') }));
+        this.plate_element_ref.appendChild(this.Helpers.create_element('p', { text_content: t('update_rulefile_step2_intro') }));
+
+        const versions_ul = this.Helpers.create_element('ul', { class_name: 'warning-list' });
+        versions_ul.appendChild(this.Helpers.create_element('li', { text_content: t('update_rulefile_version_current', { version: current_version }) }));
+        versions_ul.appendChild(this.Helpers.create_element('li', { text_content: t('update_rulefile_version_new', { version: new_version }) }));
+        this.plate_element_ref.appendChild(versions_ul);
+
+        this.plate_element_ref.appendChild(this.Helpers.create_element('p', { class_name: 'view-intro-text', text_content: t('update_rulefile_step2_confirm_notice') }));
 
         const actions_div = this.Helpers.create_element('div', { class_name: 'form-actions', style: { 'margin-top': '2rem' } });
         if (this._loading_server_rule) {

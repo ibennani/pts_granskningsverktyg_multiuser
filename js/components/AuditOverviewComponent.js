@@ -129,7 +129,7 @@ export const AuditOverviewComponent = {
             });
             link.addEventListener('click', (e) => {
                 e.preventDefault();
-                this.router('update_rulefile', { ruleId: this.newerRuleAvailable.ruleId });
+                this.router('update_rulefile', { ruleId: this.newerRuleAvailable.ruleId, version: this.newerRuleAvailable.version });
             });
             banner.appendChild(this.Helpers.create_element('span', { text_content: t('audit_overview_newer_rule_available') + ' ' }));
             banner.appendChild(link);

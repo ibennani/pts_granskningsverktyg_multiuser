@@ -51,7 +51,7 @@ export const AuditActionsViewComponent = {
             slot_element.appendChild(this.create_status_action_item({
                 label: t('update_rulefile_button_with_version', { version: newer_rule.version }),
                 description: t('audit_actions_update_rulefile_description'),
-                on_click: () => this.router('update_rulefile', { ruleId: newer_rule.ruleId }),
+                on_click: () => this.router('update_rulefile', { ruleId: newer_rule.ruleId, version: newer_rule.version }),
                 variant: 'button-default',
                 icon_name: 'update',
                 id_suffix: 'update-rulefile'
