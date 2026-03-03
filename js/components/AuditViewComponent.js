@@ -262,46 +262,50 @@ export const AuditViewComponent = {
                                 ) || null;
                         }
 
-                        if (production_copy?.updated_at) {
-                            server_updated_at = production_copy.updated_at;
-                        }
-                        if (production_copy?.metadata_version) {
-                            server_version = (production_copy.metadata_version ?? '').toString().trim();
-                        }
+                        const is_working_copy_row = !matched.is_published;
+                        const has_existing_working_copy = is_working_copy_row || !!production_copy;
 
-                        let is_older = false;
-                        const has_distinct_versions =
-                            uploaded_version && server_version && uploaded_version !== server_version;
-
-                        if (has_distinct_versions) {
-                            const uploaded_is_newer = version_greater_than(uploaded_version, server_version);
-                            is_older = !uploaded_is_newer;
-                        } else {
-                            is_older = this._is_uploaded_file_older(file_date_modified, server_updated_at);
-                        }
-
-                        let import_options = null;
-                        if (production_copy?.id) {
-                            import_options = { target_rule_id: production_copy.id };
-                        } else if (matched.is_published) {
-                            import_options = { create_production_copy_from_base_id: matched.id };
-                        } else {
-                            import_options = { target_rule_id: matched.id };
-                        }
-
-                        this._show_rulefile_duplicate_modal(
-                            is_older,
-                            () => {
-                                this._do_import_rule_and_refresh(migrated_content, event, import_options);
-                            },
-                            () => {
-                                if (event.target) event.target.value = '';
-                            },
-                            {
-                                server_version,
-                                uploaded_version
+                        if (has_existing_working_copy) {
+                            if (production_copy?.updated_at) {
+                                server_updated_at = production_copy.updated_at;
                             }
-                        );
+                            if (production_copy?.metadata_version) {
+                                server_version = (production_copy.metadata_version ?? '').toString().trim();
+                            }
+
+                            let is_older = false;
+                            const has_distinct_versions =
+                                uploaded_version && server_version && uploaded_version !== server_version;
+
+                            if (has_distinct_versions) {
+                                const uploaded_is_newer = version_greater_than(uploaded_version, server_version);
+                                is_older = !uploaded_is_newer;
+                            } else {
+                                is_older = this._is_uploaded_file_older(file_date_modified, server_updated_at);
+                            }
+
+                            const import_options = production_copy?.id
+                                ? { target_rule_id: production_copy.id }
+                                : { target_rule_id: matched.id };
+
+                            this._show_rulefile_duplicate_modal(
+                                is_older,
+                                () => {
+                                    this._do_import_rule_and_refresh(migrated_content, event, import_options);
+                                },
+                                () => {
+                                    if (event.target) event.target.value = '';
+                                },
+                                {
+                                    server_version,
+                                    uploaded_version
+                                }
+                            );
+                        } else {
+                            await this._do_import_rule_and_refresh(migrated_content, event, {
+                                create_production_copy_from_base_id: matched.id
+                            });
+                        }
                         return;
                     }
                     await this._do_import_rule_and_refresh(migrated_content, event, {
