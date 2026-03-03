@@ -151,7 +151,7 @@ window.DraftManager = DraftManager;
     // Fallback för action bar containers - mindre kritiskt
     if (!top_action_bar_container) {
         consoleManager.warn("[Main.js] Top action bar container not found. Creating fallback container.");
-        top_action_bar_container = document.createElement('nav');
+        top_action_bar_container = document.createElement('div');
         top_action_bar_container.id = 'global-action-bar-top';
         top_action_bar_container.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: #f8f9fa; border-bottom: 1px solid #dee2e6;';
         
@@ -167,7 +167,7 @@ window.DraftManager = DraftManager;
 
     if (!bottom_action_bar_container) {
         consoleManager.warn("[Main.js] Bottom action bar container not found. Creating fallback container.");
-        bottom_action_bar_container = document.createElement('nav');
+        bottom_action_bar_container = document.createElement('div');
         bottom_action_bar_container.id = 'global-action-bar-bottom';
         bottom_action_bar_container.style.cssText = 'position: fixed; bottom: 0; left: 0; right: 0; z-index: 1000; background: #f8f9fa; border-top: 1px solid #dee2e6;';
         
@@ -1549,42 +1549,43 @@ window.DraftManager = DraftManager;
         const t = typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function'
             ? window.Translation.t.bind(window.Translation)
             : (key) => key;
+
+        // Uppdatera endast text på skiplänken – den är aldrig ett eget landmärke
         const skip_link = document.querySelector('.skip-link');
-        if (skip_link) skip_link.textContent = t('skip_to_content');
+        if (skip_link) {
+            skip_link.textContent = t('skip_to_content');
+        }
 
+        // Huvudinnehåll: exakt ett main-landmärke
         const main_el = document.getElementById('app-main-view-root');
-        if (main_el && typeof get_page_title_prefix === 'function') {
-            const v = view_name ?? current_view_name_rendered ?? 'start';
-            let p = params;
-            if (p == null && current_view_params_rendered_json) {
-                try { p = JSON.parse(current_view_params_rendered_json); } catch (_) { p = {}; }
+        if (main_el) {
+            // Rensa tidigare namn
+            main_el.removeAttribute('aria-label');
+            main_el.removeAttribute('aria-labelledby');
+
+            // Försök koppla main till sidans huvudrubrik
+            const root_for_heading = main_el || document;
+            const heading = root_for_heading.querySelector('#main-content-heading') || root_for_heading.querySelector('h1');
+            if (heading && heading.id) {
+                main_el.setAttribute('aria-labelledby', heading.id);
+            } else {
+                main_el.setAttribute('aria-label', t('landmark_main_default'));
             }
-            const main_label = get_page_title_prefix(v, p || {});
-            main_el.setAttribute('aria-label', main_label || t('landmark_main_default'));
         }
 
-        const top_nav = document.getElementById('global-action-bar-top');
-        if (top_nav) {
-            const top_has_content = top_nav.childElementCount > 0;
-            if (top_has_content) {
-                top_nav.setAttribute('aria-label', t('landmark_toolbar'));
-                top_nav.removeAttribute('aria-hidden');
-            } else {
-                top_nav.removeAttribute('aria-label');
-                top_nav.setAttribute('aria-hidden', 'true');
-            }
+        // Globala action bars ska inte vara separata landmärken
+        const top_container = document.getElementById('global-action-bar-top');
+        if (top_container) {
+            top_container.removeAttribute('aria-label');
+            top_container.removeAttribute('aria-hidden');
         }
-        const bottom_nav = document.getElementById('global-action-bar-bottom');
-        if (bottom_nav) {
-            const bottom_has_content = bottom_nav.childElementCount > 0;
-            if (bottom_has_content) {
-                bottom_nav.setAttribute('aria-label', t('landmark_toolbar'));
-                bottom_nav.removeAttribute('aria-hidden');
-            } else {
-                bottom_nav.removeAttribute('aria-label');
-                bottom_nav.setAttribute('aria-hidden', 'true');
-            }
+        const bottom_container = document.getElementById('global-action-bar-bottom');
+        if (bottom_container) {
+            bottom_container.removeAttribute('aria-label');
+            bottom_container.removeAttribute('aria-hidden');
         }
+
+        // Högerspalt som komplementärt landmärke när den har innehåll
         const right_sidebar = document.getElementById('app-right-sidebar-root');
         if (right_sidebar) {
             const sidebar_has_content = right_sidebar.childElementCount > 0;
