@@ -80,20 +80,18 @@ export const RequirementInfoSections = {
                     return; // Skip empty blocks
                 }
                 
-                // Create accordion-style section
+                // Skapa sektion med rubrik och löpande text (ingen accordion)
                 const section_div = this.Helpers.create_element('div', { class_name: 'audit-section info-block-section' });
                 
-                // Create accordion header
+                // Rubrik utan knapp-/accordion-beteende
                 const header = this.Helpers.create_element('div', { 
-                    class_name: ['info-block-header', block.expanded === false ? 'collapsed' : 'expanded'],
-                    attributes: { role: 'button', tabindex: '0', 'aria-expanded': block.expanded !== false ? 'true' : 'false' }
+                    class_name: 'info-block-header'
                 });
                 header.appendChild(this.Helpers.create_element('h2', { text_content: block.name || block_id }));
                 
                 // Create content container
                 const content_element = this.Helpers.create_element('div', { 
-                    class_name: ['audit-section-content', 'markdown-content', 'info-block-content'],
-                    style: block.expanded === false ? 'display: none;' : ''
+                    class_name: ['audit-section-content', 'markdown-content', 'info-block-content']
                 });
                 
                 // Parse markdown content
@@ -122,22 +120,6 @@ export const RequirementInfoSections = {
                 } else {
                     content_element.textContent = String(block.text);
                 }
-                
-                // Toggle functionality
-                header.addEventListener('click', () => {
-                    const is_expanded = header.getAttribute('aria-expanded') === 'true';
-                    header.setAttribute('aria-expanded', !is_expanded ? 'true' : 'false');
-                    header.classList.toggle('collapsed', is_expanded);
-                    header.classList.toggle('expanded', !is_expanded);
-                    content_element.style.display = is_expanded ? 'none' : '';
-                });
-                
-                header.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        header.click();
-                    }
-                });
                 
                 section_div.appendChild(header);
                 section_div.appendChild(content_element);
