@@ -618,6 +618,7 @@
   "update_rulefile_step2_text": "Välj den nya, uppdaterade JSON-regelfilen från din dator.",
   "update_rulefile_step2_title": "Steg 2: Använd regelfil från servern",
   "update_rulefile_use_from_server": "Använd regelfil från servern",
+  "update_rulefile_loading_server": "Hämtar och analyserar regelfil…",
   "update_rulefile_success": "Regelfilen har uppdaterats.",
   "update_rulefile_title": "Uppdatera regelfil",
   "update_rulefile_warning_intro": "Du är på väg att uppdatera regelfilen för en pågående granskning. Detta är en avancerad åtgärd med följande konsekvenser:",

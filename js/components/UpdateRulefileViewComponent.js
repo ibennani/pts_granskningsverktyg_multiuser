@@ -34,6 +34,7 @@ export const UpdateRulefileViewComponent = {
         this.staged_new_rule_file_content = null;
         this.staged_analysis_report = null;
         this.plate_element_ref = null;
+        this._loading_server_rule = false;
 
         if (this.Helpers?.load_css && this.CSS_PATH) {
             try {
@@ -78,6 +79,8 @@ export const UpdateRulefileViewComponent = {
             this.NotificationComponent?.show_global_message(t('error_internal_reload'), 'error');
             return;
         }
+        this._loading_server_rule = true;
+        this.render();
         try {
             const rule_row = await get_rule(this.rule_id_from_params);
             // Uppdatering av regelfil i en granskning ska alltid använda publicerad version.
@@ -107,8 +110,11 @@ export const UpdateRulefileViewComponent = {
             this.staged_analysis_report = report;
             this.staged_new_rule_file_content = new_rule_content;
             this.current_step = this.VIEW_STEPS.CONFIRM;
+            this._loading_server_rule = false;
             this.render();
         } catch (error) {
+            this._loading_server_rule = false;
+            this.render();
             if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[UpdateRulefileViewComponent] handle_use_rule_from_server_click:', error);
             this.NotificationComponent?.show_global_message(
                 t('error_rulefile_update_failed') + (error?.message ? `: ${error.message}` : ''),
@@ -214,22 +220,32 @@ export const UpdateRulefileViewComponent = {
     render_upload_step() {
         const t = this.get_t_internally();
 
-        this.plate_element_ref.appendChild(this.Helpers.create_element('div', {
-            class_name: 'backup-confirmation',
-            html_content: (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('check_circle') : '✔') + ` <span>${t('update_rulefile_backup_saved')}</span>`
-        }));
+        if (!this._loading_server_rule) {
+            this.plate_element_ref.appendChild(this.Helpers.create_element('div', {
+                class_name: 'backup-confirmation',
+                html_content: (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('check_circle') : '✔') + ` <span>${t('update_rulefile_backup_saved')}</span>`
+            }));
+        }
 
         this.plate_element_ref.appendChild(this.Helpers.create_element('h2', { style: { 'font-size': '1.2rem', 'margin-top': '1.5rem' }, text_content: t('update_rulefile_step2_title') }));
         this.plate_element_ref.appendChild(this.Helpers.create_element('p', { text_content: t('update_rulefile_use_from_server') }));
 
-        const use_server_button = this.Helpers.create_element('button', {
-            class_name: ['button', 'button-primary'],
-            html_content: `<span>${t('update_rulefile_use_from_server')}</span>` + (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('upload_file') : '')
-        });
-        use_server_button.addEventListener('click', () => this.handle_use_rule_from_server_click());
-
         const actions_div = this.Helpers.create_element('div', { class_name: 'form-actions', style: { 'margin-top': '2rem' } });
-        actions_div.appendChild(use_server_button);
+        if (this._loading_server_rule) {
+            const loading_p = this.Helpers.create_element('p', {
+                class_name: 'update-rulefile-loading',
+                text_content: t('update_rulefile_loading_server'),
+                attributes: { 'aria-live': 'polite' }
+            });
+            actions_div.appendChild(loading_p);
+        } else {
+            const use_server_button = this.Helpers.create_element('button', {
+                class_name: ['button', 'button-primary'],
+                html_content: `<span>${t('update_rulefile_use_from_server')}</span>` + (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('upload_file') : '')
+            });
+            use_server_button.addEventListener('click', () => this.handle_use_rule_from_server_click());
+            actions_div.appendChild(use_server_button);
+        }
 
         this.plate_element_ref.appendChild(actions_div);
     },
@@ -290,6 +306,7 @@ export const UpdateRulefileViewComponent = {
         this.current_step = this.VIEW_STEPS.WARNING;
         this.staged_analysis_report = null;
         this.staged_new_rule_file_content = null;
+        this._loading_server_rule = false;
         this.root = null;
         this.deps = null;
     }
