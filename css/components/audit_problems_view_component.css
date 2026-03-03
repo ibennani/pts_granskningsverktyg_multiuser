@@ -118,28 +118,33 @@
 
 .audit-problem-card__buttons-row {
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-top: 1rem;
-    align-items: center;
-    justify-content: flex-end;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 0.35rem;
+    margin-top: 0.75rem;
+    align-items: flex-start;
+    max-width: 100%;
 }
 
-.audit-problem-edit-btn {
+.audit-problem-edit-btn,
+.audit-problem-copy-btn,
+.audit-problem-solved-btn {
     margin-left: 0;
-}
-
-.audit-problem-copy-btn {
-    margin-left: auto;
+    width: auto;
+    min-height: 32px;
+    padding: 0.25rem 0.5rem;
     font-size: 0.875rem;
 }
 
 .audit-problem-copy-btn span[aria-hidden="true"],
-.audit-problem-edit-btn span[aria-hidden="true"] {
+.audit-problem-edit-btn span[aria-hidden="true"],
+.audit-problem-solved-btn span[aria-hidden="true"] {
     margin-left: 0.35em;
     display: inline-block;
     vertical-align: middle;
 }
+
+/* .audit-problem-solved-btn använder .button-danger för röd styling */
 
 .audit-problem-copy-btn--copied {
     background-color: var(--button-success-bg);

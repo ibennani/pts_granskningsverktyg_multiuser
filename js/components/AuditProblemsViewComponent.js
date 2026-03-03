@@ -47,6 +47,7 @@ export const AuditProblemsViewComponent = {
         this.handle_copy_click = this.handle_copy_click.bind(this);
         this.handle_copy_all_click = this.handle_copy_all_click.bind(this);
         this.handle_edit_click = this.handle_edit_click.bind(this);
+        this.handle_problem_solved_click = this.handle_problem_solved_click.bind(this);
 
         this.unsubscribe = null;
         if (typeof deps.subscribe === 'function') {
@@ -210,6 +211,85 @@ export const AuditProblemsViewComponent = {
         }
     },
 
+    _apply_focus_after_problem_solved() {
+        const focus_spec = this._focus_after_problem_solved;
+        this._focus_after_problem_solved = null;
+        if (!focus_spec || !this.root) return;
+        const plate = this.root.querySelector('.audit-problems-plate');
+        if (!plate) return;
+        let target = null;
+        if (focus_spec.next?.sample_id && focus_spec.next?.requirement_id) {
+            target = plate.querySelector(
+                `.audit-problem-card__requirement-link[data-sample-id="${CSS.escape(focus_spec.next.sample_id)}"][data-requirement-id="${CSS.escape(focus_spec.next.requirement_id)}"]`
+            );
+        }
+        if (!target && focus_spec.prev?.sample_id && focus_spec.prev?.requirement_id) {
+            target = plate.querySelector(
+                `.audit-problem-card__requirement-link[data-sample-id="${CSS.escape(focus_spec.prev.sample_id)}"][data-requirement-id="${CSS.escape(focus_spec.prev.requirement_id)}"]`
+            );
+        }
+        if (!target) {
+            target = plate.querySelector('.audit-problems-header-row h1');
+        }
+        if (target && typeof target.focus === 'function') {
+            try {
+                target.focus({ preventScroll: true });
+            } catch (e) {
+                target.focus();
+            }
+        }
+    },
+
+    handle_problem_solved_click(event) {
+        const btn = event.currentTarget;
+        const sample_id = btn.dataset.sampleId;
+        const req_id = btn.dataset.requirementId;
+        if (!sample_id || !req_id || !this.dispatch || !this.StoreActionTypes) return;
+
+        const plate = btn.closest('.audit-problems-plate');
+        const cards = plate ? Array.from(plate.querySelectorAll('.audit-problem-card')) : [];
+        const current_card = btn.closest('.audit-problem-card');
+        const current_index = current_card ? cards.indexOf(current_card) : -1;
+
+        const get_link_ids = (card_el) => {
+            if (!card_el) return null;
+            const link = card_el.querySelector('.audit-problem-card__requirement-link');
+            if (!link) return null;
+            const sid = link.getAttribute('data-sample-id');
+            const rid = link.getAttribute('data-requirement-id');
+            return (sid && rid) ? { sample_id: sid, requirement_id: rid } : null;
+        };
+        const next_ids = current_index >= 0 && current_index < cards.length - 1 ? get_link_ids(cards[current_index + 1]) : null;
+        const prev_ids = current_index > 0 ? get_link_ids(cards[current_index - 1]) : null;
+        this._focus_after_problem_solved = { next: next_ids, prev: prev_ids };
+
+        const state = this.getState();
+        const sample = (state?.samples || []).find(s => String(s.id) === String(sample_id));
+        const req_result = sample?.requirementResults?.[req_id];
+        if (!req_result) return;
+
+        const modified_result = JSON.parse(JSON.stringify(req_result));
+        modified_result.stuckProblemDescription = '';
+        modified_result.lastStatusUpdate = this.Helpers?.get_current_iso_datetime_utc?.() || new Date().toISOString();
+        modified_result.lastStatusUpdateBy = get_current_user_name();
+        const req_def = (state?.ruleFileContent?.requirements || {})[req_id] || (Array.isArray(state?.ruleFileContent?.requirements) ? state.ruleFileContent.requirements.find(r => (r?.key || r?.id) === req_id) : null);
+        if (req_def && this.AuditLogic?.calculate_requirement_status) {
+            modified_result.status = this.AuditLogic.calculate_requirement_status(req_def, modified_result);
+        }
+        this.dispatch({
+            type: this.StoreActionTypes.UPDATE_REQUIREMENT_RESULT,
+            payload: {
+                sampleId: sample_id,
+                requirementId: req_id,
+                newRequirementResult: modified_result
+            }
+        });
+        this.render();
+        setTimeout(() => {
+            requestAnimationFrame(() => this._apply_focus_after_problem_solved());
+        }, 50);
+    },
+
     handle_edit_click(event) {
         const btn = event.currentTarget;
         const sample_id = btn.dataset.sampleId;
@@ -350,10 +430,19 @@ export const AuditProblemsViewComponent = {
         }
 
         const header_row = this.Helpers.create_element('div', { class_name: 'audit-problems-header-row' });
-        const h1 = this.Helpers.create_element('h1', { text_content: t('audit_problems_title') });
+        const h1 = this.Helpers.create_element('h1', {
+            text_content: t('audit_problems_title'),
+            attributes: { tabindex: '-1' }
+        });
         header_row.appendChild(h1);
 
-        if (problems.length > 0) {
+        const has_any_copyable = problems.some((p) => {
+            const stuck = (p.stuck_text || '').trim();
+            const title = (p.requirement?.title || p.reqId || '').trim();
+            const sample_desc = (p.sample?.description || p.sample?.id || '').trim();
+            return !!(stuck || title || sample_desc);
+        });
+        if (problems.length > 0 && has_any_copyable) {
             const copy_all_icon = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('content_copy', ['currentColor'], 16) : '';
             const copy_all_btn = this.Helpers.create_element('button', {
                 class_name: ['button', 'button-default', 'audit-problem-copy-btn', 'audit-problem-copy-all-btn'],
@@ -505,6 +594,22 @@ export const AuditProblemsViewComponent = {
         });
         copy_btn.addEventListener('click', this.handle_copy_click);
         buttons_row.appendChild(copy_btn);
+
+        const has_stuck_text = (item.stuck_text || '').trim() !== '';
+        if (has_stuck_text) {
+            const delete_icon = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('delete', ['currentColor'], 16) : '';
+            const solved_btn = this.Helpers.create_element('button', {
+                class_name: ['button', 'button-danger', 'audit-problem-solved-btn'],
+                attributes: {
+                    type: 'button',
+                    'data-sample-id': sample_id,
+                    'data-requirement-id': req_id
+                },
+                html_content: `<span>${this.Helpers.escape_html(t('stuck_modal_problem_solved'))}</span>${delete_icon ? `<span aria-hidden="true">${delete_icon}</span>` : ''}`
+            });
+            solved_btn.addEventListener('click', this.handle_problem_solved_click);
+            buttons_row.appendChild(solved_btn);
+        }
 
         card.appendChild(buttons_row);
 
