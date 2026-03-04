@@ -390,6 +390,7 @@
   "final_confirm_updates_title": "Confirm all assessments",
   "for_requirement": "for requirement",
   "handle_updated_assessments": "Handle {count} updated assessments",
+  "confirm_updates_filter_sample_label": "Filter by sample",
   "handle_updated_assessments_intro": "The list below shows all requirements that have been changed. You can either approve all existing assessments with one click, or review and approve each requirement individually. You can also click a requirement's title to perform a new, detailed assessment.",
   "handle_updated_assessments_title": "Handle {count} updated assessments",
   "higher_is_better": "Higher is better",

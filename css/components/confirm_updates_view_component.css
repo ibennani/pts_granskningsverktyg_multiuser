@@ -1,5 +1,23 @@
 /* css/components/confirm_updates_view_component.css */
 
+.confirm-updates-filter {
+    margin: 1rem 0 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.confirm-updates-filter label {
+    font-weight: 500;
+}
+
+.confirm-updates-filter input {
+    min-width: 12rem;
+    padding: 0.35rem 0.5rem;
+    font-size: 1rem;
+}
+
 /*
    Denna klass ärver mycket från den globala .item-list-item,
    men gör specifika justeringar för att minska den vertikala höjden.

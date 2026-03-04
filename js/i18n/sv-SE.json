@@ -390,6 +390,7 @@
   "final_confirm_updates_title": "Bekräfta alla bedömningar",
   "for_requirement": "för kravet",
   "handle_updated_assessments": "Hantera {count} uppdaterade bedömningar",
+  "confirm_updates_filter_sample_label": "Filtrera på stickprov",
   "handle_updated_assessments_intro": "Listan nedan visar alla krav som har ändrats. Du kan antingen godkänna alla befintliga bedömningar med ett klick, eller granska och godkänna varje krav individuellt. Du kan också klicka på ett kravs titel för att göra en ny, detaljerad bedömning.",
   "handle_updated_assessments_title": "Hantera {count} uppdaterade bedömningar",
   "higher_is_better": "Ju högre, desto bättre",

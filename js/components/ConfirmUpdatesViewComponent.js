@@ -15,10 +15,17 @@ export const ConfirmUpdatesViewComponent = {
         this.plate_element_ref = null;
         this.list_container_for_delegation = null;
         this.h1_ref = null;
-        
+        this._filter_sample = '';
+
         // Bind event handlers
         this.handle_list_item_click = this.handle_list_item_click.bind(this);
         this.handle_list_item_keydown = this.handle_list_item_keydown.bind(this);
+        this.handle_filter_input = this.handle_filter_input.bind(this);
+    },
+
+    handle_filter_input(event) {
+        this._filter_sample = (event.target.value || '').trim();
+        this.render();
     },
 
     handle_list_item_click(event) {
@@ -167,12 +174,30 @@ export const ConfirmUpdatesViewComponent = {
         
         this.plate_element_ref.appendChild(this.render_action_buttons('top'));
 
+        const filter_section = this.Helpers.create_element('div', { class_name: 'confirm-updates-filter' });
+        const filter_label = this.Helpers.create_element('label', {
+            attributes: { for: 'confirm-updates-filter-input' },
+            text_content: t('confirm_updates_filter_sample_label')
+        });
+        const filter_input = this.Helpers.create_element('input', {
+            attributes: { type: 'text', id: 'confirm-updates-filter-input', autocomplete: 'off' }
+        });
+        filter_input.value = this._filter_sample;
+        filter_input.addEventListener('input', this.handle_filter_input);
+        filter_section.appendChild(filter_label);
+        filter_section.appendChild(filter_input);
+        this.plate_element_ref.appendChild(filter_section);
+
+        const filter_term = (this._filter_sample || '').toLowerCase();
+        const sample_ids_to_show = filter_term === ''
+            ? Object.keys(updated_reqs_by_sample)
+            : Object.keys(updated_reqs_by_sample).filter(sid => (updated_reqs_by_sample[sid].sampleName || '').toLowerCase().includes(filter_term));
+
         this.list_container_for_delegation = this.Helpers.create_element('div');
         this.list_container_for_delegation.addEventListener('click', this.handle_list_item_click);
-        // Add keyboard support for accessibility
         this.list_container_for_delegation.addEventListener('keydown', this.handle_list_item_keydown);
 
-        for (const sampleId in updated_reqs_by_sample) {
+        for (const sampleId of sample_ids_to_show) {
             const data = updated_reqs_by_sample[sampleId];
             const sample_section = this.Helpers.create_element('section', { style: { marginTop: '2rem' } });
             
