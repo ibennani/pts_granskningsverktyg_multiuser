@@ -622,6 +622,7 @@
   "update_rulefile_step2_intro": "Här är versionsinformationen för regelfilen.",
   "update_rulefile_version_current_prefix": "Nuvarande version i granskningen: ",
   "update_rulefile_version_new_prefix": "Ny version från servern: ",
+  "update_rulefile_changes_summary_intro": "Sammanfattning av ändringarna i den nya regelfilen:",
   "update_rulefile_count_added": "Nya krav: {count}",
   "update_rulefile_count_updated": "Uppdaterade krav: {count}",
   "update_rulefile_count_removed": "Raderade krav: {count}",

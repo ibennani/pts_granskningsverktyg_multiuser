@@ -271,6 +271,7 @@ export const UpdateRulefileViewComponent = {
 
         if (this._analysis_ready && this.staged_analysis_report) {
             const report = this.staged_analysis_report;
+            this.plate_element_ref.appendChild(this.Helpers.create_element('p', { text_content: t('update_rulefile_changes_summary_intro') }));
             const counts_ul = this.Helpers.create_element('ul', { class_name: 'change-count-list' });
             counts_ul.appendChild(this.Helpers.create_element('li', { text_content: t('update_rulefile_count_added', { count: (report.added_requirements || []).length }) }));
             counts_ul.appendChild(this.Helpers.create_element('li', { text_content: t('update_rulefile_count_updated', { count: (report.updated_requirements || []).length }) }));
