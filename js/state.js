@@ -392,6 +392,9 @@ function root_reducer(current_state, action) {
                     },
                     saveFileVersion: APP_STATE_VERSION
                 };
+                if (!Array.isArray(merged_state.archivedRequirementResults)) {
+                    merged_state.archivedRequirementResults = [];
+                }
                 (merged_state.samples || []).forEach(sample => {
                     Object.values(sample.requirementResults || {}).forEach(reqResult => {
                         Object.values(reqResult.checkResults || {}).forEach(checkResult => {
