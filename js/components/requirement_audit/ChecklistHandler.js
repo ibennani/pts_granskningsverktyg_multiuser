@@ -694,6 +694,9 @@ export const ChecklistHandler = {
             const status_text_container = check_wrapper.querySelector('.check-status-display');
             status_text_container.innerHTML = '';
             status_text_container.setAttribute('aria-hidden', 'true');
+            const strong_element = this.Helpers.create_element('strong', { text_content: t('check_status') });
+            status_text_container.appendChild(strong_element);
+            status_text_container.appendChild(document.createTextNode(': '));
             const status_span = this.Helpers.create_element('span', { 
                 class_name: `status-text status-${calculated_check_status}`, 
                 text_content: status_text 
@@ -755,6 +758,9 @@ export const ChecklistHandler = {
                 pc_status_text_container.innerHTML = '';
                 pc_status_text_container.setAttribute('aria-hidden', 'true');
                 const pc_status_text = t(`audit_status_${current_pc_status}`);
+                const pc_strong_element = this.Helpers.create_element('strong', { text_content: t('status') });
+                pc_status_text_container.appendChild(pc_strong_element);
+                pc_status_text_container.appendChild(document.createTextNode(': '));
                 const pc_status_span = this.Helpers.create_element('span', { 
                     class_name: `status-text status-${current_pc_status}`, 
                     text_content: pc_status_text 
