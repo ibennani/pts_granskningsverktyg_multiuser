@@ -1487,6 +1487,11 @@ window.DraftManager = DraftManager;
         const buildTimestampElement = document.getElementById('build-timestamp');
         if (!buildTimestampElement) return;
 
+        // Om byggtiden redan är inskriven (t.ex. av postbuild-scriptet) ska vi inte skriva över den.
+        if (typeof buildTimestampElement.textContent === 'string' && buildTimestampElement.textContent.trim() !== '') {
+            return;
+        }
+
         const t = window.Translation?.t || ((key, replacements) => {
             if (replacements) {
                 let result = key;
