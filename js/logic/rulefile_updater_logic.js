@@ -244,9 +244,12 @@ function get_pass_criteria_changes(old_req, new_req) {
 
 /**
  * Tillämpar en regelfilsuppdatering på ett befintligt granskningstillstånd.
+ * - Uppdaterar ruleFileContent till den nya regelfilen.
+ * - Flyttar requirementResults för borttagna krav till ett arkivfält på state-nivå (archivedRequirementResults).
+ * - Märker befintliga resultat för uppdaterade krav med needsReview där det är relevant.
  * @param {object} current_audit_state
  * @param {object} new_rule_file_content
- * @param {object} report
+ * @param {{ updated_requirements: Array<{id:string,title:string}>, removed_requirements: Array<{id:string,title:string}> }} report
  * @returns {object} Det nya, uppdaterade state-objektet.
  */
 export function apply_rule_file_update(current_audit_state, new_rule_file_content, report) {
@@ -277,12 +280,33 @@ export function apply_rule_file_update(current_audit_state, new_rule_file_conten
         }
     });
 
+    const archived_by_requirement_id = {}; // old_req_key -> { requirementId, title, reference, originalRuleVersion, archivedAt, samples: [...] }
+
     new_reconciled_state.samples.forEach(sample => {
         const original_results = sample.requirementResults || {};
         const new_results = {};
 
         for (const old_req_key in original_results) {
             if (removed_req_ids.has(old_req_key)) {
+                const result_data_for_archive = original_results[old_req_key];
+                if (result_data_for_archive) {
+                    if (!archived_by_requirement_id[old_req_key]) {
+                        const old_req_def = old_reqs[old_req_key] || {};
+                        archived_by_requirement_id[old_req_key] = {
+                            requirementId: old_req_key,
+                            title: old_req_def.title || String(old_req_key),
+                            reference: old_req_def.standardReference?.text || '',
+                            originalRuleVersion: current_audit_state?.ruleFileContent?.metadata?.version || null,
+                            archivedAt: new Date().toISOString(),
+                            samples: []
+                        };
+                    }
+                    archived_by_requirement_id[old_req_key].samples.push({
+                        sampleId: sample.id,
+                        sampleDescription: sample.description,
+                        requirementResult: result_data_for_archive
+                    });
+                }
                 continue;
             }
             const result_data = original_results[old_req_key];
@@ -306,6 +330,16 @@ export function apply_rule_file_update(current_audit_state, new_rule_file_conten
             new_reconciled_state.requirementUpdateDetails[new_req_key] = r.passCriteriaChanges;
         }
     });
+
+    const existing_archived = Array.isArray(new_reconciled_state.archivedRequirementResults)
+        ? new_reconciled_state.archivedRequirementResults
+        : [];
+    const newly_archived = Object.values(archived_by_requirement_id);
+    if (newly_archived.length > 0) {
+        new_reconciled_state.archivedRequirementResults = existing_archived.concat(newly_archived);
+    } else if (!Array.isArray(new_reconciled_state.archivedRequirementResults)) {
+        new_reconciled_state.archivedRequirementResults = existing_archived;
+    }
 
     return new_reconciled_state;
 }
