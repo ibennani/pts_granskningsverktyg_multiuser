@@ -15,7 +15,7 @@
     "db:migrate": "node server/scripts/migrate.js",
     "db:dedupe": "node server/scripts/dedupe-rules.js",
     "deploy:v2": "node scripts/deploy-v2.js",
-    "build": "vite build",
+    "build": "vite build && node scripts/postbuild-copy.js",
     "preview": "vite preview",
     "lint": "eslint . --max-warnings=0",
     "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config jest.config.js --passWithNoTests"
