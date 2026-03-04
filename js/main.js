@@ -634,6 +634,69 @@ window.DraftManager = DraftManager;
         const data_index = el.getAttribute?.('data-index');
         if (id) return { elementId: id, elementName: null, dataIndex: null };
         if (name !== null && name !== undefined) return { elementId: null, elementName: name, dataIndex: data_index };
+
+        // För tabeller (t.ex. GenericTableComponent) där länkar/knappar saknar id/name,
+        // försök spara rad-id och kolumnindex så att vi kan hitta tillbaka.
+        const row = el.closest && el.closest('tr[data-row-id]');
+        if (row && row.parentElement && row.parentElement.tagName === 'TBODY') {
+            const row_id = row.getAttribute('data-row-id');
+            if (row_id) {
+                const cells = Array.from(row.cells || []);
+                let col_index = -1;
+                const owning_cell = el.closest('td');
+                if (owning_cell) {
+                    col_index = cells.indexOf(owning_cell);
+                }
+                if (col_index >= 0) {
+                    return {
+                        tableRowId: String(row_id),
+                        tableColIndex: col_index
+                    };
+                }
+            }
+        }
+
+        // För krav-/stickprovslistor där länken identifieras via requirementId + sampleId
+        const requirement_id = el.getAttribute?.('data-requirement-id');
+        const sample_id = el.getAttribute?.('data-sample-id');
+        if (requirement_id && sample_id) {
+            return {
+                requirementId: requirement_id,
+                sampleId: sample_id
+            };
+        }
+
+        // Generellt fallback-mönster för länkar: använd href + index bland länkar med samma href
+        const tag = el.tagName ? el.tagName.toLowerCase() : '';
+        if (tag === 'a') {
+            const href = el.getAttribute && el.getAttribute('href');
+            if (href) {
+                const selector = `a[href="${CSS.escape(href)}"]`;
+                const all_links = Array.from(main_view_root.querySelectorAll(selector));
+                const link_index = all_links.indexOf(el);
+                return {
+                    linkHref: href,
+                    linkIndex: link_index >= 0 ? link_index : null
+                };
+            }
+        }
+
+        // Generellt fallback-mönster för knappar: använd tag + textinnehåll + index
+        if (tag === 'button') {
+            const label = (el.textContent || '').trim();
+            if (label) {
+                const all_buttons = Array
+                    .from(main_view_root.querySelectorAll('button'))
+                    .filter((btn) => (btn.textContent || '').trim() === label);
+                const button_index = all_buttons.indexOf(el);
+                return {
+                    buttonTag: 'button',
+                    buttonLabel: label,
+                    buttonIndex: button_index >= 0 ? button_index : null
+                };
+            }
+        }
+
         return null;
     }
 
@@ -770,6 +833,8 @@ window.DraftManager = DraftManager;
 
         const try_focus = (attempts_left) => {
             let el = null;
+
+            // 1) Försök först med id/name (formfält m.m.)
             if (focus_info.elementId) {
                 el = view_root.querySelector(`#${CSS.escape(focus_info.elementId)}`);
             }
@@ -781,6 +846,55 @@ window.DraftManager = DraftManager;
                     if (!Number.isNaN(idx) && candidates[idx]) el = candidates[idx];
                 }
             }
+
+            // 2) Om vi har tabellinfo (t.ex. rad i granskningstabellen), försök hitta rätt cell
+            if (!el && focus_info.tableRowId && typeof focus_info.tableColIndex === 'number') {
+                const tbody_rows = view_root.querySelectorAll('tbody tr[data-row-id]');
+                let target_row = null;
+                for (const r of tbody_rows) {
+                    if (r.getAttribute('data-row-id') === String(focus_info.tableRowId)) {
+                        target_row = r;
+                        break;
+                    }
+                }
+                if (target_row && target_row.cells && target_row.cells.length > focus_info.tableColIndex) {
+                    const cell = target_row.cells[focus_info.tableColIndex];
+                    if (cell) {
+                        el = cell.querySelector('a[href], button, [tabindex="0"]');
+                    }
+                }
+            }
+
+            // 3) Om vi kommer från en krav-/stickprovslista, försök hitta samma länk via requirementId + sampleId
+            if (!el && focus_info.requirementId && focus_info.sampleId) {
+                const selector = `[data-requirement-id="${CSS.escape(focus_info.requirementId)}"][data-sample-id="${CSS.escape(focus_info.sampleId)}"]`;
+                const candidates = view_root.querySelectorAll(selector);
+                if (candidates && candidates.length > 0) {
+                    el = candidates[0];
+                }
+            }
+
+            // 4) Generellt fall för länkar: hitta via href + index
+            if (!el && focus_info.linkHref) {
+                const selector = `a[href="${CSS.escape(focus_info.linkHref)}"]`;
+                const candidates = Array.from(view_root.querySelectorAll(selector));
+                if (candidates.length > 0) {
+                    const idx = typeof focus_info.linkIndex === 'number' ? focus_info.linkIndex : 0;
+                    el = candidates[idx] || candidates[0];
+                }
+            }
+
+            // 5) Generellt fall för knappar: hitta via textinnehåll + index
+            if (!el && focus_info.buttonTag === 'button' && focus_info.buttonLabel) {
+                const all_buttons = Array
+                    .from(view_root.querySelectorAll('button'))
+                    .filter((btn) => (btn.textContent || '').trim() === focus_info.buttonLabel);
+                if (all_buttons.length > 0) {
+                    const idx = typeof focus_info.buttonIndex === 'number' ? focus_info.buttonIndex : 0;
+                    el = all_buttons[idx] || all_buttons[0];
+                }
+            }
+
             if (el && document.contains(el)) {
                 try {
                     el.focus({ preventScroll: false });
@@ -791,10 +905,12 @@ window.DraftManager = DraftManager;
                 return;
             }
             if (attempts_left > 0) {
-                memoryManager.setTimeout(() => try_focus(attempts_left - 1), 50);
+                memoryManager.setTimeout(() => try_focus(attempts_left - 1), 100);
             }
         };
-        memoryManager.setTimeout(() => try_focus(5), 100);
+        // Vänta in att vyer som laddar data asynkront (t.ex. startvyns tabeller) hinner rendera klart.
+        // 40 försök * 100 ms ≈ upp till 4 sekunders fönster för att hitta tillbaka till rätt element.
+        memoryManager.setTimeout(() => try_focus(40), 200);
         return true;
     }
 
