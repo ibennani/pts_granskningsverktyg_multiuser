@@ -594,7 +594,7 @@
   "status_updated": "Updated",
   "status_updated_needs_review": "Updated, needs re-review",
   "status_updated_tooltip": "Updated",
-  "shortcut_key_next": "n",
+  "shortcut_key_next": "g",
   "shortcut_key_previous": "p",
   "shortcut_key_next_unhandled": "u",
   "shortcut_key_back_to_list": "b",
