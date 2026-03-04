@@ -361,12 +361,15 @@ export const RequirementAuditSidebarComponent = {
             return;
         }
 
+        const t = this.Translation.t;
+
         const list = this.Helpers.create_element('ul', { class_name: 'requirement-audit-sidebar__items' });
 
         sorted_items.forEach(item => {
             const { req_key, requirement, req_result, needs_help } = item;
             const base_status = this.AuditLogic.calculate_requirement_status(requirement, req_result);
             const is_updated = req_result?.needsReview === true;
+            const base_text = t(`audit_status_${base_status}`);
 
             const li = this.Helpers.create_element('li', { class_name: 'requirement-audit-sidebar__item' });
 
@@ -384,6 +387,16 @@ export const RequirementAuditSidebarComponent = {
                 }
             });
             link_heading.textContent = requirement.title || this.Translation.t('unknown_value', { val: req_key });
+
+            const aria_label_parts = [link_heading.textContent, base_text];
+            if (is_updated) {
+                aria_label_parts.push(t('status_updated_tooltip'));
+            }
+            if (needs_help) {
+                aria_label_parts.push(t('filter_option_needs_help'));
+            }
+            link.setAttribute('aria-label', aria_label_parts.join(', '));
+
             link.appendChild(link_heading);
             link_wrapper.appendChild(link);
             li.appendChild(link_wrapper);
@@ -395,8 +408,10 @@ export const RequirementAuditSidebarComponent = {
             }
 
             // Punktlista med statusrader under länken
-            const t = this.Translation.t;
-            const status_list = this.Helpers.create_element('ul', { class_name: 'requirement-audit-sidebar__item-inner' });
+            const status_list = this.Helpers.create_element('ul', {
+                class_name: 'requirement-audit-sidebar__item-inner',
+                attributes: { 'aria-hidden': 'true' }
+            });
 
             const add_status_row = (icon_node, text) => {
                 const row = this.Helpers.create_element('li', { class_name: 'requirement-audit-sidebar__item-status-row' });
@@ -416,7 +431,6 @@ export const RequirementAuditSidebarComponent = {
             };
 
             // Grundstatus
-            const base_text = t(`audit_status_${base_status}`);
             const base_icon = this.Helpers.create_element('span', {
                 class_name: `requirement-audit-sidebar__status-icon status-icon status-icon-${base_status.replace('_', '-')}`,
                 text_content: this.get_status_icon(base_status),
@@ -476,6 +490,8 @@ export const RequirementAuditSidebarComponent = {
             const needs_help = item.needs_help;
             const base_status = this.AuditLogic.calculate_requirement_status(current_requirement, req_result);
             const is_updated = req_result?.needsReview === true;
+            const t = this.Translation.t;
+            const base_text = t(`audit_status_${base_status}`);
 
             const li = this.Helpers.create_element('li', { class_name: 'requirement-audit-sidebar__item' });
 
@@ -493,6 +509,16 @@ export const RequirementAuditSidebarComponent = {
                 }
             });
             link_heading.textContent = sample?.description || this.Translation.t('undefined_description');
+
+            const aria_label_parts = [link_heading.textContent, base_text];
+            if (is_updated) {
+                aria_label_parts.push(t('status_updated_tooltip'));
+            }
+            if (needs_help) {
+                aria_label_parts.push(t('filter_option_needs_help'));
+            }
+            link.setAttribute('aria-label', aria_label_parts.join(', '));
+
             link.appendChild(link_heading);
             link_wrapper.appendChild(link);
             li.appendChild(link_wrapper);
@@ -504,8 +530,10 @@ export const RequirementAuditSidebarComponent = {
             }
 
             // Punktlista med statusrader under länken
-            const t = this.Translation.t;
-            const status_list = this.Helpers.create_element('ul', { class_name: 'requirement-audit-sidebar__item-inner' });
+            const status_list = this.Helpers.create_element('ul', {
+                class_name: 'requirement-audit-sidebar__item-inner',
+                attributes: { 'aria-hidden': 'true' }
+            });
 
             const add_status_row = (icon_node, text) => {
                 const row = this.Helpers.create_element('li', { class_name: 'requirement-audit-sidebar__item-status-row' });
@@ -525,7 +553,6 @@ export const RequirementAuditSidebarComponent = {
             };
 
             // Grundstatus
-            const base_text = t(`audit_status_${base_status}`);
             const base_icon = this.Helpers.create_element('span', {
                 class_name: `requirement-audit-sidebar__status-icon status-icon status-icon-${base_status.replace('_', '-')}`,
                 text_content: this.get_status_icon(base_status),

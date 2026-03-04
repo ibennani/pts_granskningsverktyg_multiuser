@@ -593,7 +593,7 @@
   "status_filter_button_text": "Filter",
   "status_updated": "Updated",
   "status_updated_needs_review": "Updated, needs re-review",
-  "status_updated_tooltip": "Updated requirement - needs review",
+  "status_updated_tooltip": "Updated",
   "shortcut_key_next": "n",
   "shortcut_key_previous": "p",
   "shortcut_key_next_unhandled": "u",
