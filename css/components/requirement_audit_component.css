@@ -265,25 +265,24 @@
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
-    font-size: 0.8rem;
-    font-weight: 500;
+    font-size: 1rem;
+    font-weight: 400;
     margin-left: 0.25rem;
+    color: var(--text-color);
+    line-height: 1.2;
 }
 
-.pass-criterion-update-badge--new {
-    color: var(--success-color, #2e7d32);
+.pass-criterion-update-badge svg {
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    fill: #007BFF;
+    /* Samma blå som övriga uppdateringsikoner (status-icon-updated-indicator) */
+    shape-rendering: geometricPrecision;
 }
 
-.pass-criterion-update-badge--updated {
-    color: var(--primary-color, #1565c0);
-}
-
-[data-theme="dark"] .pass-criterion-update-badge--new {
-    color: var(--success-color);
-}
-
-[data-theme="dark"] .pass-criterion-update-badge--updated {
-    color: var(--primary-color);
+[data-theme="dark"] .pass-criterion-update-badge svg {
+    fill: #5BA3FF;
 }
 
 .check-number-label {

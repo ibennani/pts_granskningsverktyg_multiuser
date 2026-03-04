@@ -405,6 +405,42 @@ export const RequirementAuditComponent = {
         return items;
     },
 
+    /**
+     * Fallback när kravet har needsReview men requirementUpdateDetails saknas (t.ex. sparad state från före uppdatering).
+     * Markerar kontroller/kriterier med UUID-liknande eller "new-check-"/"new-pc-" id som tillagda.
+     */
+    _build_fallback_update_details(requirement) {
+        const addedChecks = [];
+        const added = [];
+        const checks = requirement?.checks || [];
+        for (const check of checks) {
+            const check_id = check?.id ?? check?.key;
+            if (!check_id) continue;
+            const id_str = String(check_id);
+            const looks_new = id_str.startsWith('new-check-') || (id_str.length > 20 && /[0-9a-f-]{20,}/i.test(id_str));
+            if (looks_new) {
+                addedChecks.push(check_id);
+                (check.passCriteria || []).forEach(pc => {
+                    const pc_id = pc?.id ?? pc?.key;
+                    if (pc_id) {
+                        added.push({ checkId: check_id, passCriterionId: pc_id, text: pc.requirement || '' });
+                    }
+                });
+            } else {
+                (check.passCriteria || []).forEach(pc => {
+                    const pc_id = pc?.id ?? pc?.key;
+                    if (!pc_id) return;
+                    const pc_str = String(pc_id);
+                    const pc_looks_new = pc_str.startsWith('new-pc-') || (pc_str.length > 20 && /[0-9a-f-]{20,}/i.test(pc_str));
+                    if (pc_looks_new) {
+                        added.push({ checkId: check_id, passCriterionId: pc_id, text: pc.requirement || '' });
+                    }
+                });
+            }
+        }
+        return addedChecks.length > 0 || added.length > 0 ? { addedChecks, added, updated: [] } : null;
+    },
+
     dispatch_result_update(modified_result_object, options = {}) {
         (this.current_requirement.checks || []).forEach(check_def => {
             const check_res = modified_result_object.checkResults[check_def.id];
@@ -669,8 +705,14 @@ export const RequirementAuditComponent = {
         this.bottom_navigation_instance.render(nav_options);
 
         this.info_sections_instance.render(this.current_requirement, this.current_sample, state.ruleFileContent.metadata);
-        const req_key = this.current_requirement?.key || this.params?.requirementId;
-        const update_details = state.requirementUpdateDetails?.[req_key] || null;
+        const details_by_key = state.requirementUpdateDetails || {};
+        let update_details = details_by_key[this.params?.requirementId]
+            ?? details_by_key[this.current_requirement?.key]
+            ?? details_by_key[this.current_requirement?.id]
+            ?? null;
+        if (!update_details && this.current_result?.needsReview && this.current_requirement?.checks?.length) {
+            update_details = this._build_fallback_update_details(this.current_requirement);
+        }
         this.checklist_handler_instance.render(this.current_requirement, this.current_result, is_locked, update_details);
 
         const comments_section = this.plate_element_ref.querySelector('.input-fields-container.audit-section');

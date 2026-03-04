@@ -461,8 +461,7 @@ export const ChecklistHandler = {
         const t = this.Translation.t;
         const is_new = type === 'new';
         const label = is_new ? t('pass_criterion_badge_new') : t('pass_criterion_badge_updated');
-        const icon_name = is_new ? 'add' : 'update';
-        const icon_svg = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg(icon_name, ['currentColor'], 14) : '';
+        const icon_svg = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('update', ['currentColor'], 14) : '';
         const span = this.Helpers.create_element('span', {
             class_name: `pass-criterion-update-badge pass-criterion-update-badge--${type}`,
             attributes: { 'aria-hidden': 'true' }
@@ -496,15 +495,16 @@ export const ChecklistHandler = {
         this.container_ref.appendChild(checks_header_row);
 
         this.requirement_definition_ref.checks.forEach((check_definition, check_index) => {
+            const check_id = check_definition?.id ?? check_definition?.key;
             const check_wrapper = this.Helpers.create_element('div', { 
                 class_name: 'check-item',
-                attributes: {'data-check-id': check_definition.id }
+                attributes: {'data-check-id': check_id }
             });
 
             const check_title_label = `${t('check_item_title')} ${check_index + 1}`;
             const condition_h3 = this.Helpers.create_element('h3', { class_name: 'check-condition-title' });
             condition_h3.textContent = check_title_label;
-            if (details?.addedChecks?.includes(check_definition.id)) {
+            if (check_id && details?.addedChecks?.includes(check_id)) {
                 condition_h3.appendChild(document.createTextNode(' '));
                 condition_h3.appendChild(this._create_update_badge('new'));
             }
@@ -543,9 +543,10 @@ export const ChecklistHandler = {
             
             const pc_list = this.Helpers.create_element('ul', { class_name: 'pass-criteria-list' });
             (check_definition.passCriteria || []).forEach((pc_def, pc_index) => {
+                const pc_id = pc_def?.id ?? pc_def?.key;
                 const pc_item_li = this.Helpers.create_element('li', { 
                     class_name: 'pass-criterion-item', 
-                    attributes: {'data-pc-id': pc_def.id }
+                    attributes: {'data-pc-id': pc_id }
                 });
 
                 const numbering = `${check_index + 1}.${pc_index + 1}`;
@@ -554,8 +555,8 @@ export const ChecklistHandler = {
                     text_content: `${t('pass_criterion_label')} ${numbering}`
                 });
                 pc_title_h4.appendChild(strong);
-                const in_added = details?.added?.some(e => e.checkId === check_definition.id && e.passCriterionId === pc_def.id);
-                const in_updated = details?.updated?.some(e => e.checkId === check_definition.id && e.passCriterionId === pc_def.id);
+                const in_added = check_id && pc_id && details?.added?.some(e => e.checkId === check_id && e.passCriterionId === pc_id);
+                const in_updated = check_id && pc_id && details?.updated?.some(e => e.checkId === check_id && e.passCriterionId === pc_id);
                 if (in_added) {
                     pc_title_h4.appendChild(document.createTextNode(' '));
                     pc_title_h4.appendChild(this._create_update_badge('new'));
@@ -601,12 +602,12 @@ export const ChecklistHandler = {
 
                 const observation_wrapper = this.Helpers.create_element('div', { class_name: 'pc-observation-detail-wrapper form-group' });
                 const observation_label = this.Helpers.create_element('label', { 
-                    attributes: { for: `pc-observation-${check_definition.id}-${pc_def.id}` }, 
+                    attributes: { for: `pc-observation-${check_id}-${pc_id}` }, 
                     text_content: t('pc_observation_detail_label') 
                 });
                 observation_wrapper.appendChild(observation_label);
                 const observation_textarea = this.Helpers.create_element('textarea', {
-                    id: `pc-observation-${check_definition.id}-${pc_def.id}`,
+                    id: `pc-observation-${check_id}-${pc_id}`,
                     class_name: 'form-control pc-observation-detail-textarea',
                     attributes: { rows: '4' }
                 });
@@ -618,8 +619,8 @@ export const ChecklistHandler = {
                     class_name: ['button', 'button-default', 'button-small'],
                     attributes: {
                         'data-action': 'copy-observation',
-                        'data-check-id': check_definition.id,
-                        'data-pc-id': pc_def.id,
+                        'data-check-id': check_id,
+                        'data-pc-id': pc_id,
                         type: 'button',
                         'aria-label': t('copy_observation_from_other_button')
                     },
@@ -631,7 +632,7 @@ export const ChecklistHandler = {
                 const requirement_plain = this._get_plain_text_from_html(
                     this._safe_parse_markdown_inline(pc_def.requirement)
                 );
-                const pc_result = this.requirement_result_ref?.checkResults?.[check_definition.id]?.passCriteria?.[pc_def.id];
+                const pc_result = this.requirement_result_ref?.checkResults?.[check_id]?.passCriteria?.[pc_id];
                 const attached_filenames = Array.isArray(pc_result?.attachedMediaFilenames)
                     ? pc_result.attachedMediaFilenames.filter(f => f && String(f).trim())
                     : [];
@@ -649,8 +650,8 @@ export const ChecklistHandler = {
                     class_name: ['button', 'button-default', 'button-small'],
                     attributes: {
                         'data-action': 'attach-media',
-                        'data-check-id': check_definition.id,
-                        'data-pc-id': pc_def.id,
+                        'data-check-id': check_id,
+                        'data-pc-id': pc_id,
                         type: 'button',
                         'aria-label': attach_aria_label
                     },
@@ -674,8 +675,8 @@ export const ChecklistHandler = {
                         class_name: ['button', 'button-default', 'button-small', 'stuck-button', ...(has_stuck_content ? ['stuck-button--has-content'] : [])],
                         attributes: {
                             'data-action': 'stuck',
-                            'data-check-id': check_definition.id,
-                            'data-pc-id': pc_def.id,
+                            'data-check-id': check_id,
+                            'data-pc-id': pc_id,
                             type: 'button',
                             'aria-label': stuck_aria_label
                         },
@@ -934,6 +935,9 @@ export const ChecklistHandler = {
     },
 
     render(requirement_definition, requirement_result, locked_status, update_details) {
+        if (this.requirement_definition_ref !== requirement_definition) {
+            this.is_dom_built = false;
+        }
         this.requirement_definition_ref = requirement_definition;
         this.requirement_result_ref = requirement_result;
         this.is_audit_locked = locked_status;

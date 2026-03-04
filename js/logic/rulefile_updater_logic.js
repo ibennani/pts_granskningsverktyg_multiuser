@@ -183,25 +183,33 @@ function has_requirement_content_changed(old_req, new_req) {
  * @param {object} new_req - Krav från nya regelfilen
  * @returns {{ addedChecks: string[], added: { checkId: string, passCriterionId: string, text: string }[], updated: { checkId: string, passCriterionId: string, text: string }[] }}
  */
+function get_check_id(check_obj) {
+    return check_obj?.id ?? check_obj?.key ?? null;
+}
+
+function get_pc_id(pc_obj) {
+    return pc_obj?.id ?? pc_obj?.key ?? null;
+}
+
 function get_pass_criteria_changes(old_req, new_req) {
     const result = { addedChecks: [], added: [], updated: [] };
     const old_checks = Array.isArray(old_req?.checks) ? old_req.checks : [];
     const new_checks = Array.isArray(new_req?.checks) ? new_req.checks : [];
-    const old_check_ids = new Set(old_checks.map(c => c?.id).filter(Boolean));
 
     for (const new_check of new_checks) {
-        const new_check_id = new_check?.id;
+        const new_check_id = get_check_id(new_check);
         if (!new_check_id) continue;
-        const old_check = old_checks.find(c => c?.id === new_check_id);
+        const old_check = old_checks.find(c => get_check_id(c) === new_check_id);
         const new_pcs = Array.isArray(new_check.passCriteria) ? new_check.passCriteria : [];
 
         if (!old_check) {
             result.addedChecks.push(new_check_id);
             new_pcs.forEach(pc => {
-                if (pc?.id) {
+                const pc_id = get_pc_id(pc);
+                if (pc_id) {
                     result.added.push({
                         checkId: new_check_id,
-                        passCriterionId: pc.id,
+                        passCriterionId: pc_id,
                         text: pc.requirement || ''
                     });
                 }
@@ -210,10 +218,10 @@ function get_pass_criteria_changes(old_req, new_req) {
         }
 
         const old_pcs = Array.isArray(old_check.passCriteria) ? old_check.passCriteria : [];
-        const old_pc_by_id = new Map(old_pcs.map(pc => [pc?.id, pc]).filter(([id]) => id));
+        const old_pc_by_id = new Map(old_pcs.map(pc => [get_pc_id(pc), pc]).filter(([id]) => id));
 
         for (const new_pc of new_pcs) {
-            const pc_id = new_pc?.id;
+            const pc_id = get_pc_id(new_pc);
             if (!pc_id) continue;
             const old_pc = old_pc_by_id.get(pc_id);
             const text = new_pc.requirement || '';
@@ -290,8 +298,11 @@ export function apply_rule_file_update(current_audit_state, new_rule_file_conten
     new_reconciled_state.requirementUpdateDetails = {};
     (report.updated_requirements || []).forEach(r => {
         const old_key = r.id;
-        const new_req_key = key_change_map[old_key] || old_key;
-        if (r.passCriteriaChanges) {
+        const old_req = old_reqs[old_key];
+        const new_req_obj = new_reqs[old_key] || (old_req && new_req_map_by_title_ref.get(`${old_req.title}::${old_req.standardReference?.text || ''}`));
+        const key_in_new = new_req_obj ? Object.keys(new_reqs).find(k => new_reqs[k] === new_req_obj) : null;
+        const new_req_key = key_in_new || key_change_map[old_key] || old_key;
+        if (r.passCriteriaChanges && new_req_key) {
             new_reconciled_state.requirementUpdateDetails[new_req_key] = r.passCriteriaChanges;
         }
     });
