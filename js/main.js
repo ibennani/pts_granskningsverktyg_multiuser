@@ -603,6 +603,28 @@ window.DraftManager = DraftManager;
         }
     }
 
+    const FOCUS_STORAGE_KEY = 'gv_focus_by_scope_v1';
+
+    function load_focus_storage() {
+        try {
+            const raw = window.sessionStorage?.getItem(FOCUS_STORAGE_KEY);
+            if (!raw) return {};
+            const parsed = JSON.parse(raw);
+            if (!parsed || typeof parsed !== 'object') return {};
+            return parsed;
+        } catch (e) {
+            return {};
+        }
+    }
+
+    function save_focus_storage(storage) {
+        try {
+            window.sessionStorage?.setItem(FOCUS_STORAGE_KEY, JSON.stringify(storage || {}));
+        } catch (e) {
+            /* ignore */
+        }
+    }
+
     let restore_position_state = { view: null, params: {}, focusInfo: null };
 
     function capture_focus_info_from_element(el) {
@@ -644,6 +666,12 @@ window.DraftManager = DraftManager;
         const params_obj = {};
         Array.from(url_params.entries()).forEach(([key, value]) => { params_obj[key] = value; });
         return `${route_key}:${JSON.stringify(params_obj)}`;
+    }
+
+    function get_scope_key_from_view_and_params(view, params) {
+        const route_key = view || 'start';
+        const safe_params = params && typeof params === 'object' ? params : {};
+        return `${route_key}:${JSON.stringify(safe_params)}`;
     }
 
     function should_capture_draft_target(target) {
@@ -1226,6 +1254,18 @@ window.DraftManager = DraftManager;
                 target_view;
             history.replaceState(null, '', `#${target_hash_part}`);
         }
+        try {
+            const scope_key = get_scope_key_from_view_and_params(target_view, target_params);
+            if (scope_key && window.sessionStorage) {
+                const focus_storage = load_focus_storage();
+                const focus_info = focus_storage[scope_key];
+                if (focus_info) {
+                    window.__gv_restore_focus_info = focus_info;
+                }
+            }
+        } catch (e) {
+            /* ignore */
+        }
         updatePageTitle(target_view, target_params);
         render_view(target_view, target_params);
     }
@@ -1305,8 +1345,24 @@ window.DraftManager = DraftManager;
                 focus_capture_timer = null;
                 const info = capture_focus_info_from_element(document.activeElement);
                 if (info) {
-                    update_restore_position(current_view_name_rendered, JSON.parse(current_view_params_rendered_json || '{}'), info);
+                    let parsed_params = {};
+                    try {
+                        parsed_params = JSON.parse(current_view_params_rendered_json || '{}');
+                    } catch (e) {
+                        parsed_params = {};
+                    }
+                    update_restore_position(current_view_name_rendered, parsed_params, info);
                     updateBackupRestorePosition(window.__gv_get_restore_position?.());
+                    try {
+                        const scope_key = get_scope_key_from_view_and_params(current_view_name_rendered, parsed_params);
+                        if (scope_key && window.sessionStorage) {
+                            const focus_storage = load_focus_storage();
+                            focus_storage[scope_key] = info;
+                            save_focus_storage(focus_storage);
+                        }
+                    } catch (e) {
+                        /* ignore */
+                    }
                 }
             }, 150);
         };
