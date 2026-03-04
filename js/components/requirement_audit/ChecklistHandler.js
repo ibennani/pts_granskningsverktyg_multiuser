@@ -703,7 +703,8 @@ export const ChecklistHandler = {
         
         this.container_ref.querySelectorAll('.check-item[data-check-id]').forEach(check_wrapper => {
             const check_id = check_wrapper.dataset.checkId;
-            const check_result_data = this.requirement_result_ref.checkResults[check_id];
+            const check_result_data = this.requirement_result_ref.checkResults?.[check_id]
+                ?? this.requirement_result_ref.checkResults?.[String(check_id)];
             const calculated_check_status = check_result_data?.status || 'not_audited';
             const overall_manual_status = check_result_data?.overallStatus || 'not_audited';
 
@@ -740,52 +741,17 @@ export const ChecklistHandler = {
             const pc_list = check_wrapper.querySelector('.pass-criteria-list');
             const compliance_info_text = check_wrapper.querySelector('.compliance-info-text');
 
-            const pc_list_was_hidden = pc_list.style.display === 'none';
-            const compliance_was_hidden = compliance_info_text.style.display === 'none';
-
-            pc_list.classList.remove('slide-down-in', 'slide-down-out');
-            compliance_info_text.classList.remove('slide-down-in', 'slide-down-out');
-
-            // Show/hide pass criteria
-            if (overall_manual_status === 'passed' && pc_list.children.length > 0) {
-                pc_list.style.display = '';
-                if (pc_list_was_hidden) {
-                    pc_list.classList.add('slide-down-in');
-                }
-            } else {
-                if (!pc_list_was_hidden) {
-                    pc_list.classList.add('slide-down-out');
-                    setTimeout(() => {
-                        pc_list.style.display = 'none';
-                        pc_list.classList.remove('slide-down-out');
-                    }, 500);
-                } else {
-                    pc_list.style.display = 'none';
-                }
-            }
-            
-            // Show/hide compliance info text
+            pc_list.style.display = (overall_manual_status === 'passed' && pc_list.children.length > 0) ? '' : 'none';
             if (overall_manual_status === 'not_applicable') {
                 compliance_info_text.textContent = t('condition_not_met_criteria_auto_passed');
                 compliance_info_text.style.display = '';
-                if (compliance_was_hidden) {
-                    compliance_info_text.classList.add('slide-down-in');
-                }
             } else {
-                if (!compliance_was_hidden) {
-                    compliance_info_text.classList.add('slide-down-out');
-                    setTimeout(() => {
-                        compliance_info_text.style.display = 'none';
-                        compliance_info_text.classList.remove('slide-down-out');
-                    }, 500);
-                } else {
-                    compliance_info_text.style.display = 'none';
-                }
+                compliance_info_text.style.display = 'none';
             }
 
             check_wrapper.querySelectorAll('.pass-criterion-item[data-pc-id]').forEach(pc_item_li => {
                 const pc_id = pc_item_li.dataset.pcId;
-                const pc_data = check_result_data?.passCriteria[pc_id] || { status: 'not_audited', observationDetail: '' };
+                const pc_data = check_result_data?.passCriteria?.[pc_id] ?? check_result_data?.passCriteria?.[String(pc_id)] ?? { status: 'not_audited', observationDetail: '' };
                 const current_pc_status = pc_data.status;
 
                 const pc_status_text_container = pc_item_li.querySelector('.pass-criterion-status');
@@ -827,38 +793,11 @@ export const ChecklistHandler = {
                 const observation_textarea = observation_wrapper.querySelector('textarea');
 
                 const was_hidden = observation_wrapper.hidden;
-                
-                observation_wrapper.classList.remove('slide-down-in', 'slide-down-out');
-                
-                // Show/hide observation field
-                if (current_pc_status === 'failed') {
-                    observation_wrapper.hidden = false;
-                    if (was_hidden) {
-                        observation_wrapper.classList.add('slide-down-in');
-                    }
-                    
-                    if (was_hidden && !this.is_audit_locked) {
-                        setTimeout(() => {
-                            if (window.focusProtectionActive || window.customFocusApplied) return;
-                            const active = document.activeElement;
-                            if (active && active.tagName && active.tagName.toLowerCase() === 'textarea') {
-                                const id = active.id || '';
-                                const is_comment_field = id === 'commentToAuditor' || id === 'commentToActor';
-                                const is_observation_field = active.classList.contains('pc-observation-detail-textarea');
-                                if (is_comment_field || is_observation_field) return;
-                            }
-                            observation_textarea.focus();
-                        }, 500);
-                    }
-                } else {
-                    if (!was_hidden) {
-                        observation_wrapper.classList.add('slide-down-out');
-                        setTimeout(() => {
-                            observation_wrapper.hidden = true;
-                            observation_wrapper.classList.remove('slide-down-out');
-                        }, 500);
-                    } else {
-                        observation_wrapper.hidden = true;
+                observation_wrapper.hidden = (current_pc_status !== 'failed');
+
+                if (was_hidden && !observation_wrapper.hidden && !this.is_audit_locked) {
+                    if (!window.focusProtectionActive && !window.customFocusApplied) {
+                        observation_textarea.focus();
                     }
                 }
                 
