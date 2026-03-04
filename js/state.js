@@ -59,6 +59,7 @@ const initial_state = {
     startTime: null,
     endTime: null,
     samples: [],
+    archivedRequirementResults: [],
     deficiencyCounter: 1,
     ruleFileOriginalContentString: null,
     ruleFileOriginalFilename: '',
