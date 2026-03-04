@@ -258,8 +258,15 @@ export const UpdateRulefileViewComponent = {
         this.plate_element_ref.appendChild(this.Helpers.create_element('p', { text_content: t('update_rulefile_step2_intro') }));
 
         const versions_ul = this.Helpers.create_element('ul', { class_name: 'version-list' });
-        versions_ul.appendChild(this.Helpers.create_element('li', { text_content: t('update_rulefile_version_current', { version: current_version }) }));
-        versions_ul.appendChild(this.Helpers.create_element('li', { text_content: t('update_rulefile_version_new', { version: new_version }) }));
+        const current_li = this.Helpers.create_element('li');
+        current_li.appendChild(document.createTextNode(t('update_rulefile_version_current_prefix')));
+        current_li.appendChild(this.Helpers.create_element('strong', { text_content: current_version }));
+        versions_ul.appendChild(current_li);
+
+        const new_li = this.Helpers.create_element('li');
+        new_li.appendChild(document.createTextNode(t('update_rulefile_version_new_prefix')));
+        new_li.appendChild(this.Helpers.create_element('strong', { text_content: new_version }));
+        versions_ul.appendChild(new_li);
         this.plate_element_ref.appendChild(versions_ul);
 
         if (this._analysis_ready && this.staged_analysis_report) {
