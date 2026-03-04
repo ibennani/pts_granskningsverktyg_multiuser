@@ -26,6 +26,9 @@ function state_to_patch(state) {
     if (state.ruleFileContent) {
         patch.ruleFileContent = state.ruleFileContent;
     }
+    if (Array.isArray(state.archivedRequirementResults) && state.archivedRequirementResults.length > 0) {
+        patch.archivedRequirementResults = state.archivedRequirementResults;
+    }
     return patch;
 }
 
