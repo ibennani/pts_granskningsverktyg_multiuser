@@ -63,7 +63,8 @@ export function analyze_rule_file_changes(current_audit_state, new_rule_file_con
 
         if (new_req_match) {
             if (has_requirement_content_changed(old_req, new_req_match)) {
-                report.updated_requirements.push({ id: old_key, title: old_req.title });
+                const passCriteriaChanges = get_pass_criteria_changes(old_req, new_req_match);
+                report.updated_requirements.push({ id: old_key, title: old_req.title, passCriteriaChanges });
             }
         } else {
             report.removed_requirements.push({ id: old_key, title: old_req.title });
@@ -177,6 +178,63 @@ function has_requirement_content_changed(old_req, new_req) {
 }
 
 /**
+ * Returnerar vilka kontrollpunkter och godkännandekriterier som tillkommit eller uppdaterats.
+ * @param {object} old_req - Krav från gamla regelfilen
+ * @param {object} new_req - Krav från nya regelfilen
+ * @returns {{ addedChecks: string[], added: { checkId: string, passCriterionId: string, text: string }[], updated: { checkId: string, passCriterionId: string, text: string }[] }}
+ */
+function get_pass_criteria_changes(old_req, new_req) {
+    const result = { addedChecks: [], added: [], updated: [] };
+    const old_checks = Array.isArray(old_req?.checks) ? old_req.checks : [];
+    const new_checks = Array.isArray(new_req?.checks) ? new_req.checks : [];
+    const old_check_ids = new Set(old_checks.map(c => c?.id).filter(Boolean));
+
+    for (const new_check of new_checks) {
+        const new_check_id = new_check?.id;
+        if (!new_check_id) continue;
+        const old_check = old_checks.find(c => c?.id === new_check_id);
+        const new_pcs = Array.isArray(new_check.passCriteria) ? new_check.passCriteria : [];
+
+        if (!old_check) {
+            result.addedChecks.push(new_check_id);
+            new_pcs.forEach(pc => {
+                if (pc?.id) {
+                    result.added.push({
+                        checkId: new_check_id,
+                        passCriterionId: pc.id,
+                        text: pc.requirement || ''
+                    });
+                }
+            });
+            continue;
+        }
+
+        const old_pcs = Array.isArray(old_check.passCriteria) ? old_check.passCriteria : [];
+        const old_pc_by_id = new Map(old_pcs.map(pc => [pc?.id, pc]).filter(([id]) => id));
+
+        for (const new_pc of new_pcs) {
+            const pc_id = new_pc?.id;
+            if (!pc_id) continue;
+            const old_pc = old_pc_by_id.get(pc_id);
+            const text = new_pc.requirement || '';
+            if (!old_pc) {
+                result.added.push({ checkId: new_check_id, passCriterionId: pc_id, text });
+            } else {
+                const old_normalized = { ...old_pc };
+                delete old_normalized.failureStatementTemplate;
+                const new_normalized = { ...new_pc };
+                delete new_normalized.failureStatementTemplate;
+                if (!deep_equals(old_normalized, new_normalized)) {
+                    result.updated.push({ checkId: new_check_id, passCriterionId: pc_id, text });
+                }
+            }
+        }
+    }
+
+    return result;
+}
+
+/**
  * Tillämpar en regelfilsuppdatering på ett befintligt granskningstillstånd.
  * @param {object} current_audit_state
  * @param {object} new_rule_file_content
@@ -227,6 +285,15 @@ export function apply_rule_file_update(current_audit_state, new_rule_file_conten
             new_results[new_req_key] = result_data;
         }
         sample.requirementResults = new_results;
+    });
+
+    new_reconciled_state.requirementUpdateDetails = {};
+    (report.updated_requirements || []).forEach(r => {
+        const old_key = r.id;
+        const new_req_key = key_change_map[old_key] || old_key;
+        if (r.passCriteriaChanges) {
+            new_reconciled_state.requirementUpdateDetails[new_req_key] = r.passCriteriaChanges;
+        }
     });
 
     return new_reconciled_state;

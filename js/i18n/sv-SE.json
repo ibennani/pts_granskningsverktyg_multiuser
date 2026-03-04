@@ -963,6 +963,8 @@
   "delete_prefix": "Radera",
   "edit_rulefile_button": "Redigera regelfil",
   "pass_criterion_label": "Godkännandekriterium",
+  "pass_criterion_badge_new": "Ny",
+  "pass_criterion_badge_updated": "Uppdaterad",
   "pass_criterion_field_label": "Vad är det som kan godkännas eller underkännas?",
   "requirement_standard_reference_text": "Text för standardreferens",
   "requirement_standard_reference_url": "URL för standardreferens",

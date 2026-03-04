@@ -669,7 +669,9 @@ export const RequirementAuditComponent = {
         this.bottom_navigation_instance.render(nav_options);
 
         this.info_sections_instance.render(this.current_requirement, this.current_sample, state.ruleFileContent.metadata);
-        this.checklist_handler_instance.render(this.current_requirement, this.current_result, is_locked);
+        const req_key = this.current_requirement?.key || this.params?.requirementId;
+        const update_details = state.requirementUpdateDetails?.[req_key] || null;
+        this.checklist_handler_instance.render(this.current_requirement, this.current_result, is_locked, update_details);
 
         const comments_section = this.plate_element_ref.querySelector('.input-fields-container.audit-section');
         if (comments_section) {

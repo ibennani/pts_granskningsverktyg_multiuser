@@ -238,10 +238,13 @@ function root_reducer(current_state, action) {
                 }
             };
 
-        case ActionTypes.CONFIRM_SINGLE_REVIEWED_REQUIREMENT:
+        case ActionTypes.CONFIRM_SINGLE_REVIEWED_REQUIREMENT: {
             const { sampleId, requirementId } = action.payload;
+            const new_update_details = { ...(current_state.requirementUpdateDetails || {}) };
+            delete new_update_details[requirementId];
             return {
                 ...current_state,
+                requirementUpdateDetails: new_update_details,
                 samples: current_state.samples.map(sample => {
                     if (sample.id === sampleId && sample.requirementResults?.[requirementId]?.needsReview) {
                         const newResults = { ...sample.requirementResults };
@@ -253,10 +256,12 @@ function root_reducer(current_state, action) {
                     return sample;
                 })
             };
+        }
 
         case ActionTypes.CONFIRM_ALL_REVIEWED_REQUIREMENTS:
             return {
                 ...current_state,
+                requirementUpdateDetails: {},
                 samples: current_state.samples.map(sample => {
                     const newResults = {};
                     let hasChanged = false;

@@ -457,8 +457,29 @@ export const ChecklistHandler = {
         }
     },
 
+    _create_update_badge(type) {
+        const t = this.Translation.t;
+        const is_new = type === 'new';
+        const label = is_new ? t('pass_criterion_badge_new') : t('pass_criterion_badge_updated');
+        const icon_name = is_new ? 'add' : 'update';
+        const icon_svg = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg(icon_name, ['currentColor'], 14) : '';
+        const span = this.Helpers.create_element('span', {
+            class_name: `pass-criterion-update-badge pass-criterion-update-badge--${type}`,
+            attributes: { 'aria-hidden': 'true' }
+        });
+        if (icon_svg) {
+            const icon_wrapper = document.createElement('span');
+            icon_wrapper.setAttribute('aria-hidden', 'true');
+            icon_wrapper.innerHTML = icon_svg;
+            span.appendChild(icon_wrapper);
+        }
+        span.appendChild(document.createTextNode(' ' + label));
+        return span;
+    },
+
     build_initial_dom() {
         const t = this.Translation.t;
+        const details = this.requirement_update_details;
         this.container_ref.innerHTML = '';
 
         if (!this.requirement_definition_ref?.checks?.length) {
@@ -481,10 +502,12 @@ export const ChecklistHandler = {
             });
 
             const check_title_label = `${t('check_item_title')} ${check_index + 1}`;
-            const condition_h3 = this.Helpers.create_element('h3', { 
-                class_name: 'check-condition-title', 
-                html_content: this.Helpers.escape_html(check_title_label) 
-            });
+            const condition_h3 = this.Helpers.create_element('h3', { class_name: 'check-condition-title' });
+            condition_h3.textContent = check_title_label;
+            if (details?.addedChecks?.includes(check_definition.id)) {
+                condition_h3.appendChild(document.createTextNode(' '));
+                condition_h3.appendChild(this._create_update_badge('new'));
+            }
             check_wrapper.appendChild(condition_h3);
 
             const condition_text_div = this.Helpers.create_element('div', { 
@@ -526,10 +549,20 @@ export const ChecklistHandler = {
                 });
 
                 const numbering = `${check_index + 1}.${pc_index + 1}`;
-                const pc_title_h4 = this.Helpers.create_element('h4', {
-                    class_name: 'pass-criterion-title',
-                    html_content: `<strong>${this.Helpers.escape_html(t('pass_criterion_label'))} ${this.Helpers.escape_html(numbering)}</strong>`
+                const pc_title_h4 = this.Helpers.create_element('h4', { class_name: 'pass-criterion-title' });
+                const strong = this.Helpers.create_element('strong', {
+                    text_content: `${t('pass_criterion_label')} ${numbering}`
                 });
+                pc_title_h4.appendChild(strong);
+                const in_added = details?.added?.some(e => e.checkId === check_definition.id && e.passCriterionId === pc_def.id);
+                const in_updated = details?.updated?.some(e => e.checkId === check_definition.id && e.passCriterionId === pc_def.id);
+                if (in_added) {
+                    pc_title_h4.appendChild(document.createTextNode(' '));
+                    pc_title_h4.appendChild(this._create_update_badge('new'));
+                } else if (in_updated) {
+                    pc_title_h4.appendChild(document.createTextNode(' '));
+                    pc_title_h4.appendChild(this._create_update_badge('updated'));
+                }
                 pc_item_li.appendChild(pc_title_h4);
 
                 const requirement_content_div = this.Helpers.create_element('div', { 
@@ -900,10 +933,11 @@ export const ChecklistHandler = {
         }
     },
 
-    render(requirement_definition, requirement_result, locked_status) {
+    render(requirement_definition, requirement_result, locked_status, update_details) {
         this.requirement_definition_ref = requirement_definition;
         this.requirement_result_ref = requirement_result;
         this.is_audit_locked = locked_status;
+        this.requirement_update_details = update_details || null;
 
         const current_lang = typeof this.Translation?.get_current_language_code === 'function'
             ? this.Translation.get_current_language_code()

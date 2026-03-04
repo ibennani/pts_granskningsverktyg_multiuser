@@ -963,6 +963,8 @@
   "delete_prefix": "Delete",
   "edit_rulefile_button": "Edit Rule File",
   "pass_criterion_label": "Pass Criterion",
+  "pass_criterion_badge_new": "New",
+  "pass_criterion_badge_updated": "Updated",
   "pass_criterion_field_label": "What can be approved or rejected?",
   "requirement_standard_reference_text": "Standard Reference Text",
   "requirement_standard_reference_url": "Standard Reference URL",

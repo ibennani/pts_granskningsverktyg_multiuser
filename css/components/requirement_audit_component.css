@@ -261,6 +261,31 @@
     color: var(--heading-color);
 }
 
+.pass-criterion-update-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    margin-left: 0.25rem;
+}
+
+.pass-criterion-update-badge--new {
+    color: var(--success-color, #2e7d32);
+}
+
+.pass-criterion-update-badge--updated {
+    color: var(--primary-color, #1565c0);
+}
+
+[data-theme="dark"] .pass-criterion-update-badge--new {
+    color: var(--success-color);
+}
+
+[data-theme="dark"] .pass-criterion-update-badge--updated {
+    color: var(--primary-color);
+}
+
 .check-number-label {
     margin: 0 0 0 0;
     padding: 0;
