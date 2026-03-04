@@ -178,7 +178,7 @@ export const RequirementAuditSidebarComponent = {
     },
 
     handle_link_click(event) {
-        const link = event.target?.closest?.('a[data-requirement-sidebar-link="true"]');
+        const link = event.target?.closest?.('[data-requirement-sidebar-link="true"]');
         if (!link || !this.router) return;
 
         const sample_id = link.getAttribute('data-sample-id');
@@ -376,11 +376,11 @@ export const RequirementAuditSidebarComponent = {
             // Länken överst: div.wrapper > a > h3
             const link_wrapper = this.Helpers.create_element('div', { class_name: 'requirement-audit-sidebar__link-wrapper' });
             const link_heading = this.Helpers.create_element('h3', {});
-            const link = this.Helpers.create_element('a', {
+            const link = this.Helpers.create_element('button', {
                 class_name: 'requirement-audit-sidebar__link',
                 text_content: '',
                 attributes: {
-                    href: `#requirement_audit?${new URLSearchParams({ sampleId: current_sample.id, requirementId: req_key }).toString()}`,
+                    type: 'button',
                     'data-requirement-sidebar-link': 'true',
                     'data-sample-id': current_sample.id,
                     'data-requirement-id': req_key
@@ -498,11 +498,11 @@ export const RequirementAuditSidebarComponent = {
             // Länken överst: div.wrapper > a > h3
             const link_wrapper = this.Helpers.create_element('div', { class_name: 'requirement-audit-sidebar__link-wrapper' });
             const link_heading = this.Helpers.create_element('h3', {});
-            const link = this.Helpers.create_element('a', {
+            const link = this.Helpers.create_element('button', {
                 class_name: 'requirement-audit-sidebar__link',
                 text_content: '',
                 attributes: {
-                    href: `#requirement_audit?${new URLSearchParams({ sampleId: sample.id, requirementId: requirement_key }).toString()}`,
+                    type: 'button',
                     'data-requirement-sidebar-link': 'true',
                     'data-sample-id': sample.id,
                     'data-requirement-id': requirement_key

@@ -186,11 +186,10 @@ export const SideMenuComponent = {
         if (is_active && view_name === 'rulefile_sections' && params.section) {
             is_active = current_params.section === params.section;
         }
-        const href = this.build_hash(view_name, params);
 
-        const link = this.Helpers.create_element('a', {
+        const link = this.Helpers.create_element('button', {
             attributes: {
-                href,
+                type: 'button',
                 'aria-label': label,
                 ...(is_active ? { 'aria-current': 'page' } : {})
             },

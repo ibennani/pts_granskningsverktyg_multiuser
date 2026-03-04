@@ -625,10 +625,10 @@ export const AuditProblemsViewComponent = {
             text_content: `${t('audit_images_card_requirement_label')} `
         });
         req_row.appendChild(req_label);
-        const req_link = this.Helpers.create_element('a', {
+        const req_link = this.Helpers.create_element('button', {
             class_name: 'audit-problem-card__requirement-link',
             attributes: {
-                href: this.build_hash('requirement_audit', { sampleId: sample_id, requirementId: req_id }),
+                type: 'button',
                 'data-sample-id': sample_id,
                 'data-requirement-id': req_id
             },
