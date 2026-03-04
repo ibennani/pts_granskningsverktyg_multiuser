@@ -517,11 +517,7 @@ export const ChecklistHandler = {
             check_wrapper.appendChild(condition_text_div);
             
             const actions_div = this.Helpers.create_element('div', {
-                class_name: 'condition-actions',
-                attributes: {
-                    role: 'group',
-                    'aria-label': t('check_status_buttons_group_aria')
-                }
+                class_name: 'condition-actions'
             });
             const check_icon = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('check_circle', [], 16) : '';
             const cancel_icon = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('cancel', [], 16) : '';
@@ -578,11 +574,7 @@ export const ChecklistHandler = {
                 }));
 
                 const pc_actions_div = this.Helpers.create_element('div', {
-                    class_name: 'pass-criterion-actions',
-                    attributes: {
-                        role: 'group',
-                        'aria-label': `${t('pass_criterion_status_buttons_group_aria')} ${numbering}`
-                    }
+                    class_name: 'pass-criterion-actions'
                 });
                 const thumb_up_icon = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('thumb_up', [], 16) : '';
                 const thumb_down_icon = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('thumb_down', [], 16) : '';
