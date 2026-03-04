@@ -26,6 +26,160 @@ export const ModalComponent = {
         }
     },
 
+    _is_word_char(ch) {
+        if (!ch) return false;
+        return /[A-Za-z0-9ÅÄÖåäö_]/.test(ch);
+    },
+
+    _is_single_quote_open(text, idx) {
+        const prev = idx > 0 ? text[idx - 1] : '';
+        const next = idx + 1 < text.length ? text[idx + 1] : '';
+        if (this._is_word_char(prev)) return false;
+        if (!next) return false;
+        if (next === ' ' || next === '\n' || next === '\t') return false;
+        return true;
+    },
+
+    _is_single_quote_close(text, idx) {
+        const prev = idx > 0 ? text[idx - 1] : '';
+        const next = idx + 1 < text.length ? text[idx + 1] : '';
+        if (!prev || prev === ' ' || prev === '\n' || prev === '\t') return false;
+        if (this._is_word_char(next)) return false;
+        return true;
+    },
+
+    _find_next_quote_open(text, from_idx) {
+        const idx_double = text.indexOf('"', from_idx);
+        const idx_swedish = text.indexOf('”', from_idx);
+
+        let idx_single = -1;
+        for (let i = from_idx; i < text.length; i += 1) {
+            if (text[i] === "'" && this._is_single_quote_open(text, i)) {
+                idx_single = i;
+                break;
+            }
+        }
+
+        const candidates = [
+            { idx: idx_double, ch: '"', kind: 'double' },
+            { idx: idx_swedish, ch: '”', kind: 'swedish' },
+            { idx: idx_single, ch: "'", kind: 'single' },
+        ].filter(c => c.idx !== -1);
+
+        if (candidates.length === 0) return null;
+
+        candidates.sort((a, b) => a.idx - b.idx);
+        return candidates[0];
+    },
+
+    _find_single_quote_close(text, from_idx) {
+        for (let i = from_idx; i < text.length; i += 1) {
+            if (text[i] === "'" && this._is_single_quote_close(text, i)) return i;
+        }
+        return -1;
+    },
+
+    _tokenize_quoted_strong_parts(text) {
+        const input = `${text ?? ''}`;
+        if (!input) return [{ type: 'text', value: '' }];
+
+        if (!input.includes('"') && !input.includes('”') && !input.includes("'")) {
+            return [{ type: 'text', value: input }];
+        }
+
+        const parts = [];
+        let cursor = 0;
+
+        while (cursor < input.length) {
+            const next_open = this._find_next_quote_open(input, cursor);
+            if (!next_open) {
+                parts.push({ type: 'text', value: input.slice(cursor) });
+                break;
+            }
+
+            if (next_open.idx > cursor) {
+                parts.push({ type: 'text', value: input.slice(cursor, next_open.idx) });
+            }
+
+            let close_idx = -1;
+            if (next_open.kind === 'single') {
+                close_idx = this._find_single_quote_close(input, next_open.idx + 1);
+            } else {
+                close_idx = input.indexOf(next_open.ch, next_open.idx + 1);
+            }
+
+            if (close_idx === -1) return null;
+
+            const inner = input.slice(next_open.idx + 1, close_idx);
+            if (inner) {
+                parts.push({ type: 'strong', value: inner });
+            }
+
+            cursor = close_idx + 1;
+        }
+
+        return parts;
+    },
+
+    _transform_text_node_quotes_to_strong(text_node) {
+        if (!text_node?.parentNode) return;
+        const text = text_node.nodeValue ?? '';
+        if (!text) return;
+        if (!text.includes('"') && !text.includes('”') && !text.includes("'")) return;
+
+        const parts = this._tokenize_quoted_strong_parts(text);
+        if (!parts || parts.length === 0) return;
+        if (parts.length === 1 && parts[0].type === 'text' && parts[0].value === text) return;
+
+        const frag = document.createDocumentFragment();
+        for (const part of parts) {
+            if (!part?.value && part?.value !== '') continue;
+            if (part.type === 'strong') {
+                frag.appendChild(this.Helpers.create_element('strong', { text_content: part.value }));
+            } else {
+                frag.appendChild(document.createTextNode(part.value));
+            }
+        }
+
+        text_node.parentNode.replaceChild(frag, text_node);
+    },
+
+    _transform_quotes_to_strong_in_container(container) {
+        if (!container) return;
+        if (!this.Helpers?.create_element) return;
+
+        const excluded_tags = new Set(['SCRIPT', 'STYLE', 'TEXTAREA', 'INPUT', 'SELECT', 'OPTION', 'PRE', 'CODE']);
+
+        const walker = document.createTreeWalker(
+            container,
+            NodeFilter.SHOW_TEXT,
+            {
+                acceptNode: (node) => {
+                    const parent = node?.parentElement;
+                    if (!parent) return NodeFilter.FILTER_REJECT;
+                    if (excluded_tags.has(parent.tagName)) return NodeFilter.FILTER_REJECT;
+                    if (parent.closest && parent.closest('pre, code, textarea')) return NodeFilter.FILTER_REJECT;
+
+                    const v = node.nodeValue ?? '';
+                    if (!v) return NodeFilter.FILTER_REJECT;
+                    if (!v.includes('"') && !v.includes('”') && !v.includes("'")) return NodeFilter.FILTER_REJECT;
+                    return NodeFilter.FILTER_ACCEPT;
+                }
+            }
+        );
+
+        const nodes = [];
+        let n = walker.nextNode();
+        while (n) {
+            nodes.push(n);
+            n = walker.nextNode();
+        }
+
+        for (const text_node of nodes) {
+            this._transform_text_node_quotes_to_strong(text_node);
+        }
+    },
+
     show({ h1_text, message_text }, content_callback) {
         if (!this.root || !this.Helpers?.create_element) return;
 
@@ -61,6 +215,8 @@ export const ModalComponent = {
         if (typeof content_callback === 'function') {
             content_callback(this.content_container_ref, this);
         }
+
+        this._transform_quotes_to_strong_in_container(this.content_container_ref);
 
         this.dialog_element_ref.appendChild(this.content_container_ref);
 

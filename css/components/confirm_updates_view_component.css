@@ -1,21 +1,26 @@
 /* css/components/confirm_updates_view_component.css */
 
-.confirm-updates-filter {
+.confirm-updates-filter-section {
     margin: 1rem 0 1.5rem;
+}
+
+.confirm-updates-filter-section .requirements-list-toolbar-wrapper {
+    margin-top: 0.5rem;
+}
+
+/* När listan sorteras på krav: stickprovsnamn på raden ovanför kravlänken */
+.confirm-updates-item-left {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+    margin-right: 1rem;
 }
 
-.confirm-updates-filter label {
-    font-weight: 500;
-}
-
-.confirm-updates-filter input {
-    min-width: 12rem;
-    padding: 0.35rem 0.5rem;
-    font-size: 1rem;
+.confirm-updates-sample-name {
+    font-size: 0.9em;
+    color: var(--text-color-secondary, #555);
+    display: block;
 }
 
 /*
@@ -29,6 +34,15 @@
 
     /* Minska marginalen mellan listelementen */
     margin-bottom: 0.5rem;
+
+    /* Knappen i överkanten när innehållet blir flerradigt */
+    align-items: flex-start;
+}
+
+/* Knappen radbryts aldrig och ligger i överkanten */
+.compact-review-item button[data-action="confirm-single"] {
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 /* Anpassa länken inuti listelementet för bättre läsbarhet */
