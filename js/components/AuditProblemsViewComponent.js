@@ -625,10 +625,14 @@ export const AuditProblemsViewComponent = {
             text_content: `${t('audit_images_card_requirement_label')} `
         });
         req_row.appendChild(req_label);
-        const req_link = this.Helpers.create_element('button', {
+        const base_path = (window.location && window.location.pathname)
+            ? window.location.pathname.split('?')[0].split('#')[0]
+            : '/';
+        const href_params = new URLSearchParams({ view: 'requirement_audit', sampleId: sample_id, requirementId: req_id });
+        const req_link = this.Helpers.create_element('a', {
             class_name: 'audit-problem-card__requirement-link',
             attributes: {
-                type: 'button',
+                href: `${base_path}?${href_params.toString()}`,
                 'data-sample-id': sample_id,
                 'data-requirement-id': req_id
             },

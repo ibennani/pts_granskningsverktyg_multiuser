@@ -192,6 +192,18 @@ export const RequirementAuditSidebarComponent = {
         this.router('requirement_audit', { sampleId: sample_id, requirementId: requirement_id });
     },
 
+    build_non_anchor_href(view_name, params = {}) {
+        try {
+            const base_path = (window.location && window.location.pathname)
+                ? window.location.pathname.split('?')[0].split('#')[0]
+                : '/';
+            const search_params = new URLSearchParams({ view: view_name, ...params });
+            return `${base_path}?${search_params.toString()}`;
+        } catch (e) {
+            return '#';
+        }
+    },
+
     async render(options) {
         if (!this.root || !options) return;
         await this.ensure_dom_initialized();
@@ -373,14 +385,14 @@ export const RequirementAuditSidebarComponent = {
 
             const li = this.Helpers.create_element('li', { class_name: 'requirement-audit-sidebar__item' });
 
-            // Länken överst: div.wrapper > a > h3
+            // Länken överst: div.wrapper > länk > h3
             const link_wrapper = this.Helpers.create_element('div', { class_name: 'requirement-audit-sidebar__link-wrapper' });
             const link_heading = this.Helpers.create_element('h3', {});
-            const link = this.Helpers.create_element('button', {
+            const link = this.Helpers.create_element('a', {
                 class_name: 'requirement-audit-sidebar__link',
                 text_content: '',
                 attributes: {
-                    type: 'button',
+                    href: this.build_non_anchor_href('requirement_audit', { sampleId: current_sample.id, requirementId: req_key }),
                     'data-requirement-sidebar-link': 'true',
                     'data-sample-id': current_sample.id,
                     'data-requirement-id': req_key
@@ -495,14 +507,14 @@ export const RequirementAuditSidebarComponent = {
 
             const li = this.Helpers.create_element('li', { class_name: 'requirement-audit-sidebar__item' });
 
-            // Länken överst: div.wrapper > a > h3
+            // Länken överst: div.wrapper > länk > h3
             const link_wrapper = this.Helpers.create_element('div', { class_name: 'requirement-audit-sidebar__link-wrapper' });
             const link_heading = this.Helpers.create_element('h3', {});
-            const link = this.Helpers.create_element('button', {
+            const link = this.Helpers.create_element('a', {
                 class_name: 'requirement-audit-sidebar__link',
                 text_content: '',
                 attributes: {
-                    type: 'button',
+                    href: this.build_non_anchor_href('requirement_audit', { sampleId: sample.id, requirementId: requirement_key }),
                     'data-requirement-sidebar-link': 'true',
                     'data-sample-id': sample.id,
                     'data-requirement-id': requirement_key

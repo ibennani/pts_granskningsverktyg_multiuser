@@ -187,9 +187,15 @@ export const SideMenuComponent = {
             is_active = current_params.section === params.section;
         }
 
-        const link = this.Helpers.create_element('button', {
+        const base_path = (window.location && window.location.pathname)
+            ? window.location.pathname.split('?')[0].split('#')[0]
+            : '/';
+        const search_params = new URLSearchParams({ view: view_name, ...params });
+        const href = `${base_path}?${search_params.toString()}`;
+
+        const link = this.Helpers.create_element('a', {
             attributes: {
-                type: 'button',
+                href,
                 'aria-label': label,
                 ...(is_active ? { 'aria-current': 'page' } : {})
             },
