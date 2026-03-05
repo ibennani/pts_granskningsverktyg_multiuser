@@ -793,37 +793,6 @@ window.DraftManager = DraftManager;
         window.addEventListener('storage', (event) => DraftManager.handleStorageEvent(event));
     }
 
-    // --- START OF CHANGE ---
-    function set_focus_to_h1() {
-        memoryManager.setTimeout(() => {
-            let force_focus = false;
-            try {
-                force_focus = window.sessionStorage?.getItem('gv_force_focus_h1_v1') === 'true';
-                if (force_focus) {
-                    window.sessionStorage?.removeItem('gv_force_focus_h1_v1');
-                }
-            } catch (e) {}
-            // Kontrollera om en specifik fokusinstruktion redan har hanterats
-            if (window.customFocusApplied && !force_focus) {
-                // Återställ flaggan och gör ingenting mer
-                window.customFocusApplied = false;
-                return;
-            }
-            // Annars, kör den generella fokuseringen
-            const focus_root = main_view_root || app_container;
-            if (focus_root) {
-                const h1_element = focus_root.querySelector('h1');
-                if (h1_element) {
-                    if (h1_element.getAttribute('tabindex') === null) {
-                        h1_element.setAttribute('tabindex', '-1');
-                    }
-                    h1_element.focus();
-                }
-            }
-        }, 100); 
-    }
-    // --- END OF CHANGE ---
-
     function apply_restore_focus_instruction({ view_root }) {
         if (!view_root) return false;
         const focus_info = window.__gv_restore_focus_info;
@@ -1253,13 +1222,10 @@ window.DraftManager = DraftManager;
                 updateBackupRestorePosition(window.__gv_get_restore_position?.());
             }
 
-            const did_apply_custom_focus = apply_post_render_focus_instruction({
+            apply_post_render_focus_instruction({
                 view_name: view_name_to_render,
                 view_root
             });
-            if (!did_apply_custom_focus) {
-                set_focus_to_h1();
-            }
 
             // Uppdatera landmärken och skiplänk efter att vyn (inklusive sidokolumn) har renderats klart
             if (typeof update_landmarks_and_skip_link === 'function') {
