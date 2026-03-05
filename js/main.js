@@ -865,9 +865,14 @@ window.DraftManager = DraftManager;
                 }
             }
 
-            // 3) Om vi kommer från en krav-/stickprovslista, försök hitta samma länk via requirementId + sampleId
-            if (!el && focus_info.requirementId && focus_info.sampleId) {
-                const selector = `[data-requirement-id="${CSS.escape(focus_info.requirementId)}"][data-sample-id="${CSS.escape(focus_info.sampleId)}"]`;
+            // 3) Om vi kommer från en krav-/stickprovslista, försök hitta samma länk via requirementId
+            //    – i första hand med både requirementId + sampleId (alla krav-listan),
+            //    men fall tillbaka till endast requirementId (kravlista per stickprov).
+            if (!el && focus_info.requirementId) {
+                let selector = `[data-requirement-id="${CSS.escape(focus_info.requirementId)}"]`;
+                if (focus_info.sampleId) {
+                    selector += `[data-sample-id="${CSS.escape(focus_info.sampleId)}"]`;
+                }
                 const candidates = view_root.querySelectorAll(selector);
                 if (candidates && candidates.length > 0) {
                     el = candidates[0];
