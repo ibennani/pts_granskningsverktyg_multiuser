@@ -236,6 +236,7 @@
   "check_status_buttons_group_aria": "Välj om kontrollen uppfylls",
   "checks_short": "Kontroller",
   "checks_title": "Kontrollpunkter",
+  "checks_landmark_label": "Kontroller",
   "pass_criteria_title": "Godkännandekriterier",
   "close": "Stäng",
   "comment_to_actor": "Kommentar till aktören",

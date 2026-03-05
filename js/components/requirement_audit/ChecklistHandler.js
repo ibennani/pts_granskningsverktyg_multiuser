@@ -487,12 +487,20 @@ export const ChecklistHandler = {
             return;
         }
 
+        const checks_region = this.Helpers.create_element('section', {
+            class_name: 'checks-container',
+            attributes: {
+                role: 'region',
+                'aria-label': t('checks_landmark_label')
+            }
+        });
+
         const checks_header_row = this.Helpers.create_element('div', { class_name: 'checks-header-row' });
         const checks_h2 = this.Helpers.create_element('h2', { text_content: t('checks_title') });
         const checks_header_actions = this.Helpers.create_element('div', { class_name: 'checks-header-actions' });
         checks_header_row.appendChild(checks_h2);
         checks_header_row.appendChild(checks_header_actions);
-        this.container_ref.appendChild(checks_header_row);
+        checks_region.appendChild(checks_header_row);
 
         this.requirement_definition_ref.checks.forEach((check_definition, check_index) => {
             const check_id = check_definition?.id ?? check_definition?.key;
@@ -684,8 +692,10 @@ export const ChecklistHandler = {
 
             check_wrapper.appendChild(this.Helpers.create_element('p', { class_name: 'text-muted compliance-info-text', style: 'font-style: italic;' }));
             
-            this.container_ref.appendChild(check_wrapper);
+            checks_region.appendChild(check_wrapper);
         });
+
+        this.container_ref.appendChild(checks_region);
 
         this.is_dom_built = true;
     },

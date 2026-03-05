@@ -37,6 +37,9 @@ export const AuditViewComponent = {
         this.production_rules = [];
         this.audits = [];
         this.audit_filter_query = '';
+        this._auditFilterHadFocus = false;
+        this._auditFilterSelection = null;
+        this._auditFilterInputRef = null;
         this.router = deps.router;
         this.getState = deps.getState;
         this.NotificationComponent?.clear_global_message?.();
@@ -100,9 +103,20 @@ export const AuditViewComponent = {
     },
 
     handle_filter_input(event) {
-        const value = event && event.target ? event.target.value : '';
+        const target = event && event.target ? event.target : null;
+        const value = target ? target.value : '';
         if (this.audit_filter_query === value) return;
+        let selectionStart = null;
+        let selectionEnd = null;
+        if (target && typeof target.selectionStart === 'number' && typeof target.selectionEnd === 'number') {
+            selectionStart = target.selectionStart;
+            selectionEnd = target.selectionEnd;
+        }
         this.audit_filter_query = value;
+        this._auditFilterHadFocus = document.activeElement === target;
+        this._auditFilterSelection = selectionStart != null && selectionEnd != null
+            ? { selectionStart, selectionEnd }
+            : null;
         if (this.root) {
             this.render();
         }
@@ -1284,6 +1298,8 @@ export const AuditViewComponent = {
             plate.appendChild(msg_el);
         }
 
+        this._auditFilterInputRef = null;
+
         const header_class_name = this.audit_mode === 'audits'
             ? ['audit-header', 'audit-header--with-filter']
             : 'audit-header';
@@ -1310,6 +1326,7 @@ export const AuditViewComponent = {
                 }
             });
             filter_input.addEventListener('input', this.handle_filter_input);
+            this._auditFilterInputRef = filter_input;
             filter_wrapper.appendChild(filter_label);
             filter_wrapper.appendChild(filter_input);
             header.appendChild(filter_wrapper);
@@ -1714,6 +1731,28 @@ export const AuditViewComponent = {
         }
 
         this.root.appendChild(plate);
+
+        if (this.audit_mode === 'audits' && this._auditFilterHadFocus && this._auditFilterInputRef) {
+            const input = this._auditFilterInputRef;
+            const selection = this._auditFilterSelection;
+            setTimeout(() => {
+                if (!input || !document.contains(input)) return;
+                try {
+                    input.focus({ preventScroll: true });
+                } catch {
+                    input.focus();
+                }
+                if (selection && typeof input.setSelectionRange === 'function') {
+                    try {
+                        input.setSelectionRange(selection.selectionStart, selection.selectionEnd);
+                    } catch {
+                        /* ignorerar */
+                    }
+                }
+            }, 0);
+        }
+        this._auditFilterHadFocus = false;
+        this._auditFilterSelection = null;
 
         if (this.audit_mode === 'audits' && this.deps.params?.startNew === '1') {
             setTimeout(() => {

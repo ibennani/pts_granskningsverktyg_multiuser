@@ -236,6 +236,7 @@
   "check_status_buttons_group_aria": "Choose whether the check is met",
   "checks_short": "Checks",
   "checks_title": "Checkpoints",
+  "checks_landmark_label": "Checks",
   "pass_criteria_title": "Pass Criteria",
   "close": "Close",
   "comment_to_actor": "Comment to actor",

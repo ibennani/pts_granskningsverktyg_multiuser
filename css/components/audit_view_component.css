@@ -31,7 +31,7 @@
 
 .audit-filter-input {
     padding: 0 0.5rem;
-    border-radius: var(--border-radius);
+    border-radius: 2px;
     border: 1px solid var(--border-color);
     background: var(--input-background-color);
     font-size: 0.85rem;
