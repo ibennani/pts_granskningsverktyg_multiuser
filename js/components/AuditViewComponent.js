@@ -1284,16 +1284,22 @@ export const AuditViewComponent = {
             plate.appendChild(msg_el);
         }
 
-        const header = this.Helpers.create_element('div', { class_name: 'audit-header' });
+        const header_class_name = this.audit_mode === 'audits'
+            ? ['audit-header', 'audit-header--with-filter']
+            : 'audit-header';
+        const header = this.Helpers.create_element('div', { class_name: header_class_name });
         const title_text = this.audit_mode === 'rules' ? t('audit_title_rules') : this.audit_mode === 'audits' ? t('audit_title_audits') : t('audit_title');
         const title = this.Helpers.create_element('h1', { text_content: title_text });
         header.appendChild(title);
         if (this.audit_mode === 'audits') {
             const filter_wrapper = this.Helpers.create_element('div', { class_name: 'audit-filter-wrapper' });
             const filter_label = this.Helpers.create_element('label', {
-                attributes: { for: 'audit-filter-input' },
+                attributes: { for: 'audit-filter-input' }
+            });
+            const filter_label_strong = this.Helpers.create_element('strong', {
                 text_content: t('audit_filter_label')
             });
+            filter_label.appendChild(filter_label_strong);
             const filter_input = this.Helpers.create_element('input', {
                 class_name: 'audit-filter-input',
                 attributes: {

@@ -8,6 +8,7 @@ import {
 } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { get_latest_project_mtime } from './compute-latest-mtime.js';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const projectRoot = join(__dirname, '..');
@@ -73,7 +74,13 @@ try {
 
 // Generate build info file
 try {
-  const buildTime = new Date();
+  const latestMtime =
+    get_latest_project_mtime({
+      rootDir: projectRoot,
+      excludeDirs: ['dist'],
+    }) || new Date();
+
+  const buildTime = latestMtime;
   const buildInfo = {
     timestamp: buildTime.toISOString(),
     date: buildTime.toLocaleDateString('sv-SE'),

@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "concurrently -k -n \"DOCKER,NGROK,APP\" -c \"blue,green,magenta\" \"node scripts/dev-with-docker.js\" \"npm run ngrok\" \"vite\"",
+    "dev": "concurrently -k -n \"DOCKER,NGROK,APP,BUILDINFO\" -c \"blue,green,magenta,cyan\" \"node scripts/dev-with-docker.js\" \"npm run ngrok\" \"vite\" \"node scripts/dev-build-info-watcher.js\"",
     "ngrok": "taskkill /f /im ngrok.exe 2>nul & ngrok http --url=irreproachable-eun-refractorily.ngrok-free.dev 11434",
     "vibe": "npm run dev",
     "dev:client": "vite",

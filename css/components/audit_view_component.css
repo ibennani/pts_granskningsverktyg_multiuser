@@ -16,20 +16,27 @@
     margin: 0;
 }
 
+.audit-header--with-filter {
+    flex-direction: column;
+    align-items: flex-start;
+}
+
 .audit-filter-wrapper {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
-    min-width: 260px;
-    max-width: 320px;
+    min-width: 30ch;
+    max-width: 420px;
 }
 
 .audit-filter-input {
-    padding: 0.35rem 0.5rem;
+    padding: 0 0.5rem;
     border-radius: var(--border-radius);
     border: 1px solid var(--border-color);
     background: var(--input-background-color);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
+    height: 1.7rem;
+    line-height: 1.7rem;
 }
 
 .audit-filter-input:focus-visible {
