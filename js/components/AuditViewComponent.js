@@ -1317,7 +1317,7 @@ export const AuditViewComponent = {
             });
             filter_label.appendChild(filter_label_strong);
             const filter_input = this.Helpers.create_element('input', {
-                class_name: 'audit-filter-input',
+                class_name: ['audit-filter-input', 'form-control'],
                 attributes: {
                     id: 'audit-filter-input',
                     type: 'text',
