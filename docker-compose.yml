@@ -44,9 +44,9 @@ services:
     image: ghcr.io/open-webui/open-webui:main
     container_name: open-webui
     ports:
-      - "127.0.0.1:3000:8080" # Nås på http://localhost:3000
+      - "127.0.0.1:3080:8080" # Nås på http://localhost:3080
     environment:
-      - OLLAMA_BASE_URL=http://ollama:11434 # Viktigt: pekar på containernamnet
+      - OLLAMA_BASE_URL=http://ollama-final:11434 # Viktigt: pekar på Ollama-containern
       - WEBUI_SECRET_KEY=din_hemliga_nyckel_här
     volumes:
       - webui_data:/app/backend/data
