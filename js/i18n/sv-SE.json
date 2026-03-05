@@ -6,6 +6,8 @@
   "audit_title": "Regelfiler & Granskningar",
   "audit_title_audits": "Hantera granskningar",
   "audit_title_rules": "Hantera regelfiler",
+  "audit_filter_label": "Filtrera på diarienummer eller aktörens namn (på alla språk)",
+  "audit_filter_no_results": "Inga granskningar matchar filtret.",
   "audit_back_to_start": "Tillbaka till start",
   "audit_rules_title": "Publicerade regelfiler",
   "audit_rules_draft_title": "Arbetskopior",

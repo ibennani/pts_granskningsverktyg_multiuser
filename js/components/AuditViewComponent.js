@@ -36,6 +36,7 @@ export const AuditViewComponent = {
         this.published_rules = [];
         this.production_rules = [];
         this.audits = [];
+        this.audit_filter_query = '';
         this.router = deps.router;
         this.getState = deps.getState;
         this.NotificationComponent?.clear_global_message?.();
@@ -74,6 +75,7 @@ export const AuditViewComponent = {
         this.handle_edit_rule = this.handle_edit_rule.bind(this);
         this.handle_open_audit = this.handle_open_audit.bind(this);
         this.handle_start_new_audit = this.handle_start_new_audit.bind(this);
+        this.handle_filter_input = this.handle_filter_input.bind(this);
 
         if (this.Helpers?.load_css_safely) {
             await this.Helpers.load_css_safely(this.CSS_PATH, 'AuditViewComponent', {
@@ -95,6 +97,15 @@ export const AuditViewComponent = {
         this._auditListComponent = Object.create(AuditListComponent);
         await this._auditListComponent.init({ deps });
         this.draft_rules = [];
+    },
+
+    handle_filter_input(event) {
+        const value = event && event.target ? event.target.value : '';
+        if (this.audit_filter_query === value) return;
+        this.audit_filter_query = value;
+        if (this.root) {
+            this.render();
+        }
     },
 
     _rule_fingerprint(r) {
@@ -1277,6 +1288,26 @@ export const AuditViewComponent = {
         const title_text = this.audit_mode === 'rules' ? t('audit_title_rules') : this.audit_mode === 'audits' ? t('audit_title_audits') : t('audit_title');
         const title = this.Helpers.create_element('h1', { text_content: title_text });
         header.appendChild(title);
+        if (this.audit_mode === 'audits') {
+            const filter_wrapper = this.Helpers.create_element('div', { class_name: 'audit-filter-wrapper' });
+            const filter_label = this.Helpers.create_element('label', {
+                attributes: { for: 'audit-filter-input' },
+                text_content: t('audit_filter_label')
+            });
+            const filter_input = this.Helpers.create_element('input', {
+                class_name: 'audit-filter-input',
+                attributes: {
+                    id: 'audit-filter-input',
+                    type: 'text',
+                    name: 'audit-filter',
+                    value: this.audit_filter_query || ''
+                }
+            });
+            filter_input.addEventListener('input', this.handle_filter_input);
+            filter_wrapper.appendChild(filter_label);
+            filter_wrapper.appendChild(filter_input);
+            header.appendChild(filter_wrapper);
+        }
         if (this.audit_mode !== 'audits') {
             this.upload_file_input = this.Helpers.create_element('input', {
                 class_name: 'audit-hidden-file-input',
@@ -1434,19 +1465,46 @@ export const AuditViewComponent = {
                 return ca.localeCompare(cb, undefined, { numeric: true });
             });
 
-            const in_progress = this.audits.filter((a) => a.status === 'in_progress');
-            const not_started = this.audits.filter((a) => a.status === 'not_started');
-            const completed = this.audits.filter((a) => a.status === 'locked' || a.status === 'archived');
+            const query_raw = this.audit_filter_query || '';
+            const query = query_raw.trim().toLowerCase();
+
+            const filter_and_sort_audits = (list) => {
+                if (!query) {
+                    return sort_audits(list);
+                }
+                const filtered = list.filter((a) => {
+                    const meta = a.metadata || {};
+                    const case_number = (meta.caseNumber ?? '').toString().trim().toLowerCase();
+                    const actor_name = (meta.actorName ?? '').toString().trim().toLowerCase();
+                    const combined = `${case_number} ${actor_name}`.trim();
+                    if (!combined) return false;
+                    return combined.includes(query);
+                });
+                return sort_audits(filtered);
+            };
+
+            const base_in_progress = this.audits.filter((a) => a.status === 'in_progress');
+            const base_not_started = this.audits.filter((a) => a.status === 'not_started');
+            const base_completed = this.audits.filter((a) => a.status === 'locked' || a.status === 'archived');
+
+            const in_progress = filter_and_sort_audits(base_in_progress);
+            const not_started = filter_and_sort_audits(base_not_started);
+            const completed = filter_and_sort_audits(base_completed);
 
             const section_configs = [
-                { heading_key: 'start_view_audits_heading', audits: sort_audits(in_progress) },
-                { heading_key: 'start_view_new_audits_heading', audits: sort_audits(not_started) },
-                { heading_key: 'start_view_completed_audits_heading', audits: sort_audits(completed) }
+                { heading_key: 'start_view_audits_heading', audits: in_progress },
+                { heading_key: 'start_view_new_audits_heading', audits: not_started },
+                { heading_key: 'start_view_completed_audits_heading', audits: completed }
             ];
+
+            const has_filter = !!query;
+            const visible_section_configs = has_filter
+                ? section_configs.filter((config) => (config.audits || []).length > 0)
+                : section_configs;
 
             right_col.classList.add('audit-audits-sections-container');
 
-            section_configs.forEach((config, index) => {
+            visible_section_configs.forEach((config, index) => {
                 const section = this.Helpers.create_element('section', {
                     class_name: index === 0 ? 'start-view-audits-section' : 'start-view-audits-section start-view-audits-section-following',
                     attributes: { 'aria-labelledby': `${config.heading_key}-heading` }
@@ -1537,6 +1595,14 @@ export const AuditViewComponent = {
                 section.appendChild(table_wrapper);
                 right_col.appendChild(section);
             });
+
+            if (has_filter && visible_section_configs.length === 0) {
+                const no_results = this.Helpers.create_element('p', {
+                    class_name: 'audit-filter-no-results',
+                    text_content: t('audit_filter_no_results')
+                });
+                right_col.appendChild(no_results);
+            }
         } else {
             const audits_heading_row = this.Helpers.create_element('div', {
                 class_name: 'audit-column-heading-row'

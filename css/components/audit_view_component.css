@@ -16,6 +16,33 @@
     margin: 0;
 }
 
+.audit-filter-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 260px;
+    max-width: 320px;
+}
+
+.audit-filter-input {
+    padding: 0.35rem 0.5rem;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    background: var(--input-background-color);
+    font-size: 0.9rem;
+}
+
+.audit-filter-input:focus-visible {
+    outline: 2px solid var(--focus-ring-color, #000);
+    outline-offset: 2px;
+}
+
+.audit-filter-no-results {
+    margin-top: 0.75rem;
+    font-size: 0.9rem;
+    opacity: 0.85;
+}
+
 .audit-header .audit-upload-btn {
     flex-shrink: 0;
 }
