@@ -67,9 +67,22 @@ export const ArchivedRequirementsViewComponent = {
             const meta_p = this.Helpers.create_element('p', { class_name: 'text-muted' });
             const samples_count = Array.isArray(entry.samples) ? entry.samples.length : 0;
             const version_text = entry.originalRuleVersion ? entry.originalRuleVersion : t('archived_requirements_version_unknown');
+
+            let archived_at_text = '';
+            if (typeof entry.archivedAt === 'string') {
+                const d = new Date(entry.archivedAt);
+                if (!Number.isNaN(d.getTime())) {
+                    const year = d.getFullYear();
+                    const month = (d.getMonth() + 1).toString().padStart(2, '0');
+                    const day = d.getDate().toString().padStart(2, '0');
+                    archived_at_text = `${year}-${month}-${day}`;
+                }
+            }
+
             meta_p.textContent = t('archived_requirements_meta', {
                 samples: samples_count,
-                version: version_text
+                version: version_text,
+                archivedAt: archived_at_text
             });
             li.appendChild(meta_p);
 

@@ -95,7 +95,9 @@ function build_full_state(audit_row, rule_set_row) {
         ruleFileOriginalFilename: '',
         version: audit_row.version,
         auditId: audit_row.id,
-        ruleSetId: audit_row.rule_set_id
+        ruleSetId: audit_row.rule_set_id,
+        archivedRequirementResults: Array.isArray(audit_row.archived_requirement_results) ? audit_row.archived_requirement_results : [],
+        lastRulefileUpdateLog: audit_row.last_rulefile_update_log || null
     };
 }
 
@@ -132,7 +134,9 @@ function build_audit_state_without_rule_file(audit_row) {
         ruleFileOriginalFilename: '',
         version: audit_row.version,
         auditId: audit_row.id,
-        ruleSetId: audit_row.rule_set_id
+        ruleSetId: audit_row.rule_set_id,
+        archivedRequirementResults: Array.isArray(audit_row.archived_requirement_results) ? audit_row.archived_requirement_results : [],
+        lastRulefileUpdateLog: audit_row.last_rulefile_update_log || null
     };
 }
 
@@ -357,9 +361,20 @@ router.post('/import', async (req, res) => {
         const metadata = data.auditMetadata || {};
         const samples = data.samples || [];
         const status = data.auditStatus || 'not_started';
+        const archived_requirement_results = Array.isArray(data.archivedRequirementResults) ? data.archivedRequirementResults : [];
+        const last_rulefile_update_log = data.lastRulefileUpdateLog || null;
         const result = await query(
-            'INSERT INTO audits (rule_set_id, rule_file_content, status, metadata, samples, last_updated_by) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-            [null, data.ruleFileContent, status, JSON.stringify(metadata), JSON.stringify(samples), last_updated_by]
+            'INSERT INTO audits (rule_set_id, rule_file_content, status, metadata, samples, archived_requirement_results, last_rulefile_update_log, last_updated_by) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+            [
+                null,
+                data.ruleFileContent,
+                status,
+                JSON.stringify(metadata),
+                JSON.stringify(samples),
+                JSON.stringify(archived_requirement_results),
+                last_rulefile_update_log ? JSON.stringify(last_rulefile_update_log) : null,
+                last_updated_by
+            ]
         );
         const audit = result.rows[0];
         const fullState = build_full_state(audit, null);
@@ -387,7 +402,7 @@ router.delete('/:id', async (req, res) => {
 router.patch('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { metadata, status, samples, ruleFileContent } = req.body;
+        const { metadata, status, samples, ruleFileContent, archivedRequirementResults, lastRulefileUpdateLog } = req.body;
         const last_updated_by = req.headers['x-user-name'] || req.headers['x-user-id'] || null;
         const updates = [];
         const values = [];
@@ -411,6 +426,14 @@ router.patch('/:id', async (req, res) => {
         if (ruleFileContent !== undefined) {
             updates.push(`rule_file_content = $${i++}`);
             values.push(JSON.stringify(ruleFileContent));
+        }
+        if (archivedRequirementResults !== undefined) {
+            updates.push(`archived_requirement_results = $${i++}`);
+            values.push(JSON.stringify(archivedRequirementResults));
+        }
+        if (lastRulefileUpdateLog !== undefined) {
+            updates.push(`last_rulefile_update_log = $${i++}`);
+            values.push(JSON.stringify(lastRulefileUpdateLog));
         }
         updates.push(`version = version + 1`);
         if (last_updated_by !== null) {

@@ -56,6 +56,7 @@ import { AuditActionsViewComponent } from './components/AuditActionsViewComponen
 import { AllRequirementsViewComponent } from './components/AllRequirementsViewComponent.js';
 import { AuditProblemsViewComponent } from './components/AuditProblemsViewComponent.js';
 import { ArchivedRequirementsViewComponent } from './components/ArchivedRequirementsViewComponent.js';
+import { RulefileChangeLogViewComponent } from './components/RulefileChangeLogViewComponent.js';
 import { AuditImagesViewComponent } from './components/AuditImagesViewComponent.js';
 import { AuditViewComponent } from './components/AuditViewComponent.js';
 import { StartViewComponent } from './components/StartViewComponent.js';
@@ -1134,6 +1135,7 @@ window.DraftManager = DraftManager;
             case 'audit_problems': ComponentClass = AuditProblemsViewComponent; break;
             case 'audit_images': ComponentClass = AuditImagesViewComponent; break;
             case 'archived_requirements': ComponentClass = ArchivedRequirementsViewComponent; break;
+            case 'rulefile_change_log': ComponentClass = RulefileChangeLogViewComponent; break;
             case 'requirement_list': ComponentClass = RequirementListComponent; break;
             case 'requirement_audit': ComponentClass = RequirementAuditComponent; break;
             case 'update_rulefile': ComponentClass = UpdateRulefileViewComponent; break; 

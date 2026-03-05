@@ -341,5 +341,15 @@ export function apply_rule_file_update(current_audit_state, new_rule_file_conten
         new_reconciled_state.archivedRequirementResults = existing_archived;
     }
 
+    // Spara en enkel ändringslogg för den senaste regelfilsuppdateringen så att den kan visas i efterhand.
+    const previous_version = current_audit_state?.ruleFileContent?.metadata?.version || null;
+    const new_version = new_rule_file_content?.metadata?.version || null;
+    new_reconciled_state.lastRulefileUpdateLog = {
+        createdAt: new Date().toISOString(),
+        previousRuleVersion: previous_version,
+        newRuleVersion: new_version,
+        report: report
+    };
+
     return new_reconciled_state;
 }

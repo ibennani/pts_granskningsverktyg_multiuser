@@ -386,6 +386,17 @@ export const AuditActionsViewComponent = {
             }));
         }
 
+        if (state.lastRulefileUpdateLog && state.lastRulefileUpdateLog.report) {
+            status_actions.appendChild(this.create_status_action_item({
+                label: t('audit_actions_view_rulefile_change_log_label'),
+                description: t('audit_actions_view_rulefile_change_log_description'),
+                on_click: () => this.router('rulefile_change_log'),
+                variant: 'button-default',
+                icon_name: 'info',
+                id_suffix: 'view-rulefile-change-log'
+            }));
+        }
+
         if (state.auditStatus === 'locked') {
             status_actions.appendChild(this.create_status_action_item({
                 label: t('unlock_audit'),

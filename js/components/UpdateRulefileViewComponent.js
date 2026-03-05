@@ -1,6 +1,7 @@
 // js/components/UpdateRulefileViewComponent.js
 import { migrate_rulefile_to_new_structure } from '../logic/rulefile_migration_logic.js';
 import { get_rule } from '../api/client.js';
+import { render_rulefile_change_log } from '../logic/rulefile_change_log_renderer.js';
 
 export const UpdateRulefileViewComponent = {
     CSS_PATH: 'css/components/update_rulefile_view.css',
@@ -59,7 +60,12 @@ export const UpdateRulefileViewComponent = {
         const t = this.get_t_internally();
         if (this.SaveAuditLogic?.save_audit_to_json_file) {
             const show_msg = (msg, type) => this.NotificationComponent?.show_global_message?.(msg, type);
-            this.SaveAuditLogic.save_audit_to_json_file(this.getState(), t, show_msg);
+            this.SaveAuditLogic.save_audit_to_json_file(
+                this.getState(),
+                t,
+                show_msg,
+                { backup_suffix_key: 'filename_backup_suffix' }
+            );
             this._backup_saved = true;
             this.current_step = this.VIEW_STEPS.UPLOAD;
             this.render();
@@ -137,6 +143,54 @@ export const UpdateRulefileViewComponent = {
         if (!this._analysis_ready || !this.staged_analysis_report || !this.staged_new_rule_file_content) return;
         this.current_step = this.VIEW_STEPS.CONFIRM;
         this.render();
+    },
+
+    handle_download_change_log_click() {
+        const t = this.get_t_internally();
+        if (!this.staged_analysis_report || !this.staged_new_rule_file_content) return;
+
+        const current_state = this.getState();
+        const previous_version = (current_state?.ruleFileContent?.metadata?.version || '').trim() || t('update_rulefile_version_unknown');
+        const new_version = (this.staged_new_rule_file_content?.metadata?.version || '').trim() || t('update_rulefile_version_unknown');
+
+        const report = this.staged_analysis_report;
+        const added = Array.isArray(report.added_requirements) ? report.added_requirements : [];
+        const removed = Array.isArray(report.removed_requirements) ? report.removed_requirements : [];
+        const updated = Array.isArray(report.updated_requirements) ? report.updated_requirements : [];
+
+        const lines = [];
+        lines.push(t('update_rulefile_change_log_title'));
+        lines.push('');
+        lines.push(`${t('update_rulefile_version_current_prefix')}${previous_version}`);
+        lines.push(`${t('update_rulefile_version_new_prefix')}${new_version}`);
+        lines.push('');
+        lines.push(`${t('update_rulefile_change_log_section_added')} (${added.length})`);
+        added.forEach((item) => {
+            lines.push(`- ${item.title || item.id}`);
+        });
+        lines.push('');
+        lines.push(`${t('update_rulefile_change_log_section_removed')} (${removed.length})`);
+        removed.forEach((item) => {
+            lines.push(`- ${item.title || item.id}`);
+        });
+        lines.push('');
+        lines.push(`${t('update_rulefile_change_log_section_updated')} (${updated.length})`);
+        updated.forEach((item) => {
+            lines.push(`- ${item.title || item.id}`);
+        });
+
+        const text_content = lines.join('\n');
+        const blob = new Blob([text_content], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const now = new Date();
+        const date_str = `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}`;
+        a.download = `rulefile_change_log_${date_str}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     },
     
     handle_confirm_update_click() {
@@ -319,37 +373,42 @@ export const UpdateRulefileViewComponent = {
 
     render_confirm_step(report) {
         const t = this.get_t_internally();
-        const old_reqs = this.getState().ruleFileContent.requirements;
+        const state = this.getState();
+        const old_reqs = state.ruleFileContent.requirements || {};
+        const new_reqs = this.staged_new_rule_file_content?.requirements || {};
 
-        const confirm_intro = this.Helpers.create_element('p', { class_name: 'view-intro-text', text_content: t('update_rulefile_confirm_intro') });
+        const confirm_intro = this.Helpers.create_element('p', {
+            class_name: 'view-intro-text',
+            text_content: t('update_rulefile_confirm_intro')
+        });
         confirm_intro.setAttribute('aria-live', 'polite');
         this.plate_element_ref.appendChild(confirm_intro);
 
-        const new_reqs = this.staged_new_rule_file_content?.requirements || {};
-        const render_report_section = (title_key, items, use_old_reqs = true) => {
-            const section = this.Helpers.create_element('div', { class_name: 'report-section' });
-            section.appendChild(this.Helpers.create_element('h3', { text_content: `${t(title_key)} (${items.length})` }));
-            if (items.length > 0) {
-                const ul = this.Helpers.create_element('ul', { class_name: 'report-list' });
-                items.forEach(item => {
-                    const ref_source = use_old_reqs ? old_reqs[item.id] : new_reqs[item.id];
-                    const ref_text = ref_source?.standardReference?.text;
-                    let display_text = item.title || item.id;
-                    if (ref_text) {
-                        display_text += ` (${ref_text})`;
-                    }
-                    ul.appendChild(this.Helpers.create_element('li', { text_content: this.Helpers.escape_html(display_text) }));
-                });
-                section.appendChild(ul);
-            } else {
-                section.appendChild(this.Helpers.create_element('p', { class_name: 'text-muted', text_content: t('no_items_in_category') }));
-            }
-            return section;
-        };
+        const change_log_title = this.Helpers.create_element('h2', {
+            text_content: t('update_rulefile_change_log_title'),
+            style: { 'font-size': '1.2rem', 'margin-top': '1.5rem' }
+        });
+        this.plate_element_ref.appendChild(change_log_title);
 
-        this.plate_element_ref.appendChild(render_report_section('update_report_updated_reqs_title', report.updated_requirements || []));
-        this.plate_element_ref.appendChild(render_report_section('update_report_removed_reqs_title', report.removed_requirements || []));
-        this.plate_element_ref.appendChild(render_report_section('update_report_added_reqs_title', report.added_requirements || [], false));
+        const change_log_intro = this.Helpers.create_element('p', {
+            class_name: 'view-intro-text',
+            text_content: t('update_rulefile_change_log_intro')
+        });
+        this.plate_element_ref.appendChild(change_log_intro);
+
+        const log_container = this.Helpers.create_element('div', {
+            class_name: 'rulefile-change-log'
+        });
+        this.plate_element_ref.appendChild(log_container);
+
+        render_rulefile_change_log({
+            container: log_container,
+            t,
+            Helpers: this.Helpers,
+            report: report,
+            old_requirements: old_reqs,
+            new_requirements: new_reqs
+        });
 
         const confirm_button = this.Helpers.create_element('button', {
             class_name: ['button', 'button-success'],
@@ -357,15 +416,21 @@ export const UpdateRulefileViewComponent = {
         });
         confirm_button.addEventListener('click', () => this.handle_confirm_update_click());
 
+        const download_log_button = this.Helpers.create_element('button', {
+            class_name: ['button', 'button-default'],
+            text_content: t('update_rulefile_download_change_log_button')
+        });
+        download_log_button.addEventListener('click', () => this.handle_download_change_log_click());
+
         const cancel_button = this.Helpers.create_element('button', {
             class_name: ['button', 'button-default'],
             text_content: t('update_rulefile_continue_with_old')
         });
         cancel_button.addEventListener('click', () => this.router('audit_overview'));
-        
+
         const actions_div = this.Helpers.create_element('div', { class_name: 'form-actions', style: { 'margin-top': '2rem' } });
-        
-        actions_div.append(confirm_button, cancel_button);
+
+        actions_div.append(confirm_button, download_log_button, cancel_button);
         this.plate_element_ref.appendChild(actions_div);
     },
 

@@ -22,11 +22,11 @@ function state_to_patch(state) {
         status: normalize_status_for_server(state.auditStatus || 'not_started'),
         samples: state.samples || []
     };
-    // Inkludera regelfilinnehåll så att "Uppdatera regelfil" och liknande persisteras i audits.rule_file_content
+    // Inkludera regelfilinnehåll så att \"Uppdatera regelfil\" och liknande persisteras i audits.rule_file_content
     if (state.ruleFileContent) {
         patch.ruleFileContent = state.ruleFileContent;
     }
-    if (Array.isArray(state.archivedRequirementResults) && state.archivedRequirementResults.length > 0) {
+    if (Array.isArray(state.archivedRequirementResults)) {
         patch.archivedRequirementResults = state.archivedRequirementResults;
     }
     return patch;
