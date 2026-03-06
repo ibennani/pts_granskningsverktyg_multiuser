@@ -15,6 +15,7 @@ import cron from 'node-cron';
 import usersRouter from './routes/users.js';
 import rulesRouter from './routes/rules.js';
 import auditsRouter from './routes/audits.js';
+import backupRouter from './routes/backup.js';
 import { run_backup } from './backup/audit_backup.js';
 
 const app = express();
@@ -33,6 +34,7 @@ app.use((req, res, next) => {
 app.use('/api/users', usersRouter);
 app.use('/api/rules', rulesRouter);
 app.use('/api/audits', auditsRouter);
+app.use('/api/backup', backupRouter);
 
 app.get('/api/health', async (_req, res) => {
     try {
