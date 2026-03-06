@@ -34,46 +34,46 @@ export const RulefileSectionsViewComponent = {
         const sections = {
             general: {
                 id: 'general',
-                title: t('rulefile_section_general_title') || 'Allmän information',
+                title: t('rulefile_section_general_title'),
                 editRoute: 'rulefile_sections',
                 editSection: 'general',
                 isEditable: true
             },
             publisher_source: {
                 id: 'publisher_source',
-                title: t('rulefile_section_publisher_source_title') || 'Utgivare & källa',
+                title: t('rulefile_section_publisher_source_title'),
                 editRoute: 'rulefile_metadata_edit',
                 editSection: 'publisher_source'
             },
             classifications: {
                 id: 'classifications',
-                title: t('rulefile_section_classifications_title') || 'Klassificeringar',
+                title: t('rulefile_section_classifications_title'),
                 editRoute: 'rulefile_sections',
                 editSection: 'classifications'
             },
             page_types: {
                 id: 'page_types',
-                title: t('rulefile_metadata_section_page_types') || 'Sidtyper',
+                title: t('rulefile_metadata_section_page_types'),
                 editRoute: 'rulefile_sections',
                 editSection: 'page_types',
                 isEditable: true
             },
             content_types: {
                 id: 'content_types',
-                title: t('rulefile_metadata_section_content_types') || 'Innehållstyper',
+                title: t('rulefile_metadata_section_content_types'),
                 editRoute: 'rulefile_sections',
                 editSection: 'content_types',
                 isEditable: true
             },
             report_template: {
                 id: 'report_template',
-                title: t('rulefile_section_report_template_title') || 'Rapportmall',
+                title: t('rulefile_section_report_template_title'),
                 editRoute: 'rulefile_sections',
                 editSection: 'report_template'
             },
             info_blocks_order: {
                 id: 'info_blocks_order',
-                title: t('rulefile_section_info_blocks_order_title') || 'Informationsblock',
+                title: t('rulefile_section_info_blocks_order_title'),
                 editRoute: 'rulefile_sections',
                 editSection: 'info_blocks_order',
                 isEditable: true
@@ -150,7 +150,7 @@ export const RulefileSectionsViewComponent = {
                 class_name: ['button', 'button-secondary', 'rulefile-sections-edit-button'],
                 attributes: {
                     type: 'button',
-                    'aria-label': t('rulefile_sections_edit_info_blocks_aria') || 'Redigera informationsblock'
+                    'aria-label': t('rulefile_sections_edit_info_blocks_aria')
                 },
                 html_content: `<span>${t('edit_button_label')}</span>` +
                               (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('edit') : '')
@@ -166,7 +166,7 @@ export const RulefileSectionsViewComponent = {
         if (section_config.id === 'content_types' && is_editing) {
             const intro = this.Helpers.create_element('p', {
                 class_name: 'field-hint rulefile-sections-header-intro',
-                text_content: t('rulefile_metadata_content_types_intro') || 'Lägg till eller redigera huvudkategorier och underkategorier.\nEndast underkategorier har beskrivningar.\nUnderkategorier kan kopplas till krav.'
+                text_content: t('rulefile_metadata_content_types_intro')
             });
             header_wrapper.appendChild(intro);
         }
@@ -174,13 +174,13 @@ export const RulefileSectionsViewComponent = {
         if (section_config.id === 'info_blocks_order') {
             const intro = this.Helpers.create_element('p', {
                 class_name: 'field-hint rulefile-sections-header-intro',
-                text_content: t('rulefile_info_blocks_order_intro') || 'Här väljer du vad du vill kalla de olika informationsblock som visas överst i alla krav, ovanför kontrollpunkterna. Det går även att ändra i vilken ordning informationsblocken visas.'
+                text_content: t('rulefile_info_blocks_order_intro')
             });
             header_wrapper.appendChild(intro);
         }
 
         if (section_config.id === 'page_types') {
-            const intro_text = t('rulefile_page_types_intro') || 'Här definierar du vilka typer av sidor eller vyer som kan granskas i dina stickprov.';
+            const intro_text = t('rulefile_page_types_intro');
             const intro_paragraphs = intro_text.split(/\n\n+/).filter(p => p.trim());
             intro_paragraphs.forEach(paragraph => {
                 const p = this.Helpers.create_element('p', {
@@ -282,7 +282,7 @@ export const RulefileSectionsViewComponent = {
     _create_list(items, empty_key, class_name = 'metadata-list') {
         const t = this.Translation.t;
         if (!Array.isArray(items) || items.length === 0) {
-            return this.Helpers.create_element('p', { class_name: 'metadata-empty', text_content: t(empty_key) || 'Inget innehåll' });
+            return this.Helpers.create_element('p', { class_name: 'metadata-empty', text_content: t(empty_key) });
         }
         const ul = this.Helpers.create_element('ul', { class_name });
         items.filter(Boolean).forEach(item => {
@@ -520,13 +520,13 @@ export const RulefileSectionsViewComponent = {
 
         // H2 och kort beskrivning ovanför listan
         const list_heading = this.Helpers.create_element('h2', { 
-            text_content: t('rulefile_page_types_current_list_title') || 'Aktuella sidtyper',
+            text_content: t('rulefile_page_types_current_list_title'),
             class_name: 'page-types-list-heading'
         });
         section.appendChild(list_heading);
         const list_intro = this.Helpers.create_element('p', {
             class_name: 'field-hint rulefile-sections-header-intro page-types-list-intro',
-            text_content: t('rulefile_page_types_current_list_intro') || 'Nedan visas de sidtyper som finns i regelfilen.'
+            text_content: t('rulefile_page_types_current_list_intro')
         });
         section.appendChild(list_intro);
 
@@ -692,7 +692,7 @@ export const RulefileSectionsViewComponent = {
                 if (section_data.required) {
                     const required_tag = this.Helpers.create_element('span', { 
                         class_name: 'metadata-tag', 
-                        text_content: t('report_section_required') || 'Obligatorisk' 
+                        text_content: t('report_section_required')
                     });
                     header.appendChild(required_tag);
                 }
@@ -716,7 +716,7 @@ export const RulefileSectionsViewComponent = {
         const section = this.Helpers.create_element('section', { class_name: 'rulefile-section-content' });
         section.appendChild(this.Helpers.create_element('p', {
             class_name: 'rulefile-section-coming-soon',
-            text_content: t('rulefile_section_coming_soon') || 'Denna funktion kommer senare'
+            text_content: t('rulefile_section_coming_soon')
         }));
         return section;
     },

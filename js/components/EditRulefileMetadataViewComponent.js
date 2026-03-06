@@ -828,7 +828,7 @@ export const EditRulefileMetadataViewComponent = {
     _create_report_template_section(reportTemplate, metadata) {
         const t = this.Translation.t;
         const section = this.Helpers.create_element('section', { class_name: 'form-section' });
-        section.appendChild(this.Helpers.create_element('h2', { text_content: t('report_template_sections_title') || 'Rapportmall - Sektioner' }));
+        section.appendChild(this.Helpers.create_element('h2', { text_content: t('report_template_sections_title') }));
         
         const current_state = this.getState();
         const block_order = metadata?.blockOrders?.reportSections || [];
@@ -890,7 +890,7 @@ export const EditRulefileMetadataViewComponent = {
             // Section name: synlig label (ingen placeholder). Fältet hade ingen label – texten används som label.
             const name_label = this.Helpers.create_element('label', {
                 attributes: { for: `section_${section_id}_name` },
-                text_content: t('report_section_name_placeholder') || 'Sektionsnamn'
+                text_content: t('report_section_name_placeholder')
             });
             const name_input = this.Helpers.create_element('input', {
                 id: `section_${section_id}_name`,
@@ -911,7 +911,7 @@ export const EditRulefileMetadataViewComponent = {
             if (section_data.required === true && sections[section_id]) {
                 const required_text = this.Helpers.create_element('span', {
                     class_name: 'report-section-required-label',
-                    text_content: t('report_section_required') || 'Obligatorisk'
+                    text_content: t('report_section_required')
                 });
                 header.appendChild(required_text);
             } else {
@@ -929,7 +929,7 @@ export const EditRulefileMetadataViewComponent = {
                     }
                 });
                 required_label.appendChild(required_checkbox);
-                required_label.appendChild(document.createTextNode(' ' + (t('report_section_required') || 'Obligatorisk')));
+                required_label.appendChild(document.createTextNode(' ' + t('report_section_required')));
                 header.appendChild(required_label);
             }
             
@@ -941,7 +941,7 @@ export const EditRulefileMetadataViewComponent = {
                     html_content: this.Helpers.get_icon_svg('delete', [], 16)
                 });
                 delete_btn.addEventListener('click', () => {
-                    const warning_text = t('confirm_delete_report_section') || 'Är du säker på att du vill ta bort denna sektion?';
+                    const warning_text = t('confirm_delete_report_section');
                     if (window.show_confirm_delete_modal) {
                         window.show_confirm_delete_modal({
                             warning_text,
@@ -966,7 +966,7 @@ export const EditRulefileMetadataViewComponent = {
             const content_group = this.Helpers.create_element('div', { class_name: 'form-group' });
             const content_label = this.Helpers.create_element('label', {
                 attributes: { 'for': `section_${section_id}_content` },
-                text_content: t('report_section_content') || 'Innehåll (Markdown)'
+                text_content: t('report_section_content')
             });
             const content_textarea = this.Helpers.create_element('textarea', {
                 class_name: 'form-control',
@@ -995,7 +995,7 @@ export const EditRulefileMetadataViewComponent = {
         add_section_btn.addEventListener('click', () => {
             const new_id = `section-${this.Helpers.generate_uuid_v4().substring(0, 8)}`;
             sections[new_id] = {
-                name: t('new_report_section') || 'Ny sektion',
+                name: t('new_report_section'),
                 required: false,
                 content: ''
             };
@@ -1258,7 +1258,7 @@ export const EditRulefileMetadataViewComponent = {
             this.router('rulefile_metadata_view');
         } catch (err) {
             this.NotificationComponent.show_global_message?.(
-                err?.message || t('rulefile_metadata_edit_save_error') || 'Kunde inte spara',
+                err?.message || t('rulefile_metadata_edit_save_error'),
                 'error'
             );
         }

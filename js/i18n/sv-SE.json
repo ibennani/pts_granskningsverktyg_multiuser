@@ -796,6 +796,7 @@
   "rulefile_metadata_edit_title": "Redigera regelfilens metadata",
   "rulefile_metadata_edit_intro": "Uppdatera uppgifterna nedan och spara när du är klar.",
   "rulefile_metadata_edit_saved": "Regelfilens metadata har uppdaterats.",
+  "rulefile_metadata_edit_save_error": "Kunde inte spara regelfilens metadata.",
   "rulefile_metadata_save_metadata": "Spara metadata",
   "rulefile_metadata_view_without_saving": "Visa metadata utan att spara",
   "back_without_saving": "Tillbaka utan att spara",

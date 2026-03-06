@@ -216,7 +216,7 @@ export const EditInfoBlocksSectionComponent = {
         const input_id = `info_block_name_${new_id}`;
         const name_label = this.Helpers.create_element('label', {
             attributes: { for: input_id },
-            text_content: t('rulefile_info_blocks_order_name_label') || 'Namn',
+            text_content: t('rulefile_info_blocks_order_name_label'),
             class_name: 'info-blocks-order-name-label'
         });
         const text_input = this.Helpers.create_element('input', {
@@ -235,7 +235,7 @@ export const EditInfoBlocksSectionComponent = {
         const up_btn = this.Helpers.create_element('button', {
             class_name: ['button', 'button-small', 'button-default'],
             attributes: { type: 'button', 'data-action': 'move-info-block-up', 'aria-label': block_label },
-            html_content: `<span>${t('rulefile_metadata_move_up_text') || 'Flytta upp'}</span>` +
+            html_content: `<span>${t('rulefile_metadata_move_up_text')}</span>` +
                          (this.Helpers.get_icon_svg ? `<span aria-hidden="true">${this.Helpers.get_icon_svg('arrow_upward', ['currentColor'], 16)}</span>` : '')
         });
         up_btn.addEventListener('click', (e) => {
@@ -257,7 +257,7 @@ export const EditInfoBlocksSectionComponent = {
         const delete_btn = this.Helpers.create_element('button', {
             class_name: ['button', 'button-small', 'button-danger'],
             attributes: { type: 'button', 'aria-label': block_label },
-            html_content: `<span>${t('rulefile_metadata_delete_button_text') || 'Ta bort'}</span>` +
+            html_content: `<span>${t('rulefile_metadata_delete_button_text')}</span>` +
                          (this.Helpers.get_icon_svg ? `<span aria-hidden="true">${this.Helpers.get_icon_svg('delete', ['currentColor'], 16)}</span>` : '')
         });
         delete_btn.addEventListener('click', () => {
@@ -294,7 +294,7 @@ export const EditInfoBlocksSectionComponent = {
                 const down_btn = this.Helpers.create_element('button', {
                     class_name: ['button', 'button-small', 'button-default'],
                     attributes: { type: 'button', 'data-action': 'move-info-block-down', 'aria-label': block_label },
-                    html_content: `<span>${t('rulefile_metadata_move_down_text') || 'Flytta ner'}</span>` +
+                    html_content: `<span>${t('rulefile_metadata_move_down_text')}</span>` +
                                  (this.Helpers.get_icon_svg ? `<span aria-hidden="true">${this.Helpers.get_icon_svg('arrow_downward', ['currentColor'], 16)}</span>` : '')
                 });
                 down_btn.addEventListener('click', (e) => {
@@ -350,7 +350,7 @@ export const EditInfoBlocksSectionComponent = {
         const editor = this.Helpers.create_element('div', { class_name: 'info-blocks-order-editor' });
         const info_text = this.Helpers.create_element('p', {
             class_name: 'field-hint',
-            text_content: t('rulefile_info_blocks_order_instruction') || 'Ändra ordningen genom att klicka på pilarna. Denna ordning används för alla krav i regelfilen.'
+            text_content: t('rulefile_info_blocks_order_instruction')
         });
         editor.appendChild(info_text);
 
@@ -378,7 +378,7 @@ export const EditInfoBlocksSectionComponent = {
             const input_id = `info_block_name_${blockId}`;
             const name_label = this.Helpers.create_element('label', {
                 attributes: { for: input_id },
-                text_content: t('rulefile_info_blocks_order_name_label') || 'Namn',
+                text_content: t('rulefile_info_blocks_order_name_label'),
                 class_name: 'info-blocks-order-name-label'
             });
             const display_name = blockId.startsWith('custom_')
@@ -411,8 +411,8 @@ export const EditInfoBlocksSectionComponent = {
                 const up_aria = block_label === t('rulefile_info_blocks_unnamed_block')
                     ? block_label
                     : (up_target_index === 0
-                        ? (t('rulefile_info_blocks_move_up_to_top') || 'Flytta till översta raden')
-                        : (t('rulefile_info_blocks_move_up_to_row', { row: up_target_index + 1 }) || `Flytta upp till rad ${up_target_index + 1}`));
+                        ? t('rulefile_info_blocks_move_up_to_top')
+                        : t('rulefile_info_blocks_move_up_to_row', { row: up_target_index + 1 }));
                 const up_btn = this.Helpers.create_element('button', {
                     class_name: ['button', 'button-small', 'button-default'],
                     attributes: {
@@ -421,7 +421,7 @@ export const EditInfoBlocksSectionComponent = {
                         'data-index': String(index),
                         'aria-label': up_aria
                     },
-                    html_content: `<span>${t('rulefile_metadata_move_up_text') || 'Flytta upp'}</span>` +
+                    html_content: `<span>${t('rulefile_metadata_move_up_text')}</span>` +
                                  (this.Helpers.get_icon_svg ? `<span aria-hidden="true">${this.Helpers.get_icon_svg('arrow_upward', ['currentColor'], 16)}</span>` : '')
                 });
                 up_btn.addEventListener('click', (e) => {
@@ -444,8 +444,8 @@ export const EditInfoBlocksSectionComponent = {
                 const down_aria = block_label === t('rulefile_info_blocks_unnamed_block')
                     ? block_label
                     : (down_target_index === total - 1
-                        ? (t('rulefile_info_blocks_move_down_to_bottom') || 'Flytta till nedersta raden')
-                        : (t('rulefile_info_blocks_move_down_to_row', { row: down_target_index + 1 }) || `Flytta ner till rad ${down_target_index + 1}`));
+                        ? t('rulefile_info_blocks_move_down_to_bottom')
+                        : t('rulefile_info_blocks_move_down_to_row', { row: down_target_index + 1 }));
                 const down_btn = this.Helpers.create_element('button', {
                     class_name: ['button', 'button-small', 'button-default'],
                     attributes: {
@@ -454,7 +454,7 @@ export const EditInfoBlocksSectionComponent = {
                         'data-index': String(index),
                         'aria-label': down_aria
                     },
-                    html_content: `<span>${t('rulefile_metadata_move_down_text') || 'Flytta ner'}</span>` +
+                    html_content: `<span>${t('rulefile_metadata_move_down_text')}</span>` +
                                  (this.Helpers.get_icon_svg ? `<span aria-hidden="true">${this.Helpers.get_icon_svg('arrow_downward', ['currentColor'], 16)}</span>` : '')
                 });
                 down_btn.addEventListener('click', (e) => {
@@ -477,9 +477,9 @@ export const EditInfoBlocksSectionComponent = {
                     type: 'button',
                     'aria-label': block_label === t('rulefile_info_blocks_unnamed_block')
                         ? block_label
-                        : (t('rulefile_metadata_delete_button_text') || 'Ta bort')
+                        : t('rulefile_metadata_delete_button_text')
                 },
-                html_content: `<span>${t('rulefile_metadata_delete_button_text') || 'Ta bort'}</span>` +
+                html_content: `<span>${t('rulefile_metadata_delete_button_text')}</span>` +
                              (this.Helpers.get_icon_svg ? `<span aria-hidden="true">${this.Helpers.get_icon_svg('delete', ['currentColor'], 16)}</span>` : '')
             });
             delete_btn.addEventListener('click', () => {
@@ -576,7 +576,7 @@ export const EditInfoBlocksSectionComponent = {
             this._save_info_blocks_order(order_from_dom, block_names, true);
             this.edit_baseline = null;
             this.NotificationComponent.show_global_message?.(
-                t('rulefile_info_blocks_order_saved') || 'Informationsblock sparad',
+                t('rulefile_info_blocks_order_saved'),
                 'success'
             );
             sessionStorage.setItem('focusAfterLoad', '.rulefile-sections-header h1');
