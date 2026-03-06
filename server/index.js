@@ -16,7 +16,8 @@ import usersRouter from './routes/users.js';
 import rulesRouter from './routes/rules.js';
 import auditsRouter from './routes/audits.js';
 import backupRouter from './routes/backup.js';
-import { run_backup } from './backup/audit_backup.js';
+import path from 'path';
+import { run_backup, get_backup_dir } from './backup/audit_backup.js';
 
 const app = express();
 const PORT = process.env.API_PORT || 3000;
@@ -35,6 +36,7 @@ app.use('/api/users', usersRouter);
 app.use('/api/rules', rulesRouter);
 app.use('/api/audits', auditsRouter);
 app.use('/api/backup', backupRouter);
+app.use('/backup', express.static(get_backup_dir()));
 
 app.get('/api/health', async (_req, res) => {
     try {

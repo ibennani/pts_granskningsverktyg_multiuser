@@ -23,7 +23,7 @@ function server_t_func(key) {
     return SERVER_T_KEYS[key] ?? key;
 }
 
-function get_backup_dir() {
+export function get_backup_dir() {
     const base = process.env.GV_BACKUP_DIR || path.join(process.cwd(), 'backup');
     return path.resolve(base);
 }
