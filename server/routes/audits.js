@@ -3,6 +3,7 @@ import express from 'express';
 import { query } from '../db.js';
 import { calculate_overall_audit_progress } from '../../js/audit_logic.js';
 import { calculateQualityScore } from '../../js/logic/ScoreCalculator.js';
+import { save_archive_for_audit } from '../backup/audit_backup.js';
 
 const router = express.Router();
 
@@ -459,6 +460,15 @@ router.patch('/:id', async (req, res) => {
             ruleSet = ruleResult.rows[0] || null;
         }
         const fullState = build_full_state(audit, ruleSet);
+
+        if (status === 'locked') {
+            setImmediate(() => {
+                save_archive_for_audit(fullState).catch((err) => {
+                    console.warn('[audits] Arkivering vid låsning misslyckades:', err.message);
+                });
+            });
+        }
+
         res.json(fullState);
     } catch (err) {
         console.error('[audits] PATCH error:', err.message, err.stack);
