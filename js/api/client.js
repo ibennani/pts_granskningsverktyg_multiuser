@@ -169,6 +169,15 @@ export async function export_rule(id) {
     return api_get(`/rules/${id}/export`);
 }
 
+// Backup-API
+export async function get_backup_overview() {
+    return api_get('/backup/list');
+}
+
+export async function get_backups_for_audit(audit_id) {
+    return api_get(`/backup/${encodeURIComponent(audit_id)}`);
+}
+
 export async function get_audits(status) {
     const q = status ? `?status=${encodeURIComponent(status)}` : '';
     return api_get(`/audits${q}`);
