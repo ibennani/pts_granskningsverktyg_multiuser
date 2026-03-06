@@ -68,7 +68,7 @@ function count_business_days(startDate, endDate) {
     return count;
 }
 
-function build_full_state(audit_row, rule_set_row) {
+export function build_full_state(audit_row, rule_set_row) {
     let ruleFileContent = audit_row?.rule_file_content
         ?? (rule_set_row
             ? (rule_set_row.published_content ?? rule_set_row.content)
