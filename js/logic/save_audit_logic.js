@@ -23,10 +23,11 @@ function _generate_filename(audit_data, t_func, options = {}) {
         actor_name_part = sanitized_name || t_func('filename_fallback_actor');
     }
 
-    // Diarienummer först i filnamnet om det finns (t.ex. 25-1156)
+    // Diarienummer först i filnamnet om det finns (t.ex. 25-1156).
+    // Filnamnsprefixet ska motsvara den angivna textsträngen, vi tar bara bort tecken som inte är tillåtna i filnamn.
     const case_number = (audit_data?.auditMetadata?.caseNumber || '').trim();
-    const sanitized_case_number = case_number ? case_number.replace(/[^a-z0-9A-Z-]/g, '') : '';
-    const case_number_prefix = sanitized_case_number ? `${sanitized_case_number}_` : '';
+    const safe_case_number = case_number.replace(/[<>:"/\\|?*\x00-\x1F]/g, '');
+    const case_number_prefix = safe_case_number ? `${safe_case_number}_` : '';
 
     let base_name = `${case_number_prefix}${filename_prefix}_${actor_name_part}_${datetime_str}`;
 
