@@ -14,16 +14,31 @@ export function get_current_user_name() {
         (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('gv_current_user_name'))) || '';
 }
 
+/**
+ * Löser en relativ CSS/asset-sökväg mot sidans pathname så att /v2 inkluderas på servern.
+ * Lokalt (t.ex. / eller /index.html) blir base "/", på servern (t.ex. /v2/) blir base "/v2/".
+ */
+export function resolve_asset_href(href) {
+    if (typeof window === 'undefined' || !window.location || !href) return href;
+    if (href.startsWith('http:') || href.startsWith('https:') || href.startsWith('//')) return href;
+    const pathname = (window.location.pathname || '/').split('#')[0].split('?')[0];
+    const base = pathname.endsWith('/') ? pathname : pathname + '/';
+    if (href.startsWith('/')) return href;
+    const relative = href.startsWith('./') ? href.slice(2) : href;
+    return base + relative;
+}
+
 export function load_css(href, options = {}) {
     return new Promise((resolve, reject) => {
-        if (document.querySelector(`link[href="${href}"]`)) {
+        const resolved_href = resolve_asset_href(href);
+        if (document.querySelector(`link[href="${resolved_href}"]`)) {
             resolve();
             return;
         }
         
         const link = document.createElement('link');
         link.rel = 'stylesheet';
-        link.href = href;
+        link.href = resolved_href;
         
         // Timeout för CSS-laddning
         const timeout = options.timeout || 10000; // 10 sekunder default
