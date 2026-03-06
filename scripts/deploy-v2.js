@@ -91,6 +91,40 @@ async function main() {
             await scpFile(nginxConf, `${remotePath}/nginx-ux-granskning.conf`);
         }
 
+        // Bygg fullchain-cert i deploy-mappen (utan sudo) för att undvika att vissa klienter
+        // inte kan verifiera cert-kedjan vid t.ex. WebSocket (wss).
+        //
+        // Vi hämtar servercertet via TLS (Node) och kombinerar med den befintliga kedjefilen
+        // som finns på servern. Resultatet blir: leaf + intermediate(s).
+        //
+        // OBS: Kedjefilen på servern heter "pts-ad-chain.crt_används-ej" men används här som källa.
+        try {
+            console.log('[deploy] Bygger fullchain-cert för nginx...');
+            await sshOrRun(
+                [
+                    `mkdir -p ${remotePath}/ssl`,
+                    // Skriv leaf-cert (PEM) från live-TLS
+                    `node -e "const tls=require('tls');const fs=require('fs');` +
+                        `const s=tls.connect({host:'ux-granskningsverktyg.pts.ad',port:443,servername:'ux-granskningsverktyg.pts.ad',rejectUnauthorized:false},()=>{` +
+                        `const c=s.getPeerCertificate(true);` +
+                        `if(!c||!c.raw){console.error('Kunde inte läsa servercert (raw)');process.exit(1);}` +
+                        `const b64=c.raw.toString('base64');` +
+                        `const pem='-----BEGIN CERTIFICATE-----\\n'+b64.match(/.{1,64}/g).join('\\n')+'\\n-----END CERTIFICATE-----\\n';` +
+                        `fs.writeFileSync('${remotePath}/ssl/pts-ad-leaf.crt',pem,'utf8');` +
+                        `s.end();` +
+                        `});s.on('error',e=>{console.error('TLS error',e.message);process.exit(1);});"`,
+                    // Bygg fullchain: leaf + kedja (om kedjefilen finns)
+                    `if [ -f /etc/nginx/ssl/pts-ad-chain.crt_används-ej ]; then ` +
+                        `cat ${remotePath}/ssl/pts-ad-leaf.crt /etc/nginx/ssl/pts-ad-chain.crt_används-ej > ${remotePath}/ssl/pts-ad-fullchain.crt; ` +
+                        `else cp ${remotePath}/ssl/pts-ad-leaf.crt ${remotePath}/ssl/pts-ad-fullchain.crt; fi`,
+                    `chmod 0644 ${remotePath}/ssl/pts-ad-fullchain.crt ${remotePath}/ssl/pts-ad-leaf.crt || true`
+                ].join(' && '),
+                ['ssh', [host, `cd ${remotePath} && mkdir -p ssl && node -e "const tls=require('tls');const fs=require('fs');const s=tls.connect({host:'ux-granskningsverktyg.pts.ad',port:443,servername:'ux-granskningsverktyg.pts.ad',rejectUnauthorized:false},()=>{const c=s.getPeerCertificate(true);if(!c||!c.raw){console.error('Kunde inte läsa servercert (raw)');process.exit(1);}const b64=c.raw.toString('base64');const pem='-----BEGIN CERTIFICATE-----\\n'+b64.match(/.{1,64}/g).join('\\n')+'\\n-----END CERTIFICATE-----\\n';fs.writeFileSync('ssl/pts-ad-leaf.crt',pem,'utf8');s.end();});s.on('error',e=>{console.error('TLS error',e.message);process.exit(1);});\" && if [ -f /etc/nginx/ssl/pts-ad-chain.crt_används-ej ]; then cat ssl/pts-ad-leaf.crt /etc/nginx/ssl/pts-ad-chain.crt_används-ej > ssl/pts-ad-fullchain.crt; else cp ssl/pts-ad-leaf.crt ssl/pts-ad-fullchain.crt; fi && chmod 0644 ssl/pts-ad-fullchain.crt ssl/pts-ad-leaf.crt || true`]]
+            );
+        } catch (e) {
+            console.warn('[deploy] Kunde inte bygga fullchain-cert (fortsätter):', e.message);
+        }
+
         const envPath = join(projectRoot, '.env');
         if (existsSync(envPath)) {
             console.log('[deploy] Kopierar .env till servern (utan DEPLOY_*)...');
