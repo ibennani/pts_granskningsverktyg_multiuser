@@ -58,6 +58,7 @@ import { AuditProblemsViewComponent } from './components/AuditProblemsViewCompon
 import { ArchivedRequirementsViewComponent } from './components/ArchivedRequirementsViewComponent.js';
 import { RulefileChangeLogViewComponent } from './components/RulefileChangeLogViewComponent.js';
 import { AuditImagesViewComponent } from './components/AuditImagesViewComponent.js';
+import { BackupOverviewComponent } from './components/BackupOverviewComponent.js';
 import { AuditViewComponent } from './components/AuditViewComponent.js';
 import { StartViewComponent } from './components/StartViewComponent.js';
 import { LoginViewComponent } from './components/LoginViewComponent.js';
@@ -1152,6 +1153,7 @@ window.DraftManager = DraftManager;
             case 'rulefile_sections_edit_general': ComponentClass = EditGeneralSectionComponent; break;
             case 'rulefile_sections_edit_page_types': ComponentClass = EditPageTypesSectionComponent; break;
             case 'rulefile_sections': ComponentClass = RulefileSectionsViewComponent; break;
+            case 'backup': ComponentClass = BackupOverviewComponent; break;
             case 'confirm_delete': ComponentClass = ConfirmDeleteViewComponent; break;
             default:
                 consoleManager.error(`[Main.js] View "${view_name_to_render}" not found in render_view switch.`);
