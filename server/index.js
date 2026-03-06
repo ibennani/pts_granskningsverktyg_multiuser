@@ -16,8 +16,7 @@ import usersRouter from './routes/users.js';
 import rulesRouter from './routes/rules.js';
 import auditsRouter from './routes/audits.js';
 import backupRouter from './routes/backup.js';
-import path from 'path';
-import { run_backup, get_backup_dir } from './backup/audit_backup.js';
+import { run_backup, get_backup_dir, get_last_backup_status } from './backup/audit_backup.js';
 
 const app = express();
 const PORT = process.env.API_PORT || 3000;
@@ -41,7 +40,16 @@ app.use('/backup', express.static(get_backup_dir()));
 app.get('/api/health', async (_req, res) => {
     try {
         await query('SELECT 1');
-        res.json({ ok: true, timestamp: new Date().toISOString() });
+        const backup_status = get_last_backup_status();
+        res.json({
+            ok: true,
+            timestamp: new Date().toISOString(),
+            backup: backup_status ? {
+                last_run: backup_status.last_run,
+                audits_processed: backup_status.audits_processed,
+                new_files: backup_status.new_files
+            } : null
+        });
     } catch (err) {
         res.status(503).json({ ok: false, error: 'Databas ej tillgänglig', detail: err.message });
     }
