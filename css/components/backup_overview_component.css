@@ -1,0 +1,82 @@
+/* css/components/backup_overview_component.css */
+
+.backup-view-plate {
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+}
+
+.backup-view-intro {
+    margin-bottom: 0.75rem;
+}
+
+.backup-status-box {
+    margin-bottom: 1.5rem;
+    padding: 0.75rem 1rem;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    background-color: var(--input-background-color);
+}
+
+.backup-status-box h2 {
+    margin-top: 0;
+    margin-bottom: 0.25rem;
+    font-size: 1rem;
+}
+
+.backup-filter-section {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: flex-end;
+    margin-bottom: 1rem;
+}
+
+.backup-filter-search,
+.backup-filter-status {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 12rem;
+}
+
+.backup-filter-search label,
+.backup-filter-status label {
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.backup-filter-search input,
+.backup-filter-status select {
+    padding: 0.35rem 0.5rem;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    background-color: var(--input-background-color);
+}
+
+.backup-overview-section,
+.backup-detail-section {
+    margin-top: 1rem;
+}
+
+.backup-overview-section h2,
+.backup-detail-section h2 {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+}
+
+.backup-detail-heading-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.backup-overview-table-root,
+.backup-detail-table-root {
+    margin-top: 0.25rem;
+}
+
