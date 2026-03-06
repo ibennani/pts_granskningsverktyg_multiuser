@@ -178,6 +178,10 @@ export async function get_backups_for_audit(audit_id) {
     return api_get(`/backup/${encodeURIComponent(audit_id)}`);
 }
 
+export async function run_backup_now() {
+    return api_post('/backup/run', {});
+}
+
 export async function get_audits(status) {
     const q = status ? `?status=${encodeURIComponent(status)}` : '';
     return api_get(`/audits${q}`);

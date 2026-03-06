@@ -86,7 +86,7 @@ app.use((err, _req, res, _next) => {
 
 init_ws(http_server);
 
-cron.schedule('0 12,18 * * *', () => {
+cron.schedule('0 0,6,12,18 * * *', () => {
     run_backup().then((s) => {
         console.log('[Server] Backup kördes:', s?.audits_processed, 'granskningar,', s?.new_files, 'nya filer');
     }).catch((err) => {

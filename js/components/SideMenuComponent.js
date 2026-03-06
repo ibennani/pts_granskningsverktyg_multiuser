@@ -180,7 +180,10 @@ export const SideMenuComponent = {
 
     create_menu_link({ label, view_name, params = {}, count_id, count_value }) {
         const view_from_hash = this.get_view_name_from_location_hash();
-        const active_view_name = view_from_hash || this.current_view_name;
+        let active_view_name = view_from_hash || this.current_view_name;
+        if (active_view_name === 'backup_detail') {
+            active_view_name = 'backup';
+        }
         const current_params = this.get_params_from_location_hash();
         let is_active = active_view_name === view_name;
         if (is_active && view_name === 'rulefile_sections' && params.section) {
@@ -291,13 +294,14 @@ export const SideMenuComponent = {
             return { should_show: false, items: [], aria_label: t('side_menu_aria_label') };
         }
 
-        if (this.current_view_name === 'start' || this.current_view_name === 'audit' || this.current_view_name === 'audit_audits' || this.current_view_name === 'audit_rules' || this.current_view_name === 'manage_users' || this.current_view_name === 'my_settings') {
+        if (this.current_view_name === 'start' || this.current_view_name === 'audit' || this.current_view_name === 'audit_audits' || this.current_view_name === 'audit_rules' || this.current_view_name === 'manage_users' || this.current_view_name === 'my_settings' || this.current_view_name === 'backup' || this.current_view_name === 'backup_detail') {
             return {
                 should_show: true,
                 aria_label: t('side_menu_aria_label'),
                 items: [
                     { label: t('menu_link_manage_audits'), view_name: 'start' },
                     { label: t('menu_link_manage_rules'), view_name: 'audit_rules' },
+                    { label: t('menu_link_backups'), view_name: 'backup' },
                     { label: t('menu_link_my_settings'), view_name: 'my_settings' },
                     { label: t('menu_link_manage_users'), view_name: 'manage_users' }
                 ]
@@ -434,7 +438,9 @@ export const SideMenuComponent = {
         const t = this.Translation.t;
 
         const menu_model = this.get_menu_model();
-        if (!menu_model.should_show) {
+        const has_items = menu_model?.items && menu_model.items.length > 0;
+        // Regel: När vänstermenyn saknar alternativ ska den inte visas alls.
+        if (!menu_model.should_show || !has_items) {
             this.root.innerHTML = '';
             this.root.classList.add('hidden');
             this.is_menu_open = false;

@@ -1154,6 +1154,7 @@ window.DraftManager = DraftManager;
             case 'rulefile_sections_edit_page_types': ComponentClass = EditPageTypesSectionComponent; break;
             case 'rulefile_sections': ComponentClass = RulefileSectionsViewComponent; break;
             case 'backup': ComponentClass = BackupOverviewComponent; break;
+            case 'backup_detail': ComponentClass = BackupOverviewComponent; break;
             case 'confirm_delete': ComponentClass = ConfirmDeleteViewComponent; break;
             default:
                 consoleManager.error(`[Main.js] View "${view_name_to_render}" not found in render_view switch.`);
