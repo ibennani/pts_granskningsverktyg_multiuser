@@ -712,7 +712,7 @@
   "backup_detail_type_archive": "Arkiv vid låsning",
   "backup_detail_type_regular": "Löpande backup",
   "backup_detail_download_button": "Ladda ner filen",
-  "backup_detail_download_aria": "Ladda ner säkerhetskopia {filename}",
+  "backup_detail_download_aria": "Ladda ner filen: {filename}",
   "backup_detail_empty": "Det finns inga sparade filer för den här granskningen ännu.",
   "backup_detail_aria_label": "Lista över säkerhetskopior för vald granskning",
   "backup_detail_load_error": "Kunde inte hämta säkerhetskopiorna för den här granskningen. Försök igen senare.",

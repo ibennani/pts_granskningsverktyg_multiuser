@@ -373,6 +373,8 @@ window.DraftManager = DraftManager;
                     case 'rulefile_sections_edit_general': title_prefix = t('rulefile_sections_edit_general_title'); break;
                     case 'rulefile_sections_edit_page_types': title_prefix = t('rulefile_sections_edit_page_types_title'); break;
                     case 'rulefile_sections': title_prefix = t('rulefile_sections_title'); break;
+                    case 'backup':
+                    case 'backup_detail': title_prefix = t('menu_link_backups'); break;
                     case 'confirm_delete':
                         if (params.type === 'requirement') title_prefix = t('rulefile_confirm_delete_title');
                         else if (params.type === 'check') title_prefix = t('confirm_delete_check_title');

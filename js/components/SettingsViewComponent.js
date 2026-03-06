@@ -35,6 +35,8 @@ export const SettingsViewComponent = {
     async handle_language_change(event) {
         const lang = event.target?.value;
         if (lang && typeof this.Translation?.set_language === 'function') {
+            this.user_preferences = this.user_preferences || {};
+            this.user_preferences.language_preference = lang;
             await this.Translation.set_language(lang);
             try {
                 await update_current_user_preferences({ language_preference: lang });
