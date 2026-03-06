@@ -15,6 +15,11 @@ export const ModalComponent = {
         this.pending_focus_element = null;
         this._bound_handle_close = null;
         this._bound_handle_cancel = null;
+        this._bound_handle_popstate = null;
+        this._history_state_pushed = false;
+        this._close_triggered_by_popstate = false;
+        this._modal_history_id = null;
+        this._close_started = false;
 
         if (this.Helpers?.load_css_safely && this.CSS_PATH) {
             this.Helpers.load_css_safely(this.CSS_PATH, 'ModalComponent', {
@@ -24,6 +29,44 @@ export const ModalComponent = {
                 console.warn('[ModalComponent] Continuing without CSS due to loading failure');
             });
         }
+    },
+
+    _setup_history_close_on_back() {
+        if (typeof window === 'undefined' || !window.history) return;
+        if (this._history_state_pushed) return;
+
+        this._modal_history_id = `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+        try {
+            window.history.pushState(
+                { __gv_modal: true, modal_id: this._modal_history_id },
+                '',
+                window.location.href
+            );
+            this._history_state_pushed = true;
+        } catch (e) {
+            this._history_state_pushed = false;
+            this._modal_history_id = null;
+            return;
+        }
+
+        this._bound_handle_popstate = () => {
+            if (!this.dialog_element_ref) return;
+            if (!this._history_state_pushed) return;
+            if (this._close_started) return;
+
+            this._close_triggered_by_popstate = true;
+            this.close();
+        };
+
+        window.addEventListener('popstate', this._bound_handle_popstate);
+    },
+
+    _cleanup_history_close_on_back() {
+        if (typeof window === 'undefined') return;
+        if (this._bound_handle_popstate) {
+            window.removeEventListener('popstate', this._bound_handle_popstate);
+        }
+        this._bound_handle_popstate = null;
     },
 
     _is_word_char(ch) {
@@ -185,6 +228,8 @@ export const ModalComponent = {
 
         this.focus_before_open = document.activeElement;
         this.pending_focus_element = null;
+        this._close_triggered_by_popstate = false;
+        this._close_started = false;
 
         this.dialog_element_ref = this.Helpers.create_element('dialog', {
             class_name: 'modal-dialog',
@@ -276,6 +321,8 @@ export const ModalComponent = {
         this.dialog_element_ref.showModal();
         heading.focus({ preventScroll: true });
 
+        this._setup_history_close_on_back();
+
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
                 this.dialog_element_ref.classList.add('modal-dialog--visible');
@@ -287,10 +334,13 @@ export const ModalComponent = {
         const dialog = this.dialog_element_ref;
         if (!dialog) return;
 
+        const should_pop_history_entry = this._history_state_pushed && !this._close_triggered_by_popstate;
+
         dialog.removeEventListener('close', this._bound_handle_close);
         dialog.removeEventListener('cancel', this._bound_handle_cancel);
         this._bound_handle_close = null;
         this._bound_handle_cancel = null;
+        this._cleanup_history_close_on_back();
 
         const focus_element = this.pending_focus_element ?? this.focus_before_open;
 
@@ -326,6 +376,10 @@ export const ModalComponent = {
             this.focus_before_open = null;
             this.pending_focus_element = null;
             this._debug_observer = null;
+            this._modal_history_id = null;
+            this._history_state_pushed = false;
+            this._close_triggered_by_popstate = false;
+            this._close_started = false;
 
             const app_container = document.getElementById('app-container');
             const main_view_root = document.getElementById('app-main-view-root');
@@ -401,6 +455,14 @@ export const ModalComponent = {
         };
 
         do_cleanup();
+
+        if (should_pop_history_entry && typeof window !== 'undefined' && window.history) {
+            try {
+                window.history.back();
+            } catch (e) {
+                /* ignore */
+            }
+        }
     },
 
     _do_animated_close() {
@@ -434,6 +496,8 @@ export const ModalComponent = {
     close(focus_element_override) {
         if (!this.dialog_element_ref) return;
 
+        if (this._close_started) return;
+        this._close_started = true;
         this.pending_focus_element = focus_element_override ?? this.focus_before_open;
         this._do_animated_close();
     },
