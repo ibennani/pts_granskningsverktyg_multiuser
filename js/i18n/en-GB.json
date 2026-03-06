@@ -401,6 +401,7 @@
   "filename_deficiencies_suffix": "deficiencies",
   "filename_fallback_actor": "audit",
   "filename_backup_suffix": "backup",
+  "filename_archive_suffix": "archive",
   "filter_by_status_label": "Filter:",
   "filter_option_needs_help": "Needs help",
   "filter_option_updated": "Updated requirement",

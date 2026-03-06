@@ -401,6 +401,7 @@
   "filename_deficiencies_suffix": "brister",
   "filename_fallback_actor": "granskning",
   "filename_backup_suffix": "säkerhetskopia",
+  "filename_archive_suffix": "arkiv",
   "filter_by_status_label": "Filter:",
   "filter_option_needs_help": "Behöver hjälp",
   "filter_option_updated": "Uppdaterat krav",
