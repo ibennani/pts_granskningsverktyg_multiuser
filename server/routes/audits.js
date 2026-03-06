@@ -461,7 +461,7 @@ router.patch('/:id', async (req, res) => {
         const fullState = build_full_state(audit, ruleSet);
         res.json(fullState);
     } catch (err) {
-        console.error('[audits] PATCH error:', err);
+        console.error('[audits] PATCH error:', err.message, err.stack);
         res.status(500).json({ error: 'Kunde inte uppdatera granskning' });
     }
 });

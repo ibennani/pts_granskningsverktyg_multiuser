@@ -44,6 +44,9 @@ async function migrate() {
         const sql10 = readFileSync(join(__dirname, '../migrations/010_add_production_base_id_to_rule_sets.sql'), 'utf8');
         await client.query(sql10);
         console.log('[Migrate] Migration 010 kördes.');
+        const sql11 = readFileSync(join(__dirname, '../migrations/011_add_archived_and_rulefile_update_log_to_audits.sql'), 'utf8');
+        await client.query(sql11);
+        console.log('[Migrate] Migration 011 kördes.');
     } catch (err) {
         console.error('[Migrate] Fel:', err.message);
         process.exit(1);
