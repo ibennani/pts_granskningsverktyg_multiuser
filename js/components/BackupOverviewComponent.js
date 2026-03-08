@@ -1,6 +1,6 @@
 // js/components/BackupOverviewComponent.js
 
-import { get_backup_overview, get_backups_for_audit, run_backup_now, get_backup_settings, update_backup_settings, api_get, get_base_url } from '../api/client.js';
+import { get_backup_overview, get_backups_for_audit, run_backup_now, get_backup_settings, api_get, get_base_url } from '../api/client.js';
 import { GenericTableComponent } from './GenericTableComponent.js';
 
 export const BackupOverviewComponent = {
@@ -19,6 +19,7 @@ export const BackupOverviewComponent = {
         this.backup_overview = [];
         this.filtered_overview = [];
         this.backup_status = null;
+        this.backup_settings = null;
         this.selected_audit_id = this.view_name === 'backup_detail'
             ? (this.params.auditId || null)
             : null;
@@ -82,16 +83,44 @@ export const BackupOverviewComponent = {
         return map[status] || status || '';
     },
 
+    /**
+     * Beräknar nästa planerade körningstid från schedule_cron (t.ex. "0 0,6,12,18 * * *").
+     * Returnerar Date eller null.
+     */
+    _get_next_backup_run() {
+        const cron = this.backup_settings?.schedule_cron;
+        if (!cron || typeof cron !== 'string') return null;
+        const parts = cron.trim().split(/\s+/);
+        if (parts.length < 2) return null;
+        const hoursStr = parts[1];
+        const hours = hoursStr.split(',').map((h) => parseInt(h, 10)).filter((n) => !Number.isNaN(n) && n >= 0 && n <= 23);
+        if (hours.length === 0) return null;
+        hours.sort((a, b) => a - b);
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        for (let i = 0; i < hours.length; i++) {
+            const runAt = new Date(today.getTime());
+            runAt.setHours(hours[i], 0, 0, 0);
+            if (runAt > now) return runAt;
+        }
+        const tomorrow = new Date(today.getTime());
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(hours[0], 0, 0, 0);
+        return tomorrow;
+    },
+
     async _load_data(force = false) {
         if (this._data_loaded && !force) return;
         this._data_loaded = true;
         try {
-            const [overview, status] = await Promise.all([
+            const [overview, status, settings] = await Promise.all([
                 get_backup_overview(),
-                api_get('/backup/status').catch(() => null)
+                api_get('/backup/status').catch(() => null),
+                get_backup_settings().catch(() => null)
             ]);
             this.backup_overview = Array.isArray(overview) ? overview : [];
             this.backup_status = status && status.ok ? status : null;
+            this.backup_settings = settings && (settings.schedule_cron || settings.runs_per_day != null) ? settings : null;
             this._apply_filters();
 
             if (this.view_name === 'backup_detail' && this.selected_audit_id) {
@@ -249,105 +278,10 @@ export const BackupOverviewComponent = {
         }
     },
 
-    async _handle_open_backup_settings() {
-        const t = this.get_t_func();
-        const ModalComponent = this.deps?.ModalComponent || window.ModalComponent;
-        const NotificationComponent = this.NotificationComponent;
-        if (!ModalComponent?.show) return;
-        let schedule_times = '00:00, 06:00, 12:00, 18:00';
-        let retention_days = 30;
-        try {
-            const data = await get_backup_settings();
-            if (data?.schedule_cron === '0 0,6,12,18 * * *') {
-                schedule_times = '00:00, 06:00, 12:00, 18:00';
-            } else if (data?.schedule_cron) {
-                schedule_times = data.schedule_cron;
-            }
-            if (data?.retention_days != null) retention_days = data.retention_days;
-        } catch {
-            /* använd standardvärden */
+    _handle_open_backup_settings() {
+        if (typeof this.router === 'function') {
+            this.router('backup_settings', {});
         }
-
-        ModalComponent.show(
-            {
-                h1_text: t('backup_settings_modal_title'),
-                message_text: ''
-            },
-            (content_container, modal_ref) => {
-                const form = this.Helpers.create_element('div', { class_name: 'backup-settings-modal-form' });
-
-                const schedule_group = this.Helpers.create_element('div', { class_name: 'form-group' });
-                schedule_group.appendChild(this.Helpers.create_element('label', { text_content: t('backup_settings_schedule_label') }));
-                schedule_group.appendChild(this.Helpers.create_element('p', { class_name: 'form-control-static', text_content: t('backup_settings_schedule_value', { times: schedule_times }) }));
-                schedule_group.appendChild(this.Helpers.create_element('p', { class_name: 'form-help', text_content: t('backup_settings_schedule_info') }));
-                form.appendChild(schedule_group);
-
-                const retention_group = this.Helpers.create_element('div', { class_name: 'form-group' });
-                const retention_label_el = this.Helpers.create_element('label', {
-                    text_content: t('backup_settings_retention_label'),
-                    attributes: { for: 'backup-settings-retention-days' }
-                });
-                retention_group.appendChild(retention_label_el);
-                const retention_input = this.Helpers.create_element('input', {
-                    attributes: {
-                        type: 'number',
-                        id: 'backup-settings-retention-days',
-                        min: '1',
-                        max: '365',
-                        value: String(retention_days),
-                        'aria-describedby': 'backup-settings-retention-help'
-                    },
-                    class_name: 'form-control'
-                });
-                retention_group.appendChild(retention_input);
-                const retention_help = this.Helpers.create_element('p', {
-                    class_name: 'form-help',
-                    text_content: t('backup_settings_retention_help'),
-                    attributes: { id: 'backup-settings-retention-help' }
-                });
-                retention_group.appendChild(retention_help);
-                form.appendChild(retention_group);
-
-                const btn_row = this.Helpers.create_element('div', { class_name: 'backup-settings-modal-buttons' });
-                const save_btn = this.Helpers.create_element('button', {
-                    class_name: ['button', 'button-primary'],
-                    text_content: t('backup_settings_save'),
-                    attributes: { type: 'button' }
-                });
-                const close_btn = this.Helpers.create_element('button', {
-                    class_name: ['button', 'button-secondary'],
-                    text_content: t('backup_settings_close'),
-                    attributes: { type: 'button' }
-                });
-                save_btn.addEventListener('click', async () => {
-                    const raw = retention_input.value.trim();
-                    const num = raw === '' ? NaN : parseInt(raw, 10);
-                    if (!Number.isInteger(num) || num < 1 || num > 365) {
-                        if (NotificationComponent?.show_global_message) {
-                            NotificationComponent.show_global_message(t('backup_settings_retention_invalid'), 'warning');
-                        }
-                        return;
-                    }
-                    try {
-                        await update_backup_settings({ retention_days: num });
-                        if (NotificationComponent?.show_global_message) {
-                            NotificationComponent.show_global_message(t('backup_settings_saved_ok'), 'success');
-                        }
-                        modal_ref.close();
-                    } catch (err) {
-                        if (NotificationComponent?.show_global_message) {
-                            NotificationComponent.show_global_message(t('backup_settings_save_error') || err.message, 'error');
-                        }
-                    }
-                });
-                close_btn.addEventListener('click', () => modal_ref.close());
-                btn_row.appendChild(save_btn);
-                btn_row.appendChild(close_btn);
-                form.appendChild(btn_row);
-
-                content_container.appendChild(form);
-            }
-        );
     },
 
     _build_overview_columns(t) {
@@ -484,6 +418,20 @@ export const BackupOverviewComponent = {
             class_name: 'content-plate backup-view-plate'
         });
 
+        const global_message_el = this.NotificationComponent?.get_global_message_element_reference?.();
+        if (global_message_el) {
+            plate.appendChild(global_message_el);
+        }
+
+        let pending_message_key = null;
+        try {
+            pending_message_key = sessionStorage.getItem('gv_backup_settings_saved_message');
+            if (pending_message_key) sessionStorage.removeItem('gv_backup_settings_saved_message');
+        } catch (_) {}
+        if (pending_message_key && this.view_name === 'backup' && this.NotificationComponent?.show_global_message) {
+            this.NotificationComponent.show_global_message(t(pending_message_key), 'success');
+        }
+
         const h1 = this.Helpers.create_element('h1', {
             id: 'main-content-heading',
             text_content: t('backup_view_h1'),
@@ -554,6 +502,18 @@ export const BackupOverviewComponent = {
                     : t('backup_status_no_runs')
             });
             status_box.appendChild(p);
+        }
+
+        const next_run = this.view_name === 'backup' ? this._get_next_backup_run() : null;
+        if (next_run) {
+            const lang = this.Translation?.get_current_language_code?.() || 'sv-SE';
+            const next_run_str = this.Helpers?.format_iso_to_local_datetime
+                ? this.Helpers.format_iso_to_local_datetime(next_run.toISOString(), lang)
+                : next_run.toLocaleString(lang);
+            const p_next = this.Helpers.create_element('p', {
+                text_content: t('backup_status_next_run', { datetime: next_run_str })
+            });
+            status_box.appendChild(p_next);
         }
 
         plate.appendChild(status_box);

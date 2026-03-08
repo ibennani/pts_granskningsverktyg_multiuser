@@ -6,12 +6,20 @@ import { get_backup_settings, update_backup_settings } from '../api/client.js';
 const RUNS_PER_DAY_OPTIONS = [1, 2, 3, 4, 6, 8, 12, 24];
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
-function get_schedule_summary(runs_per_day, first_run_hour) {
+function compute_schedule_hours(first_run_hour, last_run_hour, runs_per_day) {
+    const first = Math.max(0, Math.min(23, parseInt(first_run_hour, 10) || 0));
+    const last = Math.max(0, Math.min(23, parseInt(last_run_hour, 10) || 0));
+    const runs = Math.max(1, Math.min(24, parseInt(runs_per_day, 10) || 1));
+    if (runs === 1) return [first];
+    const span = last >= first ? last - first : 24 - first + last;
     const hours = [];
-    for (let i = 0; i < runs_per_day; i++) {
-        hours.push(Math.floor((first_run_hour + (24 * i) / runs_per_day) % 24));
+    for (let i = 0; i < runs; i++) {
+        hours.push(Math.round((first + (i * span) / (runs - 1)) % 24));
     }
-    hours.sort((a, b) => a - b);
+    return [...new Set(hours)].sort((a, b) => a - b);
+}
+
+function format_schedule_times(hours) {
     return hours.map((h) => `${String(h).padStart(2, '0')}:00`).join(', ');
 }
 
@@ -33,8 +41,7 @@ export const BackupSettingsViewComponent = {
         }
         this._handle_save = this._handle_save.bind(this);
         this._handle_back = this._handle_back.bind(this);
-        this._handle_runs_change = this._handle_runs_change.bind(this);
-        this._handle_hour_change = this._handle_hour_change.bind(this);
+        this._handle_schedule_change = this._handle_schedule_change.bind(this);
     },
 
     destroy() {
@@ -54,7 +61,8 @@ export const BackupSettingsViewComponent = {
             this.settings = {
                 retention_days: 30,
                 runs_per_day: 4,
-                first_run_hour: 0
+                first_run_hour: 0,
+                last_run_hour: 18
             };
         }
     },
@@ -65,20 +73,18 @@ export const BackupSettingsViewComponent = {
         }
     },
 
-    _handle_runs_change() {
-        this._update_summary();
-    },
-
-    _handle_hour_change() {
+    _handle_schedule_change() {
         this._update_summary();
     },
 
     _update_summary() {
         if (!this.summary_ref) return;
         const runs = parseInt(this.runs_select_ref?.value ?? '4', 10);
-        const hour = parseInt(this.hour_select_ref?.value ?? '0', 10);
+        const first = parseInt(this.hour_select_ref?.value ?? '0', 10);
+        const last = parseInt(this.last_hour_select_ref?.value ?? '18', 10);
         const t = this.get_t();
-        const times = get_schedule_summary(runs, hour);
+        const hours = compute_schedule_hours(first, last, runs);
+        const times = format_schedule_times(hours);
         this.summary_ref.textContent = t('backup_settings_schedule_summary', { count: runs, times }) || `Backup körs ${runs} gånger per dygn: ${times}`;
     },
 
@@ -95,22 +101,38 @@ export const BackupSettingsViewComponent = {
         }
         const runs_per_day = parseInt(this.runs_select_ref?.value ?? '4', 10);
         const first_run_hour = parseInt(this.hour_select_ref?.value ?? '0', 10);
+        const last_run_hour = parseInt(this.last_hour_select_ref?.value ?? '18', 10);
         this._save_in_progress = true;
+        const show_msg = (msg, type) => {
+            const nc = this.NotificationComponent || window.NotificationComponent;
+            if (nc?.show_global_message) nc.show_global_message(msg, type);
+        };
+        const SAVE_TIMEOUT_MS = 15000;
+        const save_promise = update_backup_settings({
+            retention_days: retention,
+            runs_per_day,
+            first_run_hour,
+            last_run_hour
+        });
+        const timeout_promise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error(t('backup_settings_save_timeout'))), SAVE_TIMEOUT_MS);
+        });
         try {
-            await update_backup_settings({
-                retention_days: retention,
-                runs_per_day,
-                first_run_hour
-            });
-            if (this.NotificationComponent?.show_global_message) {
-                this.NotificationComponent.show_global_message(t('backup_settings_saved_ok'), 'success');
+            await Promise.race([save_promise, timeout_promise]);
+            if (typeof this.router === 'function') {
+                try {
+                    sessionStorage.setItem('gv_backup_settings_saved_message', 'backup_settings_saved_ok');
+                } catch (_) {}
+                this.router('backup', {});
+            } else {
+                show_msg(t('backup_settings_saved_ok'), 'success');
+                await this._load_settings();
+                if (this.root) await this.render();
             }
-            await this._load_settings();
-            if (this.root) this.render();
         } catch (err) {
-            if (this.NotificationComponent?.show_global_message) {
-                this.NotificationComponent.show_global_message(t('backup_settings_save_error') || err.message, 'error');
-            }
+            const message = (err && err.message) || t('backup_settings_save_error');
+            show_msg(message, 'error');
+            if (this.root) await this.render();
         } finally {
             this._save_in_progress = false;
         }
@@ -123,10 +145,15 @@ export const BackupSettingsViewComponent = {
         if (!this.settings) {
             await this._load_settings();
         }
-        const s = this.settings || { retention_days: 30, runs_per_day: 4, first_run_hour: 0 };
+        const s = this.settings || { retention_days: 30, runs_per_day: 4, first_run_hour: 0, last_run_hour: 18 };
 
         this.root.innerHTML = '';
         const plate = this.Helpers.create_element('div', { class_name: 'content-plate backup-settings-plate' });
+
+        const global_message_el = this.NotificationComponent?.get_global_message_element_reference?.();
+        if (global_message_el) {
+            plate.appendChild(global_message_el);
+        }
 
         plate.appendChild(this.Helpers.create_element('h1', {
             id: 'main-content-heading',
@@ -146,18 +173,20 @@ export const BackupSettingsViewComponent = {
         form.appendChild(schedule_heading);
 
         const schedule_info = this.Helpers.create_element('p', {
-            class_name: 'form-help',
+            class_name: 'backup-settings-schedule-info',
             text_content: t('backup_settings_schedule_info')
         });
         form.appendChild(schedule_info);
 
-        const runs_group = this.Helpers.create_element('div', { class_name: 'form-group' });
+        const schedule_row = this.Helpers.create_element('div', { class_name: 'backup-settings-schedule-row' });
+
+        const runs_group = this.Helpers.create_element('div', { class_name: 'backup-settings-schedule-field' });
         runs_group.appendChild(this.Helpers.create_element('label', {
             text_content: t('backup_settings_runs_per_day_label'),
             attributes: { for: 'backup-settings-runs' }
         }));
         this.runs_select_ref = this.Helpers.create_element('select', {
-            attributes: { id: 'backup-settings-runs', 'aria-describedby': 'backup-settings-runs-help' },
+            attributes: { id: 'backup-settings-runs' },
             class_name: 'form-control'
         });
         RUNS_PER_DAY_OPTIONS.forEach((n) => {
@@ -166,11 +195,9 @@ export const BackupSettingsViewComponent = {
             this.runs_select_ref.appendChild(opt);
         });
         runs_group.appendChild(this.runs_select_ref);
-        const runs_help = this.Helpers.create_element('p', { class_name: 'form-help', text_content: t('backup_settings_runs_help'), attributes: { id: 'backup-settings-runs-help' } });
-        runs_group.appendChild(runs_help);
-        form.appendChild(runs_group);
+        schedule_row.appendChild(runs_group);
 
-        const hour_group = this.Helpers.create_element('div', { class_name: 'form-group' });
+        const hour_group = this.Helpers.create_element('div', { class_name: 'backup-settings-schedule-field' });
         hour_group.appendChild(this.Helpers.create_element('label', {
             text_content: t('backup_settings_first_run_label'),
             attributes: { for: 'backup-settings-hour' }
@@ -188,15 +215,44 @@ export const BackupSettingsViewComponent = {
             this.hour_select_ref.appendChild(opt);
         });
         hour_group.appendChild(this.hour_select_ref);
-        form.appendChild(hour_group);
+        schedule_row.appendChild(hour_group);
+
+        const last_hour_group = this.Helpers.create_element('div', { class_name: 'backup-settings-schedule-field' });
+        last_hour_group.appendChild(this.Helpers.create_element('label', {
+            text_content: t('backup_settings_last_run_label'),
+            attributes: { for: 'backup-settings-last-hour' }
+        }));
+        this.last_hour_select_ref = this.Helpers.create_element('select', {
+            attributes: { id: 'backup-settings-last-hour' },
+            class_name: 'form-control'
+        });
+        HOURS.forEach((h) => {
+            const opt = this.Helpers.create_element('option', {
+                attributes: { value: String(h) },
+                text_content: `${String(h).padStart(2, '0')}:00`
+            });
+            if (h === (s.last_run_hour ?? 18)) opt.selected = true;
+            this.last_hour_select_ref.appendChild(opt);
+        });
+        last_hour_group.appendChild(this.last_hour_select_ref);
+        schedule_row.appendChild(last_hour_group);
+
+        form.appendChild(schedule_row);
 
         this.summary_ref = this.Helpers.create_element('p', { class_name: 'backup-settings-summary' });
-        const times = get_schedule_summary(s.runs_per_day, s.first_run_hour);
+        const hours = compute_schedule_hours(s.first_run_hour, s.last_run_hour ?? 18, s.runs_per_day);
+        const times = format_schedule_times(hours);
         this.summary_ref.textContent = t('backup_settings_schedule_summary', { count: s.runs_per_day, times }) || `Backup körs ${s.runs_per_day} gånger per dygn: ${times}`;
         form.appendChild(this.summary_ref);
 
-        this.runs_select_ref.addEventListener('change', this._handle_runs_change);
-        this.hour_select_ref.addEventListener('change', this._handle_hour_change);
+        if (RUNS_PER_DAY_OPTIONS.includes(s.runs_per_day)) {
+            this.runs_select_ref.value = String(s.runs_per_day);
+        }
+        this.hour_select_ref.value = String(s.first_run_hour);
+        this.last_hour_select_ref.value = String(s.last_run_hour ?? 18);
+        this.runs_select_ref.addEventListener('change', this._handle_schedule_change);
+        this.hour_select_ref.addEventListener('change', this._handle_schedule_change);
+        this.last_hour_select_ref.addEventListener('change', this._handle_schedule_change);
 
         const retention_heading = this.Helpers.create_element('h2', { text_content: t('backup_settings_retention_heading') });
         form.appendChild(retention_heading);
@@ -234,7 +290,7 @@ export const BackupSettingsViewComponent = {
         save_btn.addEventListener('click', this._handle_save);
         const back_btn = this.Helpers.create_element('button', {
             class_name: ['button', 'button-secondary'],
-            text_content: t('backup_settings_back_to_list'),
+            text_content: t('backup_settings_back_without_save'),
             attributes: { type: 'button' }
         });
         back_btn.addEventListener('click', this._handle_back);

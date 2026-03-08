@@ -64,7 +64,8 @@ export async function api_put(path, body) {
     });
     if (!res.ok) {
         const err = await res.json().catch(() => ({ error: res.statusText }));
-        throw new Error(err.error || `HTTP ${res.status}`);
+        const msg = err.detail ? `${err.error || res.statusText}: ${err.detail}` : (err.error || `HTTP ${res.status}`);
+        throw new Error(msg);
     }
     return res.json();
 }

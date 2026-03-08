@@ -37,6 +37,14 @@ const ALLOWED_RUNS = [1, 2, 3, 4, 6, 8, 12, 24];
 router.put('/settings', async (req, res) => {
     try {
         const body = req.body || {};
+        const has_retention = body.retention_days !== undefined;
+        const has_schedule = body.runs_per_day !== undefined || body.first_run_hour !== undefined || body.last_run_hour !== undefined;
+        if (!has_retention && !has_schedule) {
+            return res.status(400).json({
+                error: 'Saknar giltiga inställningar. Skicka retention_days och/eller runs_per_day, first_run_hour, last_run_hour.'
+            });
+        }
+
         const current = await get_backup_settings();
         const updates = { ...current };
 
@@ -61,6 +69,13 @@ router.put('/settings', async (req, res) => {
             }
             updates.first_run_hour = num;
         }
+        if (body.last_run_hour !== undefined) {
+            const num = typeof body.last_run_hour === 'number' ? body.last_run_hour : parseInt(body.last_run_hour, 10);
+            if (!Number.isInteger(num) || num < 0 || num > 23) {
+                return res.status(400).json({ error: 'last_run_hour måste vara 0–23' });
+            }
+            updates.last_run_hour = num;
+        }
 
         await save_backup_settings(updates);
         await start_backup_scheduler();
@@ -68,7 +83,8 @@ router.put('/settings', async (req, res) => {
         res.json({ ok: true, ...updated });
     } catch (err) {
         console.warn('[backup] PUT settings error:', err.message);
-        res.status(500).json({ error: 'Kunde inte spara inställningar', detail: err.message });
+        const detail = err.code === 'EACCES' ? 'Saknar skrivrättighet till backup-katalogen.' : err.message;
+        res.status(500).json({ error: 'Kunde inte spara inställningar', detail });
     }
 });
 

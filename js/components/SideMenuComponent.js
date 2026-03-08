@@ -181,7 +181,7 @@ export const SideMenuComponent = {
     create_menu_link({ label, view_name, params = {}, count_id, count_value }) {
         const view_from_hash = this.get_view_name_from_location_hash();
         let active_view_name = view_from_hash || this.current_view_name;
-        if (active_view_name === 'backup_detail') {
+        if (active_view_name === 'backup_detail' || active_view_name === 'backup_settings') {
             active_view_name = 'backup';
         }
         const current_params = this.get_params_from_location_hash();
@@ -294,7 +294,7 @@ export const SideMenuComponent = {
             return { should_show: false, items: [], aria_label: t('side_menu_aria_label') };
         }
 
-        if (this.current_view_name === 'start' || this.current_view_name === 'audit' || this.current_view_name === 'audit_audits' || this.current_view_name === 'audit_rules' || this.current_view_name === 'manage_users' || this.current_view_name === 'my_settings' || this.current_view_name === 'backup' || this.current_view_name === 'backup_detail') {
+        if (this.current_view_name === 'start' || this.current_view_name === 'audit' || this.current_view_name === 'audit_audits' || this.current_view_name === 'audit_rules' || this.current_view_name === 'manage_users' || this.current_view_name === 'my_settings' || this.current_view_name === 'backup' || this.current_view_name === 'backup_detail' || this.current_view_name === 'backup_settings') {
             return {
                 should_show: true,
                 aria_label: t('side_menu_aria_label'),

@@ -59,6 +59,7 @@ import { ArchivedRequirementsViewComponent } from './components/ArchivedRequirem
 import { RulefileChangeLogViewComponent } from './components/RulefileChangeLogViewComponent.js';
 import { AuditImagesViewComponent } from './components/AuditImagesViewComponent.js';
 import { BackupOverviewComponent } from './components/BackupOverviewComponent.js';
+import { BackupSettingsViewComponent } from './components/BackupSettingsViewComponent.js';
 import { AuditViewComponent } from './components/AuditViewComponent.js';
 import { StartViewComponent } from './components/StartViewComponent.js';
 import { LoginViewComponent } from './components/LoginViewComponent.js';
@@ -374,7 +375,8 @@ window.DraftManager = DraftManager;
                     case 'rulefile_sections_edit_page_types': title_prefix = t('rulefile_sections_edit_page_types_title'); break;
                     case 'rulefile_sections': title_prefix = t('rulefile_sections_title'); break;
                     case 'backup':
-                    case 'backup_detail': title_prefix = t('menu_link_backups'); break;
+                    case 'backup_detail':
+                    case 'backup_settings': title_prefix = t('menu_link_backups'); break;
                     case 'confirm_delete':
                         if (params.type === 'requirement') title_prefix = t('rulefile_confirm_delete_title');
                         else if (params.type === 'check') title_prefix = t('confirm_delete_check_title');
@@ -1157,6 +1159,7 @@ window.DraftManager = DraftManager;
             case 'rulefile_sections': ComponentClass = RulefileSectionsViewComponent; break;
             case 'backup': ComponentClass = BackupOverviewComponent; break;
             case 'backup_detail': ComponentClass = BackupOverviewComponent; break;
+            case 'backup_settings': ComponentClass = BackupSettingsViewComponent; break;
             case 'confirm_delete': ComponentClass = ConfirmDeleteViewComponent; break;
             default:
                 consoleManager.error(`[Main.js] View "${view_name_to_render}" not found in render_view switch.`);

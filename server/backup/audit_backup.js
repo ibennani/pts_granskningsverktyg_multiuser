@@ -1,6 +1,6 @@
 /**
  * Schemalagd backup av granskningar till JSON-filer.
- * Schema styrs av runs_per_day (1–24) och first_run_hour (0–23). Sparar endast vid ändringar, rensar filer enligt retention_days.
+ * Schema styrs av first_run_hour, last_run_hour och runs_per_day (jämnt fördelat). Sparar endast vid ändringar, rensar filer enligt retention_days.
  */
 import crypto from 'crypto';
 import fs from 'fs/promises';
@@ -15,6 +15,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_RETENTION_DAYS = 30;
 const DEFAULT_RUNS_PER_DAY = 4;
 const DEFAULT_FIRST_RUN_HOUR = 0;
+const DEFAULT_LAST_RUN_HOUR = 18;
 const SETTINGS_FILENAME = '.backup-settings.json';
 const ALLOWED_RUNS_PER_DAY = [1, 2, 3, 4, 6, 8, 12, 24];
 
@@ -28,32 +29,47 @@ function clamp_runs_per_day(n) {
     return ALLOWED_RUNS_PER_DAY.includes(num) ? num : DEFAULT_RUNS_PER_DAY;
 }
 
-function clamp_first_run_hour(n) {
+function clamp_hour(n) {
     const num = typeof n === 'number' ? n : parseInt(n, 10);
-    if (!Number.isInteger(num) || num < 0 || num > 23) return DEFAULT_FIRST_RUN_HOUR;
+    if (!Number.isInteger(num) || num < 0 || num > 23) return 0;
     return num;
 }
 
 /**
- * Bygger cron-uttryck från runs_per_day och first_run_hour. Max en körning per timme.
+ * Beräknar vilka timmar backup körs, jämnt fördelat mellan first och last (inkl. midnatt).
  */
-export function build_cron_from_settings(settings) {
-    const runs = clamp_runs_per_day(settings?.runs_per_day);
-    const first = clamp_first_run_hour(settings?.first_run_hour);
+function compute_schedule_hours(first_run_hour, last_run_hour, runs_per_day) {
+    const first = clamp_hour(first_run_hour);
+    const last = clamp_hour(last_run_hour);
+    const runs = clamp_runs_per_day(runs_per_day);
+    if (runs === 1) return [first];
+    const span = last >= first ? last - first : 24 - first + last;
     const hours = [];
     for (let i = 0; i < runs; i++) {
-        const h = Math.floor((first + (24 * i) / runs) % 24);
+        const h = Math.round((first + (i * span) / (runs - 1)) % 24);
         hours.push(h);
     }
-    hours.sort((a, b) => a - b);
-    const uniq = [...new Set(hours)];
-    return `0 ${uniq.join(',')} * * *`;
+    const uniq = [...new Set(hours)].sort((a, b) => a - b);
+    return uniq;
+}
+
+/**
+ * Bygger cron-uttryck från first_run_hour, last_run_hour och runs_per_day.
+ */
+export function build_cron_from_settings(settings) {
+    const hours = compute_schedule_hours(
+        settings?.first_run_hour ?? DEFAULT_FIRST_RUN_HOUR,
+        settings?.last_run_hour ?? DEFAULT_LAST_RUN_HOUR,
+        settings?.runs_per_day
+    );
+    return `0 ${hours.join(',')} * * *`;
 }
 
 export async function get_backup_settings() {
     let retention_days = DEFAULT_RETENTION_DAYS;
     let runs_per_day = DEFAULT_RUNS_PER_DAY;
     let first_run_hour = DEFAULT_FIRST_RUN_HOUR;
+    let last_run_hour = DEFAULT_LAST_RUN_HOUR;
     try {
         const content = await fs.readFile(get_settings_path(), 'utf8');
         const data = JSON.parse(content);
@@ -61,12 +77,13 @@ export async function get_backup_settings() {
             retention_days = data.retention_days;
         }
         if (data.runs_per_day != null) runs_per_day = clamp_runs_per_day(data.runs_per_day);
-        if (data.first_run_hour != null) first_run_hour = clamp_first_run_hour(data.first_run_hour);
+        if (data.first_run_hour != null) first_run_hour = clamp_hour(data.first_run_hour);
+        if (data.last_run_hour != null) last_run_hour = clamp_hour(data.last_run_hour);
     } catch {
         /* använd standardvärden */
     }
-    const schedule_cron = build_cron_from_settings({ runs_per_day, first_run_hour });
-    return { retention_days, runs_per_day, first_run_hour, schedule_cron };
+    const schedule_cron = build_cron_from_settings({ runs_per_day, first_run_hour, last_run_hour });
+    return { retention_days, runs_per_day, first_run_hour, last_run_hour, schedule_cron };
 }
 
 export async function save_backup_settings(settings) {
@@ -76,14 +93,27 @@ export async function save_backup_settings(settings) {
             ? settings.retention_days
             : current.retention_days,
         runs_per_day: settings.runs_per_day != null ? clamp_runs_per_day(settings.runs_per_day) : current.runs_per_day,
-        first_run_hour: settings.first_run_hour != null ? clamp_first_run_hour(settings.first_run_hour) : current.first_run_hour
+        first_run_hour: settings.first_run_hour != null ? clamp_hour(settings.first_run_hour) : current.first_run_hour,
+        last_run_hour: settings.last_run_hour != null ? clamp_hour(settings.last_run_hour) : current.last_run_hour
     };
     const dir = get_backup_dir();
-    await ensure_dir(dir);
+    try {
+        await ensure_dir(dir);
+    } catch (e) {
+        const err = new Error(`Kunde inte skapa backup-katalog: ${dir}. ${e.message}`);
+        err.code = e.code;
+        throw err;
+    }
     const file_path = path.join(dir, SETTINGS_FILENAME);
     const tmp_path = file_path + '.tmp';
-    await fs.writeFile(tmp_path, JSON.stringify(next, null, 2), 'utf8');
-    await fs.rename(tmp_path, file_path);
+    try {
+        await fs.writeFile(tmp_path, JSON.stringify(next, null, 2), 'utf8');
+        await fs.rename(tmp_path, file_path);
+    } catch (e) {
+        const err = new Error(`Kunde inte skriva inställningsfil: ${e.message}`);
+        err.code = e.code;
+        throw err;
+    }
     return next;
 }
 
