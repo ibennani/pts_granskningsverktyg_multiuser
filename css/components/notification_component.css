@@ -1,13 +1,14 @@
-/* Styles for the global message area (formerly NotificationComponent) */
+/* Övre: kritisk info (ny version av koden, ny regelfil). Nedre: vanliga meddelanden (Sparat, fel, etc.) */
+#global-critical-message-area,
 #global-message-area {
-    padding: 1rem;
-    margin-bottom: 1.5rem; /* Utrymme till H1 eller annat innehåll */
+    padding: 0.4rem 0.75rem;
+    margin-bottom: 1rem;
     border: 1px solid transparent;
     border-radius: var(--border-radius);
-    /* text-align: center; Valfritt */
-    position: relative; /* För att positionera stängningsknappen absolut */
+    position: relative; /* För att positionera knapp absolut */
 }
 
+#global-critical-message-area[hidden],
 #global-message-area[hidden] {
     display: none;
 }
@@ -32,6 +33,11 @@
 .global-message-close-btn:hover,
 .global-message-close-btn:focus {
     opacity: 1;
+}
+
+#global-critical-message-area .global-message-close-btn,
+#global-message-area .global-message-close-btn {
+    /* Samma som .global-message-close-btn nedan */
 }
 
 .global-message-action-btn {
@@ -124,4 +130,24 @@
 }
 [data-theme="dark"] #global-message-area.message-error .global-message-close-btn {
     color: var(--text-color); /* ÄNDRAD TILL LJUS TEXT */
+}
+
+/* Kritisk meddelandeområde (övre) – samma orange/warning-stil som "uppdatera regelfil" */
+#global-critical-message-area.message-warning {
+    background-color: var(--warning-color-light); 
+    border-color: var(--warning-color); 
+    color: #856404; 
+}
+#global-critical-message-area.message-warning .global-message-close-btn,
+#global-critical-message-area.message-warning .global-message-action-btn {
+    color: #856404;
+}
+[data-theme="dark"] #global-critical-message-area.message-warning {
+    background-color: #806600; 
+    border-color: var(--warning-color); 
+    color: var(--text-color);
+}
+[data-theme="dark"] #global-critical-message-area.message-warning .global-message-close-btn,
+[data-theme="dark"] #global-critical-message-area.message-warning .global-message-action-btn {
+    color: var(--text-color);
 }

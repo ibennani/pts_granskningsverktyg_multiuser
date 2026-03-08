@@ -49,7 +49,6 @@ export const RequirementsListViewComponent = {
         this.empty_message_element_ref = null;
         this.list_element_ref = null;
         this.content_div_for_delegation = null;
-        this.global_message_element_ref = null;
 
         this._last_rendered_fingerprint = null;
 
@@ -68,9 +67,6 @@ export const RequirementsListViewComponent = {
         }
 
         this.NotificationComponent = deps.NotificationComponent;
-        if (this.mode === 'sample' && this.NotificationComponent?.get_global_message_element_reference) {
-            this.global_message_element_ref = this.NotificationComponent.get_global_message_element_reference();
-        }
 
         if (typeof this.subscribe === 'function') {
             this.unsubscribe_from_store = this.subscribe((_new_state, listener_meta) => {
@@ -498,9 +494,9 @@ export const RequirementsListViewComponent = {
         const plate_class = 'content-plate requirement-list-plate';
         this.plate_element_ref = this.Helpers.create_element('div', { class_name: plate_class });
 
-        // Global message element (sample mode only)
-        if (this.mode === 'sample' && this.global_message_element_ref) {
-            this.plate_element_ref.appendChild(this.global_message_element_ref);
+        // Global message areas – övre kritisk, nedre vanlig (sample mode only)
+        if (this.mode === 'sample' && this.NotificationComponent?.append_global_message_areas_to) {
+            this.NotificationComponent.append_global_message_areas_to(this.plate_element_ref);
         }
 
         // Header container
@@ -1381,6 +1377,5 @@ export const RequirementsListViewComponent = {
         this.results_summary_element_ref = null;
         this.empty_message_element_ref = null;
         this.list_element_ref = null;
-        this.global_message_element_ref = null;
     }
 };

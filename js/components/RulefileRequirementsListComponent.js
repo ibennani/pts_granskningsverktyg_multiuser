@@ -26,11 +26,6 @@ export const RulefileRequirementsListComponent = {
         this.Helpers = deps.Helpers;
         this.NotificationComponent = deps.NotificationComponent;
         
-        this.global_message_element_ref = null;
-        if (this.NotificationComponent.get_global_message_element_reference) {
-            this.global_message_element_ref = this.NotificationComponent.get_global_message_element_reference();
-        }
-
         this.content_div_for_delegation = null;
         this.toolbar_component_instance = RequirementListToolbarComponent;
         this.is_dom_initialized = false;
@@ -154,9 +149,7 @@ export const RulefileRequirementsListComponent = {
         this.root.innerHTML = '';
         this.plate_element_ref = this.Helpers.create_element('div', { class_name: 'content-plate rulefile-requirements-list-plate' });
         
-        if (this.global_message_element_ref) {
-            this.plate_element_ref.appendChild(this.global_message_element_ref);
-        }
+        this.NotificationComponent.append_global_message_areas_to(this.plate_element_ref);
 
         // Skapa header-container med H1 och knapp på samma rad
         const header_container = this.Helpers.create_element('div', { class_name: 'page-header-container', style: 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;' });

@@ -874,6 +874,7 @@
   "realtime_sync_rulefile_updated": "The rule file has been updated by another device",
   "realtime_sync_error": "Could not fetch update: {message}",
   "new_version_available": "A new version is available.",
+  "new_version_reloading": "A new version is available. The page will reload in a few seconds.",
   "reload_page": "Reload page",
   "server_retry_hint": "Server not responding. Ensure Docker and Postgres are running, then click below.",
   "server_retry_button": "Check again",

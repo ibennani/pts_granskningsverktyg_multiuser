@@ -94,9 +94,8 @@ export const SampleManagementViewComponent = {
         
         this.plate_element_ref.innerHTML = ''; 
 
-        if (this.NotificationComponent.get_global_message_element_reference) {
-            const global_message_element_ref = this.NotificationComponent.get_global_message_element_reference();
-            this.plate_element_ref.appendChild(global_message_element_ref);
+        if (this.NotificationComponent.append_global_message_areas_to) {
+            this.NotificationComponent.append_global_message_areas_to(this.plate_element_ref);
         }
 
         this.plate_element_ref.appendChild(this.Helpers.create_element('h1', {

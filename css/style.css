@@ -1035,14 +1035,17 @@ select,
 }
 
 /* --- START OF CHANGE: Updated Notification Message Styles --- */
+/* Övre: kritisk info. Nedre: vanliga meddelanden. */
+#global-critical-message-area,
 #global-message-area {
-    padding: 1rem;
-    margin-bottom: 1.5rem;
+    padding: 0.4rem 0.75rem;
+    margin-bottom: 1rem;
     border: 1px solid transparent;
     border-radius: var(--border-radius);
     position: relative;
 }
 
+#global-critical-message-area[hidden],
 #global-message-area[hidden] {
     display: none;
 }
@@ -1144,6 +1147,26 @@ select,
 
 [data-theme="dark"] #global-message-area.message-error .global-message-close-btn {
     color: var(--button-danger-text);
+}
+
+/* Kritisk meddelandeområde (övre) – orange/warning som "uppdatera regelfil" */
+#global-critical-message-area.message-warning {
+    background-color: var(--button-warning-bg);
+    border-color: var(--button-warning-border);
+    color: var(--button-warning-text);
+}
+#global-critical-message-area.message-warning .global-message-close-btn,
+#global-critical-message-area.message-warning .global-message-action-btn {
+    color: var(--button-warning-text);
+}
+[data-theme="dark"] #global-critical-message-area.message-warning {
+    background-color: var(--warning-color-light);
+    border-color: var(--button-warning-border);
+    color: var(--button-warning-text);
+}
+[data-theme="dark"] #global-critical-message-area.message-warning .global-message-close-btn,
+[data-theme="dark"] #global-critical-message-area.message-warning .global-message-action-btn {
+    color: var(--button-warning-text);
 }
 
 /* --- END OF CHANGE --- */

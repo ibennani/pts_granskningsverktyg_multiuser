@@ -38,8 +38,6 @@ export const AuditProblemsViewComponent = {
         this.AuditLogic = deps.AuditLogic;
         this.NotificationComponent = deps.NotificationComponent;
 
-        this.global_message_element_ref = this.NotificationComponent?.get_global_message_element_reference?.();
-
         // Hämta senaste granskningen från servern så att antal och lista stämmer med DB (t.ex. vid återbesök eller flik med gammal session).
         const state = this.getState();
         if (window.__GV_DEBUG_PROBLEMS_UPDATE__) {
@@ -545,9 +543,7 @@ export const AuditProblemsViewComponent = {
         const plate = this.Helpers.create_element('div', { class_name: 'content-plate audit-problems-plate' });
         this.root.appendChild(plate);
 
-        if (this.global_message_element_ref) {
-            plate.appendChild(this.global_message_element_ref);
-        }
+        this.NotificationComponent?.append_global_message_areas_to?.(plate);
 
         const header_row = this.Helpers.create_element('div', { class_name: 'audit-problems-header-row' });
         const problems_count = problems.length;
@@ -771,6 +767,5 @@ export const AuditProblemsViewComponent = {
         this.Helpers = null;
         this.AuditLogic = null;
         this.NotificationComponent = null;
-        this.global_message_element_ref = null;
     }
 };

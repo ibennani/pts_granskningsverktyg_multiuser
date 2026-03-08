@@ -874,6 +874,7 @@
   "realtime_sync_rulefile_updated": "Regelfilen har uppdaterats av en annan enhet",
   "realtime_sync_error": "Kunde inte hämta uppdatering: {message}",
   "new_version_available": "En ny version är tillgänglig.",
+  "new_version_reloading": "En ny version är tillgänglig. Sidan laddas om om några sekunder.",
   "reload_page": "Ladda om sidan",
   "server_retry_hint": "Servern svarar inte. Kontrollera att Docker och Postgres körs, sedan klicka nedan.",
   "server_retry_button": "Kontrollera igen",

@@ -1293,9 +1293,8 @@ export const AuditViewComponent = {
 
         const plate = this.Helpers.create_element('div', { class_name: 'content-plate audit-plate' });
 
-        if (this.NotificationComponent?.get_global_message_element_reference) {
-            const msg_el = this.NotificationComponent.get_global_message_element_reference();
-            plate.appendChild(msg_el);
+        if (this.NotificationComponent?.append_global_message_areas_to) {
+            this.NotificationComponent.append_global_message_areas_to(plate);
         }
 
         this._auditFilterInputRef = null;

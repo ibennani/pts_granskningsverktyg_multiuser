@@ -1,5 +1,5 @@
 // js/logic/version_check_service.js
-// Kontrollerar periodiskt om en ny version av appen har deployats och visar uppdateringsprompt.
+// Kontrollerar periodiskt om en ny version av appen har deployats. Visar kritisk meddelanderuta med knapp (ingen nedräkning).
 
 const CHECK_INTERVAL_MS = 30000;
 const INITIAL_DELAY_MS = 5000;
@@ -40,16 +40,13 @@ export function init_version_check_service() {
             const remote = JSON.parse(text.slice(jsonStart, jsonEnd + 1));
             if (remote?.timestamp && remote.timestamp !== current_timestamp) {
                 already_shown = true;
-                if (window.NotificationComponent?.show_global_message_with_action && window.Translation?.t) {
-                    const msg = window.Translation.t('new_version_available') || 'En ny version är tillgänglig.';
-                    const label = window.Translation.t('reload_page') || 'Ladda om sidan';
-                    window.NotificationComponent.show_global_message_with_action(msg, 'info', {
+                const msg = window.Translation?.t?.('new_version_available') || 'En ny version är tillgänglig.';
+                const label = window.Translation?.t?.('reload_page') || 'Ladda om sidan';
+                if (window.NotificationComponent?.show_global_critical_message_with_action) {
+                    window.NotificationComponent.show_global_critical_message_with_action(msg, 'warning', {
                         label,
                         callback: () => window.location.reload()
                     });
-                } else if (window.NotificationComponent?.show_global_message) {
-                    const msg = (window.Translation?.t?.('new_version_available') || 'En ny version är tillgänglig. Ladda om sidan för att uppdatera.');
-                    window.NotificationComponent.show_global_message(msg, 'info');
                 }
             }
         } catch (_) {

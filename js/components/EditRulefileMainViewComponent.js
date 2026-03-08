@@ -17,10 +17,7 @@ export const EditRulefileMainViewComponent = {
         this.root.innerHTML = '';
         const plate_element = this.Helpers.create_element('div', { class_name: 'content-plate' });
         
-        const global_message_element = this.NotificationComponent.get_global_message_element_reference();
-        if (global_message_element) {
-            plate_element.appendChild(global_message_element);
-        }
+        this.NotificationComponent.append_global_message_areas_to(plate_element);
 
         const current_state = this.getState();
         const rulefile_title = current_state?.ruleFileContent?.metadata?.title || t('unknown_rulefile');

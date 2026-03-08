@@ -71,10 +71,7 @@ export const ConfirmSampleEditViewComponent = {
         this.plate_element_ref = this.Helpers.create_element('div', { class_name: 'content-plate' });
         this.root.appendChild(this.plate_element_ref);
 
-        const global_message_element = this.NotificationComponent.get_global_message_element_reference();
-        if (global_message_element) {
-            this.plate_element_ref.appendChild(global_message_element);
-        }
+        this.NotificationComponent.append_global_message_areas_to(this.plate_element_ref);
 
         if (!pending_changes) {
             this.plate_element_ref.appendChild(this.Helpers.create_element('h1', { text_content: t('error_internal') }));

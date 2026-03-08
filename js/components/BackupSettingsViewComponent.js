@@ -150,9 +150,8 @@ export const BackupSettingsViewComponent = {
         this.root.innerHTML = '';
         const plate = this.Helpers.create_element('div', { class_name: 'content-plate backup-settings-plate' });
 
-        const global_message_el = this.NotificationComponent?.get_global_message_element_reference?.();
-        if (global_message_el) {
-            plate.appendChild(global_message_el);
+        if (this.NotificationComponent?.append_global_message_areas_to) {
+            this.NotificationComponent.append_global_message_areas_to(plate);
         }
 
         plate.appendChild(this.Helpers.create_element('h1', {

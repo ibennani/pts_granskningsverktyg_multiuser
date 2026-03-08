@@ -970,8 +970,7 @@ export const RulefileSectionsViewComponent = {
     async _build_main_plate(state, section_id, is_editing) {
         const metadata = state?.ruleFileContent?.metadata || {};
         const main_plate = this.Helpers.create_element('div', { class_name: 'content-plate rulefile-sections-main-plate' });
-        const global_message = this.NotificationComponent.get_global_message_element_reference();
-        if (global_message) main_plate.appendChild(global_message);
+        this.NotificationComponent.append_global_message_areas_to(main_plate);
         const layout = this.Helpers.create_element('div', { class_name: 'rulefile-sections-layout' });
         const right_wrapper = this.Helpers.create_element('div', { class_name: 'rulefile-sections-right-wrapper' });
         let section_content;

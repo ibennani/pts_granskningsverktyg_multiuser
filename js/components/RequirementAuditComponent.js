@@ -31,7 +31,6 @@ export const RequirementAuditComponent = {
 
     // DOM references
     plate_element_ref: null,
-    global_message_element_ref: null,
     comment_to_auditor_input: null,
     comment_to_actor_input: null,
 
@@ -70,8 +69,6 @@ export const RequirementAuditComponent = {
         this.handle_comment_input_with_autosave = this.handle_comment_input_with_autosave.bind(this);
         this.handle_sidebar_filters_change = this.handle_sidebar_filters_change.bind(this);
         this.handle_audit_keydown = this.handle_audit_keydown.bind(this);
-
-        this.global_message_element_ref = this.NotificationComponent.get_global_message_element_reference();
 
         if (this.right_sidebar_root) {
             this.right_sidebar_component_instance = RequirementAuditSidebarComponent;
@@ -599,10 +596,8 @@ export const RequirementAuditComponent = {
         this.root.innerHTML = '';
         this.plate_element_ref = this.Helpers.create_element('div', { class_name: 'content-plate requirement-audit-plate' });
 
-        if (this.global_message_element_ref) {
-            this.plate_element_ref.appendChild(this.global_message_element_ref);
-        }
-        
+        this.NotificationComponent.append_global_message_areas_to(this.plate_element_ref);
+
         const top_nav_container = this.Helpers.create_element('div', { class_name: 'audit-navigation-buttons top-nav' });
         this.top_navigation_instance = new RequirementAuditNavigationComponent();
         this.top_navigation_instance.init(top_nav_container, this.handle_navigation, { deps: this.deps });

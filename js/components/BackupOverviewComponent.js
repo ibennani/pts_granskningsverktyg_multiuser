@@ -718,9 +718,8 @@ export const BackupOverviewComponent = {
             class_name: 'content-plate backup-view-plate'
         });
 
-        const global_message_el = this.NotificationComponent?.get_global_message_element_reference?.();
-        if (global_message_el) {
-            plate.appendChild(global_message_el);
+        if (this.NotificationComponent?.append_global_message_areas_to) {
+            this.NotificationComponent.append_global_message_areas_to(plate);
         }
 
         let pending_message_key = null;

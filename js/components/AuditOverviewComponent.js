@@ -32,8 +32,6 @@ export const AuditOverviewComponent = {
         this.newerRuleAvailable = null;
         this._newerRuleCheckRequested = false;
 
-        this.global_message_element_ref = this.NotificationComponent.get_global_message_element_reference();
-
         // Bind methods
         this.handle_store_update = this.handle_store_update.bind(this);
 
@@ -103,9 +101,7 @@ export const AuditOverviewComponent = {
         const plate_element = this.Helpers.create_element('div', { class_name: 'content-plate audit-overview-plate' });
         this.root.appendChild(plate_element);
 
-        if (this.global_message_element_ref) {
-            plate_element.appendChild(this.global_message_element_ref);
-        }
+        this.NotificationComponent.append_global_message_areas_to(plate_element);
         plate_element.appendChild(this.Helpers.create_element('h1', { text_content: t('audit_overview_title') }));
 
         if (current_global_state.auditStatus !== 'locked' && !this._newerRuleCheckRequested) {

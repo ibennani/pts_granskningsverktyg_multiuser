@@ -255,11 +255,8 @@ export const RulefileMetadataViewComponent = {
         this.root.innerHTML = '';
         const plate = this.Helpers.create_element('div', { class_name: ['content-plate', 'rulefile-metadata-plate'] });
 
-        if (this.NotificationComponent?.get_global_message_element_reference) {
-            const global_message_element = this.NotificationComponent.get_global_message_element_reference();
-            if (global_message_element) {
-                plate.appendChild(global_message_element);
-            }
+        if (this.NotificationComponent?.append_global_message_areas_to) {
+            this.NotificationComponent.append_global_message_areas_to(plate);
         }
 
         const header_wrapper = this.Helpers.create_element('div', { class_name: 'metadata-header' });
