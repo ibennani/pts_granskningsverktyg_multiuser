@@ -14,16 +14,30 @@ export function get_current_user_name() {
         (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('gv_current_user_name'))) || '';
 }
 
+/** Base path för deploy under /v2 (sökväg måste matcha så att CSS/assets laddas rätt). */
+const DEPLOY_BASE_PATH = '/v2';
+
 /**
- * Löser en relativ CSS/asset-sökväg mot sidans pathname så att /v2 inkluderas på servern.
- * Lokalt (t.ex. / eller /index.html) blir base "/", på servern (t.ex. /v2/) blir base "/v2/".
+ * Returnerar appens rot-sökväg (base) så att CSS och andra assets hamnar rätt.
+ * - Vid deploy under /v2 (t.ex. https://host/v2 eller https://host/v2/audit/1): returnerar "/v2/".
+ * - Lokalt eller vid root: returnerar "/".
+ */
+export function get_app_base() {
+    if (typeof window === 'undefined' || !window.location) return '/';
+    const pathname = (window.location.pathname || '/').split('#')[0].split('?')[0].replace(/\/+$/, '') || '/';
+    if (pathname === DEPLOY_BASE_PATH || pathname.startsWith(DEPLOY_BASE_PATH + '/')) return DEPLOY_BASE_PATH + '/';
+    return '/';
+}
+
+/**
+ * Löser en relativ eller absolut CSS/asset-sökväg mot appens rot.
+ * Fungerar både lokalt (base "/") och vid deploy under /v2 (base "/v2/").
  */
 export function resolve_asset_href(href) {
     if (typeof window === 'undefined' || !window.location || !href) return href;
     if (href.startsWith('http:') || href.startsWith('https:') || href.startsWith('//')) return href;
-    const pathname = (window.location.pathname || '/').split('#')[0].split('?')[0];
-    const base = pathname.endsWith('/') ? pathname : pathname + '/';
-    if (href.startsWith('/')) return href;
+    const base = get_app_base();
+    if (href.startsWith('/')) return base === '/' ? href : base.replace(/\/$/, '') + href;
     const relative = href.startsWith('./') ? href.slice(2) : href;
     return base + relative;
 }
