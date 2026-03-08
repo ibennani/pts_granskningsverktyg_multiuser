@@ -124,9 +124,13 @@
     background-color: var(--input-background-color);
 }
 
-.backup-overview-section,
-.backup-detail-section {
+.backup-overview-section {
     margin-top: 1rem;
+}
+
+/* Ingen margin-top på detaljsektionen så att h1 hamnar på samma höjd som i översiktsvyn */
+.backup-detail-section {
+    margin-top: 0;
 }
 
 .backup-overview-section h2,
