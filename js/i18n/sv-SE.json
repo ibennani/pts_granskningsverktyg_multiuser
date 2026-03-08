@@ -404,6 +404,7 @@
   "filename_archive_suffix": "arkiv",
   "filename_locked_suffix": "granskningen_låst",
   "filename_manual_save_suffix": "manuellt_sparad",
+  "filename_system_update_suffix": "systemuppdatering",
   "filter_by_status_label": "Filter:",
   "filter_option_needs_help": "Behöver hjälp",
   "filter_option_updated": "Uppdaterat krav",

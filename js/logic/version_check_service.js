@@ -46,7 +46,14 @@ export function init_version_check_service() {
                 if (window.NotificationComponent?.show_global_critical_message_with_action) {
                     window.NotificationComponent.show_global_critical_message_with_action(msg, 'warning', {
                         label,
-                        callback: () => window.location.reload()
+                        callback: () => {
+                            const state = typeof window.getState === 'function' ? window.getState() : null;
+                            if (state?.auditId && state?.ruleFileContent && window.SaveAuditLogic?.save_audit_to_json_file) {
+                                const t = window.Translation?.t ?? ((k) => k);
+                                window.SaveAuditLogic.save_audit_to_json_file(state, t, () => {}, { backup_suffix_key: 'filename_system_update_suffix' });
+                            }
+                            window.location.reload();
+                        }
                     });
                 }
             }
