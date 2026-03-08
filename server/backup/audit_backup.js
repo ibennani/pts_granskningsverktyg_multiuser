@@ -283,6 +283,52 @@ export function get_last_backup_status() {
 }
 
 /**
+ * Härleder backup-status från filsystemet när last_backup_status inte är satt (t.ex. efter serverstart).
+ * Returnerar { last_run, audits_processed, new_files } eller null om katalogen är tom eller saknas.
+ */
+export async function get_backup_status_from_fs() {
+    const backup_dir = get_backup_dir();
+    let dir_entries;
+    try {
+        dir_entries = await fs.readdir(backup_dir, { withFileTypes: true });
+    } catch (err) {
+        if (err.code === 'ENOENT') return null;
+        throw err;
+    }
+    const audit_dirs = dir_entries.filter((d) => d.isDirectory()).map((d) => d.name);
+    if (audit_dirs.length === 0) return null;
+
+    let latest_mtime = null;
+    for (const audit_id of audit_dirs) {
+        const audit_path = path.join(backup_dir, audit_id);
+        let files;
+        try {
+            files = await fs.readdir(audit_path);
+        } catch {
+            continue;
+        }
+        for (const f of files) {
+            if (!f.endsWith('.json')) continue;
+            const fp = path.join(audit_path, f);
+            try {
+                const stat = await fs.stat(fp);
+                if (!latest_mtime || stat.mtimeMs > latest_mtime) {
+                    latest_mtime = stat.mtimeMs;
+                }
+            } catch {
+                // Ignorera
+            }
+        }
+    }
+    if (latest_mtime == null) return null;
+    return {
+        last_run: new Date(latest_mtime).toISOString(),
+        audits_processed: audit_dirs.length,
+        new_files: 0
+    };
+}
+
+/**
  * Sparar en kopia av granskningens fulla state som fil på servern.
  * @param {object} full_state - Full state från build_full_state
  * @param {object} options - options.backup_suffix_key = i18n-nyckel för filnamnssuffix (t.ex. 'filename_archive_suffix', 'filename_locked_suffix', 'filename_manual_save_suffix')

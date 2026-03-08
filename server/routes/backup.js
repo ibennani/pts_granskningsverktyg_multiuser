@@ -2,7 +2,7 @@
 import express from 'express';
 import fs from 'fs/promises';
 import path from 'path';
-import { run_backup, get_last_backup_status, get_backup_dir, get_backup_settings, save_backup_settings, start_backup_scheduler, save_backup_for_audit } from '../backup/audit_backup.js';
+import { run_backup, get_last_backup_status, get_backup_status_from_fs, get_backup_dir, get_backup_settings, save_backup_settings, start_backup_scheduler, save_backup_for_audit } from '../backup/audit_backup.js';
 import { build_full_state } from './audits.js';
 import { query } from '../db.js';
 
@@ -18,8 +18,15 @@ router.post('/run', async (_req, res) => {
     }
 });
 
-router.get('/status', (_req, res) => {
-    const status = get_last_backup_status();
+router.get('/status', async (_req, res) => {
+    let status = get_last_backup_status();
+    if (!status) {
+        try {
+            status = await get_backup_status_from_fs();
+        } catch (err) {
+            console.warn('[backup] get_backup_status_from_fs:', err.message);
+        }
+    }
     res.json(status ? { ok: true, ...status } : { ok: true, last_run: null });
 });
 
