@@ -78,6 +78,44 @@
     font-size: 0.875rem;
 }
 
+.backup-status-deleted {
+    color: var(--backup-status-deleted-color, #b32d2e);
+}
+
+.backup-detail-actions-cell {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.backup-btn-with-icon {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.backup-btn-with-icon .backup-btn-icon {
+    display: inline-flex;
+    flex-shrink: 0;
+}
+
+.backup-restore-modal-list {
+    list-style-type: disc;
+    padding-left: 1.5rem;
+}
+
+.backup-detail-info {
+    margin-top: 0.25rem;
+    margin-bottom: 1rem;
+    list-style: none;
+    padding-left: 0;
+}
+
+.backup-detail-info li {
+    margin: 0;
+}
+
 .backup-filter-search input,
 .backup-filter-status select {
     padding: 0.35rem 0.5rem;

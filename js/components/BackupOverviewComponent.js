@@ -1,6 +1,6 @@
 // js/components/BackupOverviewComponent.js
 
-import { get_backup_overview, get_backups_for_audit, run_backup_now, get_backup_settings, api_get, get_base_url } from '../api/client.js';
+import { get_backup_overview, get_backups_for_audit, run_backup_now, get_backup_settings, api_get, get_base_url, get_audit_version, update_audit, import_audit } from '../api/client.js';
 import { GenericTableComponent } from './GenericTableComponent.js';
 
 export const BackupOverviewComponent = {
@@ -48,6 +48,7 @@ export const BackupOverviewComponent = {
         this._handle_run_backup = this._handle_run_backup.bind(this);
         this._handle_open_backup_settings = this._handle_open_backup_settings.bind(this);
         this._handle_download_backup = this._handle_download_backup.bind(this);
+        this._handle_restore_backup = this._handle_restore_backup.bind(this);
 
         this._data_loaded = false;
     },
@@ -81,7 +82,8 @@ export const BackupOverviewComponent = {
             not_started: t('audit_status_not_started'),
             in_progress: t('audit_status_in_progress'),
             locked: t('audit_status_locked'),
-            archived: t('audit_status_archived')
+            archived: t('audit_status_archived'),
+            deleted: t('backup_status_deleted')
         };
         return map[status] || status || '';
     },
@@ -146,7 +148,8 @@ export const BackupOverviewComponent = {
             }
         }
         if (this._run_backup_btn_ref && document.contains(this._run_backup_btn_ref)) {
-            this._run_backup_btn_ref.textContent = t('backup_run_now_button');
+            const label_el = this._run_backup_btn_ref.querySelector('.backup-btn-label');
+            if (label_el) label_el.textContent = t('backup_run_now_button');
             this._run_backup_btn_ref.removeAttribute('aria-busy');
         }
     },
@@ -320,6 +323,166 @@ export const BackupOverviewComponent = {
         }
     },
 
+    async _handle_restore_backup(event, row) {
+        if (event) event.preventDefault();
+        const audit_id = this.selected_audit_id;
+        if (!audit_id || !row?.filename) return;
+        const t = this.get_t_func();
+        const Helpers = this.Helpers;
+        const lang = this.Translation?.get_current_language_code?.() || 'sv-SE';
+        const format_datetime = (iso) => {
+            if (!iso || !Helpers?.format_iso_to_local_datetime) return '';
+            return Helpers.format_iso_to_local_datetime(iso, lang);
+        };
+        const base = get_base_url();
+        const backup_url = `${base}/backup/${encodeURIComponent(audit_id)}/${encodeURIComponent(row.filename)}`;
+        let backup_data;
+        try {
+            const res = await fetch(backup_url, { cache: 'no-store' });
+            if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.statusText);
+            backup_data = await res.json();
+        } catch (err) {
+            if (this.NotificationComponent?.show_global_message) {
+                this.NotificationComponent.show_global_message(t('backup_restore_error') || err.message, 'error');
+            }
+            return;
+        }
+        const overview_row = this.backup_overview.find((r) => r.auditId === audit_id) || null;
+        const is_deleted = overview_row?.status === 'deleted';
+        const ModalComponent = window.ModalComponent;
+        if (!ModalComponent?.show || !Helpers?.create_element) return;
+
+        if (is_deleted) {
+            const backup_datetime_str = format_datetime(row.createdAt) || row.createdAt || '—';
+            ModalComponent.show(
+                {
+                    h1_text: t('backup_restore_modal_deleted_title'),
+                    message_text: ''
+                },
+                (container, modal) => {
+                    const intro = Helpers.create_element('p', { text_content: t('backup_restore_modal_deleted_intro') });
+                    container.appendChild(intro);
+                    const ul = Helpers.create_element('ul');
+                    const li = Helpers.create_element('li', { text_content: t('backup_restore_modal_deleted_from', { datetime: backup_datetime_str }) });
+                    ul.appendChild(li);
+                    container.appendChild(ul);
+                    const actions = Helpers.create_element('div', { class_name: 'modal-confirm-actions' });
+                    const restore_btn = Helpers.create_element('button', {
+                        class_name: ['button', 'button-success'],
+                        text_content: t('backup_restore_modal_restore_btn'),
+                        attributes: { type: 'button' }
+                    });
+                    restore_btn.addEventListener('click', async () => {
+                        modal.close();
+                        try {
+                            await import_audit({
+                                ruleFileContent: backup_data.ruleFileContent,
+                                auditMetadata: backup_data.auditMetadata,
+                                samples: backup_data.samples || [],
+                                auditStatus: backup_data.auditStatus || 'not_started',
+                                archivedRequirementResults: backup_data.archivedRequirementResults || [],
+                                lastRulefileUpdateLog: backup_data.lastRulefileUpdateLog || null
+                            });
+                            if (this.NotificationComponent?.show_global_message) {
+                                this.NotificationComponent.show_global_message(t('backup_restore_success'), 'success');
+                            }
+                            this._data_loaded = false;
+                            await this._load_data(true);
+                            if (this.root) this.render();
+                        } catch (err) {
+                            if (this.NotificationComponent?.show_global_message) {
+                                this.NotificationComponent.show_global_message(t('backup_restore_error') || err.message, 'error');
+                            }
+                        }
+                    });
+                    const close_btn = Helpers.create_element('button', {
+                        class_name: ['button', 'button-secondary'],
+                        text_content: t('backup_restore_modal_close'),
+                        attributes: { type: 'button' }
+                    });
+                    close_btn.addEventListener('click', () => modal.close());
+                    actions.appendChild(restore_btn);
+                    actions.appendChild(close_btn);
+                    container.appendChild(actions);
+                }
+            );
+            return;
+        }
+
+        let current_updated_at = null;
+        try {
+            const ver = await get_audit_version(audit_id);
+            current_updated_at = ver?.updated_at || null;
+        } catch (_) {}
+        const backup_datetime_str = format_datetime(row.createdAt) || row.createdAt || '—';
+        const current_datetime_str = current_updated_at ? format_datetime(current_updated_at) : '—';
+        const actor_name = overview_row?.actorName ?? backup_data?.auditMetadata?.actorName ?? '—';
+
+        ModalComponent.show(
+            {
+                h1_text: t('backup_restore_modal_overwrite_title'),
+                message_text: ''
+            },
+            (container, modal) => {
+                const intro = Helpers.create_element('p');
+                intro.appendChild(document.createTextNode(t('backup_restore_modal_overwrite_intro') + ' '));
+                intro.appendChild(Helpers.create_element('br'));
+                const actor_label = Helpers.create_element('strong', { text_content: t('backup_restore_modal_actor_label') });
+                intro.appendChild(actor_label);
+                intro.appendChild(document.createTextNode(' ' + actor_name + '.'));
+                container.appendChild(intro);
+                const ul = Helpers.create_element('ul', { class_name: 'backup-restore-modal-list' });
+                const li_load = Helpers.create_element('li');
+                li_load.appendChild(Helpers.create_element('strong', { text_content: t('backup_restore_modal_loading_from_label') }));
+                li_load.appendChild(document.createTextNode(' ' + backup_datetime_str));
+                const li_current = Helpers.create_element('li');
+                li_current.appendChild(Helpers.create_element('strong', { text_content: t('backup_restore_modal_current_overwrite_label') }));
+                li_current.appendChild(document.createTextNode(' ' + current_datetime_str));
+                ul.appendChild(li_load);
+                ul.appendChild(li_current);
+                container.appendChild(ul);
+                const actions = Helpers.create_element('div', { class_name: 'modal-confirm-actions' });
+                const load_btn = Helpers.create_element('button', {
+                    class_name: ['button', 'button-success'],
+                    text_content: t('backup_restore_modal_confirm_load'),
+                    attributes: { type: 'button' }
+                });
+                load_btn.addEventListener('click', async () => {
+                    modal.close();
+                    try {
+                        await update_audit(audit_id, {
+                            metadata: backup_data.auditMetadata || {},
+                            status: backup_data.auditStatus || 'not_started',
+                            samples: backup_data.samples || [],
+                            ruleFileContent: backup_data.ruleFileContent,
+                            archivedRequirementResults: backup_data.archivedRequirementResults || [],
+                            lastRulefileUpdateLog: backup_data.lastRulefileUpdateLog ?? null
+                        });
+                        if (this.NotificationComponent?.show_global_message) {
+                            this.NotificationComponent.show_global_message(t('backup_restore_success'), 'success');
+                        }
+                        this._data_loaded = false;
+                        await this._load_data(true);
+                        if (this.root) this.render();
+                    } catch (err) {
+                        if (this.NotificationComponent?.show_global_message) {
+                            this.NotificationComponent.show_global_message(t('backup_restore_error') || err.message, 'error');
+                        }
+                    }
+                });
+                const keep_btn = Helpers.create_element('button', {
+                    class_name: ['button', 'button-secondary'],
+                    text_content: t('backup_restore_modal_keep_current'),
+                    attributes: { type: 'button' }
+                });
+                keep_btn.addEventListener('click', () => modal.close());
+                actions.appendChild(load_btn);
+                actions.appendChild(keep_btn);
+                container.appendChild(actions);
+            }
+        );
+    },
+
     _handle_open_backup_settings() {
         if (typeof this.router === 'function') {
             this.router('backup_settings', {});
@@ -348,7 +511,17 @@ export const BackupOverviewComponent = {
             {
                 headerLabel: t('backup_overview_col_status'),
                 getSortValue: (row) => (row.status ?? '').toString(),
-                getContent: (row) => this.get_status_label(row.status) || '—'
+                getContent: (row) => {
+                    const label = this.get_status_label(row.status) || '—';
+                    if (row.status === 'deleted') {
+                        const span = this.Helpers.create_element('span', {
+                            class_name: 'backup-status-deleted',
+                            text_content: label
+                        });
+                        return span;
+                    }
+                    return label;
+                }
             },
             {
                 headerLabel: t('backup_overview_col_latest_backup'),
@@ -359,11 +532,6 @@ export const BackupOverviewComponent = {
                 headerLabel: t('backup_overview_col_backup_count'),
                 getSortValue: (row) => row.backupCount != null ? Number(row.backupCount) : 0,
                 getContent: (row) => (row.backupCount != null ? String(row.backupCount) : '0')
-            },
-            {
-                headerLabel: t('backup_overview_col_has_archive'),
-                getSortValue: (row) => row.hasArchive ? 1 : 0,
-                getContent: (row) => row.hasArchive ? t('yes') : t('no')
             },
             {
                 headerLabel: t('backup_overview_col_actions'),
@@ -394,51 +562,102 @@ export const BackupOverviewComponent = {
             if (!iso || !Helpers?.format_iso_to_local_datetime) return '';
             return Helpers.format_iso_to_local_datetime(iso, lang);
         };
-        const actor_name = overview_row?.actorName ?? '—';
-        const backup_count = overview_row?.backupCount != null ? String(overview_row.backupCount) : '—';
-        const latest_str = overview_row?.latestBackupAt
-            ? format_datetime(overview_row.latestBackupAt) || '—'
-            : '—';
+
+        const format_file_size = (bytes) => {
+            if (bytes == null || typeof bytes !== 'number') return '—';
+            if (bytes >= 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1).replace('.', ',') + ' MB';
+            if (bytes >= 1024) return (bytes / 1024).toFixed(1).replace('.', ',') + ' KB';
+            return bytes + ' B';
+        };
+        const get_summary_text = (row) => {
+            const s = row.summarySamples;
+            const r = row.summaryRequirements;
+            if (s != null && r != null) return t('backup_detail_summary', { samples: s, requirements: r });
+            if (s != null) return t('backup_detail_summary_samples_only', { samples: s });
+            if (r != null) return t('backup_detail_summary_requirements_only', { requirements: r });
+            return '—';
+        };
 
         return [
             {
-                headerLabel: t('backup_detail_col_actor'),
-                getSortValue: () => actor_name,
-                getContent: () => actor_name
-            },
-            {
-                headerLabel: t('backup_detail_col_backup_count'),
-                getSortValue: () => overview_row?.backupCount ?? 0,
-                getContent: () => backup_count
-            },
-            {
-                headerLabel: t('backup_detail_col_latest'),
+                headerLabel: t('backup_detail_col_datetime'),
                 getSortValue: (row) => row.createdAt ? Date.parse(row.createdAt) || 0 : 0,
-                getContent: () => latest_str
+                getContent: (row) => format_datetime(row.createdAt) || row.createdAt || '—'
             },
             {
-                headerLabel: t('backup_detail_col_type'),
-                getSortValue: (row) => row.isArchive ? 1 : 0,
-                getContent: (row) => row.isArchive
-                    ? t('backup_detail_type_archive')
-                    : t('backup_detail_type_regular')
+                headerLabel: t('backup_detail_col_file_size'),
+                getSortValue: (row) => row.fileSizeBytes != null ? Number(row.fileSizeBytes) : 0,
+                getContent: (row) => format_file_size(row.fileSizeBytes)
+            },
+            {
+                headerLabel: t('backup_detail_col_summary'),
+                getSortValue: (row) => (row.summarySamples != null ? row.summarySamples : 0) * 10000 + (row.summaryRequirements != null ? row.summaryRequirements : 0),
+                getContent: (row) => get_summary_text(row)
+            },
+            {
+                headerLabel: t('backup_detail_col_progress'),
+                getSortValue: (row) => row.progressPercent != null ? Number(row.progressPercent) : -1,
+                getContent: (row) => {
+                    const audited = row.progressAudited;
+                    const total = row.progressTotal;
+                    if (audited == null || total == null || total === 0) return '—';
+                    const pct = (100 * audited) / total;
+                    const pctStr = pct.toFixed(1).replace('.', ',');
+                    return `${audited} / ${total} (${pctStr} %)`;
+                }
             },
             {
                 headerLabel: t('backup_detail_col_actions'),
                 isAction: true,
                 getContent: (row) => {
-                    const a = Helpers.create_element('a', {
-                        class_name: 'button button-default button-small generic-table-action-cell',
-                        text_content: t('backup_detail_download_button'),
+                    const wrapper = Helpers.create_element('div', {
+                        class_name: 'backup-detail-actions-cell'
+                    });
+                    const row_datetime = format_datetime(row.createdAt) || row.createdAt || '—';
+                    const row_summary = get_summary_text(row);
+                    const restore_aria = t('backup_restore_aria', { datetime: row_datetime, type: row_summary });
+                    const download_aria = t('backup_detail_download_aria', { datetime: row_datetime, type: row_summary });
+                    const restore_btn = Helpers.create_element('button', {
+                        class_name: ['button', 'button-success', 'button-small', 'generic-table-action-cell', 'backup-btn-with-icon'],
                         attributes: {
-                            href: '#',
-                            'aria-label': t('backup_detail_download_aria', { filename: row.filename || '' })
+                            type: 'button',
+                            'aria-label': restore_aria
                         }
                     });
-                    a.addEventListener('click', (e) => {
+                    restore_btn.appendChild(Helpers.create_element('span', { class_name: 'backup-btn-label', text_content: t('backup_restore_button') }));
+                    if (Helpers.get_icon_svg) {
+                        const icon_span = Helpers.create_element('span', {
+                            html_content: Helpers.get_icon_svg('update', ['currentColor'], 18),
+                            attributes: { 'aria-hidden': 'true' }
+                        });
+                        icon_span.classList.add('backup-btn-icon');
+                        restore_btn.appendChild(icon_span);
+                    }
+                    restore_btn.addEventListener('click', (e) => {
+                        this._handle_restore_backup(e, row);
+                    });
+                    const download_a = Helpers.create_element('a', {
+                        class_name: ['button', 'button-default', 'button-small', 'generic-table-action-cell', 'backup-btn-with-icon'],
+                        attributes: {
+                            href: '#',
+                            'aria-label': download_aria
+                        }
+                    });
+                    download_a.appendChild(Helpers.create_element('span', { class_name: 'backup-btn-label', text_content: t('backup_detail_download_button') }));
+                    if (Helpers.get_icon_svg) {
+                        const dl_icon = Helpers.create_element('span', {
+                            html_content: Helpers.get_icon_svg('download', ['currentColor'], 18),
+                            attributes: { 'aria-hidden': 'true' }
+                        });
+                        dl_icon.classList.add('backup-btn-icon');
+                        download_a.appendChild(dl_icon);
+                    }
+                    download_a.addEventListener('click', (e) => {
                         this._handle_download_backup(e, this.selected_audit_id, row.filename);
                     });
-                    return a;
+                    wrapper.appendChild(restore_btn);
+                    wrapper.appendChild(download_a);
+                    return wrapper;
                 }
             }
         ];
@@ -499,10 +718,22 @@ export const BackupOverviewComponent = {
             text_content: t('backup_status_heading')
         });
         const run_backup_btn = this.Helpers.create_element('button', {
-            class_name: ['button', 'button-default', 'button-small'],
-            text_content: this._run_backup_in_progress ? t('backup_run_in_progress') : t('backup_run_now_button'),
+            class_name: ['button', 'button-default', 'button-small', 'backup-btn-with-icon'],
             attributes: { type: 'button' }
         });
+        const run_text_span = this.Helpers.create_element('span', {
+            class_name: 'backup-btn-label',
+            text_content: this._run_backup_in_progress ? t('backup_run_in_progress') : t('backup_run_now_button')
+        });
+        run_backup_btn.appendChild(run_text_span);
+        if (this.Helpers.get_icon_svg) {
+            const run_icon = this.Helpers.create_element('span', {
+                html_content: this.Helpers.get_icon_svg('save', ['currentColor'], 18),
+                attributes: { 'aria-hidden': 'true' }
+            });
+            run_icon.classList.add('backup-btn-icon');
+            run_backup_btn.appendChild(run_icon);
+        }
         this._run_backup_btn_ref = run_backup_btn;
         if (this._run_backup_in_progress) {
             run_backup_btn.setAttribute('aria-busy', 'true');
@@ -512,10 +743,21 @@ export const BackupOverviewComponent = {
         heading_and_run.appendChild(status_heading);
         heading_and_run.appendChild(run_backup_btn);
         const settings_btn = this.Helpers.create_element('button', {
-            class_name: ['button', 'button-default', 'button-small'],
-            text_content: t('backup_settings_button'),
+            class_name: ['button', 'button-default', 'button-small', 'backup-btn-with-icon'],
             attributes: { type: 'button', 'aria-label': t('backup_settings_button') }
         });
+        settings_btn.appendChild(this.Helpers.create_element('span', {
+            class_name: 'backup-btn-label',
+            text_content: t('backup_settings_button')
+        }));
+        if (this.Helpers.get_icon_svg) {
+            const set_icon = this.Helpers.create_element('span', {
+                html_content: this.Helpers.get_icon_svg('settings', ['currentColor'], 18),
+                attributes: { 'aria-hidden': 'true' }
+            });
+            set_icon.classList.add('backup-btn-icon');
+            settings_btn.appendChild(set_icon);
+        }
         settings_btn.addEventListener('click', this._handle_open_backup_settings);
         const status_buttons = this.Helpers.create_element('div', { class_name: 'backup-status-heading-buttons' });
         status_buttons.appendChild(settings_btn);
@@ -616,6 +858,7 @@ export const BackupOverviewComponent = {
         add_option('not_started', this.get_status_label('not_started'));
         add_option('locked', this.get_status_label('locked'));
         add_option('archived', this.get_status_label('archived'));
+        add_option('deleted', t('backup_status_deleted'));
         status_select.addEventListener('change', this._handle_status_change);
         status_wrapper.appendChild(status_label);
         status_wrapper.appendChild(status_select);
@@ -670,12 +913,35 @@ export const BackupOverviewComponent = {
             });
             detail_section.appendChild(detail_h2);
 
+            const detail_overview_row = this.backup_overview.find(r => r.auditId === this.selected_audit_id) || null;
+            const detail_info = this.Helpers.create_element('ul', { class_name: 'backup-detail-info' });
+            const lang = this.Translation?.get_current_language_code?.() || 'sv-SE';
+            const format_dt = (iso) => (iso && this.Helpers?.format_iso_to_local_datetime)
+                ? this.Helpers.format_iso_to_local_datetime(iso, lang)
+                : '';
+            const actor_name = detail_overview_row?.actorName ?? '—';
+            const case_number = detail_overview_row?.caseNumber ?? '';
+            const backup_count = detail_overview_row?.backupCount != null ? String(detail_overview_row.backupCount) : '0';
+            const latest_str = detail_overview_row?.latestBackupAt ? format_dt(detail_overview_row.latestBackupAt) : '—';
+            const make_li = (label, value) => {
+                const li = this.Helpers.create_element('li');
+                li.appendChild(this.Helpers.create_element('strong', { text_content: label }));
+                li.appendChild(document.createTextNode(' ' + value));
+                return li;
+            };
+            detail_info.appendChild(make_li(t('backup_detail_info_actor'), actor_name));
+            if (case_number) {
+                detail_info.appendChild(make_li(t('backup_detail_info_case_number'), case_number));
+            }
+            detail_info.appendChild(make_li(t('backup_detail_info_backup_count'), backup_count));
+            detail_info.appendChild(make_li(t('backup_detail_info_latest'), latest_str));
+            detail_section.appendChild(detail_info);
+
             const detail_table_root = this.Helpers.create_element('div', {
                 class_name: 'backup-detail-table-root'
             });
             detail_section.appendChild(detail_table_root);
 
-            const detail_overview_row = this.backup_overview.find(r => r.auditId === this.selected_audit_id) || null;
             const detail_columns = this._build_detail_columns(t, detail_overview_row);
             this._detail_table.render({
                 root: detail_table_root,

@@ -5,6 +5,7 @@ import path from 'path';
 import { run_backup, get_last_backup_status, get_backup_status_from_fs, get_backup_dir, get_backup_settings, save_backup_settings, start_backup_scheduler, save_backup_for_audit } from '../backup/audit_backup.js';
 import { build_full_state } from './audits.js';
 import { query } from '../db.js';
+import { calculate_overall_audit_progress } from '../../js/audit_logic.js';
 
 const router = express.Router();
 
@@ -193,7 +194,7 @@ router.get('/list', async (_req, res) => {
                 auditId: audit_id,
                 caseNumber: metadata.caseNumber || null,
                 actorName: metadata.actorName || null,
-                status: row.status || null,
+                status: row && row.status != null ? row.status : 'deleted',
                 latestBackupAt: latest_mtime ? new Date(latest_mtime).toISOString() : null,
                 backupCount: json_files.length,
                 hasArchive: has_archive
@@ -257,11 +258,47 @@ router.get('/:auditId', async (req, res) => {
         for (const fname of json_files) {
             const fp = path.join(audit_path, fname);
             let created_at = null;
+            let file_size_bytes = null;
+            let summary_samples = null;
+            let summary_requirements = null;
+            let progress_percent = null;
+            let progress_audited = null;
+            let progress_total = null;
             try {
                 const stat = await fs.stat(fp);
-                created_at = stat.mtime.toISOString();
+                created_at = stat.mtime != null ? stat.mtime.toISOString() : null;
+                const size = stat.size;
+                file_size_bytes = typeof size === 'number' && !Number.isNaN(size) ? size : null;
             } catch {
-                // Ignorera tidsstämpel om vi inte kan läsa den
+                // Ignorera om vi inte kan läsa stat
+            }
+            try {
+                const raw = await fs.readFile(fp, 'utf8');
+                const data = JSON.parse(raw);
+                const samples = Array.isArray(data.samples) ? data.samples : [];
+                const ruleContent = data.ruleFileContent;
+                const reqs = ruleContent && typeof ruleContent === 'object' && ruleContent.requirements && typeof ruleContent.requirements === 'object'
+                    ? ruleContent.requirements
+                    : {};
+                summary_samples = samples.length;
+                summary_requirements = Object.keys(reqs).length;
+                try {
+                    const progress = calculate_overall_audit_progress(data);
+                    progress_percent = progress.total > 0
+                        ? Math.round((100 * progress.audited) / progress.total)
+                        : null;
+                    progress_audited = progress.audited;
+                    progress_total = progress.total;
+                } catch {
+                    progress_percent = null;
+                    progress_audited = null;
+                    progress_total = null;
+                }
+            } catch (err) {
+                // Filen kunde inte läsas eller är ogiltig JSON – behåll null för sammanfattning
+                if (process.env.NODE_ENV === 'development') {
+                    console.warn('[backup] Kunde inte parsa backup för sammanfattning:', fp, err?.message);
+                }
             }
             const lower = fname.toLowerCase();
             const is_archive = lower.includes('_arkiv') || lower.includes('_archive');
@@ -269,7 +306,13 @@ router.get('/:auditId', async (req, res) => {
                 filename: fname,
                 url: `/backup/${auditId}/${encodeURIComponent(fname)}`,
                 createdAt: created_at,
-                isArchive: is_archive
+                isArchive: is_archive,
+                fileSizeBytes: file_size_bytes,
+                summarySamples: summary_samples,
+                summaryRequirements: summary_requirements,
+                progressPercent: progress_percent,
+                progressAudited: progress_audited,
+                progressTotal: progress_total
             });
         }
 
