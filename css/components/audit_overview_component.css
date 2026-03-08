@@ -1,24 +1,25 @@
 /* css/components/audit_overview_component.css */
 
+/* Samma bakgrund och kant som kritisk meddelanderuta "ny version" (notification_component.css) */
 .audit-overview__newer-rule-banner {
     margin: 0.75rem 0;
     padding: 0.5rem 0.75rem;
-    background: #f9ca65;
-    color: #111;
-    border: 1px solid var(--border-color, #ddd);
+    background: #FFE5CC;
+    color: #000000;
+    border: 1px solid #DC7D0A;
     border-radius: var(--border-radius, 4px);
     font-size: 0.95rem;
 }
 
 .audit-overview__newer-rule-banner a {
     text-decoration: underline;
-    color: #111;
+    color: #000000;
 }
 
 [data-theme="dark"] .audit-overview__newer-rule-banner {
-    background: #FFB000;
-    color: #111;
-    border-color: #8a5a00;
+    background: #DC7D0A;
+    color: #000000;
+    border-color: #E68A1A;
 }
 
 /* --- NY LAYOUT FÖR DASHBOARD --- */
