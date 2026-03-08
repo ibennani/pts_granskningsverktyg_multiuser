@@ -2,7 +2,8 @@
 import express from 'express';
 import fs from 'fs/promises';
 import path from 'path';
-import { run_backup, get_last_backup_status, get_backup_dir, get_backup_settings, save_backup_settings, start_backup_scheduler } from '../backup/audit_backup.js';
+import { run_backup, get_last_backup_status, get_backup_dir, get_backup_settings, save_backup_settings, start_backup_scheduler, save_backup_for_audit } from '../backup/audit_backup.js';
+import { build_full_state } from './audits.js';
 import { query } from '../db.js';
 
 const router = express.Router();
@@ -85,6 +86,31 @@ router.put('/settings', async (req, res) => {
         console.warn('[backup] PUT settings error:', err.message);
         const detail = err.code === 'EACCES' ? 'Saknar skrivrättighet till backup-katalogen.' : err.message;
         res.status(500).json({ error: 'Kunde inte spara inställningar', detail });
+    }
+});
+
+router.post('/save-audit', async (req, res) => {
+    try {
+        const audit_id = req.body?.auditId || req.body?.audit_id;
+        if (!audit_id) {
+            return res.status(400).json({ error: 'auditId krävs' });
+        }
+        const auditResult = await query('SELECT * FROM audits WHERE id = $1', [audit_id]);
+        if (auditResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Granskning hittades inte' });
+        }
+        const audit = auditResult.rows[0];
+        let ruleSet = null;
+        if (audit.rule_set_id) {
+            const rs = await query('SELECT * FROM rule_sets WHERE id = $1', [audit.rule_set_id]);
+            ruleSet = rs.rows[0] || null;
+        }
+        const full_state = build_full_state(audit, ruleSet);
+        await save_backup_for_audit(full_state, { backup_suffix_key: 'filename_manual_save_suffix' });
+        res.json({ ok: true });
+    } catch (err) {
+        console.warn('[backup] save-audit error:', err.message);
+        res.status(500).json({ error: 'Kunde inte spara säkerhetskopian', detail: err.message });
     }
 });
 

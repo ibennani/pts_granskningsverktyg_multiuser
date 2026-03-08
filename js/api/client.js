@@ -183,6 +183,10 @@ export async function run_backup_now() {
     return api_post('/backup/run', {});
 }
 
+export async function save_audit_backup_on_server(audit_id) {
+    return api_post('/backup/save-audit', { auditId: audit_id });
+}
+
 export async function get_backup_settings() {
     return api_get('/backup/settings');
 }

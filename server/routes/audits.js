@@ -3,7 +3,7 @@ import express from 'express';
 import { query } from '../db.js';
 import { calculate_overall_audit_progress } from '../../js/audit_logic.js';
 import { calculateQualityScore } from '../../js/logic/ScoreCalculator.js';
-import { save_archive_for_audit } from '../backup/audit_backup.js';
+import { save_backup_for_audit } from '../backup/audit_backup.js';
 
 const router = express.Router();
 
@@ -463,8 +463,8 @@ router.patch('/:id', async (req, res) => {
 
         if (status === 'locked') {
             setImmediate(() => {
-                save_archive_for_audit(fullState).catch((err) => {
-                    console.warn('[audits] Arkivering vid låsning misslyckades:', err.message);
+                save_backup_for_audit(fullState, { backup_suffix_key: 'filename_locked_suffix' }).catch((err) => {
+                    console.warn('[audits] Säkerhetskopiering vid låsning misslyckades:', err.message);
                 });
             });
         }

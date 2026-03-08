@@ -402,6 +402,8 @@
   "filename_fallback_actor": "audit",
   "filename_backup_suffix": "backup",
   "filename_archive_suffix": "archive",
+  "filename_locked_suffix": "audit_locked",
+  "filename_manual_save_suffix": "manually_saved",
   "filter_by_status_label": "Filter:",
   "filter_option_needs_help": "Needs help",
   "filter_option_updated": "Updated requirement",

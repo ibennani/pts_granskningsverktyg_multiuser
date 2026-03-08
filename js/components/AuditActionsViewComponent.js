@@ -1,4 +1,4 @@
-import { get_rules } from '../api/client.js';
+import { get_rules, save_audit_backup_on_server } from '../api/client.js';
 import { subscribe_rules } from '../logic/list_push_service.js';
 import { version_greater_than } from '../utils/version_utils.js';
 import { find_newer_rule_for_audit } from '../logic/newer_rule_check.js';
@@ -106,6 +106,9 @@ export const AuditActionsViewComponent = {
         const t = this.Translation.t;
         const current_state = this.getState();
         const show_msg = this.NotificationComponent?.show_global_message?.bind(this.NotificationComponent);
+        if (current_state?.auditId) {
+            save_audit_backup_on_server(current_state.auditId).catch(() => {});
+        }
         if (this.SaveAuditLogic?.save_audit_to_json_file) {
             this.SaveAuditLogic.save_audit_to_json_file(current_state, t, show_msg);
         } else if (show_msg) {
@@ -417,10 +420,20 @@ export const AuditActionsViewComponent = {
             }));
         }
 
-        const updated_reqs_count = (state.samples || [])
-            .flatMap(s => Object.values(s.requirementResults || {}))
-            .filter(r => r.needsReview === true)
-            .length;
+        // Antal krav som har needsReview och en tydlig bedömning (godkänd/underkänd) – det som faktiskt behöver bekräftas i vyn.
+        const requirements = state?.ruleFileContent?.requirements;
+        let updated_reqs_count = 0;
+        (state.samples || []).forEach(sample => {
+            Object.keys(sample.requirementResults || {}).forEach(reqId => {
+                if (sample.requirementResults[reqId]?.needsReview !== true) return;
+                const req_def = requirements && (Array.isArray(requirements) ? requirements.find(r => (r?.key || r?.id) === reqId) : requirements[reqId]);
+                if (!req_def) return;
+                const display_status = this.AuditLogic?.calculate_requirement_status
+                    ? this.AuditLogic.calculate_requirement_status(req_def, sample.requirementResults[reqId])
+                    : (sample.requirementResults[reqId]?.status || 'not_audited');
+                if (display_status === 'passed' || display_status === 'failed') updated_reqs_count++;
+            });
+        });
 
         if (updated_reqs_count > 0) {
             status_actions.appendChild(this.create_status_action_item({

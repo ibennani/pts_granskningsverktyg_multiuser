@@ -402,6 +402,8 @@
   "filename_fallback_actor": "granskning",
   "filename_backup_suffix": "säkerhetskopia",
   "filename_archive_suffix": "arkiv",
+  "filename_locked_suffix": "granskningen_låst",
+  "filename_manual_save_suffix": "manuellt_sparad",
   "filter_by_status_label": "Filter:",
   "filter_option_needs_help": "Behöver hjälp",
   "filter_option_updated": "Uppdaterat krav",

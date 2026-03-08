@@ -120,7 +120,9 @@ export async function save_backup_settings(settings) {
 const SERVER_T_KEYS = {
     filename_audit_prefix: 'tillganglighetsgranskning',
     filename_fallback_actor: 'granskning',
-    filename_archive_suffix: 'arkiv'
+    filename_archive_suffix: 'arkiv',
+    filename_locked_suffix: 'granskningen_låst',
+    filename_manual_save_suffix: 'manuellt_sparad'
 };
 
 function server_t_func(key) {
@@ -280,7 +282,12 @@ export function get_last_backup_status() {
     return last_backup_status;
 }
 
-export async function save_archive_for_audit(full_state) {
+/**
+ * Sparar en kopia av granskningens fulla state som fil på servern.
+ * @param {object} full_state - Full state från build_full_state
+ * @param {object} options - options.backup_suffix_key = i18n-nyckel för filnamnssuffix (t.ex. 'filename_archive_suffix', 'filename_locked_suffix', 'filename_manual_save_suffix')
+ */
+export async function save_backup_for_audit(full_state, options = {}) {
     const backup_dir = get_backup_dir();
     await ensure_dir(backup_dir);
 
@@ -290,12 +297,17 @@ export async function save_archive_for_audit(full_state) {
     const audit_dir = path.join(backup_dir, audit_id);
     await ensure_dir(audit_dir);
 
+    const suffix_key = options.backup_suffix_key || 'filename_archive_suffix';
     const filename = generate_audit_filename(full_state, server_t_func, {
-        backup_suffix_key: 'filename_archive_suffix'
+        backup_suffix_key: suffix_key
     });
     const target_path = path.join(audit_dir, filename);
     const tmp_path = target_path + '.tmp';
 
     await fs.writeFile(tmp_path, JSON.stringify(full_state, null, 2), 'utf8');
     await fs.rename(tmp_path, target_path);
+}
+
+export async function save_archive_for_audit(full_state) {
+    return save_backup_for_audit(full_state, { backup_suffix_key: 'filename_archive_suffix' });
 }
