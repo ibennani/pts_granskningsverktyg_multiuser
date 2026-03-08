@@ -718,6 +718,7 @@
   "backup_overview_col_actions": "Åtgärder",
   "backup_overview_show_backups_button": "Visa backuper",
   "backup_overview_show_backups_aria": "Visa backuper: {actorName}",
+  "backup_overview_link_to_audit_aria": "Aktörens namn (till granskningen)",
   "backup_overview_empty": "Det finns inga sparade säkerhetskopior ännu.",
   "backup_overview_aria_label": "Lista över granskningar med sparade säkerhetskopior",
   "backup_overview_load_error": "Kunde inte hämta listan över säkerhetskopior. Försök igen senare.",

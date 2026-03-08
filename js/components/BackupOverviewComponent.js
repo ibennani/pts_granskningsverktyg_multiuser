@@ -56,6 +56,7 @@ export const BackupOverviewComponent = {
     destroy() {
         this._overview_table?.destroy?.();
         this._detail_table?.destroy?.();
+        this._overview_table_root = null;
         this._status_last_run_p = null;
         this._status_next_run_p = null;
         this._run_backup_btn_ref = null;
@@ -217,13 +218,34 @@ export const BackupOverviewComponent = {
     _handle_filter_input(event) {
         this.filter_text = event.target.value || '';
         this._apply_filters();
-        if (this.root) this.render();
+        this._render_overview_table_only();
     },
 
     _handle_status_change(event) {
         this.status_filter = event.target.value || 'all';
         this._apply_filters();
-        if (this.root) this.render();
+        this._render_overview_table_only();
+    },
+
+    _render_overview_table_only() {
+        if (this.view_name !== 'backup' || !this._overview_table_root || !this.Helpers?.create_element) return;
+        const t = this.get_t_func();
+        const overview_columns = this._build_overview_columns(t);
+        this._overview_table.render({
+            root: this._overview_table_root,
+            columns: overview_columns,
+            data: this.filtered_overview || [],
+            emptyMessage: t('backup_overview_empty'),
+            ariaLabel: t('backup_overview_aria_label'),
+            wrapperClassName: 'generic-table-wrapper',
+            tableClassName: 'generic-table generic-table--backup-overview',
+            sortState: this.sort_state_overview,
+            onSort: (col_index, direction) => {
+                this.sort_state_overview = { columnIndex: col_index, direction };
+                if (this.root) this.render();
+            },
+            t
+        });
     },
 
     async _handle_show_backups(audit_id) {
@@ -506,7 +528,23 @@ export const BackupOverviewComponent = {
             {
                 headerLabel: t('backup_overview_col_actor'),
                 getSortValue: (row) => (row.actorName ?? '').toString().trim(),
-                getContent: (row) => (row.actorName ?? '').toString().trim() || '—'
+                getContent: (row) => {
+                    const actor_name = (row.actorName ?? '').toString().trim() || '—';
+                    const a = Helpers.create_element('a', {
+                        text_content: actor_name,
+                        attributes: {
+                            href: `#audit_overview?auditId=${row.auditId ?? ''}`,
+                            'aria-label': t('backup_overview_link_to_audit_aria')
+                        }
+                    });
+                    a.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        if (row.auditId != null) {
+                            this.router('audit_overview', { auditId: row.auditId });
+                        }
+                    });
+                    return a;
+                }
             },
             {
                 headerLabel: t('backup_overview_col_status'),
@@ -590,9 +628,9 @@ export const BackupOverviewComponent = {
                 getContent: (row) => format_file_size(row.fileSizeBytes)
             },
             {
-                headerLabel: t('backup_detail_col_summary'),
-                getSortValue: (row) => (row.summarySamples != null ? row.summarySamples : 0) * 10000 + (row.summaryRequirements != null ? row.summaryRequirements : 0),
-                getContent: (row) => get_summary_text(row)
+                headerLabel: t('backup_overview_col_status'),
+                getSortValue: () => (overview_row?.status ?? '').toString(),
+                getContent: () => this.get_status_label(overview_row?.status) || '—'
             },
             {
                 headerLabel: t('backup_detail_col_progress'),
@@ -674,6 +712,7 @@ export const BackupOverviewComponent = {
 
         const t = this.get_t_func();
         this.root.innerHTML = '';
+        this._overview_table_root = null;
 
         const plate = this.Helpers.create_element('div', {
             class_name: 'content-plate backup-view-plate'
@@ -693,21 +732,24 @@ export const BackupOverviewComponent = {
             this.NotificationComponent.show_global_message(t(pending_message_key), 'success');
         }
 
-        const h1 = this.Helpers.create_element('h1', {
-            id: 'main-content-heading',
-            text_content: t('backup_view_h1'),
-            attributes: { tabindex: '-1' }
-        });
+        if (this.view_name === 'backup') {
+            const h1 = this.Helpers.create_element('h1', {
+                id: 'main-content-heading',
+                text_content: t('backup_view_h1'),
+                attributes: { tabindex: '-1' }
+            });
 
-        const intro = this.Helpers.create_element('p', {
-            class_name: 'backup-view-intro',
-            text_content: t('backup_view_intro')
-        });
+            const intro = this.Helpers.create_element('p', {
+                class_name: 'backup-view-intro',
+                text_content: t('backup_view_intro')
+            });
 
-        plate.appendChild(h1);
-        plate.appendChild(intro);
+            plate.appendChild(h1);
+            plate.appendChild(intro);
+        }
 
-        // Systemstatus-ruta
+        // Systemstatus-ruta (endast i översiktsvy)
+        if (this.view_name === 'backup') {
         const status_box = this.Helpers.create_element('section', {
             class_name: 'backup-status-box'
         });
@@ -867,6 +909,7 @@ export const BackupOverviewComponent = {
         filter_section.appendChild(status_wrapper);
 
         plate.appendChild(filter_section);
+        }
 
         if (this.view_name === 'backup') {
             // Översiktstabell
@@ -882,6 +925,7 @@ export const BackupOverviewComponent = {
                 class_name: 'backup-overview-table-root'
             });
             overview_section.appendChild(overview_table_root);
+            this._overview_table_root = overview_table_root;
 
             const overview_columns = this._build_overview_columns(t);
             this._overview_table.render({
@@ -908,10 +952,12 @@ export const BackupOverviewComponent = {
             const detail_section = this.Helpers.create_element('section', {
                 class_name: 'backup-detail-section'
             });
-            const detail_h2 = this.Helpers.create_element('h2', {
-                text_content: t('backup_detail_heading')
+            const detail_h1 = this.Helpers.create_element('h1', {
+                id: 'main-content-heading',
+                text_content: t('backup_detail_heading'),
+                attributes: { tabindex: '-1' }
             });
-            detail_section.appendChild(detail_h2);
+            detail_section.appendChild(detail_h1);
 
             const detail_overview_row = this.backup_overview.find(r => r.auditId === this.selected_audit_id) || null;
             const detail_info = this.Helpers.create_element('ul', { class_name: 'backup-detail-info' });
@@ -929,7 +975,22 @@ export const BackupOverviewComponent = {
                 li.appendChild(document.createTextNode(' ' + value));
                 return li;
             };
-            detail_info.appendChild(make_li(t('backup_detail_info_actor'), actor_name));
+            const actor_li = this.Helpers.create_element('li');
+            actor_li.appendChild(this.Helpers.create_element('strong', { text_content: t('backup_detail_info_actor') }));
+            actor_li.appendChild(document.createTextNode(' '));
+            const actor_link = this.Helpers.create_element('a', {
+                text_content: actor_name,
+                attributes: {
+                    href: `#audit_overview?auditId=${this.selected_audit_id}`,
+                    'aria-label': t('backup_overview_link_to_audit_aria')
+                }
+            });
+            actor_link.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.router('audit_overview', { auditId: this.selected_audit_id });
+            });
+            actor_li.appendChild(actor_link);
+            detail_info.appendChild(actor_li);
             if (case_number) {
                 detail_info.appendChild(make_li(t('backup_detail_info_case_number'), case_number));
             }

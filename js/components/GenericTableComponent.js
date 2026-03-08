@@ -227,6 +227,9 @@ export const GenericTableComponent = {
                 apply_restore_focus(target);
             }
         } else if (focus_restore) {
+            if (document.activeElement?.id === 'backup-filter-search-input') {
+                return;
+            }
             if (focus_restore.in_header) {
                 const header_row = wrapper.querySelector('thead tr');
                 const th = header_row?.children[focus_restore.col_index];

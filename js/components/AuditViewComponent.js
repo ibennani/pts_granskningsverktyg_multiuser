@@ -1662,19 +1662,19 @@ export const AuditViewComponent = {
                         text_content: case_number ? `${case_number} ` : '',
                         class_name: 'audit-audit-case-number'
                     });
+                    const audit_link_text = case_number ? `${case_number} ${display_name}` : display_name;
                     const link = this.Helpers.create_element('a', {
                         text_content: display_name,
                         class_name: 'audit-item-label audit-audit-link',
                         attributes: {
                             href: `#audit_overview?auditId=${a.id}`,
-                            'aria-label': display_name
+                            'aria-label': t('backup_overview_link_to_audit_aria')
                         }
                     });
                     link.addEventListener('click', (e) => {
                         e.preventDefault();
                         this.handle_open_audit(a.id);
                     });
-                    const audit_link_text = case_number ? `${case_number} ${display_name}` : display_name;
                     const delete_aria = t('audit_delete_audit_aria', { name: audit_link_text });
                     const download_aria = t('audit_download_audit_aria', { name: audit_link_text });
                     const icon_svg_li = (name, size = 16) => (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg(name, ['currentColor'], size) : '');
