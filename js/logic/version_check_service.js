@@ -1,5 +1,6 @@
 // js/logic/version_check_service.js
 // Kontrollerar periodiskt om en ny version av appen har deployats. Visar kritisk meddelanderuta med knapp (ingen nedräkning).
+// Kör endast periodisk kontroll när fliken är synlig – webbläsare throttlar timers i bakgrunden, då syns inte meddelandet förrän användaren växlar tillbaka.
 
 const CHECK_INTERVAL_MS = 30000;
 const INITIAL_DELAY_MS = 5000;
@@ -54,31 +55,48 @@ export function init_version_check_service() {
         }
     }
 
-    function schedule_check() {
+    function schedule_next_check() {
         if (check_timer) clearTimeout(check_timer);
+        if (document.visibilityState !== 'visible') return;
         check_timer = setTimeout(() => {
             check_for_new_version();
-            schedule_check();
+            schedule_next_check();
         }, CHECK_INTERVAL_MS);
+    }
+
+    function start_periodic_check() {
+        if (document.visibilityState !== 'visible') return;
+        check_for_new_version();
+        schedule_next_check();
+    }
+
+    function stop_periodic_check() {
+        if (check_timer) {
+            clearTimeout(check_timer);
+            check_timer = null;
+        }
     }
 
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
             check_for_new_version();
+            schedule_next_check();
+        } else {
+            stop_periodic_check();
         }
     });
 
-    check_timer = setTimeout(() => {
-        check_for_new_version();
-        schedule_check();
-    }, INITIAL_DELAY_MS);
+    if (document.visibilityState === 'visible') {
+        check_timer = setTimeout(start_periodic_check, INITIAL_DELAY_MS);
+    } else {
+        check_timer = setTimeout(() => {
+            if (document.visibilityState === 'visible') start_periodic_check();
+        }, INITIAL_DELAY_MS);
+    }
 
     return {
         disconnect() {
-            if (check_timer) {
-                clearTimeout(check_timer);
-                check_timer = null;
-            }
+            stop_periodic_check();
         }
     };
 }
