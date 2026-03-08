@@ -55,6 +55,9 @@ export const BackupOverviewComponent = {
     destroy() {
         this._overview_table?.destroy?.();
         this._detail_table?.destroy?.();
+        this._status_last_run_p = null;
+        this._status_next_run_p = null;
+        this._run_backup_btn_ref = null;
         this.root = null;
         this.deps = null;
         this.router = null;
@@ -107,6 +110,45 @@ export const BackupOverviewComponent = {
         tomorrow.setDate(tomorrow.getDate() + 1);
         tomorrow.setHours(hours[0], 0, 0, 0);
         return tomorrow;
+    },
+
+    /**
+     * Uppdaterar endast texten i statusrutan (senaste och nästa körning) utan att rendera om hela vyn.
+     * Anropas t.ex. när en manuell backup just slutförts.
+     */
+    _update_status_box_text() {
+        const t = this.get_t_func();
+        const lang = this.Translation?.get_current_language_code?.() || 'sv-SE';
+        if (this._status_last_run_p && document.contains(this._status_last_run_p)) {
+            if (!this.backup_status) {
+                this._status_last_run_p.textContent = t('backup_status_unknown');
+            } else {
+                const last_run = this.backup_status.last_run || this.backup_status.timestamp || null;
+                const last_run_str = last_run && this.Helpers?.format_iso_to_local_datetime
+                    ? this.Helpers.format_iso_to_local_datetime(last_run, lang)
+                    : null;
+                this._status_last_run_p.textContent = last_run_str
+                    ? t('backup_status_last_run', {
+                        datetime: last_run_str,
+                        audits: this.backup_status.audits_processed ?? 0,
+                        files: this.backup_status.new_files ?? 0
+                    })
+                    : t('backup_status_no_runs');
+            }
+        }
+        if (this._status_next_run_p && document.contains(this._status_next_run_p)) {
+            const next_run = this.view_name === 'backup' ? this._get_next_backup_run() : null;
+            if (next_run) {
+                const next_run_str = this.Helpers?.format_iso_to_local_datetime
+                    ? this.Helpers.format_iso_to_local_datetime(next_run.toISOString(), lang)
+                    : next_run.toLocaleString(lang);
+                this._status_next_run_p.textContent = t('backup_status_next_run', { datetime: next_run_str });
+            }
+        }
+        if (this._run_backup_btn_ref && document.contains(this._run_backup_btn_ref)) {
+            this._run_backup_btn_ref.textContent = t('backup_run_now_button');
+            this._run_backup_btn_ref.removeAttribute('aria-busy');
+        }
     },
 
     async _load_data(force = false) {
@@ -241,7 +283,7 @@ export const BackupOverviewComponent = {
             }
         } finally {
             this._run_backup_in_progress = false;
-            if (this.root) this.render();
+            this._update_status_box_text();
         }
     },
 
@@ -461,6 +503,7 @@ export const BackupOverviewComponent = {
             text_content: this._run_backup_in_progress ? t('backup_run_in_progress') : t('backup_run_now_button'),
             attributes: { type: 'button' }
         });
+        this._run_backup_btn_ref = run_backup_btn;
         if (this._run_backup_in_progress) {
             run_backup_btn.setAttribute('aria-busy', 'true');
         }
@@ -484,6 +527,7 @@ export const BackupOverviewComponent = {
             const p = this.Helpers.create_element('p', {
                 text_content: t('backup_status_unknown')
             });
+            this._status_last_run_p = p;
             status_box.appendChild(p);
         } else {
             const last_run = this.backup_status.last_run || this.backup_status.timestamp || null;
@@ -501,10 +545,12 @@ export const BackupOverviewComponent = {
                     })
                     : t('backup_status_no_runs')
             });
+            this._status_last_run_p = p;
             status_box.appendChild(p);
         }
 
         const next_run = this.view_name === 'backup' ? this._get_next_backup_run() : null;
+        this._status_next_run_p = null;
         if (next_run) {
             const lang = this.Translation?.get_current_language_code?.() || 'sv-SE';
             const next_run_str = this.Helpers?.format_iso_to_local_datetime
@@ -513,6 +559,7 @@ export const BackupOverviewComponent = {
             const p_next = this.Helpers.create_element('p', {
                 text_content: t('backup_status_next_run', { datetime: next_run_str })
             });
+            this._status_next_run_p = p_next;
             status_box.appendChild(p_next);
         }
 
