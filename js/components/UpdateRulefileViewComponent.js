@@ -23,6 +23,7 @@ export const UpdateRulefileViewComponent = {
         this.NotificationComponent = deps.NotificationComponent;
         this.SaveAuditLogic = deps.SaveAuditLogic;
         this.ValidationLogic = deps.ValidationLogic || window.ValidationLogic;
+        this.AuditLogic = deps.AuditLogic;
 
         const rule_id = deps.params?.ruleId;
         if (!rule_id) {
@@ -208,9 +209,20 @@ export const UpdateRulefileViewComponent = {
             this.staged_analysis_report
         );
 
-        const needs_review_count = (final_reconciled_state.samples || []).reduce((n, s) => {
-            return n + Object.values(s.requirementResults || {}).filter(r => r.needsReview === true).length;
-        }, 0);
+        // Antal krav som har needsReview och en tydlig bedömning (godkänd/underkänd) – det som faktiskt behöver bekräftas.
+        const requirements = final_reconciled_state?.ruleFileContent?.requirements;
+        let needs_review_count = 0;
+        (final_reconciled_state.samples || []).forEach(sample => {
+            Object.keys(sample.requirementResults || {}).forEach(reqId => {
+                if (sample.requirementResults[reqId]?.needsReview !== true) return;
+                const req_def = requirements && (Array.isArray(requirements) ? requirements.find(r => (r?.key || r?.id) === reqId) : requirements[reqId]);
+                if (!req_def) return;
+                const display_status = this.AuditLogic?.calculate_requirement_status
+                    ? this.AuditLogic.calculate_requirement_status(req_def, sample.requirementResults[reqId])
+                    : (sample.requirementResults[reqId]?.status || 'not_audited');
+                if (display_status === 'passed' || display_status === 'failed') needs_review_count++;
+            });
+        });
 
         this.dispatch({
             type: this.StoreActionTypes.REPLACE_RULEFILE_AND_RECONCILE,

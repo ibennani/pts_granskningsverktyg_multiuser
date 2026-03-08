@@ -12,6 +12,7 @@ export const ConfirmUpdatesViewComponent = {
         this.Translation = deps.Translation;
         this.Helpers = deps.Helpers;
         this.NotificationComponent = deps.NotificationComponent;
+        this.AuditLogic = deps.AuditLogic;
 
         this.plate_element_ref = null;
         this.list_container_for_delegation = null;
@@ -105,13 +106,20 @@ export const ConfirmUpdatesViewComponent = {
                 if (sample.requirementResults[reqId]?.needsReview === true) {
                     const req_def = requirements && (Array.isArray(requirements) ? requirements.find(r => (r?.key || r?.id) === reqId) : requirements[reqId]);
                     if (req_def) {
-                        sample_reqs.push({
-                            id: reqId,
-                            title: req_def.title,
-                            reference: req_def.standardReference?.text || '',
-                            status: sample.requirementResults[reqId].status
-                        });
-                        total_count++;
+                        const result = sample.requirementResults[reqId];
+                        const display_status = this.AuditLogic?.calculate_requirement_status
+                            ? this.AuditLogic.calculate_requirement_status(req_def, result)
+                            : (result?.status || 'not_audited');
+                        // Visa bara krav som du faktiskt bedömt (godkänd/underkänd). Krav som ännu inte har en tydlig status behöver inte bekräftas här.
+                        if (display_status === 'passed' || display_status === 'failed') {
+                            sample_reqs.push({
+                                id: reqId,
+                                title: req_def.title,
+                                reference: req_def.standardReference?.text || '',
+                                status: display_status
+                            });
+                            total_count++;
+                        }
                     }
                 }
             });
