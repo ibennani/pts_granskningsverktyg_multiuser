@@ -2,7 +2,7 @@
 import express from 'express';
 import fs from 'fs/promises';
 import path from 'path';
-import { run_backup, get_last_backup_status, get_backup_dir } from '../backup/audit_backup.js';
+import { run_backup, get_last_backup_status, get_backup_dir, get_backup_settings, save_backup_settings } from '../backup/audit_backup.js';
 import { query } from '../db.js';
 
 const router = express.Router();
@@ -20,6 +20,33 @@ router.post('/run', async (_req, res) => {
 router.get('/status', (_req, res) => {
     const status = get_last_backup_status();
     res.json(status ? { ok: true, ...status } : { ok: true, last_run: null });
+});
+
+router.get('/settings', async (_req, res) => {
+    try {
+        const settings = await get_backup_settings();
+        res.json({ ok: true, ...settings });
+    } catch (err) {
+        console.warn('[backup] GET settings error:', err.message);
+        res.status(500).json({ error: 'Kunde inte läsa inställningar' });
+    }
+});
+
+router.put('/settings', async (req, res) => {
+    try {
+        const { retention_days } = req.body || {};
+        const num = typeof retention_days === 'number' ? retention_days : parseInt(retention_days, 10);
+        if (!Number.isInteger(num) || num < 1 || num > 365) {
+            return res.status(400).json({ error: 'retention_days måste vara ett tal mellan 1 och 365' });
+        }
+        const current = await get_backup_settings();
+        await save_backup_settings({ ...current, retention_days: num });
+        const updated = await get_backup_settings();
+        res.json({ ok: true, ...updated });
+    } catch (err) {
+        console.warn('[backup] PUT settings error:', err.message);
+        res.status(500).json({ error: 'Kunde inte spara inställningar', detail: err.message });
+    }
 });
 
 // Lista alla granskningar som har backuper i backup-katalogen.

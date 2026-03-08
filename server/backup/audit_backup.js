@@ -11,7 +11,36 @@ import { build_full_state } from '../routes/audits.js';
 import { generate_audit_filename } from '../../js/utils/filename_utils.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const RETENTION_DAYS = 30;
+const DEFAULT_RETENTION_DAYS = 30;
+const BACKUP_SCHEDULE_CRON = '0 0,6,12,18 * * *';
+const SETTINGS_FILENAME = '.backup-settings.json';
+
+function get_settings_path() {
+    return path.join(get_backup_dir(), SETTINGS_FILENAME);
+}
+
+export async function get_backup_settings() {
+    let retention_days = DEFAULT_RETENTION_DAYS;
+    try {
+        const content = await fs.readFile(get_settings_path(), 'utf8');
+        const data = JSON.parse(content);
+        if (typeof data.retention_days === 'number' && data.retention_days >= 1 && data.retention_days <= 365) {
+            retention_days = data.retention_days;
+        }
+    } catch {
+        /* använd standardvärden */
+    }
+    return { retention_days, schedule_cron: BACKUP_SCHEDULE_CRON };
+}
+
+export async function save_backup_settings(settings) {
+    const dir = get_backup_dir();
+    await ensure_dir(dir);
+    const file_path = path.join(dir, SETTINGS_FILENAME);
+    const tmp_path = file_path + '.tmp';
+    await fs.writeFile(tmp_path, JSON.stringify(settings, null, 2), 'utf8');
+    await fs.rename(tmp_path, file_path);
+}
 
 const SERVER_T_KEYS = {
     filename_audit_prefix: 'tillganglighetsgranskning',
@@ -100,7 +129,8 @@ async function run_scheduled_backup() {
         }
     }
 
-    await cleanup_old_backups(backup_dir);
+    const settings = await get_backup_settings();
+    await cleanup_old_backups(backup_dir, settings.retention_days);
 
     const status = {
         last_run: start_time,
@@ -112,9 +142,9 @@ async function run_scheduled_backup() {
     return status;
 }
 
-async function cleanup_old_backups(backup_dir) {
+async function cleanup_old_backups(backup_dir, retention_days = DEFAULT_RETENTION_DAYS) {
     const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - RETENTION_DAYS);
+    cutoff.setDate(cutoff.getDate() - retention_days);
     const cutoff_time = cutoff.getTime();
 
     let removed = 0;

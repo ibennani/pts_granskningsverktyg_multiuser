@@ -1,6 +1,6 @@
 // Auto-generated build info (dev watcher)
 window.BUILD_INFO = {
-  "timestamp": "2026-03-06T15:37:26.690Z",
-  "date": "2026-03-06",
-  "time": "16:37"
+  "timestamp": "2026-03-08T13:13:40.801Z",
+  "date": "2026-03-08",
+  "time": "14:13"
 };

@@ -1,6 +1,6 @@
 // js/components/BackupOverviewComponent.js
 
-import { get_backup_overview, get_backups_for_audit, run_backup_now, api_get } from '../api/client.js';
+import { get_backup_overview, get_backups_for_audit, run_backup_now, get_backup_settings, update_backup_settings, api_get } from '../api/client.js';
 import { GenericTableComponent } from './GenericTableComponent.js';
 
 export const BackupOverviewComponent = {
@@ -45,6 +45,7 @@ export const BackupOverviewComponent = {
         this._handle_show_backups = this._handle_show_backups.bind(this);
         this._handle_back_to_list = this._handle_back_to_list.bind(this);
         this._handle_run_backup = this._handle_run_backup.bind(this);
+        this._handle_open_backup_settings = this._handle_open_backup_settings.bind(this);
 
         this._data_loaded = false;
     },
@@ -214,6 +215,107 @@ export const BackupOverviewComponent = {
         }
     },
 
+    async _handle_open_backup_settings() {
+        const t = this.get_t_func();
+        const ModalComponent = this.deps?.ModalComponent || window.ModalComponent;
+        const NotificationComponent = this.NotificationComponent;
+        if (!ModalComponent?.show) return;
+        let schedule_times = '00:00, 06:00, 12:00, 18:00';
+        let retention_days = 30;
+        try {
+            const data = await get_backup_settings();
+            if (data?.schedule_cron === '0 0,6,12,18 * * *') {
+                schedule_times = '00:00, 06:00, 12:00, 18:00';
+            } else if (data?.schedule_cron) {
+                schedule_times = data.schedule_cron;
+            }
+            if (data?.retention_days != null) retention_days = data.retention_days;
+        } catch {
+            /* använd standardvärden */
+        }
+
+        ModalComponent.show(
+            {
+                h1_text: t('backup_settings_modal_title'),
+                message_text: ''
+            },
+            (content_container, modal_ref) => {
+                const form = this.Helpers.create_element('div', { class_name: 'backup-settings-modal-form' });
+
+                const schedule_group = this.Helpers.create_element('div', { class_name: 'form-group' });
+                schedule_group.appendChild(this.Helpers.create_element('label', { text_content: t('backup_settings_schedule_label') }));
+                schedule_group.appendChild(this.Helpers.create_element('p', { class_name: 'form-control-static', text_content: t('backup_settings_schedule_value', { times: schedule_times }) }));
+                schedule_group.appendChild(this.Helpers.create_element('p', { class_name: 'form-help', text_content: t('backup_settings_schedule_info') }));
+                form.appendChild(schedule_group);
+
+                const retention_group = this.Helpers.create_element('div', { class_name: 'form-group' });
+                const retention_label_el = this.Helpers.create_element('label', {
+                    text_content: t('backup_settings_retention_label'),
+                    attributes: { for: 'backup-settings-retention-days' }
+                });
+                retention_group.appendChild(retention_label_el);
+                const retention_input = this.Helpers.create_element('input', {
+                    attributes: {
+                        type: 'number',
+                        id: 'backup-settings-retention-days',
+                        min: '1',
+                        max: '365',
+                        value: String(retention_days),
+                        'aria-describedby': 'backup-settings-retention-help'
+                    },
+                    class_name: 'form-control'
+                });
+                retention_group.appendChild(retention_input);
+                const retention_help = this.Helpers.create_element('p', {
+                    class_name: 'form-help',
+                    text_content: t('backup_settings_retention_help'),
+                    attributes: { id: 'backup-settings-retention-help' }
+                });
+                retention_group.appendChild(retention_help);
+                form.appendChild(retention_group);
+
+                const btn_row = this.Helpers.create_element('div', { class_name: 'backup-settings-modal-buttons' });
+                const save_btn = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-primary'],
+                    text_content: t('backup_settings_save'),
+                    attributes: { type: 'button' }
+                });
+                const close_btn = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-secondary'],
+                    text_content: t('backup_settings_close'),
+                    attributes: { type: 'button' }
+                });
+                save_btn.addEventListener('click', async () => {
+                    const raw = retention_input.value.trim();
+                    const num = raw === '' ? NaN : parseInt(raw, 10);
+                    if (!Number.isInteger(num) || num < 1 || num > 365) {
+                        if (NotificationComponent?.show_global_message) {
+                            NotificationComponent.show_global_message(t('backup_settings_retention_invalid'), 'warning');
+                        }
+                        return;
+                    }
+                    try {
+                        await update_backup_settings({ retention_days: num });
+                        if (NotificationComponent?.show_global_message) {
+                            NotificationComponent.show_global_message(t('backup_settings_saved_ok'), 'success');
+                        }
+                        modal_ref.close();
+                    } catch (err) {
+                        if (NotificationComponent?.show_global_message) {
+                            NotificationComponent.show_global_message(t('backup_settings_save_error') || err.message, 'error');
+                        }
+                    }
+                });
+                close_btn.addEventListener('click', () => modal_ref.close());
+                btn_row.appendChild(save_btn);
+                btn_row.appendChild(close_btn);
+                form.appendChild(btn_row);
+
+                content_container.appendChild(form);
+            }
+        );
+    },
+
     _build_overview_columns(t) {
         const Helpers = this.Helpers;
         const lang = this.Translation?.get_current_language_code?.() || 'sv-SE';
@@ -275,19 +377,34 @@ export const BackupOverviewComponent = {
         ];
     },
 
-    _build_detail_columns(t) {
+    _build_detail_columns(t, overview_row) {
         const Helpers = this.Helpers;
         const lang = this.Translation?.get_current_language_code?.() || 'sv-SE';
         const format_datetime = (iso) => {
             if (!iso || !Helpers?.format_iso_to_local_datetime) return '';
             return Helpers.format_iso_to_local_datetime(iso, lang);
         };
+        const actor_name = overview_row?.actorName ?? '—';
+        const backup_count = overview_row?.backupCount != null ? String(overview_row.backupCount) : '—';
+        const latest_str = overview_row?.latestBackupAt
+            ? format_datetime(overview_row.latestBackupAt) || '—'
+            : '—';
 
         return [
             {
-                headerLabel: t('backup_detail_col_datetime'),
+                headerLabel: t('backup_detail_col_actor'),
+                getSortValue: () => actor_name,
+                getContent: () => actor_name
+            },
+            {
+                headerLabel: t('backup_detail_col_backup_count'),
+                getSortValue: () => overview_row?.backupCount ?? 0,
+                getContent: () => backup_count
+            },
+            {
+                headerLabel: t('backup_detail_col_latest'),
                 getSortValue: (row) => row.createdAt ? Date.parse(row.createdAt) || 0 : 0,
-                getContent: (row) => format_datetime(row.createdAt) || '—'
+                getContent: () => latest_str
             },
             {
                 headerLabel: t('backup_detail_col_type'),
@@ -297,16 +414,11 @@ export const BackupOverviewComponent = {
                     : t('backup_detail_type_regular')
             },
             {
-                headerLabel: t('backup_detail_col_filename'),
-                getSortValue: (row) => (row.filename ?? '').toString(),
-                getContent: (row) => row.filename || '—'
-            },
-            {
                 headerLabel: t('backup_detail_col_actions'),
                 isAction: true,
                 getContent: (row) => {
                     const a = Helpers.create_element('a', {
-                        class_name: 'button button-default button-small',
+                        class_name: 'button button-default button-small generic-table-action-cell',
                         text_content: t('backup_detail_download_button'),
                         attributes: {
                             href: row.url || '#',
@@ -368,8 +480,19 @@ export const BackupOverviewComponent = {
             run_backup_btn.setAttribute('aria-busy', 'true');
         }
         run_backup_btn.addEventListener('click', this._handle_run_backup);
-        status_heading_row.appendChild(status_heading);
-        status_heading_row.appendChild(run_backup_btn);
+        const heading_and_run = this.Helpers.create_element('div', { class_name: 'backup-status-heading-left' });
+        heading_and_run.appendChild(status_heading);
+        heading_and_run.appendChild(run_backup_btn);
+        const settings_btn = this.Helpers.create_element('button', {
+            class_name: ['button', 'button-default', 'button-small'],
+            text_content: t('backup_settings_button'),
+            attributes: { type: 'button', 'aria-label': t('backup_settings_button') }
+        });
+        settings_btn.addEventListener('click', this._handle_open_backup_settings);
+        const status_buttons = this.Helpers.create_element('div', { class_name: 'backup-status-heading-buttons' });
+        status_buttons.appendChild(settings_btn);
+        status_heading_row.appendChild(heading_and_run);
+        status_heading_row.appendChild(status_buttons);
         status_box.appendChild(status_heading_row);
 
         if (!this.backup_status) {
@@ -508,7 +631,8 @@ export const BackupOverviewComponent = {
             });
             detail_section.appendChild(detail_table_root);
 
-            const detail_columns = this._build_detail_columns(t);
+            const detail_overview_row = this.backup_overview.find(r => r.auditId === this.selected_audit_id) || null;
+            const detail_columns = this._build_detail_columns(t, detail_overview_row);
             this._detail_table.render({
                 root: detail_table_root,
                 columns: detail_columns,

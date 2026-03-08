@@ -182,6 +182,14 @@ export async function run_backup_now() {
     return api_post('/backup/run', {});
 }
 
+export async function get_backup_settings() {
+    return api_get('/backup/settings');
+}
+
+export async function update_backup_settings(body) {
+    return api_put('/backup/settings', body);
+}
+
 export async function get_audits(status) {
     const q = status ? `?status=${encodeURIComponent(status)}` : '';
     return api_get(`/audits${q}`);
