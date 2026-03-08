@@ -1149,24 +1149,34 @@ select,
     color: var(--button-danger-text);
 }
 
-/* Kritisk meddelandeområde (övre) – orange/warning som "uppdatera regelfil" */
+/* Kritisk meddelandeområde (övre) – samma orange som "uppdatera regelfil" */
 #global-critical-message-area.message-warning {
     background-color: var(--button-warning-bg);
     border-color: var(--button-warning-border);
     color: var(--button-warning-text);
 }
-#global-critical-message-area.message-warning .global-message-close-btn,
-#global-critical-message-area.message-warning .global-message-action-btn {
+#global-critical-message-area.message-warning .global-message-close-btn {
     color: var(--button-warning-text);
 }
+/* Knappen i kritisk ruta använder .button.button-default (standardknapp) */
 [data-theme="dark"] #global-critical-message-area.message-warning {
-    background-color: var(--warning-color-light);
+    background-color: var(--button-warning-bg);
     border-color: var(--button-warning-border);
     color: var(--button-warning-text);
 }
-[data-theme="dark"] #global-critical-message-area.message-warning .global-message-close-btn,
-[data-theme="dark"] #global-critical-message-area.message-warning .global-message-action-btn {
+[data-theme="dark"] #global-critical-message-area.message-warning .global-message-close-btn {
     color: var(--button-warning-text);
+}
+
+/* Standardknapp i kritisk ruta (inte primary) */
+#global-critical-message-area .global-message-action-btn.button {
+    background-color: var(--button-default-bg);
+    color: var(--button-default-text);
+    border-color: var(--button-default-border);
+}
+#global-critical-message-area .global-message-action-btn.button:hover,
+#global-critical-message-area .global-message-action-btn.button:focus {
+    background-color: var(--button-default-hover-bg);
 }
 
 /* --- END OF CHANGE --- */

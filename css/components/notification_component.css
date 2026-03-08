@@ -132,22 +132,21 @@
     color: var(--text-color); /* ÄNDRAD TILL LJUS TEXT */
 }
 
-/* Kritisk meddelandeområde (övre) – samma orange/warning-stil som "uppdatera regelfil" */
+/* Kritisk meddelandeområde (övre) – samma orange som "uppdatera regelfil" (--button-warning-bg) */
 #global-critical-message-area.message-warning {
-    background-color: var(--warning-color-light); 
-    border-color: var(--warning-color); 
-    color: #856404; 
+    background-color: var(--button-warning-bg);
+    border-color: var(--button-warning-border);
+    color: var(--button-warning-text);
 }
-#global-critical-message-area.message-warning .global-message-close-btn,
-#global-critical-message-area.message-warning .global-message-action-btn {
-    color: #856404;
+#global-critical-message-area.message-warning .global-message-close-btn {
+    color: var(--button-warning-text);
 }
+/* Knappen är standardknapp (button button-default), inte primary */
 [data-theme="dark"] #global-critical-message-area.message-warning {
-    background-color: #806600; 
-    border-color: var(--warning-color); 
-    color: var(--text-color);
+    background-color: var(--button-warning-bg);
+    border-color: var(--button-warning-border);
+    color: var(--button-warning-text);
 }
-[data-theme="dark"] #global-critical-message-area.message-warning .global-message-close-btn,
-[data-theme="dark"] #global-critical-message-area.message-warning .global-message-action-btn {
-    color: var(--text-color);
+[data-theme="dark"] #global-critical-message-area.message-warning .global-message-close-btn {
+    color: var(--button-warning-text);
 }

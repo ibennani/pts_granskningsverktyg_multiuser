@@ -83,7 +83,7 @@ export const NotificationComponent = {
             if (action && typeof action.callback === 'function') {
                 const btn = document.createElement('button');
                 btn.type = 'button';
-                btn.className = 'global-message-action-btn';
+                btn.className = is_critical ? 'global-message-action-btn button button-default' : 'global-message-action-btn';
                 btn.textContent = action.label || (typeof window.Translation?.t === 'function' ? window.Translation.t('ok') : 'Ok');
                 const clear_fn = is_critical ? this.clear_global_critical_message.bind(this) : this.clear_global_message.bind(this);
                 btn.addEventListener('click', () => {
@@ -100,7 +100,7 @@ export const NotificationComponent = {
             element.removeAttribute('hidden');
         } else {
             if (is_critical) {
-                this.clear_global_critical_message();
+                /* Kritisk meddelanderuta (ny version / ny regelfil) rensas endast när användaren klickar på knappen – aldrig vid tom uppdatering. */
             } else {
                 this.clear_global_message();
             }
