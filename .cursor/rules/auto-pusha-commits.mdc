@@ -1,22 +1,15 @@
 ---
-description: Automatisk commit och push vid kommandot "Pusha"
+description: Automatisk commit och push vid "Pusha"; vid "Deploy" först pusha sedan deploy till v2
 alwaysApply: true
 ---
 
-# Automatisk commit och push vid "Pusha"
+# "Pusha" och "Deploy" – beteende
 
-Den här regeln styr hur agenten ska bete sig när du skriver exakt ordet `Pusha` i chatten.
+## Pusha
 
-## Beteende
+När användaren skriver **`Pusha`** (exakt ordet) ska agenten **endast** skapa commit och pusha – ingen deploy. Följ commit-reglerna i `00-project-rules.mdc` (svenska meddelanden, beskriv användarupplevelse).
 
-När användaren skriver `Pusha` ska agenten:
-
-- Tolka detta som en uttrycklig begäran att skapa en git-commit och köra `git push` för den aktuella branchen.
-- Alltid följa commit-reglerna i `00-project-rules.mdc`:
-  - Commit-meddelanden ska vara på svenska och beskriva vad användaren upplever, inte tekniska detaljer.
-  - Meddelandet ska täcka alla ändringar som ingår i commiten.
-
-## Arbetsflöde vid `Pusha`
+### Arbetsflöde vid Pusha
 
 1. Kör `git status`, `git diff` och `git log -5` för att förstå alla ändringar.
 2. Analysera alla staged och unstaged ändringar.
@@ -33,4 +26,13 @@ När användaren skriver `Pusha` ska agenten:
 - Skapa aldrig en commit om det inte finns några ändringar att committa.
 - Pusha inte filer som uppenbart kan innehålla hemligheter (t.ex. `.env`, nyckelfiler, lösenord).
 - Om commit eller push misslyckas ska agenten redovisa felet i klartext och inte försöka forcera igenom ändringen.
+
+## Deploy
+
+När användaren skriver **`Deploy`** (exakt ordet) ska agenten:
+
+1. **Först** utföra hela arbetsflödet för **Pusha** (commit + push) enligt stegen ovan. Om det inte finns något att committa ska push hoppas över men deploy köras om användaren uttryckligen skrev "Deploy".
+2. **Därefter** köra deploy till v2: `npm run deploy:v2`.
+
+Kort sagt: **Deploy = Pusha, sedan deploy till v2.**
 

@@ -1640,11 +1640,6 @@ window.DraftManager = DraftManager;
         const buildTimestampElement = document.getElementById('build-timestamp');
         if (!buildTimestampElement) return;
 
-        // Om byggtiden redan är inskriven (t.ex. av postbuild-scriptet) ska vi inte skriva över den.
-        if (typeof buildTimestampElement.textContent === 'string' && buildTimestampElement.textContent.trim() !== '') {
-            return;
-        }
-
         const t = window.Translation?.t || ((key, replacements) => {
             if (replacements) {
                 let result = key;
@@ -1656,22 +1651,22 @@ window.DraftManager = DraftManager;
             return key;
         });
 
-        if (window.BUILD_INFO?.date && window.BUILD_INFO?.time) {
-            const buildDate = window.BUILD_INFO.date;
-            const buildTime = window.BUILD_INFO.time;
-            buildTimestampElement.textContent = t('build_timestamp_built', { date: buildDate, time: buildTime });
-            buildTimestampElement.style.display = 'block';
+        const is_dev = typeof window !== 'undefined' && (
+            window.location.hostname === 'localhost' ||
+            window.location.hostname === '127.0.0.1' ||
+            window.location.port === '5173' ||
+            window.location.port === '4173'
+        );
+
+        const date_str = window.BUILD_INFO?.date || new Date().toLocaleDateString('sv-SE');
+        const time_str = window.BUILD_INFO?.time || new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+
+        if (is_dev) {
+            buildTimestampElement.textContent = t('build_timestamp_dev_fallback', { date: date_str, time: time_str });
         } else {
-            // Fallback: show current timestamp if BUILD_INFO is not available
-            const now = new Date();
-            const fallbackDate = now.toLocaleDateString('sv-SE');
-            const fallbackTime = now.toLocaleTimeString('sv-SE', {
-                hour: '2-digit',
-                minute: '2-digit',
-            });
-            buildTimestampElement.textContent = t('build_timestamp_dev_fallback', { date: fallbackDate, time: fallbackTime });
-            buildTimestampElement.style.display = 'block';
+            buildTimestampElement.textContent = t('build_timestamp_built', { date: date_str, time: time_str });
         }
+        buildTimestampElement.style.display = 'block';
     }
 
     function ensure_skip_link_target(root) {
