@@ -132,40 +132,31 @@
     color: var(--text-color); /* ÄNDRAD TILL LJUS TEXT */
 }
 
-/* Kritisk meddelandeområde (övre) – samma orange som "uppdatera regelfil", mörk text */
+/* Kritisk meddelandeområde (övre) – orange bakgrund, svart text */
 #global-critical-message-area.message-warning {
-    background-color: var(--button-warning-bg);
-    border-color: var(--button-warning-border);
-    color: #1e2a2b;
+    background-color: #FFE5CC;
+    border-color: #DC7D0A;
+    color: #000000;
 }
 #global-critical-message-area.message-warning .global-message-close-btn {
-    color: #1e2a2b;
+    color: #000000;
 }
 [data-theme="dark"] #global-critical-message-area.message-warning {
-    background-color: var(--button-warning-bg);
-    border-color: var(--button-warning-border);
-    color: var(--text-color);
+    background-color: #DC7D0A;
+    border-color: #E68A1A;
+    color: #000000;
 }
 [data-theme="dark"] #global-critical-message-area.message-warning .global-message-close-btn {
-    color: var(--text-color);
+    color: #000000;
 }
 
-/* Knappen i kritisk ruta ska alltid ha synlig bakgrund (överstycker .global-message-action-btn) */
+/* Knappen i kritisk ruta – standardfärg (samma som övriga standardknappar) */
 #global-critical-message-area .global-message-action-btn.button {
-    background-color: #ffffff;
-    color: #1e2a2b;
-    border-color: #B07CBF;
-}
-#global-critical-message-area .global-message-action-btn.button:hover,
-#global-critical-message-area .global-message-action-btn.button:focus {
-    background-color: #F5F0EB;
-}
-[data-theme="dark"] #global-critical-message-area .global-message-action-btn.button {
     background-color: var(--button-default-bg);
     color: var(--button-default-text);
     border-color: var(--button-default-border);
 }
-[data-theme="dark"] #global-critical-message-area .global-message-action-btn.button:hover,
-[data-theme="dark"] #global-critical-message-area .global-message-action-btn.button:focus {
+#global-critical-message-area .global-message-action-btn.button:hover,
+#global-critical-message-area .global-message-action-btn.button:focus {
     background-color: var(--button-default-hover-bg);
 }
