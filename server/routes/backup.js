@@ -2,7 +2,7 @@
 import express from 'express';
 import fs from 'fs/promises';
 import path from 'path';
-import { run_backup, get_last_backup_status, get_backup_dir, get_backup_settings, save_backup_settings } from '../backup/audit_backup.js';
+import { run_backup, get_last_backup_status, get_backup_dir, get_backup_settings, save_backup_settings, start_backup_scheduler } from '../backup/audit_backup.js';
 import { query } from '../db.js';
 
 const router = express.Router();
@@ -32,15 +32,38 @@ router.get('/settings', async (_req, res) => {
     }
 });
 
+const ALLOWED_RUNS = [1, 2, 3, 4, 6, 8, 12, 24];
+
 router.put('/settings', async (req, res) => {
     try {
-        const { retention_days } = req.body || {};
-        const num = typeof retention_days === 'number' ? retention_days : parseInt(retention_days, 10);
-        if (!Number.isInteger(num) || num < 1 || num > 365) {
-            return res.status(400).json({ error: 'retention_days måste vara ett tal mellan 1 och 365' });
-        }
+        const body = req.body || {};
         const current = await get_backup_settings();
-        await save_backup_settings({ ...current, retention_days: num });
+        const updates = { ...current };
+
+        if (body.retention_days !== undefined) {
+            const num = typeof body.retention_days === 'number' ? body.retention_days : parseInt(body.retention_days, 10);
+            if (!Number.isInteger(num) || num < 1 || num > 365) {
+                return res.status(400).json({ error: 'retention_days måste vara ett tal mellan 1 och 365' });
+            }
+            updates.retention_days = num;
+        }
+        if (body.runs_per_day !== undefined) {
+            const num = typeof body.runs_per_day === 'number' ? body.runs_per_day : parseInt(body.runs_per_day, 10);
+            if (!Number.isInteger(num) || num < 1 || num > 24 || !ALLOWED_RUNS.includes(num)) {
+                return res.status(400).json({ error: 'runs_per_day måste vara 1, 2, 3, 4, 6, 8, 12 eller 24' });
+            }
+            updates.runs_per_day = num;
+        }
+        if (body.first_run_hour !== undefined) {
+            const num = typeof body.first_run_hour === 'number' ? body.first_run_hour : parseInt(body.first_run_hour, 10);
+            if (!Number.isInteger(num) || num < 0 || num > 23) {
+                return res.status(400).json({ error: 'first_run_hour måste vara 0–23' });
+            }
+            updates.first_run_hour = num;
+        }
+
+        await save_backup_settings(updates);
+        await start_backup_scheduler();
         const updated = await get_backup_settings();
         res.json({ ok: true, ...updated });
     } catch (err) {
@@ -132,6 +155,33 @@ router.get('/list', async (_req, res) => {
     } catch (err) {
         console.error('[backup] list error:', err);
         res.status(500).json({ error: 'Kunde inte hämta backup-lista' });
+    }
+});
+
+// Ladda ner en enskild backup-fil (måste komma före /:auditId så att två segment matchar).
+router.get('/:auditId/:filename', async (req, res) => {
+    const { auditId, filename } = req.params;
+    if (!filename || !auditId) {
+        return res.status(400).json({ error: 'Saknar auditId eller filnamn' });
+    }
+    const decoded_filename = decodeURIComponent(filename);
+    if (decoded_filename.includes('..') || path.normalize(decoded_filename) !== decoded_filename) {
+        return res.status(400).json({ error: 'Ogiltigt filnamn' });
+    }
+    try {
+        const backup_dir = get_backup_dir();
+        const file_path = path.join(backup_dir, auditId, decoded_filename);
+        await fs.access(file_path);
+        res.setHeader('Content-Disposition', `attachment; filename="${decoded_filename.replace(/"/g, '\\"')}"`);
+        res.setHeader('Content-Type', 'application/json');
+        const buffer = await fs.readFile(file_path);
+        res.send(buffer);
+    } catch (err) {
+        if (err.code === 'ENOENT') {
+            return res.status(404).json({ error: 'Filen hittades inte' });
+        }
+        console.warn('[backup] Nedladdning misslyckades:', err.message);
+        res.status(500).json({ error: 'Kunde inte ladda ner filen' });
     }
 });
 

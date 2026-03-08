@@ -1,6 +1,6 @@
 // js/components/BackupOverviewComponent.js
 
-import { get_backup_overview, get_backups_for_audit, run_backup_now, get_backup_settings, update_backup_settings, api_get } from '../api/client.js';
+import { get_backup_overview, get_backups_for_audit, run_backup_now, get_backup_settings, update_backup_settings, api_get, get_base_url } from '../api/client.js';
 import { GenericTableComponent } from './GenericTableComponent.js';
 
 export const BackupOverviewComponent = {
@@ -46,6 +46,7 @@ export const BackupOverviewComponent = {
         this._handle_back_to_list = this._handle_back_to_list.bind(this);
         this._handle_run_backup = this._handle_run_backup.bind(this);
         this._handle_open_backup_settings = this._handle_open_backup_settings.bind(this);
+        this._handle_download_backup = this._handle_download_backup.bind(this);
 
         this._data_loaded = false;
     },
@@ -212,6 +213,39 @@ export const BackupOverviewComponent = {
         } finally {
             this._run_backup_in_progress = false;
             if (this.root) this.render();
+        }
+    },
+
+    async _handle_download_backup(event, audit_id, filename) {
+        if (event) event.preventDefault();
+        if (!audit_id || !filename) return;
+        const base = get_base_url();
+        const url = `${base}/backup/${encodeURIComponent(audit_id)}/${encodeURIComponent(filename)}`;
+        try {
+            const res = await fetch(url, { cache: 'no-store' });
+            if (!res.ok) {
+                const t = this.get_t_func();
+                const msg = (await res.json().catch(() => ({}))).error || res.statusText;
+                if (this.NotificationComponent?.show_global_message) {
+                    this.NotificationComponent.show_global_message(msg || t('backup_detail_load_error'), 'error');
+                }
+                return;
+            }
+            const blob = await res.blob();
+            const object_url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = object_url;
+            a.download = filename;
+            a.setAttribute('aria-hidden', 'true');
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(object_url);
+        } catch (err) {
+            if (this.NotificationComponent?.show_global_message) {
+                const t = this.get_t_func();
+                this.NotificationComponent.show_global_message(t('backup_detail_load_error') || err.message, 'error');
+            }
         }
     },
 
@@ -421,9 +455,12 @@ export const BackupOverviewComponent = {
                         class_name: 'button button-default button-small generic-table-action-cell',
                         text_content: t('backup_detail_download_button'),
                         attributes: {
-                            href: row.url || '#',
+                            href: '#',
                             'aria-label': t('backup_detail_download_aria', { filename: row.filename || '' })
                         }
+                    });
+                    a.addEventListener('click', (e) => {
+                        this._handle_download_backup(e, this.selected_audit_id, row.filename);
                     });
                     return a;
                 }

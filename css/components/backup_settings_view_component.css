@@ -1,0 +1,61 @@
+/* backup settings view */
+
+.backup-settings-plate {
+    max-width: 40rem;
+}
+
+.backup-settings-intro {
+    margin-bottom: 1.25rem;
+}
+
+.backup-settings-form h2 {
+    font-size: 1rem;
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.backup-settings-form h2:first-child {
+    margin-top: 0;
+}
+
+.backup-settings-form .form-group {
+    margin-bottom: 1rem;
+}
+
+.backup-settings-form .form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.backup-settings-form .form-control {
+    display: block;
+    width: 100%;
+    max-width: 12rem;
+    padding: 0.35rem 0.5rem;
+    margin-top: 0.25rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+}
+
+.backup-settings-form .form-help {
+    margin: 0.25rem 0 0;
+    font-size: 0.875rem;
+    color: var(--text-muted, #555);
+}
+
+.backup-settings-summary {
+    margin: 0.75rem 0;
+    padding: 0.5rem 0.75rem;
+    background: var(--input-background-color);
+    border-radius: var(--border-radius);
+    font-weight: 500;
+}
+
+.backup-settings-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+}

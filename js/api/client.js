@@ -1,6 +1,6 @@
 // js/api/client.js
 
-const get_base_url = () => {
+export const get_base_url = () => {
     if (typeof window === 'undefined') return '/api';
     const base = window.__GV_API_BASE__ || '/v2/api';
     return base.replace(/\/$/, '');

@@ -11,12 +11,11 @@ process.on('uncaughtException', (err) => {
 process.on('unhandledRejection', (reason, promise) => {
     console.error('[Server] Unhandled rejection at', promise, 'reason:', reason);
 });
-import cron from 'node-cron';
 import usersRouter from './routes/users.js';
 import rulesRouter from './routes/rules.js';
 import auditsRouter from './routes/audits.js';
 import backupRouter from './routes/backup.js';
-import { run_backup, get_backup_dir, get_last_backup_status } from './backup/audit_backup.js';
+import { get_backup_dir, get_last_backup_status, start_backup_scheduler } from './backup/audit_backup.js';
 
 const app = express();
 const PORT = process.env.API_PORT || 3000;
@@ -86,12 +85,8 @@ app.use((err, _req, res, _next) => {
 
 init_ws(http_server);
 
-cron.schedule('0 0,6,12,18 * * *', () => {
-    run_backup().then((s) => {
-        console.log('[Server] Backup kördes:', s?.audits_processed, 'granskningar,', s?.new_files, 'nya filer');
-    }).catch((err) => {
-        console.warn('[Server] Backup misslyckades:', err.message);
-    });
+start_backup_scheduler().catch((err) => {
+    console.warn('[Server] Kunde inte starta backup-schema:', err.message);
 });
 
 http_server.listen(PORT, () => {
