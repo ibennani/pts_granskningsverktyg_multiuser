@@ -298,7 +298,9 @@ export async function flush_sync_to_server(get_state_fn, dispatch_fn) {
         debounce_timer = null;
     }
     const state = typeof get_state_fn === 'function' ? get_state_fn() : null;
-    if (state) {
-        await run_sync(state, dispatch_fn);
-    }
+    if (!state) return;
+    // För helt nya granskningar (status not_started utan remote auditId) ska server-sync
+    // endast ske via explicita anrop (t.ex. från metadata-flödet), inte vid generell navigering.
+    if (state.auditStatus === 'not_started' && !state.auditId) return;
+    await run_sync(state, dispatch_fn);
 }

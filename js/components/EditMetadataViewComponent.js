@@ -51,13 +51,10 @@ export const EditMetadataViewComponent = {
         }
         
         const current_status = this.getState().auditStatus;
-        
+
         if (current_status === 'not_started') {
-            try {
-                await sync_to_server_now(this.getState, this.dispatch);
-            } catch (err) {
-                // Fel visas redan av run_sync via NotificationComponent
-            }
+            // För nya granskningar sparar vi endast lokalt och går vidare till stickprov.
+            // Själva skapandet av remote-granskningen sker först när granskningen startas.
             this.router('sample_management');
         } else {
             try {
@@ -77,7 +74,7 @@ export const EditMetadataViewComponent = {
     },
 
     handle_cancel_new_audit() {
-        this.router('start');
+        this.router('start', { allow_new_audit_exit: '1' });
     },
 
     _is_metadata_empty_or_only_auditor(form_data) {
@@ -134,16 +131,16 @@ export const EditMetadataViewComponent = {
                 if (message_el) message_el.innerHTML = message_html;
                 const buttons_wrapper = this.Helpers.create_element('div', { class_name: 'modal-confirm-actions' });
                 const stay_btn = this.Helpers.create_element('button', {
-                    class_name: ['button', 'button-default'],
+                    class_name: ['button', 'button-primary'],
                     text_content: t('metadata_empty_warning_stay_button')
                 });
                 stay_btn.addEventListener('click', () => modal_instance.close());
                 const list_btn = this.Helpers.create_element('button', {
-                    class_name: ['button', 'button-primary'],
+                    class_name: ['button', 'button-default'],
                     text_content: t('metadata_empty_warning_continue_to_list_button')
                 });
                 list_btn.addEventListener('click', () => {
-                    modal_instance.close();
+                    modal_instance.close(null, { skipHistoryPop: true });
                     if (typeof on_proceed === 'function') on_proceed();
                 });
                 buttons_wrapper.appendChild(stay_btn);
@@ -154,10 +151,11 @@ export const EditMetadataViewComponent = {
     },
 
     _do_go_to_list() {
-        this.router('start');
+        this.router('start', { allow_new_audit_exit: '1' });
     },
 
     async _save_and_go_to_list(form_data) {
+        const is_new_audit = this.getState().auditStatus === 'not_started';
         await this.dispatch({
             type: this.StoreActionTypes.UPDATE_METADATA,
             payload: form_data
@@ -165,6 +163,7 @@ export const EditMetadataViewComponent = {
         if (window.DraftManager?.commitCurrentDraft) {
             window.DraftManager.commitCurrentDraft();
         }
+        // Synka till servern så att granskningen skapas och visas i listan.
         try {
             await sync_to_server_now(this.getState, this.dispatch);
         } catch (err) {
@@ -194,16 +193,16 @@ export const EditMetadataViewComponent = {
             (container, modal_instance) => {
                 const buttons_wrapper = this.Helpers.create_element('div', { class_name: 'modal-confirm-actions' });
                 const stay_btn = this.Helpers.create_element('button', {
-                    class_name: ['button', 'button-default'],
+                    class_name: ['button', 'button-primary'],
                     text_content: t('metadata_empty_warning_stay_button')
                 });
                 stay_btn.addEventListener('click', () => modal_instance.close());
                 const continue_btn = this.Helpers.create_element('button', {
-                    class_name: ['button', 'button-primary'],
+                    class_name: ['button', 'button-default'],
                     text_content: continue_label
                 });
                 continue_btn.addEventListener('click', () => {
-                    modal_instance.close();
+                    modal_instance.close(null, { skipHistoryPop: true });
                     if (typeof on_proceed === 'function') on_proceed();
                 });
                 buttons_wrapper.appendChild(stay_btn);
@@ -238,7 +237,10 @@ export const EditMetadataViewComponent = {
         const current_state = this.getState();
         const is_new_audit = current_state.auditStatus === 'not_started';
 
-        if (!current_state.ruleFileContent) {
+        // För nya granskningar ska vi aldrig automatiskt kasta användaren tillbaka till översikten
+        // om något är inkonsekvent – metadata-vyn är själva startpunkten.
+        // För pågående/avslutade granskningar utan regelfil-innehåll skickar vi fortfarande tillbaka till start.
+        if (!current_state.ruleFileContent && !is_new_audit) {
             this.router('start');
             return;
         }

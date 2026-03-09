@@ -569,7 +569,7 @@ export const AuditViewComponent = {
                         text_content: btn_text
                     });
                     btn.addEventListener('click', () => {
-                        modal_instance.close();
+                        modal_instance.close(null, { skipHistoryPop: true });
                         this._load_rule_and_start_new_audit(r.id);
                     });
                     li.appendChild(btn);

@@ -336,7 +336,7 @@ export const ModalComponent = {
         const dialog = this.dialog_element_ref;
         if (!dialog) return;
 
-        const should_pop_history_entry = this._history_state_pushed && !this._close_triggered_by_popstate;
+        const should_pop_history_entry = this._history_state_pushed && !this._close_triggered_by_popstate && !this._skip_history_pop_on_close;
 
         dialog.removeEventListener('close', this._bound_handle_close);
         dialog.removeEventListener('cancel', this._bound_handle_cancel);
@@ -382,6 +382,7 @@ export const ModalComponent = {
             this._history_state_pushed = false;
             this._close_triggered_by_popstate = false;
             this._close_started = false;
+            this._skip_history_pop_on_close = false;
 
             const app_container = document.getElementById('app-container');
             const main_view_root = document.getElementById('app-main-view-root');
@@ -495,12 +496,13 @@ export const ModalComponent = {
         }
     },
 
-    close(focus_element_override) {
+    close(focus_element_override, options = {}) {
         if (!this.dialog_element_ref) return;
 
         if (this._close_started) return;
         this._close_started = true;
         this.pending_focus_element = focus_element_override ?? this.focus_before_open;
+        this._skip_history_pop_on_close = options.skipHistoryPop === true;
         this._do_animated_close();
     },
 

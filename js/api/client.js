@@ -205,6 +205,20 @@ export async function reset_password_with_code(code, password) {
     return data;
 }
 
+export async function get_admin_contacts() {
+    const res = await fetch(`${get_base_url()}/auth/admin-contacts`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await res.json().catch(() => ([]));
+    if (!res.ok) {
+        const e = new Error(data.error || 'Kunde inte hämta administratörer');
+        e.status = res.status;
+        throw e;
+    }
+    return Array.isArray(data) ? data : [];
+}
+
 export async function get_users() {
     return api_get('/users');
 }

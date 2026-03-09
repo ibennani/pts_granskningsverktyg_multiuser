@@ -96,4 +96,21 @@ router.post('/reset-password', async (req, res) => {
     }
 });
 
+router.get('/admin-contacts', async (_req, res) => {
+    try {
+        const result = await query(
+            'SELECT id, name FROM users WHERE is_admin = TRUE ORDER BY name ASC',
+            []
+        );
+        const admins = result.rows.map((row) => ({
+            id: row.id,
+            name: row.name || ''
+        }));
+        res.json(admins);
+    } catch (err) {
+        console.error('[auth] admin-contacts error:', err);
+        res.status(500).json({ error: 'Kunde inte hämta administratörer' });
+    }
+});
+
 export default router;

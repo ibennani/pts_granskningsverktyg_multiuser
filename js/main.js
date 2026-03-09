@@ -593,8 +593,35 @@ window.DraftManager = DraftManager;
 
     function navigate_and_set_hash(target_view_name, target_params = {}) {
         nav_debug('navigate_and_set_hash anropad', { target_view_name, target_params, current_hash: window.location.hash });
-        const target_hash_part = target_params && Object.keys(target_params).length > 0 ?
-            `${target_view_name}?${new URLSearchParams(target_params).toString()}` :
+        const current_state_for_nav = typeof getState === 'function' ? getState() : null;
+        const is_new_audit_metadata =
+            current_view_name_rendered === 'metadata' &&
+            current_state_for_nav?.auditStatus === 'not_started' &&
+            !!current_state_for_nav?.ruleFileContent;
+        const is_start_like_view =
+            target_view_name === 'start' ||
+            target_view_name === 'audit' ||
+            target_view_name === 'audit_audits';
+        const allow_new_audit_exit = target_params && target_params.allow_new_audit_exit === '1';
+
+        // Skydda metadata-flödet för nya granskningar:
+        // vi blockerar all implicit navigering tillbaka till listan/granskningsvyn
+        // så länge användaren inte uttryckligen valt det via metadata-vyn.
+        if (is_new_audit_metadata && is_start_like_view && !allow_new_audit_exit) {
+            nav_debug('navigate_and_set_hash blockerad för ny granskning i metadata', {
+                target_view_name,
+                target_params
+            });
+            return;
+        }
+
+        const safe_params = { ...(target_params || {}) };
+        if (allow_new_audit_exit) {
+            delete safe_params.allow_new_audit_exit;
+        }
+
+        const target_hash_part = safe_params && Object.keys(safe_params).length > 0 ?
+            `${target_view_name}?${new URLSearchParams(safe_params).toString()}` :
             target_view_name;
         const new_hash = `#${target_hash_part}`;
         if (window.location.hash === new_hash) {

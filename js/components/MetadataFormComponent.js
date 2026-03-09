@@ -81,7 +81,6 @@ export const MetadataFormComponent = {
 
     handle_form_submit(event) {
         event.preventDefault();
-
         this.autosave_session?.flush({ should_trim: true, skip_render: true });
 
         const trim_text_fn = this.AutosaveService?.trim_text_preserve_lines;
