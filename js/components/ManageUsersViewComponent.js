@@ -361,7 +361,7 @@ export const ManageUsersViewComponent = {
         });
 
         const delete_btn = is_edit ? this.Helpers.create_element('button', {
-            class_name: ['button', 'button-secondary', 'manage-users-delete-button'],
+            class_name: ['button', 'button-danger', 'manage-users-delete-button'],
             text_content: t('manage_users_button_delete_user'),
             attributes: { type: 'button' }
         }) : null;
