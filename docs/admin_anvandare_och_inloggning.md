@@ -13,11 +13,11 @@ När du går in på **Hantera användare** visas först en översikt:
   - **Förnamn**.
   - **Efternamn**.
   - **Admin** – om användaren är administratör (Ja/Nej).
-  - **Åtgärder** – knappar för att skapa återställningskod och hantera användaren.
+  - **Åtgärder** – knappar för att skapa engångskod och hantera användaren.
 
 I kolumnen **Åtgärder** finns två knappar:
 
-- **Skapa återställningskod** – används när någon har tappat bort sitt lösenord.
+- **Skapa engångskod** – används när någon har tappat bort sitt lösenord.
 - **Hantera användare** – öppnar en detaljvy där du kan ändra uppgifter för den valda användaren.
 
 ### 2. Lägga till en ny användare
@@ -35,12 +35,12 @@ För att skapa en ny användare:
 Efter att du klickat på **Skapa ny användare**:
 
 - Användaren skapas i systemet utan lösenord.
-- En dialogruta visas med en **återställningskod** som du ger till användaren.
+- En dialogruta visas med en **engångskod** som du ger till användaren.
 - Välj hur länge koden ska gälla (t.ex. 15, 30 eller 60 minuter).
 - Kopiera koden och ge den till användaren på ett säkert sätt (t.ex. via telefon).
 - När du stänger dialogrutan kommer du tillbaka till tabellen.
 
-Användaren går sedan till inloggningssidan, klickar på **Jag kan inte logga in**, fyller i återställningskoden och väljer sitt lösenord.
+Användaren går sedan till inloggningssidan, klickar på **Jag kan inte logga in**, fyller i engångskoden och väljer sitt lösenord.
 
 ### 3. Uppdatera en befintlig användare
 
@@ -50,7 +50,7 @@ För att uppdatera en redan befintlig användare:
 2. Klicka på **Hantera användare** på den raden.
 3. Ett formulär visas, förifyllt med personens uppgifter:
    - Du kan ändra **användarnamn**, **namn** (förnamn och efternamn) och om personen är **administratör**.
-   - För att byta lösenord använder du knappen **Skapa återställningskod** i tabellen (se avsnitt 5).
+   - För att byta lösenord använder du knappen **Skapa engångskod** i tabellen (se avsnitt 5).
 4. Längst ned i formuläret finns tre knappar:
    - **Uppdatera användare** – sparar ändringarna.
    - **Tillbaka till tabellen utan att spara** – återgår till tabellen utan att spara.
@@ -79,27 +79,27 @@ Om du väljer **Radera användare**:
 - Användaren tas bort från systemet.
 - Raden försvinner från tabellen.
 
-### 5. Skapa och använda återställningskod
+### 5. Skapa och använda engångskod
 
 När en användare har tappat bort sitt lösenord ska du inte se eller skicka något befintligt lösenord. I stället gör du så här:
 
 1. Gå till **Hantera användare**.
 2. Hitta personen i tabellen.
-3. Klicka på **Skapa återställningskod** i kolumnen **Åtgärder**.
+3. Klicka på **Skapa engångskod** i kolumnen **Åtgärder**.
 4. En dialogruta öppnas där du:
    - Väljer hur länge koden ska gälla (t.ex. 15, 30 eller 60 minuter).
-   - Klickar på **Skapa återställningskod**.
+   - Klickar på **Skapa engångskod**.
 5. Systemet visar då:
    - En text som beskriver att koden är engångs och tidsbegränsad.
    - Själva koden i ett tydligt, monospace-format.
-6. Under koden finns en knapp **Kopiera återställningskod**:
+6. Under koden finns en knapp **Kopiera engångskod**:
    - När du klickar på den kopieras koden till urklipp.
    - Knappens text ändras till **Koden är kopierad** som kvitto.
 
 Ge sedan koden till användaren på ett säkert sätt (t.ex. via telefon). Användaren går därefter själv till inloggningsvyn och:
 
 - Klickar på **Jag kan inte logga in**.
-- Fyller i återställningskoden och väljer ett nytt lösenord.
+- Fyller i engångskoden och väljer ett nytt lösenord.
 - När bytet lyckas blir personen automatiskt inloggad.
 
 ### 6. Själva inloggningen – användarnamn + lösenord
@@ -114,17 +114,17 @@ Efter förändringarna i projektet loggar alla användare in på samma sätt:
 
 Om användaren inte kan logga in:
 
-- Administratören skapar en ny **återställningskod** enligt avsnittet ovan.
+- Administratören skapar en ny **engångskod** enligt avsnittet ovan.
 - Användaren använder koden i inloggningsvyn för att sätta ett nytt lösenord.
 
 ### Sammanfattning
 
 - **Inloggning** sker alltid med **användarnamn + lösenord**.
 - **Hantera användare** ger en tydlig överblick över alla konton och låter dig:
-  - Lägga till nya användare (som får en återställningskod för att sätta sitt lösenord).
+  - Lägga till nya användare (som får en engångskod för att sätta sitt lösenord).
   - Uppdatera namn, användarnamn och admin-status.
   - Radera användare som inte längre ska ha åtkomst.
-  - Skapa engångs-**återställningskoder** vid borttappade lösenord eller vid lösenordsbyte, med enkel kopiering till urklipp.
+  - Skapa engångs-**engångskoder** vid borttappade lösenord eller vid lösenordsbyte, med enkel kopiering till urklipp.
 
 På så sätt kan du som administratör ha full kontroll över vilka som får logga in i verktyget och hur de kommer åt sina konton. 
 

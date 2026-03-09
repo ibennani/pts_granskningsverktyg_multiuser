@@ -53,7 +53,7 @@ router.post('/reset-password', async (req, res) => {
     try {
         const { code, password } = req.body || {};
         if (!code || typeof code !== 'string' || !code.trim()) {
-            return res.status(400).json({ error: 'Återställningskod krävs' });
+            return res.status(400).json({ error: 'Engångskod krävs' });
         }
         if (!password || typeof password !== 'string' || password.trim().length < 8) {
             return res.status(400).json({ error: 'Lösenordet måste vara minst 8 tecken' });
@@ -77,7 +77,7 @@ router.post('/reset-password', async (req, res) => {
         }
 
         if (!matched) {
-            return res.status(400).json({ error: 'Ogiltig eller utgången återställningskod' });
+            return res.status(400).json({ error: 'Ogiltig eller utgången engångskod' });
         }
 
         const newHash = await bcrypt.hash(password.trim(), 10);

@@ -280,7 +280,7 @@ router.post('/:id/password-reset-codes', requireAdmin, async (req, res) => {
         });
     } catch (err) {
         console.error('[users] POST /:id/password-reset-codes error:', err);
-        return res.status(500).json({ error: 'Kunde inte skapa återställningskod' });
+        return res.status(500).json({ error: 'Kunde inte skapa engångskod' });
     }
 });
 

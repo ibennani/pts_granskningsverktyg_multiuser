@@ -1,5 +1,5 @@
 -- Lösenordsåterställning via engångskoder
--- Skapar tabell för återställningskoder kopplade till users.
+-- Skapar tabell för engångskoder kopplade till users.
 
 CREATE TABLE IF NOT EXISTS password_reset_tokens (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
