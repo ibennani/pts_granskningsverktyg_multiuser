@@ -306,6 +306,29 @@ router.put('/:id/password', requireAdmin, async (req, res) => {
     }
 });
 
+router.get('/:id/audit-count', requireAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userResult = await query('SELECT id, name FROM users WHERE id = $1', [id]);
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Användare hittades inte' });
+        }
+
+        const user_name = userResult.rows[0].name;
+        const auditResult = await query(
+            "SELECT COUNT(*) AS count FROM audits WHERE metadata->>'auditorName' = $1",
+            [user_name]
+        );
+        const raw_count = auditResult.rows[0] && auditResult.rows[0].count;
+        const audit_count = Number.isFinite(Number(raw_count)) ? Number(raw_count) : 0;
+
+        res.json({ audit_count });
+    } catch (err) {
+        console.error('[users] GET /:id/audit-count error:', err);
+        res.status(500).json({ error: 'Kunde inte hämta antal granskningar' });
+    }
+});
+
 router.delete('/:id', requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;

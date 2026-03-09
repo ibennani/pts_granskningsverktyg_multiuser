@@ -306,6 +306,10 @@ export async function delete_user(id) {
     return api_delete(`/users/${encodeURIComponent(id)}`);
 }
 
+export async function get_user_audit_count(id) {
+    return api_get(`/users/${encodeURIComponent(id)}/audit-count`);
+}
+
 export async function update_backup_settings(body) {
     return api_put('/backup/settings', body);
 }

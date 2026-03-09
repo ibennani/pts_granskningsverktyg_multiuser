@@ -1,6 +1,6 @@
 // js/components/ManageUsersViewComponent.js
 
-import { get_users, create_password_reset_code, create_user, update_user, delete_user } from '../api/client.js';
+import { get_users, create_password_reset_code, create_user, update_user, delete_user, get_user_audit_count } from '../api/client.js';
 import './manage_users_view_component.css';
 import { GenericTableComponent } from './GenericTableComponent.js';
 
@@ -14,7 +14,6 @@ export const ManageUsersViewComponent = {
         this.Translation = deps.Translation;
         this.Helpers = deps.Helpers;
         this.NotificationComponent = deps.NotificationComponent;
-        this.ModalComponent = deps.ModalComponent;
 
         this.users = [];
         this.users_loaded = false;
@@ -26,6 +25,9 @@ export const ManageUsersViewComponent = {
         this.detail_form_root = null;
         this.table_root = null;
         this.reset_code_button_focus_ref = null;
+        this.return_focus_info = this.return_focus_info || null;
+        this.skip_table_focus_restore_next_render = this.skip_table_focus_restore_next_render || false;
+        this.detail_delete_button_ref = null;
         this.sort_state = { columnIndex: 0, direction: 'asc' };
 
         this._table = Object.create(GenericTableComponent);
@@ -58,6 +60,10 @@ export const ManageUsersViewComponent = {
 
     async render() {
         if (!this.root || !this.Helpers?.create_element) return;
+
+        if (typeof window !== 'undefined' && window.__gv_restore_focus_info) {
+            window.__gv_restore_focus_info = null;
+        }
 
         await this.fetch_users();
 
@@ -121,6 +127,8 @@ export const ManageUsersViewComponent = {
         this.render_table_view();
 
         this.root.appendChild(plate);
+
+        this.restore_focus_to_manage_trigger_if_needed();
     },
 
     _get_display_name(user) {
@@ -134,6 +142,12 @@ export const ManageUsersViewComponent = {
     render_table_view() {
         if (!this.table_root || !this._table || !this.Helpers) return;
         const t = this.get_t_func();
+
+        if (this.skip_table_focus_restore_next_render && this._table) {
+            this._table._lastFocusPosition = null;
+            this._table._pendingSortFocusIndex = undefined;
+            this.skip_table_focus_restore_next_render = false;
+        }
 
         const columns = [
             {
@@ -176,10 +190,12 @@ export const ManageUsersViewComponent = {
                         text_content: t('manage_users_action_manage_user'),
                         attributes: {
                             type: 'button',
-                            'aria-label': `${t('manage_users_action_manage_user')} ${t('manage_users_action_for')} ${display_name}`
+                            'aria-label': `${t('manage_users_action_manage_user')} ${t('manage_users_action_for')} ${display_name}`,
+                            'data-user-id': String(user.id)
                         }
                     });
                     manage_btn.addEventListener('click', () => {
+                        this.return_focus_info = { type: 'manage', user_id: user.id };
                         if (this.router) {
                             this.router('manage_users', { mode: 'detail', id: user.id });
                         } else {
@@ -213,6 +229,43 @@ export const ManageUsersViewComponent = {
         });
     },
 
+    restore_focus_to_manage_trigger_if_needed() {
+        if (!this.root || !this.return_focus_info) return;
+
+        const info = this.return_focus_info;
+        this.return_focus_info = null;
+
+        try {
+            let el = null;
+            if (info.type === 'manage' && info.user_id) {
+                const user_id_str = String(info.user_id).replace(/"/g, '\\"');
+                el = this.root.querySelector(`.manage-users-manage-button[data-user-id="${user_id_str}"]`);
+            }
+
+            if (el && typeof el.focus === 'function' && document.contains(el)) {
+                const focus_element = () => {
+                    if (!document.contains(el)) return;
+                    try {
+                        el.focus({ preventScroll: true });
+                    } catch (e) {
+                        el.focus();
+                    }
+                };
+
+                const raf = typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function';
+                if (raf) {
+                    window.requestAnimationFrame(() => {
+                        window.requestAnimationFrame(focus_element);
+                    });
+                } else {
+                    setTimeout(focus_element, 0);
+                }
+            }
+        } catch (e) {
+            // Ignorera fokusfel
+        }
+    },
+
     render_detail_view() {
         if (!this.root || !this.Helpers) return;
         const t = this.get_t_func();
@@ -227,6 +280,10 @@ export const ManageUsersViewComponent = {
         }
 
         const is_edit = !!this.current_user;
+
+        if (is_edit && this.current_user && (!this.return_focus_info || this.return_focus_info.user_id !== this.current_user.id)) {
+            this.return_focus_info = { type: 'manage', user_id: this.current_user.id };
+        }
 
         plate.appendChild(this.Helpers.create_element('h1', {
             id: 'main-content-heading',
@@ -387,6 +444,7 @@ export const ManageUsersViewComponent = {
         buttons_row.appendChild(cancel_btn);
         if (delete_btn) {
             buttons_row.appendChild(delete_btn);
+            this.detail_delete_button_ref = delete_btn;
         }
 
         form.appendChild(buttons_row);
@@ -403,6 +461,7 @@ export const ManageUsersViewComponent = {
         });
 
         cancel_btn.addEventListener('click', () => {
+            this.skip_table_focus_restore_next_render = true;
             if (this.router) {
                 this.router('manage_users', {});
             } else {
@@ -413,9 +472,9 @@ export const ManageUsersViewComponent = {
         });
 
         if (delete_btn) {
-            delete_btn.addEventListener('click', () => {
+            delete_btn.addEventListener('click', async () => {
                 if (!this.current_user) return;
-                this.open_delete_user_modal(this.current_user);
+                await this.open_delete_user_modal(this.current_user);
             });
         }
 
@@ -462,16 +521,24 @@ export const ManageUsersViewComponent = {
             if (this.current_user) {
                 await update_user(this.current_user.id, body);
                 this.NotificationComponent?.show_global_message?.(t('manage_users_update_success'), 'success');
+                this.return_focus_info = { type: 'manage', user_id: this.current_user.id };
             } else {
-                await create_user(body);
+                const created = await create_user(body);
                 this.NotificationComponent?.show_global_message?.(t('manage_users_create_success'), 'success');
+                if (created && created.id) {
+                    this.return_focus_info = { type: 'manage', user_id: created.id };
+                } else {
+                    this.return_focus_info = null;
+                }
             }
             await this.fetch_users();
             if (this.router) {
+                this.skip_table_focus_restore_next_render = true;
                 this.router('manage_users', {});
             } else {
                 this.mode = 'list';
                 this.current_user = null;
+                this.skip_table_focus_restore_next_render = true;
                 this.render();
             }
         } catch (err) {
@@ -506,32 +573,51 @@ export const ManageUsersViewComponent = {
         return combined.replace(/\s+/g, '');
     },
 
-    open_delete_user_modal(user) {
+    async open_delete_user_modal(user) {
         const t = this.get_t_func();
-        if (!this.ModalComponent) return;
+        const ModalComponent = window.ModalComponent;
+        if (!ModalComponent?.show || !this.Helpers?.create_element) return;
 
-        const username = user.username || t('user_fallback_name', { id: user.id });
-        this.ModalComponent.show(
+        const display_name = this._get_display_name(user);
+        let audit_count = 0;
+
+        try {
+            const result = await get_user_audit_count(user.id);
+            const raw_count = result && (result.audit_count ?? result.count);
+            if (Number.isFinite(Number(raw_count))) {
+                audit_count = Number(raw_count);
+            }
+        } catch (err) {
+            audit_count = 0;
+        }
+
+        ModalComponent.show(
             {
-                h1_text: t('manage_users_delete_modal_title', { username }),
-                message_text: t('manage_users_delete_modal_message')
+                h1_text: t('manage_users_delete_modal_title', { name: display_name }),
+                message_text: t('manage_users_delete_modal_message', { name: display_name, auditCount: audit_count })
             },
             (container, modal_instance) => {
                 const actions = this.Helpers.create_element('div', { class_name: 'modal-actions' });
 
                 const delete_btn = this.Helpers.create_element('button', {
                     class_name: ['button', 'button-primary'],
-                    text_content: t('manage_users_delete_modal_confirm'),
+                    text_content: t('manage_users_delete_modal_confirm', { name: display_name }),
                     attributes: { type: 'button' }
                 });
                 const keep_btn = this.Helpers.create_element('button', {
                     class_name: ['button', 'button-secondary'],
-                    text_content: t('manage_users_delete_modal_cancel'),
+                    text_content: t('manage_users_delete_modal_cancel', { name: display_name }),
                     attributes: { type: 'button' }
                 });
 
                 delete_btn.addEventListener('click', async () => {
                     try {
+                        this.return_focus_info = null;
+                        this.skip_table_focus_restore_next_render = true;
+                        if (this._table) {
+                            this._table._lastFocusPosition = null;
+                            this._table._pendingSortFocusIndex = undefined;
+                        }
                         await delete_user(user.id);
                         this.NotificationComponent?.show_global_message?.(t('manage_users_delete_success'), 'success');
                         await this.fetch_users();
@@ -552,6 +638,14 @@ export const ManageUsersViewComponent = {
 
                 keep_btn.addEventListener('click', () => {
                     modal_instance.close();
+                    const btn = this.detail_delete_button_ref;
+                    if (btn && typeof btn.focus === 'function' && document.contains(btn)) {
+                        try {
+                            btn.focus({ preventScroll: true });
+                        } catch (e) {
+                            btn.focus();
+                        }
+                    }
                 });
 
                 actions.appendChild(delete_btn);
@@ -563,10 +657,11 @@ export const ManageUsersViewComponent = {
 
     open_reset_code_modal_for_user(user) {
         const t = this.get_t_func();
-        if (!this.ModalComponent) return;
+        const ModalComponent = window.ModalComponent;
+        if (!ModalComponent?.show || !this.Helpers?.create_element) return;
         const username = user.username || t('user_fallback_name', { id: user.id });
 
-        this.ModalComponent.show(
+        ModalComponent.show(
             {
                 h1_text: t('manage_users_reset_modal_title', { username }),
                 message_text: t('manage_users_reset_modal_intro')
