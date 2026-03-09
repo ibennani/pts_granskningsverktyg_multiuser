@@ -330,8 +330,12 @@ export const ManageUsersViewComponent = {
         const password_wrapper = this.Helpers.create_element('div', { class_name: 'form-group manage-users-password-group' });
         const password_label = this.Helpers.create_element('label', {
             attributes: { for: password_id },
+            class_name: 'manage-users-password-label'
+        });
+        const password_label_strong = this.Helpers.create_element('strong', {
             text_content: t('manage_users_field_password_optional')
         });
+        password_label.appendChild(password_label_strong);
         password_wrapper.appendChild(password_label);
 
         const password_row = this.Helpers.create_element('div', { class_name: 'manage-users-password-row' });

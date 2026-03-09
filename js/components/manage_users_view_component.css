@@ -102,6 +102,11 @@
     margin-bottom: 0.15rem;
 }
 
+.manage-users-password-label {
+    display: inline-block;
+    margin-bottom: 0.15rem;
+}
+
 .manage-users-admin-label {
     display: inline-block;
     margin-bottom: 0;
