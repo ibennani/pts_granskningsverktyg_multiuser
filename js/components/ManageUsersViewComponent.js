@@ -267,7 +267,8 @@ export const ManageUsersViewComponent = {
                 class_name: 'form-control',
                 attributes: {
                     autocomplete: 'username',
-                    maxlength: '6'
+                    maxlength: '6',
+                    size: '6'
                 }
             });
             if (this.current_user?.username) {
@@ -281,7 +282,8 @@ export const ManageUsersViewComponent = {
             type: 'text',
             class_name: 'form-control',
             attributes: {
-                maxlength: '40'
+                maxlength: '40',
+                size: '40'
             }
         });
         if (this.current_user?.name) {
@@ -314,7 +316,8 @@ export const ManageUsersViewComponent = {
             class_name: 'form-control manage-users-password-input',
             attributes: {
                 autocomplete: is_edit ? 'new-password' : 'new-password',
-                maxlength: '8'
+                maxlength: '8',
+                size: '8'
             }
         });
 
