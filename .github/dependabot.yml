@@ -45,27 +45,7 @@ updates:
       - dependency-name: "eslint"
         update-types: ["version-update:semver-major"]
 
-  # 2) NPM/Yarn – säkerhetsuppdateringar (oftare, eget “spår”)
-  - package-ecosystem: "npm"
-    directory: "/"
-    schedule:
-      interval: "daily"
-      time: "04:15"
-      timezone: "Europe/Stockholm"
-    target-branch: "main"
-    # Endast säkerhet
-    allow:
-      - dependency-type: "direct"
-      - dependency-type: "all"
-    labels:
-      - "dependencies"
-      - "dependabot"
-      - "security"
-    # Begränsa till security alerts
-    # (Dependabot triggar dessa separat; ingen grouping behövs här)
-    # Tips: slå på "Dependabot alerts" och auto-merge för patch/minor i reposettings
-
-  # 3) GitHub Actions – håll workflows uppdaterade, men sällan
+  # 2) GitHub Actions – håll workflows uppdaterade, men sällan
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
