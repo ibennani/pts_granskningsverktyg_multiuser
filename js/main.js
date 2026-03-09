@@ -1832,9 +1832,16 @@ window.DraftManager = DraftManager;
 
         const is_logged_in = () => {
             if (typeof window === 'undefined') return true;
-            return !!(window.__GV_CURRENT_USER_NAME__ ||
-                (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('gv_current_user_name')) ||
-                get_auth_token());
+            const has_token = !!get_auth_token();
+            if (!has_token) {
+                try {
+                    if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem('gv_current_user_name');
+                } catch (_) {}
+                try {
+                    delete window.__GV_CURRENT_USER_NAME__;
+                } catch (_) {}
+            }
+            return has_token;
         };
 
         if (!is_logged_in()) {
