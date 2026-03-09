@@ -14,13 +14,15 @@ let debounce_timer = null;
 
 function format_build_info_from_mtime(mtime) {
     const buildTime = mtime || new Date();
+    const swedishOptions = { timeZone: 'Europe/Stockholm' };
     return {
         timestamp: buildTime.toISOString(),
-        date: buildTime.toLocaleDateString('sv-SE'),
+        date: buildTime.toLocaleDateString('sv-SE', swedishOptions),
         time: buildTime.toLocaleTimeString('sv-SE', {
             hour: '2-digit',
             minute: '2-digit',
             second: '2-digit',
+            timeZone: 'Europe/Stockholm',
         }),
     };
 }

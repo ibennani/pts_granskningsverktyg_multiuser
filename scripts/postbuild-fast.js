@@ -47,12 +47,14 @@ try {
     }) || new Date();
 
   const buildTime = latestMtime;
+  const swedishOptions = { timeZone: 'Europe/Stockholm' };
   const buildInfo = {
     timestamp: buildTime.toISOString(),
-    date: buildTime.toLocaleDateString('sv-SE'),
+    date: buildTime.toLocaleDateString('sv-SE', swedishOptions),
     time: buildTime.toLocaleTimeString('sv-SE', {
       hour: '2-digit',
       minute: '2-digit',
+      timeZone: 'Europe/Stockholm',
     }),
   };
 
