@@ -308,8 +308,10 @@ export const ManageUsersViewComponent = {
         const is_admin_wrapper = this.Helpers.create_element('div', { class_name: 'form-group' });
         const is_admin_checkbox = this.Helpers.create_element('input', {
             id: is_admin_id,
-            type: 'checkbox',
-            class_name: 'form-checkbox'
+            class_name: 'form-checkbox',
+            attributes: {
+                type: 'checkbox'
+            }
         });
         if (this.current_user?.is_admin) {
             is_admin_checkbox.checked = true;
