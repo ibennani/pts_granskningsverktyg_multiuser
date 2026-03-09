@@ -790,16 +790,33 @@ export const ManageUsersViewComponent = {
 
                 const copy_code_to_clipboard = async () => {
                     if (!current_code) return;
+                    const server_url = typeof window !== 'undefined' && window.location?.origin ? window.location.origin : '';
+                    const expires_str = current_expires_at
+                        ? (() => {
+                            try {
+                                const d = new Date(current_expires_at);
+                                return Number.isNaN(d.getTime()) ? '' : d.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+                            } catch {
+                                return '';
+                            }
+                        })()
+                        : '';
+                    const clipboard_text = t('manage_users_copy_clipboard_text', {
+                        server_url,
+                        username,
+                        code: current_code,
+                        expires: expires_str
+                    });
                     try {
                         if (navigator.clipboard && navigator.clipboard.writeText) {
-                            await navigator.clipboard.writeText(current_code);
+                            await navigator.clipboard.writeText(clipboard_text);
                         } else {
                             const textarea = this.Helpers.create_element('textarea', {
                                 attributes: { 'aria-hidden': 'true' }
                             });
                             textarea.style.position = 'fixed';
                             textarea.style.left = '-9999px';
-                            textarea.value = current_code;
+                            textarea.value = clipboard_text;
                             document.body.appendChild(textarea);
                             textarea.focus();
                             textarea.select();
