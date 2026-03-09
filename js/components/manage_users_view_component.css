@@ -1,28 +1,61 @@
 /* ManageUsersViewComponent */
 
-.manage-users-plate textarea {
-    display: block;
-    width: 100%;
-    max-width: 40rem;
-    margin-top: 0.5rem;
+.manage-users-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
     margin-bottom: 1rem;
 }
 
-.manage-users-plate .button {
-    margin-top: 0.5rem;
+.manage-users-add-button {
+    margin-top: 0;
 }
 
-.manage-users-plate #manage-users-reset-user-select {
-    display: inline-block;
-    width: auto;
-    max-width: 100%;
+.manage-users-table-wrapper {
+    margin-top: 1rem;
+}
+
+.manage-users-actions-cell {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.manage-users-detail-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.manage-users-delete-button {
+    margin-left: auto;
+}
+
+.manage-users-reset-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
     margin-top: 0.5rem;
     margin-bottom: 0.5rem;
 }
 
-.manage-users-plate .manage-users-reset-expires-select {
+.manage-users-reset-code-container {
+    margin-top: 1rem;
+}
+
+.manage-users-reset-code-value {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 1.2rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #ccc;
+    border-radius: 3px;
     display: inline-block;
-    width: auto;
-    max-width: 12rem;
-    margin-right: 0.5rem;
+    margin-top: 0.25rem;
+}
+
+.manage-users-copy-button {
+    margin-left: 0.5rem;
 }
