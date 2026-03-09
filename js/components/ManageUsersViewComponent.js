@@ -244,8 +244,7 @@ export const ManageUsersViewComponent = {
         });
 
         const username_id = 'manage-users-username-input';
-        const first_name_id = 'manage-users-first-name-input';
-        const last_name_id = 'manage-users-last-name-input';
+        const name_id = 'manage-users-name-input';
         const is_admin_id = 'manage-users-is-admin-input';
         const password_id = 'manage-users-password-input';
 
@@ -277,33 +276,18 @@ export const ManageUsersViewComponent = {
             form.appendChild(make_field(t('manage_users_field_username'), username_input));
         }
 
-        const first_name_input = this.Helpers.create_element('input', {
-            id: first_name_id,
+        const name_input = this.Helpers.create_element('input', {
+            id: name_id,
             type: 'text',
             class_name: 'form-control',
             attributes: {
-                maxlength: '30'
-            }
-        });
-        const last_name_input = this.Helpers.create_element('input', {
-            id: last_name_id,
-            type: 'text',
-            class_name: 'form-control',
-            attributes: {
-                maxlength: '30'
+                maxlength: '60'
             }
         });
         if (this.current_user?.name) {
-            const parts = String(this.current_user.name).trim().split(/\s+/);
-            if (parts.length === 1) {
-                first_name_input.value = parts[0];
-            } else if (parts.length > 1) {
-                first_name_input.value = parts[0];
-                last_name_input.value = parts.slice(1).join(' ');
-            }
+            name_input.value = String(this.current_user.name).trim();
         }
-        form.appendChild(make_field(t('manage_users_field_first_name'), first_name_input));
-        form.appendChild(make_field(t('manage_users_field_last_name'), last_name_input));
+        form.appendChild(make_field(t('manage_users_field_name'), name_input));
 
         const is_admin_wrapper = this.Helpers.create_element('div', { class_name: 'form-group' });
         const is_admin_checkbox = this.Helpers.create_element('input', {
@@ -395,8 +379,7 @@ export const ManageUsersViewComponent = {
             event.preventDefault();
             await this.handle_submit_user_form({
                 username_input,
-                first_name_input,
-                last_name_input,
+                name_input,
                 is_admin_checkbox,
                 password_input
             });
@@ -422,24 +405,17 @@ export const ManageUsersViewComponent = {
         this.root.appendChild(plate);
     },
 
-    async handle_submit_user_form({ username_input, first_name_input, last_name_input, is_admin_checkbox, password_input }) {
+    async handle_submit_user_form({ username_input, name_input, is_admin_checkbox, password_input }) {
         const t = this.get_t_func();
         const is_edit = !!this.current_user;
         let username = username_input ? (username_input.value || '').trim() : '';
-        const first_name = (first_name_input.value || '').trim();
-        const last_name = (last_name_input.value || '').trim();
+        const raw_name = (name_input.value || '').trim();
         const is_admin = !!is_admin_checkbox.checked;
         const password = (password_input.value || '').trim();
 
-        if (username_input && !username && first_name && last_name) {
-            const auto_username = this.generate_username_from_names(first_name, last_name);
-            if (auto_username) {
-                username = auto_username;
-                if (username_input) {
-                    username_input.value = auto_username;
-                }
-            }
-        }
+        const name_parts = raw_name.split(/\s+/).filter(Boolean);
+        const first_name = name_parts[0] || '';
+        const last_name = name_parts.slice(1).join(' ');
 
         if (is_edit && !username) {
             this.NotificationComponent?.show_global_message?.(t('manage_users_error_username_required'), 'warning');
@@ -455,8 +431,7 @@ export const ManageUsersViewComponent = {
         }
 
         const body = {
-            first_name,
-            last_name,
+            name: raw_name,
             is_admin
         };
         if (username) {

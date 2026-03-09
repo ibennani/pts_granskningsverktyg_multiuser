@@ -120,10 +120,19 @@ router.get('/', async (_req, res) => {
 
 router.post('/', requireAdmin, async (req, res) => {
     try {
-        const { username, first_name, last_name, is_admin, password } = req.body || {};
+        const { username, first_name, last_name, name, is_admin, password } = req.body || {};
 
-        const first_name_trimmed = typeof first_name === 'string' ? first_name.trim() : '';
-        const last_name_trimmed = typeof last_name === 'string' ? last_name.trim() : '';
+        const name_raw = typeof name === 'string' ? name.trim() : '';
+        let first_name_trimmed = typeof first_name === 'string' ? first_name.trim() : '';
+        let last_name_trimmed = typeof last_name === 'string' ? last_name.trim() : '';
+
+        if (name_raw) {
+            const normalized = name_raw.replace(/\s+/g, ' ').trim();
+            const parts = normalized.split(/\s+/);
+            first_name_trimmed = parts[0] || '';
+            last_name_trimmed = parts.slice(1).join(' ');
+        }
+
         if (!first_name_trimmed || !last_name_trimmed) {
             return res.status(400).json({ error: 'Förnamn och efternamn krävs' });
         }
@@ -172,7 +181,7 @@ router.post('/', requireAdmin, async (req, res) => {
 router.put('/:id', requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
-        const { username, first_name, last_name, is_admin } = req.body || {};
+        const { username, first_name, last_name, name, is_admin } = req.body || {};
 
         const updates = [];
         const values = [];
@@ -189,7 +198,17 @@ router.put('/:id', requireAdmin, async (req, res) => {
 
         const has_first = first_name !== undefined;
         const has_last = last_name !== undefined;
-        if (has_first || has_last) {
+        const has_name = name !== undefined;
+        if (has_name) {
+            const name_raw = typeof name === 'string' ? name.trim() : '';
+            const normalized = name_raw.replace(/\s+/g, ' ').trim();
+            const parts = normalized.split(/\s+/);
+            if (parts.length < 2) {
+                return res.status(400).json({ error: 'Förnamn och efternamn krävs' });
+            }
+            updates.push(`name = $${i++}`);
+            values.push(normalized);
+        } else if (has_first || has_last) {
             const first_name_trimmed = has_first && typeof first_name === 'string' ? first_name.trim() : '';
             const last_name_trimmed = has_last && typeof last_name === 'string' ? last_name.trim() : '';
             if (!first_name_trimmed || !last_name_trimmed) {
