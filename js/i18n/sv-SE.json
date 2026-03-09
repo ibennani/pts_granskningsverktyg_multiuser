@@ -847,6 +847,8 @@
   "manage_users_field_first_name": "Förnamn",
   "manage_users_field_last_name": "Efternamn",
   "manage_users_field_is_admin": "Administratör",
+  "manage_users_is_admin_label_with_name": "{name} är administratör.",
+  "manage_users_is_admin_label_without_name": "Användaren är administratör.",
   "manage_users_field_password_optional": "Lösenord (valfritt, 8 tecken)",
   "manage_users_generate_password_button": "Generera lösenord",
   "manage_users_button_create_user": "Skapa ny användare",
