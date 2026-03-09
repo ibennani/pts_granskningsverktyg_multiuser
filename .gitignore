@@ -8,6 +8,7 @@ yarn-error.log*
 dist/
 build/
 .vite/
+build-info.js
 
 # Environment variables
 .env
