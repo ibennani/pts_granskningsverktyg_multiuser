@@ -59,3 +59,25 @@
 .manage-users-copy-button {
     margin-left: 0.5rem;
 }
+
+.manage-users-password-group {
+    margin-top: 0.5rem;
+}
+
+.manage-users-password-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    margin-top: 0.25rem;
+}
+
+.manage-users-password-input {
+    flex: 1 1 auto;
+    padding-top: 0.3rem;
+    padding-bottom: 0.3rem;
+}
+
+.manage-users-generate-password-button {
+    flex: 0 0 auto;
+}

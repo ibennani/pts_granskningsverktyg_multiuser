@@ -241,7 +241,8 @@ export const ManageUsersViewComponent = {
             type: 'text',
             class_name: 'form-control',
             attributes: {
-                autocomplete: 'username'
+                autocomplete: 'username',
+                maxlength: '30'
             }
         });
         if (this.current_user?.username) {
@@ -252,12 +253,18 @@ export const ManageUsersViewComponent = {
         const first_name_input = this.Helpers.create_element('input', {
             id: first_name_id,
             type: 'text',
-            class_name: 'form-control'
+            class_name: 'form-control',
+            attributes: {
+                maxlength: '30'
+            }
         });
         const last_name_input = this.Helpers.create_element('input', {
             id: last_name_id,
             type: 'text',
-            class_name: 'form-control'
+            class_name: 'form-control',
+            attributes: {
+                maxlength: '30'
+            }
         });
         if (this.current_user?.name) {
             const parts = String(this.current_user.name).trim().split(/\s+/);
@@ -291,12 +298,40 @@ export const ManageUsersViewComponent = {
         const password_input = this.Helpers.create_element('input', {
             id: password_id,
             type: 'password',
-            class_name: 'form-control',
+            class_name: 'form-control manage-users-password-input',
             attributes: {
-                autocomplete: is_edit ? 'new-password' : 'new-password'
+                autocomplete: is_edit ? 'new-password' : 'new-password',
+                maxlength: '8'
             }
         });
-        form.appendChild(make_field(t('manage_users_field_password_optional'), password_input));
+
+        const password_wrapper = this.Helpers.create_element('div', { class_name: 'form-group manage-users-password-group' });
+        const password_label = this.Helpers.create_element('label', {
+            attributes: { for: password_id },
+            text_content: t('manage_users_field_password_optional')
+        });
+        password_wrapper.appendChild(password_label);
+
+        const password_row = this.Helpers.create_element('div', { class_name: 'manage-users-password-row' });
+        password_row.appendChild(password_input);
+
+        const generate_btn = this.Helpers.create_element('button', {
+            class_name: ['button', 'button-secondary', 'manage-users-generate-password-button'],
+            text_content: t('manage_users_generate_password_button'),
+            attributes: { type: 'button' }
+        });
+        generate_btn.addEventListener('click', () => {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+            let pwd = '';
+            for (let i = 0; i < 8; i += 1) {
+                pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            password_input.value = pwd;
+        });
+        password_row.appendChild(generate_btn);
+
+        password_wrapper.appendChild(password_row);
+        form.appendChild(password_wrapper);
 
         const buttons_row = this.Helpers.create_element('div', { class_name: 'manage-users-detail-buttons' });
 
