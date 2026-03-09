@@ -5,8 +5,12 @@ ALTER TABLE users
 
 -- Sätt ett första användarnamn för befintliga användare om saknas.
 -- Vi utgår från hela namnet, tar bort mellanslag/icke-alfanumeriska tecken och gör gemener.
+-- Om name är NULL eller tomt ger det tom sträng – använd då id som fallback så att NOT NULL uppfylls.
 UPDATE users
-SET username = LOWER(REGEXP_REPLACE(name, '[^A-Za-z0-9]+', '', 'g'))
+SET username = COALESCE(
+    NULLIF(LOWER(REGEXP_REPLACE(TRIM(COALESCE(name, '')), '[^A-Za-z0-9]+', '', 'g')), ''),
+    'user-' || id::text
+)
 WHERE (username IS NULL OR username = '');
 
 -- Säkerställ att alla användare har ett ifyllt användarnamn.
