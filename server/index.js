@@ -2,6 +2,8 @@
 import 'dotenv/config';
 import http from 'http';
 import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
 import { query } from './db.js';
 import { init_ws } from './ws.js';
 process.on('uncaughtException', (err) => {
@@ -22,6 +24,26 @@ import { get_last_backup_status, start_backup_scheduler } from './backup/audit_b
 const app = express();
 const PORT = process.env.API_PORT || 3000;
 const http_server = http.createServer(app);
+
+app.use(helmet());
+
+const allowed_origins_env = (process.env.ALLOWED_ORIGINS || '').trim();
+const allowed_origins = allowed_origins_env
+    ? allowed_origins_env.split(',').map((s) => s.trim()).filter(Boolean)
+    : (() => {
+        console.warn('[Server] ALLOWED_ORIGINS är inte satt – tillåter http://localhost:5173 som fallback.');
+        return ['http://localhost:5173'];
+    })();
+
+app.use(cors({
+    origin: (origin, cb) => {
+        if (!origin) return cb(null, true);
+        if (allowed_origins.includes(origin)) return cb(null, true);
+        return cb(null, false);
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    credentials: true
+}));
 
 app.use(express.json({ limit: '10mb' }));
 
