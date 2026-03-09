@@ -753,17 +753,21 @@ export const ManageUsersViewComponent = {
         const ModalComponent = window.ModalComponent;
         if (!ModalComponent?.show || !this.Helpers?.create_element) return;
         const username = user.username || t('user_fallback_name', { id: user.id });
+        const display_name = this._get_display_name(user);
 
         ModalComponent.show(
             {
-                h1_text: t('manage_users_reset_modal_title', { username }),
-                message_text: t('manage_users_reset_modal_intro')
+                h1_text: t('manage_users_reset_modal_title'),
+                message_text: t('manage_users_reset_modal_intro', { name: display_name })
             },
             (container, modal_instance) => {
                 const expires_label = this.Helpers.create_element('label', {
-                    attributes: { for: 'manage-users-reset-expires' },
+                    attributes: { for: 'manage-users-reset-expires' }
+                });
+                const expires_label_strong = this.Helpers.create_element('strong', {
                     text_content: t('manage_users_password_expires_label')
                 });
+                expires_label.appendChild(expires_label_strong);
                 const expires_select = this.Helpers.create_element('select', {
                     id: 'manage-users-reset-expires',
                     class_name: 'form-control manage-users-reset-expires-select'
@@ -784,16 +788,16 @@ export const ManageUsersViewComponent = {
                 controls.appendChild(expires_label);
                 controls.appendChild(expires_select);
 
+                const info_heading = this.Helpers.create_element('h2', {
+                    class_name: 'manage-users-reset-info-heading',
+                    text_content: t('manage_users_password_info_heading', { name: display_name })
+                });
+
                 const code_container = this.Helpers.create_element('div', {
                     class_name: 'manage-users-reset-code-container'
                 });
 
                 const actions = this.Helpers.create_element('div', { class_name: 'modal-actions' });
-                const create_btn = this.Helpers.create_element('button', {
-                    class_name: ['button', 'button-primary'],
-                    text_content: t('manage_users_password_create_code_button'),
-                    attributes: { type: 'button' }
-                });
                 const close_btn = this.Helpers.create_element('button', {
                     class_name: ['button', 'button-secondary'],
                     text_content: t('manage_users_reset_modal_close'),
@@ -801,24 +805,42 @@ export const ManageUsersViewComponent = {
                 });
 
                 let current_code = '';
+                let current_expires_at = null;
                 const copy_btn = this.Helpers.create_element('button', {
-                    class_name: ['button', 'button-secondary', 'manage-users-copy-button'],
+                    class_name: ['button', 'button-primary', 'manage-users-copy-button'],
                     text_content: t('manage_users_copy_code_button'),
                     attributes: { type: 'button' }
                 });
 
+                const copy_info = this.Helpers.create_element('p', {
+                    class_name: 'manage-users-copy-info'
+                });
+
                 const copy_code_to_clipboard = async () => {
                     if (!current_code) return;
+                    const lang = this.Translation?.get_current_language_code?.() || 'sv-SE';
+                    let expires_time = '';
+                    if (current_expires_at) {
+                        const d = new Date(current_expires_at);
+                        if (!Number.isNaN(d.getTime())) {
+                            expires_time = d.toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' });
+                        }
+                    }
+                    const clipboard_text = t('manage_users_copy_clipboard_text', {
+                        username,
+                        code: current_code,
+                        expires: expires_time
+                    });
                     try {
                         if (navigator.clipboard && navigator.clipboard.writeText) {
-                            await navigator.clipboard.writeText(current_code);
+                            await navigator.clipboard.writeText(clipboard_text);
                         } else {
                             const textarea = this.Helpers.create_element('textarea', {
                                 attributes: { 'aria-hidden': 'true' }
                             });
                             textarea.style.position = 'fixed';
                             textarea.style.left = '-9999px';
-                            textarea.value = current_code;
+                            textarea.value = clipboard_text;
                             document.body.appendChild(textarea);
                             textarea.focus();
                             textarea.select();
@@ -826,7 +848,11 @@ export const ManageUsersViewComponent = {
                             document.body.removeChild(textarea);
                         }
                         copy_btn.textContent = t('manage_users_copy_code_button_copied');
-                        this.NotificationComponent?.show_global_message?.(t('manage_users_copy_code_success'), 'success');
+                        copy_info.textContent = t('manage_users_copy_code_success', { name: display_name });
+                        this.NotificationComponent?.show_global_message?.(
+                            t('manage_users_copy_code_success', { name: display_name }),
+                            'success'
+                        );
                     } catch {
                         this.NotificationComponent?.show_global_message?.(t('manage_users_copy_code_error'), 'error');
                     }
@@ -836,41 +862,71 @@ export const ManageUsersViewComponent = {
                     copy_code_to_clipboard();
                 });
 
-                create_btn.addEventListener('click', async () => {
+                const create_or_refresh_code = async () => {
                     const minutes = Number(expires_select.value) || 15;
                     try {
                         const payload = await create_password_reset_code(user.username || String(user.id), minutes);
                         current_code = payload.code;
+                        current_expires_at = payload.expires_at || null;
                         code_container.innerHTML = '';
                         const info = this.Helpers.create_element('p', {
                             class_name: 'manage-users-reset-code-info',
-                            text_content: t('manage_users_password_code_info', { minutes })
+                            text_content: t('manage_users_password_code_info', { minutes, name: display_name })
                         });
-                        const code_el = this.Helpers.create_element('div', {
+                        const list = this.Helpers.create_element('ul', {
+                            class_name: 'manage-users-reset-code-list'
+                        });
+
+                        const username_item = this.Helpers.create_element('li', {});
+                        const username_label = this.Helpers.create_element('strong', {
+                            text_content: t('manage_users_password_code_bullet_username')
+                        });
+                        username_item.appendChild(username_label);
+                        username_item.appendChild(document.createTextNode(` ${username}`));
+
+                        const code_item = this.Helpers.create_element('li', {});
+                        const code_label = this.Helpers.create_element('strong', {
+                            text_content: t('manage_users_password_code_bullet_code')
+                        });
+                        const code_el = this.Helpers.create_element('span', {
                             class_name: 'manage-users-reset-code-value',
                             text_content: current_code
                         });
+                        code_item.appendChild(code_label);
+                        code_item.appendChild(document.createTextNode(' '));
+                        code_item.appendChild(code_el);
+
+                        list.appendChild(username_item);
+                        list.appendChild(code_item);
+
                         code_container.appendChild(info);
-                        code_container.appendChild(code_el);
+                        code_container.appendChild(list);
                         copy_btn.textContent = t('manage_users_copy_code_button');
                         this.NotificationComponent?.show_global_message?.(t('manage_users_password_code_created'), 'success');
                     } catch (err) {
                         const msg = err?.message || t('manage_users_password_code_error');
                         this.NotificationComponent?.show_global_message?.(msg, 'error');
                     }
+                };
+
+                expires_select.addEventListener('change', () => {
+                    create_or_refresh_code();
                 });
 
                 close_btn.addEventListener('click', () => {
                     modal_instance.close();
                 });
 
-                actions.appendChild(create_btn);
                 actions.appendChild(copy_btn);
-                actions.appendChild(close_btn);
 
                 container.appendChild(controls);
+                container.appendChild(info_heading);
                 container.appendChild(code_container);
                 container.appendChild(actions);
+                container.appendChild(copy_info);
+                container.appendChild(close_btn);
+
+                create_or_refresh_code();
             }
         );
     },

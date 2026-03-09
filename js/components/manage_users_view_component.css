@@ -35,25 +35,34 @@
 
 .manage-users-reset-controls {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
     margin-top: 0.5rem;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
 }
 
 .manage-users-reset-code-container {
-    margin-top: 1rem;
+    margin-top: 0.25rem;
+}
+
+.manage-users-reset-info-heading {
+    margin-top: 0.75rem;
+    margin-bottom: 0;
+}
+
+.manage-users-reset-code-info {
+    margin-top: 0;
 }
 
 .manage-users-reset-code-value {
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    font-size: 1.2rem;
-    padding: 0.5rem 0.75rem;
-    border: 1px solid #ccc;
-    border-radius: 3px;
-    display: inline-block;
-    margin-top: 0.25rem;
+    font-size: 1rem;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    display: inline;
+    margin: 0;
 }
 
 .manage-users-copy-button {
@@ -110,4 +119,24 @@
 .manage-users-admin-label {
     display: inline-block;
     margin-bottom: 0;
+}
+
+.manage-users-reset-expires-select {
+    display: inline-block;
+    width: auto;
+    min-width: 0;
+}
+
+.manage-users-reset-code-list {
+    margin-top: 0.25rem;
+    padding-left: 1.25rem;
+}
+
+.manage-users-reset-code-list li {
+    margin: 0.1rem 0;
+}
+
+.manage-users-copy-info {
+    margin-top: 0.5rem;
+}
 }
