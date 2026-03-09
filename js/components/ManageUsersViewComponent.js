@@ -397,7 +397,6 @@ export const ManageUsersViewComponent = {
         const username_id = 'manage-users-username-input';
         const name_id = 'manage-users-name-input';
         const is_admin_id = 'manage-users-is-admin-input';
-        const password_id = 'manage-users-password-input';
 
         const make_field = (label_text, input_el) => {
             const wrapper = this.Helpers.create_element('div', { class_name: 'form-group' });
@@ -467,49 +466,6 @@ export const ManageUsersViewComponent = {
         is_admin_wrapper.appendChild(is_admin_label);
         form.appendChild(is_admin_wrapper);
 
-        const password_input = this.Helpers.create_element('input', {
-            id: password_id,
-            type: 'password',
-            class_name: 'form-control manage-users-password-input',
-            attributes: {
-                autocomplete: is_edit ? 'new-password' : 'new-password',
-                maxlength: '8',
-                size: '8'
-            }
-        });
-
-        const password_wrapper = this.Helpers.create_element('div', { class_name: 'form-group manage-users-password-group' });
-        const password_label = this.Helpers.create_element('label', {
-            attributes: { for: password_id },
-            class_name: 'manage-users-password-label'
-        });
-        const password_label_strong = this.Helpers.create_element('strong', {
-            text_content: t('manage_users_field_password_optional')
-        });
-        password_label.appendChild(password_label_strong);
-        password_wrapper.appendChild(password_label);
-
-        const password_row = this.Helpers.create_element('div', { class_name: 'manage-users-password-row' });
-        password_row.appendChild(password_input);
-
-        const generate_btn = this.Helpers.create_element('button', {
-            class_name: ['button', 'button-secondary', 'manage-users-generate-password-button'],
-            html_content: `<span>${t('manage_users_generate_password_button')}</span>` + this.Helpers.get_icon_svg('password_magic'),
-            attributes: { type: 'button' }
-        });
-        generate_btn.addEventListener('click', () => {
-            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
-            let pwd = '';
-            for (let i = 0; i < 8; i += 1) {
-                pwd += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            password_input.value = pwd;
-        });
-        password_row.appendChild(generate_btn);
-
-        password_wrapper.appendChild(password_row);
-        form.appendChild(password_wrapper);
-
         name_input.addEventListener('input', () => {
             this.update_admin_label_text(name_input, is_admin_label_strong);
         });
@@ -549,8 +505,7 @@ export const ManageUsersViewComponent = {
             await this.handle_submit_user_form({
                 username_input,
                 name_input,
-                is_admin_checkbox,
-                password_input
+                is_admin_checkbox
             });
         });
 
@@ -575,13 +530,12 @@ export const ManageUsersViewComponent = {
         this.root.appendChild(plate);
     },
 
-    async handle_submit_user_form({ username_input, name_input, is_admin_checkbox, password_input }) {
+    async handle_submit_user_form({ username_input, name_input, is_admin_checkbox }) {
         const t = this.get_t_func();
         const is_edit = !!this.current_user;
         let username = username_input ? (username_input.value || '').trim() : '';
         const raw_name = (name_input.value || '').trim();
         const is_admin = !!is_admin_checkbox.checked;
-        const password = (password_input.value || '').trim();
 
         const name_parts = raw_name.split(/\s+/).filter(Boolean);
         const first_name = name_parts[0] || '';
@@ -595,10 +549,6 @@ export const ManageUsersViewComponent = {
             this.NotificationComponent?.show_global_message?.(t('manage_users_error_name_required'), 'warning');
             return;
         }
-        if (password && password.length < 8) {
-            this.NotificationComponent?.show_global_message?.(t('manage_users_error_password_too_short'), 'warning');
-            return;
-        }
 
         const body = {
             name: raw_name,
@@ -607,33 +557,39 @@ export const ManageUsersViewComponent = {
         if (username) {
             body.username = username;
         }
-        if (password) {
-            body.password = password;
-        }
 
         try {
             if (this.current_user) {
                 await update_user(this.current_user.id, body);
                 this.NotificationComponent?.show_global_message?.(t('manage_users_update_success'), 'success');
                 this.return_focus_info = { type: 'manage', user_id: this.current_user.id };
+                await this.fetch_users();
+                if (this.router) {
+                    this.skip_table_focus_restore_next_render = true;
+                    this.router('manage_users', {});
+                } else {
+                    this.mode = 'list';
+                    this.current_user = null;
+                    this.skip_table_focus_restore_next_render = true;
+                    this.render();
+                }
             } else {
                 const created = await create_user(body);
                 this.NotificationComponent?.show_global_message?.(t('manage_users_create_success'), 'success');
-                if (created && created.id) {
-                    this.return_focus_info = { type: 'manage', user_id: created.id };
-                } else {
-                    this.return_focus_info = null;
-                }
-            }
-            await this.fetch_users();
-            if (this.router) {
-                this.skip_table_focus_restore_next_render = true;
-                this.router('manage_users', {});
-            } else {
-                this.mode = 'list';
-                this.current_user = null;
-                this.skip_table_focus_restore_next_render = true;
-                this.render();
+                await this.fetch_users();
+                const created_user = this.users.find((u) => String(u.id) === String(created?.id)) || created;
+                this.open_reset_code_modal_for_user(created_user, {
+                    onClose: () => {
+                        this.skip_table_focus_restore_next_render = true;
+                        if (this.router) {
+                            this.router('manage_users', {});
+                        } else {
+                            this.mode = 'list';
+                            this.current_user = null;
+                            this.render();
+                        }
+                    }
+                });
             }
         } catch (err) {
             const msg = err?.message || t('manage_users_save_error');
@@ -749,12 +705,13 @@ export const ManageUsersViewComponent = {
         );
     },
 
-    open_reset_code_modal_for_user(user) {
+    open_reset_code_modal_for_user(user, options = {}) {
         const t = this.get_t_func();
         const ModalComponent = window.ModalComponent;
         if (!ModalComponent?.show || !this.Helpers?.create_element) return;
         const username = user.username || t('user_fallback_name', { id: user.id });
         const display_name = this._get_display_name(user);
+        const onClose = typeof options.onClose === 'function' ? options.onClose : null;
 
         ModalComponent.show(
             {
@@ -902,6 +859,7 @@ export const ManageUsersViewComponent = {
                 });
 
                 close_btn.addEventListener('click', () => {
+                    if (onClose) onClose();
                     modal_instance.close();
                 });
 

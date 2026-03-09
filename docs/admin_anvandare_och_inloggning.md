@@ -26,19 +26,21 @@ För att skapa en ny användare:
 
 1. Klicka på **Lägg till användare**.
 2. En ny vy öppnas på samma sida med ett formulär:
-   - **Användarnamn** – skriv ett unikt användarnamn (utan mellanslag rekommenderas).
-   - **Förnamn**.
-   - **Efternamn**.
+   - **Namn** – fyll i förnamn och efternamn.
    - **Administratör** – kryssa i om användaren ska vara administratör.
-   - **Lösenord (valfritt)** – om du vill sätta ett första lösenord direkt.
 3. När fälten är ifyllda har du två huvudval:
    - **Skapa ny användare** – sparar uppgifterna och lägger till användaren i tabellen.
    - **Tillbaka till tabellen utan att spara** – avbryter utan att göra några ändringar.
 
 Efter att du klickat på **Skapa ny användare**:
 
-- Användaren skapas i systemet.
-- Du kommer tillbaka till tabellen, där den nya användaren syns som en egen rad.
+- Användaren skapas i systemet utan lösenord.
+- En dialogruta visas med en **återställningskod** som du ger till användaren.
+- Välj hur länge koden ska gälla (t.ex. 15, 30 eller 60 minuter).
+- Kopiera koden och ge den till användaren på ett säkert sätt (t.ex. via telefon).
+- När du stänger dialogrutan kommer du tillbaka till tabellen.
+
+Användaren går sedan till inloggningssidan, klickar på **Jag kan inte logga in**, fyller i återställningskoden och väljer sitt lösenord.
 
 ### 3. Uppdatera en befintlig användare
 
@@ -46,9 +48,9 @@ För att uppdatera en redan befintlig användare:
 
 1. Hitta rätt rad i tabellen.
 2. Klicka på **Hantera användare** på den raden.
-3. Samma formulär som vid ny användare visas, men nu förifyllt med personens uppgifter:
-   - Du kan ändra **användarnamn**, **förnamn**, **efternamn** och om personen är **administratör**.
-   - Du kan också skriva in ett nytt **lösenord** om du vill byta lösenord direkt.
+3. Ett formulär visas, förifyllt med personens uppgifter:
+   - Du kan ändra **användarnamn**, **namn** (förnamn och efternamn) och om personen är **administratör**.
+   - För att byta lösenord använder du knappen **Skapa återställningskod** i tabellen (se avsnitt 5).
 4. Längst ned i formuläret finns tre knappar:
    - **Uppdatera användare** – sparar ändringarna.
    - **Tillbaka till tabellen utan att spara** – återgår till tabellen utan att spara.
@@ -119,10 +121,10 @@ Om användaren inte kan logga in:
 
 - **Inloggning** sker alltid med **användarnamn + lösenord**.
 - **Hantera användare** ger en tydlig överblick över alla konton och låter dig:
-  - Lägga till nya användare.
-  - Uppdatera namn, användarnamn, admin-status och lösenord.
+  - Lägga till nya användare (som får en återställningskod för att sätta sitt lösenord).
+  - Uppdatera namn, användarnamn och admin-status.
   - Radera användare som inte längre ska ha åtkomst.
-  - Skapa engångs-**återställningskoder** vid borttappade lösenord, med enkel kopiering till urklipp.
+  - Skapa engångs-**återställningskoder** vid borttappade lösenord eller vid lösenordsbyte, med enkel kopiering till urklipp.
 
 På så sätt kan du som administratör ha full kontroll över vilka som får logga in i verktyget och hur de kommer åt sina konton. 
 

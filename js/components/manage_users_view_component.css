@@ -85,29 +85,6 @@
     margin-left: 0.5rem;
 }
 
-.manage-users-password-group {
-    margin-top: 0.5rem;
-}
-
-.manage-users-password-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    align-items: center;
-    margin-top: 0.25rem;
-}
-
-.manage-users-password-input {
-    flex: 0 0 auto;
-    width: auto;
-    padding-top: 0.3rem;
-    padding-bottom: 0.3rem;
-}
-
-.manage-users-generate-password-button {
-    flex: 0 0 auto;
-}
-
 .manage-users-plate .form-group {
     margin-bottom: 0.75rem;
 }
@@ -122,13 +99,8 @@
     display: inline-block;
 }
 
-.manage-users-plate .form-group > label:not(.manage-users-admin-label):not(.manage-users-password-label) {
+.manage-users-plate .form-group > label:not(.manage-users-admin-label) {
     display: block;
-    margin-bottom: 0.15rem;
-}
-
-.manage-users-password-label {
-    display: inline-block;
     margin-bottom: 0.15rem;
 }
 
