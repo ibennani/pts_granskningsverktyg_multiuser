@@ -59,7 +59,6 @@ export const ManageUsersViewComponent = {
         this.root.innerHTML = '';
 
         const plate = this.Helpers.create_element('div', { class_name: 'content-plate manage-users-plate' });
-        this.table_root = plate;
 
         if (this.NotificationComponent?.append_global_message_areas_to) {
             this.NotificationComponent.append_global_message_areas_to(plate);
@@ -92,6 +91,12 @@ export const ManageUsersViewComponent = {
             text_content: t('manage_users_intro_new')
         });
         plate.appendChild(intro);
+
+        const table_container = this.Helpers.create_element('div', {
+            class_name: 'manage-users-table-container'
+        });
+        this.table_root = table_container;
+        plate.appendChild(table_container);
 
         this.render_table_view();
 
