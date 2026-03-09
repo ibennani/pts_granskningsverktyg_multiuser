@@ -78,6 +78,7 @@
   "delete_contact_admin_message_rule": "You must contact an administrator to delete the rule file.",
   "delete_contact_admin_admins_heading": "Administrators:",
   "delete_contact_admin_ok": "OK",
+  "delete_contact_admin_list_unavailable": "The list of administrators could not be loaded. Contact your system administrator.",
   "actor_link": "Link to subject",
   "actor_name": "Subject",
   "actual_observation": "Actual observation",

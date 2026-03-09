@@ -224,7 +224,7 @@ export async function reset_password_with_code(code, password) {
 export async function get_admin_contacts() {
     const res = await fetch(`${get_base_url()}/auth/admin-contacts`, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json' }
+        headers: get_auth_headers()
     });
     const data = await res.json().catch(() => ([]));
     if (!res.ok) {
@@ -232,7 +232,9 @@ export async function get_admin_contacts() {
         e.status = res.status;
         throw e;
     }
-    return Array.isArray(data) ? data : [];
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.admins)) return data.admins;
+    return [];
 }
 
 export async function get_users() {

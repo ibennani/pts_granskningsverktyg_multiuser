@@ -99,12 +99,12 @@ router.post('/reset-password', async (req, res) => {
 router.get('/admin-contacts', async (_req, res) => {
     try {
         const result = await query(
-            'SELECT id, name FROM users WHERE is_admin = TRUE ORDER BY name ASC',
+            'SELECT id, name, username FROM users WHERE is_admin = TRUE ORDER BY COALESCE(NULLIF(TRIM(name), \'\'), username) ASC',
             []
         );
         const admins = result.rows.map((row) => ({
             id: row.id,
-            name: row.name || ''
+            name: (row.name && String(row.name).trim()) || (row.username && String(row.username).trim()) || ''
         }));
         res.json(admins);
     } catch (err) {

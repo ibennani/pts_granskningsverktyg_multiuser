@@ -78,6 +78,7 @@
   "delete_contact_admin_message_rule": "Du måste kontakta en administratör för att ta bort regelfilen.",
   "delete_contact_admin_admins_heading": "Administratörer:",
   "delete_contact_admin_ok": "OK",
+  "delete_contact_admin_list_unavailable": "Listan över administratörer kunde inte hämtas. Kontakta din systemadministratör.",
   "actor_link": "Länk till aktör",
   "actor_name": "Aktör",
   "actual_observation": "Faktisk observation",

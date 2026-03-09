@@ -1131,7 +1131,9 @@ export const AuditViewComponent = {
         } catch (_) {
             admins = [];
         }
-        const admin_names = Array.isArray(admins) ? admins.map((a) => (a?.name || '').trim()).filter(Boolean) : [];
+        const admin_names = Array.isArray(admins)
+            ? admins.map((a) => (a?.name || a?.username || '').trim()).filter(Boolean)
+            : [];
         ModalComponent.show(
             {
                 h1_text: t(title_key),
@@ -1150,6 +1152,12 @@ export const AuditViewComponent = {
                         list.appendChild(li);
                     });
                     container.appendChild(list);
+                } else {
+                    const fallback_p = this.Helpers.create_element('p', {
+                        class_name: 'delete-contact-admin-fallback',
+                        text_content: t('delete_contact_admin_list_unavailable')
+                    });
+                    container.appendChild(fallback_p);
                 }
                 const ok_btn = this.Helpers.create_element('button', {
                     class_name: ['button', 'button-primary'],
