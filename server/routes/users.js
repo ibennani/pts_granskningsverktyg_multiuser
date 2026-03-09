@@ -6,6 +6,15 @@ import { requireAdmin } from '../auth/middleware.js';
 
 const router = express.Router();
 
+function generate_reset_code(length = 10) {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for (let i = 0; i < length; i += 1) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+}
+
 router.get('/me', async (req, res) => {
     try {
         const user = req.user;
@@ -90,6 +99,40 @@ router.post('/', requireAdmin, async (req, res) => {
     } catch (err) {
         console.error('[users] POST error:', err);
         res.status(500).json({ error: 'Kunde inte skapa användare' });
+    }
+});
+
+router.post('/:id/password-reset-codes', requireAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { expires_in_minutes } = req.body || {};
+        const minutes = Number.isFinite(Number(expires_in_minutes)) && Number(expires_in_minutes) > 0
+            ? Math.min(Number(expires_in_minutes), 240)
+            : 15;
+
+        const userResult = await query('SELECT id, name FROM users WHERE id::text = $1 OR name = $1 LIMIT 1', [id]);
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Användare hittades inte' });
+        }
+
+        const code = generate_reset_code(10);
+        const hash = await bcrypt.hash(code, 10);
+        const expiresAtResult = await query('SELECT (NOW() + ($1 || \' minutes\')::interval) AS expires_at', [minutes]);
+        const expires_at = expiresAtResult.rows[0].expires_at;
+
+        await query(
+            `INSERT INTO password_reset_tokens (user_id, code_hash, expires_at)
+             VALUES ($1, $2, $3)`,
+            [userResult.rows[0].id, hash, expires_at]
+        );
+
+        return res.status(201).json({
+            code,
+            expires_at
+        });
+    } catch (err) {
+        console.error('[users] POST /:id/password-reset-codes error:', err);
+        return res.status(500).json({ error: 'Kunde inte skapa återställningskod' });
     }
 });
 

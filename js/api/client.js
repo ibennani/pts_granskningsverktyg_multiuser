@@ -1,6 +1,7 @@
 // js/api/client.js
 
 const AUTH_TOKEN_KEY = 'gv_auth_token';
+const AUTH_REQUIRED_EVENT = 'gv-auth-required';
 
 export const get_base_url = () => {
     if (typeof window === 'undefined') return '/api';
@@ -23,6 +24,30 @@ export function clear_auth_token() {
     if (typeof window !== 'undefined') {
         sessionStorage.removeItem(AUTH_TOKEN_KEY);
     }
+}
+
+function handle_unauthorized_response(res) {
+    if (!res || res.status !== 401) return false;
+    try {
+        clear_auth_token();
+    } catch (_) {}
+    try {
+        if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem('gv_current_user_name');
+    } catch (_) {}
+    try {
+        delete window.__GV_CURRENT_USER_NAME__;
+    } catch (_) {}
+    try {
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent(AUTH_REQUIRED_EVENT));
+        }
+    } catch (_) {}
+    return true;
+}
+
+async function parse_error_payload(res) {
+    if (!res) return { error: 'Okänt fel' };
+    return res.json().catch(() => ({ error: res.statusText || `HTTP ${res.status}` }));
 }
 
 export function get_auth_headers() {
@@ -52,9 +77,16 @@ export async function api_get(path) {
         cache: 'no-store',
         headers: get_auth_headers()
     });
+    if (handle_unauthorized_response(res)) {
+        const e = new Error('Inloggning krävs');
+        e.status = 401;
+        throw e;
+    }
     if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: res.statusText }));
-        throw new Error(err.error || `HTTP ${res.status}`);
+        const err = await parse_error_payload(res);
+        const e = new Error(err.error || `HTTP ${res.status}`);
+        e.status = res.status;
+        throw e;
     }
     return res.json();
 }
@@ -65,8 +97,13 @@ export async function api_post(path, body) {
         headers: get_auth_headers(),
         body: JSON.stringify(body)
     });
+    if (path !== '/auth/login' && handle_unauthorized_response(res)) {
+        const e = new Error('Inloggning krävs');
+        e.status = 401;
+        throw e;
+    }
     if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: res.statusText }));
+        const err = await parse_error_payload(res);
         const e = new Error(err.error || `HTTP ${res.status}`);
         e.status = res.status;
         e.existingAuditId = err.existingAuditId;
@@ -81,10 +118,17 @@ export async function api_put(path, body) {
         headers: get_auth_headers(),
         body: JSON.stringify(body)
     });
+    if (handle_unauthorized_response(res)) {
+        const e = new Error('Inloggning krävs');
+        e.status = 401;
+        throw e;
+    }
     if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: res.statusText }));
+        const err = await parse_error_payload(res);
         const msg = err.detail ? `${err.error || res.statusText}: ${err.detail}` : (err.error || `HTTP ${res.status}`);
-        throw new Error(msg);
+        const e = new Error(msg);
+        e.status = res.status;
+        throw e;
     }
     return res.json();
 }
@@ -94,8 +138,13 @@ export async function api_delete(path) {
         method: 'DELETE',
         headers: get_auth_headers()
     });
+    if (handle_unauthorized_response(res)) {
+        const e = new Error('Inloggning krävs');
+        e.status = 401;
+        throw e;
+    }
     if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: res.statusText }));
+        const err = await parse_error_payload(res);
         const msg = err?.error || `HTTP ${res.status}`;
         const e = new Error(msg);
         e.status = res.status;
@@ -112,9 +161,16 @@ export async function api_patch(path, body) {
         headers: get_auth_headers(),
         body: JSON.stringify(body)
     });
+    if (handle_unauthorized_response(res)) {
+        const e = new Error('Inloggning krävs');
+        e.status = 401;
+        throw e;
+    }
     if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: res.statusText }));
-        throw new Error(err.error || `HTTP ${res.status}`);
+        const err = await parse_error_payload(res);
+        const e = new Error(err.error || `HTTP ${res.status}`);
+        e.status = res.status;
+        throw e;
     }
     return res.json();
 }
@@ -128,6 +184,21 @@ export async function login(name, password) {
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
         const e = new Error(data.error || 'Inloggning misslyckades');
+        e.status = res.status;
+        throw e;
+    }
+    return data;
+}
+
+export async function reset_password_with_code(code, password) {
+    const res = await fetch(`${get_base_url()}/auth/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, password })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+        const e = new Error(data.error || 'Återställning av lösenord misslyckades');
         e.status = res.status;
         throw e;
     }
@@ -217,6 +288,10 @@ export async function save_audit_backup_on_server(audit_id) {
 
 export async function get_backup_settings() {
     return api_get('/backup/settings');
+}
+
+export async function create_password_reset_code(user_id, expires_in_minutes) {
+    return api_post(`/users/${encodeURIComponent(user_id)}/password-reset-codes`, { expires_in_minutes });
 }
 
 export async function update_backup_settings(body) {

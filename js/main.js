@@ -1412,6 +1412,14 @@ window.DraftManager = DraftManager;
         }
     }
 
+    function is_focus_in_editable_field(view_root) {
+        if (!view_root) return false;
+        const active = document.activeElement;
+        if (!active || !view_root.contains(active)) return false;
+        const tag = active.tagName ? active.tagName.toLowerCase() : '';
+        return tag === 'input' || tag === 'textarea' || tag === 'select';
+    }
+
     async function start_normal_session(options = {}) {
         const { restore_pending } = options;
         ensure_app_layout();
@@ -1488,14 +1496,6 @@ window.DraftManager = DraftManager;
             
             consoleManager.info('[Main.js] Global event listeners cleaned up');
         };
-
-        function is_focus_in_editable_field(view_root) {
-            if (!view_root) return false;
-            const active = document.activeElement;
-            if (!active || !view_root.contains(active)) return false;
-            const tag = active.tagName ? active.tagName.toLowerCase() : '';
-            return tag === 'input' || tag === 'textarea' || tag === 'select';
-        }
 
         subscribe((new_state, listener_meta) => {
             if (listener_meta?.skip_render) {
@@ -1756,6 +1756,9 @@ window.DraftManager = DraftManager;
     }
 
     async function init_app() { 
+        const AUTH_REQUIRED_EVENT = 'gv-auth-required';
+        const AUTH_REQUIRED_MESSAGE_KEY = 'gv_auth_required_message';
+
         set_initial_theme();
         // Add a small delay to ensure build-info.js is loaded
         memoryManager.setTimeout(() => {
@@ -1769,6 +1772,43 @@ window.DraftManager = DraftManager;
         const had_session_storage = typeof sessionStorage !== 'undefined' && sessionStorage.getItem(APP_STATE_KEY) !== null;
         initState();
         init_draft_manager();
+
+        // Om servern svarar 401 (ogiltig/utgången token) vill vi växla tillbaka till inloggning
+        // utan att lämna kvar bakgrundstjänster som fortsätter att göra anrop.
+        const on_auth_required = async () => {
+            if (window.__gv_auth_required_in_progress) return;
+            window.__gv_auth_required_in_progress = true;
+            try {
+                if (typeof sessionStorage !== 'undefined') sessionStorage.setItem(AUTH_REQUIRED_MESSAGE_KEY, '1');
+            } catch (_) {}
+            try {
+                if (typeof window.cleanupGlobalEventListeners === 'function') {
+                    window.cleanupGlobalEventListeners();
+                }
+            } catch (_) {}
+
+            // Växla till inloggningsvy direkt i stället för att ladda om sidan
+            ensure_app_layout();
+            await init_global_components();
+            if (side_menu_root) {
+                side_menu_root.innerHTML = '';
+                side_menu_root.classList.add('hidden');
+            }
+            try {
+                const t = window.Translation?.t ?? ((k) => k);
+                NotificationComponent?.show_global_message?.(t('auth_session_expired'), 'warning');
+            } catch (_) {}
+
+            await render_view('login', {
+                on_login: () => {
+                    if (side_menu_root) side_menu_root.classList.remove('hidden');
+                    start_normal_session({ restore_pending: null }).catch((err) =>
+                        consoleManager.error('Error starting session after auth-required:', err)
+                    );
+                }
+            });
+        };
+        memoryManager.addEventListener(window, AUTH_REQUIRED_EVENT, on_auth_required);
 
         let visibility_was_hidden = document.hidden;
         document.addEventListener('visibilitychange', () => {
@@ -1851,6 +1891,14 @@ window.DraftManager = DraftManager;
                 side_menu_root.innerHTML = '';
                 side_menu_root.classList.add('hidden');
             }
+            try {
+                const should_show = typeof sessionStorage !== 'undefined' && sessionStorage.getItem(AUTH_REQUIRED_MESSAGE_KEY) === '1';
+                if (should_show) {
+                    sessionStorage.removeItem(AUTH_REQUIRED_MESSAGE_KEY);
+                    const t = window.Translation?.t ?? ((k) => k);
+                    NotificationComponent?.show_global_message?.(t('auth_session_expired'), 'warning');
+                }
+            } catch (_) {}
             await render_view('login', {
                 on_login: () => {
                     if (side_menu_root) side_menu_root.classList.remove('hidden');

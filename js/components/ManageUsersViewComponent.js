@@ -1,6 +1,6 @@
 // js/components/ManageUsersViewComponent.js
 
-import { get_users } from '../api/client.js';
+import { get_users, create_password_reset_code } from '../api/client.js';
 import './manage_users_view_component.css';
 import { api_post, api_delete } from '../api/client.js';
 
@@ -38,10 +38,13 @@ export const ManageUsersViewComponent = {
         this.users = [];
         this.textarea_ref = null;
         this.plate_element_ref = null;
+        this.reset_user_select_ref = null;
+        this.reset_code_container_ref = null;
         this.autosave_session = null;
         this.skip_autosave_on_destroy = false;
         this.handle_save = this.handle_save.bind(this);
         this.handle_autosave_input = this.handle_autosave_input.bind(this);
+        this.handle_create_reset_code = this.handle_create_reset_code.bind(this);
 
         if (this.Helpers?.load_css_safely) {
             await this.Helpers.load_css_safely(this.CSS_PATH, 'ManageUsersViewComponent', {
@@ -53,6 +56,7 @@ export const ManageUsersViewComponent = {
 
     handle_autosave_input() {
         this.autosave_session?.request_autosave();
+        this.sync_reset_user_select_from_textarea();
     },
 
     get_t_func() {
@@ -120,6 +124,68 @@ export const ManageUsersViewComponent = {
         }
     },
 
+    async handle_create_reset_code({ expires_in_minutes }) {
+        const t = this.get_t_func();
+        if (!this.reset_user_select_ref) return;
+        const identifier = this.reset_user_select_ref.value;
+        if (!identifier) {
+            this.NotificationComponent?.show_global_message?.(t('manage_users_password_select_user_first'), 'warning');
+            return;
+        }
+        try {
+            const payload = await create_password_reset_code(identifier, expires_in_minutes);
+            if (this.reset_code_container_ref) {
+                this.reset_code_container_ref.innerHTML = '';
+                const info = this.Helpers.create_element('p', {
+                    class_name: 'manage-users-reset-code-info',
+                    text_content: t('manage_users_password_code_info', { minutes: expires_in_minutes })
+                });
+                const code_el = this.Helpers.create_element('div', {
+                    class_name: 'manage-users-reset-code-value',
+                    text_content: payload.code
+                });
+                this.reset_code_container_ref.appendChild(info);
+                this.reset_code_container_ref.appendChild(code_el);
+            }
+            this.NotificationComponent?.show_global_message?.(t('manage_users_password_code_created'), 'success');
+        } catch (err) {
+            this.NotificationComponent?.show_global_message?.(
+                err?.message || t('manage_users_password_code_error'),
+                'error'
+            );
+        }
+    },
+
+    sync_reset_user_select_from_textarea() {
+        if (!this.reset_user_select_ref || !this.textarea_ref || !this.Helpers) return;
+        const t = this.get_t_func();
+        const raw = this.textarea_ref.value || '';
+        const names = raw.split('\n')
+            .map((s) => s.trim())
+            .filter((s, index, arr) => s !== '' && arr.indexOf(s) === index);
+
+        const previous_value = this.reset_user_select_ref.value;
+
+        this.reset_user_select_ref.innerHTML = '';
+        const placeholder_option = this.Helpers.create_element('option', {
+            attributes: { value: '' },
+            text_content: t('manage_users_password_select_user_placeholder')
+        });
+        this.reset_user_select_ref.appendChild(placeholder_option);
+
+        names.forEach((name) => {
+            const opt = this.Helpers.create_element('option', {
+                attributes: { value: name },
+                text_content: name
+            });
+            this.reset_user_select_ref.appendChild(opt);
+        });
+
+        if (previous_value && names.includes(previous_value)) {
+            this.reset_user_select_ref.value = previous_value;
+        }
+    },
+
     async render() {
         if (!this.root || !this.Helpers?.create_element) return;
 
@@ -184,6 +250,72 @@ export const ManageUsersViewComponent = {
             this.textarea_ref.addEventListener('input', this.handle_autosave_input);
         }
 
+        // Sektion för lösenordshantering (admin-only vy)
+        const reset_section_heading = this.Helpers.create_element('h2', {
+            text_content: t('manage_users_password_section_title')
+        });
+        plate.appendChild(reset_section_heading);
+
+        plate.appendChild(this.Helpers.create_element('p', {
+            class_name: 'view-intro-text',
+            text_content: t('manage_users_password_section_intro')
+        }));
+
+        const reset_label = this.Helpers.create_element('label', {
+            attributes: { for: 'manage-users-reset-user-select' },
+            text_content: t('manage_users_password_select_user_label')
+        });
+        plate.appendChild(reset_label);
+
+        this.reset_user_select_ref = this.Helpers.create_element('select', {
+            id: 'manage-users-reset-user-select',
+            class_name: 'form-control'
+        });
+        this.sync_reset_user_select_from_textarea();
+        plate.appendChild(this.reset_user_select_ref);
+
+        const reset_controls = this.Helpers.create_element('div', { class_name: 'manage-users-reset-controls' });
+        const expires_label = this.Helpers.create_element('label', {
+            attributes: { for: 'manage-users-reset-expires' },
+            text_content: t('manage_users_password_expires_label')
+        });
+        const expires_select = this.Helpers.create_element('select', {
+            id: 'manage-users-reset-expires',
+            class_name: 'form-control manage-users-reset-expires-select'
+        });
+        [
+            { value: 15, label: t('manage_users_password_expires_15') },
+            { value: 30, label: t('manage_users_password_expires_30') },
+            { value: 60, label: t('manage_users_password_expires_60') }
+        ].forEach((optDef) => {
+            const opt = this.Helpers.create_element('option', {
+                attributes: { value: String(optDef.value) },
+                text_content: optDef.label
+            });
+            expires_select.appendChild(opt);
+        });
+
+        const create_code_btn = this.Helpers.create_element('button', {
+            class_name: ['button', 'button-secondary'],
+            text_content: t('manage_users_password_create_code_button'),
+            attributes: { type: 'button' }
+        });
+        create_code_btn.addEventListener('click', () => {
+            this.handle_create_reset_code({
+                expires_in_minutes: Number(expires_select.value) || 15
+            });
+        });
+
+        reset_controls.appendChild(expires_label);
+        reset_controls.appendChild(expires_select);
+        reset_controls.appendChild(create_code_btn);
+        plate.appendChild(reset_controls);
+
+        this.reset_code_container_ref = this.Helpers.create_element('div', {
+            class_name: 'manage-users-reset-code-container'
+        });
+        plate.appendChild(this.reset_code_container_ref);
+
         const save_btn = this.Helpers.create_element('button', {
             class_name: ['button', 'button-primary'],
             text_content: t('manage_users_save'),
@@ -218,6 +350,8 @@ export const ManageUsersViewComponent = {
         this.autosave_session = null;
         this.textarea_ref = null;
         this.plate_element_ref = null;
+        this.reset_user_select_ref = null;
+        this.reset_code_container_ref = null;
         if (this.root) this.root.innerHTML = '';
         this.root = null;
         this.deps = null;

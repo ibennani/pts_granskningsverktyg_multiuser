@@ -11,3 +11,18 @@
 .manage-users-plate .button {
     margin-top: 0.5rem;
 }
+
+.manage-users-plate #manage-users-reset-user-select {
+    display: inline-block;
+    width: auto;
+    max-width: 100%;
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.manage-users-plate .manage-users-reset-expires-select {
+    display: inline-block;
+    width: auto;
+    max-width: 12rem;
+    margin-right: 0.5rem;
+}
