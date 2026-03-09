@@ -1126,14 +1126,20 @@ export const AuditViewComponent = {
         const title_key = type === 'audit' ? 'delete_contact_admin_title_audit' : 'delete_contact_admin_title_rule';
         const message_key = type === 'audit' ? 'delete_contact_admin_message_audit' : 'delete_contact_admin_message_rule';
         let admins = [];
+        let fetched = false;
         try {
-            admins = await get_admin_contacts();
+            const result = await get_admin_contacts();
+            admins = result?.list ?? [];
+            fetched = result?.fetched ?? false;
         } catch (_) {
             admins = [];
         }
         const admin_names = Array.isArray(admins)
             ? admins.map((a) => (a?.name || a?.username || '').trim()).filter(Boolean)
             : [];
+        const fallback_message = fetched
+            ? t('delete_contact_admin_list_empty')
+            : t('delete_contact_admin_list_unavailable');
         ModalComponent.show(
             {
                 h1_text: t(title_key),
@@ -1155,7 +1161,7 @@ export const AuditViewComponent = {
                 } else {
                     const fallback_p = this.Helpers.create_element('p', {
                         class_name: 'delete-contact-admin-fallback',
-                        text_content: t('delete_contact_admin_list_unavailable')
+                        text_content: fallback_message
                     });
                     container.appendChild(fallback_p);
                 }

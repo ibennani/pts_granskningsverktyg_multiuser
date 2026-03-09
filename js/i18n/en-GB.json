@@ -79,6 +79,7 @@
   "delete_contact_admin_admins_heading": "Administrators:",
   "delete_contact_admin_ok": "OK",
   "delete_contact_admin_list_unavailable": "The list of administrators could not be loaded. Contact your system administrator.",
+  "delete_contact_admin_list_empty": "No administrators are registered.",
   "actor_link": "Link to subject",
   "actor_name": "Subject",
   "actual_observation": "Actual observation",

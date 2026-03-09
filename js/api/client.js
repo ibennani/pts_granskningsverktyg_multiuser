@@ -221,35 +221,44 @@ export async function reset_password_with_code(code, password) {
     return data;
 }
 
+/**
+ * Hämtar administratörer för t.ex. "kontakta admin"-modalen.
+ * @returns {{ list: Array<{id?, name?, username?}>, fetched: boolean }} fetched=true om anropet lyckades (även vid tom lista)
+ */
 export async function get_admin_contacts() {
-    // Använd den publika endpointen först (kräver inte inloggning) så att listan alltid visas
-    let data = await _fetch_admin_contacts_public();
-    if (Array.isArray(data) && data.length > 0) return data;
-    if (data && Array.isArray(data.admins) && data.admins.length > 0) return data.admins;
+    const public_result = await _fetch_admin_contacts_public();
+    if (public_result.success) return { list: public_result.list, fetched: true };
     try {
-        data = await api_get('/users/admin-contacts');
+        const data = await api_get('/users/admin-contacts');
+        const list = Array.isArray(data) ? data : (data && Array.isArray(data.admins) ? data.admins : []);
+        return { list, fetched: true };
     } catch (_) {
-        data = null;
+        return { list: [], fetched: false };
     }
-    if (Array.isArray(data)) return data;
-    if (data && Array.isArray(data.admins)) return data.admins;
-    return [];
 }
 
 async function _fetch_admin_contacts_public() {
+    const url = `${get_base_url()}/auth/admin-contacts`;
     try {
-        const res = await fetch(`${get_base_url()}/auth/admin-contacts`, {
+        const res = await fetch(url, {
             method: 'GET',
             cache: 'no-store',
             headers: { 'Content-Type': 'application/json' }
         });
-        const data = await res.json().catch(() => ([]));
-        if (!res.ok) return [];
-        if (Array.isArray(data)) return data;
-        if (data && Array.isArray(data.admins)) return data.admins;
-        return [];
-    } catch (_) {
-        return [];
+        const raw = await res.json().catch(() => null);
+        if (!res.ok) {
+            if (typeof console !== 'undefined' && console.warn) {
+                console.warn('[get_admin_contacts] Publikt anrop misslyckades:', res.status, url, raw);
+            }
+            return { success: false, list: [] };
+        }
+        const list = Array.isArray(raw) ? raw : (raw && Array.isArray(raw.admins) ? raw.admins : []);
+        return { success: true, list };
+    } catch (err) {
+        if (typeof console !== 'undefined' && console.warn) {
+            console.warn('[get_admin_contacts] Publikt anrop fel:', url, err?.message || err);
+        }
+        return { success: false, list: [] };
     }
 }
 

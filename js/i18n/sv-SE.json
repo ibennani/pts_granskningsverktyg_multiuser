@@ -79,6 +79,7 @@
   "delete_contact_admin_admins_heading": "Administratörer:",
   "delete_contact_admin_ok": "OK",
   "delete_contact_admin_list_unavailable": "Listan över administratörer kunde inte hämtas. Kontakta din systemadministratör.",
+  "delete_contact_admin_list_empty": "Inga administratörer är registrerade.",
   "actor_link": "Länk till aktör",
   "actor_name": "Aktör",
   "actual_observation": "Faktisk observation",

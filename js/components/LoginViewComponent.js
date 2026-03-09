@@ -234,9 +234,9 @@ export const LoginViewComponent = {
             this.reset_error_message = '';
             if (!this._admin_contacts_loaded) {
                 try {
-                    const admins = await get_admin_contacts();
-                    this.admin_contacts = Array.isArray(admins)
-                        ? admins.filter((u) => u && u.name)
+                    const { list } = await get_admin_contacts();
+                    this.admin_contacts = Array.isArray(list)
+                        ? list.filter((u) => u && (u.name || u.username))
                         : [];
                     this._admin_contacts_loaded = true;
                 } catch {
