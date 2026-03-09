@@ -7,6 +7,8 @@ const INITIAL_DELAY_MS = 5000;
 
 export function init_version_check_service() {
     if (typeof window === 'undefined') return;
+    // På produktion stängs versionskontroll av – undviker felaktiga notiser pga cache/roundtrip
+    if (window.location.hostname === 'ux-granskningsverktyg.pts.ad') return;
 
     const current_timestamp = window.BUILD_INFO?.timestamp;
     if (!current_timestamp) return;

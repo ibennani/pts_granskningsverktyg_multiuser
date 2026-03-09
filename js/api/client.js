@@ -222,22 +222,26 @@ export async function reset_password_with_code(code, password) {
 }
 
 export async function get_admin_contacts() {
-    let data;
+    // Använd den publika endpointen först (kräver inte inloggning) så att listan alltid visas
+    let data = await _fetch_admin_contacts_public();
+    if (Array.isArray(data) && data.length > 0) return data;
+    if (data && Array.isArray(data.admins) && data.admins.length > 0) return data.admins;
     try {
         data = await api_get('/users/admin-contacts');
     } catch (_) {
-        data = await _fetch_admin_contacts_fallback();
+        data = null;
     }
     if (Array.isArray(data)) return data;
     if (data && Array.isArray(data.admins)) return data.admins;
     return [];
 }
 
-async function _fetch_admin_contacts_fallback() {
+async function _fetch_admin_contacts_public() {
     try {
         const res = await fetch(`${get_base_url()}/auth/admin-contacts`, {
             method: 'GET',
-            headers: get_auth_headers()
+            cache: 'no-store',
+            headers: { 'Content-Type': 'application/json' }
         });
         const data = await res.json().catch(() => ([]));
         if (!res.ok) return [];
