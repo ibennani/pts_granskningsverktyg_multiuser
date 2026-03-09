@@ -73,7 +73,7 @@ router.patch('/me', async (req, res) => {
 
 router.get('/', async (_req, res) => {
     try {
-        const result = await query('SELECT id, name, is_admin, created_at FROM users ORDER BY name');
+        const result = await query('SELECT id, username, name, is_admin, created_at FROM users ORDER BY username, name');
         res.json(result.rows);
     } catch (err) {
         console.error('[users] GET error:', err);
@@ -83,22 +83,96 @@ router.get('/', async (_req, res) => {
 
 router.post('/', requireAdmin, async (req, res) => {
     try {
-        const { name, password } = req.body;
-        if (!name || typeof name !== 'string' || !name.trim()) {
-            return res.status(400).json({ error: 'Namn krävs' });
+        const { username, first_name, last_name, is_admin, password } = req.body || {};
+
+        const username_trimmed = typeof username === 'string' ? username.trim() : '';
+        const first_name_trimmed = typeof first_name === 'string' ? first_name.trim() : '';
+        const last_name_trimmed = typeof last_name === 'string' ? last_name.trim() : '';
+
+        if (!username_trimmed) {
+            return res.status(400).json({ error: 'Användarnamn krävs' });
         }
+        if (!first_name_trimmed || !last_name_trimmed) {
+            return res.status(400).json({ error: 'Förnamn och efternamn krävs' });
+        }
+
+        const full_name = `${first_name_trimmed} ${last_name_trimmed}`.replace(/\s+/g, ' ').trim();
+        const is_admin_bool = !!is_admin;
+
         let password_hash = null;
         if (password != null && typeof password === 'string' && password.trim() !== '') {
             password_hash = await bcrypt.hash(password.trim(), 10);
         }
         const result = await query(
-            'INSERT INTO users (name, password) VALUES ($1, $2) RETURNING id, name, is_admin, created_at',
-            [name.trim(), password_hash]
+            'INSERT INTO users (username, name, is_admin, password) VALUES ($1, $2, $3, $4) RETURNING id, username, name, is_admin, created_at',
+            [username_trimmed, full_name, is_admin_bool, password_hash]
         );
         res.status(201).json(result.rows[0]);
     } catch (err) {
         console.error('[users] POST error:', err);
+        if (err && err.code === '23505') {
+            return res.status(409).json({ error: 'Användarnamnet är redan upptaget' });
+        }
         res.status(500).json({ error: 'Kunde inte skapa användare' });
+    }
+});
+
+router.put('/:id', requireAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { username, first_name, last_name, is_admin } = req.body || {};
+
+        const updates = [];
+        const values = [];
+        let i = 1;
+
+        if (username !== undefined) {
+            const username_trimmed = typeof username === 'string' ? username.trim() : '';
+            if (!username_trimmed) {
+                return res.status(400).json({ error: 'Användarnamn krävs' });
+            }
+            updates.push(`username = $${i++}`);
+            values.push(username_trimmed);
+        }
+
+        const has_first = first_name !== undefined;
+        const has_last = last_name !== undefined;
+        if (has_first || has_last) {
+            const first_name_trimmed = has_first && typeof first_name === 'string' ? first_name.trim() : '';
+            const last_name_trimmed = has_last && typeof last_name === 'string' ? last_name.trim() : '';
+            if (!first_name_trimmed || !last_name_trimmed) {
+                return res.status(400).json({ error: 'Förnamn och efternamn krävs' });
+            }
+            const full_name = `${first_name_trimmed} ${last_name_trimmed}`.replace(/\s+/g, ' ').trim();
+            updates.push(`name = $${i++}`);
+            values.push(full_name);
+        }
+
+        if (is_admin !== undefined) {
+            const is_admin_bool = !!is_admin;
+            updates.push(`is_admin = $${i++}`);
+            values.push(is_admin_bool);
+        }
+
+        if (updates.length === 0) {
+            return res.status(400).json({ error: 'Ingen data att uppdatera' });
+        }
+
+        values.push(id);
+        const result = await query(
+            `UPDATE users SET ${updates.join(', ')} WHERE id = $${i} RETURNING id, username, name, is_admin, created_at`,
+            values
+        );
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Användare hittades inte' });
+        }
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error('[users] PUT /:id error:', err);
+        if (err && err.code === '23505') {
+            return res.status(409).json({ error: 'Användarnamnet är redan upptaget' });
+        }
+        res.status(500).json({ error: 'Kunde inte uppdatera användare' });
     }
 });
 
@@ -110,7 +184,10 @@ router.post('/:id/password-reset-codes', requireAdmin, async (req, res) => {
             ? Math.min(Number(expires_in_minutes), 240)
             : 15;
 
-        const userResult = await query('SELECT id, name FROM users WHERE id::text = $1 OR name = $1 LIMIT 1', [id]);
+        const userResult = await query(
+            'SELECT id, username, name FROM users WHERE id::text = $1 OR username = $1 OR name = $1 LIMIT 1',
+            [id]
+        );
         if (userResult.rows.length === 0) {
             return res.status(404).json({ error: 'Användare hittades inte' });
         }
