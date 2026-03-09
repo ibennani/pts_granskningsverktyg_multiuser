@@ -81,3 +81,12 @@
 .manage-users-generate-password-button {
     flex: 0 0 auto;
 }
+
+.manage-users-plate .form-group {
+    margin-bottom: 0.75rem;
+}
+
+.manage-users-plate .form-control {
+    padding-top: 0.35rem;
+    padding-bottom: 0.35rem;
+}
