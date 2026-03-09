@@ -294,6 +294,18 @@ export async function create_password_reset_code(user_id, expires_in_minutes) {
     return api_post(`/users/${encodeURIComponent(user_id)}/password-reset-codes`, { expires_in_minutes });
 }
 
+export async function create_user(body) {
+    return api_post('/users', body);
+}
+
+export async function update_user(id, body) {
+    return api_put(`/users/${encodeURIComponent(id)}`, body);
+}
+
+export async function delete_user(id) {
+    return api_delete(`/users/${encodeURIComponent(id)}`);
+}
+
 export async function update_backup_settings(body) {
     return api_put('/backup/settings', body);
 }
