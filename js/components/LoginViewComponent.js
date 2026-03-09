@@ -134,9 +134,9 @@ export const LoginViewComponent = {
         };
 
         login_btn.addEventListener('click', async () => {
-            const name = (name_input.value || '').trim();
+            const username = (name_input.value || '').trim();
             const password = password_input.value || '';
-            if (!name) {
+            if (!username) {
                 this.NotificationComponent?.show_global_message?.(t('login_select_first'), 'warning');
                 return;
             }
@@ -145,10 +145,10 @@ export const LoginViewComponent = {
                 return;
             }
             try {
-                const data = await login(name, password);
+                const data = await login(username, password);
                 set_auth_token(data.token);
                 const user = await get_current_user_preferences();
-                const user_name = user?.name || name;
+                const user_name = user?.name || username;
                 if (typeof sessionStorage !== 'undefined') {
                     sessionStorage.setItem('gv_current_user_name', user_name);
                 }

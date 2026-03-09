@@ -175,11 +175,11 @@ export async function api_patch(path, body) {
     return res.json();
 }
 
-export async function login(name, password) {
+export async function login(username, password) {
     const res = await fetch(`${get_base_url()}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, password })
+        body: JSON.stringify({ username, password })
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {

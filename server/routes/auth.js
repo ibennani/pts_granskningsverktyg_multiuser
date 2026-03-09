@@ -9,16 +9,21 @@ const router = express.Router();
 
 router.post('/login', login_rate_limiter, async (req, res) => {
     try {
-        const { name, password } = req.body || {};
-        if (!name || typeof name !== 'string' || !name.trim()) {
+        const { username, name, password } = req.body || {};
+
+        const login_identifier = typeof username === 'string' && username.trim()
+            ? username.trim()
+            : (typeof name === 'string' && name.trim() ? name.trim() : '');
+
+        if (!login_identifier) {
             return res.status(400).json({ error: 'Användarnamn krävs' });
         }
         if (!password || typeof password !== 'string') {
             return res.status(400).json({ error: 'Lösenord krävs' });
         }
         const result = await query(
-            'SELECT id, name, is_admin, password FROM users WHERE name = $1 LIMIT 1',
-            [name.trim()]
+            'SELECT id, name, is_admin, password FROM users WHERE username = $1 LIMIT 1',
+            [login_identifier]
         );
         if (result.rows.length === 0) {
             return res.status(401).json({ error: 'Fel användarnamn eller lösenord' });
