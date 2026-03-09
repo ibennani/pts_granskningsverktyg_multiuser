@@ -18,7 +18,7 @@
 
 .generic-table th,
 .generic-table td {
-    padding: 0.5rem 0.75rem;
+    padding: 0.25rem 0.5rem;
     text-align: left;
     border: none;
     vertical-align: middle;
@@ -40,7 +40,7 @@
 }
 
 .generic-table thead th {
-    padding: 0.5rem 0.75rem;
+    padding: 0.25rem 0.5rem;
 }
 
 .generic-table-header-sort-btn {
@@ -125,12 +125,22 @@
     display: flex;
     justify-content: flex-end;
     align-items: center;
-    gap: 0.25rem;
+    gap: 0.2rem;
     flex-wrap: nowrap;
 }
 
-.generic-table .generic-table-action-cell .button {
+/* Kompakta knappar i tabellrader – gäller alla knappar i generic-table */
+.generic-table .button,
+.generic-table a.button {
     white-space: nowrap;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+}
+
+.generic-table .button svg,
+.generic-table a.button svg {
+    width: 0.9em;
+    height: 0.9em;
 }
 
 /* Variant: granskningslistan (kolumnbredder + länk/knapp-stilar) */
@@ -165,7 +175,7 @@
 .generic-table--audit-list .generic-table-download-btn {
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
+    gap: 0.25rem;
     white-space: nowrap;
 }
 
