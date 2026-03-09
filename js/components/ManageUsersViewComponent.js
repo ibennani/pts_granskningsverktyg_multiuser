@@ -334,7 +334,7 @@ export const ManageUsersViewComponent = {
 
         const generate_btn = this.Helpers.create_element('button', {
             class_name: ['button', 'button-secondary', 'manage-users-generate-password-button'],
-            text_content: t('manage_users_generate_password_button'),
+            html_content: `<span>${t('manage_users_generate_password_button')}</span>` + this.Helpers.get_icon_svg('lock_audit'),
             attributes: { type: 'button' }
         });
         generate_btn.addEventListener('click', () => {
