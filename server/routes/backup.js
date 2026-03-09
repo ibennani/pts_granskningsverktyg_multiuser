@@ -6,12 +6,10 @@ import { run_backup, get_last_backup_status, get_backup_status_from_fs, get_back
 import { build_full_state } from './audits.js';
 import { query } from '../db.js';
 import { calculate_overall_audit_progress } from '../../js/audit_logic.js';
-import { requireAdmin } from '../auth/middleware.js';
-
 const router = express.Router();
 
-// Nedladdning av backup-fil – kräver admin
-router.get('/files/:auditId/:filename', requireAdmin, async (req, res) => {
+// Nedladdning av backup-fil – alla inloggade användare
+router.get('/files/:auditId/:filename', async (req, res) => {
     const { auditId, filename } = req.params;
     if (!filename || !auditId) {
         return res.status(400).json({ error: 'Saknar auditId eller filnamn' });
@@ -37,7 +35,8 @@ router.get('/files/:auditId/:filename', requireAdmin, async (req, res) => {
     }
 });
 
-router.post('/run', requireAdmin, async (_req, res) => {
+// Manuell körning av backup – alla inloggade användare
+router.post('/run', async (_req, res) => {
     try {
         const status = await run_backup();
         res.json({ ok: true, ...status });
@@ -71,7 +70,8 @@ router.get('/settings', async (_req, res) => {
 
 const ALLOWED_RUNS = [1, 2, 3, 4, 6, 8, 12, 24];
 
-router.put('/settings', requireAdmin, async (req, res) => {
+// Uppdatera backup-inställningar – alla inloggade användare
+router.put('/settings', async (req, res) => {
     try {
         const body = req.body || {};
         const has_retention = body.retention_days !== undefined;
