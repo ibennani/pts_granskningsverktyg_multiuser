@@ -7,8 +7,6 @@ import {
 } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { get_latest_project_mtime } from './compute-latest-mtime.js';
-
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const projectRoot = join(__dirname, '..');
 const distDir = join(projectRoot, 'dist');
@@ -52,15 +50,9 @@ for (const relativePath of foldersToCopy) {
 
 console.log('[postbuild-copy] Finished copying folders, starting build-info generation...');
 
-// Generate build info file
+// Generate build info file – använd aktuell tid så att "Byggt ..." visar när bygget kördes
 try {
-  const latestMtime =
-    get_latest_project_mtime({
-      rootDir: projectRoot,
-      excludeDirs: ['dist'],
-    }) || new Date();
-
-  const buildTime = latestMtime;
+  const buildTime = new Date();
   const swedishOptions = { timeZone: 'Europe/Stockholm' };
   const buildInfo = {
     timestamp: buildTime.toISOString(),
