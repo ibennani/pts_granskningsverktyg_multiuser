@@ -119,6 +119,8 @@ export const ManageUsersViewComponent = {
                 this.render_detail_view();
             }
         });
+        left_header.appendChild(add_btn);
+
         this._userFilterInputRef = null;
         const filter_wrapper = this.Helpers.create_element('div', {
             class_name: ['audit-filter-wrapper', 'manage-users-filter-wrapper']
@@ -146,7 +148,6 @@ export const ManageUsersViewComponent = {
         left_header.appendChild(filter_wrapper);
 
         header_row.appendChild(left_header);
-        header_row.appendChild(add_btn);
         plate.appendChild(header_row);
 
         const intro = this.Helpers.create_element('p', {

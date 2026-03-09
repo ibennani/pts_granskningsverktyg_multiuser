@@ -2,10 +2,26 @@
 
 .manage-users-header-row {
     display: flex;
-    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.manage-users-header-left {
+    display: flex;
+    flex-wrap: wrap;
     align-items: flex-start;
     gap: 1rem;
-    margin-bottom: 1rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.manage-users-header-left .manage-users-add-button {
+    margin-left: auto;
+    margin-top: 0;
+}
+
+.manage-users-header-left .manage-users-filter-wrapper {
+    flex-basis: 100%;
 }
 
 .manage-users-add-button {
@@ -138,5 +154,4 @@
 
 .manage-users-copy-info {
     margin-top: 0.5rem;
-}
 }
