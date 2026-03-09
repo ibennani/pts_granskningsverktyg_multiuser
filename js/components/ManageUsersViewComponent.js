@@ -818,29 +818,16 @@ export const ManageUsersViewComponent = {
 
                 const copy_code_to_clipboard = async () => {
                     if (!current_code) return;
-                    const lang = this.Translation?.get_current_language_code?.() || 'sv-SE';
-                    let expires_time = '';
-                    if (current_expires_at) {
-                        const d = new Date(current_expires_at);
-                        if (!Number.isNaN(d.getTime())) {
-                            expires_time = d.toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' });
-                        }
-                    }
-                    const clipboard_text = t('manage_users_copy_clipboard_text', {
-                        username,
-                        code: current_code,
-                        expires: expires_time
-                    });
                     try {
                         if (navigator.clipboard && navigator.clipboard.writeText) {
-                            await navigator.clipboard.writeText(clipboard_text);
+                            await navigator.clipboard.writeText(current_code);
                         } else {
                             const textarea = this.Helpers.create_element('textarea', {
                                 attributes: { 'aria-hidden': 'true' }
                             });
                             textarea.style.position = 'fixed';
                             textarea.style.left = '-9999px';
-                            textarea.value = clipboard_text;
+                            textarea.value = current_code;
                             document.body.appendChild(textarea);
                             textarea.focus();
                             textarea.select();
@@ -848,9 +835,9 @@ export const ManageUsersViewComponent = {
                             document.body.removeChild(textarea);
                         }
                         copy_btn.textContent = t('manage_users_copy_code_button_copied');
-                        copy_info.textContent = t('manage_users_copy_code_success', { name: display_name });
+                        copy_info.textContent = t('manage_users_copy_code_button_copied');
                         this.NotificationComponent?.show_global_message?.(
-                            t('manage_users_copy_code_success', { name: display_name }),
+                            t('manage_users_copy_code_button_copied'),
                             'success'
                         );
                     } catch {

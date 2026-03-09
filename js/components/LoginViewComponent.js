@@ -57,12 +57,8 @@ export const LoginViewComponent = {
 
         const name_input = this.Helpers.create_element('input', {
             id: 'login-user-input',
-            type: 'text',
             class_name: 'form-control',
-            attributes: {
-                'aria-label': t('login_who_are_you'),
-                autocomplete: 'username'
-            }
+            attributes: { type: 'text', autocomplete: 'username' }
         });
 
         const label_password = this.Helpers.create_element('label', {
@@ -72,12 +68,8 @@ export const LoginViewComponent = {
 
         const password_input = this.Helpers.create_element('input', {
             id: 'login-password-input',
-            type: 'password',
             class_name: 'form-control',
-            attributes: {
-                'aria-label': t('login_password_label'),
-                autocomplete: 'current-password'
-            }
+            attributes: { type: 'password', autocomplete: 'current-password' }
         });
 
         if (this.mode === 'login') {
@@ -105,11 +97,8 @@ export const LoginViewComponent = {
         });
         const reset_code_input = this.Helpers.create_element('input', {
             id: 'login-reset-code-input',
-            type: 'text',
             class_name: 'form-control',
-            attributes: {
-                'aria-label': t('login_reset_code_label')
-            }
+            attributes: { type: 'text' }
         });
 
         const reset_password_label = this.Helpers.create_element('label', {
@@ -118,12 +107,8 @@ export const LoginViewComponent = {
         });
         const reset_password_input = this.Helpers.create_element('input', {
             id: 'login-reset-password-input',
-            type: 'password',
             class_name: 'form-control',
-            attributes: {
-                'aria-label': t('login_new_password_label'),
-                autocomplete: 'new-password'
-            }
+            attributes: { type: 'password', autocomplete: 'new-password' }
         });
 
         const reset_password_confirm_label = this.Helpers.create_element('label', {
@@ -132,12 +117,8 @@ export const LoginViewComponent = {
         });
         const reset_password_confirm_input = this.Helpers.create_element('input', {
             id: 'login-reset-password-confirm-input',
-            type: 'password',
             class_name: 'form-control',
-            attributes: {
-                'aria-label': t('login_new_password_confirm_label'),
-                autocomplete: 'new-password'
-            }
+            attributes: { type: 'password', autocomplete: 'new-password' }
         });
 
         const reset_btn = this.Helpers.create_element('button', {
