@@ -17,6 +17,7 @@ export const ManageUsersViewComponent = {
 
         this.users = [];
         this.users_loaded = false;
+        this.fetch_users_error = null;
         this.user_filter_query = '';
         this._userFilterHadFocus = false;
         this._userFilterSelection = null;
@@ -55,10 +56,18 @@ export const ManageUsersViewComponent = {
 
     async fetch_users() {
         if (this.users_loaded) return;
+        this.fetch_users_error = null;
         try {
-            this.users = await get_users();
-        } catch {
+            const data = await get_users();
+            if (!Array.isArray(data)) {
+                this.users = [];
+                this.fetch_users_error = Object.assign(new Error('Ogiltigt svar'), { status: 0 });
+            } else {
+                this.users = data;
+            }
+        } catch (err) {
             this.users = [];
+            this.fetch_users_error = err;
         } finally {
             this.users_loaded = true;
         }
@@ -241,7 +250,13 @@ export const ManageUsersViewComponent = {
                 if (!query) return true;
                 return username.includes(query) || display_name.includes(query);
             });
-        const empty_message = has_filter ? t('manage_users_filter_no_results') : t('manage_users_empty');
+        const is_forbidden = this.fetch_users_error && this.fetch_users_error.status === 403;
+        const is_load_error = this.fetch_users_error && !is_forbidden;
+        const empty_message = is_forbidden
+            ? t('manage_users_error_forbidden')
+            : is_load_error
+                ? t('manage_users_error_load_failed')
+                : (has_filter ? t('manage_users_filter_no_results') : t('manage_users_empty'));
 
         const columns = [
             {

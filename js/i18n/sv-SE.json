@@ -856,6 +856,8 @@
   "manage_users_action_manage_user": "Hantera användare",
   "manage_users_action_for": "för",
   "manage_users_empty": "Det finns inga användare ännu.",
+  "manage_users_error_forbidden": "Endast administratörer kan se användarlistan. Logga ut och logga in igen om du nyligen blivit administratör.",
+  "manage_users_error_load_failed": "Kunde inte hämta användarlistan. Kontrollera nätverket eller försök igen.",
   "manage_users_filter_label": "Filtrera på användarnamn eller namn",
   "manage_users_filter_no_results": "Inga användare matchar filtret.",
   "manage_users_table_aria_label": "Tabell över användare i Granskningsverktyget",

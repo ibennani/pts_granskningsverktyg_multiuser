@@ -56,6 +56,9 @@ async function migrate() {
         const sql14 = readFileSync(join(__dirname, '../migrations/014_add_username_to_users.sql'), 'utf8');
         await client.query(sql14);
         console.log('[Migrate] Migration 014 kördes.');
+        const sql15 = readFileSync(join(__dirname, '../migrations/015_seed_users_if_empty.sql'), 'utf8');
+        await client.query(sql15);
+        console.log('[Migrate] Migration 015 kördes.');
     } catch (err) {
         console.error('[Migrate] Fel:', err.message);
         process.exit(1);

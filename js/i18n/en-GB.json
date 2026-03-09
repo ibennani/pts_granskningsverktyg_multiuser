@@ -850,6 +850,8 @@
   "manage_users_action_manage_user": "Manage user",
   "manage_users_action_for": "for",
   "manage_users_empty": "There are no users yet.",
+  "manage_users_error_forbidden": "Only administrators can see the user list. Log out and log in again if you were recently made an administrator.",
+  "manage_users_error_load_failed": "Could not load the user list. Check your connection or try again.",
   "manage_users_filter_label": "Filter by username or name",
   "manage_users_filter_no_results": "No users match the current filter.",
   "manage_users_table_aria_label": "Table of users in the audit tool",
