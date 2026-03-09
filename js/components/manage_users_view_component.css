@@ -97,7 +97,7 @@
     display: inline-block;
 }
 
-.manage-users-plate .form-group > label {
+.manage-users-plate .form-group > label:not(.manage-users-admin-label):not(.manage-users-password-label) {
     display: block;
     margin-bottom: 0.15rem;
 }
