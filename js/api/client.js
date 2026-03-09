@@ -222,21 +222,12 @@ export async function reset_password_with_code(code, password) {
 }
 
 export async function get_admin_contacts() {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/83ecba28-d9b1-459e-99cb-18120411b77e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'968615'},body:JSON.stringify({sessionId:'968615',location:'client.js:get_admin_contacts',message:'before api_get',data:{path:'/users/admin-contacts',baseUrl:typeof get_base_url==='function'?get_base_url():'n/a'},timestamp:Date.now(),hypothesisId:'H3'})}).catch(()=>{});
-    // #endregion
     let data;
     try {
         data = await api_get('/users/admin-contacts');
-    } catch (err) {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/83ecba28-d9b1-459e-99cb-18120411b77e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'968615'},body:JSON.stringify({sessionId:'968615',location:'client.js:get_admin_contacts',message:'api_get threw',data:{message:err?.message,status:err?.status},timestamp:Date.now(),hypothesisId:'H1_H5'})}).catch(()=>{});
-        // #endregion
+    } catch (_) {
         data = await _fetch_admin_contacts_fallback();
     }
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/83ecba28-d9b1-459e-99cb-18120411b77e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'968615'},body:JSON.stringify({sessionId:'968615',location:'client.js:get_admin_contacts',message:'after api_get',data:{isArray:Array.isArray(data),length:Array.isArray(data)?data.length:undefined},timestamp:Date.now(),hypothesisId:'H2_H4'})}).catch(()=>{});
-    // #endregion
     if (Array.isArray(data)) return data;
     if (data && Array.isArray(data.admins)) return data.admins;
     return [];
