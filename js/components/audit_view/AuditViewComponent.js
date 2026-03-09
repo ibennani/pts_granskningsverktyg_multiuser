@@ -1128,9 +1128,16 @@ export const AuditViewComponent = {
         let admins = [];
         try {
             admins = await get_admin_contacts();
-        } catch (_) {
+        } catch (err) {
+            // #region agent log
+            if (typeof fetch === 'function') fetch('http://127.0.0.1:7242/ingest/83ecba28-d9b1-459e-99cb-18120411b77e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'968615'},body:JSON.stringify({sessionId:'968615',location:'AuditViewComponent:_show_contact_admin_modal',message:'catch',data:{msg:err?.message,status:err?.status},timestamp:Date.now(),hypothesisId:'H1_H5'})}).catch(()=>{});
+            // #endregion
             admins = [];
         }
+        // #region agent log
+        const _an = Array.isArray(admins) ? admins.map((a) => (a?.name || a?.username || '').trim()).filter(Boolean) : [];
+        if (typeof fetch === 'function') fetch('http://127.0.0.1:7242/ingest/83ecba28-d9b1-459e-99cb-18120411b77e',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'968615'},body:JSON.stringify({sessionId:'968615',location:'AuditViewComponent:_show_contact_admin_modal',message:'after',data:{adminsLen:admins.length,namesLen:_an.length},timestamp:Date.now(),hypothesisId:'H2_H4'})}).catch(()=>{});
+        // #endregion
         const admin_names = Array.isArray(admins)
             ? admins.map((a) => (a?.name || a?.username || '').trim()).filter(Boolean)
             : [];
