@@ -22,7 +22,7 @@ export const ManageUsersViewComponent = {
         this.detail_form_root = null;
         this.table_root = null;
         this.reset_code_button_focus_ref = null;
-        this.sort_state = { column_index: 0, direction: 'asc' };
+        this.sort_state = { columnIndex: 0, direction: 'asc' };
 
         this._table = Object.create(GenericTableComponent);
         await this._table.init({ root, deps: { Helpers: this.Helpers } });
@@ -177,7 +177,7 @@ export const ManageUsersViewComponent = {
             tableClassName: 'generic-table manage-users-table',
             sortState: this.sort_state,
             onSort: (column_index, direction) => {
-                this.sort_state = { column_index, direction };
+                this.sort_state = { columnIndex: column_index, direction };
                 this.render_table_view();
             },
             t
