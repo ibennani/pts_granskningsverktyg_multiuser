@@ -13,12 +13,11 @@ När du går in på **Hantera användare** visas först en översikt:
   - **Förnamn**.
   - **Efternamn**.
   - **Admin** – om användaren är administratör (Ja/Nej).
-  - **Åtgärder** – knappar för att skapa engångskod och hantera användaren.
+  - **Åtgärder** – knapp för att hantera användaren.
 
-I kolumnen **Åtgärder** finns två knappar:
+I kolumnen **Åtgärder** finns en knapp:
 
-- **Skapa engångskod** – används när någon har tappat bort sitt lösenord.
-- **Hantera användare** – öppnar en detaljvy där du kan ändra uppgifter för den valda användaren.
+- **Hantera användare** – öppnar en detaljvy där du kan ändra uppgifter för den valda användaren och skapa engångskod.
 
 ### 2. Lägga till en ny användare
 
@@ -50,10 +49,11 @@ För att uppdatera en redan befintlig användare:
 2. Klicka på **Hantera användare** på den raden.
 3. Ett formulär visas, förifyllt med personens uppgifter:
    - Du kan ändra **användarnamn**, **namn** (förnamn och efternamn) och om personen är **administratör**.
-   - För att byta lösenord använder du knappen **Skapa engångskod** i tabellen (se avsnitt 5).
-4. Längst ned i formuläret finns tre knappar:
+   - För att byta lösenord använder du knappen **Skapa engångskod** i formuläret (se avsnitt 5).
+4. Längst ned i formuläret finns fyra knappar:
    - **Uppdatera användare** – sparar ändringarna.
    - **Tillbaka till tabellen utan att spara** – återgår till tabellen utan att spara.
+   - **Skapa engångskod** – skapar en engångskod som användaren kan använda för att sätta lösenord (se avsnitt 5).
    - **Radera användare** – öppnar en särskild bekräftelseruta (se nästa avsnitt).
 
 När du väljer **Uppdatera användare**:
@@ -84,11 +84,11 @@ Om du väljer **Radera användare**:
 När en användare har tappat bort sitt lösenord ska du inte se eller skicka något befintligt lösenord. I stället gör du så här:
 
 1. Gå till **Hantera användare**.
-2. Hitta personen i tabellen.
-3. Klicka på **Skapa engångskod** i kolumnen **Åtgärder**.
+2. Hitta personen i tabellen och klicka på **Hantera användare**.
+3. I formuläret klickar du på **Skapa engångskod**.
 4. En dialogruta öppnas där du:
    - Väljer hur länge koden ska gälla (t.ex. 15, 30 eller 60 minuter).
-   - Klickar på **Skapa engångskod**.
+   - Koden skapas automatiskt och visas.
 5. Systemet visar då:
    - En text som beskriver att koden är engångs och tidsbegränsad.
    - Själva koden i ett tydligt, monospace-format.

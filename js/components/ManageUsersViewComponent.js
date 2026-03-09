@@ -267,18 +267,6 @@ export const ManageUsersViewComponent = {
 
                     const display_name = this._get_display_name(user);
 
-                    const reset_btn = this.Helpers.create_element('button', {
-                        class_name: ['button', 'button-secondary', 'manage-users-reset-button'],
-                        text_content: t('manage_users_action_create_reset_code'),
-                        attributes: {
-                            type: 'button',
-                            'aria-label': `${t('manage_users_action_create_reset_code')} ${t('manage_users_action_for')} ${display_name}`
-                        }
-                    });
-                    reset_btn.addEventListener('click', () => {
-                        this.open_reset_code_modal_for_user(user);
-                    });
-
                     const manage_btn = this.Helpers.create_element('button', {
                         class_name: ['button', 'button-secondary', 'manage-users-manage-button'],
                         text_content: t('manage_users_action_manage_user'),
@@ -299,7 +287,6 @@ export const ManageUsersViewComponent = {
                         }
                     });
 
-                    container.appendChild(reset_btn);
                     container.appendChild(manage_btn);
                     return container;
                 }
@@ -469,6 +456,33 @@ export const ManageUsersViewComponent = {
         name_input.addEventListener('input', () => {
             this.update_admin_label_text(name_input, is_admin_label_strong);
         });
+
+        if (is_edit && this.current_user) {
+            const one_time_code_section = this.Helpers.create_element('div', { class_name: 'manage-users-one-time-code-section' });
+            const one_time_code_heading = this.Helpers.create_element('h2', {
+                class_name: 'manage-users-one-time-code-heading',
+                text_content: t('manage_users_detail_one_time_code_heading')
+            });
+            const one_time_code_intro = this.Helpers.create_element('p', {
+                class_name: 'manage-users-one-time-code-intro',
+                text_content: t('manage_users_detail_one_time_code_intro')
+            });
+            const reset_code_btn = this.Helpers.create_element('button', {
+                class_name: ['button', 'button-secondary', 'manage-users-reset-button'],
+                text_content: t('manage_users_action_create_reset_code'),
+                attributes: {
+                    type: 'button',
+                    'aria-label': `${t('manage_users_action_create_reset_code')} ${t('manage_users_action_for')} ${this._get_display_name(this.current_user)}`
+                }
+            });
+            reset_code_btn.addEventListener('click', () => {
+                this.open_reset_code_modal_for_user(this.current_user);
+            });
+            one_time_code_section.appendChild(one_time_code_heading);
+            one_time_code_section.appendChild(one_time_code_intro);
+            one_time_code_section.appendChild(reset_code_btn);
+            form.appendChild(one_time_code_section);
+        }
 
         const buttons_row = this.Helpers.create_element('div', { class_name: 'manage-users-detail-buttons' });
 

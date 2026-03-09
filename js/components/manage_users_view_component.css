@@ -38,6 +38,21 @@
     gap: 0.5rem;
 }
 
+.manage-users-one-time-code-section {
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+}
+
+.manage-users-one-time-code-heading {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+}
+
+.manage-users-one-time-code-intro {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+}
+
 .manage-users-detail-buttons {
     display: flex;
     flex-wrap: wrap;
