@@ -41,17 +41,17 @@ async function main() {
 
         const hash = await bcrypt.hash(password, 10);
         const result = await query(
-            'UPDATE users SET password = $1 WHERE name = $2 RETURNING id, name, is_admin',
+            'UPDATE users SET password = $1 WHERE username = $2 RETURNING id, username, name, is_admin',
             [hash, name]
         );
 
         if (result.rows.length === 0) {
-            console.error(`Ingen användare med namn "${name}" hittades.`);
+            console.error(`Ingen användare med användarnamn "${name}" hittades.`);
             process.exit(1);
         }
 
         const user = result.rows[0];
-        console.log('Lösenord uppdaterat för användare:', user.name, user.id, 'is_admin:', user.is_admin);
+        console.log('Lösenord uppdaterat för användare:', user.username || user.name, user.id, 'is_admin:', user.is_admin);
         process.exit(0);
     } catch (err) {
         console.error('[set_user_password] Fel:', err?.message || err);

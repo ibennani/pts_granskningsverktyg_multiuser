@@ -81,15 +81,20 @@ window.BUILD_INFO = ${JSON.stringify(buildInfo, null, 2)};
   console.log('[postbuild-copy] Generated build-info.js');
 
   const formattedTimestamp = `Byggt ${buildInfo.date} kl ${buildInfo.time}`;
+  const buildVersion = String(buildTime.getTime());
   const indexPath = join(distDir, 'index.html');
   if (existsSync(indexPath)) {
-    const indexHtml = readFileSync(indexPath, 'utf8');
-    const updatedHtml = indexHtml.replace(
+    let indexHtml = readFileSync(indexPath, 'utf8');
+    indexHtml = indexHtml.replace(
       /<div id="build-timestamp">[\s\S]*?<\/div>/,
       `<div id="build-timestamp">${formattedTimestamp}</div>`
     );
-    writeFileSync(indexPath, updatedHtml, 'utf8');
-    console.log('[postbuild-copy] Injected build timestamp into index.html');
+    indexHtml = indexHtml.replace(
+      /(src=")(build-info\.js)(")/,
+      `$1$2?v=${buildVersion}$3`
+    );
+    writeFileSync(indexPath, indexHtml, 'utf8');
+    console.log('[postbuild-copy] Injected build timestamp and cache-busting version into index.html');
   }
 } catch (error) {
   console.error(

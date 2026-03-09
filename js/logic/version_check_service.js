@@ -76,7 +76,11 @@ export function init_version_check_service() {
                             } catch (_) {
                                 // Vid fel försöker vi ändå ladda om till ny version utan att störa användaren.
                             }
-                            window.location.reload();
+                            // Navigera med cache-brytande query så att webbläsaren inte återanvänder bfcache
+                            // och vi får verkligen ny build-info.js – annars kan "ny version"-notisen komma tillbaka.
+                            const pathname = window.location.pathname || '/';
+                            const hash = window.location.hash || '';
+                            window.location.href = pathname + '?_=' + Date.now() + hash;
                         }
                     });
                 }
