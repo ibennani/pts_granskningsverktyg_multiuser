@@ -26,7 +26,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
-    margin-top: 1.5rem;
+    margin-top: 3rem;
 }
 
 .manage-users-delete-button {
