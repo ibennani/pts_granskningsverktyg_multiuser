@@ -1,7 +1,19 @@
 // js/api/client.js
 
 const AUTH_TOKEN_KEY = 'gv_auth_token';
+const AUTH_USER_IS_ADMIN_KEY = 'gv_current_user_is_admin';
 const AUTH_REQUIRED_EVENT = 'gv-auth-required';
+
+export function is_current_user_admin() {
+    if (typeof window === 'undefined') return false;
+    return sessionStorage.getItem(AUTH_USER_IS_ADMIN_KEY) === '1';
+}
+
+export function set_current_user_admin(is_admin) {
+    if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.setItem(AUTH_USER_IS_ADMIN_KEY, is_admin ? '1' : '0');
+    }
+}
 
 export const get_base_url = () => {
     if (typeof window === 'undefined') return '/api';
@@ -23,6 +35,7 @@ export function set_auth_token(token) {
 export function clear_auth_token() {
     if (typeof window !== 'undefined') {
         sessionStorage.removeItem(AUTH_TOKEN_KEY);
+        sessionStorage.removeItem(AUTH_USER_IS_ADMIN_KEY);
     }
 }
 
@@ -32,7 +45,10 @@ function handle_unauthorized_response(res) {
         clear_auth_token();
     } catch (_) {}
     try {
-        if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem('gv_current_user_name');
+        if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.removeItem('gv_current_user_name');
+            sessionStorage.removeItem(AUTH_USER_IS_ADMIN_KEY);
+        }
     } catch (_) {}
     try {
         delete window.__GV_CURRENT_USER_NAME__;

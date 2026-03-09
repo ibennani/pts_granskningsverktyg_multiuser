@@ -119,7 +119,7 @@ export function render_audit_samples_section(ctx) {
                 },
                 onOpenAudit: (id) => ctx.handle_open_audit(id),
                 onDownloadAudit: (id) => ctx.handle_download_audit(id),
-                onDeleteAudit: (id) => ctx.handle_delete_audit(id),
+                onDeleteAudit: (id, displayName, deleteButton) => ctx.handle_delete_audit_click(id, displayName, deleteButton),
                 get_status_label: ctx.get_status_label.bind(ctx)
             });
             section.appendChild(table_wrapper);
@@ -193,19 +193,7 @@ export function render_audit_samples_section(ctx) {
                     attributes: { type: 'button', 'aria-label': delete_aria }
                 });
                 delete_btn.addEventListener('click', () => {
-                    const show_modal = window.show_confirm_delete_modal;
-                    if (show_modal) {
-                        show_modal({
-                            h1_text: t('audit_confirm_delete_audit_title'),
-                            warning_text: t('audit_confirm_delete_audit_warning', { name: audit_link_text }),
-                            delete_button: delete_btn,
-                            yes_label: t('audit_confirm_delete_radera'),
-                            no_label: t('audit_confirm_delete_behall'),
-                            on_confirm: () => ctx.handle_delete_audit(a.id)
-                        });
-                    } else {
-                        ctx.handle_delete_audit(a.id);
-                    }
+                    ctx.handle_delete_audit_click(a.id, audit_link_text, delete_btn);
                 });
                 const btn_group = ctx.Helpers.create_element('div', { class_name: 'audit-audit-item-actions' });
                 btn_group.appendChild(download_btn);

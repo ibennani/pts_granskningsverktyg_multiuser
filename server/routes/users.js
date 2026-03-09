@@ -108,7 +108,7 @@ router.patch('/me', async (req, res) => {
     }
 });
 
-router.get('/', async (_req, res) => {
+router.get('/', requireAdmin, async (_req, res) => {
     try {
         const result = await query('SELECT id, username, name, is_admin, created_at FROM users ORDER BY username, name');
         res.json(result.rows);

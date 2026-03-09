@@ -14,7 +14,9 @@ import {
     copy_rule,
     publish_production_rule,
     update_rule,
-    create_production_rule
+    create_production_rule,
+    get_admin_contacts,
+    is_current_user_admin
 } from '../../api/client.js';
 import { subscribe_audits, subscribe_rules } from '../../logic/list_push_service.js';
 import { GenericTableComponent } from '../GenericTableComponent.js';
@@ -74,6 +76,8 @@ export const AuditViewComponent = {
         this.handle_go_to_start = this.handle_go_to_start.bind(this);
         this.handle_delete_rule = this.handle_delete_rule.bind(this);
         this.handle_delete_audit = this.handle_delete_audit.bind(this);
+        this.handle_delete_audit_click = this.handle_delete_audit_click.bind(this);
+        this.handle_delete_rule_click = this.handle_delete_rule_click.bind(this);
         this.handle_download_audit = this.handle_download_audit.bind(this);
         this.handle_download_rule = this.handle_download_rule.bind(this);
         this.handle_publish_rule = this.handle_publish_rule.bind(this);
@@ -1071,6 +1075,93 @@ export const AuditViewComponent = {
         } finally {
             this._publishProductionInProgress = false;
         }
+    },
+
+    handle_delete_audit_click(audit_id, audit_display_name, delete_button) {
+        const t = this.get_t_func();
+        if (!is_current_user_admin()) {
+            this._show_contact_admin_modal('audit');
+            return;
+        }
+        const show_modal = window.show_confirm_delete_modal;
+        if (show_modal && delete_button) {
+            show_modal({
+                h1_text: t('audit_confirm_delete_audit_title'),
+                warning_text: t('audit_confirm_delete_audit_warning', { name: audit_display_name }),
+                delete_button,
+                yes_label: t('audit_confirm_delete_radera'),
+                no_label: t('audit_confirm_delete_behall'),
+                on_confirm: () => this.handle_delete_audit(audit_id)
+            });
+        } else {
+            this.handle_delete_audit(audit_id);
+        }
+    },
+
+    handle_delete_rule_click(rule_id, rule_display_name, delete_button) {
+        const t = this.get_t_func();
+        if (!is_current_user_admin()) {
+            this._show_contact_admin_modal('rule');
+            return;
+        }
+        const show_modal = window.show_confirm_delete_modal;
+        if (show_modal && delete_button) {
+            show_modal({
+                h1_text: t('audit_confirm_delete_rule_title'),
+                warning_text: t('audit_confirm_delete_rule_warning', { name: rule_display_name }),
+                delete_button,
+                yes_label: t('audit_confirm_delete_radera'),
+                no_label: t('audit_confirm_delete_behall'),
+                on_confirm: () => this.handle_delete_rule(rule_id)
+            });
+        } else {
+            this.handle_delete_rule(rule_id);
+        }
+    },
+
+    async _show_contact_admin_modal(type) {
+        const t = this.get_t_func();
+        const ModalComponent = window.ModalComponent;
+        if (!ModalComponent?.show || !this.Helpers?.create_element) return;
+        const title_key = type === 'audit' ? 'delete_contact_admin_title_audit' : 'delete_contact_admin_title_rule';
+        const message_key = type === 'audit' ? 'delete_contact_admin_message_audit' : 'delete_contact_admin_message_rule';
+        let admins = [];
+        try {
+            admins = await get_admin_contacts();
+        } catch (_) {
+            admins = [];
+        }
+        const admin_names = Array.isArray(admins) ? admins.map((a) => (a?.name || '').trim()).filter(Boolean) : [];
+        ModalComponent.show(
+            {
+                h1_text: t(title_key),
+                message_text: t(message_key)
+            },
+            (container, modal_instance) => {
+                if (admin_names.length > 0) {
+                    const heading = this.Helpers.create_element('p', {
+                        class_name: 'delete-contact-admin-heading',
+                        text_content: t('delete_contact_admin_admins_heading')
+                    });
+                    container.appendChild(heading);
+                    const list = this.Helpers.create_element('ul', { class_name: 'delete-contact-admin-list' });
+                    admin_names.forEach((name) => {
+                        const li = this.Helpers.create_element('li', { text_content: name });
+                        list.appendChild(li);
+                    });
+                    container.appendChild(list);
+                }
+                const ok_btn = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-primary'],
+                    text_content: t('delete_contact_admin_ok'),
+                    attributes: { type: 'button' }
+                });
+                ok_btn.addEventListener('click', () => modal_instance.close());
+                const wrapper = this.Helpers.create_element('div', { class_name: 'modal-confirm-actions' });
+                wrapper.appendChild(ok_btn);
+                container.appendChild(wrapper);
+            }
+        );
     },
 
     async handle_delete_audit(audit_id) {

@@ -72,7 +72,7 @@ import { show_confirm_delete_modal } from './logic/confirm_delete_modal_logic.js
 import { flush_sync_to_server } from './logic/server_sync.js';
 
 import { DraftManager } from './draft_manager.js';
-import { get_auth_token, get_current_user_preferences } from './api/client.js';
+import { get_auth_token, get_current_user_preferences, is_current_user_admin, set_current_user_admin } from './api/client.js';
 import { getState, dispatch, subscribe, initState, StoreActionTypes, StoreInitialState, loadStateFromLocalStorageBackup, clearLocalStorageBackup, updateBackupRestorePosition, APP_STATE_KEY } from './state.js';
 window.getState = getState;
 window.dispatch = dispatch;
@@ -593,6 +593,10 @@ window.DraftManager = DraftManager;
 
     function navigate_and_set_hash(target_view_name, target_params = {}) {
         nav_debug('navigate_and_set_hash anropad', { target_view_name, target_params, current_hash: window.location.hash });
+        if (target_view_name === 'manage_users' && !is_current_user_admin()) {
+            window.location.hash = '#start';
+            return;
+        }
         const current_state_for_nav = typeof getState === 'function' ? getState() : null;
         const is_new_audit_metadata =
             current_view_name_rendered === 'metadata' &&
@@ -1372,6 +1376,11 @@ window.DraftManager = DraftManager;
             target_view = 'start';
             target_params = {};
         }
+        if (target_view === 'manage_users' && !is_current_user_admin()) {
+            target_view = 'start';
+            target_params = {};
+            history.replaceState(null, '', '#start');
+        }
         nav_debug('handle_hash_change -> render_view', { target_view, target_params, effective_view_name });
         if (is_skip_link_anchor || !effective_view_name) {
             const target_hash_part = target_params && Object.keys(target_params).length > 0 ?
@@ -1956,12 +1965,16 @@ window.DraftManager = DraftManager;
         if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('gv_current_user_name')) {
             window.__GV_CURRENT_USER_NAME__ = sessionStorage.getItem('gv_current_user_name');
         }
-        if (get_auth_token() && !window.__GV_CURRENT_USER_NAME__) {
+        const has_token = get_auth_token();
+        const missing_user_or_admin = !window.__GV_CURRENT_USER_NAME__ ||
+            (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('gv_current_user_is_admin') === null);
+        if (has_token && missing_user_or_admin) {
             get_current_user_preferences().then((user) => {
                 if (user?.name) {
                     window.__GV_CURRENT_USER_NAME__ = user.name;
                     if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('gv_current_user_name', user.name);
                 }
+                set_current_user_admin(!!user?.is_admin);
             }).catch(() => {});
         }
 

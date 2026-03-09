@@ -107,18 +107,8 @@ export function create_audit_table_columns(deps, handlers, opts = {}) {
                     attributes: { type: 'button', 'aria-label': t('audit_delete_audit_aria', { name: audit_link_text }) }
                 });
                 delete_btn.addEventListener('click', () => {
-                    const show_modal = window.show_confirm_delete_modal;
-                    if (show_modal) {
-                        show_modal({
-                            h1_text: t('audit_confirm_delete_audit_title'),
-                            warning_text: t('audit_confirm_delete_audit_warning', { name: audit_link_text }),
-                            delete_button: delete_btn,
-                            yes_label: t('audit_confirm_delete_radera'),
-                            no_label: t('audit_confirm_delete_behall'),
-                            on_confirm: () => onDeleteAudit(row.id)
-                        });
-                    } else {
-                        onDeleteAudit(row.id);
+                    if (typeof onDeleteAudit === 'function') {
+                        onDeleteAudit(row.id, audit_link_text, delete_btn);
                     }
                 });
                 return delete_btn;

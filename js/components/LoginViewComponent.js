@@ -1,6 +1,6 @@
 // js/components/LoginViewComponent.js
 
-import { login, set_auth_token, get_current_user_preferences, reset_password_with_code, get_admin_contacts } from '../api/client.js';
+import { login, set_auth_token, set_current_user_admin, get_current_user_preferences, reset_password_with_code, get_admin_contacts } from '../api/client.js';
 import './login_view_component.css';
 
 export const LoginViewComponent = {
@@ -215,6 +215,7 @@ export const LoginViewComponent = {
                 if (typeof sessionStorage !== 'undefined') {
                     sessionStorage.setItem('gv_current_user_name', user_name);
                 }
+                set_current_user_admin(!!user?.is_admin);
                 window.__GV_CURRENT_USER_NAME__ = user_name;
                 if (typeof this.on_login_callback === 'function') {
                     this.on_login_callback();
@@ -283,6 +284,7 @@ export const LoginViewComponent = {
                 if (user_name && typeof sessionStorage !== 'undefined') {
                     sessionStorage.setItem('gv_current_user_name', user_name);
                 }
+                set_current_user_admin(!!user?.is_admin);
                 if (user_name) {
                     window.__GV_CURRENT_USER_NAME__ = user_name;
                 }

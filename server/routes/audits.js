@@ -296,7 +296,7 @@ router.get('/:id/export', async (req, res) => {
     }
 });
 
-router.post('/', requireAdmin, async (req, res) => {
+router.post('/', async (req, res) => {
     try {
         const { rule_set_id } = req.body;
         const last_updated_by = req.user ? req.user.name : null;
@@ -324,7 +324,7 @@ router.post('/', requireAdmin, async (req, res) => {
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-router.post('/import', requireAdmin, async (req, res) => {
+router.post('/import', async (req, res) => {
     try {
         const data = req.body;
         const last_updated_by = req.user ? req.user.name : null;

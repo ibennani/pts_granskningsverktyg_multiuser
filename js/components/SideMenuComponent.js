@@ -297,16 +297,20 @@ export const SideMenuComponent = {
         }
 
         if (this.current_view_name === 'start' || this.current_view_name === 'audit' || this.current_view_name === 'audit_audits' || this.current_view_name === 'audit_rules' || this.current_view_name === 'manage_users' || this.current_view_name === 'my_settings' || this.current_view_name === 'backup' || this.current_view_name === 'backup_detail' || this.current_view_name === 'backup_settings') {
+            const is_admin = typeof sessionStorage !== 'undefined' && sessionStorage.getItem('gv_current_user_is_admin') === '1';
+            const items = [
+                { label: t('menu_link_manage_audits'), view_name: 'start' },
+                { label: t('menu_link_manage_rules'), view_name: 'audit_rules' },
+                { label: t('menu_link_backups'), view_name: 'backup' },
+                { label: t('menu_link_my_settings'), view_name: 'my_settings' }
+            ];
+            if (is_admin) {
+                items.push({ label: t('menu_link_manage_users'), view_name: 'manage_users' });
+            }
             return {
                 should_show: true,
                 aria_label: t('side_menu_aria_label'),
-                items: [
-                    { label: t('menu_link_manage_audits'), view_name: 'start' },
-                    { label: t('menu_link_manage_rules'), view_name: 'audit_rules' },
-                    { label: t('menu_link_backups'), view_name: 'backup' },
-                    { label: t('menu_link_my_settings'), view_name: 'my_settings' },
-                    { label: t('menu_link_manage_users'), view_name: 'manage_users' }
-                ]
+                items
             };
         }
 

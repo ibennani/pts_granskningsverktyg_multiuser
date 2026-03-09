@@ -29,7 +29,7 @@ export function render_audit_requirement_section(ctx) {
     const rules_table_handlers = {
         onEditRule: (id) => ctx.handle_edit_rule(id),
         onDownloadRule: (id) => ctx.handle_download_rule(id),
-        onDeleteRule: (id) => ctx.handle_delete_rule(id),
+        onDeleteRule: (id, displayName, deleteButton) => ctx.handle_delete_rule_click(id, displayName, deleteButton),
         onPublishRule: (id) => ctx.handle_publish_rule(id),
         onCopyRule: (id) => ctx.handle_copy_rule(id),
         onPublishProductionRule: (id) => ctx.handle_publish_production_rule(id)
