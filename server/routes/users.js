@@ -30,6 +30,28 @@ function generate_username_from_names(first_name, last_name) {
     return combined.replace(/\s+/g, '');
 }
 
+function bump_last_character(value) {
+    if (!value) return '';
+    const str = String(value);
+    const last_index = str.length - 1;
+    const last_char = str.charAt(last_index);
+    const prefix = str.slice(0, last_index);
+
+    if (last_char >= 'a' && last_char <= 'z') {
+        if (last_char === 'z') {
+            return `${prefix}a`;
+        }
+        return `${prefix}${String.fromCharCode(last_char.charCodeAt(0) + 1)}`;
+    }
+    if (last_char >= 'A' && last_char <= 'Z') {
+        if (last_char === 'Z') {
+            return `${prefix}A`;
+        }
+        return `${prefix}${String.fromCharCode(last_char.charCodeAt(0) + 1)}`;
+    }
+    return `${str}a`;
+}
+
 router.get('/me', async (req, res) => {
     try {
         const user = req.user;
@@ -106,13 +128,24 @@ router.post('/', requireAdmin, async (req, res) => {
             return res.status(400).json({ error: 'Förnamn och efternamn krävs' });
         }
 
-        let username_final = typeof username === 'string' ? username.trim() : '';
-        if (!username_final) {
-            username_final = generate_username_from_names(first_name_trimmed, last_name_trimmed);
-        }
+        const username_provided = typeof username === 'string' && username.trim() !== '';
+        let username_final = username_provided ? username.trim() : generate_username_from_names(first_name_trimmed, last_name_trimmed);
         username_final = username_final.toLowerCase();
         if (!username_final) {
             return res.status(400).json({ error: 'Användarnamn krävs' });
+        }
+
+        if (!username_provided) {
+            let candidate = username_final;
+            // Begränsa antalet försök för att undvika evig loop
+            for (let i = 0; i < 26; i += 1) {
+                const existing = await query('SELECT 1 FROM users WHERE username = $1 LIMIT 1', [candidate]);
+                if (existing.rows.length === 0) {
+                    username_final = candidate;
+                    break;
+                }
+                candidate = bump_last_character(candidate);
+            }
         }
 
         const full_name = `${first_name_trimmed} ${last_name_trimmed}`.replace(/\s+/g, ' ').trim();

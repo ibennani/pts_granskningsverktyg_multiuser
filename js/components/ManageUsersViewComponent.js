@@ -17,7 +17,11 @@ export const ManageUsersViewComponent = {
         this.ModalComponent = deps.ModalComponent;
 
         this.users = [];
-        this.mode = 'list'; // 'list' | 'detail'
+        this.users_loaded = false;
+
+        const params = deps.params || {};
+        this.mode = params.mode === 'detail' ? 'detail' : 'list'; // 'list' | 'detail'
+        this.initial_user_id = params.id || null;
         this.current_user = null; // hela user-objektet när vi hanterar användare
         this.detail_form_root = null;
         this.table_root = null;
@@ -42,10 +46,13 @@ export const ManageUsersViewComponent = {
     },
 
     async fetch_users() {
+        if (this.users_loaded) return;
         try {
             this.users = await get_users();
         } catch {
             this.users = [];
+        } finally {
+            this.users_loaded = true;
         }
     },
 
@@ -53,6 +60,15 @@ export const ManageUsersViewComponent = {
         if (!this.root || !this.Helpers?.create_element) return;
 
         await this.fetch_users();
+
+        if (this.mode === 'detail') {
+            if (!this.current_user && this.initial_user_id && Array.isArray(this.users)) {
+                const found = this.users.find((user) => String(user.id) === String(this.initial_user_id));
+                this.current_user = found || null;
+            }
+            this.render_detail_view();
+            return;
+        }
 
         const t = this.get_t_func();
 
@@ -79,9 +95,13 @@ export const ManageUsersViewComponent = {
             attributes: { type: 'button' }
         });
         add_btn.addEventListener('click', () => {
-            this.mode = 'detail';
-            this.current_user = null;
-            this.render_detail_view();
+            if (this.router) {
+                this.router('manage_users', { mode: 'detail' });
+            } else {
+                this.mode = 'detail';
+                this.current_user = null;
+                this.render_detail_view();
+            }
         });
         header_row.appendChild(add_btn);
         plate.appendChild(header_row);
@@ -160,9 +180,13 @@ export const ManageUsersViewComponent = {
                         }
                     });
                     manage_btn.addEventListener('click', () => {
-                        this.mode = 'detail';
-                        this.current_user = user;
-                        this.render_detail_view();
+                        if (this.router) {
+                            this.router('manage_users', { mode: 'detail', id: user.id });
+                        } else {
+                            this.mode = 'detail';
+                            this.current_user = user;
+                            this.render_detail_view();
+                        }
                     });
 
                     container.appendChild(reset_btn);
@@ -236,19 +260,22 @@ export const ManageUsersViewComponent = {
             return wrapper;
         };
 
-        const username_input = this.Helpers.create_element('input', {
-            id: username_id,
-            type: 'text',
-            class_name: 'form-control',
-            attributes: {
-                autocomplete: 'username',
-                maxlength: '30'
+        let username_input = null;
+        if (is_edit) {
+            username_input = this.Helpers.create_element('input', {
+                id: username_id,
+                type: 'text',
+                class_name: 'form-control',
+                attributes: {
+                    autocomplete: 'username',
+                    maxlength: '30'
+                }
+            });
+            if (this.current_user?.username) {
+                username_input.value = this.current_user.username;
             }
-        });
-        if (this.current_user?.username) {
-            username_input.value = this.current_user.username;
+            form.appendChild(make_field(t('manage_users_field_username'), username_input));
         }
-        form.appendChild(make_field(t('manage_users_field_username'), username_input));
 
         const first_name_input = this.Helpers.create_element('input', {
             id: first_name_id,
@@ -374,9 +401,13 @@ export const ManageUsersViewComponent = {
         });
 
         cancel_btn.addEventListener('click', () => {
-            this.mode = 'list';
-            this.current_user = null;
-            this.render();
+            if (this.router) {
+                this.router('manage_users', {});
+            } else {
+                this.mode = 'list';
+                this.current_user = null;
+                this.render();
+            }
         });
 
         if (delete_btn) {
@@ -391,21 +422,24 @@ export const ManageUsersViewComponent = {
 
     async handle_submit_user_form({ username_input, first_name_input, last_name_input, is_admin_checkbox, password_input }) {
         const t = this.get_t_func();
-        let username = (username_input.value || '').trim();
+        const is_edit = !!this.current_user;
+        let username = username_input ? (username_input.value || '').trim() : '';
         const first_name = (first_name_input.value || '').trim();
         const last_name = (last_name_input.value || '').trim();
         const is_admin = !!is_admin_checkbox.checked;
         const password = (password_input.value || '').trim();
 
-        if (!username && first_name && last_name) {
+        if (username_input && !username && first_name && last_name) {
             const auto_username = this.generate_username_from_names(first_name, last_name);
             if (auto_username) {
                 username = auto_username;
-                username_input.value = auto_username;
+                if (username_input) {
+                    username_input.value = auto_username;
+                }
             }
         }
 
-        if (!username) {
+        if (is_edit && !username) {
             this.NotificationComponent?.show_global_message?.(t('manage_users_error_username_required'), 'warning');
             return;
         }
@@ -419,11 +453,13 @@ export const ManageUsersViewComponent = {
         }
 
         const body = {
-            username,
             first_name,
             last_name,
             is_admin
         };
+        if (username) {
+            body.username = username;
+        }
         if (password) {
             body.password = password;
         }
@@ -437,9 +473,13 @@ export const ManageUsersViewComponent = {
                 this.NotificationComponent?.show_global_message?.(t('manage_users_create_success'), 'success');
             }
             await this.fetch_users();
-            this.mode = 'list';
-            this.current_user = null;
-            this.render();
+            if (this.router) {
+                this.router('manage_users', {});
+            } else {
+                this.mode = 'list';
+                this.current_user = null;
+                this.render();
+            }
         } catch (err) {
             const msg = err?.message || t('manage_users_save_error');
             this.NotificationComponent?.show_global_message?.(msg, 'error');
@@ -490,9 +530,13 @@ export const ManageUsersViewComponent = {
                         await delete_user(user.id);
                         this.NotificationComponent?.show_global_message?.(t('manage_users_delete_success'), 'success');
                         await this.fetch_users();
-                        this.mode = 'list';
-                        this.current_user = null;
-                        this.render();
+                        if (this.router) {
+                            this.router('manage_users', {});
+                        } else {
+                            this.mode = 'list';
+                            this.current_user = null;
+                            this.render();
+                        }
                         modal_instance.close();
                     } catch (err) {
                         const msg = err?.message || t('manage_users_delete_error');
@@ -643,8 +687,10 @@ export const ManageUsersViewComponent = {
         this.root = null;
         this.deps = null;
         this.users = [];
+        this.users_loaded = false;
         this.mode = 'list';
         this.current_user = null;
+        this.initial_user_id = null;
         this.detail_form_root = null;
         this.table_root = null;
         if (this._table && typeof this._table.destroy === 'function') {
