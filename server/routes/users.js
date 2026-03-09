@@ -130,7 +130,7 @@ router.post('/', requireAdmin, async (req, res) => {
             const normalized = name_raw.replace(/\s+/g, ' ').trim();
             const parts = normalized.split(/\s+/);
             first_name_trimmed = parts[0] || '';
-            last_name_trimmed = parts.slice(1).join(' ');
+            last_name_trimmed = parts.length > 1 ? parts[parts.length - 1] : '';
         }
 
         if (!first_name_trimmed || !last_name_trimmed) {
