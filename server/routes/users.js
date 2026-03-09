@@ -52,6 +52,23 @@ function bump_last_character(value) {
     return `${str}a`;
 }
 
+router.get('/admin-contacts', async (_req, res) => {
+    try {
+        const result = await query(
+            'SELECT id, name, username FROM users WHERE is_admin = TRUE ORDER BY COALESCE(NULLIF(TRIM(name), \'\'), username) ASC',
+            []
+        );
+        const admins = result.rows.map((row) => ({
+            id: row.id,
+            name: (row.name && String(row.name).trim()) || (row.username && String(row.username).trim()) || ''
+        }));
+        res.json(admins);
+    } catch (err) {
+        console.error('[users] GET /admin-contacts error:', err);
+        res.status(500).json({ error: 'Kunde inte hämta administratörer' });
+    }
+});
+
 router.get('/me', async (req, res) => {
     try {
         const user = req.user;

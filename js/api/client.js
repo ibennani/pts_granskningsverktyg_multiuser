@@ -222,16 +222,7 @@ export async function reset_password_with_code(code, password) {
 }
 
 export async function get_admin_contacts() {
-    const res = await fetch(`${get_base_url()}/auth/admin-contacts`, {
-        method: 'GET',
-        headers: get_auth_headers()
-    });
-    const data = await res.json().catch(() => ([]));
-    if (!res.ok) {
-        const e = new Error(data.error || 'Kunde inte hämta administratörer');
-        e.status = res.status;
-        throw e;
-    }
+    const data = await api_get('/users/admin-contacts');
     if (Array.isArray(data)) return data;
     if (data && Array.isArray(data.admins)) return data.admins;
     return [];
