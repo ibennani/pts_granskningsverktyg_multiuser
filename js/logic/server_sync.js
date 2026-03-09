@@ -56,6 +56,22 @@ function count_stuck_in_samples(samples) {
 
 function show_audit_deleted_modal_and_navigate() {
     if (typeof window === 'undefined') return;
+    const current_view = window.__gv_current_view_name || null;
+    const outside_audit_views = new Set([
+        'start',
+        'audit',
+        'audit_audits',
+        'audit_rules',
+        'login',
+        'manage_users',
+        'my_settings',
+        'backup',
+        'backup_detail',
+        'backup_settings'
+    ]);
+    if (current_view && outside_audit_views.has(current_view)) {
+        return;
+    }
     if (window.__GV_AUDIT_DELETED_MODAL_SHOWN__) return;
     window.__GV_AUDIT_DELETED_MODAL_SHOWN__ = true;
 

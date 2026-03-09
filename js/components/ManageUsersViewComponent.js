@@ -17,6 +17,10 @@ export const ManageUsersViewComponent = {
 
         this.users = [];
         this.users_loaded = false;
+        this.user_filter_query = '';
+        this._userFilterHadFocus = false;
+        this._userFilterSelection = null;
+        this._userFilterInputRef = null;
 
         const params = deps.params || {};
         this.mode = params.mode === 'detail' ? 'detail' : 'list'; // 'list' | 'detail'
@@ -29,6 +33,8 @@ export const ManageUsersViewComponent = {
         this.skip_table_focus_restore_next_render = this.skip_table_focus_restore_next_render || false;
         this.detail_delete_button_ref = null;
         this.sort_state = { columnIndex: 0, direction: 'asc' };
+
+        this.handle_filter_input = this.handle_filter_input.bind(this);
 
         this._table = Object.create(GenericTableComponent);
         await this._table.init({ root, deps: { Helpers: this.Helpers } });
@@ -88,12 +94,16 @@ export const ManageUsersViewComponent = {
 
         const header_row = this.Helpers.create_element('div', { class_name: 'manage-users-header-row' });
 
+        const left_header = this.Helpers.create_element('div', {
+            class_name: 'manage-users-header-left'
+        });
+
         const heading = this.Helpers.create_element('h1', {
             id: 'main-content-heading',
             text_content: t('manage_users_title'),
             attributes: { tabindex: '-1' }
         });
-        header_row.appendChild(heading);
+        left_header.appendChild(heading);
 
         const add_btn = this.Helpers.create_element('button', {
             class_name: ['button', 'button-primary', 'manage-users-add-button'],
@@ -109,6 +119,33 @@ export const ManageUsersViewComponent = {
                 this.render_detail_view();
             }
         });
+        this._userFilterInputRef = null;
+        const filter_wrapper = this.Helpers.create_element('div', {
+            class_name: ['audit-filter-wrapper', 'manage-users-filter-wrapper']
+        });
+        const filter_label = this.Helpers.create_element('label', {
+            attributes: { for: 'manage-users-filter-input' }
+        });
+        const filter_label_strong = this.Helpers.create_element('strong', {
+            text_content: t('manage_users_filter_label')
+        });
+        filter_label.appendChild(filter_label_strong);
+        const filter_input = this.Helpers.create_element('input', {
+            class_name: ['audit-filter-input', 'form-control', 'manage-users-filter-input'],
+            attributes: {
+                id: 'manage-users-filter-input',
+                type: 'text',
+                name: 'manage-users-filter',
+                value: this.user_filter_query || ''
+            }
+        });
+        filter_input.addEventListener('input', this.handle_filter_input);
+        this._userFilterInputRef = filter_input;
+        filter_wrapper.appendChild(filter_label);
+        filter_wrapper.appendChild(filter_input);
+        left_header.appendChild(filter_wrapper);
+
+        header_row.appendChild(left_header);
         header_row.appendChild(add_btn);
         plate.appendChild(header_row);
 
@@ -128,6 +165,28 @@ export const ManageUsersViewComponent = {
 
         this.root.appendChild(plate);
 
+        if (this._userFilterHadFocus && this._userFilterInputRef) {
+            const input = this._userFilterInputRef;
+            const selection = this._userFilterSelection;
+            setTimeout(() => {
+                if (!input || !document.contains(input)) return;
+                try {
+                    input.focus({ preventScroll: true });
+                } catch {
+                    input.focus();
+                }
+                if (selection && typeof input.setSelectionRange === 'function') {
+                    try {
+                        input.setSelectionRange(selection.selectionStart, selection.selectionEnd);
+                    } catch (e) {
+                        // Ignorera fel vid återställning av markering
+                    }
+                }
+            }, 0);
+        }
+        this._userFilterHadFocus = false;
+        this._userFilterSelection = null;
+
         this.restore_focus_to_manage_trigger_if_needed();
     },
 
@@ -139,6 +198,26 @@ export const ManageUsersViewComponent = {
         return t('user_fallback_name', { id: user?.id ?? '' });
     },
 
+    handle_filter_input(event) {
+        const target = event && event.target ? event.target : null;
+        const value = target ? target.value : '';
+        if (this.user_filter_query === value) return;
+        let selectionStart = null;
+        let selectionEnd = null;
+        if (target && typeof target.selectionStart === 'number' && typeof target.selectionEnd === 'number') {
+            selectionStart = target.selectionStart;
+            selectionEnd = target.selectionEnd;
+        }
+        this.user_filter_query = value;
+        this._userFilterHadFocus = document.activeElement === target;
+        this._userFilterSelection = selectionStart != null && selectionEnd != null
+            ? { selectionStart, selectionEnd }
+            : null;
+        if (this.root) {
+            this.render();
+        }
+    },
+
     render_table_view() {
         if (!this.table_root || !this._table || !this.Helpers) return;
         const t = this.get_t_func();
@@ -148,6 +227,20 @@ export const ManageUsersViewComponent = {
             this._table._pendingSortFocusIndex = undefined;
             this.skip_table_focus_restore_next_render = false;
         }
+
+        const raw_users = Array.isArray(this.users) ? this.users : [];
+        const query_raw = this.user_filter_query || '';
+        const query = query_raw.trim().toLowerCase();
+        const has_filter = query.length > 0;
+        const data = !has_filter
+            ? raw_users
+            : raw_users.filter((user) => {
+                const username = (user && user.username ? String(user.username) : '').trim().toLowerCase();
+                const display_name = this._get_display_name(user).toString().trim().toLowerCase();
+                if (!query) return true;
+                return username.includes(query) || display_name.includes(query);
+            });
+        const empty_message = has_filter ? t('manage_users_filter_no_results') : t('manage_users_empty');
 
         const columns = [
             {
@@ -215,8 +308,8 @@ export const ManageUsersViewComponent = {
         this._table.render({
             root: this.table_root,
             columns,
-            data: this.users,
-            emptyMessage: t('manage_users_empty'),
+            data,
+            emptyMessage: empty_message,
             ariaLabel: t('manage_users_table_aria_label'),
             wrapperClassName: 'generic-table-wrapper manage-users-table-wrapper',
             tableClassName: 'generic-table manage-users-table',

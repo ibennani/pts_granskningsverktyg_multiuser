@@ -841,6 +841,8 @@
   "manage_users_action_manage_user": "Hantera användare",
   "manage_users_action_for": "för",
   "manage_users_empty": "Det finns inga användare ännu.",
+  "manage_users_filter_label": "Filtrera på användarnamn eller namn",
+  "manage_users_filter_no_results": "Inga användare matchar filtret.",
   "manage_users_table_aria_label": "Tabell över användare i Granskningsverktyget",
   "manage_users_field_username": "Användarnamn",
   "manage_users_field_name": "Namn",

@@ -841,6 +841,8 @@
   "manage_users_action_manage_user": "Manage user",
   "manage_users_action_for": "for",
   "manage_users_empty": "There are no users yet.",
+  "manage_users_filter_label": "Filter by username or name",
+  "manage_users_filter_no_results": "No users match the current filter.",
   "manage_users_table_aria_label": "Table of users in the audit tool",
   "manage_users_field_username": "Username",
   "manage_users_field_name": "Name",
