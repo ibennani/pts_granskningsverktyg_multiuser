@@ -106,6 +106,7 @@ temp*.txt
 temp*.json
 temp*.modelfile
 *.modelfile
+Modelfile
 
 # App-specific
 backup/
