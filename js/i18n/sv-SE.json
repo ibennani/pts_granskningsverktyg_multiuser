@@ -832,7 +832,7 @@
   "manage_users_title": "Hantera användare",
   "manage_users_intro": "Här ser du alla användare som kan logga in i verktyget.",
   "manage_users_intro_new": "Lägg till nya användare eller uppdatera befintliga. Varje användare loggar in med ett unikt användarnamn och lösenord.",
-  "manage_users_add_button": "Lägg till användare",
+  "manage_users_add_button": "Skapa användare",
   "manage_users_col_username": "Användarnamn",
   "manage_users_col_name": "Namn",
   "manage_users_col_is_admin": "Admin",

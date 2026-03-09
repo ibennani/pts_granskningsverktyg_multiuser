@@ -65,18 +65,14 @@ export const ManageUsersViewComponent = {
             this.NotificationComponent.append_global_message_areas_to(plate);
         }
 
-        plate.appendChild(this.Helpers.create_element('h1', {
+        const header_row = this.Helpers.create_element('div', { class_name: 'manage-users-header-row' });
+
+        const heading = this.Helpers.create_element('h1', {
             id: 'main-content-heading',
             text_content: t('manage_users_title'),
             attributes: { tabindex: '-1' }
-        }));
-
-        const header_row = this.Helpers.create_element('div', { class_name: 'manage-users-header-row' });
-        const intro = this.Helpers.create_element('p', {
-            class_name: 'view-intro-text',
-            text_content: t('manage_users_intro_new')
         });
-        header_row.appendChild(intro);
+        header_row.appendChild(heading);
 
         const add_btn = this.Helpers.create_element('button', {
             class_name: ['button', 'button-primary', 'manage-users-add-button'],
@@ -90,6 +86,12 @@ export const ManageUsersViewComponent = {
         });
         header_row.appendChild(add_btn);
         plate.appendChild(header_row);
+
+        const intro = this.Helpers.create_element('p', {
+            class_name: 'view-intro-text',
+            text_content: t('manage_users_intro_new')
+        });
+        plate.appendChild(intro);
 
         this.render_table_view();
 

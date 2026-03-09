@@ -832,7 +832,7 @@
   "manage_users_title": "Manage users",
   "manage_users_intro": "Here you can see all users who can log in to the tool.",
   "manage_users_intro_new": "Add new users or update existing ones. Each user logs in with a unique username and password.",
-  "manage_users_add_button": "Add user",
+  "manage_users_add_button": "Create user",
   "manage_users_col_username": "Username",
   "manage_users_col_name": "Name",
   "manage_users_col_is_admin": "Admin",
