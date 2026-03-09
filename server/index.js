@@ -27,13 +27,16 @@ const http_server = http.createServer(app);
 
 app.use(helmet());
 
+const public_app_url = (process.env.PUBLIC_APP_URL || '').trim();
 const allowed_origins_env = (process.env.ALLOWED_ORIGINS || '').trim();
 const allowed_origins = allowed_origins_env
     ? allowed_origins_env.split(',').map((s) => s.trim()).filter(Boolean)
-    : (() => {
-        console.warn('[Server] ALLOWED_ORIGINS är inte satt – tillåter http://localhost:5173 som fallback.');
-        return ['http://localhost:5173'];
-    })();
+    : public_app_url
+        ? [public_app_url]
+        : (() => {
+            console.warn('[Server] ALLOWED_ORIGINS och PUBLIC_APP_URL är inte satta – tillåter http://localhost:5173 som fallback.');
+            return ['http://localhost:5173'];
+        })();
 
 app.use(cors({
     origin: (origin, cb) => {

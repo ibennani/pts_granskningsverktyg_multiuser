@@ -32,6 +32,23 @@ ssh-copy-id -i ~/.ssh/id_ed25519_granskning.pub ux-granskningsverktyg.pts.ad
 # Lägg till i ~/.ssh/config: Host ux-granskningsverktyg.pts.ad IdentityFile ~/.ssh/id_ed25519_granskning
 ```
 
+## Produktions-URL och CORS (.env – sparas inte i Git)
+
+För att CORS och andra inställningar ska använda din publika adress (t.ex. `https://ux-granskningsverktyg.pts.ad`) utan att URL:en sparas i GitHub:
+
+1. **Lägg variablerna i `.env`** (filen är redan i `.gitignore` och kopieras till servern vid deploy, men commitas aldrig):
+   ```
+   PUBLIC_APP_URL=https://ux-granskningsverktyg.pts.ad
+   ```
+   Backend använder då `PUBLIC_APP_URL` som tillåten origin för CORS om `ALLOWED_ORIGINS` inte är satt.
+
+2. **Flera origins (t.ex. dev + prod):** sätt i stället:
+   ```
+   ALLOWED_ORIGINS=https://ux-granskningsverktyg.pts.ad,http://localhost:5173
+   ```
+
+Vid `npm run deploy:v2` kopieras `.env` till servern (utom rader som börjar med `DEPLOY_`), så samma URL gäller både lokalt och på servern utan att något av detta hamnar i Git.
+
 ## Vad deploy gör
 
 | Komponent | Vad som händer |
