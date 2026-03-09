@@ -309,7 +309,9 @@ export const ManageUsersViewComponent = {
             attributes: { for: is_admin_id },
             class_name: 'manage-users-admin-label'
         });
-        this.update_admin_label_text(name_input, is_admin_label);
+        const is_admin_label_strong = this.Helpers.create_element('strong', {});
+        is_admin_label.appendChild(is_admin_label_strong);
+        this.update_admin_label_text(name_input, is_admin_label_strong);
         is_admin_wrapper.appendChild(is_admin_checkbox);
         is_admin_wrapper.appendChild(is_admin_label);
         form.appendChild(is_admin_wrapper);
@@ -354,7 +356,7 @@ export const ManageUsersViewComponent = {
         form.appendChild(password_wrapper);
 
         name_input.addEventListener('input', () => {
-            this.update_admin_label_text(name_input, is_admin_label);
+            this.update_admin_label_text(name_input, is_admin_label_strong);
         });
 
         const buttons_row = this.Helpers.create_element('div', { class_name: 'manage-users-detail-buttons' });
@@ -474,14 +476,14 @@ export const ManageUsersViewComponent = {
         }
     },
 
-    update_admin_label_text(name_input, label_el) {
-        if (!label_el) return;
+    update_admin_label_text(name_input, label_content_el) {
+        if (!label_content_el) return;
         const t = this.get_t_func();
         const raw_name = (name_input && name_input.value) ? name_input.value.trim() : '';
         if (raw_name) {
-            label_el.textContent = t('manage_users_is_admin_label_with_name', { name: raw_name });
+            label_content_el.textContent = t('manage_users_is_admin_label_with_name', { name: raw_name });
         } else {
-            label_el.textContent = t('manage_users_is_admin_label_without_name');
+            label_content_el.textContent = t('manage_users_is_admin_label_without_name');
         }
     },
 
