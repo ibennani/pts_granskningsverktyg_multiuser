@@ -2,9 +2,10 @@
 import { migrate_rulefile_to_new_structure } from '../logic/rulefile_migration_logic.js';
 import { get_rule } from '../api/client.js';
 import { render_rulefile_change_log } from '../logic/rulefile_change_log_renderer.js';
+import './update_rulefile_view.css';
 
 export const UpdateRulefileViewComponent = {
-    CSS_PATH: 'css/components/update_rulefile_view.css',
+    CSS_PATH: './update_rulefile_view.css',
     VIEW_STEPS: {
         WARNING: 'WARNING',
         UPLOAD: 'UPLOAD',

@@ -1,7 +1,9 @@
 // js/components/ModalComponent.js
 
+import './modal_component.css';
+
 export const ModalComponent = {
-    CSS_PATH: './css/components/modal_component.css',
+    CSS_PATH: './modal_component.css',
 
     init({ root, deps }) {
         this.root = root;

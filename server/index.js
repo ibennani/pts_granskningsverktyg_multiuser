@@ -11,11 +11,13 @@ process.on('uncaughtException', (err) => {
 process.on('unhandledRejection', (reason, promise) => {
     console.error('[Server] Unhandled rejection at', promise, 'reason:', reason);
 });
+import { requireAuth } from './auth/middleware.js';
+import authRouter from './routes/auth.js';
 import usersRouter from './routes/users.js';
 import rulesRouter from './routes/rules.js';
 import auditsRouter from './routes/audits.js';
 import backupRouter from './routes/backup.js';
-import { get_backup_dir, get_last_backup_status, start_backup_scheduler } from './backup/audit_backup.js';
+import { get_last_backup_status, start_backup_scheduler } from './backup/audit_backup.js';
 
 const app = express();
 const PORT = process.env.API_PORT || 3000;
@@ -30,11 +32,11 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use('/api/users', usersRouter);
-app.use('/api/rules', rulesRouter);
-app.use('/api/audits', auditsRouter);
-app.use('/api/backup', backupRouter);
-app.use('/backup', express.static(get_backup_dir()));
+app.use('/api/auth', authRouter);
+app.use('/api/users', requireAuth, usersRouter);
+app.use('/api/rules', requireAuth, rulesRouter);
+app.use('/api/audits', requireAuth, auditsRouter);
+app.use('/api/backup', requireAuth, backupRouter);
 
 app.get('/api/health', async (_req, res) => {
     try {

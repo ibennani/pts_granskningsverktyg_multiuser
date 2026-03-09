@@ -1,0 +1,162 @@
+/* Övre: kritisk info (ny version av koden, ny regelfil). Nedre: vanliga meddelanden (Sparat, fel, etc.) */
+#global-critical-message-area,
+#global-message-area {
+    padding: 0.4rem 0.75rem;
+    margin-bottom: 1rem;
+    border: 1px solid transparent;
+    border-radius: var(--border-radius);
+    position: relative; /* För att positionera knapp absolut */
+}
+
+#global-critical-message-area[hidden],
+#global-message-area[hidden] {
+    display: none;
+}
+
+.global-message-content { 
+    /* Används för att sätta typklasser */
+}
+
+.global-message-close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem; 
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 0.5rem;
+    opacity: 0.7;
+    position: absolute;
+    top: 50%;
+    right: 1rem;
+    transform: translateY(-50%);
+}
+.global-message-close-btn:hover,
+.global-message-close-btn:focus {
+    opacity: 1;
+}
+
+#global-critical-message-area .global-message-close-btn,
+#global-message-area .global-message-close-btn {
+    /* Samma som .global-message-close-btn nedan */
+}
+
+.global-message-action-btn {
+    margin-left: 0.75rem;
+    padding: 0.25rem 0.75rem;
+    font-size: inherit;
+    cursor: pointer;
+    border: 1px solid currentColor;
+    border-radius: var(--border-radius, 4px);
+    background: transparent;
+}
+.global-message-action-btn:hover,
+.global-message-action-btn:focus {
+    background: rgba(0, 0, 0, 0.1);
+}
+[data-theme="dark"] .global-message-action-btn:hover,
+[data-theme="dark"] .global-message-action-btn:focus {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/* Message types - Kontrastjusterade färger */
+
+/* Info */
+#global-message-area.message-info {
+    background-color: var(--info-color-light);
+    border-color: var(--info-color);
+    color: #004085; 
+}
+#global-message-area.message-info .global-message-close-btn {
+    color: #004085;
+}
+[data-theme="dark"] #global-message-area.message-info {
+    background-color: #0c5460; 
+    border-color: var(--info-color); 
+    color: var(--text-color); /* ÄNDRAD TILL LJUS TEXT */
+}
+[data-theme="dark"] #global-message-area.message-info .global-message-close-btn {
+    color: var(--text-color); /* ÄNDRAD TILL LJUS TEXT */
+}
+
+/* Success */
+#global-message-area.message-success {
+    background-color: var(--success-color-light);
+    border-color: var(--success-color); 
+    color: #155724; 
+}
+#global-message-area.message-success .global-message-close-btn {
+    color: #155724;
+}
+[data-theme="dark"] #global-message-area.message-success {
+    background-color: #126128; 
+    border-color: var(--success-color); 
+    color: var(--text-color); /* ÄNDRAD TILL LJUS TEXT */
+}
+[data-theme="dark"] #global-message-area.message-success .global-message-close-btn {
+    color: var(--text-color); /* ÄNDRAD TILL LJUS TEXT */
+}
+
+/* Warning */
+#global-message-area.message-warning {
+    background-color: var(--warning-color-light); 
+    border-color: var(--warning-color); 
+    color: #856404; 
+}
+#global-message-area.message-warning .global-message-close-btn {
+    color: #856404;
+}
+[data-theme="dark"] #global-message-area.message-warning {
+    background-color: #806600; 
+    border-color: var(--warning-color); 
+    color: var(--text-color); /* ÄNDRAD TILL LJUS TEXT */
+}
+[data-theme="dark"] #global-message-area.message-warning .global-message-close-btn {
+    color: var(--text-color); /* ÄNDRAD TILL LJUS TEXT */
+}
+
+/* Error */
+#global-message-area.message-error {
+    background-color: var(--danger-color-light); 
+    border-color: var(--danger-color); 
+    color: #721c24; 
+}
+#global-message-area.message-error .global-message-close-btn {
+    color: #721c24;
+}
+[data-theme="dark"] #global-message-area.message-error {
+    background-color: #5a1219; /* Gjorde den lite mörkare än #721c24 för bättre kontrast med vit text */
+    border-color: var(--danger-color); 
+    color: var(--text-color); /* ÄNDRAD TILL LJUS TEXT */
+}
+[data-theme="dark"] #global-message-area.message-error .global-message-close-btn {
+    color: var(--text-color); /* ÄNDRAD TILL LJUS TEXT */
+}
+
+/* Kritisk meddelandeområde (övre) – orange bakgrund, svart text */
+#global-critical-message-area.message-warning {
+    background-color: #FFE5CC;
+    border-color: #DC7D0A;
+    color: #000000;
+}
+#global-critical-message-area.message-warning .global-message-close-btn {
+    color: #000000;
+}
+[data-theme="dark"] #global-critical-message-area.message-warning {
+    background-color: #DC7D0A;
+    border-color: #E68A1A;
+    color: #000000;
+}
+[data-theme="dark"] #global-critical-message-area.message-warning .global-message-close-btn {
+    color: #000000;
+}
+
+/* Knappen i kritisk ruta – standardfärg (samma som övriga standardknappar) */
+#global-critical-message-area .global-message-action-btn.button {
+    background-color: var(--button-default-bg);
+    color: var(--button-default-text);
+    border-color: var(--button-default-border);
+}
+#global-critical-message-area .global-message-action-btn.button:hover,
+#global-critical-message-area .global-message-action-btn.button:focus {
+    background-color: var(--button-default-hover-bg);
+}

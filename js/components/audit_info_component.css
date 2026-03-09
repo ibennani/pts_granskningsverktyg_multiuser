@@ -1,0 +1,47 @@
+/* css/components/audit_info_component.css */
+
+.audit-info-panel .info-item {
+    margin-bottom: 0.8rem;
+    word-break: break-word;
+}
+
+/* ÄNDRING HÄR: Använder '>' för att bara styla <strong> som är ett direkt barn */
+.audit-info-panel .info-item > strong {
+    display: block;
+    color: var(--text-color);
+    font-weight: 500;
+    margin-bottom: 0.1rem;
+    font-size: 0.9em;
+}
+
+.audit-info-panel .info-item p.value,
+.audit-info-panel .info-item div.value { /* Inkluderar div.value för markdown */
+    margin: 0;
+    color: var(--text-color-muted);
+}
+
+.audit-info-panel .info-item .value.text-muted {
+    font-style: italic;
+}
+
+/* -- REGLER FÖR RUBRIK OCH REDIGERA-KNAPP -- */
+.audit-info-panel .panel-header-wrapper {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px dashed var(--secondary-color);
+}
+
+.audit-info-panel .panel-header-wrapper .dashboard-panel__title {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.audit-info-panel .edit-info-button {
+    flex-shrink: 0;
+}

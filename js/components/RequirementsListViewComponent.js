@@ -2,10 +2,12 @@ import { RequirementListToolbarComponent } from './RequirementListToolbarCompone
 import { get_searchable_text_for_requirement as get_searchable_text_util } from '../utils/requirement_search_utils.js';
 import { ProgressBarComponent } from './ProgressBarComponent.js';
 import { fingerprint_item_keys, can_incremental_update } from '../utils/incremental_list_update.js';
+import './all_requirements_view_component.css';
+import './requirement_list_component.css';
 
 export const RequirementsListViewComponent = {
-    CSS_PATH_ALL: 'css/components/all_requirements_view_component.css',
-    CSS_PATH_SAMPLE: 'css/components/requirement_list_component.css',
+    CSS_PATH_ALL: './all_requirements_view_component.css',
+    CSS_PATH_SAMPLE: './requirement_list_component.css',
 
     async init({ root, deps }) {
         this.root = root;

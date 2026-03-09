@@ -1,0 +1,9 @@
+/* css/components/save_audit_button_component.css */
+
+/* Om du behöver specifik styling för just denna knapp.
+   Annars kan den ärva globala .button stilar.
+   Exempel:
+.save-audit-button-component-wrapper .button {
+    margin-left: auto; // Om den ska vara högerjusterad i sin container
+}
+*/

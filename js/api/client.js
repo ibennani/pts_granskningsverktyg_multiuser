@@ -1,10 +1,38 @@
 // js/api/client.js
 
+const AUTH_TOKEN_KEY = 'gv_auth_token';
+
 export const get_base_url = () => {
     if (typeof window === 'undefined') return '/api';
     const base = window.__GV_API_BASE__ || '/v2/api';
     return base.replace(/\/$/, '');
 };
+
+export function get_auth_token() {
+    if (typeof window === 'undefined') return null;
+    return sessionStorage.getItem(AUTH_TOKEN_KEY);
+}
+
+export function set_auth_token(token) {
+    if (typeof window !== 'undefined' && token) {
+        sessionStorage.setItem(AUTH_TOKEN_KEY, token);
+    }
+}
+
+export function clear_auth_token() {
+    if (typeof window !== 'undefined') {
+        sessionStorage.removeItem(AUTH_TOKEN_KEY);
+    }
+}
+
+export function get_auth_headers() {
+    const headers = { 'Content-Type': 'application/json' };
+    const token = typeof window !== 'undefined' ? get_auth_token() : null;
+    if (token) {
+        headers.Authorization = `Bearer ${token}`;
+    }
+    return headers;
+}
 
 /**
  * Returnerar WebSocket-URL för realtidssynkronisering.
@@ -22,10 +50,7 @@ export function get_websocket_url() {
 export async function api_get(path) {
     const res = await fetch(`${get_base_url()}${path}`, {
         cache: 'no-store',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-User-Name': window.__GV_CURRENT_USER_NAME__ || ''
-        }
+        headers: get_auth_headers()
     });
     if (!res.ok) {
         const err = await res.json().catch(() => ({ error: res.statusText }));
@@ -37,10 +62,7 @@ export async function api_get(path) {
 export async function api_post(path, body) {
     const res = await fetch(`${get_base_url()}${path}`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-User-Name': window.__GV_CURRENT_USER_NAME__ || ''
-        },
+        headers: get_auth_headers(),
         body: JSON.stringify(body)
     });
     if (!res.ok) {
@@ -56,10 +78,7 @@ export async function api_post(path, body) {
 export async function api_put(path, body) {
     const res = await fetch(`${get_base_url()}${path}`, {
         method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-User-Name': window.__GV_CURRENT_USER_NAME__ || ''
-        },
+        headers: get_auth_headers(),
         body: JSON.stringify(body)
     });
     if (!res.ok) {
@@ -73,10 +92,7 @@ export async function api_put(path, body) {
 export async function api_delete(path) {
     const res = await fetch(`${get_base_url()}${path}`, {
         method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-User-Name': window.__GV_CURRENT_USER_NAME__ || ''
-        }
+        headers: get_auth_headers()
     });
     if (!res.ok) {
         const err = await res.json().catch(() => ({ error: res.statusText }));
@@ -93,10 +109,7 @@ export async function api_delete(path) {
 export async function api_patch(path, body) {
     const res = await fetch(`${get_base_url()}${path}`, {
         method: 'PATCH',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-User-Name': window.__GV_CURRENT_USER_NAME__ || ''
-        },
+        headers: get_auth_headers(),
         body: JSON.stringify(body)
     });
     if (!res.ok) {
@@ -104,6 +117,21 @@ export async function api_patch(path, body) {
         throw new Error(err.error || `HTTP ${res.status}`);
     }
     return res.json();
+}
+
+export async function login(name, password) {
+    const res = await fetch(`${get_base_url()}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, password })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+        const e = new Error(data.error || 'Inloggning misslyckades');
+        e.status = res.status;
+        throw e;
+    }
+    return data;
 }
 
 export async function get_users() {

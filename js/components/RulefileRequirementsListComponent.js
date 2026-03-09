@@ -3,9 +3,10 @@ import { RequirementListToolbarComponent } from './RequirementListToolbarCompone
 import { get_searchable_text_for_requirement } from '../utils/requirement_search_utils.js';
 import { show_confirm_delete_modal, build_delete_warning_text } from '../logic/confirm_delete_modal_logic.js';
 import { can_edit_rulefile } from '../utils/helpers.js';
+import './rulefile_requirements_list_component.css';
 
 export const RulefileRequirementsListComponent = {
-    CSS_PATH: 'css/components/rulefile_requirements_list_component.css',
+    CSS_PATH: './rulefile_requirements_list_component.css',
     RETURN_FOCUS_SESSION_KEY: 'gv_return_focus_rulefile_requirements_list_v1',
     SORT_OPTIONS: [
         { value: 'ref_asc', textKey: 'sort_option_ref_asc_natural' },

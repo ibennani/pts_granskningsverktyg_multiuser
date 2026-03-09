@@ -2,9 +2,10 @@
 
 import { marked, auto_convert_code_like_to_codeblocks } from '../utils/markdown.js';
 import { can_edit_rulefile } from '../utils/helpers.js';
+import './requirement_audit_component.css';
 
 export const ViewRulefileRequirementComponent = {
-    CSS_PATH: 'css/components/requirement_audit_component.css',
+    CSS_PATH: './requirement_audit_component.css',
 
     async init({ root, deps }) {
         this.root = root;

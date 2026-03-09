@@ -1,13 +1,14 @@
 // js/components/StartViewComponent.js
 
 import { check_api_available, get_audits } from '../api/client.js';
+import './start_view_component.css';
 import { GenericTableComponent } from './GenericTableComponent.js';
 import { create_audit_table_columns } from '../utils/audit_table_columns.js';
 import { open_audit_by_id, download_audit_by_id } from '../logic/audit_open_logic.js';
 import { subscribe_audits } from '../logic/list_push_service.js';
 
 export const StartViewComponent = {
-    CSS_PATH: './css/components/start_view_component.css',
+    CSS_PATH: './start_view_component.css',
 
     async init({ root, deps }) {
         this.root = root;

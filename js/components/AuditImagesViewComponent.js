@@ -1,7 +1,8 @@
 import { get_current_user_name } from '../utils/helpers.js';
+import './audit_images_view_component.css';
 
 export const AuditImagesViewComponent = {
-    CSS_PATH: 'css/components/audit_images_view_component.css',
+    CSS_PATH: './audit_images_view_component.css',
 
     async init({ root, deps }) {
         this.root = root;

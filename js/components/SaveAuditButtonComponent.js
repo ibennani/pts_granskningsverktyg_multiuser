@@ -1,6 +1,8 @@
+import './save_audit_button_component.css';
+
 export class SaveAuditButtonComponent {
     constructor() {
-        this.CSS_PATH = 'css/components/save_audit_button_component.css';
+        this.CSS_PATH = './save_audit_button_component.css';
         this.root = null;
         this.deps = null;
         this.Helpers = null;

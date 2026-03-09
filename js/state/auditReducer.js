@@ -1,0 +1,341 @@
+// js/state/auditReducer.js
+import * as AuditLogic from '../audit_logic.js';
+import { get_current_user_name } from '../utils/helpers.js';
+import { ActionTypes } from './actionTypes.js';
+import { initial_state, APP_STATE_VERSION } from './initialState.js';
+
+function get_current_iso_datetime_utc_internal() {
+    return new Date().toISOString();
+}
+
+export function auditReducer(current_state, action) {
+    let new_state;
+
+    switch (action.type) {
+        case ActionTypes.DELETE_CHECK_FROM_REQUIREMENT: {
+            const { requirementId: reqIdForCheck, checkId } = action.payload;
+            if (!current_state.ruleFileContent || !current_state.ruleFileContent.requirements) {
+                if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[State] Cannot delete check: ruleFileContent or requirements is null/undefined');
+                return current_state;
+            }
+            const reqToUpdateCheck = current_state.ruleFileContent.requirements[reqIdForCheck];
+            if (reqToUpdateCheck) {
+                const updatedChecks = reqToUpdateCheck.checks.filter(c => c.id !== checkId);
+                const updatedReq = { ...reqToUpdateCheck, checks: updatedChecks };
+                const newRequirements = { ...current_state.ruleFileContent.requirements, [reqIdForCheck]: updatedReq };
+                return { ...current_state, ruleFileContent: { ...current_state.ruleFileContent, requirements: newRequirements } };
+            }
+            return current_state;
+        }
+        case ActionTypes.DELETE_CRITERION_FROM_CHECK: {
+            const { requirementId: reqIdForPc, checkId: checkIdForPc, passCriterionId } = action.payload;
+            if (!current_state.ruleFileContent || !current_state.ruleFileContent.requirements) {
+                if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[State] Cannot delete criterion: ruleFileContent or requirements is null/undefined');
+                return current_state;
+            }
+            const reqToUpdatePc = current_state.ruleFileContent.requirements[reqIdForPc];
+            if (reqToUpdatePc) {
+                const updatedChecksForPc = reqToUpdatePc.checks.map(c => {
+                    if (c.id === checkIdForPc) {
+                        const updatedPassCriteria = c.passCriteria.filter(pc => pc.id !== passCriterionId);
+                        return { ...c, passCriteria: updatedPassCriteria };
+                    }
+                    return c;
+                });
+                const updatedReqForPc = { ...reqToUpdatePc, checks: updatedChecksForPc };
+                const newRequirementsForPc = { ...current_state.ruleFileContent.requirements, [reqIdForPc]: updatedReqForPc };
+                return { ...current_state, ruleFileContent: { ...current_state.ruleFileContent, requirements: newRequirementsForPc } };
+            }
+            return current_state;
+        }
+        case ActionTypes.UPDATE_REQUIREMENT_DEFINITION: {
+            const { requirementId: updateReqId, updatedRequirementData } = action.payload;
+            if (current_state.ruleFileContent?.requirements?.[updateReqId]) {
+                const newRequirements = {
+                    ...current_state.ruleFileContent.requirements,
+                    [updateReqId]: updatedRequirementData
+                };
+                return {
+                    ...current_state,
+                    ruleFileContent: {
+                        ...current_state.ruleFileContent,
+                        requirements: newRequirements
+                    }
+                };
+            }
+            return current_state;
+        }
+        case ActionTypes.ADD_REQUIREMENT_DEFINITION: {
+            const { requirementId: addReqId, newRequirementData } = action.payload;
+            if (current_state.ruleFileContent?.requirements && newRequirementData) {
+                const newRequirements = {
+                    ...current_state.ruleFileContent.requirements,
+                    [addReqId]: newRequirementData
+                };
+                return {
+                    ...current_state,
+                    ruleFileContent: {
+                        ...current_state.ruleFileContent,
+                        requirements: newRequirements
+                    }
+                };
+            }
+            return current_state;
+        }
+        case ActionTypes.DELETE_REQUIREMENT_DEFINITION: {
+            const { requirementId: deleteReqId } = action.payload;
+            if (!current_state.ruleFileContent || !current_state.ruleFileContent.requirements) {
+                if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[State] Cannot delete requirement: ruleFileContent or requirements is null/undefined');
+                return current_state;
+            }
+            const newRequirementsAfterDelete = { ...current_state.ruleFileContent.requirements };
+            delete newRequirementsAfterDelete[deleteReqId];
+            const updatedSamples = current_state.samples.map(sample => {
+                if (sample.requirementResults && sample.requirementResults[deleteReqId]) {
+                    const newResults = { ...sample.requirementResults };
+                    delete newResults[deleteReqId];
+                    return { ...sample, requirementResults: newResults };
+                }
+                return sample;
+            });
+            return {
+                ...current_state,
+                samples: updatedSamples,
+                ruleFileContent: {
+                    ...current_state.ruleFileContent,
+                    requirements: newRequirementsAfterDelete
+                }
+            };
+        }
+        case ActionTypes.CONFIRM_SINGLE_REVIEWED_REQUIREMENT: {
+            const { sampleId, requirementId } = action.payload;
+            const new_update_details = { ...(current_state.requirementUpdateDetails || {}) };
+            delete new_update_details[requirementId];
+            return {
+                ...current_state,
+                requirementUpdateDetails: new_update_details,
+                samples: current_state.samples.map(sample => {
+                    if (sample.id === sampleId && sample.requirementResults?.[requirementId]?.needsReview) {
+                        const newResults = { ...sample.requirementResults };
+                        const newReqResult = { ...newResults[requirementId] };
+                        delete newReqResult.needsReview;
+                        newResults[requirementId] = newReqResult;
+                        return { ...sample, requirementResults: newResults };
+                    }
+                    return sample;
+                })
+            };
+        }
+        case ActionTypes.CONFIRM_ALL_REVIEWED_REQUIREMENTS:
+            return {
+                ...current_state,
+                requirementUpdateDetails: {},
+                samples: current_state.samples.map(sample => {
+                    const newResults = {};
+                    let hasChanged = false;
+                    Object.keys(sample.requirementResults || {}).forEach(reqId => {
+                        const originalResult = sample.requirementResults[reqId];
+                        if (originalResult?.needsReview) {
+                            hasChanged = true;
+                            newResults[reqId] = { ...originalResult };
+                            delete newResults[reqId].needsReview;
+                        } else {
+                            newResults[reqId] = originalResult;
+                        }
+                    });
+                    return hasChanged ? { ...sample, requirementResults: newResults } : sample;
+                })
+            };
+        case ActionTypes.MARK_ALL_UNREVIEWED_AS_PASSED: {
+            if (!current_state.ruleFileContent?.requirements || !current_state.samples?.length) {
+                return current_state;
+            }
+            const timestamp = get_current_iso_datetime_utc_internal();
+            const new_samples = current_state.samples.map(sample => {
+                const relevant_reqs = AuditLogic.get_relevant_requirements_for_sample(current_state.ruleFileContent, sample);
+                const new_results = { ...(sample.requirementResults || {}) };
+                let has_changed = false;
+                relevant_reqs.forEach(req_def => {
+                    const req_key = req_def.key || req_def.id;
+                    const existing = new_results[req_key];
+                    const status = AuditLogic.calculate_requirement_status(req_def, existing);
+                    if (status === 'not_audited' || status === 'partially_audited') {
+                        new_results[req_key] = AuditLogic.build_not_applicable_requirement_result(req_def, existing, timestamp, get_current_user_name());
+                        has_changed = true;
+                    }
+                });
+                return has_changed ? { ...sample, requirementResults: new_results } : sample;
+            });
+            new_state = { ...current_state, samples: new_samples };
+            new_state = AuditLogic.recalculateAuditTimes(new_state);
+            return AuditLogic.updateIncrementalDeficiencyIds(new_state);
+        }
+        case ActionTypes.MARK_REQUIREMENT_AS_PASSED_IN_ALL_SAMPLES: {
+            const requirement_id = action.payload?.requirementId;
+            if (!requirement_id || !current_state.ruleFileContent?.requirements || !current_state.samples?.length) {
+                return current_state;
+            }
+            const timestamp = get_current_iso_datetime_utc_internal();
+            const new_samples = current_state.samples.map(sample => {
+                const relevant_reqs = AuditLogic.get_relevant_requirements_for_sample(current_state.ruleFileContent, sample);
+                const req_def = relevant_reqs.find(r => (r.key || r.id) === requirement_id);
+                if (!req_def) return sample;
+                const req_key = req_def.key || req_def.id;
+                const existing = (sample.requirementResults || {})[req_key];
+                const status = AuditLogic.calculate_requirement_status(req_def, existing);
+                if (status !== 'not_audited' && status !== 'partially_audited') return sample;
+                const new_results = { ...(sample.requirementResults || {}) };
+                new_results[req_key] = AuditLogic.build_not_applicable_requirement_result(req_def, existing, timestamp, get_current_user_name());
+                return { ...sample, requirementResults: new_results };
+            });
+            new_state = { ...current_state, samples: new_samples };
+            new_state = AuditLogic.recalculateAuditTimes(new_state);
+            return AuditLogic.updateIncrementalDeficiencyIds(new_state);
+        }
+        case ActionTypes.STAGE_SAMPLE_CHANGES:
+            return { ...current_state, pendingSampleChanges: action.payload };
+        case ActionTypes.CLEAR_STAGED_SAMPLE_CHANGES:
+            return { ...current_state, pendingSampleChanges: null };
+        case ActionTypes.INITIALIZE_NEW_AUDIT:
+            return {
+                ...initial_state,
+                saveFileVersion: APP_STATE_VERSION,
+                ruleFileContent: action.payload.ruleFileContent,
+                auditMetadata: {
+                    caseNumber: '', actorName: '', actorLink: '', auditorName: '', caseHandler: '', internalComment: ''
+                },
+                uiSettings: JSON.parse(JSON.stringify(initial_state.uiSettings)),
+                auditStatus: 'not_started'
+            };
+        case ActionTypes.INITIALIZE_RULEFILE_EDITING:
+            return {
+                ...initial_state,
+                saveFileVersion: APP_STATE_VERSION,
+                ruleFileContent: action.payload.ruleFileContent,
+                ruleFileIsPublished: action.payload.ruleFileIsPublished ?? false,
+                uiSettings: JSON.parse(JSON.stringify(initial_state.uiSettings)),
+                auditStatus: 'rulefile_editing',
+                ruleFileOriginalContentString: action.payload.originalRuleFileContentString || null,
+                ruleFileOriginalFilename: action.payload.originalRuleFileFilename || '',
+                ruleSetId: action.payload.ruleSetId ?? null,
+                ruleFileServerVersion: action.payload.ruleFileServerVersion ?? 0
+            };
+        case ActionTypes.LOAD_AUDIT_FROM_FILE:
+            if (action.payload && typeof action.payload === 'object') {
+                const loaded_data = action.payload;
+                const new_state_base = JSON.parse(JSON.stringify(initial_state));
+                let merged_state = {
+                    ...new_state_base,
+                    ...loaded_data,
+                    uiSettings: { ...new_state_base.uiSettings, ...(loaded_data.uiSettings || {}) },
+                    saveFileVersion: APP_STATE_VERSION
+                };
+                if (!Array.isArray(merged_state.archivedRequirementResults)) {
+                    merged_state.archivedRequirementResults = [];
+                }
+                (merged_state.samples || []).forEach(sample => {
+                    Object.values(sample.requirementResults || {}).forEach(reqResult => {
+                        Object.values(reqResult.checkResults || {}).forEach(checkResult => {
+                            if (checkResult.passCriteria) {
+                                Object.keys(checkResult.passCriteria).forEach(pcId => {
+                                    const pcValue = checkResult.passCriteria[pcId];
+                                    if (typeof pcValue === 'string') {
+                                        checkResult.passCriteria[pcId] = {
+                                            status: pcValue,
+                                            observationDetail: '',
+                                            timestamp: merged_state.startTime || null,
+                                            attachedMediaFilenames: []
+                                        };
+                                    } else if (typeof pcValue === 'object' && pcValue !== null && !Array.isArray(pcValue.attachedMediaFilenames)) {
+                                        pcValue.attachedMediaFilenames = [];
+                                    }
+                                });
+                            }
+                        });
+                        const stuck_parts = [];
+                        Object.values(reqResult.checkResults || {}).forEach(checkResult => {
+                            Object.values(checkResult.passCriteria || {}).forEach(pcResult => {
+                                const s = (pcResult?.stuckProblemDescription || '').trim();
+                                if (s) stuck_parts.push(s);
+                                if (pcResult && typeof pcResult === 'object') delete pcResult.stuckProblemDescription;
+                            });
+                        });
+                        if (stuck_parts.length > 0) reqResult.stuckProblemDescription = stuck_parts.join('\n\n');
+                        if (typeof reqResult.stuckProblemDescription !== 'string') reqResult.stuckProblemDescription = '';
+                    });
+                });
+                if (!merged_state.deficiencyCounter) merged_state.deficiencyCounter = 1;
+                merged_state = AuditLogic.recalculateAuditTimes(merged_state);
+                merged_state.manageUsersText = current_state.manageUsersText ?? '';
+                return AuditLogic.recalculateStatusesOnLoad(merged_state);
+            }
+            if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[State] LOAD_AUDIT_FROM_FILE: Invalid payload.', action.payload);
+            return current_state;
+        case ActionTypes.UPDATE_METADATA:
+            return { ...current_state, auditMetadata: { ...current_state.auditMetadata, ...action.payload } };
+        case ActionTypes.ADD_SAMPLE: {
+            const new_sample_with_defaults = { sampleCategory: '', sampleType: '', ...action.payload };
+            return { ...current_state, samples: [...current_state.samples, new_sample_with_defaults] };
+        }
+        case ActionTypes.UPDATE_SAMPLE:
+            return {
+                ...current_state,
+                samples: current_state.samples.map(s => s.id === action.payload.sampleId ? { ...s, ...action.payload.updatedSampleData } : s)
+            };
+        case ActionTypes.DELETE_SAMPLE:
+            new_state = { ...current_state, samples: current_state.samples.filter(s => s.id !== action.payload.sampleId) };
+            return AuditLogic.updateIncrementalDeficiencyIds(new_state);
+        case ActionTypes.UPDATE_REQUIREMENT_RESULT: {
+            const { sampleId: updateSampleId, requirementId: updateRequirementId, newRequirementResult } = action.payload;
+            const result_to_save = { ...newRequirementResult };
+            new_state = {
+                ...current_state,
+                samples: current_state.samples.map(sample =>
+                    (sample.id === updateSampleId)
+                        ? { ...sample, requirementResults: { ...(sample.requirementResults || {}), [updateRequirementId]: result_to_save } }
+                        : sample
+                )
+            };
+            new_state = AuditLogic.recalculateAuditTimes(new_state);
+            return AuditLogic.updateIncrementalDeficiencyIds(new_state);
+        }
+        case ActionTypes.SET_AUDIT_STATUS: {
+            const newStatus = action.payload.status;
+            let state_before_status_change = current_state;
+            if (newStatus === 'locked' && current_state.auditStatus === 'in_progress') {
+                if (current_state.deficiencyCounter === 1) {
+                    state_before_status_change = AuditLogic.assignSortedDeficiencyIdsOnLock(current_state);
+                }
+                state_before_status_change = AuditLogic.recalculateAuditTimes(state_before_status_change);
+                if (!state_before_status_change.endTime) {
+                    state_before_status_change = { ...state_before_status_change, endTime: get_current_iso_datetime_utc_internal() };
+                }
+            } else if (newStatus === 'in_progress' && current_state.auditStatus === 'locked') {
+                state_before_status_change = AuditLogic.removeAllDeficiencyIds(current_state);
+                state_before_status_change = { ...AuditLogic.recalculateAuditTimes(state_before_status_change), endTime: null };
+            } else if (newStatus === 'in_progress' && current_state.auditStatus === 'not_started') {
+                state_before_status_change = AuditLogic.removeAllDeficiencyIds(current_state);
+                state_before_status_change = AuditLogic.recalculateAuditTimes(state_before_status_change);
+            }
+            return { ...state_before_status_change, auditStatus: newStatus };
+        }
+        case ActionTypes.SET_REMOTE_AUDIT_ID:
+            return {
+                ...current_state,
+                auditId: action.payload.auditId,
+                ruleSetId: action.payload.ruleSetId ?? current_state.ruleSetId,
+                version: action.payload.version ?? current_state.version
+            };
+        case ActionTypes.REPLACE_STATE_FROM_REMOTE: {
+            const remote = action.payload;
+            if (!remote || typeof remote !== 'object') return current_state;
+            return {
+                ...remote,
+                uiSettings: current_state.uiSettings || remote.uiSettings || {},
+                manageUsersText: current_state.manageUsersText ?? ''
+            };
+        }
+        default:
+            return current_state;
+    }
+}

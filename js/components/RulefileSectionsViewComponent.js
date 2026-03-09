@@ -1,12 +1,13 @@
 // js/components/RulefileSectionsViewComponent.js
 
 import { can_edit_rulefile } from '../utils/helpers.js';
+import './rulefile_sections_view.css';
 
 let _last_section_id = null;
 let _last_is_editing = null;
 
 export const RulefileSectionsViewComponent = {
-    CSS_PATH: 'css/components/rulefile_sections_view.css',
+    CSS_PATH: './rulefile_sections_view.css',
 
     async init({ root, deps }) {
         this.root = root;

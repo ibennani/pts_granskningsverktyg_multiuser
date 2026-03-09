@@ -1,4 +1,4 @@
-import "../../css/components/score_analysis_component.css";
+import "./score_analysis_component.css";
 
 export const ScoreAnalysisComponent = {
     init({ root, deps }) {

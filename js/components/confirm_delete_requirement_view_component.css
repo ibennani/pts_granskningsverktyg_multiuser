@@ -1,0 +1,22 @@
+/* css/components/confirm_delete_requirement_view_component.css */
+
+.warning-box {
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+    border: 2px solid var(--danger-color);
+    border-radius: var(--border-radius);
+    background-color: var(--danger-color-light);
+}
+
+.warning-box p {
+    color: var(--button-danger-text);
+    line-height: 1.7;
+}
+
+[data-theme="dark"] .warning-box p {
+    color: var(--text-color);
+}
+
+.warning-box strong {
+    font-weight: 700;
+}

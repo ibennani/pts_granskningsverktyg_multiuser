@@ -1,0 +1,178 @@
+/* css/components/generic_table_component.css */
+/* Generell tabell – återanvänds i startvy, audit-vy m.fl. */
+
+.generic-table-wrapper {
+    overflow-x: auto;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    background-color: var(--input-background-color);
+    box-shadow: none;
+}
+
+.generic-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: none;
+    box-shadow: none;
+}
+
+.generic-table th,
+.generic-table td {
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    border: none;
+    vertical-align: middle;
+    font-size: 0.875rem;
+}
+
+.generic-table th {
+    font-weight: 600;
+    white-space: nowrap;
+    font-size: 0.75rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--text-color-muted);
+}
+
+.generic-table thead tr {
+    background: linear-gradient(135deg, color-mix(in srgb, var(--primary-color) 8%, var(--input-background-color)), color-mix(in srgb, var(--primary-color) 4%, var(--input-background-color)));
+    border-bottom: 2px solid color-mix(in srgb, var(--border-color) 50%, transparent);
+}
+
+.generic-table thead th {
+    padding: 0.5rem 0.75rem;
+}
+
+.generic-table-header-sort-btn {
+    appearance: none;
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    font-weight: 600;
+    white-space: nowrap;
+    font-size: 0.75rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--text-color-muted);
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.generic-table-header-sort-btn:hover {
+    color: var(--primary-color);
+}
+
+.generic-table-header-sort-btn:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+.generic-table-header-sort-btn::after {
+    content: '';
+    display: inline-block;
+    width: 0.4em;
+    height: 0.4em;
+    margin-left: 0.2rem;
+    opacity: 0.5;
+    border: solid currentColor;
+    border-width: 0 1px 1px 0;
+    transform: rotate(225deg);
+}
+
+.generic-table thead th[aria-sort="ascending"] .generic-table-header-sort-btn::after {
+    transform: rotate(45deg);
+    opacity: 1;
+}
+
+.generic-table thead th[aria-sort="descending"] .generic-table-header-sort-btn::after {
+    transform: rotate(225deg);
+    opacity: 1;
+}
+
+.generic-table tbody tr {
+    border-bottom: 1px solid color-mix(in srgb, var(--border-color) 35%, transparent);
+    transition: background-color 0.2s ease;
+}
+
+.generic-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.generic-table tbody tr:hover {
+    background-color: color-mix(in srgb, var(--primary-color) 6%, var(--input-background-color));
+}
+
+.generic-table td.generic-table-col-actions {
+    min-width: 0;
+    width: 1%;
+    white-space: nowrap;
+    text-align: right;
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+}
+
+.generic-table td.generic-table-col-actions:last-child {
+    padding-right: 0.5rem;
+}
+
+.generic-table .generic-table-action-cell {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.25rem;
+    flex-wrap: nowrap;
+}
+
+.generic-table .generic-table-action-cell .button {
+    white-space: nowrap;
+}
+
+/* Variant: granskningslistan (kolumnbredder + länk/knapp-stilar) */
+.generic-table--audit-list th:nth-child(1),
+.generic-table--audit-list td:nth-child(1) { min-width: 6rem; }
+.generic-table--audit-list th:nth-child(2),
+.generic-table--audit-list td:nth-child(2) { min-width: 9rem; }
+.generic-table--audit-list th:nth-child(3),
+.generic-table--audit-list td:nth-child(3) { min-width: 5.5rem; }
+.generic-table--audit-list th:nth-child(4),
+.generic-table--audit-list td:nth-child(4) { min-width: 4rem; }
+.generic-table--audit-list th:nth-child(5),
+.generic-table--audit-list td:nth-child(5) { min-width: 4rem; }
+.generic-table--audit-list th:nth-child(6),
+.generic-table--audit-list td:nth-child(6) { min-width: 6rem; }
+
+.generic-table--audit-list td:nth-child(2) {
+    font-weight: 500;
+}
+
+.generic-table--audit-list .generic-table-audit-link {
+    color: var(--link-color);
+    text-decoration: underline;
+    transition: color 0.2s ease;
+}
+
+.generic-table--audit-list .generic-table-audit-link:hover {
+    text-decoration: underline;
+    color: var(--link-hover-color);
+}
+
+.generic-table--audit-list .generic-table-download-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    white-space: nowrap;
+}
+
+.generic-table--audit-list .generic-table-download-btn > span {
+    white-space: nowrap;
+}
+
+[data-theme="dark"] .generic-table thead tr {
+    background: linear-gradient(135deg, color-mix(in srgb, var(--primary-color) 15%, var(--input-background-color)), color-mix(in srgb, var(--primary-color) 8%, var(--input-background-color)));
+}

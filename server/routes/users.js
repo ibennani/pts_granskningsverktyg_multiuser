@@ -1,18 +1,17 @@
 // server/routes/users.js
 import express from 'express';
+import bcrypt from 'bcrypt';
 import { query } from '../db.js';
+import { requireAdmin } from '../auth/middleware.js';
 
 const router = express.Router();
 
 router.get('/me', async (req, res) => {
     try {
-        const user_name = req.headers['x-user-name'] || '';
-        if (!user_name.trim()) {
-            return res.status(401).json({ error: 'Användarnamn krävs (X-User-Name)' });
-        }
+        const user = req.user;
         const result = await query(
-            'SELECT id, name, is_admin, language_preference, theme_preference, review_sort_preference, created_at FROM users WHERE name = $1 LIMIT 1',
-            [user_name.trim()]
+            'SELECT id, name, is_admin, language_preference, theme_preference, review_sort_preference, created_at FROM users WHERE id = $1 LIMIT 1',
+            [user.id]
         );
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Användare hittades inte' });
@@ -26,10 +25,7 @@ router.get('/me', async (req, res) => {
 
 router.patch('/me', async (req, res) => {
     try {
-        const user_name = req.headers['x-user-name'] || '';
-        if (!user_name.trim()) {
-            return res.status(401).json({ error: 'Användarnamn krävs (X-User-Name)' });
-        }
+        const user = req.user;
         const { language_preference, theme_preference, review_sort_preference } = req.body;
         const updates = [];
         const values = [];
@@ -51,9 +47,9 @@ router.patch('/me', async (req, res) => {
         if (updates.length === 0) {
             return res.status(400).json({ error: 'Ingen data att uppdatera' });
         }
-        values.push(user_name.trim());
+        values.push(user.id);
         const result = await query(
-            `UPDATE users SET ${updates.join(', ')} WHERE name = $${i} RETURNING id, name, language_preference, theme_preference, review_sort_preference`,
+            `UPDATE users SET ${updates.join(', ')} WHERE id = $${i} RETURNING id, name, language_preference, theme_preference, review_sort_preference`,
             values
         );
         if (result.rows.length === 0) {
@@ -76,15 +72,19 @@ router.get('/', async (_req, res) => {
     }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', requireAdmin, async (req, res) => {
     try {
-        const { name } = req.body;
+        const { name, password } = req.body;
         if (!name || typeof name !== 'string' || !name.trim()) {
             return res.status(400).json({ error: 'Namn krävs' });
         }
+        let password_hash = null;
+        if (password != null && typeof password === 'string' && password.trim() !== '') {
+            password_hash = await bcrypt.hash(password.trim(), 10);
+        }
         const result = await query(
-            'INSERT INTO users (name) VALUES ($1) RETURNING id, name, is_admin, created_at',
-            [name.trim()]
+            'INSERT INTO users (name, password) VALUES ($1, $2) RETURNING id, name, is_admin, created_at',
+            [name.trim(), password_hash]
         );
         res.status(201).json(result.rows[0]);
     } catch (err) {
@@ -93,7 +93,29 @@ router.post('/', async (req, res) => {
     }
 });
 
-router.delete('/:id', async (req, res) => {
+router.put('/:id/password', requireAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { password } = req.body;
+        if (!password || typeof password !== 'string' || password.trim() === '') {
+            return res.status(400).json({ error: 'Lösenord krävs' });
+        }
+        const hash = await bcrypt.hash(password.trim(), 10);
+        const result = await query(
+            'UPDATE users SET password = $1 WHERE id = $2 RETURNING id, name, is_admin, created_at',
+            [hash, id]
+        );
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Användare hittades inte' });
+        }
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error('[users] PUT password error:', err);
+        res.status(500).json({ error: 'Kunde inte uppdatera lösenord' });
+    }
+});
+
+router.delete('/:id', requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const result = await query('DELETE FROM users WHERE id = $1 RETURNING id', [id]);

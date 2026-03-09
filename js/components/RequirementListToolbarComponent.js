@@ -1,5 +1,5 @@
 import { FilterPanelComponent } from './FilterPanelComponent.js';
-import "../../css/components/requirement_list_toolbar_component.css";
+import "./requirement_list_toolbar_component.css";
 
 export const RequirementListToolbarComponent = {
     async init({ root, deps }) {

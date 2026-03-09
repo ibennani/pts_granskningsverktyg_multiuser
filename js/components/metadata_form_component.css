@@ -1,0 +1,65 @@
+/* Styles for the reusable MetadataFormComponent */
+
+/* Innehåller nu stylingen som tidigare låg i metadata_view_component.css */
+/* Notera: .metadata-view-plate har bytts ut mot en mer generell .metadata-form-plate */
+
+.metadata-form-plate {
+    background-color: var(--plate-background-color);
+    padding: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    /* Skugga hanteras av global CSS för .content-plate */
+}
+
+.metadata-form-plate h1 {
+    margin-bottom: 0.5rem;
+}
+
+.metadata-form-plate .view-intro-text {
+    margin-bottom: 0.75rem;
+    font-size: 0.9rem;
+    color: var(--text-color-muted);
+}
+
+.metadata-form-container .form-group {
+    margin-top: 1rem;
+    margin-bottom: 0;
+}
+
+.metadata-form-container .form-group:first-of-type {
+    margin-top: 0;
+}
+
+.metadata-form-container .form-group label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 0.1rem;
+    font-size: 0.9rem;
+}
+
+.metadata-form-container .form-control {
+    border-width: 1px;
+    border-color: var(--border-color);
+    padding: 0.4rem 0.6rem;
+    background-color: var(--input-background-color);
+    color: var(--text-color);
+    font-size: 0.9rem;
+}
+
+
+[data-theme="dark"] .metadata-form-container .form-control {
+    border-color: var(--border-color);
+}
+
+/* Actions are now part of the form component itself */
+.metadata-form-container .form-actions {
+    margin-top: 1rem;
+    display: flex;
+    justify-content: flex-start;
+    gap: 0.75rem;
+}
+
+.metadata-form-container .form-actions .button {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.9rem;
+}

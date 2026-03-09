@@ -2,6 +2,7 @@
 import express from 'express';
 import { query } from '../db.js';
 import { broadcast } from '../ws.js';
+import { requireAdmin } from '../auth/middleware.js';
 
 const router = express.Router();
 
@@ -141,7 +142,7 @@ router.get('/:id/export', async (req, res) => {
     }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', requireAdmin, async (req, res) => {
     try {
         const { name, content } = req.body;
         if (!content || typeof content !== 'object') {
@@ -162,7 +163,7 @@ router.post('/', async (req, res) => {
     }
 });
 
-router.post('/import', async (req, res) => {
+router.post('/import', requireAdmin, async (req, res) => {
     try {
         const { name, content } = req.body;
         if (!content || typeof content !== 'object') {
@@ -191,7 +192,7 @@ router.post('/import', async (req, res) => {
     }
 });
 
-router.post('/production', async (req, res) => {
+router.post('/production', requireAdmin, async (req, res) => {
     try {
         const { name, content } = req.body;
         if (!content || typeof content !== 'object') {
@@ -212,7 +213,7 @@ router.post('/production', async (req, res) => {
     }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const countResult = await query(
@@ -238,7 +239,7 @@ router.delete('/:id', async (req, res) => {
     }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const { name, content } = req.body;
@@ -284,7 +285,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // Publicera en regelfil: kopiera nuvarande utkast (content) till published_content.
-router.post('/:id/publish', async (req, res) => {
+router.post('/:id/publish', requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const selectResult = await query('SELECT content, published_content, version FROM rule_sets WHERE id = $1', [id]);
@@ -319,7 +320,7 @@ router.post('/:id/publish', async (req, res) => {
 });
 
 // Skapa en produktionskopia av en regelfil.
-router.post('/:id/copy', async (req, res) => {
+router.post('/:id/copy', requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -371,7 +372,7 @@ router.post('/:id/copy', async (req, res) => {
 });
 
 // Publicera en produktionskopia tillbaka till sin basregelfil.
-router.post('/:id/publish_production', async (req, res) => {
+router.post('/:id/publish_production', requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const productionResult = await query('SELECT * FROM rule_sets WHERE id = $1', [id]);

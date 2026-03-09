@@ -1,3 +1,5 @@
+import './error_boundary_component.css';
+
 export const ErrorBoundaryComponent = {
     root: null,
     deps: {},
@@ -19,7 +21,7 @@ export const ErrorBoundaryComponent = {
 
     load_css() {
         if (this.css_loaded) return;
-        const css_path = 'css/components/error_boundary_component.css';
+        const css_path = './error_boundary_component.css';
         
         // Try to use helper if available
         if (this.deps.Helpers && typeof this.deps.Helpers.load_css === 'function') {

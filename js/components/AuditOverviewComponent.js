@@ -4,7 +4,7 @@ import { ProgressBarComponent } from './ProgressBarComponent.js';
 import { get_rules } from '../api/client.js';
 import { find_newer_rule_for_audit } from '../logic/newer_rule_check.js';
 import { version_greater_than } from '../utils/version_utils.js';
-import "../../css/components/audit_overview_component.css";
+import "./audit_overview_component.css";
 
 export const AuditOverviewComponent = {
     async init({ root, deps }) {

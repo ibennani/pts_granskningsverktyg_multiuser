@@ -1,7 +1,9 @@
 // js/components/RulefileMetadataViewComponent.js
 
+import './rulefile_metadata_view_component.css';
+
 export const RulefileMetadataViewComponent = {
-    CSS_PATH: 'css/components/rulefile_metadata_view_component.css',
+    CSS_PATH: './rulefile_metadata_view_component.css',
 
     async init({ root, deps }) {
         this.root = root;

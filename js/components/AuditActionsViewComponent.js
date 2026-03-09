@@ -2,9 +2,10 @@ import { get_rules, save_audit_backup_on_server } from '../api/client.js';
 import { subscribe_rules } from '../logic/list_push_service.js';
 import { version_greater_than } from '../utils/version_utils.js';
 import { find_newer_rule_for_audit } from '../logic/newer_rule_check.js';
+import './audit_actions_view_component.css';
 
 export const AuditActionsViewComponent = {
-    CSS_PATH: 'css/components/audit_actions_view_component.css',
+    CSS_PATH: './audit_actions_view_component.css',
 
     async init({ root, deps }) {
         this.root = root;

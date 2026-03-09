@@ -1,0 +1,494 @@
+/* css/components/rulefile_sections_view.css */
+
+.rulefile-sections-main-plate {
+    width: 100%;
+    max-width: 100%;
+}
+
+.rulefile-sections-layout {
+    display: flex;
+    gap: 2rem;
+    margin-top: 0.25rem;
+    width: 100%;
+}
+
+.rulefile-sections-menu {
+    flex: 0 0 200px;
+    padding-right: 2rem;
+    height: fit-content;
+    position: sticky;
+    top: 1rem;
+}
+
+.rulefile-sections-menu-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.rulefile-sections-menu-item {
+    margin-bottom: 0.75rem;
+}
+
+.rulefile-sections-menu-item a {
+    display: block;
+    padding: 0.25rem 0;
+    text-decoration: underline;
+    color: var(--text-color);
+    transition: color 0.2s;
+}
+
+.rulefile-sections-menu-item a:hover {
+    color: var(--primary-color);
+}
+
+.rulefile-sections-menu-item a.active {
+    color: var(--primary-color);
+    font-weight: 500;
+}
+
+.rulefile-sections-right-wrapper {
+    flex: 1;
+    min-width: 0;
+}
+
+.rulefile-sections-content-plate {
+    /* Content plate för högerinnehållet */
+    width: 100%;
+}
+
+.rulefile-sections-main-plate > .button {
+    margin-top: 2rem;
+}
+
+
+.rulefile-sections-header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-bottom: 1rem;
+}
+
+.rulefile-sections-header-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.rulefile-sections-header-row h1,
+.rulefile-sections-header-row h2 {
+    margin: 0;
+}
+
+.rulefile-sections-header h1,
+.rulefile-sections-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.rulefile-sections-header-intro {
+    margin: 0.25rem 0 0 0;
+    max-width: 50rem;
+    white-space: pre-line;
+}
+
+.rulefile-sections-edit-button {
+    flex-shrink: 0;
+}
+
+.rulefile-sections-add-button-wrapper {
+    margin-top: 1rem;
+}
+
+.rulefile-section-content {
+    line-height: 1.6;
+}
+
+/* Kompakt styling för Allmän information-redigeringsformuläret */
+.rulefile-section-edit-form-container .rulefile-metadata-edit-form {
+    gap: 0.75rem;
+}
+
+.rulefile-section-edit-form-container .form-section {
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+}
+
+.rulefile-section-edit-form-container .form-section h3 {
+    margin: 0 0 0.2rem 0;
+    font-size: 1.05rem;
+}
+
+.rulefile-section-edit-form-container .form-section + .form-section {
+    margin-top: 0;
+}
+
+.rulefile-section-edit-form-container .form-group {
+    gap: 0.2rem;
+}
+
+.rulefile-section-edit-form-container .form-control {
+    padding: 0.35rem 0.6rem;
+    font-size: 0.95rem;
+}
+
+.rulefile-section-edit-form-container textarea.form-control {
+    min-height: 4.5rem;
+}
+
+.rulefile-section-edit-form-container .metadata-edit-form-footer-actions {
+    margin-top: 0.5rem;
+    gap: 0.75rem;
+}
+
+/* Definition lists - förbättrad läsbarhet */
+.rulefile-section-content .metadata-definition-list {
+    margin: 0;
+    padding: 0;
+}
+
+.rulefile-section-content .metadata-definition-list dt {
+    font-weight: 600;
+    color: var(--text-color);
+    margin: 0.75rem 0 0.05rem 0;
+    font-size: 0.95rem;
+    letter-spacing: 0.01em;
+}
+
+.rulefile-section-content .metadata-definition-list dt:first-child {
+    margin-top: 0;
+}
+
+
+.rulefile-section-content .metadata-definition-list dd {
+    margin: 0 0 0.5rem 0;
+    padding-left: 0;
+    color: var(--text-color);
+    line-height: 1.5;
+    margin-top: 0;
+}
+
+.rulefile-section-content .metadata-definition-list dd:last-child {
+    margin-bottom: 0;
+}
+
+/* Listor */
+.rulefile-section-content .metadata-list,
+.rulefile-section-content .metadata-inline-list {
+    list-style: disc;
+    margin: 0.5rem 0 1rem 1.5rem;
+    padding: 0;
+    line-height: 1.5;
+}
+
+.rulefile-section-content .metadata-list li,
+.rulefile-section-content .metadata-inline-list li {
+    margin-bottom: 0.25rem;
+    padding-left: 0.25rem;
+}
+
+.rulefile-section-content .metadata-list li:last-child,
+.rulefile-section-content .metadata-inline-list li:last-child {
+    margin-bottom: 0;
+}
+
+.metadata-subsection {
+    margin-bottom: 1.25rem;
+}
+
+.metadata-subsection:first-of-type {
+    margin-top: 1.25rem;
+}
+
+.metadata-subsection:last-child {
+    margin-bottom: 0;
+}
+
+.metadata-subsection h2 {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+
+/* Visningsläge: kompakt numrerad lista (ol/li) */
+.info-blocks-order-list {
+    list-style-type: decimal;
+    padding-left: 1.5rem;
+    margin: 0;
+}
+
+.info-blocks-order-list li {
+    padding: 0.1rem 0;
+    line-height: 1.4;
+}
+
+.info-blocks-order-editor .button-small {
+    margin-bottom: 0.75rem;
+}
+
+.info-blocks-order-list-editable {
+    list-style: decimal;
+    padding-left: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.info-blocks-order-item {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--plate-background-color);
+}
+
+.info-blocks-order-item-moving {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.info-blocks-order-item-content {
+    display: grid;
+    grid-template-columns: minmax(14rem, 1fr) 8.5rem 8.5rem auto;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.info-blocks-order-input-wrapper {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.info-blocks-order-name-label {
+    flex-shrink: 0;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+.info-blocks-order-name-input {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+    padding: 0.35rem 0.5rem;
+    font-size: 0.9rem;
+    box-sizing: border-box;
+}
+
+.info-blocks-order-controls {
+    display: contents;
+}
+
+.info-blocks-order-btn-slot {
+    min-width: 8.5rem;
+    min-height: 2.25rem;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.info-blocks-order-controls .button {
+    flex-shrink: 0;
+}
+
+.report-sections-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.report-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.report-section-header h3 {
+    margin: 0;
+}
+
+.report-section-content {
+    margin-top: 0.75rem;
+    white-space: pre-wrap;
+    line-height: 1.7;
+    color: var(--text-color);
+}
+
+/* Förbättringar för metadata cards */
+.rulefile-section-content .metadata-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.25rem;
+    margin-top: 1rem;
+}
+
+.rulefile-section-content .metadata-card {
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 1.25rem;
+    background: var(--plate-background-color);
+    transition: box-shadow 0.2s, border-color 0.2s;
+}
+
+.rulefile-section-content .metadata-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border-color: var(--primary-color);
+}
+
+.rulefile-section-content .metadata-card h3 {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.rulefile-section-content .metadata-empty {
+    font-style: italic;
+    color: var(--text-color-muted);
+    padding: 1rem 0;
+}
+
+/* Styling för sidtyper */
+.page-types-list-heading {
+    margin: 0 0 0.25rem 0;
+}
+
+.page-types-list-intro {
+    margin: 0 0 2rem 0;
+}
+
+.rulefile-section-content .page-type-item {
+    margin-bottom: 2rem;
+}
+
+.rulefile-section-content .page-type-item:last-child {
+    margin-bottom: 0;
+}
+
+.rulefile-section-content .page-type-heading {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.rulefile-section-content .page-type-empty {
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+.rulefile-section-content .metadata-tag {
+    display: inline-block;
+    margin: 0.25rem 0.5rem 0.5rem 0;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    background: var(--primary-color);
+    color: #ffffff;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.rulefile-section-content .metadata-nested-list {
+    list-style: disc;
+    margin: 0.75rem 0 0.75rem 1.5rem;
+    padding: 0;
+    line-height: 1.8;
+}
+
+.rulefile-section-content .metadata-nested-list-child {
+    list-style: circle;
+    margin-top: 0.5rem;
+    margin-left: 1.5rem;
+}
+
+.rulefile-section-content .metadata-nested-list > li {
+    margin-bottom: 1rem;
+}
+
+.rulefile-section-content .metadata-nested-list-child > li {
+    margin-bottom: 0.5rem;
+}
+
+.rulefile-section-content .metadata-subject {
+    font-weight: 600;
+    display: block;
+    margin-bottom: 0.25rem;
+    color: var(--text-color);
+}
+
+.rulefile-section-content .metadata-description {
+    margin: 0.25rem 0 0.75rem 0;
+    color: var(--text-color-muted);
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+/* Förbättringar för länkar i innehållet */
+.rulefile-section-content a {
+    color: var(--link-color);
+    text-decoration: underline;
+    transition: color 0.2s;
+}
+
+.rulefile-section-content a:hover {
+    color: var(--link-hover-color);
+}
+
+/* Förbättringar för report sections */
+.rulefile-section-content .report-sections-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    margin-top: 1rem;
+}
+
+.rulefile-section-content .report-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.rulefile-section-content .report-section-header h3 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.rulefile-section-content .report-section-content {
+    margin-top: 0.75rem;
+    white-space: pre-wrap;
+    line-height: 1.7;
+    color: var(--text-color);
+    padding: 0.75rem 0;
+}
+
+/* Responsive design – menyn ovanför innehållet vid skärmar under 1200 px */
+@media (max-width: 1199px) {
+    .rulefile-sections-layout {
+        flex-direction: column;
+    }
+
+    .rulefile-sections-menu {
+        position: static;
+        flex: none;
+    }
+
+    .rulefile-sections-right-wrapper {
+        flex: none;
+    }
+
+}

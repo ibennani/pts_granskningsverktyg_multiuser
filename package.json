@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently -k -n \"DOCKER,NGROK,APP,BUILDINFO\" -c \"blue,green,magenta,cyan\" \"node scripts/dev-with-docker.js\" \"npm run ngrok\" \"vite\" \"node scripts/dev-build-info-watcher.js\"",
-    "ngrok": "taskkill /f /im ngrok.exe 2>nul & ngrok http --url=irreproachable-eun-refractorily.ngrok-free.dev 11434",
+    "ngrok": "taskkill /f /im ngrok.exe 2>nul & node scripts/ngrok.js",
     "vibe": "npm run dev",
     "dev:client": "vite",
     "dev:db": "docker compose -p sessionversion up -d --wait",
@@ -32,10 +32,12 @@
   },
   "dependencies": {
     "@fontsource/roboto": "^5.2.10",
+    "bcrypt": "^6.0.0",
     "docx": "^9.6.0",
     "dotenv": "^16.6.1",
     "exceljs": "^4.4.0",
     "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
     "marked": "^16.3.0",
     "node-cron": "^4.2.1",
     "node-ssh": "^13.2.1",

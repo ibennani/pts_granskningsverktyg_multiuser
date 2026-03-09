@@ -1,5 +1,5 @@
 import { marked } from '../utils/markdown.js';
-import "../../css/components/audit_info_component.css";
+import "./audit_info_component.css";
 
 export const AuditInfoComponent = {
     init({ root, deps }) {

@@ -1,0 +1,61 @@
+/* css/components/global_action_bar_component.css */
+
+.global-action-bar {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.25rem;
+    background-color: var(--plate-background-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap; /* Kan wrappa om nödvändigt på mycket smala skärmar */
+    gap: 1rem;
+}
+
+#global-action-bar-bottom .global-action-bar {
+    margin-top: 0.25rem;
+    margin-bottom: 0;
+}
+
+.global-action-bar .action-bar-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.global-action-bar .action-bar-group.left {
+    /* Inga specifika regler just nu */
+}
+.global-action-bar .action-bar-group.right {
+    /* Inga specifika regler just nu */
+}
+
+/* Små skärmar: Dölj text och visa bara ikoner/select */
+@media (max-width: 600px) {
+    .global-action-bar .button .button-text {
+        border: 0;
+        clip: rect(0 0 0 0);
+        height: 1px;
+        margin: -1px;
+        overflow: hidden;
+        padding: 0;
+        position: absolute;
+        width: 1px;
+        white-space: nowrap;
+    }
+
+    .global-action-bar .button {
+        padding: 0.5rem; /* Mindre padding för ikon-knappar */
+        gap: 0;
+    }
+
+    .global-action-bar .button svg {
+        margin: 0; /* Ta bort eventuell marginal om gap är 0 */
+    }
+
+    .global-action-bar {
+        padding: 0.5rem;
+    }
+}

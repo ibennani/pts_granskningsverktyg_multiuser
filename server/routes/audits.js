@@ -4,6 +4,7 @@ import { query } from '../db.js';
 import { calculate_overall_audit_progress } from '../../js/audit_logic.js';
 import { calculateQualityScore } from '../../js/logic/ScoreCalculator.js';
 import { save_backup_for_audit } from '../backup/audit_backup.js';
+import { requireAdmin } from '../auth/middleware.js';
 
 const router = express.Router();
 
@@ -295,10 +296,10 @@ router.get('/:id/export', async (req, res) => {
     }
 });
 
-router.post('/', async (req, res) => {
+router.post('/', requireAdmin, async (req, res) => {
     try {
         const { rule_set_id } = req.body;
-        const last_updated_by = req.headers['x-user-name'] || req.headers['x-user-id'] || null;
+        const last_updated_by = req.user ? req.user.name : null;
         if (!rule_set_id) {
             return res.status(400).json({ error: 'rule_set_id krävs' });
         }
@@ -323,10 +324,10 @@ router.post('/', async (req, res) => {
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-router.post('/import', async (req, res) => {
+router.post('/import', requireAdmin, async (req, res) => {
     try {
         const data = req.body;
-        const last_updated_by = req.headers['x-user-name'] || req.headers['x-user-id'] || null;
+        const last_updated_by = req.user ? req.user.name : null;
         if (!data.ruleFileContent) {
             return res.status(400).json({ error: 'ruleFileContent krävs' });
         }
@@ -386,7 +387,7 @@ router.post('/import', async (req, res) => {
     }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const result = await query('DELETE FROM audits WHERE id = $1 RETURNING id', [id]);
@@ -404,7 +405,7 @@ router.patch('/:id', async (req, res) => {
     try {
         const { id } = req.params;
         const { metadata, status, samples, ruleFileContent, archivedRequirementResults, lastRulefileUpdateLog } = req.body;
-        const last_updated_by = req.headers['x-user-name'] || req.headers['x-user-id'] || null;
+        const last_updated_by = req.user ? req.user.name : null;
         const updates = [];
         const values = [];
         let i = 1;
@@ -480,7 +481,7 @@ router.patch('/:id/results/:sampleId/:requirementId', async (req, res) => {
     try {
         const { id, sampleId, requirementId } = req.params;
         const { version, result: newResult } = req.body;
-        const last_updated_by = req.headers['x-user-name'] || req.headers['x-user-id'] || null;
+        const last_updated_by = req.user ? req.user.name : null;
         const auditResult = await query('SELECT * FROM audits WHERE id = $1', [id]);
         if (auditResult.rows.length === 0) {
             return res.status(404).json({ error: 'Granskning hittades inte' });

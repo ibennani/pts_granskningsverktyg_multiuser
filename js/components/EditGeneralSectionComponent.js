@@ -1,7 +1,9 @@
 // js/components/EditGeneralSectionComponent.js
 
+import './edit_rulefile_metadata_view.css';
+
 export const EditGeneralSectionComponent = {
-    CSS_PATH: 'css/components/edit_rulefile_metadata_view.css',
+    CSS_PATH: './edit_rulefile_metadata_view.css',
 
     async init({ root, deps }) {
         this.root = root;

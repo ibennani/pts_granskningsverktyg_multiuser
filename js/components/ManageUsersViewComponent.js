@@ -1,6 +1,7 @@
 // js/components/ManageUsersViewComponent.js
 
 import { get_users } from '../api/client.js';
+import './manage_users_view_component.css';
 import { api_post, api_delete } from '../api/client.js';
 
 /** Trimmar text (rad för rad), sorterar i bokstavsordning (sv) och synkar till API. Används vid lämna-vyn (fire-and-forget). */
@@ -20,7 +21,7 @@ async function sync_users_to_server_with_text(text, current_users, trim_fn) {
 }
 
 export const ManageUsersViewComponent = {
-    CSS_PATH: 'css/components/manage_users_view_component.css',
+    CSS_PATH: './manage_users_view_component.css',
 
     async init({ root, deps }) {
         this.root = root;

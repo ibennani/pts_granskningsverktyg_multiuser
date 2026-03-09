@@ -1,3 +1,5 @@
+import './metadata_form_component.css';
+
 export const MetadataFormComponent = {
     init({ root, deps, options = {} }) {
         this.root = root;
@@ -29,7 +31,7 @@ export const MetadataFormComponent = {
         this.form_element_ref = null;
 
         // Load CSS if possible
-        const CSS_PATH = 'css/components/metadata_form_component.css';
+        const CSS_PATH = './metadata_form_component.css';
         if (this.Helpers && this.Helpers.load_css) {
             this.Helpers.load_css(CSS_PATH);
         }

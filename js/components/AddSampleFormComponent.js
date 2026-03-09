@@ -1,5 +1,5 @@
 import { marked } from '../utils/markdown.js';
-import "../../css/components/add_sample_form_component.css";
+import "./add_sample_form_component.css";
 
 export const AddSampleFormComponent = {
     init({ root, deps }) {

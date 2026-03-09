@@ -43,7 +43,7 @@ import { FinalConfirmUpdatesViewComponent } from './components/FinalConfirmUpdat
 import { EditRulefileMainViewComponent } from './components/EditRulefileMainViewComponent.js';
 import { RulefileRequirementsListComponent } from './components/RulefileRequirementsListComponent.js';
 import { ViewRulefileRequirementComponent } from './components/ViewRulefileRequirementComponent.js';
-import { EditRulefileRequirementComponent } from './components/EditRulefileRequirementComponent.js';
+import { EditRulefileRequirementComponent } from './components/rulefile_editor/EditRulefileRequirementComponent.js';
 import { ConfirmDeleteViewComponent } from './components/ConfirmDeleteViewComponent.js';
 import { EditRulefileMetadataViewComponent } from './components/EditRulefileMetadataViewComponent.js';
 import { RulefileMetadataViewComponent } from './components/RulefileMetadataViewComponent.js';
@@ -60,7 +60,7 @@ import { RulefileChangeLogViewComponent } from './components/RulefileChangeLogVi
 import { AuditImagesViewComponent } from './components/AuditImagesViewComponent.js';
 import { BackupOverviewComponent } from './components/BackupOverviewComponent.js';
 import { BackupSettingsViewComponent } from './components/BackupSettingsViewComponent.js';
-import { AuditViewComponent } from './components/AuditViewComponent.js';
+import { AuditViewComponent } from './components/audit_view/AuditViewComponent.js';
 import { StartViewComponent } from './components/StartViewComponent.js';
 import { LoginViewComponent } from './components/LoginViewComponent.js';
 import { ManageUsersViewComponent } from './components/ManageUsersViewComponent.js';
@@ -72,6 +72,7 @@ import { show_confirm_delete_modal } from './logic/confirm_delete_modal_logic.js
 import { flush_sync_to_server } from './logic/server_sync.js';
 
 import { DraftManager } from './draft_manager.js';
+import { get_auth_token, get_current_user_preferences } from './api/client.js';
 import { getState, dispatch, subscribe, initState, StoreActionTypes, StoreInitialState, loadStateFromLocalStorageBackup, clearLocalStorageBackup, updateBackupRestorePosition, APP_STATE_KEY } from './state.js';
 window.getState = getState;
 window.dispatch = dispatch;
@@ -1832,7 +1833,8 @@ window.DraftManager = DraftManager;
         const is_logged_in = () => {
             if (typeof window === 'undefined') return true;
             return !!(window.__GV_CURRENT_USER_NAME__ ||
-                (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('gv_current_user_name')));
+                (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('gv_current_user_name')) ||
+                get_auth_token());
         };
 
         if (!is_logged_in()) {
@@ -1855,6 +1857,14 @@ window.DraftManager = DraftManager;
 
         if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('gv_current_user_name')) {
             window.__GV_CURRENT_USER_NAME__ = sessionStorage.getItem('gv_current_user_name');
+        }
+        if (get_auth_token() && !window.__GV_CURRENT_USER_NAME__) {
+            get_current_user_preferences().then((user) => {
+                if (user?.name) {
+                    window.__GV_CURRENT_USER_NAME__ = user.name;
+                    if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('gv_current_user_name', user.name);
+                }
+            }).catch(() => {});
         }
 
         const active_session_state = getState();

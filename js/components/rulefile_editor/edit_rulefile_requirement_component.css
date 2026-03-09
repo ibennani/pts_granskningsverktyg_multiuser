@@ -1,0 +1,289 @@
+/* css/components/edit_rulefile_requirement_component.css */
+
+:root {
+    --swap-border-start: rgba(0, 92, 191, 1);
+    --swap-border-mid: rgba(0, 92, 191, 0.6);
+    --swap-border-end: rgba(0, 92, 191, 0);
+}
+
+[data-theme="dark"] {
+    --swap-border-start: rgba(255, 198, 84, 1);
+    --swap-border-mid: rgba(255, 198, 84, 0.65);
+    --swap-border-end: rgba(255, 198, 84, 0);
+}
+
+/* Sektion för grundläggande info och hjälptexter */
+.edit-rulefile-requirement-view .audit-section {
+    margin-bottom: 2rem;
+}
+
+.edit-rulefile-requirement-view .audit-section h2 {
+    font-size: 1.3rem;
+    color: var(--primary-color);
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px dashed var(--secondary-color);
+}
+
+[data-theme="dark"] .edit-rulefile-requirement-view .audit-section h2 {
+    color: var(--heading-color);
+}
+
+/* Styling för redigerbara kontrollpunkter */
+.check-item-edit {
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background-color: var(--background-color);
+    position: relative;
+}
+
+[data-theme="dark"] .check-item-edit {
+    background-color: color-mix(in srgb, var(--background-color) 95%, black);
+}
+
+.pc-container-edit {
+    padding-left: 1.5rem;
+    margin-top: 1rem;
+    border-left: 2px solid var(--secondary-color);
+}
+
+.pc-item-edit {
+    margin-bottom: 1.5rem;
+    position: relative;
+}
+
+/* --- NY REGEL: Lägg till skiljelinje mellan kriterier --- */
+.pc-item-edit:not(:last-of-type) {
+    padding-bottom: 1.5rem;
+    border-bottom: 1px dashed var(--secondary-color);
+}
+
+.form-group-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.form-group-header label,
+.form-group-header h4 {
+    margin: 0;
+}
+
+.form-group-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1 1 auto;
+}
+
+.form-group-header-actions .delete-item-btn {
+    margin-left: auto;
+}
+
+.move-item-btn {
+    white-space: nowrap;
+}
+
+
+.new-item-animation {
+    animation: fadeInHighlight 0.5s ease;
+}
+
+.item-swap-animation {
+    animation: swapHighlight 2s ease;
+    border: 3px solid transparent;
+    animation-fill-mode: forwards;
+}
+
+@keyframes fadeInHighlight {
+    0% {
+    }
+    100% {
+    }
+}
+
+@keyframes swapHighlight {
+    0% {
+        border-color: var(--swap-border-start);
+        opacity: 1;
+    }
+    50% {
+        border-color: var(--swap-border-start);
+        opacity: 1;
+    }
+    75% {
+        border-color: var(--swap-border-mid);
+    }
+    100% {
+        border-color: var(--swap-border-end);
+        opacity: 1;
+    }
+}
+
+/* Visuellt dold legend för skärmläsare */
+.content-type-parent-group-edit legend.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}
+
+/* HIERARKISKA INNEHÅLLSTYPER */
+.content-type-parent-group-edit {
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 1rem 1.25rem;
+    margin: 0 0 1.5rem 0;
+    background-color: var(--plate-background-color);
+}
+
+/* Visuell header för parent checkbox */
+.content-type-parent-header-edit {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+    margin-bottom: 0.75rem;
+    border-bottom: 2px solid var(--secondary-color);
+}
+
+.content-type-parent-header-edit .form-check-input {
+    width: 1.25rem;
+    height: 1.25rem;
+    margin: 0;
+    cursor: pointer;
+}
+
+.content-type-parent-label-edit {
+    font-size: 1.1em;
+    font-weight: 600;
+    color: var(--primary-color);
+    margin: 0;
+    cursor: pointer;
+    flex: 1;
+}
+
+[data-theme="dark"] .content-type-parent-label-edit {
+    color: var(--heading-color);
+}
+
+/* Container för children med visuell koppling */
+.content-type-children-container-edit {
+    padding-left: 0.5rem;
+    margin-top: 0.5rem;
+    border-left: 3px solid var(--secondary-color);
+    padding-left: 1rem;
+    margin-left: 0.75rem;
+}
+
+.content-type-child-item-edit {
+    padding-left: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+/* Logik-radioknappar */
+.check-logic-group {
+    border: none;
+    padding: 0;
+    margin: 1rem 0 0.5rem 0;
+}
+
+.check-logic-group legend {
+    font-size: 0.9em;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    width: auto;
+}
+
+.check-logic-group .form-check {
+    margin-bottom: 0.5rem;
+}
+
+.pc-item-edit .form-group:last-of-type {
+    margin-left: 1.5rem;
+    padding-left: 1.5rem;
+    border-left: 2px solid var(--secondary-color);
+    margin-top: 1rem;
+}
+
+.pc-item-edit .form-group:last-of-type label {
+    font-style: normal;
+    font-size: 1em;
+    color: var(--text-color);
+}
+
+/* Klassificerings-kryssrutor */
+.classification-group {
+    border: none;
+    padding: 0;
+    margin-top: 1rem;
+}
+
+.classification-group legend, .classification-group h2 {
+    font-size: 1em;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    width: auto;
+}
+
+.classification-group .form-check {
+    margin-bottom: 0.5rem;
+}
+
+/* Animation */
+@keyframes fadeInSlideDown {
+  from { opacity: 0; transform: translateY(-15px); max-height: 0; }
+  to { opacity: 1; transform: translateY(0); max-height: 500px; }
+}
+
+@keyframes swapHighlight {
+  0% { transform: translateY(var(--swap-offset, 0)); opacity: 0.7; }
+  20% { transform: translateY(0); opacity: 1; }
+  50% { }
+  100% { opacity: 1; }
+}
+
+.new-item-animation {
+  animation: fadeInSlideDown 0.3s ease-out forwards;
+  overflow: hidden;
+}
+
+.item-swap-animation {
+  position: relative;
+  animation: swapHighlight 1s ease forwards;
+}
+
+.swap-animation-active {
+  pointer-events: none;
+}
+
+.checks-container-edit > .button-primary {
+    margin-top: 1.5rem;
+    /* Ta bort bottenmarginal från knappen, vi styr avståndet med containern istället */
+    margin-bottom: 0;
+}
+
+/* Tydligare skiljelinje efter hela kontrollpunktssektionen */
+.checks-container-edit {
+    /* Utrymme inuti sektionen, efter knappen */
+    padding-bottom: 1.5rem; 
+    /* Marginal utanför sektionen, skapar avstånd ner till nästa rubrik */
+    margin-bottom: 2rem; 
+    /* Gör linjen heldragen och lite mörkare */
+    border-bottom: 1px solid var(--border-color); 
+}
+
+/* Tydligare skiljelinje mellan kriterier */
+.pc-item-edit:not(:last-of-type) {
+    padding-bottom: 1.5rem;
+    /* Gör linjen heldragen och lite mörkare */
+    border-bottom: 1px solid var(--border-color);
+}

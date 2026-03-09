@@ -6,10 +6,38 @@ import { run_backup, get_last_backup_status, get_backup_status_from_fs, get_back
 import { build_full_state } from './audits.js';
 import { query } from '../db.js';
 import { calculate_overall_audit_progress } from '../../js/audit_logic.js';
+import { requireAdmin } from '../auth/middleware.js';
 
 const router = express.Router();
 
-router.post('/run', async (_req, res) => {
+// Nedladdning av backup-fil – kräver admin
+router.get('/files/:auditId/:filename', requireAdmin, async (req, res) => {
+    const { auditId, filename } = req.params;
+    if (!filename || !auditId) {
+        return res.status(400).json({ error: 'Saknar auditId eller filnamn' });
+    }
+    const decoded_filename = decodeURIComponent(filename);
+    if (decoded_filename.includes('..') || path.normalize(decoded_filename) !== decoded_filename) {
+        return res.status(400).json({ error: 'Ogiltigt filnamn' });
+    }
+    try {
+        const backup_dir = get_backup_dir();
+        const file_path = path.join(backup_dir, auditId, decoded_filename);
+        await fs.access(file_path);
+        res.setHeader('Content-Disposition', `attachment; filename="${decoded_filename.replace(/"/g, '\\"')}"`);
+        res.setHeader('Content-Type', 'application/json');
+        const buffer = await fs.readFile(file_path);
+        res.send(buffer);
+    } catch (err) {
+        if (err.code === 'ENOENT') {
+            return res.status(404).json({ error: 'Filen hittades inte' });
+        }
+        console.warn('[backup] Nedladdning misslyckades:', err.message);
+        res.status(500).json({ error: 'Kunde inte ladda ner filen' });
+    }
+});
+
+router.post('/run', requireAdmin, async (_req, res) => {
     try {
         const status = await run_backup();
         res.json({ ok: true, ...status });
@@ -43,7 +71,7 @@ router.get('/settings', async (_req, res) => {
 
 const ALLOWED_RUNS = [1, 2, 3, 4, 6, 8, 12, 24];
 
-router.put('/settings', async (req, res) => {
+router.put('/settings', requireAdmin, async (req, res) => {
     try {
         const body = req.body || {};
         const has_retention = body.retention_days !== undefined;
@@ -208,33 +236,6 @@ router.get('/list', async (_req, res) => {
     }
 });
 
-// Ladda ner en enskild backup-fil (måste komma före /:auditId så att två segment matchar).
-router.get('/:auditId/:filename', async (req, res) => {
-    const { auditId, filename } = req.params;
-    if (!filename || !auditId) {
-        return res.status(400).json({ error: 'Saknar auditId eller filnamn' });
-    }
-    const decoded_filename = decodeURIComponent(filename);
-    if (decoded_filename.includes('..') || path.normalize(decoded_filename) !== decoded_filename) {
-        return res.status(400).json({ error: 'Ogiltigt filnamn' });
-    }
-    try {
-        const backup_dir = get_backup_dir();
-        const file_path = path.join(backup_dir, auditId, decoded_filename);
-        await fs.access(file_path);
-        res.setHeader('Content-Disposition', `attachment; filename="${decoded_filename.replace(/"/g, '\\"')}"`);
-        res.setHeader('Content-Type', 'application/json');
-        const buffer = await fs.readFile(file_path);
-        res.send(buffer);
-    } catch (err) {
-        if (err.code === 'ENOENT') {
-            return res.status(404).json({ error: 'Filen hittades inte' });
-        }
-        console.warn('[backup] Nedladdning misslyckades:', err.message);
-        res.status(500).json({ error: 'Kunde inte ladda ner filen' });
-    }
-});
-
 // Lista alla backup-filer för en specifik granskning.
 router.get('/:auditId', async (req, res) => {
     const { auditId } = req.params;
@@ -304,7 +305,7 @@ router.get('/:auditId', async (req, res) => {
             const is_archive = lower.includes('_arkiv') || lower.includes('_archive');
             items.push({
                 filename: fname,
-                url: `/backup/${auditId}/${encodeURIComponent(fname)}`,
+                url: `/backup/files/${auditId}/${encodeURIComponent(fname)}`,
                 createdAt: created_at,
                 isArchive: is_archive,
                 fileSizeBytes: file_size_bytes,

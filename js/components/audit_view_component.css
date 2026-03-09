@@ -1,0 +1,285 @@
+/* AuditViewComponent - Hantera granskningar och regelfiler */
+
+.audit-plate {
+    max-width: 100%;
+}
+
+.audit-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.audit-header h1 {
+    margin: 0;
+}
+
+.audit-header--with-filter {
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.audit-filter-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 30ch;
+    max-width: 420px;
+}
+
+.audit-filter-input {
+    width: 100%;
+}
+
+.audit-filter-input:focus-visible {
+    outline: 2px solid var(--focus-ring-color, #000);
+    outline-offset: 2px;
+}
+
+.audit-filter-no-results {
+    margin-top: 0.75rem;
+    font-size: 0.9rem;
+    opacity: 0.85;
+}
+
+.audit-header .audit-upload-btn {
+    flex-shrink: 0;
+}
+
+.audit-back-link {
+    text-decoration: underline;
+    color: var(--link-color);
+}
+
+.audit-back-link:hover,
+.audit-back-link:focus {
+    text-decoration: underline;
+}
+
+.audit-loading {
+    margin: 2rem 0;
+    opacity: 0.8;
+}
+
+.audit-no-api {
+    margin: 2rem 0;
+    padding: 1rem;
+    background: var(--warning-color-light, rgba(201, 149, 61, 0.15));
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+}
+
+.audit-two-columns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+    margin-top: 1rem;
+}
+
+@media (max-width: 768px) {
+    .audit-two-columns {
+        grid-template-columns: 1fr;
+    }
+}
+
+.audit-column {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: var(--input-background-color);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    text-align: left;
+}
+
+.audit-column h2 {
+    margin: 0 0 0.25rem 0;
+    font-size: 1rem;
+}
+
+.audit-column-heading-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.audit-column-heading-row h2 {
+    margin: 0 0 0.25rem 0;
+}
+
+.audit-start-new-audit-btn {
+    flex-shrink: 0;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.9rem;
+}
+
+.audit-upload-audit-btn {
+    flex-shrink: 0;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.9rem;
+}
+
+.audit-upload-btn {
+    align-self: flex-start;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.9rem;
+}
+
+/* Samma höjd och vertikal linjering för knapparna i Arbetskopior-rubrikraden */
+.start-view-section-heading-row .audit-upload-btn,
+.start-view-section-heading-row .audit-create-rule-btn {
+    height: 2.25rem;
+    min-height: 2.25rem;
+    display: inline-flex;
+    align-items: center;
+    box-sizing: border-box;
+}
+
+.audit-hidden-file-input {
+    position: absolute;
+    width: 0.1px;
+    height: 0.1px;
+    opacity: 0;
+    overflow: hidden;
+    z-index: -1;
+}
+
+.audit-list {
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
+    max-height: 320px;
+    overflow-y: auto;
+    text-align: left;
+}
+
+.audit-list-item {
+    padding: 0.25rem 0;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    text-align: left;
+}
+
+.audit-list-item:last-child {
+    border-bottom: none;
+}
+
+.audit-list-item .audit-item-label {
+    flex: 1;
+    min-width: 0;
+    text-align: left;
+}
+
+.audit-audit-item-actions {
+    display: flex;
+    flex-shrink: 0;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.audit-rule-item-actions {
+    display: flex;
+    flex-shrink: 0;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.audit-audit-item-actions .audit-download-btn,
+.audit-audit-item-actions .audit-delete-btn,
+.audit-rule-item-actions .audit-download-btn,
+.audit-rule-item-actions .audit-delete-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.audit-list-item .audit-delete-btn {
+    flex-shrink: 0;
+}
+
+.audit-item-label {
+    font-weight: 500;
+}
+
+.audit-rule-link {
+    color: var(--link-color);
+    text-decoration: underline;
+}
+
+.audit-rule-link:hover,
+.audit-rule-link:focus {
+    color: var(--link-hover-color);
+    text-decoration: underline;
+}
+
+.audit-audit-case-number {
+    flex-shrink: 0;
+    margin-right: 0.35rem;
+    color: var(--text-color-muted);
+    font-size: 0.9rem;
+}
+
+.audit-audit-link {
+    color: var(--link-color);
+    text-decoration: underline;
+}
+
+.audit-audit-link:hover,
+.audit-audit-link:focus {
+    color: var(--link-hover-color);
+    text-decoration: underline;
+}
+
+.audit-item-meta {
+    font-size: 0.85rem;
+    opacity: 0.8;
+}
+
+.audit-list-empty {
+    padding: 0.5rem 0;
+    opacity: 0.7;
+    font-style: italic;
+    list-style: none;
+    font-size: 0.9rem;
+}
+
+.audit-delete-btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+    min-height: 24px;
+}
+
+.audit-rules-picker-list {
+    list-style: none;
+    padding: 0;
+    margin: 0.5rem 0 0;
+}
+
+.audit-rules-picker-list li {
+    margin-bottom: 0.25rem;
+}
+
+.audit-modal-close-btn {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.9rem;
+}
+
+/* Animationer vid Skapa arbetskopia (0,25 s) */
+.audit-copy-button-fade-out {
+    transition: opacity 0.25s ease-out;
+    pointer-events: none;
+}
+
+.audit-copy-row-fade-in {
+    transition: opacity 0.25s ease-out;
+}
