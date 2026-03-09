@@ -1,8 +1,0 @@
-FROM qwen2.5-coder:14b
-
-# Tvinga modellen att inte skicka onödig JSON-statistik i varje svar
-PARAMETER stop "<|im_end|>"
-PARAMETER stop "<|im_start|>"
-
-# Se till att kontext-fönstret matchar din dators kraft
-PARAMETER num_ctx 8192
