@@ -251,9 +251,12 @@ export const ManageUsersViewComponent = {
         const make_field = (label_text, input_el) => {
             const wrapper = this.Helpers.create_element('div', { class_name: 'form-group' });
             const label = this.Helpers.create_element('label', {
-                attributes: { for: input_el.id },
+                attributes: { for: input_el.id }
+            });
+            const strong = this.Helpers.create_element('strong', {
                 text_content: label_text
             });
+            label.appendChild(strong);
             wrapper.appendChild(label);
             wrapper.appendChild(input_el);
             return wrapper;

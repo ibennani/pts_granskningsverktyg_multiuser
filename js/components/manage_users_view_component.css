@@ -96,6 +96,11 @@
     display: inline-block;
 }
 
+.manage-users-plate .form-group > label {
+    display: block;
+    margin-bottom: 0.15rem;
+}
+
 .manage-users-admin-label {
     margin-left: 0.5rem;
 }
