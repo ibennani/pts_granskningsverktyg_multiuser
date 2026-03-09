@@ -832,7 +832,7 @@
   "manage_users_title": "Användare i verktyget",
   "manage_users_intro": "Här ser du alla personer som har konto i verktyget och kan logga in.",
   "manage_users_intro_new": "Tabellen visar en rad per användare med användarnamn, namn och om personen är administratör.",
-  "manage_users_add_button": "Skapa användare",
+  "manage_users_add_button": "Skapa ny användare",
   "manage_users_col_username": "Användarnamn",
   "manage_users_col_name": "Namn",
   "manage_users_col_is_admin": "Admin",

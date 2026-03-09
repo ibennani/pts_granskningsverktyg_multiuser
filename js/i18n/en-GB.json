@@ -832,7 +832,7 @@
   "manage_users_title": "Users in the tool",
   "manage_users_intro": "Here you see everyone who has an account in the tool and can log in.",
   "manage_users_intro_new": "The table shows one row per user with username, name and whether the person is an administrator.",
-  "manage_users_add_button": "Create user",
+  "manage_users_add_button": "Create new user",
   "manage_users_col_username": "Username",
   "manage_users_col_name": "Name",
   "manage_users_col_is_admin": "Admin",
