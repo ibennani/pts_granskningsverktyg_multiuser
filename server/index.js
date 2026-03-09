@@ -50,6 +50,8 @@ app.use(cors({
             const originHostname = originUrl.hostname;
             const requestHostname = hostHeader ? hostHeader.split(':')[0].trim() : '';
             if (requestHostname && originHostname === requestHostname) return cb(null, origin);
+            // Produktionsvärd: tillåt explicit så att adminlistan och API fungerar även om Host skickas annorlunda av proxy
+            if (originHostname === 'ux-granskningsverktyg.pts.ad') return cb(null, origin);
         } catch (_) { /* ignore */ }
         return cb(null, false);
     },

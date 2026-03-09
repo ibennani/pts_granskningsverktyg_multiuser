@@ -39,7 +39,8 @@ export function init_version_check_service() {
             }
             if (jsonEnd === -1) return;
             const remote = JSON.parse(text.slice(jsonStart, jsonEnd + 1));
-            if (remote?.timestamp && remote.timestamp !== current_timestamp) {
+            // Visa endast när servern har en nyare build (undvik falska notiser pga cache/skillnad)
+            if (remote?.timestamp && current_timestamp && remote.timestamp > current_timestamp) {
                 already_shown = true;
                 const msg = window.Translation?.t?.('new_version_available') || 'En ny version är tillgänglig.';
                 const label = window.Translation?.t?.('reload_page') || 'Ladda om sidan';
