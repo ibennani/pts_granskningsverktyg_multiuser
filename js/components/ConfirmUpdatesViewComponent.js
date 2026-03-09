@@ -1,5 +1,5 @@
-import "../../css/components/confirm_updates_view_component.css";
-import "../../css/components/requirement_list_toolbar_component.css";
+import "./confirm_updates_view_component.css";
+import "./requirement_list_toolbar_component.css";
 
 export const ConfirmUpdatesViewComponent = {
     init({ root, deps }) {

@@ -6,7 +6,7 @@ import { ChecklistHandler } from './requirement_audit/ChecklistHandler.js';
 import { RequirementInfoSections } from './requirement_audit/RequirementInfoSections.js';
 import { RequirementAuditNavigationComponent } from './requirement_audit/RequirementAuditNavigation.js';
 import { RequirementAuditSidebarComponent } from './RequirementAuditSidebarComponent.js';
-import "../../css/components/requirement_audit_component.css";
+import "./requirement_audit_component.css";
 
 export const RequirementAuditComponent = {
     // Dependencies

@@ -1,8 +1,10 @@
 // js/components/GenericTableComponent.js
 // Generell tabellkomponent för återanvändning i flera vyer. Tar kolumndefinitioner och data.
 
+import './generic_table_component.css';
+
 export const GenericTableComponent = {
-    CSS_PATH: './css/components/generic_table_component.css',
+    CSS_PATH: './generic_table_component.css',
 
     async init({ root, deps }) {
         this.root = root;

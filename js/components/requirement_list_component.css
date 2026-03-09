@@ -1,0 +1,494 @@
+/* Styles for RequirementListComponent */
+.requirement-list-plate {
+    /* Använder .content-plate globalt - ingen specifik styling behövs */
+    display: block;
+    overflow: visible;
+}
+
+/* Header för vyn - Stickprovsinfo */
+.requirement-list-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--primary-color);
+}
+
+.requirement-list-header h1 {
+    font-size: 1.8rem;
+    /* Återställd till standard H1-storlek för denna vy */
+    margin-bottom: 0.35rem;
+    /* Lite mer utrymme till sub-info */
+    color: var(--primary-color-dark);
+}
+
+[data-theme="dark"] .requirement-list-header h1 {
+    color: var(--heading-color);
+}
+
+/* NY REGEL: Gör länken i H1 klickbar över hela ytan med rätt pekare */
+.requirement-list-header h1 a {
+    cursor: pointer;
+    /* display: block;  BORTTAGEN för att bara texten ska vara klickbar */
+}
+
+/* Wrapper för "Typ av sida" och "Granskade krav" för att få dem under H1 */
+.requirement-list-header .sample-info-display {
+    font-size: 0.95rem;
+    color: var(--text-color-muted);
+    margin-bottom: 0.25rem;
+    /* Litet utrymme mellan raderna */
+    display: block;
+    /* Säkerställ att de hamnar på egna rader om de inte är i en flex-container */
+}
+
+.requirement-list-header .sample-info-display strong {
+    color: var(--text-color);
+    font-weight: 500;
+    /* Lite mindre fet än default strong */
+}
+
+.requirement-list-header .sample-page-type {
+    /* Ingen specifik styling just nu - använder standard styling */
+    display: block;
+}
+
+.requirement-list-header .sample-audit-progress {
+    /* Ingen specifik styling just nu - använder standard styling */
+    display: block;
+}
+
+
+/* Filter section (samma som högerspalten) */
+.requirements-list-filter-section {
+    margin-bottom: 1.5rem;
+    overflow: visible;
+    position: relative;
+    z-index: 10;
+}
+
+.requirement-audit-sidebar__filters-wrapper {
+    overflow: visible;
+}
+
+/* Förhindra att filterpanelen orsakar scrollbar i content-plate vid 0 krav */
+#all-requirements-filter-container,
+#all-requirements-filter-container .requirements-list-toolbar,
+#all-requirements-filter-container .status-filter-group,
+#requirement-list-filter-container,
+#requirement-list-filter-container .requirements-list-toolbar,
+#requirement-list-filter-container .status-filter-group {
+    overflow: visible;
+}
+
+/* Säkerställ att content-plate inte får scrollbar när filterpanelen är öppen */
+.requirement-list-plate.content-plate {
+    overflow: visible;
+}
+
+.requirements-list-filter-section h2 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem 0;
+    color: var(--heading-color);
+}
+
+/* Results summary (h2) */
+.results-summary {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0 0 1rem 0;
+    color: var(--heading-color);
+}
+
+/* Navigationsfältet (Tillbaka-knapp) */
+.requirements-navigation-bar {
+    margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: flex-start;
+}
+
+.requirements-navigation-bar.bottom {
+    margin-top: 2.5rem;
+    border-top: 1px solid var(--border-color);
+    padding-top: 1.5rem;
+}
+
+/* Innehållet i kravlistan */
+.requirements-list-content .category-group {
+    margin-bottom: 2rem;
+}
+
+.requirements-list-content .main-category-title {
+    /* H2 */
+    font-size: 1.5rem;
+    color: var(--primary-color);
+    margin-bottom: 0.6rem;
+    padding-bottom: 0.3rem;
+    border-bottom: 1px solid var(--secondary-color);
+}
+
+[data-theme="dark"] .requirements-list-content .main-category-title {
+    color: var(--heading-color);
+}
+
+.requirements-list-content .sub-category-title {
+    /* H3 */
+    font-size: 1.15rem;
+    color: var(--text-color);
+    margin-top: 1.25rem;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+[data-theme="dark"] .requirements-list-content .sub-category-title {
+    color: var(--heading-color);
+}
+
+.requirements-list-content .requirement-items-ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+/* Kompakt TVÅRADIG styling för kravlistan */
+.requirements-list-content .requirement-item.compact-twoline {
+    padding: 0.6rem 0.8rem;
+    margin-bottom: 0.6rem;
+    border: 2px solid var(--border-color);
+    border-left: 3px solid color-mix(in srgb, var(--primary-color) 60%, transparent);
+    background-color: #FFF5E6;
+    /* Väldigt ljus orange nyans */
+    border-radius: var(--border-radius);
+    /* Rundade hörn överallt */
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+[data-theme="dark"] .requirements-list-content .requirement-item.compact-twoline {
+    border-left-width: 2px;
+    /* Samma bredd som övriga kanter */
+    border-left-color: var(--border-color);
+    /* Samma färg som övriga kanter */
+    background-color: color-mix(in srgb, var(--plate-background-color) 95%, black);
+}
+
+/* Nästlad struktur: h3 med kravnamn, sub-text med ref och antal, ul med stickprov (all requirements-vyn) */
+.requirements-list-content .requirement-header-nested {
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin: 0 0 0 0;
+    line-height: 1.4;
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .requirements-list-content .requirement-header-nested {
+    color: var(--heading-color);
+}
+
+.requirements-list-content .requirement-header-sub {
+    font-size: 0.9rem;
+    margin: 0;
+    white-space: pre-line;
+    line-height: 1.4;
+    color: var(--text-color-muted);
+}
+
+[data-theme="dark"] .requirements-list-content .requirement-header-sub {
+    color: var(--text-color);
+}
+
+.requirements-list-content .requirement-samples-list {
+    margin: 0;
+    padding-left: 0;
+    list-style: none;
+}
+
+.requirements-list-content .requirement-sample-item {
+    margin: 0.25rem 0;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.requirements-list-content .requirement-sample-item .list-title-link {
+    font-weight: 500;
+    font-size: 0.95rem;
+}
+
+.requirements-list-content .requirement-sample-item .status-icons-wrapper {
+    flex-shrink: 0;
+}
+
+.requirements-list-content .requirement-sample-item .status-icons-wrapper .status-icon {
+    margin-right: 0;
+    cursor: default;
+}
+
+.requirements-list-content .requirement-title-row {
+    width: 100%;
+}
+
+.requirements-list-content .requirement-title-container {
+    margin: 0;
+    padding: 0;
+    line-height: 1.3;
+}
+
+.requirements-list-content .list-title-link {
+    background: none;
+    border: none;
+    padding: 0.1rem 0;
+    margin: 0;
+    font-family: inherit;
+    font-size: 1.05rem;
+    font-weight: 600;
+    /* Ökad från 500 till 600 för tydligare titlar */
+    color: var(--primary-color);
+    text-align: left;
+    cursor: pointer;
+    text-decoration: underline;
+    display: inline-block;
+}
+
+.requirements-list-content .list-title-link:hover,
+.requirements-list-content .list-title-link:focus {
+    color: var(--primary-color-dark);
+}
+
+[data-theme="dark"] .requirements-list-content .list-title-link {
+    color: var(--link-color);
+}
+
+[data-theme="dark"] .requirements-list-content .list-title-link:hover,
+[data-theme="dark"] .requirements-list-content .list-title-link:focus {
+    color: var(--link-hover-color);
+}
+
+
+
+
+.requirements-list-content .requirement-details-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.5rem;
+    font-size: 0.8rem;
+    color: var(--text-color-muted);
+    padding-top: 0.2rem;
+}
+
+.requirements-list-content .requirement-details-row>span,
+.requirements-list-content .requirement-details-row>a {
+    white-space: nowrap;
+}
+
+.requirements-list-content .requirement-status-indicator-wrapper {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    /* Behåll detta om texten kommer direkt efter span för ikonen */
+}
+
+.requirements-list-content .list-reference-link {
+    color: var(--primary-color);
+    text-decoration: underline;
+}
+
+.requirements-list-content .list-reference-link:hover,
+.requirements-list-content .list-reference-link:focus {
+    color: var(--primary-color-dark);
+}
+
+[data-theme="dark"] .requirements-list-content .list-reference-link {
+    color: var(--link-color);
+}
+
+[data-theme="dark"] .requirements-list-content .list-reference-link:hover,
+[data-theme="dark"] .requirements-list-content .list-reference-link:focus {
+    color: var(--link-hover-color);
+}
+
+
+
+
+.requirements-list-content .list-reference-text {
+    color: var(--primary-color);
+}
+
+[data-theme="dark"] .requirements-list-content .list-reference-text {
+    color: var(--link-color);
+}
+
+
+
+.requirements-list-content .status-text-updated {
+    color: var(--info-color);
+    font-weight: 500;
+}
+
+/* Status ikoner */
+.requirements-list-content .status-icon {
+    display: inline-block;
+    margin-right: 0.3rem;
+    /* Återställd till ursprungligt värde */
+    font-size: 1rem;
+    line-height: 1;
+    vertical-align: middle;
+    font-weight: normal;
+    /* Säkerställ raka ikoner */
+    font-family: Arial, sans-serif;
+    /* Säkerställ att Unicode-symboler visas */
+    text-rendering: optimizeLegibility;
+    /* Förbättra rendering av Unicode */
+}
+
+/* Specifika färger för varje status ikon */
+.requirements-list-content .status-icon-not-audited {
+    color: #000000;
+    /* Svart i ljust läge - enfärgad */
+    font-weight: bold;
+    /* Fetare för bättre synlighet */
+    opacity: 1;
+    /* Säkerställ full opacitet */
+    text-stroke: 2px currentColor;
+    /* Tjockare cirkel - 2px */
+    -webkit-text-stroke: 2px currentColor;
+    /* Webkit-stöd för tjockare cirkel */
+}
+
+[data-theme="dark"] .requirements-list-content .status-icon-not-audited {
+    color: #FFFFFF;
+    /* Vit i mörkt läge - enfärgad */
+    opacity: 1;
+    /* Säkerställ full opacitet */
+    text-stroke: 2px currentColor;
+    /* Tjockare cirkel - 2px */
+    -webkit-text-stroke: 2px currentColor;
+    /* Webkit-stöd för tjockare cirkel */
+}
+
+.requirements-list-content .status-icon-partially-audited {
+    color: #FF8C00;
+    /* Orange */
+}
+
+.requirements-list-content .status-icon-passed {
+    color: #28A745;
+    /* Grön */
+    font-weight: bold;
+    /* Fetare ikon */
+}
+
+.requirements-list-content .status-icon-failed {
+    color: #DC3545;
+    /* Röd */
+    font-weight: bold;
+    /* Fetare ikon */
+}
+
+.requirements-list-content .status-icon-updated {
+    color: #007BFF;
+    /* Blå */
+}
+
+.requirements-list-content .status-icons-wrapper {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15rem;
+    margin-right: 0.3rem;
+    cursor: default;
+}
+
+.requirements-list-content .status-icons-wrapper .status-icon {
+    margin-right: 0;
+    cursor: default;
+}
+
+/* Custom tooltip ovanför ikon – aldrig title-attribut */
+.requirements-list-content .status-icon-tooltip-wrapper {
+    position: relative;
+    display: inline-flex;
+    cursor: default;
+}
+
+.requirements-list-content .status-icon-tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 0.35rem;
+    padding: 0.35rem 0.5rem;
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.2;
+    white-space: nowrap;
+    color: #1a1a1a;
+    background-color: #fff;
+    border: 1px solid #333;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.15s ease, visibility 0.15s ease;
+    z-index: 100;
+    pointer-events: none;
+}
+
+.requirements-list-content .status-icon-tooltip-wrapper:hover .status-icon-tooltip,
+.requirements-list-content .status-icon-tooltip-wrapper:focus-within .status-icon-tooltip {
+    visibility: visible;
+    opacity: 1;
+}
+
+[data-theme="dark"] .requirements-list-content .status-icon-tooltip {
+    color: #f5f5f5;
+    background-color: #2d2d2d;
+    border-color: #666;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.requirements-list-content .status-icon-needs-help-indicator {
+    display: inline-flex;
+    align-items: center;
+    color: #E67E22;
+    /* Orange – samma varningsikon som "Jag har kört fast"-knappen */
+}
+
+.requirements-list-content .status-icon-needs-help-indicator svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    cursor: default;
+    pointer-events: none;
+}
+
+[data-theme="dark"] .requirements-list-content .status-icon-needs-help-indicator {
+    color: #F39C12;
+    /* Ljusare orange i mörkt läge */
+}
+
+.requirements-list-content .status-icon-updated-indicator {
+    display: inline-flex;
+    align-items: center;
+    color: #007BFF;
+    /* Blå – samma som status-icon-updated */
+}
+
+.requirements-list-content .status-icon-updated-indicator svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    cursor: default;
+    pointer-events: none;
+}
+
+[data-theme="dark"] .requirements-list-content .status-icon-updated-indicator {
+    color: #5BA3FF;
+    /* Ljusare blå i mörkt läge */
+}
+
+/* *** SLUT PÅ NYA REGLER *** */
+
+.requirements-list-content .requirement-checks-info {
+    font-style: italic;
+}

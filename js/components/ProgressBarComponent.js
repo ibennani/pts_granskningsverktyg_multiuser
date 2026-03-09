@@ -1,4 +1,4 @@
-import "../../css/components/progress_bar_component.css";
+import "./progress_bar_component.css";
 
 export const ProgressBarComponent = {
     created_instances: new Set(),
@@ -8,7 +8,7 @@ export const ProgressBarComponent = {
         if (!this.css_loaded && typeof window.Helpers !== 'undefined' && typeof window.Helpers.load_css === 'function') {
             if (!document.querySelector(`link[href$="progress_bar_component.css"]`)) {
                 try {
-                    await window.Helpers.load_css('css/components/progress_bar_component.css');
+                    await window.Helpers.load_css('./progress_bar_component.css');
                     this.css_loaded = true;
                 } catch (error) {
                     console.warn("Failed to load CSS for ProgressBarComponent:", error);

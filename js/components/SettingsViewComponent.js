@@ -2,9 +2,10 @@
 
 import { get_current_user_preferences, update_current_user_preferences } from '../api/client.js';
 import { get_current_user_name } from '../utils/helpers.js';
+import './settings_view_component.css';
 
 export const SettingsViewComponent = {
-    CSS_PATH: 'css/components/settings_view_component.css',
+    CSS_PATH: './settings_view_component.css',
 
     async init({ root, deps }) {
         this.root = root;

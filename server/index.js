@@ -2,6 +2,8 @@
 import 'dotenv/config';
 import http from 'http';
 import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
 import { query } from './db.js';
 import { init_ws } from './ws.js';
 process.on('uncaughtException', (err) => {
@@ -11,15 +13,37 @@ process.on('uncaughtException', (err) => {
 process.on('unhandledRejection', (reason, promise) => {
     console.error('[Server] Unhandled rejection at', promise, 'reason:', reason);
 });
+import { requireAuth } from './auth/middleware.js';
+import authRouter from './routes/auth.js';
 import usersRouter from './routes/users.js';
 import rulesRouter from './routes/rules.js';
 import auditsRouter from './routes/audits.js';
 import backupRouter from './routes/backup.js';
-import { get_backup_dir, get_last_backup_status, start_backup_scheduler } from './backup/audit_backup.js';
+import { get_last_backup_status, start_backup_scheduler } from './backup/audit_backup.js';
 
 const app = express();
 const PORT = process.env.API_PORT || 3000;
 const http_server = http.createServer(app);
+
+app.use(helmet());
+
+const allowed_origins_env = (process.env.ALLOWED_ORIGINS || '').trim();
+const allowed_origins = allowed_origins_env
+    ? allowed_origins_env.split(',').map((s) => s.trim()).filter(Boolean)
+    : (() => {
+        console.warn('[Server] ALLOWED_ORIGINS är inte satt – tillåter http://localhost:5173 som fallback.');
+        return ['http://localhost:5173'];
+    })();
+
+app.use(cors({
+    origin: (origin, cb) => {
+        if (!origin) return cb(null, true);
+        if (allowed_origins.includes(origin)) return cb(null, true);
+        return cb(null, false);
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    credentials: true
+}));
 
 app.use(express.json({ limit: '10mb' }));
 
@@ -30,11 +54,11 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use('/api/users', usersRouter);
-app.use('/api/rules', rulesRouter);
-app.use('/api/audits', auditsRouter);
-app.use('/api/backup', backupRouter);
-app.use('/backup', express.static(get_backup_dir()));
+app.use('/api/auth', authRouter);
+app.use('/api/users', requireAuth, usersRouter);
+app.use('/api/rules', requireAuth, rulesRouter);
+app.use('/api/audits', requireAuth, auditsRouter);
+app.use('/api/backup', requireAuth, backupRouter);
 
 app.get('/api/health', async (_req, res) => {
     try {

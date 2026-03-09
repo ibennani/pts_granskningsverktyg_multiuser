@@ -3,9 +3,10 @@
 
 import { GenericTableComponent } from './GenericTableComponent.js';
 import { create_audit_table_columns } from '../utils/audit_table_columns.js';
+import './generic_table_component.css';
 
 export const AuditListComponent = {
-    CSS_PATH: './css/components/generic_table_component.css',
+    CSS_PATH: './generic_table_component.css',
 
     async init({ root, deps }) {
         this.root = root;

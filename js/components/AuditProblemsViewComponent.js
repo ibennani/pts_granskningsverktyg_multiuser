@@ -1,8 +1,9 @@
 import { get_current_user_name } from '../utils/helpers.js';
 import { marked } from '../utils/markdown.js';
+import './audit_problems_view_component.css';
 
 export const AuditProblemsViewComponent = {
-    CSS_PATH: 'css/components/audit_problems_view_component.css',
+    CSS_PATH: './audit_problems_view_component.css',
 
     _safe_parse_markdown(markdown_string) {
         if (typeof marked === 'undefined' || !this.Helpers?.escape_html) {

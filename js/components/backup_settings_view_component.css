@@ -1,0 +1,93 @@
+/* backup settings view */
+
+.backup-settings-plate {
+    width: 100%;
+}
+
+.backup-settings-intro {
+    margin-bottom: 1.25rem;
+}
+
+.backup-settings-form h2 {
+    font-size: 1rem;
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.backup-settings-form h2:first-child {
+    margin-top: 0;
+}
+
+.backup-settings-form .form-group {
+    margin-bottom: 1rem;
+}
+
+.backup-settings-form .form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.backup-settings-form .form-control {
+    display: block;
+    width: 100%;
+    max-width: 12rem;
+    padding: 0.35rem 0.5rem;
+    margin-top: 0.25rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+}
+
+.backup-settings-schedule-info {
+    margin: 0 0 0.75rem 0;
+    font-size: 0.875rem;
+    color: var(--text-muted, #555);
+}
+
+.backup-settings-schedule-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 1rem 1.5rem;
+}
+
+.backup-settings-schedule-field {
+    margin-bottom: 0;
+    min-width: 0;
+}
+
+.backup-settings-schedule-field label {
+    display: block;
+    font-weight: 600;
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+}
+
+.backup-settings-schedule-field .form-control {
+    max-width: 5.5rem;
+    width: auto;
+}
+
+/* Sammanfattning framhävd som informationsblock (samma stil som t.ex. Godkännandekriterierna), inte som inmatningsfält */
+.backup-settings-summary {
+    margin: 1rem 0 0;
+    padding: 0.75rem 0 0.75rem 1.25rem;
+    border-left: 3px solid var(--border-color);
+    background: var(--surface-emphasis-bg);
+    font-weight: 500;
+    font-size: 0.9375rem;
+}
+
+.backup-settings-form .form-help {
+    margin: 0.25rem 0 0;
+    font-size: 0.875rem;
+    color: var(--text-muted, #555);
+}
+
+.backup-settings-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+}

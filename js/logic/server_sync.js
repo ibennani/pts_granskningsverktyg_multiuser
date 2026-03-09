@@ -54,6 +54,68 @@ function count_stuck_in_samples(samples) {
     return n;
 }
 
+function show_audit_deleted_modal_and_navigate() {
+    if (typeof window === 'undefined') return;
+    const current_view = window.__gv_current_view_name || null;
+    const outside_audit_views = new Set([
+        'start',
+        'audit',
+        'audit_audits',
+        'audit_rules',
+        'login',
+        'manage_users',
+        'my_settings',
+        'backup',
+        'backup_detail',
+        'backup_settings'
+    ]);
+    if (current_view && outside_audit_views.has(current_view)) {
+        return;
+    }
+    if (window.__GV_AUDIT_DELETED_MODAL_SHOWN__) return;
+    window.__GV_AUDIT_DELETED_MODAL_SHOWN__ = true;
+
+    const ModalComponent = window.ModalComponent;
+    const Helpers = window.Helpers;
+    const t = window.Translation?.t || ((key) => key);
+
+    if (!ModalComponent?.show || !Helpers?.create_element) {
+        const NotificationComponent = window.NotificationComponent;
+        if (NotificationComponent?.show_global_message) {
+            NotificationComponent.show_global_message(
+                t('audit_deleted_modal_message_fallback'),
+                'error'
+            );
+        }
+        try {
+            window.location.hash = '#audit_audits';
+        } catch (_) {}
+        return;
+    }
+
+    ModalComponent.show(
+        {
+            h1_text: t('audit_deleted_modal_title'),
+            message_text: t('audit_deleted_modal_message')
+        },
+        (container, modal_instance) => {
+            const buttons_wrapper = Helpers.create_element('div', { class_name: 'modal-confirm-actions' });
+            const ok_btn = Helpers.create_element('button', {
+                class_name: ['button', 'button-primary'],
+                text_content: t('audit_deleted_modal_understand_button')
+            });
+            ok_btn.addEventListener('click', () => {
+                modal_instance.close();
+                try {
+                    window.location.hash = '#audit_audits';
+                } catch (_) {}
+            });
+            buttons_wrapper.appendChild(ok_btn);
+            container.appendChild(buttons_wrapper);
+        }
+    );
+}
+
 async function run_sync(state, dispatch_fn) {
     if (!state || !state.ruleFileContent || typeof window === 'undefined') return;
     if (state.auditStatus === 'rulefile_editing') return;
@@ -124,6 +186,8 @@ async function run_sync(state, dispatch_fn) {
                     skip_render: true
                 }
             });
+        } else if (err.status === 404 && err.message && err.message.toLowerCase().includes('granskning hittades inte')) {
+            show_audit_deleted_modal_and_navigate();
         } else if (window.NotificationComponent?.show_global_message && window.Translation?.t) {
             window.NotificationComponent.show_global_message(
                 window.Translation.t('server_sync_error', { message: err.message }) || `Kunde inte spara till servern: ${err.message}`,
@@ -234,7 +298,9 @@ export async function flush_sync_to_server(get_state_fn, dispatch_fn) {
         debounce_timer = null;
     }
     const state = typeof get_state_fn === 'function' ? get_state_fn() : null;
-    if (state) {
-        await run_sync(state, dispatch_fn);
-    }
+    if (!state) return;
+    // För helt nya granskningar (status not_started utan remote auditId) ska server-sync
+    // endast ske via explicita anrop (t.ex. från metadata-flödet), inte vid generell navigering.
+    if (state.auditStatus === 'not_started' && !state.auditId) return;
+    await run_sync(state, dispatch_fn);
 }

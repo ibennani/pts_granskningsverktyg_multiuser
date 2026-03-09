@@ -1,5 +1,7 @@
+import './side_menu_component.css';
+
 export const SideMenuComponent = {
-    CSS_PATH: 'css/components/side_menu_component.css',
+    CSS_PATH: './side_menu_component.css',
 
     async init({ root, deps }) {
         this.root = root;

@@ -1,9 +1,10 @@
 import { SaveAuditButtonComponent } from './SaveAuditButtonComponent.js';
 import { can_edit_rulefile } from '../utils/helpers.js';
+import './global_action_bar_component.css';
 
 export class GlobalActionBarComponent {
   constructor() {
-    this.CSS_PATH = './css/components/global_action_bar_component.css';
+    this.CSS_PATH = './global_action_bar_component.css';
 
     // Internal references
     this.root = null;

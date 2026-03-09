@@ -1,0 +1,117 @@
+/* css/components/requirement_list_toolbar_component.css */
+
+.requirements-list-toolbar {
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background-color: var(--background-color);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end; /* Linjera label och input snyggt vertikalt */
+    gap: 1.5rem;
+}
+
+[data-theme="dark"] .requirements-list-toolbar {
+    background-color: color-mix(in srgb, var(--plate-background-color) 90%, black);
+}
+
+.toolbar-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.toolbar-group label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-color);
+}
+
+/* Anpassa bredder */
+.toolbar-group.search-group {
+    flex-grow: 2; /* Låt sökfältet ta mer plats */
+    min-width: 250px;
+}
+.toolbar-group.status-filter-group,
+.toolbar-group.sort-group {
+    flex-grow: 1;
+    min-width: 180px;
+}
+
+/* --- NY STYLING FÖR FILTERPANEL OCH ANIMATION --- */
+
+.status-filter-group {
+    position: relative;
+    z-index: 10;
+}
+
+.status-filter-panel {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 100%;
+    min-width: 220px;
+    background-color: var(--plate-background-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 1rem;
+    z-index: 100;
+    margin-top: 0.25rem;
+    
+    /* Animationsregler */
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition: max-height 0.3s ease-out, opacity 0.3s ease-out, transform 0.3s ease-out, visibility 0.3s;
+    visibility: hidden; /* Dölj från DOM helt när den är stängd */
+}
+
+.status-filter-panel.is-visible {
+    max-height: 500px; /* Ett tillräckligt högt värde för att allt innehåll ska rymmas */
+    opacity: 1;
+    transform: translateY(0);
+    visibility: visible;
+}
+
+.status-filter-panel .form-check {
+    margin-bottom: 0.75rem;
+}
+.status-filter-panel .form-check.all-check {
+    font-weight: bold;
+}
+.status-filter-panel hr {
+    border: none;
+    border-top: 1px solid var(--border-color);
+    margin: 0.75rem 0;
+}
+
+/* --- SLUT PÅ NY STYLING --- */
+
+
+/* Justera input-kontroller inuti verktygsraden */
+.requirements-list-toolbar .form-control {
+    width: 100%;
+    padding: 0.5rem 0.75rem; /* Lite mindre padding för ett kompaktare utseende */
+    font-size: 0.95rem;
+}
+.requirements-list-toolbar .button {
+    width: 100%;
+    justify-content: flex-start; /* Vänsterjustera text i filterknappen */
+}
+
+/* Responsivitet för mindre skärmar */
+@media (max-width: 768px) {
+    .requirements-list-toolbar {
+        flex-direction: column;
+        align-items: stretch; /* Få alla grupper att ta full bredd */
+        gap: 1rem;
+    }
+
+    .toolbar-group.search-group,
+    .toolbar-group.status-filter-group,
+    .toolbar-group.sort-group {
+        min-width: 100%;
+    }
+}

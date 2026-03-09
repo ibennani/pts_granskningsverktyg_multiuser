@@ -1,4 +1,4 @@
-import "../../css/components/notification_component.css";
+import "./notification_component.css";
 
 const GLOBAL_MESSAGE_CONTAINER_ID = 'global-message-area';
 const GLOBAL_CRITICAL_MESSAGE_CONTAINER_ID = 'global-critical-message-area';

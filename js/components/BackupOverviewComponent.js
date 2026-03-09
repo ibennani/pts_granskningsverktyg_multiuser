@@ -1,10 +1,11 @@
 // js/components/BackupOverviewComponent.js
 
-import { get_backup_overview, get_backups_for_audit, run_backup_now, get_backup_settings, api_get, get_base_url, get_audit_version, update_audit, import_audit } from '../api/client.js';
+import { get_backup_overview, get_backups_for_audit, run_backup_now, get_backup_settings, api_get, get_base_url, get_auth_headers, get_audit_version, update_audit, import_audit } from '../api/client.js';
 import { GenericTableComponent } from './GenericTableComponent.js';
+import './backup_overview_component.css';
 
 export const BackupOverviewComponent = {
-    CSS_PATH: './css/components/backup_overview_component.css',
+    CSS_PATH: './backup_overview_component.css',
 
     async init({ root, deps }) {
         this.root = root;
@@ -316,9 +317,9 @@ export const BackupOverviewComponent = {
         if (event) event.preventDefault();
         if (!audit_id || !filename) return;
         const base = get_base_url();
-        const url = `${base}/backup/${encodeURIComponent(audit_id)}/${encodeURIComponent(filename)}`;
+        const url = `${base}/backup/files/${encodeURIComponent(audit_id)}/${encodeURIComponent(filename)}`;
         try {
-            const res = await fetch(url, { cache: 'no-store' });
+            const res = await fetch(url, { cache: 'no-store', headers: get_auth_headers() });
             if (!res.ok) {
                 const t = this.get_t_func();
                 const msg = (await res.json().catch(() => ({}))).error || res.statusText;
@@ -357,10 +358,10 @@ export const BackupOverviewComponent = {
             return Helpers.format_iso_to_local_datetime(iso, lang);
         };
         const base = get_base_url();
-        const backup_url = `${base}/backup/${encodeURIComponent(audit_id)}/${encodeURIComponent(row.filename)}`;
+        const backup_url = `${base}/backup/files/${encodeURIComponent(audit_id)}/${encodeURIComponent(row.filename)}`;
         let backup_data;
         try {
-            const res = await fetch(backup_url, { cache: 'no-store' });
+            const res = await fetch(backup_url, { cache: 'no-store', headers: get_auth_headers() });
             if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.statusText);
             backup_data = await res.json();
         } catch (err) {

@@ -1,0 +1,703 @@
+/* Styles for RequirementAuditComponent */
+.requirement-audit-plate {
+    /* Använder .content-plate globalt, inga specifika ändringar här just nu */
+}
+
+.requirement-audit-header h1 {
+    font-size: 1.8rem; /* Lite större för kravets titel */
+    color: var(--primary-color-dark);
+    margin-bottom: 0; /* ÄNDRING: Tog bort marginalen under H1 för att minska avståndet */
+}
+
+[data-theme="dark"] .requirement-audit-header h1 {
+    color: var(--heading-color);
+}
+
+/* NY REGEL: Gör länken för aktör/stickprov klickbar över hela ytan med rätt pekare */
+.requirement-audit-header p a {
+    cursor: pointer;
+    display: inline-block; /* Säkerställer att hela texten agerar som en enhet */
+}
+
+.requirement-audit-header .standard-reference,
+.requirement-audit-header .audited-page-link { /* Gäller nu båda raderna */
+    font-size: 0.9rem;
+    color: var(--text-color-muted);
+    margin-top: 0.25rem; /* Lite luft mellan referensraderna */
+    margin-bottom: 0.25rem;
+}
+
+
+.requirement-audit-header .standard-reference a,
+.requirement-audit-header .audited-page-link a { /* Gäller nu båda raderna */
+    color: var(--primary-color);
+    text-decoration: underline;
+}
+
+.requirement-audit-header .standard-reference a:hover,
+.requirement-audit-header .audited-page-link a:hover { /* Gäller nu båda raderna */
+    text-decoration: underline;
+}
+
+[data-theme="dark"] .requirement-audit-header .standard-reference a,
+[data-theme="dark"] .requirement-audit-header .audited-page-link a {
+    color: var(--link-color);
+}
+[data-theme="dark"] .requirement-audit-header .standard-reference a:hover,
+[data-theme="dark"] .requirement-audit-header .audited-page-link a:hover,
+[data-theme="dark"] .requirement-audit-header .standard-reference a:focus,
+[data-theme="dark"] .requirement-audit-header .audited-page-link a:focus {
+    color: var(--link-hover-color);
+}
+
+/* NYTT: Regel för att styla den nya etiketten (strong-taggen) */
+.requirement-audit-header .standard-reference strong,
+.requirement-audit-header .audited-page-link strong { /* Gäller nu båda raderna */
+    color: var(--text-color); /* Åsidosätt den nedtonade färgen för etiketten */
+    font-weight: 500;
+}
+
+.requirement-audit-header .overall-requirement-status-display {
+    font-size: 1rem;
+    font-weight: 500;
+    margin-top: 0.75rem; /* Lite utrymme från standardreferensen */
+    margin-bottom: 1.5rem;
+    padding: 0.75rem 1rem; /* Mer padding */
+    border: 2px solid var(--border-color); /* Samma ram-tjocklek som kravkort */
+    border-radius: var(--border-radius);
+    background-color: #FFF5E6; /* Väldigt ljus orange nyans - samma som kravkort */
+}
+
+[data-theme="dark"] .requirement-audit-header .overall-requirement-status-display {
+    background-color: color-mix(in srgb, var(--background-color) 90%, black); /* Lite mörkare i mörkt läge */
+    border-color: var(--secondary-color);
+}
+
+/* KORRIGERAD SEKTIONSSTYLING FÖR JÄMN LUFT */
+.audit-section {
+    margin-bottom: 1rem; /* Minskat avstånd mellan sektioner */
+}
+
+.audit-section:last-of-type {
+    margin-bottom: 0;
+}
+
+.audit-section > :last-child {
+    margin-bottom: 0;
+}
+
+.audit-section h2 {
+    font-size: 1.3rem;
+    color: var(--primary-color);
+    font-weight: 500;
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.0rem;
+    border-bottom: 1px dashed var(--secondary-color);
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+[data-theme="dark"] .audit-section h2 {
+    color: var(--heading-color);
+}
+
+.audit-section p,
+.audit-section ul,
+.audit-section ol {
+    font-size: 1rem;
+    color: var(--text-color);
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+    line-height: 1.7;
+}
+
+.audit-section:not(.info-block-section):not(.instructions-section) ul:not(.requirement-metadata-list):not(.pass-criteria-list):not(.instructions-list),
+.audit-section:not(.info-block-section):not(.instructions-section) ol:not(.instructions-list) {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1rem 0;
+}
+
+.audit-section:not(.info-block-section):not(.instructions-section) ul:not(.requirement-metadata-list):not(.pass-criteria-list):not(.instructions-list) > li,
+.audit-section:not(.info-block-section):not(.instructions-section) ol:not(.instructions-list) > li {
+    position: relative;
+    padding-left: 1.25rem;
+}
+
+.audit-section:not(.info-block-section):not(.instructions-section) ul:not(.requirement-metadata-list):not(.pass-criteria-list):not(.instructions-list) > li::before {
+    content: "•";
+    position: absolute;
+    left: 0;
+    top: 0.25em;
+    line-height: 1;
+}
+
+.audit-section:not(.info-block-section):not(.instructions-section) ol:not(.instructions-list) { counter-reset: audit-ol; }
+.audit-section:not(.info-block-section):not(.instructions-section) ol:not(.instructions-list) > li { counter-increment: audit-ol; }
+.audit-section:not(.info-block-section):not(.instructions-section) ol:not(.instructions-list) > li::before {
+    content: counter(audit-ol) ".";
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
+.audit-section ul.instructions-list,
+.audit-section ol.instructions-list {
+    list-style: revert;
+    padding-left: 1.25rem;
+    margin: 0 0 1rem 0;
+}
+
+.audit-section ul.instructions-list > li,
+.audit-section ol.instructions-list > li {
+    position: static;
+    padding-left: 0;
+}
+
+.audit-section ul.instructions-list > li::before,
+.audit-section ol.instructions-list > li::before {
+    content: none;
+}
+
+.audit-section ol.instructions-list { counter-reset: none; }
+.audit-section ol.instructions-list > li { counter-increment: none; }
+
+.requirement-metadata-list {
+    list-style: disc;
+    padding-left: 1.25rem;
+    margin-top: 0.5rem;
+    margin-bottom: 1rem;
+    line-height: 1.5;
+}
+
+.requirement-metadata-list li {
+    margin-bottom: 0.25rem;
+    color: var(--text-color);
+}
+
+.requirement-metadata-list li strong {
+    color: var(--text-color);
+    font-weight: 500;
+}
+
+.checks-container {
+    margin-top: 1rem;
+}
+
+/* Header-rad: Kontrollpunkter (h2) + Jag har kört fast-knapp på samma rad */
+.checks-header-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.checks-header-row h2 {
+    width: fit-content;
+    flex: 0 1 auto;
+    min-width: 0;
+    margin-bottom: 0;
+}
+
+.checks-header-actions {
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.checks-header-actions .stuck-button {
+    white-space: nowrap;
+}
+
+.checks-header-actions .stuck-button--has-content .stuck-button-indicator {
+    opacity: 0.9;
+}
+
+.check-item {
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--border-color);
+    border-left-width: 5px;
+    border-radius: 0 var(--border-radius) var(--border-radius) 0;
+    transition: border-color 0.3s ease;
+    background-color: var(--plate-background-color);
+}
+
+.check-item.status-not_audited {
+    border-left-color: var(--border-color);
+}
+
+.check-item.status-passed {
+    border-left-color: var(--success-color);
+}
+
+.check-item.status-failed {
+    border-left-color: var(--danger-color);
+}
+
+.check-item.status-partially_audited {
+    border-left-color: var(--warning-color);
+}
+
+[data-theme="dark"] .check-item {
+    background-color: color-mix(in srgb, var(--plate-background-color) 92%, black);
+}
+[data-theme="dark"] .check-item.status-not_audited {
+    border-left-color: color-mix(in srgb, var(--border-color) 80%, white);
+}
+
+.check-condition-title {
+    font-size: 1.15rem;
+    color: var(--text-color);
+    margin: 0 0 0 0;
+    padding: 0;
+    line-height: 1.2;
+    font-weight: 500;
+    width: fit-content;
+}
+
+[data-theme="dark"] .check-condition-title {
+    color: var(--heading-color);
+}
+
+.pass-criterion-update-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 1rem;
+    font-weight: 400;
+    margin-left: 0.25rem;
+    color: var(--text-color);
+    line-height: 1.2;
+}
+
+.pass-criterion-update-badge svg {
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    fill: #007BFF;
+    /* Samma blå som övriga uppdateringsikoner (status-icon-updated-indicator) */
+    shape-rendering: geometricPrecision;
+}
+
+[data-theme="dark"] .pass-criterion-update-badge svg {
+    fill: #5BA3FF;
+}
+
+.check-number-label {
+    margin: 0 0 0 0;
+    padding: 0;
+    line-height: 1;
+    font-weight: 600;
+    color: var(--secondary-color);
+}
+
+.check-item p.text-muted {
+    margin: 0 0 12px 0;
+    padding: 0;
+    line-height: 1.2;
+}
+
+.check-status-display {
+    font-size: 0.9rem;
+    color: var(--text-color-muted);
+    margin-bottom: 1rem;
+    padding: 0.3rem 0.6rem;
+    background-color: var(--background-color);
+    border-radius: var(--border-radius);
+    display: inline-block;
+}
+
+[data-theme="dark"] .check-status-display {
+    background-color: var(--input-background-color);
+}
+
+.pass-criteria-list {
+    list-style: none;
+    padding-left: 0;
+    margin-top: 1rem;
+    overflow: hidden;
+}
+
+.pass-criteria-list.slide-down-in {
+    animation: fadeInSlideDown 0.5s ease-out forwards;
+}
+
+.pass-criteria-list.slide-down-out {
+    animation: fadeOutSlideUp 0.5s ease-out forwards;
+}
+
+.compliance-info-text {
+    overflow: hidden;
+}
+
+.compliance-info-text.slide-down-in {
+    animation: fadeInSlideDown 0.5s ease-out forwards;
+}
+
+.compliance-info-text.slide-down-out {
+    animation: fadeOutSlideUp 0.5s ease-out forwards;
+}
+
+.pc-observation-detail-wrapper {
+    overflow: hidden;
+}
+
+.pc-observation-detail-wrapper.slide-down-in {
+    animation: fadeInSlideDown 0.5s ease-out forwards;
+}
+
+.pc-observation-detail-wrapper.slide-down-out {
+    animation: fadeOutSlideUp 0.5s ease-out forwards;
+}
+
+.pc-observation-detail-wrapper[hidden] {
+    display: none;
+}
+
+@keyframes fadeInSlideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-15px);
+        max-height: 0;
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+        max-height: 5000px;
+    }
+}
+
+@keyframes fadeOutSlideUp {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+        max-height: 5000px;
+    }
+    to {
+        opacity: 0;
+        transform: translateY(-15px);
+        max-height: 0;
+    }
+}
+
+.pass-criterion-item {
+    padding: 1rem 1rem 0.5rem 1rem;
+    margin-bottom: 1rem;
+    border: 2px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background-color: #FFF5E6; /* Väldigt ljus orange nyans - samma som kravkort */
+}
+
+[data-theme="dark"] .pass-criterion-item {
+    background-color: color-mix(in srgb, var(--background-color) 95%, black);
+    border-color: var(--border-color);
+}
+
+.pass-criterion-item h4 {
+    margin: 0 0 0.35rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+.pass-criterion-number-label {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--secondary-color);
+    margin: 0 0 0.35rem;
+}
+
+.pass-criterion-requirement {
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+.pass-criterion-heading {
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin: 0 0 0.75rem;
+    color: var(--text-color);
+}
+
+[data-theme="dark"] .pass-criterion-heading {
+    color: var(--heading-color);
+}
+
+.pass-criterion-status {
+    font-size: 0.9rem;
+    color: var(--text-color-muted);
+    margin-bottom: 0.75rem;
+}
+
+/* --- START OF CHANGE: Updated Button Styling --- */
+.condition-actions,
+.pass-criterion-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
+}
+
+.condition-actions {
+    margin-bottom: 1rem;
+}
+
+.condition-actions .button.button-small,
+.pass-criterion-actions .button.button-small {
+    transition: all 0.2s ease-in-out;
+}
+
+/* STATE 1: Inaktivt (ej valt) - "Ghost button" stil */
+.condition-actions .button:not(.active),
+.pass-criterion-actions .button:not(.active) {
+    background-color: transparent;
+}
+
+/* Specifika färger för ghost-knapparna */
+.condition-actions .button-success:not(.active),
+.pass-criterion-actions .button-success:not(.active) {
+    border-color: var(--button-success-border);
+    color: var(--button-success-text);
+}
+
+.condition-actions .button-danger:not(.active),
+.pass-criterion-actions .button-danger:not(.active) {
+    border-color: var(--button-danger-border);
+    color: var(--button-danger-text);
+}
+
+/* Hover-effekt för inaktiva knappar (blir solida) */
+.condition-actions .button-success:not(.active):hover,
+.pass-criterion-actions .button-success:not(.active):hover {
+    background-color: var(--button-success-bg);
+}
+
+.condition-actions .button-danger:not(.active):hover,
+.pass-criterion-actions .button-danger:not(.active):hover {
+    background-color: var(--button-danger-bg);
+}
+
+/* STATE 2: Aktivt (valt) - Solid stil (ärver direkt från globala regler) */
+.condition-actions .button-success.active,
+.pass-criterion-actions .button-success.active {
+    background-color: var(--button-success-bg);
+    border-color: var(--button-success-border);
+    color: var(--button-success-text);
+}
+
+.condition-actions .button-danger.active,
+.pass-criterion-actions .button-danger.active {
+    background-color: var(--button-danger-bg);
+    border-color: var(--button-danger-border);
+    color: var(--button-danger-text);
+}
+/* --- END OF CHANGE --- */
+
+
+/* Status textfärger */
+.status-text.status-passed { color: var(--success-color); font-weight: bold; }
+.status-text.status-failed { color: var(--danger-color); font-weight: bold; }
+.status-text.status-partially_audited { color: var(--warning-color); font-weight: bold; }
+.status-text.status-not_audited { color: var(--text-color-muted); }
+
+.input-fields-container {
+    margin-top: 2rem;
+}
+
+.input-fields-container .form-group {
+    margin-bottom: 1.25rem;
+}
+
+.input-fields-container textarea.form-control {
+    min-height: 100px;
+    font-size: 0.95rem;
+}
+
+.input-fields-container textarea.form-control.readonly-textarea {
+    background-color: color-mix(in srgb, var(--input-background-color) 90%, var(--border-color));
+    color: var(--text-color-muted);
+    cursor: default;
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .input-fields-container textarea.form-control.readonly-textarea {
+    background-color: color-mix(in srgb, var(--input-background-color) 85%, black);
+    border-color: var(--border-color);
+}
+
+.audit-navigation-buttons {
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.audit-navigation-buttons.top-nav {
+    border-top: 1px solid var(--border-color);
+    border-bottom: none;
+    margin-top: 0.75rem;
+    margin-bottom: 1rem;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+}
+
+.audit-navigation-buttons .nav-group-left,
+.audit-navigation-buttons .nav-group-right {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.confirm-btn-fade-out {
+    transition: opacity 0.25s;
+    opacity: 0;
+}
+
+/* Tooltip för navigeringsknappar – samma mönster som kravlistan */
+.audit-navigation-buttons .status-icon-tooltip-wrapper {
+    position: relative;
+    display: inline-flex;
+    cursor: default;
+}
+
+.audit-navigation-buttons .status-icon-tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 0.35rem;
+    padding: 0.35rem 0.5rem;
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.2;
+    white-space: nowrap;
+    color: #1a1a1a;
+    background-color: #fff;
+    border: 1px solid #333;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.15s ease, visibility 0.15s ease;
+    z-index: 100;
+    pointer-events: none;
+}
+
+.audit-navigation-buttons .status-icon-tooltip-wrapper:hover .status-icon-tooltip,
+.audit-navigation-buttons .status-icon-tooltip-wrapper:focus-within .status-icon-tooltip {
+    visibility: visible;
+    opacity: 1;
+}
+
+[data-theme="dark"] .audit-navigation-buttons .status-icon-tooltip {
+    color: #f5f5f5;
+    background-color: #2d2d2d;
+    border-color: #666;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.pc-observation-detail-wrapper label[for^="pc-observation-"] {
+    margin-top: 0.75rem;
+    display: block;
+}
+
+.pc-copy-observation-row[hidden] {
+    display: none;
+}
+
+.pc-attach-media-row {
+    margin-top: 0.5rem;
+    margin-bottom: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pc-attach-media-row > button[data-action="attach-media"] {
+    margin-left: auto;
+}
+
+.pc-attach-media-row .stuck-button {
+    margin-left: auto;
+}
+
+.pc-attach-media-row .stuck-button-icon {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 0.25em;
+}
+
+.pc-attach-media-row .attach-media-button-icons {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25em;
+    margin-left: 0.25em;
+}
+
+
+.requirement-audit-header-title-wrapper {
+    display: block;
+    margin-bottom: 0.25rem;
+    line-height: 1.5; /* Säkerställer konsekvent radhöjd */
+}
+
+.requirement-audit-header-title-wrapper h1 {
+    margin: 0; /* Tar bort H1-elementets standardmarginal */
+    display: inline; /* Gör h1 inline så att texten kan brytas naturligt och knappen kan följa direkt efter */
+    line-height: inherit;
+}
+
+.requirement-audit-header-title-wrapper .edit-button {
+    display: inline-block; /* Gör knappen inline-block så den kan ligga direkt efter texten */
+    vertical-align: baseline; /* Alignerar knappen med textens baseline */
+    margin-left: 1rem; /* Avstånd från rubriken */
+    white-space: nowrap; /* Förhindrar att knappen bryts på flera rader */
+}
+/* Styling för listan med metadata i visningsläget */
+.requirement-metadata-list {
+    list-style: disc;
+    padding-left: 1.25rem;
+    margin-top: 0.5rem;
+    margin-bottom: 1rem;
+    line-height: 1.5;
+}
+
+.requirement-metadata-list li {
+    margin-bottom: 0.25rem;
+    color: var(--text-color);
+}
+
+.requirement-metadata-list li strong {
+    color: var(--text-color);
+    font-weight: 500;
+}
+
+/* Styling för malltexten för avvikelser */
+.pass-criterion-item .failure-template-display {
+    margin-top: 1rem;
+    padding: 0.75rem;
+    background-color: var(--background-color);
+    border: 1px dashed var(--secondary-color);
+    border-radius: var(--border-radius);
+    font-size: 0.9em;
+    color: var(--text-color-muted);
+}
+
+.pass-criterion-item .failure-template-display strong {
+    display: block;
+    color: var(--text-color);
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+[data-theme="dark"] .pass-criterion-item .failure-template-display {
+    background-color: color-mix(in srgb, var(--background-color) 95%, black);
+}

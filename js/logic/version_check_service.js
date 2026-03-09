@@ -46,11 +46,35 @@ export function init_version_check_service() {
                 if (window.NotificationComponent?.show_global_critical_message_with_action) {
                     window.NotificationComponent.show_global_critical_message_with_action(msg, 'warning', {
                         label,
-                        callback: () => {
-                            const state = typeof window.getState === 'function' ? window.getState() : null;
-                            if (state?.auditId && state?.ruleFileContent && window.SaveAuditLogic?.save_audit_to_json_file) {
-                                const t = window.Translation?.t ?? ((k) => k);
-                                window.SaveAuditLogic.save_audit_to_json_file(state, t, () => {}, { backup_suffix_key: 'filename_system_update_suffix' });
+                        callback: async () => {
+                            try {
+                                const state = typeof window.getState === 'function' ? window.getState() : null;
+                                const audit_id = state?.auditId;
+                                if (audit_id && state?.ruleFileContent) {
+                                    const raw_base = (typeof window !== 'undefined' && window.__GV_API_BASE__) ? window.__GV_API_BASE__ : '/v2/api';
+                                    const api_base = String(raw_base).replace(/\/$/, '');
+                                    let headers = { 'Content-Type': 'application/json' };
+                                    try {
+                                        const token = typeof window !== 'undefined' && window.sessionStorage
+                                            ? window.sessionStorage.getItem('gv_auth_token')
+                                            : null;
+                                        if (token) {
+                                            headers = {
+                                                ...headers,
+                                                Authorization: `Bearer ${token}`
+                                            };
+                                        }
+                                    } catch (_) {
+                                        // Om sessionStorage inte är tillgängligt fortsätter vi utan auth-header.
+                                    }
+                                    await fetch(`${api_base}/backup/save-audit`, {
+                                        method: 'POST',
+                                        headers,
+                                        body: JSON.stringify({ auditId: audit_id })
+                                    });
+                                }
+                            } catch (_) {
+                                // Vid fel försöker vi ändå ladda om till ny version utan att störa användaren.
                             }
                             window.location.reload();
                         }

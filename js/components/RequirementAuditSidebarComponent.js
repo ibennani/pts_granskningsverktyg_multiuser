@@ -1,11 +1,12 @@
 // js/components/RequirementAuditSidebarComponent.js
 
 import { RequirementsFilterComponent } from './RequirementsFilterComponent.js';
+import './requirement_audit_sidebar_component.css';
 import { get_searchable_text_for_requirement as get_searchable_text_util } from '../utils/requirement_search_utils.js';
 import { fingerprint_item_keys, can_incremental_update } from '../utils/incremental_list_update.js';
 
 export const RequirementAuditSidebarComponent = {
-    CSS_PATH: 'css/components/requirement_audit_sidebar_component.css',
+    CSS_PATH: './requirement_audit_sidebar_component.css',
 
     root: null,
     deps: null,

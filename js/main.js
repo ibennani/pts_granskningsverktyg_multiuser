@@ -43,7 +43,7 @@ import { FinalConfirmUpdatesViewComponent } from './components/FinalConfirmUpdat
 import { EditRulefileMainViewComponent } from './components/EditRulefileMainViewComponent.js';
 import { RulefileRequirementsListComponent } from './components/RulefileRequirementsListComponent.js';
 import { ViewRulefileRequirementComponent } from './components/ViewRulefileRequirementComponent.js';
-import { EditRulefileRequirementComponent } from './components/EditRulefileRequirementComponent.js';
+import { EditRulefileRequirementComponent } from './components/rulefile_editor/EditRulefileRequirementComponent.js';
 import { ConfirmDeleteViewComponent } from './components/ConfirmDeleteViewComponent.js';
 import { EditRulefileMetadataViewComponent } from './components/EditRulefileMetadataViewComponent.js';
 import { RulefileMetadataViewComponent } from './components/RulefileMetadataViewComponent.js';
@@ -60,7 +60,7 @@ import { RulefileChangeLogViewComponent } from './components/RulefileChangeLogVi
 import { AuditImagesViewComponent } from './components/AuditImagesViewComponent.js';
 import { BackupOverviewComponent } from './components/BackupOverviewComponent.js';
 import { BackupSettingsViewComponent } from './components/BackupSettingsViewComponent.js';
-import { AuditViewComponent } from './components/AuditViewComponent.js';
+import { AuditViewComponent } from './components/audit_view/AuditViewComponent.js';
 import { StartViewComponent } from './components/StartViewComponent.js';
 import { LoginViewComponent } from './components/LoginViewComponent.js';
 import { ManageUsersViewComponent } from './components/ManageUsersViewComponent.js';
@@ -72,6 +72,7 @@ import { show_confirm_delete_modal } from './logic/confirm_delete_modal_logic.js
 import { flush_sync_to_server } from './logic/server_sync.js';
 
 import { DraftManager } from './draft_manager.js';
+import { get_auth_token, get_current_user_preferences } from './api/client.js';
 import { getState, dispatch, subscribe, initState, StoreActionTypes, StoreInitialState, loadStateFromLocalStorageBackup, clearLocalStorageBackup, updateBackupRestorePosition, APP_STATE_KEY } from './state.js';
 window.getState = getState;
 window.dispatch = dispatch;
@@ -592,8 +593,35 @@ window.DraftManager = DraftManager;
 
     function navigate_and_set_hash(target_view_name, target_params = {}) {
         nav_debug('navigate_and_set_hash anropad', { target_view_name, target_params, current_hash: window.location.hash });
-        const target_hash_part = target_params && Object.keys(target_params).length > 0 ?
-            `${target_view_name}?${new URLSearchParams(target_params).toString()}` :
+        const current_state_for_nav = typeof getState === 'function' ? getState() : null;
+        const is_new_audit_metadata =
+            current_view_name_rendered === 'metadata' &&
+            current_state_for_nav?.auditStatus === 'not_started' &&
+            !!current_state_for_nav?.ruleFileContent;
+        const is_start_like_view =
+            target_view_name === 'start' ||
+            target_view_name === 'audit' ||
+            target_view_name === 'audit_audits';
+        const allow_new_audit_exit = target_params && target_params.allow_new_audit_exit === '1';
+
+        // Skydda metadata-flödet för nya granskningar:
+        // vi blockerar all implicit navigering tillbaka till listan/granskningsvyn
+        // så länge användaren inte uttryckligen valt det via metadata-vyn.
+        if (is_new_audit_metadata && is_start_like_view && !allow_new_audit_exit) {
+            nav_debug('navigate_and_set_hash blockerad för ny granskning i metadata', {
+                target_view_name,
+                target_params
+            });
+            return;
+        }
+
+        const safe_params = { ...(target_params || {}) };
+        if (allow_new_audit_exit) {
+            delete safe_params.allow_new_audit_exit;
+        }
+
+        const target_hash_part = safe_params && Object.keys(safe_params).length > 0 ?
+            `${target_view_name}?${new URLSearchParams(safe_params).toString()}` :
             target_view_name;
         const new_hash = `#${target_hash_part}`;
         if (window.location.hash === new_hash) {
@@ -1411,6 +1439,14 @@ window.DraftManager = DraftManager;
         }
     }
 
+    function is_focus_in_editable_field(view_root) {
+        if (!view_root) return false;
+        const active = document.activeElement;
+        if (!active || !view_root.contains(active)) return false;
+        const tag = active.tagName ? active.tagName.toLowerCase() : '';
+        return tag === 'input' || tag === 'textarea' || tag === 'select';
+    }
+
     async function start_normal_session(options = {}) {
         const { restore_pending } = options;
         ensure_app_layout();
@@ -1487,14 +1523,6 @@ window.DraftManager = DraftManager;
             
             consoleManager.info('[Main.js] Global event listeners cleaned up');
         };
-
-        function is_focus_in_editable_field(view_root) {
-            if (!view_root) return false;
-            const active = document.activeElement;
-            if (!active || !view_root.contains(active)) return false;
-            const tag = active.tagName ? active.tagName.toLowerCase() : '';
-            return tag === 'input' || tag === 'textarea' || tag === 'select';
-        }
 
         subscribe((new_state, listener_meta) => {
             if (listener_meta?.skip_render) {
@@ -1659,7 +1687,23 @@ window.DraftManager = DraftManager;
         );
 
         const date_str = window.BUILD_INFO?.date || new Date().toLocaleDateString('sv-SE');
-        const time_str = window.BUILD_INFO?.time || new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+        let time_str;
+        if (is_dev) {
+            if (window.BUILD_INFO?.timestamp) {
+                const d = new Date(window.BUILD_INFO.timestamp);
+                time_str = d.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            } else {
+                time_str = new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            }
+        } else {
+            // Byggt: datum och HH:mm (när appen byggdes/deployades)
+            if (window.BUILD_INFO?.timestamp) {
+                const d = new Date(window.BUILD_INFO.timestamp);
+                time_str = d.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+            } else {
+                time_str = window.BUILD_INFO?.time || new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+            }
+        }
 
         if (is_dev) {
             buildTimestampElement.textContent = t('build_timestamp_dev_fallback', { date: date_str, time: time_str });
@@ -1755,6 +1799,9 @@ window.DraftManager = DraftManager;
     }
 
     async function init_app() { 
+        const AUTH_REQUIRED_EVENT = 'gv-auth-required';
+        const AUTH_REQUIRED_MESSAGE_KEY = 'gv_auth_required_message';
+
         set_initial_theme();
         // Add a small delay to ensure build-info.js is loaded
         memoryManager.setTimeout(() => {
@@ -1768,6 +1815,43 @@ window.DraftManager = DraftManager;
         const had_session_storage = typeof sessionStorage !== 'undefined' && sessionStorage.getItem(APP_STATE_KEY) !== null;
         initState();
         init_draft_manager();
+
+        // Om servern svarar 401 (ogiltig/utgången token) vill vi växla tillbaka till inloggning
+        // utan att lämna kvar bakgrundstjänster som fortsätter att göra anrop.
+        const on_auth_required = async () => {
+            if (window.__gv_auth_required_in_progress) return;
+            window.__gv_auth_required_in_progress = true;
+            try {
+                if (typeof sessionStorage !== 'undefined') sessionStorage.setItem(AUTH_REQUIRED_MESSAGE_KEY, '1');
+            } catch (_) {}
+            try {
+                if (typeof window.cleanupGlobalEventListeners === 'function') {
+                    window.cleanupGlobalEventListeners();
+                }
+            } catch (_) {}
+
+            // Växla till inloggningsvy direkt i stället för att ladda om sidan
+            ensure_app_layout();
+            await init_global_components();
+            if (side_menu_root) {
+                side_menu_root.innerHTML = '';
+                side_menu_root.classList.add('hidden');
+            }
+            try {
+                const t = window.Translation?.t ?? ((k) => k);
+                NotificationComponent?.show_global_message?.(t('auth_session_expired'), 'warning');
+            } catch (_) {}
+
+            await render_view('login', {
+                on_login: () => {
+                    if (side_menu_root) side_menu_root.classList.remove('hidden');
+                    start_normal_session({ restore_pending: null }).catch((err) =>
+                        consoleManager.error('Error starting session after auth-required:', err)
+                    );
+                }
+            });
+        };
+        memoryManager.addEventListener(window, AUTH_REQUIRED_EVENT, on_auth_required);
 
         let visibility_was_hidden = document.hidden;
         document.addEventListener('visibilitychange', () => {
@@ -1831,8 +1915,16 @@ window.DraftManager = DraftManager;
 
         const is_logged_in = () => {
             if (typeof window === 'undefined') return true;
-            return !!(window.__GV_CURRENT_USER_NAME__ ||
-                (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('gv_current_user_name')));
+            const has_token = !!get_auth_token();
+            if (!has_token) {
+                try {
+                    if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem('gv_current_user_name');
+                } catch (_) {}
+                try {
+                    delete window.__GV_CURRENT_USER_NAME__;
+                } catch (_) {}
+            }
+            return has_token;
         };
 
         if (!is_logged_in()) {
@@ -1842,6 +1934,14 @@ window.DraftManager = DraftManager;
                 side_menu_root.innerHTML = '';
                 side_menu_root.classList.add('hidden');
             }
+            try {
+                const should_show = typeof sessionStorage !== 'undefined' && sessionStorage.getItem(AUTH_REQUIRED_MESSAGE_KEY) === '1';
+                if (should_show) {
+                    sessionStorage.removeItem(AUTH_REQUIRED_MESSAGE_KEY);
+                    const t = window.Translation?.t ?? ((k) => k);
+                    NotificationComponent?.show_global_message?.(t('auth_session_expired'), 'warning');
+                }
+            } catch (_) {}
             await render_view('login', {
                 on_login: () => {
                     if (side_menu_root) side_menu_root.classList.remove('hidden');
@@ -1855,6 +1955,14 @@ window.DraftManager = DraftManager;
 
         if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('gv_current_user_name')) {
             window.__GV_CURRENT_USER_NAME__ = sessionStorage.getItem('gv_current_user_name');
+        }
+        if (get_auth_token() && !window.__GV_CURRENT_USER_NAME__) {
+            get_current_user_preferences().then((user) => {
+                if (user?.name) {
+                    window.__GV_CURRENT_USER_NAME__ = user.name;
+                    if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('gv_current_user_name', user.name);
+                }
+            }).catch(() => {});
         }
 
         const active_session_state = getState();

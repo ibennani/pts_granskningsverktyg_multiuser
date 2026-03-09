@@ -5,9 +5,10 @@ import {
     get_requirements_count_for_parent_content_type,
     remove_content_type_from_requirements
 } from '../utils/content_types_helper.js';
+import './edit_rulefile_metadata_view.css';
 
 export const EditContentTypesSectionComponent = {
-    CSS_PATH: 'css/components/edit_rulefile_metadata_view.css',
+    CSS_PATH: './edit_rulefile_metadata_view.css',
 
     async init({ root, deps }) {
         this.root = root;

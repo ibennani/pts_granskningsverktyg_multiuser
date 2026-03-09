@@ -1,4 +1,4 @@
-import "../../css/components/confirm_delete_requirement_view_component.css";
+import "./confirm_delete_requirement_view_component.css";
 
 export const ConfirmDeleteViewComponent = {
     init({ root, deps }) {

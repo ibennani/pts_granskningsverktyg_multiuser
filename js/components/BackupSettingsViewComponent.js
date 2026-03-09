@@ -2,6 +2,7 @@
 // Egen vy för inställningar för säkerhetskopior (schema + retention).
 
 import { get_backup_settings, update_backup_settings } from '../api/client.js';
+import './backup_settings_view_component.css';
 
 const RUNS_PER_DAY_OPTIONS = [1, 2, 3, 4, 6, 8, 12, 24];
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
@@ -24,7 +25,7 @@ function format_schedule_times(hours) {
 }
 
 export const BackupSettingsViewComponent = {
-    CSS_PATH: 'css/components/backup_settings_view_component.css',
+    CSS_PATH: './backup_settings_view_component.css',
 
     async init({ root, deps }) {
         this.root = root;

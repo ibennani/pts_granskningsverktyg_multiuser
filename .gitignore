@@ -102,6 +102,16 @@ jspm_packages/
 # Temporary folders
 tmp/
 temp/
+temp*.txt
+temp*.json
+temp*.modelfile
+*.modelfile
+Modelfile
+
+# App-specific
+backup/
+state_pack.json
+planning.md
 
 # Test results
 test-results/

@@ -47,6 +47,15 @@ async function migrate() {
         const sql11 = readFileSync(join(__dirname, '../migrations/011_add_archived_and_rulefile_update_log_to_audits.sql'), 'utf8');
         await client.query(sql11);
         console.log('[Migrate] Migration 011 kördes.');
+        const sql12 = readFileSync(join(__dirname, '../migrations/012_add_password_to_users.sql'), 'utf8');
+        await client.query(sql12);
+        console.log('[Migrate] Migration 012 kördes.');
+        const sql13 = readFileSync(join(__dirname, '../migrations/013_add_password_reset_tokens.sql'), 'utf8');
+        await client.query(sql13);
+        console.log('[Migrate] Migration 013 kördes.');
+        const sql14 = readFileSync(join(__dirname, '../migrations/014_add_username_to_users.sql'), 'utf8');
+        await client.query(sql14);
+        console.log('[Migrate] Migration 014 kördes.');
     } catch (err) {
         console.error('[Migrate] Fel:', err.message);
         process.exit(1);

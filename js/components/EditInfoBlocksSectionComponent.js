@@ -1,7 +1,9 @@
 // js/components/EditInfoBlocksSectionComponent.js
 
+import './rulefile_sections_view.css';
+
 export const EditInfoBlocksSectionComponent = {
-    CSS_PATH: 'css/components/rulefile_sections_view.css',
+    CSS_PATH: './rulefile_sections_view.css',
 
     async init({ root, deps }) {
         this.root = root;

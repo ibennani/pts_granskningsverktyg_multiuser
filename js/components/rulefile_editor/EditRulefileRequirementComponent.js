@@ -1,10 +1,15 @@
-// js/components/EditRulefileRequirementComponent.js
+// js/components/rulefile_editor/EditRulefileRequirementComponent.js
 
-import { show_confirm_delete_modal, build_delete_warning_text } from '../logic/confirm_delete_modal_logic.js';
+import { show_confirm_delete_modal, build_delete_warning_text } from '../../logic/confirm_delete_modal_logic.js';
+import { RequirementMetaEditor } from './RequirementMetaEditor.js';
+import { ChecklistEditor } from './ChecklistEditor.js';
+import { CriteriaEditor } from './CriteriaEditor.js';
+import './requirement_audit_component.css';
+import './edit_rulefile_requirement_component.css';
 
 export const EditRulefileRequirementComponent = {
-    CSS_PATH_SHARED: 'css/components/requirement_audit_component.css',
-    CSS_PATH_SPECIFIC: 'css/components/edit_rulefile_requirement_component.css',
+    CSS_PATH_SHARED: './requirement_audit_component.css',
+    CSS_PATH_SPECIFIC: './edit_rulefile_requirement_component.css',
 
     async init({ root, deps }) {
         this.root = root;

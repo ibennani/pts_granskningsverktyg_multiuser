@@ -2,9 +2,10 @@
 // Gemensam filterkomponent – samma som i högerspalten (Filtrera relaterade krav)
 
 import { FilterPanelComponent } from './FilterPanelComponent.js';
+import './requirement_audit_sidebar_component.css';
 
 export const RequirementsFilterComponent = {
-    CSS_PATH: 'css/components/requirement_audit_sidebar_component.css',
+    CSS_PATH: './requirement_audit_sidebar_component.css',
 
     async init({ root, deps }) {
         this.root = root;

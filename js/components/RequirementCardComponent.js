@@ -1,8 +1,9 @@
+import './requirement_card_component.css';
 
 export const RequirementCardComponent = {
     // Cache for CSS loading state
     css_loaded: false,
-    CSS_PATH: 'css/components/requirement_card_component.css',
+    CSS_PATH: './requirement_card_component.css',
 
     /**
      * Creates a requirement card element.

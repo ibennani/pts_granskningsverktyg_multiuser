@@ -1,4 +1,5 @@
 import { SampleListComponent } from './SampleListComponent.js';
+import './sample_management_view_component.css';
 
 export const SampleManagementViewComponent = {
     init({ root, deps }) {
@@ -13,7 +14,7 @@ export const SampleManagementViewComponent = {
         this.Helpers = deps.Helpers;
         this.NotificationComponent = deps.NotificationComponent;
         
-        this.CSS_PATH = 'css/components/sample_management_view_component.css';
+        this.CSS_PATH = './sample_management_view_component.css';
         
         // Internal references
         this.sample_list_component_instance = SampleListComponent;

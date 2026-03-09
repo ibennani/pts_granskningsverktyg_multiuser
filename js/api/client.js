@@ -1,10 +1,63 @@
 // js/api/client.js
 
+const AUTH_TOKEN_KEY = 'gv_auth_token';
+const AUTH_REQUIRED_EVENT = 'gv-auth-required';
+
 export const get_base_url = () => {
     if (typeof window === 'undefined') return '/api';
     const base = window.__GV_API_BASE__ || '/v2/api';
     return base.replace(/\/$/, '');
 };
+
+export function get_auth_token() {
+    if (typeof window === 'undefined') return null;
+    return sessionStorage.getItem(AUTH_TOKEN_KEY);
+}
+
+export function set_auth_token(token) {
+    if (typeof window !== 'undefined' && token) {
+        sessionStorage.setItem(AUTH_TOKEN_KEY, token);
+    }
+}
+
+export function clear_auth_token() {
+    if (typeof window !== 'undefined') {
+        sessionStorage.removeItem(AUTH_TOKEN_KEY);
+    }
+}
+
+function handle_unauthorized_response(res) {
+    if (!res || res.status !== 401) return false;
+    try {
+        clear_auth_token();
+    } catch (_) {}
+    try {
+        if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem('gv_current_user_name');
+    } catch (_) {}
+    try {
+        delete window.__GV_CURRENT_USER_NAME__;
+    } catch (_) {}
+    try {
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent(AUTH_REQUIRED_EVENT));
+        }
+    } catch (_) {}
+    return true;
+}
+
+async function parse_error_payload(res) {
+    if (!res) return { error: 'Okänt fel' };
+    return res.json().catch(() => ({ error: res.statusText || `HTTP ${res.status}` }));
+}
+
+export function get_auth_headers() {
+    const headers = { 'Content-Type': 'application/json' };
+    const token = typeof window !== 'undefined' ? get_auth_token() : null;
+    if (token) {
+        headers.Authorization = `Bearer ${token}`;
+    }
+    return headers;
+}
 
 /**
  * Returnerar WebSocket-URL för realtidssynkronisering.
@@ -22,14 +75,18 @@ export function get_websocket_url() {
 export async function api_get(path) {
     const res = await fetch(`${get_base_url()}${path}`, {
         cache: 'no-store',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-User-Name': window.__GV_CURRENT_USER_NAME__ || ''
-        }
+        headers: get_auth_headers()
     });
+    if (handle_unauthorized_response(res)) {
+        const e = new Error('Inloggning krävs');
+        e.status = 401;
+        throw e;
+    }
     if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: res.statusText }));
-        throw new Error(err.error || `HTTP ${res.status}`);
+        const err = await parse_error_payload(res);
+        const e = new Error(err.error || `HTTP ${res.status}`);
+        e.status = res.status;
+        throw e;
     }
     return res.json();
 }
@@ -37,14 +94,16 @@ export async function api_get(path) {
 export async function api_post(path, body) {
     const res = await fetch(`${get_base_url()}${path}`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-User-Name': window.__GV_CURRENT_USER_NAME__ || ''
-        },
+        headers: get_auth_headers(),
         body: JSON.stringify(body)
     });
+    if (path !== '/auth/login' && handle_unauthorized_response(res)) {
+        const e = new Error('Inloggning krävs');
+        e.status = 401;
+        throw e;
+    }
     if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: res.statusText }));
+        const err = await parse_error_payload(res);
         const e = new Error(err.error || `HTTP ${res.status}`);
         e.status = res.status;
         e.existingAuditId = err.existingAuditId;
@@ -56,16 +115,20 @@ export async function api_post(path, body) {
 export async function api_put(path, body) {
     const res = await fetch(`${get_base_url()}${path}`, {
         method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-User-Name': window.__GV_CURRENT_USER_NAME__ || ''
-        },
+        headers: get_auth_headers(),
         body: JSON.stringify(body)
     });
+    if (handle_unauthorized_response(res)) {
+        const e = new Error('Inloggning krävs');
+        e.status = 401;
+        throw e;
+    }
     if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: res.statusText }));
+        const err = await parse_error_payload(res);
         const msg = err.detail ? `${err.error || res.statusText}: ${err.detail}` : (err.error || `HTTP ${res.status}`);
-        throw new Error(msg);
+        const e = new Error(msg);
+        e.status = res.status;
+        throw e;
     }
     return res.json();
 }
@@ -73,13 +136,15 @@ export async function api_put(path, body) {
 export async function api_delete(path) {
     const res = await fetch(`${get_base_url()}${path}`, {
         method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-User-Name': window.__GV_CURRENT_USER_NAME__ || ''
-        }
+        headers: get_auth_headers()
     });
+    if (handle_unauthorized_response(res)) {
+        const e = new Error('Inloggning krävs');
+        e.status = 401;
+        throw e;
+    }
     if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: res.statusText }));
+        const err = await parse_error_payload(res);
         const msg = err?.error || `HTTP ${res.status}`;
         const e = new Error(msg);
         e.status = res.status;
@@ -93,17 +158,65 @@ export async function api_delete(path) {
 export async function api_patch(path, body) {
     const res = await fetch(`${get_base_url()}${path}`, {
         method: 'PATCH',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-User-Name': window.__GV_CURRENT_USER_NAME__ || ''
-        },
+        headers: get_auth_headers(),
         body: JSON.stringify(body)
     });
+    if (handle_unauthorized_response(res)) {
+        const e = new Error('Inloggning krävs');
+        e.status = 401;
+        throw e;
+    }
     if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: res.statusText }));
-        throw new Error(err.error || `HTTP ${res.status}`);
+        const err = await parse_error_payload(res);
+        const e = new Error(err.error || `HTTP ${res.status}`);
+        e.status = res.status;
+        throw e;
     }
     return res.json();
+}
+
+export async function login(username, password) {
+    const res = await fetch(`${get_base_url()}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+        const e = new Error(data.error || 'Inloggning misslyckades');
+        e.status = res.status;
+        throw e;
+    }
+    return data;
+}
+
+export async function reset_password_with_code(code, password) {
+    const res = await fetch(`${get_base_url()}/auth/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, password })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+        const e = new Error(data.error || 'Återställning av lösenord misslyckades');
+        e.status = res.status;
+        throw e;
+    }
+    return data;
+}
+
+export async function get_admin_contacts() {
+    const res = await fetch(`${get_base_url()}/auth/admin-contacts`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await res.json().catch(() => ([]));
+    if (!res.ok) {
+        const e = new Error(data.error || 'Kunde inte hämta administratörer');
+        e.status = res.status;
+        throw e;
+    }
+    return Array.isArray(data) ? data : [];
 }
 
 export async function get_users() {
@@ -189,6 +302,26 @@ export async function save_audit_backup_on_server(audit_id) {
 
 export async function get_backup_settings() {
     return api_get('/backup/settings');
+}
+
+export async function create_password_reset_code(user_id, expires_in_minutes) {
+    return api_post(`/users/${encodeURIComponent(user_id)}/password-reset-codes`, { expires_in_minutes });
+}
+
+export async function create_user(body) {
+    return api_post('/users', body);
+}
+
+export async function update_user(id, body) {
+    return api_put(`/users/${encodeURIComponent(id)}`, body);
+}
+
+export async function delete_user(id) {
+    return api_delete(`/users/${encodeURIComponent(id)}`);
+}
+
+export async function get_user_audit_count(id) {
+    return api_get(`/users/${encodeURIComponent(id)}/audit-count`);
 }
 
 export async function update_backup_settings(body) {

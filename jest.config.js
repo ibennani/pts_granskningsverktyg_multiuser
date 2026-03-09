@@ -5,6 +5,11 @@ export default {
   // Filer som körs innan varje testfil (bra för mocks och global setup)
   setupFilesAfterEnv: ['<rootDir>/tests/setup-jest.js'],
   
+  // Stubba CSS-importer som annars kraschar i Jest (Vite hanterar CSS i runtime).
+  moduleNameMapper: {
+    '\\.(css)$': '<rootDir>/tests/styleMock.js',
+  },
+
   // Sökväg till alla enhetstester. 
   // Vi separerar dessa strikt från E2E-tester för att undvika konflikter.
   testMatch: ['<rootDir>/tests/unit/**/*.spec.js'],

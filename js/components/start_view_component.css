@@ -1,0 +1,138 @@
+/* css/components/start_view_component.css */
+
+/* Plattan ska alltid anpassa höjd efter innehållet; ingen scrollbar på eller innanför plattan */
+.start-view-plate {
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+}
+
+.start-view-intro {
+    margin-bottom: 0.5rem;
+}
+
+.start-view-audits-section {
+    margin-top: 0;
+    box-shadow: none;
+}
+
+.start-view-audits-section-following {
+    margin-top: 2rem;
+}
+
+.start-view-audits-section h2 {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+}
+
+.start-view-section-heading-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.start-view-section-heading-row h2 {
+    margin: 0;
+}
+
+.start-view-audits-section .audit-start-new-audit-btn {
+    flex-shrink: 0;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.9rem;
+}
+
+.start-view-table-wrapper {
+    overflow-x: auto;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    background-color: var(--input-background-color);
+    box-shadow: none;
+}
+
+.start-view-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: none;
+    box-shadow: none;
+}
+
+.start-view-table th:nth-child(1),
+.start-view-table td:nth-child(1) { min-width: 6rem; }
+.start-view-table th:nth-child(2),
+.start-view-table td:nth-child(2) { min-width: 9rem; }
+.start-view-table th:nth-child(3),
+.start-view-table td:nth-child(3) { min-width: 5.5rem; }
+.start-view-table th:nth-child(4),
+.start-view-table td:nth-child(4) { min-width: 4rem; }
+.start-view-table th:nth-child(5),
+.start-view-table td:nth-child(5) { min-width: 4rem; }
+.start-view-table th:nth-child(6),
+.start-view-table td:nth-child(6) { min-width: 6rem; }
+
+.start-view-table th,
+.start-view-table td {
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    border: none;
+    vertical-align: middle;
+    font-size: 0.875rem;
+}
+
+.start-view-table th {
+    font-weight: 600;
+    white-space: nowrap;
+    font-size: 0.75rem;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--text-color-muted);
+}
+
+.start-view-table thead tr {
+    background: linear-gradient(135deg, color-mix(in srgb, var(--primary-color) 8%, var(--input-background-color)), color-mix(in srgb, var(--primary-color) 4%, var(--input-background-color)));
+    border-bottom: 2px solid color-mix(in srgb, var(--border-color) 50%, transparent);
+}
+
+.start-view-table thead th {
+    padding: 0.5rem 0.75rem;
+}
+
+.start-view-table tbody tr {
+    border-bottom: 1px solid color-mix(in srgb, var(--border-color) 35%, transparent);
+    transition: background-color 0.2s ease;
+}
+
+.start-view-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.start-view-table tbody tr:hover {
+    background-color: color-mix(in srgb, var(--primary-color) 6%, var(--input-background-color));
+}
+
+.start-view-table td:nth-child(2) {
+    font-weight: 500;
+}
+
+.start-view-audit-link {
+    color: var(--link-color);
+    text-decoration: underline;
+    transition: color 0.2s ease;
+}
+
+.start-view-audit-link:hover {
+    text-decoration: underline;
+    color: var(--link-hover-color);
+}
+
+.start-view-loading,
+.start-view-no-api {
+    margin-top: 1rem;
+}
+
+/* Mörkt läge */
+[data-theme="dark"] .start-view-table thead tr {
+    background: linear-gradient(135deg, color-mix(in srgb, var(--primary-color) 15%, var(--input-background-color)), color-mix(in srgb, var(--primary-color) 8%, var(--input-background-color)));
+}

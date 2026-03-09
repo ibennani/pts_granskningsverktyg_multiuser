@@ -1,4 +1,4 @@
-import "../../css/components/sample_list_component.css";
+import "./sample_list_component.css";
 import { ProgressBarComponent } from './ProgressBarComponent.js';
 
 export const SampleListComponent = {

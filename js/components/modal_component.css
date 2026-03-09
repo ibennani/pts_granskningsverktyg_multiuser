@@ -1,0 +1,212 @@
+/* ModalComponent: dialog-element med ::backdrop och klass-baserad animation */
+
+/* Backdrop – mörk overlay bakom dialogen */
+dialog.modal-dialog::backdrop {
+    background-color: transparent;
+    transition: background-color 0.2s ease;
+}
+
+dialog.modal-dialog.modal-dialog--visible::backdrop {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+dialog.modal-dialog.modal-dialog--closing::backdrop {
+    background-color: transparent;
+    transition: background-color 0.2s ease;
+}
+
+/* Dialog-rutan */
+dialog.modal-dialog {
+    width: max-content;
+    max-width: 600px;
+    max-height: calc(100vh - 4rem);
+    margin: 2rem auto;
+    padding: 1.5rem;
+    border: none;
+    border-radius: var(--border-radius, 12px);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+    background-color: var(--plate-background-color, #fff);
+    outline: none;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+dialog.modal-dialog.modal-dialog--visible {
+    opacity: 1;
+}
+
+dialog.modal-dialog.modal-dialog--closing {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    dialog.modal-dialog,
+    dialog.modal-dialog::backdrop {
+        transition: none;
+    }
+
+    dialog.modal-dialog.modal-dialog--visible,
+    dialog.modal-dialog.modal-dialog--visible::backdrop {
+        opacity: 1;
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+
+    dialog.modal-dialog.modal-dialog--closing,
+    dialog.modal-dialog.modal-dialog--closing::backdrop {
+        opacity: 0;
+        background-color: transparent;
+    }
+}
+
+@media (max-width: 799px) {
+    dialog.modal-dialog {
+        margin: 1rem auto;
+        width: 95vw;
+        max-width: none;
+        max-height: calc(100vh - 2rem);
+    }
+}
+
+.modal-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+.modal-heading {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.modal-message {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    white-space: pre-line;
+}
+
+.modal-message-block {
+    margin-top: 0;
+    margin-bottom: 1rem;
+}
+
+.modal-message-block p {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+}
+
+.modal-message-block p:last-child {
+    margin-bottom: 0;
+}
+
+.modal-affected-samples-list {
+    margin: 0.75rem 0;
+}
+
+.modal-affected-samples-label {
+    margin: 0 0 0.5rem 0;
+    font-weight: 600;
+}
+
+.modal-affected-samples-ul {
+    margin: 0;
+    padding-left: 1.5rem;
+}
+
+.modal-versions-heading {
+    margin: 0 0 0.5rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.modal-versions-list {
+    margin: 0 0 1rem 0;
+    padding-left: 1.5rem;
+}
+
+.modal-content .button {
+    align-self: flex-start;
+}
+
+.modal-confirm-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+}
+
+.modal-attach-media-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.modal-attach-media-actions .form-group {
+    margin-bottom: 0;
+}
+
+.modal-attach-media-actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+.modal-attach-media-actions .modal-action-right {
+    margin-left: auto;
+}
+
+.copy-observation-radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin: 1rem 0;
+    max-height: 50vh;
+    overflow-y: auto;
+    padding: 0.5rem 0;
+}
+
+.copy-observation-radio-option {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    background-color: var(--background-color);
+}
+
+.copy-observation-radio-option:hover,
+.copy-observation-radio-option:focus-within {
+    border-color: var(--primary-color);
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+.copy-observation-radio-option input[type="radio"] {
+    flex-shrink: 0;
+    margin-top: 0.25rem;
+}
+
+.copy-observation-radio-text {
+    flex: 1;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.modal-copy-observation-actions {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+[data-theme="dark"] dialog.modal-dialog {
+    background-color: var(--plate-background-color);
+}
