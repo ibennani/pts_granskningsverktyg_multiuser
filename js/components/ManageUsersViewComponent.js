@@ -267,7 +267,7 @@ export const ManageUsersViewComponent = {
                 class_name: 'form-control',
                 attributes: {
                     autocomplete: 'username',
-                    maxlength: '30'
+                    maxlength: '6'
                 }
             });
             if (this.current_user?.username) {
@@ -281,7 +281,7 @@ export const ManageUsersViewComponent = {
             type: 'text',
             class_name: 'form-control',
             attributes: {
-                maxlength: '60'
+                maxlength: '40'
             }
         });
         if (this.current_user?.name) {
