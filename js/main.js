@@ -1308,6 +1308,17 @@ window.DraftManager = DraftManager;
     const SKIP_LINK_ANCHOR_ID = 'main-content-heading';
 
     async function handle_hash_change() {
+        if (get_auth_token()) {
+            try {
+                const user = await get_current_user_preferences();
+                if (user?.name) {
+                    window.__GV_CURRENT_USER_NAME__ = user.name;
+                    if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('gv_current_user_name', user.name);
+                }
+                set_current_user_admin(!!user?.is_admin);
+                dispatch({ type: 'GV_USER_PREFERENCES_SYNCED' });
+            } catch (_) {}
+        }
         const hash = window.location.hash.substring(1);
         nav_debug('handle_hash_change anropad', { hash, full_url: window.location.href });
         const [view_name_from_hash, ...param_pairs] = hash.split('?');
@@ -1966,9 +1977,8 @@ window.DraftManager = DraftManager;
             window.__GV_CURRENT_USER_NAME__ = sessionStorage.getItem('gv_current_user_name');
         }
         const has_token = get_auth_token();
-        const missing_user_or_admin = !window.__GV_CURRENT_USER_NAME__ ||
-            (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('gv_current_user_is_admin') === null);
-        if (has_token && missing_user_or_admin) {
+        // Synka alltid användardata från servern när vi har token (så att t.ex. ny admin-behörighet visas utan om-inloggning)
+        if (has_token) {
             get_current_user_preferences().then((user) => {
                 if (user?.name) {
                     window.__GV_CURRENT_USER_NAME__ = user.name;
@@ -1977,6 +1987,19 @@ window.DraftManager = DraftManager;
                 set_current_user_admin(!!user?.is_admin);
             }).catch(() => {});
         }
+
+        // När fliken blir synlig igen: hämta användardata så att admin-meny m.m. uppdateras
+        document.addEventListener('visibilitychange', function sync_user_when_visible() {
+            if (document.visibilityState !== 'visible' || !get_auth_token()) return;
+            get_current_user_preferences().then((user) => {
+                if (user?.name) {
+                    window.__GV_CURRENT_USER_NAME__ = user.name;
+                    if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('gv_current_user_name', user.name);
+                }
+                set_current_user_admin(!!user?.is_admin);
+                dispatch({ type: 'GV_USER_PREFERENCES_SYNCED' });
+            }).catch(() => {});
+        });
 
         const active_session_state = getState();
         if (active_session_state && active_session_state.ruleFileContent && active_session_state.auditStatus !== 'rulefile_editing') {

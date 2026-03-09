@@ -2,13 +2,13 @@
 // Kontrollerar periodiskt om en ny version av appen har deployats. Visar kritisk meddelanderuta med knapp (ingen nedräkning).
 // Kör endast periodisk kontroll när fliken är synlig – webbläsare throttlar timers i bakgrunden, då syns inte meddelandet förrän användaren växlar tillbaka.
 
-const CHECK_INTERVAL_MS = 30000;
 const INITIAL_DELAY_MS = 5000;
+// Intervall: 60 s på produktion (minskar cache-beteende), 30 s lokalt
+const is_production = typeof window !== 'undefined' && window.location.hostname === 'ux-granskningsverktyg.pts.ad';
+const EFFECTIVE_CHECK_INTERVAL_MS = is_production ? 60000 : 30000;
 
 export function init_version_check_service() {
     if (typeof window === 'undefined') return;
-    // På produktion stängs versionskontroll av – undviker felaktiga notiser pga cache/roundtrip
-    if (window.location.hostname === 'ux-granskningsverktyg.pts.ad') return;
 
     const current_timestamp = window.BUILD_INFO?.timestamp;
     if (!current_timestamp) return;
@@ -99,7 +99,7 @@ export function init_version_check_service() {
         check_timer = setTimeout(() => {
             check_for_new_version();
             schedule_next_check();
-        }, CHECK_INTERVAL_MS);
+        }, EFFECTIVE_CHECK_INTERVAL_MS);
     }
 
     function start_periodic_check() {
