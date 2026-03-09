@@ -49,6 +49,8 @@ För att CORS och andra inställningar ska använda din publika adress (t.ex. `h
 
 Vid `npm run deploy:v2` kopieras `.env` till servern (utom rader som börjar med `DEPLOY_`), så samma URL gäller både lokalt och på servern utan att något av detta hamnar i Git.
 
+**Om du ser i loggen:** *"ALLOWED_ORIGINS och PUBLIC_APP_URL är inte satta"* – då tillåter servern endast localhost som standard, men anrop från **samma host** (t.ex. sidan på `https://ux-granskningsverktyg.pts.ad/v2/` som anropar API:et på samma domän) tillåts ändå. För tydlig konfiguration och för att undvika varningen: lägg `PUBLIC_APP_URL=https://ux-granskningsverktyg.pts.ad` i din lokala `.env` och deploya igen.
+
 ## Vad deploy gör
 
 | Komponent | Vad som händer |

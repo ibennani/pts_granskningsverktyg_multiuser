@@ -39,9 +39,18 @@ const allowed_origins = allowed_origins_env
         })();
 
 app.use(cors({
-    origin: (origin, cb) => {
+    origin: (req, cb) => {
+        const origin = req && req.get ? req.get('Origin') : null;
         if (!origin) return cb(null, true);
-        if (allowed_origins.includes(origin)) return cb(null, true);
+        if (allowed_origins.includes(origin)) return cb(null, origin);
+        // När PUBLIC_APP_URL/ALLOWED_ORIGINS inte är satta: tillåt om anropet kommer från samma host (t.ex. Nginx proxy)
+        try {
+            const originUrl = new URL(origin);
+            const hostHeader = req.get('Host');
+            const originHostname = originUrl.hostname;
+            const requestHostname = hostHeader ? hostHeader.split(':')[0].trim() : '';
+            if (requestHostname && originHostname === requestHostname) return cb(null, origin);
+        } catch (_) { /* ignore */ }
         return cb(null, false);
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
