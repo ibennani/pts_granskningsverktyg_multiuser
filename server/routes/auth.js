@@ -3,10 +3,11 @@ import express from 'express';
 import bcrypt from 'bcrypt';
 import { query } from '../db.js';
 import { sign_token } from '../auth/jwt.js';
+import { login_rate_limiter } from '../middleware/rateLimiter.js';
 
 const router = express.Router();
 
-router.post('/login', async (req, res) => {
+router.post('/login', login_rate_limiter, async (req, res) => {
     try {
         const { name, password } = req.body || {};
         if (!name || typeof name !== 'string' || !name.trim()) {
