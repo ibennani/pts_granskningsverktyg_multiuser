@@ -91,6 +91,11 @@
     padding-bottom: 0.35rem;
 }
 
+.manage-users-plate input.form-control {
+    width: auto;
+    display: inline-block;
+}
+
 .manage-users-admin-label {
     margin-left: 0.5rem;
 }
