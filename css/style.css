@@ -704,6 +704,13 @@ textarea {
     padding-left: 0;
 }
 
+/* Standard: kryssrutor och radioknappar med label till höger */
+input[type="checkbox"] + label,
+input[type="radio"] + label {
+    display: inline-block;
+    margin-left: 0.5rem;
+}
+
 /* Inga fokusindikatorer på icke-interaktiva element (t.ex. h1 som mål för skiplänk) */
 [tabindex="-1"]:focus-visible,
 [tabindex="-1"]:focus {
