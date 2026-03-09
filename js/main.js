@@ -1687,7 +1687,23 @@ window.DraftManager = DraftManager;
         );
 
         const date_str = window.BUILD_INFO?.date || new Date().toLocaleDateString('sv-SE');
-        const time_str = window.BUILD_INFO?.time || new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+        let time_str;
+        if (is_dev) {
+            if (window.BUILD_INFO?.timestamp) {
+                const d = new Date(window.BUILD_INFO.timestamp);
+                time_str = d.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            } else {
+                time_str = new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            }
+        } else {
+            // Byggt: datum och HH:mm (när appen byggdes/deployades)
+            if (window.BUILD_INFO?.timestamp) {
+                const d = new Date(window.BUILD_INFO.timestamp);
+                time_str = d.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+            } else {
+                time_str = window.BUILD_INFO?.time || new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+            }
+        }
 
         if (is_dev) {
             buildTimestampElement.textContent = t('build_timestamp_dev_fallback', { date: date_str, time: time_str });
