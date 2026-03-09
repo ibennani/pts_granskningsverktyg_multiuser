@@ -22,6 +22,7 @@ export const ManageUsersViewComponent = {
         this.detail_form_root = null;
         this.table_root = null;
         this.reset_code_button_focus_ref = null;
+        this.sort_state = { column_index: 0, direction: 'asc' };
 
         this._table = Object.create(GenericTableComponent);
         await this._table.init({ root, deps: { Helpers: this.Helpers } });
@@ -95,6 +96,14 @@ export const ManageUsersViewComponent = {
         this.root.appendChild(plate);
     },
 
+    _get_display_name(user) {
+        const t = this.get_t_func();
+        const raw_name = (user && user.name) ? String(user.name) : '';
+        const trimmed = raw_name.trim();
+        if (trimmed) return trimmed;
+        return t('user_fallback_name', { id: user?.id ?? '' });
+    },
+
     render_table_view() {
         if (!this.table_root || !this._table || !this.Helpers) return;
         const t = this.get_t_func();
@@ -102,23 +111,18 @@ export const ManageUsersViewComponent = {
         const columns = [
             {
                 headerLabel: t('manage_users_col_username'),
-                getContent: (user) => user.username || ''
+                getContent: (user) => user.username || '',
+                getSortValue: (user) => user.username || ''
             },
             {
-                headerLabel: t('manage_users_col_first_name'),
-                getContent: (user) => (user.name || '').split(' ')[0] || ''
-            },
-            {
-                headerLabel: t('manage_users_col_last_name'),
-                getContent: (user) => {
-                    const parts = (user.name || '').trim().split(/\s+/);
-                    if (parts.length <= 1) return '';
-                    return parts.slice(1).join(' ');
-                }
+                headerLabel: t('manage_users_col_name'),
+                getContent: (user) => this._get_display_name(user),
+                getSortValue: (user) => this._get_display_name(user)
             },
             {
                 headerLabel: t('manage_users_col_is_admin'),
-                getContent: (user) => (user.is_admin ? t('yes') : t('no'))
+                getContent: (user) => (user.is_admin ? t('yes') : t('no')),
+                getSortValue: (user) => (user.is_admin ? 1 : 0)
             },
             {
                 headerLabel: t('manage_users_col_actions'),
@@ -126,10 +130,15 @@ export const ManageUsersViewComponent = {
                 getContent: (user) => {
                     const container = this.Helpers.create_element('div', { class_name: 'manage-users-actions-cell' });
 
+                    const display_name = this._get_display_name(user);
+
                     const reset_btn = this.Helpers.create_element('button', {
                         class_name: ['button', 'button-secondary', 'manage-users-reset-button'],
                         text_content: t('manage_users_action_create_reset_code'),
-                        attributes: { type: 'button' }
+                        attributes: {
+                            type: 'button',
+                            'aria-label': `${t('manage_users_action_create_reset_code')} ${t('manage_users_action_for')} ${display_name}`
+                        }
                     });
                     reset_btn.addEventListener('click', () => {
                         this.open_reset_code_modal_for_user(user);
@@ -138,7 +147,10 @@ export const ManageUsersViewComponent = {
                     const manage_btn = this.Helpers.create_element('button', {
                         class_name: ['button', 'button-secondary', 'manage-users-manage-button'],
                         text_content: t('manage_users_action_manage_user'),
-                        attributes: { type: 'button' }
+                        attributes: {
+                            type: 'button',
+                            'aria-label': `${t('manage_users_action_manage_user')} ${t('manage_users_action_for')} ${display_name}`
+                        }
                     });
                     manage_btn.addEventListener('click', () => {
                         this.mode = 'detail';
@@ -161,8 +173,11 @@ export const ManageUsersViewComponent = {
             ariaLabel: t('manage_users_table_aria_label'),
             wrapperClassName: 'generic-table-wrapper manage-users-table-wrapper',
             tableClassName: 'generic-table manage-users-table',
-            sortState: { columnIndex: 0, direction: 'asc' },
-            onSort: () => {},
+            sortState: this.sort_state,
+            onSort: (column_index, direction) => {
+                this.sort_state = { column_index, direction };
+                this.render_table_view();
+            },
             t
         });
     },
