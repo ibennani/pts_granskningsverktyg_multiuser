@@ -391,11 +391,19 @@ export const ManageUsersViewComponent = {
 
     async handle_submit_user_form({ username_input, first_name_input, last_name_input, is_admin_checkbox, password_input }) {
         const t = this.get_t_func();
-        const username = (username_input.value || '').trim();
+        let username = (username_input.value || '').trim();
         const first_name = (first_name_input.value || '').trim();
         const last_name = (last_name_input.value || '').trim();
         const is_admin = !!is_admin_checkbox.checked;
         const password = (password_input.value || '').trim();
+
+        if (!username && first_name && last_name) {
+            const auto_username = this.generate_username_from_names(first_name, last_name);
+            if (auto_username) {
+                username = auto_username;
+                username_input.value = auto_username;
+            }
+        }
 
         if (!username) {
             this.NotificationComponent?.show_global_message?.(t('manage_users_error_username_required'), 'warning');
@@ -436,6 +444,21 @@ export const ManageUsersViewComponent = {
             const msg = err?.message || t('manage_users_save_error');
             this.NotificationComponent?.show_global_message?.(msg, 'error');
         }
+    },
+
+    generate_username_from_names(first_name, last_name) {
+        const first = typeof first_name === 'string' ? first_name.trim().toLowerCase() : '';
+        const last = typeof last_name === 'string' ? last_name.trim().toLowerCase() : '';
+
+        if (!first && !last) {
+            return '';
+        }
+
+        const first_part = first.slice(0, 3);
+        const last_part = last.slice(0, 3);
+        const combined = `${first_part}${last_part}` || `${first}${last}`.slice(0, 6);
+
+        return combined.replace(/\s+/g, '');
     },
 
     open_delete_user_modal(user) {

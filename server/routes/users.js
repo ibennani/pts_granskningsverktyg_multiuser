@@ -15,6 +15,21 @@ function generate_reset_code(length = 10) {
     return code;
 }
 
+function generate_username_from_names(first_name, last_name) {
+    const first = typeof first_name === 'string' ? first_name.trim().toLowerCase() : '';
+    const last = typeof last_name === 'string' ? last_name.trim().toLowerCase() : '';
+
+    if (!first && !last) {
+        return '';
+    }
+
+    const first_part = first.slice(0, 3);
+    const last_part = last.slice(0, 3);
+    const combined = `${first_part}${last_part}` || `${first}${last}`.slice(0, 6);
+
+    return combined.replace(/\s+/g, '');
+}
+
 router.get('/me', async (req, res) => {
     try {
         const user = req.user;
@@ -85,15 +100,19 @@ router.post('/', requireAdmin, async (req, res) => {
     try {
         const { username, first_name, last_name, is_admin, password } = req.body || {};
 
-        const username_trimmed = typeof username === 'string' ? username.trim() : '';
         const first_name_trimmed = typeof first_name === 'string' ? first_name.trim() : '';
         const last_name_trimmed = typeof last_name === 'string' ? last_name.trim() : '';
-
-        if (!username_trimmed) {
-            return res.status(400).json({ error: 'Användarnamn krävs' });
-        }
         if (!first_name_trimmed || !last_name_trimmed) {
             return res.status(400).json({ error: 'Förnamn och efternamn krävs' });
+        }
+
+        let username_final = typeof username === 'string' ? username.trim() : '';
+        if (!username_final) {
+            username_final = generate_username_from_names(first_name_trimmed, last_name_trimmed);
+        }
+        username_final = username_final.toLowerCase();
+        if (!username_final) {
+            return res.status(400).json({ error: 'Användarnamn krävs' });
         }
 
         const full_name = `${first_name_trimmed} ${last_name_trimmed}`.replace(/\s+/g, ' ').trim();
@@ -105,7 +124,7 @@ router.post('/', requireAdmin, async (req, res) => {
         }
         const result = await query(
             'INSERT INTO users (username, name, is_admin, password) VALUES ($1, $2, $3, $4) RETURNING id, username, name, is_admin, created_at',
-            [username_trimmed, full_name, is_admin_bool, password_hash]
+            [username_final, full_name, is_admin_bool, password_hash]
         );
         res.status(201).json(result.rows[0]);
     } catch (err) {
