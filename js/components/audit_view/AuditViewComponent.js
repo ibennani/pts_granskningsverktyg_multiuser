@@ -198,8 +198,11 @@ export const AuditViewComponent = {
 
     _split_rules_for_views() {
         const all_rules = Array.isArray(this.rules) ? this.rules : [];
-        this.published_rules = all_rules.filter((r) => r.is_published);
-        this.production_rules = all_rules.filter((r) => !r.is_published);
+        // Använd list_as_arbetskopia från servern så att uppladdade regler alltid hamnar i Arbetskopior
+        // även om is_published skulle skilja sig mellan miljöer (t.ex. cache eller databasskillnader).
+        const is_arbetskopia = (r) => r.list_as_arbetskopia === true || (r.list_as_arbetskopia !== false && !r.is_published);
+        this.production_rules = all_rules.filter(is_arbetskopia);
+        this.published_rules = all_rules.filter((r) => !is_arbetskopia(r));
     },
 
     async ensure_api_data() {

@@ -34,6 +34,7 @@ router.get('/', async (_req, res) => {
         const sql = hasPublished
             ? `SELECT id,
                     published_content IS NOT NULL AS is_published,
+                    (production_base_id IS NOT NULL OR published_content IS NULL) AS list_as_arbetskopia,
                     COALESCE(
                         NULLIF(TRIM(COALESCE(published_content, content)->'metadata'->>'title'), ''),
                         name
@@ -59,6 +60,7 @@ router.get('/', async (_req, res) => {
                ORDER BY updated_at DESC`
             : `SELECT id,
                     false AS is_published,
+                    true AS list_as_arbetskopia,
                     COALESCE(NULLIF(TRIM(content->'metadata'->>'title'), ''), name) AS name,
                     COALESCE(NULLIF(TRIM(content->'metadata'->>'version'), ''), version::text) AS version_display,
                     content->'metadata'->>'version' AS metadata_version,
@@ -202,7 +204,8 @@ router.post('/production', async (req, res) => {
         const ruleName = title_from_content || name || 'Arbetskopia ' + new Date().toISOString().slice(0, 10);
         const content_json = JSON.stringify(content);
         const result = await query(
-            'INSERT INTO rule_sets (name, content, published_content) VALUES ($1, $2, NULL) RETURNING *',
+            `INSERT INTO rule_sets (name, content, published_content, production_base_id)
+             VALUES ($1, $2, NULL, NULL) RETURNING *`,
             [ruleName, content_json]
         );
         broadcast_rules_changed();
