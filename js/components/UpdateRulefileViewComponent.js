@@ -214,10 +214,14 @@ export const UpdateRulefileViewComponent = {
             this.staged_analysis_report
         );
 
+        const state_with_recalculated_statuses = this.AuditLogic?.recalculateStatusesOnLoad
+            ? this.AuditLogic.recalculateStatusesOnLoad(final_reconciled_state)
+            : final_reconciled_state;
+
         // Antal krav som har needsReview och en tydlig bedömning (godkänd/underkänd) – det som faktiskt behöver bekräftas.
-        const requirements = final_reconciled_state?.ruleFileContent?.requirements;
+        const requirements = state_with_recalculated_statuses?.ruleFileContent?.requirements;
         let needs_review_count = 0;
-        (final_reconciled_state.samples || []).forEach(sample => {
+        (state_with_recalculated_statuses.samples || []).forEach(sample => {
             Object.keys(sample.requirementResults || {}).forEach(reqId => {
                 if (sample.requirementResults[reqId]?.needsReview !== true) return;
                 const req_def = requirements && (Array.isArray(requirements) ? requirements.find(r => (r?.key || r?.id) === reqId) : requirements[reqId]);
@@ -231,7 +235,7 @@ export const UpdateRulefileViewComponent = {
 
         this.dispatch({
             type: this.StoreActionTypes.REPLACE_RULEFILE_AND_RECONCILE,
-            payload: final_reconciled_state
+            payload: state_with_recalculated_statuses
         });
 
         if (needs_review_count > 0) {
