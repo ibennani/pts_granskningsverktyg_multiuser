@@ -805,7 +805,9 @@ export const ManageUsersViewComponent = {
 
                 const copy_code_to_clipboard = async () => {
                     if (!current_code) return;
-                    const server_url = typeof window !== 'undefined' && window.location?.origin ? window.location.origin : '';
+                    const origin = typeof window !== 'undefined' && window.location?.origin ? window.location.origin : '';
+                    const app_base = this.Helpers?.get_app_base ? this.Helpers.get_app_base() : '/';
+                    const server_url = app_base === '/' ? origin : (origin + app_base.replace(/\/$/, ''));
                     const expires_str = current_expires_at
                         ? (() => {
                             try {
