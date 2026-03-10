@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "concurrently -k -n \"DOCKER,NGROK,APP,BUILDINFO\" -c \"blue,green,magenta,cyan\" \"node scripts/dev-with-docker.js\" \"npm run ngrok\" \"set BROWSER=msedge&& vite\" \"node scripts/dev-build-info-watcher.js\"",
+    "dev": "concurrently -k -n \"DOCKER,NGROK,APP,BUILDINFO\" -c \"blue,green,magenta,cyan\" \"node scripts/dev-with-docker.js\" \"npm run ngrok\" \"npx wait-on tcp:localhost:3000 --timeout 60000 && set BROWSER=msedge&& vite\" \"node scripts/dev-build-info-watcher.js\"",
     "ngrok": "node scripts/ngrok.js",
     "vibe": "npm run dev",
     "dev:client": "vite",
@@ -21,6 +21,7 @@
     "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config jest.config.js --passWithNoTests"
   },
   "devDependencies": {
+    "@ngrok/ngrok": "^1.7.0",
     "@playwright/test": "^1.56.0",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",

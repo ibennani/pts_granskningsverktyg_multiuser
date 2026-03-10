@@ -27,7 +27,12 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/v2/, ''),
         configure: (proxy) => {
           proxy.on('error', (err, _req, _res) => {
-            if (err?.code !== 'ECONNREFUSED' && err?.code !== 'ECONNRESET') {
+            const isConnectionRefused = (e) =>
+              e?.code === 'ECONNREFUSED' || e?.code === 'ECONNRESET' ||
+              (e?.message && String(e.message).includes('ECONNREFUSED'));
+            const isIgnorable = isConnectionRefused(err) ||
+              (err?.name === 'AggregateError' && err?.errors?.every?.(isConnectionRefused));
+            if (!isIgnorable) {
               console.warn('[vite] ws proxy:', err?.message || err);
             }
           });

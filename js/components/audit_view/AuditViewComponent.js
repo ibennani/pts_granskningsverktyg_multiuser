@@ -921,6 +921,14 @@ export const AuditViewComponent = {
             if (error.status === 409 && error.responseBody?.inUseCount != null) {
                 const rule_name = this._get_rule_base_name(rule_id);
                 this._show_rule_in_use_modal(rule_name, error.responseBody.inUseCount);
+            } else if (error.status === 409 && error.responseBody?.productionCopyCount != null) {
+                const rule_name = this._get_rule_base_name(rule_id);
+                this._show_rule_has_production_copies_modal(rule_name, error.responseBody.productionCopyCount);
+            } else if (error.status === 403) {
+                this.NotificationComponent?.show_global_message(
+                    t('audit_delete_rule_forbidden_admin'),
+                    'error'
+                );
             } else {
                 this.NotificationComponent?.show_global_message(
                     error.message || t('audit_delete_error'),
@@ -948,6 +956,44 @@ export const AuditViewComponent = {
                 const strong_count = this.Helpers.create_element('strong', { text_content: String(in_use_count) });
                 p.appendChild(strong_count);
                 p.appendChild(document.createTextNode(t('audit_rule_in_use_modal_suffix')));
+                container.appendChild(p);
+                const btn = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-primary'],
+                    text_content: t('audit_rule_in_use_modal_understand'),
+                    attributes: { type: 'button' }
+                });
+                btn.addEventListener('click', () => modal_instance.close());
+                const wrapper = this.Helpers.create_element('div', { class_name: 'modal-confirm-actions' });
+                wrapper.appendChild(btn);
+                container.appendChild(wrapper);
+            }
+        );
+    },
+
+    _show_rule_has_production_copies_modal(rule_name, production_copy_count) {
+        const t = this.get_t_func();
+        const ModalComponent = window.ModalComponent;
+        if (!ModalComponent?.show || !this.Helpers?.create_element) {
+            this.NotificationComponent?.show_global_message(
+                t('audit_rule_has_copies_modal_title') + ' ' + t('audit_rule_has_copies_modal_suffix', { count: production_copy_count }),
+                'error'
+            );
+            return;
+        }
+        ModalComponent.show(
+            {
+                h1_text: t('audit_rule_has_copies_modal_title'),
+                message_text: ''
+            },
+            (container, modal_instance) => {
+                const p = this.Helpers.create_element('p');
+                p.appendChild(document.createTextNode(t('audit_rule_has_copies_modal_prefix')));
+                const strong_title = this.Helpers.create_element('strong', { text_content: rule_name });
+                p.appendChild(strong_title);
+                p.appendChild(document.createTextNode(t('audit_rule_has_copies_modal_used')));
+                const strong_count = this.Helpers.create_element('strong', { text_content: String(production_copy_count) });
+                p.appendChild(strong_count);
+                p.appendChild(document.createTextNode(t('audit_rule_has_copies_modal_suffix_plain')));
                 container.appendChild(p);
                 const btn = this.Helpers.create_element('button', {
                     class_name: ['button', 'button-primary'],

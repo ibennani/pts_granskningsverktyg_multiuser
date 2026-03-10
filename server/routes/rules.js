@@ -230,6 +230,17 @@ router.delete('/:id', requireAdmin, async (req, res) => {
                 inUseCount
             });
         }
+        const productionCopyResult = await query(
+            'SELECT COUNT(*) AS count FROM rule_sets WHERE production_base_id = $1',
+            [id]
+        );
+        const productionCopyCount = parseInt(productionCopyResult.rows[0]?.count ?? '0', 10);
+        if (productionCopyCount > 0) {
+            return res.status(409).json({
+                error: 'Regelfilen kan inte raderas eftersom minst en arbetskopia är kopplad till den. Radera arbetskopiorna först.',
+                productionCopyCount
+            });
+        }
         const result = await query('DELETE FROM rule_sets WHERE id = $1 RETURNING id', [id]);
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Regelfil hittades inte' });

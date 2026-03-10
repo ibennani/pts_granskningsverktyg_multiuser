@@ -165,10 +165,11 @@ router.get('/list', async (_req, res) => {
             return res.status(500).json({ error: 'Kunde inte läsa backup-katalogen' });
         }
 
+        const uuidLike = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
         const audit_ids = dir_entries
             .filter((d) => d.isDirectory())
             .map((d) => d.name)
-            .filter((name) => typeof name === 'string' && name.length > 0);
+            .filter((name) => typeof name === 'string' && name.length > 0 && uuidLike.test(name));
 
         if (audit_ids.length === 0) {
             return res.json([]);

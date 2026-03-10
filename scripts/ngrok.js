@@ -1,44 +1,54 @@
-// scripts/ngrok.js – dödar befintlig ngrok och startar om med URL från NGROK_URL (eller .env)
+// scripts/ngrok.js – startar ngrok via @ngrok/ngrok (ingen separat installation krävs)
+// Kräver NGROK_AUTHTOKEN i .env. Valfritt: NGROK_URL (t.ex. https://din-subdomain.ngrok-free.app) för fast adress.
 import 'dotenv/config';
-import { spawn } from 'child_process';
+import ngrok from '@ngrok/ngrok';
 
-const url = (process.env.NGROK_URL || '').trim();
 const port = 11434;
+const url_raw = (process.env.NGROK_URL || '').trim();
+const authtoken = (process.env.NGROK_AUTHTOKEN || '').trim();
 
-if (!url) {
-    console.warn('[ngrok] NGROK_URL är inte satt i .env – ngrok körs utan --url.');
+function get_domain() {
+    if (!url_raw) return undefined;
+    try {
+        return new URL(url_raw).hostname;
+    } catch {
+        return url_raw;
+    }
 }
 
-function kill_existing_ngrok(done) {
-    const is_win = process.platform === 'win32';
-    const kill_proc = is_win
-        ? spawn('taskkill', ['/f', '/im', 'ngrok.exe'], { stdio: 'ignore' })
-        : spawn('sh', ['-c', 'pkill -f ngrok || true'], { stdio: 'ignore' });
-    kill_proc.on('close', () => {
-        setTimeout(done, 500);
-    });
-    kill_proc.on('error', () => setTimeout(done, 500));
-}
-
-function start_ngrok() {
-    const args = url ? ['http', '--url=' + url, String(port)] : ['http', String(port)];
-    const proc = spawn('ngrok', args, { stdio: 'inherit', shell: true });
-    proc.on('error', (err) => {
-        console.warn('[ngrok] Ngrok startades inte (saknas i PATH eller ej installerat). Dev fortsätter utan ngrok.');
+async function run() {
+    if (!authtoken) {
+        console.warn('[ngrok] NGROK_AUTHTOKEN är inte satt i .env. Lägg till din token från https://dashboard.ngrok.com/get-started/your-authtoken');
         keep_alive();
-    });
-    proc.on('exit', (code) => {
-        const sigterm = code === 0 || code === 143 || code === null;
-        if (sigterm) {
-            process.exit(code ?? 0);
-        } else {
-            keep_alive();
-        }
-    });
+        return;
+    }
+
+    const domain = get_domain();
+    if (!domain && url_raw) {
+        console.warn('[ngrok] NGROK_URL kunde inte tolkas som domän – använd t.ex. https://din-subdomain.ngrok-free.app');
+    }
+    if (!domain) {
+        console.warn('[ngrok] NGROK_URL är inte satt – ngrok använder slumpad URL (fungerar fint).');
+    }
+
+    try {
+        const opts = {
+            addr: port,
+            authtoken_from_env: true,
+            ...(domain && { domain })
+        };
+        const listener = await ngrok.forward(opts);
+        console.log('[ngrok] Ingress aktiverad:', listener.url());
+        process.stdin.resume();
+        setInterval(() => {}, 60000);
+    } catch (err) {
+        console.warn('[ngrok] Ngrok startades inte:', err?.message || err);
+        keep_alive();
+    }
 }
 
 function keep_alive() {
     setInterval(() => {}, 60000);
 }
 
-kill_existing_ngrok(start_ngrok);
+run();
