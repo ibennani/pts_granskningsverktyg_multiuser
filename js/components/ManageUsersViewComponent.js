@@ -1000,17 +1000,22 @@ export const ManageUsersViewComponent = {
                 });
 
                 const create_or_refresh_code = async () => {
-                    const minutes = Number(expires_select.value) || 15;
-                    const duration_label = (expiry_options.find((opt) => opt.value === minutes)?.label)
+                    let minutes = Number(expires_select.value) || 15;
+                    const fallback_duration_label = (expiry_options.find((opt) => opt.value === minutes)?.label)
                         || t('manage_users_password_expires_15');
                     try {
                         const payload = await create_password_reset_code(user.username || String(user.id), minutes);
                         current_code = payload.code;
                         current_expires_at = payload.expires_at || null;
+                        if (payload && Number.isFinite(Number(payload.minutes)) && Number(payload.minutes) > 0) {
+                            minutes = Number(payload.minutes);
+                        }
+                        const effective_duration_label = (expiry_options.find((opt) => opt.value === minutes)?.label)
+                            || fallback_duration_label;
                         code_container.innerHTML = '';
                         const info = this.Helpers.create_element('p', {
                             class_name: 'manage-users-reset-code-info',
-                            text_content: t('manage_users_password_code_info', { duration: duration_label, name: display_name })
+                            text_content: t('manage_users_password_code_info', { duration: effective_duration_label, name: display_name })
                         });
                         const list = this.Helpers.create_element('ul', {
                             class_name: 'manage-users-reset-code-list'

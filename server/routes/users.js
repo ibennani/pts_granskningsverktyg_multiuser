@@ -268,9 +268,15 @@ router.post('/:id/password-reset-codes', requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         const { expires_in_minutes } = req.body || {};
-        const minutes = Number.isFinite(Number(expires_in_minutes)) && Number(expires_in_minutes) > 0
-            ? Math.min(Number(expires_in_minutes), 240)
-            : 15;
+        const raw_minutes = Number(expires_in_minutes);
+
+        if (!Number.isFinite(raw_minutes) || raw_minutes <= 0) {
+            return res.status(400).json({
+                error: 'Giltighetstid för engångskod måste anges i minuter mellan 1 och 240.'
+            });
+        }
+
+        const minutes = Math.min(raw_minutes, 240);
 
         const userResult = await query(
             'SELECT id, username, name FROM users WHERE id::text = $1 OR username = $1 OR name = $1 LIMIT 1',
@@ -293,7 +299,8 @@ router.post('/:id/password-reset-codes', requireAdmin, async (req, res) => {
 
         return res.status(201).json({
             code,
-            expires_at
+            expires_at,
+            minutes
         });
     } catch (err) {
         console.error('[users] POST /:id/password-reset-codes error:', err);
