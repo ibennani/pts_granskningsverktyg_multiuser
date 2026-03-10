@@ -13,6 +13,7 @@
   "audit_rules_draft_title": "Drafts",
   "audit_rules_col_name": "Rule file",
   "audit_rules_col_actions": "Actions",
+  "rulefile_last_updated": "Last updated",
   "audit_audits_title": "Audits",
   "audit_upload": "Upload",
   "audit_upload_invalid_file": "The file is neither a valid rule file nor an audit.",

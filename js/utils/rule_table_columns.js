@@ -14,6 +14,12 @@ export function create_rule_table_columns(deps, handlers) {
     const icon_svg = (name, size = 16) =>
         Helpers?.get_icon_svg ? Helpers.get_icon_svg(name, ['currentColor'], size) : '';
 
+    const lang = Translation?.get_current_language_code?.() || 'sv-SE';
+    const format_updated_at = (iso) => {
+        if (!iso || !Helpers?.format_iso_to_local_datetime) return '';
+        return Helpers.format_iso_to_local_datetime(iso, lang);
+    };
+
     const columns = [
         {
             headerLabel: t('audit_rules_col_name'),
@@ -53,6 +59,20 @@ export function create_rule_table_columns(deps, handlers) {
                 return link;
             }
         },
+        ...(is_draft_table
+            ? [{
+                headerLabel: t('rulefile_last_updated'),
+                getSortValue: (row) => row.updated_at || '',
+                getContent: (row) => {
+                    const text = format_updated_at(row.updated_at) || '—';
+                    const span = Helpers.create_element('span', {
+                        class_name: 'generic-table-cell-datetime',
+                        text_content: text
+                    });
+                    return span;
+                }
+            }]
+            : []),
         {
             headerLabel: t('audit_rules_col_actions'),
             isAction: true,

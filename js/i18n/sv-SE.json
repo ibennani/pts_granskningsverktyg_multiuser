@@ -13,6 +13,7 @@
   "audit_rules_draft_title": "Arbetskopior",
   "audit_rules_col_name": "Regelfil",
   "audit_rules_col_actions": "Åtgärder",
+  "rulefile_last_updated": "Senast uppdaterad",
   "audit_audits_title": "Granskningar",
   "audit_upload": "Ladda upp",
   "audit_upload_invalid_file": "Filen är varken en giltig regelfil eller granskning.",

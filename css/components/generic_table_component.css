@@ -133,6 +133,10 @@
     white-space: nowrap;
 }
 
+.generic-table .generic-table-cell-datetime {
+    white-space: nowrap;
+}
+
 /* Variant: granskningslistan (kolumnbredder + länk/knapp-stilar) */
 .generic-table--audit-list th:nth-child(1),
 .generic-table--audit-list td:nth-child(1) { min-width: 6rem; }

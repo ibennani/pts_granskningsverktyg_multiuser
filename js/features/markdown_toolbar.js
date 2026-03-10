@@ -45,13 +45,7 @@ export const MarkdownToolbar = {
         if (textarea.closest('.manage-users-plate') || textarea.id === 'manage-users-textarea') {
             return;
         }
-        
-        // Check if focus protection is active - if so, delay processing
-        if (window.focusProtectionActive || window.customFocusApplied) {
-            if (window.ConsoleManager) {
-                window.ConsoleManager.log('%c[FOCUS DEBUG] Markdown toolbar delaying processing due to focus protection', 'color: #FF6600; font-weight: bold;');
-            }
-            setTimeout(() => this.processTextarea(textarea), 500);
+        if (!textarea.parentNode) {
             return;
         }
         
@@ -70,21 +64,22 @@ export const MarkdownToolbar = {
         const previewDiv = document.createElement('div');
         previewDiv.className = 'md-preview markdown-content';
 
-        textarea.parentNode.insertBefore(wrapper, textarea);
+        const label_before = textarea.previousElementSibling;
+        const parent = textarea.parentNode;
+
+        parent.insertBefore(wrapper, textarea);
         wrapper.appendChild(toolbar);
         wrapper.appendChild(textarea);
         wrapper.appendChild(previewDiv);
 
         const toggle_btn = this.createFormatToggleButton(textarea, wrapper, wasToolbarVisible);
-        const label = wrapper.previousElementSibling;
         const label_row = document.createElement('div');
         label_row.className = 'markdown-editor-label-row';
-        if (label && label.tagName === 'LABEL') {
-            label_row.appendChild(label);
+        if (label_before && label_before.tagName === 'LABEL') {
+            label_row.appendChild(label_before);
         }
         label_row.appendChild(toggle_btn);
-        const parent = wrapper.parentNode;
-        parent.insertBefore(label_row, wrapper);
+        wrapper.insertBefore(label_row, wrapper.firstChild);
 
         this.applyToolbarVisibility(toolbar, wrapper, toggle_btn, label_row, previewDiv, wasToolbarVisible, wasPreviewVisible);
 
