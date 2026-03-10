@@ -1034,6 +1034,19 @@ window.DraftManager = DraftManager;
             consoleManager.warn('[Main.js] Kunde inte kontrollera ruleFileIsPublished vid vybyte:', e?.message || e);
         }
 
+        // Vid navigering till inloggning (t.ex. efter Logga ut) saknas on_login – då måste vi sätta den
+        // så att lyckad inloggning startar session och tar användaren till startvyn.
+        if (view_name_to_render === 'login' && typeof (params_to_render?.on_login) !== 'function') {
+            params_to_render = {
+                ...params_to_render,
+                on_login: () => {
+                    start_normal_session({ restore_pending: null }).catch((err) =>
+                        consoleManager.error('Error starting session after login:', err)
+                    );
+                }
+            };
+        }
+
         if (view_name_to_render !== 'login') {
             ensure_app_layout();
         }
@@ -1680,7 +1693,13 @@ window.DraftManager = DraftManager;
                 autosaved_state: state_to_restore
             });
         } else {
-            handle_hash_change(); 
+            const hash = (window.location.hash || '').replace(/^#/, '');
+            const view_from_hash = hash.split('?')[0];
+            if (view_from_hash === 'login') {
+                window.location.hash = '#start';
+            } else {
+                handle_hash_change();
+            }
         }
         update_app_chrome_texts();
     } 
