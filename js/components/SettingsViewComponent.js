@@ -1,6 +1,6 @@
 // js/components/SettingsViewComponent.js
 
-import { get_current_user_preferences, update_current_user_preferences } from '../api/client.js';
+import { get_current_user_preferences, update_current_user_preferences, change_my_password } from '../api/client.js';
 import { get_current_user_name } from '../utils/helpers.js';
 import './settings_view_component.css';
 
@@ -21,6 +21,9 @@ export const SettingsViewComponent = {
         this.handle_language_change = this.handle_language_change.bind(this);
         this.handle_theme_change = this.handle_theme_change.bind(this);
         this.handle_review_sort_change = this.handle_review_sort_change.bind(this);
+        this.handle_change_password_click = this.handle_change_password_click.bind(this);
+        this.password_change_success = false;
+        this.password_change_error = null;
 
         try {
             this.user_preferences = await get_current_user_preferences();
@@ -76,7 +79,7 @@ export const SettingsViewComponent = {
             } catch {
                 /* ignorerar sparfel */
             }
-        } else if (theme === 'light' || theme === 'dark') {
+        } else if (theme === 'light' || theme === 'dark' || theme === 'alternative') {
             localStorage.setItem('theme_preference', theme);
             document.documentElement.setAttribute('data-theme', theme);
             try {
@@ -84,6 +87,38 @@ export const SettingsViewComponent = {
             } catch {
                 /* ignorerar sparfel */
             }
+        }
+    },
+
+    async handle_change_password_click() {
+        const t = this.Translation.t;
+        const new_pw = (this.new_password_input_ref?.value || '').trim();
+        const new_pw_confirm = (this.new_password_confirm_input_ref?.value || '').trim();
+        this.password_change_error = null;
+        if (new_pw.length < 8) {
+            this.password_change_error = t('login_reset_password_too_short');
+            this.render();
+            return;
+        }
+        if (new_pw !== new_pw_confirm) {
+            this.password_change_error = t('login_reset_password_mismatch');
+            this.render();
+            return;
+        }
+        try {
+            await change_my_password(new_pw);
+            this.password_change_success = true;
+            this.password_change_error = null;
+            this.render();
+            requestAnimationFrame(() => {
+                const heading = document.getElementById('settings-password-changed-heading');
+                if (heading) {
+                    heading.focus({ preventScroll: true });
+                }
+            });
+        } catch (err) {
+            this.password_change_error = err?.message || t('settings_password_error_generic');
+            this.render();
         }
     },
 
@@ -113,6 +148,10 @@ export const SettingsViewComponent = {
         plate.appendChild(this.Helpers.create_element('p', {
             class_name: 'view-intro-text',
             text_content: t('settings_intro')
+        }));
+
+        plate.appendChild(this.Helpers.create_element('h2', {
+            text_content: t('settings_general_heading')
         }));
 
         const review_sort_group = this.Helpers.create_element('div', { class_name: 'form-group' });
@@ -173,11 +212,12 @@ export const SettingsViewComponent = {
             attributes: { 'aria-label': t('settings_theme_label') }
         });
         const theme_pref = this.user_preferences?.theme_preference;
-        const saved = theme_pref === 'light' || theme_pref === 'dark' ? theme_pref : localStorage.getItem('theme_preference');
-        const current_pref = (saved === 'light' || saved === 'dark') ? saved : 'system';
+        const saved = theme_pref === 'light' || theme_pref === 'dark' || theme_pref === 'alternative' ? theme_pref : localStorage.getItem('theme_preference');
+        const current_pref = (saved === 'light' || saved === 'dark' || saved === 'alternative') ? saved : 'system';
         const theme_options = [
             { value: 'light', label_key: 'light_mode' },
             { value: 'dark', label_key: 'dark_mode' },
+            { value: 'alternative', label_key: 'settings_theme_alternative' },
             { value: 'system', label_key: 'settings_theme_system' }
         ];
         theme_options.forEach(({ value, label_key }) => {
@@ -186,10 +226,79 @@ export const SettingsViewComponent = {
                 text_content: t(label_key)
             }));
         });
-        this.theme_select_ref.value = current_pref === 'light' || current_pref === 'dark' ? current_pref : 'system';
+        this.theme_select_ref.value = current_pref === 'light' || current_pref === 'dark' || current_pref === 'alternative' ? current_pref : 'system';
         this.theme_select_ref.addEventListener('change', this.handle_theme_change);
         theme_group.appendChild(this.theme_select_ref);
         plate.appendChild(theme_group);
+
+        const password_section = this.Helpers.create_element('div', { class_name: 'settings-password-section' });
+        if (this.password_change_success) {
+            const changed_heading = this.Helpers.create_element('h2', {
+                id: 'settings-password-changed-heading',
+                text_content: t('settings_password_changed_heading'),
+                attributes: { tabindex: '-1' }
+            });
+            password_section.appendChild(changed_heading);
+            password_section.appendChild(this.Helpers.create_element('p', {
+                class_name: 'view-intro-text',
+                text_content: t('settings_password_changed_intro')
+            }));
+        } else {
+            password_section.appendChild(this.Helpers.create_element('h2', {
+                text_content: t('settings_change_password_heading')
+            }));
+            password_section.appendChild(this.Helpers.create_element('p', {
+                class_name: 'view-intro-text',
+                text_content: t('settings_change_password_intro')
+            }));
+            const error_id = 'settings-password-error';
+            if (this.password_change_error) {
+                const error_el = this.Helpers.create_element('p', {
+                    id: error_id,
+                    class_name: 'settings-password-error',
+                    text_content: this.password_change_error,
+                    attributes: { role: 'alert', 'aria-live': 'polite' }
+                });
+                password_section.appendChild(error_el);
+            }
+            const new_group = this.Helpers.create_element('div', { class_name: 'form-group' });
+            new_group.appendChild(this.Helpers.create_element('label', {
+                attributes: { for: 'settings-new-password' },
+                text_content: t('login_new_password_label')
+            }));
+            const new_input_attrs = { type: 'password', autocomplete: 'new-password' };
+            if (this.password_change_error) {
+                new_input_attrs['aria-describedby'] = error_id;
+            }
+            this.new_password_input_ref = this.Helpers.create_element('input', {
+                id: 'settings-new-password',
+                class_name: 'form-control',
+                attributes: new_input_attrs
+            });
+            new_group.appendChild(this.new_password_input_ref);
+            password_section.appendChild(new_group);
+            const confirm_group = this.Helpers.create_element('div', { class_name: 'form-group' });
+            confirm_group.appendChild(this.Helpers.create_element('label', {
+                attributes: { for: 'settings-new-password-confirm' },
+                text_content: t('login_new_password_confirm_label')
+            }));
+            this.new_password_confirm_input_ref = this.Helpers.create_element('input', {
+                id: 'settings-new-password-confirm',
+                class_name: 'form-control',
+                attributes: { type: 'password', autocomplete: 'new-password' }
+            });
+            confirm_group.appendChild(this.new_password_confirm_input_ref);
+            password_section.appendChild(confirm_group);
+            const change_btn = this.Helpers.create_element('button', {
+                class_name: ['button', 'button-primary'],
+                text_content: t('settings_change_password_button'),
+                attributes: { type: 'button' }
+            });
+            change_btn.addEventListener('click', this.handle_change_password_click);
+            this.change_password_button_ref = change_btn;
+            password_section.appendChild(change_btn);
+        }
+        plate.appendChild(password_section);
 
         this.root.appendChild(plate);
     },
@@ -204,6 +313,12 @@ export const SettingsViewComponent = {
         if (this.theme_select_ref) {
             this.theme_select_ref.removeEventListener('change', this.handle_theme_change);
         }
+        if (this.change_password_button_ref) {
+            this.change_password_button_ref.removeEventListener('click', this.handle_change_password_click);
+        }
+        this.new_password_input_ref = null;
+        this.new_password_confirm_input_ref = null;
+        this.change_password_button_ref = null;
         this.root = null;
         this.deps = null;
     }

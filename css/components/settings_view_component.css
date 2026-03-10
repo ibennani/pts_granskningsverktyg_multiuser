@@ -41,3 +41,34 @@
     padding: 0.3rem 0.5rem;
     font-size: 0.9rem;
 }
+
+.settings-plate h2 {
+    margin-top: 1rem;
+    margin-bottom: 0.35rem;
+    font-size: 1.1rem;
+}
+
+.settings-plate h2:first-of-type {
+    margin-top: 0.5rem;
+}
+
+.settings-password-section {
+    margin-top: 1rem;
+}
+
+.settings-password-section .form-group {
+    margin-top: 0.4rem;
+}
+
+.settings-password-section .button {
+    margin-top: 0.5rem;
+}
+
+.settings-password-error {
+    margin: 0.35rem 0 0 0;
+    padding: 0.35rem;
+    font-size: 0.9rem;
+    color: var(--color-error, #b32d2e);
+    background: var(--color-error-bg, #fef2f2);
+    border-radius: 0.25rem;
+}

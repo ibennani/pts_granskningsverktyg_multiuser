@@ -222,6 +222,27 @@ export async function reset_password_with_code(code, password) {
 }
 
 /**
+ * Byter lösenord för inloggad användare. Användaren behöver inte ange nuvarande lösenord.
+ * Använder egen fetch så att 401 inte triggar utloggning via handle_unauthorized_response.
+ * @param {string} new_password - Nytt lösenord
+ */
+export async function change_my_password(new_password) {
+    const base = get_base_url();
+    const res = await fetch(`${base}/auth/change-password`, {
+        method: 'POST',
+        headers: get_auth_headers(),
+        body: JSON.stringify({ new_password })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+        const e = new Error(data.error || data.message || `HTTP ${res.status}`);
+        e.status = res.status;
+        throw e;
+    }
+    return data;
+}
+
+/**
  * Hämtar administratörer för t.ex. "kontakta admin"-modalen.
  * @returns {{ list: Array<{id?, name?, username?}>, fetched: boolean }} fetched=true om anropet lyckades (även vid tom lista)
  */

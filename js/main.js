@@ -1452,7 +1452,7 @@ window.DraftManager = DraftManager;
             if (user?.language_preference && typeof window.Translation?.set_language === 'function') {
                 await window.Translation.set_language(user.language_preference);
             }
-            if (user?.theme_preference === 'light' || user?.theme_preference === 'dark') {
+            if (user?.theme_preference === 'light' || user?.theme_preference === 'dark' || user?.theme_preference === 'alternative') {
                 localStorage.setItem('theme_preference', user.theme_preference);
                 document.documentElement.setAttribute('data-theme', user.theme_preference);
             } else if (user?.theme_preference === 'system' || user?.theme_preference === null || user?.theme_preference === '') {
