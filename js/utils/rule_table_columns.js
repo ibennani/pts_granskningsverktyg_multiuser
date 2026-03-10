@@ -21,13 +21,16 @@ export function create_rule_table_columns(deps, handlers) {
             getContent: (row) => {
                 const rule_name = (row.name || `Regelfil ${row.id}`).trim();
                 const is_production_row = !!row.production_base_id;
+                const is_published = row.is_published === true;
 
                 let link_text = rule_name;
-                if (row.version_display && !is_production_row) {
-                    // Publicerad rad: visa version + (Publicerad)
-                    link_text = `${rule_name} ${row.version_display} (${t('rulefile_status_published_label')})`;
-                } else if (is_production_row) {
-                    // Produktionsrad: visa version + (Arbetskopia), samma upplägg som publicerad
+                if (is_published && !is_production_row) {
+                    // Verkligen publicerad basregel: visa version + (Publicerad)
+                    link_text = row.version_display
+                        ? `${rule_name} ${row.version_display} (${t('rulefile_status_published_label')})`
+                        : `${rule_name} (${t('rulefile_status_published_label')})`;
+                } else {
+                    // Arbetskopia: antingen produktionskopia (production_base_id) eller opublicerad (t.ex. uppladdad)
                     link_text = row.version_display
                         ? `${rule_name} ${row.version_display} (${t('rulefile_status_production_label')})`
                         : `${rule_name} (${t('rulefile_status_production_label')})`;
@@ -56,11 +59,14 @@ export function create_rule_table_columns(deps, handlers) {
             getContent: (row) => {
                 const rule_name = (row.name || `Regelfil ${row.id}`).trim();
                 const is_production_row = !!row.production_base_id;
+                const is_published = row.is_published === true;
 
                 let link_text = rule_name;
-                if (row.version_display && !is_production_row) {
-                    link_text = `${rule_name} ${row.version_display} (${t('rulefile_status_published_label')})`;
-                } else if (is_production_row) {
+                if (is_published && !is_production_row) {
+                    link_text = row.version_display
+                        ? `${rule_name} ${row.version_display} (${t('rulefile_status_published_label')})`
+                        : `${rule_name} (${t('rulefile_status_published_label')})`;
+                } else {
                     link_text = row.version_display
                         ? `${rule_name} ${row.version_display} (${t('rulefile_status_production_label')})`
                         : `${rule_name} (${t('rulefile_status_production_label')})`;
