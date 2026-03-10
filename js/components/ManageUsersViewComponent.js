@@ -759,11 +759,14 @@ export const ManageUsersViewComponent = {
                     id: 'manage-users-reset-expires',
                     class_name: 'form-control manage-users-reset-expires-select'
                 });
-                [
+                const expiry_options = [
                     { value: 15, label: t('manage_users_password_expires_15') },
                     { value: 30, label: t('manage_users_password_expires_30') },
-                    { value: 60, label: t('manage_users_password_expires_60') }
-                ].forEach((optDef) => {
+                    { value: 60, label: t('manage_users_password_expires_60') },
+                    { value: 120, label: t('manage_users_password_expires_120') },
+                    { value: 240, label: t('manage_users_password_expires_240') }
+                ];
+                expiry_options.forEach((optDef) => {
                     const opt = this.Helpers.create_element('option', {
                         attributes: { value: String(optDef.value) },
                         text_content: optDef.label
@@ -857,6 +860,8 @@ export const ManageUsersViewComponent = {
 
                 const create_or_refresh_code = async () => {
                     const minutes = Number(expires_select.value) || 15;
+                    const duration_label = (expiry_options.find((opt) => opt.value === minutes)?.label)
+                        || t('manage_users_password_expires_15');
                     try {
                         const payload = await create_password_reset_code(user.username || String(user.id), minutes);
                         current_code = payload.code;
@@ -864,7 +869,7 @@ export const ManageUsersViewComponent = {
                         code_container.innerHTML = '';
                         const info = this.Helpers.create_element('p', {
                             class_name: 'manage-users-reset-code-info',
-                            text_content: t('manage_users_password_code_info', { minutes, name: display_name })
+                            text_content: t('manage_users_password_code_info', { duration: duration_label, name: display_name })
                         });
                         const list = this.Helpers.create_element('ul', {
                             class_name: 'manage-users-reset-code-list'
