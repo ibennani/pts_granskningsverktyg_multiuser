@@ -123,19 +123,39 @@ export async function load_css_safely(href, componentName = 'Unknown', options =
     }
 }
 
-export function format_iso_to_local_datetime(iso_string, lang_code = 'en-GB') {
+/**
+ * Tidsstämplar från servern (PostgreSQL TIMESTAMP) kommer utan tidszon.
+ * Tolka dem som UTC så att toLocaleString() visar rätt lokal tid.
+ */
+function ensure_utc_for_parsing(iso_string) {
+    if (typeof iso_string !== 'string') return iso_string;
+    const s = iso_string.trim();
+    if (!s) return s;
+    if (/Z$/i.test(s) || /[+-]\d{2}:?\d{2}$/.test(s)) return s;
+    if (/\d{4}-\d{2}-\d{2}[T \t]\d{2}:\d{2}(:\d{2})?(\.\d+)?$/i.test(s)) return s + 'Z';
+    return s;
+}
+
+/**
+ * @param {string} iso_string - ISO-datum/tid (ev. utan tidszon, tolkas som UTC).
+ * @param {string} [lang_code='en-GB'] - Locale för formatering.
+ * @param {{ showSeconds?: boolean }} [opts] - showSeconds: false för att inte visa sekunder (standard true).
+ */
+export function format_iso_to_local_datetime(iso_string, lang_code = 'en-GB', opts = {}) {
     if (!iso_string) return '';
     try {
-        const date = new Date(iso_string);
+        const to_parse = ensure_utc_for_parsing(iso_string);
+        const date = new Date(to_parse);
         const t_func = (typeof window.Translation?.t === 'function') ? window.Translation.t : (key) => `**${key}**`;
         if (isNaN(date.getTime())) return t_func('invalid_date_format');
 
         const options = {
             year: 'numeric', month: '2-digit', day: '2-digit',
-            hour: '2-digit', minute: '2-digit', second: '2-digit',
+            hour: '2-digit', minute: '2-digit',
             hour12: false
         };
-        
+        if (opts.showSeconds !== false) options.second = '2-digit';
+
         return date.toLocaleString(lang_code, options);
 
     } catch (e) {
@@ -150,7 +170,8 @@ export function format_iso_to_relative_time(iso_string, lang_code = 'en-GB') {
     const t = (typeof window.Translation?.t === 'function') ? window.Translation.t : (key) => `**${key}**`;
     
     try {
-        const date = new Date(iso_string);
+        const to_parse = ensure_utc_for_parsing(iso_string);
+        const date = new Date(to_parse);
         if (isNaN(date.getTime())) return t('invalid_date_format');
 
         const now = new Date();

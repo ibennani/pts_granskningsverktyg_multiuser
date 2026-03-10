@@ -40,12 +40,14 @@ export async function query(text, params) {
         }
     };
     try {
+        await client.query("SET timezone = 'UTC'");
         return await client.query(text, params);
     } catch (err) {
         do_release(true);
         if (is_connection_error(err)) {
             const retry_client = await pool.connect();
             try {
+                await retry_client.query("SET timezone = 'UTC'");
                 return await retry_client.query(text, params);
             } finally {
                 retry_client.release();

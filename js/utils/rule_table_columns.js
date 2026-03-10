@@ -17,7 +17,7 @@ export function create_rule_table_columns(deps, handlers) {
     const lang = Translation?.get_current_language_code?.() || 'sv-SE';
     const format_updated_at = (iso) => {
         if (!iso || !Helpers?.format_iso_to_local_datetime) return '';
-        return Helpers.format_iso_to_local_datetime(iso, lang);
+        return Helpers.format_iso_to_local_datetime(iso, lang, { showSeconds: false });
     };
 
     const columns = [
@@ -62,9 +62,10 @@ export function create_rule_table_columns(deps, handlers) {
         ...(is_draft_table
             ? [{
                 headerLabel: t('rulefile_last_updated'),
-                getSortValue: (row) => row.updated_at || '',
+                getSortValue: (row) => row.content_updated_at || row.updated_at || '',
                 getContent: (row) => {
-                    const text = format_updated_at(row.updated_at) || '—';
+                    const ts = row.content_updated_at || row.updated_at;
+                    const text = format_updated_at(ts) || '—';
                     const span = Helpers.create_element('span', {
                         class_name: 'generic-table-cell-datetime',
                         text_content: text

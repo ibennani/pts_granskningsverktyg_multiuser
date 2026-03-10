@@ -54,7 +54,8 @@ router.get('/', async (_req, res) => {
                         THEN content->'metadata'->>'version'
                         ELSE NULL
                     END AS draft_version,
-                    version, created_at, updated_at,
+                    version, created_at::text AS created_at, updated_at::text AS updated_at,
+                    content_updated_at::text AS content_updated_at,
                     production_base_id
                FROM rule_sets
                ORDER BY updated_at DESC`
@@ -70,12 +71,26 @@ router.get('/', async (_req, res) => {
                     ) AS monitoring_type_text,
                     false AS has_draft,
                     NULL AS draft_version,
-                    version, created_at, updated_at,
+                    version, created_at::text AS created_at, updated_at::text AS updated_at,
+                    content_updated_at::text AS content_updated_at,
                     production_base_id
                FROM rule_sets
                ORDER BY updated_at DESC`;
         const result = await query(sql);
-        res.json(result.rows);
+        const rows = result.rows.map((row) => {
+            const out = { ...row };
+            ['created_at', 'updated_at', 'content_updated_at'].forEach((key) => {
+                if (out[key] != null && typeof out[key] === 'string') {
+                    const s = out[key].trim();
+                    if (s && !/Z$/i.test(s) && !/[+-]\d{2}:?\d{2}$/.test(s)) {
+                        const iso = s.replace(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}:\d{2}(?:\.\d+)?)/, '$1T$2Z');
+                        if (iso !== s) out[key] = iso;
+                    }
+                }
+            });
+            return out;
+        });
+        res.json(rows);
     } catch (err) {
         console.error('[rules] GET list error:', err);
         res.status(500).json({ error: 'Kunde inte hämta regelfiler' });
@@ -287,6 +302,7 @@ router.put('/:id', async (req, res) => {
                 : content;
             updates.push(`content = $${i++}`);
             values.push(JSON.stringify(content_with_date));
+            updates.push(`content_updated_at = CURRENT_TIMESTAMP`);
         }
         if (updates.length === 0) {
             return res.status(400).json({ error: 'Ingen data att uppdatera' });
@@ -377,8 +393,8 @@ router.post('/:id/copy', async (req, res) => {
         }
 
         const insertResult = await query(
-            `INSERT INTO rule_sets (name, content, published_content, version, production_base_id)
-             VALUES ($1, $2, NULL, $3, $4)
+            `INSERT INTO rule_sets (name, content, published_content, version, production_base_id, content_updated_at)
+             VALUES ($1, $2, NULL, $3, $4, CURRENT_TIMESTAMP)
              RETURNING *`,
             [
                 source.name,
@@ -464,7 +480,8 @@ router.post('/:id/publish_production', async (req, res) => {
              SET published_content = $1::jsonb,
                  content = $1::jsonb,
                  version = version + 1,
-                 updated_at = CURRENT_TIMESTAMP
+                 updated_at = CURRENT_TIMESTAMP,
+                 content_updated_at = CURRENT_TIMESTAMP
              WHERE id = $2
              RETURNING *`,
             [JSON.stringify(content_with_version), base_id]
