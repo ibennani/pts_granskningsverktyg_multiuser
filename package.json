@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "concurrently -k -n \"DOCKER,NGROK,APP,BUILDINFO\" -c \"blue,green,magenta,cyan\" \"node scripts/dev-with-docker.js\" \"npm run ngrok\" \"vite\" \"node scripts/dev-build-info-watcher.js\"",
-    "ngrok": "taskkill /f /im ngrok.exe 2>nul & node scripts/ngrok.js",
+    "dev": "concurrently -k -n \"DOCKER,NGROK,APP,BUILDINFO\" -c \"blue,green,magenta,cyan\" \"node scripts/dev-with-docker.js\" \"npm run ngrok\" \"set BROWSER=msedge&& vite\" \"node scripts/dev-build-info-watcher.js\"",
+    "ngrok": "node scripts/ngrok.js",
     "vibe": "npm run dev",
     "dev:client": "vite",
     "dev:db": "docker compose -p sessionversion up -d --wait",

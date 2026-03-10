@@ -519,17 +519,20 @@ export const EditInfoBlocksSectionComponent = {
             form_element: editor,
             focus_root: editor,
             debounce_ms: 250,
-            on_save: () => {
+            on_save: ({ should_trim, skip_render }) => {
                 const list_el = editor.querySelector('.info-blocks-order-list-editable');
                 if (list_el) {
                     const order_from_dom = Array.from(list_el.querySelectorAll('.info-blocks-order-name-input'))
                         .map(inp => inp.getAttribute('data-block-id')).filter(Boolean);
                     const block_names = Array.from(list_el.querySelectorAll('.info-blocks-order-name-input')).reduce((acc, inp) => {
                         const id = inp.getAttribute('data-block-id');
-                        if (id) acc[id] = (inp.value || '').trim();
+                        if (id) {
+                            const raw_value = inp.value || '';
+                            acc[id] = should_trim ? raw_value.trim() : raw_value;
+                        }
                         return acc;
                     }, {});
-                    this._save_info_blocks_order(order_from_dom, block_names);
+                    this._save_info_blocks_order(order_from_dom, block_names, skip_render === true);
                 }
             }
         }) || null;

@@ -468,12 +468,43 @@ export const EditContentTypesSectionComponent = {
         }, fade_duration_ms);
     },
 
+    /**
+     * Läser innehållet från DOM (alla sidtypsfält) så att autospar alltid sparar senaste värdet.
+     * Anropas före sparning så att vi inte enbart förlitar oss på input-handlers.
+     */
+    _read_content_types_from_dom(container, shouldTrim) {
+        if (!container) return [];
+        const normalize = (val) => {
+            const s = (val ?? '').toString();
+            return shouldTrim ? s.trim() : s;
+        };
+        const parent_cards = container.querySelectorAll('.content-type-card');
+        const result = [];
+        parent_cards.forEach((card) => {
+            const text_field = card.querySelector('.inline-field input, .inline-field textarea');
+            const parent_text = text_field ? normalize(text_field.value) : '';
+            const child_cards = card.querySelectorAll('.editable-sublist .editable-child-card');
+            const types = [];
+            child_cards.forEach((child_card) => {
+                const fields = child_card.querySelectorAll('.inline-field input, .inline-field textarea');
+                const text_val = fields[0] ? normalize(fields[0].value) : '';
+                const desc_val = fields[1] ? normalize(fields[1].value) : '';
+                types.push({ id: '', text: text_val, description: desc_val });
+            });
+            result.push({ id: '', text: parent_text, description: '', types });
+        });
+        return result;
+    },
+
     _perform_save(shouldTrim, skip_render) {
         if (!this.form_element_ref || !this.working_metadata) return;
 
         const state = this.getState();
         const currentRulefile = state?.ruleFileContent || {};
-        const content_types = this.working_metadata.vocabularies?.contentTypes || this.working_metadata.contentTypes || [];
+        const content_types_from_dom = this._read_content_types_from_dom(this.content_types_container, shouldTrim);
+        const content_types = content_types_from_dom.length > 0
+            ? content_types_from_dom
+            : (this.working_metadata.vocabularies?.contentTypes || this.working_metadata.contentTypes || []);
 
         const cleanedContentTypes = content_types.map(parent => {
             const cleanedParent = {

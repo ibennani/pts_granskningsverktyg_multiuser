@@ -87,6 +87,12 @@ export const RequirementAuditComponent = {
             this.unsubscribe_from_store = this.subscribe((_new_state, listener_meta) => {
                 if (listener_meta?.skip_render) return;
                 if (this.root && typeof this.render === 'function') {
+                    const active = document.activeElement;
+                    const tag = active?.tagName?.toLowerCase();
+                    if (active && (tag === 'textarea' || tag === 'input' || tag === 'select') &&
+                        this.plate_element_ref?.contains(active)) {
+                        return;
+                    }
                     if (window.__GV_DEBUG_MODAL_SCROLL && window.ConsoleManager) window.ConsoleManager.log('[GV-ModalDebug] RequirementAuditComponent: render');
                     this.render();
                 }
@@ -797,24 +803,25 @@ export const RequirementAuditComponent = {
             return;
         }
 
-        if (!this.plate_element_ref || !this.root.contains(this.plate_element_ref)) {
+        const plate_exists = this.plate_element_ref && this.root.contains(this.plate_element_ref);
+        if (!plate_exists) {
             this.build_initial_dom();
+            this.autosave_session?.destroy?.();
+            this.autosave_session = null;
+            if (this.plate_element_ref && this.AutosaveService?.create_session) {
+                this.autosave_session = this.AutosaveService.create_session({
+                    form_element: this.plate_element_ref,
+                    focus_root: this.plate_element_ref,
+                    debounce_ms: 250,
+                    on_save: ({ is_autosave, should_trim, skip_render }) => {
+                        this.handle_comment_input(should_trim);
+                        this.checklist_handler_instance?.flush_observations_before_destroy?.({ trim: should_trim });
+                        this.save_result_immediately({ skipRender: skip_render });
+                    }
+                });
+            }
         }
 
-        this.autosave_session?.destroy?.();
-        this.autosave_session = null;
-        if (this.plate_element_ref && this.AutosaveService?.create_session) {
-            this.autosave_session = this.AutosaveService.create_session({
-                form_element: this.plate_element_ref,
-                focus_root: this.plate_element_ref,
-                debounce_ms: 250,
-                on_save: ({ is_autosave, should_trim, skip_render }) => {
-                    this.handle_comment_input(should_trim);
-                    this.save_result_immediately({ skipRender: skip_render });
-                }
-            });
-        }
-        
         this.populate_dom_with_data();
         await this.render_right_sidebar();
         this.render_navigation_from_sidebar();

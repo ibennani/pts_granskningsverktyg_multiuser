@@ -40,21 +40,46 @@ export const MetadataFormComponent = {
     },
 
     _get_form_data(should_trim, trim_text) {
-        let actor_link_value = (this.actor_link_input?.value || '').trim();
-        if (actor_link_value && this.Helpers?.add_protocol_if_missing) {
-            actor_link_value = this.Helpers.add_protocol_if_missing(actor_link_value);
+        const sanitize_input = (val) => {
+            const value = val ?? '';
+            if (this.Helpers?.sanitize_plain_input) {
+                return this.Helpers.sanitize_plain_input(value, { trim: should_trim });
+            }
+            if (!should_trim || typeof value !== 'string') {
+                return value;
+            }
+            return value.trim();
+        };
+
+        const sanitize_comment = (val) => {
+            const raw_value = val ?? '';
+            if (should_trim && typeof trim_text === 'function') {
+                return trim_text(raw_value);
+            }
+            if (this.Helpers?.sanitize_plain_input) {
+                return this.Helpers.sanitize_plain_input(raw_value, { trim: should_trim });
+            }
+            if (!should_trim || typeof raw_value !== 'string') {
+                return raw_value;
+            }
+            return raw_value.trim();
+        };
+
+        let actor_link_value_raw = this.actor_link_input?.value ?? '';
+        let actor_link_sanitized = sanitize_input(actor_link_value_raw);
+        if (should_trim && actor_link_sanitized && this.Helpers?.add_protocol_if_missing) {
+            actor_link_sanitized = this.Helpers.add_protocol_if_missing(actor_link_sanitized);
         }
-        const raw_comment = (this.internal_comment_input?.value ?? '');
-        const internal_comment = should_trim && typeof trim_text === 'function'
-            ? trim_text(raw_comment)
-            : (this.Helpers?.sanitize_plain_input ? this.Helpers.sanitize_plain_input(raw_comment) : raw_comment);
-        const sanitize = (val) => (this.Helpers?.sanitize_plain_input ? this.Helpers.sanitize_plain_input(val) : (val || '').trim());
+
+        const raw_comment = this.internal_comment_input?.value ?? '';
+        const internal_comment = sanitize_comment(raw_comment);
+
         return {
-            caseNumber: sanitize(this.case_number_input?.value ?? ''),
-            actorName: sanitize(this.actor_name_input?.value ?? ''),
-            actorLink: sanitize(actor_link_value),
-            auditorName: sanitize(this.auditor_name_input?.value ?? ''),
-            caseHandler: sanitize(this.case_handler_input?.value ?? ''),
+            caseNumber: sanitize_input(this.case_number_input?.value ?? ''),
+            actorName: sanitize_input(this.actor_name_input?.value ?? ''),
+            actorLink: actor_link_sanitized,
+            auditorName: sanitize_input(this.auditor_name_input?.value ?? ''),
+            caseHandler: sanitize_input(this.case_handler_input?.value ?? ''),
             internalComment: internal_comment
         };
     },
@@ -186,9 +211,15 @@ export const MetadataFormComponent = {
                 form_element: this.form_element_ref,
                 focus_root: this.form_element_ref,
                 debounce_ms: 250,
-                on_save: ({ should_trim, trim_text }) => {
+                on_save: ({ is_autosave, should_trim, skip_render, trim_text }) => {
                     const payload = this._get_form_data(should_trim, trim_text);
-                    this.dispatch({ type: this.StoreActionTypes.UPDATE_METADATA, payload });
+                    this.dispatch({
+                        type: this.StoreActionTypes.UPDATE_METADATA,
+                        payload: {
+                            ...payload,
+                            skip_render: skip_render === true
+                        }
+                    });
                 }
             });
         }

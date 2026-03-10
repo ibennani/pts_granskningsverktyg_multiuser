@@ -805,8 +805,9 @@ export const ChecklistHandler = {
                 
                 observation_textarea.readOnly = this.is_audit_locked;
                 const target_observation_value = pc_data.observationDetail || '';
-                if (document.activeElement !== observation_textarea &&
-                    observation_textarea.value !== target_observation_value) {
+                const any_textarea_focused = document.activeElement && this.container_ref?.contains(document.activeElement) &&
+                    (document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'INPUT');
+                if (!any_textarea_focused && observation_textarea.value !== target_observation_value) {
                     observation_textarea.value = target_observation_value;
                 }
                 if (this.Helpers?.init_auto_resize_for_textarea) {
@@ -899,7 +900,14 @@ export const ChecklistHandler = {
         this.update_dom();
     },
 
-    flush_observations_before_destroy() {
+    /**
+     * Synkar innehållet från alla observationstextareas i DOM till requirement_result_ref.
+     * Anropas före sparning så att autospar alltid har senaste värdet, och vid destroy/navigering.
+     * @param {Object} options
+     * @param {boolean} [options.trim=true] - om true trimmas värdena (vid manuell sparning/navigering). Vid autospar skicka false.
+     */
+    flush_observations_before_destroy(options = {}) {
+        const should_trim = options.trim !== false;
         if (!this.container_ref || !this.requirement_result_ref?.checkResults) return;
         const textareas = this.container_ref.querySelectorAll('textarea.pc-observation-detail-textarea');
         textareas.forEach((textarea) => {
@@ -910,10 +918,10 @@ export const ChecklistHandler = {
                 const pc_id = pc_item.dataset.pcId;
                 const check_result = this.requirement_result_ref.checkResults[check_id];
                 if (check_result?.passCriteria?.[pc_id]) {
-                    const trimmed = this.Helpers?.trim_textarea_preserve_lines
-                        ? this.Helpers.trim_textarea_preserve_lines(textarea.value || '')
-                        : (textarea.value || '').trim();
-                    check_result.passCriteria[pc_id].observationDetail = trimmed;
+                    const raw = textarea.value || '';
+                    check_result.passCriteria[pc_id].observationDetail = should_trim && this.Helpers?.trim_textarea_preserve_lines
+                        ? this.Helpers.trim_textarea_preserve_lines(raw)
+                        : should_trim ? raw.trim() : raw;
                 }
             }
         });
