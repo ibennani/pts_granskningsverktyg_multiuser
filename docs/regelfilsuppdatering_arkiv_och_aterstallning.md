@@ -105,6 +105,7 @@ När användaren bekräftar att regelfilen ska uppdateras byggs granskningens in
      - fortfarande finns oförändrat i den nya regelfilen,
      - finns men är ändrat,
      - eller inte längre finns alls (borttaget krav).
+   - **Mappning av kontrollpunkter och godkännandekriterier:** För krav som finns kvar omstruktureras varje kravresultat så att det följer den nya regelfilens ID-struktur. Kontrollpunkter och godkännandekriterier kan ha nya ID:n i den nya regelfilen även när innehållet är detsamma (t.ex. efter redigering). Systemet matchar då gamla och nya kontrollpunkter på normaliserad condition-text, och inom varje kontrollpunkt matchas kriterier på normaliserad requirement-text (ordning används vid identisk text). Sparad status (t.ex. Underkänt, Inte aktuellt), bristbeskrivningar och bilagor flyttas till de nya ID:n så att de visas korrekt efter uppdateringen.
 
 3. **Borttagna krav flyttas till arkivet**
    - Om ett krav inte längre finns i den nya regelfilen tas det bort från de ordinarie kravresultaten i respektive stickprov.
@@ -121,7 +122,8 @@ När användaren bekräftar att regelfilen ska uppdateras byggs granskningens in
    - Resultaten för dessa krav fortsätter att gälla som tidigare.
 
 6. **Det nya state:et ersätter det gamla**
-   - När alla stickprov och kravresultat har hanterats ersätter det nybyggda state:et det gamla.
+   - När alla stickprov och kravresultat har hanterats beräknas statusar om (på krav- och kontrollpunktsnivå) så att de sparade statusfälten stämmer med den nya regelfilens struktur.
+   - Det nybyggda state:et ersätter sedan det gamla.
    - Synkroniseringstjänsten skickar därefter upp de relevanta delarna av state till servern så att databasen uppdateras.
 
 ### 1.7 Efter uppdatering: omgranskning och arkiv
