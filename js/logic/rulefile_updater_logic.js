@@ -26,9 +26,9 @@ export function analyze_rule_file_changes(current_audit_state, new_rule_file_con
         throw new Error("Analysfel: 'requirements' saknas i gamla eller nya regelfilen.");
     }
 
-    const old_reqs = current_audit_state.ruleFileContent.requirements;
-    const new_reqs = new_rule_file_content.requirements;
-    
+    const old_reqs = normalize_requirements_to_object(current_audit_state.ruleFileContent.requirements);
+    const new_reqs = normalize_requirements_to_object(new_rule_file_content.requirements);
+
     const old_req_keys = Object.keys(old_reqs);
     const new_req_keys = Object.keys(new_reqs);
     const new_req_keys_set = new Set(new_req_keys);
@@ -191,6 +191,147 @@ function get_pc_id(pc_obj) {
     return pc_obj?.id ?? pc_obj?.key ?? null;
 }
 
+/**
+ * Normaliserar requirements till ett objekt keyat av req.key eller req.id.
+ * @param {object|Array} requirements
+ * @returns {object}
+ */
+function normalize_requirements_to_object(requirements) {
+    if (!requirements || typeof requirements !== 'object') return {};
+    if (!Array.isArray(requirements)) return requirements;
+    const out = {};
+    requirements.forEach(req => {
+        if (!req || typeof req !== 'object') return;
+        const key = req.key || req.id;
+        if (key != null) out[key] = req;
+    });
+    return out;
+}
+
+/**
+ * Normaliserar text för innehållsmatchning (condition, requirement).
+ * @param {string|undefined} str
+ * @returns {string}
+ */
+function normalize_text_for_match(str) {
+    if (str == null) return '';
+    const t = typeof str === 'string' ? str : String(str);
+    return t.trim().toLowerCase();
+}
+
+/**
+ * Bygger mappning gamla check-id -> nya check-id och per gammal check gamla pc-id -> nya pc-id.
+ * Matchning sker på normaliserad condition- resp. requirement-text; ordning används som tie-breaker.
+ * @param {object} old_req - Kravdefinition från gamla regelfilen
+ * @param {object} new_req - Kravdefinition från nya regelfilen
+ * @returns {{ oldCheckIdToNewCheckId: Record<string, string>, oldPcIdToNewPcIdByOldCheckId: Record<string, Record<string, string>> }}
+ */
+function build_check_and_pc_id_mappings(old_req, new_req) {
+    const oldCheckIdToNewCheckId = {};
+    const oldPcIdToNewPcIdByOldCheckId = {};
+
+    const old_checks = Array.isArray(old_req?.checks) ? old_req.checks : [];
+    const new_checks = Array.isArray(new_req?.checks) ? new_req.checks : [];
+
+    // Matcha checks på normaliserad condition; vid lika text använd ordning (första mot första).
+    const old_by_condition = new Map(); // normalized_condition -> [old_check, ...] i ordning
+    old_checks.forEach(c => {
+        const key = normalize_text_for_match(c.condition);
+        if (!old_by_condition.has(key)) old_by_condition.set(key, []);
+        old_by_condition.get(key).push(c);
+    });
+    const consumed_old = new Set(); // index i old_checks som redan parats
+
+    new_checks.forEach(new_check => {
+        const new_id = get_check_id(new_check);
+        if (!new_id) return;
+        const key = normalize_text_for_match(new_check.condition);
+        const candidates = old_by_condition.get(key) || [];
+        const old_check = candidates.find(c => {
+            const idx = old_checks.indexOf(c);
+            return idx >= 0 && !consumed_old.has(idx);
+        });
+        if (old_check) {
+            const old_id = get_check_id(old_check);
+            if (old_id) {
+                oldCheckIdToNewCheckId[old_id] = new_id;
+                consumed_old.add(old_checks.indexOf(old_check));
+
+                // Per check: matcha passCriteria på normaliserad requirement
+                const old_pcs = Array.isArray(old_check.passCriteria) ? old_check.passCriteria : [];
+                const new_pcs = Array.isArray(new_check.passCriteria) ? new_check.passCriteria : [];
+                const pc_map = {};
+                const old_by_req = new Map();
+                old_pcs.forEach(pc => {
+                    const pk = normalize_text_for_match(pc.requirement);
+                    if (!old_by_req.has(pk)) old_by_req.set(pk, []);
+                    old_by_req.get(pk).push(pc);
+                });
+                const consumed_pc = new Set();
+
+                new_pcs.forEach(new_pc => {
+                    const new_pc_id = get_pc_id(new_pc);
+                    if (!new_pc_id) return;
+                    const pk = normalize_text_for_match(new_pc.requirement);
+                    const pc_candidates = old_by_req.get(pk) || [];
+                    const old_pc = pc_candidates.find(p => {
+                        const idx = old_pcs.indexOf(p);
+                        return idx >= 0 && !consumed_pc.has(idx);
+                    });
+                    if (old_pc) {
+                        const old_pc_id = get_pc_id(old_pc);
+                        if (old_pc_id) {
+                            pc_map[old_pc_id] = new_pc_id;
+                            consumed_pc.add(old_pcs.indexOf(old_pc));
+                        }
+                    }
+                });
+                oldPcIdToNewPcIdByOldCheckId[old_id] = pc_map;
+            }
+        }
+    });
+
+    return { oldCheckIdToNewCheckId, oldPcIdToNewPcIdByOldCheckId };
+}
+
+/**
+ * Omstrukturera ett kravresultat så att checkResults och passCriteria använder nya ID:n enligt mappning.
+ * @param {object} old_result - Befintligt requirementResult (checkResults nycklade med gamla id:n)
+ * @param {{ oldCheckIdToNewCheckId: Record<string, string>, oldPcIdToNewPcIdByOldCheckId: Record<string, Record<string, string>> }} mappings
+ * @returns {object} Nytt resultatobjekt med samma toppnivåfält men checkResults med nya id:n
+ */
+function remap_requirement_result_to_new_ids(old_result, mappings) {
+    const { oldCheckIdToNewCheckId, oldPcIdToNewPcIdByOldCheckId } = mappings;
+    const new_check_results = {};
+    const old_check_results = old_result.checkResults || {};
+
+    for (const old_check_id in old_check_results) {
+        const new_check_id = oldCheckIdToNewCheckId[old_check_id];
+        if (!new_check_id) continue;
+
+        const old_cr = old_check_results[old_check_id];
+        const pc_map = oldPcIdToNewPcIdByOldCheckId[old_check_id] || {};
+        const new_pass_criteria = {};
+        if (old_cr.passCriteria && typeof old_cr.passCriteria === 'object') {
+            for (const old_pc_id in old_cr.passCriteria) {
+                const new_pc_id = pc_map[old_pc_id];
+                if (new_pc_id != null) {
+                    new_pass_criteria[new_pc_id] = old_cr.passCriteria[old_pc_id];
+                }
+            }
+        }
+
+        new_check_results[new_check_id] = {
+            ...old_cr,
+            passCriteria: new_pass_criteria
+        };
+    }
+
+    const result = { ...old_result };
+    result.checkResults = new_check_results;
+    return result;
+}
+
 function get_pass_criteria_changes(old_req, new_req) {
     const result = { addedChecks: [], added: [], updated: [] };
     const old_checks = Array.isArray(old_req?.checks) ? old_req.checks : [];
@@ -247,6 +388,7 @@ function get_pass_criteria_changes(old_req, new_req) {
  * - Uppdaterar ruleFileContent till den nya regelfilen.
  * - Flyttar requirementResults för borttagna krav till ett arkivfält på state-nivå (archivedRequirementResults).
  * - Märker befintliga resultat för uppdaterade krav med needsReview där det är relevant.
+ * - Mappar checkResults och passCriteria från gamla ID:n till nya (på innehåll) så att status och bristbeskrivningar bevaras.
  * @param {object} current_audit_state
  * @param {object} new_rule_file_content
  * @param {{ updated_requirements: Array<{id:string,title:string}>, removed_requirements: Array<{id:string,title:string}> }} report
@@ -254,20 +396,25 @@ function get_pass_criteria_changes(old_req, new_req) {
  */
 export function apply_rule_file_update(current_audit_state, new_rule_file_content, report) {
     const new_reconciled_state = JSON.parse(JSON.stringify(current_audit_state));
-    new_reconciled_state.ruleFileContent = new_rule_file_content;
+
+    const old_reqs_raw = current_audit_state.ruleFileContent?.requirements;
+    const new_reqs_raw = new_rule_file_content?.requirements;
+    const old_reqs = normalize_requirements_to_object(old_reqs_raw);
+    const new_reqs = normalize_requirements_to_object(new_reqs_raw);
+
+    const new_rule_content_normalized = { ...new_rule_file_content, requirements: new_reqs };
+    new_reconciled_state.ruleFileContent = new_rule_content_normalized;
     new_reconciled_state.uiSettings = current_audit_state.uiSettings;
 
     const removed_req_ids = new Set(report.removed_requirements.map(r => r.id));
     const updated_req_ids = new Set(report.updated_requirements.map(r => r.id));
 
-    const old_reqs = current_audit_state.ruleFileContent.requirements;
-    const new_reqs = new_rule_file_content.requirements;
     const new_req_map_by_title_ref = new Map();
     Object.values(new_reqs).forEach(req => {
         const map_key = `${req.title}::${req.standardReference?.text || ''}`;
         new_req_map_by_title_ref.set(map_key, req);
     });
-    
+
     const key_change_map = {}; // old_key -> new_key
     Object.keys(old_reqs).forEach(old_key => {
         if (!new_reqs[old_key]) {
@@ -310,11 +457,21 @@ export function apply_rule_file_update(current_audit_state, new_rule_file_conten
                 continue;
             }
             const result_data = original_results[old_req_key];
-            if (updated_req_ids.has(old_req_key) && result_data.status !== 'not_audited') {
-                result_data.needsReview = true;
-            }
             const new_req_key = key_change_map[old_req_key] || old_req_key;
-            new_results[new_req_key] = result_data;
+            const old_req = old_reqs[old_req_key];
+            const new_req = new_reqs[new_req_key];
+
+            let final_result;
+            if (old_req && new_req && (old_req.checks?.length || new_req.checks?.length)) {
+                const mappings = build_check_and_pc_id_mappings(old_req, new_req);
+                final_result = remap_requirement_result_to_new_ids(result_data, mappings);
+            } else {
+                final_result = result_data;
+            }
+            if (updated_req_ids.has(old_req_key) && final_result.status !== 'not_audited') {
+                final_result.needsReview = true;
+            }
+            new_results[new_req_key] = final_result;
         }
         sample.requirementResults = new_results;
     });
