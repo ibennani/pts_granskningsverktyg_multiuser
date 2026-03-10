@@ -1,5 +1,6 @@
 // js/components/audit_view/AuditViewComponent.js
 import { migrate_rulefile_to_new_structure } from '../../logic/rulefile_migration_logic.js';
+import { analyze_rule_file_changes } from '../../logic/rulefile_updater_logic.js';
 import { version_greater_than } from '../../utils/version_utils.js';
 import {
     check_api_available,
@@ -324,6 +325,15 @@ export const AuditViewComponent = {
                                 ? { target_rule_id: production_copy.id }
                                 : { target_rule_id: matched.id };
 
+                            let existing_content = null;
+                            const target_rule_id = production_copy?.id ?? matched.id;
+                            try {
+                                const rule_row = await get_rule(target_rule_id);
+                                existing_content = rule_row?.content ?? null;
+                            } catch (_) {
+                                /* använd null om hämtning misslyckas */
+                            }
+
                             this._show_rulefile_duplicate_modal(
                                 is_older,
                                 () => {
@@ -334,7 +344,9 @@ export const AuditViewComponent = {
                                 },
                                 {
                                     server_version,
-                                    uploaded_version
+                                    uploaded_version,
+                                    existing_content,
+                                    uploaded_content: migrated_content
                                 }
                             );
                         } else {
@@ -754,7 +766,18 @@ export const AuditViewComponent = {
             return;
         }
         const message = t('rulefile_duplicate_modal_message');
-        const { server_version, uploaded_version } = options || {};
+        const { server_version, uploaded_version, existing_content, uploaded_content } = options || {};
+        let diff_report = null;
+        if (existing_content && uploaded_content) {
+            try {
+                diff_report = analyze_rule_file_changes(
+                    { ruleFileContent: existing_content },
+                    uploaded_content
+                );
+            } catch (_) {
+                diff_report = 'error';
+            }
+        }
         ModalComponent.show(
             {
                 h1_text: t('rulefile_duplicate_modal_title'),
@@ -783,6 +806,82 @@ export const AuditViewComponent = {
                         ul.appendChild(li);
                     }
                     container.appendChild(ul);
+                }
+                if (diff_report !== null) {
+                    const diff_heading = this.Helpers.create_element('h2', {
+                        class_name: 'modal-diff-heading',
+                        text_content: t('rulefile_duplicate_modal_diff_heading')
+                    });
+                    container.appendChild(diff_heading);
+                    if (diff_report === 'error') {
+                        const p = this.Helpers.create_element('p', {
+                            class_name: 'modal-diff-message',
+                            text_content: t('rulefile_duplicate_modal_diff_error')
+                        });
+                        container.appendChild(p);
+                    } else {
+                        const has_added = diff_report.added_requirements?.length > 0;
+                        const has_removed = diff_report.removed_requirements?.length > 0;
+                        const has_updated = diff_report.updated_requirements?.length > 0;
+                        if (!has_added && !has_removed && !has_updated) {
+                            const p = this.Helpers.create_element('p', {
+                                class_name: 'modal-diff-message',
+                                text_content: t('rulefile_duplicate_modal_diff_none')
+                            });
+                            container.appendChild(p);
+                        } else {
+                            const diff_list = this.Helpers.create_element('ul', { class_name: 'modal-diff-list' });
+                            if (has_added) {
+                                const li = this.Helpers.create_element('li');
+                                const span = this.Helpers.create_element('span', {
+                                    text_content: t('rulefile_duplicate_modal_diff_added') + ': '
+                                });
+                                li.appendChild(span);
+                                const sub_ul = this.Helpers.create_element('ul');
+                                diff_report.added_requirements.forEach((r) => {
+                                    const sub_li = this.Helpers.create_element('li', {
+                                        text_content: r.title || r.id || ''
+                                    });
+                                    sub_ul.appendChild(sub_li);
+                                });
+                                li.appendChild(sub_ul);
+                                diff_list.appendChild(li);
+                            }
+                            if (has_removed) {
+                                const li = this.Helpers.create_element('li');
+                                const span = this.Helpers.create_element('span', {
+                                    text_content: t('rulefile_duplicate_modal_diff_removed') + ': '
+                                });
+                                li.appendChild(span);
+                                const sub_ul = this.Helpers.create_element('ul');
+                                diff_report.removed_requirements.forEach((r) => {
+                                    const sub_li = this.Helpers.create_element('li', {
+                                        text_content: r.title || r.id || ''
+                                    });
+                                    sub_ul.appendChild(sub_li);
+                                });
+                                li.appendChild(sub_ul);
+                                diff_list.appendChild(li);
+                            }
+                            if (has_updated) {
+                                const li = this.Helpers.create_element('li');
+                                const span = this.Helpers.create_element('span', {
+                                    text_content: t('rulefile_duplicate_modal_diff_updated') + ': '
+                                });
+                                li.appendChild(span);
+                                const sub_ul = this.Helpers.create_element('ul');
+                                diff_report.updated_requirements.forEach((r) => {
+                                    const sub_li = this.Helpers.create_element('li', {
+                                        text_content: r.title || r.id || ''
+                                    });
+                                    sub_ul.appendChild(sub_li);
+                                });
+                                li.appendChild(sub_ul);
+                                diff_list.appendChild(li);
+                            }
+                            container.appendChild(diff_list);
+                        }
+                    }
                 }
                 const what_to_do = this.Helpers.create_element('p', {
                     class_name: 'modal-what-to-do',
@@ -859,6 +958,167 @@ export const AuditViewComponent = {
                         }
                     }
                     modal_instance.close();
+                });
+                const cancel_btn = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-default'],
+                    text_content: t('rulefile_publish_confirm_modal_cancel_btn')
+                });
+                cancel_btn.addEventListener('click', () => {
+                    modal_instance.close();
+                    if (typeof on_cancel === 'function') on_cancel();
+                });
+                buttons_wrapper.appendChild(confirm_btn);
+                buttons_wrapper.appendChild(cancel_btn);
+                container.appendChild(buttons_wrapper);
+            }
+        );
+    },
+
+    _show_publish_with_diff_modal(draft_content, published_content, rule_base_name, on_confirm, on_cancel) {
+        const t = this.get_t_func();
+        const ModalComponent = window.ModalComponent;
+        if (!ModalComponent?.show || !this.Helpers?.create_element) {
+            if (typeof on_cancel === 'function') on_cancel();
+            return;
+        }
+        let diff_report = null;
+        if (published_content && draft_content) {
+            try {
+                diff_report = analyze_rule_file_changes(
+                    { ruleFileContent: published_content },
+                    draft_content
+                );
+            } catch (_) {
+                diff_report = 'error';
+            }
+        }
+        ModalComponent.show(
+            {
+                h1_text: t('rulefile_publish_diff_modal_title'),
+                message_text: ''
+            },
+            (container, modal_instance) => {
+                const diff_heading = this.Helpers.create_element('h2', {
+                    class_name: 'modal-diff-heading',
+                    text_content: t('rulefile_publish_diff_modal_heading')
+                });
+                container.appendChild(diff_heading);
+                if (diff_report === null || diff_report === 'error') {
+                    const p = this.Helpers.create_element('p', {
+                        class_name: 'modal-diff-message',
+                        text_content: diff_report === 'error'
+                            ? t('rulefile_duplicate_modal_diff_error')
+                            : t('rulefile_duplicate_modal_diff_none')
+                    });
+                    container.appendChild(p);
+                } else {
+                    const has_added = diff_report.added_requirements?.length > 0;
+                    const has_removed = diff_report.removed_requirements?.length > 0;
+                    const has_updated = diff_report.updated_requirements?.length > 0;
+                    if (!has_added && !has_removed && !has_updated) {
+                        const p = this.Helpers.create_element('p', {
+                            class_name: 'modal-diff-message',
+                            text_content: t('rulefile_duplicate_modal_diff_none')
+                        });
+                        container.appendChild(p);
+                    } else {
+                        const diff_list = this.Helpers.create_element('ul', { class_name: 'modal-diff-list' });
+                        if (has_added) {
+                            const li = this.Helpers.create_element('li');
+                            li.appendChild(this.Helpers.create_element('span', {
+                                text_content: t('rulefile_duplicate_modal_diff_added') + ': '
+                            }));
+                            const sub_ul = this.Helpers.create_element('ul');
+                            diff_report.added_requirements.forEach((r) => {
+                                sub_ul.appendChild(this.Helpers.create_element('li', {
+                                    text_content: r.title || r.id || ''
+                                }));
+                            });
+                            li.appendChild(sub_ul);
+                            diff_list.appendChild(li);
+                        }
+                        if (has_removed) {
+                            const li = this.Helpers.create_element('li');
+                            li.appendChild(this.Helpers.create_element('span', {
+                                text_content: t('rulefile_duplicate_modal_diff_removed') + ': '
+                            }));
+                            const sub_ul = this.Helpers.create_element('ul');
+                            diff_report.removed_requirements.forEach((r) => {
+                                sub_ul.appendChild(this.Helpers.create_element('li', {
+                                    text_content: r.title || r.id || ''
+                                }));
+                            });
+                            li.appendChild(sub_ul);
+                            diff_list.appendChild(li);
+                        }
+                        if (has_updated) {
+                            const li = this.Helpers.create_element('li');
+                            li.appendChild(this.Helpers.create_element('span', {
+                                text_content: t('rulefile_duplicate_modal_diff_updated') + ': '
+                            }));
+                            const sub_ul = this.Helpers.create_element('ul');
+                            diff_report.updated_requirements.forEach((r) => {
+                                sub_ul.appendChild(this.Helpers.create_element('li', {
+                                    text_content: r.title || r.id || ''
+                                }));
+                            });
+                            li.appendChild(sub_ul);
+                            diff_list.appendChild(li);
+                        }
+                        container.appendChild(diff_list);
+                    }
+                }
+                const buttons_wrapper = this.Helpers.create_element('div', { class_name: 'modal-confirm-actions' });
+                const confirm_btn = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-primary'],
+                    text_content: t('rulefile_publish_confirm_modal_confirm_btn')
+                });
+                confirm_btn.addEventListener('click', async () => {
+                    modal_instance.close();
+                    if (typeof on_confirm === 'function') {
+                        const result = on_confirm();
+                        if (result && typeof result.then === 'function') await result;
+                    }
+                });
+                const cancel_btn = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-default'],
+                    text_content: t('rulefile_publish_confirm_modal_cancel_btn')
+                });
+                cancel_btn.addEventListener('click', () => {
+                    modal_instance.close();
+                    if (typeof on_cancel === 'function') on_cancel();
+                });
+                buttons_wrapper.appendChild(confirm_btn);
+                buttons_wrapper.appendChild(cancel_btn);
+                container.appendChild(buttons_wrapper);
+            }
+        );
+    },
+
+    _show_publish_standalone_modal(rule_base_name, on_confirm, on_cancel) {
+        const t = this.get_t_func();
+        const ModalComponent = window.ModalComponent;
+        if (!ModalComponent?.show || !this.Helpers?.create_element) {
+            if (typeof on_cancel === 'function') on_cancel();
+            return;
+        }
+        ModalComponent.show(
+            {
+                h1_text: t('rulefile_publish_standalone_modal_title'),
+                message_text: t('rulefile_publish_standalone_modal_message')
+            },
+            (container, modal_instance) => {
+                const buttons_wrapper = this.Helpers.create_element('div', { class_name: 'modal-confirm-actions' });
+                const confirm_btn = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-primary'],
+                    text_content: t('rulefile_publish_confirm_modal_confirm_btn')
+                });
+                confirm_btn.addEventListener('click', async () => {
+                    modal_instance.close();
+                    if (typeof on_confirm === 'function') {
+                        const result = on_confirm();
+                        if (result && typeof result.then === 'function') await result;
+                    }
                 });
                 const cancel_btn = this.Helpers.create_element('button', {
                     class_name: ['button', 'button-default'],
@@ -1093,13 +1353,44 @@ export const AuditViewComponent = {
         }
     },
 
-    handle_publish_production_rule(rule_id) {
+    async handle_publish_production_rule(rule_id) {
+        const t = this.get_t_func();
+        let rule_row = null;
+        try {
+            rule_row = await get_rule(rule_id);
+        } catch (_) {
+            this.NotificationComponent?.show_global_message(
+                t('rulefile_publish_error'),
+                'error'
+            );
+            return;
+        }
+        const draft_content = rule_row?.content ?? null;
+        const base_id = rule_row?.production_base_id ?? null;
         const rule_base_name = this._get_rule_base_name(rule_id);
-        this._show_publish_rule_confirm_modal(
-            rule_base_name,
-            () => this._do_publish_production_rule(rule_id),
-            () => {}
-        );
+
+        if (base_id && draft_content) {
+            let published_content = null;
+            try {
+                const base_row = await get_rule(base_id);
+                published_content = base_row?.published_content ?? base_row?.content ?? null;
+            } catch (_) {
+                published_content = null;
+            }
+            this._show_publish_with_diff_modal(
+                draft_content,
+                published_content,
+                rule_base_name,
+                () => this._do_publish_production_rule(rule_id),
+                () => {}
+            );
+        } else {
+            this._show_publish_standalone_modal(
+                rule_base_name,
+                () => this._do_publish_rule(rule_id),
+                () => {}
+            );
+        }
     },
 
     async _do_publish_production_rule(rule_id) {

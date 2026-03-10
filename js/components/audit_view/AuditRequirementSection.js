@@ -35,6 +35,8 @@ export function render_audit_requirement_section(ctx) {
         onPublishProductionRule: (id) => ctx.handle_publish_production_rule(id)
     };
     const rule_columns = create_rule_table_columns(rules_table_deps, rules_table_handlers);
+    const draft_rules_table_deps = { ...rules_table_deps, is_draft_table: true };
+    const draft_rule_columns = create_rule_table_columns(draft_rules_table_deps, rules_table_handlers);
     ctx._publishedRulesTable?.render({
         root: rules_table_wrapper,
         columns: rule_columns,
@@ -90,7 +92,7 @@ export function render_audit_requirement_section(ctx) {
     ctx._draftRulesTableSortState = ctx._draftRulesTableSortState ?? { columnIndex: 0, direction: 'asc' };
     ctx._draftRulesTable?.render({
         root: draft_rules_table_wrapper,
-        columns: rule_columns,
+        columns: draft_rule_columns,
         data: ctx.production_rules || [],
         emptyMessage: t('audit_rules_draft_empty') || '',
         ariaLabel: t('audit_rules_draft_title'),

@@ -47,6 +47,12 @@
   "rulefile_duplicate_modal_what_to_do": "What do you want to do now?",
   "rulefile_duplicate_modal_upload_anyway": "Overwrite existing working copy",
   "rulefile_duplicate_modal_close": "Keep existing working copy",
+  "rulefile_duplicate_modal_diff_heading": "Differences between uploaded file and working copy",
+  "rulefile_duplicate_modal_diff_added": "Added requirements",
+  "rulefile_duplicate_modal_diff_removed": "Removed requirements",
+  "rulefile_duplicate_modal_diff_updated": "Updated requirements",
+  "rulefile_duplicate_modal_diff_none": "No differences in the requirements list.",
+  "rulefile_duplicate_modal_diff_error": "Could not compare content.",
   "audit_audit_deleted_success": "Audit has been deleted.",
   "audit_delete_error": "Could not delete.",
   "audit_delete_rule_aria": "Delete rule file {name}",
@@ -1312,5 +1318,9 @@
   "rulefile_publish_confirm_modal_para2": "After publishing, each audit can be updated with the new rule file from within the respective audit.",
   "rulefile_publish_confirm_modal_question": "Do you want to publish the rule file now?",
   "rulefile_publish_confirm_modal_confirm_btn": "Publish",
-  "rulefile_publish_confirm_modal_cancel_btn": "Maybe later"
+  "rulefile_publish_confirm_modal_cancel_btn": "Maybe later",
+  "rulefile_publish_diff_modal_title": "Publish working copy",
+  "rulefile_publish_diff_modal_heading": "Differences between the working copy and the published rule file",
+  "rulefile_publish_standalone_modal_title": "Publish rule file",
+  "rulefile_publish_standalone_modal_message": "This rule file has no published version yet. Publishing will create the first published version."
 }

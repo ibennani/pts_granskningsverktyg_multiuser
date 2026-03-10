@@ -47,6 +47,12 @@
   "rulefile_duplicate_modal_what_to_do": "Vad vill du göra nu?",
   "rulefile_duplicate_modal_upload_anyway": "Skriv över befintlig arbetskopia",
   "rulefile_duplicate_modal_close": "Behåll befintlig arbetskopia",
+  "rulefile_duplicate_modal_diff_heading": "Skillnader mellan uppladdad fil och arbetskopian",
+  "rulefile_duplicate_modal_diff_added": "Tillagda krav",
+  "rulefile_duplicate_modal_diff_removed": "Borttagna krav",
+  "rulefile_duplicate_modal_diff_updated": "Ändrade krav",
+  "rulefile_duplicate_modal_diff_none": "Inga skillnader i kravlistan.",
+  "rulefile_duplicate_modal_diff_error": "Kunde inte jämföra innehållet.",
   "audit_audit_deleted_success": "Granskningen har raderats.",
   "audit_delete_error": "Kunde inte radera.",
   "audit_delete_rule_aria": "Radera {name}",
@@ -1318,5 +1324,9 @@
   "rulefile_publish_confirm_modal_para2": "Efter publicering kan var och en av granskningarna uppdateras med den nya regelfilen inifrån respektive granskning.",
   "rulefile_publish_confirm_modal_question": "Vill du publicera regelfilen nu?",
   "rulefile_publish_confirm_modal_confirm_btn": "Publicera",
-  "rulefile_publish_confirm_modal_cancel_btn": "Kanske senare"
+  "rulefile_publish_confirm_modal_cancel_btn": "Kanske senare",
+  "rulefile_publish_diff_modal_title": "Publicera arbetskopia",
+  "rulefile_publish_diff_modal_heading": "Skillnader mellan arbetskopian och den publicerade regelfilen",
+  "rulefile_publish_standalone_modal_title": "Publicera regelfil",
+  "rulefile_publish_standalone_modal_message": "Denna regelfil har ingen publicerad version. Publicering skapar den första publicerade versionen."
 }

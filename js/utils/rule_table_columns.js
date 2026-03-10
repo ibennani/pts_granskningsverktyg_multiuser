@@ -3,12 +3,12 @@
 
 /**
  * Skapar kolumndefinitioner för regelfilstabellen.
- * @param {Object} deps - { t, Helpers, Translation }
+ * @param {Object} deps - { t, Helpers, Translation, production_rules_with_base_ids?, is_draft_table? }
  * @param {Object} handlers - { onEditRule(id), onDownloadRule(id), onDeleteRule(id), onPublishRule(id), onCopyRule(id), onPublishProductionRule(id) }
  * @returns {Array<{ headerLabel: string, getContent: (row: any) => string | HTMLElement }>}
  */
 export function create_rule_table_columns(deps, handlers) {
-    const { t, Helpers, Translation } = deps;
+    const { t, Helpers, Translation, is_draft_table = false } = deps;
     const { onEditRule, onDownloadRule, onDeleteRule, onPublishRule, onCopyRule, onPublishProductionRule } = handlers;
 
     const icon_svg = (name, size = 16) =>
@@ -78,7 +78,8 @@ export function create_rule_table_columns(deps, handlers) {
                     ? deps.production_rules_with_base_ids.includes(row.id)
                     : false;
 
-                if (!is_production_row && !has_production_copy_for_base && typeof onCopyRule === 'function') {
+                const show_copy_btn = !is_draft_table && !is_production_row && !has_production_copy_for_base && typeof onCopyRule === 'function';
+                if (show_copy_btn) {
                     const copy_aria = t('audit_create_working_copy_aria', { name: link_text });
                     const copy_btn = Helpers.create_element('button', {
                         class_name: ['button', 'button-default', 'button-small', 'generic-table-edit-btn'],
@@ -90,6 +91,22 @@ export function create_rule_table_columns(deps, handlers) {
                     });
                     copy_btn.addEventListener('click', () => onCopyRule(row.id));
                     container.appendChild(copy_btn);
+                }
+
+                // Publicera-knapp visas för alla rader i Arbetskopior-tabellen (alltid till vänster om Ladda ner).
+                const show_publish_btn = (is_draft_table || is_production_row) && typeof onPublishProductionRule === 'function';
+                if (show_publish_btn) {
+                    const publish_prod_aria = t('rulefile_publish_rule_aria', { name: link_text });
+                    const publish_prod_btn = Helpers.create_element('button', {
+                        class_name: ['button', 'button-success', 'button-small', 'generic-table-publish-btn'],
+                        html_content: `<span>${t('rulefile_publish_button')}</span>` + icon_svg('publish'),
+                        attributes: {
+                            type: 'button',
+                            'aria-label': publish_prod_aria
+                        }
+                    });
+                    publish_prod_btn.addEventListener('click', () => onPublishProductionRule(row.id));
+                    container.appendChild(publish_prod_btn);
                 }
 
                 if (typeof onDownloadRule === 'function') {
@@ -104,21 +121,6 @@ export function create_rule_table_columns(deps, handlers) {
                     });
                     download_btn.addEventListener('click', () => onDownloadRule(row.id));
                     container.appendChild(download_btn);
-                }
-
-                // Publicera-knapp visas endast i Arbetskopior-tabellen (produktionsrader), inte under Publicerade regelfiler.
-                if (is_production_row && typeof onPublishProductionRule === 'function') {
-                    const publish_prod_aria = t('rulefile_publish_rule_aria', { name: link_text });
-                    const publish_prod_btn = Helpers.create_element('button', {
-                        class_name: ['button', 'button-success', 'button-small', 'generic-table-publish-btn'],
-                        html_content: `<span>${t('rulefile_publish_button')}</span>` + icon_svg('publish'),
-                        attributes: {
-                            type: 'button',
-                            'aria-label': publish_prod_aria
-                        }
-                    });
-                    publish_prod_btn.addEventListener('click', () => onPublishProductionRule(row.id));
-                    container.appendChild(publish_prod_btn);
                 }
 
                 if (typeof onDeleteRule === 'function') {

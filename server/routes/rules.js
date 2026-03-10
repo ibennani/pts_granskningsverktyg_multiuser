@@ -219,32 +219,43 @@ router.post('/production', async (req, res) => {
 router.delete('/:id', requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
-        const countResult = await query(
-            'SELECT COUNT(*) AS count FROM audits WHERE rule_set_id = $1',
+        const ruleResult = await query(
+            'SELECT id, production_base_id FROM rule_sets WHERE id = $1',
             [id]
         );
-        const inUseCount = parseInt(countResult.rows[0]?.count ?? '0', 10);
+        if (ruleResult.rows.length === 0) {
+            return res.status(404).json({ error: 'Regelfil hittades inte' });
+        }
+        const rule = ruleResult.rows[0];
+        const is_arbetskopia = rule.production_base_id != null;
+
+        if (is_arbetskopia) {
+            await query(
+                'UPDATE audits SET rule_set_id = $1 WHERE rule_set_id = $2',
+                [rule.production_base_id, id]
+            );
+            await query('DELETE FROM rule_sets WHERE id = $1', [id]);
+            broadcast_rules_changed();
+            return res.status(204).send();
+        }
+
+        const activeCountResult = await query(
+            `SELECT COUNT(*) AS count FROM audits
+             WHERE rule_set_id = $1 AND status IN ('not_started', 'in_progress')`,
+            [id]
+        );
+        const inUseCount = parseInt(activeCountResult.rows[0]?.count ?? '0', 10);
         if (inUseCount > 0) {
             return res.status(409).json({
                 error: 'Regelfilen används av minst en granskning och kan inte raderas. Radera granskningarna först.',
                 inUseCount
             });
         }
-        const productionCopyResult = await query(
-            'SELECT COUNT(*) AS count FROM rule_sets WHERE production_base_id = $1',
+        await query(
+            'UPDATE rule_sets SET production_base_id = NULL WHERE production_base_id = $1',
             [id]
         );
-        const productionCopyCount = parseInt(productionCopyResult.rows[0]?.count ?? '0', 10);
-        if (productionCopyCount > 0) {
-            return res.status(409).json({
-                error: 'Regelfilen kan inte raderas eftersom minst en arbetskopia är kopplad till den. Radera arbetskopiorna först.',
-                productionCopyCount
-            });
-        }
-        const result = await query('DELETE FROM rule_sets WHERE id = $1 RETURNING id', [id]);
-        if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Regelfil hittades inte' });
-        }
+        await query('DELETE FROM rule_sets WHERE id = $1', [id]);
         broadcast_rules_changed();
         res.status(204).send();
     } catch (err) {

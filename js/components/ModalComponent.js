@@ -22,6 +22,7 @@ export const ModalComponent = {
         this._close_triggered_by_popstate = false;
         this._modal_history_id = null;
         this._close_started = false;
+        this._pending_on_closed = null;
 
         if (this.Helpers?.load_css_safely && this.CSS_PATH) {
             this.Helpers.load_css_safely(this.CSS_PATH, 'ModalComponent', {
@@ -384,6 +385,16 @@ export const ModalComponent = {
             this._close_started = false;
             this._skip_history_pop_on_close = false;
 
+            const on_closed_cb = this._pending_on_closed;
+            this._pending_on_closed = null;
+            if (typeof on_closed_cb === 'function') {
+                try {
+                    on_closed_cb();
+                } catch (err) {
+                    /* anrop efter stängning får inte krascha */
+                }
+            }
+
             const app_container = document.getElementById('app-container');
             const main_view_root = document.getElementById('app-main-view-root');
             if (app_container && scroll_state.appContainer !== null) {
@@ -503,6 +514,7 @@ export const ModalComponent = {
         this._close_started = true;
         this.pending_focus_element = focus_element_override ?? this.focus_before_open;
         this._skip_history_pop_on_close = options.skipHistoryPop === true;
+        this._pending_on_closed = options.onClosed || null;
         this._do_animated_close();
     },
 
