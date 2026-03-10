@@ -171,7 +171,7 @@ export function render_audit_samples_section(ctx) {
                     class_name: 'audit-item-label audit-audit-link',
                     attributes: {
                         href: `#audit_overview?auditId=${a.id}`,
-                        'aria-label': t('backup_overview_link_to_audit_aria')
+                        'aria-label': t('backup_overview_link_to_audit_aria', { name: display_name })
                     }
                 });
                 link.addEventListener('click', (e) => {

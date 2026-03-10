@@ -727,7 +727,7 @@
   "backup_overview_col_actions": "Actions",
   "backup_overview_show_backups_button": "Show backups",
   "backup_overview_show_backups_aria": "Show backups: {actorName}",
-  "backup_overview_link_to_audit_aria": "Actor name (to the audit)",
+  "backup_overview_link_to_audit_aria": "{name} (to the audit)",
   "backup_overview_empty": "There are no saved backups yet.",
   "backup_overview_aria_label": "List of audits with saved backups",
   "backup_overview_load_error": "Could not load the backup list. Please try again later.",

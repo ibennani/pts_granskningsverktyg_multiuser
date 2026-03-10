@@ -535,7 +535,7 @@ export const BackupOverviewComponent = {
                         text_content: actor_name,
                         attributes: {
                             href: `#audit_overview?auditId=${row.auditId ?? ''}`,
-                            'aria-label': t('backup_overview_link_to_audit_aria')
+                            'aria-label': t('backup_overview_link_to_audit_aria', { name: actor_name })
                         }
                     });
                     a.addEventListener('click', (e) => {
@@ -982,7 +982,7 @@ export const BackupOverviewComponent = {
                 text_content: actor_name,
                 attributes: {
                     href: `#audit_overview?auditId=${this.selected_audit_id}`,
-                    'aria-label': t('backup_overview_link_to_audit_aria')
+                    'aria-label': t('backup_overview_link_to_audit_aria', { name: actor_name })
                 }
             });
             actor_link.addEventListener('click', (e) => {

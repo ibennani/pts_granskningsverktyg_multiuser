@@ -41,7 +41,7 @@ export function create_audit_table_columns(deps, handlers, opts = {}) {
                     text_content: actor_name || EMPTY_PLACEHOLDER,
                     attributes: {
                         href: `#audit_overview?auditId=${row.id}`,
-                        'aria-label': t('backup_overview_link_to_audit_aria')
+                        'aria-label': t('backup_overview_link_to_audit_aria', { name: link_label })
                     }
                 });
                 a.addEventListener('click', (e) => {
