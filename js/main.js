@@ -72,7 +72,7 @@ import { show_confirm_delete_modal } from './logic/confirm_delete_modal_logic.js
 import { flush_sync_to_server } from './logic/server_sync.js';
 
 import { DraftManager } from './draft_manager.js';
-import { get_auth_token, get_current_user_preferences, is_current_user_admin, set_current_user_admin } from './api/client.js';
+import { get_auth_token, clear_auth_token, get_current_user_preferences, is_current_user_admin, set_current_user_admin } from './api/client.js';
 import { getState, dispatch, subscribe, initState, StoreActionTypes, StoreInitialState, loadStateFromLocalStorageBackup, clearLocalStorageBackup, updateBackupRestorePosition, APP_STATE_KEY } from './state.js';
 window.getState = getState;
 window.dispatch = dispatch;
@@ -528,7 +528,8 @@ window.DraftManager = DraftManager;
                     deps: {
                         ...common_deps,
                         router: navigate_and_set_hash,
-                        subscribe
+                        subscribe,
+                        clear_auth_token
                     }
                 });
             }

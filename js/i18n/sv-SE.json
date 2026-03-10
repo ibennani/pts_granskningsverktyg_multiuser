@@ -809,6 +809,7 @@
   "menu_link_admin": "Regelfiler & Granskningar",
   "menu_link_manage_users": "Hantera användare",
   "menu_link_my_settings": "Mina inställningar",
+  "menu_link_logout": "Logga ut",
   "settings_greeting": "Hej {name}",
   "settings_greeting_guest": "Hej",
   "settings_intro": "Här kan du välja språk och färgtema för verktyget.",

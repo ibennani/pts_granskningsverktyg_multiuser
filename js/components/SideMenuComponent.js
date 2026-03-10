@@ -12,6 +12,7 @@ export const SideMenuComponent = {
         this.Translation = deps.Translation;
         this.Helpers = deps.Helpers;
         this.AuditLogic = deps.AuditLogic;
+        this.clear_auth_token = deps.clear_auth_token;
 
         this.current_view_name = 'start';
         this.current_view_params = {};
@@ -498,6 +499,34 @@ export const SideMenuComponent = {
             li.appendChild(link);
             list.appendChild(li);
         });
+
+        // Logga ut – synlig för alla, placerad under Hantera användare / Mina inställningar
+        const logout_li = this.Helpers.create_element('li', {
+            class_name: ['side-menu__item', 'side-menu__item--separated']
+        });
+        const logout_link = this.Helpers.create_element('a', {
+            attributes: {
+                href: '#login',
+                'aria-label': t('menu_link_logout')
+            },
+            class_name: 'side-menu__link',
+            text_content: t('menu_link_logout')
+        });
+        logout_link.addEventListener('click', (event) => {
+            event.preventDefault();
+            if (typeof this.clear_auth_token === 'function') {
+                this.clear_auth_token();
+            }
+            if (typeof this.router === 'function') {
+                this.router('login');
+            }
+            if (this.is_small_screen()) {
+                this.handle_close_menu();
+            }
+        });
+        logout_li.appendChild(logout_link);
+        list.appendChild(logout_li);
+
         nav.appendChild(list);
 
         const should_hide_nav = this.is_small_screen() && !this.is_menu_open;
@@ -536,6 +565,7 @@ export const SideMenuComponent = {
         this.getState = null;
         this.Translation = null;
         this.Helpers = null;
+        this.clear_auth_token = null;
 
         this.menu_button_ref = null;
         this.nav_ref = null;

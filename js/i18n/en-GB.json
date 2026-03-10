@@ -809,6 +809,7 @@
   "menu_link_admin": "Rule files & Audits",
   "menu_link_manage_users": "Manage users",
   "menu_link_my_settings": "My settings",
+  "menu_link_logout": "Log out",
   "settings_greeting": "Hello {name}",
   "settings_greeting_guest": "Hello",
   "settings_intro": "Here you can choose language and colour theme for the tool.",
