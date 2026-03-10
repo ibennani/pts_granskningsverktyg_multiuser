@@ -10,6 +10,7 @@ import cron from 'node-cron';
 import { query } from '../db.js';
 import { build_full_state } from '../routes/audits.js';
 import { generate_audit_filename } from '../../js/utils/filename_utils.js';
+import { save_system_snapshot, cleanup_old_system_snapshots } from './system_backup.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_RETENTION_DAYS = 30;
@@ -157,6 +158,7 @@ async function run_scheduled_backup() {
 
     let new_files = 0;
     const start_time = new Date().toISOString();
+    const now = new Date();
 
     for (const audit_row of result.rows) {
         try {
@@ -208,6 +210,23 @@ async function run_scheduled_backup() {
 
     const settings = await get_backup_settings();
     await cleanup_old_backups(backup_dir, settings.retention_days);
+    try {
+        await save_system_snapshot({
+            backup_dir,
+            now,
+            retention_days: settings.retention_days
+        });
+    } catch (err) {
+        console.warn('[backup] System-snapshot misslyckades:', err.message);
+    }
+    try {
+        await cleanup_old_system_snapshots({
+            backup_dir,
+            retention_days: settings.retention_days
+        });
+    } catch (err) {
+        console.warn('[backup] Rensning av system-snapshots misslyckades:', err.message);
+    }
 
     const status = {
         last_run: start_time,

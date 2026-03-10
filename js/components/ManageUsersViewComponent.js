@@ -414,6 +414,20 @@ export const ManageUsersViewComponent = {
             return wrapper;
         };
 
+        const name_input = this.Helpers.create_element('input', {
+            id: name_id,
+            type: 'text',
+            class_name: 'form-control',
+            attributes: {
+                maxlength: '40',
+                size: '40'
+            }
+        });
+        if (this.current_user?.name) {
+            name_input.value = String(this.current_user.name).trim();
+        }
+        form.appendChild(make_field(t('manage_users_field_name'), name_input));
+
         let username_input = null;
         if (is_edit) {
             username_input = this.Helpers.create_element('input', {
@@ -431,20 +445,6 @@ export const ManageUsersViewComponent = {
             }
             form.appendChild(make_field(t('manage_users_field_username'), username_input));
         }
-
-        const name_input = this.Helpers.create_element('input', {
-            id: name_id,
-            type: 'text',
-            class_name: 'form-control',
-            attributes: {
-                maxlength: '40',
-                size: '40'
-            }
-        });
-        if (this.current_user?.name) {
-            name_input.value = String(this.current_user.name).trim();
-        }
-        form.appendChild(make_field(t('manage_users_field_name'), name_input));
 
         const is_admin_wrapper = this.Helpers.create_element('div', { class_name: 'form-group' });
         const is_admin_checkbox = this.Helpers.create_element('input', {
