@@ -26,6 +26,9 @@ const PORT = process.env.API_PORT || 3000;
 const http_server = http.createServer(app);
 
 app.use(helmet());
+// Kör bakom Nginx reverse proxy i drift – krävs för korrekt hantering av X-Forwarded-For
+// (t.ex. express-rate-limit) och för att undvika onödiga ValidationError-loggar.
+app.set('trust proxy', 1);
 
 const public_app_url = (process.env.PUBLIC_APP_URL || '').trim();
 const allowed_origins_env = (process.env.ALLOWED_ORIGINS || '').trim();

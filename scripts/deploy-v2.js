@@ -80,7 +80,8 @@ async function main() {
         await scpDir(serverDir, `${remotePath}/server`);
         await scpFile(join(projectRoot, 'scripts', 'health-check-and-restart.sh'), `${remotePath}/scripts/health-check-and-restart.sh`);
         await scpFile(join(projectRoot, 'scripts', 'healthcheck-watchdog.js'), `${remotePath}/scripts/healthcheck-watchdog.js`);
-        await sshOrRun(`chmod +x ${remotePath}/scripts/health-check-and-restart.sh`, ['ssh', [host, `chmod +x ${remotePath}/scripts/health-check-and-restart.sh`]], { cwd: false });
+        await scpFile(join(projectRoot, 'scripts', 'cleanup-docker-remote.sh'), `${remotePath}/scripts/cleanup-docker-remote.sh`);
+        await sshOrRun(`chmod +x ${remotePath}/scripts/health-check-and-restart.sh ${remotePath}/scripts/cleanup-docker-remote.sh`, ['ssh', [host, `chmod +x ${remotePath}/scripts/health-check-and-restart.sh ${remotePath}/scripts/cleanup-docker-remote.sh`]], { cwd: false });
         await scpFile(join(projectRoot, 'docker-compose.yml'), `${remotePath}/docker-compose.yml`);
         await scpFile(join(projectRoot, 'package.json'), `${remotePath}/package.json`);
         await scpFile(join(projectRoot, 'package-lock.json'), `${remotePath}/package-lock.json`);
@@ -146,12 +147,18 @@ async function main() {
         console.log('[deploy] Kör kommandon på servern...');
         const pm2Start = [
             '(npx pm2 restart granskningsverktyget-v2 2>/dev/null || npx pm2 start server/index.js --name granskningsverktyget-v2)',
-            '(npx pm2 restart granskningsverktyget-watchdog 2>/dev/null || npx pm2 start scripts/healthcheck-watchdog.js --name granskningsverktyget-watchdog)'
+            '(npx pm2 restart granskningsverktyget-watchdog 2>/dev/null || npx pm2 start scripts/healthcheck-watchdog.js --name granskningsverktyget-watchdog)',
+            'npx pm2 save 2>/dev/null || true'
         ].join(' && ');
         await sshOrRun(
             `npm install --omit=dev --ignore-scripts && npm run db:migrate && ${pm2Start}`,
             ['ssh', [host, `cd ${remotePath} && npm install --omit=dev --ignore-scripts && npm run db:migrate && ${pm2Start}`]]
         );
+        try {
+            await exec('npx pm2 install pm2-logrotate 2>/dev/null || true');
+        } catch (_) {
+            // Ignorera om modulen redan finns
+        }
 
         const nginxConfigPath = process.env.DEPLOY_NGINX_CONF || '/etc/nginx/conf.d/ux-granskning.conf';
         const sudoPassword = process.env.DEPLOY_SUDO_PASSWORD || '';

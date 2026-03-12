@@ -16,7 +16,7 @@ async function main() {
             'echo "" && echo "=== Backend health (localhost) ===" && curl -s http://localhost:3000/api/health || echo "Backend svarar inte"',
             'echo "" && echo "=== Debug-status ===" && curl -s http://localhost:3000/api/debug-status 2>/dev/null || echo "Debug-endpoint ej tillgänglig"',
             'echo "" && echo "=== .env finns? ===" && (test -f .env && echo "Ja" && head -1 .env | sed "s/:.*/:***/" || echo "Nej")',
-            'echo "" && echo "=== Docker Postgres ===" && (docker ps 2>/dev/null | grep -E "postgres|granskningsverktyget" || echo "Postgres-container ej synlig")'
+            'echo "" && echo "=== Docker Postgres (projekt: granskningsverktyget-v2) ===" && (cd ' + remotePath + ' && docker compose -p granskningsverktyget-v2 ps 2>/dev/null || true) && (docker ps 2>/dev/null | grep -E "postgres|granskningsverktyget" || echo "Postgres-container ej synlig")'
         ];
 
         if (sshPassword) {
@@ -25,7 +25,7 @@ async function main() {
             await run('ssh', [host, `cd ${remotePath} && ${cmds.join(' && ')}`]);
         }
 
-        console.log('\n[debug] Klart. Om backend svarar 503 eller "Databas ej tillgänglig" – starta Docker: cd ' + remotePath + ' && docker compose up -d');
+        console.log('\n[debug] Klart. Om backend svarar 503 eller "Databas ej tillgänglig" – starta Postgres med rätt data: cd ' + remotePath + ' && docker compose -p granskningsverktyget-v2 up -d postgres');
     } finally {
         await disconnect();
     }

@@ -16,6 +16,17 @@ if [ "$RESP" = "200" ]; then
     exit 0
 fi
 
+# Försök först säkerställa att Postgres är igång (vanligaste orsaken till att backend inte svarar).
+# Använd fast docker compose-projektnamn så att rätt volym används.
+PROJECT_DIR="/var/www/granskningsverktyget-v2"
+DOCKER_PROJECT="granskningsverktyget-v2"
+DB_CONTAINER="granskningsverktyget-db"
+
+if ! docker exec "$DB_CONTAINER" pg_isready -U granskning >/dev/null 2>&1; then
+    echo "$(date -Iseconds) Postgres verkar nere – försöker starta (endast postgres)"
+    (cd "$PROJECT_DIR" && docker compose -p "$DOCKER_PROJECT" up -d postgres) || true
+fi
+
 # Backend svarar inte – starta om
 echo "$(date -Iseconds) Backend svarade inte (HTTP $RESP) – startar om PM2"
 (npx pm2 restart granskningsverktyget-v2 2>/dev/null || pm2 restart granskningsverktyget-v2 2>/dev/null) || true
