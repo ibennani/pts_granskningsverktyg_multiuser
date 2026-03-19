@@ -100,13 +100,15 @@ export const RulefileRequirementsListComponent = {
     },
 
     handle_list_keydown(event) {
-        if (event.key === 'Enter' || event.key === ' ') {
-            const action_element = event.target.closest('[data-action]');
-            if (!action_element) return;
+        const is_space = event.key === ' ';
+        const action_element = event.target.closest('[data-action]');
+        if (!is_space || !action_element) return;
 
-            event.preventDefault();
-            this.handle_list_click(event);
-        }
+        // Space ska kunna aktivera länk-liknande actions.
+        // Knappar hanterar Enter/Space nativt och ska inte dubbeltriggas här.
+        if (action_element.tagName !== 'A') return;
+        event.preventDefault();
+        this.handle_list_click(event);
     },
 
     handle_toolbar_change(new_toolbar_state) {

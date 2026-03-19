@@ -3,10 +3,24 @@
  * Används av både klient (nedladdning) och server (backup).
  */
 
+export function format_local_date_for_filename(date = new Date(), separator = '') {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return separator ? `${year}${separator}${month}${separator}${day}` : `${year}${month}${day}`;
+}
+
+export function format_local_datetime_for_filename(date = new Date(), date_separator = '', time_separator = '') {
+    const date_part = format_local_date_for_filename(date, date_separator);
+    const hour = String(date.getHours()).padStart(2, '0');
+    const minute = String(date.getMinutes()).padStart(2, '0');
+    const second = String(date.getSeconds()).padStart(2, '0');
+    const time_part = time_separator ? `${hour}${time_separator}${minute}${time_separator}${second}` : `${hour}${minute}${second}`;
+    return `${date_part}_${time_part}`;
+}
+
 export function generate_audit_filename(audit_data, t_func, options = {}) {
-    const now = new Date();
-    const time_str = `${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}${now.getSeconds().toString().padStart(2, '0')}`;
-    const datetime_str = `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}_${time_str}`;
+    const datetime_str = format_local_datetime_for_filename();
 
     const filename_prefix = t_func('filename_audit_prefix');
     let actor_name_part = t_func('filename_fallback_actor');

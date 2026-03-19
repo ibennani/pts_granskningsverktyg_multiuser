@@ -22,7 +22,6 @@ export const ConfirmUpdatesViewComponent = {
 
         // Bind event handlers
         this.handle_list_item_click = this.handle_list_item_click.bind(this);
-        this.handle_list_item_keydown = this.handle_list_item_keydown.bind(this);
         this.handle_filter_search_input = this.handle_filter_search_input.bind(this);
         this.handle_sort_change = this.handle_sort_change.bind(this);
     },
@@ -79,18 +78,6 @@ export const ConfirmUpdatesViewComponent = {
             }
         }, 0);
         // --- END OF NEW, ROBUST FOCUS LOGIC ---
-    },
-
-    handle_list_item_keydown(event) {
-        // Handle keyboard navigation for accessibility
-        if (event.key === 'Enter' || event.key === ' ') {
-            const button = event.target.closest('button[data-action="confirm-single"]');
-            if (!button) return;
-            
-            event.preventDefault();
-            // Trigger the same action as click
-            this.handle_list_item_click(event);
-        }
     },
 
     get_updated_reqs_data() {
@@ -318,7 +305,6 @@ export const ConfirmUpdatesViewComponent = {
 
         this.list_container_for_delegation = this.Helpers.create_element('div');
         this.list_container_for_delegation.addEventListener('click', this.handle_list_item_click);
-        this.list_container_for_delegation.addEventListener('keydown', this.handle_list_item_keydown);
 
         const render_one_item = (sampleId, sampleName, req) => {
             const li = this.Helpers.create_element('li', { class_name: 'item-list-item compact-review-item', style: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' } });
@@ -380,7 +366,6 @@ export const ConfirmUpdatesViewComponent = {
     destroy() {
         if (this.list_container_for_delegation) {
             this.list_container_for_delegation.removeEventListener('click', this.handle_list_item_click);
-            this.list_container_for_delegation.removeEventListener('keydown', this.handle_list_item_keydown);
         }
         if (this.root) this.root.innerHTML = '';
         this.plate_element_ref = null;

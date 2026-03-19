@@ -3,6 +3,7 @@
 import ExcelJS from 'exceljs/dist/exceljs.min.js';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle, UnderlineType, ExternalHyperlink, InternalHyperlink, ShadingType, TabStopType, SectionType, PageOrientation } from 'docx';
 import { marked } from './utils/markdown.js';
+import { format_local_date_for_filename } from './utils/filename_utils.js';
 
 function get_t_internal() {
     if (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function') {
@@ -153,7 +154,7 @@ function export_to_csv(current_audit) {
     const case_number = (current_audit.auditMetadata.caseNumber || '').trim();
     // Behåll bindestreck i ärendenummer (t.ex. "25-18359")
     const sanitized_case_number = case_number ? case_number.replace(/[^a-z0-9åäöÅÄÖ-]/gi, '') : '';
-    const date_str = new Date().toISOString().split('T')[0];
+    const date_str = format_local_date_for_filename(new Date(), '-');
     
     let filename;
     if (sanitized_case_number) {
@@ -316,7 +317,7 @@ async function export_to_excel(current_audit) {
         const case_number = (current_audit.auditMetadata.caseNumber || '').trim();
         // Behåll bindestreck i ärendenummer (t.ex. "25-18359")
         const sanitized_case_number = case_number ? case_number.replace(/[^a-z0-9åäöÅÄÖ-]/gi, '') : '';
-        const date_str = new Date().toISOString().split('T')[0];
+        const date_str = format_local_date_for_filename(new Date(), '-');
         
         let filename;
         if (sanitized_case_number) {
@@ -863,7 +864,7 @@ async function export_to_word_wrapper(current_audit, sortBy) {
         const sanitized_case_number = case_number ? case_number.replace(/[^a-z0-9åäöÅÄÖ-]/gi, '') : '';
         
         const sort_suffix = isSortByRequirements ? '_sorterat_på_krav' : '_sorterat_på_stickprov';
-        const date_str = new Date().toISOString().split('T')[0];
+        const date_str = format_local_date_for_filename(new Date(), '-');
         
         let filename;
         if (sanitized_case_number) {
@@ -1963,7 +1964,7 @@ async function export_to_text_export_deprecated(current_audit) {
         const report_prefix = t('filename_audit_report_prefix');
         const deficiencies_suffix = "textexport";
         const actor_name = (current_audit.auditMetadata.actorName || t('filename_fallback_actor')).replace(/[^a-z0-9åäöÅÄÖ]/gi, '_');
-        const filename = `${report_prefix}_${deficiencies_suffix}_${actor_name}_${new Date().toISOString().split('T')[0]}.docx`;
+        const filename = `${report_prefix}_${deficiencies_suffix}_${actor_name}_${format_local_date_for_filename(new Date(), '-')}.docx`;
 
         link.download = filename;
         document.body.appendChild(link);
@@ -3684,7 +3685,7 @@ async function export_to_html(current_audit) {
         const actor_name = (current_audit.auditMetadata.actorName || t('filename_fallback_actor')).replace(/[^a-z0-9åäöÅÄÖ]/gi, '_');
         const case_number = (current_audit.auditMetadata.caseNumber || '').trim();
         const sanitized_case_number = case_number ? case_number.replace(/[^a-z0-9åäöÅÄÖ-]/gi, '') : '';
-        const date_str = new Date().toISOString().split('T')[0];
+        const date_str = format_local_date_for_filename(new Date(), '-');
         
         let filename;
         if (sanitized_case_number) {
