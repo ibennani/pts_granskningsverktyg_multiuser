@@ -136,6 +136,14 @@ function execute_single_dispatch(action, dispatch_fn) {
                 try {
                     notify_listeners({
                         skip_render: action?.payload?.skip_render === true,
+                        action_type: action.type,
+                        requirement_result_update:
+                            action.type === ActionTypes.UPDATE_REQUIREMENT_RESULT
+                                ? {
+                                    sampleId: action.payload.sampleId,
+                                    requirementId: action.payload.requirementId
+                                }
+                                : null,
                         _debug_action_type: window.__GV_DEBUG_MODAL_SCROLL ? action?.type : undefined
                     });
                 } catch (listenerError) {

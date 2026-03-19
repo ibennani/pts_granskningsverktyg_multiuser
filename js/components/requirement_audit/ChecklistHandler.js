@@ -32,6 +32,43 @@ export const ChecklistHandler = {
         };
     },
 
+    _reapply_pending_status_button_focus() {
+        const pending = window.__gv_pending_checklist_focus_target;
+        if (!pending?.action || !this.container_ref) return;
+        if (typeof pending.set_at !== 'number' || Date.now() - pending.set_at > 5000) return;
+        const target = { action: pending.action, check_id: pending.check_id, pc_id: pending.pc_id };
+        this._try_focus_button_target(target);
+    },
+
+    _try_focus_button_target(button_target) {
+        if (!button_target || !this.container_ref) return false;
+
+        let search_root = this.container_ref;
+        if (button_target.check_id) {
+            const check_selector = `.check-item[data-check-id="${CSS.escape(button_target.check_id)}"]`;
+            const check_item = this.container_ref.querySelector(check_selector);
+            if (check_item) search_root = check_item;
+        }
+        if (button_target.pc_id) {
+            const pc_selector = `.pass-criterion-item[data-pc-id="${CSS.escape(button_target.pc_id)}"]`;
+            const pc_item = search_root.querySelector(pc_selector);
+            if (pc_item) search_root = pc_item;
+        }
+
+        const button_to_focus = search_root.querySelector(`button[data-action="${CSS.escape(button_target.action)}"]`);
+        const has_layout = button_to_focus && typeof button_to_focus.getClientRects === 'function'
+            ? button_to_focus.getClientRects().length > 0
+            : false;
+
+        if (!button_to_focus || !has_layout || !document.contains(button_to_focus)) return false;
+        try {
+            button_to_focus.focus({ preventScroll: true });
+        } catch (e) {
+            button_to_focus.focus();
+        }
+        return true;
+    },
+
     _restore_focus_to_button_if_needed(button_target) {
         if (!button_target || !this.container_ref) return;
         requestAnimationFrame(() => {
@@ -70,56 +107,26 @@ export const ChecklistHandler = {
         });
     },
 
-    _restore_focus_to_button_with_retry(button_target, { attempts = 12, interval_ms = 50 } = {}) {
+    _restore_focus_to_button_with_retry(button_target, { restore_custom_flag_to = null } = {}) {
         if (!button_target || !this.container_ref) return;
 
         // Hindrar att `update_dom()` försöker fokusera textarea när den visas/döljs.
-        const prev_custom_focus_applied = window.customFocusApplied;
+        // `restore_custom_flag_to` används när anroparen redan satt `customFocusApplied` före dispatch/render.
+        const prev_custom_focus_applied = restore_custom_flag_to !== null && restore_custom_flag_to !== undefined
+            ? restore_custom_flag_to
+            : window.customFocusApplied;
         window.customFocusApplied = true;
 
-        const attempt_focus = (remaining) => {
-            if (!this.container_ref) {
-                window.customFocusApplied = prev_custom_focus_applied;
-                return;
-            }
-
-            let search_root = this.container_ref;
-            if (button_target.check_id) {
-                const check_selector = `.check-item[data-check-id="${CSS.escape(button_target.check_id)}"]`;
-                const check_item = this.container_ref.querySelector(check_selector);
-                if (check_item) search_root = check_item;
-            }
-            if (button_target.pc_id) {
-                const pc_selector = `.pass-criterion-item[data-pc-id="${CSS.escape(button_target.pc_id)}"]`;
-                const pc_item = search_root.querySelector(pc_selector);
-                if (pc_item) search_root = pc_item;
-            }
-
-            const button_to_focus = search_root.querySelector(`button[data-action="${CSS.escape(button_target.action)}"]`);
-            const has_layout = button_to_focus && typeof button_to_focus.getClientRects === 'function'
-                ? button_to_focus.getClientRects().length > 0
-                : false;
-
-            if (button_to_focus && has_layout && document.contains(button_to_focus)) {
-                try {
-                    button_to_focus.focus({ preventScroll: true });
-                } catch (e) {
-                    button_to_focus.focus();
-                }
-
-                // Släpp tillbaka skyddet efter en kort stund så andra fokusflöden kan ta över.
-                setTimeout(() => { window.customFocusApplied = prev_custom_focus_applied; }, 400);
-                return;
-            }
-
-            if (remaining <= 1) {
-                setTimeout(() => { window.customFocusApplied = prev_custom_focus_applied; }, 0);
-                return;
-            }
-            setTimeout(() => attempt_focus(remaining - 1), interval_ms);
+        const try_focus = () => {
+            if (!this.container_ref) return;
+            this._try_focus_button_target(button_target);
         };
 
-        attempt_focus(attempts);
+        try_focus();
+        queueMicrotask(try_focus);
+
+        // Kort fönster så markdown-verktyg m.m. inte blockeras för länge.
+        setTimeout(() => { window.customFocusApplied = prev_custom_focus_applied; }, 650);
     },
 
     // --- HELPER FUNCTION ---
@@ -156,6 +163,14 @@ export const ChecklistHandler = {
         const div = document.createElement('div');
         div.innerHTML = html_string || '';
         return (div.textContent || div.innerText || '').trim();
+    },
+
+    _button_aria_label_with_context(button_label, context_plain) {
+        const label = typeof button_label === 'string' ? button_label.trim() : '';
+        const ctx = typeof context_plain === 'string' ? context_plain.trim() : '';
+        if (!ctx) return label || '';
+        if (!label) return ctx;
+        return `${label}: ${ctx}`;
     },
 
     init(_container, _callbacks, options = {}) {
@@ -233,13 +248,26 @@ export const ChecklistHandler = {
         }
         
         if (change_info.type && this.on_status_change_callback) {
+            const should_keep_focus_on_status_button = change_info.type === 'check_overall_status_change' ||
+                (change_info.type === 'pc_status_change' &&
+                    (change_info.newStatus === 'passed' || change_info.newStatus === 'failed'));
+            // Måste sättas före callback: `update_dom()` anropas synkront vid dispatch och kan annars
+            // flytta fokus till textarea innan återställningen hinner sätta skyddet.
+            const prev_custom_focus_flag = window.customFocusApplied;
+            if (should_keep_focus_on_status_button) {
+                window.customFocusApplied = true;
+                window.__gv_pending_checklist_focus_target = {
+                    action: button_focus_target.action,
+                    check_id: button_focus_target.check_id,
+                    pc_id: button_focus_target.pc_id,
+                    set_at: Date.now()
+                };
+            }
             this.on_status_change_callback(change_info);
-            // För just “Ingen anmärkning” / “Underkänt” behöver vi vara extra aggressiva:
-            // UI:t kan samtidigt visa/dölja textarea och SR kan annars “falla tillbaka”.
-            if (change_info.type === 'pc_status_change' && (change_info.newStatus === 'passed' || change_info.newStatus === 'failed')) {
-                this._restore_focus_to_button_with_retry(button_focus_target, { attempts: 14, interval_ms: 60 });
-            } else {
-                this._restore_focus_to_button_if_needed(button_focus_target);
+            if (should_keep_focus_on_status_button) {
+                this._restore_focus_to_button_with_retry(button_focus_target, {
+                    restore_custom_flag_to: prev_custom_focus_flag
+                });
             }
         }
     },
@@ -614,11 +642,17 @@ export const ChecklistHandler = {
             }
             check_wrapper.appendChild(condition_h3);
 
-            const condition_text_div = this.Helpers.create_element('div', { 
-                class_name: ['check-condition-text','markdown-content'], 
-                html_content: this._safe_parse_markdown_inline(check_definition.condition) 
+            const condition_text_div = this.Helpers.create_element('div', {
+                class_name: ['check-condition-text', 'markdown-content'],
+                html_content: this._safe_parse_markdown_inline(check_definition.condition)
             });
             check_wrapper.appendChild(condition_text_div);
+
+            const condition_plain = this._get_plain_text_from_html(
+                this._safe_parse_markdown_inline(check_definition.condition || '')
+            );
+            const complies_aria = this._button_aria_label_with_context(t('check_complies'), condition_plain);
+            const not_complies_aria = this._button_aria_label_with_context(t('check_does_not_comply'), condition_plain);
             
             const actions_div = this.Helpers.create_element('div', {
                 class_name: 'condition-actions'
@@ -628,12 +662,20 @@ export const ChecklistHandler = {
             actions_div.append(
                 this.Helpers.create_element('button', {
                     class_name: ['button', 'button-success', 'button-small'],
-                    attributes: { 'data-action': 'set-check-complies', 'aria-pressed': 'false' },
+                    attributes: {
+                        'data-action': 'set-check-complies',
+                        'aria-pressed': 'false',
+                        'aria-label': complies_aria
+                    },
                     html_content: `<span>${t('check_complies')}</span>${check_icon}`
                 }),
                 this.Helpers.create_element('button', {
                     class_name: ['button', 'button-danger', 'button-small'],
-                    attributes: { 'data-action': 'set-check-not-complies', 'aria-pressed': 'false' },
+                    attributes: {
+                        'data-action': 'set-check-not-complies',
+                        'aria-pressed': 'false',
+                        'aria-label': not_complies_aria
+                    },
                     html_content: `<span>${t('check_does_not_comply')}</span>${cancel_icon}`
                 })
             );
@@ -666,7 +708,7 @@ export const ChecklistHandler = {
                 }
                 pc_item_li.appendChild(pc_title_h4);
 
-                const requirement_content_div = this.Helpers.create_element('div', { 
+                const requirement_content_div = this.Helpers.create_element('div', {
                     class_name: ['pass-criterion-requirement', 'markdown-content'],
                     html_content: this._safe_parse_markdown_inline(pc_def.requirement)
                 });
@@ -686,13 +728,15 @@ export const ChecklistHandler = {
                 });
                 const thumb_up_icon = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('thumb_up', [], 16) : '';
                 const thumb_down_icon = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('thumb_down', [], 16) : '';
+                const passed_aria = this._button_aria_label_with_context(t('pass_criterion_approved'), requirement_plain);
+                const failed_aria = this._button_aria_label_with_context(t('pass_criterion_failed'), requirement_plain);
                 pc_actions_div.append(
                     this.Helpers.create_element('button', {
                         class_name: ['button', 'button-success', 'button-small'],
                         attributes: { 
                             'data-action': 'set-pc-passed', 
                             'aria-pressed': 'false',
-                            'aria-label': `${t('pass_criterion_approved')}: ${requirement_plain}`
+                            'aria-label': passed_aria
                         },
                         html_content: `<span>${t('pass_criterion_approved')}</span>${thumb_up_icon}`
                     }),
@@ -701,7 +745,7 @@ export const ChecklistHandler = {
                         attributes: { 
                             'data-action': 'set-pc-failed', 
                             'aria-pressed': 'false',
-                            'aria-label': `${t('pass_criterion_failed')}: ${requirement_plain}`
+                            'aria-label': failed_aria
                         },
                         html_content: `<span>${t('pass_criterion_failed')}</span>${thumb_down_icon}`
                     })
@@ -817,6 +861,11 @@ export const ChecklistHandler = {
 
             check_wrapper.className = `check-item status-${calculated_check_status}`;
 
+            const check_def_top = this.requirement_definition_ref?.checks?.find(c => (c?.id || c?.key) === check_id);
+            const condition_plain_for_aria = check_def_top
+                ? this._get_plain_text_from_html(this._safe_parse_markdown_inline(check_def_top.condition || ''))
+                : '';
+
             const complies_btn = check_wrapper.querySelector('button[data-action="set-check-complies"]');
             const not_complies_btn = check_wrapper.querySelector('button[data-action="set-check-not-complies"]');
             
@@ -825,6 +874,14 @@ export const ChecklistHandler = {
                 not_complies_btn.classList.toggle('active', overall_manual_status === 'not_applicable');
                 complies_btn.setAttribute('aria-pressed', overall_manual_status === 'passed' ? 'true' : 'false');
                 not_complies_btn.setAttribute('aria-pressed', overall_manual_status === 'not_applicable' ? 'true' : 'false');
+                complies_btn.setAttribute(
+                    'aria-label',
+                    this._button_aria_label_with_context(t('check_complies'), condition_plain_for_aria)
+                );
+                not_complies_btn.setAttribute(
+                    'aria-label',
+                    this._button_aria_label_with_context(t('check_does_not_comply'), condition_plain_for_aria)
+                );
                 complies_btn.parentElement.style.display = this.is_audit_locked ? 'none' : 'flex';
             }
             
@@ -848,7 +905,22 @@ export const ChecklistHandler = {
             const pc_list = check_wrapper.querySelector('.pass-criteria-list');
             const compliance_info_text = check_wrapper.querySelector('.compliance-info-text');
 
-            pc_list.style.display = (overall_manual_status === 'passed' && pc_list.children.length > 0) ? '' : 'none';
+            const next_pc_list_display = (overall_manual_status === 'passed' && pc_list.children.length > 0) ? '' : 'none';
+            if (next_pc_list_display === 'none' && pc_list.style.display !== 'none') {
+                const ae = document.activeElement;
+                if (ae && pc_list.contains(ae)) {
+                    const fallback = check_wrapper.querySelector('button[data-action="set-check-complies"]')
+                        || check_wrapper.querySelector('button[data-action="set-check-not-complies"]');
+                    if (fallback && document.contains(fallback)) {
+                        try {
+                            fallback.focus({ preventScroll: true });
+                        } catch (e) {
+                            fallback.focus();
+                        }
+                    }
+                }
+            }
+            pc_list.style.display = next_pc_list_display;
             if (overall_manual_status === 'not_applicable') {
                 compliance_info_text.textContent = t('condition_not_met_criteria_auto_passed');
                 compliance_info_text.style.display = '';
@@ -893,21 +965,28 @@ export const ChecklistHandler = {
                     failed_btn.classList.toggle('active', current_pc_status === 'failed');
                     passed_btn.setAttribute('aria-pressed', current_pc_status === 'passed' ? 'true' : 'false');
                     failed_btn.setAttribute('aria-pressed', current_pc_status === 'failed' ? 'true' : 'false');
+                    const pc_def_aria = this.requirement_definition_ref?.checks
+                        ?.find(c => (c?.id || c?.key) === check_id)
+                        ?.passCriteria?.find(p => (p?.id || p?.key) === pc_id);
+                    const requirement_plain_aria = this._get_plain_text_from_html(
+                        this._safe_parse_markdown_inline(pc_def_aria?.requirement || '')
+                    );
+                    passed_btn.setAttribute(
+                        'aria-label',
+                        this._button_aria_label_with_context(t('pass_criterion_approved'), requirement_plain_aria)
+                    );
+                    failed_btn.setAttribute(
+                        'aria-label',
+                        this._button_aria_label_with_context(t('pass_criterion_failed'), requirement_plain_aria)
+                    );
                     passed_btn.parentElement.style.display = this.is_audit_locked ? 'none' : 'flex';
                 }
 
                 const observation_wrapper = pc_item_li.querySelector('.pc-observation-detail-wrapper');
                 const observation_textarea = observation_wrapper.querySelector('textarea');
 
-                const was_hidden = observation_wrapper.hidden;
                 observation_wrapper.hidden = (current_pc_status !== 'failed');
 
-                if (was_hidden && !observation_wrapper.hidden && !this.is_audit_locked) {
-                    if (!window.focusProtectionActive && !window.customFocusApplied) {
-                        observation_textarea.focus();
-                    }
-                }
-                
                 observation_textarea.readOnly = this.is_audit_locked;
                 const target_observation_value = pc_data.observationDetail || '';
                 const any_textarea_focused = document.activeElement && this.container_ref?.contains(document.activeElement) &&
@@ -979,6 +1058,10 @@ export const ChecklistHandler = {
                 text_span.innerHTML = this.Helpers.escape_html(t('stuck_button')) + indicator_html;
             }
         }
+
+        // Direkt efter DOM-mutationer i samma macrotask som state-render — undviker att fokus
+        // tillfälligt hamnar på body/textarea innan senare setTimeout-refokusering körs.
+        this._reapply_pending_status_button_focus();
     },
 
     render(requirement_definition, requirement_result, locked_status, update_details) {

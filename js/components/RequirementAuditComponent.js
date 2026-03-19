@@ -93,6 +93,10 @@ export const RequirementAuditComponent = {
                         this.plate_element_ref?.contains(active)) {
                         return;
                     }
+                    if (this._should_patch_requirement_result_only(listener_meta)) {
+                        void this.patch_dom_after_current_requirement_result_change();
+                        return;
+                    }
                     if (window.__GV_DEBUG_MODAL_SCROLL && window.ConsoleManager) window.ConsoleManager.log('[GV-ModalDebug] RequirementAuditComponent: render');
                     this.render();
                 }
@@ -182,6 +186,76 @@ export const RequirementAuditComponent = {
         
         this.ordered_requirement_keys = this.AuditLogic.get_ordered_relevant_requirement_keys(state.ruleFileContent, this.current_sample, 'default');
         return true;
+    },
+
+    _should_patch_requirement_result_only(listener_meta) {
+        if (listener_meta?.action_type !== this.StoreActionTypes.UPDATE_REQUIREMENT_RESULT) return false;
+        const u = listener_meta.requirement_result_update;
+        if (!u || this.params?.sampleId === undefined || this.params?.requirementId === undefined) return false;
+        return String(u.sampleId) === String(this.params.sampleId) &&
+            String(u.requirementId) === String(this.params.requirementId);
+    },
+
+    _get_checklist_update_details(state) {
+        const details_by_key = state.requirementUpdateDetails || {};
+        let update_details = details_by_key[this.params?.requirementId]
+            ?? details_by_key[this.current_requirement?.key]
+            ?? details_by_key[this.current_requirement?.id]
+            ?? null;
+        if (!update_details && this.current_result?.needsReview && this.current_requirement?.checks?.length) {
+            update_details = this._build_fallback_update_details(this.current_requirement);
+        }
+        return update_details;
+    },
+
+    _refresh_overall_requirement_status_in_header() {
+        const p = this.plate_element_ref?.querySelector('.overall-requirement-status-display');
+        if (!p || !this.Helpers?.create_element) return;
+        const t = this.Translation.t;
+        const status_key = this.current_result?.status || 'not_audited';
+        const status_text = t(`audit_status_${status_key}`);
+        let span = p.querySelector('.status-text');
+        if (!span) {
+            span = this.Helpers.create_element('span', {
+                class_name: `status-text status-${status_key}`,
+                text_content: status_text
+            });
+            p.appendChild(span);
+        } else {
+            span.className = `status-text status-${status_key}`;
+            span.textContent = status_text;
+        }
+    },
+
+    async patch_dom_after_current_requirement_result_change() {
+        if (!this.load_and_prepare_view_data()) {
+            await this.render();
+            return;
+        }
+        const plate_exists = this.plate_element_ref && this.root.contains(this.plate_element_ref);
+        if (!plate_exists) {
+            await this.render();
+            return;
+        }
+
+        const state = this.getState();
+        const is_locked = state.auditStatus === 'locked';
+        const t = this.Translation.t;
+
+        this._refresh_overall_requirement_status_in_header();
+
+        const update_details = this._get_checklist_update_details(state);
+        this.checklist_handler_instance.render(this.current_requirement, this.current_result, is_locked, update_details);
+
+        if (this.current_result?.needsReview === true) {
+            this.NotificationComponent.show_global_message(t('requirement_updated_needs_review'), 'info');
+        } else {
+            this.NotificationComponent.clear_global_message();
+        }
+
+        await this.render_right_sidebar();
+        this.render_navigation_from_sidebar();
+        this.checklist_handler_instance?._reapply_pending_status_button_focus?.();
     },
 
     handle_checklist_status_change(change_info) {
@@ -706,14 +780,7 @@ export const RequirementAuditComponent = {
         this.bottom_navigation_instance.render(nav_options);
 
         this.info_sections_instance.render(this.current_requirement, this.current_sample, state.ruleFileContent.metadata);
-        const details_by_key = state.requirementUpdateDetails || {};
-        let update_details = details_by_key[this.params?.requirementId]
-            ?? details_by_key[this.current_requirement?.key]
-            ?? details_by_key[this.current_requirement?.id]
-            ?? null;
-        if (!update_details && this.current_result?.needsReview && this.current_requirement?.checks?.length) {
-            update_details = this._build_fallback_update_details(this.current_requirement);
-        }
+        const update_details = this._get_checklist_update_details(state);
         this.checklist_handler_instance.render(this.current_requirement, this.current_result, is_locked, update_details);
 
         const comments_section = this.plate_element_ref.querySelector('.input-fields-container.audit-section');
@@ -825,6 +892,7 @@ export const RequirementAuditComponent = {
         this.populate_dom_with_data();
         await this.render_right_sidebar();
         this.render_navigation_from_sidebar();
+        this.checklist_handler_instance?._reapply_pending_status_button_focus?.();
     },
 
     async render_right_sidebar() {
