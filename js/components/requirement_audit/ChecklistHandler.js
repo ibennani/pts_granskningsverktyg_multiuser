@@ -70,6 +70,58 @@ export const ChecklistHandler = {
         });
     },
 
+    _restore_focus_to_button_with_retry(button_target, { attempts = 12, interval_ms = 50 } = {}) {
+        if (!button_target || !this.container_ref) return;
+
+        // Hindrar att `update_dom()` försöker fokusera textarea när den visas/döljs.
+        const prev_custom_focus_applied = window.customFocusApplied;
+        window.customFocusApplied = true;
+
+        const attempt_focus = (remaining) => {
+            if (!this.container_ref) {
+                window.customFocusApplied = prev_custom_focus_applied;
+                return;
+            }
+
+            let search_root = this.container_ref;
+            if (button_target.check_id) {
+                const check_selector = `.check-item[data-check-id="${CSS.escape(button_target.check_id)}"]`;
+                const check_item = this.container_ref.querySelector(check_selector);
+                if (check_item) search_root = check_item;
+            }
+            if (button_target.pc_id) {
+                const pc_selector = `.pass-criterion-item[data-pc-id="${CSS.escape(button_target.pc_id)}"]`;
+                const pc_item = search_root.querySelector(pc_selector);
+                if (pc_item) search_root = pc_item;
+            }
+
+            const button_to_focus = search_root.querySelector(`button[data-action="${CSS.escape(button_target.action)}"]`);
+            const has_layout = button_to_focus && typeof button_to_focus.getClientRects === 'function'
+                ? button_to_focus.getClientRects().length > 0
+                : false;
+
+            if (button_to_focus && has_layout && document.contains(button_to_focus)) {
+                try {
+                    button_to_focus.focus({ preventScroll: true });
+                } catch (e) {
+                    button_to_focus.focus();
+                }
+
+                // Släpp tillbaka skyddet efter en kort stund så andra fokusflöden kan ta över.
+                setTimeout(() => { window.customFocusApplied = prev_custom_focus_applied; }, 400);
+                return;
+            }
+
+            if (remaining <= 1) {
+                setTimeout(() => { window.customFocusApplied = prev_custom_focus_applied; }, 0);
+                return;
+            }
+            setTimeout(() => attempt_focus(remaining - 1), interval_ms);
+        };
+
+        attempt_focus(attempts);
+    },
+
     // --- HELPER FUNCTION ---
     _safe_parse_markdown_inline(markdown_string) {
         if (typeof marked === 'undefined' || !this.Helpers.escape_html) {
@@ -182,7 +234,13 @@ export const ChecklistHandler = {
         
         if (change_info.type && this.on_status_change_callback) {
             this.on_status_change_callback(change_info);
-            this._restore_focus_to_button_if_needed(button_focus_target);
+            // För just “Ingen anmärkning” / “Underkänt” behöver vi vara extra aggressiva:
+            // UI:t kan samtidigt visa/dölja textarea och SR kan annars “falla tillbaka”.
+            if (change_info.type === 'pc_status_change' && (change_info.newStatus === 'passed' || change_info.newStatus === 'failed')) {
+                this._restore_focus_to_button_with_retry(button_focus_target, { attempts: 14, interval_ms: 60 });
+            } else {
+                this._restore_focus_to_button_if_needed(button_focus_target);
+            }
         }
     },
 
