@@ -39,9 +39,11 @@ export default defineConfig({
         }
       }
     },
+    // build-info.js uppdateras av dev-build-info-watcher; ignorera så Vite inte omladdar hela appen vid varje skrivning.
     watch: {
       usePolling: true,
-      interval: 300
+      interval: 1000,
+      ignored: ['**/build-info.js']
     },
     hmr: true
   },

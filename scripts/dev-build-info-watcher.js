@@ -11,6 +11,8 @@ const buildInfoPath = join(projectRoot, 'build-info.js');
 const DEBOUNCE_MS = 150;
 
 let debounce_timer = null;
+/** Undvik att skriva samma innehåll igen – annars uppdateras mtime och Vite triggar HMR/omladdning i loop (särskilt på Windows). */
+let last_written_content = null;
 
 function format_build_info_from_mtime(mtime) {
     const buildTime = mtime || new Date();
@@ -31,7 +33,12 @@ function write_build_info_file(buildInfo) {
     const content = `// Auto-generated build info (dev – uppdateras vid filändring)
 window.BUILD_INFO = ${JSON.stringify(buildInfo, null, 2)};
 `;
+    if (content === last_written_content) {
+        return false;
+    }
+    last_written_content = content;
     writeFileSync(buildInfoPath, content, 'utf8');
+    return true;
 }
 
 function update_build_info() {
@@ -44,8 +51,10 @@ function update_build_info() {
         if (!latestMtime) return;
 
         const buildInfo = format_build_info_from_mtime(latestMtime);
-        write_build_info_file(buildInfo);
-        console.log(`[BUILDINFO] Senaste dev: ${buildInfo.date} kl ${buildInfo.time}`);
+        const did_write = write_build_info_file(buildInfo);
+        if (did_write) {
+            console.log(`[BUILDINFO] Senaste dev: ${buildInfo.date} kl ${buildInfo.time}`);
+        }
     } catch (error) {
         console.warn('[BUILDINFO] Kunde inte uppdatera build-info.js:', error.message);
     }
