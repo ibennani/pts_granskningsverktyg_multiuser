@@ -19,6 +19,39 @@ export const ChecklistHandler = {
     is_dom_built: false,
     last_language_code: null,
 
+    _build_button_focus_selector(button_element) {
+        if (!button_element) return null;
+        const action = button_element.getAttribute('data-action');
+        if (!action) return null;
+        const check_item = button_element.closest('.check-item[data-check-id]');
+        const pc_item = button_element.closest('.pass-criterion-item[data-pc-id]');
+        const check_id = check_item?.dataset?.checkId;
+        const pc_id = pc_item?.dataset?.pcId;
+        let selector = `button[data-action="${CSS.escape(action)}"]`;
+        if (check_id) {
+            selector += `[data-check-id="${CSS.escape(check_id)}"]`;
+        }
+        if (pc_id) {
+            selector += `[data-pc-id="${CSS.escape(pc_id)}"]`;
+        }
+        return selector;
+    },
+
+    _restore_focus_to_button_if_needed(button_selector) {
+        if (!button_selector || !this.container_ref) return;
+        requestAnimationFrame(() => {
+            const active = document.activeElement;
+            if (active && this.container_ref.contains(active)) return;
+            const button_to_focus = this.container_ref.querySelector(button_selector);
+            if (!button_to_focus || !document.contains(button_to_focus)) return;
+            try {
+                button_to_focus.focus({ preventScroll: true });
+            } catch (e) {
+                button_to_focus.focus();
+            }
+        });
+    },
+
     // --- HELPER FUNCTION ---
     _safe_parse_markdown_inline(markdown_string) {
         if (typeof marked === 'undefined' || !this.Helpers.escape_html) {
@@ -71,15 +104,12 @@ export const ChecklistHandler = {
         // Bind handlers to this instance
         this.handle_checklist_click = this.handle_checklist_click.bind(this);
         this.handle_textarea_input = this.handle_textarea_input.bind(this);
-        this.handle_checklist_keydown = this.handle_checklist_keydown.bind(this);
         this.handle_attach_media_click = this.handle_attach_media_click.bind(this);
         this.handle_stuck_click = this.handle_stuck_click.bind(this);
         this.handle_copy_observation_click = this.handle_copy_observation_click.bind(this);
 
         this.container_ref.addEventListener('click', this.handle_checklist_click);
         this.container_ref.addEventListener('input', this.handle_textarea_input);
-        // Add keyboard support for accessibility
-        this.container_ref.addEventListener('keydown', this.handle_checklist_keydown);
     },
     
     handle_checklist_click(event) {
@@ -107,6 +137,7 @@ export const ChecklistHandler = {
         const action = target_button.dataset.action;
         const check_item_element = target_button.closest('.check-item[data-check-id]');
         const pc_item_element = target_button.closest('.pass-criterion-item[data-pc-id]');
+        const button_focus_selector = this._build_button_focus_selector(target_button);
         
         if (!check_item_element) return;
         const check_id = check_item_element.dataset.checkId;
@@ -133,18 +164,7 @@ export const ChecklistHandler = {
         
         if (change_info.type && this.on_status_change_callback) {
             this.on_status_change_callback(change_info);
-        }
-    },
-
-    handle_checklist_keydown(event) {
-        // Handle keyboard navigation for accessibility
-        if (event.key === 'Enter' || event.key === ' ') {
-            const target_button = event.target.closest('button[data-action]');
-            if (!target_button) return;
-            
-            event.preventDefault();
-            // Trigger the same action as click
-            this.handle_checklist_click(event);
+            this._restore_focus_to_button_if_needed(button_focus_selector);
         }
     },
 
@@ -932,7 +952,6 @@ export const ChecklistHandler = {
             this.flush_observations_before_destroy();
             this.container_ref.removeEventListener('click', this.handle_checklist_click);
             this.container_ref.removeEventListener('input', this.handle_textarea_input);
-            this.container_ref.removeEventListener('keydown', this.handle_checklist_keydown);
             this.container_ref.innerHTML = '';
         }
         this.is_dom_built = false;
