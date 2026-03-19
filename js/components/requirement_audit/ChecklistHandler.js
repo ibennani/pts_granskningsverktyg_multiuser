@@ -671,6 +671,10 @@ export const ChecklistHandler = {
                     html_content: this._safe_parse_markdown_inline(pc_def.requirement)
                 });
                 pc_item_li.appendChild(requirement_content_div);
+                // Använd renderad (plain) text som påståendetext så skärmläsaren får samma innehåll som användaren ser.
+                const requirement_plain = this._get_plain_text_from_html(
+                    this._safe_parse_markdown_inline(pc_def.requirement)
+                );
                 
                 pc_item_li.appendChild(this.Helpers.create_element('div', {
                     class_name: 'pass-criterion-status',
@@ -685,12 +689,20 @@ export const ChecklistHandler = {
                 pc_actions_div.append(
                     this.Helpers.create_element('button', {
                         class_name: ['button', 'button-success', 'button-small'],
-                        attributes: { 'data-action': 'set-pc-passed', 'aria-pressed': 'false' },
+                        attributes: { 
+                            'data-action': 'set-pc-passed', 
+                            'aria-pressed': 'false',
+                            'aria-label': `${t('pass_criterion_approved')}: ${requirement_plain}`
+                        },
                         html_content: `<span>${t('pass_criterion_approved')}</span>${thumb_up_icon}`
                     }),
                     this.Helpers.create_element('button', {
                         class_name: ['button', 'button-danger', 'button-small'],
-                        attributes: { 'data-action': 'set-pc-failed', 'aria-pressed': 'false' },
+                        attributes: { 
+                            'data-action': 'set-pc-failed', 
+                            'aria-pressed': 'false',
+                            'aria-label': `${t('pass_criterion_failed')}: ${requirement_plain}`
+                        },
                         html_content: `<span>${t('pass_criterion_failed')}</span>${thumb_down_icon}`
                     })
                 );
@@ -725,9 +737,6 @@ export const ChecklistHandler = {
                 copy_observation_row.appendChild(copy_observation_btn);
                 attach_media_row.appendChild(copy_observation_row);
                 const criterion_title = `${t('pass_criterion_label')} ${numbering}`;
-                const requirement_plain = this._get_plain_text_from_html(
-                    this._safe_parse_markdown_inline(pc_def.requirement)
-                );
                 const pc_result = this.requirement_result_ref?.checkResults?.[check_id]?.passCriteria?.[pc_id];
                 const attached_filenames = Array.isArray(pc_result?.attachedMediaFilenames)
                     ? pc_result.attachedMediaFilenames.filter(f => f && String(f).trim())
