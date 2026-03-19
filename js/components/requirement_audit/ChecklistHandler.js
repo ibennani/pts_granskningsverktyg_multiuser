@@ -36,7 +36,15 @@ export const ChecklistHandler = {
         if (!button_target || !this.container_ref) return;
         requestAnimationFrame(() => {
             const active = document.activeElement;
-            if (active && this.container_ref.contains(active)) return;
+            if (active && this.container_ref.contains(active)) {
+                // Om fokuset ligger kvar på ett element som blivit dolt (t.ex. via `hidden`
+                // eller `display:none`) ska vi ändå återställa fokus, annars kan skärmläsare
+                // hoppa till sidstart/andra “fallback”-fokus.
+                const has_layout = typeof active.getClientRects === 'function'
+                    ? active.getClientRects().length > 0
+                    : false;
+                if (has_layout) return;
+            }
             let search_root = this.container_ref;
             if (button_target.check_id) {
                 const check_selector = `.check-item[data-check-id="${CSS.escape(button_target.check_id)}"]`;
