@@ -157,7 +157,7 @@ export const RequirementAuditSidebarComponent = {
 
         this.list_container_ref = this.Helpers.create_element('div', {
             class_name: 'requirement-audit-sidebar__list',
-            attributes: { 'aria-live': 'polite' }
+            attributes: {}
         });
         container.appendChild(this.list_container_ref);
 
