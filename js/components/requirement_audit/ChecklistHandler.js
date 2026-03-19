@@ -19,30 +19,40 @@ export const ChecklistHandler = {
     is_dom_built: false,
     last_language_code: null,
 
-    _build_button_focus_selector(button_element) {
+    _build_button_focus_target(button_element) {
         if (!button_element) return null;
         const action = button_element.getAttribute('data-action');
         if (!action) return null;
         const check_item = button_element.closest('.check-item[data-check-id]');
         const pc_item = button_element.closest('.pass-criterion-item[data-pc-id]');
-        const check_id = check_item?.dataset?.checkId;
-        const pc_id = pc_item?.dataset?.pcId;
-        let selector = `button[data-action="${CSS.escape(action)}"]`;
-        if (check_id) {
-            selector += `[data-check-id="${CSS.escape(check_id)}"]`;
-        }
-        if (pc_id) {
-            selector += `[data-pc-id="${CSS.escape(pc_id)}"]`;
-        }
-        return selector;
+        return {
+            action,
+            check_id: check_item?.dataset?.checkId || null,
+            pc_id: pc_item?.dataset?.pcId || null
+        };
     },
 
-    _restore_focus_to_button_if_needed(button_selector) {
-        if (!button_selector || !this.container_ref) return;
+    _restore_focus_to_button_if_needed(button_target) {
+        if (!button_target || !this.container_ref) return;
         requestAnimationFrame(() => {
             const active = document.activeElement;
             if (active && this.container_ref.contains(active)) return;
-            const button_to_focus = this.container_ref.querySelector(button_selector);
+            let search_root = this.container_ref;
+            if (button_target.check_id) {
+                const check_selector = `.check-item[data-check-id="${CSS.escape(button_target.check_id)}"]`;
+                const check_item = this.container_ref.querySelector(check_selector);
+                if (check_item) {
+                    search_root = check_item;
+                }
+            }
+            if (button_target.pc_id) {
+                const pc_selector = `.pass-criterion-item[data-pc-id="${CSS.escape(button_target.pc_id)}"]`;
+                const pc_item = search_root.querySelector(pc_selector);
+                if (pc_item) {
+                    search_root = pc_item;
+                }
+            }
+            const button_to_focus = search_root.querySelector(`button[data-action="${CSS.escape(button_target.action)}"]`);
             if (!button_to_focus || !document.contains(button_to_focus)) return;
             try {
                 button_to_focus.focus({ preventScroll: true });
@@ -137,7 +147,7 @@ export const ChecklistHandler = {
         const action = target_button.dataset.action;
         const check_item_element = target_button.closest('.check-item[data-check-id]');
         const pc_item_element = target_button.closest('.pass-criterion-item[data-pc-id]');
-        const button_focus_selector = this._build_button_focus_selector(target_button);
+        const button_focus_target = this._build_button_focus_target(target_button);
         
         if (!check_item_element) return;
         const check_id = check_item_element.dataset.checkId;
@@ -164,7 +174,7 @@ export const ChecklistHandler = {
         
         if (change_info.type && this.on_status_change_callback) {
             this.on_status_change_callback(change_info);
-            this._restore_focus_to_button_if_needed(button_focus_selector);
+            this._restore_focus_to_button_if_needed(button_focus_target);
         }
     },
 
