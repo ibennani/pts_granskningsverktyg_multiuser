@@ -103,7 +103,7 @@ export const AuditInfoComponent = {
         // Show end time if available, or if audit is locked (fallback to now if missing in state for locked audit)
         if (current_state.endTime) {
             info_panel.appendChild(this.create_info_item('end_time', this.Helpers.format_iso_to_local_datetime(current_state.endTime, lang_code)));
-        } else if (current_state.auditStatus === 'locked') {
+        } else if (current_state.auditStatus === 'locked' || current_state.auditStatus === 'archived') {
              // Fallback for locked audits without recorded end time - show current time or a placeholder
              // However, to avoid showing a misleading "now" every time the component renders, we should probably rely on state.
              // But if state is missing it, maybe show "Unknown" or similar? 

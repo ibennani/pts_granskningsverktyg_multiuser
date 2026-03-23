@@ -343,7 +343,7 @@ export const SideMenuComponent = {
             };
         }
 
-        if (audit_status === 'in_progress' || audit_status === 'locked') {
+        if (audit_status === 'in_progress' || audit_status === 'locked' || audit_status === 'archived') {
             const problems_count = (this.AuditLogic && typeof this.AuditLogic.count_audit_problems === 'function')
                 ? this.AuditLogic.count_audit_problems(state)
                 : 0;

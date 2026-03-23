@@ -394,7 +394,7 @@ export function recalculateStatusesOnLoad(auditState) {
         });
     });
 
-    // Om granskningen är låst, beräkna om bristindex baserat på korrekta statusar
+    // Avslutad: beräkna om bristnumrering baserat på korrekta statusar. Arkiverad: fryst data — ingen omnumrering.
     if (newState.auditStatus === 'locked') {
         return assignSortedDeficiencyIdsOnLock(newState);
     }

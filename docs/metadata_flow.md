@@ -14,6 +14,7 @@ Granskningsmetadata lagras centralt i `state.auditMetadata` i [js/state.js](../j
 | `auditorName` | Granskarens namn |
 | `caseHandler` | Ärend handläggare |
 | `internalComment` | Intern kommentar |
+| `audit_edit_log` | Valfri append-only-lista (array av händelser med tid och status vid sparning mot servern). Fylls i av klienten; äldre exporterade JSON-filer kan sakna fältet tills första lyckade synk. |
 
 ## Hur uppdateringar sprids
 
@@ -62,3 +63,18 @@ När applikationen är ansluten till en server visas [StartViewComponent](../js/
 | Ladda ner | Knapp | Nedladdning som JSON |
 
 Varje rad har en "Ladda ner"-knapp för att ladda ner granskningen som JSON-fil. Knappens aria-label är "Ladda ner {diarienummer} {aktörens namn}".
+
+## Granskningsstatus i databasen och i gränssnittet
+
+Status lagras i databasen som oförändrade enum-värden. Visningsnamn styrs av översättningar (i18n), inte av migrering av befintliga rader.
+
+| Lagrat värde (`audit.status`) | Visningsnamn i gränssnittet |
+|-------------------------------|-----------------------------|
+| `not_started` | Förberett |
+| `in_progress` | Pågår |
+| `locked` | Avslutad |
+| `archived` | Arkiverad |
+
+**Importerade eller äldre JSON-filer:** Om `auditStatus` saknas eller är ogiltig faller valideringen tillbaka till `not_started` (Förberett), i linje med befintlig logik. Fält som `audit_edit_log` kan saknas och behandlas då som tomma tills data skapats vid synk.
+
+**Export:** För arkiverade granskningar ska fältet för senaste ändring inte följa med i Excel-exportens allmänna information (listor i startvyn visar däremot alltid kolumnen *Senast ändrad* utifrån serverns `updated_at`).

@@ -206,6 +206,18 @@ async function export_to_excel(current_audit) {
             [t('end_time'), current_audit.endTime ? window.Helpers.format_iso_to_local_datetime(current_audit.endTime, lang_code) : '']
         ];
 
+        if (current_audit.auditStatus !== 'archived') {
+            const log = current_audit.auditMetadata?.audit_edit_log;
+            const last = Array.isArray(log) && log.length ? log[log.length - 1] : null;
+            const last_at = last?.at;
+            if (last_at) {
+                general_info_data.push([
+                    t('export_last_updated_label'),
+                    window.Helpers.format_iso_to_local_datetime(last_at, lang_code)
+                ]);
+            }
+        }
+
         // --- START OF CHANGE ---
         const score_analysis = window.ScoreCalculator.calculateQualityScore(current_audit);
         const deficiency_index_value = score_analysis ? score_analysis.totalScore : null;

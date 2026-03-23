@@ -196,7 +196,7 @@ export const AuditImagesViewComponent = {
             list_wrapper.appendChild(empty_msg);
         } else {
             const grouped = this.group_images_by_requirement_sample(images);
-            const is_audit_locked = state.auditStatus === 'locked';
+            const is_audit_locked = state.auditStatus === 'locked' || state.auditStatus === 'archived';
             grouped.forEach((group) => {
                 const card = this.create_image_card(group, t, is_audit_locked);
                 list_wrapper.appendChild(card);

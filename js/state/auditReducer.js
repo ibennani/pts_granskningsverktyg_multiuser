@@ -108,6 +108,7 @@ export function auditReducer(current_state, action) {
             };
         }
         case ActionTypes.CONFIRM_SINGLE_REVIEWED_REQUIREMENT: {
+            if (current_state.auditStatus === 'archived') return current_state;
             const { sampleId, requirementId } = action.payload;
             const new_update_details = { ...(current_state.requirementUpdateDetails || {}) };
             delete new_update_details[requirementId];
@@ -127,6 +128,7 @@ export function auditReducer(current_state, action) {
             };
         }
         case ActionTypes.CONFIRM_ALL_REVIEWED_REQUIREMENTS:
+            if (current_state.auditStatus === 'archived') return current_state;
             return {
                 ...current_state,
                 requirementUpdateDetails: {},
@@ -147,6 +149,7 @@ export function auditReducer(current_state, action) {
                 })
             };
         case ActionTypes.MARK_ALL_UNREVIEWED_AS_PASSED: {
+            if (current_state.auditStatus === 'archived') return current_state;
             if (!current_state.ruleFileContent?.requirements || !current_state.samples?.length) {
                 return current_state;
             }
@@ -171,6 +174,7 @@ export function auditReducer(current_state, action) {
             return AuditLogic.updateIncrementalDeficiencyIds(new_state);
         }
         case ActionTypes.MARK_REQUIREMENT_AS_PASSED_IN_ALL_SAMPLES: {
+            if (current_state.auditStatus === 'archived') return current_state;
             const requirement_id = action.payload?.requirementId;
             if (!requirement_id || !current_state.ruleFileContent?.requirements || !current_state.samples?.length) {
                 return current_state;
@@ -271,21 +275,32 @@ export function auditReducer(current_state, action) {
             }
             if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[State] LOAD_AUDIT_FROM_FILE: Invalid payload.', action.payload);
             return current_state;
-        case ActionTypes.UPDATE_METADATA:
-            return { ...current_state, auditMetadata: { ...current_state.auditMetadata, ...action.payload } };
+        case ActionTypes.UPDATE_METADATA: {
+            const payload = { ...(action.payload || {}) };
+            delete payload.skip_server_sync;
+            if (current_state.auditStatus === 'archived') {
+                const keys = Object.keys(payload);
+                if (keys.length !== 1 || keys[0] !== 'audit_edit_log') return current_state;
+            }
+            return { ...current_state, auditMetadata: { ...current_state.auditMetadata, ...payload } };
+        }
         case ActionTypes.ADD_SAMPLE: {
+            if (current_state.auditStatus === 'archived') return current_state;
             const new_sample_with_defaults = { sampleCategory: '', sampleType: '', ...action.payload };
             return { ...current_state, samples: [...current_state.samples, new_sample_with_defaults] };
         }
         case ActionTypes.UPDATE_SAMPLE:
+            if (current_state.auditStatus === 'archived') return current_state;
             return {
                 ...current_state,
                 samples: current_state.samples.map(s => s.id === action.payload.sampleId ? { ...s, ...action.payload.updatedSampleData } : s)
             };
         case ActionTypes.DELETE_SAMPLE:
+            if (current_state.auditStatus === 'archived') return current_state;
             new_state = { ...current_state, samples: current_state.samples.filter(s => s.id !== action.payload.sampleId) };
             return AuditLogic.updateIncrementalDeficiencyIds(new_state);
         case ActionTypes.UPDATE_REQUIREMENT_RESULT: {
+            if (current_state.auditStatus === 'archived') return current_state;
             const { sampleId: updateSampleId, requirementId: updateRequirementId, newRequirementResult } = action.payload;
             const result_to_save = { ...newRequirementResult };
             new_state = {
@@ -316,6 +331,10 @@ export function auditReducer(current_state, action) {
             } else if (newStatus === 'in_progress' && current_state.auditStatus === 'not_started') {
                 state_before_status_change = AuditLogic.removeAllDeficiencyIds(current_state);
                 state_before_status_change = AuditLogic.recalculateAuditTimes(state_before_status_change);
+            } else if (newStatus === 'archived' && current_state.auditStatus === 'locked') {
+                state_before_status_change = current_state;
+            } else if (newStatus === 'locked' && current_state.auditStatus === 'archived') {
+                state_before_status_change = current_state;
             }
             return { ...state_before_status_change, auditStatus: newStatus };
         }

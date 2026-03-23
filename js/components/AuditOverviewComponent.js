@@ -104,7 +104,7 @@ export const AuditOverviewComponent = {
         this.NotificationComponent.append_global_message_areas_to(plate_element);
         plate_element.appendChild(this.Helpers.create_element('h1', { text_content: t('audit_overview_title') }));
 
-        if (current_global_state.auditStatus === 'locked') {
+        if (current_global_state.auditStatus === 'locked' || current_global_state.auditStatus === 'archived') {
             this.newerRuleAvailable = null;
         } else if (!this._newerRuleCheckRequested) {
             this._newerRuleCheckRequested = true;
@@ -119,7 +119,7 @@ export const AuditOverviewComponent = {
                 .catch(() => {});
         }
 
-        if (current_global_state.auditStatus !== 'locked' && this.newerRuleAvailable?.ruleId && this.newerRuleAvailable?.version) {
+        if (current_global_state.auditStatus !== 'locked' && current_global_state.auditStatus !== 'archived' && this.newerRuleAvailable?.ruleId && this.newerRuleAvailable?.version) {
             const banner = this.Helpers.create_element('div', { class_name: 'audit-overview__newer-rule-banner' });
             const link = this.Helpers.create_element('a', {
                 text_content: t('update_rulefile_button_with_version', { version: this.newerRuleAvailable.version }),

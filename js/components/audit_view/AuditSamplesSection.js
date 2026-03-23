@@ -35,14 +35,17 @@ export function render_audit_samples_section(ctx) {
         };
         const base_in_progress = ctx.audits.filter((a) => a.status === 'in_progress');
         const base_not_started = ctx.audits.filter((a) => a.status === 'not_started');
-        const base_completed = ctx.audits.filter((a) => a.status === 'locked' || a.status === 'archived');
+        const base_locked = ctx.audits.filter((a) => a.status === 'locked');
+        const base_archived = ctx.audits.filter((a) => a.status === 'archived');
         const in_progress = filter_and_sort_audits(base_in_progress);
         const not_started = filter_and_sort_audits(base_not_started);
-        const completed = filter_and_sort_audits(base_completed);
+        const completed = filter_and_sort_audits(base_locked);
+        const archived_audits = filter_and_sort_audits(base_archived);
         const section_configs = [
             { heading_key: 'start_view_audits_heading', audits: in_progress },
             { heading_key: 'start_view_new_audits_heading', audits: not_started },
-            { heading_key: 'start_view_completed_audits_heading', audits: completed }
+            { heading_key: 'start_view_completed_audits_heading', audits: completed },
+            { heading_key: 'start_view_archived_audits_heading', audits: archived_audits }
         ];
         const has_filter = !!query;
         const visible_section_configs = has_filter
@@ -98,13 +101,17 @@ export function render_audit_samples_section(ctx) {
                     ? 'start_view_no_audits'
                     : config.heading_key === 'start_view_new_audits_heading'
                         ? 'start_view_no_new_audits'
-                        : 'start_view_no_completed_audits';
+                        : config.heading_key === 'start_view_archived_audits_heading'
+                            ? 'start_view_no_archived_audits'
+                            : 'start_view_no_completed_audits';
             const sort_state_key =
                 config.heading_key === 'start_view_audits_heading'
                     ? '_inProgressTableSortState'
                     : config.heading_key === 'start_view_new_audits_heading'
                         ? '_newTableSortState'
-                        : '_completedTableSortState';
+                        : config.heading_key === 'start_view_archived_audits_heading'
+                            ? '_archivedTableSortState'
+                            : '_completedTableSortState';
             ctx[sort_state_key] = ctx[sort_state_key] ?? { columnIndex: 0, direction: 'asc' };
             ctx._auditListComponent.render({
                 root: table_wrapper,

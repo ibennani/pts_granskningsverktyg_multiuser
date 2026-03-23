@@ -73,6 +73,14 @@ export function create_audit_table_columns(deps, handlers, opts = {}) {
             getContent: (row) => (row.metadata?.auditorName ?? '').toString().trim() || EMPTY_PLACEHOLDER
         },
         {
+            headerLabel: t('start_view_col_last_updated'),
+            getSortValue: (row) => (row.updated_at ? String(row.updated_at) : ''),
+            getContent: (row) => {
+                if (!row.updated_at) return EMPTY_PLACEHOLDER;
+                return Helpers?.format_iso_to_local_datetime?.(row.updated_at, lang) || String(row.updated_at);
+            }
+        },
+        {
             headerLabel: t('start_view_col_download'),
             isAction: true,
             getContent: (row) => {

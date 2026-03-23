@@ -7,6 +7,8 @@ import { create_audit_table_columns } from '../utils/audit_table_columns.js';
 import { open_audit_by_id, download_audit_by_id } from '../logic/audit_open_logic.js';
 import { subscribe_audits } from '../logic/list_push_service.js';
 
+const START_VIEW_SECTION_COUNT = 4;
+
 export const StartViewComponent = {
     CSS_PATH: './start_view_component.css',
 
@@ -37,13 +39,11 @@ export const StartViewComponent = {
             }).catch(() => {});
         }
 
-        this._genericTables = [
-            Object.create(GenericTableComponent),
-            Object.create(GenericTableComponent),
-            Object.create(GenericTableComponent)
-        ];
-        for (const tbl of this._genericTables) {
+        this._genericTables = [];
+        for (let i = 0; i < START_VIEW_SECTION_COUNT; i++) {
+            const tbl = Object.create(GenericTableComponent);
             await tbl.init({ deps });
+            this._genericTables.push(tbl);
         }
     },
 
@@ -60,7 +60,8 @@ export const StartViewComponent = {
         const s = audit?.status;
         if (s === 'in_progress') return 0;
         if (s === 'not_started') return 1;
-        if (s === 'locked' || s === 'archived') return 2;
+        if (s === 'locked') return 2;
+        if (s === 'archived') return 3;
         return 1;
     },
 
@@ -97,7 +98,6 @@ export const StartViewComponent = {
                 }
             }
         } catch {
-            // Vid t.ex. DOM-avvikelse eller kast i updateRow: fall tillbaka till full render
             if (this.root) this.render();
         }
     },
@@ -208,12 +208,14 @@ export const StartViewComponent = {
             });
             const in_progress = this.audits.filter((a) => a.status === 'in_progress');
             const not_started = this.audits.filter((a) => a.status === 'not_started');
-            const completed = this.audits.filter((a) => a.status === 'locked' || a.status === 'archived');
+            const locked = this.audits.filter((a) => a.status === 'locked');
+            const archived = this.audits.filter((a) => a.status === 'archived');
 
             const section_configs = [
-                { heading_key: 'start_view_audits_heading', audits: sort_audits(in_progress) },
-                { heading_key: 'start_view_new_audits_heading', audits: sort_audits(not_started) },
-                { heading_key: 'start_view_completed_audits_heading', audits: sort_audits(completed) }
+                { heading_key: 'start_view_audits_heading', audits: sort_audits(in_progress), empty_key: 'start_view_no_audits' },
+                { heading_key: 'start_view_new_audits_heading', audits: sort_audits(not_started), empty_key: 'start_view_no_new_audits' },
+                { heading_key: 'start_view_completed_audits_heading', audits: sort_audits(locked), empty_key: 'start_view_no_completed_audits' },
+                { heading_key: 'start_view_archived_audits_heading', audits: sort_audits(archived), empty_key: 'start_view_no_archived_audits' }
             ];
 
             const table_deps = {
@@ -254,19 +256,13 @@ export const StartViewComponent = {
                 }
 
                 const table_wrapper = this.Helpers.create_element('div');
-                const empty_key =
-                    config.heading_key === 'start_view_audits_heading'
-                        ? 'start_view_no_audits'
-                        : config.heading_key === 'start_view_new_audits_heading'
-                            ? 'start_view_no_new_audits'
-                            : 'start_view_no_completed_audits';
                 this._startTableSortState = this._startTableSortState ?? { columnIndex: 0, direction: 'asc' };
                 const table_instance = this._genericTables[index];
                 table_instance.render({
                     root: table_wrapper,
                     columns: audit_columns,
                     data: config.audits,
-                    emptyMessage: t(empty_key),
+                    emptyMessage: t(config.empty_key),
                     ariaLabel: t(config.heading_key),
                     wrapperClassName: 'generic-table-wrapper',
                     tableClassName: 'generic-table generic-table--audit-list',

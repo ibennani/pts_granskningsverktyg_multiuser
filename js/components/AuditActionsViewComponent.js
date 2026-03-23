@@ -2,6 +2,7 @@ import { get_rules, save_audit_backup_on_server } from '../api/client.js';
 import { subscribe_rules } from '../logic/list_push_service.js';
 import { version_greater_than } from '../utils/version_utils.js';
 import { find_newer_rule_for_audit } from '../logic/newer_rule_check.js';
+import { audit_status_is_exportable, audit_status_blocks_rulefile_update_offer } from '../utils/audit_status_helpers.js';
 import './audit_actions_view_component.css';
 
 export const AuditActionsViewComponent = {
@@ -38,11 +39,13 @@ export const AuditActionsViewComponent = {
         this.handle_export_word_samples = this.handle_export_word_samples.bind(this);
         this.handle_export_html = this.handle_export_html.bind(this);
         this.handle_download_audit = this.handle_download_audit.bind(this);
+        this.handle_archive_audit = this.handle_archive_audit.bind(this);
+        this.handle_activate_audit = this.handle_activate_audit.bind(this);
     },
 
     _populate_update_rulefile_slot(slot_element, state) {
         const newer_rule = this.newerRuleAvailable;
-        const should_show = state?.auditStatus !== 'locked' && newer_rule?.ruleId && newer_rule?.version;
+        const should_show = !audit_status_blocks_rulefile_update_offer(state?.auditStatus) && newer_rule?.ruleId && newer_rule?.version;
         const has_content = slot_element.children.length > 0;
 
         if (should_show) {
@@ -89,7 +92,7 @@ export const AuditActionsViewComponent = {
     _refresh_newer_rule_check() {
         if (this._newerRuleCheckInProgress) return;
         const state = this.getState();
-        if (!state?.ruleFileContent || state.auditStatus === 'locked') return;
+        if (!state?.ruleFileContent || audit_status_blocks_rulefile_update_offer(state.auditStatus)) return;
         this._newerRuleCheckInProgress = true;
         get_rules()
             .then((rules) => {
@@ -142,6 +145,34 @@ export const AuditActionsViewComponent = {
             if (btn) btn.removeAttribute('aria-busy');
             this.dispatch({ type: this.StoreActionTypes.SET_AUDIT_STATUS, payload: { status: 'in_progress' } });
             this.NotificationComponent.show_global_message(t('audit_unlocked_successfully'), 'success');
+        }, 500);
+    },
+
+    handle_archive_audit(event) {
+        const t = this.Translation.t;
+        const btn = event?.currentTarget;
+        if (btn) {
+            btn.classList.add('audit-actions__btn--animating');
+            btn.setAttribute('aria-busy', 'true');
+        }
+        setTimeout(() => {
+            if (btn) btn.removeAttribute('aria-busy');
+            this.dispatch({ type: this.StoreActionTypes.SET_AUDIT_STATUS, payload: { status: 'archived' } });
+            this.NotificationComponent.show_global_message(t('audit_archived_successfully'), 'success');
+        }, 500);
+    },
+
+    handle_activate_audit(event) {
+        const t = this.Translation.t;
+        const btn = event?.currentTarget;
+        if (btn) {
+            btn.classList.add('audit-actions__btn--animating');
+            btn.setAttribute('aria-busy', 'true');
+        }
+        setTimeout(() => {
+            if (btn) btn.removeAttribute('aria-busy');
+            this.dispatch({ type: this.StoreActionTypes.SET_AUDIT_STATUS, payload: { status: 'locked' } });
+            this.NotificationComponent.show_global_message(t('audit_reactivated_successfully'), 'success');
         }, 500);
     },
 
@@ -346,7 +377,7 @@ export const AuditActionsViewComponent = {
         const plate = this.Helpers.create_element('div', { class_name: 'content-plate' });
         plate.appendChild(this.Helpers.create_element('h1', { text_content: t('audit_actions_title') }));
 
-        if (state.auditStatus !== 'locked') {
+        if (state.auditStatus !== 'locked' && state.auditStatus !== 'archived') {
             if (this.newerRuleAvailable === null && !this._newerRuleCheckInProgress) {
                 this._refresh_newer_rule_check();
             }
@@ -436,7 +467,7 @@ export const AuditActionsViewComponent = {
             });
         });
 
-        if (updated_reqs_count > 0) {
+        if (updated_reqs_count > 0 && state.auditStatus !== 'archived') {
             status_actions.appendChild(this.create_status_action_item({
                 label: t('handle_updated_assessments', { count: updated_reqs_count }),
                 description: t('audit_actions_handle_updated_description'),
@@ -448,16 +479,42 @@ export const AuditActionsViewComponent = {
         }
 
         status_section.appendChild(status_actions);
+
+        if (state.auditStatus === 'locked' || state.auditStatus === 'archived') {
+            const archive_row = this.Helpers.create_element('div', { class_name: 'audit-actions__archive-row' });
+            if (state.auditStatus === 'locked') {
+                archive_row.appendChild(this.create_status_action_item({
+                    label: t('audit_actions_archive_audit_label'),
+                    description: t('audit_actions_archive_description'),
+                    on_click: this.handle_archive_audit,
+                    variant: 'button-default',
+                    icon_name: 'save',
+                    id_suffix: 'archive-audit'
+                }));
+            }
+            if (state.auditStatus === 'archived') {
+                archive_row.appendChild(this.create_status_action_item({
+                    label: t('audit_actions_activate_audit_label'),
+                    description: t('audit_actions_activate_description'),
+                    on_click: this.handle_activate_audit,
+                    variant: 'button-primary',
+                    icon_name: 'unlock_audit',
+                    id_suffix: 'activate-audit'
+                }));
+            }
+            status_section.appendChild(archive_row);
+        }
+
         plate.appendChild(status_section);
 
         // Export
         const export_section = this.Helpers.create_element('section', { class_name: 'audit-actions__export-section' });
         export_section.appendChild(this.Helpers.create_element('h2', { class_name: 'audit-actions__section-title', text_content: t('audit_actions_exports_title') }));
 
-        if (state.auditStatus !== 'locked') {
+        if (!audit_status_is_exportable(state.auditStatus)) {
             export_section.appendChild(this.Helpers.create_element('p', {
                 class_name: 'audit-actions__section-lead',
-                text_content: t('audit_not_locked_for_export', { status: state.auditStatus })
+                text_content: t('audit_not_locked_for_export')
             }));
         } else {
             const export_actions = this.Helpers.create_element('div', { class_name: 'audit-actions__export-list' });

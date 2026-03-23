@@ -104,7 +104,7 @@ export const SampleListComponent = {
             });
         });
         
-        const can_edit_or_delete = state.auditStatus !== 'locked';
+        const can_edit_or_delete = state.auditStatus !== 'locked' && state.auditStatus !== 'archived';
 
         state.samples.forEach(sample => {
             const li = create_element('li', { 

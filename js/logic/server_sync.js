@@ -123,6 +123,12 @@ async function run_sync(state, dispatch_fn) {
     try {
         if (state.auditId) {
             const patch = state_to_patch(state);
+            const prev_log = Array.isArray(state.auditMetadata?.audit_edit_log) ? state.auditMetadata.audit_edit_log : [];
+            const entry = { at: new Date().toISOString(), auditStatus: state.auditStatus };
+            patch.metadata = {
+                ...(patch.metadata || {}),
+                audit_edit_log: [...prev_log, entry].slice(-400)
+            };
             const stuck_count = count_stuck_in_samples(patch.samples);
             if (window.__GV_DEBUG_STUCK_SYNC__) {
                 console.log('[GV-Debug] run_sync: skickar PATCH till servern,', stuck_count, 'kört-fast i payload, auditId:', state.auditId);
@@ -148,9 +154,23 @@ async function run_sync(state, dispatch_fn) {
                         skip_render: true
                     }
                 });
+                dispatch_fn({
+                    type: 'UPDATE_METADATA',
+                    payload: {
+                        audit_edit_log: patch.metadata.audit_edit_log,
+                        skip_server_sync: true
+                    }
+                });
             }
         } else {
-            const full_state = await import_audit(state_to_import(state));
+            const import_payload = state_to_import(state);
+            const prev_log_i = Array.isArray(state.auditMetadata?.audit_edit_log) ? state.auditMetadata.audit_edit_log : [];
+            const entry_i = { at: new Date().toISOString(), auditStatus: state.auditStatus };
+            import_payload.auditMetadata = {
+                ...(import_payload.auditMetadata || {}),
+                audit_edit_log: [...prev_log_i, entry_i].slice(-400)
+            };
+            const full_state = await import_audit(import_payload);
             try {
                 if (full_state?.auditId && typeof BroadcastChannel !== 'undefined') {
                     const ch = new BroadcastChannel('granskningsverktyget-audit-updates');
@@ -167,6 +187,13 @@ async function run_sync(state, dispatch_fn) {
                             ruleSetId: full_state.ruleSetId ?? null,
                             version: full_state.version ?? null,
                             skip_render: true
+                        }
+                    });
+                    dispatch_fn({
+                        type: 'UPDATE_METADATA',
+                        payload: {
+                            audit_edit_log: import_payload.auditMetadata.audit_edit_log,
+                            skip_server_sync: true
                         }
                     });
                 }, 0);

@@ -31,7 +31,8 @@ export const UpdateRulefileViewComponent = {
             this.router('audit_overview');
             return;
         }
-        if (deps.getState?.()?.auditStatus === 'locked') {
+        const _as = deps.getState?.()?.auditStatus;
+        if (_as === 'locked' || _as === 'archived') {
             this.router('audit_overview');
             return;
         }

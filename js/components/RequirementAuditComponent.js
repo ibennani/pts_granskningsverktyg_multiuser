@@ -239,7 +239,7 @@ export const RequirementAuditComponent = {
         }
 
         const state = this.getState();
-        const is_locked = state.auditStatus === 'locked';
+        const is_locked = state.auditStatus === 'locked' || state.auditStatus === 'archived';
         const t = this.Translation.t;
 
         this._refresh_overall_requirement_status_in_header();
@@ -332,7 +332,7 @@ export const RequirementAuditComponent = {
     build_navigation_options() {
         const t = this.Translation.t;
         const state = this.getState();
-        const is_locked = state?.auditStatus === 'locked';
+        const is_locked = state?.auditStatus === 'locked' || state?.auditStatus === 'archived';
         const navigation_state = this.get_navigation_state();
         const { mode, is_first, is_last, prev_item, next_item, next_unhandled_item } = navigation_state;
 
@@ -651,7 +651,7 @@ export const RequirementAuditComponent = {
 
         const nav = this.get_navigation_state();
         const state = this.getState();
-        const is_locked = state?.auditStatus === 'locked';
+        const is_locked = state?.auditStatus === 'locked' || state?.auditStatus === 'archived';
 
         let action = null;
         if (key_lower === shortcut_key('shortcut_key_back_to_list')) {
@@ -764,7 +764,7 @@ export const RequirementAuditComponent = {
     populate_dom_with_data() {
         const t = this.Translation.t;
         const state = this.getState();
-        const is_locked = state.auditStatus === 'locked';
+        const is_locked = state.auditStatus === 'locked' || state.auditStatus === 'archived';
 
         const header = this.plate_element_ref.querySelector('.requirement-audit-header');
         header.innerHTML = '';

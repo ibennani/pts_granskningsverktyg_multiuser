@@ -118,7 +118,10 @@ function execute_single_dispatch(action, dispatch_fn) {
                     if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[State] Failed to save state to sessionStorage:', saveError);
                 }
                 try {
-                    if (action.type !== ActionTypes.CLEAR_STAGED_SAMPLE_CHANGES &&
+                    const skip_sync_after_internal_metadata =
+                        action.type === ActionTypes.UPDATE_METADATA && action.payload?.skip_server_sync === true;
+                    if (!skip_sync_after_internal_metadata &&
+                        action.type !== ActionTypes.CLEAR_STAGED_SAMPLE_CHANGES &&
                         action.type !== ActionTypes.REPLACE_STATE_FROM_REMOTE &&
                         action.type !== ActionTypes.REPLACE_RULEFILE_FROM_REMOTE &&
                         action.type !== ActionTypes.SET_REMOTE_AUDIT_ID &&
