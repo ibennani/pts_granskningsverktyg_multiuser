@@ -17,7 +17,8 @@ const DEFAULT_EXCLUDED_DIRS = new Set([
 ]);
 
 const APP_DIRECTORIES = new Set(['js', 'css']);
-const APP_FILE_EXTENSIONS = new Set(['.html', '.js', '.css']);
+// Inkludera .json så att ändringar i t.ex. js/i18n/*.json räknas in i "senaste dev"
+const APP_FILE_EXTENSIONS = new Set(['.html', '.js', '.css', '.json']);
 
 export function get_latest_project_mtime(options = {}) {
     const root_dir = options.rootDir;

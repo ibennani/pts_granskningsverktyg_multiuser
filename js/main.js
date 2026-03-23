@@ -1704,6 +1704,27 @@ window.DraftManager = DraftManager;
         update_app_chrome_texts();
     } 
 
+    function is_dev_build_environment() {
+        if (typeof window === 'undefined') return false;
+        const h = window.location.hostname;
+        const p = window.location.port;
+        return h === 'localhost' || h === '127.0.0.1' || p === '5173' || p === '4173';
+    }
+
+    /**
+     * I dev cachar webbläsaren ofta den första modulladdningen av build-info.js.
+     * Hämta om med unik URL så att window.BUILD_INFO matchar filen på disk (utan hel sidomladdning).
+     */
+    async function refresh_dev_build_info_from_server() {
+        if (!is_dev_build_environment()) return;
+        try {
+            const url = new URL(`../build-info.js?t=${Date.now()}`, import.meta.url).href;
+            await import(/* @vite-ignore */ url);
+        } catch (_) {
+            // Ignorera om build-info saknas i vissa lägen
+        }
+    }
+
     function update_build_timestamp() {
         const buildTimestampElement = document.getElementById('build-timestamp');
         if (!buildTimestampElement) return;
@@ -1719,12 +1740,7 @@ window.DraftManager = DraftManager;
             return key;
         });
 
-        const is_dev = typeof window !== 'undefined' && (
-            window.location.hostname === 'localhost' ||
-            window.location.hostname === '127.0.0.1' ||
-            window.location.port === '5173' ||
-            window.location.port === '4173'
-        );
+        const is_dev = is_dev_build_environment();
 
         const date_str = window.BUILD_INFO?.date || new Date().toLocaleDateString('sv-SE');
         let time_str;
@@ -1843,10 +1859,22 @@ window.DraftManager = DraftManager;
         const AUTH_REQUIRED_MESSAGE_KEY = 'gv_auth_required_message';
 
         set_initial_theme();
-        // Add a small delay to ensure build-info.js is loaded
+        // Läs in färsk build-info i dev (cachning av första script-taggen) innan tidsstämpel sätts
         memoryManager.setTimeout(() => {
-            update_build_timestamp();
+            (async () => {
+                await refresh_dev_build_info_from_server();
+                update_build_timestamp();
+            })();
         }, 100);
+        if (is_dev_build_environment()) {
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState !== 'visible') return;
+                (async () => {
+                    await refresh_dev_build_info_from_server();
+                    update_build_timestamp();
+                })();
+            });
+        }
         await window.Translation.ensure_initial_load();
         setup_skip_link_click_handler();
         update_landmarks_and_skip_link();
