@@ -39,10 +39,7 @@ router.get('/', async (_req, res) => {
                         NULLIF(TRIM(COALESCE(published_content, content)->'metadata'->>'title'), ''),
                         name
                     ) AS name,
-                    COALESCE(
-                        NULLIF(TRIM(COALESCE(published_content, content)->'metadata'->>'version'), ''),
-                        version::text
-                    ) AS version_display,
+                    NULLIF(TRIM(COALESCE(published_content, content)->'metadata'->>'version'), '') AS version_display,
                     COALESCE(published_content, content)->'metadata'->>'version' AS metadata_version,
                     COALESCE(
                         NULLIF(TRIM(COALESCE(published_content, content)->'metadata'->'monitoringType'->>'text'), ''),
@@ -63,7 +60,7 @@ router.get('/', async (_req, res) => {
                     false AS is_published,
                     true AS list_as_arbetskopia,
                     COALESCE(NULLIF(TRIM(content->'metadata'->>'title'), ''), name) AS name,
-                    COALESCE(NULLIF(TRIM(content->'metadata'->>'version'), ''), version::text) AS version_display,
+                    NULLIF(TRIM(content->'metadata'->>'version'), '') AS version_display,
                     content->'metadata'->>'version' AS metadata_version,
                     COALESCE(
                         NULLIF(TRIM(content->'metadata'->'monitoringType'->>'text'), ''),
