@@ -20,6 +20,7 @@ import rulesRouter from './routes/rules.js';
 import auditsRouter from './routes/audits.js';
 import backupRouter from './routes/backup.js';
 import { get_last_backup_status, start_backup_scheduler } from './backup/audit_backup.js';
+import { JSON_MAX_UPLOAD_BYTES } from '../js/constants/json_upload_limits.js';
 
 const app = express();
 const PORT = process.env.API_PORT || 3000;
@@ -62,7 +63,8 @@ app.use(cors({
     credentials: true
 }));
 
-app.use(express.json({ limit: '10mb' }));
+// Samma tak som klientens uppladdningsgräns och dokumentation (10 MiB)
+app.use(express.json({ limit: JSON_MAX_UPLOAD_BYTES }));
 
 app.use((req, res, next) => {
     if (req.path === '/api/debug-delete') {
@@ -150,6 +152,9 @@ app.get('/api/debug-status', async (_req, res) => {
 });
 
 app.use((err, _req, res, _next) => {
+    if (err && (err.type === 'entity.too.large' || err.status === 413)) {
+        return res.status(413).json({ error: 'Begäran överskrider maxstorlek (10 MB).' });
+    }
     console.error('[Server] Ohanterat fel i route:', err);
     res.status(500).json({ error: 'Ett serverfel inträffade' });
 });

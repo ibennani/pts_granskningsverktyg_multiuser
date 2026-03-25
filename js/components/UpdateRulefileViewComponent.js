@@ -63,16 +63,23 @@ export const UpdateRulefileViewComponent = {
         return this.Translation?.t || ((key) => `**${key}**`);
     },
 
-    handle_backup_click() {
+    async handle_backup_click() {
         const t = this.get_t_internally();
         if (this.SaveAuditLogic?.save_audit_to_json_file) {
             const show_msg = (msg, type) => this.NotificationComponent?.show_global_message?.(msg, type);
-            this.SaveAuditLogic.save_audit_to_json_file(
-                this.getState(),
-                t,
-                show_msg,
-                { backup_suffix_key: 'filename_backup_suffix' }
-            );
+            try {
+                await this.SaveAuditLogic.save_audit_to_json_file(
+                    this.getState(),
+                    t,
+                    show_msg,
+                    { backup_suffix_key: 'filename_backup_suffix' }
+                );
+            } catch {
+                if (this.NotificationComponent?.show_global_message) {
+                    this.NotificationComponent.show_global_message(t('error_saving_audit'), 'error');
+                }
+                return;
+            }
             this._backup_saved = true;
             this.current_step = this.VIEW_STEPS.UPLOAD;
             this.render();

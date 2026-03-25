@@ -17,6 +17,8 @@
   "audit_audits_title": "Audits",
   "audit_upload": "Upload",
   "audit_upload_invalid_file": "The file is neither a valid rule file nor an audit.",
+  "audit_upload_file_too_large": "The file must not exceed 10 MB.",
+  "audit_upload_json_structure_invalid": "The file structure is nested too deeply or contains too many values.",
   "audit_upload_rule": "Upload rule file",
   "audit_upload_audit": "Upload audit",
   "audit_upload_saved_rule": "Upload saved rule file",

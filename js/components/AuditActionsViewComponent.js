@@ -114,7 +114,9 @@ export const AuditActionsViewComponent = {
             save_audit_backup_on_server(current_state.auditId).catch(() => {});
         }
         if (this.SaveAuditLogic?.save_audit_to_json_file) {
-            this.SaveAuditLogic.save_audit_to_json_file(current_state, t, show_msg);
+            void this.SaveAuditLogic.save_audit_to_json_file(current_state, t, show_msg).catch(() => {
+                if (show_msg) show_msg(t('error_internal'), 'error');
+            });
         } else if (show_msg) {
             show_msg(t('error_internal'), 'error');
         }

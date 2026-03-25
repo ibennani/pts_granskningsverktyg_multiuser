@@ -477,8 +477,14 @@ export const AddSampleFormComponent = {
                         class_name: 'content-type-description markdown-content',
                         attributes: { id: desc_id }
                     });
-                    if (typeof marked !== 'undefined') desc_div.innerHTML = marked.parse(child.description);
-                    else desc_div.textContent = child.description;
+                    if (typeof marked !== 'undefined') {
+                        const raw_html = marked.parse(child.description);
+                        desc_div.innerHTML = this.Helpers.sanitize_html
+                            ? this.Helpers.sanitize_html(raw_html)
+                            : raw_html;
+                    } else {
+                        desc_div.textContent = child.description;
+                    }
                     children_container.appendChild(desc_div);
                 }
             });

@@ -52,7 +52,9 @@ export class SaveAuditButtonComponent {
         
         if (typeof this.SaveAuditLogic.save_audit_to_json_file === 'function') {
              const show_msg = (msg, type) => this.NotificationComponent?.show_global_message?.(msg, type);
-             this.SaveAuditLogic.save_audit_to_json_file(current_audit_data, t, show_msg);
+             void this.SaveAuditLogic.save_audit_to_json_file(current_audit_data, t, show_msg).catch(() => {
+                 show_msg(t('error_internal'), 'error');
+             });
         } else {
              if (window.ConsoleManager?.warn) window.ConsoleManager.warn("[SaveAuditButtonComponent] SaveAuditLogic.save_audit_to_json_file is not a function");
         }

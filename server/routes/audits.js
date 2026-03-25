@@ -3,8 +3,12 @@ import express from 'express';
 import { query } from '../db.js';
 import { calculate_overall_audit_progress } from '../../js/audit_logic.js';
 import { calculateQualityScore } from '../../js/logic/ScoreCalculator.js';
+import { validate_saved_audit_file } from '../../js/validation_logic.js';
+import { check_json_structure_depth_and_size } from '../../js/utils/json_structure_guard.js';
 import { save_backup_for_audit } from '../backup/audit_backup.js';
 import { requireAdmin } from '../auth/middleware.js';
+import { import_payload_rate_limiter } from '../middleware/rateLimiter.js';
+import { attach_export_integrity_server_payload } from '../utils/export_integrity_node.js';
 
 const router = express.Router();
 
@@ -288,8 +292,9 @@ router.get('/:id/export', async (req, res) => {
             ruleSet = ruleResult.rows[0] || null;
         }
         const fullState = build_full_state(audit, ruleSet);
+        const with_integrity = attach_export_integrity_server_payload(fullState);
         res.setHeader('Content-Disposition', `attachment; filename="granskning_${id}.json"`);
-        res.json(fullState);
+        res.json(with_integrity);
     } catch (err) {
         console.error('[audits] export error:', err);
         res.status(500).json({ error: 'Kunde inte exportera' });
@@ -324,10 +329,31 @@ router.post('/', async (req, res) => {
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-router.post('/import', async (req, res) => {
+router.post('/import', import_payload_rate_limiter, async (req, res) => {
     try {
         const data = req.body;
+        const structure_check = check_json_structure_depth_and_size(data);
+        if (!structure_check.ok) {
+            const msg = structure_check.reason === 'too_deep'
+                ? 'JSON-strukturen är för djupt nästlad.'
+                : 'JSON-strukturen är för stor (för många fält eller värden).';
+            return res.status(400).json({ error: msg });
+        }
         const last_updated_by = req.user ? req.user.name : null;
+        const audit_validation = validate_saved_audit_file(data, {
+            t: (key) => {
+                const map = {
+                    error_invalid_saved_audit_file: 'Ogiltig sparad granskningsfil',
+                    error_audit_missing_rulefile: 'Saknar regelfilsinnehåll'
+                };
+                return map[key] || key;
+            }
+        });
+        if (!audit_validation?.isValid) {
+            return res.status(400).json({
+                error: audit_validation?.message || 'Ogiltig granskningsdata'
+            });
+        }
         if (!data.ruleFileContent) {
             return res.status(400).json({ error: 'ruleFileContent krävs' });
         }

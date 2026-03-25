@@ -2,8 +2,9 @@
 'use-strict';
 
 import { generate_audit_filename } from '../utils/filename_utils.js';
+import { attach_export_integrity_to_audit_payload } from '../utils/export_integrity.js';
 
-export function save_audit_to_json_file(current_audit_data, t_func, show_notification_func, options) {
+export async function save_audit_to_json_file(current_audit_data, t_func, show_notification_func, options) {
     if (!current_audit_data) {
         if (show_notification_func) show_notification_func(t_func('no_audit_data_to_save'), 'error');
         if (window.ConsoleManager?.warn) window.ConsoleManager.warn("[SaveAuditLogic] No audit data provided to save.");
@@ -11,7 +12,15 @@ export function save_audit_to_json_file(current_audit_data, t_func, show_notific
     }
 
     const filename = generate_audit_filename(current_audit_data, t_func, options || {});
-    const data_str = JSON.stringify(current_audit_data, null, 2);
+    let payload_for_file;
+    try {
+        payload_for_file = await attach_export_integrity_to_audit_payload(current_audit_data);
+    } catch (e) {
+        if (show_notification_func) show_notification_func(t_func('error_internal'), 'error');
+        if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[SaveAuditLogic] exportIntegrity misslyckades:', e);
+        return;
+    }
+    const data_str = JSON.stringify(payload_for_file, null, 2);
     const blob = new Blob([data_str], { type: "application/json" });
     const url = URL.createObjectURL(blob);
 

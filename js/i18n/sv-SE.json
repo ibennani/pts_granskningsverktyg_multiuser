@@ -17,6 +17,8 @@
   "audit_audits_title": "Granskningar",
   "audit_upload": "Ladda upp",
   "audit_upload_invalid_file": "Filen är varken en giltig regelfil eller granskning.",
+  "audit_upload_file_too_large": "Filen får vara högst 10 MB.",
+  "audit_upload_json_structure_invalid": "Filens struktur är för djupt nästlad eller innehåller för många värden.",
   "audit_upload_rule": "Ladda upp regelfil",
   "audit_upload_audit": "Ladda upp granskning",
   "audit_upload_saved_rule": "Ladda upp sparad regelfil",

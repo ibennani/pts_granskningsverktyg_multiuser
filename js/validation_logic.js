@@ -213,7 +213,7 @@ export function validate_saved_audit_file(json_object, options = {}) {
     const missing_keys = required_keys.filter(key => !(key in json_object));
 
     if (missing_keys.length > 0) {
-        if (window.ConsoleManager?.warn) window.ConsoleManager.warn(`[ValidationLogic] Saved audit file is missing keys: ${missing_keys.join(', ')}`);
+        if (globalThis.ConsoleManager?.warn) globalThis.ConsoleManager.warn(`[ValidationLogic] Saved audit file is missing keys: ${missing_keys.join(', ')}`);
         return { isValid: false, message: `${t('error_invalid_saved_audit_file')} (Missing: ${missing_keys.join(', ')})` };
     }
 

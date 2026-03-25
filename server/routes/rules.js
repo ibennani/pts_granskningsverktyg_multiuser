@@ -3,6 +3,8 @@ import express from 'express';
 import { query } from '../db.js';
 import { broadcast } from '../ws.js';
 import { requireAdmin } from '../auth/middleware.js';
+import { import_payload_rate_limiter } from '../middleware/rateLimiter.js';
+import { check_json_structure_depth_and_size } from '../../js/utils/json_structure_guard.js';
 
 const router = express.Router();
 
@@ -177,8 +179,15 @@ router.post('/', async (req, res) => {
     }
 });
 
-router.post('/import', async (req, res) => {
+router.post('/import', import_payload_rate_limiter, async (req, res) => {
     try {
+        const structure_check = check_json_structure_depth_and_size(req.body);
+        if (!structure_check.ok) {
+            const msg = structure_check.reason === 'too_deep'
+                ? 'JSON-strukturen är för djupt nästlad.'
+                : 'JSON-strukturen är för stor (för många fält eller värden).';
+            return res.status(400).json({ error: msg });
+        }
         const { name, content } = req.body;
         if (!content || typeof content !== 'object') {
             return res.status(400).json({ error: 'Content krävs' });

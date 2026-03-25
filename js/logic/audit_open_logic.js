@@ -128,7 +128,7 @@ export async function download_audit_by_id(params) {
 
         if (full_state?.ruleFileContent && is_valid) {
             if (typeof SaveAuditLogic.save_audit_to_json_file === 'function') {
-                SaveAuditLogic.save_audit_to_json_file(full_state, t, show_msg);
+                await SaveAuditLogic.save_audit_to_json_file(full_state, t, show_msg);
                 return true;
             }
             if (show_msg) show_msg(t('error_internal'), 'error');

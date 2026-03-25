@@ -28,6 +28,8 @@ import { open_audit_by_id, download_audit_by_id } from '../../logic/audit_open_l
 import { render_audit_header } from './AuditHeaderSection.js';
 import { render_audit_requirement_section } from './AuditRequirementSection.js';
 import { render_audit_samples_section } from './AuditSamplesSection.js';
+import { JSON_MAX_UPLOAD_BYTES } from '../../constants/json_upload_limits.js';
+import { check_json_structure_depth_and_size } from '../../utils/json_structure_guard.js';
 import './audit_view_component.css';
 
 export const AuditViewComponent = {
@@ -232,11 +234,22 @@ export const AuditViewComponent = {
         const t = this.get_t_func();
         const file = event.target.files[0];
         if (!file) return;
+        if (file.size > JSON_MAX_UPLOAD_BYTES) {
+            this.NotificationComponent?.show_global_message(t('audit_upload_file_too_large'), 'error');
+            if (event.target) event.target.value = '';
+            return;
+        }
 
         const reader = new FileReader();
         reader.onload = async (e) => {
             try {
                 const json_content = JSON.parse(e.target.result);
+                const structure_check = check_json_structure_depth_and_size(json_content);
+                if (!structure_check.ok) {
+                    this.NotificationComponent?.show_global_message(t('audit_upload_json_structure_invalid'), 'error');
+                    if (event.target) event.target.value = '';
+                    return;
+                }
 
                 const audit_validation = this.ValidationLogic?.validate_saved_audit_file?.(json_content);
                 if (audit_validation?.isValid) {
@@ -417,12 +430,23 @@ export const AuditViewComponent = {
         const t = this.get_t_func();
         const file = event.target.files?.[0];
         if (!file) return;
+        if (file.size > JSON_MAX_UPLOAD_BYTES) {
+            this.NotificationComponent?.show_global_message(t('audit_upload_file_too_large'), 'error');
+            if (event.target) event.target.value = '';
+            return;
+        }
 
         const reader = new FileReader();
         reader.onload = async (e) => {
             let file_content_object = null;
             try {
                 const json_content = JSON.parse(e.target.result);
+                const structure_check = check_json_structure_depth_and_size(json_content);
+                if (!structure_check.ok) {
+                    this.NotificationComponent?.show_global_message(t('audit_upload_json_structure_invalid'), 'error');
+                    if (event.target) event.target.value = '';
+                    return;
+                }
                 const audit_validation = this.ValidationLogic?.validate_saved_audit_file?.(json_content);
                 if (!audit_validation?.isValid) {
                     this.NotificationComponent?.show_global_message(
