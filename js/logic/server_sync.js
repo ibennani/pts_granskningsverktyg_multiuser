@@ -2,7 +2,7 @@
 // Debounced sync av state till server. Om auditId saknas importeras granskningen först.
 // Vid regelfilsredigering synkas innehållet till rule_sets så att updated_at = senast ändrad.
 
-import { update_audit, import_audit, update_rule } from '../api/client.js';
+import { update_audit, import_audit, update_rule, load_audit_with_rule_file } from '../api/client.js';
 
 let debounce_timer = null;
 let rulefile_debounce_timer = null;
@@ -20,7 +20,8 @@ function state_to_patch(state) {
     const patch = {
         metadata: state.auditMetadata || {},
         status: normalize_status_for_server(state.auditStatus || 'not_started'),
-        samples: state.samples || []
+        samples: state.samples || [],
+        expectedVersion: state.version != null && state.version !== '' ? Number(state.version) : 0
     };
     // Inkludera regelfilinnehåll så att \"Uppdatera regelfil\" och liknande persisteras i audits.rule_file_content
     if (state.ruleFileContent) {
@@ -213,6 +214,37 @@ async function run_sync(state, dispatch_fn) {
                     skip_render: true
                 }
             });
+        } else if (err.status === 409 && state.auditId && dispatch_fn && !err.existingAuditId) {
+            try {
+                const full_state = await load_audit_with_rule_file(state.auditId);
+                if (full_state) {
+                    dispatch_fn({
+                        type: 'REPLACE_STATE_FROM_REMOTE',
+                        payload: {
+                            ...full_state,
+                            saveFileVersion: full_state.saveFileVersion || '2.1.0'
+                        }
+                    });
+                    if (window.NotificationComponent?.show_global_message && window.Translation?.t) {
+                        window.NotificationComponent.show_global_message(
+                            window.Translation.t('version_conflict_reload_from_server'),
+                            'info'
+                        );
+                    }
+                } else if (window.NotificationComponent?.show_global_message && window.Translation?.t) {
+                    window.NotificationComponent.show_global_message(
+                        window.Translation.t('server_sync_error', { message: err.message }) || err.message,
+                        'warning'
+                    );
+                }
+            } catch (_) {
+                if (window.NotificationComponent?.show_global_message && window.Translation?.t) {
+                    window.NotificationComponent.show_global_message(
+                        window.Translation.t('server_sync_error', { message: err.message }) || err.message,
+                        'warning'
+                    );
+                }
+            }
         } else if (err.status === 404 && err.message && err.message.toLowerCase().includes('granskning hittades inte')) {
             show_audit_deleted_modal_and_navigate();
         } else if (window.NotificationComponent?.show_global_message && window.Translation?.t) {

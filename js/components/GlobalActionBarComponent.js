@@ -341,7 +341,6 @@ export class GlobalActionBarComponent {
       current_view !== 'audit' &&
       current_view !== 'audit_audits' &&
       current_view !== 'audit_rules' &&
-      current_view !== 'restore_session' &&
       audit_or_rulefile_views.includes(current_view);
     const current_language_code =
       typeof this.Translation?.get_current_language_code === 'function'

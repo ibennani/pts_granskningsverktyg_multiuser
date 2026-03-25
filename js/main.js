@@ -37,7 +37,7 @@ import { AuditOverviewComponent } from './components/AuditOverviewComponent.js';
 import { RequirementListComponent } from './components/RequirementListComponent.js';
 import { RequirementAuditComponent } from './components/RequirementAuditComponent.js';
 import { UpdateRulefileViewComponent } from './components/UpdateRulefileViewComponent.js'; 
-import { RestoreSessionViewComponent } from './components/RestoreSessionViewComponent.js'; 
+import { apply_session_boot_merge_from_backup } from './logic/session_boot_merge.js';
 import { ConfirmUpdatesViewComponent } from './components/ConfirmUpdatesViewComponent.js';
 import { FinalConfirmUpdatesViewComponent } from './components/FinalConfirmUpdatesViewComponent.js';
 import { EditRulefileMainViewComponent } from './components/EditRulefileMainViewComponent.js';
@@ -243,8 +243,8 @@ window.DraftManager = DraftManager;
     function update_side_menu(view_name, params = {}) {
         if (!side_menu_component_instance || typeof side_menu_component_instance.render !== 'function') return;
 
-        // Vid återställning av session eller inloggning ska vänstermenyn aldrig renderas.
-        if (view_name === 'restore_session' || view_name === 'login') {
+        // Vid inloggning ska vänstermenyn aldrig renderas.
+        if (view_name === 'login') {
             if (side_menu_root) {
                 side_menu_root.innerHTML = '';
                 side_menu_root.classList.add('hidden');
@@ -272,7 +272,6 @@ window.DraftManager = DraftManager;
             return;
         }
 
-        // Säkerställ att menyn blir synlig igen när vi lämnar restore_session.
         if (side_menu_root) {
             side_menu_root.classList.remove('hidden');
         }
@@ -363,7 +362,6 @@ window.DraftManager = DraftManager;
                     case 'audit_images': title_prefix = t('audit_images_title'); break;
                     case 'requirement_list': title_prefix = t('requirement_list_title_suffix'); break;
                     case 'update_rulefile': title_prefix = t('update_rulefile_title'); break;
-                    case 'restore_session': title_prefix = t('restore_session_title'); break;
                     case 'confirm_updates': title_prefix = t('handle_updated_assessments_title', {count: ''}).trim(); break;
                     case 'final_confirm_updates': title_prefix = t('final_confirm_updates_title'); break;
                     case 'edit_rulefile_main': title_prefix = t('edit_rulefile_title'); break;
@@ -1040,7 +1038,7 @@ window.DraftManager = DraftManager;
             params_to_render = {
                 ...params_to_render,
                 on_login: () => {
-                    start_normal_session({ restore_pending: null }).catch((err) =>
+                    start_normal_session().catch((err) =>
                         consoleManager.error('Error starting session after login:', err)
                     );
                 }
@@ -1190,7 +1188,6 @@ window.DraftManager = DraftManager;
             case 'requirement_list': ComponentClass = RequirementListComponent; break;
             case 'requirement_audit': ComponentClass = RequirementAuditComponent; break;
             case 'update_rulefile': ComponentClass = UpdateRulefileViewComponent; break; 
-            case 'restore_session': ComponentClass = RestoreSessionViewComponent; break;
             case 'confirm_updates': ComponentClass = ConfirmUpdatesViewComponent; break;
             case 'final_confirm_updates': ComponentClass = FinalConfirmUpdatesViewComponent; break;
             case 'edit_rulefile_main': ComponentClass = EditRulefileMainViewComponent; break;
@@ -1273,10 +1270,8 @@ window.DraftManager = DraftManager;
             if (DraftManager?.restoreIntoDom) {
                 DraftManager.restoreIntoDom(view_root);
             }
-            if (view_name_to_render !== 'restore_session') {
-                update_restore_position(view_name_to_render, params_to_render, null);
-                updateBackupRestorePosition(window.__gv_get_restore_position?.());
-            }
+            update_restore_position(view_name_to_render, params_to_render, null);
+            updateBackupRestorePosition(window.__gv_get_restore_position?.());
 
             apply_post_render_focus_instruction({
                 view_name: view_name_to_render,
@@ -1482,7 +1477,6 @@ window.DraftManager = DraftManager;
     }
 
     async function start_normal_session(options = {}) {
-        const { restore_pending } = options;
         ensure_app_layout();
         setup_tooltip_overlay();
         // Initialize layout manager to handle dynamic vertical positioning
@@ -1670,29 +1664,7 @@ window.DraftManager = DraftManager;
         });
         if (NotificationComponent?.clear_global_message) { NotificationComponent.clear_global_message(); }
 
-        if (restore_pending) {
-            const state_to_restore = restore_pending.state || restore_pending;
-            const restore_position = restore_pending.restorePosition || null;
-            const on_restore = () => {
-                clearLocalStorageBackup();
-                dispatch({ type: StoreActionTypes.LOAD_AUDIT_FROM_FILE, payload: state_to_restore });
-                if (restore_position && restore_position.view) {
-                    window.__gv_restore_focus_info = restore_position.focusInfo || null;
-                    navigate_and_set_hash(restore_position.view, restore_position.params || {});
-                }
-                handle_hash_change();
-            };
-            const on_discard = () => {
-                clearLocalStorageBackup();
-                window.location.hash = '#start';
-                handle_hash_change();
-            };
-            await render_view('restore_session', {
-                on_restore,
-                on_discard,
-                autosaved_state: state_to_restore
-            });
-        } else {
+        {
             const hash = (window.location.hash || '').replace(/^#/, '');
             const view_from_hash = hash.split('?')[0];
             if (view_from_hash === 'login') {
@@ -1913,7 +1885,7 @@ window.DraftManager = DraftManager;
             await render_view('login', {
                 on_login: () => {
                     if (side_menu_root) side_menu_root.classList.remove('hidden');
-                    start_normal_session({ restore_pending: null }).catch((err) =>
+                    start_normal_session().catch((err) =>
                         consoleManager.error('Error starting session after auth-required:', err)
                     );
                 }
@@ -1973,13 +1945,25 @@ window.DraftManager = DraftManager;
 
         dispatch({ type: StoreActionTypes.CLEAR_STAGED_SAMPLE_CHANGES });
 
-        let restore_pending = null;
+        let boot_local_backup = null;
         if (!had_session_storage) {
-            restore_pending = loadStateFromLocalStorageBackup();
-            if (restore_pending) {
-                consoleManager.log("[Main.js] Session was cleared (e.g. tab closed) but backup found in localStorage. Showing restore prompt.");
+            boot_local_backup = loadStateFromLocalStorageBackup();
+            if (boot_local_backup) {
+                consoleManager.log('[Main.js] Cold start: localStorage-backup hittad; jämförs med servern vid start.');
             }
         }
+
+        const boot_merge_common_opts = () => ({
+            dispatch,
+            getState,
+            StoreActionTypes,
+            ValidationLogic,
+            router: navigate_and_set_hash,
+            NotificationComponent,
+            t: typeof window.Translation?.t === 'function' ? window.Translation.t.bind(window.Translation) : ((k) => k),
+            navigate_and_set_hash,
+            handle_hash_change
+        });
 
         const is_logged_in = () => {
             if (typeof window === 'undefined') return true;
@@ -2011,9 +1995,20 @@ window.DraftManager = DraftManager;
                 }
             } catch (_) {}
             await render_view('login', {
-                on_login: () => {
+                on_login: async () => {
                     if (side_menu_root) side_menu_root.classList.remove('hidden');
-                    start_normal_session({ restore_pending }).catch((err) =>
+                    try {
+                        if (boot_local_backup) {
+                            await apply_session_boot_merge_from_backup({
+                                backup_entry: boot_local_backup,
+                                ...boot_merge_common_opts()
+                            });
+                            boot_local_backup = null;
+                        }
+                    } catch (merge_err) {
+                        consoleManager.error('[Main.js] Boot-merge efter inloggning misslyckades:', merge_err);
+                    }
+                    start_normal_session().catch((err) =>
                         consoleManager.error('Error starting session:', err)
                     );
                 }
@@ -2049,17 +2044,19 @@ window.DraftManager = DraftManager;
             }).catch(() => {});
         });
 
-        const active_session_state = getState();
-        if (active_session_state && active_session_state.ruleFileContent && active_session_state.auditStatus !== 'rulefile_editing') {
-            consoleManager.log("[Main.js] Active session found in sessionStorage. Starting normally.");
-            await start_normal_session({ restore_pending: null });
-        } else if (restore_pending) {
-            consoleManager.log("[Main.js] Showing restore session prompt.");
-            await start_normal_session({ restore_pending });
-        } else {
-            consoleManager.log("[Main.js] No active session. Starting fresh.");
-            await start_normal_session({ restore_pending: null });
+        try {
+            if (boot_local_backup) {
+                await apply_session_boot_merge_from_backup({
+                    backup_entry: boot_local_backup,
+                    ...boot_merge_common_opts()
+                });
+            }
+        } catch (merge_err) {
+            consoleManager.error('[Main.js] Boot-merge vid start misslyckades:', merge_err);
         }
+
+        consoleManager.log('[Main.js] Startar session.');
+        await start_normal_session();
     }
 
     if (document.readyState === 'loading') {

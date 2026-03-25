@@ -3,7 +3,7 @@
 //
 // Vyer som INTE ingår (avsiktligt):
 // - start, upload, audit: inte i en granskning
-// - restore_session: återställningsflöde, polling skulle skriva över backup
+// - (cold start-backup hanteras i session_boot_merge innan audit-vyer)
 // - confirm_sample_edit: REPLACE_STATE_FROM_REMOTE skulle förlora pendingSampleChanges
 // - rulefile_*: auditStatus === 'rulefile_editing' stoppar polling automatiskt
 // - auditStatus === 'not_started': granskningen är inte synkad till servern än → undviker 404

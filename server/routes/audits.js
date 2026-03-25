@@ -401,10 +401,31 @@ router.delete('/:id', requireAdmin, async (req, res) => {
     }
 });
 
+/**
+ * Versionskontrakt (optimistisk låsning):
+ * - Klienten skickar expectedVersion = den audit.version den baserar ändringen på.
+ * - UPDATE lyckas endast om radens version fortfarande matchar; annars 409 med serverVersion.
+ * - Vid lyckad uppdatering ökas version med 1 (som tidigare).
+ */
 router.patch('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { metadata, status, samples, ruleFileContent, archivedRequirementResults, lastRulefileUpdateLog } = req.body;
+        const {
+            metadata,
+            status,
+            samples,
+            ruleFileContent,
+            archivedRequirementResults,
+            lastRulefileUpdateLog,
+            expectedVersion
+        } = req.body;
+        if (expectedVersion === undefined || expectedVersion === null) {
+            return res.status(400).json({ error: 'expectedVersion krävs för att spara granskningen' });
+        }
+        const expect_num = Number(expectedVersion);
+        if (!Number.isFinite(expect_num)) {
+            return res.status(400).json({ error: 'expectedVersion måste vara ett tal' });
+        }
         const last_updated_by = req.user ? req.user.name : null;
         const updates = [];
         const values = [];
@@ -446,13 +467,23 @@ router.patch('/:id', async (req, res) => {
             return res.status(400).json({ error: 'Ingen data att uppdatera' });
         }
         updates.push(`updated_at = CURRENT_TIMESTAMP`);
+        const id_placeholder = i;
+        const version_placeholder = i + 1;
         values.push(id);
+        values.push(expect_num);
         const result = await query(
-            `UPDATE audits SET ${updates.join(', ')} WHERE id = $${i} RETURNING *`,
+            `UPDATE audits SET ${updates.join(', ')} WHERE id = $${id_placeholder} AND version = $${version_placeholder} RETURNING *`,
             values
         );
         if (result.rows.length === 0) {
-            return res.status(404).json({ error: 'Granskning hittades inte' });
+            const check = await query('SELECT version FROM audits WHERE id = $1', [id]);
+            if (check.rows.length === 0) {
+                return res.status(404).json({ error: 'Granskning hittades inte' });
+            }
+            return res.status(409).json({
+                error: 'Versionskonflikt',
+                serverVersion: Number(check.rows[0].version)
+            });
         }
         const audit = result.rows[0];
         let ruleSet = null;

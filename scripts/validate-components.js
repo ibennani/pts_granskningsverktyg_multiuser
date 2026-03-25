@@ -44,7 +44,6 @@ const expectedComponents = [
     'RequirementListComponent.js',
     'RequirementAuditComponent.js',
     'UpdateRulefileViewComponent.js',
-    'RestoreSessionViewComponent.js',
     'ConfirmUpdatesViewComponent.js',
     'FinalConfirmUpdatesViewComponent.js',
     'EditRulefileMainViewComponent.js',

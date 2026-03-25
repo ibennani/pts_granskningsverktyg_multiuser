@@ -11,6 +11,24 @@ function get_translation_func(Translation) {
 }
 
 /**
+ * Navigerar till standardvy för en granskning utifrån status och stickprov (efter LOAD i state).
+ * @param {Object} full_state
+ * @param {function(string, Object): void} router
+ */
+export function navigate_to_default_audit_view(full_state, router) {
+    if (!full_state || typeof router !== 'function') return;
+    const status = full_state.auditStatus || 'not_started';
+    const samples = full_state.samples || [];
+    let next_view = 'audit_overview';
+    if (status === 'not_started' && samples.length === 0) {
+        next_view = 'sample_management';
+    } else if (status === 'not_started') {
+        next_view = 'metadata';
+    }
+    router(next_view, {});
+}
+
+/**
  * Öppnar en granskning genom att ladda den från servern, validera och uppdatera state.
  * Navigerar sedan vidare till lämplig vy baserat på status/innehåll.
  *
@@ -55,17 +73,7 @@ export async function open_audit_by_id(params) {
                 NotificationComponent.show_global_message(t('saved_audit_loaded_successfully'), 'success');
             }
 
-            const status = full_state.auditStatus || 'not_started';
-            const samples = full_state.samples || [];
-
-            let next_view = 'audit_overview';
-            if (status === 'not_started' && samples.length === 0) {
-                next_view = 'sample_management';
-            } else if (status === 'not_started') {
-                next_view = 'metadata';
-            }
-
-            router(next_view, {});
+            navigate_to_default_audit_view(full_state, router);
             return true;
         }
 

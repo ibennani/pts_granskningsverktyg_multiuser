@@ -293,10 +293,6 @@ export const SideMenuComponent = {
             ? [...requirement_ids_in_samples].filter(req_id => requirement_ids_in_rulefile.has(req_id)).length
             : requirement_ids_in_samples.size;
 
-        if (this.current_view_name === 'restore_session') {
-            return { should_show: false, items: [], aria_label: t('side_menu_aria_label') };
-        }
-
         if (this.current_view_name === 'start' || this.current_view_name === 'audit' || this.current_view_name === 'audit_audits' || this.current_view_name === 'audit_rules' || this.current_view_name === 'manage_users' || this.current_view_name === 'my_settings' || this.current_view_name === 'backup' || this.current_view_name === 'backup_detail' || this.current_view_name === 'backup_settings') {
             const is_admin = typeof sessionStorage !== 'undefined' && sessionStorage.getItem('gv_current_user_is_admin') === '1';
             const items = [

@@ -436,9 +436,13 @@ export const BackupOverviewComponent = {
         }
 
         let current_updated_at = null;
+        let current_audit_version = null;
         try {
             const ver = await get_audit_version(audit_id);
             current_updated_at = ver?.updated_at || null;
+            if (ver?.version != null) {
+                current_audit_version = Number(ver.version);
+            }
         } catch (_) {}
         const backup_datetime_str = format_datetime(row.createdAt) || row.createdAt || '—';
         const current_datetime_str = current_updated_at ? format_datetime(current_updated_at) : '—';
@@ -476,13 +480,20 @@ export const BackupOverviewComponent = {
                 load_btn.addEventListener('click', async () => {
                     modal.close();
                     try {
+                        if (current_audit_version === null || !Number.isFinite(current_audit_version)) {
+                            if (this.NotificationComponent?.show_global_message) {
+                                this.NotificationComponent.show_global_message(t('backup_restore_error'), 'error');
+                            }
+                            return;
+                        }
                         await update_audit(audit_id, {
                             metadata: backup_data.auditMetadata || {},
                             status: backup_data.auditStatus || 'not_started',
                             samples: backup_data.samples || [],
                             ruleFileContent: backup_data.ruleFileContent,
                             archivedRequirementResults: backup_data.archivedRequirementResults || [],
-                            lastRulefileUpdateLog: backup_data.lastRulefileUpdateLog ?? null
+                            lastRulefileUpdateLog: backup_data.lastRulefileUpdateLog ?? null,
+                            expectedVersion: current_audit_version
                         });
                         if (this.NotificationComponent?.show_global_message) {
                             this.NotificationComponent.show_global_message(t('backup_restore_success'), 'success');

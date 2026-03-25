@@ -216,6 +216,12 @@ export async function api_patch(path, body) {
         const err = await parse_error_payload(res);
         const e = new Error(err.error || `HTTP ${res.status}`);
         e.status = res.status;
+        if (err.serverVersion !== undefined && err.serverVersion !== null) {
+            e.serverVersion = err.serverVersion;
+        }
+        if (err.existingAuditId !== undefined) {
+            e.existingAuditId = err.existingAuditId;
+        }
         throw e;
     }
     return res.json();
