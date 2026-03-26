@@ -1,4 +1,4 @@
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const LOGIN_MAX_ATTEMPTS = 15;
@@ -14,7 +14,11 @@ export const import_payload_rate_limiter = rateLimit({
     legacyHeaders: false,
     keyGenerator: (req) => {
         const uid = req.user && req.user.id != null ? String(req.user.id) : '';
-        return uid ? `import:user:${uid}` : `import:ip:${req.ip || 'unknown'}`;
+        if (uid) {
+            return `import:user:${uid}`;
+        }
+        const ip = req.ip || 'unknown';
+        return `import:ip:${ipKeyGenerator(ip)}`;
     },
     handler: (_req, res) => {
         res.status(429).json({

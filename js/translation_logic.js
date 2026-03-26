@@ -7,7 +7,8 @@ const translationModules = import.meta.glob('./i18n/*.json', { eager: true });
 
 const supported_languages = {
     'sv-SE': 'Svenska (Sverige)',
-    'en-GB': 'English (UK)'
+    'en-GB': 'English (UK)',
+    'nb-NO': 'Norsk bokmål (Norge)'
 };
 
 const DEFAULT_LANGUAGE_TAG = 'en-GB';
@@ -42,7 +43,8 @@ function resolve_effective_language_tag(requested_tag) {
     // Special handling for common language codes that should map to our supported variants
     const language_mappings = {
         'sv': 'sv-SE',  // Swedish maps to Swedish (Sweden)
-        'en': 'en-GB'   // English maps to British English
+        'en': 'en-GB',  // English maps to British English
+        'nb': 'nb-NO'   // Norwegian Bokmål maps to Norwegian (Norway)
     };
 
     if (language_mappings[requested_tag]) {
