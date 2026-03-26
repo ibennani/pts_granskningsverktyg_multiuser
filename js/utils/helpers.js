@@ -165,6 +165,29 @@ export function format_iso_to_local_datetime(iso_string, lang_code = 'en-GB', op
     }
 }
 
+/**
+ * Formaterar ISO-sträng till lokalt datum utan klockslag (för t.ex. start/sluttid i översikt och Excel).
+ */
+export function format_iso_to_local_date(iso_string, lang_code = 'en-GB') {
+    if (!iso_string) return '';
+    try {
+        const to_parse = ensure_utc_for_parsing(iso_string);
+        const date = new Date(to_parse);
+        const t_func = (typeof window.Translation?.t === 'function') ? window.Translation.t : (key) => `**${key}**`;
+        if (isNaN(date.getTime())) return t_func('invalid_date_format');
+
+        return date.toLocaleDateString(lang_code, {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        });
+    } catch (e) {
+        if (window.ConsoleManager?.warn) window.ConsoleManager.warn("Error formatting date:", iso_string, e);
+        const t_func = (typeof window.Translation?.t === 'function') ? window.Translation.t : (key) => `**${key}**`;
+        return t_func('date_formatting_error');
+    }
+}
+
 export function format_iso_to_relative_time(iso_string, lang_code = 'en-GB') {
     if (!iso_string) return '';
     const t = (typeof window.Translation?.t === 'function') ? window.Translation.t : (key) => `**${key}**`;

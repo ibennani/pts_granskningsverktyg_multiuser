@@ -4,6 +4,7 @@ import ExcelJS from 'exceljs/dist/exceljs.min.js';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle, UnderlineType, ExternalHyperlink, InternalHyperlink, ShadingType, TabStopType, SectionType, PageOrientation } from 'docx';
 import { marked } from './utils/markdown.js';
 import { format_local_date_for_filename } from './utils/filename_utils.js';
+import { recalculateAuditTimes } from './audit_logic.js';
 
 function get_t_internal() {
     if (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function') {
@@ -66,6 +67,55 @@ function get_pass_criterion_text(req_definition, check_id, pc_id) {
     if (!check?.passCriteria) return pc_id;
     const pc = check.passCriteria.find(p => p.id === pc_id);
     return pc ? pc.requirement : pc_id;
+}
+
+/**
+ * Tar bort vanlig Markdown-syntax men behåller radbrytningar (för Excel-export).
+ */
+function strip_markdown_for_excel(text) {
+    if (text == null || typeof text !== 'string') {
+        return text;
+    }
+    let s = text.replace(/\r\n/g, '\n');
+    s = s.replace(/```[\w]*\n?([\s\S]*?)```/g, '$1');
+    s = s.replace(/`([^`]+)`/g, '$1');
+    s = s.replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1');
+    for (let i = 0; i < 6; i++) {
+        s = s.replace(/\*\*([^*]+)\*\*/g, '$1');
+        s = s.replace(/\*([^*\n]+)\*/g, '$1');
+        s = s.replace(/__([^_]+)__/g, '$1');
+    }
+    s = s.replace(/(^|\s)_([^_\n]+)_(\s|$)/g, '$1$2$3');
+    s = s.replace(/^#{1,6}\s+/gm, '');
+    s = s.replace(/^\s*[-*+]\s+/gm, '');
+    s = s.replace(/^\s*\d+\.\s+/gm, '');
+    s = s.replace(/[`*]{1,2}/g, '');
+    return s;
+}
+
+function apply_excel_cell_alignment_top_left_wrap(sheet) {
+    sheet.eachRow({ includeEmpty: true }, (row) => {
+        row.eachCell({ includeEmpty: true }, (cell) => {
+            const prev = cell.alignment || {};
+            cell.alignment = {
+                ...prev,
+                vertical: 'top',
+                horizontal: 'left',
+                wrapText: true
+            };
+        });
+    });
+}
+
+function get_effective_display_times_for_audit(audit) {
+    if (!audit) {
+        return { startTime: null, endTime: null };
+    }
+    const merged = recalculateAuditTimes({ ...audit });
+    return {
+        startTime: audit.startTime || merged?.startTime || null,
+        endTime: audit.endTime || merged?.endTime || null
+    };
 }
 
 function extractDeficiencyNumber(deficiencyId) {
@@ -243,18 +293,20 @@ async function export_to_excel(current_audit) {
 
         const lang_code = window.Translation.get_current_language_code();
 
+        const display_times = get_effective_display_times_for_audit(current_audit);
         const general_info_data = [
-            [t('case_number'), current_audit.auditMetadata.caseNumber || ''],
-            [t('actor_name'), current_audit.auditMetadata.actorName || ''],
-            [t('excel_general_service_link'), current_audit.auditMetadata.actorLink || ''],
-            [t('auditor_name'), current_audit.auditMetadata.auditorName || ''],
-            [t('start_time'), current_audit.startTime ? window.Helpers.format_iso_to_local_datetime(current_audit.startTime, lang_code) : ''],
-            [t('end_time'), current_audit.endTime ? window.Helpers.format_iso_to_local_datetime(current_audit.endTime, lang_code) : '']
+            [t('case_number'), strip_markdown_for_excel(String(current_audit.auditMetadata.caseNumber || ''))],
+            [t('actor_name'), strip_markdown_for_excel(String(current_audit.auditMetadata.actorName || ''))],
+            [t('excel_general_service_link'), strip_markdown_for_excel(String(current_audit.auditMetadata.actorLink || ''))],
+            [t('auditor_name'), strip_markdown_for_excel(String(current_audit.auditMetadata.auditorName || ''))],
+            [t('start_time'), display_times.startTime ? window.Helpers.format_iso_to_local_date(display_times.startTime, lang_code) : ''],
+            [t('end_time'), display_times.endTime ? window.Helpers.format_iso_to_local_date(display_times.endTime, lang_code) : '']
         ];
 
         generalSheet.addRows(general_info_data);
         generalSheet.getColumn(1).width = 30;
         generalSheet.getColumn(2).width = 70;
+        apply_excel_cell_alignment_top_left_wrap(generalSheet);
 
         const deficienciesSheet = workbook.addWorksheet(t('excel_sheet_deficiencies'));
 
@@ -280,24 +332,26 @@ async function export_to_excel(current_audit) {
                             if (!userObservation.trim() || userObservation.trim() === templateObservation.trim()) {
                                 finalObservation = passCriterionText;
                             }
+                            finalObservation = strip_markdown_for_excel(finalObservation);
 
-                            const reference_obj = { text: req_definition.standardReference?.text || '' };
+                            const ref_text_raw = req_definition.standardReference?.text || '';
+                            const reference_obj = { text: strip_markdown_for_excel(ref_text_raw) };
                             if (req_definition.standardReference?.url) {
                                 reference_obj.hyperlink = window.Helpers.add_protocol_if_missing(req_definition.standardReference.url);
                             }
 
                             const url_obj = sample.url ? {
-                                text: sample.url,
+                                text: strip_markdown_for_excel(String(sample.url)),
                                 hyperlink: window.Helpers.add_protocol_if_missing(sample.url)
                             } : null;
 
                             const pour_vals = get_wcag_pour_export_values_for_requirement(req_definition, current_audit, t);
-                            const comment_text = (result.commentToAuditor || '').trim();
+                            const comment_text = strip_markdown_for_excel((result.commentToAuditor || '').trim());
                             deficiencies_data.push({
                                 id: extractDeficiencyNumber(pc_obj.deficiencyId),
-                                reqTitle: req_definition.title,
+                                reqTitle: strip_markdown_for_excel(String(req_definition.title || '')),
                                 reference: reference_obj,
-                                sampleName: sample.description,
+                                sampleName: strip_markdown_for_excel(String(sample.description || '')),
                                 sampleUrl: url_obj,
                                 deficiencyType: '',
                                 observation: finalObservation,
@@ -317,10 +371,10 @@ async function export_to_excel(current_audit) {
 
         const include_comment_column = deficiencies_data.some(d => d.comment && String(d.comment).trim().length > 0);
         const wcag_column_defs = [
-            { header: t('excel_col_wcag_perceivable'), key: 'wcagPerceivable', width: 22 },
-            { header: t('excel_col_wcag_operable'), key: 'wcagOperable', width: 22 },
-            { header: t('excel_col_wcag_understandable'), key: 'wcagUnderstandable', width: 22 },
-            { header: t('excel_col_wcag_robust'), key: 'wcagRobust', width: 14 }
+            { header: t('excel_col_wcag_perceivable'), key: 'wcagPerceivable', width: 14 },
+            { header: t('excel_col_wcag_operable'), key: 'wcagOperable', width: 14 },
+            { header: t('excel_col_wcag_understandable'), key: 'wcagUnderstandable', width: 14 },
+            { header: t('excel_col_wcag_robust'), key: 'wcagRobust', width: 12 }
         ];
         const column_defs_before_comment = [
             { header: t('excel_col_deficiency_id'), key: 'id', width: 12 },
@@ -354,17 +408,11 @@ async function export_to_excel(current_audit) {
         const id_column_width = Math.min(Math.max(max_id_cell_len + 2, 8), 45);
         deficienciesSheet.getColumn('id').width = id_column_width;
 
-        const headerRow = deficienciesSheet.getRow(1);
-        headerRow.font = { color: { argb: 'FFFFFFFF' }, bold: true };
-        headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6E3282' } };
-        headerRow.alignment = { vertical: 'top', wrapText: true };
-
         deficienciesSheet.eachRow({ includeEmpty: false }, function (row, rowNumber) {
             if (rowNumber > 1) {
                 const isEvenRow = rowNumber % 2 === 0;
                 row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: isEvenRow ? 'FFF4F1EE' : 'FFFFFFFF' } };
                 row.font = { color: { argb: 'FF000000' } };
-                row.alignment = { vertical: 'top', wrapText: true };
 
                 const referenceCell = row.getCell('reference');
                 if (referenceCell.hyperlink) {
@@ -375,6 +423,12 @@ async function export_to_excel(current_audit) {
                     sampleUrlCell.font = { color: { argb: 'FF0000FF' }, underline: true };
                 }
             }
+        });
+
+        apply_excel_cell_alignment_top_left_wrap(deficienciesSheet);
+        deficienciesSheet.getRow(1).eachCell({ includeEmpty: true }, (cell) => {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6E3282' } };
+            cell.font = { color: { argb: 'FFFFFFFF' }, bold: true };
         });
 
         deficienciesSheet.autoFilter = { from: 'A1', to: { row: 1, column: deficienciesSheet.columns.length } };

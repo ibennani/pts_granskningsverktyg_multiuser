@@ -50,7 +50,8 @@ export const AuditOverviewComponent = {
                 router: this.router,
                 getState: this.getState,
                 Translation: this.Translation,
-                Helpers: this.Helpers
+                Helpers: this.Helpers,
+                AuditLogic: this.AuditLogic
             }
         });
 

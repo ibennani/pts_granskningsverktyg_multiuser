@@ -329,9 +329,63 @@ router.post('/', async (req, res) => {
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+async function find_import_conflict_audit_id(data) {
+    if (data.auditId && UUID_REGEX.test(data.auditId)) {
+        const existingById = await query('SELECT id FROM audits WHERE id = $1', [data.auditId]);
+        if (existingById.rows.length > 0) {
+            return data.auditId;
+        }
+    }
+    const sample_ids = (data.samples || [])
+        .map(s => s?.id)
+        .filter(id => id && UUID_REGEX.test(id));
+    if (sample_ids.length > 0) {
+        const first_sample_id = sample_ids[0];
+        const existingBySample = await query(
+            `SELECT a.id FROM audits a, jsonb_array_elements(COALESCE(a.samples, '[]'::jsonb)) AS s
+             WHERE s->>'id' = $1 LIMIT 1`,
+            [first_sample_id]
+        );
+        if (existingBySample.rows.length > 0) {
+            return existingBySample.rows[0].id;
+        }
+    }
+    return null;
+}
+
+async function build_existing_audit_summary_for_response(audit_id) {
+    const result = await query(
+        `SELECT version, updated_at, status, metadata, samples, last_updated_by
+         FROM audits WHERE id = $1`,
+        [audit_id]
+    );
+    if (result.rows.length === 0) {
+        return null;
+    }
+    const row = result.rows[0];
+    const samples = row.samples;
+    const sampleCount = Array.isArray(samples) ? samples.length : 0;
+    const meta = row.metadata || {};
+    return {
+        version: row.version,
+        updated_at: row.updated_at,
+        status: row.status,
+        sampleCount,
+        lastUpdatedBy: row.last_updated_by || null,
+        metadata: {
+            caseNumber: (meta.caseNumber ?? '').toString(),
+            actorName: (meta.actorName ?? '').toString()
+        }
+    };
+}
+
 router.post('/import', import_payload_rate_limiter, async (req, res) => {
     try {
-        const data = req.body;
+        const raw = req.body;
+        const replaceExistingAuditId = raw.replaceExistingAuditId;
+        const data = { ...raw };
+        delete data.replaceExistingAuditId;
+
         const structure_check = check_json_structure_depth_and_size(data);
         if (!structure_check.ok) {
             const msg = structure_check.reason === 'too_deep'
@@ -358,32 +412,70 @@ router.post('/import', import_payload_rate_limiter, async (req, res) => {
             return res.status(400).json({ error: 'ruleFileContent krävs' });
         }
 
-        if (data.auditId && UUID_REGEX.test(data.auditId)) {
-            const existingById = await query('SELECT id FROM audits WHERE id = $1', [data.auditId]);
-            if (existingById.rows.length > 0) {
-                return res.status(409).json({
-                    error: 'Granskningen finns redan i databasen.',
-                    existingAuditId: data.auditId
+        const conflict_id = await find_import_conflict_audit_id(data);
+
+        if (replaceExistingAuditId !== undefined && replaceExistingAuditId !== null && replaceExistingAuditId !== '') {
+            if (!UUID_REGEX.test(String(replaceExistingAuditId))) {
+                return res.status(400).json({ error: 'Ogiltigt värde för replaceExistingAuditId.' });
+            }
+            if (!conflict_id) {
+                return res.status(400).json({
+                    error: 'Ingen dubblett att ersätta: granskningen finns inte redan i databasen.'
                 });
             }
+            if (String(conflict_id) !== String(replaceExistingAuditId)) {
+                return res.status(400).json({
+                    error: 'Ersättnings-id matchar inte den befintliga granskningen.'
+                });
+            }
+
+            const metadata = data.auditMetadata || {};
+            const samples = data.samples || [];
+            const status = data.auditStatus || 'not_started';
+            const archived_requirement_results = Array.isArray(data.archivedRequirementResults) ? data.archivedRequirementResults : [];
+            const last_rulefile_update_log = data.lastRulefileUpdateLog || null;
+
+            const update_result = await query(
+                `UPDATE audits SET
+                    rule_set_id = $1,
+                    rule_file_content = $2,
+                    status = $3,
+                    metadata = $4,
+                    samples = $5,
+                    archived_requirement_results = $6,
+                    last_rulefile_update_log = $7,
+                    last_updated_by = $8,
+                    version = version + 1,
+                    updated_at = CURRENT_TIMESTAMP
+                 WHERE id = $9
+                 RETURNING *`,
+                [
+                    null,
+                    data.ruleFileContent,
+                    status,
+                    JSON.stringify(metadata),
+                    JSON.stringify(samples),
+                    JSON.stringify(archived_requirement_results),
+                    last_rulefile_update_log ? JSON.stringify(last_rulefile_update_log) : null,
+                    last_updated_by,
+                    replaceExistingAuditId
+                ]
+            );
+            if (update_result.rows.length === 0) {
+                return res.status(404).json({ error: 'Granskning hittades inte' });
+            }
+            const audit = update_result.rows[0];
+            const fullState = build_full_state(audit, null);
+            return res.status(201).json(fullState);
         }
 
-        const sample_ids = (data.samples || [])
-            .map(s => s?.id)
-            .filter(id => id && UUID_REGEX.test(id));
-        if (sample_ids.length > 0) {
-            const first_sample_id = sample_ids[0];
-            const existingBySample = await query(
-                `SELECT a.id FROM audits a, jsonb_array_elements(COALESCE(a.samples, '[]'::jsonb)) AS s
-                 WHERE s->>'id' = $1 LIMIT 1`,
-                [first_sample_id]
-            );
-            if (existingBySample.rows.length > 0) {
-                return res.status(409).json({
-                    error: 'Granskningen finns redan i databasen.',
-                    existingAuditId: existingBySample.rows[0].id
-                });
-            }
+        if (conflict_id) {
+            const existingAuditSummary = await build_existing_audit_summary_for_response(conflict_id);
+            return res.status(409).json({
+                error: 'Granskningen finns redan i databasen.',
+                existingAuditId: conflict_id,
+                existingAuditSummary: existingAuditSummary || undefined
+            });
         }
 
         const metadata = data.auditMetadata || {};

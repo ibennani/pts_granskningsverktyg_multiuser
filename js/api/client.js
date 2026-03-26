@@ -153,6 +153,9 @@ export async function api_post(path, body) {
         const e = new Error(err.error || `HTTP ${res.status}`);
         e.status = res.status;
         e.existingAuditId = err.existingAuditId;
+        if (err.existingAuditSummary !== undefined && err.existingAuditSummary !== null) {
+            e.existingAuditSummary = err.existingAuditSummary;
+        }
         throw e;
     }
     return res.json();
@@ -467,8 +470,16 @@ export async function create_audit(rule_set_id) {
     return api_post('/audits', { rule_set_id });
 }
 
-export async function import_audit(audit_data) {
-    return api_post('/audits/import', audit_data);
+/**
+ * @param {object} audit_data - Granskningspayload (sparad JSON-struktur)
+ * @param {{ replace_existing_audit_id?: string }} [options] - Vid överskrivning: befintligt gransknings-id
+ */
+export async function import_audit(audit_data, options = {}) {
+    const body = { ...audit_data };
+    if (options.replace_existing_audit_id) {
+        body.replaceExistingAuditId = options.replace_existing_audit_id;
+    }
+    return api_post('/audits/import', body);
 }
 
 export async function delete_audit(id) {

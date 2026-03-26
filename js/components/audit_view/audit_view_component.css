@@ -283,3 +283,22 @@
 .audit-copy-row-fade-in {
     transition: opacity 0.25s ease-out;
 }
+
+.modal-audit-duplicate-compare {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0.75rem 0 1rem;
+    font-size: 0.95rem;
+}
+
+.modal-audit-duplicate-compare th,
+.modal-audit-duplicate-compare td {
+    border: 1px solid var(--border-color, #ccc);
+    padding: 0.35rem 0.5rem;
+    text-align: left;
+    vertical-align: top;
+}
+
+.modal-audit-duplicate-compare thead th {
+    font-weight: 600;
+}

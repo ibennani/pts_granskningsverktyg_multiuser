@@ -9,6 +9,7 @@ export const AuditInfoComponent = {
         this.getState = deps.getState;
         this.Translation = deps.Translation;
         this.Helpers = deps.Helpers;
+        this.AuditLogic = deps.AuditLogic;
     },
 
     create_info_item(label_key, value, options = {}) {
@@ -45,6 +46,12 @@ export const AuditInfoComponent = {
         
         const t = this.Translation.t;
         const current_state = this.getState();
+        const audit_logic = this.AuditLogic;
+        const state_for_times = (audit_logic?.recalculateAuditTimes)
+            ? audit_logic.recalculateAuditTimes({ ...current_state })
+            : null;
+        const start_time_iso = current_state.startTime || state_for_times?.startTime || null;
+        const end_time_iso = current_state.endTime || state_for_times?.endTime || null;
 
         const info_panel = this.Helpers.create_element('div', { class_name: 'audit-info-panel' });
 
@@ -98,11 +105,13 @@ export const AuditInfoComponent = {
         info_panel.appendChild(this.create_info_item('rule_file_title', rf_meta.title));
         info_panel.appendChild(this.create_info_item('version_rulefile', rf_meta.version));
         info_panel.appendChild(this.create_info_item('status', t(`audit_status_${current_state.auditStatus}`)));
-        info_panel.appendChild(this.create_info_item('start_time', this.Helpers.format_iso_to_local_datetime(current_state.startTime, lang_code)));
-        
+        info_panel.appendChild(this.create_info_item('start_time', start_time_iso
+            ? this.Helpers.format_iso_to_local_date(start_time_iso, lang_code)
+            : ''));
+
         // Show end time if available, or if audit is locked (fallback to now if missing in state for locked audit)
-        if (current_state.endTime) {
-            info_panel.appendChild(this.create_info_item('end_time', this.Helpers.format_iso_to_local_datetime(current_state.endTime, lang_code)));
+        if (end_time_iso) {
+            info_panel.appendChild(this.create_info_item('end_time', this.Helpers.format_iso_to_local_date(end_time_iso, lang_code)));
         } else if (current_state.auditStatus === 'locked' || current_state.auditStatus === 'archived') {
              // Fallback for locked audits without recorded end time - show current time or a placeholder
              // However, to avoid showing a misleading "now" every time the component renders, we should probably rely on state.
@@ -156,5 +165,6 @@ export const AuditInfoComponent = {
         this.getState = null;
         this.Translation = null;
         this.Helpers = null;
+        this.AuditLogic = null;
     }
 };

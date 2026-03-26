@@ -265,7 +265,14 @@ export const AuditViewComponent = {
                     } catch (err) {
                         if (err.status === 409) {
                             this._show_audit_duplicate_modal(
-                                file_content_object?.auditMetadata,
+                                file_content_object,
+                                err,
+                                async () => {
+                                    this.NotificationComponent?.show_global_message(t('audit_audit_uploaded_success'), 'success');
+                                    await this.ensure_api_data();
+                                    this.render();
+                                    if (event.target) event.target.value = '';
+                                },
                                 () => { if (event.target) event.target.value = ''; }
                             );
                             return;
@@ -513,7 +520,14 @@ export const AuditViewComponent = {
         } catch (err) {
             if (err.status === 409) {
                 this._show_audit_duplicate_modal(
-                    file_content_object?.auditMetadata,
+                    file_content_object,
+                    err,
+                    async () => {
+                        this.NotificationComponent?.show_global_message(t('audit_audit_uploaded_success'), 'success');
+                        await this.ensure_api_data();
+                        this.render();
+                        if (input_element) input_element.value = '';
+                    },
                     () => { if (input_element) input_element.value = ''; }
                 );
                 return;
@@ -1159,33 +1173,183 @@ export const AuditViewComponent = {
         );
     },
 
-    _show_audit_duplicate_modal(metadata, on_close) {
+    _format_audit_duplicate_timestamp(raw, t) {
+        if (raw === undefined || raw === null || raw === '') {
+            return t('audit_audit_duplicate_modal_value_missing');
+        }
+        const d = new Date(raw);
+        if (!Number.isNaN(d.getTime())) {
+            return d.toLocaleString('sv-SE');
+        }
+        const n = Number(raw);
+        if (Number.isFinite(n)) {
+            const d2 = new Date(n);
+            if (!Number.isNaN(d2.getTime())) {
+                return d2.toLocaleString('sv-SE');
+            }
+        }
+        return t('audit_audit_duplicate_modal_value_missing');
+    },
+
+    _show_audit_duplicate_modal(file_content_object, duplicate_err, on_after_overwrite, on_keep) {
         const t = this.get_t_func();
         const ModalComponent = window.ModalComponent;
         if (!ModalComponent?.show || !this.Helpers?.create_element) {
             this.NotificationComponent?.show_global_message(t('audit_audit_already_exists'), 'error');
-            if (typeof on_close === 'function') on_close();
+            if (typeof on_keep === 'function') on_keep();
             return;
         }
-        const case_number = (metadata?.caseNumber ?? '').toString().trim() || '—';
-        const actor_name = (metadata?.actorName ?? '').toString().trim() || t('audit_audit_duplicate_unknown_actor');
-        const message = t('audit_audit_duplicate_modal_message', { caseNumber: case_number, actorName: actor_name });
+        const summary = duplicate_err?.existingAuditSummary;
+        const file_meta = file_content_object?.auditMetadata || {};
+        const file_case = (file_meta.caseNumber ?? '').toString().trim() || t('audit_audit_duplicate_modal_value_missing');
+        const file_actor = (file_meta.actorName ?? '').toString().trim() || t('audit_audit_duplicate_unknown_actor');
+
+        const server_case = summary?.metadata && String(summary.metadata.caseNumber ?? '').trim() !== ''
+            ? String(summary.metadata.caseNumber).trim()
+            : t('audit_audit_duplicate_modal_value_missing');
+        const server_actor = summary?.metadata && String(summary.metadata.actorName ?? '').trim() !== ''
+            ? String(summary.metadata.actorName).trim()
+            : t('audit_audit_duplicate_unknown_actor');
+
+        const server_updated = summary
+            ? this._format_audit_duplicate_timestamp(summary.updated_at, t)
+            : t('audit_audit_duplicate_modal_value_missing');
+        const file_updated = this._format_audit_duplicate_timestamp(
+            file_content_object?.updated_at ?? file_content_object?.updatedAt,
+            t
+        );
+
+        const server_version = summary && summary.version !== undefined && summary.version !== null
+            ? String(summary.version)
+            : t('audit_audit_duplicate_modal_value_missing');
+        const file_version = file_content_object?.version !== undefined && file_content_object?.version !== null
+            ? String(file_content_object.version)
+            : t('audit_audit_duplicate_modal_value_missing');
+
+        const server_status = summary?.status != null
+            ? this.get_status_label(summary.status)
+            : t('audit_audit_duplicate_modal_value_missing');
+        const file_status = file_content_object?.auditStatus != null
+            ? this.get_status_label(file_content_object.auditStatus)
+            : t('audit_audit_duplicate_modal_value_missing');
+
+        const server_samples = summary && summary.sampleCount !== undefined && summary.sampleCount !== null
+            ? String(summary.sampleCount)
+            : t('audit_audit_duplicate_modal_value_missing');
+        const file_samples = Array.isArray(file_content_object?.samples)
+            ? String(file_content_object.samples.length)
+            : '0';
+
+        const server_by = summary?.lastUpdatedBy && String(summary.lastUpdatedBy).trim() !== ''
+            ? String(summary.lastUpdatedBy).trim()
+            : t('audit_audit_duplicate_modal_value_missing');
+        const file_by = t('audit_audit_duplicate_modal_value_missing');
+
         ModalComponent.show(
             {
                 h1_text: t('audit_audit_duplicate_modal_title'),
-                message_text: message
+                message_text: t('audit_audit_duplicate_modal_intro')
             },
             (container, modal_instance) => {
+                if (!summary) {
+                    const fallback_p = this.Helpers.create_element('p', {
+                        class_name: 'modal-diff-message',
+                        text_content: t('audit_audit_duplicate_modal_message', {
+                            caseNumber: file_case,
+                            actorName: file_actor
+                        })
+                    });
+                    container.appendChild(fallback_p);
+                }
+
+                const compare_h2 = this.Helpers.create_element('h2', {
+                    class_name: 'modal-versions-heading',
+                    text_content: t('audit_audit_duplicate_modal_compare_heading')
+                });
+                container.appendChild(compare_h2);
+
+                const table = this.Helpers.create_element('table', {
+                    class_name: 'modal-audit-duplicate-compare'
+                });
+                const thead = this.Helpers.create_element('thead');
+                const tr_head = this.Helpers.create_element('tr');
+                tr_head.appendChild(this.Helpers.create_element('th', {
+                    text_content: t('audit_audit_duplicate_modal_col_property')
+                }));
+                tr_head.appendChild(this.Helpers.create_element('th', {
+                    text_content: t('audit_audit_duplicate_modal_col_server')
+                }));
+                tr_head.appendChild(this.Helpers.create_element('th', {
+                    text_content: t('audit_audit_duplicate_modal_col_file')
+                }));
+                thead.appendChild(tr_head);
+                table.appendChild(thead);
+
+                const tbody = this.Helpers.create_element('tbody');
+                const add_row = (label, server_val, file_val) => {
+                    const tr = this.Helpers.create_element('tr');
+                    const th = this.Helpers.create_element('th', {
+                        text_content: label,
+                        attributes: { scope: 'row' }
+                    });
+                    tr.appendChild(th);
+                    tr.appendChild(this.Helpers.create_element('td', { text_content: server_val }));
+                    tr.appendChild(this.Helpers.create_element('td', { text_content: file_val }));
+                    tbody.appendChild(tr);
+                };
+
+                add_row(t('audit_audit_duplicate_modal_label_case_number'), server_case, file_case);
+                add_row(t('audit_audit_duplicate_modal_label_actor'), server_actor, file_actor);
+                add_row(t('audit_audit_duplicate_modal_label_updated'), server_updated, file_updated);
+                add_row(t('audit_audit_duplicate_modal_label_version'), server_version, file_version);
+                add_row(t('audit_audit_duplicate_modal_label_status'), server_status, file_status);
+                add_row(t('audit_audit_duplicate_modal_label_samples'), server_samples, file_samples);
+                add_row(t('audit_audit_duplicate_modal_label_last_updated_by'), server_by, file_by);
+
+                table.appendChild(tbody);
+                container.appendChild(table);
+
+                const what_p = this.Helpers.create_element('p', {
+                    class_name: 'modal-what-to-do',
+                    text_content: t('audit_audit_duplicate_modal_what_to_do')
+                });
+                container.appendChild(what_p);
+
                 const buttons_wrapper = this.Helpers.create_element('div', { class_name: 'modal-confirm-actions' });
-                const ok_btn = this.Helpers.create_element('button', {
+                const overwrite_btn = this.Helpers.create_element('button', {
                     class_name: ['button', 'button-primary'],
-                    text_content: t('audit_audit_duplicate_modal_ok')
+                    text_content: t('audit_audit_duplicate_modal_overwrite')
                 });
-                ok_btn.addEventListener('click', () => {
+                overwrite_btn.addEventListener('click', async () => {
                     modal_instance.close();
-                    if (typeof on_close === 'function') on_close();
+                    if (!duplicate_err?.existingAuditId) {
+                        this.NotificationComponent?.show_global_message(t('audit_audit_already_exists'), 'error');
+                        if (typeof on_keep === 'function') on_keep();
+                        return;
+                    }
+                    try {
+                        await import_audit(file_content_object, {
+                            replace_existing_audit_id: duplicate_err.existingAuditId
+                        });
+                        if (typeof on_after_overwrite === 'function') await on_after_overwrite();
+                    } catch (e) {
+                        this.NotificationComponent?.show_global_message(
+                            e?.message || t('audit_upload_invalid_file'),
+                            'error'
+                        );
+                        if (typeof on_keep === 'function') on_keep();
+                    }
                 });
-                buttons_wrapper.appendChild(ok_btn);
+                const keep_btn = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-default'],
+                    text_content: t('audit_audit_duplicate_modal_keep')
+                });
+                keep_btn.addEventListener('click', () => {
+                    modal_instance.close();
+                    if (typeof on_keep === 'function') on_keep();
+                });
+                buttons_wrapper.appendChild(overwrite_btn);
+                buttons_wrapper.appendChild(keep_btn);
                 container.appendChild(buttons_wrapper);
             }
         );
