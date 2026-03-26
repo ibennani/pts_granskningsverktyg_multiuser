@@ -81,6 +81,45 @@ function formatDeficiencyForWord(deficiencyId) {
     return `Brist\u00A0${number}`;
 }
 
+function norm_taxonomy_string(v) {
+    return String(v ?? '').trim().toLowerCase();
+}
+
+/**
+ * Värden för WCAG POUR-kolumner i CSV/Excel-bristexport.
+ * Tomma strängar om taxonomin wcag22-pour saknas; annars Ja/Nej per princip.
+ */
+function get_wcag_pour_export_values_for_requirement(req_definition, current_audit, t) {
+    const empty = {
+        wcagPerceivable: '',
+        wcagOperable: '',
+        wcagUnderstandable: '',
+        wcagRobust: ''
+    };
+    const meta = current_audit?.ruleFileContent?.metadata;
+    const taxonomies = meta?.vocabularies?.taxonomies || meta?.taxonomies;
+    if (!Array.isArray(taxonomies)) {
+        return empty;
+    }
+    const taxonomy = taxonomies.find(tx => norm_taxonomy_string(tx?.id) === 'wcag22-pour');
+    if (!taxonomy) {
+        return empty;
+    }
+    const classifications = Array.isArray(req_definition?.classifications) ? req_definition.classifications : [];
+    const pour_ids = new Set(
+        classifications
+            .filter(c => norm_taxonomy_string(c?.taxonomyId) === 'wcag22-pour' && c?.conceptId)
+            .map(c => norm_taxonomy_string(c.conceptId))
+    );
+    const yes = t('yes');
+    const no = t('no');
+    return {
+        wcagPerceivable: pour_ids.has('perceivable') ? yes : no,
+        wcagOperable: pour_ids.has('operable') ? yes : no,
+        wcagUnderstandable: pour_ids.has('understandable') ? yes : no,
+        wcagRobust: pour_ids.has('robust') ? yes : no
+    };
+}
 
 function export_to_csv(current_audit) {
     const t = get_t_internal();
@@ -98,7 +137,12 @@ function export_to_csv(current_audit) {
         t('excel_col_sample_name'),
         t('excel_col_sample_url'),
         "Kravets syfte",
-        t('excel_col_observation')
+        t('excel_col_deficiency_type'),
+        t('excel_col_observation'),
+        t('excel_col_wcag_perceivable'),
+        t('excel_col_wcag_operable'),
+        t('excel_col_wcag_understandable'),
+        t('excel_col_wcag_robust')
     ];
     csv_content_array.push(headers.join(';'));
 
@@ -128,6 +172,7 @@ function export_to_csv(current_audit) {
                             finalObservation = passCriterionText;
                         }
 
+                        const pour_vals = get_wcag_pour_export_values_for_requirement(req_definition, current_audit, t);
                         const row_values = [
                             escape_for_csv(extractDeficiencyNumber(pc_obj.deficiencyId)),
                             escape_for_csv(req_definition.title),
@@ -135,7 +180,12 @@ function export_to_csv(current_audit) {
                             escape_for_csv(sample.description),
                             escape_for_csv(sample.url),
                             escape_for_csv("Här kommer en ny text visas. Denna text är ännu inte klar."),
-                            escape_for_csv(finalObservation)
+                            escape_for_csv(''),
+                            escape_for_csv(finalObservation),
+                            escape_for_csv(pour_vals.wcagPerceivable),
+                            escape_for_csv(pour_vals.wcagOperable),
+                            escape_for_csv(pour_vals.wcagUnderstandable),
+                            escape_for_csv(pour_vals.wcagRobust)
                         ];
                         csv_content_array.push(row_values.join(';'));
                     }
@@ -196,52 +246,17 @@ async function export_to_excel(current_audit) {
         const general_info_data = [
             [t('case_number'), current_audit.auditMetadata.caseNumber || ''],
             [t('actor_name'), current_audit.auditMetadata.actorName || ''],
-            [t('actor_link'), current_audit.auditMetadata.actorLink || ''],
+            [t('excel_general_service_link'), current_audit.auditMetadata.actorLink || ''],
             [t('auditor_name'), current_audit.auditMetadata.auditorName || ''],
-            [t('case_handler'), current_audit.auditMetadata.caseHandler || ''],
-            [t('rule_file_title'), current_audit.ruleFileContent.metadata.title || ''],
-            [t('version_rulefile'), current_audit.ruleFileContent.metadata.version || ''],
-            [t('status'), t(`audit_status_${current_audit.auditStatus}`)],
             [t('start_time'), current_audit.startTime ? window.Helpers.format_iso_to_local_datetime(current_audit.startTime, lang_code) : ''],
             [t('end_time'), current_audit.endTime ? window.Helpers.format_iso_to_local_datetime(current_audit.endTime, lang_code) : '']
         ];
-
-        if (current_audit.auditStatus !== 'archived') {
-            const log = current_audit.auditMetadata?.audit_edit_log;
-            const last = Array.isArray(log) && log.length ? log[log.length - 1] : null;
-            const last_at = last?.at;
-            if (last_at) {
-                general_info_data.push([
-                    t('export_last_updated_label'),
-                    window.Helpers.format_iso_to_local_datetime(last_at, lang_code)
-                ]);
-            }
-        }
-
-        // --- START OF CHANGE ---
-        const score_analysis = window.ScoreCalculator.calculateQualityScore(current_audit);
-        const deficiency_index_value = score_analysis ? score_analysis.totalScore : null;
-        const display_deficiency_index = (deficiency_index_value !== null && deficiency_index_value !== undefined)
-            ? window.Helpers.format_number_locally(deficiency_index_value, lang_code)
-            : '---';
-
-        general_info_data.push([t('deficiency_index_title', { defaultValue: "Deficiency Index" }), `${display_deficiency_index} / 100`]);
-        // --- END OF CHANGE ---
 
         generalSheet.addRows(general_info_data);
         generalSheet.getColumn(1).width = 30;
         generalSheet.getColumn(2).width = 70;
 
         const deficienciesSheet = workbook.addWorksheet(t('excel_sheet_deficiencies'));
-        deficienciesSheet.columns = [
-            { header: t('excel_col_deficiency_id'), key: 'id', width: 20 },
-            { header: t('excel_col_req_title'), key: 'reqTitle', width: 45 },
-            { header: t('excel_col_reference'), key: 'reference', width: 40 },
-            { header: t('excel_col_sample_name'), key: 'sampleName', width: 30 },
-            { header: t('excel_col_sample_url'), key: 'sampleUrl', width: 40 },
-            { header: t('excel_col_observation'), key: 'observation', width: 70 },
-            { header: t('excel_col_pts_qc_comments'), key: 'ptsQcComments', width: 70 }
-        ];
 
         const deficiencies_data = [];
         (current_audit.samples || []).forEach(sample => {
@@ -276,14 +291,21 @@ async function export_to_excel(current_audit) {
                                 hyperlink: window.Helpers.add_protocol_if_missing(sample.url)
                             } : null;
 
+                            const pour_vals = get_wcag_pour_export_values_for_requirement(req_definition, current_audit, t);
+                            const comment_text = (result.commentToAuditor || '').trim();
                             deficiencies_data.push({
                                 id: extractDeficiencyNumber(pc_obj.deficiencyId),
                                 reqTitle: req_definition.title,
                                 reference: reference_obj,
                                 sampleName: sample.description,
                                 sampleUrl: url_obj,
+                                deficiencyType: '',
                                 observation: finalObservation,
-                                ptsQcComments: ''
+                                comment: comment_text,
+                                wcagPerceivable: pour_vals.wcagPerceivable,
+                                wcagOperable: pour_vals.wcagOperable,
+                                wcagUnderstandable: pour_vals.wcagUnderstandable,
+                                wcagRobust: pour_vals.wcagRobust
                             });
                         }
                     });
@@ -292,7 +314,45 @@ async function export_to_excel(current_audit) {
         });
 
         deficiencies_data.sort((a, b) => (a.id || '').localeCompare(b.id || '', undefined, { numeric: true }));
+
+        const include_comment_column = deficiencies_data.some(d => d.comment && String(d.comment).trim().length > 0);
+        const wcag_column_defs = [
+            { header: t('excel_col_wcag_perceivable'), key: 'wcagPerceivable', width: 22 },
+            { header: t('excel_col_wcag_operable'), key: 'wcagOperable', width: 22 },
+            { header: t('excel_col_wcag_understandable'), key: 'wcagUnderstandable', width: 22 },
+            { header: t('excel_col_wcag_robust'), key: 'wcagRobust', width: 14 }
+        ];
+        const column_defs_before_comment = [
+            { header: t('excel_col_deficiency_id'), key: 'id', width: 12 },
+            { header: t('excel_col_req_title'), key: 'reqTitle', width: 45 },
+            { header: t('excel_col_reference'), key: 'reference', width: 40 },
+            { header: t('excel_col_sample_name'), key: 'sampleName', width: 30 },
+            { header: t('excel_col_sample_url'), key: 'sampleUrl', width: 40 },
+            { header: t('excel_col_deficiency_type'), key: 'deficiencyType', width: 24 },
+            { header: t('excel_col_observation'), key: 'observation', width: 70 }
+        ];
+        deficienciesSheet.columns = [
+            ...column_defs_before_comment,
+            ...(include_comment_column
+                ? [{ header: t('excel_col_comment'), key: 'comment', width: 70 }]
+                : []),
+            ...wcag_column_defs
+        ];
+        if (!include_comment_column) {
+            deficiencies_data.forEach(row => {
+                delete row.comment;
+            });
+        }
+
         deficienciesSheet.addRows(deficiencies_data);
+
+        const id_header_len = t('excel_col_deficiency_id').length;
+        const max_id_cell_len = deficiencies_data.reduce((max, row) => {
+            const len = String(row.id ?? '').length;
+            return len > max ? len : max;
+        }, id_header_len);
+        const id_column_width = Math.min(Math.max(max_id_cell_len + 2, 8), 45);
+        deficienciesSheet.getColumn('id').width = id_column_width;
 
         const headerRow = deficienciesSheet.getRow(1);
         headerRow.font = { color: { argb: 'FFFFFFFF' }, bold: true };
