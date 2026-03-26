@@ -19,6 +19,7 @@ import * as RulefileEditorLogic from './logic/rulefile_editor_logic.js';
 import { AutosaveService, capture_focus_state, restore_focus_state } from './logic/autosave_service.js';
 import { init_version_check_service } from './logic/version_check_service.js';
 import { init_rulefile_view_poll_service } from './logic/rulefile_view_poll_service.js';
+import { init_connectivity_service } from './logic/connectivity_service.js';
 import { MarkdownToolbar } from './features/markdown_toolbar.js';
 import './utils/dependency_manager.js';
 import './utils/console_manager.js';
@@ -1484,7 +1485,8 @@ window.DraftManager = DraftManager;
             LayoutManager.init();
         }
         await apply_user_preferences_from_server();
-        await init_global_components(); 
+        await init_global_components();
+        init_connectivity_service({ getState, dispatch });
         if (window.ScoreManager?.init) { window.ScoreManager.init(subscribe, getState, dispatch, StoreActionTypes); }
         if (MarkdownToolbar?.init) { MarkdownToolbar.init(); }
         init_version_check_service();

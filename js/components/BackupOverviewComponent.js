@@ -186,9 +186,6 @@ export const BackupOverviewComponent = {
                 }
             }
         } catch (err) {
-            // #region agent log
-            fetch('http://127.0.0.1:7697/ingest/2fc1a7e9-a75d-4471-982b-aab871f3ce49', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '2d60f5' }, body: JSON.stringify({ sessionId: '2d60f5', location: 'BackupOverviewComponent.js:_load_data catch', message: 'backup overview load failed', data: { errMessage: err?.message, errStatus: err?.status }, timestamp: Date.now(), hypothesisId: 'catch' }) }).catch(() => {});
-            // #endregion
             if (this.NotificationComponent?.show_global_message) {
                 const t = this.get_t_func();
                 this.NotificationComponent.show_global_message(

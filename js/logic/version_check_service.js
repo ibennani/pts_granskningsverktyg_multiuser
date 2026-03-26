@@ -47,6 +47,9 @@ export function init_version_check_service() {
     let verified_server_timestamp = null;
 
     async function fetch_build_info_from_server() {
+        if (typeof navigator !== 'undefined' && !navigator.onLine) {
+            return null;
+        }
         const url = `./build-info.js?t=${Date.now()}`;
         const res = await fetch(url, { cache: 'no-store' });
         if (!res.ok) return null;
@@ -157,9 +160,11 @@ export function init_version_check_service() {
     });
 
     // Sätt baseline från servern direkt så att första jämförelsen inte använder cachad data
-    fetch_build_info_from_server().then((info) => {
-        if (info?.timestamp) verified_server_timestamp = info.timestamp;
-    }).catch(() => {});
+    if (typeof navigator === 'undefined' || navigator.onLine) {
+        fetch_build_info_from_server().then((info) => {
+            if (info?.timestamp) verified_server_timestamp = info.timestamp;
+        }).catch(() => {});
+    }
 
     if (document.visibilityState === 'visible') {
         check_timer = setTimeout(start_periodic_check, INITIAL_DELAY_MS);

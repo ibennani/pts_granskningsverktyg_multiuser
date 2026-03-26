@@ -2,6 +2,7 @@
 // Gemensam logik för att öppna och ladda ner granskningar baserat på audit-id.
 
 import { load_audit_with_rule_file } from '../api/client.js';
+import { is_fetch_network_error } from './connectivity_service.js';
 
 function get_translation_func(Translation) {
     if (Translation && typeof Translation.t === 'function') {
@@ -85,10 +86,17 @@ export async function open_audit_by_id(params) {
         }
     } catch (err) {
         if (NotificationComponent?.show_global_message) {
-            NotificationComponent.show_global_message(
-                t('server_load_audit_error', { message: err.message }) || err.message,
-                'error'
-            );
+            if (is_fetch_network_error(err)) {
+                NotificationComponent.show_global_message(
+                    t('connectivity_offline_cannot_open_audit'),
+                    'warning'
+                );
+            } else {
+                NotificationComponent.show_global_message(
+                    t('server_load_audit_error', { message: err.message }) || err.message,
+                    'error'
+                );
+            }
         }
     }
 

@@ -2,6 +2,29 @@
 
 import { check_api_available, get_audits } from '../api/client.js';
 import './start_view_component.css';
+
+const GV_AUDITS_LIST_CACHE_KEY = 'gv_audits_list_cache_v1';
+
+function read_cached_audits_list() {
+    try {
+        const raw = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(GV_AUDITS_LIST_CACHE_KEY) : null;
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed?.audits) ? parsed.audits : null;
+    } catch {
+        return null;
+    }
+}
+
+function write_cached_audits_list(audits) {
+    try {
+        if (typeof sessionStorage !== 'undefined') {
+            sessionStorage.setItem(GV_AUDITS_LIST_CACHE_KEY, JSON.stringify({ audits: audits || [] }));
+        }
+    } catch {
+        /* ignorera quota m.m. */
+    }
+}
 import { GenericTableComponent } from './GenericTableComponent.js';
 import { create_audit_table_columns } from '../utils/audit_table_columns.js';
 import { open_audit_by_id, download_audit_by_id } from '../logic/audit_open_logic.js';
@@ -151,8 +174,21 @@ export const StartViewComponent = {
         if (this.api_available) {
             try {
                 this.audits = await get_audits();
+                write_cached_audits_list(this.audits);
             } catch {
-                this.audits = [];
+                const cached = read_cached_audits_list();
+                if (cached) {
+                    this.audits = cached;
+                    this.api_available = true;
+                } else {
+                    this.audits = [];
+                }
+            }
+        } else {
+            const cached = read_cached_audits_list();
+            if (cached) {
+                this.audits = cached;
+                this.api_available = true;
             }
         }
     },

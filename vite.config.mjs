@@ -1,8 +1,25 @@
 // vite.config.mjs
 import { defineConfig } from 'vite'
+import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
   base: '/v2/',
+  plugins: [
+    VitePWA({
+      registerType: 'autoUpdate',
+      injectRegister: 'script',
+      manifest: false,
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,woff}'],
+        navigateFallback: 'index.html',
+        navigateFallbackDenylist: [/^\/v2\/api\//, /^\/v2\/ws/],
+        maximumFileSizeToCacheInBytes: 6000000
+      },
+      devOptions: {
+        enabled: false
+      }
+    })
+  ],
   server: {
     port: 5173,
     strictPort: false,

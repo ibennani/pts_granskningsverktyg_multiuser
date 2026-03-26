@@ -3,6 +3,14 @@
 // Vid regelfilsredigering synkas innehållet till rule_sets så att updated_at = senast ändrad.
 
 import { update_audit, import_audit, update_rule, load_audit_with_rule_file } from '../api/client.js';
+import {
+    clear_audit_sync_pending,
+    clear_rulefile_sync_pending,
+    is_fetch_network_error,
+    mark_audit_sync_pending,
+    mark_rulefile_sync_pending,
+    notify_network_unreachable_for_sync
+} from './connectivity_service.js';
 
 let debounce_timer = null;
 let rulefile_debounce_timer = null;
@@ -121,6 +129,12 @@ async function run_sync(state, dispatch_fn) {
     if (!state || !state.ruleFileContent || typeof window === 'undefined') return;
     if (state.auditStatus === 'rulefile_editing') return;
 
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        mark_audit_sync_pending();
+        notify_network_unreachable_for_sync();
+        return;
+    }
+
     try {
         if (state.auditId) {
             const patch = state_to_patch(state);
@@ -163,6 +177,7 @@ async function run_sync(state, dispatch_fn) {
                     }
                 });
             }
+            clear_audit_sync_pending();
         } else {
             const import_payload = state_to_import(state);
             const prev_log_i = Array.isArray(state.auditMetadata?.audit_edit_log) ? state.auditMetadata.audit_edit_log : [];
@@ -199,10 +214,16 @@ async function run_sync(state, dispatch_fn) {
                     });
                 }, 0);
             }
+            clear_audit_sync_pending();
         }
     } catch (err) {
         if (window.__GV_DEBUG_STUCK_SYNC__) {
             console.warn('[GV-Debug] run_sync: PATCH misslyckades', err?.message || err, err);
+        }
+        if (is_fetch_network_error(err)) {
+            mark_audit_sync_pending();
+            notify_network_unreachable_for_sync();
+            return;
         }
         if (err.status === 409 && err.existingAuditId && dispatch_fn) {
             dispatch_fn({
@@ -214,6 +235,7 @@ async function run_sync(state, dispatch_fn) {
                     skip_render: true
                 }
             });
+            clear_audit_sync_pending();
         } else if (err.status === 409 && state.auditId && dispatch_fn && !err.existingAuditId) {
             try {
                 const full_state = await load_audit_with_rule_file(state.auditId);
@@ -225,6 +247,7 @@ async function run_sync(state, dispatch_fn) {
                             saveFileVersion: full_state.saveFileVersion || '2.1.0'
                         }
                     });
+                    clear_audit_sync_pending();
                     if (window.NotificationComponent?.show_global_message && window.Translation?.t) {
                         window.NotificationComponent.show_global_message(
                             window.Translation.t('version_conflict_reload_from_server'),
@@ -232,13 +255,18 @@ async function run_sync(state, dispatch_fn) {
                         );
                     }
                 } else if (window.NotificationComponent?.show_global_message && window.Translation?.t) {
+                    mark_audit_sync_pending();
                     window.NotificationComponent.show_global_message(
                         window.Translation.t('server_sync_error', { message: err.message }) || err.message,
                         'warning'
                     );
                 }
-            } catch (_) {
-                if (window.NotificationComponent?.show_global_message && window.Translation?.t) {
+            } catch (load_err) {
+                if (is_fetch_network_error(load_err)) {
+                    mark_audit_sync_pending();
+                    notify_network_unreachable_for_sync();
+                } else if (window.NotificationComponent?.show_global_message && window.Translation?.t) {
+                    mark_audit_sync_pending();
                     window.NotificationComponent.show_global_message(
                         window.Translation.t('server_sync_error', { message: err.message }) || err.message,
                         'warning'
@@ -247,17 +275,29 @@ async function run_sync(state, dispatch_fn) {
             }
         } else if (err.status === 404 && err.message && err.message.toLowerCase().includes('granskning hittades inte')) {
             show_audit_deleted_modal_and_navigate();
-        } else if (window.NotificationComponent?.show_global_message && window.Translation?.t) {
-            window.NotificationComponent.show_global_message(
-                window.Translation.t('server_sync_error', { message: err.message }) || `Kunde inte spara till servern: ${err.message}`,
-                'error'
-            );
+        } else if (err.status === 401) {
+            /* Ingen kö – användaren måste logga in på nytt */
+        } else {
+            mark_audit_sync_pending();
+            if (window.NotificationComponent?.show_global_message && window.Translation?.t) {
+                window.NotificationComponent.show_global_message(
+                    window.Translation.t('server_sync_error', { message: err.message }) || `Kunde inte spara till servern: ${err.message}`,
+                    'error'
+                );
+            }
         }
     }
 }
 
 async function run_sync_rulefile(state, dispatch_fn) {
     if (!state?.ruleSetId || !state?.ruleFileContent || typeof window === 'undefined') return;
+
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        mark_rulefile_sync_pending();
+        notify_network_unreachable_for_sync();
+        return;
+    }
+
     try {
         const updated = await update_rule(state.ruleSetId, { content: state.ruleFileContent });
         if (updated?.content && typeof dispatch_fn === 'function') {
@@ -269,7 +309,17 @@ async function run_sync_rulefile(state, dispatch_fn) {
                 }
             });
         }
+        clear_rulefile_sync_pending();
     } catch (err) {
+        if (is_fetch_network_error(err)) {
+            mark_rulefile_sync_pending();
+            notify_network_unreachable_for_sync();
+            return;
+        }
+        if (err.status === 401) {
+            return;
+        }
+        mark_rulefile_sync_pending();
         if (window.NotificationComponent?.show_global_message && window.Translation?.t) {
             window.NotificationComponent.show_global_message(
                 window.Translation.t('server_sync_error', { message: err.message }) || `Kunde inte spara regelfilen: ${err.message}`,

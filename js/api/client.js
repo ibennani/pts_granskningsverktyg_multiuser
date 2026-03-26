@@ -90,11 +90,6 @@ export function get_websocket_url() {
 
 export async function api_get(path) {
     const url = `${get_base_url()}${path}`;
-    // #region agent log
-    if (path === '/backup/list') {
-        fetch('http://127.0.0.1:7697/ingest/2fc1a7e9-a75d-4471-982b-aab871f3ce49', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '2d60f5' }, body: JSON.stringify({ sessionId: '2d60f5', location: 'client.js:api_get', message: 'backup list request', data: { path, url }, timestamp: Date.now(), hypothesisId: 'H1' }) }).catch(() => {});
-    }
-    // #endregion
     let res;
     try {
         res = await fetch(url, {
@@ -102,18 +97,8 @@ export async function api_get(path) {
             headers: get_auth_headers()
         });
     } catch (fetchErr) {
-        // #region agent log
-        if (path === '/backup/list') {
-            fetch('http://127.0.0.1:7697/ingest/2fc1a7e9-a75d-4471-982b-aab871f3ce49', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '2d60f5' }, body: JSON.stringify({ sessionId: '2d60f5', location: 'client.js:api_get', message: 'backup list fetch threw', data: { path, errMessage: fetchErr?.message, errName: fetchErr?.name }, timestamp: Date.now(), hypothesisId: 'H5' }) }).catch(() => {});
-        }
-        // #endregion
         throw fetchErr;
     }
-    // #region agent log
-    if (path === '/backup/list') {
-        fetch('http://127.0.0.1:7697/ingest/2fc1a7e9-a75d-4471-982b-aab871f3ce49', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '2d60f5' }, body: JSON.stringify({ sessionId: '2d60f5', location: 'client.js:api_get', message: 'backup list response', data: { status: res.status, ok: res.ok }, timestamp: Date.now(), hypothesisId: 'H2-H3' }) }).catch(() => {});
-    }
-    // #endregion
     if (handle_unauthorized_response(res)) {
         const e = new Error('Inloggning krävs');
         e.status = 401;
@@ -128,11 +113,6 @@ export async function api_get(path) {
     try {
         return await res.json();
     } catch (jsonErr) {
-        // #region agent log
-        if (path === '/backup/list') {
-            fetch('http://127.0.0.1:7697/ingest/2fc1a7e9-a75d-4471-982b-aab871f3ce49', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': '2d60f5' }, body: JSON.stringify({ sessionId: '2d60f5', location: 'client.js:api_get', message: 'backup list res.json() threw', data: { errMessage: jsonErr?.message }, timestamp: Date.now(), hypothesisId: 'H4' }) }).catch(() => {});
-        }
-        // #endregion
         throw jsonErr;
     }
 }
