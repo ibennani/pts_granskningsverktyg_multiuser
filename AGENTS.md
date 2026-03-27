@@ -4,7 +4,7 @@ Detta dokument beskriver hur AI-agenter (som Cursor Composer) kan användas för
 
 ## Översikt
 
-Granskningsverktyget är ett modulbaserat projekt med tydlig struktur och konventioner. Denna guide hjälper AI-agenter att förstå projektets arkitektur och följa etablerade mönster.
+**Leffe** (webbapplikationen för digital tillsyn) är ett modulbaserat projekt med tydlig struktur och konventioner. Denna guide hjälper AI-agenter att förstå projektets arkitektur och följa etablerade mönster.
 
 ## Projektstruktur
 
@@ -16,6 +16,7 @@ Projektet är organiserat enligt följande struktur:
   - `logic/` - Affärslogik och utilities
   - `utils/` - Hjälpfunktioner
   - `i18n/` - Översättningar
+- `server/` - Express-backend, API, autentisering, databas
 - `css/` - Stylesheets
 - `tests/` - Testfiler
 - `docs/` - Dokumentation
@@ -61,6 +62,7 @@ Projektet är organiserat enligt följande struktur:
 - Central autospar-service i `js/logic/autosave_service.js`
 - Debounce 250 ms, sparar utan visuell omrendering, bevarar fokus/markering/scroll
 - Se `docs/autosave_integration.md` för instruktion om hur nya vyer ansluts
+- Fältutkast (drafts) hanteras separat i `js/draft_manager.js`
 
 ## Vanliga uppgifter
 
@@ -75,15 +77,16 @@ Projektet är organiserat enligt följande struktur:
 2. Använd `t('nyckel')` i koden
 
 ### Testa ändringar
-- Kör `npm run test:e2e` för E2E-tester
-- Kör `npm run lint` för att kontrollera kodkvalitet
+- Kör Playwright: `npx playwright test` (med rätt `baseURL`)
+- Kör `npm test` för Jest
+- Kör `npm run lint` för kodkvalitet
 
 ## Kända begränsningar
 
 ### Word-export
-- Använder Words inbyggda TOC-funktion vilket ger en varning vid öppning
-- Användaren måste klicka "Ja" för att uppdatera fält
-- Manuella interna länkar fungerar inte korrekt med docx-biblioteket
+- Använder Words inbyggda TOC-funktion vilket kan ge en varning vid öppning
+- Användaren kan behöva bekräfta uppdatering av fält
+- Manuella interna länkar kan bete sig annorlunda med docx-biblioteket
 
 ### Browser-kompatibilitet
 - Kräver moderna webbläsare med ES6-stöd
@@ -92,7 +95,7 @@ Projektet är organiserat enligt följande struktur:
 ## Tips för AI-agenter
 
 1. **Läs befintlig kod först** - Projektet har etablerade mönster som bör följas
-2. **Använd semantisk sökning** - Använd `codebase_search` för att hitta relevant kod
+2. **Använd semantisk sökning** - Hitta relevant kod utifrån beteende
 3. **Följ projektets struktur** - Placera kod i rätt kataloger
 4. **Testa ändringar** - Kör tester efter större ändringar
 5. **Använd svenska** - Kommentarer och commit-meddelanden ska vara på svenska
