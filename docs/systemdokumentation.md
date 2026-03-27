@@ -1,15 +1,15 @@
-# Systemdokumentation: Webbapplikation för digital tillsyn
+# Systemdokumentation: Leffe (webbapp för digital tillsyn)
 
-**Version:** 1.0
-**Datum:** 2024-05-27 _(Ersätt med aktuellt datum)_
+**Version:** 1.1  
+**Datum:** 2026-03-27
 
 ## 1. Introduktion
 
 ### 1.1 Syfte med dokumentationen
-Denna systemdokumentation syftar till att beskriva den interna arkitekturen, funktionaliteten och kodstrukturen för webbapplikationen för digital tillsyn. Målet är att underlätta för utvecklare att förstå, underhålla och vidareutveckla systemet. Dokumentationen beskriver *hur* systemet är implementerat, till skillnad från den tekniska specifikationen som beskriver *vad* systemet ska göra.
+Denna systemdokumentation syftar till att beskriva den interna arkitekturen, funktionaliteten och kodstrukturen för **Leffe**. Målet är att underlätta för utvecklare att förstå, underhålla och vidareutveckla systemet. Dokumentationen beskriver *hur* systemet är implementerat, till skillnad från den tekniska specifikationen som beskriver *vad* systemet ska göra.
 
 ### 1.2 Översikt av systemet
-Applikationen är ett klient-sida verktyg byggt med HTML5, CSS3 och modern JavaScript (ES6+ standard, med användning av moduler). Den möjliggör för användare att ladda upp JSON-baserade regelfiler, definiera och hantera stickprov, granska krav mot dessa stickprov, dokumentera observationer och exportera resultat. All data lagras och bearbetas lokalt i användarens webbläsare. Systemet är designat för att vara fristående och kräver ingen backend-server för sin kärnfunktionalitet.
+Leffe är en SPA (Single Page Application) byggd med HTML5, CSS3 och JavaScript (ES6-moduler). I drift används en **Express-backend** (`server/`) med **PostgreSQL**, **JWT-baserad inloggning** (lösenord med bcrypt) och **WebSocket** för realtidssynk. Klienten synkar granskningar och regelfiler via REST under `/v2/api` (proxat från Vite i utveckling). Tillstånd hanteras i `state.js` med sparning i webbläsaren (`sessionStorage`/`localStorage`) och synk mot server när användaren arbetar mot backend. Användaren kan även ladda ner/importera granskning som JSON-fil där det stöds i gränssnittet.
 
 ### 1.3 Målgrupp
 Denna dokumentation riktar sig primärt till mjukvaruutvecklare som är involverade i underhåll, felsökning eller vidareutveckling av applikationen.
@@ -41,10 +41,11 @@ Projektet följer en standardiserad struktur för webbapplikationer:
     *   `translation_logic.js`: Hanterar internationalisering (i18n), laddning av språkfiler från `js/i18n/` och tillhandahåller översättningsfunktioner.
     *   `validation_logic.js`: Innehåller logik för att validera JSON-strukturen hos uppladdade regelfiler och sparade granskningsfiler.
     *   `audit_logic.js`: Innehåller affärslogik relaterad till granskningsprocessen, såsom beräkning av status för krav och kontrollpunkter, samt identifiering av relevanta krav för specifika stickprov.
-    *   `export_logic.js`: Hanterar logiken för att generera och initiera nedladdning av granskningsdata i CSV- och XLSX-format. Använder det externa biblioteket SheetJS (via CDN) för XLSX-generering.
+    *   `export_logic.js`: Genererar export till CSV, Excel (ExcelJS), Word (docx) och HTML; inga CDN-lösningar – npm-moduler.
     *   `utils/`: Innehåller allmänna hjälpfunktioner.
         *   `helpers.js`: En samling av återanvändbara funktioner för DOM-manipulering (t.ex. `create_element`), generering av UUID, dynamisk laddning av CSS, datumformatering, HTML-sanering och generering av SVG-ikoner.
-    *   `components/`: Innehåller alla UI-komponenter. Varje komponent är implementerad som en ES6-modul, oftast med en IIFE-struktur (Immediately Invoked Function Expression) som returnerar ett objekt med publika metoder (vanligtvis `init`, `render`, `destroy`). Komponenterna exporteras som namngivna konstanter för att kunna importeras av `main.js` eller andra komponenter.
+    *   `components/`: UI-komponenter som ES6-moduler med objektliteral (`export const X = { init, render, destroy }`), utan IIFE.
+*   **`server/`**: Express-API, databas, autentisering, migreringar – se källkoden och `docs/api-dokumentation.md`.
     *   `i18n/`: Innehåller JSON-filer för språkstöd, en fil per språk (t.ex. `sv-SE.json`, `en-GB.json`).
 *   **`docs/`**: Innehåller all projektdokumentation.
     *   `teknisk_specifikation_vX.X.md`: Den formella tekniska specifikationen.
@@ -64,7 +65,7 @@ Projektet följer en standardiserad struktur för webbapplikationer:
     *   Anropar `render()` på komponenten för att visa innehållet i `div#app-container`.
     *   Vid byte av vy anropas `destroy()` på den föregående vykomponenten för att rensa eventlyssnare och andra resurser.
 *   **Globala UI-kontroller:**
-    *   Initierar och hanterar språkväljaren (`<select>`) och temaväxlaren (`<button>`).
+    *   Initierar globala kontroller för språk och tema enligt aktuell implementation i `main.js`.
     *   Lyssnar på `languageChanged`-eventet (utsänt av `translation_logic.js`) och anropar `update_app_chrome_texts()` samt renderar om den aktiva vyn för att applicera det nya språket.
 *   **Felhantering:** Grundläggande felhantering om en specificerad vykomponent inte kan laddas eller om renderingen misslyckas.
 
@@ -128,7 +129,7 @@ Projektet följer en standardiserad struktur för webbapplikationer:
 
 ## 4. Komponentbibliotek (`js/components/`)
 
-Varje JavaScript-fil i denna katalog representerar en UI-komponent. De flesta följer ett mönster med en IIFE som returnerar ett objekt med metoderna `init(container, router_cb, params)`, `render()`, och `destroy()`. De exporteras sedan som namngivna konstanter.
+Varje fil representerar en UI-komponent som exporterar ett objekt med `init({ root, deps })`, `render()`, `destroy()` (dependency injection via `deps`).
 
 ### 4.1 Vykomponenter
 Dessa renderas direkt av `main.js` och utgör de huvudsakliga "sidorna" i applikationen. Alla komponenter följer samma mönster:

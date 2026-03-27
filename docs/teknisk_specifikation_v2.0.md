@@ -1,11 +1,11 @@
-# Teknisk specifikation: Granskningsverktyget
+# Teknisk specifikation: Leffe
 
 **Version:** 2.1.0
-**Datum:** 2025-01-27
+**Datum:** 2026-03-27
 
 ## 1. Mål och syfte
 
-Granskningsverktyget är en modern webbapplikation för digital tillsyn av webbsidor och digitala tjänster. Verktyget stöder hela processen från regelfilsuppladdning till slutlig rapportgenerering, med fokus på användarvänlighet, tillgänglighet och effektivitet.
+**Leffe** är en modern webbapplikation för digital tillsyn av webbsidor och digitala tjänster. Verktyget stöder hela processen från regelfilsuppladdning till slutlig rapportgenerering, med fokus på användarvänlighet, tillgänglighet och effektivitet. I drift används en Express-backend med PostgreSQL; klienten synkar granskningar via API och WebSocket.
 
 ### Huvudsyfte
 

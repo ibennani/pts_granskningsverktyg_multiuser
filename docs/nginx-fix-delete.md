@@ -1,6 +1,6 @@
 # Fix: Radering fungerar inte på servern (404)
 
-Om du inte kan radera regelfiler eller granskningar på servern beror det oftast på att nginx inte skickar DELETE-anrop korrekt till backend.
+Gäller **Leffe** i produktion bakom Nginx. Om du inte kan radera regelfiler eller granskningar beror det oftast på att nginx inte skickar DELETE-anrop korrekt till backend.
 
 ## Lösning
 

@@ -2,7 +2,7 @@
 
 ## Översikt
 
-Granskningsverktyget använder en central autospar-service (`AutosaveService` i `js/logic/autosave_service.js`) för formulär. Autospar triggas endast vid `input`-events, debouncar 250 ms, sparar utan visuell omrendering och bevarar fokus, markering och scroll-position.
+Leffe använder en central autospar-service (`AutosaveService` i `js/logic/autosave_service.js`) för formulär. Autospar triggas endast vid `input`-events, debouncar 250 ms, sparar utan visuell omrendering och bevarar fokus, markering och scroll-position.
 
 ## Anslut en ny vy
 

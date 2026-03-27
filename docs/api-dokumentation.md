@@ -1,4 +1,4 @@
-# API-dokumentation - Granskningsverktyget
+# API-dokumentation – Leffe
 
 **Version:** 1.0  
 **Datum:** 2025-01-27
@@ -18,7 +18,7 @@
 
 ## 1. Översikt
 
-Granskningsverktyget använder en modulär arkitektur med tydliga API:er för varje komponent. Alla API:er är dokumenterade med TypeScript-liknande typer för bättre förståelse.
+Leffe använder en modulär arkitektur med tydliga API:er för varje komponent. Alla API:er är dokumenterade med TypeScript-liknande typer för bättre förståelse.
 
 ### API-struktur
 
@@ -425,7 +425,7 @@ const currentLang = window.Translation.get_current_language_code();
 ```javascript
 // js/i18n/sv-SE.json
 {
-    "app_title": "Granskningsverktyget",
+    "app_title": "Leffe",
     "welcome_message": "Välkommen, {name}!",
     "error_loading": "Fel vid laddning",
     "success_saved": "Sparat framgångsrikt"

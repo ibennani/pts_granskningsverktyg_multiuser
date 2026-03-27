@@ -1,4 +1,4 @@
-# Komponentstandard för granskningsverktyget (frontend)
+# Komponentstandard för Leffe (frontend)
 
 Detta dokument beskriver den **officiella komponentmodellen** för projektet.  
 Alla nya komponenter ska följa denna standard, och befintliga komponenter ska migreras hit när de ändå ändras.

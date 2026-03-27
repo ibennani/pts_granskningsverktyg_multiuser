@@ -53,12 +53,15 @@ Vid `npm run deploy:v2` kopieras `.env` till servern (utom rader som börjar med
 
 ## Vad deploy gör
 
+Skriptet `scripts/deploy-v2.js` motsvarar i stora drag följande (standardväg: `DEPLOY_PATH=/var/www/granskningsverktyget-v2`):
+
 | Komponent | Vad som händer |
 |----------|----------------|
-| **Frontend** | `vite build` → dist/ → laddas upp till serverns `v2/` |
-| **Backend** | `server/` laddas upp, `npm install`, `pm2 restart` |
-| **Databas** | `npm run db:migrate` körs (nya migrationer appliceras) |
-| **Behörigheter** | `chmod -R o+rX v2/` så att nginx kan läsa filerna |
+| **Frontend** | `vite build` → `dist/` laddas upp till en temp-katalog på servern och kopieras sedan till **deploy-roten** (`/var/www/granskningsverktyget-v2/`). Nginx mappar URL `/v2/` till denna katalog (`alias` i `scripts/ux-granskning-with-v2.conf`), inte till en undermapp som heter `v2`. |
+| **CSS/JS** | Mapparna `css/` och `js/` kopieras upp till samma deploy-root. |
+| **Backend** | `server/` laddas upp; `npm install --omit=dev`, `npm run db:migrate`, `pm2 restart granskningsverktyget-v2` (eller start om processen saknas). |
+| **Databas** | Migrationer körs via `db:migrate`. |
+| **Behörigheter** | `chmod -R o+rX` på deploy-root för att nginx ska kunna läsa statiska filer. |
 
 ## Krav på servern (en gång)
 
@@ -71,7 +74,7 @@ Vid `npm run deploy:v2` kopieras `.env` till servern (utom rader som börjar med
 
 En watchdog-process kontrollerar var minut om backend svarar. Om inte – startas PM2 om automatiskt.
 
-**Startas automatiskt vid `npm run deploy:v2`** – ingen manuell konfiguration behövs. Watchdog körs som PM2-process (`granskningsverktyget-watchdog`).
+**Startas automatiskt vid `npm run deploy:v2`** – ingen manuell konfiguration behövs. Watchdog körs som PM2-process (`granskningsverktyget-watchdog`) och övervakar **Leffe**-backenden.
 
 Shell-scriptet `scripts/health-check-and-restart.sh` finns kvar för manuell körning eller cron-fallback.
 
@@ -83,11 +86,11 @@ SSH-kommandot med `&&` kan ge "The syntax of the command is incorrect". Kör då
 # 1. Bygg lokalt
 npm run build
 
-# 2. Kopiera till servern
+# 2. Kopiera frontend till serverns deploy-root (samma logik som deploy-skriptet ungefär)
 scp -r dist granskning:/var/www/granskningsverktyget-v2/temp-dist
-ssh granskning "rm -rf /var/www/granskningsverktyget-v2/v2 && mkdir -p /var/www/granskningsverktyget-v2/v2 && cp -r /var/www/granskningsverktyget-v2/temp-dist/* /var/www/granskningsverktyget-v2/v2/ && chmod -R o+rX /var/www/granskningsverktyget-v2/v2 && rm -rf /var/www/granskningsverktyget-v2/temp-dist"
+ssh granskning "cd /var/www/granskningsverktyget-v2 && rm -rf assets && rm -f index.html build-info.js && cp -r temp-dist/* . && chmod -R o+rX . && rm -rf temp-dist"
 
-# 3. Backend
+# 3. Backend (upprepa även css/, js/ om du ändrat dem – se deploy-v2.js)
 scp -r server docker-compose.yml package.json package-lock.json granskning:/var/www/granskningsverktyget-v2/
 ssh granskning "cd /var/www/granskningsverktyget-v2 && npm install --omit=dev --ignore-scripts && npm run db:migrate && pm2 restart granskningsverktyget-v2"
 ```
@@ -110,7 +113,7 @@ Om du lägger till paket i `package.json` (backend eller delade):
 
 Om du bara ändrat JS/CSS/HTML i frontend:
 
-- Deploy uppdaterar hela `v2/` – backend startas om men ändras inte
+- Deploy uppdaterar hela statiska innehållet under deploy-root (det som nginx exponerar under `/v2/`) – backend startas om men ändras inte om du bara ändrat byggda filer
 - Du kan skippa `npm install` och `db:migrate` om du vill, men det är ofta enklast att köra hela deploy
 
 ## Endast backend-ändringar
@@ -124,10 +127,10 @@ Om du bara ändrat `server/`:
 
 | Problem | Kontroll |
 |---------|----------|
-| Sidan visar bara byggdatum | Nginx serverar inte assets – kolla `chmod o+rX v2/` och nginx-config |
+| Sidan visar bara byggdatum | Nginx serverar inte assets – kolla `chmod -R o+rX` på deploy-root och nginx-config |
 | "Servern svarar inte" | Backend eller API-proxy – kolla Docker, Postgres, PM2, SELinux |
 | 502 Bad Gateway | Nginx kan inte nå backend – kolla `setsebool httpd_can_network_connect 1` |
-| Permission denied | `chmod -R o+rX /var/www/granskningsverktyget-v2/v2` |
+| Permission denied | `chmod -R o+rX /var/www/granskningsverktyget-v2` (deploy-root) |
 | **Radering fungerar inte** | Nginx: `location /v2/api/` måste komma FÖRE `location /v2/` i config. Annars kan try_files fånga DELETE/PUT och ge 405. Uppdatera enligt `scripts/ux-granskning-with-v2.conf` |
 | **Regelfil kan inte raderas** | Regelfiler som används av granskningar blockeras (409). Radera granskningarna först, sedan regelfilen |
 | **500 Internal Server Error** | Se nedan |

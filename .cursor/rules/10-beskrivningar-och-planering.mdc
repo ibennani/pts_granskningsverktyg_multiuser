@@ -1,11 +1,11 @@
 ---
-description: Regel för hur AI-agenten ska beskriva flöden och planera förändringar i Granskningsverktyget.
+description: Regel för hur AI-agenten ska beskriva flöden och planera förändringar i Leffe.
 alwaysApply: true
 ---
 
 ## Regel: Beskrivningar och planering
 
-När AI-agenten beskriver hur funktioner, flöden eller förändringar fungerar i Granskningsverktyget (t.ex. uppdatering av regelfil, arkivflöden, export, autospar osv.) ska följande alltid gälla:
+När AI-agenten beskriver hur funktioner, flöden eller förändringar fungerar i Leffe (t.ex. uppdatering av regelfil, arkivflöden, export, autospar osv.) ska följande alltid gälla:
 
 - **Språk och målgrupp**
   - All beskrivning ska vara på **svenska**.

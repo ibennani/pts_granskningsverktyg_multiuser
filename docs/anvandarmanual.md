@@ -1,15 +1,15 @@
-# Användarmanual: Granskningsverktyget
+# Användarmanual: Leffe
 
 **Version:** 2.1.0
-**Datum:** 2025-01-27
+**Datum:** 2026-03-27
 
 ## Välkommen!
 
-Denna manual hjälper dig att använda Granskningsverktyget - ett webbaserat verktyg för digital tillsyn. Verktyget är designat för att underlätta processen med att granska webbsidor och digitala tjänster mot en given uppsättning regler (en regelfil).
+Denna manual hjälper dig att använda **Leffe** – ett webbaserat verktyg för digital tillsyn. Verktyget är designat för att underlätta processen med att granska webbsidor och digitala tjänster mot en given uppsättning regler (en regelfil).
 
-### Vad är Granskningsverktyget?
+### Vad är Leffe?
 
-Granskningsverktyget är en modern webbapplikation som stöder hela processen från regelfilsuppladdning till slutlig rapportgenerering. Verktyget är designat för att vara användarvänligt, tillgängligt och effektivt för granskare som arbetar med digital tillsyn.
+Leffe är en modern webbapplikation som stöder hela processen från regelfilsuppladdning till slutlig rapportgenerering. Verktyget är designat för att vara användarvänligt, tillgängligt och effektivt för granskare som arbetar med digital tillsyn.
 
 ### Huvudfunktioner
 
@@ -57,7 +57,7 @@ Granskningsverktyget är en modern webbapplikation som stöder hela processen fr
 
 ### Minimi-krav
 
-För att använda Granskningsverktyget behöver du:
+För att använda Leffe behöver du:
 
 *   **Webbläsare**: En modern webbläsare med stöd för ES6-moduler
   - Google Chrome 90+ (rekommenderat)

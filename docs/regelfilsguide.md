@@ -1,11 +1,11 @@
-# Regelfilsguide: Skapa och anpassa regelfiler för tillsynsverktyget
+# Regelfilsguide: Skapa och anpassa regelfiler för Leffe
 
-**Version:** 1.0
-**Datum:** 2024-05-27 _(Ersätt med aktuellt datum)_
+**Version:** 1.1  
+**Datum:** 2026-03-27
 
 ## 1. Introduktion
 
-Denna guide beskriver formatet och strukturen för de json-regelfiler som används av webbapplikationen för digital tillsyn. En korrekt utformad regelfil är avgörande för att kunna genomföra en meningsfull och strukturerad granskning.
+Denna guide beskriver formatet och strukturen för de json-regelfiler som används av **Leffe** (webbappen för digital tillsyn). En korrekt utformad regelfil är avgörande för att kunna genomföra en meningsfull och strukturerad granskning.
 
 Regelfilen definierar bland annat:
 *   Allmän information om regelverket (t.ex. titel, version).

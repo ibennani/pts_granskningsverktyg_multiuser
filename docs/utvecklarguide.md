@@ -1,4 +1,4 @@
-# Utvecklarguide - Granskningsverktyget
+# Utvecklarguide – Leffe
 
 **Version:** 1.0  
 **Datum:** 2025-01-27
@@ -51,7 +51,7 @@ VITE_API_BASE_URL=http://localhost:3000/api
 ### Översikt
 
 ```
-Granskningsverktyget/
+Leffe (projektmapp)/
 ├── js/
 │   ├── main.js                 # Applikationsstartpunkt
 │   ├── state.js               # State management
@@ -562,7 +562,7 @@ test.describe('Example Feature', () => {
     test('should load example page', async ({ page }) => {
         await page.goto('/');
         
-        await expect(page.locator('h1')).toContainText('Granskningsverktyget');
+        await expect(page.locator('h1')).toContainText('Leffe');
     });
     
     test('should handle user interaction', async ({ page }) => {

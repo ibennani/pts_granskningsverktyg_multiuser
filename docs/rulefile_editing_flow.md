@@ -1,6 +1,6 @@
-# Redigeringsflöde för regelfilsektioner
+# Redigeringsflöde för regelfilsektioner (Leffe)
 
-Detta dokument beskriver hur redigeringen av regelfilsektioner fungerar när användaren är i regelfilredigeringsläge (`auditStatus === 'rulefile_editing'`).
+Detta dokument beskriver hur redigeringen av regelfilsektioner fungerar i **Leffe** när användaren är i regelfilredigeringsläge (`auditStatus === 'rulefile_editing'`).
 
 ## Översikt
 

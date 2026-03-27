@@ -1,12 +1,12 @@
-# Testplan och testfall: Webbapplikation för digital tillsyn
+# Testplan och testfall: Leffe
 
-**Version:** 1.0
-**Datum:** 2024-05-27 _(Ersätt med aktuellt datum)_
+**Version:** 1.1  
+**Datum:** 2026-03-27
 
 ## 1. Introduktion
 
 ### 1.1 Syfte
-Syftet med detta dokument är att beskriva teststrategin, testtyper och en uppsättning representativa testfall för webbapplikationen för digital tillsyn. Målet är att säkerställa applikationens funktionalitet, tillförlitlighet, användbarhet och överensstämmelse med den tekniska specifikationen.
+Syftet med detta dokument är att beskriva teststrategin, testtyper och en uppsättning representativa testfall för **Leffe**. Målet är att säkerställa applikationens funktionalitet, tillförlitlighet, användbarhet och överensstämmelse med den tekniska specifikationen.
 
 ### 1.2 Omfattning
 Denna testplan täcker testning av applikationens alla kärnfunktioner, användargränssnitt, datahantering, och tillgänglighetsaspekter. Den inkluderar förslag på olika testnivåer.

@@ -1,6 +1,6 @@
 ## Hantera användare och inloggning
 
-Den här texten beskriver hur du som administratör arbetar med användare och inloggning i Granskningsverktyget. Allt nedan utgår från vyn **Hantera användare** i verktygets meny.
+Den här texten beskriver hur du som administratör arbetar med användare och inloggning i **Leffe**. Allt nedan utgår från vyn **Hantera användare** i verktygets meny.
 
 ### 1. Översikten – tabellen med alla användare
 

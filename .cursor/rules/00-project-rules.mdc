@@ -21,7 +21,7 @@ Den här filen är projektets **enda** källa för Cursor-regler. Alla tidigare 
 
 ## AI Agent Rules (tidigare `.cursorrules`)
 
-You are an expert AI developer working on the "Granskningsverktyget" project.
+You are an expert AI developer working on the "Leffe" project (webbappen för digital tillsyn).
 Adhere to the following rules at all times.
 
 ### General

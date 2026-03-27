@@ -4,8 +4,9 @@ Granskningar och regelfiler sparas i PostgreSQL i en Docker-volym. Data ska finn
 
 ## Automatisk persistence
 
-- **Volym:** `granskningsverktyget_pgdata` (namngiven volym)
-- **Vid `npm run dev`:** Docker startar med `--wait` och väntar på databasens healthcheck innan migration körs
+- **Docker Compose-projekt:** `sessionversion` (se `name:` i `docker-compose.yml` i repo).
+- **Volym:** den namngivna volymen `pgdata` prefixas med projektnamnet, t.ex. **`sessionversion_pgdata`** (inte samma namn som databasen `granskningsverktyget` i Postgres).
+- **Vid `npm run dev`:** `scripts/dev-with-docker.js` kör `docker compose -p sessionversion up -d --wait` och startar därefter backend när Postgres svarar.
 - **Vid stopp:** Använd `npm run dev:stop` (stoppar containrar men behåller volymen)
 
 ## Viktigt: Behåll data

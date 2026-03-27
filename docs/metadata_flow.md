@@ -1,6 +1,6 @@
-# Metadataflöde – Granskningsmetadata
+# Metadataflöde – granskningsmetadata i Leffe
 
-Detta dokument beskriver hur granskningsmetadata (diarienummer, granskarens namn, aktör m.m.) lagras, uppdateras och visas i applikationen.
+Detta dokument beskriver hur granskningsmetadata (diarienummer, granskarens namn, aktör m.m.) lagras, uppdateras och visas i Leffe.
 
 ## Var metadata lagras
 

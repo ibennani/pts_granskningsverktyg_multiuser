@@ -8,7 +8,7 @@ I det här projektet körs **Qwen** (och andra modeller) via **Ollama** i Docker
    - Öppna **http://localhost:3080** (inte en extern eller ngrok-URL om du vill vara säker på att allt är lokalt).
    - I vår Docker-setup är Open WebUI konfigurerad med `OLLAMA_BASE_URL=http://ollama-final:11434`, dvs den pratar bara med Ollama-containern i Docker – ingen moln-API.
 
-2. **Kolla status via Granskningsverktygets backend**
+2. **Kolla status via Leffes backend**
    - När du kör `npm run dev` kan du anropa:
    - **http://localhost:3000/api/ollama-status**
    - Svarar t.ex.:

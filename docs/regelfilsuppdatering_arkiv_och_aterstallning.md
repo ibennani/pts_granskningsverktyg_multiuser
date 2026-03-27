@@ -1,6 +1,6 @@
-## Regelfilsuppdatering, arkiv och återställning
+## Regelfilsuppdatering, arkiv och återställning (Leffe)
 
-Den här dokumentationen beskriver hur det fungerar när en befintlig granskning uppdateras till en ny regelfil, vad som anses vara en ändring, hur arkivet av borttagna krav fungerar i dag samt ett förslag på hur borttagna krav och observationer skulle kunna läggas tillbaka på ett kontrollerat sätt.
+Den här dokumentationen beskriver hur det fungerar i **Leffe** när en befintlig granskning uppdateras till en ny regelfil, vad som anses vara en ändring, hur arkivet av borttagna krav fungerar i dag samt ett förslag på hur borttagna krav och observationer skulle kunna läggas tillbaka på ett kontrollerat sätt.
 
 Dokumentet är uppdelat efter de fem huvuddelarna i planen:
 

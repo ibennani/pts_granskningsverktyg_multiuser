@@ -1,33 +1,31 @@
-# Teknisk specifikation: Centraliserad granskningsplattform (A11y-Audit)
+# Teknisk specifikation: Serverarkitektur för Leffe
 
-**Version:** 1.0  
-**Status:** Planering
+**Version:** 1.1  
+**Status:** Beskriver nuvarande implementation (2026)
 
 ## 1. Systemöversikt
 
-Systemet migrerar från en klientbaserad SPA med lokala JSON-filer till en **State-on-Server-arkitektur**.
+**Leffe** körs som en SPA med **Express-backend** och **PostgreSQL**. Klienten (`js/state.js` m.m.) synkar till server via REST och WebSocket; statiska filer och API proxas via Nginx under prefix `/v2/` (se `scripts/ux-granskning-with-v2.conf`).
 
-- **Backend:** Node.js med Express.js
-- **Databas:** PostgreSQL (JSONB för flexibilitet)
-- **Frontend:** State-hanteringen i `state.js` ersätts/kompletteras med `ServerStorageAdapter`
-- **Infrastruktur:** Lokal Nginx som reverse proxy (samma virtuella server som PostgreSQL)
+- **Backend:** Node.js med Express (`server/`)
+- **Databas:** PostgreSQL (se migrationer under `server/migrations/`)
+- **Frontend:** Vite-bygge med `base: '/v2/'`; utvecklingsproxy mot `localhost:3000`
+- **Infrastruktur:** Nginx, Docker för Postgres, PM2 för Node-processer (produktion)
 
 ---
 
 ## 2. Autentisering och användarhantering
 
-### Inloggning – enkel dropdown
+### Inloggning
 
-- **Mekanism:** Användare väljer sitt namn i en dropdown. Ingen lösenordskontroll.
-- **Flöde:** Vid appstart visas dropdown "Välj ditt namn" → val sparas i sessionStorage → används som `last_updated_by` i alla API-anrop.
-- **Header:** Skicka `X-User-Id` eller `X-User-Name` med varje request.
+- **Mekanism:** Användarnamn och lösenord. Lösenord lagras hashade (bcrypt) i databasen.
+- **API:** `POST /api/auth/login` returnerar **JWT** som klienten skickar i `Authorization: Bearer …` på efterföljande anrop.
+- **Återställning:** Engångskoder för lösenordsbyte (`password_reset_tokens`); administratörer kan skapa kod åt användare.
 
-### Admin-gränssnitt
+### Admin
 
-- **Behörighet:** Endast användare med `is_admin = true` ser admin-funktioner.
-- **Admin-vy:** Lista användare, lägg till, ta bort. Eventuellt: sätt/ta bort admin-rätt för andra.
-- **Bootstrap:** Första användaren skapas via migration med `is_admin = true`.
-- **Ingen separat admin-inloggning:** Samma dropdown – admin ser extra menyval "Hantera användare".
+- **Behörighet:** `is_admin = true` i databasen krävs för skyddade admin-endpoints.
+- **Vy i Leffe:** Bland annat **Hantera användare** (lista, skapa, uppdatera, radera, engångskoder).
 
 ---
 
