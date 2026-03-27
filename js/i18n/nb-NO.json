@@ -881,6 +881,7 @@
   "settings_password_error_new_too_short": "Nytt passord må være minst 8 tegn.",
   "settings_password_error_generic": "Passordendring mislyktes. Kontroller at gjeldende passord er riktig og prøv igjen.",
   "auth_session_expired": "Sesjonen din har utløpt. Logg inn på nytt.",
+  "login_welcome_heading": "Velkommen til Leffe",
   "login_title": "Logg inn",
   "login_who_are_you": "Brukernavn",
   "login_select_placeholder": "Velg brukernavnet ditt",

@@ -32,12 +32,19 @@ export const LoginViewComponent = {
 
         const plate = this.Helpers.create_element('div', { class_name: 'content-plate login-plate' });
 
-        const heading = this.Helpers.create_element('h1', {
+        const welcome_heading = this.Helpers.create_element('h1', {
             id: 'main-content-heading',
-            text_content: t('login_title'),
+            class_name: 'login-welcome-heading',
+            text_content: t('login_welcome_heading'),
             attributes: { tabindex: '-1' }
         });
-        plate.appendChild(heading);
+        plate.appendChild(welcome_heading);
+
+        const form_section_heading = this.Helpers.create_element('h2', {
+            class_name: 'login-form-section-heading',
+            text_content: t('login_title')
+        });
+        plate.appendChild(form_section_heading);
 
         const error_message = this.mode === 'login' ? this.login_error_message : this.reset_error_message;
         let error_block = null;

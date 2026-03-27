@@ -881,6 +881,7 @@
   "settings_password_error_new_too_short": "Nytt lösenord måste vara minst 8 tecken.",
   "settings_password_error_generic": "Lösenordsbytet misslyckades. Kontrollera att nuvarande lösenord stämmer och försök igen.",
   "auth_session_expired": "Din inloggning har gått ut. Logga in igen.",
+  "login_welcome_heading": "Välkommen till Leffe",
   "login_title": "Logga in",
   "login_who_are_you": "Användarnamn",
   "login_select_placeholder": "Välj ditt namn",

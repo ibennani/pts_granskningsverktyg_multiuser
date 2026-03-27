@@ -881,6 +881,7 @@
   "settings_password_error_new_too_short": "New password must be at least 8 characters.",
   "settings_password_error_generic": "Password change failed. Check that the current password is correct and try again.",
   "auth_session_expired": "Your session has expired. Please log in again.",
+  "login_welcome_heading": "Welcome to Leffe",
   "login_title": "Log in",
   "login_who_are_you": "Username",
   "login_select_placeholder": "Select your username",

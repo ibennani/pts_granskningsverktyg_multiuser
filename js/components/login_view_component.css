@@ -51,6 +51,16 @@ body.view-login .app-main-view-root {
     margin: 0 auto;
 }
 
+.login-plate .login-welcome-heading {
+    margin: 0 0 0.75rem;
+}
+
+.login-plate .login-form-section-heading {
+    margin: 0 0 0.5rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
 @media (max-width: 480px) {
     .login-plate {
         width: 100%;
