@@ -66,13 +66,6 @@ app.use(cors({
 // Samma tak som klientens uppladdningsgräns och dokumentation (10 MiB)
 app.use(express.json({ limit: JSON_MAX_UPLOAD_BYTES }));
 
-app.use((req, res, next) => {
-    if (req.path === '/api/debug-delete') {
-        return res.json({ debug: true, method: req.method, path: req.path });
-    }
-    next();
-});
-
 app.use('/api/auth', authRouter);
 app.use('/api/users', requireAuth, usersRouter);
 app.use('/api/rules', requireAuth, rulesRouter);
