@@ -14,6 +14,7 @@ export function audit_status_blocks_sample_and_requirement_edits(status) {
     return status === 'locked' || status === 'archived';
 }
 
+/** Sant om erbjudande om nyare regelfil (knapp/banner) ska döljas. Endast pågående granskning får uppdatera regelfil. */
 export function audit_status_blocks_rulefile_update_offer(status) {
-    return status === 'locked' || status === 'archived';
+    return status !== 'in_progress';
 }

@@ -379,7 +379,7 @@ export const AuditActionsViewComponent = {
         const plate = this.Helpers.create_element('div', { class_name: 'content-plate' });
         plate.appendChild(this.Helpers.create_element('h1', { text_content: t('audit_actions_title') }));
 
-        if (state.auditStatus !== 'locked' && state.auditStatus !== 'archived') {
+        if (state.auditStatus === 'in_progress') {
             if (this.newerRuleAvailable === null && !this._newerRuleCheckInProgress) {
                 this._refresh_newer_rule_check();
             }

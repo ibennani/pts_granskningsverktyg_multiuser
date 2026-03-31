@@ -32,7 +32,11 @@ export const UpdateRulefileViewComponent = {
             return;
         }
         const _as = deps.getState?.()?.auditStatus;
-        if (_as === 'locked' || _as === 'archived') {
+        if (_as !== 'in_progress') {
+            const t = deps.Translation?.t || ((k) => k);
+            if (deps.NotificationComponent?.show_global_message) {
+                deps.NotificationComponent.show_global_message(t('update_rulefile_requires_in_progress'), 'info');
+            }
             this.router('audit_overview');
             return;
         }
