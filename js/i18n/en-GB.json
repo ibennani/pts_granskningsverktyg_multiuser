@@ -1335,7 +1335,7 @@
   "markdown_toolbar_toolbar_visible": "Formatting buttons are visible",
   "markdown_toolbar_toolbar_hidden": "Formatting buttons are hidden",
   "build_timestamp_built": "Built {date} at {time}",
-  "build_timestamp_dev_fallback": "Latest dev: {date} at {time}",
+  "build_timestamp_dev_fallback": "Latest code change: {date} at {time}",
   "markdown_error_library_not_loaded": "Error: marked.js library not loaded.",
   "markdown_error_rendering_preview": "Error rendering preview. Check console for details.",
   "progress_bar_fallback_text": "Progress: {current} / {max}",

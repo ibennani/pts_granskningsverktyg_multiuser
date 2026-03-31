@@ -1042,6 +1042,21 @@ window.DraftManager = DraftManager;
             })();
         }, 100);
         if (is_dev_build_environment()) {
+            const DEV_BUILDINFO_REFRESH_INTERVAL_MS = 1500;
+            let buildinfo_refresh_in_flight = false;
+
+            memoryManager.setInterval(async () => {
+                if (document.visibilityState !== 'visible') return;
+                if (buildinfo_refresh_in_flight) return;
+                buildinfo_refresh_in_flight = true;
+                try {
+                    await refresh_dev_build_info_from_server();
+                    update_build_timestamp();
+                } finally {
+                    buildinfo_refresh_in_flight = false;
+                }
+            }, DEV_BUILDINFO_REFRESH_INTERVAL_MS);
+
             document.addEventListener('visibilitychange', () => {
                 if (document.visibilityState !== 'visible') return;
                 (async () => {

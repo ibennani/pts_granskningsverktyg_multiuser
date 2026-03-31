@@ -1335,7 +1335,7 @@
   "markdown_toolbar_toolbar_visible": "Formateringsknapparna visas",
   "markdown_toolbar_toolbar_hidden": "Formateringsknapparna är dolda",
   "build_timestamp_built": "Byggt {date} kl {time}",
-  "build_timestamp_dev_fallback": "Senaste dev: {date} kl {time}",
+  "build_timestamp_dev_fallback": "Senaste kodändring: {date} kl {time}",
   "markdown_error_library_not_loaded": "Fel: marked.js-biblioteket är inte laddat.",
   "markdown_error_rendering_preview": "Fel vid rendering av förhandsgranskning. Kontrollera konsolen för detaljer.",
   "progress_bar_fallback_text": "Framsteg: {current} / {max}",
