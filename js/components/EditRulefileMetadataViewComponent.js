@@ -5,10 +5,12 @@ import { create_field, create_language_select_field } from './rulefile_metadata/
 import {
     renderContentTypesEditor,
     renderPageTypesEditor,
-    renderSampleCategoriesEditor,
-    renderSampleTypesEditor,
     renderTaxonomiesEditor
-} from './rulefile_metadata/rulefile_metadata_vocab_editors.js';
+} from './rulefile_metadata/rulefile_metadata_page_content_editors.js';
+import {
+    renderSampleCategoriesEditor,
+    renderSampleTypesEditor
+} from './rulefile_metadata/rulefile_metadata_sample_editors.js';
 import { create_report_template_section } from './rulefile_metadata/rulefile_metadata_report_template.js';
 import './edit_rulefile_metadata_view.css';
 
