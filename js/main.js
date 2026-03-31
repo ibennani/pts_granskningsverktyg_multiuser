@@ -109,6 +109,7 @@ const notificationComponent = new NotificationComponent();
 const modalComponent = new ModalComponent();
 const sideMenuComponent = new SideMenuComponent();
 const errorBoundaryComponent = new ErrorBoundaryComponent();
+const auditOverviewComponent = new AuditOverviewComponent();
 
 window.getState = getState;
 window.dispatch = dispatch;
@@ -699,7 +700,7 @@ window.DraftManager = DraftManager;
             case 'sample_management': ComponentClass = SampleManagementViewComponent; break;
             case 'sample_form': ComponentClass = SampleFormViewComponent; break;
             case 'confirm_sample_edit': ComponentClass = ConfirmSampleEditViewComponent; break; 
-            case 'audit_overview': ComponentClass = AuditOverviewComponent; break;
+            case 'audit_overview': ComponentClass = auditOverviewComponent; break;
             case 'audit_actions': ComponentClass = AuditActionsViewComponent; break;
             case 'all_requirements': ComponentClass = allRequirementsViewComponent; break;
             case 'audit_problems': ComponentClass = AuditProblemsViewComponent; break;

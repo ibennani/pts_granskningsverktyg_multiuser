@@ -6,12 +6,34 @@ import { find_newer_rule_for_audit } from '../logic/newer_rule_check.js';
 import { version_greater_than } from '../utils/version_utils.js';
 import "./audit_overview_component.css";
 
-export const AuditOverviewComponent = {
+export class AuditOverviewComponent {
+    constructor() {
+        this.root = null;
+        this.deps = null;
+        this.router = null;
+        this.getState = null;
+        this.dispatch = null;
+        this.StoreActionTypes = null;
+        this.subscribe = null;
+        this.Translation = null;
+        this.Helpers = null;
+        this.NotificationComponent = null;
+        this.ExportLogic = null;
+        this.AuditLogic = null;
+        this.unsubscribe_from_store_function = null;
+        this.audit_info_container_element = null;
+        this.scoreAnalysisContainerElement = null;
+        this.previously_focused_element = null;
+        this._last_audit_metadata_snapshot = null;
+        this.newerRuleAvailable = null;
+        this._newerRuleCheckRequested = false;
+        this.handle_store_update = this.handle_store_update.bind(this);
+    }
+
     async init({ root, deps }) {
         this.root = root;
         this.deps = deps;
 
-        // Extract dependencies for easier access
         this.router = deps.router;
         this.getState = deps.getState;
         this.dispatch = deps.dispatch;
@@ -23,24 +45,12 @@ export const AuditOverviewComponent = {
         this.ExportLogic = deps.ExportLogic;
         this.AuditLogic = deps.AuditLogic;
 
-        // Internal state
-        this.unsubscribe_from_store_function = null;
-        this.audit_info_container_element = null;
-        this.scoreAnalysisContainerElement = null;
-        this.previously_focused_element = null;
-        this._last_audit_metadata_snapshot = null;
-        this.newerRuleAvailable = null;
-        this._newerRuleCheckRequested = false;
-
-        // Bind methods
-        this.handle_store_update = this.handle_store_update.bind(this);
-
         await this.init_sub_components();
 
         if (!this.unsubscribe_from_store_function && typeof this.subscribe === 'function') {
             this.unsubscribe_from_store_function = this.subscribe(this.handle_store_update);
         }
-    },
+    }
 
     async init_sub_components() {
         this.audit_info_container_element = this.Helpers.create_element('div', { id: 'audit-info-component-container', class_name: 'dashboard-panel' });
@@ -62,10 +72,10 @@ export const AuditOverviewComponent = {
                 Helpers: this.Helpers,
                 Translation: this.Translation,
                 getState: this.getState,
-                ScoreCalculator: window.ScoreCalculator // ScoreCalculator seems to be global, or we could look for it in deps if main.js passes it
+                ScoreCalculator: window.ScoreCalculator
             }
         });
-    },
+    }
 
     handle_store_update(new_state, listener_meta) {
         if (listener_meta?.skip_render) return;
@@ -78,8 +88,7 @@ export const AuditOverviewComponent = {
         if (metadata_changed) {
             this.render();
         }
-    },
-
+    }
 
     render() {
         const t = this.Translation.t;
@@ -88,7 +97,6 @@ export const AuditOverviewComponent = {
         const current_global_state = this.getState();
 
         if (!current_global_state || !current_global_state.ruleFileContent) {
-            // Anropa inte NotificationComponent här om elementet inte är redo eller root är fel
             if (this.root) {
                 this.root.innerHTML = '';
                 const error_div = this.Helpers.create_element('div', { class_name: 'content-plate' });
@@ -137,7 +145,6 @@ export const AuditOverviewComponent = {
 
         const dashboard_container = this.Helpers.create_element('div', { class_name: 'overview-dashboard' });
 
-        // Granskningsinfo först
         if (this.audit_info_container_element) {
             dashboard_container.appendChild(this.audit_info_container_element);
             AuditInfoComponent.render();
@@ -184,7 +191,7 @@ export const AuditOverviewComponent = {
         plate_element.appendChild(dashboard_container);
 
         this._last_audit_metadata_snapshot = JSON.parse(JSON.stringify(current_global_state.auditMetadata || {}));
-    },
+    }
 
     destroy() {
         if (this.unsubscribe_from_store_function) {
@@ -201,6 +208,5 @@ export const AuditOverviewComponent = {
 
         this.root = null;
         this.deps = null;
-        // clear other deps
     }
-};
+}
