@@ -107,6 +107,7 @@ import { getState, dispatch, subscribe, initState, StoreActionTypes, StoreInitia
 
 const notificationComponent = new NotificationComponent();
 const modalComponent = new ModalComponent();
+const sideMenuComponent = new SideMenuComponent();
 
 window.getState = getState;
 window.dispatch = dispatch;
@@ -154,7 +155,7 @@ window.DraftManager = DraftManager;
     let side_menu_root = null;
     let main_view_root = null;
     let right_sidebar_root = null;
-    const side_menu_component_instance = SideMenuComponent;
+    const side_menu_component_instance = sideMenuComponent;
 
     // Fallback för app_wrapper - kritiskt element
     if (!app_wrapper) {
