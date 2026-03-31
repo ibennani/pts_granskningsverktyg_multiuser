@@ -1,7 +1,24 @@
 import { SampleListComponent } from './SampleListComponent.js';
 import './sample_management_view_component.css';
 
-export const SampleManagementViewComponent = {
+export class SampleManagementViewComponent {
+    constructor() {
+        this.root = null;
+        this.deps = null;
+        this.router = null;
+        this.getState = null;
+        this.dispatch = null;
+        this.StoreActionTypes = null;
+        this.Translation = null;
+        this.Helpers = null;
+        this.NotificationComponent = null;
+        this.CSS_PATH = './sample_management_view_component.css';
+        this.sample_list_component_instance = SampleListComponent;
+        this.sample_list_container_element = null;
+        this.plate_element_ref = null;
+        this.previously_focused_element = null;
+    }
+
     init({ root, deps }) {
         this.root = root;
         this.deps = deps;
@@ -13,14 +30,6 @@ export const SampleManagementViewComponent = {
         this.Translation = deps.Translation;
         this.Helpers = deps.Helpers;
         this.NotificationComponent = deps.NotificationComponent;
-        
-        this.CSS_PATH = './sample_management_view_component.css';
-        
-        // Internal references
-        this.sample_list_component_instance = SampleListComponent;
-        this.sample_list_container_element = null;
-        this.plate_element_ref = null;
-        this.previously_focused_element = null;
 
         // Bind methods
         this.handle_edit_sample_request_from_list = this.handle_edit_sample_request_from_list.bind(this);
@@ -32,7 +41,7 @@ export const SampleManagementViewComponent = {
         if (this.Helpers && this.Helpers.load_css) {
             this.Helpers.load_css(this.CSS_PATH).catch(e => console.warn(e));
         }
-    },
+    }
 
     async init_sub_components() {
         this.sample_list_container_element = this.Helpers.create_element('div', { id: 'sample-list-area-smv' });
@@ -45,11 +54,11 @@ export const SampleManagementViewComponent = {
                 on_delete: this.handle_delete_sample_request_from_list
             }
         });
-    },
+    }
 
     handle_edit_sample_request_from_list(sample_id) {
         this.router('sample_form', { editSampleId: sample_id });
-    },
+    }
 
     handle_delete_sample_request_from_list(sample_id, delete_button) {
         const t = this.Translation.t;
@@ -74,12 +83,12 @@ export const SampleManagementViewComponent = {
                 }
             });
         }
-    },
+    }
 
     handle_start_audit() {
         this.dispatch({ type: this.StoreActionTypes.SET_AUDIT_STATUS, payload: { status: 'in_progress' } });
         this.router('audit_overview');
-    },
+    }
 
     render() {
         if (!this.root) return;
@@ -152,7 +161,7 @@ export const SampleManagementViewComponent = {
             }
             this.plate_element_ref.appendChild(bottom_actions_div);
         }
-    },
+    }
 
     destroy() {
         if (this.sample_list_component_instance && this.sample_list_component_instance.destroy) {
@@ -163,4 +172,4 @@ export const SampleManagementViewComponent = {
         this.previously_focused_element = null;
         this.deps = null;
     }
-};
+}

@@ -24,8 +24,18 @@ function format_schedule_times(hours) {
     return hours.map((h) => `${String(h).padStart(2, '0')}:00`).join(', ');
 }
 
-export const BackupSettingsViewComponent = {
-    CSS_PATH: './backup_settings_view_component.css',
+export class BackupSettingsViewComponent {
+    constructor() {
+        this.CSS_PATH = './backup_settings_view_component.css';
+        this.root = null;
+        this.deps = null;
+        this.router = null;
+        this.Helpers = null;
+        this.Translation = null;
+        this.NotificationComponent = null;
+        this.settings = null;
+        this._save_in_progress = false;
+    }
 
     async init({ root, deps }) {
         this.root = root;
@@ -43,17 +53,17 @@ export const BackupSettingsViewComponent = {
         this._handle_save = this._handle_save.bind(this);
         this._handle_back = this._handle_back.bind(this);
         this._handle_schedule_change = this._handle_schedule_change.bind(this);
-    },
+    }
 
     destroy() {
         this.root = null;
         this.deps = null;
         this.router = null;
-    },
+    }
 
     get_t() {
         return this.Translation?.t ? this.Translation.t.bind(this.Translation) : (k) => k;
-    },
+    }
 
     async _load_settings() {
         try {
@@ -66,17 +76,17 @@ export const BackupSettingsViewComponent = {
                 last_run_hour: 18
             };
         }
-    },
+    }
 
     _handle_back() {
         if (typeof this.router === 'function') {
             this.router('backup', {});
         }
-    },
+    }
 
     _handle_schedule_change() {
         this._update_summary();
-    },
+    }
 
     _update_summary() {
         if (!this.summary_ref) return;
@@ -87,7 +97,7 @@ export const BackupSettingsViewComponent = {
         const hours = compute_schedule_hours(first, last, runs);
         const times = format_schedule_times(hours);
         this.summary_ref.textContent = t('backup_settings_schedule_summary', { count: runs, times }) || `Backup körs ${runs} gånger per dygn: ${times}`;
-    },
+    }
 
     async _handle_save() {
         const t = this.get_t();
@@ -137,7 +147,7 @@ export const BackupSettingsViewComponent = {
         } finally {
             this._save_in_progress = false;
         }
-    },
+    }
 
     async render() {
         if (!this.root || !this.Helpers?.create_element) return;
@@ -301,4 +311,4 @@ export const BackupSettingsViewComponent = {
         plate.appendChild(form);
         this.root.appendChild(plate);
     }
-};
+}

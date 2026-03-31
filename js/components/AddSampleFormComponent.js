@@ -1,7 +1,37 @@
 import { marked } from '../utils/markdown.js';
 import "./add_sample_form_component.css";
 
-export const AddSampleFormComponent = {
+export class AddSampleFormComponent {
+    constructor() {
+        this.root = null;
+        this.deps = null;
+        this.on_sample_saved_callback = null;
+        this.discard_callback = null;
+        this.router = null;
+        this.getState = null;
+        this.dispatch = null;
+        this.StoreActionTypes = null;
+        this.Translation = null;
+        this.Helpers = null;
+        this.NotificationComponent = null;
+        this.AuditLogic = null;
+        this.AutosaveService = null;
+        this.form_element = null;
+        this.category_fieldset_element = null;
+        this.sample_type_select = null;
+        this.description_input = null;
+        this.url_input = null;
+        this.url_form_group_ref = null;
+        this.content_types_container_element = null;
+        this.sample_type_container = null;
+        this.current_editing_sample_id = null;
+        this.original_content_types_on_load = [];
+        this.previous_sample_type_value = '';
+        this.autosave_session = null;
+        this.skip_autosave_on_destroy = false;
+        this.initial_sample_snapshot = null;
+    }
+
     init({ root, deps }) {
         this.root = root;
         this.deps = deps;
@@ -39,7 +69,7 @@ export const AddSampleFormComponent = {
         this._handleCheckboxChange = this._handleCheckboxChange.bind(this);
         this.handle_autosave_input = this.handle_autosave_input.bind(this);
         this.handle_content_type_change = this.handle_content_type_change.bind(this);
-    },
+    }
 
     get_sample_categories_from_state() {
         const state = this.getState ? this.getState() : null;
@@ -57,11 +87,11 @@ export const AddSampleFormComponent = {
         }
 
         return sample_categories;
-    },
+    }
 
     get_t_internally() {
         return this.Translation?.t || ((key) => `**${key}**`);
-    },
+    }
 
     update_description_from_sample_type() {
         if (!this.sample_type_select || !this.description_input) return;
@@ -73,7 +103,7 @@ export const AddSampleFormComponent = {
             this.description_input.value = new_sample_type_text;
         }
         this.previous_sample_type_value = new_sample_type_text;
-    },
+    }
 
     on_category_change(selected_cat_id, preselected_sample_type_id = null) {
         const sample_categories = this.get_sample_categories_from_state();
@@ -103,7 +133,7 @@ export const AddSampleFormComponent = {
             this.url_form_group_ref.style.display = selected_category.hasUrl ? '' : 'none';
             if (!selected_category.hasUrl) this.url_input.value = '';
         }
-    },
+    }
 
     _updateParentCheckboxState(parentCheckbox) {
         const parentId = parentCheckbox.dataset.parentId;
@@ -125,7 +155,7 @@ export const AddSampleFormComponent = {
         } else {
             parentCheckbox.setAttribute('aria-checked', parentCheckbox.checked.toString());
         }
-    },
+    }
 
     _handleCheckboxChange(event) {
         const target = event.target;
@@ -139,17 +169,17 @@ export const AddSampleFormComponent = {
             const parentCheckbox = this.content_types_container_element.querySelector(`input[data-parent-id="${parentId}"]`);
             if (parentCheckbox) this._updateParentCheckboxState(parentCheckbox);
         }
-    },
+    }
 
     handle_autosave_input() {
         if (!this.current_editing_sample_id) return; // Autospar endast för redigering, inte för nya stickprov
         this.autosave_session?.request_autosave();
-    },
+    }
 
     handle_content_type_change(e) {
         this._handleCheckboxChange(e);
         this.handle_autosave_input();
-    },
+    }
 
     save_form_data_immediately(is_autosave = false, should_trim = !is_autosave, skip_render = false) {
         if (!this.current_editing_sample_id) return;
@@ -194,7 +224,7 @@ export const AddSampleFormComponent = {
         } else {
             this._stage_changes_and_navigate(sample_payload_data, is_autosave, skip_render);
         }
-    },
+    }
 
     _stage_changes_and_navigate(sample_payload_data, is_autosave = false, skip_render_for_trim = false) {
         const state = this.getState();
@@ -233,7 +263,7 @@ export const AddSampleFormComponent = {
         if (!is_autosave) {
             this.router('confirm_sample_edit');
         }
-    },
+    }
 
     _perform_save(sample_payload_data, is_autosave = false, skip_render_for_trim = false) {
         const t = this.get_t_internally();
@@ -274,7 +304,7 @@ export const AddSampleFormComponent = {
         if (!is_autosave && this.on_sample_saved_callback) {
             this.on_sample_saved_callback();
         }
-    },
+    }
 
     handle_form_submit(event) {
         event.preventDefault();
@@ -331,7 +361,7 @@ export const AddSampleFormComponent = {
         } else {
             this._stage_changes_and_navigate(sample_payload_data);
         }
-    },
+    }
 
     _restore_initial_state() {
         if (!this.initial_sample_snapshot || !this.current_editing_sample_id) return;
@@ -343,7 +373,7 @@ export const AddSampleFormComponent = {
                 updatedSampleData: this.initial_sample_snapshot
             }
         });
-    },
+    }
 
     render(sample_id_to_edit = null) {
         // Prevent re-rendering (and resetting form state) only when editing the same existing sample and the form is mounted.
@@ -544,12 +574,12 @@ export const AddSampleFormComponent = {
             this.on_category_change(selected_cat_id, sample_data?.sampleType);
         }
         this.previous_sample_type_value = sample_data?.sampleType ? this.sample_type_select.options[this.sample_type_select.selectedIndex]?.text : '';
-    },
+    }
 
     discard() {
         this.skip_autosave_on_destroy = true;
         this.autosave_session?.cancel_pending();
-    },
+    }
 
     destroy() {
         if (!this.skip_autosave_on_destroy && this.current_editing_sample_id && this.form_element) {
@@ -573,4 +603,4 @@ export const AddSampleFormComponent = {
         this.form_element = null;
         this.initial_sample_snapshot = null;
     }
-};
+}

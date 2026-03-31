@@ -1,12 +1,14 @@
 import './error_boundary_component.css';
 
-export const ErrorBoundaryComponent = {
-    root: null,
-    deps: {},
-    retry_callback: null,
-    error_info: null,
-    css_loaded: false,
-    
+export class ErrorBoundaryComponent {
+    constructor() {
+        this.root = null;
+        this.deps = {};
+        this.retry_callback = null;
+        this.error_info = null;
+        this.css_loaded = false;
+    }
+
     async init({ root, deps = {}, options = {} }) {
         if (!root) throw new Error('[ErrorBoundaryComponent] Root element is required');
         this.root = root;
@@ -14,15 +16,15 @@ export const ErrorBoundaryComponent = {
         if (options.retry_callback) {
             this.retry_callback = options.retry_callback;
         }
-        
+
         this.load_css();
         this.clear_error();
-    },
+    }
 
     load_css() {
         if (this.css_loaded) return;
         const css_path = './error_boundary_component.css';
-        
+
         // Try to use helper if available
         if (this.deps.Helpers && typeof this.deps.Helpers.load_css === 'function') {
             this.deps.Helpers.load_css(css_path).catch(err => console.warn('Failed to load CSS via Helpers:', err));
@@ -35,21 +37,21 @@ export const ErrorBoundaryComponent = {
             this.css_loaded = true;
             return;
         }
-        
+
         const link = document.createElement('link');
         link.rel = 'stylesheet';
         link.href = css_path;
         link.type = 'text/css';
         document.head.appendChild(link);
         this.css_loaded = true;
-    },
+    }
 
     get_t() {
         if (this.deps.Translation && typeof this.deps.Translation.t === 'function') {
             return this.deps.Translation.t;
         }
         return (key) => `**${key}**`;
-    },
+    }
 
     create_error_display(error_data) {
         const t = this.get_t();
@@ -75,14 +77,14 @@ export const ErrorBoundaryComponent = {
 
         const technical_section = document.createElement('details');
         technical_section.className = 'error-boundary-technical';
-        
+
         const technical_summary = document.createElement('summary');
         technical_summary.textContent = t('error_boundary_technical_details');
         technical_section.appendChild(technical_summary);
 
         const technical_content = document.createElement('div');
         technical_content.className = 'error-boundary-technical-content';
-        
+
         const error_message = document.createElement('p');
         const escape_html = (Helpers && typeof Helpers.escape_html === 'function')
             ? Helpers.escape_html
@@ -95,12 +97,12 @@ export const ErrorBoundaryComponent = {
             const stack_summary = document.createElement('summary');
             stack_summary.textContent = t('error_boundary_stack_trace');
             stack_trace.appendChild(stack_summary);
-            
+
             const stack_pre = document.createElement('pre');
             stack_pre.className = 'error-boundary-stack';
             stack_pre.textContent = error_data.stack;
             stack_trace.appendChild(stack_pre);
-            
+
             technical_content.appendChild(stack_trace);
         }
 
@@ -162,7 +164,7 @@ export const ErrorBoundaryComponent = {
         error_container.appendChild(actions_container);
 
         return error_container;
-    },
+    }
 
     log_error(error_data) {
         if (window.ConsoleManager?.warn) {
@@ -176,7 +178,7 @@ export const ErrorBoundaryComponent = {
                 'error'
             );
         }
-    },
+    }
 
     show_error(error_data, retry_callback = null) {
         if (!this.root) {
@@ -194,22 +196,22 @@ export const ErrorBoundaryComponent = {
         this.error_info = error_data;
         this.root.innerHTML = '';
         this.root.appendChild(this.create_error_display(error_data));
-    },
+    }
 
     clear_error() {
         if (this.root) {
             this.root.innerHTML = '';
         }
         this.error_info = null;
-    },
+    }
 
     is_error_displayed() {
         return this.error_info !== null;
-    },
+    }
 
     get_error_info() {
         return this.error_info;
-    },
+    }
 
     destroy() {
         if (this.root) {
@@ -220,4 +222,4 @@ export const ErrorBoundaryComponent = {
         this.retry_callback = null;
         this.deps = {};
     }
-};
+}

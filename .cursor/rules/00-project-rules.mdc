@@ -31,7 +31,7 @@ Adhere to the following rules at all times.
 
 ### Coding Standards
 
-- Follow the component standard defined below under **"Standard för JavaScript-komponenter"** (tidigare `.cursor/rules/javascript_component_standard.mdc`).
+- Follow the component standard defined below under **"Standard för JavaScript-komponenter"**.
 - Use ES6 modules.
 - Prefer `const` over `let`, and avoid `var`.
 - Use `snake_case` for variable and function names in JavaScript (legacy convention in this project), but `PascalCase` for component files/objects.
@@ -364,106 +364,93 @@ _parse_form_data(form, workingMetadata) {
 - **Trimning:** Alla formulärfält trimmas vid manuell sparning eller när formulärvyn lämnas, INTE vid autospar
 - **Osynlighet:** Autospar ska vara helt osynligt för användaren - ingen fokus-förändring, ingen scroll-förändring, inga visuella ändringar
 
-## Standard för JavaScript-komponenter (tidigare `.cursor/rules/javascript_component_standard.mdc`)
+## Standard för JavaScript-komponenter
 
-Alla nya och refaktorerade UI-komponenter i `js/components/` ska följa detta strikta mönster.
+Komponenter ska skrivas som klasser eller factory-funktioner — aldrig som exporterade singleton-objekt. Detta möjliggör testbarhet, flera instanser och tydlig livscykelhantering.
 
-### Grundstruktur
-
-Komponenten ska vara en ES6-modul som exporterar ett enda objekt (Singleton-pattern). Använd inte IIFE (Immediately Invoked Function Expressions) eller klasser om det inte är absolut nödvändigt.
+### Föredragen struktur — klass:
 
 ```javascript
-// js/components/ExempelComponent.js
+export class ExempelComponent {
+    constructor() {
+        this.root = null;
+        this.deps = null;
+    }
 
-export const ExempelComponent = {
-    // Konstanter definieras som properties
-    CSS_PATH: 'css/components/exempel_component.css',
-
-    // Standard init-metod med en parameter: ett objekt med root och deps
     async init({ root, deps }) {
         this.root = root;
         this.deps = deps;
-        
-        // Destrukturera och spara beroenden på `this`
-        this.router = deps.router;
-        this.getState = deps.getState;
-        this.dispatch = deps.dispatch;
-        this.StoreActionTypes = deps.StoreActionTypes;
-        this.Translation = deps.Translation;
-        this.Helpers = deps.Helpers;
-        this.NotificationComponent = deps.NotificationComponent;
-        
-        // Initiera interna referenser
-        this.plate_element_ref = null;
-        
-        // Binda metoder som används som callbacks
-        this.handle_click = this.handle_click.bind(this);
+    }
 
-        // Ladda CSS om nödvändigt
-        if (this.Helpers?.load_css && this.CSS_PATH) {
-            await this.Helpers.load_css(this.CSS_PATH).catch(e => console.warn(e));
-        }
-    },
+    async render() {
+        // Rendera komponenten
+    }
 
-    // Exempel på event handler
-    handle_click(event) {
-        // Logik...
-    },
-
-    // Render-metoden ansvarar för att rita upp UI
-    render() {
-        if (!this.root) return;
-        const t = this.Translation.t;
-        
-        // Rensa root eller container
-        this.root.innerHTML = '';
-        
-        // Skapa element med Helpers.create_element
-        this.plate_element_ref = this.Helpers.create_element('div', { class_name: 'content-plate' });
-        
-        const heading = this.Helpers.create_element('h1', { text_content: t('exempel_titel') });
-        this.plate_element_ref.appendChild(heading);
-
-        // Lägg till i DOM
-        this.root.appendChild(this.plate_element_ref);
-    },
-
-    // Destroy-metoden städar upp
     destroy() {
-        // Ta bort event listeners om de lagts på globala objekt (window/document)
-        // Element som ligger i this.root städas oftast automatiskt när this.root töms, 
-        // men timers och prenumerationer måste avslutas här.
-        
-        if (this.root) {
-            this.root.innerHTML = '';
-        }
-        
-        // Rensa referenser
         this.root = null;
-        this.plate_element_ref = null;
         this.deps = null;
     }
-};
+}
+```
+
+### Alternativ struktur — factory-funktion:
+
+```javascript
+export function createExempelComponent() {
+    let root = null;
+    let deps = null;
+
+    return {
+        async init({ root: r, deps: d }) {
+            root = r;
+            deps = d;
+        },
+        async render() {
+            // Rendera komponenten
+        },
+        destroy() {
+            root = null;
+            deps = null;
+        }
+    };
+}
 ```
 
 ### Regler
 
-1.  **Dependency Injection**: Inga globala referenser (`window.Helpers`, `window.Translation`) ska användas direkt i metoder. Alla beroenden ska injiceras via `init` och sparas på `this`.
-2.  **Object Literal**: Använd `export const Component = { ... }`.
-3.  **Metoder**: Använd `methodName() { ... }` syntax.
-4.  **This-context**: För callbacks (event listeners), bind `this` i `init` eller använd pilfunktioner i `render`. Att binda i `init` (`this.method = this.method.bind(this)`) föredras för prestanda och tydlighet vid borttagning.
-5.  **Helpers**: Använd alltid `this.Helpers.create_element` för DOM-manipulation.
-6.  **State**: Hämta state via `this.getState()`. Undvik att lagra applikations-state internt i komponenten; använd Redux-storen. UI-state (t.ex. "är dropdown öppen") kan lagras på `this`.
-7.  **Text**: All text ska hämtas via `this.Translation.t('key')`.
-8.  **CSS**: Definiera `CSS_PATH` och ladda i `init`.
-9.  **Destroy**: Implementera alltid `destroy` för att undvika minnesläckor.
+1. **Dependency Injection**: Alla beroenden injiceras via init() och sparas som instansvariabler. Inga globala referenser (window.Helpers, window.Translation) i metoder.
+2. **Livscykel**: Alla komponenter ska ha metoderna init(), render() och destroy().
+3. **Storlek**: Max 400 rader per komponentfil.
+4. **Notering**: Befintliga singleton-komponenter migreras gradvis — ny kod ska alltid följa klassstandarden.
 
-### Varför?
+---
 
-Detta mönster säkerställer:
+## Säkerhetsregler (obligatoriska)
 
--   Enhetlighet i kodbasen.
--   Testbarhet (lätt att mocka deps).
--   Tydlig livscykelhantering (`init` -> `render` -> `destroy`).
--   Undvikande av globala namespace-föroreningar.
+- Använd ALDRIG `innerHTML =` direkt med användardata eller variabelinnehåll. Använd alltid `textContent` för text eller `safe_set_inner_html()` för HTML.
+- Lägg ALDRIG till `'unsafe-inline'` i Content-Security-Policy.
+- Lägg ALDRIG hårdkodade hemligheter, lösenord, API-nycklar eller domännamn i koden. Använd alltid miljövariabler via process.env.
+- JWT_SECRET och andra hemligheter måste alltid valideras vid uppstart med ett tydligt felmeddelande om de saknas.
+- Debug-endpoints och testkod får ALDRIG finnas i produktionskod.
+- Exponera ALDRIG interna moduler eller state på window-objektet i produktionskod.
+
+## Kodkvalitetsregler (obligatoriska)
+
+- Ingen funktion får vara längre än 50 rader.
+- Alla nya filer ska ha tydliga JSDoc-kommentarer som beskriver filens syfte.
+
+## Testregler (obligatoriska)
+
+- Varje ny funktion i logic/-mappen ska ha ett tillhörande enhetstest i tests/unit/.
+- Tester ska köras med `npm test` innan varje commit med kodändringar.
+
+## Förbjudna mönster
+
+Cursor får ALDRIG föreslå eller skriva kod som:
+
+- Använder `eval()` eller `new Function()`
+- Använder `document.write()`
+- Sätter `window.*` för att exponera interna moduler
+- Innehåller hårdkodade URL:er, IP-adresser eller domännamn
+- Har tomma catch-block utan felhantering: `catch(e) {}`
 

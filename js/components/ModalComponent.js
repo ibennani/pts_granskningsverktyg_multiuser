@@ -2,8 +2,8 @@
 
 import './modal_component.css';
 
-export const ModalComponent = {
-    CSS_PATH: './modal_component.css',
+export class ModalComponent {
+    static CSS_PATH = './modal_component.css';
 
     init({ root, deps }) {
         this.root = root;
@@ -24,15 +24,15 @@ export const ModalComponent = {
         this._close_started = false;
         this._pending_on_closed = null;
 
-        if (this.Helpers?.load_css_safely && this.CSS_PATH) {
-            this.Helpers.load_css_safely(this.CSS_PATH, 'ModalComponent', {
+        if (this.Helpers?.load_css_safely && ModalComponent.CSS_PATH) {
+            this.Helpers.load_css_safely(ModalComponent.CSS_PATH, 'ModalComponent', {
                 timeout: 5000,
                 maxRetries: 2,
             }).catch(() => {
                 console.warn('[ModalComponent] Continuing without CSS due to loading failure');
             });
         }
-    },
+    }
 
     _setup_history_close_on_back() {
         if (typeof window === 'undefined' || !window.history) return;
@@ -62,7 +62,7 @@ export const ModalComponent = {
         };
 
         window.addEventListener('popstate', this._bound_handle_popstate);
-    },
+    }
 
     _cleanup_history_close_on_back() {
         if (typeof window === 'undefined') return;
@@ -70,12 +70,12 @@ export const ModalComponent = {
             window.removeEventListener('popstate', this._bound_handle_popstate);
         }
         this._bound_handle_popstate = null;
-    },
+    }
 
     _is_word_char(ch) {
         if (!ch) return false;
         return /[A-Za-z0-9ÅÄÖåäö_]/.test(ch);
-    },
+    }
 
     _is_single_quote_open(text, idx) {
         const prev = idx > 0 ? text[idx - 1] : '';
@@ -84,7 +84,7 @@ export const ModalComponent = {
         if (!next) return false;
         if (next === ' ' || next === '\n' || next === '\t') return false;
         return true;
-    },
+    }
 
     _is_single_quote_close(text, idx) {
         const prev = idx > 0 ? text[idx - 1] : '';
@@ -92,7 +92,7 @@ export const ModalComponent = {
         if (!prev || prev === ' ' || prev === '\n' || prev === '\t') return false;
         if (this._is_word_char(next)) return false;
         return true;
-    },
+    }
 
     _find_next_quote_open(text, from_idx) {
         const idx_double = text.indexOf('"', from_idx);
@@ -116,14 +116,14 @@ export const ModalComponent = {
 
         candidates.sort((a, b) => a.idx - b.idx);
         return candidates[0];
-    },
+    }
 
     _find_single_quote_close(text, from_idx) {
         for (let i = from_idx; i < text.length; i += 1) {
             if (text[i] === "'" && this._is_single_quote_close(text, i)) return i;
         }
         return -1;
-    },
+    }
 
     _tokenize_quoted_strong_parts(text) {
         const input = `${text ?? ''}`;
@@ -165,7 +165,7 @@ export const ModalComponent = {
         }
 
         return parts;
-    },
+    }
 
     _transform_text_node_quotes_to_strong(text_node) {
         if (!text_node?.parentNode) return;
@@ -188,7 +188,7 @@ export const ModalComponent = {
         }
 
         text_node.parentNode.replaceChild(frag, text_node);
-    },
+    }
 
     _transform_quotes_to_strong_in_container(container) {
         if (!container) return;
@@ -224,7 +224,7 @@ export const ModalComponent = {
         for (const text_node of nodes) {
             this._transform_text_node_quotes_to_strong(text_node);
         }
-    },
+    }
 
     show({ h1_text, message_text }, content_callback) {
         if (!this.root || !this.Helpers?.create_element) return;
@@ -331,7 +331,7 @@ export const ModalComponent = {
                 this.dialog_element_ref.classList.add('modal-dialog--visible');
             });
         });
-    },
+    }
 
     _finish_close() {
         const dialog = this.dialog_element_ref;
@@ -477,7 +477,7 @@ export const ModalComponent = {
                 /* ignore */
             }
         }
-    },
+    }
 
     _do_animated_close() {
         const dialog = this.dialog_element_ref;
@@ -505,7 +505,7 @@ export const ModalComponent = {
         } else {
             dialog.close();
         }
-    },
+    }
 
     close(focus_element_override, options = {}) {
         if (!this.dialog_element_ref) return;
@@ -516,7 +516,7 @@ export const ModalComponent = {
         this._skip_history_pop_on_close = options.skipHistoryPop === true;
         this._pending_on_closed = options.onClosed || null;
         this._do_animated_close();
-    },
+    }
 
     destroy() {
         if (this.dialog_element_ref && this.root?.contains(this.dialog_element_ref)) {
@@ -524,5 +524,5 @@ export const ModalComponent = {
         }
         this.root = null;
         this.deps = null;
-    },
-};
+    }
+}

@@ -20,6 +20,31 @@ import { AutosaveService, capture_focus_state, restore_focus_state } from './log
 import { init_version_check_service } from './logic/version_check_service.js';
 import { init_rulefile_view_poll_service } from './logic/rulefile_view_poll_service.js';
 import { init_connectivity_service } from './logic/connectivity_service.js';
+import {
+    capture_focus_info_from_element,
+    apply_post_render_focus_instruction,
+    load_focus_storage,
+    save_focus_storage,
+    update_restore_position
+} from './logic/focus_manager.js';
+import {
+    navigate_and_set_hash as navigate_and_set_hash_impl,
+    handle_hash_change as handle_hash_change_impl,
+    get_route_key_from_hash,
+    get_scope_key_from_hash,
+    get_scope_key_from_view_and_params
+} from './logic/router.js';
+import {
+    updatePageTitle as updatePageTitle_impl,
+    updatePageTitleFromCurrentView as updatePageTitleFromCurrentView_impl
+} from './logic/page_title_manager.js';
+import {
+    set_initial_theme,
+    is_dev_build_environment,
+    refresh_dev_build_info_from_server,
+    update_build_timestamp,
+    start_normal_session as start_normal_session_impl
+} from './logic/session_manager.js';
 import { MarkdownToolbar } from './features/markdown_toolbar.js';
 import './utils/dependency_manager.js';
 import './utils/console_manager.js';
@@ -65,6 +90,10 @@ import { AuditViewComponent } from './components/audit_view/AuditViewComponent.j
 import { StartViewComponent } from './components/StartViewComponent.js';
 import { LoginViewComponent } from './components/LoginViewComponent.js';
 import { ManageUsersViewComponent } from './components/ManageUsersViewComponent.js';
+
+const auditViewComponent = new AuditViewComponent();
+const allRequirementsViewComponent = new AllRequirementsViewComponent();
+const loginViewComponent = new LoginViewComponent();
 import { SettingsViewComponent } from './components/SettingsViewComponent.js';
 
 import { GlobalActionBarComponent } from './components/GlobalActionBarComponent.js';
@@ -73,14 +102,50 @@ import { show_confirm_delete_modal } from './logic/confirm_delete_modal_logic.js
 import { flush_sync_to_server } from './logic/server_sync.js';
 
 import { DraftManager } from './draft_manager.js';
-import { get_auth_token, clear_auth_token, get_current_user_preferences, is_current_user_admin, set_current_user_admin } from './api/client.js';
+import { get_auth_token, clear_auth_token, get_current_user_preferences, set_current_user_admin } from './api/client.js';
 import { getState, dispatch, subscribe, initState, StoreActionTypes, StoreInitialState, loadStateFromLocalStorageBackup, clearLocalStorageBackup, updateBackupRestorePosition, APP_STATE_KEY } from './state.js';
+
+const notificationComponent = new NotificationComponent();
+const modalComponent = new ModalComponent();
+const sideMenuComponent = new SideMenuComponent();
+const errorBoundaryComponent = new ErrorBoundaryComponent();
+const auditOverviewComponent = new AuditOverviewComponent();
+const confirmSampleEditViewComponent = new ConfirmSampleEditViewComponent();
+const finalConfirmUpdatesViewComponent = new FinalConfirmUpdatesViewComponent();
+const archivedRequirementsViewComponent = new ArchivedRequirementsViewComponent();
+const startViewComponent = new StartViewComponent();
+const auditActionsViewComponent = new AuditActionsViewComponent();
+const auditImagesViewComponent = new AuditImagesViewComponent();
+const auditProblemsViewComponent = new AuditProblemsViewComponent();
+const sampleManagementViewComponent = new SampleManagementViewComponent();
+const sampleFormViewComponent = new SampleFormViewComponent();
+const editMetadataViewComponent = new EditMetadataViewComponent();
+const requirementListComponent = new RequirementListComponent();
+const requirementAuditComponent = new RequirementAuditComponent();
+const confirmUpdatesViewComponent = new ConfirmUpdatesViewComponent();
+const updateRulefileViewComponent = new UpdateRulefileViewComponent();
+const backupOverviewComponent = new BackupOverviewComponent();
+const backupSettingsViewComponent = new BackupSettingsViewComponent();
+const manageUsersViewComponent = new ManageUsersViewComponent();
+const settingsViewComponent = new SettingsViewComponent();
+const rulefileChangeLogViewComponent = new RulefileChangeLogViewComponent();
+const rulefileRequirementsListComponent = new RulefileRequirementsListComponent();
+const viewRulefileRequirementComponent = new ViewRulefileRequirementComponent();
+const editRulefileMainViewComponent = new EditRulefileMainViewComponent();
+const editRulefileMetadataViewComponent = new EditRulefileMetadataViewComponent();
+const rulefileMetadataViewComponent = new RulefileMetadataViewComponent();
+const rulefileSectionsViewComponent = new RulefileSectionsViewComponent();
+const editGeneralSectionComponent = new EditGeneralSectionComponent();
+const editPageTypesSectionComponent = new EditPageTypesSectionComponent();
+const confirmDeleteViewComponent = new ConfirmDeleteViewComponent();
+const editRulefileRequirementComponent = new EditRulefileRequirementComponent();
+
 window.getState = getState;
 window.dispatch = dispatch;
 window.Store = { getState, dispatch, subscribe, StoreActionTypes, StoreInitialState };
 window.StoreActionTypes = StoreActionTypes;
-window.NotificationComponent = NotificationComponent;
-window.ModalComponent = ModalComponent;
+window.NotificationComponent = notificationComponent;
+window.ModalComponent = modalComponent;
 window.show_confirm_delete_modal = show_confirm_delete_modal;
 window.dependencyManager = dependencyManager;
 window.Helpers = Helpers;
@@ -121,7 +186,7 @@ window.DraftManager = DraftManager;
     let side_menu_root = null;
     let main_view_root = null;
     let right_sidebar_root = null;
-    const side_menu_component_instance = SideMenuComponent;
+    const side_menu_component_instance = sideMenuComponent;
 
     // Fallback för app_wrapper - kritiskt element
     if (!app_wrapper) {
@@ -289,174 +354,17 @@ window.DraftManager = DraftManager;
             : (key, replacements) => `**${key}**`;
     }
 
-    function parse_view_and_params_from_hash() {
-        const hash = typeof window !== 'undefined' && window.location?.hash ? window.location.hash.substring(1) : '';
-        const is_skip_link = hash === 'main-content-heading';
-        const [view_name, ...param_pairs] = hash.split('?');
-        const params = {};
-        if (param_pairs.length > 0 && !is_skip_link && view_name) {
-            const query_string = param_pairs.join('?');
-            const url_params = new URLSearchParams(query_string);
-            for (const [key, value] of url_params) { params[key] = value; }
-        }
-        return {
-            viewName: (is_skip_link || !view_name) ? 'start' : view_name,
-            params: (is_skip_link || !view_name) ? {} : params
-        };
-    }
-
-    function get_page_title_prefix(view_name, params) {
-        const t = get_t_fallback();
-        const current_state = getState();
-        const audit_status = current_state?.auditStatus;
-        let title_prefix = t('app_title');
-        try {
-            if (audit_status === 'rulefile_editing') {
-                const section_to_menu_key = {
-                    general: 'rulefile_section_general_title',
-                    publisher_source: 'rulefile_section_general_title',
-                    page_types: 'rulefile_metadata_section_page_types',
-                    content_types: 'rulefile_metadata_section_content_types',
-                    sample_types: 'rulefile_section_sample_types_title',
-                    info_blocks_order: 'rulefile_section_info_blocks_order_title',
-                    classifications: 'rulefile_section_classifications_title',
-                    report_template: 'rulefile_section_report_template_title'
-                };
-                const section = params.section || params.editSection || 'general';
-                if (view_name === 'rulefile_sections' && section_to_menu_key[section]) {
-                    title_prefix = t(section_to_menu_key[section]);
-                } else if (['rulefile_requirements', 'rulefile_view_requirement', 'rulefile_edit_requirement', 'rulefile_add_requirement'].includes(view_name)) {
-                    title_prefix = t('rulefile_requirements_menu_title');
-                } else if (view_name === 'rulefile_metadata_edit') {
-                    title_prefix = t(section && section_to_menu_key[section] ? section_to_menu_key[section] : 'rulefile_section_general_title');
-                } else if (view_name === 'rulefile_sections_edit_general') {
-                    title_prefix = t('rulefile_section_general_title');
-                } else if (view_name === 'rulefile_sections_edit_page_types') {
-                    title_prefix = t('rulefile_metadata_section_page_types');
-                } else if (view_name === 'confirm_delete' && params.type === 'requirement') {
-                    title_prefix = t('rulefile_requirements_menu_title');
-                } else if (view_name === 'confirm_delete' && (params.type === 'check' || params.type === 'criterion')) {
-                    title_prefix = t('rulefile_requirements_menu_title');
-                } else if (view_name === 'edit_rulefile_main') {
-                    title_prefix = t('rulefile_section_general_title');
-                }
-            }
-
-            if (title_prefix === t('app_title')) {
-            switch (view_name) {
-                case 'start': title_prefix = t('menu_link_manage_audits'); break;
-                    case 'audit': title_prefix = t('audit_title'); break;
-                    case 'audit_audits': title_prefix = t('audit_title_audits'); break;
-                    case 'audit_rules': title_prefix = t('audit_title_rules'); break;
-                    case 'manage_users': title_prefix = t('manage_users_title'); break;
-                    case 'my_settings': title_prefix = t('menu_link_my_settings'); break;
-                    case 'login': title_prefix = t('login_title'); break;
-                    case 'metadata': title_prefix = t('audit_metadata_title'); break;
-                    case 'edit_metadata': title_prefix = t('edit_audit_metadata_title'); break;
-                    case 'sample_management': title_prefix = t('manage_samples_title'); break;
-                    case 'sample_form': title_prefix = params.editSampleId ? t('edit_sample') : t('add_new_sample'); break;
-                    case 'confirm_sample_edit': title_prefix = t('sample_edit_confirm_dialog_title'); break;
-                    case 'audit_overview': title_prefix = t('audit_overview_title'); break;
-                    case 'audit_actions': title_prefix = t('audit_actions_title'); break;
-                    case 'all_requirements': title_prefix = t('left_menu_all_requirements'); break;
-                    case 'audit_problems': title_prefix = t('audit_problems_title'); break;
-                    case 'audit_images': title_prefix = t('audit_images_title'); break;
-                    case 'requirement_list': title_prefix = t('requirement_list_title_suffix'); break;
-                    case 'update_rulefile': title_prefix = t('update_rulefile_title'); break;
-                    case 'confirm_updates': title_prefix = t('handle_updated_assessments_title', {count: ''}).trim(); break;
-                    case 'final_confirm_updates': title_prefix = t('final_confirm_updates_title'); break;
-                    case 'edit_rulefile_main': title_prefix = t('edit_rulefile_title'); break;
-                    case 'rulefile_requirements': title_prefix = t('rulefile_requirements_menu_title'); break;
-                    case 'rulefile_view_requirement': title_prefix = t('rulefile_view_requirement_title'); break;
-                    case 'rulefile_edit_requirement': title_prefix = t('rulefile_edit_requirement_title'); break;
-                    case 'rulefile_add_requirement': title_prefix = t('rulefile_add_requirement_title'); break;
-                    case 'rulefile_metadata_edit': title_prefix = t('rulefile_metadata_edit_title'); break;
-                    case 'rulefile_sections_edit_general': title_prefix = t('rulefile_sections_edit_general_title'); break;
-                    case 'rulefile_sections_edit_page_types': title_prefix = t('rulefile_sections_edit_page_types_title'); break;
-                    case 'rulefile_sections': title_prefix = t('rulefile_sections_title'); break;
-                    case 'backup':
-                    case 'backup_detail':
-                    case 'backup_settings': title_prefix = t('menu_link_backups'); break;
-                    case 'confirm_delete':
-                        if (params.type === 'requirement') title_prefix = t('rulefile_confirm_delete_title');
-                        else if (params.type === 'check') title_prefix = t('confirm_delete_check_title');
-                        else if (params.type === 'criterion') title_prefix = t('confirm_delete_criterion_title');
-                        break;
-                    case 'requirement_audit': {
-                        const sidebar_mode = current_state?.uiSettings?.requirementAuditSidebar?.selectedMode;
-                        if (sidebar_mode === 'requirement_samples') {
-                            const sample = (current_state?.samples || []).find(s => String(s?.id) === String(params.sampleId || ''));
-                            title_prefix = sample?.description || t('undefined_description');
-                        } else {
-                            const req_id = params.requirementId || '';
-                            const requirements_map = current_state?.ruleFileContent?.requirements || {};
-                            let requirement = requirements_map?.[req_id];
-
-                            if (!requirement && req_id) {
-                                requirement = Object.values(requirements_map).find(req => {
-                                    if (!req || typeof req !== 'object') return false;
-                                    const key = req.key !== undefined && req.key !== null ? String(req.key) : '';
-                                    const id = req.id !== undefined && req.id !== null ? String(req.id) : '';
-                                    return key === String(req_id) || id === String(req_id);
-                                }) || null;
-                            }
-                            if (!requirement && req_id) {
-                                consoleManager.warn('[Main.js] build_page_title: requirement not found for requirement_audit', {
-                                    requirementId: req_id,
-                                    requirementKeys: Object.keys(requirements_map || {}).slice(0, 20)
-                                });
-                            }
-
-                            const requirement_name = requirement?.title || req_id || '';
-                            title_prefix = requirement_name
-                                ? `${t('page_title_requirement')} ${requirement_name}`
-                                : t('page_title_requirement');
-                        }
-                        break;
-                    }
-                    default: break;
-                }
-            }
-        } catch (e) {
-            consoleManager.error("Error building page title:", e);
-        }
-        return (title_prefix && String(title_prefix).trim()) || t('app_title');
-    }
-
-    function build_page_title(view_name, params) {
-        const t = get_t_fallback();
-        const title_suffix = ` | ${t('app_title_suffix')}`;
-        const current_state = getState();
-        const audit_status = current_state?.auditStatus;
-        const title_prefix = get_page_title_prefix(view_name || 'start', params || {});
-
-        let final_title = `${title_prefix}${title_suffix}`;
-        const is_inside_audit = audit_status !== 'rulefile_editing' &&
-            !['start', 'audit', 'audit_audits', 'audit_rules', 'login', 'manage_users', 'my_settings'].includes(view_name);
-        const actor_name = (is_inside_audit && current_state?.auditMetadata?.actorName)
-            ? String(current_state.auditMetadata.actorName).trim()
-            : '';
-        if (actor_name) {
-            final_title = `${actor_name} | ${final_title}`;
-        }
-        return (final_title && String(final_title).trim()) || t('app_title_suffix');
-    }
-
     function updatePageTitle(view_name, params) {
-        const new_title = build_page_title(view_name || 'start', params || {});
-        if (!new_title || !String(new_title).trim()) {
-            consoleManager.warn('[Main.js] updatePageTitle: build_page_title returnerade tom sträng. view:', view_name, 'params:', JSON.stringify(params));
-            return;
-        }
-        document.title = new_title;
+        return updatePageTitle_impl(view_name, params, { getState, Translation: window.Translation });
     }
 
-    // Uppdaterar sidtiteln baserat på den aktuellt renderade vyn och dess parametrar.
-    // Används av subscribe-callback och språkbyte – aldrig från routing-kod.
     function updatePageTitleFromCurrentView() {
-        let params = {};
-        try { params = JSON.parse(current_view_params_rendered_json || '{}'); } catch (_) {}
-        updatePageTitle(current_view_name_rendered || 'start', params);
+        return updatePageTitleFromCurrentView_impl({
+            getState,
+            Translation: window.Translation,
+            get_current_view_name: () => current_view_name_rendered,
+            get_current_view_params_json: () => current_view_params_rendered_json
+        });
     }
 
     function update_app_chrome_texts() {
@@ -500,7 +408,7 @@ window.DraftManager = DraftManager;
         // Wait for dependency manager to be ready
         await window.dependencyManager?.initialize();
         
-        if (!window.Translation || !window.Helpers || !NotificationComponent || !window.SaveAuditLogic) {
+        if (!window.Translation || !window.Helpers || !notificationComponent || !window.SaveAuditLogic) {
             consoleManager.error("[Main.js] init_global_components: Core dependencies not available!");
             return;
         }
@@ -510,8 +418,8 @@ window.DraftManager = DraftManager;
             StoreActionTypes: StoreActionTypes,
             Translation: window.Translation,
             Helpers: window.Helpers,
-            NotificationComponent: NotificationComponent,
-            ModalComponent: ModalComponent,
+            NotificationComponent: notificationComponent,
+            ModalComponent: modalComponent,
             SaveAuditLogic: window.SaveAuditLogic,
             AuditLogic: AuditLogic,
             ValidationLogic: ValidationLogic,
@@ -563,7 +471,7 @@ window.DraftManager = DraftManager;
         
         // Initialize error boundary
         try {
-            error_boundary_instance = ErrorBoundaryComponent;
+            error_boundary_instance = errorBoundaryComponent;
             await error_boundary_instance.init({ root: main_view_root || app_container, deps: common_deps });
         } catch (error) {
             consoleManager.error("[Main.js] Failed to initialize error boundary:", error);
@@ -573,206 +481,21 @@ window.DraftManager = DraftManager;
         const modal_root = document.getElementById('modal-root');
         if (modal_root) {
             try {
-                await ModalComponent.init({ root: modal_root, deps: common_deps });
+                await modalComponent.init({ root: modal_root, deps: common_deps });
             } catch (error) {
                 consoleManager.error("[Main.js] Failed to initialize modal:", error);
             }
         }
     }
     
-    function set_initial_theme() {
-        const saved_theme = localStorage.getItem('theme_preference');
-        if (saved_theme && saved_theme !== 'system') {
-            document.documentElement.setAttribute('data-theme', saved_theme);
-        } else {
-            const prefers_dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-            const initial_theme = prefers_dark ? 'dark' : 'light';
-            document.documentElement.setAttribute('data-theme', initial_theme);
-        }
-    }
-
     function navigate_and_set_hash(target_view_name, target_params = {}) {
-        nav_debug('navigate_and_set_hash anropad', { target_view_name, target_params, current_hash: window.location.hash });
-        if (target_view_name === 'manage_users' && !is_current_user_admin()) {
-            window.location.hash = '#start';
-            return;
-        }
-        const current_state_for_nav = typeof getState === 'function' ? getState() : null;
-        const is_new_audit_metadata =
-            current_view_name_rendered === 'metadata' &&
-            current_state_for_nav?.auditStatus === 'not_started' &&
-            !!current_state_for_nav?.ruleFileContent;
-        const is_start_like_view =
-            target_view_name === 'start' ||
-            target_view_name === 'audit' ||
-            target_view_name === 'audit_audits';
-        const allow_new_audit_exit = target_params && target_params.allow_new_audit_exit === '1';
-
-        // Skydda metadata-flödet för nya granskningar:
-        // vi blockerar all implicit navigering tillbaka till listan/granskningsvyn
-        // så länge användaren inte uttryckligen valt det via metadata-vyn.
-        if (is_new_audit_metadata && is_start_like_view && !allow_new_audit_exit) {
-            nav_debug('navigate_and_set_hash blockerad för ny granskning i metadata', {
-                target_view_name,
-                target_params
-            });
-            return;
-        }
-
-        const safe_params = { ...(target_params || {}) };
-        if (allow_new_audit_exit) {
-            delete safe_params.allow_new_audit_exit;
-        }
-
-        const target_hash_part = safe_params && Object.keys(safe_params).length > 0 ?
-            `${target_view_name}?${new URLSearchParams(safe_params).toString()}` :
-            target_view_name;
-        const new_hash = `#${target_hash_part}`;
-        if (window.location.hash === new_hash) {
-            nav_debug('Hash oförändrad – endast render', { new_hash });
-            updatePageTitle(target_view_name, target_params);
-            if (current_view_component_instance && typeof current_view_component_instance.render === 'function') {
-                current_view_component_instance.render();
-            }
-        } else {
-            nav_debug('Sätter hash', { from: window.location.hash, to: new_hash });
-            window.location.hash = new_hash;
-            updatePageTitle(target_view_name, target_params);
-        }
-    }
-
-    const FOCUS_STORAGE_KEY = 'gv_focus_by_scope_v1';
-
-    function load_focus_storage() {
-        try {
-            const raw = window.sessionStorage?.getItem(FOCUS_STORAGE_KEY);
-            if (!raw) return {};
-            const parsed = JSON.parse(raw);
-            if (!parsed || typeof parsed !== 'object') return {};
-            return parsed;
-        } catch (e) {
-            return {};
-        }
-    }
-
-    function save_focus_storage(storage) {
-        try {
-            window.sessionStorage?.setItem(FOCUS_STORAGE_KEY, JSON.stringify(storage || {}));
-        } catch (e) {
-            /* ignore */
-        }
-    }
-
-    let restore_position_state = { view: null, params: {}, focusInfo: null };
-
-    function capture_focus_info_from_element(el) {
-        if (!el || !main_view_root || !main_view_root.contains(el)) return null;
-        const id = el.id;
-        const name = el.getAttribute?.('name');
-        const data_index = el.getAttribute?.('data-index');
-        if (id) return { elementId: id, elementName: null, dataIndex: null };
-        if (name !== null && name !== undefined) return { elementId: null, elementName: name, dataIndex: data_index };
-
-        // För tabeller (t.ex. GenericTableComponent) där länkar/knappar saknar id/name,
-        // försök spara rad-id och kolumnindex så att vi kan hitta tillbaka.
-        const row = el.closest && el.closest('tr[data-row-id]');
-        if (row && row.parentElement && row.parentElement.tagName === 'TBODY') {
-            const row_id = row.getAttribute('data-row-id');
-            if (row_id) {
-                const cells = Array.from(row.cells || []);
-                let col_index = -1;
-                const owning_cell = el.closest('td');
-                if (owning_cell) {
-                    col_index = cells.indexOf(owning_cell);
-                }
-                if (col_index >= 0) {
-                    return {
-                        tableRowId: String(row_id),
-                        tableColIndex: col_index
-                    };
-                }
-            }
-        }
-
-        // För krav-/stickprovslistor där länken identifieras via requirementId + sampleId
-        const requirement_id = el.getAttribute?.('data-requirement-id');
-        const sample_id = el.getAttribute?.('data-sample-id');
-        if (requirement_id && sample_id) {
-            return {
-                requirementId: requirement_id,
-                sampleId: sample_id
-            };
-        }
-
-        // Generellt fallback-mönster för länkar: använd href + index bland länkar med samma href
-        const tag = el.tagName ? el.tagName.toLowerCase() : '';
-        if (tag === 'a') {
-            const href = el.getAttribute && el.getAttribute('href');
-            if (href) {
-                const selector = `a[href="${CSS.escape(href)}"]`;
-                const all_links = Array.from(main_view_root.querySelectorAll(selector));
-                const link_index = all_links.indexOf(el);
-                return {
-                    linkHref: href,
-                    linkIndex: link_index >= 0 ? link_index : null
-                };
-            }
-        }
-
-        // Generellt fallback-mönster för knappar: använd tag + textinnehåll + index
-        if (tag === 'button') {
-            const label = (el.textContent || '').trim();
-            if (label) {
-                const all_buttons = Array
-                    .from(main_view_root.querySelectorAll('button'))
-                    .filter((btn) => (btn.textContent || '').trim() === label);
-                const button_index = all_buttons.indexOf(el);
-                return {
-                    buttonTag: 'button',
-                    buttonLabel: label,
-                    buttonIndex: button_index >= 0 ? button_index : null
-                };
-            }
-        }
-
-        return null;
-    }
-
-    function update_restore_position(view, params, focus_info) {
-        restore_position_state = {
-            view: view,
-            params: params || {},
-            focusInfo: focus_info ?? restore_position_state.focusInfo
-        };
-    }
-
-    window.__gv_get_restore_position = () => restore_position_state;
-
-    function get_route_key_from_hash() {
-        const hash = window.location.hash || '';
-        const raw = hash.startsWith('#') ? hash.slice(1) : hash;
-        const [view_name] = raw.split('?');
-        return view_name || 'start';
-    }
-
-    function get_scope_key_from_hash() {
-        const route_key = get_route_key_from_hash();
-        if (current_view_name_rendered === route_key) {
-            return `${route_key}:${current_view_params_rendered_json}`;
-        }
-        const raw = (window.location.hash || '').replace(/^#/, '');
-        const [, query = ''] = raw.split('?');
-        if (!query) return `${route_key}:{}`;
-        const url_params = new URLSearchParams(query);
-        const params_obj = {};
-        Array.from(url_params.entries()).forEach(([key, value]) => { params_obj[key] = value; });
-        return `${route_key}:${JSON.stringify(params_obj)}`;
-    }
-
-    function get_scope_key_from_view_and_params(view, params) {
-        const route_key = view || 'start';
-        const safe_params = params && typeof params === 'object' ? params : {};
-        return `${route_key}:${JSON.stringify(safe_params)}`;
+        return navigate_and_set_hash_impl(target_view_name, target_params, {
+            nav_debug,
+            getState,
+            get_current_view_name: () => current_view_name_rendered,
+            get_current_view_component: () => current_view_component_instance,
+            updatePageTitle
+        });
     }
 
     function should_capture_draft_target(target) {
@@ -798,12 +521,12 @@ window.DraftManager = DraftManager;
     function init_draft_manager() {
         DraftManager.init({
             getRouteKey: get_route_key_from_hash,
-            getScopeKey: get_scope_key_from_hash,
+            getScopeKey: () => get_scope_key_from_hash({ current_view_name_rendered, current_view_params_rendered_json }),
             rootProvider: () => main_view_root || app_container,
             restorePolicy: { max_auto_restore_age_ms: 2 * 60 * 60 * 1000 },
             onConflict: () => {
-                if (NotificationComponent?.show_global_message) {
-                    NotificationComponent.show_global_message((window.Translation?.t && window.Translation.t('draft_updated_other_tab')) || 'Utkast uppdaterades i annan flik.', 'info');
+                if (notificationComponent?.show_global_message) {
+                    notificationComponent.show_global_message((window.Translation?.t && window.Translation.t('draft_updated_other_tab')) || 'Utkast uppdaterades i annan flik.', 'info');
                 } else {
                     consoleManager.warn('[Main.js] Draft conflict detected.');
                 }
@@ -829,179 +552,6 @@ window.DraftManager = DraftManager;
         });
         window.addEventListener('beforeunload', () => DraftManager.flushNow('beforeunload'));
         window.addEventListener('storage', (event) => DraftManager.handleStorageEvent(event));
-    }
-
-    function apply_restore_focus_instruction({ view_root }) {
-        if (!view_root) return false;
-        const focus_info = window.__gv_restore_focus_info;
-        if (!focus_info) return false;
-        window.__gv_restore_focus_info = null;
-        window.customFocusApplied = true;
-
-        const try_focus = (attempts_left) => {
-            let el = null;
-
-            // 1) Försök först med id/name (formfält m.m.)
-            if (focus_info.elementId) {
-                el = view_root.querySelector(`#${CSS.escape(focus_info.elementId)}`);
-            }
-            if (!el && focus_info.elementName) {
-                el = view_root.querySelector(`[name="${CSS.escape(focus_info.elementName)}"]`);
-                if (!el && focus_info.dataIndex !== null && focus_info.dataIndex !== undefined) {
-                    const candidates = view_root.querySelectorAll(`[name="${CSS.escape(focus_info.elementName)}"]`);
-                    const idx = parseInt(focus_info.dataIndex, 10);
-                    if (!Number.isNaN(idx) && candidates[idx]) el = candidates[idx];
-                }
-            }
-
-            // 2) Om vi har tabellinfo (t.ex. rad i granskningstabellen), försök hitta rätt cell
-            if (!el && focus_info.tableRowId && typeof focus_info.tableColIndex === 'number') {
-                const tbody_rows = view_root.querySelectorAll('tbody tr[data-row-id]');
-                let target_row = null;
-                for (const r of tbody_rows) {
-                    if (r.getAttribute('data-row-id') === String(focus_info.tableRowId)) {
-                        target_row = r;
-                        break;
-                    }
-                }
-                if (target_row && target_row.cells && target_row.cells.length > focus_info.tableColIndex) {
-                    const cell = target_row.cells[focus_info.tableColIndex];
-                    if (cell) {
-                        el = cell.querySelector('a[href], button, [tabindex="0"]');
-                    }
-                }
-            }
-
-            // 3) Om vi kommer från en krav-/stickprovslista, försök hitta samma länk via requirementId
-            //    – i första hand med både requirementId + sampleId (alla krav-listan),
-            //    men fall tillbaka till endast requirementId (kravlista per stickprov).
-            if (!el && focus_info.requirementId) {
-                let selector = `[data-requirement-id="${CSS.escape(focus_info.requirementId)}"]`;
-                if (focus_info.sampleId) {
-                    selector += `[data-sample-id="${CSS.escape(focus_info.sampleId)}"]`;
-                }
-                const candidates = view_root.querySelectorAll(selector);
-                if (candidates && candidates.length > 0) {
-                    el = candidates[0];
-                }
-            }
-
-            // 4) Generellt fall för länkar: hitta via href + index
-            if (!el && focus_info.linkHref) {
-                const selector = `a[href="${CSS.escape(focus_info.linkHref)}"]`;
-                const candidates = Array.from(view_root.querySelectorAll(selector));
-                if (candidates.length > 0) {
-                    const idx = typeof focus_info.linkIndex === 'number' ? focus_info.linkIndex : 0;
-                    el = candidates[idx] || candidates[0];
-                }
-            }
-
-            // 5) Generellt fall för knappar: hitta via textinnehåll + index
-            if (!el && focus_info.buttonTag === 'button' && focus_info.buttonLabel) {
-                const all_buttons = Array
-                    .from(view_root.querySelectorAll('button'))
-                    .filter((btn) => (btn.textContent || '').trim() === focus_info.buttonLabel);
-                if (all_buttons.length > 0) {
-                    const idx = typeof focus_info.buttonIndex === 'number' ? focus_info.buttonIndex : 0;
-                    el = all_buttons[idx] || all_buttons[0];
-                }
-            }
-
-            if (el && document.contains(el)) {
-                try {
-                    el.focus({ preventScroll: false });
-                    el.scrollIntoView({ block: 'nearest', behavior: 'auto' });
-                } catch (e) {
-                    el.focus();
-                }
-                return;
-            }
-            if (attempts_left > 0) {
-                memoryManager.setTimeout(() => try_focus(attempts_left - 1), 100);
-            }
-        };
-        // Vänta in att vyer som laddar data asynkront (t.ex. startvyns tabeller) hinner rendera klart.
-        // 40 försök * 100 ms ≈ upp till 4 sekunders fönster för att hitta tillbaka till rätt element.
-        memoryManager.setTimeout(() => try_focus(40), 200);
-        return true;
-    }
-
-    function apply_post_render_focus_instruction({ view_name, view_root }) {
-        if (view_root && apply_restore_focus_instruction({ view_root })) return true;
-
-        // One-shot fokusinstruktioner används för att sätta fokus på rätt ställe
-        // när användaren återgår från en vy till en annan (t.ex. efter formulär).
-        if (!view_root || !window.sessionStorage) return false;
-
-        const RETURN_FOCUS_AUDIT_INFO_H2_KEY = 'gv_return_focus_audit_info_h2_v1';
-
-        if (view_name !== 'audit_overview') return false;
-
-        let raw = null;
-        try {
-            raw = window.sessionStorage.getItem(RETURN_FOCUS_AUDIT_INFO_H2_KEY);
-        } catch (e) {
-            return false;
-        }
-        if (!raw) return false;
-
-        let instruction = null;
-        try {
-            instruction = JSON.parse(raw);
-        } catch (e) {
-            try { window.sessionStorage.removeItem(RETURN_FOCUS_AUDIT_INFO_H2_KEY); } catch (err) {}
-            return false;
-        }
-
-        if (instruction?.focus !== 'audit_info_h2') {
-            try { window.sessionStorage.removeItem(RETURN_FOCUS_AUDIT_INFO_H2_KEY); } catch (err) {}
-            return false;
-        }
-
-        // Hindra generella "fokusera <h1>" från att skriva över.
-        window.customFocusApplied = true;
-
-        // Försök hitta rubriken efter render. Om den ännu inte finns (pga sub-render),
-        // gör ett par retry-försök innan vi ger upp.
-        let attempts_left = 6;
-        const try_focus = () => {
-            const heading = view_root.querySelector('#audit-info-heading');
-            if (heading) {
-                // Scrolla så rubriken hamnar längst upp (med hänsyn till topp-baren)
-                const top_action_bar = document.getElementById('global-action-bar-top');
-                const top_bar_height = top_action_bar ? top_action_bar.offsetHeight : 0;
-
-                const rect = heading.getBoundingClientRect();
-                const absolute_top = rect.top + window.pageYOffset;
-                const scroll_target = Math.max(0, absolute_top - top_bar_height);
-
-                window.scrollTo({ top: scroll_target, behavior: 'auto' });
-
-                try {
-                    if (heading.getAttribute('tabindex') === null) {
-                        heading.setAttribute('tabindex', '-1');
-                    }
-                    heading.focus({ preventScroll: true });
-                } catch (e) {
-                    heading.focus();
-                }
-                try { window.sessionStorage.removeItem(RETURN_FOCUS_AUDIT_INFO_H2_KEY); } catch (err) {}
-                return;
-            }
-
-            attempts_left -= 1;
-            if (attempts_left <= 0) {
-                // Rensa för att undvika loop om elementet inte finns.
-                try { window.sessionStorage.removeItem(RETURN_FOCUS_AUDIT_INFO_H2_KEY); } catch (err) {}
-                return;
-            }
-
-            memoryManager.setTimeout(try_focus, 50);
-        };
-
-        // Vänta en tick så att DOM + subkomponenter hinner rendera.
-        memoryManager.setTimeout(try_focus, 0);
-        return true;
     }
 
     async function render_view(view_name_to_render, params_to_render = {}) {
@@ -1103,7 +653,7 @@ window.DraftManager = DraftManager;
             prev_view === 'rulefile_sections' &&
             prev_params.section === (params_to_render?.section || 'general') &&
             (prev_params.edit === 'true') !== (params_to_render?.edit === 'true') &&
-            current_view_component_instance === RulefileSectionsViewComponent &&
+            current_view_component_instance === rulefileSectionsViewComponent &&
             typeof current_view_component_instance.render === 'function';
 
         if (is_rulefile_sections_edit_toggle) {
@@ -1128,8 +678,8 @@ window.DraftManager = DraftManager;
         }
 
         if (current_view_component_instance && typeof current_view_component_instance.destroy === 'function') {
-            NotificationComponent?.clear_global_message?.();
-            if (current_view_component_instance === RequirementListComponent && view_name_to_render === 'rulefile_requirements') {
+            notificationComponent?.clear_global_message?.();
+            if (current_view_component_instance === requirementListComponent && view_name_to_render === 'rulefile_requirements') {
                 try {
                     current_view_component_instance.destroy();
                 } catch (err) {
@@ -1167,44 +717,44 @@ window.DraftManager = DraftManager;
         let ComponentClass;
         
         switch (view_name_to_render) {
-            case 'start': ComponentClass = AuditViewComponent; break;
-            case 'audit': ComponentClass = AuditViewComponent; break;
-            case 'audit_audits': ComponentClass = AuditViewComponent; break;
-            case 'audit_rules': ComponentClass = AuditViewComponent; break;
-            case 'manage_users': ComponentClass = ManageUsersViewComponent; break;
-            case 'my_settings': ComponentClass = SettingsViewComponent; break;
-            case 'login': ComponentClass = LoginViewComponent; break;
-            case 'metadata': ComponentClass = EditMetadataViewComponent; break;
-            case 'edit_metadata': ComponentClass = EditMetadataViewComponent; break;
-            case 'sample_management': ComponentClass = SampleManagementViewComponent; break;
-            case 'sample_form': ComponentClass = SampleFormViewComponent; break;
-            case 'confirm_sample_edit': ComponentClass = ConfirmSampleEditViewComponent; break; 
-            case 'audit_overview': ComponentClass = AuditOverviewComponent; break;
-            case 'audit_actions': ComponentClass = AuditActionsViewComponent; break;
-            case 'all_requirements': ComponentClass = AllRequirementsViewComponent; break;
-            case 'audit_problems': ComponentClass = AuditProblemsViewComponent; break;
-            case 'audit_images': ComponentClass = AuditImagesViewComponent; break;
-            case 'archived_requirements': ComponentClass = ArchivedRequirementsViewComponent; break;
-            case 'rulefile_change_log': ComponentClass = RulefileChangeLogViewComponent; break;
-            case 'requirement_list': ComponentClass = RequirementListComponent; break;
-            case 'requirement_audit': ComponentClass = RequirementAuditComponent; break;
-            case 'update_rulefile': ComponentClass = UpdateRulefileViewComponent; break; 
-            case 'confirm_updates': ComponentClass = ConfirmUpdatesViewComponent; break;
-            case 'final_confirm_updates': ComponentClass = FinalConfirmUpdatesViewComponent; break;
-            case 'edit_rulefile_main': ComponentClass = EditRulefileMainViewComponent; break;
-            case 'rulefile_requirements': ComponentClass = RulefileRequirementsListComponent; break;
-            case 'rulefile_view_requirement': ComponentClass = ViewRulefileRequirementComponent; break;
-            case 'rulefile_edit_requirement': ComponentClass = EditRulefileRequirementComponent; break;
-            case 'rulefile_add_requirement': ComponentClass = EditRulefileRequirementComponent; break;
-            case 'rulefile_metadata_edit': ComponentClass = EditRulefileMetadataViewComponent; break;
-            case 'rulefile_metadata_view': ComponentClass = RulefileMetadataViewComponent; break;
-            case 'rulefile_sections_edit_general': ComponentClass = EditGeneralSectionComponent; break;
-            case 'rulefile_sections_edit_page_types': ComponentClass = EditPageTypesSectionComponent; break;
-            case 'rulefile_sections': ComponentClass = RulefileSectionsViewComponent; break;
-            case 'backup': ComponentClass = BackupOverviewComponent; break;
-            case 'backup_detail': ComponentClass = BackupOverviewComponent; break;
-            case 'backup_settings': ComponentClass = BackupSettingsViewComponent; break;
-            case 'confirm_delete': ComponentClass = ConfirmDeleteViewComponent; break;
+            case 'start': ComponentClass = auditViewComponent; break;
+            case 'audit': ComponentClass = auditViewComponent; break;
+            case 'audit_audits': ComponentClass = auditViewComponent; break;
+            case 'audit_rules': ComponentClass = auditViewComponent; break;
+            case 'manage_users': ComponentClass = manageUsersViewComponent; break;
+            case 'my_settings': ComponentClass = settingsViewComponent; break;
+            case 'login': ComponentClass = loginViewComponent; break;
+            case 'metadata': ComponentClass = editMetadataViewComponent; break;
+            case 'edit_metadata': ComponentClass = editMetadataViewComponent; break;
+            case 'sample_management': ComponentClass = sampleManagementViewComponent; break;
+            case 'sample_form': ComponentClass = sampleFormViewComponent; break;
+            case 'confirm_sample_edit': ComponentClass = confirmSampleEditViewComponent; break; 
+            case 'audit_overview': ComponentClass = auditOverviewComponent; break;
+            case 'audit_actions': ComponentClass = auditActionsViewComponent; break;
+            case 'all_requirements': ComponentClass = allRequirementsViewComponent; break;
+            case 'audit_problems': ComponentClass = auditProblemsViewComponent; break;
+            case 'audit_images': ComponentClass = auditImagesViewComponent; break;
+            case 'archived_requirements': ComponentClass = archivedRequirementsViewComponent; break;
+            case 'rulefile_change_log': ComponentClass = rulefileChangeLogViewComponent; break;
+            case 'requirement_list': ComponentClass = requirementListComponent; break;
+            case 'requirement_audit': ComponentClass = requirementAuditComponent; break;
+            case 'update_rulefile': ComponentClass = updateRulefileViewComponent; break;
+            case 'confirm_updates': ComponentClass = confirmUpdatesViewComponent; break;
+            case 'final_confirm_updates': ComponentClass = finalConfirmUpdatesViewComponent; break;
+            case 'edit_rulefile_main': ComponentClass = editRulefileMainViewComponent; break;
+            case 'rulefile_requirements': ComponentClass = rulefileRequirementsListComponent; break;
+            case 'rulefile_view_requirement': ComponentClass = viewRulefileRequirementComponent; break;
+            case 'rulefile_edit_requirement': ComponentClass = editRulefileRequirementComponent; break;
+            case 'rulefile_add_requirement': ComponentClass = editRulefileRequirementComponent; break;
+            case 'rulefile_metadata_edit': ComponentClass = editRulefileMetadataViewComponent; break;
+            case 'rulefile_metadata_view': ComponentClass = rulefileMetadataViewComponent; break;
+            case 'rulefile_sections_edit_general': ComponentClass = editGeneralSectionComponent; break;
+            case 'rulefile_sections_edit_page_types': ComponentClass = editPageTypesSectionComponent; break;
+            case 'rulefile_sections': ComponentClass = rulefileSectionsViewComponent; break;
+            case 'backup': ComponentClass = backupOverviewComponent; break;
+            case 'backup_detail': ComponentClass = backupOverviewComponent; break;
+            case 'backup_settings': ComponentClass = backupSettingsViewComponent; break;
+            case 'confirm_delete': ComponentClass = confirmDeleteViewComponent; break;
             default:
                 consoleManager.error(`[Main.js] View "${view_name_to_render}" not found in render_view switch.`);
                 const error_h1 = document.createElement('h1');
@@ -1247,7 +797,7 @@ window.DraftManager = DraftManager;
                     flush_sync_to_server,
                     Translation: window.Translation,
                     Helpers: window.Helpers,
-                    NotificationComponent: NotificationComponent,
+                    NotificationComponent: notificationComponent,
                     SaveAuditLogic: window.SaveAuditLogic,
                     AuditLogic: AuditLogic,
                     ExportLogic: window.ExportLogic,
@@ -1315,114 +865,17 @@ window.DraftManager = DraftManager;
         }
     }
 
-    const SKIP_LINK_ANCHOR_ID = 'main-content-heading';
-
     async function handle_hash_change() {
-        if (get_auth_token()) {
-            try {
-                const user = await get_current_user_preferences();
-                if (user?.name) {
-                    window.__GV_CURRENT_USER_NAME__ = user.name;
-                    if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('gv_current_user_name', user.name);
-                }
-                set_current_user_admin(!!user?.is_admin);
-                dispatch({ type: 'GV_USER_PREFERENCES_SYNCED' });
-            } catch (_) {}
-        }
-        const hash = window.location.hash.substring(1);
-        nav_debug('handle_hash_change anropad', { hash, full_url: window.location.href });
-        const [view_name_from_hash, ...param_pairs] = hash.split('?');
-        /* Ignorera #main-content-heading – det är en intern ankare för skiplänken, inte ett vynamn */
-        const is_skip_link_anchor = view_name_from_hash === SKIP_LINK_ANCHOR_ID;
-        const effective_view_name = is_skip_link_anchor ? '' : view_name_from_hash;
-
-        const params = {};
-        if (param_pairs.length > 0 && !is_skip_link_anchor) {
-            const query_string = param_pairs.join('?');
-            const url_params = new URLSearchParams(query_string);
-            for (const [key, value] of url_params) { params[key] = value; }
-        }
-        let target_view = 'start';
-        let target_params = params;
-        const current_global_state = getState();
-
-        const load_audit_and_navigate = async (auditId) => {
-            const t = window.Translation?.t || (k => k);
-            try {
-                const { load_audit_with_rule_file } = await import('./api/client.js');
-                const full_state = await load_audit_with_rule_file(auditId);
-                const validation = ValidationLogic?.validate_saved_audit_file?.(full_state, { t });
-                if (full_state && validation?.isValid) {
-                    dispatch({ type: StoreActionTypes.LOAD_AUDIT_FROM_FILE, payload: full_state });
-                    const status = full_state.auditStatus || 'not_started';
-                    const samples = full_state.samples || [];
-                    let next_view = 'audit_overview';
-                    if (status === 'not_started' && samples.length === 0) {
-                        next_view = 'sample_management';
-                    } else if (status === 'not_started') {
-                        next_view = 'metadata';
-                    }
-                    navigate_and_set_hash(next_view, {});
-                    return true;
-                }
-                if (validation && !validation.isValid && window.NotificationComponent?.show_global_message) {
-                    window.NotificationComponent.show_global_message(validation.message || t('error_invalid_saved_audit_file'), 'error');
-                }
-            } catch (err) {
-                if (window.NotificationComponent?.show_global_message) {
-                    window.NotificationComponent.show_global_message(
-                        t('server_load_audit_error', { message: err.message }) || err.message,
-                        'error'
-                    );
-                }
-            }
-            return false;
-        };
-
-        if (effective_view_name === 'upload') {
-            if (params.auditId && (await load_audit_and_navigate(params.auditId))) return;
-            navigate_and_set_hash('start', {});
-            return;
-        }
-
-        if (effective_view_name === 'audit_overview' && params.auditId) {
-            if (await load_audit_and_navigate(params.auditId)) return;
-            navigate_and_set_hash('start', {});
-            return;
-        }
-
-        if (effective_view_name) {
-            target_view = effective_view_name;
-        } else {
-            target_view = 'start';
-            target_params = {};
-        }
-        if (target_view === 'manage_users' && !is_current_user_admin()) {
-            target_view = 'start';
-            target_params = {};
-            history.replaceState(null, '', '#start');
-        }
-        nav_debug('handle_hash_change -> render_view', { target_view, target_params, effective_view_name });
-        if (is_skip_link_anchor || !effective_view_name) {
-            const target_hash_part = target_params && Object.keys(target_params).length > 0 ?
-                `${target_view}?${new URLSearchParams(target_params).toString()}` :
-                target_view;
-            history.replaceState(null, '', `#${target_hash_part}`);
-        }
-        try {
-            const scope_key = get_scope_key_from_view_and_params(target_view, target_params);
-            if (scope_key && window.sessionStorage) {
-                const focus_storage = load_focus_storage();
-                const focus_info = focus_storage[scope_key];
-                if (focus_info) {
-                    window.__gv_restore_focus_info = focus_info;
-                }
-            }
-        } catch (e) {
-            /* ignore */
-        }
-        updatePageTitle(target_view, target_params);
-        render_view(target_view, target_params);
+        return handle_hash_change_impl({
+            nav_debug,
+            dispatch,
+            StoreActionTypes,
+            navigate_and_set_hash,
+            updatePageTitle,
+            render_view,
+            load_focus_storage,
+            get_scope_key_from_view_and_params
+        });
     }
 
     function on_language_changed_event() { 
@@ -1440,35 +893,6 @@ window.DraftManager = DraftManager;
         }
     }
     
-    async function apply_user_preferences_from_server() {
-        if (!window.__GV_CURRENT_USER_NAME__) return;
-        try {
-            const { get_current_user_preferences } = await import('./api/client.js');
-            const user = await get_current_user_preferences();
-            if (user?.language_preference && typeof window.Translation?.set_language === 'function') {
-                await window.Translation.set_language(user.language_preference);
-            }
-            if (user?.theme_preference === 'light' || user?.theme_preference === 'dark' || user?.theme_preference === 'alternative') {
-                localStorage.setItem('theme_preference', user.theme_preference);
-                document.documentElement.setAttribute('data-theme', user.theme_preference);
-            } else if (user?.theme_preference === 'system' || user?.theme_preference === null || user?.theme_preference === '') {
-                localStorage.removeItem('theme_preference');
-                const prefers_dark = window.matchMedia?.('(prefers-color-scheme: dark)')?.matches;
-                document.documentElement.setAttribute('data-theme', prefers_dark ? 'dark' : 'light');
-            }
-            const pref = user?.review_sort_preference || 'by_criteria';
-            if (pref === 'by_criteria' || pref === 'by_sample') {
-                const mode = pref === 'by_criteria' ? 'requirement_samples' : 'sample_requirements';
-                dispatch({
-                    type: StoreActionTypes.SET_REQUIREMENT_AUDIT_SIDEBAR_SETTINGS,
-                    payload: { selectedMode: mode }
-                });
-            }
-        } catch {
-            /* ignorerar – användaren kanske inte finns i DB */
-        }
-    }
-
     function is_focus_in_editable_field(view_root) {
         if (!view_root) return false;
         const active = document.activeElement;
@@ -1478,269 +902,46 @@ window.DraftManager = DraftManager;
     }
 
     async function start_normal_session(options = {}) {
-        ensure_app_layout();
-        setup_tooltip_overlay();
-        // Initialize layout manager to handle dynamic vertical positioning
-        if (LayoutManager && typeof LayoutManager.init === 'function') {
-            LayoutManager.init();
-        }
-        await apply_user_preferences_from_server();
-        await init_global_components();
-        init_connectivity_service({ getState, dispatch });
-        if (window.ScoreManager?.init) { window.ScoreManager.init(subscribe, getState, dispatch, StoreActionTypes); }
-        if (MarkdownToolbar?.init) { MarkdownToolbar.init(); }
-        init_version_check_service();
-        const rulefile_view_poll_instance = init_rulefile_view_poll_service({ getState, dispatch, StoreActionTypes });
-        // Lagra referenser till event listeners för senare cleanup
-        const language_changed_handler = on_language_changed_event;
-        const hash_change_handler = handle_hash_change;
-        const hash_change_wrapper = (...args) => {
-            nav_debug('hashchange-event triggat', { hash: window.location.hash });
-            hash_change_handler(...args);
-        };
-        memoryManager.addEventListener(window, 'hashchange', hash_change_wrapper);
-        memoryManager.addEventListener(document, 'languageChanged', language_changed_handler);
-
-        let focus_capture_timer = null;
-        const focus_in_handler = (e) => {
-            if (focus_capture_timer) clearTimeout(focus_capture_timer);
-            focus_capture_timer = setTimeout(() => {
-                focus_capture_timer = null;
-                const info = capture_focus_info_from_element(document.activeElement);
-                if (info) {
-                    let parsed_params = {};
-                    try {
-                        parsed_params = JSON.parse(current_view_params_rendered_json || '{}');
-                    } catch (e) {
-                        parsed_params = {};
-                    }
-                    update_restore_position(current_view_name_rendered, parsed_params, info);
-                    updateBackupRestorePosition(window.__gv_get_restore_position?.());
-                    try {
-                        const scope_key = get_scope_key_from_view_and_params(current_view_name_rendered, parsed_params);
-                        if (scope_key && window.sessionStorage) {
-                            const focus_storage = load_focus_storage();
-                            focus_storage[scope_key] = info;
-                            save_focus_storage(focus_storage);
-                        }
-                    } catch (e) {
-                        /* ignore */
-                    }
-                }
-            }, 150);
-        };
-        const focus_root = main_view_root || app_container;
-        if (focus_root) {
-            focus_root.addEventListener('focusin', focus_in_handler);
-        }
-
-        // Exponera cleanup-funktion globalt
-        window.cleanupGlobalEventListeners = () => {
-            if (rulefile_view_poll_instance?.disconnect) rulefile_view_poll_instance.disconnect();
-            memoryManager.removeEventListener(document, 'languageChanged', language_changed_handler);
-            memoryManager.removeEventListener(window, 'hashchange', hash_change_wrapper);
-            const fr = main_view_root || app_container;
-            if (fr) fr.removeEventListener('focusin', focus_in_handler);
-            
-            // Clean up error boundary
-            if (error_boundary_instance && typeof error_boundary_instance.destroy === 'function') {
-                try {
-                    error_boundary_instance.destroy();
-                } catch (error) {
-                    consoleManager.error('[Main.js] Error cleaning up error boundary:', error);
-                }
-            }
-            
-            consoleManager.info('[Main.js] Global event listeners cleaned up');
-        };
-
-        subscribe((new_state, listener_meta) => {
-            if (listener_meta?.skip_render) {
-                if (window.__GV_DEBUG_MODAL_SCROLL) {
-                    consoleManager.log('[GV-ModalDebug] subscribe: skip_render – ingen render');
-                }
-                return;
-            }
-            if (window.__GV_DEBUG_MODAL_SCROLL) {
-                consoleManager.log('[GV-ModalDebug] subscribe: RENDERAR top_action_bar, bottom_action_bar, current_view');
-            }
-            try {
-                top_action_bar_instance.render();
-            } catch (error) {
-                consoleManager.error("[Main.js] Error in subscription top action bar render:", error);
-                if (error_boundary_instance && error_boundary_instance.show_error) {
-                    error_boundary_instance.show_error({
-                        message: `Top action bar subscription render failed: ${error.message}`,
-                        stack: error.stack,
-                        component: 'TopActionBar'
-                    });
-                }
-            }
-            
-            try {
-                bottom_action_bar_instance.render();
-            } catch (error) {
-                consoleManager.error("[Main.js] Error in subscription bottom action bar render:", error);
-                if (error_boundary_instance && error_boundary_instance.show_error) {
-                    error_boundary_instance.show_error({
-                        message: `Bottom action bar subscription render failed: ${error.message}`,
-                        stack: error.stack,
-                        component: 'BottomActionBar'
-                    });
-                }
-            }
-            updatePageTitleFromCurrentView();
-            try {
-                const parsed_params = JSON.parse(current_view_params_rendered_json || '{}');
-                update_side_menu(current_view_name_rendered, parsed_params);
-            } catch (error) {
-                consoleManager.warn('[Main.js] Failed to parse current view params for side menu update:', error);
-                update_side_menu(current_view_name_rendered, {});
-            }
-            const hash = window.location.hash.substring(1);
-            const [view_name_from_hash,] = hash.split('?');
-            if (current_view_name_rendered === view_name_from_hash && 
-                current_view_component_instance && typeof current_view_component_instance.render === 'function') {
-                if (current_view_name_rendered !== 'confirm_sample_edit') {
-                    if ((current_view_name_rendered === 'audit' || current_view_name_rendered === 'audit_audits' || current_view_name_rendered === 'audit_rules') && current_view_component_instance._api_load_started && !current_view_component_instance._api_checked) {
-                        return;
-                    }
-                    if (current_view_name_rendered === 'rulefile_edit_requirement' || current_view_name_rendered === 'rulefile_add_requirement') {
-                        const skip_count = Number(window.skipRulefileRequirementRender) || 0;
-                        if (skip_count > 0) {
-                            window.skipRulefileRequirementRender = skip_count - 1;
-                            return;
-                        }
-                    }
-                    const view_root = main_view_root || app_container;
-                    if (is_focus_in_editable_field(view_root)) {
-                        return;
-                    }
-                    const scroll_before = {
-                        windowY: window.scrollY,
-                        appContainer: document.getElementById('app-container')?.scrollTop ?? 0,
-                        mainViewRoot: document.getElementById('app-main-view-root')?.scrollTop ?? 0
-                    };
-                    const focus_state = capture_focus_state(view_root);
-                    const window_scroll = focus_state ? { x: window.scrollX, y: window.scrollY } : null;
-                    try {
-                        const render_promise = current_view_component_instance.render();
-                        if (DraftManager?.restoreIntoDom) {
-                            DraftManager.restoreIntoDom(main_view_root || app_container);
-                        }
-                        const restore_scroll = () => {
-                            requestAnimationFrame(() => {
-                                if (focus_state && view_root) {
-                                    restore_focus_state({
-                                        focus_root: view_root,
-                                        focus_state,
-                                        window_scroll
-                                    });
-                                }
-                                window.scrollTo(0, scroll_before.windowY);
-                                document.documentElement.scrollTop = scroll_before.windowY;
-                                document.body.scrollTop = scroll_before.windowY;
-                                const ac = document.getElementById('app-container');
-                                const mvr = document.getElementById('app-main-view-root');
-                                if (ac) ac.scrollTop = scroll_before.appContainer;
-                                if (mvr) mvr.scrollTop = scroll_before.mainViewRoot;
-                            });
-                        };
-                        if (render_promise && typeof render_promise.then === 'function') {
-                            render_promise.then(restore_scroll).catch(() => restore_scroll());
-                        } else {
-                            restore_scroll();
-                        }
-                    } catch (error) {
-                        consoleManager.error("[Main.js] Error in subscription current view render:", error);
-                        if (error_boundary_instance && error_boundary_instance.show_error) {
-                            error_boundary_instance.show_error({
-                                message: `Current view render failed: ${error.message}`,
-                                stack: error.stack,
-                                component: current_view_name_rendered || 'Unknown'
-                            });
-                        }
-                    }
-                }
-            }
+        return start_normal_session_impl({
+            ...options,
+            ensure_app_layout,
+            setup_tooltip_overlay,
+            LayoutManager,
+            init_global_components,
+            init_connectivity_service,
+            init_version_check_service,
+            init_rulefile_view_poll_service,
+            MarkdownToolbar,
+            nav_debug,
+            on_language_changed_event,
+            handle_hash_change,
+            capture_focus_info_from_element,
+            get_main_view_root: () => main_view_root,
+            get_app_container: () => app_container,
+            get_current_view_name_rendered: () => current_view_name_rendered,
+            get_current_view_params_rendered_json: () => current_view_params_rendered_json,
+            update_restore_position,
+            updateBackupRestorePosition,
+            get_scope_key_from_view_and_params,
+            load_focus_storage,
+            save_focus_storage,
+            top_action_bar_instance,
+            bottom_action_bar_instance,
+            error_boundary_instance,
+            NotificationComponent: notificationComponent,
+            DraftManager,
+            capture_focus_state,
+            restore_focus_state,
+            updatePageTitleFromCurrentView,
+            update_side_menu,
+            get_current_view_component: () => current_view_component_instance,
+            is_focus_in_editable_field,
+            subscribe,
+            getState,
+            dispatch,
+            StoreActionTypes,
+            update_app_chrome_texts
         });
-        if (NotificationComponent?.clear_global_message) { NotificationComponent.clear_global_message(); }
-
-        {
-            const hash = (window.location.hash || '').replace(/^#/, '');
-            const view_from_hash = hash.split('?')[0];
-            if (view_from_hash === 'login') {
-                window.location.hash = '#start';
-            } else {
-                handle_hash_change();
-            }
-        }
-        update_app_chrome_texts();
-    } 
-
-    function is_dev_build_environment() {
-        if (typeof window === 'undefined') return false;
-        const h = window.location.hostname;
-        const p = window.location.port;
-        return h === 'localhost' || h === '127.0.0.1' || p === '5173' || p === '4173';
-    }
-
-    /**
-     * I dev cachar webbläsaren ofta den första modulladdningen av build-info.js.
-     * Hämta om med unik URL så att window.BUILD_INFO matchar filen på disk (utan hel sidomladdning).
-     */
-    async function refresh_dev_build_info_from_server() {
-        if (!is_dev_build_environment()) return;
-        try {
-            const url = new URL(`../build-info.js?t=${Date.now()}`, import.meta.url).href;
-            await import(/* @vite-ignore */ url);
-        } catch (_) {
-            // Ignorera om build-info saknas i vissa lägen
-        }
-    }
-
-    function update_build_timestamp() {
-        const buildTimestampElement = document.getElementById('build-timestamp');
-        if (!buildTimestampElement) return;
-
-        const t = window.Translation?.t || ((key, replacements) => {
-            if (replacements) {
-                let result = key;
-                for (const [k, v] of Object.entries(replacements)) {
-                    result = result.replace(`{${k}}`, v);
-                }
-                return result;
-            }
-            return key;
-        });
-
-        const is_dev = is_dev_build_environment();
-
-        const date_str = window.BUILD_INFO?.date || new Date().toLocaleDateString('sv-SE');
-        let time_str;
-        if (is_dev) {
-            if (window.BUILD_INFO?.timestamp) {
-                const d = new Date(window.BUILD_INFO.timestamp);
-                time_str = d.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            } else {
-                time_str = new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-            }
-        } else {
-            // Byggt: datum och HH:mm (när appen byggdes/deployades)
-            if (window.BUILD_INFO?.timestamp) {
-                const d = new Date(window.BUILD_INFO.timestamp);
-                time_str = d.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
-            } else {
-                time_str = window.BUILD_INFO?.time || new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
-            }
-        }
-
-        if (is_dev) {
-            buildTimestampElement.textContent = t('build_timestamp_dev_fallback', { date: date_str, time: time_str });
-        } else {
-            buildTimestampElement.textContent = t('build_timestamp_built', { date: date_str, time: time_str });
-        }
-        buildTimestampElement.style.display = 'block';
     }
 
     function ensure_skip_link_target(root) {
@@ -1841,6 +1042,21 @@ window.DraftManager = DraftManager;
             })();
         }, 100);
         if (is_dev_build_environment()) {
+            const DEV_BUILDINFO_REFRESH_INTERVAL_MS = 1500;
+            let buildinfo_refresh_in_flight = false;
+
+            memoryManager.setInterval(async () => {
+                if (document.visibilityState !== 'visible') return;
+                if (buildinfo_refresh_in_flight) return;
+                buildinfo_refresh_in_flight = true;
+                try {
+                    await refresh_dev_build_info_from_server();
+                    update_build_timestamp();
+                } finally {
+                    buildinfo_refresh_in_flight = false;
+                }
+            }, DEV_BUILDINFO_REFRESH_INTERVAL_MS);
+
             document.addEventListener('visibilitychange', () => {
                 if (document.visibilityState !== 'visible') return;
                 (async () => {
@@ -1881,7 +1097,7 @@ window.DraftManager = DraftManager;
             }
             try {
                 const t = window.Translation?.t ?? ((k) => k);
-                NotificationComponent?.show_global_message?.(t('auth_session_expired'), 'warning');
+                notificationComponent?.show_global_message?.(t('auth_session_expired'), 'warning');
             } catch (_) {}
 
             await render_view('login', {
@@ -1961,7 +1177,7 @@ window.DraftManager = DraftManager;
             StoreActionTypes,
             ValidationLogic,
             router: navigate_and_set_hash,
-            NotificationComponent,
+            NotificationComponent: notificationComponent,
             t: typeof window.Translation?.t === 'function' ? window.Translation.t.bind(window.Translation) : ((k) => k),
             navigate_and_set_hash,
             handle_hash_change
@@ -1993,7 +1209,7 @@ window.DraftManager = DraftManager;
                 if (should_show) {
                     sessionStorage.removeItem(AUTH_REQUIRED_MESSAGE_KEY);
                     const t = window.Translation?.t ?? ((k) => k);
-                    NotificationComponent?.show_global_message?.(t('auth_session_expired'), 'warning');
+                    notificationComponent?.show_global_message?.(t('auth_session_expired'), 'warning');
                 }
             } catch (_) {}
             await render_view('login', {

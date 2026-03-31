@@ -78,7 +78,8 @@ async function renderStartView() {
   const { AuditViewComponent } = await import('../../js/components/AuditViewComponent.js');
   const appContainer = document.getElementById('app-container');
 
-  await AuditViewComponent.init({
+  const auditViewComponent = new AuditViewComponent();
+  await auditViewComponent.init({
     root: appContainer,
     deps: {
       router: jest.fn(),
@@ -111,11 +112,11 @@ async function renderStartView() {
     return { ok: true, json: async () => ({}) };
   });
 
-  await AuditViewComponent.ensure_api_data();
-  AuditViewComponent._api_checked = true;
-  AuditViewComponent.render();
+  await auditViewComponent.ensure_api_data();
+  auditViewComponent._api_checked = true;
+  auditViewComponent.render();
 
-  return { StartViewComponent: AuditViewComponent, appContainer };
+  return { StartViewComponent: auditViewComponent, appContainer };
 }
 
 afterEach(() => {

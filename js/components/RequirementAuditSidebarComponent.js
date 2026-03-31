@@ -5,45 +5,49 @@ import './requirement_audit_sidebar_component.css';
 import { get_searchable_text_for_requirement as get_searchable_text_util } from '../utils/requirement_search_utils.js';
 import { fingerprint_item_keys, can_incremental_update } from '../utils/incremental_list_update.js';
 
-export const RequirementAuditSidebarComponent = {
-    CSS_PATH: './requirement_audit_sidebar_component.css',
+export class RequirementAuditSidebarComponent {
+    constructor() {
+        this.CSS_PATH = './requirement_audit_sidebar_component.css';
 
-    root: null,
-    deps: null,
-    router: null,
-    getState: null,
-    Translation: null,
-    Helpers: null,
-    AuditLogic: null,
-    on_filters_change_callback: null,
+        this.root = null;
+        this.deps = null;
+        this.router = null;
+        this.getState = null;
+        this.dispatch = null;
+        this.StoreActionTypes = null;
+        this.Translation = null;
+        this.Helpers = null;
+        this.AuditLogic = null;
+        this.on_filters_change_callback = null;
 
-    is_dom_initialized: false,
-    selected_mode: 'requirement_samples',
-    last_render_options: null,
-    _last_rendered_fingerprint: null,
+        this.is_dom_initialized = false;
+        this.selected_mode = 'requirement_samples';
+        this.last_render_options = null;
+        this._last_rendered_fingerprint = null;
 
-    mode_fieldset_ref: null,
-    mode_legend_ref: null,
-    mode_label_refs: null,
-    filter_container_ref: null,
-    requirements_filter_component: null,
-    list_container_ref: null,
-    heading_ref: null,
-    filter_heading_ref: null,
-    list_heading_ref: null,
+        this.mode_fieldset_ref = null;
+        this.mode_legend_ref = null;
+        this.mode_label_refs = null;
+        this.filter_container_ref = null;
+        this.requirements_filter_component = null;
+        this.list_container_ref = null;
+        this.heading_ref = null;
+        this.filter_heading_ref = null;
+        this.list_heading_ref = null;
 
-    filters_by_mode: {
-        sample_requirements: {
-            searchText: '',
-            sortBy: 'ref_asc',
-            status: { needs_help: true, passed: true, failed: true, partially_audited: true, not_audited: true, updated: true }
-        },
-        requirement_samples: {
-            searchText: '',
-            sortBy: 'creation_order',
-            status: { needs_help: true, passed: true, failed: true, partially_audited: true, not_audited: true, updated: true }
-        }
-    },
+        this.filters_by_mode = {
+            sample_requirements: {
+                searchText: '',
+                sortBy: 'ref_asc',
+                status: { needs_help: true, passed: true, failed: true, partially_audited: true, not_audited: true, updated: true }
+            },
+            requirement_samples: {
+                searchText: '',
+                sortBy: 'creation_order',
+                status: { needs_help: true, passed: true, failed: true, partially_audited: true, not_audited: true, updated: true }
+            }
+        };
+    }
 
     async init({ root, deps }) {
         this.root = root;
@@ -68,7 +72,7 @@ export const RequirementAuditSidebarComponent = {
         } else if (this.Helpers?.load_css) {
             await this.Helpers.load_css(this.CSS_PATH).catch(() => {});
         }
-    },
+    }
 
     async ensure_dom_initialized() {
         if (!this.root || this.is_dom_initialized) return;
@@ -164,7 +168,7 @@ export const RequirementAuditSidebarComponent = {
         this.root.appendChild(container);
         this.root.addEventListener('click', this.handle_link_click);
         this.is_dom_initialized = true;
-    },
+    }
 
     handle_mode_change(event) {
         const new_value = event?.target?.value;
@@ -176,7 +180,7 @@ export const RequirementAuditSidebarComponent = {
         if (this.last_render_options) {
             this.render(this.last_render_options);
         }
-    },
+    }
 
     handle_link_click(event) {
         const link = event.target?.closest?.('[data-requirement-sidebar-link="true"]');
@@ -191,7 +195,7 @@ export const RequirementAuditSidebarComponent = {
             window.sessionStorage?.setItem('gv_force_focus_h1_v1', 'true');
         } catch (e) {}
         this.router('requirement_audit', { sampleId: sample_id, requirementId: requirement_id });
-    },
+    }
 
     build_non_anchor_href(view_name, params = {}) {
         try {
@@ -203,7 +207,7 @@ export const RequirementAuditSidebarComponent = {
         } catch (e) {
             return '#';
         }
-    },
+    }
 
     async render(options) {
         if (!this.root || !options) return;
@@ -301,7 +305,7 @@ export const RequirementAuditSidebarComponent = {
         }
         this._last_rendered_fingerprint = fingerprint;
         this.notify_filters_changed();
-    },
+    }
 
     _update_list_items_status_only(sorted_items, rule_file_content, current_sample, current_requirement, requirement_id) {
         // Vi vill rita om hela listan med den nya, förenklade strukturen.
@@ -309,7 +313,7 @@ export const RequirementAuditSidebarComponent = {
             this.list_container_ref.innerHTML = '';
         }
         return false;
-    },
+    }
 
     _create_sidebar_status_icons(base_status, needs_help, is_updated) {
         const t = this.Translation.t;
@@ -360,7 +364,7 @@ export const RequirementAuditSidebarComponent = {
             icons_wrapper.appendChild(updated_wrapper);
         }
         return icons_wrapper;
-    },
+    }
 
     // _build_sidebar_status_rows togs bort – vi använder en mer kompakt struktur
 
@@ -480,7 +484,7 @@ export const RequirementAuditSidebarComponent = {
         });
 
         this.list_container_ref.appendChild(list);
-    },
+    }
 
     render_samples_for_requirement(rule_file_content, current_requirement, samples, requirement_id, current_sample_id) {
         // Behåll requirement_id från aktuell route för att säkerställa
@@ -602,7 +606,7 @@ export const RequirementAuditSidebarComponent = {
         });
 
         this.list_container_ref.appendChild(list);
-    },
+    }
 
     get_current_filters() {
         const current = this.filters_by_mode[this.selected_mode] || this.filters_by_mode.sample_requirements;
@@ -610,7 +614,7 @@ export const RequirementAuditSidebarComponent = {
             current.status = { needs_help: true, passed: true, failed: true, partially_audited: true, not_audited: true, updated: true };
         }
         return current;
-    },
+    }
 
     get_sort_options_for_mode(mode) {
         if (mode === 'requirement_samples') {
@@ -629,7 +633,7 @@ export const RequirementAuditSidebarComponent = {
             { value: 'title_desc', textKey: 'sort_option_title_desc' },
             { value: 'updated_first', textKey: 'sort_option_updated_first' }
         ];
-    },
+    }
 
     update_filter_texts_and_values() {
         const current = this.get_current_filters();
@@ -642,7 +646,7 @@ export const RequirementAuditSidebarComponent = {
         if (this.requirements_filter_component && typeof this.requirements_filter_component.render === 'function') {
             this.requirements_filter_component.render();
         }
-    },
+    }
 
     get_filtered_requirement_items(rule_file_content, current_sample) {
         if (!rule_file_content || !current_sample) return [];
@@ -689,7 +693,7 @@ export const RequirementAuditSidebarComponent = {
             });
 
         return this.sort_requirement_items(filtered_items, filters.sortBy);
-    },
+    }
 
     get_filtered_sample_items(rule_file_content, current_requirement, samples, requirement_id, current_sample_id) {
         if (!rule_file_content || !current_requirement || !Array.isArray(samples)) return [];
@@ -756,7 +760,7 @@ export const RequirementAuditSidebarComponent = {
             });
 
         return this.sort_sample_items(matching_samples, filters.sortBy, current_requirement, rule_file_content);
-    },
+    }
 
     is_requirement_relevant_for_sample(requirement, sample) {
         if (!requirement || !sample) return false;
@@ -765,7 +769,7 @@ export const RequirementAuditSidebarComponent = {
         const req_types = requirement.contentType;
         if (!Array.isArray(req_types) || req_types.length === 0) return true;
         return req_types.some(ct => selected_types.includes(ct));
-    },
+    }
 
     get_navigation_payload(options) {
         if (!options) return null;
@@ -780,7 +784,7 @@ export const RequirementAuditSidebarComponent = {
                 options.current_sample?.id
             )
         };
-    },
+    }
 
     notify_filters_changed() {
         if (typeof this.on_filters_change_callback !== 'function') return;
@@ -789,7 +793,7 @@ export const RequirementAuditSidebarComponent = {
         if (payload) {
             this.on_filters_change_callback(payload);
         }
-    },
+    }
 
     load_settings_from_state() {
         if (!this.getState) return;
@@ -816,7 +820,7 @@ export const RequirementAuditSidebarComponent = {
                 }
             }
         }
-    },
+    }
 
     save_settings_to_state() {
         if (!this.dispatch || !this.StoreActionTypes) return;
@@ -831,11 +835,11 @@ export const RequirementAuditSidebarComponent = {
                 }
             }
         });
-    },
+    }
 
     get_display_status(requirement, requirement_result) {
         return requirement_result?.needsReview ? 'updated' : this.AuditLogic.calculate_requirement_status(requirement, requirement_result);
-    },
+    }
 
     get_status_icon(status) {
         switch (status) {
@@ -852,16 +856,16 @@ export const RequirementAuditSidebarComponent = {
             default:
                 return '○';
         }
-    },
+    }
 
     get_searchable_text_for_requirement(requirement) {
         return get_searchable_text_util(requirement, { includeInfoBlocks: true });
-    },
+    }
 
     get_active_status_filters(status_filters) {
         if (!status_filters || typeof status_filters !== 'object') return [];
         return Object.keys(status_filters).filter(key => status_filters[key]);
-    },
+    }
 
     sort_requirement_items(items, sort_by) {
         const sorted = [...items];
@@ -882,7 +886,7 @@ export const RequirementAuditSidebarComponent = {
             sorted.sort((a, b) => this.Helpers.natural_sort(a.requirement.standardReference?.text || 'Z', b.requirement.standardReference?.text || 'Z'));
         }
         return sorted;
-    },
+    }
 
     sort_sample_items(items, sort_by, current_requirement, rule_file_content) {
         const sorted = [...items];
@@ -921,7 +925,7 @@ export const RequirementAuditSidebarComponent = {
             sorted.sort((a, b) => (a.sample?.description || '').localeCompare(b.sample?.description || '', 'sv', { numeric: true, sensitivity: 'base' }));
         }
         return sorted;
-    },
+    }
 
     get_page_type_text(page_type_id, rule_file_content) {
         if (!page_type_id || !rule_file_content) return '';
@@ -929,7 +933,7 @@ export const RequirementAuditSidebarComponent = {
         const page_type = page_types.find(pt => pt.id === page_type_id || pt === page_type_id);
         if (typeof page_type === 'string') return page_type;
         return page_type?.text || page_type?.id || '';
-    },
+    }
 
     destroy() {
         if (this.root) {
@@ -960,4 +964,4 @@ export const RequirementAuditSidebarComponent = {
         }
         this.requirements_filter_component = null;
     }
-};
+}

@@ -1,6 +1,23 @@
 import { AddSampleFormComponent } from './AddSampleFormComponent.js';
 
-export const SampleFormViewComponent = {
+export class SampleFormViewComponent {
+    constructor() {
+        this.root = null;
+        this.deps = null;
+        this.router = null;
+        this.params = null;
+        this.getState = null;
+        this.dispatch = null;
+        this.StoreActionTypes = null;
+        this.Translation = null;
+        this.Helpers = null;
+        this.NotificationComponent = null;
+        this.AuditLogic = null;
+        this.add_sample_form_container_element = null;
+        this.plate_element_ref = null;
+        this.add_sample_form_component_instance = new AddSampleFormComponent();
+    }
+
     async init({ root, deps }) {
         this.root = root;
         this.deps = deps;
@@ -16,11 +33,10 @@ export const SampleFormViewComponent = {
 
         this.add_sample_form_container_element = null;
         this.plate_element_ref = null;
-        this.add_sample_form_component_instance = AddSampleFormComponent;
 
         // Initialize child component container
         this.add_sample_form_container_element = this.Helpers.create_element('div', { id: 'add-sample-form-area-in-view' });
-        
+
         // Initialize child component
         await this.add_sample_form_component_instance.init({
             root: this.add_sample_form_container_element,
@@ -38,7 +54,7 @@ export const SampleFormViewComponent = {
                 AutosaveService: this.deps?.AutosaveService || window.AutosaveService
             }
         });
-    },
+    }
 
     _request_focus_on_audit_info_h2() {
         // Instruktion: när användaren återgår till granskningsöversikten ska fokus hamna på
@@ -50,7 +66,7 @@ export const SampleFormViewComponent = {
         } catch (e) {
             // Ignorera om sessionStorage inte är tillgängligt.
         }
-    },
+    }
 
     on_form_saved_or_updated() {
         const current_state = this.getState();
@@ -59,8 +75,8 @@ export const SampleFormViewComponent = {
             this._request_focus_on_audit_info_h2();
         }
         this.router(previous_view);
-    },
-    
+    }
+
     discard_and_return() {
         this.add_sample_form_component_instance.discard?.();
         const current_state = this.getState();
@@ -69,7 +85,7 @@ export const SampleFormViewComponent = {
             this._request_focus_on_audit_info_h2();
         }
         this.router(previous_view);
-    },
+    }
 
     render() {
         const t = this.Translation.t;
@@ -86,11 +102,11 @@ export const SampleFormViewComponent = {
 
         const title_text = sample_id_to_edit ? t('edit_sample') : t('add_new_sample');
         this.plate_element_ref.appendChild(this.Helpers.create_element('h1', { text_content: title_text }));
-        
+
         const intro_text_key = (audit_status === 'not_started') ? 'add_samples_intro_message' : 'add_sample_form_new_intro';
-        this.plate_element_ref.appendChild(this.Helpers.create_element('p', { 
-            class_name: 'view-intro-text', 
-            text_content: t(intro_text_key) 
+        this.plate_element_ref.appendChild(this.Helpers.create_element('p', {
+            class_name: 'view-intro-text',
+            text_content: t(intro_text_key)
         }));
 
         // Rendera formulärkomponenten inuti vår nya vy
@@ -107,9 +123,9 @@ export const SampleFormViewComponent = {
 
         if (!should_hide_back_to_samples_for_first_sample) {
             const bottom_actions_div = this.Helpers.create_element('div', { class_name: 'form-actions', style: 'margin-top: 2rem; justify-content: flex-start;' });
-            
+
             const return_button_text_key = (audit_status === 'not_started') ? 'back_to_sample_management' : 'back_to_audit_overview';
-            
+
             const return_button = this.Helpers.create_element('button', {
                 class_name: ['button', 'button-default'],
                 html_content: `<span>${t(return_button_text_key)}</span>` + (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('arrow_back') : '')
@@ -118,7 +134,7 @@ export const SampleFormViewComponent = {
             bottom_actions_div.appendChild(return_button);
             this.plate_element_ref.appendChild(bottom_actions_div);
         }
-    },
+    }
 
     destroy() {
         if (this.add_sample_form_component_instance?.destroy) {
@@ -129,4 +145,4 @@ export const SampleFormViewComponent = {
         this.root = null;
         this.deps = null;
     }
-};
+}

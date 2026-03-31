@@ -1,5 +1,6 @@
 // server/index.js
 import 'dotenv/config';
+import { randomBytes } from 'node:crypto';
 import http from 'http';
 import express from 'express';
 import cors from 'cors';
@@ -26,7 +27,24 @@ const app = express();
 const PORT = process.env.API_PORT || 3000;
 const http_server = http.createServer(app);
 
-app.use(helmet());
+app.use(helmet({ contentSecurityPolicy: false }));
+app.use((req, res, next) => {
+    const nonce = randomBytes(16).toString('base64');
+    res.locals.cspNonce = nonce;
+    res.setHeader('Content-Security-Policy',
+        `default-src 'self'; ` +
+        `script-src 'self' 'nonce-${nonce}'; ` +
+        `style-src 'self' 'unsafe-inline'; ` +
+        `img-src 'self' data:; ` +
+        `connect-src 'self'; ` +
+        `font-src 'self' data:; ` +
+        `object-src 'none'; ` +
+        `base-uri 'self'; ` +
+        `form-action 'self'; ` +
+        `worker-src 'self';`
+    );
+    next();
+});
 // Kör bakom Nginx reverse proxy i drift – krävs för korrekt hantering av X-Forwarded-For
 // (t.ex. express-rate-limit) och för att undvika onödiga ValidationError-loggar.
 app.set('trust proxy', 1);
@@ -54,8 +72,6 @@ app.use(cors({
             const originHostname = originUrl.hostname;
             const requestHostname = hostHeader ? hostHeader.split(':')[0].trim() : '';
             if (requestHostname && originHostname === requestHostname) return cb(null, origin);
-            // Produktionsvärd: tillåt explicit så att adminlistan och API fungerar även om Host skickas annorlunda av proxy
-            if (originHostname === 'ux-granskningsverktyg.pts.ad') return cb(null, origin);
         } catch (_) { /* ignore */ }
         return cb(null, false);
     },
@@ -65,13 +81,6 @@ app.use(cors({
 
 // Samma tak som klientens uppladdningsgräns och dokumentation (10 MiB)
 app.use(express.json({ limit: JSON_MAX_UPLOAD_BYTES }));
-
-app.use((req, res, next) => {
-    if (req.path === '/api/debug-delete') {
-        return res.json({ debug: true, method: req.method, path: req.path });
-    }
-    next();
-});
 
 app.use('/api/auth', authRouter);
 app.use('/api/users', requireAuth, usersRouter);

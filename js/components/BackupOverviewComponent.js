@@ -4,8 +4,35 @@ import { get_backup_overview, get_backups_for_audit, run_backup_now, get_backup_
 import { GenericTableComponent } from './GenericTableComponent.js';
 import './backup_overview_component.css';
 
-export const BackupOverviewComponent = {
-    CSS_PATH: './backup_overview_component.css',
+export class BackupOverviewComponent {
+    constructor() {
+        this.CSS_PATH = './backup_overview_component.css';
+        this.root = null;
+        this.deps = null;
+        this.router = null;
+        this.view_name = null;
+        this.params = null;
+        this.Helpers = null;
+        this.Translation = null;
+        this.NotificationComponent = null;
+        this.backup_overview = [];
+        this.filtered_overview = [];
+        this.backup_status = null;
+        this.backup_settings = null;
+        this.selected_audit_id = null;
+        this.selected_audit_backups = [];
+        this.filter_text = '';
+        this.status_filter = 'all';
+        this._run_backup_in_progress = false;
+        this.sort_state_overview = { columnIndex: 0, direction: 'asc' };
+        this._overview_table = null;
+        this._detail_table = null;
+        this._overview_table_root = null;
+        this._status_last_run_p = null;
+        this._status_next_run_p = null;
+        this._run_backup_btn_ref = null;
+        this._data_loaded = false;
+    }
 
     async init({ root, deps }) {
         this.root = root;
@@ -30,8 +57,8 @@ export const BackupOverviewComponent = {
         this._run_backup_in_progress = false;
         this.sort_state_overview = { columnIndex: 0, direction: 'asc' };
 
-        this._overview_table = Object.create(GenericTableComponent);
-        this._detail_table = Object.create(GenericTableComponent);
+        this._overview_table = new GenericTableComponent();
+        this._detail_table = new GenericTableComponent();
         await this._overview_table.init({ deps });
         await this._detail_table.init({ deps });
 
@@ -52,7 +79,7 @@ export const BackupOverviewComponent = {
         this._handle_restore_backup = this._handle_restore_backup.bind(this);
 
         this._data_loaded = false;
-    },
+    }
 
     destroy() {
         this._overview_table?.destroy?.();
@@ -70,13 +97,13 @@ export const BackupOverviewComponent = {
         this.backup_overview = [];
         this.filtered_overview = [];
         this.selected_audit_backups = [];
-    },
+    }
 
     get_t_func() {
         return (this.Translation && typeof this.Translation.t === 'function')
             ? this.Translation.t
             : (key) => `**${key}**`;
-    },
+    }
 
     get_status_label(status) {
         const t = this.get_t_func();
@@ -88,7 +115,7 @@ export const BackupOverviewComponent = {
             deleted: t('backup_status_deleted')
         };
         return map[status] || status || '';
-    },
+    }
 
     /**
      * Beräknar nästa planerade körningstid från schedule_cron (t.ex. "0 0,6,12,18 * * *").
@@ -114,7 +141,7 @@ export const BackupOverviewComponent = {
         tomorrow.setDate(tomorrow.getDate() + 1);
         tomorrow.setHours(hours[0], 0, 0, 0);
         return tomorrow;
-    },
+    }
 
     /**
      * Uppdaterar endast texten i statusrutan (senaste och nästa körning) utan att rendera om hela vyn.
@@ -154,7 +181,7 @@ export const BackupOverviewComponent = {
             if (label_el) label_el.textContent = t('backup_run_now_button');
             this._run_backup_btn_ref.removeAttribute('aria-busy');
         }
-    },
+    }
 
     async _load_data(force = false) {
         if (this._data_loaded && !force) return;
@@ -196,7 +223,7 @@ export const BackupOverviewComponent = {
             this.backup_overview = [];
             this.filtered_overview = [];
         }
-    },
+    }
 
     _apply_filters() {
         const text = (this.filter_text || '').toLowerCase();
@@ -214,19 +241,19 @@ export const BackupOverviewComponent = {
             ].join(' ').toLowerCase();
             return haystack.includes(text);
         });
-    },
+    }
 
     _handle_filter_input(event) {
         this.filter_text = event.target.value || '';
         this._apply_filters();
         this._render_overview_table_only();
-    },
+    }
 
     _handle_status_change(event) {
         this.status_filter = event.target.value || 'all';
         this._apply_filters();
         this._render_overview_table_only();
-    },
+    }
 
     _render_overview_table_only() {
         if (this.view_name !== 'backup' || !this._overview_table_root || !this.Helpers?.create_element) return;
@@ -247,7 +274,7 @@ export const BackupOverviewComponent = {
             },
             t
         });
-    },
+    }
 
     async _handle_show_backups(audit_id) {
         if (!audit_id) return;
@@ -272,7 +299,7 @@ export const BackupOverviewComponent = {
             }
         }
         if (this.root) this.render();
-    },
+    }
 
     _handle_back_to_list() {
         if (typeof this.router === 'function') {
@@ -282,7 +309,7 @@ export const BackupOverviewComponent = {
         this.selected_audit_id = null;
         this.selected_audit_backups = [];
         if (this.root) this.render();
-    },
+    }
 
     async _handle_run_backup() {
         const t = this.get_t_func();
@@ -311,7 +338,7 @@ export const BackupOverviewComponent = {
             this._run_backup_in_progress = false;
             this._update_status_box_text();
         }
-    },
+    }
 
     async _handle_download_backup(event, audit_id, filename) {
         if (event) event.preventDefault();
@@ -344,7 +371,7 @@ export const BackupOverviewComponent = {
                 this.NotificationComponent.show_global_message(t('backup_detail_load_error') || err.message, 'error');
             }
         }
-    },
+    }
 
     async _handle_restore_backup(event, row) {
         if (event) event.preventDefault();
@@ -515,13 +542,13 @@ export const BackupOverviewComponent = {
                 container.appendChild(actions);
             }
         );
-    },
+    }
 
     _handle_open_backup_settings() {
         if (typeof this.router === 'function') {
             this.router('backup_settings', {});
         }
-    },
+    }
 
     _build_overview_columns(t) {
         const Helpers = this.Helpers;
@@ -541,7 +568,17 @@ export const BackupOverviewComponent = {
                 headerLabel: t('backup_overview_col_actor'),
                 getSortValue: (row) => (row.actorName ?? '').toString().trim(),
                 getContent: (row) => {
-                    const actor_name = (row.actorName ?? '').toString().trim() || '—';
+                    const raw_actor_name = (row.actorName ?? '').toString().trim();
+                    const fallback_name = t('unknown_actor') || '—';
+                    const actor_name = raw_actor_name || fallback_name;
+                    const is_deleted = row?.status === 'deleted';
+
+                    if (is_deleted) {
+                        return Helpers.create_element('span', {
+                            text_content: t('backup_actor_display_deleted', { name: actor_name })
+                        });
+                    }
+
                     const a = Helpers.create_element('a', {
                         text_content: actor_name,
                         attributes: {
@@ -603,7 +640,7 @@ export const BackupOverviewComponent = {
                 }
             }
         ];
-    },
+    }
 
     _build_detail_columns(t, overview_row) {
         const Helpers = this.Helpers;
@@ -711,7 +748,7 @@ export const BackupOverviewComponent = {
                 }
             }
         ];
-    },
+    }
 
     async render() {
         if (!this.root || !this.Helpers?.create_element) return;
@@ -976,7 +1013,13 @@ export const BackupOverviewComponent = {
             const format_dt = (iso) => (iso && this.Helpers?.format_iso_to_local_datetime)
                 ? this.Helpers.format_iso_to_local_datetime(iso, lang)
                 : '';
-            const actor_name = detail_overview_row?.actorName ?? '—';
+            const raw_actor_name = (detail_overview_row?.actorName ?? '').toString().trim();
+            const fallback_name = t('unknown_actor') || '—';
+            const base_actor_name = raw_actor_name || fallback_name;
+            const is_deleted = detail_overview_row?.status === 'deleted';
+            const actor_name = is_deleted
+                ? t('backup_actor_display_deleted', { name: base_actor_name })
+                : base_actor_name;
             const case_number = detail_overview_row?.caseNumber ?? '';
             const backup_count = detail_overview_row?.backupCount != null ? String(detail_overview_row.backupCount) : '0';
             const latest_str = detail_overview_row?.latestBackupAt ? format_dt(detail_overview_row.latestBackupAt) : '—';
@@ -989,18 +1032,22 @@ export const BackupOverviewComponent = {
             const actor_li = this.Helpers.create_element('li');
             actor_li.appendChild(this.Helpers.create_element('strong', { text_content: t('backup_detail_info_actor') }));
             actor_li.appendChild(document.createTextNode(' '));
-            const actor_link = this.Helpers.create_element('a', {
-                text_content: actor_name,
-                attributes: {
-                    href: `#audit_overview?auditId=${this.selected_audit_id}`,
-                    'aria-label': t('backup_overview_link_to_audit_aria', { name: actor_name })
-                }
-            });
-            actor_link.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.router('audit_overview', { auditId: this.selected_audit_id });
-            });
-            actor_li.appendChild(actor_link);
+            if (is_deleted) {
+                actor_li.appendChild(document.createTextNode(actor_name));
+            } else {
+                const actor_link = this.Helpers.create_element('a', {
+                    text_content: actor_name,
+                    attributes: {
+                        href: `#audit_overview?auditId=${this.selected_audit_id}`,
+                        'aria-label': t('backup_overview_link_to_audit_aria', { name: actor_name })
+                    }
+                });
+                actor_link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.router('audit_overview', { auditId: this.selected_audit_id });
+                });
+                actor_li.appendChild(actor_link);
+            }
             detail_info.appendChild(actor_li);
             if (case_number) {
                 detail_info.appendChild(make_li(t('backup_detail_info_case_number'), case_number));
@@ -1041,5 +1088,5 @@ export const BackupOverviewComponent = {
 
         this.root.appendChild(plate);
     }
-};
+}
 

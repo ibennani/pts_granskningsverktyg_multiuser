@@ -1,6 +1,16 @@
 export default {
   // Testmiljö som simulerar en webbläsare (DOM)
   testEnvironment: 'jsdom',
+
+  collectCoverage: true,
+  coverageDirectory: 'coverage',
+  coverageReporters: ['text', 'lcov'],
+  collectCoverageFrom: [
+    'js/logic/**/*.js',
+    'js/api/**/*.js',
+    'js/state/**/*.js',
+    '!js/**/*.spec.js',
+  ],
   
   // Filer som körs innan varje testfil (bra för mocks och global setup)
   setupFilesAfterEnv: ['<rootDir>/tests/setup-jest.js'],

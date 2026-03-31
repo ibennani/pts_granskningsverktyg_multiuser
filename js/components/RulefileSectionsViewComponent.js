@@ -6,8 +6,24 @@ import './rulefile_sections_view.css';
 let _last_section_id = null;
 let _last_is_editing = null;
 
-export const RulefileSectionsViewComponent = {
-    CSS_PATH: './rulefile_sections_view.css',
+export class RulefileSectionsViewComponent {
+    constructor() {
+        this.CSS_PATH = './rulefile_sections_view.css';
+        this.root = null;
+        this.deps = null;
+        this.router = null;
+        this.getState = null;
+        this.dispatch = null;
+        this.StoreActionTypes = null;
+        this.Translation = null;
+        this.Helpers = null;
+        this.NotificationComponent = null;
+        this.AutosaveService = null;
+        this.is_initial_render = true;
+        this.general_form_initial_focus_set = false;
+        this.page_types_form_initial_focus_set = false;
+        this.content_types_form_initial_focus_set = false;
+    }
 
     async init({ root, deps }) {
         this.root = root;
@@ -28,7 +44,7 @@ export const RulefileSectionsViewComponent = {
         if (this.Helpers?.load_css) {
             await this.Helpers.load_css(this.CSS_PATH).catch(err => console.warn('[RulefileSectionsViewComponent] Failed to load CSS', err));
         }
-    },
+    }
 
     _get_section_config(section_id) {
         const t = this.Translation.t;
@@ -81,7 +97,7 @@ export const RulefileSectionsViewComponent = {
             }
         };
         return sections[section_id] || sections.general;
-    },
+    }
 
     _create_header(section_config, is_editing = false) {
         const t = this.Translation.t;
@@ -211,7 +227,7 @@ export const RulefileSectionsViewComponent = {
         }
         
         return header_wrapper;
-    },
+    }
 
     _format_simple_value(value) {
         if (value === undefined || value === null) return '';
@@ -228,7 +244,7 @@ export const RulefileSectionsViewComponent = {
             }
         }
         return String(value);
-    },
+    }
 
     _create_definition_list(entries) {
         const dl = this.Helpers.create_element('dl', { class_name: 'metadata-definition-list' });
@@ -248,7 +264,7 @@ export const RulefileSectionsViewComponent = {
             }
         });
         return dl;
-    },
+    }
 
     _format_date_display(iso_string) {
         if (!iso_string) return '';
@@ -263,7 +279,7 @@ export const RulefileSectionsViewComponent = {
             console.warn('[RulefileSectionsViewComponent] Failed to format date', iso_string, error);
             return iso_string;
         }
-    },
+    }
 
     _create_source_link(source_url) {
         const clean_url = this.Helpers.add_protocol_if_missing ? this.Helpers.add_protocol_if_missing(source_url) : source_url;
@@ -278,7 +294,7 @@ export const RulefileSectionsViewComponent = {
                 rel: 'noopener noreferrer'
             }
         });
-    },
+    }
 
     _create_list(items, empty_key, class_name = 'metadata-list') {
         const t = this.Translation.t;
@@ -292,7 +308,7 @@ export const RulefileSectionsViewComponent = {
             ul.appendChild(this.Helpers.create_element('li', { text_content: content }));
         });
         return ul;
-    },
+    }
 
     _render_general_section(metadata) {
         const t = this.Translation.t;
@@ -346,7 +362,7 @@ export const RulefileSectionsViewComponent = {
         section.appendChild(source_subsection);
 
         return section;
-    },
+    }
 
     _render_publisher_source_section(metadata) {
         const t = this.Translation.t;
@@ -383,7 +399,7 @@ export const RulefileSectionsViewComponent = {
         section.appendChild(source_section);
 
         return section;
-    },
+    }
 
     _render_classifications_section(metadata) {
         const t = this.Translation.t;
@@ -482,7 +498,7 @@ export const RulefileSectionsViewComponent = {
         section.appendChild(taxonomies_subsection);
 
         return section;
-    },
+    }
 
     _render_page_types_section(metadata) {
         const t = this.Translation.t;
@@ -609,7 +625,7 @@ export const RulefileSectionsViewComponent = {
         });
 
         return section;
-    },
+    }
 
     _render_content_types_section(metadata) {
         const t = this.Translation.t;
@@ -661,7 +677,7 @@ export const RulefileSectionsViewComponent = {
         }
 
         return section;
-    },
+    }
 
     _render_report_template_section(ruleFileContent) {
         const t = this.Translation.t;
@@ -710,7 +726,7 @@ export const RulefileSectionsViewComponent = {
         }
 
         return section;
-    },
+    }
 
     _render_coming_soon_section() {
         const t = this.Translation.t;
@@ -720,13 +736,13 @@ export const RulefileSectionsViewComponent = {
             text_content: t('rulefile_section_coming_soon')
         }));
         return section;
-    },
+    }
 
     _flush_info_blocks_order_from_dom() {
         if (this.info_blocks_edit_component && typeof this.info_blocks_edit_component.flush_to_state === 'function') {
             this.info_blocks_edit_component.flush_to_state();
         }
-    },
+    }
 
     _get_block_display_name(block_id) {
         const t = this.Translation.t;
@@ -739,7 +755,7 @@ export const RulefileSectionsViewComponent = {
             'examples': t('requirement_examples')
         };
         return name_map[block_id] || block_id;
-    },
+    }
 
     _get_custom_block_name_from_requirements(block_id) {
         const requirements = this.getState()?.ruleFileContent?.requirements || {};
@@ -748,7 +764,7 @@ export const RulefileSectionsViewComponent = {
             if (typeof name === 'string') return name;
         }
         return '';
-    },
+    }
 
     _render_info_blocks_order_section(metadata) {
         const t = this.Translation.t;
@@ -771,7 +787,7 @@ export const RulefileSectionsViewComponent = {
         });
         section.appendChild(list);
         return section;
-    },
+    }
 
     async _render_general_edit_form(container, metadata) {
         const is_first_render = !this.general_edit_component;
@@ -808,7 +824,7 @@ export const RulefileSectionsViewComponent = {
         
         // Spara referens för cleanup
         this.general_edit_component = EditGeneralSectionComponent;
-    },
+    }
 
     async _render_page_types_edit_form(container, metadata) {
         const is_first_render = !this.page_types_edit_component;
@@ -845,7 +861,7 @@ export const RulefileSectionsViewComponent = {
         
         // Spara referens för cleanup
         this.page_types_edit_component = EditPageTypesSectionComponent;
-    },
+    }
 
     async _render_content_types_edit_form(container, metadata) {
         const is_first_render = !this.content_types_edit_component;
@@ -875,7 +891,7 @@ export const RulefileSectionsViewComponent = {
         }
         
         this.content_types_edit_component = EditContentTypesSectionComponent;
-    },
+    }
 
     async _render_info_blocks_edit_form(container, metadata) {
         if (this.info_blocks_edit_component && container.children.length > 0) {
@@ -892,7 +908,7 @@ export const RulefileSectionsViewComponent = {
         EditInfoBlocksSectionComponent.render();
 
         this.info_blocks_edit_component = EditInfoBlocksSectionComponent;
-    },
+    }
 
     async render() {
         if (!this.root) return;
@@ -966,7 +982,7 @@ export const RulefileSectionsViewComponent = {
         this.root.appendChild(main_plate);
         this._apply_focus_after_load();
         this.is_initial_render = false;
-    },
+    }
 
     async _build_main_plate(state, section_id, is_editing) {
         const metadata = state?.ruleFileContent?.metadata || {};
@@ -1031,7 +1047,7 @@ export const RulefileSectionsViewComponent = {
         layout.appendChild(right_wrapper);
         main_plate.appendChild(layout);
         return main_plate;
-    },
+    }
 
     _apply_focus_after_load() {
         const focusSelector = sessionStorage.getItem('focusAfterLoad');
@@ -1045,7 +1061,7 @@ export const RulefileSectionsViewComponent = {
                 }
             }, 100);
         }
-    },
+    }
 
     destroy() {
         // Cleanup redigeringskomponenter om de finns
@@ -1078,4 +1094,4 @@ export const RulefileSectionsViewComponent = {
         this.root = null;
         this.deps = null;
     }
-};
+}

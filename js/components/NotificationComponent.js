@@ -3,7 +3,7 @@ import "./notification_component.css";
 const GLOBAL_MESSAGE_CONTAINER_ID = 'global-message-area';
 const GLOBAL_CRITICAL_MESSAGE_CONTAINER_ID = 'global-critical-message-area';
 
-export const NotificationComponent = {
+export class NotificationComponent {
     init() {
         this.global_message_element = null;
         this.global_critical_message_element = null;
@@ -32,7 +32,7 @@ export const NotificationComponent = {
                 this.global_message_element.setAttribute('aria-live', 'polite');
             }
         });
-    },
+    }
 
     _ensure_message_element(which) {
         const id = which === 'critical' ? GLOBAL_CRITICAL_MESSAGE_CONTAINER_ID : GLOBAL_MESSAGE_CONTAINER_ID;
@@ -56,7 +56,7 @@ export const NotificationComponent = {
             }
         }
         return this[ref];
-    },
+    }
 
     _update_global_message_content(message, type, action = null, is_critical = false) {
         const element = is_critical ? this._ensure_message_element('critical') : this._ensure_message_element('regular');
@@ -105,7 +105,7 @@ export const NotificationComponent = {
                 this.clear_global_message();
             }
         }
-    },
+    }
 
     show_global_message(message, type = 'info', _duration, action) {
         if (!this.global_message_element) {
@@ -116,7 +116,7 @@ export const NotificationComponent = {
             return;
         }
         this._update_global_message_content(message, type, action || null, false);
-    },
+    }
 
     show_global_message_with_action(message, type = 'info', action) {
         if (!this.global_message_element) {
@@ -127,7 +127,7 @@ export const NotificationComponent = {
             return;
         }
         this._update_global_message_content(message, type, action, false);
-    },
+    }
 
     show_global_critical_message(message, type = 'warning', action = null) {
         if (!this.global_critical_message_element) {
@@ -138,7 +138,7 @@ export const NotificationComponent = {
             return;
         }
         this._update_global_message_content(message, type, action, true);
-    },
+    }
 
     show_global_critical_message_with_action(message, type = 'warning', action) {
         if (!this.global_critical_message_element) {
@@ -149,7 +149,7 @@ export const NotificationComponent = {
             return;
         }
         this._update_global_message_content(message, type, action, true);
-    },
+    }
 
     clear_global_message() {
         if (this.global_message_element) {
@@ -158,7 +158,7 @@ export const NotificationComponent = {
             this.global_message_element.className = 'global-message-content';
             this.global_message_element.removeAttribute('role');
         }
-    },
+    }
 
     clear_global_critical_message() {
         if (this.global_critical_message_element) {
@@ -167,15 +167,15 @@ export const NotificationComponent = {
             this.global_critical_message_element.className = 'global-message-content';
             this.global_critical_message_element.removeAttribute('role');
         }
-    },
+    }
 
     get_global_critical_message_element_reference() {
         return this._ensure_message_element('critical');
-    },
+    }
 
     get_global_message_element_reference() {
         return this._ensure_message_element('regular');
-    },
+    }
 
     append_global_message_areas_to(container) {
         if (!container) return;
@@ -187,7 +187,7 @@ export const NotificationComponent = {
         if (regular && !container.contains(regular)) {
             container.appendChild(regular);
         }
-    },
+    }
 
     cleanup() {
         if (this.global_message_element) {
@@ -199,4 +199,4 @@ export const NotificationComponent = {
             this.global_critical_message_element = null;
         }
     }
-};
+}

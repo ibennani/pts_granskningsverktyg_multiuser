@@ -47,7 +47,7 @@ services:
       - "127.0.0.1:3080:8080" # Nås på http://localhost:3080
     environment:
       - OLLAMA_BASE_URL=http://ollama-final:11434 # Viktigt: pekar på Ollama-containern
-      - WEBUI_SECRET_KEY=din_hemliga_nyckel_här
+      - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY}
     volumes:
       - webui_data:/app/backend/data
     networks:

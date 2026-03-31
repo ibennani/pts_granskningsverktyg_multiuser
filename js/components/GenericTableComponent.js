@@ -3,8 +3,7 @@
 
 import './generic_table_component.css';
 
-export const GenericTableComponent = {
-    CSS_PATH: './generic_table_component.css',
+export class GenericTableComponent {    static CSS_PATH = './generic_table_component.css';
 
     async init({ root, deps }) {
         this.root = root;
@@ -12,12 +11,12 @@ export const GenericTableComponent = {
         this.Helpers = deps.Helpers;
 
         if (this.Helpers?.load_css_safely) {
-            await this.Helpers.load_css_safely(this.CSS_PATH, 'GenericTableComponent', {
+            await this.Helpers.load_css_safely(this.constructor.CSS_PATH, 'GenericTableComponent', {
                 timeout: 5000,
                 maxRetries: 2
             }).catch(() => {});
         }
-    },
+    }
 
     /**
      * @param {Object} opts
@@ -89,7 +88,7 @@ export const GenericTableComponent = {
             const is_active = sortState && sortState.columnIndex === col_index;
             const direction = is_active ? sortState.direction : 'asc';
 
-            const th_attrs = { 'scope': 'col' };
+            const th_attrs = { 'scope': 'col' }
             if (is_sortable) {
                 th_attrs['aria-sort'] = is_active ? (direction === 'asc' ? 'ascending' : 'descending') : 'none';
             }
@@ -245,7 +244,7 @@ export const GenericTableComponent = {
                 if (focusable) apply_restore_focus(focusable);
             }
         }
-    },
+    }
 
     /**
      * Uppdaterar innehållet i en befintlig rad (endast celler). Använd efter push när bara innehållet i raden ändrats.
@@ -292,7 +291,7 @@ export const GenericTableComponent = {
                 }
             }
         });
-    },
+    }
 
     /**
      * Uppdaterar flera rader. Anropar updateRow för varje { id, row }.
@@ -303,7 +302,7 @@ export const GenericTableComponent = {
         changed_rows.forEach(({ id, row }) => {
             this.updateRow(id, row);
         });
-    },
+    }
 
     destroy() {
         if (this.root) {

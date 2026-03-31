@@ -109,13 +109,22 @@ temp*.modelfile
 *.modelfile
 Modelfile
 
-# App-specific
+# Backupfiler
 backup/
+
+# Testresultat
+test-results/
+
+# Temporära filer
+temp.modelfile
+temp.txt
+temp_old_sv-SE.json
 state_pack.json
 planning.md
+final.modelfile
+cursor.modelfile
 
 # Test results
-test-results/
 playwright-report/
 test-results.xml
 

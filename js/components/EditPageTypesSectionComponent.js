@@ -2,8 +2,26 @@
 
 import './edit_rulefile_metadata_view.css';
 
-export const EditPageTypesSectionComponent = {
-    CSS_PATH: './edit_rulefile_metadata_view.css',
+export class EditPageTypesSectionComponent {
+    constructor() {
+        this.CSS_PATH = './edit_rulefile_metadata_view.css';
+        this.root = null;
+        this.deps = null;
+        this.router = null;
+        this.getState = null;
+        this.dispatch = null;
+        this.StoreActionTypes = null;
+        this.Translation = null;
+        this.Helpers = null;
+        this.NotificationComponent = null;
+        this.AutosaveService = null;
+        this.form_element_ref = null;
+        this.working_metadata = null;
+        this.initial_metadata_snapshot = null;
+        this.autosave_session = null;
+        this.skip_autosave_on_destroy = false;
+        this.move_after_render = null;
+    }
 
     async init({ root, deps }) {
         this.root = root;
@@ -27,11 +45,11 @@ export const EditPageTypesSectionComponent = {
         if (this.Helpers?.load_css) {
             await this.Helpers.load_css(this.CSS_PATH).catch(err => console.warn('[EditPageTypesSectionComponent] Failed to load CSS', err));
         }
-    },
+    }
 
     _clone_metadata(metadata) {
         return JSON.parse(JSON.stringify(metadata || {}));
-    },
+    }
 
     _ensure_metadata_defaults(workingMetadata) {
         // Se till att samples och sampleCategories finns
@@ -48,7 +66,7 @@ export const EditPageTypesSectionComponent = {
         }
         
         return workingMetadata;
-    },
+    }
 
     _move_page_type(workingMetadata, index, direction, clickedButton) {
         // direction: 'up' eller 'down'
@@ -84,7 +102,7 @@ export const EditPageTypesSectionComponent = {
         
         // Animera först, byt plats och rendera om efteråt (samma mönster som informationsblock)
         this._animate_then_render_page_type_move(workingMetadata, index, new_index, direction, clickedButton);
-    },
+    }
 
     _delete_page_type_with_animation(workingMetadata, index, elementToDelete) {
         // Avbryt väntande autospar så att det inte skriver tillbaka den gamla datan efter radering
@@ -201,7 +219,7 @@ export const EditPageTypesSectionComponent = {
                 }, 50);
             }, 400);
         }, 400);
-    },
+    }
 
     _save_form_values_to_metadata(workingMetadata, shouldTrim = false) {
         if (!this.form_element_ref) return;
@@ -279,7 +297,7 @@ export const EditPageTypesSectionComponent = {
         if (vocabularies.sampleTypes) {
             vocabularies.sampleTypes.sampleCategories = sample_categories;
         }
-    },
+    }
 
     _perform_save(shouldTrim, skip_render) {
         if (!this.form_element_ref) return;
@@ -313,11 +331,11 @@ export const EditPageTypesSectionComponent = {
                 this._update_move_buttons(container, this.working_metadata);
             }
         }
-    },
+    }
 
     handle_autosave_input() {
         this.autosave_session?.request_autosave();
-    },
+    }
 
     _generate_slug(value) {
         if (!value) return '';
@@ -326,7 +344,7 @@ export const EditPageTypesSectionComponent = {
             .replace(/[^a-z0-9]+/g, '-')
             .replace(/-{2,}/g, '-')
             .replace(/^-+|-+$/g, '');
-    },
+    }
 
     _update_move_buttons(page_types_container, workingMetadata) {
         const t = this.Translation.t;
@@ -411,7 +429,7 @@ export const EditPageTypesSectionComponent = {
                 move_button_group.appendChild(down_button);
             }
         });
-    },
+    }
 
     handle_add_page_type_click() {
         if (!this.form_element_ref || !this.working_metadata) return;
@@ -436,7 +454,7 @@ export const EditPageTypesSectionComponent = {
         workingMetadata.samples.sampleCategories = sample_categories;
 
         this._recreate_form_and_focus(workingMetadata, page_types.length - 1);
-    },
+    }
 
     _recreate_form_and_focus(workingMetadata, focusIndex) {
         const form = this.form_element_ref;
@@ -454,7 +472,7 @@ export const EditPageTypesSectionComponent = {
                 input.focus();
             }
         }, 50);
-    },
+    }
 
     _animate_then_render_page_type_move(workingMetadata, index, new_index, direction, clickedButton) {
         const form = this.form_element_ref;
@@ -539,7 +557,7 @@ export const EditPageTypesSectionComponent = {
             };
             setTimeout(after_move, DUR_MOVE * 1000);
         });
-    },
+    }
 
     _do_swap_and_render_page_type_move(workingMetadata, index, new_index, fade_in_after, clickedButton) {
         const vocabularies = workingMetadata.vocabularies || {};
@@ -566,7 +584,7 @@ export const EditPageTypesSectionComponent = {
             fade_in_after
         };
         this._render_form_after_page_type_move(workingMetadata);
-    },
+    }
 
     _render_form_after_page_type_move(workingMetadata) {
         this.working_metadata = workingMetadata;
@@ -630,7 +648,7 @@ export const EditPageTypesSectionComponent = {
         } else {
             do_focus();
         }
-    },
+    }
 
     _create_form(metadata) {
         const workingMetadata = this._ensure_metadata_defaults(this._clone_metadata(metadata));
@@ -929,7 +947,7 @@ export const EditPageTypesSectionComponent = {
         });
 
         return { form, workingMetadata };
-    },
+    }
 
     _restore_initial_state() {
         if (!this.initial_metadata_snapshot) return;
@@ -946,7 +964,7 @@ export const EditPageTypesSectionComponent = {
             type: this.StoreActionTypes.UPDATE_RULEFILE_CONTENT,
             payload: { ruleFileContent: restoredRulefileContent, skip_render: true }
         });
-    },
+    }
 
     render() {
         if (!this.root) return;
@@ -981,7 +999,7 @@ export const EditPageTypesSectionComponent = {
         }) || null;
 
         this.root.appendChild(form);
-    },
+    }
 
     destroy() {
         if (!this.skip_autosave_on_destroy && this.form_element_ref && this.working_metadata) {
@@ -1000,4 +1018,4 @@ export const EditPageTypesSectionComponent = {
         this.initial_metadata_snapshot = null;
         this.deps = null;
     }
-};
+}
