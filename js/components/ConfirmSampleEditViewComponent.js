@@ -54,7 +54,9 @@ export class ConfirmSampleEditViewComponent {
                 if (window.sessionStorage) {
                     window.sessionStorage.setItem('gv_return_focus_audit_info_h2_v1', JSON.stringify({ focus: 'audit_info_h2' }));
                 }
-            } catch (e) {}
+            } catch (_) {
+                // ignoreras medvetet
+            }
         }
         this.router(return_view);
     }
@@ -69,7 +71,9 @@ export class ConfirmSampleEditViewComponent {
                 if (window.sessionStorage) {
                     window.sessionStorage.setItem('gv_return_focus_audit_info_h2_v1', JSON.stringify({ focus: 'audit_info_h2' }));
                 }
-            } catch (e) {}
+            } catch (_) {
+                // ignoreras medvetet
+            }
         }
         this.router(return_view);
     }

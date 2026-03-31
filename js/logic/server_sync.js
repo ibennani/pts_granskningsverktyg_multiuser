@@ -98,7 +98,9 @@ function show_audit_deleted_modal_and_navigate() {
         }
         try {
             window.location.hash = '#audit_audits';
-        } catch (_) {}
+        } catch (_) {
+            // ignoreras medvetet
+        }
         return;
     }
 
@@ -117,7 +119,9 @@ function show_audit_deleted_modal_and_navigate() {
                 modal_instance.close();
                 try {
                     window.location.hash = '#audit_audits';
-                } catch (_) {}
+                } catch (_) {
+                    // ignoreras medvetet
+                }
             });
             buttons_wrapper.appendChild(ok_btn);
             container.appendChild(buttons_wrapper);
@@ -158,7 +162,9 @@ async function run_sync(state, dispatch_fn) {
                     ch.postMessage({ type: 'audit-updated', auditId: state.auditId });
                     ch.close();
                 }
-            } catch (_) {}
+            } catch (_) {
+                // ignoreras medvetet
+            }
             if (dispatch_fn && full_state && full_state.version != null) {
                 dispatch_fn({
                     type: 'SET_REMOTE_AUDIT_ID',
@@ -193,7 +199,9 @@ async function run_sync(state, dispatch_fn) {
                     ch.postMessage({ type: 'audit-updated', auditId: full_state.auditId });
                     ch.close();
                 }
-            } catch (_) {}
+            } catch (_) {
+                // ignoreras medvetet
+            }
             if (dispatch_fn && full_state?.auditId) {
                 setTimeout(() => {
                     dispatch_fn({

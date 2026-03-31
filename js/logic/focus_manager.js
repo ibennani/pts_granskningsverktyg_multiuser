@@ -216,12 +216,20 @@ export function apply_post_render_focus_instruction({ view_name, view_root }) {
     try {
         instruction = JSON.parse(raw);
     } catch (e) {
-        try { window.sessionStorage.removeItem(RETURN_FOCUS_AUDIT_INFO_H2_KEY); } catch (err) {}
+        try {
+            window.sessionStorage.removeItem(RETURN_FOCUS_AUDIT_INFO_H2_KEY);
+        } catch (_) {
+            // ignoreras medvetet
+        }
         return false;
     }
 
     if (instruction?.focus !== 'audit_info_h2') {
-        try { window.sessionStorage.removeItem(RETURN_FOCUS_AUDIT_INFO_H2_KEY); } catch (err) {}
+        try {
+            window.sessionStorage.removeItem(RETURN_FOCUS_AUDIT_INFO_H2_KEY);
+        } catch (_) {
+            // ignoreras medvetet
+        }
         return false;
     }
 
@@ -248,13 +256,21 @@ export function apply_post_render_focus_instruction({ view_name, view_root }) {
             } catch (e) {
                 heading.focus();
             }
-            try { window.sessionStorage.removeItem(RETURN_FOCUS_AUDIT_INFO_H2_KEY); } catch (err) {}
+            try {
+                window.sessionStorage.removeItem(RETURN_FOCUS_AUDIT_INFO_H2_KEY);
+            } catch (_) {
+                // ignoreras medvetet
+            }
             return;
         }
 
         attempts_left -= 1;
         if (attempts_left <= 0) {
-            try { window.sessionStorage.removeItem(RETURN_FOCUS_AUDIT_INFO_H2_KEY); } catch (err) {}
+            try {
+                window.sessionStorage.removeItem(RETURN_FOCUS_AUDIT_INFO_H2_KEY);
+            } catch (_) {
+                // ignoreras medvetet
+            }
             return;
         }
 

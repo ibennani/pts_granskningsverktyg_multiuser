@@ -626,7 +626,11 @@ window.DraftManager = DraftManager;
         // Uppdatera params direkt efter view-name för att undvika inkonsekvent state
         // om subscribe-callback triggas under komponentens livscykel.
         current_view_params_rendered_json = JSON.stringify(params_to_render);
-        try { window.__gv_current_view_name = current_view_name_rendered; } catch (e) {}
+        try {
+            window.__gv_current_view_name = current_view_name_rendered;
+        } catch (_) {
+            // ignoreras medvetet
+        }
 
         const is_same_view_quick_render = prev_view === view_name_to_render &&
             prev_params_json === JSON.stringify(params_to_render) &&
@@ -1081,12 +1085,16 @@ window.DraftManager = DraftManager;
             window.__gv_auth_required_in_progress = true;
             try {
                 if (typeof sessionStorage !== 'undefined') sessionStorage.setItem(AUTH_REQUIRED_MESSAGE_KEY, '1');
-            } catch (_) {}
+            } catch (_) {
+                // ignoreras medvetet
+            }
             try {
                 if (typeof window.cleanupGlobalEventListeners === 'function') {
                     window.cleanupGlobalEventListeners();
                 }
-            } catch (_) {}
+            } catch (_) {
+                // ignoreras medvetet
+            }
 
             // Växla till inloggningsvy direkt i stället för att ladda om sidan
             ensure_app_layout();
@@ -1098,7 +1106,9 @@ window.DraftManager = DraftManager;
             try {
                 const t = window.Translation?.t ?? ((k) => k);
                 notificationComponent?.show_global_message?.(t('auth_session_expired'), 'warning');
-            } catch (_) {}
+            } catch (_) {
+                // ignoreras medvetet
+            }
 
             await render_view('login', {
                 on_login: () => {
@@ -1189,10 +1199,14 @@ window.DraftManager = DraftManager;
             if (!has_token) {
                 try {
                     if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem('gv_current_user_name');
-                } catch (_) {}
+                } catch (_) {
+                    // ignoreras medvetet
+                }
                 try {
                     delete window.__GV_CURRENT_USER_NAME__;
-                } catch (_) {}
+                } catch (_) {
+                    // ignoreras medvetet
+                }
             }
             return has_token;
         };
@@ -1211,7 +1225,9 @@ window.DraftManager = DraftManager;
                     const t = window.Translation?.t ?? ((k) => k);
                     notificationComponent?.show_global_message?.(t('auth_session_expired'), 'warning');
                 }
-            } catch (_) {}
+            } catch (_) {
+                // ignoreras medvetet
+            }
             await render_view('login', {
                 on_login: async () => {
                     if (side_menu_root) side_menu_root.classList.remove('hidden');

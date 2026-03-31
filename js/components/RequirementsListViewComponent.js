@@ -1286,14 +1286,22 @@ export class RequirementsListViewComponent {
         try {
             focus_instruction = JSON.parse(raw);
         } catch (e) {
-            try { window.sessionStorage.removeItem(this.RETURN_FOCUS_SESSION_KEY); } catch (err) {}
+            try {
+                window.sessionStorage.removeItem(this.RETURN_FOCUS_SESSION_KEY);
+            } catch (_) {
+                // ignoreras medvetet
+            }
             return;
         }
 
         const requirement_id = focus_instruction?.requirementId || null;
         const sample_id = focus_instruction?.sampleId || null;
 
-        try { window.sessionStorage.removeItem(this.RETURN_FOCUS_SESSION_KEY); } catch (e) {}
+        try {
+            window.sessionStorage.removeItem(this.RETURN_FOCUS_SESSION_KEY);
+        } catch (_) {
+            // ignoreras medvetet
+        }
 
         if (!requirement_id || !sample_id) return;
 

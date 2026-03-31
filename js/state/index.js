@@ -62,7 +62,7 @@ function root_reducer(current_state, action) {
 
 let internal_state = { ...initial_state };
 let listeners = [];
-let dispatch_queue = [];
+const dispatch_queue = [];
 let is_dispatching = false;
 
 function dispatch(action) {
@@ -128,14 +128,18 @@ function execute_single_dispatch(action, dispatch_fn) {
                         internal_state.auditStatus !== 'not_started') {
                         schedule_sync_to_server(internal_state, dispatch_fn);
                     }
-                } catch (syncError) {}
+                } catch (syncError) {
+                    // ignoreras medvetet
+                }
                 try {
                     if (action.type === ActionTypes.UPDATE_RULEFILE_CONTENT &&
                         internal_state.auditStatus === 'rulefile_editing' &&
                         internal_state.ruleSetId) {
                         schedule_sync_rulefile_to_server(getState, dispatch);
                     }
-                } catch (rulefileSyncError) {}
+                } catch (rulefileSyncError) {
+                    // ignoreras medvetet
+                }
                 try {
                     notify_listeners({
                         skip_render: action?.payload?.skip_render === true,
@@ -252,7 +256,11 @@ function loadStateFromLocalStorageBackup() {
         if (!has_restorable_state(merged)) return null;
         return { state: merged, restorePosition: restore_position };
     } catch (e) {
-        try { localStorage.removeItem(APP_STATE_BACKUP_KEY); } catch (_) {}
+        try {
+            localStorage.removeItem(APP_STATE_BACKUP_KEY);
+        } catch (_) {
+            // ignoreras medvetet
+        }
         return null;
     }
 }

@@ -467,7 +467,9 @@ export class BackupOverviewComponent {
             if (ver?.version != null) {
                 current_audit_version = Number(ver.version);
             }
-        } catch (_) {}
+        } catch (_) {
+            // ignoreras medvetet
+        }
         const backup_datetime_str = format_datetime(row.createdAt) || row.createdAt || '—';
         const current_datetime_str = current_updated_at ? format_datetime(current_updated_at) : '—';
         const actor_name = overview_row?.actorName ?? backup_data?.auditMetadata?.actorName ?? '—';
@@ -775,7 +777,9 @@ export class BackupOverviewComponent {
         try {
             pending_message_key = sessionStorage.getItem('gv_backup_settings_saved_message');
             if (pending_message_key) sessionStorage.removeItem('gv_backup_settings_saved_message');
-        } catch (_) {}
+        } catch (_) {
+            // ignoreras medvetet
+        }
         if (pending_message_key && this.view_name === 'backup' && this.NotificationComponent?.show_global_message) {
             this.NotificationComponent.show_global_message(t(pending_message_key), 'success');
         }

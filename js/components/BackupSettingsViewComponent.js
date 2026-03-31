@@ -133,7 +133,9 @@ export class BackupSettingsViewComponent {
             if (typeof this.router === 'function') {
                 try {
                     sessionStorage.setItem('gv_backup_settings_saved_message', 'backup_settings_saved_ok');
-                } catch (_) {}
+                } catch (_) {
+                    // ignoreras medvetet
+                }
                 this.router('backup', {});
             } else {
                 show_msg(t('backup_settings_saved_ok'), 'success');

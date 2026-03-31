@@ -140,7 +140,9 @@ export class ViewRulefileRequirementComponent {
                     requirementId: requirement_id,
                     createdAt: Date.now()
                 }));
-            } catch (e) {}
+            } catch (_) {
+                // ignoreras medvetet
+            }
             this.router('rulefile_requirements');
         });
         top_nav_bar.appendChild(back_button_top);
@@ -361,7 +363,9 @@ export class ViewRulefileRequirementComponent {
                     requirementId: requirement_id,
                     createdAt: Date.now()
                 }));
-            } catch (e) {}
+            } catch (_) {
+                // ignoreras medvetet
+            }
             this.router('rulefile_requirements');
         });
         bottom_nav_bar.appendChild(back_button_bottom);

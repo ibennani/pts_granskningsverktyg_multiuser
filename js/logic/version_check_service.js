@@ -81,7 +81,9 @@ export function init_version_check_service() {
             already_shown = true;
             try {
                 sessionStorage.setItem(NOTIFICATION_COOLDOWN_KEY, String(Date.now()));
-            } catch (_) {}
+            } catch (_) {
+                // ignoreras medvetet
+            }
             const msg = window.Translation?.t?.('new_version_available') || 'En ny version är tillgänglig.';
             const label = window.Translation?.t?.('reload_page') || 'Ladda om sidan';
             if (window.NotificationComponent?.show_global_critical_message_with_action) {

@@ -193,7 +193,9 @@ export class RequirementAuditSidebarComponent {
         event.preventDefault();
         try {
             window.sessionStorage?.setItem('gv_force_focus_h1_v1', 'true');
-        } catch (e) {}
+        } catch (_) {
+            // ignoreras medvetet
+        }
         this.router('requirement_audit', { sampleId: sample_id, requirementId: requirement_id });
     }
 

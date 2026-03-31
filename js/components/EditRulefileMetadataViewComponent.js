@@ -181,7 +181,11 @@ export class EditRulefileMetadataViewComponent {
             }
             const el = focusFieldName ? form.elements[focusFieldName] : null;
             if (el && typeof el.focus === 'function') {
-                try { el.focus(); } catch (e) {}
+                try {
+                    el.focus();
+                } catch (_) {
+                    // ignoreras medvetet
+                }
             }
             return;
         }
@@ -223,7 +227,11 @@ export class EditRulefileMetadataViewComponent {
                     modal_instance.close();
                     const el = focusFieldName ? form.elements[focusFieldName] : null;
                     if (el && typeof el.focus === 'function') {
-                        try { el.focus(); } catch (e) {}
+                        try {
+                    el.focus();
+                } catch (_) {
+                    // ignoreras medvetet
+                }
                     }
                 });
                 buttons_wrapper.appendChild(ok_btn);

@@ -118,7 +118,9 @@ export class ConfirmDeleteViewComponent {
                         deletedRequirementId: this.params.reqId,
                         createdAt: Date.now()
                     }));
-                } catch (e) {}
+                } catch (_) {
+                    // ignoreras medvetet
+                }
             } else if (config.focusOnSuccess === 'h1') {
                 sessionStorage.setItem('focusOnH1AfterLoad', 'true');
             } else {

@@ -601,7 +601,9 @@ export class RequirementAuditComponent {
                         requirementId: this.params.requirementId,
                         createdAt: Date.now()
                     }));
-                } catch (e) {}
+                } catch (_) {
+                    // ignoreras medvetet
+                }
                 this.router('all_requirements');
                 break;
             case 'previous':

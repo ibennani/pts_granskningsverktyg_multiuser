@@ -105,7 +105,9 @@ export class RulefileRequirementsListComponent {
                                 deletedRequirementId: requirementId,
                                 createdAt: Date.now()
                             }));
-                        } catch (e) {}
+                        } catch (_) {
+                            // ignoreras medvetet
+                        }
                         this.router('rulefile_requirements');
                     }
                 });
@@ -332,8 +334,16 @@ export class RulefileRequirementsListComponent {
         // Återställ fokus när användaren kommer tillbaka till listan (t.ex. från "Visa krav" eller efter radering)
         if (this._apply_return_focus_if_needed()) {
             // Rensa äldre fokusflaggor så att de inte skriver över vår fokus-återställning
-            try { sessionStorage.removeItem('focusAfterLoad'); } catch (e) {}
-            try { sessionStorage.removeItem('focusOnH1AfterLoad'); } catch (e) {}
+            try {
+                sessionStorage.removeItem('focusAfterLoad');
+            } catch (_) {
+                // ignoreras medvetet
+            }
+            try {
+                sessionStorage.removeItem('focusOnH1AfterLoad');
+            } catch (_) {
+                // ignoreras medvetet
+            }
             return;
         }
 
@@ -368,12 +378,20 @@ export class RulefileRequirementsListComponent {
         try {
             focus_instruction = JSON.parse(raw);
         } catch (e) {
-            try { window.sessionStorage.removeItem(this.RETURN_FOCUS_SESSION_KEY); } catch (err) {}
+            try {
+                window.sessionStorage.removeItem(this.RETURN_FOCUS_SESSION_KEY);
+            } catch (_) {
+                // ignoreras medvetet
+            }
             return false;
         }
 
         // One-shot: rensa alltid instruktionen, oavsett utfall.
-        try { window.sessionStorage.removeItem(this.RETURN_FOCUS_SESSION_KEY); } catch (e) {}
+        try {
+            window.sessionStorage.removeItem(this.RETURN_FOCUS_SESSION_KEY);
+        } catch (_) {
+            // ignoreras medvetet
+        }
 
         const requirement_id = focus_instruction?.requirementId || null;
         const deleted_requirement_id = focus_instruction?.deletedRequirementId || null;

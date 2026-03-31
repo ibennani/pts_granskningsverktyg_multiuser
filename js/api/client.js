@@ -43,21 +43,29 @@ function handle_unauthorized_response(res) {
     if (!res || res.status !== 401) return false;
     try {
         clear_auth_token();
-    } catch (_) {}
+    } catch (_) {
+        // ignoreras medvetet
+    }
     try {
         if (typeof sessionStorage !== 'undefined') {
             sessionStorage.removeItem('gv_current_user_name');
             sessionStorage.removeItem(AUTH_USER_IS_ADMIN_KEY);
         }
-    } catch (_) {}
+    } catch (_) {
+        // ignoreras medvetet
+    }
     try {
         delete window.__GV_CURRENT_USER_NAME__;
-    } catch (_) {}
+    } catch (_) {
+        // ignoreras medvetet
+    }
     try {
         if (typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent(AUTH_REQUIRED_EVENT));
         }
-    } catch (_) {}
+    } catch (_) {
+        // ignoreras medvetet
+    }
     return true;
 }
 
