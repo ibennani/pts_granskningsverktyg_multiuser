@@ -4,6 +4,45 @@
     max-width: 100%;
 }
 
+/*
+ * AuditSamplesSection återanvänder startvyns klasser (start-view-audits-section, start-view-section-heading-row).
+ * StartViewComponent laddar start_view_component.css; granskningsvyn gör det inte – rubrikraden måste därför
+ * definieras här så h2 och knappar ligger på samma rad (flex), inte som block under varandra.
+ */
+.start-view-audits-section {
+    margin-top: 0;
+    box-shadow: none;
+}
+
+.start-view-audits-section-following {
+    margin-top: 2rem;
+}
+
+.start-view-audits-section h2 {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+}
+
+.start-view-section-heading-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.start-view-section-heading-row h2 {
+    margin: 0;
+    flex: 0 1 auto;
+    min-width: 0;
+}
+
+.start-view-audits-section .audit-start-new-audit-btn {
+    flex-shrink: 0;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.9rem;
+}
+
 .audit-header {
     display: flex;
     flex-wrap: wrap;
@@ -130,9 +169,10 @@
     font-size: 0.9rem;
 }
 
-/* Samma höjd och vertikal linjering för knapparna i Arbetskopior-rubrikraden */
+/* Samma höjd och vertikal linjering för knapparna i rubrikraden (startvy / granskningslista) */
 .start-view-section-heading-row .audit-upload-btn,
-.start-view-section-heading-row .audit-create-rule-btn {
+.start-view-section-heading-row .audit-create-rule-btn,
+.start-view-section-heading-row .audit-upload-audit-btn {
     height: 2.25rem;
     min-height: 2.25rem;
     display: inline-flex;
