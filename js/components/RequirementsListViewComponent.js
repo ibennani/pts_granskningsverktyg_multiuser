@@ -1,8 +1,5 @@
 import { RequirementListToolbarComponent } from './RequirementListToolbarComponent.js';
-import {
-    get_requirements_entries,
-    get_reference_string_for_sort
-} from './requirements_list/requirement_list_query.js';
+import { get_requirements_entries } from './requirements_list/requirement_list_query.js';
 import { get_sort_options, sort_items } from './requirements_list/requirement_list_sort.js';
 import { create_status_icons_wrapper } from './requirements_list/requirement_list_status_icons.js';
 import { build_item_keys, update_items_status_only } from './requirements_list/requirement_list_incremental_dom.js';
@@ -13,6 +10,12 @@ import { render_sample_header } from './requirements_list/requirement_list_sampl
 import { build_requirements_list_dom } from './requirements_list/requirement_list_build_dom.js';
 import { build_all_mode_data } from './requirements_list/requirement_list_all_mode_data.js';
 import { filter_requirements } from './requirements_list/requirement_list_filter_requirements.js';
+import {
+    build_toolbar_initial_filter_state,
+    compute_auto_sort_by_override,
+    ensure_default_status_filter,
+    normalize_status_for_toolbar
+} from './requirements_list/requirement_list_ui_settings.js';
 import { fingerprint_item_keys, can_incremental_update } from '../utils/incremental_list_update.js';
 import './all_requirements_view_component.css';
 import './requirement_list_component.css';
@@ -271,45 +274,20 @@ export class RequirementsListViewComponent {
         }
 
         // Get filter settings
-        let current_ui_settings = state.uiSettings?.[this.state_filter_key] || {};
-        
-        // Default statusfilter (samma som högerspalten), används vid sessionStorage-återladdning utan status
-        const default_status = { needs_help: true, passed: true, failed: true, partially_audited: true, not_audited: true, updated: true };
-        if (!current_ui_settings.status || Object.keys(current_ui_settings.status).length === 0) {
-            current_ui_settings = { ...current_ui_settings, status: default_status };
-        }
+        let current_ui_settings = ensure_default_status_filter(state.uiSettings?.[this.state_filter_key] || {});
 
-        // Automatisk val av sortering första gången
-        if (!current_ui_settings.sortBy || current_ui_settings.sortBy === 'default') {
-            const requirements_to_check = this.mode === 'all' ? entries : all_relevant_requirements;
-            const has_any_reference = requirements_to_check.some((item) => {
-                if (this.mode === 'all') {
-                    const [, req] = item;
-                    const ref = get_reference_string_for_sort(req);
-                    return ref && ref.trim() !== '';
-                } else {
-                    const ref = item.standardReference?.text;
-                    return ref && typeof ref === 'string' && ref.trim() !== '';
-                }
-            });
-            const auto_sort_by = has_any_reference ? 'ref_asc' : 'title_asc';
-            
+        const auto_sort_by = compute_auto_sort_by_override(this.mode, entries, all_relevant_requirements, current_ui_settings);
+        if (auto_sort_by !== null) {
             this.dispatch({
                 type: this.action_type,
                 payload: { ...current_ui_settings, sortBy: auto_sort_by }
             });
-            
             current_ui_settings = { ...current_ui_settings, sortBy: auto_sort_by };
         }
 
         if (this.filter_component_instance?.init && this.filter_component_instance?.render) {
             if (!this._toolbar_inited) {
-                const default_status = { needs_help: true, passed: true, failed: true, partially_audited: true, not_audited: true, updated: true };
-                const initial_state = {
-                    searchText: current_ui_settings.searchText || '',
-                    sortBy: current_ui_settings.sortBy || 'ref_asc',
-                    status: { ...default_status, ...(current_ui_settings.status || {}) }
-                };
+                const initial_state = build_toolbar_initial_filter_state(current_ui_settings);
                 await this.filter_component_instance.init({
                     root: this.filter_container_element,
                     deps: {
@@ -327,14 +305,7 @@ export class RequirementsListViewComponent {
                 });
                 this._toolbar_inited = true;
             }
-            const default_status = { needs_help: true, passed: true, failed: true, partially_audited: true, not_audited: true, updated: true };
-            const status_from_store = current_ui_settings.status || {};
-            const normalized_status = { ...default_status };
-            ['needs_help', 'passed', 'failed', 'partially_audited', 'not_audited', 'updated'].forEach(key => {
-                if (status_from_store[key] !== undefined) {
-                    normalized_status[key] = status_from_store[key] === true;
-                }
-            });
+            const normalized_status = normalize_status_for_toolbar(current_ui_settings);
             this.filter_component_instance.render({
                 searchText: current_ui_settings.searchText || '',
                 sortBy: current_ui_settings.sortBy || 'ref_asc',
