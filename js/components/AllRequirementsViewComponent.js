@@ -6,7 +6,7 @@ export class AllRequirementsViewComponent {
     }
 
     async init({ root, deps }) {
-        this.inner_component = RequirementsListViewComponent;
+        this.inner_component = new RequirementsListViewComponent();
         await this.inner_component.init({
             root,
             deps: {

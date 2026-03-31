@@ -5,9 +5,9 @@ import { fingerprint_item_keys, can_incremental_update } from '../utils/incremen
 import './all_requirements_view_component.css';
 import './requirement_list_component.css';
 
-export const RequirementsListViewComponent = {
-    CSS_PATH_ALL: './all_requirements_view_component.css',
-    CSS_PATH_SAMPLE: './requirement_list_component.css',
+export class RequirementsListViewComponent {
+    static CSS_PATH_ALL = './all_requirements_view_component.css';
+    static CSS_PATH_SAMPLE = './requirement_list_component.css';
 
     async init({ root, deps }) {
         this.root = root;
@@ -60,11 +60,11 @@ export const RequirementsListViewComponent = {
 
         // Load CSS – båda lägena använder samma kompakta kravlistformat
         if (this.Helpers?.load_css) {
-            if (this.CSS_PATH_SAMPLE) {
-                await this.Helpers.load_css(this.CSS_PATH_SAMPLE).catch(() => {});
+            if (this.constructor.CSS_PATH_SAMPLE) {
+                await this.Helpers.load_css(this.constructor.CSS_PATH_SAMPLE).catch(() => {});
             }
-            if (this.mode === 'all' && this.CSS_PATH_ALL) {
-                await this.Helpers.load_css(this.CSS_PATH_ALL).catch(() => {});
+            if (this.mode === 'all' && this.constructor.CSS_PATH_ALL) {
+                await this.Helpers.load_css(this.constructor.CSS_PATH_ALL).catch(() => {});
             }
         }
 
@@ -78,7 +78,7 @@ export const RequirementsListViewComponent = {
                 }
             });
         }
-    },
+    }
 
     handle_filter_change(partial) {
         if (typeof this.dispatch !== 'function' || !this.StoreActionTypes) return;
@@ -89,7 +89,7 @@ export const RequirementsListViewComponent = {
             type: this.action_type,
             payload: merged,
         });
-    },
+    }
 
     handle_toolbar_change(new_state) {
         if (typeof this.dispatch !== 'function' || !this.StoreActionTypes) return;
@@ -101,7 +101,7 @@ export const RequirementsListViewComponent = {
                 status: new_state.status
             }
         });
-    },
+    }
 
     handle_requirement_list_click(event) {
         const mark_btn = event.target.closest('button[data-action="mark-requirement-passed-all"]');
@@ -123,7 +123,7 @@ export const RequirementsListViewComponent = {
             event.preventDefault();
             this.router('requirement_audit', { sampleId: sample_id, requirementId: requirement_id });
         }
-    },
+    }
 
     handle_mark_requirement_passed_in_all_samples(requirement_id, trigger_button) {
         const t = this.Translation.t;
@@ -213,7 +213,7 @@ export const RequirementsListViewComponent = {
                 container.appendChild(actions_wrapper);
             }
         );
-    },
+    }
 
     handle_requirement_list_keydown(event) {
         if (event.key === 'Enter' || event.key === ' ') {
@@ -226,7 +226,7 @@ export const RequirementsListViewComponent = {
                 this.router('requirement_audit', { sampleId: sample_id, requirementId: requirement_id });
             }
         }
-    },
+    }
 
     get_sort_options() {
         if (this.mode === 'all') {
@@ -246,7 +246,7 @@ export const RequirementsListViewComponent = {
                 { value: 'updated_first', textKey: 'sort_option_updated_first', defaultValue: 'Updated First' }
             ];
         }
-    },
+    }
 
     get_requirements_entries(rule_file_content) {
         const requirements = rule_file_content?.requirements;
@@ -261,11 +261,11 @@ export const RequirementsListViewComponent = {
         }
 
         return [];
-    },
+    }
 
     get_searchable_text_for_requirement(req) {
         return get_searchable_text_util(req, { includeInfoBlocks: true });
-    },
+    }
 
     get_reference_string_for_sort(req) {
         if (typeof req?.standardReference?.text === 'string' && req.standardReference.text.trim() !== '') {
@@ -275,13 +275,13 @@ export const RequirementsListViewComponent = {
             return req.reference.trim();
         }
         return '';
-    },
+    }
 
     compare_strings_locale(a, b) {
         const a_str = (a || '').toString();
         const b_str = (b || '').toString();
         return a_str.localeCompare(b_str, 'sv', { numeric: true, sensitivity: 'base' });
-    },
+    }
 
     get_status_icon(status) {
         switch (status) {
@@ -299,7 +299,7 @@ export const RequirementsListViewComponent = {
             default:
                 return '○';
         }
-    },
+    }
 
     _create_status_icons_wrapper(base_status, needs_help, is_updated) {
         const t = this.Translation.t;
@@ -332,7 +332,7 @@ export const RequirementsListViewComponent = {
             icons_wrapper.appendChild(uw);
         }
         return icons_wrapper;
-    },
+    }
 
     _build_item_keys(sorted_items, samples, current_sample_object, filter_opts = {}) {
         if (this.mode === 'sample') {
@@ -357,7 +357,7 @@ export const RequirementsListViewComponent = {
             matching.forEach(s => keys.push(`${req_key}:${s?.id || ''}`));
         });
         return keys;
-    },
+    }
 
     _update_items_status_only(sorted_items, samples, current_sample_object, filter_opts) {
         const t = this.Translation.t;
@@ -433,7 +433,7 @@ export const RequirementsListViewComponent = {
                 });
             });
         }
-    },
+    }
 
     get_aggregated_display_status_for_requirement(req_id, req, samples) {
         const candidates = new Set([String(req_id)]);
@@ -461,7 +461,7 @@ export const RequirementsListViewComponent = {
             if (status === 'passed' && display_status === 'not_audited') display_status = 'passed';
         }
         return display_status;
-    },
+    }
 
     /**
      * Kontrollerar om ett stickprov matchar statusfiltret för ett givet krav.
@@ -477,7 +477,7 @@ export const RequirementsListViewComponent = {
         const show_by_status = status_match || (needs_help_checked && needs_help);
         const hide_by_needs_help = status_filters.needs_help === false && needs_help;
         return show_by_status && !hide_by_needs_help;
-    },
+    }
 
     ensure_dom_initialized() {
         if (!this.root) return false;
@@ -553,7 +553,7 @@ export const RequirementsListViewComponent = {
         this.root.appendChild(this.plate_element_ref);
         this.is_dom_initialized = true;
         return true;
-    },
+    }
 
     async render() {
         if (!this.root) return;
@@ -839,7 +839,7 @@ export const RequirementsListViewComponent = {
             this.render_items(sorted_items, samples, current_sample_object, total_count, filtered_count, filter_opts);
         }
         this._last_rendered_fingerprint = fingerprint_item_keys(item_keys);
-    },
+    }
 
     render_sample_header(state, current_sample_object, all_relevant_requirements) {
         const t = this.Translation.t;
@@ -892,7 +892,7 @@ export const RequirementsListViewComponent = {
         if (ProgressBarComponent) {
             this.header_element_ref.appendChild(ProgressBarComponent.create(audited_requirements_count, all_relevant_requirements.length, {}));
         }
-    },
+    }
 
     sort_items(items, sort_by, current_sample_object, samples = []) {
         const sorted = [...items];
@@ -954,7 +954,7 @@ export const RequirementsListViewComponent = {
         }
 
         return sorted;
-    },
+    }
 
     render_items(sorted_items, samples, current_sample_object, total_count, filtered_count, filter_opts = {}) {
         const t = this.Translation.t;
@@ -1015,7 +1015,7 @@ export const RequirementsListViewComponent = {
             // Apply return focus if needed (sample mode only)
             this._apply_return_focus_if_needed();
         }
-    },
+    }
 
     create_all_requirement_list_item(req_id, req, samples, filter_opts = {}) {
         const t = this.Translation.t;
@@ -1168,7 +1168,7 @@ export const RequirementsListViewComponent = {
         }
 
         return li;
-    },
+    }
 
     create_requirement_list_item(req, sample) {
         const t = this.Translation.t;
@@ -1268,7 +1268,7 @@ export const RequirementsListViewComponent = {
         
         li.appendChild(details_row_div);
         return li;
-    },
+    }
 
     _apply_return_focus_if_needed() {
         if (!this.content_div_for_delegation) return;
@@ -1348,7 +1348,7 @@ export const RequirementsListViewComponent = {
                 }
             }, 300);
         });
-    },
+    }
 
     destroy() {
         if (typeof this.unsubscribe_from_store === 'function') {

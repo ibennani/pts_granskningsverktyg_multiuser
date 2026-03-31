@@ -2,12 +2,12 @@ import { RequirementsListViewComponent } from './RequirementsListViewComponent.j
 
 export class RequirementListComponent {
     constructor() {
-        this.inner_component = RequirementsListViewComponent;
+        this.inner_component = null;
     }
 
     async init({ root, deps }) {
         // Wrapper that delegates to RequirementsListViewComponent with mode: 'sample'
-        this.inner_component = RequirementsListViewComponent;
+        this.inner_component = new RequirementsListViewComponent();
         await this.inner_component.init({
             root,
             deps: {
