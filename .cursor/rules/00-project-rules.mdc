@@ -467,3 +467,36 @@ Detta mönster säkerställer:
 -   Tydlig livscykelhantering (`init` -> `render` -> `destroy`).
 -   Undvikande av globala namespace-föroreningar.
 
+---
+
+## Säkerhetsregler (obligatoriska)
+
+- Använd ALDRIG `innerHTML =` direkt med användardata eller variabelinnehåll. Använd alltid `textContent` för text eller `safe_set_inner_html()` för HTML.
+- Lägg ALDRIG till `'unsafe-inline'` i Content-Security-Policy.
+- Lägg ALDRIG hårdkodade hemligheter, lösenord, API-nycklar eller domännamn i koden. Använd alltid miljövariabler via process.env.
+- JWT_SECRET och andra hemligheter måste alltid valideras vid uppstart med ett tydligt felmeddelande om de saknas.
+- Debug-endpoints och testkod får ALDRIG finnas i produktionskod.
+- Exponera ALDRIG interna moduler eller state på window-objektet i produktionskod.
+
+## Kodkvalitetsregler (obligatoriska)
+
+- Ingen komponentfil får vara längre än 400 rader. Om en fil växer över 400 rader ska den delas upp i mindre delar.
+- Ingen funktion får vara längre än 50 rader.
+- Komponenter ska alltid vara klasser eller factory-funktioner — aldrig exporterade singleton-objekt.
+- Alla nya filer ska ha tydliga JSDoc-kommentarer som beskriver filens syfte.
+
+## Testregler (obligatoriska)
+
+- Varje ny funktion i logic/-mappen ska ha ett tillhörande enhetstest i tests/unit/.
+- Tester ska köras med `npm test` innan varje commit med kodändringar.
+
+## Förbjudna mönster
+
+Cursor får ALDRIG föreslå eller skriva kod som:
+
+- Använder `eval()` eller `new Function()`
+- Använder `document.write()`
+- Sätter `window.*` för att exponera interna moduler
+- Innehåller hårdkodade URL:er, IP-adresser eller domännamn
+- Har tomma catch-block utan felhantering: `catch(e) {}`
+
