@@ -154,6 +154,18 @@ async function main() {
             `npm install --omit=dev --ignore-scripts && npm run db:migrate && ${pm2Start}`,
             ['ssh', [host, `cd ${remotePath} && npm install --omit=dev --ignore-scripts && npm run db:migrate && ${pm2Start}`]]
         );
+
+        console.log('[deploy] Verifierar att backend svarar på /api/health...');
+        const rp_esc = remotePath.replace(/'/g, "'\\''");
+        const health_verify = [
+            'set +e',
+            'for _ in 1 2 3 4 5; do if curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 http://127.0.0.1:3000/api/health | grep -qx 200; then echo "[deploy] Backend OK (HTTP 200)."; exit 0; fi; sleep 3; done',
+            'echo "[deploy] VARNING: /api/health svarade inte 200 efter flera försök. Kör: npm run diagnose:v2"',
+            `cd '${rp_esc}' && npx pm2 logs granskningsverktyget-v2 --lines 25 --nostream 2>/dev/null || true`,
+            'exit 0'
+        ].join('; ');
+        await exec(health_verify, { cwd: false });
+
         try {
             await exec('npx pm2 install pm2-logrotate 2>/dev/null || true');
         } catch (_) {

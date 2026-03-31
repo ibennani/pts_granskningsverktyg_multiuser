@@ -127,7 +127,8 @@ function run(cmd, args, opts = {}) {
     return new Promise((resolve, reject) => {
         const p = spawn(finalCmd, finalArgs, {
             stdio: 'inherit',
-            shell: finalCmd === 'sshpass' ? false : true,
+            // ssh utan shell: undvik att PowerShell expanderar $ i fjärrkommandot
+            shell: finalCmd === 'sshpass' || cmd === 'ssh' ? false : true,
             cwd: projectRoot,
             ...opts
         });
