@@ -106,13 +106,14 @@ import { get_auth_token, clear_auth_token, get_current_user_preferences, set_cur
 import { getState, dispatch, subscribe, initState, StoreActionTypes, StoreInitialState, loadStateFromLocalStorageBackup, clearLocalStorageBackup, updateBackupRestorePosition, APP_STATE_KEY } from './state.js';
 
 const notificationComponent = new NotificationComponent();
+const modalComponent = new ModalComponent();
 
 window.getState = getState;
 window.dispatch = dispatch;
 window.Store = { getState, dispatch, subscribe, StoreActionTypes, StoreInitialState };
 window.StoreActionTypes = StoreActionTypes;
 window.NotificationComponent = notificationComponent;
-window.ModalComponent = ModalComponent;
+window.ModalComponent = modalComponent;
 window.show_confirm_delete_modal = show_confirm_delete_modal;
 window.dependencyManager = dependencyManager;
 window.Helpers = Helpers;
@@ -386,7 +387,7 @@ window.DraftManager = DraftManager;
             Translation: window.Translation,
             Helpers: window.Helpers,
             NotificationComponent: notificationComponent,
-            ModalComponent: ModalComponent,
+            ModalComponent: modalComponent,
             SaveAuditLogic: window.SaveAuditLogic,
             AuditLogic: AuditLogic,
             ValidationLogic: ValidationLogic,
@@ -448,7 +449,7 @@ window.DraftManager = DraftManager;
         const modal_root = document.getElementById('modal-root');
         if (modal_root) {
             try {
-                await ModalComponent.init({ root: modal_root, deps: common_deps });
+                await modalComponent.init({ root: modal_root, deps: common_deps });
             } catch (error) {
                 consoleManager.error("[Main.js] Failed to initialize modal:", error);
             }
