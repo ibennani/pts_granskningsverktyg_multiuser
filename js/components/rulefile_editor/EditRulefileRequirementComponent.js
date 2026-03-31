@@ -395,7 +395,7 @@ export class EditRulefileRequirementComponent {
                                 on_confirm: () => {
                                     this.dispatch({
                                         type: this.StoreActionTypes.DELETE_CHECK_FROM_REQUIREMENT,
-                                        payload: { requirementId: this.params.id, checkId }
+                                        payload: { requirementId: this.params.id, checkId: check_id }
                                     });
                                     this.router('rulefile_edit_requirement', { id: this.params.id });
                                 }
@@ -962,7 +962,7 @@ export class EditRulefileRequirementComponent {
             options = { animate_last_item: options };
         }
         const t = this.Translation.t;
-        let checks_section = this.form_element_ref.querySelector('.checks-container-edit');
+        const checks_section = this.form_element_ref.querySelector('.checks-container-edit');
         if (!checks_section) return;
 
         checks_section.innerHTML = '';

@@ -73,7 +73,7 @@ function get_pass_criterion_text(req_definition, check_id, pc_id) {
  * Tar bort vanlig Markdown-syntax men behåller radbrytningar (för Excel-export).
  */
 function strip_markdown_for_excel(text) {
-    if (text == null || typeof text !== 'string') {
+    if (text === null || text === undefined || typeof text !== 'string') {
         return text;
     }
     let s = text.replace(/\r\n/g, '\n');
@@ -1724,6 +1724,38 @@ function get_deficiencies_for_sample(requirement, sample, current_audit, t) {
     return deficiencies;
 }
 
+/**
+ * Samlar alla brister för ett stickprov över alla krav (används av textexport per stickprov).
+ * Varje post får `_requirementId` för gruppring.
+ */
+function get_deficiencies_for_sample_any_req(sample, current_audit, t) {
+    const all = [];
+    const requirements = current_audit.ruleFileContent?.requirements || {};
+    for (const reqId of Object.keys(requirements)) {
+        const req = requirements[reqId];
+        const defs = get_deficiencies_for_sample(req, sample, current_audit, t);
+        for (const d of defs) {
+            all.push({ ...d, _requirementId: reqId });
+        }
+    }
+    return all;
+}
+
+/**
+ * Grupperar brister per krav-id (nyckel i ruleFileContent.requirements).
+ */
+function group_deficiencies_by_requirement(deficiencies, current_audit) {
+    const map = {};
+    const requirements = current_audit.ruleFileContent?.requirements || {};
+    for (const d of deficiencies) {
+        const reqId = d._requirementId;
+        if (!reqId || !requirements[reqId]) continue;
+        const { _requirementId, ...rest } = d;
+        if (!map[reqId]) map[reqId] = [];
+        map[reqId].push(rest);
+    }
+    return map;
+}
 
 // --- STICKPROVSBASERAD TEXTEXPORT (NY) ---
 async function export_to_text_export_deprecated(current_audit) {
