@@ -125,7 +125,7 @@ export class AuditViewComponent {
         }
         this.audit_filter_query = value;
         this._auditFilterHadFocus = document.activeElement === target;
-        this._auditFilterSelection = selectionStart != null && selectionEnd != null
+        this._auditFilterSelection = selectionStart !== null && selectionStart !== undefined && selectionEnd !== null && selectionEnd !== undefined
             ? { selectionStart, selectionEnd }
             : null;
         if (this.root) {
@@ -478,7 +478,7 @@ export class AuditViewComponent {
                 const file_updated = Number(file_content_object.updated_at ?? file_content_object.updatedAt ?? 0);
 
                 const existing = this.audits.find((a) => {
-                    if (file_id != null && String(a.id) === String(file_id)) return true;
+                    if (file_id !== null && file_id !== undefined && String(a.id) === String(file_id)) return true;
                     const sc = (a.metadata?.caseNumber ?? '').toString().trim();
                     const sa = (a.metadata?.actorName ?? '').toString().trim();
                     return sc === file_case && sa === file_actor;
@@ -700,7 +700,7 @@ export class AuditViewComponent {
         }
         if (!matched) return null;
         const production = all_rules.find(
-            (r) => r.production_base_id != null && String(r.production_base_id) === String(matched.id)
+            (r) => r.production_base_id !== null && r.production_base_id !== undefined && String(r.production_base_id) === String(matched.id)
         );
         return production || matched;
     }
@@ -1226,10 +1226,10 @@ export class AuditViewComponent {
             ? String(file_content_object.version)
             : t('audit_audit_duplicate_modal_value_missing');
 
-        const server_status = summary?.status != null
+        const server_status = summary?.status !== null && summary?.status !== undefined
             ? this.get_status_label(summary.status)
             : t('audit_audit_duplicate_modal_value_missing');
-        const file_status = file_content_object?.auditStatus != null
+        const file_status = file_content_object?.auditStatus !== null && file_content_object?.auditStatus !== undefined
             ? this.get_status_label(file_content_object.auditStatus)
             : t('audit_audit_duplicate_modal_value_missing');
 
@@ -1366,10 +1366,10 @@ export class AuditViewComponent {
             await this.ensure_api_data();
             this.render();
         } catch (error) {
-            if (error.status === 409 && error.responseBody?.inUseCount != null) {
+            if (error.status === 409 && error.responseBody?.inUseCount !== null && error.responseBody?.inUseCount !== undefined) {
                 const rule_name = this._get_rule_base_name(rule_id);
                 this._show_rule_in_use_modal(rule_name, error.responseBody.inUseCount);
-            } else if (error.status === 409 && error.responseBody?.productionCopyCount != null) {
+            } else if (error.status === 409 && error.responseBody?.productionCopyCount !== null && error.responseBody?.productionCopyCount !== undefined) {
                 const rule_name = this._get_rule_base_name(rule_id);
                 this._show_rule_has_production_copies_modal(rule_name, error.responseBody.productionCopyCount);
             } else if (error.status === 403) {
@@ -1747,7 +1747,7 @@ export class AuditViewComponent {
             const migrated_content = migrate_rulefile_to_new_structure(content, {
                 Translation: this.Translation
             });
-            const is_arbetskopia = !!rule_row?.production_base_id || rule_row?.published_content == null;
+            const is_arbetskopia = !!rule_row?.production_base_id || rule_row?.published_content === null || rule_row?.published_content === undefined;
             if (is_arbetskopia) {
                 if (!migrated_content?.metadata || typeof migrated_content.metadata !== 'object') {
                     this.NotificationComponent?.show_global_message(

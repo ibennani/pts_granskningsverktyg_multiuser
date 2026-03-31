@@ -203,7 +203,7 @@ function normalize_requirements_to_object(requirements) {
     requirements.forEach(req => {
         if (!req || typeof req !== 'object') return;
         const key = req.key || req.id;
-        if (key != null) out[key] = req;
+        if (key !== null && key !== undefined) out[key] = req;
     });
     return out;
 }
@@ -214,7 +214,7 @@ function normalize_requirements_to_object(requirements) {
  * @returns {string}
  */
 function normalize_text_for_match(str) {
-    if (str == null) return '';
+    if (str === null || str === undefined) return '';
     const t = typeof str === 'string' ? str : String(str);
     return t.trim().toLowerCase();
 }
@@ -315,7 +315,7 @@ function remap_requirement_result_to_new_ids(old_result, mappings) {
         if (old_cr.passCriteria && typeof old_cr.passCriteria === 'object') {
             for (const old_pc_id in old_cr.passCriteria) {
                 const new_pc_id = pc_map[old_pc_id];
-                if (new_pc_id != null) {
+                if (new_pc_id !== null && new_pc_id !== undefined) {
                     new_pass_criteria[new_pc_id] = old_cr.passCriteria[old_pc_id];
                 }
             }

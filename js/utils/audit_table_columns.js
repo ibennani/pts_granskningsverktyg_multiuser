@@ -21,7 +21,7 @@ export function create_audit_table_columns(deps, handlers, opts = {}) {
     const lang = Translation?.get_current_language_code?.() || 'sv-SE';
     const format_num = (val) =>
         Helpers?.format_number_locally?.(val, lang, { minimumFractionDigits: 1, maximumFractionDigits: 1 }) ??
-        (val != null ? Number(val).toFixed(1) : EMPTY_PLACEHOLDER);
+        (val !== null && val !== undefined ? Number(val).toFixed(1) : EMPTY_PLACEHOLDER);
 
     const columns = [
         {
@@ -58,14 +58,14 @@ export function create_audit_table_columns(deps, handlers, opts = {}) {
         },
         {
             headerLabel: t('start_view_col_progress'),
-            getSortValue: (row) => row.progress != null ? Number(row.progress) : -1,
-            getContent: (row) => (row.progress != null ? `${row.progress}%` : EMPTY_PLACEHOLDER)
+            getSortValue: (row) => (row.progress !== null && row.progress !== undefined) ? Number(row.progress) : -1,
+            getContent: (row) => (row.progress !== null && row.progress !== undefined ? `${row.progress}%` : EMPTY_PLACEHOLDER)
         },
         {
             headerLabel: t('start_view_col_deficiency'),
-            getSortValue: (row) => (row.deficiency_index != null ? Number(row.deficiency_index) : -Infinity),
+            getSortValue: (row) => (row.deficiency_index !== null && row.deficiency_index !== undefined ? Number(row.deficiency_index) : -Infinity),
             getContent: (row) =>
-                row.deficiency_index != null ? format_num(row.deficiency_index) : EMPTY_PLACEHOLDER
+                (row.deficiency_index !== null && row.deficiency_index !== undefined) ? format_num(row.deficiency_index) : EMPTY_PLACEHOLDER
         },
         {
             headerLabel: t('start_view_col_auditor'),

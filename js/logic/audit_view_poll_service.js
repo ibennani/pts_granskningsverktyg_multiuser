@@ -63,7 +63,7 @@ export function init_audit_view_poll_service({ getState, dispatch, StoreActionTy
         try {
             const { version } = await get_audit_version(audit_id);
             const local_version = state?.version ?? 0;
-            if (version != null && version > local_version) {
+            if (version !== null && version !== undefined && version > local_version) {
                 const full_state = await load_audit_with_rule_file(audit_id);
                 if (full_state) {
                     dispatch({

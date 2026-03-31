@@ -535,12 +535,12 @@ export function count_attached_media_places(state) {
  * Returns array of { requirement, sample, reqId, stuck_text }.
  */
 function find_requirement_by_id(requirements, reqId) {
-    if (!requirements || reqId == null) return null;
+    if (!requirements || reqId === null || reqId === undefined) return null;
     const reqIdStr = String(reqId);
     if (Array.isArray(requirements)) {
         return requirements.find((r) => {
-            const k = r?.key != null ? String(r.key) : null;
-            const i = r?.id != null ? String(r.id) : null;
+            const k = r?.key !== null && r?.key !== undefined ? String(r.key) : null;
+            const i = r?.id !== null && r?.id !== undefined ? String(r.id) : null;
             return (k !== null && k === reqIdStr) || (i !== null && i === reqIdStr);
         }) || null;
     }

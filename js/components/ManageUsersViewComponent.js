@@ -246,7 +246,7 @@ export class ManageUsersViewComponent {
         }
         this.user_filter_query = value;
         this._userFilterHadFocus = document.activeElement === target;
-        this._userFilterSelection = selectionStart != null && selectionEnd != null
+        this._userFilterSelection = selectionStart !== null && selectionStart !== undefined && selectionEnd !== null && selectionEnd !== undefined
             ? { selectionStart, selectionEnd }
             : null;
         if (this.root) {
@@ -601,7 +601,7 @@ export class ManageUsersViewComponent {
     async handle_submit_user_form({ username_input, name_input, is_admin_checkbox }) {
         const t = this.get_t_func();
         const is_edit = !!this.current_user;
-        let username = username_input ? (username_input.value || '').trim() : '';
+        const username = username_input ? (username_input.value || '').trim() : '';
         const raw_name = (name_input.value || '').trim();
         const is_admin = !!is_admin_checkbox.checked;
 
@@ -710,7 +710,7 @@ export class ManageUsersViewComponent {
     }
 
     normalize_username_to_a_z(value) {
-        if (value == null) return '';
+        if (value === null || value === undefined) return '';
         let str = String(value).toLowerCase();
         try {
             str = str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');

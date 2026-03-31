@@ -37,10 +37,10 @@ function getModuleKey(lang_tag) {
 
 /** Normaliserar BCP 47 (bindestreck, versaler för region). nb_NO → nb-NO så att DB/inställningar matchar. */
 function normalize_bcp47_tag(tag) {
-    if (tag == null || typeof tag !== 'string') {
+    if (tag === null || tag === undefined || typeof tag !== 'string') {
         return DEFAULT_LANGUAGE_TAG;
     }
-    let t = tag.trim().replace(/_/g, '-');
+    const t = tag.trim().replace(/_/g, '-');
     if (!t) {
         return DEFAULT_LANGUAGE_TAG;
     }

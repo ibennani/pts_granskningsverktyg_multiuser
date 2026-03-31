@@ -42,7 +42,7 @@ class DependencyManager {
         if (!dep.available) {
             try {
                 dep.value = dep.getter();
-                dep.available = dep.value != null;
+                dep.available = dep.value !== null && dep.value !== undefined;
             } catch (error) {
                 if (window.ConsoleManager?.warn) window.ConsoleManager.warn(`DependencyManager: Failed to get dependency '${name}':`, error);
                 dep.available = false;

@@ -50,7 +50,7 @@ export function init_rulefile_view_poll_service({ getState, dispatch, StoreActio
         try {
             const { version } = await get_rule_version(rule_set_id);
             const local_version = state?.ruleFileServerVersion ?? 0;
-            if (version != null && version > local_version) {
+            if (version !== null && version !== undefined && version > local_version) {
                 const rule_row = await get_rule(rule_set_id);
                 let content = rule_row?.content;
                 if (typeof content === 'string') {

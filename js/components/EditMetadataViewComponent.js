@@ -92,7 +92,7 @@ export class EditMetadataViewComponent {
 
     _is_metadata_empty_or_only_auditor(form_data) {
         if (!form_data) return true;
-        const has = (v) => (v != null && String(v).trim() !== '');
+        const has = (v) => (v !== null && v !== undefined && String(v).trim() !== '');
         const optional_filled = [
             form_data.caseNumber,
             form_data.actorLink,
@@ -104,7 +104,7 @@ export class EditMetadataViewComponent {
 
     _has_required_metadata(form_data) {
         if (!form_data) return false;
-        const has = (v) => (v != null && String(v).trim() !== '');
+        const has = (v) => (v !== null && v !== undefined && String(v).trim() !== '');
         return has(form_data.actorName) && has(form_data.auditorName);
     }
 
@@ -115,7 +115,7 @@ export class EditMetadataViewComponent {
             return;
         }
         const t = this.Translation.t;
-        const has = (v) => (v != null && String(v).trim() !== '');
+        const has = (v) => (v !== null && v !== undefined && String(v).trim() !== '');
         const missing_actor = !has(form_data?.actorName);
         const missing_auditor = !has(form_data?.auditorName);
         const from_list = source === 'go_to_list';
@@ -308,14 +308,14 @@ export class EditMetadataViewComponent {
                 };
             }
             const from = current_state.auditMetadata || {};
-            const str = (v) => (v != null && String(v).trim() !== '' ? String(v).trim() : '');
+            const str = (v) => (v !== null && v !== undefined && String(v).trim() !== '' ? String(v).trim() : '');
             const cleaned = {
                 caseNumber: str(from.caseNumber),
                 actorName: str(from.actorName),
                 actorLink: str(from.actorLink),
                 auditorName: str(from.auditorName) || get_current_user_name() || '',
                 caseHandler: str(from.caseHandler),
-                internalComment: (from.internalComment != null ? String(from.internalComment) : '').trim()
+                internalComment: (from.internalComment !== null && from.internalComment !== undefined ? String(from.internalComment) : '').trim()
             };
             if (is_new_audit) {
                 const keys = ['caseNumber', 'actorName', 'actorLink', 'auditorName', 'caseHandler', 'internalComment'];

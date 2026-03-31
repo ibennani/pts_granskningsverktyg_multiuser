@@ -29,7 +29,7 @@ function state_to_patch(state) {
         metadata: state.auditMetadata || {},
         status: normalize_status_for_server(state.auditStatus || 'not_started'),
         samples: state.samples || [],
-        expectedVersion: state.version != null && state.version !== '' ? Number(state.version) : 0
+        expectedVersion: state.version !== null && state.version !== undefined && state.version !== '' ? Number(state.version) : 0
     };
     // Inkludera regelfilinnehåll så att \"Uppdatera regelfil\" och liknande persisteras i audits.rule_file_content
     if (state.ruleFileContent) {
@@ -165,7 +165,7 @@ async function run_sync(state, dispatch_fn) {
             } catch (_) {
                 // ignoreras medvetet
             }
-            if (dispatch_fn && full_state && full_state.version != null) {
+            if (dispatch_fn && full_state && full_state.version !== null && full_state.version !== undefined) {
                 dispatch_fn({
                     type: 'SET_REMOTE_AUDIT_ID',
                     payload: {

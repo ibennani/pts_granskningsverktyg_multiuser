@@ -208,7 +208,7 @@ export class SideMenuComponent {
             class_name: ['side-menu__link', ...(is_active ? ['active'] : [])]
         });
 
-        if (count_id != null && count_value != null) {
+        if (count_id !== null && count_id !== undefined && count_value !== null && count_value !== undefined) {
             const count_str = String(count_value);
             const parts = label.split(count_str);
             if (parts.length === 2) {
@@ -381,7 +381,7 @@ export class SideMenuComponent {
     _get_counts_from_model(menu_model) {
         const counts = {};
         (menu_model?.items || []).forEach(item => {
-            if (item.count_id != null) {
+            if (item.count_id !== null && item.count_id !== undefined) {
                 counts[item.count_id] = item.count_value;
             }
         });
@@ -417,7 +417,7 @@ export class SideMenuComponent {
         if (window.__GV_DEBUG_PROBLEMS_UPDATE__) console.log('[GV-Debug menu] update_counts_only: uppdaterar counts', { new_counts, last: this.last_menu_counts });
 
         let changed = false;
-        const items_with_count = (menu_model?.items || []).filter((i) => i.count_id != null);
+        const items_with_count = (menu_model?.items || []).filter((i) => i.count_id !== null && i.count_id !== undefined);
         for (const [count_id, new_value] of Object.entries(new_counts)) {
             const span = this.nav_ref.querySelector(`[data-count-id="${CSS.escape(count_id)}"]`);
             if (window.__GV_DEBUG_PROBLEMS_UPDATE__ && count_id === 'problems_count') {

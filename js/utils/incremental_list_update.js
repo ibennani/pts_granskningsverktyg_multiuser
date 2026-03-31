@@ -17,5 +17,5 @@ export function fingerprint_item_keys(item_keys) {
  * @returns {boolean}
  */
 export function can_incremental_update(prev_fingerprint, new_fingerprint) {
-    return prev_fingerprint != null && prev_fingerprint === new_fingerprint;
+    return prev_fingerprint !== null && prev_fingerprint !== undefined && prev_fingerprint === new_fingerprint;
 }

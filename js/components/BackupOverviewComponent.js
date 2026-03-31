@@ -194,7 +194,7 @@ export class BackupOverviewComponent {
             ]);
             this.backup_overview = Array.isArray(overview) ? overview : [];
             this.backup_status = status && status.ok ? status : null;
-            this.backup_settings = settings && (settings.schedule_cron || settings.runs_per_day != null) ? settings : null;
+            this.backup_settings = settings && (settings.schedule_cron || (settings.runs_per_day !== null && settings.runs_per_day !== undefined)) ? settings : null;
             this._apply_filters();
 
             if (this.view_name === 'backup_detail' && this.selected_audit_id) {
@@ -464,7 +464,7 @@ export class BackupOverviewComponent {
         try {
             const ver = await get_audit_version(audit_id);
             current_updated_at = ver?.updated_at || null;
-            if (ver?.version != null) {
+            if (ver?.version !== null && ver?.version !== undefined) {
                 current_audit_version = Number(ver.version);
             }
         } catch (_) {
@@ -590,7 +590,7 @@ export class BackupOverviewComponent {
                     });
                     a.addEventListener('click', (e) => {
                         e.preventDefault();
-                        if (row.auditId != null) {
+                        if (row.auditId !== null && row.auditId !== undefined) {
                             this.router('audit_overview', { auditId: row.auditId });
                         }
                     });
@@ -619,8 +619,8 @@ export class BackupOverviewComponent {
             },
             {
                 headerLabel: t('backup_overview_col_backup_count'),
-                getSortValue: (row) => row.backupCount != null ? Number(row.backupCount) : 0,
-                getContent: (row) => (row.backupCount != null ? String(row.backupCount) : '0')
+                getSortValue: (row) => (row.backupCount !== null && row.backupCount !== undefined) ? Number(row.backupCount) : 0,
+                getContent: (row) => (row.backupCount !== null && row.backupCount !== undefined ? String(row.backupCount) : '0')
             },
             {
                 headerLabel: t('backup_overview_col_actions'),
@@ -653,7 +653,7 @@ export class BackupOverviewComponent {
         };
 
         const format_file_size = (bytes) => {
-            if (bytes == null || typeof bytes !== 'number') return '—';
+            if (bytes === null || bytes === undefined || typeof bytes !== 'number') return '—';
             if (bytes >= 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1).replace('.', ',') + ' MB';
             if (bytes >= 1024) return (bytes / 1024).toFixed(1).replace('.', ',') + ' KB';
             return bytes + ' B';
@@ -661,9 +661,9 @@ export class BackupOverviewComponent {
         const get_summary_text = (row) => {
             const s = row.summarySamples;
             const r = row.summaryRequirements;
-            if (s != null && r != null) return t('backup_detail_summary', { samples: s, requirements: r });
-            if (s != null) return t('backup_detail_summary_samples_only', { samples: s });
-            if (r != null) return t('backup_detail_summary_requirements_only', { requirements: r });
+            if (s !== null && s !== undefined && r !== null && r !== undefined) return t('backup_detail_summary', { samples: s, requirements: r });
+            if (s !== null && s !== undefined) return t('backup_detail_summary_samples_only', { samples: s });
+            if (r !== null && r !== undefined) return t('backup_detail_summary_requirements_only', { requirements: r });
             return '—';
         };
 
@@ -675,7 +675,7 @@ export class BackupOverviewComponent {
             },
             {
                 headerLabel: t('backup_detail_col_file_size'),
-                getSortValue: (row) => row.fileSizeBytes != null ? Number(row.fileSizeBytes) : 0,
+                getSortValue: (row) => (row.fileSizeBytes !== null && row.fileSizeBytes !== undefined) ? Number(row.fileSizeBytes) : 0,
                 getContent: (row) => format_file_size(row.fileSizeBytes)
             },
             {
@@ -685,11 +685,11 @@ export class BackupOverviewComponent {
             },
             {
                 headerLabel: t('backup_detail_col_progress'),
-                getSortValue: (row) => row.progressPercent != null ? Number(row.progressPercent) : -1,
+                getSortValue: (row) => (row.progressPercent !== null && row.progressPercent !== undefined) ? Number(row.progressPercent) : -1,
                 getContent: (row) => {
                     const audited = row.progressAudited;
                     const total = row.progressTotal;
-                    if (audited == null || total == null || total === 0) return '—';
+                    if (audited === null || audited === undefined || total === null || total === undefined || total === 0) return '—';
                     const pct = (100 * audited) / total;
                     const pctStr = pct.toFixed(1).replace('.', ',');
                     return `${audited} / ${total} (${pctStr} %)`;
@@ -1025,7 +1025,7 @@ export class BackupOverviewComponent {
                 ? t('backup_actor_display_deleted', { name: base_actor_name })
                 : base_actor_name;
             const case_number = detail_overview_row?.caseNumber ?? '';
-            const backup_count = detail_overview_row?.backupCount != null ? String(detail_overview_row.backupCount) : '0';
+            const backup_count = (detail_overview_row?.backupCount !== null && detail_overview_row?.backupCount !== undefined) ? String(detail_overview_row.backupCount) : '0';
             const latest_str = detail_overview_row?.latestBackupAt ? format_dt(detail_overview_row.latestBackupAt) : '—';
             const make_li = (label, value) => {
                 const li = this.Helpers.create_element('li');
