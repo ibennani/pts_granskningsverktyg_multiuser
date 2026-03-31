@@ -1,6 +1,17 @@
 // js/components/ArchivedRequirementsViewComponent.js
 
-export const ArchivedRequirementsViewComponent = {
+export class ArchivedRequirementsViewComponent {
+    constructor() {
+        this.root = null;
+        this.deps = null;
+        this.router = null;
+        this.getState = null;
+        this.Translation = null;
+        this.Helpers = null;
+        this.NotificationComponent = null;
+        this.plate_element_ref = null;
+    }
+
     init({ root, deps }) {
         this.root = root;
         this.deps = deps;
@@ -11,7 +22,7 @@ export const ArchivedRequirementsViewComponent = {
         this.NotificationComponent = deps.NotificationComponent;
 
         this.plate_element_ref = null;
-    },
+    }
 
     render() {
         if (!this.root) return;
@@ -98,7 +109,7 @@ export const ArchivedRequirementsViewComponent = {
         back_button.addEventListener('click', () => this.router('audit_overview'));
         actions.appendChild(back_button);
         this.plate_element_ref.appendChild(actions);
-    },
+    }
 
     destroy() {
         if (this.root) {
@@ -108,5 +119,4 @@ export const ArchivedRequirementsViewComponent = {
         this.root = null;
         this.deps = null;
     }
-};
-
+}

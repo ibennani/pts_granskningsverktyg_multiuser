@@ -112,6 +112,7 @@ const errorBoundaryComponent = new ErrorBoundaryComponent();
 const auditOverviewComponent = new AuditOverviewComponent();
 const confirmSampleEditViewComponent = new ConfirmSampleEditViewComponent();
 const finalConfirmUpdatesViewComponent = new FinalConfirmUpdatesViewComponent();
+const archivedRequirementsViewComponent = new ArchivedRequirementsViewComponent();
 
 window.getState = getState;
 window.dispatch = dispatch;
@@ -707,7 +708,7 @@ window.DraftManager = DraftManager;
             case 'all_requirements': ComponentClass = allRequirementsViewComponent; break;
             case 'audit_problems': ComponentClass = AuditProblemsViewComponent; break;
             case 'audit_images': ComponentClass = AuditImagesViewComponent; break;
-            case 'archived_requirements': ComponentClass = ArchivedRequirementsViewComponent; break;
+            case 'archived_requirements': ComponentClass = archivedRequirementsViewComponent; break;
             case 'rulefile_change_log': ComponentClass = RulefileChangeLogViewComponent; break;
             case 'requirement_list': ComponentClass = RequirementListComponent; break;
             case 'requirement_audit': ComponentClass = RequirementAuditComponent; break;
