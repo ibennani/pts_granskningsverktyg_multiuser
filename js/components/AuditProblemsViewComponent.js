@@ -2,8 +2,24 @@ import { get_current_user_name } from '../utils/helpers.js';
 import { marked } from '../utils/markdown.js';
 import './audit_problems_view_component.css';
 
-export const AuditProblemsViewComponent = {
-    CSS_PATH: './audit_problems_view_component.css',
+export class AuditProblemsViewComponent {
+    constructor() {
+        this.CSS_PATH = './audit_problems_view_component.css';
+        this.root = null;
+        this.deps = null;
+        this.router = null;
+        this.getState = null;
+        this.dispatch = null;
+        this.StoreActionTypes = null;
+        this.Translation = null;
+        this.Helpers = null;
+        this.AuditLogic = null;
+        this.NotificationComponent = null;
+        this.unsubscribe = null;
+        this._problems_signature = null;
+        this._previous_problems_keys = null;
+        this._focus_after_problem_solved = null;
+    }
 
     _safe_parse_markdown(markdown_string) {
         if (typeof marked === 'undefined' || !this.Helpers?.escape_html) {
@@ -23,7 +39,7 @@ export const AuditProblemsViewComponent = {
         };
         const parsed = marked.parse(String(markdown_string || ''), { renderer, breaks: true, gfm: true });
         return this.Helpers?.sanitize_html ? this.Helpers.sanitize_html(parsed) : parsed;
-    },
+    }
 
     async init({ root, deps }) {
         if (window.__GV_DEBUG_PROBLEMS_UPDATE__) console.log('[GV-Debug problems] init: start');
@@ -146,17 +162,17 @@ export const AuditProblemsViewComponent = {
                 this._previous_problems_keys = new Set(new_keys);
             });
         }
-    },
+    }
 
     build_hash(view_name, params = {}) {
         const has_params = params && Object.keys(params).length > 0;
         if (!has_params) return `#${view_name}`;
         return `#${view_name}?${new URLSearchParams(params).toString()}`;
-    },
+    }
 
     _wrap_html_for_clipboard(html_content) {
         return `<html xmlns="http://www.w3.org/1999/xhtml"><head><meta charset="utf-8"></head><body><!--StartFragment--><div>${html_content}</div><!--EndFragment--></body></html>`;
-    },
+    }
 
     handle_requirement_link_click(event) {
         event.preventDefault();
@@ -166,7 +182,7 @@ export const AuditProblemsViewComponent = {
         if (sample_id && requirement_id && typeof this.router === 'function') {
             this.router('requirement_audit', { sampleId: sample_id, requirementId: requirement_id });
         }
-    },
+    }
 
     async handle_copy_click(event) {
         const btn = event.currentTarget;
@@ -224,7 +240,7 @@ export const AuditProblemsViewComponent = {
                 );
             }
         }
-    },
+    }
 
     async handle_copy_all_click(event) {
         const btn = event.currentTarget;
@@ -298,7 +314,7 @@ export const AuditProblemsViewComponent = {
                 );
             }
         }
-    },
+    }
 
     _apply_focus_after_problem_solved() {
         const focus_spec = this._focus_after_problem_solved;
@@ -328,7 +344,7 @@ export const AuditProblemsViewComponent = {
                 target.focus();
             }
         }
-    },
+    }
 
     handle_problem_solved_click(event) {
         const btn = event.currentTarget;
@@ -400,7 +416,7 @@ export const AuditProblemsViewComponent = {
             // Fallback om modalkomponenten inte finns – utför borttagning direkt
             perform_delete();
         }
-    },
+    }
 
     handle_edit_click(event) {
         const btn = event.currentTarget;
@@ -516,7 +532,7 @@ export const AuditProblemsViewComponent = {
                 container.appendChild(actions_wrapper);
             }
         );
-    },
+    }
 
     render() {
         if (!this.root) return;
@@ -597,7 +613,7 @@ export const AuditProblemsViewComponent = {
                 list_wrapper.appendChild(card);
             });
         }
-    },
+    }
 
     create_problem_card(item, t) {
         const sample_id = item.sample?.id ?? '';
@@ -746,7 +762,7 @@ export const AuditProblemsViewComponent = {
         card.appendChild(buttons_row);
 
         return card;
-    },
+    }
 
     destroy() {
         if (typeof this.unsubscribe === 'function') {
@@ -769,4 +785,4 @@ export const AuditProblemsViewComponent = {
         this.AuditLogic = null;
         this.NotificationComponent = null;
     }
-};
+}
