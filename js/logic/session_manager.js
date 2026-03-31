@@ -58,19 +58,26 @@ export function update_build_timestamp() {
 
     const date_str = window.BUILD_INFO?.date || new Date().toLocaleDateString('sv-SE');
     let time_str;
+    const stockholm_time_opts = { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Europe/Stockholm' };
+    const stockholm_time_opts_no_sec = { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Stockholm' };
     if (is_dev) {
-        if (window.BUILD_INFO?.timestamp) {
+        // Samma date/time som dev-build-info-watcher skriver och loggar (Europe/Stockholm), inte webbläsarens tidszon.
+        if (window.BUILD_INFO?.time) {
+            time_str = window.BUILD_INFO.time;
+        } else if (window.BUILD_INFO?.timestamp) {
             const d = new Date(window.BUILD_INFO.timestamp);
-            time_str = d.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            time_str = d.toLocaleTimeString('sv-SE', stockholm_time_opts);
         } else {
-            time_str = new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            time_str = new Date().toLocaleTimeString('sv-SE', stockholm_time_opts);
         }
     } else {
-        if (window.BUILD_INFO?.timestamp) {
+        if (window.BUILD_INFO?.time) {
+            time_str = window.BUILD_INFO.time;
+        } else if (window.BUILD_INFO?.timestamp) {
             const d = new Date(window.BUILD_INFO.timestamp);
-            time_str = d.toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+            time_str = d.toLocaleTimeString('sv-SE', stockholm_time_opts_no_sec);
         } else {
-            time_str = window.BUILD_INFO?.time || new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' });
+            time_str = new Date().toLocaleTimeString('sv-SE', stockholm_time_opts_no_sec);
         }
     }
 
