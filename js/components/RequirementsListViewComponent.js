@@ -11,7 +11,7 @@ import { build_item_keys, update_items_status_only } from './requirements_list/r
 import { create_all_requirement_list_item, create_requirement_list_item } from './requirements_list/requirement_list_list_items.js';
 import { handle_mark_requirement_passed_in_all_samples } from './requirements_list/requirement_list_mark_all_modal.js';
 import { apply_return_focus_if_needed } from './requirements_list/requirement_list_return_focus.js';
-import { ProgressBarComponent } from './ProgressBarComponent.js';
+import { render_sample_header } from './requirements_list/requirement_list_sample_header.js';
 import { fingerprint_item_keys, can_incremental_update } from '../utils/incremental_list_update.js';
 import './all_requirements_view_component.css';
 import './requirement_list_component.css';
@@ -349,7 +349,7 @@ export class RequirementsListViewComponent {
             const total_count = entries.length;
             this.h1_element_ref.textContent = t('all_requirements_title_audit_with_count', { count: total_count });
         } else {
-            this.render_sample_header(state, current_sample_object, all_relevant_requirements);
+            render_sample_header(state, current_sample_object, all_relevant_requirements, this.header_element_ref, this.Helpers, this.Translation, this.AuditLogic);
         }
 
         // Get filter settings
@@ -508,59 +508,6 @@ export class RequirementsListViewComponent {
             this.render_items(sorted_items, samples, current_sample_object, total_count, filtered_count, filter_opts);
         }
         this._last_rendered_fingerprint = fingerprint_item_keys(item_keys);
-    }
-
-    render_sample_header(state, current_sample_object, all_relevant_requirements) {
-        const t = this.Translation.t;
-        if (!this.header_element_ref) return;
-
-        this.header_element_ref.innerHTML = '';
-
-        const actor_name = state.auditMetadata?.actorName || '';
-        const sample_description = current_sample_object.description || t('undefined_description');
-        const title_text = (actor_name.trim() !== '') ? `${actor_name.trim()}: ${sample_description}` : sample_description;
-
-        const h1 = this.Helpers.create_element('h1');
-        if (current_sample_object.url) {
-            const icon_html = this.Helpers.get_external_link_icon_html ? this.Helpers.get_external_link_icon_html(t) : ' ↗';
-            h1.appendChild(this.Helpers.create_element('a', {
-                html_content: (this.Helpers.escape_html ? this.Helpers.escape_html(title_text) : title_text) + icon_html,
-                attributes: { href: this.Helpers.add_protocol_if_missing(current_sample_object.url), target: '_blank', rel: 'noopener noreferrer' }
-            }));
-        } else {
-            h1.textContent = title_text;
-        }
-        this.header_element_ref.appendChild(h1);
-
-        const sample_categories_map = new Map();
-        (state.ruleFileContent.metadata.samples?.sampleCategories || []).forEach(cat => {
-            sample_categories_map.set(cat.id, cat.text);
-        });
-        const category_text = sample_categories_map.get(current_sample_object.sampleCategory) || current_sample_object.sampleCategory;
-        const type_info_string = `${current_sample_object.sampleType || ''} (${category_text || ''})`;
-
-        const sample_type_p = this.Helpers.create_element('p', { class_name: 'sample-info-display sample-page-type' });
-        const strong_element = this.Helpers.create_element('strong', { text_content: t('page_type') });
-        sample_type_p.appendChild(strong_element);
-        sample_type_p.appendChild(document.createTextNode(': '));
-        sample_type_p.appendChild(document.createTextNode(this.Helpers.escape_html(type_info_string)));
-        this.header_element_ref.appendChild(sample_type_p);
-
-        const audited_requirements_count = all_relevant_requirements.filter(req => {
-            const status = this.AuditLogic.calculate_requirement_status(req, (current_sample_object.requirementResults || {})[req.key]);
-            return status === 'passed' || status === 'failed';
-        }).length;
-
-        const sample_audit_status_p = this.Helpers.create_element('p', { class_name: 'sample-info-display sample-audit-progress' });
-        const strong_element2 = this.Helpers.create_element('strong', { text_content: t('requirements_audited_for_sample') });
-        sample_audit_status_p.appendChild(strong_element2);
-        sample_audit_status_p.appendChild(document.createTextNode(': '));
-        sample_audit_status_p.appendChild(document.createTextNode(`${audited_requirements_count}/${all_relevant_requirements.length}`));
-        this.header_element_ref.appendChild(sample_audit_status_p);
-
-        if (ProgressBarComponent) {
-            this.header_element_ref.appendChild(ProgressBarComponent.create(audited_requirements_count, all_relevant_requirements.length, {}));
-        }
     }
 
     render_items(sorted_items, samples, current_sample_object, total_count, filtered_count, filter_opts = {}) {
