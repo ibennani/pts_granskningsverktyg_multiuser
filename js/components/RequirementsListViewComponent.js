@@ -1,12 +1,11 @@
 import { RequirementListToolbarComponent } from './RequirementListToolbarComponent.js';
 import {
-    compare_strings_locale,
-    get_aggregated_display_status_for_requirement,
     get_requirements_entries,
     get_reference_string_for_sort,
     get_searchable_text_for_requirement,
     sample_matches_status_filter
 } from './requirements_list/requirement_list_query.js';
+import { get_sort_options, sort_items } from './requirements_list/requirement_list_sort.js';
 import { create_status_icons_wrapper } from './requirements_list/requirement_list_status_icons.js';
 import { build_item_keys, update_items_status_only } from './requirements_list/requirement_list_incremental_dom.js';
 import { create_all_requirement_list_item, create_requirement_list_item } from './requirements_list/requirement_list_list_items.js';
@@ -156,26 +155,6 @@ export class RequirementsListViewComponent {
                 event.preventDefault();
                 this.router('requirement_audit', { sampleId: sample_id, requirementId: requirement_id });
             }
-        }
-    }
-
-    get_sort_options() {
-        if (this.mode === 'all') {
-            return [
-                { value: 'ref_asc', textKey: 'sort_option_ref_asc_natural' },
-                { value: 'ref_desc', textKey: 'sort_option_ref_desc_natural' },
-                { value: 'title_asc', textKey: 'sort_option_title_asc' },
-                { value: 'title_desc', textKey: 'sort_option_title_desc' },
-                { value: 'updated_first', textKey: 'sort_option_updated_first' }
-            ];
-        } else {
-            return [
-                { value: 'ref_asc', textKey: 'sort_option_ref_asc_natural', defaultValue: 'Reference (Ascending)' },
-                { value: 'ref_desc', textKey: 'sort_option_ref_desc_natural', defaultValue: 'Reference (Descending)' },
-                { value: 'title_asc', textKey: 'sort_option_title_asc', defaultValue: 'Title (A-Z)' },
-                { value: 'title_desc', textKey: 'sort_option_title_desc', defaultValue: 'Title (Z-A)' },
-                { value: 'updated_first', textKey: 'sort_option_updated_first', defaultValue: 'Updated First' }
-            ];
         }
     }
 
@@ -422,7 +401,7 @@ export class RequirementsListViewComponent {
                         Helpers: this.Helpers,
                         config: {
                             showStatusFilter: true,
-                            sortOptions: this.get_sort_options(),
+                            sortOptions: get_sort_options(this.mode),
                             idPrefix: this.state_filter_key === 'allRequirementsFilter' ? 'all-requirements-filter' : 'requirement-list-filter',
                             searchDebounceMs: 400
                         }
@@ -511,7 +490,7 @@ export class RequirementsListViewComponent {
 
         // Sort items
         const sort_by = current_ui_settings.sortBy || 'ref_asc';
-        const sorted_items = this.sort_items(filtered_items, sort_by, current_sample_object, samples);
+        const sorted_items = sort_items(this.mode, filtered_items, sort_by, current_sample_object, samples, this.relevant_ids_by_sample, this.AuditLogic, this.Helpers);
 
         const search_term = (current_ui_settings.searchText || '').toLowerCase().trim();
         const status_keys_for_filter = ['needs_help', 'passed', 'failed', 'partially_audited', 'not_audited', 'updated'];
@@ -582,68 +561,6 @@ export class RequirementsListViewComponent {
         if (ProgressBarComponent) {
             this.header_element_ref.appendChild(ProgressBarComponent.create(audited_requirements_count, all_relevant_requirements.length, {}));
         }
-    }
-
-    sort_items(items, sort_by, current_sample_object, samples = []) {
-        const sorted = [...items];
-
-        if (this.mode === 'all') {
-            if (sort_by === 'title_asc') {
-                sorted.sort((a, b) => compare_strings_locale(a?.[1]?.title, b?.[1]?.title));
-            } else if (sort_by === 'title_desc') {
-                sorted.sort((a, b) => compare_strings_locale(b?.[1]?.title, a?.[1]?.title));
-            } else if (sort_by === 'ref_asc') {
-                sorted.sort((a, b) => {
-                    const ref_a = get_reference_string_for_sort(a?.[1]);
-                    const ref_b = get_reference_string_for_sort(b?.[1]);
-                    if (this.Helpers?.natural_sort) {
-                        return this.Helpers.natural_sort(ref_a || 'Z', ref_b || 'Z');
-                    }
-                    return compare_strings_locale(ref_a, ref_b);
-                });
-            } else if (sort_by === 'ref_desc') {
-                sorted.sort((a, b) => {
-                    const ref_a = get_reference_string_for_sort(a?.[1]);
-                    const ref_b = get_reference_string_for_sort(b?.[1]);
-                    if (this.Helpers?.natural_sort) {
-                        return this.Helpers.natural_sort(ref_b || 'Z', ref_a || 'Z');
-                    }
-                    return compare_strings_locale(ref_b, ref_a);
-                });
-            } else if (sort_by === 'updated_first') {
-                sorted.sort((a, b) => {
-                    const status_a = get_aggregated_display_status_for_requirement(a?.[0], a?.[1], samples, this.relevant_ids_by_sample, this.AuditLogic);
-                    const status_b = get_aggregated_display_status_for_requirement(b?.[0], b?.[1], samples, this.relevant_ids_by_sample, this.AuditLogic);
-                    const a_updated = status_a === 'updated' ? 0 : 1;
-                    const b_updated = status_b === 'updated' ? 0 : 1;
-                    if (a_updated !== b_updated) return a_updated - b_updated;
-                    const ref_a = get_reference_string_for_sort(a?.[1]);
-                    const ref_b = get_reference_string_for_sort(b?.[1]);
-                    return this.Helpers?.natural_sort(ref_a || 'Z', ref_b || 'Z') || 0;
-                });
-            }
-        } else {
-            const sort_function = {
-                'ref_asc': (a, b) => this.Helpers.natural_sort(a.standardReference?.text || 'Z', b.standardReference?.text || 'Z'),
-                'ref_desc': (a, b) => this.Helpers.natural_sort(b.standardReference?.text || 'Z', a.standardReference?.text || 'Z'),
-                'title_asc': (a, b) => (a.title || '').localeCompare(b.title || ''),
-                'title_desc': (a, b) => (b.title || '').localeCompare(a.title || ''),
-                'updated_first': (a, b) => {
-                    const resA = (current_sample_object.requirementResults || {})[a.key];
-                    const resB = (current_sample_object.requirementResults || {})[b.key];
-                    const isAUpdated = resA?.needsReview === true ? 0 : 1;
-                    const isBUpdated = resB?.needsReview === true ? 0 : 1;
-                    if (isAUpdated !== isBUpdated) {
-                        return isAUpdated - isBUpdated;
-                    }
-                    return this.Helpers.natural_sort(a.standardReference?.text || 'Z', b.standardReference?.text || 'Z');
-                }
-            };
-            const effectiveSortKey = sort_function.hasOwnProperty(sort_by) ? sort_by : 'ref_asc';
-            sorted.sort(sort_function[effectiveSortKey]);
-        }
-
-        return sorted;
     }
 
     render_items(sorted_items, samples, current_sample_object, total_count, filtered_count, filter_opts = {}) {
