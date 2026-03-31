@@ -2,6 +2,7 @@
 import { create_production_rule } from '../api/client.js';
 import { clone_metadata, ensure_metadata_defaults } from '../logic/rulefile_metadata_model.js';
 import { generate_slug, ensure_unique_slug } from '../logic/rulefile_metadata_slug.js';
+import { create_field, create_language_select_field } from './rulefile_metadata/rulefile_metadata_form_fields.js';
 import './edit_rulefile_metadata_view.css';
 
 export class EditRulefileMetadataViewComponent {
@@ -44,117 +45,6 @@ export class EditRulefileMetadataViewComponent {
         if (this.Helpers?.load_css) {
             await this.Helpers.load_css(this.CSS_PATH).catch(err => { if (window.ConsoleManager) window.ConsoleManager.warn('[EditRulefileMetadataView] Failed to load CSS', err); });
         }
-    }
-
-    _create_field(label_key, name, value = '', type = 'text', options = {}) {
-        const { required = false } = options;
-        const container = this.Helpers.create_element('div', { class_name: 'form-group' });
-        const labelText = this.Translation.t(label_key);
-        const label = this.Helpers.create_element('label', { attributes: { for: name }, text_content: labelText });
-        container.appendChild(label);
-
-        if (type === 'textarea') {
-            const textarea = this.Helpers.create_element('textarea', {
-                class_name: 'form-control',
-                attributes: { id: name, name, rows: '3', ...(required ? { required: 'required' } : {}) }
-            });
-            textarea.value = value ?? '';
-            container.appendChild(textarea);
-            this.Helpers.init_auto_resize_for_textarea?.(textarea);
-        } else {
-            let input_value = value ?? '';
-            if (type === 'date' && input_value) {
-                // Normalisera till YYYY-MM-DD så att browserns datumkontroll kan visa korrekt
-                const iso_like = String(input_value);
-                let parsed = null;
-
-                // Om värdet innehåller tid eller full ISO-sträng, parsa som Date
-                if (/[T ]\d{2}:\d{2}/.test(iso_like) || iso_like.includes('T')) {
-                    const d = new Date(iso_like);
-                    if (!Number.isNaN(d.getTime())) parsed = d;
-                } else if (/^\d{4}-\d{2}-\d{2}$/.test(iso_like)) {
-                    // Redan i rätt format
-                    parsed = null;
-                } else {
-                    const d = new Date(iso_like);
-                    if (!Number.isNaN(d.getTime())) parsed = d;
-                }
-
-                if (parsed) {
-                    const yyyy = parsed.getFullYear();
-                    const mm = String(parsed.getMonth() + 1).padStart(2, '0');
-                    const dd = String(parsed.getDate()).padStart(2, '0');
-                    input_value = `${yyyy}-${mm}-${dd}`;
-                } else if (!/^\d{4}-\d{2}-\d{2}$/.test(iso_like)) {
-                    // Ogiltigt datum i annat format – visa hellre tomt fält än felaktig text
-                    input_value = '';
-                }
-            }
-
-            const input_type = type === 'date' ? 'text' : type;
-            const attributes = { id: name, name, type: input_type, ...(required ? { required: 'required' } : {}) };
-            if (type === 'date') {
-                attributes.inputmode = 'numeric';
-                attributes.autocomplete = 'off';
-            }
-
-            const input = this.Helpers.create_element('input', {
-                class_name: 'form-control',
-                attributes
-            });
-            input.value = input_value;
-            container.appendChild(input);
-        }
-
-        return container;
-    }
-
-    _create_language_select_field(name, value) {
-        const container = this.Helpers.create_element('div', { class_name: 'form-group' });
-        const t = this.Translation.t;
-        const labelText = t('rulefile_metadata_field_language');
-        const label = this.Helpers.create_element('label', { attributes: { for: name }, text_content: labelText });
-        container.appendChild(label);
-
-        const select = this.Helpers.create_element('select', {
-            class_name: 'form-control',
-            attributes: { id: name, name }
-        });
-
-        const supported =
-            (this.Translation?.get_supported_languages && this.Translation.get_supported_languages()) ||
-            (window.Translation?.get_supported_languages && window.Translation.get_supported_languages()) ||
-            {};
-        const codes = Object.keys(supported);
-
-        const current_lang_code =
-            (this.Translation?.get_current_language_code && this.Translation.get_current_language_code()) ||
-            (window.Translation?.get_current_language_code && window.Translation.get_current_language_code()) ||
-            null;
-
-        let initial = (value || '').toString().trim();
-        if (!initial) {
-            if (current_lang_code && codes.includes(current_lang_code)) {
-                initial = current_lang_code;
-            } else if (codes.length > 0) {
-                initial = codes[0];
-            }
-        }
-
-        codes.forEach((code) => {
-            const option = this.Helpers.create_element('option', {
-                attributes: { value: code },
-                text_content: supported[code] || code
-            });
-            select.appendChild(option);
-        });
-
-        if (initial) {
-            select.value = initial;
-        }
-
-        container.appendChild(select);
-        return container;
     }
 
     _collect_missing_required_metadata_fields(formData) {
@@ -942,42 +832,43 @@ export class EditRulefileMetadataViewComponent {
             ? clone_metadata(metadata)
             : ensure_metadata_defaults(clone_metadata(metadata));
         const form = this.Helpers.create_element('form', { class_name: 'rulefile-metadata-edit-form' });
+        const ctx = { Helpers: this.Helpers, Translation: this.Translation };
 
         const general_section = this.Helpers.create_element('section', { class_name: 'form-section' });
         general_section.appendChild(this.Helpers.create_element('h2', { text_content: this.Translation.t('rulefile_metadata_section_general') }));
-        general_section.appendChild(this._create_field('rulefile_metadata_field_title', 'metadata.title', metadata.title || '', 'text'));
-        general_section.appendChild(this._create_field('rulefile_metadata_field_description', 'metadata.description', metadata.description || '', 'textarea'));
+        general_section.appendChild(create_field(ctx, 'rulefile_metadata_field_title', 'metadata.title', metadata.title || '', 'text'));
+        general_section.appendChild(create_field(ctx, 'rulefile_metadata_field_description', 'metadata.description', metadata.description || '', 'textarea'));
         if (!is_create_mode) {
-            general_section.appendChild(this._create_field('rulefile_metadata_field_version', 'metadata.version', metadata.version || ''));
+            general_section.appendChild(create_field(ctx, 'rulefile_metadata_field_version', 'metadata.version', metadata.version || ''));
         }
         const initial_language =
             metadata.language ||
             (this.Translation?.get_current_language_code && this.Translation.get_current_language_code()) ||
             (window.Translation?.get_current_language_code && window.Translation.get_current_language_code()) ||
             '';
-        general_section.appendChild(this._create_language_select_field('metadata.language', initial_language));
+        general_section.appendChild(create_language_select_field(ctx, 'metadata.language', initial_language));
         if (!is_create_mode) {
-            general_section.appendChild(this._create_field('rulefile_metadata_field_monitoring_type_key', 'metadata.monitoringType.type', metadata.monitoringType?.type || ''));
+            general_section.appendChild(create_field(ctx, 'rulefile_metadata_field_monitoring_type_key', 'metadata.monitoringType.type', metadata.monitoringType?.type || ''));
         }
-        general_section.appendChild(this._create_field('rulefile_metadata_field_monitoring_type_label', 'metadata.monitoringType.text', metadata.monitoringType?.text || ''));
+        general_section.appendChild(create_field(ctx, 'rulefile_metadata_field_monitoring_type_label', 'metadata.monitoringType.text', metadata.monitoringType?.text || ''));
         if (!is_create_mode) {
-            general_section.appendChild(this._create_field('rulefile_metadata_field_date_created', 'metadata.dateCreated', metadata.dateCreated || '', 'date'));
-            general_section.appendChild(this._create_field('rulefile_metadata_field_date_modified', 'metadata.dateModified', metadata.dateModified || '', 'date'));
-            general_section.appendChild(this._create_field('rulefile_metadata_field_license', 'metadata.license', metadata.license || ''));
+            general_section.appendChild(create_field(ctx, 'rulefile_metadata_field_date_created', 'metadata.dateCreated', metadata.dateCreated || '', 'date'));
+            general_section.appendChild(create_field(ctx, 'rulefile_metadata_field_date_modified', 'metadata.dateModified', metadata.dateModified || '', 'date'));
+            general_section.appendChild(create_field(ctx, 'rulefile_metadata_field_license', 'metadata.license', metadata.license || ''));
         }
 
         const publisher_section = this.Helpers.create_element('section', { class_name: 'form-section' });
         publisher_section.appendChild(this.Helpers.create_element('h2', { text_content: this.Translation.t('rulefile_metadata_section_publisher') }));
-        publisher_section.appendChild(this._create_field('rulefile_metadata_field_publisher_name', 'metadata.publisher.name', metadata.publisher?.name || ''));
-        publisher_section.appendChild(this._create_field('rulefile_metadata_field_publisher_contact', 'metadata.publisher.contactPoint', metadata.publisher?.contactPoint || ''));
+        publisher_section.appendChild(create_field(ctx, 'rulefile_metadata_field_publisher_name', 'metadata.publisher.name', metadata.publisher?.name || ''));
+        publisher_section.appendChild(create_field(ctx, 'rulefile_metadata_field_publisher_contact', 'metadata.publisher.contactPoint', metadata.publisher?.contactPoint || ''));
 
         const source_section = this.Helpers.create_element('section', { class_name: 'form-section' });
         source_section.appendChild(this.Helpers.create_element('h2', { text_content: this.Translation.t('rulefile_metadata_section_source') }));
-        source_section.appendChild(this._create_field('rulefile_metadata_field_source_url', 'metadata.source.url', metadata.source?.url || '', 'url'));
-        source_section.appendChild(this._create_field('rulefile_metadata_field_source_title', 'metadata.source.title', metadata.source?.title || ''));
+        source_section.appendChild(create_field(ctx, 'rulefile_metadata_field_source_url', 'metadata.source.url', metadata.source?.url || '', 'url'));
+        source_section.appendChild(create_field(ctx, 'rulefile_metadata_field_source_title', 'metadata.source.title', metadata.source?.title || ''));
         if (!is_create_mode) {
-            source_section.appendChild(this._create_field('rulefile_metadata_field_source_retrieved', 'metadata.source.retrievedDate', metadata.source?.retrievedDate || '', 'date'));
-            source_section.appendChild(this._create_field('rulefile_metadata_field_source_format', 'metadata.source.format', metadata.source?.format || ''));
+            source_section.appendChild(create_field(ctx, 'rulefile_metadata_field_source_retrieved', 'metadata.source.retrievedDate', metadata.source?.retrievedDate || '', 'date'));
+            source_section.appendChild(create_field(ctx, 'rulefile_metadata_field_source_format', 'metadata.source.format', metadata.source?.format || ''));
         }
 
         if (is_create_mode) {
@@ -1010,7 +901,7 @@ export class EditRulefileMetadataViewComponent {
         const keywords_section = this.Helpers.create_element('section', { class_name: 'form-section' });
         keywords_section.appendChild(this.Helpers.create_element('h2', { text_content: this.Translation.t('rulefile_metadata_section_keywords') }));
         const keywords_text = Array.isArray(metadata.keywords) ? metadata.keywords.join('\n') : '';
-        const keywords_field = this._create_field('rulefile_metadata_field_keywords', 'metadata.keywords', keywords_text, 'textarea');
+        const keywords_field = create_field(ctx, 'rulefile_metadata_field_keywords', 'metadata.keywords', keywords_text, 'textarea');
         keywords_field.appendChild(this.Helpers.create_element('p', {
             class_name: 'field-hint',
             text_content: this.Translation.t('rulefile_metadata_field_keywords_hint')
