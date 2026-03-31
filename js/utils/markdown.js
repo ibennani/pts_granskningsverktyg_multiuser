@@ -55,7 +55,7 @@ export function auto_convert_code_like_to_codeblocks(markdownText) {
             // Bearbeta textdelen för att hitta kod-liknande innehåll
             const lines = part.content.split('\n');
             let codeLikeBuffer = [];
-            let processedLines = [];
+            const processedLines = [];
             
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i];

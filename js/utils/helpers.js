@@ -56,27 +56,24 @@ export function load_css(href, options = {}) {
         
         // Timeout för CSS-laddning
         const timeout = options.timeout || 10000; // 10 sekunder default
-        let timeoutId;
-        
-        link.onload = () => {
-            clearTimeout(timeoutId);
-            resolve();
-        };
-        
-        link.onerror = () => {
-            clearTimeout(timeoutId);
-            reject(new Error(`Failed to load CSS: ${href}`));
-        };
-        
-        // Timeout-hantering
-        timeoutId = setTimeout(() => {
+        const timeoutId = setTimeout(() => {
             reject(new Error(`CSS load timeout: ${href}`));
             // Ta bort länken om den inte laddades i tid
             if (link.parentNode) {
                 link.parentNode.removeChild(link);
             }
         }, timeout);
-        
+
+        link.onload = () => {
+            clearTimeout(timeoutId);
+            resolve();
+        };
+
+        link.onerror = () => {
+            clearTimeout(timeoutId);
+            reject(new Error(`Failed to load CSS: ${href}`));
+        };
+
         document.head.appendChild(link);
     });
 }

@@ -65,7 +65,7 @@ export const MetadataFormComponent = {
             return raw_value.trim();
         };
 
-        let actor_link_value_raw = this.actor_link_input?.value ?? '';
+        const actor_link_value_raw = this.actor_link_input?.value ?? '';
         let actor_link_sanitized = sanitize_input(actor_link_value_raw);
         if (should_trim && actor_link_sanitized && this.Helpers?.add_protocol_if_missing) {
             actor_link_sanitized = this.Helpers.add_protocol_if_missing(actor_link_sanitized);

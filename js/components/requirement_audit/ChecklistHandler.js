@@ -228,7 +228,7 @@ export const ChecklistHandler = {
         if (!check_item_element) return;
         const check_id = check_item_element.dataset.checkId;
 
-        let change_info = { type: null, checkId: check_id };
+        const change_info = { type: null, checkId: check_id };
 
         if (action === 'set-check-complies') {
             change_info.type = 'check_overall_status_change';

@@ -411,7 +411,7 @@ export const MarkdownToolbar = {
             const nonEmptyLines = lines.filter(line => line.trim() !== '');
             if (nonEmptyLines.length === 0 && start === end) {
                 // Om ingen text är markerad, applicera på hela raden
-                let lineStart = textarea.value.lastIndexOf('\n', start - 1) + 1;
+                const lineStart = textarea.value.lastIndexOf('\n', start - 1) + 1;
                 let lineEnd = textarea.value.indexOf('\n', end);
                 if (lineEnd === -1) lineEnd = textarea.value.length;
                 
@@ -582,7 +582,7 @@ export const MarkdownToolbar = {
                 // Bearbeta textdelen för att hitta kod-liknande innehåll
                 const lines = part.content.split('\n');
                 let codeLikeBuffer = [];
-                let processedLines = [];
+                const processedLines = [];
                 
                 for (let i = 0; i < lines.length; i++) {
                     const line = lines[i];

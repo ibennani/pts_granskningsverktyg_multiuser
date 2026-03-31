@@ -348,7 +348,7 @@ export class EditPageTypesSectionComponent {
         const t = this.Translation.t;
         
         const vocabularies = workingMetadata.vocabularies || {};
-        let page_types = vocabularies.pageTypes || workingMetadata.pageTypes || [];
+        const page_types = vocabularies.pageTypes || workingMetadata.pageTypes || [];
         const totalCount = page_types.length;
         
         const items = Array.from(page_types_container.querySelectorAll('.page-type-editor-item'))

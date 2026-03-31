@@ -45,7 +45,7 @@ export class GenericTableComponent {    static CSS_PATH = './generic_table_comp
         const focus_restore = this._lastFocusPosition || null;
         root_el.innerHTML = '';
 
-        let data_to_render = data && data.length > 0 ? [...data] : [];
+        const data_to_render = data && data.length > 0 ? [...data] : [];
         const active_sort_col = sortState && columns[sortState.columnIndex];
         const get_sort_value = active_sort_col?.getSortValue;
         if (get_sort_value && data_to_render.length > 0 && typeof sortState.direction === 'string') {

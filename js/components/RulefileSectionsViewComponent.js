@@ -914,7 +914,7 @@ export class RulefileSectionsViewComponent {
         if (!this.root) return;
         const state = this.getState();
         const params = this.deps.params || {};
-        let section_id = params.section || 'general';
+        const section_id = params.section || 'general';
         const is_editing = params.edit === 'true';
 
         // Redirect: gamla Stickprov-länken pekar nu på Sidtyper
