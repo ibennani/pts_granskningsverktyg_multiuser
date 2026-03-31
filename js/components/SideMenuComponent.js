@@ -416,7 +416,6 @@ export class SideMenuComponent {
 
         if (window.__GV_DEBUG_PROBLEMS_UPDATE__) console.log('[GV-Debug menu] update_counts_only: uppdaterar counts', { new_counts, last: this.last_menu_counts });
 
-        let changed = false;
         const items_with_count = (menu_model?.items || []).filter((i) => i.count_id !== null && i.count_id !== undefined);
         for (const [count_id, new_value] of Object.entries(new_counts)) {
             const span = this.nav_ref.querySelector(`[data-count-id="${CSS.escape(count_id)}"]`);
@@ -428,7 +427,6 @@ export class SideMenuComponent {
                 const item = items_with_count.find((i) => i.count_id === count_id);
                 const link = span.closest('a');
                 if (link && item?.label) link.setAttribute('aria-label', item.label);
-                changed = true;
             }
         }
 

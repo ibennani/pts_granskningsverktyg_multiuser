@@ -600,7 +600,6 @@ export class ManageUsersViewComponent {
 
     async handle_submit_user_form({ username_input, name_input, is_admin_checkbox }) {
         const t = this.get_t_func();
-        const is_edit = !!this.current_user;
         const username = username_input ? (username_input.value || '').trim() : '';
         const raw_name = (name_input.value || '').trim();
         const is_admin = !!is_admin_checkbox.checked;

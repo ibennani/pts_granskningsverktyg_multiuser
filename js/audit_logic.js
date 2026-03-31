@@ -3,7 +3,7 @@
 function get_t_func() {
     return (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function')
         ? window.Translation.t
-        : (key, replacements) => `**${key}**`;
+        : (key, _replacements) => `**${key}**`;
 }
 
 export function formatDeficiencyId(number, totalCount) {
@@ -172,7 +172,6 @@ export function calculate_check_status(check_object, pass_criteria_statuses_map,
         // Om några är "not_audited" och inga är "passed" → "partially_audited"
         
         const has_passed = pc_statuses.some(s => s === 'passed');
-        const has_failed = pc_statuses.some(s => s === 'failed');
         const has_not_audited = pc_statuses.some(s => s === 'not_audited');
         const all_not_audited = pc_statuses.every(s => s === 'not_audited');
         const all_audited_and_failed = !pc_statuses.some(s => s === 'not_audited') && !has_passed;

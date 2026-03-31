@@ -884,7 +884,7 @@ export class RequirementAuditComponent {
                     form_element: this.plate_element_ref,
                     focus_root: this.plate_element_ref,
                     debounce_ms: 250,
-                    on_save: ({ is_autosave, should_trim, skip_render }) => {
+                    on_save: ({ should_trim, skip_render }) => {
                         this.handle_comment_input(should_trim);
                         this.checklist_handler_instance?.flush_observations_before_destroy?.({ trim: should_trim });
                         this.save_result_immediately({ skipRender: skip_render });

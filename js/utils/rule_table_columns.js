@@ -9,7 +9,7 @@
  */
 export function create_rule_table_columns(deps, handlers) {
     const { t, Helpers, Translation, is_draft_table = false } = deps;
-    const { onEditRule, onDownloadRule, onDeleteRule, onPublishRule, onCopyRule, onPublishProductionRule } = handlers;
+    const { onEditRule, onDownloadRule, onDeleteRule, onCopyRule, onPublishProductionRule } = handlers;
 
     const icon_svg = (name, size = 16) =>
         Helpers?.get_icon_svg ? Helpers.get_icon_svg(name, ['currentColor'], size) : '';

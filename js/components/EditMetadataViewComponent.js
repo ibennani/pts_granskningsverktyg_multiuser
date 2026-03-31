@@ -168,7 +168,6 @@ export class EditMetadataViewComponent {
     }
 
     async _save_and_go_to_list(form_data) {
-        const is_new_audit = this.getState().auditStatus === 'not_started';
         await this.dispatch({
             type: this.StoreActionTypes.UPDATE_METADATA,
             payload: form_data

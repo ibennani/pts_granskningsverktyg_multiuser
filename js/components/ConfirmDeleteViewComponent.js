@@ -30,7 +30,6 @@ export class ConfirmDeleteViewComponent {
     get_config_for_delete_type(type, state, params) {
         const { reqId, checkId, pcId } = params;
         const requirement = state?.ruleFileContent?.requirements[reqId];
-        const t = this.Translation.t;
         const Helpers = this.Helpers;
 
         switch (type) {

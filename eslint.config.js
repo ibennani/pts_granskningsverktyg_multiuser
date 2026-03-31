@@ -61,7 +61,12 @@ export default [
       import: eslintPluginImport,
     },
     rules: {
-      'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      'no-unused-vars': ['warn', {
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+        caughtErrorsIgnorePattern: '^_',
+        caughtErrors: 'none'
+      }],
       'no-undef': 'error',
       'no-debugger': 'error',
       'no-eval': 'error',

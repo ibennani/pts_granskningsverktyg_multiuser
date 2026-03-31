@@ -789,7 +789,7 @@ export class RulefileSectionsViewComponent {
         return section;
     }
 
-    async _render_general_edit_form(container, metadata) {
+    async _render_general_edit_form(container, _metadata) {
         const is_first_render = !this.general_edit_component;
         
         // Om formuläret redan är renderat, hoppa över (förhindra re-rendering vid autospar)
@@ -826,7 +826,7 @@ export class RulefileSectionsViewComponent {
         this.general_edit_component = EditGeneralSectionComponent;
     }
 
-    async _render_page_types_edit_form(container, metadata) {
+    async _render_page_types_edit_form(container, _metadata) {
         const is_first_render = !this.page_types_edit_component;
         
         // Om formuläret redan är renderat, hoppa över (förhindra re-rendering vid autospar)
@@ -863,7 +863,7 @@ export class RulefileSectionsViewComponent {
         this.page_types_edit_component = EditPageTypesSectionComponent;
     }
 
-    async _render_content_types_edit_form(container, metadata) {
+    async _render_content_types_edit_form(container, _metadata) {
         const is_first_render = !this.content_types_edit_component;
         
         if (this.content_types_edit_component && container.children.length > 0) {
@@ -893,7 +893,7 @@ export class RulefileSectionsViewComponent {
         this.content_types_edit_component = EditContentTypesSectionComponent;
     }
 
-    async _render_info_blocks_edit_form(container, metadata) {
+    async _render_info_blocks_edit_form(container, _metadata) {
         if (this.info_blocks_edit_component && container.children.length > 0) {
             return;
         }
@@ -912,7 +912,6 @@ export class RulefileSectionsViewComponent {
 
     async render() {
         if (!this.root) return;
-        const t = this.Translation.t;
         const state = this.getState();
         const params = this.deps.params || {};
         let section_id = params.section || 'general';

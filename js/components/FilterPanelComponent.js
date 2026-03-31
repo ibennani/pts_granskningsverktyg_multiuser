@@ -1,5 +1,5 @@
 import "./FilterPanelComponent.css";
-import { get_overlay_container, render_in_overlay, remove_from_overlay } from '../utils/overlay_portal.js';
+import { render_in_overlay, remove_from_overlay } from '../utils/overlay_portal.js';
 
 const STATUS_KEYS = ['needs_help', 'passed', 'failed', 'partially_audited', 'not_audited', 'updated'];
 const PANEL_OFFSET_PX = 4;

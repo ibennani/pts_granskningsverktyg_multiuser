@@ -309,7 +309,7 @@ export class RequirementAuditSidebarComponent {
         this.notify_filters_changed();
     }
 
-    _update_list_items_status_only(sorted_items, rule_file_content, current_sample, current_requirement, requirement_id) {
+    _update_list_items_status_only(_sorted_items, _rule_file_content, _current_sample, _current_requirement, _requirement_id) {
         // Vi vill rita om hela listan med den nya, förenklade strukturen.
         if (this.list_container_ref) {
             this.list_container_ref.innerHTML = '';

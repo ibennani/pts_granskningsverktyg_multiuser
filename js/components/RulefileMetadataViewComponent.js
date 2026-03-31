@@ -337,8 +337,6 @@ export class RulefileMetadataViewComponent {
             const page_types = vocabularies.pageTypes || metadata.pageTypes || [];
             const content_types = vocabularies.contentTypes || metadata.contentTypes || [];
             const taxonomies = vocabularies.taxonomies || metadata.taxonomies || [];
-            const sample_types = vocabularies.sampleTypes || metadata.samples?.sampleTypes || [];
-            
             const page_types_section = this._create_section('rulefile_metadata_section_page_types', [
                 this._create_list(page_types, 'rulefile_metadata_empty_value', 'metadata-list')
             ]);

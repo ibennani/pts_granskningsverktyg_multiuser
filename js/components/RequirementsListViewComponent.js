@@ -705,16 +705,6 @@ export class RequirementsListViewComponent {
             current_ui_settings = { ...current_ui_settings, sortBy: auto_sort_by };
         }
 
-        // Initialize filter
-        const get_current_filters = () => {
-            const s = this.getState();
-            let ui = s.uiSettings?.[this.state_filter_key] || {};
-            if (!ui.status || Object.keys(ui.status).length === 0) {
-                ui = { ...ui, status: { needs_help: true, passed: true, failed: true, partially_audited: true, not_audited: true, updated: true } };
-            }
-            return ui;
-        };
-
         if (this.filter_component_instance?.init && this.filter_component_instance?.render) {
             if (!this._toolbar_inited) {
                 const default_status = { needs_help: true, passed: true, failed: true, partially_audited: true, not_audited: true, updated: true };

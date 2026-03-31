@@ -2,7 +2,7 @@
 // Redigering av kriterier (pass criteria) inom en check.
 // Huvudkomponenten anropar render_criteria_section(ctx, check, checkIndex) vid behov.
 
-export function render_criteria_section(ctx, check, check_index) {
+export function render_criteria_section(_ctx, _check, _check_index) {
     return null;
 }
 

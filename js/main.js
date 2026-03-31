@@ -7,7 +7,6 @@ import '@fontsource/roboto/700.css';
 import * as Helpers from './utils/helpers.js';
 import * as TranslationLogic from './translation_logic.js';
 import { NotificationComponent } from './components/NotificationComponent.js';
-import { ProgressBarComponent } from './components/ProgressBarComponent.js';
 import * as AuditLogic from './audit_logic.js';
 import './export_logic.js';
 import * as SaveAuditLogic from './logic/save_audit_logic.js';
@@ -87,7 +86,6 @@ import { AuditImagesViewComponent } from './components/AuditImagesViewComponent.
 import { BackupOverviewComponent } from './components/BackupOverviewComponent.js';
 import { BackupSettingsViewComponent } from './components/BackupSettingsViewComponent.js';
 import { AuditViewComponent } from './components/audit_view/AuditViewComponent.js';
-import { StartViewComponent } from './components/StartViewComponent.js';
 import { LoginViewComponent } from './components/LoginViewComponent.js';
 import { ManageUsersViewComponent } from './components/ManageUsersViewComponent.js';
 
@@ -103,7 +101,7 @@ import { flush_sync_to_server } from './logic/server_sync.js';
 
 import { DraftManager } from './draft_manager.js';
 import { get_auth_token, clear_auth_token, get_current_user_preferences, set_current_user_admin } from './api/client.js';
-import { getState, dispatch, subscribe, initState, StoreActionTypes, StoreInitialState, loadStateFromLocalStorageBackup, clearLocalStorageBackup, updateBackupRestorePosition, APP_STATE_KEY } from './state.js';
+import { getState, dispatch, subscribe, initState, StoreActionTypes, StoreInitialState, loadStateFromLocalStorageBackup, updateBackupRestorePosition, APP_STATE_KEY } from './state.js';
 
 const notificationComponent = new NotificationComponent();
 const modalComponent = new ModalComponent();
@@ -113,7 +111,6 @@ const auditOverviewComponent = new AuditOverviewComponent();
 const confirmSampleEditViewComponent = new ConfirmSampleEditViewComponent();
 const finalConfirmUpdatesViewComponent = new FinalConfirmUpdatesViewComponent();
 const archivedRequirementsViewComponent = new ArchivedRequirementsViewComponent();
-const startViewComponent = new StartViewComponent();
 const auditActionsViewComponent = new AuditActionsViewComponent();
 const auditImagesViewComponent = new AuditImagesViewComponent();
 const auditProblemsViewComponent = new AuditProblemsViewComponent();
@@ -351,7 +348,7 @@ window.DraftManager = DraftManager;
     function get_t_fallback() {
         return (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function')
             ? window.Translation.t
-            : (key, replacements) => `**${key}**`;
+            : (key, _replacements) => `**${key}**`;
     }
 
     function updatePageTitle(view_name, params) {
@@ -368,7 +365,6 @@ window.DraftManager = DraftManager;
     }
 
     function update_app_chrome_texts() {
-        const t = get_t_fallback();
         if (!window.Translation || typeof window.Translation.t !== 'function') {
             consoleManager.warn("[Main.js] update_app_chrome_texts: Translation.t is not available.");
             return;
@@ -538,7 +534,7 @@ window.DraftManager = DraftManager;
 
         document.addEventListener('input', handle_draft_event, true);
         document.addEventListener('change', handle_draft_event, true);
-        document.addEventListener('compositionstart', (event) => {
+        document.addEventListener('compositionstart', (_event) => {
             draft_is_composing = true;
         }, true);
         document.addEventListener('compositionend', (event) => {
@@ -979,7 +975,7 @@ window.DraftManager = DraftManager;
         });
     }
 
-    function update_landmarks_and_skip_link(view_name, params) {
+    function update_landmarks_and_skip_link(_view_name, _params) {
         const t = typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function'
             ? window.Translation.t.bind(window.Translation)
             : (key) => key;

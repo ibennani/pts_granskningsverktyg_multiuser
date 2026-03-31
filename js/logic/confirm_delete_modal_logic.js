@@ -9,7 +9,7 @@
  * @param {Object} Helpers - { escape_html }
  * @returns {string|null} - Varningstext eller null om ogiltig
  */
-export function build_delete_warning_text(type, params, getState, Translation, Helpers) {
+export function build_delete_warning_text(type, params, getState, Translation, _Helpers) {
     const state = getState?.();
     const t = Translation?.t || (k => k);
     const { reqId, checkId, pcId } = params || {};

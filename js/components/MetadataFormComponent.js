@@ -211,7 +211,7 @@ export const MetadataFormComponent = {
                 form_element: this.form_element_ref,
                 focus_root: this.form_element_ref,
                 debounce_ms: 250,
-                on_save: ({ is_autosave, should_trim, skip_render, trim_text }) => {
+                on_save: ({ should_trim, skip_render, trim_text }) => {
                     const payload = this._get_form_data(should_trim, trim_text);
                     this.dispatch({
                         type: this.StoreActionTypes.UPDATE_METADATA,

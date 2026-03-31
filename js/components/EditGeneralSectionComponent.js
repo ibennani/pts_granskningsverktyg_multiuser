@@ -284,7 +284,7 @@ export class EditGeneralSectionComponent {
         this.autosave_session?.request_autosave();
     }
 
-    _handle_submit(form, originalMetadata, workingMetadata) {
+    _handle_submit(_form, _originalMetadata, _workingMetadata) {
         const t = this.Translation.t;
         this.autosave_session?.flush({ should_trim: true, skip_render: true });
         if (window.DraftManager?.commitCurrentDraft) {

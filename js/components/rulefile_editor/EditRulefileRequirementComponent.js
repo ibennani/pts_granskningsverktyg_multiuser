@@ -1,9 +1,6 @@
 // js/components/rulefile_editor/EditRulefileRequirementComponent.js
 
 import { show_confirm_delete_modal, build_delete_warning_text } from '../../logic/confirm_delete_modal_logic.js';
-import { RequirementMetaEditor } from './RequirementMetaEditor.js';
-import { ChecklistEditor } from './ChecklistEditor.js';
-import { CriteriaEditor } from './CriteriaEditor.js';
 import './requirement_audit_component.css';
 import './edit_rulefile_requirement_component.css';
 
@@ -1167,7 +1164,6 @@ export class EditRulefileRequirementComponent {
     }
 
     _add_new_check_element(check_id) {
-        const t = this.Translation.t;
         const checks_section = this.form_element_ref.querySelector('.checks-container-edit');
         if (!checks_section) return;
         
@@ -1215,7 +1211,6 @@ export class EditRulefileRequirementComponent {
     }
 
     _add_new_pass_criterion_element(check_id, pc_id) {
-        const t = this.Translation.t;
         const check_element = this.form_element_ref.querySelector(`.check-item-edit[data-check-id="${check_id}"]`);
         if (!check_element) return;
         

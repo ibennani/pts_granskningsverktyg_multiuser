@@ -125,8 +125,6 @@ export const RequirementListToolbarComponent = {
     },
     
     update_values() {
-        const t = this.Translation_t;
-        
         const searchInput = this.root.querySelector('#req-list-search');
         if (searchInput && !this._search_debounce_timer) {
             searchInput.value = this.component_state.searchText;

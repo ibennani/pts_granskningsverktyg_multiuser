@@ -125,7 +125,6 @@ export const EditInfoBlocksSectionComponent = {
         }, {});
         const new_order = [...order_from_dom];
         const focus_index = direction === 'up' ? idx - 1 : idx + 1;
-        const old_index = idx;
         [new_order[idx], new_order[focus_index]] = [new_order[focus_index], new_order[idx]];
         this._animate_then_save_info_block_move(ol, direction, idx, focus_index, new_order, block_names);
     },

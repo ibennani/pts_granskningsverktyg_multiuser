@@ -52,7 +52,7 @@ function _createDynamicListButton(textKey, onClick, options = {}) {
 
 // --- HIERARCHY EDITOR & METADATA EDITOR LOGIC ---
 // (Placeholder, as we are focusing on the requirement editor)
-export function buildMetadataEditor(metadata, onSaveCallback) {
+export function buildMetadataEditor(_metadata, _onSaveCallback) {
     const container = Helpers.create_element('div');
     container.appendChild(Helpers.create_element('p', { text_content: Translation.t('metadata_editor_placeholder') }));
     return container;
@@ -184,7 +184,7 @@ function _buildReqFormRefSection(req) {
     return fieldset;
 }
 
-function _buildReqFormHelpTextsSection(req, allContentTypes) {
+function _buildReqFormHelpTextsSection(req, _allContentTypes) {
     const fieldset = Helpers.create_element('fieldset');
     fieldset.appendChild(Helpers.create_element('h3', {text_content: Translation.t('help_texts')}));
     

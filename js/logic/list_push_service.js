@@ -29,7 +29,7 @@ function _fire_audits_changed() {
     _audits_callbacks.forEach((cb) => {
         try {
             cb();
-        } catch (err) {
+        } catch {
             // tyst vid fel i callback
         }
     });
@@ -42,7 +42,7 @@ function _fire_rules_changed() {
     _rules_callbacks.forEach((cb) => {
         try {
             cb();
-        } catch (err) {
+        } catch {
             // tyst vid fel i callback
         }
     });
@@ -103,7 +103,7 @@ function _connect() {
             } else if (type === 'rules:changed') {
                 _fire_rules_changed();
             }
-        } catch (err) {
+        } catch {
             // ignorera ogiltiga meddelanden
         }
     };
@@ -133,7 +133,7 @@ function _ensure_ws() {
     if (_ws) {
         try {
             _ws.close();
-        } catch (e) {
+        } catch {
             /* ignore */
         }
         _ws = null;
@@ -141,7 +141,7 @@ function _ensure_ws() {
     if (!_has_subscribers()) return;
     try {
         _connect();
-    } catch (err) {
+    } catch {
         _failed_connect_count += 1;
         _schedule_reconnect();
         if (_failed_connect_count >= FAILED_CONNECT_BEFORE_FALLBACK) {
@@ -168,7 +168,7 @@ export function subscribe_audits(callback) {
             if (_ws) {
                 try {
                     _ws.close();
-                } catch (e) {
+                } catch {
                     /* ignore */
                 }
                 _ws = null;
@@ -195,7 +195,7 @@ export function subscribe_rules(callback) {
             if (_ws) {
                 try {
                     _ws.close();
-                } catch (e) {
+                } catch {
                     /* ignore */
                 }
                 _ws = null;

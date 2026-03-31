@@ -33,7 +33,7 @@ export class ViewRulefileRequirementComponent {
         await this.Helpers.load_css(this.CSS_PATH).catch(e => console.warn(e));
     }
 
-    _safe_parse_markdown(markdown_string, is_inline = false) {
+    _safe_parse_markdown(markdown_string, _is_inline = false) {
         if (typeof marked === 'undefined' || !this.Helpers.escape_html) {
             return this.Helpers.escape_html(markdown_string);
         }

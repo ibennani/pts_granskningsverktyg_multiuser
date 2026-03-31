@@ -1,7 +1,7 @@
 // js/export_logic.js
 
 import ExcelJS from 'exceljs/dist/exceljs.min.js';
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle, UnderlineType, ExternalHyperlink, InternalHyperlink, ShadingType, TabStopType, SectionType, PageOrientation } from 'docx';
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType, UnderlineType, ExternalHyperlink, ShadingType, TabStopType, SectionType, PageOrientation } from 'docx';
 import { marked } from './utils/markdown.js';
 import { format_local_date_for_filename } from './utils/filename_utils.js';
 import { recalculateAuditTimes } from './audit_logic.js';
@@ -10,7 +10,7 @@ function get_t_internal() {
     if (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function') {
         return window.Translation.t;
     }
-    return (key, replacements) => `**${key}**`;
+    return (key, _replacements) => `**${key}**`;
 }
 
 function show_global_message_internal(message, type, duration) {
@@ -59,14 +59,6 @@ function escape_for_csv(str) {
         result = `"${result}"`;
     }
     return result;
-}
-
-function get_pass_criterion_text(req_definition, check_id, pc_id) {
-    if (!req_definition?.checks) return pc_id;
-    const check = req_definition.checks.find(c => c.id === check_id);
-    if (!check?.passCriteria) return pc_id;
-    const pc = check.passCriteria.find(p => p.id === pc_id);
-    return pc ? pc.requirement : pc_id;
 }
 
 /**
@@ -210,8 +202,6 @@ function export_to_csv(current_audit) {
                 Object.keys(check_res.passCriteria).forEach(pc_id => {
                     const pc_obj = check_res.passCriteria[pc_id];
                     if (pc_obj && pc_obj.status === 'failed' && pc_obj.deficiencyId) {
-                        const controlText = get_pass_criterion_text(req_definition, check_id, pc_id);
-
                         const pc_def = req_definition.checks?.find(c => c.id === check_id)?.passCriteria?.find(p => p.id === pc_id);
                         const templateObservation = pc_def?.failureStatementTemplate || '';
                         const userObservation = pc_obj.observationDetail || '';
@@ -488,7 +478,7 @@ function extract_reference_number(requirement) {
 }
 
 // Gemensam hjälpfunktion för att skapa metadata-paragraf (Referens, Principer, Brist)
-function create_metadata_paragraphs(requirement, current_audit, deficiencyIds, t) {
+function create_metadata_paragraphs(requirement, current_audit, deficiencyIds, _t) {
     const metadata_items = [];
 
     // Referens
@@ -564,7 +554,7 @@ function create_metadata_paragraphs(requirement, current_audit, deficiencyIds, t
 }
 
 // Gemensam hjälpfunktion för att formatera observationer som paragraf
-function create_observation_paragraphs(deficiency, t) {
+function create_observation_paragraphs(deficiency, _t) {
     const paragraphs = [];
     let observationText = (deficiency.observationDetail || '').trim();
     observationText = observationText.replace(/^[\s]*[-*]\s/gm, '• ');
@@ -649,7 +639,7 @@ function create_observation_paragraphs(deficiency, t) {
 }
 
 // Gemensam hjälpfunktion för att skapa kommentar-paragraf
-function create_comment_paragraphs(requirement, sample, t) {
+function create_comment_paragraphs(requirement, sample, _t) {
     const paragraphs = [];
     const req_key = requirement.key || requirement.id;
     const sample_result = (sample.requirementResults || {})[req_key];
@@ -1018,7 +1008,7 @@ async function export_to_word_criterias(current_audit) {
     return await export_to_word_wrapper(current_audit, 'requirements');
 }
 
-function create_overview_page(current_audit, t) {
+function _create_overview_page(current_audit, t) {
     const lang_code = window.Translation.get_current_language_code();
     const score_analysis = window.ScoreCalculator.calculateQualityScore(current_audit);
 
@@ -1148,7 +1138,7 @@ function create_overview_page(current_audit, t) {
     return table;
 }
 
-function create_requirement_page(requirement, current_audit, t) {
+function _create_requirement_page(requirement, current_audit, t) {
     const children = [];
 
     // H1: Kravets titel
@@ -1365,12 +1355,12 @@ function get_samples_for_requirement(requirement, current_audit) {
     });
 }
 
-function get_expected_observation(requirement, sample) {
+function get_expected_observation(_requirement, _sample) {
     // Denna funktion skulle behöva implementeras baserat på regelfilens struktur
     return null;
 }
 
-function get_actor_comment(requirement, sample) {
+function get_actor_comment(_requirement, _sample) {
     // Denna funktion skulle behöva implementeras baserat på regelfilens struktur
     return null;
 }
@@ -1394,7 +1384,7 @@ function create_body_text(text, size = 22) {
 }
 
 // Konverterar markdown-text till Word-paragraf-format
-function convert_markdown_to_word_paragraphs(markdown_text) {
+function _convert_markdown_to_word_paragraphs(markdown_text) {
     if (!markdown_text || typeof markdown_text !== 'string') {
         return [new Paragraph({
             children: [new TextRun({ text: "" })]
@@ -1686,7 +1676,7 @@ function get_samples_with_deficiencies_for_requirement(requirement, current_audi
     return samples_with_deficiencies;
 }
 
-function get_deficiencies_for_sample(requirement, sample, current_audit, t) {
+function get_deficiencies_for_sample(requirement, sample, _current_audit, _t) {
     const deficiencies = [];
     const req_key = requirement.key || requirement.id;
     const result = (sample.requirementResults || {})[req_key];
@@ -1758,7 +1748,7 @@ function group_deficiencies_by_requirement(deficiencies, current_audit) {
 }
 
 // --- STICKPROVSBASERAD TEXTEXPORT (NY) ---
-async function export_to_text_export_deprecated(current_audit) {
+async function _export_to_text_export_deprecated(current_audit) {
     console.log('[Text Export] Starting export_to_text_export function');
     const t = get_t_internal();
     if (!current_audit) {
@@ -2305,7 +2295,7 @@ function render_markdown_to_html(markdown_text) {
 }
 
 // Hjälpfunktion för att skapa HTML-observationer
-function create_html_observations(deficiency, t) {
+function create_html_observations(deficiency, _t) {
     let html = '';
     let observationText = (deficiency.observationDetail || '').trim();
     observationText = observationText.replace(/^[\s]*[-*]\s/gm, '• ');
@@ -2336,7 +2326,7 @@ function create_html_observations(deficiency, t) {
 }
 
 // Hjälpfunktion för att skapa HTML-kommentarer
-function create_html_comments(requirement, sample, t) {
+function create_html_comments(requirement, sample, _t) {
     let html = '';
     const req_key = requirement.key || requirement.id;
     const sample_result = (sample.requirementResults || {})[req_key];
@@ -2563,74 +2553,6 @@ function extract_text_content(html_string) {
     text = text.trim();
     
     return text;
-}
-
-// Hjälpfunktion för att normalisera HTML för hash-beräkning
-// Minifiera HTML för konsistent hash-beräkning
-function minify_html_for_hash(html_string) {
-    if (!html_string) return '';
-    
-    let minified = html_string;
-    
-    // 1. Ta bort kommentarer först
-    minified = minified.replace(/<!--[\s\S]*?-->/g, '');
-    
-    // 2. Normalisera whitespace i attribut FÖRE vi tar bort tomma element
-    minified = minified.replace(/\s*=\s*/g, '=');
-    minified = minified.replace(/\s*:\s*/g, ':');
-    minified = minified.replace(/\s*;\s*/g, ';');
-    minified = minified.replace(/="\s+/g, '="');
-    minified = minified.replace(/\s+"/g, '"');
-    
-    // 3. Ta bort whitespace före och efter taggar (behåll textinnehåll)
-    minified = minified.replace(/>\s+</g, '><');
-    
-    // 4. Normalisera alla whitespace-sekvenser till ett mellanslag (inklusive i textinnehåll)
-    minified = minified.replace(/\s+/g, ' ');
-    
-    // 5. Ta bort whitespace runt taggar igen (efter normalisering)
-    minified = minified.replace(/>\s+</g, '><');
-    
-    // 6. Ta bort tomma element rekursivt (inklusive med whitespace inuti)
-    // Detta fångar <p></p>, <p> </p>, <div></div>, etc.
-    // Vi gör detta flera gånger för att fånga nästlade tomma element
-    let previousLength = 0;
-    while (previousLength !== minified.length) {
-        previousLength = minified.length;
-        // Ta bort tomma element med eller utan whitespace inuti
-        minified = minified.replace(/<(\w+)([^>]*)>\s*<\/\1>/g, '');
-        // Ta bort tomma element med attribut som bara innehåller whitespace
-        minified = minified.replace(/<(\w+)([^>]*)\s+>\s*<\/\1>/g, '');
-    }
-    
-    // 7. Ta bort whitespace runt taggar igen efter att tomma element tagits bort
-    minified = minified.replace(/>\s+</g, '><');
-    
-    // 8. Normalisera stängande taggar följda av öppnande taggar av samma typ
-    // Webbläsaren gör detta automatiskt vid parsing: </p><p> blir <p>
-    // Vi gör detta för vanliga block-element som kan ha detta problem
-    const blockElements = ['p', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li', 'ul', 'ol', 'section', 'article', 'header', 'footer', 'nav', 'aside'];
-    for (const tag of blockElements) {
-        // Ta bort </tag><tag> och ersätt med <tag>
-        const closingOpeningPattern = new RegExp(`</${tag}><${tag}([^>]*)>`, 'gi');
-        minified = minified.replace(closingOpeningPattern, `<${tag}$1>`);
-        // Ta bort </tag><tag> med whitespace emellan också (för säkerhets skull)
-        const closingOpeningWithSpacePattern = new RegExp(`</${tag}>\\s*<${tag}([^>]*)>`, 'gi');
-        minified = minified.replace(closingOpeningWithSpacePattern, `<${tag}$1>`);
-    }
-    
-    // 9. Ta bort whitespace runt taggar igen efter normalisering
-    minified = minified.replace(/>\s+</g, '><');
-    
-    // 10. Trim start och slut
-    minified = minified.trim();
-    
-    return minified;
-}
-
-// Behåll gamla funktionen för bakåtkompatibilitet, men använd minify_html_for_hash
-function normalize_html_for_hash(html_string) {
-    return minify_html_for_hash(html_string);
 }
 
 // Hjälpfunktion för att beräkna hash av audit-data

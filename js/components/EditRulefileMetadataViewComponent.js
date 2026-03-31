@@ -850,7 +850,6 @@ export class EditRulefileMetadataViewComponent {
         const section = this.Helpers.create_element('section', { class_name: 'form-section' });
         section.appendChild(this.Helpers.create_element('h2', { text_content: t('report_template_sections_title') }));
         
-        const current_state = this.getState();
         const block_order = metadata?.blockOrders?.reportSections || [];
         const sections = reportTemplate.sections || {};
         

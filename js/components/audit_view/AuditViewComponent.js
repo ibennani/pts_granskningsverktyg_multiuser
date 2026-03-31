@@ -22,8 +22,6 @@ import {
 import { subscribe_audits, subscribe_rules } from '../../logic/list_push_service.js';
 import { GenericTableComponent } from '../GenericTableComponent.js';
 import { AuditListComponent } from '../AuditListComponent.js';
-import { create_audit_table_columns } from '../../utils/audit_table_columns.js';
-import { create_rule_table_columns } from '../../utils/rule_table_columns.js';
 import { open_audit_by_id, download_audit_by_id } from '../../logic/audit_open_logic.js';
 import { render_audit_header } from './AuditHeaderSection.js';
 import { render_audit_requirement_section } from './AuditRequirementSection.js';

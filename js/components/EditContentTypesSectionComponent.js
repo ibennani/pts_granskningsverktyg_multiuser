@@ -397,7 +397,6 @@ export const EditContentTypesSectionComponent = {
     },
 
     _delete_content_subtype_with_animation(workingMetadata, parentIndex, childIndex, child, container, elementToDelete) {
-        const t = this.Translation.t;
         const ruleFileContent = this.getState()?.ruleFileContent || {};
         const childId = child.id;
         const reqCount = childId ? get_requirements_count_by_content_type_id(ruleFileContent, childId) : 0;

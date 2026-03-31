@@ -145,8 +145,6 @@ export class EditPageTypesSectionComponent {
         const container = form ? form.querySelector('.page-types-editor') : null;
         if (!container) return;
         
-        const allItems = container.querySelectorAll('.page-type-editor-item');
-        
         // Fade:a ut elementet som ska tas bort
         elementToDelete.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
         

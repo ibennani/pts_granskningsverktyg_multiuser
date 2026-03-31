@@ -209,7 +209,7 @@ export const MarkdownToolbar = {
         });
 
         // När fokus lämnar verktygsfältet helt, återställ tabindex så första knappen är tabbable nästa gång
-        toolbar.addEventListener('focusout', (e) => {
+        toolbar.addEventListener('focusout', (_e) => {
             // Vänta lite för att se om fokus går till en annan knapp i verktygsfältet
             setTimeout(() => {
                 if (!toolbar.contains(document.activeElement)) {

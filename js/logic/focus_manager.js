@@ -20,7 +20,7 @@ export function load_focus_storage() {
         const parsed = JSON.parse(raw);
         if (!parsed || typeof parsed !== 'object') return {};
         return parsed;
-    } catch (e) {
+    } catch {
         return {};
     }
 }
@@ -28,7 +28,7 @@ export function load_focus_storage() {
 export function save_focus_storage(storage) {
     try {
         window.sessionStorage?.setItem(FOCUS_STORAGE_KEY, JSON.stringify(storage || {}));
-    } catch (e) {
+    } catch {
         /* ignore */
     }
 }
@@ -182,7 +182,7 @@ export function apply_restore_focus_instruction({ view_root }) {
             try {
                 el.focus({ preventScroll: false });
                 el.scrollIntoView({ block: 'nearest', behavior: 'auto' });
-            } catch (e) {
+            } catch {
                 el.focus();
             }
             return;
@@ -207,7 +207,7 @@ export function apply_post_render_focus_instruction({ view_name, view_root }) {
     let raw = null;
     try {
         raw = window.sessionStorage.getItem(RETURN_FOCUS_AUDIT_INFO_H2_KEY);
-    } catch (e) {
+    } catch {
         return false;
     }
     if (!raw) return false;
@@ -215,7 +215,7 @@ export function apply_post_render_focus_instruction({ view_name, view_root }) {
     let instruction = null;
     try {
         instruction = JSON.parse(raw);
-    } catch (e) {
+    } catch {
         try {
             window.sessionStorage.removeItem(RETURN_FOCUS_AUDIT_INFO_H2_KEY);
         } catch (_) {
@@ -253,7 +253,7 @@ export function apply_post_render_focus_instruction({ view_name, view_root }) {
                     heading.setAttribute('tabindex', '-1');
                 }
                 heading.focus({ preventScroll: true });
-            } catch (e) {
+            } catch {
                 heading.focus();
             }
             try {
