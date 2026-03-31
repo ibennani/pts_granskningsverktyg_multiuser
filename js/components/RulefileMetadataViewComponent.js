@@ -2,8 +2,18 @@
 
 import './rulefile_metadata_view_component.css';
 
-export const RulefileMetadataViewComponent = {
-    CSS_PATH: './rulefile_metadata_view_component.css',
+export class RulefileMetadataViewComponent {
+    constructor() {
+        this.CSS_PATH = './rulefile_metadata_view_component.css';
+        this.root = null;
+        this.deps = null;
+        this.router = null;
+        this.getState = null;
+        this.Translation = null;
+        this.Helpers = null;
+        this.NotificationComponent = null;
+        this.is_css_loaded = false;
+    }
 
     async init({ root, deps }) {
         this.root = root;
@@ -24,13 +34,13 @@ export const RulefileMetadataViewComponent = {
                 console.warn('[RulefileMetadataViewComponent] Failed to load CSS. Continuing without dedicated styles.', error);
             }
         }
-    },
+    }
 
     _ensure_dependencies() {
         if (!this.Helpers?.create_element || !this.Translation?.t) {
             throw new Error('RulefileMetadataViewComponent: Missing required global helpers.');
         }
-    },
+    }
 
     _format_simple_value(value) {
         if (value === undefined || value === null) return '';
@@ -47,7 +57,7 @@ export const RulefileMetadataViewComponent = {
             }
         }
         return String(value);
-    },
+    }
 
     _create_definition_list(entries) {
         const dl = this.Helpers.create_element('dl', { class_name: 'metadata-definition-list' });
@@ -67,7 +77,7 @@ export const RulefileMetadataViewComponent = {
             }
         });
         return dl;
-    },
+    }
 
     _create_section(title_key, content_nodes = []) {
         const section = this.Helpers.create_element('section', { class_name: 'metadata-section' });
@@ -91,7 +101,7 @@ export const RulefileMetadataViewComponent = {
             section.appendChild(wrapper);
         }
         return section;
-    },
+    }
 
     _create_list(items, empty_key, class_name = 'metadata-list') {
         if (!Array.isArray(items) || items.length === 0) {
@@ -104,7 +114,7 @@ export const RulefileMetadataViewComponent = {
             ul.appendChild(this.Helpers.create_element('li', { text_content: content }));
         });
         return ul;
-    },
+    }
 
     _create_content_types_section(content_types) {
         const t = this.Translation.t;
@@ -138,7 +148,7 @@ export const RulefileMetadataViewComponent = {
         });
 
         return this._create_section('rulefile_metadata_section_content_types', [root_list]);
-    },
+    }
 
     _create_samples_section(samples) {
         const t = this.Translation.t;
@@ -183,7 +193,7 @@ export const RulefileMetadataViewComponent = {
         }
 
         return this._create_section('rulefile_metadata_section_samples', nodes);
-    },
+    }
 
     _create_taxonomies_section(taxonomies) {
         const t = this.Translation.t;
@@ -217,7 +227,7 @@ export const RulefileMetadataViewComponent = {
         });
 
         return this._create_section('rulefile_metadata_section_taxonomies', [wrapper]);
-    },
+    }
 
     _create_source_link(source_url) {
         const clean_url = this.Helpers.add_protocol_if_missing ? this.Helpers.add_protocol_if_missing(source_url) : source_url;
@@ -232,7 +242,7 @@ export const RulefileMetadataViewComponent = {
                 rel: 'noopener noreferrer'
             }
         });
-    },
+    }
 
     _format_date_display(iso_string) {
         if (!iso_string) return '';
@@ -247,7 +257,7 @@ export const RulefileMetadataViewComponent = {
             console.warn('[RulefileMetadataViewComponent] Failed to format date', iso_string, error);
             return iso_string;
         }
-    },
+    }
 
     render() {
         if (!this.root) return;
@@ -363,7 +373,7 @@ export const RulefileMetadataViewComponent = {
         plate.appendChild(actions_div);
 
         this.root.appendChild(plate);
-    },
+    }
 
     destroy() {
         if (this.root) {
@@ -372,4 +382,4 @@ export const RulefileMetadataViewComponent = {
         this.root = null;
         this.deps = null;
     }
-};
+}

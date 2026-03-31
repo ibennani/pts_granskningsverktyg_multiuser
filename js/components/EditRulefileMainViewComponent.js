@@ -1,6 +1,16 @@
 import { flush_sync_rulefile_to_server } from '../logic/server_sync.js';
 
-export const EditRulefileMainViewComponent = {
+export class EditRulefileMainViewComponent {
+    constructor() {
+        this.root = null;
+        this.deps = null;
+        this.router = null;
+        this.getState = null;
+        this.Translation = null;
+        this.Helpers = null;
+        this.NotificationComponent = null;
+    }
+
     init({ root, deps }) {
         this.root = root;
         this.deps = deps;
@@ -9,14 +19,14 @@ export const EditRulefileMainViewComponent = {
         this.Translation = deps.Translation;
         this.Helpers = deps.Helpers;
         this.NotificationComponent = deps.NotificationComponent;
-    },
+    }
 
     render() {
         if (!this.root) return;
         const t = this.Translation.t;
         this.root.innerHTML = '';
         const plate_element = this.Helpers.create_element('div', { class_name: 'content-plate' });
-        
+
         this.NotificationComponent.append_global_message_areas_to(plate_element);
 
         const current_state = this.getState();
@@ -26,14 +36,14 @@ export const EditRulefileMainViewComponent = {
         plate_element.appendChild(this.Helpers.create_element('p', { class_name: 'view-intro-text', text_content: t('edit_rulefile_intro', { rulefileTitle: rulefile_title }) }));
 
         const button_group = this.Helpers.create_element('div', { class_name: 'button-group', style: 'flex-direction: column; align-items: flex-start; gap: 1rem;' });
-        
+
         const edit_reqs_button = this.Helpers.create_element('button', {
             class_name: ['button', 'button-primary'],
             attributes: { type: 'button' },
             html_content: `<span>${t('edit_rulefile_requirements_button')}</span>` + this.Helpers.get_icon_svg('list')
         });
         edit_reqs_button.addEventListener('click', () => this.router('rulefile_requirements'));
-        
+
         const view_sections_button = this.Helpers.create_element('button', {
             class_name: ['button', 'button-primary'],
             attributes: { type: 'button' },
@@ -51,12 +61,12 @@ export const EditRulefileMainViewComponent = {
             html_content: `<span>${t('side_menu_back_to_audit')}</span>` + this.Helpers.get_icon_svg('arrow_back')
         });
         back_button.addEventListener('click', () => this.router('audit_rules'));
-        
+
         actions_div.append(back_button);
         plate_element.appendChild(actions_div);
 
         this.root.appendChild(plate_element);
-    },
+    }
 
     async destroy() {
         if (this.getState && typeof this.getState === 'function') {
@@ -66,4 +76,4 @@ export const EditRulefileMainViewComponent = {
         this.root = null;
         this.deps = null;
     }
-};
+}

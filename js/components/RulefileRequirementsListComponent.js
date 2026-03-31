@@ -5,15 +5,33 @@ import { show_confirm_delete_modal, build_delete_warning_text } from '../logic/c
 import { can_edit_rulefile } from '../utils/helpers.js';
 import './rulefile_requirements_list_component.css';
 
-export const RulefileRequirementsListComponent = {
-    CSS_PATH: './rulefile_requirements_list_component.css',
-    RETURN_FOCUS_SESSION_KEY: 'gv_return_focus_rulefile_requirements_list_v1',
-    SORT_OPTIONS: [
-        { value: 'ref_asc', textKey: 'sort_option_ref_asc_natural' },
-        { value: 'ref_desc', textKey: 'sort_option_ref_desc_natural' },
-        { value: 'title_asc', textKey: 'sort_option_title_asc' },
-        { value: 'title_desc', textKey: 'sort_option_title_desc' }
-    ],
+export class RulefileRequirementsListComponent {
+    constructor() {
+        this.CSS_PATH = './rulefile_requirements_list_component.css';
+        this.RETURN_FOCUS_SESSION_KEY = 'gv_return_focus_rulefile_requirements_list_v1';
+        this.SORT_OPTIONS = [
+            { value: 'ref_asc', textKey: 'sort_option_ref_asc_natural' },
+            { value: 'ref_desc', textKey: 'sort_option_ref_desc_natural' },
+            { value: 'title_asc', textKey: 'sort_option_title_asc' },
+            { value: 'title_desc', textKey: 'sort_option_title_desc' }
+        ];
+        this.root = null;
+        this.deps = null;
+        this.router = null;
+        this.getState = null;
+        this.dispatch = null;
+        this.StoreActionTypes = null;
+        this.subscribe = null;
+        this.Translation = null;
+        this.Helpers = null;
+        this.NotificationComponent = null;
+        this.content_div_for_delegation = null;
+        this.toolbar_component_instance = RequirementListToolbarComponent;
+        this.is_dom_initialized = false;
+        this.plate_element_ref = null;
+        this.unsubscribe_from_store_function = null;
+        this.results_summary_element = null;
+    }
 
     async init({ root, deps }) {
         this.root = root;
@@ -47,7 +65,7 @@ export const RulefileRequirementsListComponent = {
         }
         
         this.is_dom_initialized = false;
-    },
+    }
 
     handle_list_click(event) {
         const action_element = event.target.closest('[data-action]');
@@ -97,7 +115,7 @@ export const RulefileRequirementsListComponent = {
                 this.router('rulefile_add_requirement', { id: 'new' });
                 break;
         }
-    },
+    }
 
     handle_list_keydown(event) {
         const is_space = event.key === ' ';
@@ -109,7 +127,7 @@ export const RulefileRequirementsListComponent = {
         if (action_element.tagName !== 'A') return;
         event.preventDefault();
         this.handle_list_click(event);
-    },
+    }
 
     handle_toolbar_change(new_toolbar_state) {
         console.log('[RulefileRequirementsListComponent] toolbar change received:', JSON.stringify(new_toolbar_state));
@@ -139,13 +157,13 @@ export const RulefileRequirementsListComponent = {
         // The subscription handler calls _populate_dynamic_content, so we might not need full render.
         // But original code called render(), so let's call it to be safe, though it might be redundant with subscription.
         this.render();
-    },
+    }
 
     handle_state_update() {
         if (this.is_dom_initialized) {
             this._populate_dynamic_content();
         }
-    },
+    }
 
     async _initialRender() {
         const t = this.Translation.t;
@@ -236,7 +254,7 @@ export const RulefileRequirementsListComponent = {
 
         this.root.appendChild(this.plate_element_ref);
         this.is_dom_initialized = true;
-    },
+    }
 
     _populate_dynamic_content(filter_settings_override = null) {
         console.log('[RulefileRequirementsListComponent] populate list start. Override:', JSON.stringify(filter_settings_override));
@@ -332,7 +350,7 @@ export const RulefileRequirementsListComponent = {
             sessionStorage.removeItem('focusOnH1AfterLoad');
             this.plate_element_ref.querySelector('#main-content-heading')?.focus();
         }
-    },
+    }
 
     _apply_return_focus_if_needed() {
         if (!this.plate_element_ref) return false;
@@ -393,8 +411,8 @@ export const RulefileRequirementsListComponent = {
         }, 150);
 
         return true;
-    },
-    
+    }
+
     _create_requirement_list_item(req) {
         const t = this.Translation.t;
         const li = this.Helpers.create_element('li', { class_name: ['item-list-item', 'rulefile-requirement-row'] });
@@ -445,7 +463,7 @@ export const RulefileRequirementsListComponent = {
             li.appendChild(button_group);
         }
         return li;
-    },
+    }
 
     async render() {
         if (!this.root) return;
@@ -457,7 +475,7 @@ export const RulefileRequirementsListComponent = {
             this._update_static_texts();
         }
         this._populate_dynamic_content();
-    },
+    }
 
     _update_static_texts() {
         if (!this.plate_element_ref) return;
@@ -484,7 +502,7 @@ export const RulefileRequirementsListComponent = {
             }
             add_button.setAttribute('aria-label', t('add_new_requirement_button'));
         }
-    },
+    }
 
     destroy() {
         if (typeof this.unsubscribe_from_store_function === 'function') {
@@ -506,4 +524,4 @@ export const RulefileRequirementsListComponent = {
         this.root = null;
         this.deps = null;
     }
-};
+}

@@ -4,8 +4,25 @@ import { get_current_user_preferences, update_current_user_preferences, change_m
 import { get_current_user_name } from '../utils/helpers.js';
 import './settings_view_component.css';
 
-export const SettingsViewComponent = {
-    CSS_PATH: './settings_view_component.css',
+export class SettingsViewComponent {
+    constructor() {
+        this.CSS_PATH = './settings_view_component.css';
+        this.root = null;
+        this.deps = null;
+        this.Translation = null;
+        this.Helpers = null;
+        this.dispatch = null;
+        this.StoreActionTypes = null;
+        this.language_select_ref = null;
+        this.theme_select_ref = null;
+        this.review_sort_select_ref = null;
+        this.user_preferences = null;
+        this.password_change_success = false;
+        this.password_change_error = null;
+        this.new_password_input_ref = null;
+        this.new_password_confirm_input_ref = null;
+        this.change_password_button_ref = null;
+    }
 
     async init({ root, deps }) {
         this.root = root;
@@ -34,7 +51,7 @@ export const SettingsViewComponent = {
         if (this.Helpers?.load_css && this.CSS_PATH) {
             await this.Helpers.load_css(this.CSS_PATH).catch(() => {});
         }
-    },
+    }
 
     async handle_language_change(event) {
         const lang = event.target?.value;
@@ -48,7 +65,7 @@ export const SettingsViewComponent = {
                 /* ignorerar sparfel */
             }
         }
-    },
+    }
 
     async handle_review_sort_change(event) {
         const value = event.target?.value;
@@ -66,7 +83,7 @@ export const SettingsViewComponent = {
                 /* ignorerar sparfel */
             }
         }
-    },
+    }
 
     async handle_theme_change(event) {
         const theme = event.target?.value;
@@ -88,7 +105,7 @@ export const SettingsViewComponent = {
                 /* ignorerar sparfel */
             }
         }
-    },
+    }
 
     async handle_change_password_click() {
         const t = this.Translation.t;
@@ -120,7 +137,7 @@ export const SettingsViewComponent = {
             this.password_change_error = err?.message || t('settings_password_error_generic');
             this.render();
         }
-    },
+    }
 
     render() {
         if (!this.root || !this.Helpers?.create_element) return;
@@ -301,7 +318,7 @@ export const SettingsViewComponent = {
         plate.appendChild(password_section);
 
         this.root.appendChild(plate);
-    },
+    }
 
     destroy() {
         if (this.review_sort_select_ref) {
@@ -322,4 +339,4 @@ export const SettingsViewComponent = {
         this.root = null;
         this.deps = null;
     }
-};
+}

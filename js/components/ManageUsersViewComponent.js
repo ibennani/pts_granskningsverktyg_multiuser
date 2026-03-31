@@ -4,8 +4,34 @@ import { get_users, create_password_reset_code, create_user, update_user, delete
 import './manage_users_view_component.css';
 import { GenericTableComponent } from './GenericTableComponent.js';
 
-export const ManageUsersViewComponent = {
-    CSS_PATH: './manage_users_view_component.css',
+export class ManageUsersViewComponent {
+    constructor() {
+        this.CSS_PATH = './manage_users_view_component.css';
+        this.root = null;
+        this.deps = null;
+        this.router = null;
+        this.Translation = null;
+        this.Helpers = null;
+        this.NotificationComponent = null;
+        this.users = [];
+        this.users_loaded = false;
+        this.fetch_users_error = null;
+        this.user_filter_query = '';
+        this._userFilterHadFocus = false;
+        this._userFilterSelection = null;
+        this._userFilterInputRef = null;
+        this.mode = 'list';
+        this.initial_user_id = null;
+        this.current_user = null;
+        this.detail_form_root = null;
+        this.table_root = null;
+        this.reset_code_button_focus_ref = null;
+        this.return_focus_info = null;
+        this.skip_table_focus_restore_next_render = false;
+        this.detail_delete_button_ref = null;
+        this.sort_state = { columnIndex: 0, direction: 'asc' };
+        this._table = null;
+    }
 
     async init({ root, deps }) {
         this.root = root;
@@ -46,13 +72,13 @@ export const ManageUsersViewComponent = {
                 maxRetries: 2
             }).catch(() => {});
         }
-    },
+    }
 
     get_t_func() {
         return (this.Translation && typeof this.Translation.t === 'function')
             ? this.Translation.t
             : (key) => `**${key}**`;
-    },
+    }
 
     async fetch_users() {
         if (this.users_loaded) return;
@@ -71,7 +97,7 @@ export const ManageUsersViewComponent = {
         } finally {
             this.users_loaded = true;
         }
-    },
+    }
 
     async render() {
         if (!this.root || !this.Helpers?.create_element) return;
@@ -198,7 +224,7 @@ export const ManageUsersViewComponent = {
         this._userFilterSelection = null;
 
         this.restore_focus_to_manage_trigger_if_needed();
-    },
+    }
 
     _get_display_name(user) {
         const t = this.get_t_func();
@@ -206,7 +232,7 @@ export const ManageUsersViewComponent = {
         const trimmed = raw_name.trim();
         if (trimmed) return trimmed;
         return t('user_fallback_name', { id: user?.id ?? '' });
-    },
+    }
 
     handle_filter_input(event) {
         const target = event && event.target ? event.target : null;
@@ -226,7 +252,7 @@ export const ManageUsersViewComponent = {
         if (this.root) {
             this.render();
         }
-    },
+    }
 
     render_table_view() {
         if (!this.table_root || !this._table || !this.Helpers) return;
@@ -323,7 +349,7 @@ export const ManageUsersViewComponent = {
             },
             t
         });
-    },
+    }
 
     restore_focus_to_manage_trigger_if_needed() {
         if (!this.root || !this.return_focus_info) return;
@@ -360,7 +386,7 @@ export const ManageUsersViewComponent = {
         } catch (e) {
             // Ignorera fokusfel
         }
-    },
+    }
 
     render_detail_view() {
         if (!this.root || !this.Helpers) return;
@@ -570,7 +596,7 @@ export const ManageUsersViewComponent = {
         }
 
         this.root.appendChild(plate);
-    },
+    }
 
     async handle_submit_user_form({ username_input, name_input, is_admin_checkbox }) {
         const t = this.get_t_func();
@@ -655,7 +681,7 @@ export const ManageUsersViewComponent = {
             const msg = err?.message || t('manage_users_save_error');
             this.NotificationComponent?.show_global_message?.(msg, 'error');
         }
-    },
+    }
 
     update_admin_label_text(name_input, label_content_el) {
         if (!label_content_el) return;
@@ -666,7 +692,7 @@ export const ManageUsersViewComponent = {
         } else {
             label_content_el.textContent = t('manage_users_is_admin_label_without_name');
         }
-    },
+    }
 
     generate_username_from_names(first_name, last_name) {
         const first = typeof first_name === 'string' ? first_name.trim().toLowerCase() : '';
@@ -681,7 +707,7 @@ export const ManageUsersViewComponent = {
         const combined = `${first_part}${last_part}` || `${first}${last}`.slice(0, 6);
 
         return combined.replace(/\s+/g, '');
-    },
+    }
 
     normalize_username_to_a_z(value) {
         if (value == null) return '';
@@ -699,7 +725,7 @@ export const ManageUsersViewComponent = {
             .replace(/ß/g, 'ss');
         str = str.replace(/[^a-z]/g, '');
         return str;
-    },
+    }
 
     bump_last_character(value) {
         if (!value) return '';
@@ -715,7 +741,7 @@ export const ManageUsersViewComponent = {
             return `${prefix}${String.fromCharCode(last_char.charCodeAt(0) + 1)}`;
         }
         return `${str}a`;
-    },
+    }
 
     generate_username_from_full_name(full_name) {
         const raw = typeof full_name === 'string' ? full_name.trim() : '';
@@ -768,7 +794,7 @@ export const ManageUsersViewComponent = {
         }
 
         return result;
-    },
+    }
 
     get_existing_usernames_set() {
         const set = new Set();
@@ -778,7 +804,7 @@ export const ManageUsersViewComponent = {
             if (username) set.add(username);
         });
         return set;
-    },
+    }
 
     find_available_username(candidate, existing_set) {
         const base = typeof candidate === 'string' ? candidate.trim().toLowerCase() : '';
@@ -791,7 +817,7 @@ export const ManageUsersViewComponent = {
             if (!existing.has(current)) return current;
         }
         return base;
-    },
+    }
 
     async open_delete_user_modal(user) {
         const t = this.get_t_func();
@@ -873,7 +899,7 @@ export const ManageUsersViewComponent = {
                 container.appendChild(actions);
             }
         );
-    },
+    }
 
     open_reset_code_modal_for_user(user, options = {}) {
         const t = this.get_t_func();
@@ -1074,7 +1100,7 @@ export const ManageUsersViewComponent = {
                 create_or_refresh_code();
             }
         );
-    },
+    }
 
     destroy() {
         if (this.root) this.root.innerHTML = '';
@@ -1092,4 +1118,4 @@ export const ManageUsersViewComponent = {
         }
         this._table = null;
     }
-};
+}

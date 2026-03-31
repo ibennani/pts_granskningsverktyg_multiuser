@@ -4,8 +4,19 @@ import { marked, auto_convert_code_like_to_codeblocks } from '../utils/markdown.
 import { can_edit_rulefile } from '../utils/helpers.js';
 import './requirement_audit_component.css';
 
-export const ViewRulefileRequirementComponent = {
-    CSS_PATH: './requirement_audit_component.css',
+export class ViewRulefileRequirementComponent {
+    constructor() {
+        this.CSS_PATH = './requirement_audit_component.css';
+        this.root = null;
+        this.deps = null;
+        this.router = null;
+        this.params = null;
+        this.getState = null;
+        this.Translation = null;
+        this.Helpers = null;
+        this.NotificationComponent = null;
+        this.plate_element_ref = null;
+    }
 
     async init({ root, deps }) {
         this.root = root;
@@ -20,7 +31,7 @@ export const ViewRulefileRequirementComponent = {
         this.plate_element_ref = null;
 
         await this.Helpers.load_css(this.CSS_PATH).catch(e => console.warn(e));
-    },
+    }
 
     _safe_parse_markdown(markdown_string, is_inline = false) {
         if (typeof marked === 'undefined' || !this.Helpers.escape_html) {
@@ -57,7 +68,7 @@ export const ViewRulefileRequirementComponent = {
         }
         
         return parsed_markdown;
-    },
+    }
 
     _render_markdown_section(title_key, content_data) {
         const t = this.Translation.t;
@@ -77,7 +88,7 @@ export const ViewRulefileRequirementComponent = {
         
         section_div.appendChild(content_element);
         return section_div;
-    },
+    }
 
     render() {
         if (!this.root) return;
@@ -358,7 +369,7 @@ export const ViewRulefileRequirementComponent = {
 
         this.root.appendChild(this.plate_element_ref);
         setTimeout(() => h1_element.focus(), 0);
-    },
+    }
 
     destroy() {
         if (this.root) {
@@ -374,4 +385,4 @@ export const ViewRulefileRequirementComponent = {
         this.root = null;
         this.deps = null;
     }
-};
+}

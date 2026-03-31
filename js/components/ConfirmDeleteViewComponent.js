@@ -1,6 +1,19 @@
 import "./confirm_delete_requirement_view_component.css";
 
-export const ConfirmDeleteViewComponent = {
+export class ConfirmDeleteViewComponent {
+    constructor() {
+        this.root = null;
+        this.deps = null;
+        this.router = null;
+        this.params = null;
+        this.getState = null;
+        this.dispatch = null;
+        this.StoreActionTypes = null;
+        this.Translation = null;
+        this.Helpers = null;
+        this.NotificationComponent = null;
+    }
+
     init({ root, deps }) {
         this.root = root;
         this.deps = deps;
@@ -12,7 +25,7 @@ export const ConfirmDeleteViewComponent = {
         this.Translation = deps.Translation;
         this.Helpers = deps.Helpers;
         this.NotificationComponent = deps.NotificationComponent;
-    },
+    }
 
     get_config_for_delete_type(type, state, params) {
         const { reqId, checkId, pcId } = params;
@@ -37,7 +50,7 @@ export const ConfirmDeleteViewComponent = {
                     focusOnSuccess: 'h1',
                     focusOnCancelSelector: `button[data-action="delete-req"][data-requirement-id="${reqId}"]`
                 };
-            case 'check':
+            case 'check': {
                 const check = requirement?.checks.find(c => c.id === checkId);
                 return {
                     isValid: !!check,
@@ -53,7 +66,8 @@ export const ConfirmDeleteViewComponent = {
                     focusOnSuccess: '#checks-section-heading',
                     focusOnCancelSelector: `.check-item-edit[data-check-id="${checkId}"] button[data-action="delete-check"]`
                 };
-            case 'criterion':
+            }
+            case 'criterion': {
                 const parentCheck = requirement?.checks.find(c => c.id === checkId);
                 const criterion = parentCheck?.passCriteria.find(pc => pc.id === pcId);
                 return {
@@ -70,17 +84,18 @@ export const ConfirmDeleteViewComponent = {
                     focusOnSuccess: '#checks-section-heading',
                     focusOnCancelSelector: `.pc-item-edit[data-pc-id="${pcId}"] button[data-action="delete-pass-criterion"]`
                 };
+            }
             default:
                 return { isValid: false };
         }
-    },
+    }
 
     render() {
         if (!this.root) return;
         const t = this.Translation.t;
         this.root.innerHTML = '';
         const plate_element = this.Helpers.create_element('div', { class_name: 'content-plate' });
-        
+
         // Use params from deps.params (mapped from main.js)
         // If main.js calls init({root, deps: { params: ... }})
         const deleteType = this.params?.type;
@@ -116,9 +131,9 @@ export const ConfirmDeleteViewComponent = {
             sessionStorage.setItem('focusAfterLoad', config.focusOnCancelSelector);
             this.router(config.returnRoute, config.returnParams || {});
         };
-        
+
         plate_element.appendChild(this.Helpers.create_element('h1', { text_content: t(config.titleKey) }));
-        
+
         const warning_box = this.Helpers.create_element('div', { class_name: 'warning-box' });
         let introHTML = `<p>${t(config.introKey, config.itemContext || {})}</p>`;
         if (config.itemText) {
@@ -148,7 +163,7 @@ export const ConfirmDeleteViewComponent = {
         plate_element.appendChild(actions_div);
 
         this.root.appendChild(plate_element);
-    },
+    }
 
     destroy() {
         if (this.root) this.root.innerHTML = '';
@@ -157,4 +172,4 @@ export const ConfirmDeleteViewComponent = {
         // Clear references
         this.params = null;
     }
-};
+}

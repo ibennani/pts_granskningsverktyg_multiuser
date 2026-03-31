@@ -121,6 +121,23 @@ const sampleFormViewComponent = new SampleFormViewComponent();
 const editMetadataViewComponent = new EditMetadataViewComponent();
 const requirementListComponent = new RequirementListComponent();
 const requirementAuditComponent = new RequirementAuditComponent();
+const confirmUpdatesViewComponent = new ConfirmUpdatesViewComponent();
+const updateRulefileViewComponent = new UpdateRulefileViewComponent();
+const backupOverviewComponent = new BackupOverviewComponent();
+const backupSettingsViewComponent = new BackupSettingsViewComponent();
+const manageUsersViewComponent = new ManageUsersViewComponent();
+const settingsViewComponent = new SettingsViewComponent();
+const rulefileChangeLogViewComponent = new RulefileChangeLogViewComponent();
+const rulefileRequirementsListComponent = new RulefileRequirementsListComponent();
+const viewRulefileRequirementComponent = new ViewRulefileRequirementComponent();
+const editRulefileMainViewComponent = new EditRulefileMainViewComponent();
+const editRulefileMetadataViewComponent = new EditRulefileMetadataViewComponent();
+const rulefileMetadataViewComponent = new RulefileMetadataViewComponent();
+const rulefileSectionsViewComponent = new RulefileSectionsViewComponent();
+const editGeneralSectionComponent = new EditGeneralSectionComponent();
+const editPageTypesSectionComponent = new EditPageTypesSectionComponent();
+const confirmDeleteViewComponent = new ConfirmDeleteViewComponent();
+const editRulefileRequirementComponent = new EditRulefileRequirementComponent();
 
 window.getState = getState;
 window.dispatch = dispatch;
@@ -635,7 +652,7 @@ window.DraftManager = DraftManager;
             prev_view === 'rulefile_sections' &&
             prev_params.section === (params_to_render?.section || 'general') &&
             (prev_params.edit === 'true') !== (params_to_render?.edit === 'true') &&
-            current_view_component_instance === RulefileSectionsViewComponent &&
+            current_view_component_instance === rulefileSectionsViewComponent &&
             typeof current_view_component_instance.render === 'function';
 
         if (is_rulefile_sections_edit_toggle) {
@@ -703,8 +720,8 @@ window.DraftManager = DraftManager;
             case 'audit': ComponentClass = auditViewComponent; break;
             case 'audit_audits': ComponentClass = auditViewComponent; break;
             case 'audit_rules': ComponentClass = auditViewComponent; break;
-            case 'manage_users': ComponentClass = ManageUsersViewComponent; break;
-            case 'my_settings': ComponentClass = SettingsViewComponent; break;
+            case 'manage_users': ComponentClass = manageUsersViewComponent; break;
+            case 'my_settings': ComponentClass = settingsViewComponent; break;
             case 'login': ComponentClass = loginViewComponent; break;
             case 'metadata': ComponentClass = editMetadataViewComponent; break;
             case 'edit_metadata': ComponentClass = editMetadataViewComponent; break;
@@ -717,26 +734,26 @@ window.DraftManager = DraftManager;
             case 'audit_problems': ComponentClass = auditProblemsViewComponent; break;
             case 'audit_images': ComponentClass = auditImagesViewComponent; break;
             case 'archived_requirements': ComponentClass = archivedRequirementsViewComponent; break;
-            case 'rulefile_change_log': ComponentClass = RulefileChangeLogViewComponent; break;
+            case 'rulefile_change_log': ComponentClass = rulefileChangeLogViewComponent; break;
             case 'requirement_list': ComponentClass = requirementListComponent; break;
             case 'requirement_audit': ComponentClass = requirementAuditComponent; break;
-            case 'update_rulefile': ComponentClass = UpdateRulefileViewComponent; break; 
-            case 'confirm_updates': ComponentClass = ConfirmUpdatesViewComponent; break;
+            case 'update_rulefile': ComponentClass = updateRulefileViewComponent; break;
+            case 'confirm_updates': ComponentClass = confirmUpdatesViewComponent; break;
             case 'final_confirm_updates': ComponentClass = finalConfirmUpdatesViewComponent; break;
-            case 'edit_rulefile_main': ComponentClass = EditRulefileMainViewComponent; break;
-            case 'rulefile_requirements': ComponentClass = RulefileRequirementsListComponent; break;
-            case 'rulefile_view_requirement': ComponentClass = ViewRulefileRequirementComponent; break;
-            case 'rulefile_edit_requirement': ComponentClass = EditRulefileRequirementComponent; break;
-            case 'rulefile_add_requirement': ComponentClass = EditRulefileRequirementComponent; break;
-            case 'rulefile_metadata_edit': ComponentClass = EditRulefileMetadataViewComponent; break;
-            case 'rulefile_metadata_view': ComponentClass = RulefileMetadataViewComponent; break;
-            case 'rulefile_sections_edit_general': ComponentClass = EditGeneralSectionComponent; break;
-            case 'rulefile_sections_edit_page_types': ComponentClass = EditPageTypesSectionComponent; break;
-            case 'rulefile_sections': ComponentClass = RulefileSectionsViewComponent; break;
-            case 'backup': ComponentClass = BackupOverviewComponent; break;
-            case 'backup_detail': ComponentClass = BackupOverviewComponent; break;
-            case 'backup_settings': ComponentClass = BackupSettingsViewComponent; break;
-            case 'confirm_delete': ComponentClass = ConfirmDeleteViewComponent; break;
+            case 'edit_rulefile_main': ComponentClass = editRulefileMainViewComponent; break;
+            case 'rulefile_requirements': ComponentClass = rulefileRequirementsListComponent; break;
+            case 'rulefile_view_requirement': ComponentClass = viewRulefileRequirementComponent; break;
+            case 'rulefile_edit_requirement': ComponentClass = editRulefileRequirementComponent; break;
+            case 'rulefile_add_requirement': ComponentClass = editRulefileRequirementComponent; break;
+            case 'rulefile_metadata_edit': ComponentClass = editRulefileMetadataViewComponent; break;
+            case 'rulefile_metadata_view': ComponentClass = rulefileMetadataViewComponent; break;
+            case 'rulefile_sections_edit_general': ComponentClass = editGeneralSectionComponent; break;
+            case 'rulefile_sections_edit_page_types': ComponentClass = editPageTypesSectionComponent; break;
+            case 'rulefile_sections': ComponentClass = rulefileSectionsViewComponent; break;
+            case 'backup': ComponentClass = backupOverviewComponent; break;
+            case 'backup_detail': ComponentClass = backupOverviewComponent; break;
+            case 'backup_settings': ComponentClass = backupSettingsViewComponent; break;
+            case 'confirm_delete': ComponentClass = confirmDeleteViewComponent; break;
             default:
                 consoleManager.error(`[Main.js] View "${view_name_to_render}" not found in render_view switch.`);
                 const error_h1 = document.createElement('h1');

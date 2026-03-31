@@ -7,9 +7,27 @@ import { CriteriaEditor } from './CriteriaEditor.js';
 import './requirement_audit_component.css';
 import './edit_rulefile_requirement_component.css';
 
-export const EditRulefileRequirementComponent = {
-    CSS_PATH_SHARED: './requirement_audit_component.css',
-    CSS_PATH_SPECIFIC: './edit_rulefile_requirement_component.css',
+export class EditRulefileRequirementComponent {
+    constructor() {
+        this.CSS_PATH_SHARED = './requirement_audit_component.css';
+        this.CSS_PATH_SPECIFIC = './edit_rulefile_requirement_component.css';
+        this.root = null;
+        this.deps = null;
+        this.router = null;
+        this.params = null;
+        this.getState = null;
+        this.dispatch = null;
+        this.StoreActionTypes = null;
+        this.Translation = null;
+        this.Helpers = null;
+        this.NotificationComponent = null;
+        this.AutosaveService = null;
+        this.form_element_ref = null;
+        this.local_requirement_data = null;
+        this.initial_requirement_snapshot = null;
+        this.autosave_session = null;
+        this.skip_autosave_on_destroy = false;
+    }
 
     async init({ root, deps }) {
         this.root = root;
@@ -38,7 +56,7 @@ export const EditRulefileRequirementComponent = {
         
         await this.Helpers.load_css(this.CSS_PATH_SHARED).catch(e => console.warn(e));
         await this.Helpers.load_css(this.CSS_PATH_SPECIFIC).catch(e => console.warn(e));
-    },
+    }
 
     _create_move_check_button(direction, check) {
         const t = this.Translation.t;
@@ -55,7 +73,7 @@ export const EditRulefileRequirementComponent = {
             },
             html_content: `<span>${t(is_up ? 'move_item_up' : 'move_item_down')}</span>` + this.Helpers.get_icon_svg(icon_name, ['currentColor'], 16)
         });
-    },
+    }
 
     _create_move_pass_criterion_button(direction, check, pass_criterion) {
         const t = this.Translation.t;
@@ -72,7 +90,7 @@ export const EditRulefileRequirementComponent = {
             },
             html_content: `<span>${t(is_up ? 'move_item_up' : 'move_item_down')}</span>` + this.Helpers.get_icon_svg(icon_name, ['currentColor'], 16)
         });
-    },
+    }
 
     _get_default_block_name(block_id) {
         const t = this.Translation.t;
@@ -85,7 +103,7 @@ export const EditRulefileRequirementComponent = {
             'exceptions': t('requirement_exceptions')
         };
         return name_map[block_id] || block_id;
-    },
+    }
 
     _get_translation_key_for_block(block_id) {
         const key_map = {
@@ -97,7 +115,7 @@ export const EditRulefileRequirementComponent = {
             'exceptions': 'requirement_exceptions'
         };
         return key_map[block_id];
-    },
+    }
 
     _update_local_data_from_form(shouldTrim = false) {
         if (!this.form_element_ref) return;
@@ -246,13 +264,13 @@ export const EditRulefileRequirementComponent = {
             checks_data.push(check_obj);
         });
         this.local_requirement_data.checks = checks_data;
-    },
+    }
 
     handle_autosave_input() {
         const is_new_requirement = this.params?.id === 'new';
         if (is_new_requirement || !this.local_requirement_data) return;
         this.autosave_session?.request_autosave();
-    },
+    }
 
     save_form_data_immediately(shouldTrim = false) {
         const is_new_requirement = this.params?.id === 'new';
@@ -263,7 +281,7 @@ export const EditRulefileRequirementComponent = {
             type: this.StoreActionTypes.UPDATE_REQUIREMENT_DEFINITION,
             payload: { requirementId: this.params.id, updatedRequirementData: this.local_requirement_data, skip_render: true }
         });
-    },
+    }
 
     handle_form_submit(event) {
         event.preventDefault();
@@ -316,8 +334,8 @@ export const EditRulefileRequirementComponent = {
             this.NotificationComponent.show_global_message(t('rulefile_requirement_saved'), 'success');
             this.router('rulefile_view_requirement', { id: this.params.id });
         }
-    },
-    
+    }
+
     handle_form_click(event) {
         const button = event.target.closest('button[data-action]');
         if (!button) return;
@@ -555,7 +573,7 @@ export const EditRulefileRequirementComponent = {
                 }
                 break;
         }
-    },
+    }
 
     _create_form_group(label_key, id, value, is_textarea = false, input_type = 'text', label_text_override = null) {
         const t = this.Translation.t;
@@ -585,8 +603,8 @@ export const EditRulefileRequirementComponent = {
         }
         form_group.appendChild(input);
         return form_group;
-    },
-    
+    }
+
     _create_action_buttons(position) {
         const t = this.Translation.t;
         const actions_div = this.Helpers.create_element('div', { 
@@ -619,8 +637,8 @@ export const EditRulefileRequirementComponent = {
         
         actions_div.append(save_button, cancel_button);
         return actions_div;
-    },
-    
+    }
+
     _create_classification_section(metadata, classifications) {
         const t = this.Translation.t;
         const fragment = document.createDocumentFragment();
@@ -662,7 +680,7 @@ export const EditRulefileRequirementComponent = {
         }
         
         return fragment;
-    },
+    }
 
     _create_impact_section(metadata) {
         const t = this.Translation.t;
@@ -685,7 +703,7 @@ export const EditRulefileRequirementComponent = {
 
         section_wrapper.appendChild(impact_group);
         return section_wrapper;
-    },
+    }
 
     _update_parent_checkbox_state(parent_checkbox) {
         const parent_id = parent_checkbox.dataset.parentId;
@@ -710,7 +728,7 @@ export const EditRulefileRequirementComponent = {
             parent_checkbox.indeterminate = true;
             parent_checkbox.setAttribute('aria-checked', 'mixed');
         }
-    },
+    }
 
     _handle_content_type_change(event) {
         const target = event.target;
@@ -727,7 +745,7 @@ export const EditRulefileRequirementComponent = {
                 this._update_parent_checkbox_state(parent_checkbox);
             }
         }
-    },
+    }
 
     _create_content_types_section(all_content_types, selected_content_types) {
         const t = this.Translation.t;
@@ -804,8 +822,8 @@ export const EditRulefileRequirementComponent = {
             section_wrapper.appendChild(fieldset);
         });
         return section_wrapper;
-    },
-    
+    }
+
     _rerender_all_sections(options = {}) {
         if (typeof options === 'boolean') {
             options = { animate_last_item: options };
@@ -937,7 +955,7 @@ export const EditRulefileRequirementComponent = {
                 this._apply_focus_target(focus_target, focus_animation_duration);
             });
         }
-    },
+    }
 
     _rerender_checks_section(options = {}) {
         if (typeof options === 'boolean') {
@@ -965,7 +983,7 @@ export const EditRulefileRequirementComponent = {
         checks_section.appendChild(add_check_button);
 
         this._apply_animation_info(options.animateInfo);
-    },
+    }
 
     _focus_element_simple(element, animation_duration, shouldForceScroll) {
         setTimeout(() => {
@@ -978,7 +996,7 @@ export const EditRulefileRequirementComponent = {
                 element.focus();
             }
         }, 200);
-    },
+    }
 
 
     _focus_element_with_delay(element, animation_duration, shouldForceScroll) {
@@ -1022,7 +1040,7 @@ export const EditRulefileRequirementComponent = {
                 setTimeout(releaseProtection, 600);
             }
         }, focusDelay);
-    },
+    }
 
     _apply_focus_target(focus_target, animation_duration = 0) {
         if (!focus_target || !this.form_element_ref) return;
@@ -1091,7 +1109,7 @@ export const EditRulefileRequirementComponent = {
         if (!button_to_focus) return;
 
         this._focus_element_with_delay(button_to_focus, animation_duration, shouldForceScroll);
-    },
+    }
 
     _apply_animation_info(animate_info) {
         if (!animate_info || !this.form_element_ref) return;
@@ -1130,7 +1148,7 @@ export const EditRulefileRequirementComponent = {
                 target_element.style.removeProperty('z-index');
             }, animation_duration);
         });
-    },
+    }
 
     _capture_positions() {
         if (!this.form_element_ref) return null;
@@ -1146,7 +1164,7 @@ export const EditRulefileRequirementComponent = {
             });
         });
         return layout;
-    },
+    }
 
     _add_new_check_element(check_id) {
         const t = this.Translation.t;
@@ -1194,8 +1212,8 @@ export const EditRulefileRequirementComponent = {
                 }, 2000);
             }, 150);
         }
-    },
-    
+    }
+
     _add_new_pass_criterion_element(check_id, pc_id) {
         const t = this.Translation.t;
         const check_element = this.form_element_ref.querySelector(`.check-item-edit[data-check-id="${check_id}"]`);
@@ -1248,7 +1266,7 @@ export const EditRulefileRequirementComponent = {
                 }, 2000);
             }, 150);
         }
-    },
+    }
 
     _apply_flip_animation(previous_layout, animate_info) {
         if (!previous_layout || !this.form_element_ref) return;
@@ -1291,8 +1309,8 @@ export const EditRulefileRequirementComponent = {
                 });
             });
         });
-    },
-    
+    }
+
     _create_check_fieldset(check, index, total_checks) {
         const t = this.Translation.t;
         const sane_check_id = this.Helpers.sanitize_id_for_css_selector(check.id);
@@ -1364,7 +1382,7 @@ export const EditRulefileRequirementComponent = {
         check_el.appendChild(pc_container);
 
         return check_el;
-    },
+    }
 
     _create_pc_item(check, pc, sane_check_id, pc_index, total_pass_criteria, check_index) {
         const t = this.Translation.t;
@@ -1412,7 +1430,7 @@ export const EditRulefileRequirementComponent = {
         pc_el.appendChild(requirement_group);
         pc_el.appendChild(this._create_form_group('failure_template_label', `pc_${sane_check_id}_${sane_pc_id}_failureTemplate`, pc.failureStatementTemplate, true));
         return pc_el;
-    },
+    }
 
     render() {
         if (!this.root) return;
@@ -1552,7 +1570,7 @@ export const EditRulefileRequirementComponent = {
                 }
             }
         }, 100);
-    },
+    }
 
     _restore_initial_state() {
         if (!this.initial_requirement_snapshot || this.params?.id === 'new') return;
@@ -1564,7 +1582,7 @@ export const EditRulefileRequirementComponent = {
                 updatedRequirementData: this.initial_requirement_snapshot
             }
         });
-    },
+    }
 
     destroy() {
         if (!this.skip_autosave_on_destroy && this.form_element_ref && this.local_requirement_data && this.params?.id !== 'new') {
@@ -1584,4 +1602,4 @@ export const EditRulefileRequirementComponent = {
         this.root = null;
         this.deps = null;
     }
-};
+}

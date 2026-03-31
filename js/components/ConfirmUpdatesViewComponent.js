@@ -1,7 +1,25 @@
 import "./confirm_updates_view_component.css";
 import "./requirement_list_toolbar_component.css";
 
-export const ConfirmUpdatesViewComponent = {
+export class ConfirmUpdatesViewComponent {
+    constructor() {
+        this.root = null;
+        this.deps = null;
+        this.router = null;
+        this.getState = null;
+        this.dispatch = null;
+        this.StoreActionTypes = null;
+        this.Translation = null;
+        this.Helpers = null;
+        this.NotificationComponent = null;
+        this.AuditLogic = null;
+        this.plate_element_ref = null;
+        this.list_container_for_delegation = null;
+        this.h1_ref = null;
+        this._filter_search = '';
+        this._sort_by = 'sample_asc';
+    }
+
     init({ root, deps }) {
         this.root = root;
         this.deps = deps;
@@ -24,17 +42,17 @@ export const ConfirmUpdatesViewComponent = {
         this.handle_list_item_click = this.handle_list_item_click.bind(this);
         this.handle_filter_search_input = this.handle_filter_search_input.bind(this);
         this.handle_sort_change = this.handle_sort_change.bind(this);
-    },
+    }
 
     handle_filter_search_input(event) {
         this._filter_search = (event.target.value || '').trim();
         this.render();
-    },
+    }
 
     handle_sort_change(event) {
         this._sort_by = event.target.value || 'sample_asc';
         this.render();
-    },
+    }
 
     handle_list_item_click(event) {
         const button = event.target.closest('button[data-action="confirm-single"]');
@@ -78,7 +96,7 @@ export const ConfirmUpdatesViewComponent = {
             }
         }, 0);
         // --- END OF NEW, ROBUST FOCUS LOGIC ---
-    },
+    }
 
     get_updated_reqs_data() {
         const state = this.getState();
@@ -119,7 +137,7 @@ export const ConfirmUpdatesViewComponent = {
         });
 
         return { updated_reqs_by_sample, total_count };
-    },
+    }
 
     render_action_buttons(position, total_count) {
         const t = this.Translation.t;
@@ -140,7 +158,7 @@ export const ConfirmUpdatesViewComponent = {
 
         actions_div.append(confirm_all_btn, return_btn);
         return actions_div;
-    },
+    }
 
     handle_confirm_all_click(trigger_button, total_count) {
         const t = this.Translation.t;
@@ -189,7 +207,7 @@ export const ConfirmUpdatesViewComponent = {
                 container.appendChild(actions_wrapper);
             }
         );
-    },
+    }
 
     render() {
         if (!this.root) return;
@@ -361,7 +379,7 @@ export const ConfirmUpdatesViewComponent = {
 
         this.plate_element_ref.appendChild(this.list_container_for_delegation);
         this.plate_element_ref.appendChild(this.render_action_buttons('bottom', total_count));
-    },
+    }
 
     destroy() {
         if (this.list_container_for_delegation) {
@@ -374,4 +392,4 @@ export const ConfirmUpdatesViewComponent = {
         this.root = null;
         this.deps = null;
     }
-};
+}

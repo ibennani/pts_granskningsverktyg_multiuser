@@ -2,8 +2,30 @@
 import { create_production_rule } from '../api/client.js';
 import './edit_rulefile_metadata_view.css';
 
-export const EditRulefileMetadataViewComponent = {
-    CSS_PATH: './edit_rulefile_metadata_view.css',
+export class EditRulefileMetadataViewComponent {
+    constructor() {
+        this.CSS_PATH = './edit_rulefile_metadata_view.css';
+        this.root = null;
+        this.deps = null;
+        this.params = null;
+        this.router = null;
+        this.getState = null;
+        this.dispatch = null;
+        this.StoreActionTypes = null;
+        this.Translation = null;
+        this.Helpers = null;
+        this.NotificationComponent = null;
+        this.REQUIRED_METADATA_FIELDS = [
+            { name: 'metadata.title', labelKey: 'rulefile_metadata_field_title' },
+            { name: 'metadata.description', labelKey: 'rulefile_metadata_field_description' },
+            { name: 'metadata.language', labelKey: 'rulefile_metadata_field_language' },
+            { name: 'metadata.monitoringType.text', labelKey: 'rulefile_metadata_field_monitoring_type_label' },
+            { name: 'metadata.publisher.name', labelKey: 'rulefile_metadata_field_publisher_name' },
+            { name: 'metadata.publisher.contactPoint', labelKey: 'rulefile_metadata_field_publisher_contact' },
+            { name: 'metadata.source.url', labelKey: 'rulefile_metadata_field_source_url' },
+            { name: 'metadata.source.title', labelKey: 'rulefile_metadata_field_source_title' }
+        ];
+    }
 
     async init({ root, deps }) {
         this.root = root;
@@ -16,22 +38,11 @@ export const EditRulefileMetadataViewComponent = {
         this.Translation = deps.Translation;
         this.Helpers = deps.Helpers;
         this.NotificationComponent = deps.NotificationComponent;
-        
+
         if (this.Helpers?.load_css) {
             await this.Helpers.load_css(this.CSS_PATH).catch(err => { if (window.ConsoleManager) window.ConsoleManager.warn('[EditRulefileMetadataView] Failed to load CSS', err); });
         }
-    },
-
-    REQUIRED_METADATA_FIELDS: [
-        { name: 'metadata.title', labelKey: 'rulefile_metadata_field_title' },
-        { name: 'metadata.description', labelKey: 'rulefile_metadata_field_description' },
-        { name: 'metadata.language', labelKey: 'rulefile_metadata_field_language' },
-        { name: 'metadata.monitoringType.text', labelKey: 'rulefile_metadata_field_monitoring_type_label' },
-        { name: 'metadata.publisher.name', labelKey: 'rulefile_metadata_field_publisher_name' },
-        { name: 'metadata.publisher.contactPoint', labelKey: 'rulefile_metadata_field_publisher_contact' },
-        { name: 'metadata.source.url', labelKey: 'rulefile_metadata_field_source_url' },
-        { name: 'metadata.source.title', labelKey: 'rulefile_metadata_field_source_title' }
-    ],
+    }
 
     _create_field(label_key, name, value = '', type = 'text', options = {}) {
         const { required = false } = options;
@@ -94,7 +105,7 @@ export const EditRulefileMetadataViewComponent = {
         }
 
         return container;
-    },
+    }
 
     _create_language_select_field(name, value) {
         const container = this.Helpers.create_element('div', { class_name: 'form-group' });
@@ -142,7 +153,7 @@ export const EditRulefileMetadataViewComponent = {
 
         container.appendChild(select);
         return container;
-    },
+    }
 
     _collect_missing_required_metadata_fields(formData) {
         const fields = Array.isArray(this.REQUIRED_METADATA_FIELDS) ? this.REQUIRED_METADATA_FIELDS : [];
@@ -155,7 +166,7 @@ export const EditRulefileMetadataViewComponent = {
             }
         });
         return missing;
-    },
+    }
 
     _show_rulefile_required_fields_modal(missingFields, form, focusFieldName) {
         const ModalComponent = window.ModalComponent;
@@ -219,11 +230,11 @@ export const EditRulefileMetadataViewComponent = {
                 container.appendChild(buttons_wrapper);
             }
         );
-    },
+    }
 
     _clone_metadata(metadata) {
         return JSON.parse(JSON.stringify(metadata || {}));
-    },
+    }
 
     _ensure_metadata_defaults(workingMetadata) {
         if (!workingMetadata.monitoringType) {
@@ -318,7 +329,7 @@ export const EditRulefileMetadataViewComponent = {
             : [];
         workingMetadata.keywords = Array.isArray(workingMetadata.keywords) ? [...workingMetadata.keywords] : [];
         return workingMetadata;
-    },
+    }
 
     _generate_slug(value) {
         if (!value) return '';
@@ -327,7 +338,7 @@ export const EditRulefileMetadataViewComponent = {
             .replace(/[^a-z0-9]+/g, '-')
             .replace(/-{2,}/g, '-')
             .replace(/^-+|-+$/g, '');
-    },
+    }
 
     _ensure_unique_slug(slugSet, preferred, fallback) {
         let base = preferred || fallback || 'item';
@@ -339,7 +350,7 @@ export const EditRulefileMetadataViewComponent = {
         }
         slugSet.add(candidate);
         return candidate;
-    },
+    }
 
     _create_inline_input(label_key, value, onChange, options = {}) {
         const { type = 'text', textarea = false, rawLabel = null } = options;
@@ -369,7 +380,7 @@ export const EditRulefileMetadataViewComponent = {
 
         wrapper.appendChild(input);
         return wrapper;
-    },
+    }
 
     _create_checkbox_input(label_key, checked, onChange) {
         const wrapper = this.Helpers.create_element('div', { class_name: 'form-check-inline' });
@@ -387,7 +398,7 @@ export const EditRulefileMetadataViewComponent = {
         });
         wrapper.append(input, label);
         return wrapper;
-    },
+    }
 
     _create_small_button(text_or_key, icon_name, onClick, variant = 'secondary', options = {}) {
         const { plainText = false, ariaLabel = null } = options;
@@ -420,7 +431,7 @@ export const EditRulefileMetadataViewComponent = {
         };
 
         return button;
-    },
+    }
 
     _renderPageTypesEditor(container, workingMetadata) {
         container.innerHTML = '';
@@ -457,7 +468,7 @@ export const EditRulefileMetadataViewComponent = {
             this._renderPageTypesEditor(container, workingMetadata);
         });
         container.appendChild(addBtn);
-    },
+    }
 
     _renderContentTypesEditor(container, workingMetadata) {
         container.innerHTML = '';
@@ -537,7 +548,7 @@ export const EditRulefileMetadataViewComponent = {
             this._renderContentTypesEditor(container, workingMetadata);
         });
         container.appendChild(addParentBtn);
-    },
+    }
 
     _renderSampleCategoriesEditor(container, workingMetadata) {
         container.innerHTML = '';
@@ -707,7 +718,7 @@ export const EditRulefileMetadataViewComponent = {
             this._renderSampleCategoriesEditor(container, workingMetadata);
         });
         container.appendChild(addCategoryBtn);
-    },
+    }
 
     _renderSampleTypesEditor(container, workingMetadata) {
         container.innerHTML = '';
@@ -743,7 +754,7 @@ export const EditRulefileMetadataViewComponent = {
             this._renderSampleTypesEditor(container, workingMetadata);
         });
         container.appendChild(addBtn);
-    },
+    }
 
     _renderTaxonomiesEditor(container, workingMetadata) {
         container.innerHTML = '';
@@ -824,7 +835,7 @@ export const EditRulefileMetadataViewComponent = {
             this._renderTaxonomiesEditor(container, workingMetadata);
         });
         container.appendChild(addTaxonomyBtn);
-    },
+    }
 
     _create_report_template_section(reportTemplate, metadata) {
         const t = this.Translation.t;
@@ -1021,7 +1032,7 @@ export const EditRulefileMetadataViewComponent = {
         this._report_template_metadata_ref = metadata;
         
         return section;
-    },
+    }
 
     _render_report_template_sections(container, reportTemplate, metadata) {
         // Re-render the sections editor
@@ -1035,7 +1046,7 @@ export const EditRulefileMetadataViewComponent = {
                 old_section.replaceWith(new_section);
             }
         }
-    },
+    }
 
     _create_form(metadata, is_create_mode = false) {
         const workingMetadata = is_create_mode
@@ -1192,7 +1203,7 @@ export const EditRulefileMetadataViewComponent = {
         form.appendChild(footerActions);
 
         return { form, workingMetadata };
-    },
+    }
 
     async _handle_submit_create(form) {
         const t = this.Translation.t;
@@ -1263,7 +1274,7 @@ export const EditRulefileMetadataViewComponent = {
                 'error'
             );
         }
-    },
+    }
 
     _handle_submit(form, originalMetadata, workingMetadata) {
         const t = this.Translation.t;
@@ -1510,7 +1521,7 @@ export const EditRulefileMetadataViewComponent = {
 
         this.NotificationComponent.show_global_message?.(t('rulefile_metadata_edit_saved'), 'success');
         this.router('edit_rulefile_main');
-    },
+    }
 
     render() {
         if (!this.root) return;
@@ -1565,7 +1576,7 @@ export const EditRulefileMetadataViewComponent = {
         plate.appendChild(form);
 
         this.root.appendChild(plate);
-    },
+    }
 
     destroy() {
         if (this.root) {
@@ -1574,4 +1585,4 @@ export const EditRulefileMetadataViewComponent = {
         this.root = null;
         this.deps = null;
     }
-};
+}

@@ -2,7 +2,18 @@
 
 import { render_rulefile_change_log } from '../logic/rulefile_change_log_renderer.js';
 
-export const RulefileChangeLogViewComponent = {
+export class RulefileChangeLogViewComponent {
+    constructor() {
+        this.root = null;
+        this.deps = null;
+        this.router = null;
+        this.getState = null;
+        this.Translation = null;
+        this.Helpers = null;
+        this.NotificationComponent = null;
+        this.plate_element_ref = null;
+    }
+
     init({ root, deps }) {
         this.root = root;
         this.deps = deps;
@@ -13,7 +24,7 @@ export const RulefileChangeLogViewComponent = {
         this.NotificationComponent = deps.NotificationComponent;
 
         this.plate_element_ref = null;
-    },
+    }
 
     render() {
         if (!this.root) return;
@@ -110,7 +121,7 @@ export const RulefileChangeLogViewComponent = {
 
         actions.append(back_button, download_log_button);
         this.plate_element_ref.appendChild(actions);
-    },
+    }
 
     destroy() {
         if (this.root) {
@@ -120,5 +131,4 @@ export const RulefileChangeLogViewComponent = {
         this.root = null;
         this.deps = null;
     }
-};
-
+}

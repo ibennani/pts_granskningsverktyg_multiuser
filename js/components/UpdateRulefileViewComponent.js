@@ -4,13 +4,36 @@ import { get_rule } from '../api/client.js';
 import { render_rulefile_change_log } from '../logic/rulefile_change_log_renderer.js';
 import './update_rulefile_view.css';
 
-export const UpdateRulefileViewComponent = {
-    CSS_PATH: './update_rulefile_view.css',
-    VIEW_STEPS: {
-        WARNING: 'WARNING',
-        UPLOAD: 'UPLOAD',
-        CONFIRM: 'CONFIRM'
-    },
+export class UpdateRulefileViewComponent {
+    constructor() {
+        this.CSS_PATH = './update_rulefile_view.css';
+        this.VIEW_STEPS = {
+            WARNING: 'WARNING',
+            UPLOAD: 'UPLOAD',
+            CONFIRM: 'CONFIRM'
+        };
+        this.root = null;
+        this.deps = null;
+        this.router = null;
+        this.getState = null;
+        this.dispatch = null;
+        this.StoreActionTypes = null;
+        this.Translation = null;
+        this.Helpers = null;
+        this.NotificationComponent = null;
+        this.SaveAuditLogic = null;
+        this.ValidationLogic = null;
+        this.AuditLogic = null;
+        this.rule_id_from_params = null;
+        this.new_rule_version_from_params = null;
+        this.current_step = this.VIEW_STEPS.WARNING;
+        this.staged_new_rule_file_content = null;
+        this.staged_analysis_report = null;
+        this.plate_element_ref = null;
+        this._loading_server_rule = false;
+        this._backup_saved = false;
+        this._analysis_ready = false;
+    }
 
     async init({ root, deps }) {
         this.root = root;
@@ -57,11 +80,11 @@ export const UpdateRulefileViewComponent = {
                 if (window.ConsoleManager?.warn) window.ConsoleManager.warn("CSS for UpdateRulefileViewComponent not found yet, skipping load.", error);
             }
         }
-    },
+    }
 
     get_t_internally() {
         return this.Translation?.t || ((key) => `**${key}**`);
-    },
+    }
 
     async handle_backup_click() {
         const t = this.get_t_internally();
@@ -89,14 +112,14 @@ export const UpdateRulefileViewComponent = {
                 this.NotificationComponent.show_global_message(t('error_saving_audit'), 'error');
             }
         }
-    },
+    }
 
     handle_skip_backup_click() {
         this._backup_saved = false;
         this._analysis_ready = false;
         this.current_step = this.VIEW_STEPS.UPLOAD;
         this.render();
-    },
+    }
 
     async handle_use_rule_from_server_click() {
         const t = this.get_t_internally();
@@ -151,13 +174,13 @@ export const UpdateRulefileViewComponent = {
                 : t('error_rulefile_update_failed') + (error?.message ? `: ${error.message}` : '');
             this.NotificationComponent?.show_global_message(message, 'error');
         }
-    },
+    }
 
     handle_go_to_confirm_step_click() {
         if (!this._analysis_ready || !this.staged_analysis_report || !this.staged_new_rule_file_content) return;
         this.current_step = this.VIEW_STEPS.CONFIRM;
         this.render();
-    },
+    }
 
     handle_download_change_log_click() {
         const t = this.get_t_internally();
@@ -205,8 +228,8 @@ export const UpdateRulefileViewComponent = {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-    },
-    
+    }
+
     handle_confirm_update_click() {
         const t = this.get_t_internally();
         if (!this.staged_new_rule_file_content || !this.staged_analysis_report) {
@@ -253,7 +276,7 @@ export const UpdateRulefileViewComponent = {
             this.NotificationComponent?.show_global_message(t('update_rulefile_success'), 'success');
             this.router('audit_overview');
         }
-    },
+    }
 
     render() {
         if (!this.root) return;
@@ -283,7 +306,7 @@ export const UpdateRulefileViewComponent = {
                 this.render_confirm_step(this.staged_analysis_report);
                 break;
         }
-    },
+    }
 
     render_warning_step() {
         const t = this.get_t_internally();
@@ -320,8 +343,8 @@ export const UpdateRulefileViewComponent = {
         const actions_div = this.Helpers.create_element('div', { class_name: 'form-actions', style: { 'margin-top': '2rem' } });
         actions_div.append(backup_button, skip_backup_button, back_button);
         this.plate_element_ref.appendChild(actions_div);
-    },
-    
+    }
+
     render_upload_step() {
         const t = this.get_t_internally();
         const current_version = (this.getState()?.ruleFileContent?.metadata?.version || '').trim() || t('update_rulefile_version_unknown');
@@ -395,7 +418,7 @@ export const UpdateRulefileViewComponent = {
         }
 
         this.plate_element_ref.appendChild(actions_div);
-    },
+    }
 
     render_confirm_step(report) {
         const t = this.get_t_internally();
@@ -458,7 +481,7 @@ export const UpdateRulefileViewComponent = {
 
         actions_div.append(confirm_button, download_log_button, cancel_button);
         this.plate_element_ref.appendChild(actions_div);
-    },
+    }
 
     destroy() {
         if (this.root) this.root.innerHTML = '';
@@ -472,4 +495,4 @@ export const UpdateRulefileViewComponent = {
         this.root = null;
         this.deps = null;
     }
-};
+}

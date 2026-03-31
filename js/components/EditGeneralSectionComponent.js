@@ -2,8 +2,25 @@
 
 import './edit_rulefile_metadata_view.css';
 
-export const EditGeneralSectionComponent = {
-    CSS_PATH: './edit_rulefile_metadata_view.css',
+export class EditGeneralSectionComponent {
+    constructor() {
+        this.CSS_PATH = './edit_rulefile_metadata_view.css';
+        this.root = null;
+        this.deps = null;
+        this.router = null;
+        this.getState = null;
+        this.dispatch = null;
+        this.StoreActionTypes = null;
+        this.Translation = null;
+        this.Helpers = null;
+        this.NotificationComponent = null;
+        this.AutosaveService = null;
+        this.form_element_ref = null;
+        this.working_metadata = null;
+        this.initial_metadata_snapshot = null;
+        this.autosave_session = null;
+        this.skip_autosave_on_destroy = false;
+    }
 
     async init({ root, deps }) {
         this.root = root;
@@ -26,7 +43,7 @@ export const EditGeneralSectionComponent = {
         if (this.Helpers?.load_css) {
             await this.Helpers.load_css(this.CSS_PATH).catch(err => console.warn('[EditGeneralSectionComponent] Failed to load CSS', err));
         }
-    },
+    }
 
     _create_field(label_key, name, value = '', type = 'text', options = {}) {
         const { required = false } = options;
@@ -65,7 +82,7 @@ export const EditGeneralSectionComponent = {
         }
 
         return container;
-    },
+    }
 
     _create_language_select_field(name, value) {
         const container = this.Helpers.create_element('div', { class_name: 'form-group' });
@@ -113,11 +130,11 @@ export const EditGeneralSectionComponent = {
 
         container.appendChild(select);
         return container;
-    },
+    }
 
     _clone_metadata(metadata) {
         return JSON.parse(JSON.stringify(metadata || {}));
-    },
+    }
 
     _ensure_metadata_defaults(workingMetadata) {
         if (!workingMetadata.monitoringType) {
@@ -133,7 +150,7 @@ export const EditGeneralSectionComponent = {
             workingMetadata.source = {};
         }
         return workingMetadata;
-    },
+    }
 
     _create_form(metadata) {
         const workingMetadata = this._ensure_metadata_defaults(this._clone_metadata(metadata));
@@ -203,7 +220,7 @@ export const EditGeneralSectionComponent = {
         form.appendChild(footerActions);
 
         return { form, workingMetadata };
-    },
+    }
 
     _parse_form_data(form, workingMetadata, should_trim = false, trim_text = null) {
         const formData = new FormData(form);
@@ -261,11 +278,11 @@ export const EditGeneralSectionComponent = {
         }
 
         return workingMetadata;
-    },
+    }
 
     handle_autosave_input() {
         this.autosave_session?.request_autosave();
-    },
+    }
 
     _handle_submit(form, originalMetadata, workingMetadata) {
         const t = this.Translation.t;
@@ -279,7 +296,7 @@ export const EditGeneralSectionComponent = {
         // Navigera tillbaka till rulefile_sections med section=general (utan edit=true)
         sessionStorage.setItem('focusAfterLoad', '.rulefile-sections-header h1');
         this.router('rulefile_sections', { section: 'general' });
-    },
+    }
 
     _restore_initial_state() {
         if (!this.initial_metadata_snapshot) return;
@@ -296,7 +313,7 @@ export const EditGeneralSectionComponent = {
             type: this.StoreActionTypes.UPDATE_RULEFILE_CONTENT,
             payload: { ruleFileContent: restoredRulefileContent, skip_render: true }
         });
-    },
+    }
 
     render() {
         if (!this.root) return;
@@ -340,7 +357,7 @@ export const EditGeneralSectionComponent = {
         }) || null;
 
         this.root.appendChild(form);
-    },
+    }
 
     destroy() {
         // Spara autosparat data innan komponenten förstörs (vid navigering bort)
@@ -359,4 +376,4 @@ export const EditGeneralSectionComponent = {
         this.initial_metadata_snapshot = null;
         this.deps = null;
     }
-};
+}
