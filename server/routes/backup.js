@@ -8,6 +8,41 @@ import { query } from '../db.js';
 import { calculate_overall_audit_progress } from '../../js/audit_logic.js';
 const router = express.Router();
 
+async function read_latest_backup_metadata(audit_path, json_files) {
+    if (!audit_path || !Array.isArray(json_files) || json_files.length === 0) return null;
+
+    let latest_fp = null;
+    let latest_mtime = null;
+
+    for (const fname of json_files) {
+        const fp = path.join(audit_path, fname);
+        try {
+            const stat = await fs.stat(fp);
+            if (!latest_mtime || stat.mtimeMs > latest_mtime) {
+                latest_mtime = stat.mtimeMs;
+                latest_fp = fp;
+            }
+        } catch {
+            // Ignorera filer som inte går att läsa metadata för
+        }
+    }
+
+    if (!latest_fp) return null;
+
+    try {
+        const raw = await fs.readFile(latest_fp, 'utf8');
+        const data = JSON.parse(raw);
+        const meta = data?.auditMetadata && typeof data.auditMetadata === 'object' ? data.auditMetadata : null;
+        if (!meta) return null;
+        return {
+            caseNumber: meta.caseNumber || null,
+            actorName: meta.actorName || null
+        };
+    } catch {
+        return null;
+    }
+}
+
 // Nedladdning av backup-fil – alla inloggade användare
 router.get('/files/:auditId/:filename', async (req, res) => {
     const { auditId, filename } = req.params;
@@ -217,13 +252,29 @@ router.get('/list', async (_req, res) => {
             }
 
             const row = meta_by_id.get(audit_id) || {};
-            const metadata = row.metadata || {};
+            const status = row && row.status != null ? row.status : 'deleted';
+            let metadata = row.metadata || {};
+
+            // För raderade granskningar finns inte metadata i DB längre.
+            // Fyll i från senaste backup-filen så listan inte blir anonym.
+            if (status === 'deleted' && (!metadata || typeof metadata !== 'object')) {
+                metadata = {};
+            }
+            if (status === 'deleted' && (!metadata.caseNumber || !metadata.actorName)) {
+                const fallback = await read_latest_backup_metadata(audit_path, json_files);
+                if (fallback) {
+                    metadata = {
+                        ...fallback,
+                        ...metadata
+                    };
+                }
+            }
 
             items.push({
                 auditId: audit_id,
                 caseNumber: metadata.caseNumber || null,
                 actorName: metadata.actorName || null,
-                status: row && row.status != null ? row.status : 'deleted',
+                status,
                 latestBackupAt: latest_mtime ? new Date(latest_mtime).toISOString() : null,
                 backupCount: json_files.length,
                 hasArchive: has_archive

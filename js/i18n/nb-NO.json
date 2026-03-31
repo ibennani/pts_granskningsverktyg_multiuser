@@ -761,6 +761,7 @@
   "backup_filter_status_label": "Filtrer etter status",
   "backup_filter_status_all": "Alle statuser",
   "backup_status_deleted": "Slettet",
+  "backup_actor_display_deleted": "{name} (slettet)",
   "backup_overview_heading": "Tilsyn med lagrede sikkerhetskopier",
   "backup_overview_col_case_number": "Saksnummer",
   "backup_overview_col_actor": "Virksomhet",

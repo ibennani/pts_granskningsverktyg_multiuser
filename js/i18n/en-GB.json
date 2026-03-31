@@ -829,6 +829,7 @@
   "backup_settings_save_error": "Could not save. Please try again.",
   "backup_settings_save_timeout": "Save took too long. Check your connection or try again.",
   "backup_settings_retention_invalid": "Enter a number between 1 and 365.",
+  "backup_actor_display_deleted": "{name} (deleted)",
   "start_view_audits_heading": "Ongoing audits",
   "start_view_new_audits_heading": "Prepared audits",
   "start_view_completed_audits_heading": "Completed audits",

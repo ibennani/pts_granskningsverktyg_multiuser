@@ -761,6 +761,7 @@
   "backup_filter_status_label": "Filtrera på status",
   "backup_filter_status_all": "Alla statusar",
   "backup_status_deleted": "Raderad",
+  "backup_actor_display_deleted": "{name} (raderad)",
   "backup_overview_heading": "Granskningar med sparade säkerhetskopior",
   "backup_overview_col_case_number": "Diarienummer",
   "backup_overview_col_actor": "Aktör",

@@ -568,7 +568,17 @@ export class BackupOverviewComponent {
                 headerLabel: t('backup_overview_col_actor'),
                 getSortValue: (row) => (row.actorName ?? '').toString().trim(),
                 getContent: (row) => {
-                    const actor_name = (row.actorName ?? '').toString().trim() || '—';
+                    const raw_actor_name = (row.actorName ?? '').toString().trim();
+                    const fallback_name = t('unknown_actor') || '—';
+                    const actor_name = raw_actor_name || fallback_name;
+                    const is_deleted = row?.status === 'deleted';
+
+                    if (is_deleted) {
+                        return Helpers.create_element('span', {
+                            text_content: t('backup_actor_display_deleted', { name: actor_name })
+                        });
+                    }
+
                     const a = Helpers.create_element('a', {
                         text_content: actor_name,
                         attributes: {
@@ -1003,7 +1013,13 @@ export class BackupOverviewComponent {
             const format_dt = (iso) => (iso && this.Helpers?.format_iso_to_local_datetime)
                 ? this.Helpers.format_iso_to_local_datetime(iso, lang)
                 : '';
-            const actor_name = detail_overview_row?.actorName ?? '—';
+            const raw_actor_name = (detail_overview_row?.actorName ?? '').toString().trim();
+            const fallback_name = t('unknown_actor') || '—';
+            const base_actor_name = raw_actor_name || fallback_name;
+            const is_deleted = detail_overview_row?.status === 'deleted';
+            const actor_name = is_deleted
+                ? t('backup_actor_display_deleted', { name: base_actor_name })
+                : base_actor_name;
             const case_number = detail_overview_row?.caseNumber ?? '';
             const backup_count = detail_overview_row?.backupCount != null ? String(detail_overview_row.backupCount) : '0';
             const latest_str = detail_overview_row?.latestBackupAt ? format_dt(detail_overview_row.latestBackupAt) : '—';
@@ -1016,18 +1032,22 @@ export class BackupOverviewComponent {
             const actor_li = this.Helpers.create_element('li');
             actor_li.appendChild(this.Helpers.create_element('strong', { text_content: t('backup_detail_info_actor') }));
             actor_li.appendChild(document.createTextNode(' '));
-            const actor_link = this.Helpers.create_element('a', {
-                text_content: actor_name,
-                attributes: {
-                    href: `#audit_overview?auditId=${this.selected_audit_id}`,
-                    'aria-label': t('backup_overview_link_to_audit_aria', { name: actor_name })
-                }
-            });
-            actor_link.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.router('audit_overview', { auditId: this.selected_audit_id });
-            });
-            actor_li.appendChild(actor_link);
+            if (is_deleted) {
+                actor_li.appendChild(document.createTextNode(actor_name));
+            } else {
+                const actor_link = this.Helpers.create_element('a', {
+                    text_content: actor_name,
+                    attributes: {
+                        href: `#audit_overview?auditId=${this.selected_audit_id}`,
+                        'aria-label': t('backup_overview_link_to_audit_aria', { name: actor_name })
+                    }
+                });
+                actor_link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.router('audit_overview', { auditId: this.selected_audit_id });
+                });
+                actor_li.appendChild(actor_link);
+            }
             detail_info.appendChild(actor_li);
             if (case_number) {
                 detail_info.appendChild(make_li(t('backup_detail_info_case_number'), case_number));
