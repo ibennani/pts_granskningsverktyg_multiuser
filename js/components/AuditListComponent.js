@@ -5,8 +5,16 @@ import { GenericTableComponent } from './GenericTableComponent.js';
 import { create_audit_table_columns } from '../utils/audit_table_columns.js';
 import './generic_table_component.css';
 
-export const AuditListComponent = {
-    CSS_PATH: './generic_table_component.css',
+export class AuditListComponent {
+    static CSS_PATH = './generic_table_component.css';
+
+    constructor() {
+        this.root = null;
+        this.deps = null;
+        this.Helpers = null;
+        this.Translation = null;
+        this._table = null;
+    }
 
     async init({ root, deps }) {
         this.root = root;
@@ -16,7 +24,7 @@ export const AuditListComponent = {
 
         this._table = Object.create(GenericTableComponent);
         await this._table.init({ deps });
-    },
+    }
 
     /**
      * Renderar en granskningstabell.
@@ -76,7 +84,7 @@ export const AuditListComponent = {
             onSort: opts.onSort,
             t
         });
-    },
+    }
 
     destroy() {
         this._table?.destroy?.();
@@ -86,5 +94,4 @@ export const AuditListComponent = {
         this.Translation = null;
         this._table = null;
     }
-};
-
+}

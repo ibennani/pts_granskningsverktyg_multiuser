@@ -108,7 +108,7 @@ export class AuditViewComponent {
         await this._publishedRulesTable.init({ deps });
         this._draftRulesTable = Object.create(GenericTableComponent);
         await this._draftRulesTable.init({ deps });
-        this._auditListComponent = Object.create(AuditListComponent);
+        this._auditListComponent = new AuditListComponent();
         await this._auditListComponent.init({ deps });
         this.draft_rules = [];
     }
