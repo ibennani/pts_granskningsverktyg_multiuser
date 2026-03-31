@@ -1,8 +1,11 @@
 import { RequirementsListViewComponent } from './RequirementsListViewComponent.js';
 
-export const AllRequirementsViewComponent = {
+export class AllRequirementsViewComponent {
+    constructor() {
+        this.inner_component = null;
+    }
+
     async init({ root, deps }) {
-        // Wrapper that delegates to RequirementsListViewComponent with mode: 'all'
         this.inner_component = RequirementsListViewComponent;
         await this.inner_component.init({
             root,
@@ -11,13 +14,13 @@ export const AllRequirementsViewComponent = {
                 mode: 'all'
             }
         });
-    },
+    }
 
     async render() {
         if (this.inner_component && typeof this.inner_component.render === 'function') {
             await this.inner_component.render();
         }
-    },
+    }
 
     destroy() {
         if (this.inner_component && typeof this.inner_component.destroy === 'function') {
@@ -25,4 +28,4 @@ export const AllRequirementsViewComponent = {
         }
         this.inner_component = null;
     }
-};
+}
