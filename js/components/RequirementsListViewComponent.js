@@ -7,6 +7,7 @@ import {
     get_searchable_text_for_requirement,
     sample_matches_status_filter
 } from './requirements_list/requirement_list_query.js';
+import { create_status_icons_wrapper, get_status_icon } from './requirements_list/requirement_list_status_icons.js';
 import { ProgressBarComponent } from './ProgressBarComponent.js';
 import { fingerprint_item_keys, can_incremental_update } from '../utils/incremental_list_update.js';
 import './all_requirements_view_component.css';
@@ -255,57 +256,6 @@ export class RequirementsListViewComponent {
         }
     }
 
-    get_status_icon(status) {
-        switch (status) {
-            case 'not_audited':
-                return '○';
-            case 'partially_audited':
-                return '◐';
-            case 'passed':
-                return '✓';
-            case 'failed':
-            case 'needs_help':
-                return '✗';
-            case 'updated':
-                return '↻';
-            default:
-                return '○';
-        }
-    }
-
-    _create_status_icons_wrapper(base_status, needs_help, is_updated) {
-        const t = this.Translation.t;
-        const icons_wrapper = this.Helpers.create_element('span', { class_name: 'status-icons-wrapper' });
-        const status_tooltip_text = t(`audit_status_${base_status}`);
-        const status_icon_wrapper = this.Helpers.create_element('span', { class_name: 'status-icon-tooltip-wrapper' });
-        status_icon_wrapper.appendChild(this.Helpers.create_element('span', {
-            class_name: `status-icon status-icon-${base_status.replace('_', '-')}`,
-            text_content: this.get_status_icon(base_status),
-            attributes: { 'aria-hidden': 'true' }
-        }));
-        status_icon_wrapper.appendChild(this.Helpers.create_element('span', {
-            class_name: 'status-icon-tooltip',
-            text_content: status_tooltip_text,
-            attributes: { 'aria-hidden': 'true' }
-        }));
-        icons_wrapper.appendChild(status_icon_wrapper);
-        if (needs_help) {
-            const warning_svg = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('warning', ['currentColor'], 14) : '';
-            const wh = this.Helpers.create_element('span', { class_name: 'status-icon-tooltip-wrapper' });
-            wh.appendChild(this.Helpers.create_element('span', { class_name: 'status-icon status-icon-needs-help-indicator', html_content: warning_svg, attributes: { 'aria-hidden': 'true' } }));
-            wh.appendChild(this.Helpers.create_element('span', { class_name: 'status-icon-tooltip', text_content: t('filter_option_needs_help'), attributes: { 'aria-hidden': 'true' } }));
-            icons_wrapper.appendChild(wh);
-        }
-        if (is_updated) {
-            const update_svg = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('update', ['currentColor'], 14) : '';
-            const uw = this.Helpers.create_element('span', { class_name: 'status-icon-tooltip-wrapper' });
-            uw.appendChild(this.Helpers.create_element('span', { class_name: 'status-icon status-icon-updated-indicator', html_content: update_svg, attributes: { 'aria-hidden': 'true' } }));
-            uw.appendChild(this.Helpers.create_element('span', { class_name: 'status-icon-tooltip', text_content: t('status_updated_tooltip'), attributes: { 'aria-hidden': 'true' } }));
-            icons_wrapper.appendChild(uw);
-        }
-        return icons_wrapper;
-    }
-
     _build_item_keys(sorted_items, samples, current_sample_object, filter_opts = {}) {
         if (this.mode === 'sample') {
             return sorted_items.map(req => req?.key || req?.id || '');
@@ -356,7 +306,7 @@ export class RequirementsListViewComponent {
                 if (link) link.setAttribute('aria-label', aria_label);
                 if (details_row) {
                     const old_icons = details_row.querySelector('.status-icons-wrapper');
-                    const new_icons = this._create_status_icons_wrapper(base_status, needs_help, is_updated);
+                    const new_icons = create_status_icons_wrapper({ Helpers: this.Helpers, Translation: this.Translation }, base_status, needs_help, is_updated);
                     if (old_icons && new_icons) old_icons.replaceWith(new_icons);
                     const checks_span = details_row.querySelector('.requirement-checks-info');
                     if (checks_span) {
@@ -399,7 +349,7 @@ export class RequirementsListViewComponent {
 
                     const link = sample_li.querySelector('a.list-title-link');
                     const old_icons = sample_li.querySelector('.status-icons-wrapper');
-                    const new_icons = this._create_status_icons_wrapper(base_status, needs_help, is_updated);
+                    const new_icons = create_status_icons_wrapper({ Helpers: this.Helpers, Translation: this.Translation }, base_status, needs_help, is_updated);
                     if (link) link.setAttribute('aria-label', `${sample_name} – ${status_text}`);
                     if (old_icons && new_icons) old_icons.replaceWith(new_icons);
                 });
@@ -996,7 +946,7 @@ export class RequirementsListViewComponent {
             const status_icon_wrapper = this.Helpers.create_element('span', { class_name: 'status-icon-tooltip-wrapper' });
             const status_icon = this.Helpers.create_element('span', {
                 class_name: `status-icon status-icon-${base_status.replace('_', '-')}`,
-                text_content: this.get_status_icon(base_status),
+                text_content: get_status_icon(base_status),
                 attributes: { 'aria-hidden': 'true' }
             });
             const status_tooltip = this.Helpers.create_element('span', {
@@ -1123,7 +1073,7 @@ export class RequirementsListViewComponent {
         const status_icon_wrapper = this.Helpers.create_element('span', { class_name: 'status-icon-tooltip-wrapper' });
         const status_icon = this.Helpers.create_element('span', {
             class_name: `status-icon status-icon-${base_status.replace('_', '-')}`,
-            text_content: this.get_status_icon(base_status),
+            text_content: get_status_icon(base_status),
             attributes: { 'aria-hidden': 'true' }
         });
         const status_tooltip = this.Helpers.create_element('span', {
