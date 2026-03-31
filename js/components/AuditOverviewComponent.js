@@ -27,6 +27,7 @@ export class AuditOverviewComponent {
         this._last_audit_metadata_snapshot = null;
         this.newerRuleAvailable = null;
         this._newerRuleCheckRequested = false;
+        this._auditInfoComponent = null;
         this.handle_store_update = this.handle_store_update.bind(this);
     }
 
@@ -54,7 +55,8 @@ export class AuditOverviewComponent {
 
     async init_sub_components() {
         this.audit_info_container_element = this.Helpers.create_element('div', { id: 'audit-info-component-container', class_name: 'dashboard-panel' });
-        await AuditInfoComponent.init({
+        this._auditInfoComponent = new AuditInfoComponent();
+        await this._auditInfoComponent.init({
             root: this.audit_info_container_element,
             deps: {
                 router: this.router,
@@ -147,7 +149,7 @@ export class AuditOverviewComponent {
 
         if (this.audit_info_container_element) {
             dashboard_container.appendChild(this.audit_info_container_element);
-            AuditInfoComponent.render();
+            this._auditInfoComponent?.render();
         }
 
         const score_panel = this.Helpers.create_element('div', { class_name: ['dashboard-panel', 'score-panel'] });
@@ -198,7 +200,8 @@ export class AuditOverviewComponent {
             this.unsubscribe_from_store_function();
             this.unsubscribe_from_store_function = null;
         }
-        AuditInfoComponent.destroy();
+        this._auditInfoComponent?.destroy();
+        this._auditInfoComponent = null;
         ScoreAnalysisComponent.destroy();
 
         this.scoreAnalysisContainerElement = null;

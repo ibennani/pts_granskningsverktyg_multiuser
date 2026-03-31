@@ -1,7 +1,17 @@
 import { marked } from '../utils/markdown.js';
 import "./audit_info_component.css";
 
-export const AuditInfoComponent = {
+export class AuditInfoComponent {
+    constructor() {
+        this.root = null;
+        this.deps = null;
+        this.router = null;
+        this.getState = null;
+        this.Translation = null;
+        this.Helpers = null;
+        this.AuditLogic = null;
+    }
+
     init({ root, deps }) {
         this.root = root;
         this.deps = deps;
@@ -10,7 +20,7 @@ export const AuditInfoComponent = {
         this.Translation = deps.Translation;
         this.Helpers = deps.Helpers;
         this.AuditLogic = deps.AuditLogic;
-    },
+    }
 
     create_info_item(label_key, value, options = {}) {
         const { is_html = false, is_markdown = false } = options;
@@ -18,7 +28,7 @@ export const AuditInfoComponent = {
         const item_div = this.Helpers.create_element('div', { class_name: 'info-item' });
         const strong = this.Helpers.create_element('strong', { text_content: t(label_key) });
         item_div.appendChild(strong);
-        
+
         let value_container;
         if (is_markdown) {
             value_container = this.Helpers.create_element('div', { class_name: ['value', 'markdown-content'] });
@@ -27,7 +37,7 @@ export const AuditInfoComponent = {
         }
 
         if (value || typeof value === 'number' || typeof value === 'boolean') {
-            if (is_html || is_markdown) { 
+            if (is_html || is_markdown) {
                 value_container.innerHTML = value;
             } else {
                 value_container.textContent = String(value);
@@ -38,12 +48,12 @@ export const AuditInfoComponent = {
         }
         item_div.appendChild(value_container);
         return item_div;
-    },
+    }
 
     render() {
         if (!this.root) return;
         this.root.innerHTML = '';
-        
+
         const t = this.Translation.t;
         const current_state = this.getState();
         const audit_logic = this.AuditLogic;
@@ -56,10 +66,10 @@ export const AuditInfoComponent = {
         const info_panel = this.Helpers.create_element('div', { class_name: 'audit-info-panel' });
 
         const header_wrapper = this.Helpers.create_element('div', { class_name: 'panel-header-wrapper' });
-        header_wrapper.appendChild(this.Helpers.create_element('h2', { 
+        header_wrapper.appendChild(this.Helpers.create_element('h2', {
             id: 'audit-info-heading',
             class_name: 'dashboard-panel__title',
-            text_content: t('audit_info_title') 
+            text_content: t('audit_info_title')
         }));
 
         if (current_state.auditStatus === 'in_progress') {
@@ -75,7 +85,7 @@ export const AuditInfoComponent = {
         }
 
         info_panel.appendChild(header_wrapper);
-        
+
         const md = current_state.auditMetadata || {};
         const rf_meta = current_state.ruleFileContent.metadata || {};
         const lang_code = this.Translation.get_current_language_code();
@@ -84,7 +94,6 @@ export const AuditInfoComponent = {
             info_panel.appendChild(this.create_info_item('case_number', md.caseNumber));
         }
 
-        // Actor is mandatory, so it's always shown.
         info_panel.appendChild(this.create_info_item('actor_name', md.actorName));
 
         if (md.actorLink) {
@@ -97,7 +106,7 @@ export const AuditInfoComponent = {
         if (md.auditorName) {
             info_panel.appendChild(this.create_info_item('auditor_name', md.auditorName));
         }
-        
+
         if (md.caseHandler) {
             info_panel.appendChild(this.create_info_item('case_handler', md.caseHandler));
         }
@@ -109,19 +118,12 @@ export const AuditInfoComponent = {
             ? this.Helpers.format_iso_to_local_date(start_time_iso, lang_code)
             : ''));
 
-        // Show end time if available, or if audit is locked (fallback to now if missing in state for locked audit)
         if (end_time_iso) {
             info_panel.appendChild(this.create_info_item('end_time', this.Helpers.format_iso_to_local_date(end_time_iso, lang_code)));
         } else if (current_state.auditStatus === 'locked' || current_state.auditStatus === 'archived') {
-             // Fallback for locked audits without recorded end time - show current time or a placeholder
-             // However, to avoid showing a misleading "now" every time the component renders, we should probably rely on state.
-             // But if state is missing it, maybe show "Unknown" or similar? 
-             // Or update state? We can't update state inside render.
-             // Given the previous fix in state.js, this branch should ideally not be reached for newly locked audits.
-             // For old audits, they might still be missing endTime.
-             info_panel.appendChild(this.create_info_item('end_time', '---'));
+            info_panel.appendChild(this.create_info_item('end_time', '---'));
         }
-        
+
         if (md.internalComment) {
             let parsed_comment = md.internalComment;
             if (typeof marked !== 'undefined') {
@@ -131,22 +133,20 @@ export const AuditInfoComponent = {
                     const safe_text = this.Helpers.escape_html(text);
                     return `<a href="${safe_href}" target="_blank" rel="noopener noreferrer">${safe_text}</a>`;
                 };
-                // Escape ren HTML-kod så den visas som text, men respektera markdown-genererad HTML
                 renderer.html = (html_token) => {
                     const text_to_escape = (typeof html_token === 'object' && html_token !== null && typeof html_token.text === 'string')
                         ? html_token.text
                         : String(html_token || '');
                     return this.Helpers.escape_html(text_to_escape);
                 };
-                
+
                 const singleLineComment = md.internalComment.replace(/(\r\n|\n|\r)/gm, " ");
-                parsed_comment = marked.parse(singleLineComment, { 
+                parsed_comment = marked.parse(singleLineComment, {
                     renderer: renderer,
                     breaks: true,
-                    gfm: true 
+                    gfm: true
                 });
-                
-                // Använd sanitize_html om tillgängligt för extra säkerhet
+
                 if (this.Helpers.sanitize_html) {
                     parsed_comment = this.Helpers.sanitize_html(parsed_comment);
                 }
@@ -155,7 +155,7 @@ export const AuditInfoComponent = {
         }
 
         this.root.appendChild(info_panel);
-    },
+    }
 
     destroy() {
         if (this.root) this.root.innerHTML = '';
@@ -167,4 +167,4 @@ export const AuditInfoComponent = {
         this.Helpers = null;
         this.AuditLogic = null;
     }
-};
+}
