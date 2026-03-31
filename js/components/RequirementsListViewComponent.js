@@ -1,9 +1,7 @@
 import { RequirementListToolbarComponent } from './RequirementListToolbarComponent.js';
 import {
     get_requirements_entries,
-    get_reference_string_for_sort,
-    get_searchable_text_for_requirement,
-    sample_matches_status_filter
+    get_reference_string_for_sort
 } from './requirements_list/requirement_list_query.js';
 import { get_sort_options, sort_items } from './requirements_list/requirement_list_sort.js';
 import { create_status_icons_wrapper } from './requirements_list/requirement_list_status_icons.js';
@@ -14,6 +12,7 @@ import { apply_return_focus_if_needed } from './requirements_list/requirement_li
 import { render_sample_header } from './requirements_list/requirement_list_sample_header.js';
 import { build_requirements_list_dom } from './requirements_list/requirement_list_build_dom.js';
 import { build_all_mode_data } from './requirements_list/requirement_list_all_mode_data.js';
+import { filter_requirements } from './requirements_list/requirement_list_filter_requirements.js';
 import { fingerprint_item_keys, can_incremental_update } from '../utils/incremental_list_update.js';
 import './all_requirements_view_component.css';
 import './requirement_list_component.css';
@@ -343,61 +342,20 @@ export class RequirementsListViewComponent {
             });
         }
 
-        // Filter and sort requirements
-        let filtered_items = [];
-        let total_count = 0;
-
-        // Samma filterlogik som högerspalten: status_filters[display_status] === true
+        // Filter and sort requirements — samma filterlogik som högerspalten
         const status_filters = current_ui_settings.status || {};
         const has_status_filters = Object.keys(status_filters).length > 0;
 
         const requirement_needs_help_fn = this.AuditLogic?.requirement_needs_help || (() => false);
 
-        if (this.mode === 'all') {
-            total_count = entries.length;
-            const search_term = (current_ui_settings.searchText || '').toLowerCase().trim();
-
-            filtered_items = entries.filter(([req_id, req]) => {
-                const candidates = new Set([String(req_id)]);
-                if (req?.key) candidates.add(String(req.key));
-                if (req?.id) candidates.add(String(req.id));
-
-                const samples_for_req = samples.filter(sample => {
-                    const sample_set = sample?.id ? this.relevant_ids_by_sample.get(sample.id) : null;
-                    if (!sample_set) return false;
-                    return [...candidates].some(id => sample_set.has(id));
-                });
-
-                const at_least_one_sample_matches = samples_for_req.some(sample =>
-                    sample_matches_status_filter(sample, req_id, req, status_filters, has_status_filters, requirement_needs_help_fn, this.AuditLogic)
-                );
-                if (!at_least_one_sample_matches) return false;
-
-                if (search_term) {
-                    return get_searchable_text_for_requirement(req).includes(search_term);
-                }
-                return true;
-            });
-        } else {
-            total_count = all_relevant_requirements.length;
-            const search_term = (current_ui_settings.searchText || '').toLowerCase();
-
-            filtered_items = all_relevant_requirements.filter(req => {
-                const result = (current_sample_object.requirementResults || {})[req.key];
-                const display_status = result?.needsReview ? 'updated' : this.AuditLogic.calculate_requirement_status(req, result);
-                const needs_help = requirement_needs_help_fn(result);
-                const status_match = !has_status_filters || status_filters[display_status] === true;
-                const needs_help_checked = status_filters.needs_help === true;
-                const show_by_status = status_match || (needs_help_checked && needs_help);
-                const hide_by_needs_help = status_filters.needs_help === false && needs_help;
-                if (!show_by_status || hide_by_needs_help) return false;
-
-                if (search_term) {
-                    return get_searchable_text_for_requirement(req).includes(search_term);
-                }
-                return true;
-            });
-        }
+        const filter_items_input = this.mode === 'all' ? entries : all_relevant_requirements;
+        const { filtered_items, total_count } = filter_requirements(filter_items_input, current_ui_settings, {
+            mode: this.mode,
+            samples,
+            relevant_ids_by_sample: this.relevant_ids_by_sample,
+            current_sample_object,
+            AuditLogic: this.AuditLogic
+        });
 
         const filtered_count = filtered_items.length;
 
