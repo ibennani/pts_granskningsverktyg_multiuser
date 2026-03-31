@@ -163,7 +163,7 @@ window.DraftManager = DraftManager;
 
 
 (function () {
-    'use-strict';
+    'use strict'; // explicit, även om ES-moduler har strict mode implicit
 
     // Debug-navigering: sätt window.__GV_DEBUG_NAV = true i konsolen ELLER lägg till ?debug=nav i URL
     if (typeof window !== 'undefined' && window.location.search.includes('debug=nav')) {
