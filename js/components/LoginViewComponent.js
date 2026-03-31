@@ -3,8 +3,8 @@
 import { login, set_auth_token, set_current_user_admin, get_current_user_preferences, reset_password_with_code, get_admin_contacts } from '../api/client.js';
 import './login_view_component.css';
 
-export const LoginViewComponent = {
-    CSS_PATH: './login_view_component.css',
+export class LoginViewComponent {
+    static CSS_PATH = './login_view_component.css';
 
     async init({ root, deps }) {
         this.root = root;
@@ -20,12 +20,12 @@ export const LoginViewComponent = {
         this._last_error_mode = null;
         this.admin_contacts = [];
         this._admin_contacts_loaded = false;
-        if (this.Helpers?.load_css && this.CSS_PATH) {
-            await this.Helpers.load_css(this.CSS_PATH).catch(() => {});
+        if (this.Helpers?.load_css && LoginViewComponent.CSS_PATH) {
+            await this.Helpers.load_css(LoginViewComponent.CSS_PATH).catch(() => {});
         }
-    },
+    }
 
-    render() {
+    async render() {
         if (!this.root || !this.Translation || !this.Helpers) return;
         const t = this.Translation.t;
         this.root.innerHTML = '';
@@ -322,7 +322,7 @@ export const LoginViewComponent = {
                 error_block.focus();
             }
         }
-    },
+    }
 
     destroy() {
         if (this.root) this.root.innerHTML = '';
@@ -330,4 +330,4 @@ export const LoginViewComponent = {
         this.root = null;
         this.deps = null;
     }
-};
+}

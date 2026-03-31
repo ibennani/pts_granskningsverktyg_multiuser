@@ -93,6 +93,7 @@ import { ManageUsersViewComponent } from './components/ManageUsersViewComponent.
 
 const auditViewComponent = new AuditViewComponent();
 const allRequirementsViewComponent = new AllRequirementsViewComponent();
+const loginViewComponent = new LoginViewComponent();
 import { SettingsViewComponent } from './components/SettingsViewComponent.js';
 
 import { GlobalActionBarComponent } from './components/GlobalActionBarComponent.js';
@@ -686,7 +687,7 @@ window.DraftManager = DraftManager;
             case 'audit_rules': ComponentClass = auditViewComponent; break;
             case 'manage_users': ComponentClass = ManageUsersViewComponent; break;
             case 'my_settings': ComponentClass = SettingsViewComponent; break;
-            case 'login': ComponentClass = LoginViewComponent; break;
+            case 'login': ComponentClass = loginViewComponent; break;
             case 'metadata': ComponentClass = EditMetadataViewComponent; break;
             case 'edit_metadata': ComponentClass = EditMetadataViewComponent; break;
             case 'sample_management': ComponentClass = SampleManagementViewComponent; break;
