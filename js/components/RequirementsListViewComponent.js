@@ -12,6 +12,7 @@ import { create_all_requirement_list_item, create_requirement_list_item } from '
 import { handle_mark_requirement_passed_in_all_samples } from './requirements_list/requirement_list_mark_all_modal.js';
 import { apply_return_focus_if_needed } from './requirements_list/requirement_list_return_focus.js';
 import { render_sample_header } from './requirements_list/requirement_list_sample_header.js';
+import { build_requirements_list_dom } from './requirements_list/requirement_list_build_dom.js';
 import { fingerprint_item_keys, can_incremental_update } from '../utils/incremental_list_update.js';
 import './all_requirements_view_component.css';
 import './requirement_list_component.css';
@@ -171,65 +172,23 @@ export class RequirementsListViewComponent {
 
         this.root.innerHTML = '';
 
-        // Create plate – samma styling för båda lägena (kompakt kravlista)
-        const plate_class = 'content-plate requirement-list-plate';
-        this.plate_element_ref = this.Helpers.create_element('div', { class_name: plate_class });
-
-        // Global message areas – övre kritisk, nedre vanlig (sample mode only)
-        if (this.mode === 'sample' && this.NotificationComponent?.append_global_message_areas_to) {
-            this.NotificationComponent.append_global_message_areas_to(this.plate_element_ref);
-        }
-
-        // Header container
-        if (this.mode === 'sample') {
-            this.header_element_ref = this.Helpers.create_element('div', { class_name: 'requirement-list-header' });
-            this.plate_element_ref.appendChild(this.header_element_ref);
-        } else {
-            this.h1_element_ref = this.Helpers.create_element('h1', { text_content: '' });
-            this.plate_element_ref.appendChild(this.h1_element_ref);
-        }
-
-        // Filter section (samma som högerspalten)
-        const filter_section_id = this.mode === 'all' ? 'all-requirements-filter-container' : 'requirement-list-filter-container';
-        const filter_wrapper = this.Helpers.create_element('div', {
-            id: filter_section_id,
-            class_name: 'requirements-list-filter-section'
+        const dom_refs = build_requirements_list_dom({
+            root: this.root,
+            mode: this.mode,
+            Helpers: this.Helpers,
+            Translation: this.Translation,
+            NotificationComponent: this.NotificationComponent,
+            handle_requirement_list_click: this.handle_requirement_list_click,
+            handle_requirement_list_keydown: this.handle_requirement_list_keydown
         });
-        this.filter_heading_ref = this.Helpers.create_element('h2', {
-            text_content: this.Translation.t('requirement_audit_sidebar_filter_heading_sample_requirements')
-        });
-        filter_wrapper.appendChild(this.filter_heading_ref);
-        this.filter_container_element = this.Helpers.create_element('div', { class_name: 'requirement-audit-sidebar__filters-wrapper' });
-        filter_wrapper.appendChild(this.filter_container_element);
-        this.plate_element_ref.appendChild(filter_wrapper);
-
-        // Results summary
-        const summary_id = this.mode === 'all' ? 'all-requirements-results-summary' : 'requirement-list-results-summary';
-        this.results_summary_element_ref = this.Helpers.create_element('h2', {
-            class_name: 'results-summary',
-            id: summary_id,
-            text_content: '',
-            attributes: { 'aria-live': 'polite' }
-        });
-        this.plate_element_ref.appendChild(this.results_summary_element_ref);
-
-        // Empty message (all mode only)
-        if (this.mode === 'all') {
-            this.empty_message_element_ref = this.Helpers.create_element('p', {
-                class_name: 'view-intro-text',
-                text_content: '',
-            });
-            this.empty_message_element_ref.style.display = 'none';
-            this.plate_element_ref.appendChild(this.empty_message_element_ref);
-        }
-
-        // Content container – samma struktur för båda lägena (kompakt kravlista)
-        this.content_div_for_delegation = this.Helpers.create_element('div', { class_name: 'requirements-list-content' });
-        this.content_div_for_delegation.addEventListener('click', this.handle_requirement_list_click);
-        this.content_div_for_delegation.addEventListener('keydown', this.handle_requirement_list_keydown);
-        this.plate_element_ref.appendChild(this.content_div_for_delegation);
-
-        this.root.appendChild(this.plate_element_ref);
+        this.plate_element_ref = dom_refs.plate_element_ref;
+        this.h1_element_ref = dom_refs.h1_element_ref;
+        this.header_element_ref = dom_refs.header_element_ref;
+        this.filter_heading_ref = dom_refs.filter_heading_ref;
+        this.filter_container_element = dom_refs.filter_container_element;
+        this.results_summary_element_ref = dom_refs.results_summary_element_ref;
+        this.empty_message_element_ref = dom_refs.empty_message_element_ref;
+        this.content_div_for_delegation = dom_refs.content_div_for_delegation;
         this.is_dom_initialized = true;
         return true;
     }
