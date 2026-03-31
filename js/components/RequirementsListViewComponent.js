@@ -1,11 +1,9 @@
 import { RequirementListToolbarComponent } from './RequirementListToolbarComponent.js';
 import { get_requirements_entries } from './requirements_list/requirement_list_query.js';
 import { get_sort_options, sort_items } from './requirements_list/requirement_list_sort.js';
-import { create_status_icons_wrapper } from './requirements_list/requirement_list_status_icons.js';
 import { build_item_keys, update_items_status_only } from './requirements_list/requirement_list_incremental_dom.js';
-import { create_all_requirement_list_item, create_requirement_list_item } from './requirements_list/requirement_list_list_items.js';
+import { render_requirements_content } from './requirements_list/requirement_list_render_content.js';
 import { handle_mark_requirement_passed_in_all_samples } from './requirements_list/requirement_list_mark_all_modal.js';
-import { apply_return_focus_if_needed } from './requirements_list/requirement_list_return_focus.js';
 import { render_sample_header } from './requirements_list/requirement_list_sample_header.js';
 import { build_requirements_list_dom } from './requirements_list/requirement_list_build_dom.js';
 import { build_all_mode_data } from './requirements_list/requirement_list_all_mode_data.js';
@@ -353,70 +351,24 @@ export class RequirementsListViewComponent {
         if (can_incremental_update(this._last_rendered_fingerprint, fingerprint_item_keys(item_keys))) {
             update_items_status_only(this.mode, this.content_div_for_delegation, this.relevant_ids_by_sample, sorted_items, samples, current_sample_object, filter_opts, this.AuditLogic, { Helpers: this.Helpers, Translation: this.Translation });
         } else {
-            this.render_items(sorted_items, samples, current_sample_object, total_count, filtered_count, filter_opts);
+            render_requirements_content(
+                {
+                    mode: this.mode,
+                    Helpers: this.Helpers,
+                    Translation: this.Translation,
+                    AuditLogic: this.AuditLogic,
+                    content_div_for_delegation: this.content_div_for_delegation,
+                    empty_message_element_ref: this.empty_message_element_ref,
+                    relevant_ids_by_sample: this.relevant_ids_by_sample,
+                    RETURN_FOCUS_SESSION_KEY: this.RETURN_FOCUS_SESSION_KEY,
+                    sample_params_id: this.params?.sampleId || null,
+                    getState: () => this.getState()
+                },
+                sorted_items,
+                { samples, current_sample_object, total_count, filtered_count, filter_opts }
+            );
         }
         this._last_rendered_fingerprint = fingerprint_item_keys(item_keys);
-    }
-
-    render_items(sorted_items, samples, current_sample_object, total_count, filtered_count, filter_opts = {}) {
-        const t = this.Translation.t;
-
-        if (this.content_div_for_delegation) {
-            this.content_div_for_delegation.innerHTML = '';
-        }
-
-        if (this.mode === 'all') {
-            if (this.empty_message_element_ref) {
-                this.empty_message_element_ref.style.display = 'none';
-            }
-
-            if (total_count === 0) {
-                if (this.empty_message_element_ref) {
-                    this.empty_message_element_ref.textContent = t('all_requirements_empty_no_samples') || t('all_requirements_empty');
-                    this.empty_message_element_ref.style.display = '';
-                }
-                return;
-            }
-
-            if (filtered_count === 0) {
-                const hint_p = this.Helpers.create_element('p', {
-                    class_name: 'view-intro-text no-match-hint',
-                    text_content: t('no_requirements_match_filter_all_hint')
-                });
-                this.content_div_for_delegation.appendChild(hint_p);
-                return;
-            }
-
-            const req_ul = this.Helpers.create_element('ul', { class_name: 'requirement-items-ul' });
-            sorted_items.forEach(([req_id, req]) => {
-                req_ul.appendChild(create_all_requirement_list_item(req_id, req, samples, filter_opts, this.relevant_ids_by_sample, () => this.getState(), this.AuditLogic, this.Helpers, this.Translation));
-            });
-            this.content_div_for_delegation.appendChild(req_ul);
-
-            apply_return_focus_if_needed(this.content_div_for_delegation, this.RETURN_FOCUS_SESSION_KEY, this.mode, this.params?.sampleId || null);
-        } else {
-            // Sample mode
-            if (this.content_div_for_delegation) {
-                this.content_div_for_delegation.innerHTML = '';
-            }
-
-            if (sorted_items.length === 0) {
-                if (this.content_div_for_delegation) {
-                    this.content_div_for_delegation.appendChild(this.Helpers.create_element('p', { text_content: t('no_requirements_match_filter') }));
-                }
-            } else {
-                const req_ol = this.Helpers.create_element('ol', { class_name: 'requirement-items-ul' });
-                sorted_items.forEach(req => {
-                    req_ol.appendChild(create_requirement_list_item(req, current_sample_object, this.AuditLogic, this.Helpers, this.Translation));
-                });
-                if (this.content_div_for_delegation) {
-                    this.content_div_for_delegation.appendChild(req_ol);
-                }
-            }
-
-            // Apply return focus if needed (sample mode only)
-            apply_return_focus_if_needed(this.content_div_for_delegation, this.RETURN_FOCUS_SESSION_KEY, this.mode, this.params?.sampleId || null);
-        }
     }
 
     destroy() {
