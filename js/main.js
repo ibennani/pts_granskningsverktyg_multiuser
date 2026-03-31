@@ -113,6 +113,7 @@ const auditOverviewComponent = new AuditOverviewComponent();
 const confirmSampleEditViewComponent = new ConfirmSampleEditViewComponent();
 const finalConfirmUpdatesViewComponent = new FinalConfirmUpdatesViewComponent();
 const archivedRequirementsViewComponent = new ArchivedRequirementsViewComponent();
+const startViewComponent = new StartViewComponent();
 const auditActionsViewComponent = new AuditActionsViewComponent();
 const auditImagesViewComponent = new AuditImagesViewComponent();
 const auditProblemsViewComponent = new AuditProblemsViewComponent();

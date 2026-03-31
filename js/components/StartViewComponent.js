@@ -2,6 +2,10 @@
 
 import { check_api_available, get_audits } from '../api/client.js';
 import './start_view_component.css';
+import { GenericTableComponent } from './GenericTableComponent.js';
+import { create_audit_table_columns } from '../utils/audit_table_columns.js';
+import { open_audit_by_id, download_audit_by_id } from '../logic/audit_open_logic.js';
+import { subscribe_audits } from '../logic/list_push_service.js';
 
 const GV_AUDITS_LIST_CACHE_KEY = 'gv_audits_list_cache_v1';
 
@@ -25,15 +29,32 @@ function write_cached_audits_list(audits) {
         /* ignorera quota m.m. */
     }
 }
-import { GenericTableComponent } from './GenericTableComponent.js';
-import { create_audit_table_columns } from '../utils/audit_table_columns.js';
-import { open_audit_by_id, download_audit_by_id } from '../logic/audit_open_logic.js';
-import { subscribe_audits } from '../logic/list_push_service.js';
 
 const START_VIEW_SECTION_COUNT = 4;
 
-export const StartViewComponent = {
-    CSS_PATH: './start_view_component.css',
+export class StartViewComponent {
+    static CSS_PATH = './start_view_component.css';
+
+    constructor() {
+        this.root = null;
+        this.deps = null;
+        this.router = null;
+        this.dispatch = null;
+        this.StoreActionTypes = null;
+        this.Translation = null;
+        this.Helpers = null;
+        this.NotificationComponent = null;
+        this.SaveAuditLogic = null;
+        this.ValidationLogic = null;
+        this.handle_download_audit = this.handle_download_audit.bind(this);
+        this.handle_open_audit = this.handle_open_audit.bind(this);
+        this.audits = [];
+        this.api_available = false;
+        this._api_checked = false;
+        this._unsubscribe_audits = null;
+        this._genericTables = [];
+        this._startTableSortState = undefined;
+    }
 
     async init({ root, deps }) {
         this.root = root;
@@ -47,16 +68,13 @@ export const StartViewComponent = {
         this.SaveAuditLogic = deps.SaveAuditLogic || window.SaveAuditLogic;
         this.ValidationLogic = deps.ValidationLogic || window.ValidationLogic;
 
-        this.handle_download_audit = this.handle_download_audit.bind(this);
-        this.handle_open_audit = this.handle_open_audit.bind(this);
-
         this.audits = [];
         this.api_available = false;
         this._api_checked = false;
         this._unsubscribe_audits = null;
 
         if (this.Helpers?.load_css_safely) {
-            await this.Helpers.load_css_safely(this.CSS_PATH, 'StartViewComponent', {
+            await this.Helpers.load_css_safely(StartViewComponent.CSS_PATH, 'StartViewComponent', {
                 timeout: 5000,
                 maxRetries: 2
             }).catch(() => {});
@@ -68,7 +86,7 @@ export const StartViewComponent = {
             await tbl.init({ deps });
             this._genericTables.push(tbl);
         }
-    },
+    }
 
     _audit_fingerprint(a) {
         return JSON.stringify({
@@ -77,7 +95,7 @@ export const StartViewComponent = {
             updated_at: a?.updated_at,
             metadata: a?.metadata
         });
-    },
+    }
 
     _section_index_for_audit(audit) {
         const s = audit?.status;
@@ -86,7 +104,7 @@ export const StartViewComponent = {
         if (s === 'locked') return 2;
         if (s === 'archived') return 3;
         return 1;
-    },
+    }
 
     async _on_audits_changed() {
         if (!this.root || !this.api_available) return;
@@ -123,13 +141,13 @@ export const StartViewComponent = {
         } catch {
             if (this.root) this.render();
         }
-    },
+    }
 
     get_t_func() {
         return (this.Translation && typeof this.Translation.t === 'function')
             ? this.Translation.t
             : (key) => `**${key}**`;
-    },
+    }
 
     get_status_label(status) {
         const t = this.get_t_func();
@@ -140,7 +158,7 @@ export const StartViewComponent = {
             archived: t('audit_status_archived')
         };
         return map[status] || status;
-    },
+    }
 
     async handle_download_audit(audit_id) {
         const t = this.get_t_func();
@@ -151,7 +169,7 @@ export const StartViewComponent = {
             NotificationComponent: this.NotificationComponent,
             t
         });
-    },
+    }
 
     async handle_open_audit(audit_id) {
         const t = this.get_t_func();
@@ -164,7 +182,7 @@ export const StartViewComponent = {
             NotificationComponent: this.NotificationComponent,
             t
         });
-    },
+    }
 
     async ensure_api_data(force = false) {
         if (this._api_checked && !force) return;
@@ -191,7 +209,7 @@ export const StartViewComponent = {
                 this.api_available = true;
             }
         }
-    },
+    }
 
     render() {
         if (!this.root || !this.Helpers?.create_element) return;
@@ -320,7 +338,7 @@ export const StartViewComponent = {
         if (this._api_checked && this.api_available && !this._unsubscribe_audits) {
             this._unsubscribe_audits = subscribe_audits(() => this._on_audits_changed());
         }
-    },
+    }
 
     destroy() {
         if (typeof this._unsubscribe_audits === 'function') {
@@ -334,4 +352,4 @@ export const StartViewComponent = {
         this.root = null;
         this.deps = null;
     }
-};
+}
