@@ -118,6 +118,9 @@ const auditImagesViewComponent = new AuditImagesViewComponent();
 const auditProblemsViewComponent = new AuditProblemsViewComponent();
 const sampleManagementViewComponent = new SampleManagementViewComponent();
 const sampleFormViewComponent = new SampleFormViewComponent();
+const editMetadataViewComponent = new EditMetadataViewComponent();
+const requirementListComponent = new RequirementListComponent();
+const requirementAuditComponent = new RequirementAuditComponent();
 
 window.getState = getState;
 window.dispatch = dispatch;
@@ -658,7 +661,7 @@ window.DraftManager = DraftManager;
 
         if (current_view_component_instance && typeof current_view_component_instance.destroy === 'function') {
             notificationComponent?.clear_global_message?.();
-            if (current_view_component_instance === RequirementListComponent && view_name_to_render === 'rulefile_requirements') {
+            if (current_view_component_instance === requirementListComponent && view_name_to_render === 'rulefile_requirements') {
                 try {
                     current_view_component_instance.destroy();
                 } catch (err) {
@@ -703,8 +706,8 @@ window.DraftManager = DraftManager;
             case 'manage_users': ComponentClass = ManageUsersViewComponent; break;
             case 'my_settings': ComponentClass = SettingsViewComponent; break;
             case 'login': ComponentClass = loginViewComponent; break;
-            case 'metadata': ComponentClass = EditMetadataViewComponent; break;
-            case 'edit_metadata': ComponentClass = EditMetadataViewComponent; break;
+            case 'metadata': ComponentClass = editMetadataViewComponent; break;
+            case 'edit_metadata': ComponentClass = editMetadataViewComponent; break;
             case 'sample_management': ComponentClass = sampleManagementViewComponent; break;
             case 'sample_form': ComponentClass = sampleFormViewComponent; break;
             case 'confirm_sample_edit': ComponentClass = confirmSampleEditViewComponent; break; 
@@ -715,8 +718,8 @@ window.DraftManager = DraftManager;
             case 'audit_images': ComponentClass = auditImagesViewComponent; break;
             case 'archived_requirements': ComponentClass = archivedRequirementsViewComponent; break;
             case 'rulefile_change_log': ComponentClass = RulefileChangeLogViewComponent; break;
-            case 'requirement_list': ComponentClass = RequirementListComponent; break;
-            case 'requirement_audit': ComponentClass = RequirementAuditComponent; break;
+            case 'requirement_list': ComponentClass = requirementListComponent; break;
+            case 'requirement_audit': ComponentClass = requirementAuditComponent; break;
             case 'update_rulefile': ComponentClass = UpdateRulefileViewComponent; break; 
             case 'confirm_updates': ComponentClass = ConfirmUpdatesViewComponent; break;
             case 'final_confirm_updates': ComponentClass = finalConfirmUpdatesViewComponent; break;

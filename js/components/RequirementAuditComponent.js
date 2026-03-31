@@ -8,40 +8,42 @@ import { RequirementAuditNavigationComponent } from './requirement_audit/Require
 import { RequirementAuditSidebarComponent } from './RequirementAuditSidebarComponent.js';
 import "./requirement_audit_component.css";
 
-export const RequirementAuditComponent = {
-    // Dependencies
-    root: null,
-    deps: null,
-    router: null,
-    params: null,
-    getState: null,
-    dispatch: null,
-    StoreActionTypes: null,
-    Translation: null,
-    Helpers: null,
-    NotificationComponent: null,
-    AuditLogic: null,
+export class RequirementAuditComponent {
+    constructor() {
+        this.root = null;
+        this.deps = null;
+        this.router = null;
+        this.params = null;
+        this.getState = null;
+        this.dispatch = null;
+        this.StoreActionTypes = null;
+        this.Translation = null;
+        this.Helpers = null;
+        this.NotificationComponent = null;
+        this.AuditLogic = null;
+        this.AutosaveService = null;
+        this.subscribe = null;
+        this.flush_sync_to_server = null;
+        this.unsubscribe_from_store = null;
 
-    // Sub-component instances
-    checklist_handler_instance: null,
-    info_sections_instance: null,
-    top_navigation_instance: null,
-    bottom_navigation_instance: null,
-    right_sidebar_component_instance: null,
+        this.checklist_handler_instance = null;
+        this.info_sections_instance = null;
+        this.top_navigation_instance = null;
+        this.bottom_navigation_instance = null;
+        this.right_sidebar_component_instance = null;
 
-    // DOM references
-    plate_element_ref: null,
-    comment_to_auditor_input: null,
-    comment_to_actor_input: null,
+        this.plate_element_ref = null;
+        this.comment_to_auditor_input = null;
+        this.comment_to_actor_input = null;
 
-    // Internal state
-    current_sample: null,
-    current_requirement: null,
-    current_result: null,
-    ordered_requirement_keys: [],
-    right_sidebar_root: null,
-    sidebar_navigation_state: null,
-    autosave_session: null,
+        this.current_sample = null;
+        this.current_requirement = null;
+        this.current_result = null;
+        this.ordered_requirement_keys = [];
+        this.right_sidebar_root = null;
+        this.sidebar_navigation_state = null;
+        this.autosave_session = null;
+    }
 
     async init({ root, deps }) {
         this.root = root;
@@ -71,7 +73,7 @@ export const RequirementAuditComponent = {
         this.handle_audit_keydown = this.handle_audit_keydown.bind(this);
 
         if (this.right_sidebar_root) {
-            this.right_sidebar_component_instance = RequirementAuditSidebarComponent;
+            this.right_sidebar_component_instance = new RequirementAuditSidebarComponent();
             await this.right_sidebar_component_instance.init({
                 root: this.right_sidebar_root,
                 deps: {
@@ -104,7 +106,7 @@ export const RequirementAuditComponent = {
         }
 
         document.addEventListener('keydown', this.handle_audit_keydown);
-    },
+    }
 
     load_and_prepare_view_data() {
         const state = this.getState();
@@ -186,7 +188,7 @@ export const RequirementAuditComponent = {
         
         this.ordered_requirement_keys = this.AuditLogic.get_ordered_relevant_requirement_keys(state.ruleFileContent, this.current_sample, 'default');
         return true;
-    },
+    }
 
     _should_patch_requirement_result_only(listener_meta) {
         if (listener_meta?.action_type !== this.StoreActionTypes.UPDATE_REQUIREMENT_RESULT) return false;
@@ -194,7 +196,7 @@ export const RequirementAuditComponent = {
         if (!u || this.params?.sampleId === undefined || this.params?.requirementId === undefined) return false;
         return String(u.sampleId) === String(this.params.sampleId) &&
             String(u.requirementId) === String(this.params.requirementId);
-    },
+    }
 
     _get_checklist_update_details(state) {
         const details_by_key = state.requirementUpdateDetails || {};
@@ -206,7 +208,7 @@ export const RequirementAuditComponent = {
             update_details = this._build_fallback_update_details(this.current_requirement);
         }
         return update_details;
-    },
+    }
 
     _refresh_overall_requirement_status_in_header() {
         const p = this.plate_element_ref?.querySelector('.overall-requirement-status-display');
@@ -225,7 +227,7 @@ export const RequirementAuditComponent = {
             span.className = `status-text status-${status_key}`;
             span.textContent = status_text;
         }
-    },
+    }
 
     async patch_dom_after_current_requirement_result_change() {
         if (!this.load_and_prepare_view_data()) {
@@ -256,7 +258,7 @@ export const RequirementAuditComponent = {
         await this.render_right_sidebar();
         this.render_navigation_from_sidebar();
         this.checklist_handler_instance?._reapply_pending_status_button_focus?.();
-    },
+    }
 
     handle_checklist_status_change(change_info) {
         this.autosave_session?.cancel_pending?.();
@@ -297,8 +299,8 @@ export const RequirementAuditComponent = {
         
         delete modified_result.needsReview;
         this.dispatch_result_update(modified_result);
-    },
-    
+    }
+
     handle_comment_input(should_trim = false) {
         if (!this.current_result) return;
         const trim_fn = this.Helpers?.trim_textarea_preserve_lines;
@@ -310,24 +312,24 @@ export const RequirementAuditComponent = {
             const val = this.comment_to_actor_input.value || '';
             this.current_result.commentToActor = should_trim && trim_fn ? trim_fn(val) : val;
         }
-    },
+    }
 
     handle_comment_input_with_autosave() {
         this.handle_comment_input();
         this.autosave_session?.request_autosave?.();
-    },
+    }
 
     handle_sidebar_filters_change(payload) {
         this.sidebar_navigation_state = payload;
         this.render_navigation_from_sidebar();
-    },
+    }
 
     render_navigation_from_sidebar() {
         if (!this.top_navigation_instance || !this.bottom_navigation_instance) return;
         const nav_options = this.build_navigation_options();
         this.top_navigation_instance.render(nav_options);
         this.bottom_navigation_instance.render(nav_options);
-    },
+    }
 
     build_navigation_options() {
         const t = this.Translation.t;
@@ -367,7 +369,7 @@ export const RequirementAuditComponent = {
             next_text_key: next_key,
             next_unhandled_text_key: next_unhandled_key
         };
-    },
+    }
 
     get_navigation_state() {
         const mode = this.sidebar_navigation_state?.mode || 'sample_requirements';
@@ -414,7 +416,7 @@ export const RequirementAuditComponent = {
             next_item,
             next_unhandled_item
         };
-    },
+    }
 
     get_fallback_requirement_items() {
         const state = this.getState();
@@ -443,7 +445,7 @@ export const RequirementAuditComponent = {
             items = this.right_sidebar_component_instance.sort_requirement_items(items, sort_by);
         }
         return items;
-    },
+    }
 
     get_fallback_sample_items() {
         const state = this.getState();
@@ -480,7 +482,7 @@ export const RequirementAuditComponent = {
             items.sort((a, b) => (a.sample?.description || '').localeCompare(b.sample?.description || '', 'sv', { numeric: true, sensitivity: 'base' }));
         }
         return items;
-    },
+    }
 
     /**
      * Fallback när kravet har needsReview men requirementUpdateDetails saknas (t.ex. sparad state från före uppdatering).
@@ -516,7 +518,7 @@ export const RequirementAuditComponent = {
             }
         }
         return addedChecks.length > 0 || added.length > 0 ? { addedChecks, added, updated: [] } : null;
-    },
+    }
 
     dispatch_result_update(modified_result_object, options = {}) {
         (this.current_requirement.checks || []).forEach(check_def => {
@@ -536,12 +538,12 @@ export const RequirementAuditComponent = {
                 skip_render: options.skipRender === true
             }
         });
-    },
+    }
 
     save_result_immediately({ skipRender = false } = {}) {
         if (!this.current_result) return;
         this.dispatch_result_update(this.current_result, { skipRender });
-    },
+    }
 
     get_observations_from_other_samples(check_id, pc_id) {
         const state = this.getState();
@@ -571,7 +573,7 @@ export const RequirementAuditComponent = {
             }
         }
         return result;
-    },
+    }
 
     handle_navigation(action) {
         this.autosave_session?.cancel_pending?.();
@@ -634,7 +636,7 @@ export const RequirementAuditComponent = {
                 break;
             }
         }
-    },
+    }
 
     handle_audit_keydown(event) {
         if (!event.shiftKey || !event.altKey) return;
@@ -670,8 +672,8 @@ export const RequirementAuditComponent = {
             event.preventDefault();
             this.handle_navigation(action);
         }
-    },
-    
+    }
+
     build_initial_dom() {
         this.root.innerHTML = '';
         this.plate_element_ref = this.Helpers.create_element('div', { class_name: 'content-plate requirement-audit-plate' });
@@ -736,8 +738,8 @@ export const RequirementAuditComponent = {
         );
         
         this.root.appendChild(this.plate_element_ref);
-    },
-    
+    }
+
     build_comment_fields() {
         const t = this.Translation.t;
         const container = this.Helpers.create_element('div', { class_name: 'input-fields-container audit-section' });
@@ -759,8 +761,8 @@ export const RequirementAuditComponent = {
         
         container.append(fg1, fg2);
         return container;
-    },
-    
+    }
+
     populate_dom_with_data() {
         const t = this.Translation.t;
         const state = this.getState();
@@ -822,7 +824,7 @@ export const RequirementAuditComponent = {
         } else {
             this.NotificationComponent.clear_global_message();
         }
-    },
+    }
 
     create_header_paragraph(className, label, data, isSampleLink = false) {
         const p = this.Helpers.create_element('p', { class_name: className });
@@ -861,8 +863,8 @@ export const RequirementAuditComponent = {
             }
         }
         return p;
-    },
-    
+    }
+
     async render() {
         if (!this.load_and_prepare_view_data()) {
             this.NotificationComponent.show_global_message(this.Translation.t('error_loading_sample_or_requirement_data'), "error");
@@ -893,7 +895,7 @@ export const RequirementAuditComponent = {
         await this.render_right_sidebar();
         this.render_navigation_from_sidebar();
         this.checklist_handler_instance?._reapply_pending_status_button_focus?.();
-    },
+    }
 
     async render_right_sidebar() {
         if (!this.right_sidebar_component_instance || !this.right_sidebar_root) return;
@@ -909,8 +911,8 @@ export const RequirementAuditComponent = {
         if (typeof this.right_sidebar_component_instance.get_navigation_payload === 'function') {
             this.sidebar_navigation_state = this.right_sidebar_component_instance.get_navigation_payload(sidebar_options);
         }
-    },
-    
+    }
+
     destroy() {
         if (typeof this.unsubscribe_from_store === 'function') {
             this.unsubscribe_from_store();
@@ -951,4 +953,4 @@ export const RequirementAuditComponent = {
         this.right_sidebar_component_instance = null;
         this.right_sidebar_root = null;
     }
-};
+}

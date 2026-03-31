@@ -2,7 +2,22 @@ import { MetadataFormComponent } from './MetadataFormComponent.js';
 import { get_current_user_name } from '../utils/helpers.js';
 import { sync_to_server_now } from '../logic/server_sync.js';
 
-export const EditMetadataViewComponent = {
+export class EditMetadataViewComponent {
+    constructor() {
+        this.root = null;
+        this.deps = null;
+        this.router = null;
+        this.getState = null;
+        this.dispatch = null;
+        this.StoreActionTypes = null;
+        this.Translation = null;
+        this.Helpers = null;
+        this.NotificationComponent = null;
+        this.metadata_form_container_element = null;
+        this.metadata_form_component_instance = MetadataFormComponent;
+        this.RETURN_FOCUS_SESSION_KEY = 'gv_return_focus_audit_info_h2_v1';
+    }
+
     init({ root, deps }) {
         this.root = root;
         this.deps = deps;
@@ -16,15 +31,13 @@ export const EditMetadataViewComponent = {
         this.NotificationComponent = deps.NotificationComponent;
         
         this.metadata_form_container_element = null;
-        this.metadata_form_component_instance = MetadataFormComponent;
 
         this.handle_form_submit = this.handle_form_submit.bind(this);
         this.handle_cancel = this.handle_cancel.bind(this);
         this.handle_cancel_new_audit = this.handle_cancel_new_audit.bind(this);
         this.handle_go_to_list = this.handle_go_to_list.bind(this);
 
-        this.RETURN_FOCUS_SESSION_KEY = 'gv_return_focus_audit_info_h2_v1';
-    },
+    }
 
     _request_focus_on_audit_info_h2() {
         // Instruktion: när användaren återgår från formuläret ska fokus hamna på
@@ -39,7 +52,7 @@ export const EditMetadataViewComponent = {
 
         // Hindra generella "fokusera <h1>" i main.js från att skriva över.
         window.customFocusApplied = true;
-    },
+    }
 
     async handle_form_submit(form_data) {
         await this.dispatch({
@@ -66,16 +79,16 @@ export const EditMetadataViewComponent = {
             this._request_focus_on_audit_info_h2();
             this.router('audit_overview');
         }
-    },
+    }
 
     handle_cancel() {
         this._request_focus_on_audit_info_h2();
         this.router('audit_overview');
-    },
+    }
 
     handle_cancel_new_audit() {
         this.router('start', { allow_new_audit_exit: '1' });
-    },
+    }
 
     _is_metadata_empty_or_only_auditor(form_data) {
         if (!form_data) return true;
@@ -87,13 +100,13 @@ export const EditMetadataViewComponent = {
             form_data.internalComment
         ].some(has);
         return !optional_filled;
-    },
+    }
 
     _has_required_metadata(form_data) {
         if (!form_data) return false;
         const has = (v) => (v != null && String(v).trim() !== '');
         return has(form_data.actorName) && has(form_data.auditorName);
-    },
+    }
 
     _show_required_fields_modal(form_data, source, on_proceed) {
         const ModalComponent = window.ModalComponent;
@@ -148,11 +161,11 @@ export const EditMetadataViewComponent = {
                 container.appendChild(buttons_wrapper);
             }
         );
-    },
+    }
 
     _do_go_to_list() {
         this.router('start', { allow_new_audit_exit: '1' });
-    },
+    }
 
     async _save_and_go_to_list(form_data) {
         const is_new_audit = this.getState().auditStatus === 'not_started';
@@ -170,7 +183,7 @@ export const EditMetadataViewComponent = {
             // Fel visas redan av run_sync via NotificationComponent
         }
         this._do_go_to_list();
-    },
+    }
 
     _show_empty_metadata_modal(form_data, action, on_proceed) {
         const ModalComponent = window.ModalComponent;
@@ -210,7 +223,7 @@ export const EditMetadataViewComponent = {
                 container.appendChild(buttons_wrapper);
             }
         );
-    },
+    }
 
     async handle_go_to_list(form_data) {
         const is_new_audit = this.getState().auditStatus === 'not_started';
@@ -227,7 +240,7 @@ export const EditMetadataViewComponent = {
             return;
         }
         this._do_go_to_list();
-    },
+    }
 
     async render() {
         if (!this.root) return;
@@ -325,7 +338,7 @@ export const EditMetadataViewComponent = {
         
         plate_element.appendChild(this.metadata_form_container_element);
         this.root.appendChild(plate_element);
-    },
+    }
 
     destroy() {
         if (this.metadata_form_component_instance && this.metadata_form_component_instance.destroy) {
@@ -337,4 +350,4 @@ export const EditMetadataViewComponent = {
         this.root = null;
         this.deps = null;
     }
-};
+}
