@@ -113,6 +113,7 @@ const auditOverviewComponent = new AuditOverviewComponent();
 const confirmSampleEditViewComponent = new ConfirmSampleEditViewComponent();
 const finalConfirmUpdatesViewComponent = new FinalConfirmUpdatesViewComponent();
 const archivedRequirementsViewComponent = new ArchivedRequirementsViewComponent();
+const auditActionsViewComponent = new AuditActionsViewComponent();
 
 window.getState = getState;
 window.dispatch = dispatch;
@@ -704,7 +705,7 @@ window.DraftManager = DraftManager;
             case 'sample_form': ComponentClass = SampleFormViewComponent; break;
             case 'confirm_sample_edit': ComponentClass = confirmSampleEditViewComponent; break; 
             case 'audit_overview': ComponentClass = auditOverviewComponent; break;
-            case 'audit_actions': ComponentClass = AuditActionsViewComponent; break;
+            case 'audit_actions': ComponentClass = auditActionsViewComponent; break;
             case 'all_requirements': ComponentClass = allRequirementsViewComponent; break;
             case 'audit_problems': ComponentClass = AuditProblemsViewComponent; break;
             case 'audit_images': ComponentClass = AuditImagesViewComponent; break;
