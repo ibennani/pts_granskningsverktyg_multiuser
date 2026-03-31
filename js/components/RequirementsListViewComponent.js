@@ -13,6 +13,7 @@ import { handle_mark_requirement_passed_in_all_samples } from './requirements_li
 import { apply_return_focus_if_needed } from './requirements_list/requirement_list_return_focus.js';
 import { render_sample_header } from './requirements_list/requirement_list_sample_header.js';
 import { build_requirements_list_dom } from './requirements_list/requirement_list_build_dom.js';
+import { build_all_mode_data } from './requirements_list/requirement_list_all_mode_data.js';
 import { fingerprint_item_keys, can_incremental_update } from '../utils/incremental_list_update.js';
 import './all_requirements_view_component.css';
 import './requirement_list_component.css';
@@ -242,50 +243,9 @@ export class RequirementsListViewComponent {
 
         if (this.mode === 'all') {
             entries = get_requirements_entries(rule_file_content);
-
-            // Only show requirements that are relevant for at least one sample
-            const can_use_audit_logic = Boolean(
-                this.AuditLogic &&
-                typeof this.AuditLogic.get_relevant_requirements_for_sample === 'function' &&
-                rule_file_content
-            );
-
-            const relevant_ids_by_sample = new Map();
-            samples.forEach(sample => {
-                const set_for_sample = new Set();
-
-                if (can_use_audit_logic) {
-                    const relevant_reqs = this.AuditLogic.get_relevant_requirements_for_sample(rule_file_content, sample);
-                    (relevant_reqs || []).forEach(req => {
-                        const req_id = req?.key || req?.id;
-                        if (req_id) set_for_sample.add(String(req_id));
-                    });
-                } else {
-                    const req_results = sample?.requirementResults;
-                    if (req_results && typeof req_results === 'object') {
-                        Object.keys(req_results).forEach(req_id => set_for_sample.add(String(req_id)));
-                    }
-                }
-
-                if (sample?.id) {
-                    relevant_ids_by_sample.set(sample.id, set_for_sample);
-                }
-            });
-
-            const requirement_ids_in_samples = new Set();
-            relevant_ids_by_sample.forEach(set_for_sample => {
-                set_for_sample.forEach(req_id => requirement_ids_in_samples.add(req_id));
-            });
-
-            const entry_matches_any_sample = (req_id, req) => {
-                const candidates = new Set([String(req_id)]);
-                if (req?.key) candidates.add(String(req.key));
-                if (req?.id) candidates.add(String(req.id));
-                return [...candidates].some(id => requirement_ids_in_samples.has(id));
-            };
-
-            entries = entries.filter(([req_id, req]) => entry_matches_any_sample(req_id, req));
-            this.relevant_ids_by_sample = relevant_ids_by_sample;
+            const all_data = build_all_mode_data(state, entries, this.AuditLogic);
+            entries = all_data.entries;
+            this.relevant_ids_by_sample = all_data.relevant_ids_by_sample;
         } else {
             // Sample mode
             current_sample_object = samples.find(s => s.id === this.params.sampleId);
