@@ -11,6 +11,7 @@ import {
     mark_rulefile_sync_pending,
     notify_network_unreachable_for_sync
 } from './connectivity_service.js';
+import { consoleManager } from '../utils/console_manager.js';
 
 let debounce_timer = null;
 let rulefile_debounce_timer = null;
@@ -150,11 +151,11 @@ async function run_sync(state, dispatch_fn) {
             };
             const stuck_count = count_stuck_in_samples(patch.samples);
             if (window.__GV_DEBUG_STUCK_SYNC__) {
-                console.log('[GV-Debug] run_sync: skickar PATCH till servern,', stuck_count, 'kört-fast i payload, auditId:', state.auditId);
+                consoleManager.log('[GV-Debug] run_sync: skickar PATCH till servern,', stuck_count, 'kört-fast i payload, auditId:', state.auditId);
             }
             const full_state = await update_audit(state.auditId, patch);
             if (window.__GV_DEBUG_STUCK_SYNC__) {
-                console.log('[GV-Debug] run_sync: PATCH lyckades, version:', full_state?.version);
+                consoleManager.log('[GV-Debug] run_sync: PATCH lyckades, version:', full_state?.version);
             }
             try {
                 if (typeof BroadcastChannel !== 'undefined') {

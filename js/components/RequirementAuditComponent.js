@@ -7,6 +7,7 @@ import { RequirementInfoSections } from './requirement_audit/RequirementInfoSect
 import { RequirementAuditNavigationComponent } from './requirement_audit/RequirementAuditNavigation.js';
 import { RequirementAuditSidebarComponent } from './RequirementAuditSidebarComponent.js';
 import "./requirement_audit_component.css";
+import { consoleManager } from '../utils/console_manager.js';
 
 export class RequirementAuditComponent {
     constructor() {
@@ -704,14 +705,14 @@ export class RequirementAuditComponent {
                 onObservationChangeImmediate: () => this.save_result_immediately({ skipRender: true }),
                 onStuckDescriptionSaved: async () => {
                     if (window.__GV_DEBUG_STUCK_SYNC__) {
-                        console.log('[GV-Debug] onStuckDescriptionSaved: sparar, anropar save_result_immediately + flush_sync_to_server');
+                        consoleManager.log('[GV-Debug] onStuckDescriptionSaved: sparar, anropar save_result_immediately + flush_sync_to_server');
                     }
                     this.save_result_immediately({ skipRender: false });
                     if (typeof this.flush_sync_to_server === 'function' && this.getState && this.dispatch) {
                         try {
                             await this.flush_sync_to_server(this.getState, this.dispatch);
                             if (window.__GV_DEBUG_STUCK_SYNC__) {
-                                console.log('[GV-Debug] onStuckDescriptionSaved: flush_sync_to_server klar');
+                                consoleManager.log('[GV-Debug] onStuckDescriptionSaved: flush_sync_to_server klar');
                             }
                         } catch (e) {
                             if (window.__GV_DEBUG_STUCK_SYNC__) {

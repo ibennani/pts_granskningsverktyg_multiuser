@@ -2,6 +2,7 @@
 'use strict';
 
 import { escape_html } from './utils/helpers.js';
+import { consoleManager } from './utils/console_manager.js';
 
 const translationModules = import.meta.glob('./i18n/*.json', { eager: true });
 
@@ -18,7 +19,7 @@ let loaded_translations = {};
 let initial_load_promise = null;
 
 function log(...args) {
-    console.log('[Translation]', ...args);
+    consoleManager.log('[Translation]', ...args);
 }
 
 function warn(...args) {

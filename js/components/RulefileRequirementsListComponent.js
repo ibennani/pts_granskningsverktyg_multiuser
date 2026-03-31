@@ -4,6 +4,7 @@ import { get_searchable_text_for_requirement } from '../utils/requirement_search
 import { show_confirm_delete_modal, build_delete_warning_text } from '../logic/confirm_delete_modal_logic.js';
 import { can_edit_rulefile } from '../utils/helpers.js';
 import './rulefile_requirements_list_component.css';
+import { consoleManager } from '../utils/console_manager.js';
 
 export class RulefileRequirementsListComponent {
     constructor() {
@@ -132,9 +133,9 @@ export class RulefileRequirementsListComponent {
     }
 
     handle_toolbar_change(new_toolbar_state) {
-        console.log('[RulefileRequirementsListComponent] toolbar change received:', JSON.stringify(new_toolbar_state));
+        consoleManager.log('[RulefileRequirementsListComponent] toolbar change received:', JSON.stringify(new_toolbar_state));
         const current_state_snapshot = this.getState();
-        console.log('[RulefileRequirementsListComponent] current state snapshot filter:', JSON.stringify(current_state_snapshot.uiSettings?.requirementListFilter));
+        consoleManager.log('[RulefileRequirementsListComponent] current state snapshot filter:', JSON.stringify(current_state_snapshot.uiSettings?.requirementListFilter));
         const existing_status_state = current_state_snapshot.uiSettings?.requirementListFilter?.status || {
             passed: true,
             failed: true,
@@ -154,7 +155,7 @@ export class RulefileRequirementsListComponent {
             type: this.StoreActionTypes.SET_UI_FILTER_SETTINGS,
             payload
         });
-        console.log('[RulefileRequirementsListComponent] dispatched payload:', JSON.stringify(payload));
+        consoleManager.log('[RulefileRequirementsListComponent] dispatched payload:', JSON.stringify(payload));
         // Note: render is triggered by subscription, but explicit render call in old code existed.
         // The subscription handler calls _populate_dynamic_content, so we might not need full render.
         // But original code called render(), so let's call it to be safe, though it might be redundant with subscription.
@@ -259,10 +260,10 @@ export class RulefileRequirementsListComponent {
     }
 
     _populate_dynamic_content(filter_settings_override = null) {
-        console.log('[RulefileRequirementsListComponent] populate list start. Override:', JSON.stringify(filter_settings_override));
+        consoleManager.log('[RulefileRequirementsListComponent] populate list start. Override:', JSON.stringify(filter_settings_override));
         const t = this.Translation.t;
         const current_global_state = this.getState();
-        console.log('[RulefileRequirementsListComponent] current state filter:', JSON.stringify(current_global_state.uiSettings?.requirementListFilter));
+        consoleManager.log('[RulefileRequirementsListComponent] current state filter:', JSON.stringify(current_global_state.uiSettings?.requirementListFilter));
 
         if (this.root && this.plate_element_ref) {
             const siblings = Array.from(this.root.children);
@@ -305,7 +306,7 @@ export class RulefileRequirementsListComponent {
             });
             return normalized_content.includes(search_term);
         });
-        console.log('[RulefileRequirementsListComponent] filtered count:', filtered_requirements.length, 'of', all_requirements.length);
+        consoleManager.log('[RulefileRequirementsListComponent] filtered count:', filtered_requirements.length, 'of', all_requirements.length);
         if (this.results_summary_element) {
             this.results_summary_element.textContent = t('rulefile_requirements_summary', {
                 filteredCount: filtered_requirements.length,

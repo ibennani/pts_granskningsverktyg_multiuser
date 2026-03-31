@@ -1,5 +1,7 @@
 // js/logic/rulefile_migration_logic.js
 
+import { consoleManager } from '../utils/console_manager.js';
+
 /**
  * Konverterar en regelfil från gammal struktur (direkta fält) till ny struktur (infoBlocks).
  * Denna funktion säkerställer att alla requirements har infoBlocks-struktur och att
@@ -138,7 +140,7 @@ export function migrate_rulefile_to_new_structure(ruleFileContent, options = {})
         });
 
         if (converted_count > 0) {
-            console.log(`[MigrationLogic] Konverterade ${converted_count} requirements från gammal struktur till ny struktur`);
+            consoleManager.log(`[MigrationLogic] Konverterade ${converted_count} requirements från gammal struktur till ny struktur`);
         }
     }
 

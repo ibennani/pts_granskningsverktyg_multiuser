@@ -1,5 +1,7 @@
 // js/audit_logic.js
 
+import { consoleManager } from './utils/console_manager.js';
+
 function get_t_func() {
     return (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function')
         ? window.Translation.t
@@ -23,7 +25,7 @@ export function formatDeficiencyId(number, totalCount) {
 }
 
 export function removeAllDeficiencyIds(auditState) {
-    console.log("[AuditLogic] Removing all deficiency IDs...");
+    consoleManager.log("[AuditLogic] Removing all deficiency IDs...");
     const newState = JSON.parse(JSON.stringify(auditState));
     
     (newState.samples || []).forEach(sample => {
@@ -41,7 +43,7 @@ export function removeAllDeficiencyIds(auditState) {
 }
 
 export function assignSortedDeficiencyIdsOnLock(auditState) {
-    console.log("[AuditLogic] Running assignSortedDeficiencyIdsOnLock...");
+    consoleManager.log("[AuditLogic] Running assignSortedDeficiencyIdsOnLock...");
     const newState = JSON.parse(JSON.stringify(auditState));
     newState.deficiencyCounter = 1;
 

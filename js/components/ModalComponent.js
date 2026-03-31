@@ -1,6 +1,7 @@
 // js/components/ModalComponent.js
 
 import './modal_component.css';
+import { consoleManager } from '../utils/console_manager.js';
 
 export class ModalComponent {
     static CSS_PATH = './modal_component.css';
@@ -302,7 +303,7 @@ export class ModalComponent {
                 if (has_structure) {
                     const ac = document.getElementById('app-container');
                     const mvr = document.getElementById('app-main-view-root');
-                    console.log('[GV-ModalDebug] DOM ändrad', {
+                    consoleManager.log('[GV-ModalDebug] DOM ändrad', {
                         mutations: debug_count.n,
                         scroll: { w: window.scrollY, ac: ac?.scrollTop, mvr: mvr?.scrollTop }
                     });
@@ -311,7 +312,7 @@ export class ModalComponent {
             this._debug_mutation_count = debug_count;
             const target = main_view_root || app_container;
             if (target) this._debug_observer.observe(target, { childList: true, subtree: true });
-            console.log('[GV-ModalDebug] Modal ÖPPNAS – scroll:', this._scroll_state);
+            consoleManager.log('[GV-ModalDebug] Modal ÖPPNAS – scroll:', this._scroll_state);
         }
 
         document.documentElement.style.overflow = 'hidden';
@@ -354,8 +355,8 @@ export class ModalComponent {
         const debug_mutation_count = this._debug_mutation_count?.n ?? 0;
 
         if (window.__GV_DEBUG_MODAL_SCROLL) {
-            console.log('[GV-ModalDebug] _finish_close – sparad scroll:', scroll_state);
-            console.log('[GV-ModalDebug] _finish_close – scroll FÖRE cleanup:', {
+            consoleManager.log('[GV-ModalDebug] _finish_close – sparad scroll:', scroll_state);
+            consoleManager.log('[GV-ModalDebug] _finish_close – scroll FÖRE cleanup:', {
                 w: window.scrollY,
                 ac: document.getElementById('app-container')?.scrollTop,
                 mvr: document.getElementById('app-main-view-root')?.scrollTop
@@ -409,7 +410,7 @@ export class ModalComponent {
             document.body.scrollTop = scroll_state.windowY;
 
             if (window.__GV_DEBUG_MODAL_SCROLL) {
-                console.log('[GV-ModalDebug] Efter sync restore:', {
+                consoleManager.log('[GV-ModalDebug] Efter sync restore:', {
                     w: window.scrollY,
                     ac: app_container?.scrollTop,
                     mvr: main_view_root?.scrollTop
@@ -439,7 +440,7 @@ export class ModalComponent {
                     main_view_root.scrollTop = scroll_state.mainViewRoot;
                 }
                 if (window.__GV_DEBUG_MODAL_SCROLL) {
-                    console.log('[GV-ModalDebug] Efter setTimeout(0) restore:', {
+                    consoleManager.log('[GV-ModalDebug] Efter setTimeout(0) restore:', {
                         w: window.scrollY,
                         ac: app_container?.scrollTop,
                         mvr: main_view_root?.scrollTop
@@ -454,14 +455,14 @@ export class ModalComponent {
                         }
                     }
                     if (window.__GV_DEBUG_MODAL_SCROLL) {
-                        console.log('[GV-ModalDebug] Efter fokus:', {
+                        consoleManager.log('[GV-ModalDebug] Efter fokus:', {
                             w: window.scrollY,
                             ac: document.getElementById('app-container')?.scrollTop,
                             mvr: document.getElementById('app-main-view-root')?.scrollTop
                         });
                         if (debug_observer) {
                             debug_observer.disconnect();
-                            console.log('[GV-ModalDebug] MutationObserver stoppad. Totalt mutationer:', debug_mutation_count);
+                            consoleManager.log('[GV-ModalDebug] MutationObserver stoppad. Totalt mutationer:', debug_mutation_count);
                         }
                     }
                 });

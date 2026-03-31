@@ -6,6 +6,7 @@
  */
 
 import * as AuditLogic from '../audit_logic.js';
+import { consoleManager } from './console_manager.js';
 
 class DependencyManager {
     constructor() {
@@ -137,7 +138,7 @@ class DependencyManager {
         }
 
         this.isInitialized = true;
-        console.log('DependencyManager: All dependencies initialized successfully');
+        consoleManager.log('DependencyManager: All dependencies initialized successfully');
         
         // Notify waiting callbacks
         this.readyCallbacks.forEach(callback => {

@@ -1,4 +1,5 @@
 import './side_menu_component.css';
+import { consoleManager } from '../utils/console_manager.js';
 
 export class SideMenuComponent {
     static CSS_PATH = './side_menu_component.css';
@@ -46,20 +47,20 @@ export class SideMenuComponent {
                 const menu_model = this.get_menu_model();
                 if (window.__GV_DEBUG_PROBLEMS_UPDATE__) {
                     const problems_item = (menu_model?.items || []).find((i) => i.count_id === 'problems_count');
-                    console.log('[GV-Debug menu] listener: problems_count i model:', problems_item?.count_value, 'skip_render:', listener_meta?.skip_render);
+                    consoleManager.log('[GV-Debug menu] listener: problems_count i model:', problems_item?.count_value, 'skip_render:', listener_meta?.skip_render);
                 }
                 if (!menu_model.should_show) {
-                    if (window.__GV_DEBUG_MODAL_SCROLL) console.log('[GV-ModalDebug] SideMenu: full render (hidden)');
+                    if (window.__GV_DEBUG_MODAL_SCROLL) consoleManager.log('[GV-ModalDebug] SideMenu: full render (hidden)');
                     this.render();
                     return;
                 }
                 if (this.update_counts_only(menu_model)) {
-                    if (window.__GV_DEBUG_PROBLEMS_UPDATE__) console.log('[GV-Debug menu] listener: update_counts_only lyckades');
-                    if (window.__GV_DEBUG_MODAL_SCROLL) console.log('[GV-ModalDebug] SideMenu: update_counts_only');
+                    if (window.__GV_DEBUG_PROBLEMS_UPDATE__) consoleManager.log('[GV-Debug menu] listener: update_counts_only lyckades');
+                    if (window.__GV_DEBUG_MODAL_SCROLL) consoleManager.log('[GV-ModalDebug] SideMenu: update_counts_only');
                     return;
                 }
-                if (window.__GV_DEBUG_PROBLEMS_UPDATE__) console.log('[GV-Debug menu] listener: update_counts_only gjorde inget, kör full render');
-                if (window.__GV_DEBUG_MODAL_SCROLL) console.log('[GV-ModalDebug] SideMenu: full render');
+                if (window.__GV_DEBUG_PROBLEMS_UPDATE__) consoleManager.log('[GV-Debug menu] listener: update_counts_only gjorde inget, kör full render');
+                if (window.__GV_DEBUG_MODAL_SCROLL) consoleManager.log('[GV-ModalDebug] SideMenu: full render');
                 this.render();
             });
         }
@@ -229,7 +230,7 @@ export class SideMenuComponent {
 
         link.addEventListener('click', (event) => {
             if (window.__GV_DEBUG_NAV) {
-                console.log('[GV-NAV] Sidomeny-länk klickad', { view_name, params, has_router: typeof this.router === 'function' });
+                consoleManager.log('[GV-NAV] Sidomeny-länk klickad', { view_name, params, has_router: typeof this.router === 'function' });
             }
             if (typeof this.router === 'function') {
                 event.preventDefault();
@@ -398,29 +399,29 @@ export class SideMenuComponent {
 
     update_counts_only(menu_model) {
         if (!this.root || !this.nav_ref) {
-            if (window.__GV_DEBUG_PROBLEMS_UPDATE__) console.log('[GV-Debug menu] update_counts_only: avbryt (root eller nav_ref saknas)');
+            if (window.__GV_DEBUG_PROBLEMS_UPDATE__) consoleManager.log('[GV-Debug menu] update_counts_only: avbryt (root eller nav_ref saknas)');
             return false;
         }
 
         const structure_key = this._get_structure_key(menu_model);
         if (structure_key !== this.last_menu_structure_key) {
-            if (window.__GV_DEBUG_PROBLEMS_UPDATE__) console.log('[GV-Debug menu] update_counts_only: avbryt (structure ändrad)', { structure_key, last: this.last_menu_structure_key });
+            if (window.__GV_DEBUG_PROBLEMS_UPDATE__) consoleManager.log('[GV-Debug menu] update_counts_only: avbryt (structure ändrad)', { structure_key, last: this.last_menu_structure_key });
             return false;
         }
 
         const new_counts = this._get_counts_from_model(menu_model);
         if (this._counts_equal(new_counts, this.last_menu_counts)) {
-            if (window.__GV_DEBUG_PROBLEMS_UPDATE__) console.log('[GV-Debug menu] update_counts_only: inga ändringar i counts', new_counts);
+            if (window.__GV_DEBUG_PROBLEMS_UPDATE__) consoleManager.log('[GV-Debug menu] update_counts_only: inga ändringar i counts', new_counts);
             return true;
         }
 
-        if (window.__GV_DEBUG_PROBLEMS_UPDATE__) console.log('[GV-Debug menu] update_counts_only: uppdaterar counts', { new_counts, last: this.last_menu_counts });
+        if (window.__GV_DEBUG_PROBLEMS_UPDATE__) consoleManager.log('[GV-Debug menu] update_counts_only: uppdaterar counts', { new_counts, last: this.last_menu_counts });
 
         const items_with_count = (menu_model?.items || []).filter((i) => i.count_id !== null && i.count_id !== undefined);
         for (const [count_id, new_value] of Object.entries(new_counts)) {
             const span = this.nav_ref.querySelector(`[data-count-id="${CSS.escape(count_id)}"]`);
             if (window.__GV_DEBUG_PROBLEMS_UPDATE__ && count_id === 'problems_count') {
-                console.log('[GV-Debug menu] update_counts_only: problems_count span', span ? 'finns' : 'saknas', 'nytt värde:', new_value);
+                consoleManager.log('[GV-Debug menu] update_counts_only: problems_count span', span ? 'finns' : 'saknas', 'nytt värde:', new_value);
             }
             if (span && span.textContent !== String(new_value)) {
                 span.textContent = String(new_value);

@@ -1,6 +1,8 @@
 // js/logic/ScoreCalculator.js
 'use-strict';
 
+import { consoleManager } from '../utils/console_manager.js';
+
 /**
  * Calculates the weight (omega, ωp) for a single requirement based on its impact.
  * This is a helper function used during score calculation.
@@ -165,4 +167,4 @@ export function calculateQualityScore(auditState) {
     };
 }
 
-console.log("[ScoreCalculator.js] ScoreCalculator loaded.");
+consoleManager.log("[ScoreCalculator.js] ScoreCalculator loaded.");

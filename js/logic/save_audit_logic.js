@@ -3,6 +3,7 @@
 
 import { generate_audit_filename } from '../utils/filename_utils.js';
 import { attach_export_integrity_to_audit_payload } from '../utils/export_integrity.js';
+import { consoleManager } from '../utils/console_manager.js';
 
 export async function save_audit_to_json_file(current_audit_data, t_func, show_notification_func, options) {
     if (!current_audit_data) {
@@ -42,7 +43,7 @@ export async function save_audit_to_json_file(current_audit_data, t_func, show_n
     }
 
     if (show_notification_func) show_notification_func(t_func('audit_saved_as_file', { filename: filename }), 'success');
-    console.log(`[SaveAuditLogic] Audit saved as ${filename}`);
+    consoleManager.log(`[SaveAuditLogic] Audit saved as ${filename}`);
 }
 
-console.log("[save_audit_logic.js] SaveAuditLogic loaded.");
+consoleManager.log("[save_audit_logic.js] SaveAuditLogic loaded.");

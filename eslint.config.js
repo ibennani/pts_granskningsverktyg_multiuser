@@ -80,4 +80,10 @@ export default [
       'import/no-unresolved': 'off',
     },
   },
+  {
+    files: ['js/utils/console_manager.js'],
+    rules: {
+      'no-console': 'off',
+    },
+  },
 ];

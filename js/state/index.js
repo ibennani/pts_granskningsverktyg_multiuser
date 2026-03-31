@@ -7,6 +7,7 @@ import { auditReducer } from './auditReducer.js';
 import { rulefileReducer } from './rulefileReducer.js';
 import { uiReducer } from './uiReducer.js';
 import { userReducer } from './userReducer.js';
+import { consoleManager } from '../utils/console_manager.js';
 
 const APP_STATE_KEY = 'digitalTillsynAppCentralState';
 const APP_STATE_BACKUP_KEY = 'digitalTillsynAppStateBackup';
@@ -166,7 +167,7 @@ function execute_single_dispatch(action, dispatch_fn) {
                     internal_state = state_before_dispatch;
                     saveStateToSessionStorage(internal_state);
                     notify_listeners();
-                    console.info('[State] State successfully restored from backup');
+                    consoleManager.info('[State] State successfully restored from backup');
                 } catch (restoreError) {
                     if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[State] Failed to restore state from backup:', restoreError);
                 }
@@ -197,7 +198,7 @@ function subscribe(listener_function) {
 function notify_listeners(listener_meta = null) {
     const currentSnapshot = getState();
     if (window.__GV_DEBUG_MODAL_SCROLL) {
-        console.log('[GV-ModalDebug] notify_listeners', {
+        consoleManager.log('[GV-ModalDebug] notify_listeners', {
             skip_render: listener_meta?.skip_render,
             action_type: listener_meta?._debug_action_type,
             listenerCount: listeners.length

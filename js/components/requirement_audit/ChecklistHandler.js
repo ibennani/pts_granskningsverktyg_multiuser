@@ -2,6 +2,7 @@
 
 import { get_current_user_name } from '../../utils/helpers.js';
 import { marked } from '../../utils/markdown.js';
+import { consoleManager } from '../../utils/console_manager.js';
 
 export const ChecklistHandler = {
     container_ref: null,
@@ -397,7 +398,7 @@ export const ChecklistHandler = {
                     this.requirement_result_ref.lastStatusUpdate = this.Helpers?.get_current_iso_datetime_utc?.() || new Date().toISOString();
                     this.requirement_result_ref.lastStatusUpdateBy = get_current_user_name();
                     if (window.__GV_DEBUG_STUCK_SYNC__) {
-                        console.log('[GV-Debug] Modal: Spara klickad, textlängd:', description.length);
+                        consoleManager.log('[GV-Debug] Modal: Spara klickad, textlängd:', description.length);
                     }
                     if (this.on_stuck_description_saved_callback) {
                         this.on_stuck_description_saved_callback();
@@ -427,7 +428,7 @@ export const ChecklistHandler = {
                         this.requirement_result_ref.lastStatusUpdate = this.Helpers?.get_current_iso_datetime_utc?.() || new Date().toISOString();
                         this.requirement_result_ref.lastStatusUpdateBy = get_current_user_name();
                         if (window.__GV_DEBUG_STUCK_SYNC__) {
-                            console.log('[GV-Debug] Modal: Problemet är löst klickad');
+                            consoleManager.log('[GV-Debug] Modal: Problemet är löst klickad');
                         }
                         if (this.on_stuck_description_saved_callback) {
                             this.on_stuck_description_saved_callback();

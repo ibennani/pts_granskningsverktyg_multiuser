@@ -1,6 +1,7 @@
 import { get_current_user_name } from '../utils/helpers.js';
 import { marked } from '../utils/markdown.js';
 import './audit_problems_view_component.css';
+import { consoleManager } from '../utils/console_manager.js';
 
 export class AuditProblemsViewComponent {
     constructor() {
@@ -42,7 +43,7 @@ export class AuditProblemsViewComponent {
     }
 
     async init({ root, deps }) {
-        if (window.__GV_DEBUG_PROBLEMS_UPDATE__) console.log('[GV-Debug problems] init: start');
+        if (window.__GV_DEBUG_PROBLEMS_UPDATE__) consoleManager.log('[GV-Debug problems] init: start');
         this.root = root;
         this.deps = deps;
 
@@ -59,7 +60,7 @@ export class AuditProblemsViewComponent {
         const state = this.getState();
         if (window.__GV_DEBUG_PROBLEMS_UPDATE__) {
             const before_count = this.AuditLogic?.count_audit_problems ? this.AuditLogic.count_audit_problems(state) : -1;
-            console.log('[GV-Debug problems] init: state innan fetch, kört-fast i state:', before_count, 'auditId:', state?.auditId || 'saknas');
+            consoleManager.log('[GV-Debug problems] init: state innan fetch, kört-fast i state:', before_count, 'auditId:', state?.auditId || 'saknas');
         }
         if (state?.auditId && typeof this.dispatch === 'function') {
             try {
@@ -69,7 +70,7 @@ export class AuditProblemsViewComponent {
                     const stuck_from_server = (full_state.samples || []).reduce((n, s) => {
                         return n + Object.values(s?.requirementResults || {}).filter((r) => (r?.stuckProblemDescription || '').trim() !== '').length;
                     }, 0);
-                    console.log('[GV-Debug problems] init: från servern, kört-fast i samples:', stuck_from_server, 'samples.length:', full_state.samples?.length);
+                    consoleManager.log('[GV-Debug problems] init: från servern, kört-fast i samples:', stuck_from_server, 'samples.length:', full_state.samples?.length);
                 }
                 if (full_state && full_state.samples) {
                     await this.dispatch({
@@ -79,17 +80,17 @@ export class AuditProblemsViewComponent {
                     if (window.__GV_DEBUG_PROBLEMS_UPDATE__) {
                         const after_state = this.getState();
                         const after_count = this.AuditLogic?.count_audit_problems ? this.AuditLogic.count_audit_problems(after_state) : -1;
-                        console.log('[GV-Debug problems] init: efter dispatch, kört-fast i state:', after_count);
+                        consoleManager.log('[GV-Debug problems] init: efter dispatch, kört-fast i state:', after_count);
                     }
                 } else if (window.__GV_DEBUG_PROBLEMS_UPDATE__) {
-                    console.log('[GV-Debug problems] init: full_state saknas eller samples saknas', { has_full_state: !!full_state, has_samples: !!full_state?.samples });
+                    consoleManager.log('[GV-Debug problems] init: full_state saknas eller samples saknas', { has_full_state: !!full_state, has_samples: !!full_state?.samples });
                 }
             } catch (e) {
                 if (window.__GV_DEBUG_PROBLEMS_UPDATE__) console.warn('[GV-Debug problems] init: fetch/dispatch fel', e);
                 if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[AuditProblemsViewComponent] Kunde inte hämta granskning från servern:', e);
             }
         } else if (window.__GV_DEBUG_PROBLEMS_UPDATE__) {
-            console.log('[GV-Debug problems] init: hoppar över fetch', { has_auditId: !!state?.auditId, has_dispatch: typeof this.dispatch === 'function' });
+            consoleManager.log('[GV-Debug problems] init: hoppar över fetch', { has_auditId: !!state?.auditId, has_dispatch: typeof this.dispatch === 'function' });
         }
 
         if (this.Helpers?.load_css && this.CSS_PATH) {
@@ -552,7 +553,7 @@ export class AuditProblemsViewComponent {
 
         const problems = this.AuditLogic?.collect_audit_problems ? this.AuditLogic.collect_audit_problems(state) : [];
         if (window.__GV_DEBUG_PROBLEMS_UPDATE__) {
-            console.log('[GV-Debug problems] render: antal problem att rita:', problems.length, 'ruleFileContent.requirements:', state?.ruleFileContent?.requirements ? 'finns' : 'saknas');
+            consoleManager.log('[GV-Debug problems] render: antal problem att rita:', problems.length, 'ruleFileContent.requirements:', state?.ruleFileContent?.requirements ? 'finns' : 'saknas');
         }
         this._problems_signature = JSON.stringify(problems.map((p) => ({ s: p.sample?.id, r: p.reqId, l: (p.stuck_text || '').length })));
         this._previous_problems_keys = new Set(problems.map((p) => `${p.sample?.id ?? ''}|${p.reqId ?? ''}`));

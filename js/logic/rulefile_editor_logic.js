@@ -3,6 +3,7 @@
 
 import * as Helpers from '../utils/helpers.js';
 import * as Translation from '../translation_logic.js';
+import { consoleManager } from '../utils/console_manager.js';
 
 // --- GENERIC FORM HELPERS ---
 function _createFormField(labelTextKey, name, value, type = 'text', instructionTextKey = null, isRequired = false) {
@@ -61,7 +62,7 @@ export function buildMetadataEditor(_metadata, _onSaveCallback) {
 // --- REQUIREMENTS EDITOR LOGIC ---
 export function buildRequirementsEditor(requirements, allContentTypes, onSaveCallback, onDeleteCallback) {
     const t = Translation.t;
-    console.log('%c[DEBUG] buildRequirementsEditor called', 'color: #0000FF; font-weight: bold;', { 
+    consoleManager.log('%c[DEBUG] buildRequirementsEditor called', 'color: #0000FF; font-weight: bold;', { 
         requirements, 
         allContentTypes, 
         onSaveCallback: typeof onSaveCallback, 
@@ -88,7 +89,7 @@ export function buildRequirementsEditor(requirements, allContentTypes, onSaveCal
     };
     const list = Helpers.create_element('ul', { class_name: 'requirement-items-ul' });
     const requirementsList = Object.values(requirements || {});
-    console.log('%c[DEBUG] Rendering requirements list:', 'color: #0000FF; font-weight: bold;', requirementsList);
+    consoleManager.log('%c[DEBUG] Rendering requirements list:', 'color: #0000FF; font-weight: bold;', requirementsList);
     requirementsList.sort((a,b) => Helpers.natural_sort(a.title, b.title)).forEach(req => {
         const li = Helpers.create_element('li', { class_name: 'requirement-item compact-twoline' });
         

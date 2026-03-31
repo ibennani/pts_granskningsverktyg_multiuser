@@ -1,6 +1,8 @@
 // js/logic/RuleDataProcessor.js
 'use-strict';
 
+import { consoleManager } from '../utils/console_manager.js';
+
 /**
  * Calculates the weight (omega, ωp) for a single requirement based on its impact.
  * This is a helper function used during pre-calculation.
@@ -27,7 +29,7 @@ function _calculateRequirementWeight(requirement) {
  * @returns {object} An object containing pre-calculated data maps and totals.
  */
 export function precalculateRuleData(ruleFileContent) {
-    console.log("[RuleDataProcessor] Pre-calculating rule data for scoring...");
+    consoleManager.log("[RuleDataProcessor] Pre-calculating rule data for scoring...");
     
     const precalculatedData = {
         requirementWeights: {},          // Map of requirement ID to its calculated weight
@@ -71,8 +73,8 @@ export function precalculateRuleData(ruleFileContent) {
         }
     }
     
-    console.log("[RuleDataProcessor] Pre-calculation complete:", JSON.parse(JSON.stringify(precalculatedData)));
+    consoleManager.log("[RuleDataProcessor] Pre-calculation complete:", JSON.parse(JSON.stringify(precalculatedData)));
     return precalculatedData;
 }
 
-console.log("[RuleDataProcessor.js] RuleDataProcessor loaded.");
+consoleManager.log("[RuleDataProcessor.js] RuleDataProcessor loaded.");
