@@ -90,6 +90,8 @@ import { AuditViewComponent } from './components/audit_view/AuditViewComponent.j
 import { StartViewComponent } from './components/StartViewComponent.js';
 import { LoginViewComponent } from './components/LoginViewComponent.js';
 import { ManageUsersViewComponent } from './components/ManageUsersViewComponent.js';
+
+const auditViewComponent = new AuditViewComponent();
 import { SettingsViewComponent } from './components/SettingsViewComponent.js';
 
 import { GlobalActionBarComponent } from './components/GlobalActionBarComponent.js';
@@ -677,10 +679,10 @@ window.DraftManager = DraftManager;
         let ComponentClass;
         
         switch (view_name_to_render) {
-            case 'start': ComponentClass = AuditViewComponent; break;
-            case 'audit': ComponentClass = AuditViewComponent; break;
-            case 'audit_audits': ComponentClass = AuditViewComponent; break;
-            case 'audit_rules': ComponentClass = AuditViewComponent; break;
+            case 'start': ComponentClass = auditViewComponent; break;
+            case 'audit': ComponentClass = auditViewComponent; break;
+            case 'audit_audits': ComponentClass = auditViewComponent; break;
+            case 'audit_rules': ComponentClass = auditViewComponent; break;
             case 'manage_users': ComponentClass = ManageUsersViewComponent; break;
             case 'my_settings': ComponentClass = SettingsViewComponent; break;
             case 'login': ComponentClass = LoginViewComponent; break;

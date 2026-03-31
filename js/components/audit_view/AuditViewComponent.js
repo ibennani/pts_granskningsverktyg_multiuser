@@ -32,8 +32,8 @@ import { JSON_MAX_UPLOAD_BYTES } from '../../constants/json_upload_limits.js';
 import { check_json_structure_depth_and_size } from '../../utils/json_structure_guard.js';
 import './audit_view_component.css';
 
-export const AuditViewComponent = {
-    CSS_PATH: './audit_view_component.css',
+export class AuditViewComponent {
+    static CSS_PATH = './audit_view_component.css';
 
     async init({ root, deps }) {
         this.root = root;
@@ -92,7 +92,7 @@ export const AuditViewComponent = {
         this.handle_filter_input = this.handle_filter_input.bind(this);
 
         if (this.Helpers?.load_css_safely) {
-            await this.Helpers.load_css_safely(this.CSS_PATH, 'AuditViewComponent', {
+            await this.Helpers.load_css_safely(AuditViewComponent.CSS_PATH, 'AuditViewComponent', {
                 timeout: 5000,
                 maxRetries: 2
             }).catch(() => {
@@ -111,7 +111,7 @@ export const AuditViewComponent = {
         this._auditListComponent = Object.create(AuditListComponent);
         await this._auditListComponent.init({ deps });
         this.draft_rules = [];
-    },
+    }
 
     handle_filter_input(event) {
         const target = event && event.target ? event.target : null;
@@ -131,11 +131,11 @@ export const AuditViewComponent = {
         if (this.root) {
             this.render();
         }
-    },
+    }
 
     _rule_fingerprint(r) {
         return JSON.stringify({ id: r?.id, updated_at: r?.updated_at, is_published: r?.is_published });
-    },
+    }
 
     async _on_audits_changed() {
         if (!this.root || !this.api_available) return;
@@ -146,7 +146,7 @@ export const AuditViewComponent = {
         } catch {
             /* tyst vid fel */
         }
-    },
+    }
 
     async _on_rules_changed() {
         if (!this.root || !this.api_available) return;
@@ -180,13 +180,13 @@ export const AuditViewComponent = {
             // Vid t.ex. DOM-avvikelse eller kast i updateRow: fall tillbaka till full render
             if (this.root) this.render();
         }
-    },
+    }
 
     get_t_func() {
         return (this.Translation && typeof this.Translation.t === 'function')
             ? this.Translation.t
             : (key) => `**${key}**`;
-    },
+    }
 
     get_status_label(status) {
         const t = this.get_t_func();
@@ -197,7 +197,7 @@ export const AuditViewComponent = {
             archived: t('audit_status_archived')
         };
         return map[status] || status;
-    },
+    }
 
     _split_rules_for_views() {
         const all_rules = Array.isArray(this.rules) ? this.rules : [];
@@ -206,7 +206,7 @@ export const AuditViewComponent = {
         const is_arbetskopia = (r) => r.list_as_arbetskopia === true || (r.list_as_arbetskopia !== false && !r.is_published);
         this.production_rules = all_rules.filter(is_arbetskopia);
         this.published_rules = all_rules.filter((r) => !is_arbetskopia(r));
-    },
+    }
 
     async ensure_api_data() {
         this.api_available = await check_api_available();
@@ -222,13 +222,13 @@ export const AuditViewComponent = {
                 this.audits = [];
             }
         }
-    },
+    }
 
     handle_upload_click() {
         if (this.upload_file_input) {
             this.upload_file_input.click();
         }
-    },
+    }
 
     handle_file_select(event) {
         const t = this.get_t_func();
@@ -396,13 +396,13 @@ export const AuditViewComponent = {
             }
         };
         reader.readAsText(file);
-    },
+    }
 
     handle_audit_upload_click() {
         if (this.upload_audit_file_input) {
             this.upload_audit_file_input.click();
         }
-    },
+    }
 
     handle_create_new_rule() {
         const minimal_rulefile = {
@@ -431,7 +431,7 @@ export const AuditViewComponent = {
             }
         });
         this.router('rulefile_metadata_edit', { mode: 'create' });
-    },
+    }
 
     async handle_audit_file_select(event) {
         const t = this.get_t_func();
@@ -507,7 +507,7 @@ export const AuditViewComponent = {
             }
         };
         reader.readAsText(file);
-    },
+    }
 
     async _do_import_audit_and_refresh(file_content_object, input_element) {
         const t = this.get_t_func();
@@ -538,7 +538,7 @@ export const AuditViewComponent = {
             );
             if (input_element) input_element.value = '';
         }
-    },
+    }
 
     _show_audit_server_newer_modal(file_content_object, on_upload_anyway, on_close) {
         const t = this.get_t_func();
@@ -579,15 +579,15 @@ export const AuditViewComponent = {
                 container.appendChild(buttons_wrapper);
             }
         );
-    },
+    }
 
     handle_go_to_start() {
         this.router('start');
-    },
+    }
 
     handle_start_new_audit() {
         this._show_rule_picker_for_new_audit();
-    },
+    }
 
     async _show_rule_picker_for_new_audit() {
         const t = this.get_t_func();
@@ -643,7 +643,7 @@ export const AuditViewComponent = {
                 container.appendChild(close_wrapper);
             }
         );
-    },
+    }
 
     async _load_rule_and_start_new_audit(rule_id) {
         const t = this.get_t_func();
@@ -687,7 +687,7 @@ export const AuditViewComponent = {
                 'error'
             );
         }
-    },
+    }
 
     _find_matching_rule(file_id, file_title) {
         const all_rules = Array.isArray(this.rules) ? this.rules : [];
@@ -703,7 +703,7 @@ export const AuditViewComponent = {
             (r) => r.production_base_id != null && String(r.production_base_id) === String(matched.id)
         );
         return production || matched;
-    },
+    }
 
     _get_rule_display_name(rule_id) {
         const all_rules = Array.isArray(this.rules) ? this.rules : [];
@@ -715,14 +715,14 @@ export const AuditViewComponent = {
         if (is_production) return `${base} (${t('rulefile_status_production_label')})`;
         if (r.version_display) return `${base} ${r.version_display} (${t('rulefile_status_published_label')})`;
         return base;
-    },
+    }
 
     _get_rule_base_name(rule_id) {
         const all_rules = Array.isArray(this.rules) ? this.rules : [];
         const r = all_rules.find((row) => String(row.id) === String(rule_id));
         if (!r) return `Regelfil ${rule_id}`;
         return (r.name || `Regelfil ${r.id}`).trim();
-    },
+    }
 
     _focus_rule_link(rule_id, section) {
         if (!rule_id || !this.root) return;
@@ -738,7 +738,7 @@ export const AuditViewComponent = {
                 }
             });
         }
-    },
+    }
 
     _is_uploaded_file_older(file_date_modified, server_updated_at) {
         if (!file_date_modified || !server_updated_at) return false;
@@ -746,7 +746,7 @@ export const AuditViewComponent = {
         const server_date = new Date(server_updated_at);
         if (Number.isNaN(file_date.getTime()) || Number.isNaN(server_date.getTime())) return false;
         return file_date.getTime() < server_date.getTime();
-    },
+    }
 
     async _do_import_rule_and_refresh(migrated_content, event, options = {}) {
         if (this._importInProgress) return;
@@ -793,7 +793,7 @@ export const AuditViewComponent = {
             this._importInProgress = false;
             if (event?.target) event.target.value = '';
         }
-    },
+    }
 
     _show_rulefile_duplicate_modal(is_older, on_upload_anyway, on_close, options = {}) {
         const t = this.get_t_func();
@@ -948,7 +948,7 @@ export const AuditViewComponent = {
                 container.appendChild(buttons_wrapper);
             }
         );
-    },
+    }
 
     _show_publish_rule_confirm_modal(rule_base_name, on_confirm, on_cancel) {
         const t = this.get_t_func();
@@ -1010,7 +1010,7 @@ export const AuditViewComponent = {
                 container.appendChild(buttons_wrapper);
             }
         );
-    },
+    }
 
     _show_publish_with_diff_modal(draft_content, published_content, rule_base_name, on_confirm, on_cancel) {
         const t = this.get_t_func();
@@ -1131,7 +1131,7 @@ export const AuditViewComponent = {
                 container.appendChild(buttons_wrapper);
             }
         );
-    },
+    }
 
     _show_publish_standalone_modal(rule_base_name, on_confirm, on_cancel) {
         const t = this.get_t_func();
@@ -1171,7 +1171,7 @@ export const AuditViewComponent = {
                 container.appendChild(buttons_wrapper);
             }
         );
-    },
+    }
 
     _format_audit_duplicate_timestamp(raw, t) {
         if (raw === undefined || raw === null || raw === '') {
@@ -1189,7 +1189,7 @@ export const AuditViewComponent = {
             }
         }
         return t('audit_audit_duplicate_modal_value_missing');
-    },
+    }
 
     _show_audit_duplicate_modal(file_content_object, duplicate_err, on_after_overwrite, on_keep) {
         const t = this.get_t_func();
@@ -1353,7 +1353,7 @@ export const AuditViewComponent = {
                 container.appendChild(buttons_wrapper);
             }
         );
-    },
+    }
 
     async handle_delete_rule(rule_id) {
         const t = this.get_t_func();
@@ -1384,7 +1384,7 @@ export const AuditViewComponent = {
                 );
             }
         }
-    },
+    }
 
     _show_rule_in_use_modal(rule_name, in_use_count) {
         const t = this.get_t_func();
@@ -1416,7 +1416,7 @@ export const AuditViewComponent = {
                 container.appendChild(wrapper);
             }
         );
-    },
+    }
 
     _show_rule_has_production_copies_modal(rule_name, production_copy_count) {
         const t = this.get_t_func();
@@ -1454,7 +1454,7 @@ export const AuditViewComponent = {
                 container.appendChild(wrapper);
             }
         );
-    },
+    }
 
     handle_publish_rule(rule_id) {
         const rule_base_name = this._get_rule_base_name(rule_id);
@@ -1463,7 +1463,7 @@ export const AuditViewComponent = {
             () => this._do_publish_rule(rule_id),
             () => {}
         );
-    },
+    }
 
     async _do_publish_rule(rule_id) {
         if (this._publishInProgress) return;
@@ -1486,7 +1486,7 @@ export const AuditViewComponent = {
         } finally {
             this._publishInProgress = false;
         }
-    },
+    }
 
     async handle_copy_rule(rule_id) {
         if (this._copyInProgress) return;
@@ -1539,7 +1539,7 @@ export const AuditViewComponent = {
         } finally {
             this._copyInProgress = false;
         }
-    },
+    }
 
     async handle_publish_production_rule(rule_id) {
         const t = this.get_t_func();
@@ -1579,7 +1579,7 @@ export const AuditViewComponent = {
                 () => {}
             );
         }
-    },
+    }
 
     async _do_publish_production_rule(rule_id) {
         if (this._publishProductionInProgress) return;
@@ -1603,7 +1603,7 @@ export const AuditViewComponent = {
         } finally {
             this._publishProductionInProgress = false;
         }
-    },
+    }
 
     handle_delete_audit_click(audit_id, audit_display_name, delete_button) {
         const t = this.get_t_func();
@@ -1624,7 +1624,7 @@ export const AuditViewComponent = {
         } else {
             this.handle_delete_audit(audit_id);
         }
-    },
+    }
 
     handle_delete_rule_click(rule_id, rule_display_name, delete_button) {
         const t = this.get_t_func();
@@ -1645,7 +1645,7 @@ export const AuditViewComponent = {
         } else {
             this.handle_delete_rule(rule_id);
         }
-    },
+    }
 
     async _show_contact_admin_modal(type) {
         const t = this.get_t_func();
@@ -1704,7 +1704,7 @@ export const AuditViewComponent = {
                 container.appendChild(wrapper);
             }
         );
-    },
+    }
 
     async handle_delete_audit(audit_id) {
         const t = this.get_t_func();
@@ -1722,7 +1722,7 @@ export const AuditViewComponent = {
                 'error'
             );
         }
-    },
+    }
 
     async handle_edit_rule(rule_id) {
         const t = this.get_t_func();
@@ -1792,7 +1792,7 @@ export const AuditViewComponent = {
                 'error'
             );
         }
-    },
+    }
 
     async handle_open_audit(audit_id) {
         const t = this.get_t_func();
@@ -1805,7 +1805,7 @@ export const AuditViewComponent = {
             NotificationComponent: this.NotificationComponent,
             t
         });
-    },
+    }
 
     async handle_download_audit(audit_id) {
         const t = this.get_t_func();
@@ -1816,7 +1816,7 @@ export const AuditViewComponent = {
             NotificationComponent: this.NotificationComponent,
             t
         });
-    },
+    }
 
     async handle_download_rule(rule_id) {
         const t = this.get_t_func();
@@ -1902,9 +1902,9 @@ export const AuditViewComponent = {
                 show_msg(t('audit_load_rule_error') + ' ' + (err.message || ''), 'error');
             }
         }
-    },
+    }
 
-    render() {
+    async render() {
         if (!this.root || !this.Helpers?.create_element) return;
 
         if (!this._api_checked) {
@@ -2009,7 +2009,7 @@ export const AuditViewComponent = {
                 this._unsubscribe_rules = subscribe_rules(() => this._on_rules_changed());
             }
         }
-    },
+    }
 
     destroy() {
         if (typeof this._unsubscribe_audits === 'function') {
@@ -2029,4 +2029,4 @@ export const AuditViewComponent = {
         this.root = null;
         this.deps = null;
     }
-};
+}
