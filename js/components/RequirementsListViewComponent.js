@@ -11,6 +11,7 @@ import { create_status_icons_wrapper } from './requirements_list/requirement_lis
 import { build_item_keys, update_items_status_only } from './requirements_list/requirement_list_incremental_dom.js';
 import { create_all_requirement_list_item, create_requirement_list_item } from './requirements_list/requirement_list_list_items.js';
 import { handle_mark_requirement_passed_in_all_samples } from './requirements_list/requirement_list_mark_all_modal.js';
+import { apply_return_focus_if_needed } from './requirements_list/requirement_list_return_focus.js';
 import { ProgressBarComponent } from './ProgressBarComponent.js';
 import { fingerprint_item_keys, can_incremental_update } from '../utils/incremental_list_update.js';
 import './all_requirements_view_component.css';
@@ -680,7 +681,7 @@ export class RequirementsListViewComponent {
             });
             this.content_div_for_delegation.appendChild(req_ul);
 
-            this._apply_return_focus_if_needed();
+            apply_return_focus_if_needed(this.content_div_for_delegation, this.RETURN_FOCUS_SESSION_KEY, this.mode, this.params?.sampleId || null);
         } else {
             // Sample mode
             if (this.content_div_for_delegation) {
@@ -702,96 +703,8 @@ export class RequirementsListViewComponent {
             }
 
             // Apply return focus if needed (sample mode only)
-            this._apply_return_focus_if_needed();
+            apply_return_focus_if_needed(this.content_div_for_delegation, this.RETURN_FOCUS_SESSION_KEY, this.mode, this.params?.sampleId || null);
         }
-    }
-
-    _apply_return_focus_if_needed() {
-        if (!this.content_div_for_delegation) return;
-        if (!window.sessionStorage || !this.RETURN_FOCUS_SESSION_KEY) return;
-
-        let raw = null;
-        try {
-            raw = window.sessionStorage.getItem(this.RETURN_FOCUS_SESSION_KEY);
-        } catch (e) {
-            return;
-        }
-        if (!raw) return;
-
-        let focus_instruction = null;
-        try {
-            focus_instruction = JSON.parse(raw);
-        } catch (e) {
-            try {
-                window.sessionStorage.removeItem(this.RETURN_FOCUS_SESSION_KEY);
-            } catch (_) {
-                // ignoreras medvetet
-            }
-            return;
-        }
-
-        const requirement_id = focus_instruction?.requirementId || null;
-        const sample_id = focus_instruction?.sampleId || null;
-
-        try {
-            window.sessionStorage.removeItem(this.RETURN_FOCUS_SESSION_KEY);
-        } catch (_) {
-            // ignoreras medvetet
-        }
-
-        if (!requirement_id || !sample_id) return;
-
-        let target_link = null;
-        if (this.mode === 'all') {
-            target_link = this.content_div_for_delegation.querySelector(
-                `a.list-title-link[data-requirement-id="${CSS.escape(String(requirement_id))}"][data-sample-id="${CSS.escape(String(sample_id))}"]`
-            );
-        } else {
-            const current_sample_id = this.params?.sampleId || null;
-            if (String(sample_id) !== String(current_sample_id)) return;
-            target_link = this.content_div_for_delegation.querySelector(
-                `a.list-title-link[data-requirement-id="${CSS.escape(String(requirement_id))}"]`
-            );
-        }
-        if (!target_link) return;
-
-        window.customFocusApplied = true;
-
-        const top_action_bar = document.getElementById('global-action-bar-top');
-        const top_bar_height = top_action_bar ? top_action_bar.offsetHeight : 0;
-
-        const element_rect = target_link.getBoundingClientRect();
-        const absolute_element_top = element_rect.top + window.pageYOffset;
-        const scroll_position = absolute_element_top - top_bar_height;
-
-        window.scrollTo({ top: scroll_position, behavior: 'smooth' });
-
-        const content_div = this.content_div_for_delegation;
-        const mode = this.mode;
-        const params_sample_id = this.params?.sampleId || null;
-        requestAnimationFrame(() => {
-            setTimeout(() => {
-                if (!content_div || !document.contains(content_div)) return;
-                let link = null;
-                if (mode === 'all') {
-                    link = content_div.querySelector(
-                        `a.list-title-link[data-requirement-id="${CSS.escape(String(requirement_id))}"][data-sample-id="${CSS.escape(String(sample_id))}"]`
-                    );
-                } else {
-                    if (String(sample_id) !== String(params_sample_id)) return;
-                    link = content_div.querySelector(
-                        `a.list-title-link[data-requirement-id="${CSS.escape(String(requirement_id))}"]`
-                    );
-                }
-                if (link && document.contains(link)) {
-                    try {
-                        link.focus({ preventScroll: true });
-                    } catch (e) {
-                        link.focus();
-                    }
-                }
-            }, 300);
-        });
     }
 
     destroy() {
