@@ -833,6 +833,7 @@
   "start_view_new_audits_heading": "Förberedda granskningar",
   "start_view_completed_audits_heading": "Avslutade granskningar",
   "start_view_archived_audits_heading": "Arkiverade granskningar",
+  "start_view_section_heading_with_count": "{title}: {count} st",
   "start_view_col_case_number": "Diarienummer",
   "start_view_col_actor": "Aktörens namn",
   "start_view_col_status": "Status",

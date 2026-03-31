@@ -833,6 +833,7 @@
   "start_view_new_audits_heading": "Forberedte tilsyn",
   "start_view_completed_audits_heading": "Fullførte tilsyn",
   "start_view_archived_audits_heading": "Arkiverte tilsyn",
+  "start_view_section_heading_with_count": "{title}: {count} stk",
   "start_view_col_case_number": "Saksnummer",
   "start_view_col_actor": "Virksomhetsnavn",
   "start_view_col_status": "Status",

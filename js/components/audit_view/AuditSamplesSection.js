@@ -59,9 +59,14 @@ export function render_audit_samples_section(ctx) {
                 attributes: { 'aria-labelledby': `${config.heading_key}-heading` }
             });
             const heading_row = ctx.Helpers.create_element('div', { class_name: 'start-view-section-heading-row' });
+            const heading_title = t(config.heading_key);
+            const section_heading_text = t('start_view_section_heading_with_count', {
+                title: heading_title,
+                count: (config.audits || []).length
+            });
             const section_heading = ctx.Helpers.create_element('h2', {
                 id: `${config.heading_key}-heading`,
-                text_content: t(config.heading_key)
+                text_content: section_heading_text
             });
             heading_row.appendChild(section_heading);
             if (config.heading_key === 'start_view_audits_heading') {
@@ -117,7 +122,7 @@ export function render_audit_samples_section(ctx) {
                 root: table_wrapper,
                 audits: config.audits,
                 emptyMessage: t(empty_key),
-                ariaLabel: t(config.heading_key),
+                ariaLabel: section_heading_text,
                 includeDelete: true,
                 sortState: ctx[sort_state_key],
                 onSort: (columnIndex, direction) => {
