@@ -1,5 +1,6 @@
 // js/components/EditRulefileMetadataViewComponent.js
 import { create_production_rule } from '../api/client.js';
+import { generate_slug, ensure_unique_slug } from '../logic/rulefile_metadata_slug.js';
 import './edit_rulefile_metadata_view.css';
 
 export class EditRulefileMetadataViewComponent {
@@ -337,27 +338,6 @@ export class EditRulefileMetadataViewComponent {
             : [];
         workingMetadata.keywords = Array.isArray(workingMetadata.keywords) ? [...workingMetadata.keywords] : [];
         return workingMetadata;
-    }
-
-    _generate_slug(value) {
-        if (!value) return '';
-        return value.toString().trim().toLowerCase()
-            .normalize('NFD').replace(/\p{Diacritic}/gu, '')
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/-{2,}/g, '-')
-            .replace(/^-+|-+$/g, '');
-    }
-
-    _ensure_unique_slug(slugSet, preferred, fallback) {
-        let base = preferred || fallback || 'item';
-        if (!base) base = 'item';
-        let candidate = base;
-        let counter = 1;
-        while (!candidate || slugSet.has(candidate)) {
-            candidate = `${base}-${counter++}`;
-        }
-        slugSet.add(candidate);
-        return candidate;
     }
 
     _create_inline_input(label_key, value, onChange, options = {}) {
@@ -1361,7 +1341,7 @@ export class EditRulefileMetadataViewComponent {
         const contentTypeSlugSet = new Set(cleanedContentTypes.map(ct => ct.id).filter(Boolean));
         cleanedContentTypes.forEach(parent => {
             if (!parent.id) {
-                parent.id = this._ensure_unique_slug(contentTypeSlugSet, this._generate_slug(parent.text), 'content-type');
+                parent.id = ensure_unique_slug(contentTypeSlugSet, generate_slug(parent.text), 'content-type');
             } else {
                 contentTypeSlugSet.add(parent.id);
             }
@@ -1369,10 +1349,10 @@ export class EditRulefileMetadataViewComponent {
             const childSlugSet = new Set(parent.types.map(child => child.id).filter(Boolean));
             parent.types.forEach(child => {
                 if (!child.id) {
-                    const childSlug = this._generate_slug(child.text);
-                    const base = parent.id || this._generate_slug(parent.text) || 'content';
+                    const childSlug = generate_slug(child.text);
+                    const base = parent.id || generate_slug(parent.text) || 'content';
                     const preferred = childSlug ? `${base}-${childSlug}` : '';
-                    child.id = this._ensure_unique_slug(childSlugSet, preferred, `${base}-child`);
+                    child.id = ensure_unique_slug(childSlugSet, preferred, `${base}-child`);
                 } else {
                     childSlugSet.add(child.id);
                 }
@@ -1382,7 +1362,7 @@ export class EditRulefileMetadataViewComponent {
         const sampleCategorySlugSet = new Set(cleanedSampleCategories.map(cat => cat.id).filter(Boolean));
         cleanedSampleCategories.forEach(category => {
             if (!category.id) {
-                category.id = this._ensure_unique_slug(sampleCategorySlugSet, this._generate_slug(category.text), 'sample-category');
+                category.id = ensure_unique_slug(sampleCategorySlugSet, generate_slug(category.text), 'sample-category');
             } else {
                 sampleCategorySlugSet.add(category.id);
             }
@@ -1390,10 +1370,10 @@ export class EditRulefileMetadataViewComponent {
             const subSlugSet = new Set(category.categories.map(sub => sub.id).filter(Boolean));
             category.categories.forEach(sub => {
                 if (!sub.id) {
-                    const subSlug = this._generate_slug(sub.text);
+                    const subSlug = generate_slug(sub.text);
                     const base = category.id || 'category';
                     const preferred = subSlug ? `${base}-${subSlug}` : '';
-                    sub.id = this._ensure_unique_slug(subSlugSet, preferred, `${base}-subcategory`);
+                    sub.id = ensure_unique_slug(subSlugSet, preferred, `${base}-subcategory`);
                 } else {
                     subSlugSet.add(sub.id);
                 }
@@ -1403,7 +1383,7 @@ export class EditRulefileMetadataViewComponent {
         const taxonomySlugSet = new Set(cleanedTaxonomies.map(t => t.id).filter(Boolean));
         cleanedTaxonomies.forEach(taxonomy => {
             if (!taxonomy.id) {
-                taxonomy.id = this._ensure_unique_slug(taxonomySlugSet, this._generate_slug(taxonomy.label), 'taxonomy');
+                taxonomy.id = ensure_unique_slug(taxonomySlugSet, generate_slug(taxonomy.label), 'taxonomy');
             } else {
                 taxonomySlugSet.add(taxonomy.id);
             }
@@ -1411,10 +1391,10 @@ export class EditRulefileMetadataViewComponent {
             const conceptSlugSet = new Set(taxonomy.concepts.map(c => c.id).filter(Boolean));
             taxonomy.concepts.forEach(concept => {
                 if (!concept.id) {
-                    const conceptSlug = this._generate_slug(concept.label);
+                    const conceptSlug = generate_slug(concept.label);
                     const base = taxonomy.id || 'taxonomy';
                     const preferred = conceptSlug ? `${base}-${conceptSlug}` : '';
-                    concept.id = this._ensure_unique_slug(conceptSlugSet, preferred, `${base}-concept`);
+                    concept.id = ensure_unique_slug(conceptSlugSet, preferred, `${base}-concept`);
                 } else {
                     conceptSlugSet.add(concept.id);
                 }
