@@ -108,6 +108,7 @@ import { getState, dispatch, subscribe, initState, StoreActionTypes, StoreInitia
 const notificationComponent = new NotificationComponent();
 const modalComponent = new ModalComponent();
 const sideMenuComponent = new SideMenuComponent();
+const errorBoundaryComponent = new ErrorBoundaryComponent();
 
 window.getState = getState;
 window.dispatch = dispatch;
@@ -440,7 +441,7 @@ window.DraftManager = DraftManager;
         
         // Initialize error boundary
         try {
-            error_boundary_instance = ErrorBoundaryComponent;
+            error_boundary_instance = errorBoundaryComponent;
             await error_boundary_instance.init({ root: main_view_root || app_container, deps: common_deps });
         } catch (error) {
             consoleManager.error("[Main.js] Failed to initialize error boundary:", error);
