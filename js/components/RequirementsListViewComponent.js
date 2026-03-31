@@ -10,6 +10,7 @@ import {
 import { create_status_icons_wrapper } from './requirements_list/requirement_list_status_icons.js';
 import { build_item_keys, update_items_status_only } from './requirements_list/requirement_list_incremental_dom.js';
 import { create_all_requirement_list_item, create_requirement_list_item } from './requirements_list/requirement_list_list_items.js';
+import { handle_mark_requirement_passed_in_all_samples } from './requirements_list/requirement_list_mark_all_modal.js';
 import { ProgressBarComponent } from './ProgressBarComponent.js';
 import { fingerprint_item_keys, can_incremental_update } from '../utils/incremental_list_update.js';
 import './all_requirements_view_component.css';
@@ -120,7 +121,16 @@ export class RequirementsListViewComponent {
             event.stopPropagation();
             const requirement_id = mark_btn.dataset.requirementId;
             if (requirement_id) {
-                this.handle_mark_requirement_passed_in_all_samples(requirement_id, mark_btn);
+                handle_mark_requirement_passed_in_all_samples(requirement_id, mark_btn, {
+                    getState: () => this.getState(),
+                    AuditLogic: this.AuditLogic,
+                    Helpers: this.Helpers,
+                    Translation: this.Translation,
+                    dispatch: this.dispatch,
+                    StoreActionTypes: this.StoreActionTypes,
+                    NotificationComponent: this.NotificationComponent,
+                    rerender: () => this.render()
+                });
             }
             return;
         }
@@ -133,96 +143,6 @@ export class RequirementsListViewComponent {
             event.preventDefault();
             this.router('requirement_audit', { sampleId: sample_id, requirementId: requirement_id });
         }
-    }
-
-    handle_mark_requirement_passed_in_all_samples(requirement_id, trigger_button) {
-        const t = this.Translation.t;
-        const ModalComponent = window.ModalComponent;
-        if (!ModalComponent?.show || !this.Helpers?.create_element) return;
-
-        const state = this.getState();
-        const rule_file = state?.ruleFileContent;
-        const samples = state?.samples || [];
-        const requirements = rule_file?.requirements;
-        const req_def = Array.isArray(requirements)
-            ? requirements.find(r => (r?.key || r?.id) === requirement_id)
-            : requirements?.[requirement_id];
-        const requirement_title = req_def?.title || requirement_id;
-
-        const affected_samples = [];
-        if (this.AuditLogic?.get_relevant_requirements_for_sample) {
-            samples.forEach(sample => {
-                const relevant_reqs = this.AuditLogic.get_relevant_requirements_for_sample(rule_file, sample);
-                const req = relevant_reqs.find(r => (r.key || r.id) === requirement_id);
-                if (req) {
-                    const existing = (sample.requirementResults || {})[requirement_id];
-                    const status = this.AuditLogic.calculate_requirement_status(req, existing);
-                    if (status === 'not_audited' || status === 'partially_audited') {
-                        affected_samples.push(sample);
-                    }
-                }
-            });
-        }
-        const sample_count = affected_samples.length;
-
-        ModalComponent.show(
-            {
-                h1_text: t('mark_requirement_passed_in_all_samples_confirm_title', { sample_count }),
-                message_text: ''
-            },
-            (container, modal) => {
-                const msg_wrapper = this.Helpers.create_element('div', { class_name: 'modal-message-block' });
-                const p1 = this.Helpers.create_element('p', {
-                    text_content: t('mark_requirement_passed_in_all_samples_confirm_p1', { requirement_title, sample_count })
-                });
-                const p2 = this.Helpers.create_element('p', {
-                    text_content: t('mark_requirement_passed_in_all_samples_confirm_p2')
-                });
-                const p3 = this.Helpers.create_element('p', {
-                    text_content: t('mark_requirement_passed_in_all_samples_confirm_p3')
-                });
-                const p4 = this.Helpers.create_element('p', {
-                    text_content: t('mark_requirement_passed_in_all_samples_confirm_p4')
-                });
-
-                const samples_list_wrapper = this.Helpers.create_element('div', { class_name: 'modal-affected-samples-list' });
-                const samples_list_label = this.Helpers.create_element('p', {
-                    class_name: 'modal-affected-samples-label',
-                    text_content: t('mark_requirement_passed_in_all_samples_affected_list')
-                });
-                const samples_ul = this.Helpers.create_element('ul', { class_name: 'modal-affected-samples-ul' });
-                affected_samples.forEach(sample => {
-                    const sample_name = sample?.description || t('undefined_description');
-                    const li = this.Helpers.create_element('li', { text_content: sample_name });
-                    samples_ul.appendChild(li);
-                });
-                samples_list_wrapper.appendChild(samples_list_label);
-                samples_list_wrapper.appendChild(samples_ul);
-
-                msg_wrapper.append(p1, samples_list_wrapper, p2, p3, p4);
-                const existing_msg = container.querySelector('.modal-message');
-                if (existing_msg) existing_msg.replaceWith(msg_wrapper);
-
-                const actions_wrapper = this.Helpers.create_element('div', { class_name: 'modal-confirm-actions' });
-                const yes_btn = this.Helpers.create_element('button', {
-                    class_name: ['button', 'button-primary'],
-                    text_content: t('mark_all_unreviewed_passed_confirm_yes')
-                });
-                yes_btn.addEventListener('click', () => {
-                    modal.close(trigger_button);
-                    this.dispatch({ type: this.StoreActionTypes.MARK_REQUIREMENT_AS_PASSED_IN_ALL_SAMPLES, payload: { requirementId: requirement_id } });
-                    this.NotificationComponent?.show_global_message?.(t('mark_requirement_passed_in_all_samples_toast'), 'success');
-                    this.render();
-                });
-                const no_btn = this.Helpers.create_element('button', {
-                    class_name: ['button', 'button-default'],
-                    text_content: t('mark_all_unreviewed_passed_confirm_no')
-                });
-                no_btn.addEventListener('click', () => modal.close(trigger_button));
-                actions_wrapper.append(yes_btn, no_btn);
-                container.appendChild(actions_wrapper);
-            }
-        );
     }
 
     handle_requirement_list_keydown(event) {
