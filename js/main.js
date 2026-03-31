@@ -27,6 +27,13 @@ import {
     save_focus_storage,
     update_restore_position
 } from './logic/focus_manager.js';
+import {
+    navigate_and_set_hash as navigate_and_set_hash_impl,
+    handle_hash_change as handle_hash_change_impl,
+    get_route_key_from_hash,
+    get_scope_key_from_hash,
+    get_scope_key_from_view_and_params
+} from './logic/router.js';
 import { MarkdownToolbar } from './features/markdown_toolbar.js';
 import './utils/dependency_manager.js';
 import './utils/console_manager.js';
@@ -80,7 +87,7 @@ import { show_confirm_delete_modal } from './logic/confirm_delete_modal_logic.js
 import { flush_sync_to_server } from './logic/server_sync.js';
 
 import { DraftManager } from './draft_manager.js';
-import { get_auth_token, clear_auth_token, get_current_user_preferences, is_current_user_admin, set_current_user_admin } from './api/client.js';
+import { get_auth_token, clear_auth_token, get_current_user_preferences, set_current_user_admin } from './api/client.js';
 import { getState, dispatch, subscribe, initState, StoreActionTypes, StoreInitialState, loadStateFromLocalStorageBackup, clearLocalStorageBackup, updateBackupRestorePosition, APP_STATE_KEY } from './state.js';
 window.getState = getState;
 window.dispatch = dispatch;
@@ -294,22 +301,6 @@ window.DraftManager = DraftManager;
         return (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function')
             ? window.Translation.t
             : (key, replacements) => `**${key}**`;
-    }
-
-    function parse_view_and_params_from_hash() {
-        const hash = typeof window !== 'undefined' && window.location?.hash ? window.location.hash.substring(1) : '';
-        const is_skip_link = hash === 'main-content-heading';
-        const [view_name, ...param_pairs] = hash.split('?');
-        const params = {};
-        if (param_pairs.length > 0 && !is_skip_link && view_name) {
-            const query_string = param_pairs.join('?');
-            const url_params = new URLSearchParams(query_string);
-            for (const [key, value] of url_params) { params[key] = value; }
-        }
-        return {
-            viewName: (is_skip_link || !view_name) ? 'start' : view_name,
-            params: (is_skip_link || !view_name) ? {} : params
-        };
     }
 
     function get_page_title_prefix(view_name, params) {
@@ -599,80 +590,13 @@ window.DraftManager = DraftManager;
     }
 
     function navigate_and_set_hash(target_view_name, target_params = {}) {
-        nav_debug('navigate_and_set_hash anropad', { target_view_name, target_params, current_hash: window.location.hash });
-        if (target_view_name === 'manage_users' && !is_current_user_admin()) {
-            window.location.hash = '#start';
-            return;
-        }
-        const current_state_for_nav = typeof getState === 'function' ? getState() : null;
-        const is_new_audit_metadata =
-            current_view_name_rendered === 'metadata' &&
-            current_state_for_nav?.auditStatus === 'not_started' &&
-            !!current_state_for_nav?.ruleFileContent;
-        const is_start_like_view =
-            target_view_name === 'start' ||
-            target_view_name === 'audit' ||
-            target_view_name === 'audit_audits';
-        const allow_new_audit_exit = target_params && target_params.allow_new_audit_exit === '1';
-
-        // Skydda metadata-flödet för nya granskningar:
-        // vi blockerar all implicit navigering tillbaka till listan/granskningsvyn
-        // så länge användaren inte uttryckligen valt det via metadata-vyn.
-        if (is_new_audit_metadata && is_start_like_view && !allow_new_audit_exit) {
-            nav_debug('navigate_and_set_hash blockerad för ny granskning i metadata', {
-                target_view_name,
-                target_params
-            });
-            return;
-        }
-
-        const safe_params = { ...(target_params || {}) };
-        if (allow_new_audit_exit) {
-            delete safe_params.allow_new_audit_exit;
-        }
-
-        const target_hash_part = safe_params && Object.keys(safe_params).length > 0 ?
-            `${target_view_name}?${new URLSearchParams(safe_params).toString()}` :
-            target_view_name;
-        const new_hash = `#${target_hash_part}`;
-        if (window.location.hash === new_hash) {
-            nav_debug('Hash oförändrad – endast render', { new_hash });
-            updatePageTitle(target_view_name, target_params);
-            if (current_view_component_instance && typeof current_view_component_instance.render === 'function') {
-                current_view_component_instance.render();
-            }
-        } else {
-            nav_debug('Sätter hash', { from: window.location.hash, to: new_hash });
-            window.location.hash = new_hash;
-            updatePageTitle(target_view_name, target_params);
-        }
-    }
-
-    function get_route_key_from_hash() {
-        const hash = window.location.hash || '';
-        const raw = hash.startsWith('#') ? hash.slice(1) : hash;
-        const [view_name] = raw.split('?');
-        return view_name || 'start';
-    }
-
-    function get_scope_key_from_hash() {
-        const route_key = get_route_key_from_hash();
-        if (current_view_name_rendered === route_key) {
-            return `${route_key}:${current_view_params_rendered_json}`;
-        }
-        const raw = (window.location.hash || '').replace(/^#/, '');
-        const [, query = ''] = raw.split('?');
-        if (!query) return `${route_key}:{}`;
-        const url_params = new URLSearchParams(query);
-        const params_obj = {};
-        Array.from(url_params.entries()).forEach(([key, value]) => { params_obj[key] = value; });
-        return `${route_key}:${JSON.stringify(params_obj)}`;
-    }
-
-    function get_scope_key_from_view_and_params(view, params) {
-        const route_key = view || 'start';
-        const safe_params = params && typeof params === 'object' ? params : {};
-        return `${route_key}:${JSON.stringify(safe_params)}`;
+        return navigate_and_set_hash_impl(target_view_name, target_params, {
+            nav_debug,
+            getState,
+            get_current_view_name: () => current_view_name_rendered,
+            get_current_view_component: () => current_view_component_instance,
+            updatePageTitle
+        });
     }
 
     function should_capture_draft_target(target) {
@@ -698,7 +622,7 @@ window.DraftManager = DraftManager;
     function init_draft_manager() {
         DraftManager.init({
             getRouteKey: get_route_key_from_hash,
-            getScopeKey: get_scope_key_from_hash,
+            getScopeKey: () => get_scope_key_from_hash({ current_view_name_rendered, current_view_params_rendered_json }),
             rootProvider: () => main_view_root || app_container,
             restorePolicy: { max_auto_restore_age_ms: 2 * 60 * 60 * 1000 },
             onConflict: () => {
@@ -1042,114 +966,17 @@ window.DraftManager = DraftManager;
         }
     }
 
-    const SKIP_LINK_ANCHOR_ID = 'main-content-heading';
-
     async function handle_hash_change() {
-        if (get_auth_token()) {
-            try {
-                const user = await get_current_user_preferences();
-                if (user?.name) {
-                    window.__GV_CURRENT_USER_NAME__ = user.name;
-                    if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('gv_current_user_name', user.name);
-                }
-                set_current_user_admin(!!user?.is_admin);
-                dispatch({ type: 'GV_USER_PREFERENCES_SYNCED' });
-            } catch (_) {}
-        }
-        const hash = window.location.hash.substring(1);
-        nav_debug('handle_hash_change anropad', { hash, full_url: window.location.href });
-        const [view_name_from_hash, ...param_pairs] = hash.split('?');
-        /* Ignorera #main-content-heading – det är en intern ankare för skiplänken, inte ett vynamn */
-        const is_skip_link_anchor = view_name_from_hash === SKIP_LINK_ANCHOR_ID;
-        const effective_view_name = is_skip_link_anchor ? '' : view_name_from_hash;
-
-        const params = {};
-        if (param_pairs.length > 0 && !is_skip_link_anchor) {
-            const query_string = param_pairs.join('?');
-            const url_params = new URLSearchParams(query_string);
-            for (const [key, value] of url_params) { params[key] = value; }
-        }
-        let target_view = 'start';
-        let target_params = params;
-        const current_global_state = getState();
-
-        const load_audit_and_navigate = async (auditId) => {
-            const t = window.Translation?.t || (k => k);
-            try {
-                const { load_audit_with_rule_file } = await import('./api/client.js');
-                const full_state = await load_audit_with_rule_file(auditId);
-                const validation = ValidationLogic?.validate_saved_audit_file?.(full_state, { t });
-                if (full_state && validation?.isValid) {
-                    dispatch({ type: StoreActionTypes.LOAD_AUDIT_FROM_FILE, payload: full_state });
-                    const status = full_state.auditStatus || 'not_started';
-                    const samples = full_state.samples || [];
-                    let next_view = 'audit_overview';
-                    if (status === 'not_started' && samples.length === 0) {
-                        next_view = 'sample_management';
-                    } else if (status === 'not_started') {
-                        next_view = 'metadata';
-                    }
-                    navigate_and_set_hash(next_view, {});
-                    return true;
-                }
-                if (validation && !validation.isValid && window.NotificationComponent?.show_global_message) {
-                    window.NotificationComponent.show_global_message(validation.message || t('error_invalid_saved_audit_file'), 'error');
-                }
-            } catch (err) {
-                if (window.NotificationComponent?.show_global_message) {
-                    window.NotificationComponent.show_global_message(
-                        t('server_load_audit_error', { message: err.message }) || err.message,
-                        'error'
-                    );
-                }
-            }
-            return false;
-        };
-
-        if (effective_view_name === 'upload') {
-            if (params.auditId && (await load_audit_and_navigate(params.auditId))) return;
-            navigate_and_set_hash('start', {});
-            return;
-        }
-
-        if (effective_view_name === 'audit_overview' && params.auditId) {
-            if (await load_audit_and_navigate(params.auditId)) return;
-            navigate_and_set_hash('start', {});
-            return;
-        }
-
-        if (effective_view_name) {
-            target_view = effective_view_name;
-        } else {
-            target_view = 'start';
-            target_params = {};
-        }
-        if (target_view === 'manage_users' && !is_current_user_admin()) {
-            target_view = 'start';
-            target_params = {};
-            history.replaceState(null, '', '#start');
-        }
-        nav_debug('handle_hash_change -> render_view', { target_view, target_params, effective_view_name });
-        if (is_skip_link_anchor || !effective_view_name) {
-            const target_hash_part = target_params && Object.keys(target_params).length > 0 ?
-                `${target_view}?${new URLSearchParams(target_params).toString()}` :
-                target_view;
-            history.replaceState(null, '', `#${target_hash_part}`);
-        }
-        try {
-            const scope_key = get_scope_key_from_view_and_params(target_view, target_params);
-            if (scope_key && window.sessionStorage) {
-                const focus_storage = load_focus_storage();
-                const focus_info = focus_storage[scope_key];
-                if (focus_info) {
-                    window.__gv_restore_focus_info = focus_info;
-                }
-            }
-        } catch (e) {
-            /* ignore */
-        }
-        updatePageTitle(target_view, target_params);
-        render_view(target_view, target_params);
+        return handle_hash_change_impl({
+            nav_debug,
+            dispatch,
+            StoreActionTypes,
+            navigate_and_set_hash,
+            updatePageTitle,
+            render_view,
+            load_focus_storage,
+            get_scope_key_from_view_and_params
+        });
     }
 
     function on_language_changed_event() { 
