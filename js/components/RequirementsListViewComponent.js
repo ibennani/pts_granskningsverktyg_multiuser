@@ -1,5 +1,12 @@
 import { RequirementListToolbarComponent } from './RequirementListToolbarComponent.js';
-import { get_searchable_text_for_requirement as get_searchable_text_util } from '../utils/requirement_search_utils.js';
+import {
+    compare_strings_locale,
+    get_aggregated_display_status_for_requirement,
+    get_requirements_entries,
+    get_reference_string_for_sort,
+    get_searchable_text_for_requirement,
+    sample_matches_status_filter
+} from './requirements_list/requirement_list_query.js';
 import { ProgressBarComponent } from './ProgressBarComponent.js';
 import { fingerprint_item_keys, can_incremental_update } from '../utils/incremental_list_update.js';
 import './all_requirements_view_component.css';
@@ -248,41 +255,6 @@ export class RequirementsListViewComponent {
         }
     }
 
-    get_requirements_entries(rule_file_content) {
-        const requirements = rule_file_content?.requirements;
-        if (!requirements) return [];
-
-        if (Array.isArray(requirements)) {
-            return requirements.map((req, idx) => [req?.id || String(idx), req]);
-        }
-
-        if (typeof requirements === 'object') {
-            return Object.entries(requirements);
-        }
-
-        return [];
-    }
-
-    get_searchable_text_for_requirement(req) {
-        return get_searchable_text_util(req, { includeInfoBlocks: true });
-    }
-
-    get_reference_string_for_sort(req) {
-        if (typeof req?.standardReference?.text === 'string' && req.standardReference.text.trim() !== '') {
-            return req.standardReference.text.trim();
-        }
-        if (typeof req?.reference === 'string' && req.reference.trim() !== '') {
-            return req.reference.trim();
-        }
-        return '';
-    }
-
-    compare_strings_locale(a, b) {
-        const a_str = (a || '').toString();
-        const b_str = (b || '').toString();
-        return a_str.localeCompare(b_str, 'sv', { numeric: true, sensitivity: 'base' });
-    }
-
     get_status_icon(status) {
         switch (status) {
             case 'not_audited':
@@ -351,7 +323,7 @@ export class RequirementsListViewComponent {
             });
             if (has_status_filters && Object.keys(status_filters).length > 0) {
                 matching = matching.filter(sample =>
-                    this._sample_matches_status_filter(sample, req_id, req, status_filters, has_status_filters, requirement_needs_help_fn)
+                    sample_matches_status_filter(sample, req_id, req, status_filters, has_status_filters, requirement_needs_help_fn, this.AuditLogic)
                 );
             }
             matching.forEach(s => keys.push(`${req_key}:${s?.id || ''}`));
@@ -409,7 +381,7 @@ export class RequirementsListViewComponent {
                 });
                 if (filter_opts.has_status_filters && Object.keys(filter_opts.status_filters || {}).length > 0) {
                     matching_samples = matching_samples.filter(sample =>
-                        this._sample_matches_status_filter(sample, req_id, req, filter_opts.status_filters, filter_opts.has_status_filters, needs_help_fn)
+                        sample_matches_status_filter(sample, req_id, req, filter_opts.status_filters, filter_opts.has_status_filters, needs_help_fn, this.AuditLogic)
                     );
                 }
                 const sample_lis = req_li.querySelectorAll('ol.requirement-samples-list > li.requirement-sample-item');
@@ -433,50 +405,6 @@ export class RequirementsListViewComponent {
                 });
             });
         }
-    }
-
-    get_aggregated_display_status_for_requirement(req_id, req, samples) {
-        const candidates = new Set([String(req_id)]);
-        if (req?.key) candidates.add(String(req.key));
-        if (req?.id) candidates.add(String(req.id));
-
-        const matching_samples = samples.filter(sample => {
-            const sample_set = sample?.id ? this.relevant_ids_by_sample.get(sample.id) : null;
-            if (!sample_set) return false;
-            return [...candidates].some(id => sample_set.has(id));
-        });
-
-        const req_key = req?.key || req?.id || req_id;
-        let display_status = 'not_audited';
-
-        const requirement_needs_help_fn = this.AuditLogic?.requirement_needs_help || (() => false);
-        for (const sample of matching_samples) {
-            const req_result = (sample.requirementResults || {})[req_key];
-            if (!req_result) continue;
-            if (requirement_needs_help_fn(req_result)) return 'needs_help';
-            const status = req_result.needsReview ? 'updated' : this.AuditLogic.calculate_requirement_status(req, req_result);
-            if (status === 'failed') return 'failed';
-            if (status === 'updated') display_status = 'updated';
-            if (status === 'partially_audited' && display_status !== 'updated') display_status = 'partially_audited';
-            if (status === 'passed' && display_status === 'not_audited') display_status = 'passed';
-        }
-        return display_status;
-    }
-
-    /**
-     * Kontrollerar om ett stickprov matchar statusfiltret för ett givet krav.
-     * Används för att filtrera både krav (minst ett matchande stickprov) och stickprov (endast matchande visas).
-     */
-    _sample_matches_status_filter(sample, req_id, req, status_filters, has_status_filters, requirement_needs_help_fn) {
-        const req_key = req?.key || req?.id || req_id;
-        const req_result = (sample.requirementResults || {})[req_key];
-        const display_status = req_result?.needsReview ? 'updated' : this.AuditLogic.calculate_requirement_status(req, req_result);
-        const needs_help = requirement_needs_help_fn(req_result);
-        const status_match = !has_status_filters || status_filters[display_status] === true;
-        const needs_help_checked = status_filters.needs_help === true;
-        const show_by_status = status_match || (needs_help_checked && needs_help);
-        const hide_by_needs_help = status_filters.needs_help === false && needs_help;
-        return show_by_status && !hide_by_needs_help;
     }
 
     ensure_dom_initialized() {
@@ -603,7 +531,7 @@ export class RequirementsListViewComponent {
         let current_sample_object = null;
 
         if (this.mode === 'all') {
-            entries = this.get_requirements_entries(rule_file_content);
+            entries = get_requirements_entries(rule_file_content);
 
             // Only show requirements that are relevant for at least one sample
             const can_use_audit_logic = Boolean(
@@ -688,7 +616,7 @@ export class RequirementsListViewComponent {
             const has_any_reference = requirements_to_check.some((item) => {
                 if (this.mode === 'all') {
                     const [, req] = item;
-                    const ref = this.get_reference_string_for_sort(req);
+                    const ref = get_reference_string_for_sort(req);
                     return ref && ref.trim() !== '';
                 } else {
                     const ref = item.standardReference?.text;
@@ -771,12 +699,12 @@ export class RequirementsListViewComponent {
                 });
 
                 const at_least_one_sample_matches = samples_for_req.some(sample =>
-                    this._sample_matches_status_filter(sample, req_id, req, status_filters, has_status_filters, requirement_needs_help_fn)
+                    sample_matches_status_filter(sample, req_id, req, status_filters, has_status_filters, requirement_needs_help_fn, this.AuditLogic)
                 );
                 if (!at_least_one_sample_matches) return false;
 
                 if (search_term) {
-                    return this.get_searchable_text_for_requirement(req).includes(search_term);
+                    return get_searchable_text_for_requirement(req).includes(search_term);
                 }
                 return true;
             });
@@ -795,7 +723,7 @@ export class RequirementsListViewComponent {
                 if (!show_by_status || hide_by_needs_help) return false;
 
                 if (search_term) {
-                    return this.get_searchable_text_for_requirement(req).includes(search_term);
+                    return get_searchable_text_for_requirement(req).includes(search_term);
                 }
                 return true;
             });
@@ -889,36 +817,36 @@ export class RequirementsListViewComponent {
 
         if (this.mode === 'all') {
             if (sort_by === 'title_asc') {
-                sorted.sort((a, b) => this.compare_strings_locale(a?.[1]?.title, b?.[1]?.title));
+                sorted.sort((a, b) => compare_strings_locale(a?.[1]?.title, b?.[1]?.title));
             } else if (sort_by === 'title_desc') {
-                sorted.sort((a, b) => this.compare_strings_locale(b?.[1]?.title, a?.[1]?.title));
+                sorted.sort((a, b) => compare_strings_locale(b?.[1]?.title, a?.[1]?.title));
             } else if (sort_by === 'ref_asc') {
                 sorted.sort((a, b) => {
-                    const ref_a = this.get_reference_string_for_sort(a?.[1]);
-                    const ref_b = this.get_reference_string_for_sort(b?.[1]);
+                    const ref_a = get_reference_string_for_sort(a?.[1]);
+                    const ref_b = get_reference_string_for_sort(b?.[1]);
                     if (this.Helpers?.natural_sort) {
                         return this.Helpers.natural_sort(ref_a || 'Z', ref_b || 'Z');
                     }
-                    return this.compare_strings_locale(ref_a, ref_b);
+                    return compare_strings_locale(ref_a, ref_b);
                 });
             } else if (sort_by === 'ref_desc') {
                 sorted.sort((a, b) => {
-                    const ref_a = this.get_reference_string_for_sort(a?.[1]);
-                    const ref_b = this.get_reference_string_for_sort(b?.[1]);
+                    const ref_a = get_reference_string_for_sort(a?.[1]);
+                    const ref_b = get_reference_string_for_sort(b?.[1]);
                     if (this.Helpers?.natural_sort) {
                         return this.Helpers.natural_sort(ref_b || 'Z', ref_a || 'Z');
                     }
-                    return this.compare_strings_locale(ref_b, ref_a);
+                    return compare_strings_locale(ref_b, ref_a);
                 });
             } else if (sort_by === 'updated_first') {
                 sorted.sort((a, b) => {
-                    const status_a = this.get_aggregated_display_status_for_requirement(a?.[0], a?.[1], samples);
-                    const status_b = this.get_aggregated_display_status_for_requirement(b?.[0], b?.[1], samples);
+                    const status_a = get_aggregated_display_status_for_requirement(a?.[0], a?.[1], samples, this.relevant_ids_by_sample, this.AuditLogic);
+                    const status_b = get_aggregated_display_status_for_requirement(b?.[0], b?.[1], samples, this.relevant_ids_by_sample, this.AuditLogic);
                     const a_updated = status_a === 'updated' ? 0 : 1;
                     const b_updated = status_b === 'updated' ? 0 : 1;
                     if (a_updated !== b_updated) return a_updated - b_updated;
-                    const ref_a = this.get_reference_string_for_sort(a?.[1]);
-                    const ref_b = this.get_reference_string_for_sort(b?.[1]);
+                    const ref_a = get_reference_string_for_sort(a?.[1]);
+                    const ref_b = get_reference_string_for_sort(b?.[1]);
                     return this.Helpers?.natural_sort(ref_a || 'Z', ref_b || 'Z') || 0;
                 });
             }
@@ -1022,7 +950,7 @@ export class RequirementsListViewComponent {
         const { status_filters = {}, has_status_filters = false, requirement_needs_help_fn = () => false, has_active_filter = false } = filter_opts;
         if (has_status_filters && Object.keys(status_filters).length > 0) {
             matching_samples = matching_samples.filter(sample =>
-                this._sample_matches_status_filter(sample, req_id, req, status_filters, has_status_filters, requirement_needs_help_fn)
+                sample_matches_status_filter(sample, req_id, req, status_filters, has_status_filters, requirement_needs_help_fn, this.AuditLogic)
             );
         }
 
