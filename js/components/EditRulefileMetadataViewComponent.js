@@ -1,5 +1,6 @@
 // js/components/EditRulefileMetadataViewComponent.js
 import { create_production_rule } from '../api/client.js';
+import { clone_metadata, ensure_metadata_defaults } from '../logic/rulefile_metadata_model.js';
 import { generate_slug, ensure_unique_slug } from '../logic/rulefile_metadata_slug.js';
 import './edit_rulefile_metadata_view.css';
 
@@ -239,105 +240,6 @@ export class EditRulefileMetadataViewComponent {
                 container.appendChild(buttons_wrapper);
             }
         );
-    }
-
-    _clone_metadata(metadata) {
-        return JSON.parse(JSON.stringify(metadata || {}));
-    }
-
-    _ensure_metadata_defaults(workingMetadata) {
-        if (!workingMetadata.monitoringType) {
-            workingMetadata.monitoringType = { type: '', text: '' };
-        } else {
-            workingMetadata.monitoringType.type = workingMetadata.monitoringType.type || '';
-            workingMetadata.monitoringType.text = workingMetadata.monitoringType.text || '';
-        }
-
-        // Support both old format (direct) and new format (vocabularies)
-        if (!workingMetadata.vocabularies) {
-            // Migrate to new format if needed
-            workingMetadata.vocabularies = {};
-            if (workingMetadata.pageTypes) {
-                workingMetadata.vocabularies.pageTypes = Array.isArray(workingMetadata.pageTypes) ? [...workingMetadata.pageTypes] : [];
-            }
-            if (workingMetadata.contentTypes) {
-                workingMetadata.vocabularies.contentTypes = Array.isArray(workingMetadata.contentTypes) ? [...workingMetadata.contentTypes] : [];
-            }
-            if (workingMetadata.taxonomies) {
-                workingMetadata.vocabularies.taxonomies = Array.isArray(workingMetadata.taxonomies) ? [...workingMetadata.taxonomies] : [];
-            }
-            // Handle sampleTypes - can be either an object with sampleCategories or an array
-            if (workingMetadata.samples?.sampleTypes) {
-                if (typeof workingMetadata.samples.sampleTypes === 'object' && !Array.isArray(workingMetadata.samples.sampleTypes)) {
-                    // New format: object with sampleCategories and sampleTypes array
-                    workingMetadata.vocabularies.sampleTypes = {
-                        sampleCategories: Array.isArray(workingMetadata.samples.sampleTypes.sampleCategories) 
-                            ? [...workingMetadata.samples.sampleTypes.sampleCategories] 
-                            : [],
-                        sampleTypes: Array.isArray(workingMetadata.samples.sampleTypes.sampleTypes) 
-                            ? [...workingMetadata.samples.sampleTypes.sampleTypes] 
-                            : []
-                    };
-                } else if (Array.isArray(workingMetadata.samples.sampleTypes)) {
-                    // Old format: just an array
-                    workingMetadata.vocabularies.sampleTypes = {
-                        sampleCategories: [],
-                        sampleTypes: [...workingMetadata.samples.sampleTypes]
-                    };
-                } else {
-                    workingMetadata.vocabularies.sampleTypes = { sampleCategories: [], sampleTypes: [] };
-                }
-            } else {
-                workingMetadata.vocabularies.sampleTypes = { sampleCategories: [], sampleTypes: [] };
-            }
-        }
-        
-        // Ensure vocabularies structure exists
-        if (!workingMetadata.vocabularies.pageTypes) {
-            workingMetadata.vocabularies.pageTypes = Array.isArray(workingMetadata.pageTypes) ? [...workingMetadata.pageTypes] : [];
-        }
-        if (!workingMetadata.vocabularies.contentTypes) {
-            workingMetadata.vocabularies.contentTypes = Array.isArray(workingMetadata.contentTypes) ? [...workingMetadata.contentTypes] : [];
-        }
-        if (!workingMetadata.vocabularies.taxonomies) {
-            workingMetadata.vocabularies.taxonomies = Array.isArray(workingMetadata.taxonomies) ? [...workingMetadata.taxonomies] : [];
-        }
-        if (!workingMetadata.vocabularies.sampleTypes) {
-            workingMetadata.vocabularies.sampleTypes = { sampleCategories: [], sampleTypes: [] };
-        }
-        
-        // Ensure sampleTypes is an object with both properties
-        if (typeof workingMetadata.vocabularies.sampleTypes !== 'object' || Array.isArray(workingMetadata.vocabularies.sampleTypes)) {
-            workingMetadata.vocabularies.sampleTypes = {
-                sampleCategories: [],
-                sampleTypes: Array.isArray(workingMetadata.vocabularies.sampleTypes) ? [...workingMetadata.vocabularies.sampleTypes] : []
-            };
-        }
-        if (!Array.isArray(workingMetadata.vocabularies.sampleTypes.sampleCategories)) {
-            workingMetadata.vocabularies.sampleTypes.sampleCategories = [];
-        }
-        if (!Array.isArray(workingMetadata.vocabularies.sampleTypes.sampleTypes)) {
-            workingMetadata.vocabularies.sampleTypes.sampleTypes = [];
-        }
-        
-        // Backward compatibility: also set direct properties
-        workingMetadata.pageTypes = workingMetadata.vocabularies.pageTypes;
-        workingMetadata.contentTypes = workingMetadata.vocabularies.contentTypes;
-        workingMetadata.taxonomies = workingMetadata.vocabularies.taxonomies;
-        
-        if (!workingMetadata.samples) {
-            workingMetadata.samples = { sampleCategories: [], sampleTypes: [] };
-        }
-        // Set sampleCategories from vocabularies
-        workingMetadata.samples.sampleCategories = Array.isArray(workingMetadata.vocabularies.sampleTypes.sampleCategories)
-            ? [...workingMetadata.vocabularies.sampleTypes.sampleCategories]
-            : [];
-        // Set sampleTypes array from vocabularies.sampleTypes.sampleTypes
-        workingMetadata.samples.sampleTypes = Array.isArray(workingMetadata.vocabularies.sampleTypes.sampleTypes)
-            ? [...workingMetadata.vocabularies.sampleTypes.sampleTypes]
-            : [];
-        workingMetadata.keywords = Array.isArray(workingMetadata.keywords) ? [...workingMetadata.keywords] : [];
-        return workingMetadata;
     }
 
     _create_inline_input(label_key, value, onChange, options = {}) {
@@ -1037,8 +939,8 @@ export class EditRulefileMetadataViewComponent {
 
     _create_form(metadata, is_create_mode = false) {
         const workingMetadata = is_create_mode
-            ? this._clone_metadata(metadata)
-            : this._ensure_metadata_defaults(this._clone_metadata(metadata));
+            ? clone_metadata(metadata)
+            : ensure_metadata_defaults(clone_metadata(metadata));
         const form = this.Helpers.create_element('form', { class_name: 'rulefile-metadata-edit-form' });
 
         const general_section = this.Helpers.create_element('section', { class_name: 'form-section' });
