@@ -22,7 +22,7 @@ export class AuditListComponent {
         this.Helpers = deps.Helpers;
         this.Translation = deps.Translation;
 
-        this._table = Object.create(GenericTableComponent);
+        this._table = new GenericTableComponent();
         await this._table.init({ deps });
     }
 

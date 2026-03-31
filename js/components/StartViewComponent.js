@@ -82,7 +82,7 @@ export class StartViewComponent {
 
         this._genericTables = [];
         for (let i = 0; i < START_VIEW_SECTION_COUNT; i++) {
-            const tbl = Object.create(GenericTableComponent);
+            const tbl = new GenericTableComponent();
             await tbl.init({ deps });
             this._genericTables.push(tbl);
         }

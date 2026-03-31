@@ -63,7 +63,7 @@ export class ManageUsersViewComponent {
 
         this.handle_filter_input = this.handle_filter_input.bind(this);
 
-        this._table = Object.create(GenericTableComponent);
+        this._table = new GenericTableComponent();
         await this._table.init({ root, deps: { Helpers: this.Helpers } });
 
         if (this.Helpers?.load_css_safely) {

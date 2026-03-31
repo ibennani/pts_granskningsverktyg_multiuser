@@ -102,11 +102,11 @@ export class AuditViewComponent {
         this._unsubscribe_audits = null;
         this._unsubscribe_rules = null;
 
-        this._auditsTable = Object.create(GenericTableComponent);
+        this._auditsTable = new GenericTableComponent();
         await this._auditsTable.init({ deps });
-        this._publishedRulesTable = Object.create(GenericTableComponent);
+        this._publishedRulesTable = new GenericTableComponent();
         await this._publishedRulesTable.init({ deps });
-        this._draftRulesTable = Object.create(GenericTableComponent);
+        this._draftRulesTable = new GenericTableComponent();
         await this._draftRulesTable.init({ deps });
         this._auditListComponent = new AuditListComponent();
         await this._auditListComponent.init({ deps });

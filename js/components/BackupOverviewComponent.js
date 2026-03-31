@@ -57,8 +57,8 @@ export class BackupOverviewComponent {
         this._run_backup_in_progress = false;
         this.sort_state_overview = { columnIndex: 0, direction: 'asc' };
 
-        this._overview_table = Object.create(GenericTableComponent);
-        this._detail_table = Object.create(GenericTableComponent);
+        this._overview_table = new GenericTableComponent();
+        this._detail_table = new GenericTableComponent();
         await this._overview_table.init({ deps });
         await this._detail_table.init({ deps });
 
