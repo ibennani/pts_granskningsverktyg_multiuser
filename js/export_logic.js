@@ -178,7 +178,7 @@ function export_to_csv(current_audit) {
         return;
     }
 
-    let csv_content_array = [];
+    const csv_content_array = [];
 
     const headers = [
         t('excel_col_deficiency_id'),
@@ -578,8 +578,8 @@ function create_observation_paragraphs(deficiency, t) {
         for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
             const isFirstLine = lineIndex === 0;
             const isLastLine = lineIndex === lines.length - 1;
-            let textRuns = [];
-            let lineText = lines[lineIndex];
+            const textRuns = [];
+            const lineText = lines[lineIndex];
             const isBulletLine = lineText.trim().startsWith('•');
             const indentConfig = isBulletLine ? { left: 227, hanging: 227 } : {};
             const tabStopsConfig = isBulletLine ? [{ position: 227, type: TabStopType.LEFT }] : [];
@@ -617,7 +617,7 @@ function create_observation_paragraphs(deficiency, t) {
             );
         }
     } else {
-        let textRuns = [];
+        const textRuns = [];
         const isBulletLine = observationText.trim().startsWith('•');
         const indentConfig = isBulletLine ? { left: 227, hanging: 227 } : {};
         const tabStopsConfig = isBulletLine ? [{ position: 227, type: TabStopType.LEFT }] : [];
@@ -1921,7 +1921,7 @@ async function export_to_text_export_deprecated(current_audit) {
                             const isFirstLine = lineIndex === 0;
                             const isLastLine = lineIndex === lines.length - 1;
                             let textRuns = [];
-                            let lineText = lines[lineIndex];
+                            const lineText = lines[lineIndex];
                             const isBulletLine = lineText.trim().startsWith('•');
 
                             const indentConfig = isBulletLine ? { left: 227, hanging: 227 } : {};
@@ -1952,7 +1952,7 @@ async function export_to_text_export_deprecated(current_audit) {
                         }
                     } else {
                         // Enkelrad
-                        let textRuns = [];
+                        const textRuns = [];
                         const isBulletLine = observationText.trim().startsWith('•');
                         const indentConfig = isBulletLine ? { left: 227, hanging: 227 } : {};
                         const tabStopsConfig = isBulletLine ? [{ position: 227, type: TabStopType.LEFT }] : [];
@@ -3762,12 +3762,12 @@ async function export_to_html(current_audit) {
                 });
                 document.querySelectorAll('input[name="sort-by"]:checked').forEach(radio => {
                     // Kompatibilitet: Använd closest() med fallback för äldre webbläsare
-                    var parentOption = null;
+                    let parentOption = null;
                     if (radio.closest) {
                         parentOption = radio.closest('.sort-option');
                     } else {
                         // Fallback för webbläsare utan closest()
-                        var element = radio.parentElement;
+                        let element = radio.parentElement;
                         while (element && !element.classList.contains('sort-option')) {
                             element = element.parentElement;
                         }
