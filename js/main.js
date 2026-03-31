@@ -104,11 +104,14 @@ import { flush_sync_to_server } from './logic/server_sync.js';
 import { DraftManager } from './draft_manager.js';
 import { get_auth_token, clear_auth_token, get_current_user_preferences, set_current_user_admin } from './api/client.js';
 import { getState, dispatch, subscribe, initState, StoreActionTypes, StoreInitialState, loadStateFromLocalStorageBackup, clearLocalStorageBackup, updateBackupRestorePosition, APP_STATE_KEY } from './state.js';
+
+const notificationComponent = new NotificationComponent();
+
 window.getState = getState;
 window.dispatch = dispatch;
 window.Store = { getState, dispatch, subscribe, StoreActionTypes, StoreInitialState };
 window.StoreActionTypes = StoreActionTypes;
-window.NotificationComponent = NotificationComponent;
+window.NotificationComponent = notificationComponent;
 window.ModalComponent = ModalComponent;
 window.show_confirm_delete_modal = show_confirm_delete_modal;
 window.dependencyManager = dependencyManager;
@@ -372,7 +375,7 @@ window.DraftManager = DraftManager;
         // Wait for dependency manager to be ready
         await window.dependencyManager?.initialize();
         
-        if (!window.Translation || !window.Helpers || !NotificationComponent || !window.SaveAuditLogic) {
+        if (!window.Translation || !window.Helpers || !notificationComponent || !window.SaveAuditLogic) {
             consoleManager.error("[Main.js] init_global_components: Core dependencies not available!");
             return;
         }
@@ -382,7 +385,7 @@ window.DraftManager = DraftManager;
             StoreActionTypes: StoreActionTypes,
             Translation: window.Translation,
             Helpers: window.Helpers,
-            NotificationComponent: NotificationComponent,
+            NotificationComponent: notificationComponent,
             ModalComponent: ModalComponent,
             SaveAuditLogic: window.SaveAuditLogic,
             AuditLogic: AuditLogic,
@@ -489,8 +492,8 @@ window.DraftManager = DraftManager;
             rootProvider: () => main_view_root || app_container,
             restorePolicy: { max_auto_restore_age_ms: 2 * 60 * 60 * 1000 },
             onConflict: () => {
-                if (NotificationComponent?.show_global_message) {
-                    NotificationComponent.show_global_message((window.Translation?.t && window.Translation.t('draft_updated_other_tab')) || 'Utkast uppdaterades i annan flik.', 'info');
+                if (notificationComponent?.show_global_message) {
+                    notificationComponent.show_global_message((window.Translation?.t && window.Translation.t('draft_updated_other_tab')) || 'Utkast uppdaterades i annan flik.', 'info');
                 } else {
                     consoleManager.warn('[Main.js] Draft conflict detected.');
                 }
@@ -642,7 +645,7 @@ window.DraftManager = DraftManager;
         }
 
         if (current_view_component_instance && typeof current_view_component_instance.destroy === 'function') {
-            NotificationComponent?.clear_global_message?.();
+            notificationComponent?.clear_global_message?.();
             if (current_view_component_instance === RequirementListComponent && view_name_to_render === 'rulefile_requirements') {
                 try {
                     current_view_component_instance.destroy();
@@ -761,7 +764,7 @@ window.DraftManager = DraftManager;
                     flush_sync_to_server,
                     Translation: window.Translation,
                     Helpers: window.Helpers,
-                    NotificationComponent: NotificationComponent,
+                    NotificationComponent: notificationComponent,
                     SaveAuditLogic: window.SaveAuditLogic,
                     AuditLogic: AuditLogic,
                     ExportLogic: window.ExportLogic,
@@ -892,7 +895,7 @@ window.DraftManager = DraftManager;
             top_action_bar_instance,
             bottom_action_bar_instance,
             error_boundary_instance,
-            NotificationComponent,
+            NotificationComponent: notificationComponent,
             DraftManager,
             capture_focus_state,
             restore_focus_state,
@@ -1046,7 +1049,7 @@ window.DraftManager = DraftManager;
             }
             try {
                 const t = window.Translation?.t ?? ((k) => k);
-                NotificationComponent?.show_global_message?.(t('auth_session_expired'), 'warning');
+                notificationComponent?.show_global_message?.(t('auth_session_expired'), 'warning');
             } catch (_) {}
 
             await render_view('login', {
@@ -1126,7 +1129,7 @@ window.DraftManager = DraftManager;
             StoreActionTypes,
             ValidationLogic,
             router: navigate_and_set_hash,
-            NotificationComponent,
+            NotificationComponent: notificationComponent,
             t: typeof window.Translation?.t === 'function' ? window.Translation.t.bind(window.Translation) : ((k) => k),
             navigate_and_set_hash,
             handle_hash_change
@@ -1158,7 +1161,7 @@ window.DraftManager = DraftManager;
                 if (should_show) {
                     sessionStorage.removeItem(AUTH_REQUIRED_MESSAGE_KEY);
                     const t = window.Translation?.t ?? ((k) => k);
-                    NotificationComponent?.show_global_message?.(t('auth_session_expired'), 'warning');
+                    notificationComponent?.show_global_message?.(t('auth_session_expired'), 'warning');
                 }
             } catch (_) {}
             await render_view('login', {
