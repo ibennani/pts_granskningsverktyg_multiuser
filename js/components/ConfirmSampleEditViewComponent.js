@@ -1,4 +1,17 @@
-export const ConfirmSampleEditViewComponent = {
+export class ConfirmSampleEditViewComponent {
+    constructor() {
+        this.root = null;
+        this.deps = null;
+        this.router = null;
+        this.getState = null;
+        this.dispatch = null;
+        this.StoreActionTypes = null;
+        this.Translation = null;
+        this.Helpers = null;
+        this.NotificationComponent = null;
+        this.plate_element_ref = null;
+    }
+
     init({ root, deps }) {
         this.root = root;
         this.deps = deps;
@@ -9,9 +22,9 @@ export const ConfirmSampleEditViewComponent = {
         this.Translation = deps.Translation;
         this.Helpers = deps.Helpers;
         this.NotificationComponent = deps.NotificationComponent;
-        
+
         this.plate_element_ref = null;
-    },
+    }
 
     handle_confirm_and_save() {
         const t = this.Translation.t;
@@ -22,18 +35,18 @@ export const ConfirmSampleEditViewComponent = {
             return;
         }
 
-        this.dispatch({ 
-            type: this.StoreActionTypes.UPDATE_SAMPLE, 
-            payload: { 
-                sampleId: pending_changes.sampleId, 
+        this.dispatch({
+            type: this.StoreActionTypes.UPDATE_SAMPLE,
+            payload: {
+                sampleId: pending_changes.sampleId,
                 updatedSampleData: pending_changes.updatedSampleData
-            } 
+            }
         });
 
         this.dispatch({ type: this.StoreActionTypes.CLEAR_STAGED_SAMPLE_CHANGES });
-        
+
         this.NotificationComponent.show_global_message(t('sample_updated_successfully'), "success");
-        
+
         const current_state = this.getState();
         const return_view = (current_state.auditStatus === 'not_started') ? 'sample_management' : 'audit_overview';
         if (return_view === 'audit_overview') {
@@ -44,11 +57,11 @@ export const ConfirmSampleEditViewComponent = {
             } catch (e) {}
         }
         this.router(return_view);
-    },
+    }
 
     handle_discard_and_return() {
         this.dispatch({ type: this.StoreActionTypes.CLEAR_STAGED_SAMPLE_CHANGES });
-        
+
         const current_state = this.getState();
         const return_view = (current_state.auditStatus === 'not_started') ? 'sample_management' : 'audit_overview';
         if (return_view === 'audit_overview') {
@@ -59,7 +72,7 @@ export const ConfirmSampleEditViewComponent = {
             } catch (e) {}
         }
         this.router(return_view);
-    },
+    }
 
     render() {
         if (!this.root) return;
@@ -115,10 +128,10 @@ export const ConfirmSampleEditViewComponent = {
             section.appendChild(render_req_list(removed_reqs));
             this.plate_element_ref.appendChild(section);
         }
-        
+
         if (data_will_be_lost) {
             const warning_div = this.Helpers.create_element('div', { style: 'margin-top: 1rem; padding: 1rem; border: 2px solid var(--danger-color); border-radius: var(--border-radius); background-color: var(--danger-color-light);' });
-            warning_div.appendChild(this.Helpers.create_element('h4', { 
+            warning_div.appendChild(this.Helpers.create_element('h4', {
                 html_content: (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('warning', ['var(--danger-color)']) + ' ' : '') + t('sample_edit_confirm_data_loss_warning_header')
             }));
             warning_div.appendChild(this.Helpers.create_element('p', { text_content: t('sample_edit_confirm_data_loss_warning_text') }));
@@ -126,13 +139,13 @@ export const ConfirmSampleEditViewComponent = {
         }
 
         const actions_div = this.Helpers.create_element('div', { class_name: 'form-actions', style: 'margin-top: 2rem;' });
-        const confirm_btn = this.Helpers.create_element('button', { 
-            class_name: ['button', 'button-primary'], 
-            text_content: t('sample_edit_confirm_action_button') 
+        const confirm_btn = this.Helpers.create_element('button', {
+            class_name: ['button', 'button-primary'],
+            text_content: t('sample_edit_confirm_action_button')
         });
-        const discard_btn = this.Helpers.create_element('button', { 
-            class_name: ['button', 'button-danger'], 
-            text_content: t('sample_edit_discard_action_button') 
+        const discard_btn = this.Helpers.create_element('button', {
+            class_name: ['button', 'button-danger'],
+            text_content: t('sample_edit_discard_action_button')
         });
 
         confirm_btn.addEventListener('click', this.handle_confirm_and_save.bind(this));
@@ -140,7 +153,7 @@ export const ConfirmSampleEditViewComponent = {
 
         actions_div.append(confirm_btn, discard_btn);
         this.plate_element_ref.appendChild(actions_div);
-    },
+    }
 
     destroy() {
         if (this.root) this.root.innerHTML = '';
@@ -148,4 +161,4 @@ export const ConfirmSampleEditViewComponent = {
         this.deps = null;
         this.plate_element_ref = null;
     }
-};
+}
