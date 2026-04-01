@@ -1,6 +1,7 @@
 // js/utils/safe_init_helper.js
 
 import * as AuditLogic from '../audit_logic.js';
+import { dependencyManager } from './dependency_manager.js';
 
 /**
  * Safe Initialization Helper - Provides utilities for safe component initialization
@@ -50,8 +51,8 @@ export async function safeAssignGlobals(target, dependencyNames, maxRetries = 10
  */
 function getDependencyValue(depName) {
     // Try dependency manager first
-    if (window.dependencyManager) {
-        const value = window.dependencyManager.getDependency(depName);
+    if (dependencyManager) {
+        const value = dependencyManager.getDependency(depName);
         if (value) return value;
     }
     
@@ -96,8 +97,8 @@ export function createSafeAssignFunction(dependencyNames) {
  * @returns {Promise<boolean>} True if all dependencies are available
  */
 export async function waitForDependencies(requiredDeps = [], timeout = 5000) {
-    if (window.dependencyManager) {
-        return await window.dependencyManager.waitForDependencies(timeout);
+    if (dependencyManager) {
+        return await dependencyManager.waitForDependencies(timeout);
     }
     
     // Fallback: check dependencies manually

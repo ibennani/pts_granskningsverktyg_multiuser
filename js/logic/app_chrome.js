@@ -2,6 +2,7 @@
  * Globalt skal: sidomeny, action bars, modal, felgräns och gemensamma deps.
  */
 import { consoleManager } from '../utils/console_manager.js';
+import { dependencyManager } from '../utils/dependency_manager.js';
 
 export function get_t_fallback() {
     return (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function')
@@ -123,7 +124,7 @@ export async function init_global_components(deps) {
         render_ctx
     } = deps;
 
-    await window.dependencyManager?.initialize();
+    await dependencyManager.initialize();
 
     if (!window.Translation || !window.Helpers || !notificationComponent || !window.SaveAuditLogic) {
         consoleManager.error('[Main.js] init_global_components: Core dependencies not available!');
