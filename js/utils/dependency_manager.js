@@ -6,8 +6,13 @@
  */
 
 import * as AuditLogic from '../audit_logic.js';
+import * as Helpers from './helpers.js';
+import * as SaveAuditLogic from '../logic/save_audit_logic.js';
+import * as ScoreCalculator from '../logic/ScoreCalculator.js';
+import { public_api as ExportLogicApi } from '../export_logic.js';
 import { consoleManager } from './console_manager.js';
 import { app_runtime_refs } from './app_runtime_refs.js';
+import { get_registered_translation_module } from './translation_access.js';
 
 class DependencyManager {
     constructor() {
@@ -122,13 +127,13 @@ class DependencyManager {
         if (this.isInitialized) return;
 
         // Register core dependencies
-        this.register('Helpers', () => window.Helpers, true);
-        this.register('Translation', () => window.Translation, true);
+        this.register('Helpers', () => Helpers, true);
+        this.register('Translation', () => get_registered_translation_module(), true);
         this.register('NotificationComponent', () => app_runtime_refs.notification_component, true);
         this.register('AuditLogic', () => AuditLogic, true);
-        this.register('SaveAuditLogic', () => window.SaveAuditLogic, true);
-        this.register('ScoreCalculator', () => window.ScoreCalculator, false);
-        this.register('ExportLogic', () => window.ExportLogic, false);
+        this.register('SaveAuditLogic', () => SaveAuditLogic, true);
+        this.register('ScoreCalculator', () => ScoreCalculator, false);
+        this.register('ExportLogic', () => ExportLogicApi, false);
 
         // Wait for all required dependencies
         const ready = await this.waitForDependencies();

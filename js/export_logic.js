@@ -5,14 +5,14 @@ import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Tabl
 import { marked } from './utils/markdown.js';
 import { format_local_date_for_filename } from './utils/filename_utils.js';
 import { recalculateAuditTimes } from './audit_logic.js';
+import * as Helpers from './utils/helpers.js';
+import * as ScoreCalculator from './logic/ScoreCalculator.js';
 import { consoleManager } from './utils/console_manager.js';
 import { app_runtime_refs } from './utils/app_runtime_refs.js';
+import { get_translation_t, get_current_language_code_from_registry } from './utils/translation_access.js';
 
 function get_t_internal() {
-    if (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function') {
-        return window.Translation.t;
-    }
-    return (key, _replacements) => `**${key}**`;
+    return get_translation_t();
 }
 
 function show_global_message_internal(message, type, duration) {
@@ -284,7 +284,7 @@ async function export_to_excel(current_audit) {
 
         const generalSheet = workbook.addWorksheet(t('excel_sheet_general_info'));
 
-        const lang_code = window.Translation.get_current_language_code();
+        const lang_code = get_current_language_code_from_registry();
 
         const display_times = get_effective_display_times_for_audit(current_audit);
         const general_info_data = [
@@ -292,8 +292,8 @@ async function export_to_excel(current_audit) {
             [t('actor_name'), strip_markdown_for_excel(String(current_audit.auditMetadata.actorName || ''))],
             [t('excel_general_service_link'), strip_markdown_for_excel(String(current_audit.auditMetadata.actorLink || ''))],
             [t('auditor_name'), strip_markdown_for_excel(String(current_audit.auditMetadata.auditorName || ''))],
-            [t('start_time'), display_times.startTime ? window.Helpers.format_iso_to_local_date(display_times.startTime, lang_code) : ''],
-            [t('end_time'), display_times.endTime ? window.Helpers.format_iso_to_local_date(display_times.endTime, lang_code) : '']
+            [t('start_time'), display_times.startTime ? Helpers.format_iso_to_local_date(display_times.startTime, lang_code) : ''],
+            [t('end_time'), display_times.endTime ? Helpers.format_iso_to_local_date(display_times.endTime, lang_code) : '']
         ];
 
         generalSheet.addRows(general_info_data);
@@ -330,12 +330,12 @@ async function export_to_excel(current_audit) {
                             const ref_text_raw = req_definition.standardReference?.text || '';
                             const reference_obj = { text: strip_markdown_for_excel(ref_text_raw) };
                             if (req_definition.standardReference?.url) {
-                                reference_obj.hyperlink = window.Helpers.add_protocol_if_missing(req_definition.standardReference.url);
+                                reference_obj.hyperlink = Helpers.add_protocol_if_missing(req_definition.standardReference.url);
                             }
 
                             const url_obj = sample.url ? {
                                 text: strip_markdown_for_excel(String(sample.url)),
-                                hyperlink: window.Helpers.add_protocol_if_missing(sample.url)
+                                hyperlink: Helpers.add_protocol_if_missing(sample.url)
                             } : null;
 
                             const pour_vals = get_wcag_pour_export_values_for_requirement(req_definition, current_audit, t);
@@ -1012,8 +1012,8 @@ async function export_to_word_criterias(current_audit) {
 }
 
 function _create_overview_page(current_audit, t) {
-    const lang_code = window.Translation.get_current_language_code();
-    const score_analysis = window.ScoreCalculator.calculateQualityScore(current_audit);
+    const lang_code = get_current_language_code_from_registry();
+    const score_analysis = ScoreCalculator.calculateQualityScore(current_audit);
 
     // Skapa tabell för förstasida
     const table = new Table({
@@ -1081,7 +1081,7 @@ function _create_overview_page(current_audit, t) {
                                 heading: HeadingLevel.HEADING_2
                             }),
                             new Paragraph({
-                                children: create_body_text(current_audit.startTime ? window.Helpers.format_iso_to_local_datetime(current_audit.startTime, lang_code) : '', 22)
+                                children: create_body_text(current_audit.startTime ? Helpers.format_iso_to_local_datetime(current_audit.startTime, lang_code) : '', 22)
                             }),
                             new Paragraph({ children: [new TextRun({ text: "" })] }),
 
@@ -1109,7 +1109,7 @@ function _create_overview_page(current_audit, t) {
                                 heading: HeadingLevel.HEADING_2
                             }),
                             new Paragraph({
-                                children: create_body_text(score_analysis ? window.Helpers.format_number_locally(score_analysis.totalScore, lang_code) : '---', 22)
+                                children: create_body_text(score_analysis ? Helpers.format_number_locally(score_analysis.totalScore, lang_code) : '---', 22)
                             }),
                             new Paragraph({ children: [new TextRun({ text: "" })] }),
 
@@ -1159,7 +1159,7 @@ function _create_requirement_page(requirement, current_audit, t) {
             children.push(new Paragraph({
                 children: [new ExternalHyperlink({
                     children: [new TextRun({ text: referenceText, color: "0563C1", underline: { type: UnderlineType.SINGLE } })],
-                    link: window.Helpers.add_protocol_if_missing(referenceUrl)
+                    link: Helpers.add_protocol_if_missing(referenceUrl)
                 })]
             }));
         } else {
@@ -1852,7 +1852,7 @@ async function _export_to_text_export_deprecated(current_audit) {
                                 new ExternalHyperlink({
                                     children: [new TextRun({ text: ref_text, style: "Hyperlink" })],
                                     // Använd helper för att säkra url om den finns
-                                    link: (window.Helpers && window.Helpers.add_protocol_if_missing) ? window.Helpers.add_protocol_if_missing(ref_url) : ref_url
+                                    link: (Helpers && Helpers.add_protocol_if_missing) ? Helpers.add_protocol_if_missing(ref_url) : ref_url
                                 })
                             ]
                         }));
@@ -2178,8 +2178,8 @@ function get_all_deficiencies_for_sample_generic(sample, current_audit) {
 
 // Hjälpfunktion för att escape HTML
 function escape_html_internal(str) {
-    if (typeof window.Helpers !== 'undefined' && typeof window.Helpers.escape_html === 'function') {
-        return window.Helpers.escape_html(str);
+    if (typeof Helpers !== 'undefined' && typeof Helpers.escape_html === 'function') {
+        return Helpers.escape_html(str);
     }
     if (str === null || str === undefined) {
         return '';
@@ -2216,8 +2216,8 @@ function create_html_metadata(requirement, current_audit, deficiencyIds, t) {
         const ref_text = escape_html_internal(requirement.standardReference.text);
         const ref_url = requirement.standardReference.url;
         if (ref_url) {
-            const safe_url = escape_html_internal(window.Helpers?.add_protocol_if_missing ? window.Helpers.add_protocol_if_missing(ref_url) : ref_url);
-            const icon_html = (typeof window.Helpers?.get_external_link_icon_html === 'function') ? window.Helpers.get_external_link_icon_html(t) : '';
+            const safe_url = escape_html_internal(Helpers?.add_protocol_if_missing ? Helpers.add_protocol_if_missing(ref_url) : ref_url);
+            const icon_html = (typeof Helpers?.get_external_link_icon_html === 'function') ? Helpers.get_external_link_icon_html(t) : '';
             html += `<p class="metadata-compact"><strong>Referens: </strong><a href="${safe_url}" target="_blank" rel="noopener noreferrer">${ref_text}${icon_html}</a></p>`;
         } else {
             html += `<p class="metadata-compact"><strong>Referens: </strong>${ref_text}</p>`;
@@ -2286,8 +2286,8 @@ function render_markdown_to_html(markdown_text) {
         const parsed_markdown = marked.parse(String(markdown_text), { renderer, breaks: true, gfm: true });
         
         // Sanitize om tillgängligt
-        if (typeof window.Helpers !== 'undefined' && typeof window.Helpers.sanitize_html === 'function') {
-            return window.Helpers.sanitize_html(parsed_markdown);
+        if (typeof Helpers !== 'undefined' && typeof Helpers.sanitize_html === 'function') {
+            return Helpers.sanitize_html(parsed_markdown);
         }
         
         return parsed_markdown;
@@ -2440,8 +2440,8 @@ function build_content_sorted_by_requirement(current_audit, t) {
             const h3_sample_anchor_id = 'h3-sample-' + generate_anchor_id(h2_text + ' ' + sampleName);
 
             if (sample.url) {
-                const safe_url = escape_html_internal(window.Helpers?.add_protocol_if_missing ? window.Helpers.add_protocol_if_missing(sample.url) : sample.url);
-                const icon_html = (typeof window.Helpers?.get_external_link_icon_html === 'function') ? window.Helpers.get_external_link_icon_html(t) : '';
+                const safe_url = escape_html_internal(Helpers?.add_protocol_if_missing ? Helpers.add_protocol_if_missing(sample.url) : sample.url);
+                const icon_html = (typeof Helpers?.get_external_link_icon_html === 'function') ? Helpers.get_external_link_icon_html(t) : '';
                 content_html += `<h3 id="${h3_sample_anchor_id}">Stickprov: <a href="${safe_url}" target="_blank" rel="noopener noreferrer">${escape_html_internal(sampleName)}${icon_html}</a></h3>`;
             } else {
                 content_html += `<h3 id="${h3_sample_anchor_id}">Stickprov: ${escape_html_internal(sampleName)}</h3>`;
@@ -2488,8 +2488,8 @@ function build_content_sorted_by_sample(current_audit, t) {
         sidebar_html += `<li role="listitem" class="sidebar-h2"><a href="#${h2_anchor_id}" aria-label="Stickprov: ${escape_html_internal(sampleName)}">${escape_html_internal(sampleName)}</a>`;
 
         if (sample.url) {
-            const safe_url = escape_html_internal(window.Helpers?.add_protocol_if_missing ? window.Helpers.add_protocol_if_missing(sample.url) : sample.url);
-            const icon_html = (typeof window.Helpers?.get_external_link_icon_html === 'function') ? window.Helpers.get_external_link_icon_html(t) : '';
+            const safe_url = escape_html_internal(Helpers?.add_protocol_if_missing ? Helpers.add_protocol_if_missing(sample.url) : sample.url);
+            const icon_html = (typeof Helpers?.get_external_link_icon_html === 'function') ? Helpers.get_external_link_icon_html(t) : '';
             content_html += `<h2 id="${h2_anchor_id}">Stickprov: <a href="${safe_url}" target="_blank" rel="noopener noreferrer">${escape_html_internal(sampleName)}${icon_html}</a></h2>`;
         } else {
             content_html += `<h2 id="${h2_anchor_id}">Stickprov: ${escape_html_internal(sampleName)}</h2>`;
@@ -3801,5 +3801,7 @@ const public_api = {
     export_to_word_samples,
     export_to_html
 };
+
+export { public_api };
 
 window.ExportLogic = public_api;

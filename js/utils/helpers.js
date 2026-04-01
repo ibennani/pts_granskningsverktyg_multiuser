@@ -2,6 +2,7 @@
 'use-strict';
 
 import { app_runtime_refs } from './app_runtime_refs.js';
+import { get_translation_t } from './translation_access.js';
 
 export function generate_uuid_v4() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
@@ -145,7 +146,7 @@ export function format_iso_to_local_datetime(iso_string, lang_code = 'en-GB', op
     try {
         const to_parse = ensure_utc_for_parsing(iso_string);
         const date = new Date(to_parse);
-        const t_func = (typeof window.Translation?.t === 'function') ? window.Translation.t : (key) => `**${key}**`;
+        const t_func = get_translation_t();
         if (isNaN(date.getTime())) return t_func('invalid_date_format');
 
         const options = {
@@ -159,7 +160,7 @@ export function format_iso_to_local_datetime(iso_string, lang_code = 'en-GB', op
 
     } catch (e) {
         if (window.ConsoleManager?.warn) window.ConsoleManager.warn("Error formatting date:", iso_string, e);
-        const t_func = (typeof window.Translation?.t === 'function') ? window.Translation.t : (key) => `**${key}**`;
+        const t_func = get_translation_t();
         return t_func('date_formatting_error');
     }
 }
@@ -172,7 +173,7 @@ export function format_iso_to_local_date(iso_string, lang_code = 'en-GB') {
     try {
         const to_parse = ensure_utc_for_parsing(iso_string);
         const date = new Date(to_parse);
-        const t_func = (typeof window.Translation?.t === 'function') ? window.Translation.t : (key) => `**${key}**`;
+        const t_func = get_translation_t();
         if (isNaN(date.getTime())) return t_func('invalid_date_format');
 
         return date.toLocaleDateString(lang_code, {
@@ -182,14 +183,14 @@ export function format_iso_to_local_date(iso_string, lang_code = 'en-GB') {
         });
     } catch (e) {
         if (window.ConsoleManager?.warn) window.ConsoleManager.warn("Error formatting date:", iso_string, e);
-        const t_func = (typeof window.Translation?.t === 'function') ? window.Translation.t : (key) => `**${key}**`;
+        const t_func = get_translation_t();
         return t_func('date_formatting_error');
     }
 }
 
 export function format_iso_to_relative_time(iso_string, lang_code = 'en-GB') {
     if (!iso_string) return '';
-    const t = (typeof window.Translation?.t === 'function') ? window.Translation.t : (key) => `**${key}**`;
+    const t = get_translation_t();
     
     try {
         const to_parse = ensure_utc_for_parsing(iso_string);
@@ -308,8 +309,9 @@ export function sanitize_html(html_string) {
         if (el.tagName === 'A') {
             el.setAttribute('target', '_blank');
             el.setAttribute('rel', 'noopener noreferrer');
-            const t = (typeof window.Translation?.t === 'function') ? window.Translation.t : (k) => (k === 'opens_in_new_tab' ? '(Öppnas i ny flik)' : k);
-            el.innerHTML = (el.innerHTML || '').trim() + get_external_link_icon_html(t);
+            const t = get_translation_t();
+            const t_for_icon = (k) => (k === 'opens_in_new_tab' ? '(Öppnas i ny flik)' : t(k));
+            el.innerHTML = (el.innerHTML || '').trim() + get_external_link_icon_html(t_for_icon);
         }
     });
     
@@ -457,8 +459,9 @@ export function sanitize_and_linkify_html(raw_html_string) {
     content.querySelectorAll('a').forEach(link => {
         link.setAttribute('target', '_blank');
         link.setAttribute('rel', 'noopener noreferrer');
-        const t = (typeof window.Translation?.t === 'function') ? window.Translation.t : (k) => (k === 'opens_in_new_tab' ? '(Öppnas i ny flik)' : k);
-        link.innerHTML = (link.innerHTML || '').trim() + get_external_link_icon_html(t);
+        const t = get_translation_t();
+        const t_for_icon = (k) => (k === 'opens_in_new_tab' ? '(Öppnas i ny flik)' : t(k));
+        link.innerHTML = (link.innerHTML || '').trim() + get_external_link_icon_html(t_for_icon);
     });
     const temp_div = document.createElement('div');
     temp_div.appendChild(content);

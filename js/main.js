@@ -46,6 +46,7 @@ import './utils/memory_manager.js';
 import { consoleManager } from './utils/console_manager.js';
 import { memoryManager } from './utils/memory_manager.js';
 import { app_runtime_refs } from './utils/app_runtime_refs.js';
+import { register_translation_module } from './utils/translation_access.js';
 import { LayoutManager } from './utils/layout_manager.js';
 import { setup_tooltip_overlay } from './utils/overlay_portal.js';
 
@@ -80,15 +81,7 @@ const errorBoundaryComponent = new ErrorBoundaryComponent();
 
 app_runtime_refs.notification_component = notificationComponent;
 app_runtime_refs.modal_component = modalComponent;
-window.Helpers = Helpers;
-window.Translation = TranslationLogic;
-window.SaveAuditLogic = SaveAuditLogic;
-window.RulefileUpdaterLogic = RulefileUpdaterLogic;
-window.ScoreCalculator = ScoreCalculator;
-window.AutosaveService = AutosaveService;
-window.ValidationLogic = ValidationLogic;
-window.AuditLogic = AuditLogic;
-window.DraftManager = DraftManager;
+register_translation_module(TranslationLogic);
 
 (function () {
     'use strict';
@@ -152,13 +145,13 @@ window.DraftManager = DraftManager;
     }
 
     function updatePageTitle(view_name, params) {
-        return updatePageTitle_impl(view_name, params, { getState, Translation: window.Translation });
+        return updatePageTitle_impl(view_name, params, { getState, Translation: TranslationLogic });
     }
 
     function updatePageTitleFromCurrentView() {
         return updatePageTitleFromCurrentView_impl({
             getState,
-            Translation: window.Translation,
+            Translation: TranslationLogic,
             get_current_view_name: () => render_ctx.current_view_name_rendered,
             get_current_view_params_json: () => render_ctx.current_view_params_rendered_json
         });

@@ -57,8 +57,8 @@ export class AuditViewComponent {
         this.Translation = deps.Translation;
         this.Helpers = deps.Helpers;
         this.NotificationComponent = deps.NotificationComponent;
-        this.ValidationLogic = deps.ValidationLogic || window.ValidationLogic;
-        this.SaveAuditLogic = deps.SaveAuditLogic || window.SaveAuditLogic;
+        this.ValidationLogic = deps.ValidationLogic;
+        this.SaveAuditLogic = deps.SaveAuditLogic;
 
         const view_name = deps.view_name;
         if (view_name === 'audit_rules') {

@@ -3,6 +3,10 @@
  */
 import { flush_sync_to_server } from './server_sync.js';
 import { DraftManager } from '../draft_manager.js';
+import * as Helpers from '../utils/helpers.js';
+import * as SaveAuditLogic from '../logic/save_audit_logic.js';
+import { get_registered_translation_module } from '../utils/translation_access.js';
+import { public_api as ExportLogicApi } from '../export_logic.js';
 import {
     apply_post_render_focus_instruction,
     update_restore_position
@@ -57,8 +61,8 @@ export async function render_view(view_name_to_render, params_to_render = {}, de
         params_mut = { ...params_mut, section: 'general' };
     }
     const t = get_t_fallback();
-    const local_helpers_escape_html = (typeof window.Helpers !== 'undefined' && typeof window.Helpers.escape_html === 'function')
-        ? window.Helpers.escape_html
+    const local_helpers_escape_html = (typeof Helpers.escape_html === 'function')
+        ? Helpers.escape_html
         : (s) => s;
 
     try {
@@ -245,12 +249,12 @@ export async function render_view(view_name_to_render, params_to_render = {}, de
                 StoreActionTypes,
                 subscribe,
                 flush_sync_to_server,
-                Translation: window.Translation,
-                Helpers: window.Helpers,
+                Translation: get_registered_translation_module(),
+                Helpers: Helpers,
                 NotificationComponent: notificationComponent,
-                SaveAuditLogic: window.SaveAuditLogic,
+                SaveAuditLogic: SaveAuditLogic,
                 AuditLogic: AuditLogic,
-                ExportLogic: window.ExportLogic,
+                ExportLogic: ExportLogicApi,
                 ValidationLogic: ValidationLogic,
                 AutosaveService: AutosaveService,
                 rightSidebarRoot: right_sidebar_root

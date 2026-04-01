@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { jest } from '@jest/globals';
 import { app_runtime_refs } from '../../js/utils/app_runtime_refs.js';
+import { register_translation_module } from '../../js/utils/translation_access.js';
 import { screen } from '@testing-library/dom';
 import axeCore from 'jest-axe';
 
@@ -40,7 +41,7 @@ async function renderStartView() {
   window.Helpers = { ...Helpers };
   window.Helpers.load_css_safely = jest.fn().mockResolvedValue();
 
-  window.Translation = {
+  const translation_for_test = {
     t: (key, replacements = {}) => {
       const template = translations[key] ?? key;
       return Object.entries(replacements).reduce(
@@ -53,6 +54,8 @@ async function renderStartView() {
       );
     },
   };
+  register_translation_module(translation_for_test);
+  window.Translation = translation_for_test;
 
   // Applicera samma logik som i main.js:update_landmarks_and_skip_link
   const skipLink = document.getElementById('skip-to-content');

@@ -1,8 +1,13 @@
 // js/utils/safe_init_helper.js
 
 import * as AuditLogic from '../audit_logic.js';
+import * as Helpers from './helpers.js';
+import * as SaveAuditLogic from '../logic/save_audit_logic.js';
+import * as ScoreCalculator from '../logic/ScoreCalculator.js';
+import { public_api as ExportLogicApi } from '../export_logic.js';
 import { dependencyManager } from './dependency_manager.js';
 import { app_runtime_refs } from './app_runtime_refs.js';
+import { get_registered_translation_module } from './translation_access.js';
 
 /**
  * Safe Initialization Helper - Provides utilities for safe component initialization
@@ -59,13 +64,13 @@ function getDependencyValue(depName) {
     
     // Fallback to direct window access
     const windowMap = {
-        'Translation': () => window.Translation,
-        'Helpers': () => window.Helpers,
+        'Translation': () => get_registered_translation_module(),
+        'Helpers': () => Helpers,
         'NotificationComponent': () => app_runtime_refs.notification_component,
         'AuditLogic': () => AuditLogic,
-        'SaveAuditLogic': () => window.SaveAuditLogic,
-        'ScoreCalculator': () => window.ScoreCalculator,
-        'ExportLogic': () => window.ExportLogic
+        'SaveAuditLogic': () => SaveAuditLogic,
+        'ScoreCalculator': () => ScoreCalculator,
+        'ExportLogic': () => ExportLogicApi
     };
     
     const getter = windowMap[depName];
@@ -178,11 +183,11 @@ export function safeAssignDependencies(target, dependencyMap) {
 export function createCommonDependencyAssigner() {
     return function(target) {
         return safeAssignDependencies(target, {
-            Translation: () => window.Translation,
-            Helpers: () => window.Helpers,
+            Translation: () => get_registered_translation_module(),
+            Helpers: () => Helpers,
             NotificationComponent: () => app_runtime_refs.notification_component,
             AuditLogic: () => AuditLogic,
-            SaveAuditLogic: () => window.SaveAuditLogic
+            SaveAuditLogic: () => SaveAuditLogic
         });
     };
 }

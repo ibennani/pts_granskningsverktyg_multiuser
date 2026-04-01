@@ -1,13 +1,14 @@
 /**
  * Globalt skal: sidomeny, action bars, modal, felgräns och gemensamma deps.
  */
+import * as Helpers from '../utils/helpers.js';
+import * as SaveAuditLogic from '../logic/save_audit_logic.js';
+import { get_registered_translation_module, get_translation_t } from '../utils/translation_access.js';
 import { consoleManager } from '../utils/console_manager.js';
 import { dependencyManager } from '../utils/dependency_manager.js';
 
 export function get_t_fallback() {
-    return (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function')
-        ? window.Translation.t
-        : (key, _replacements) => `**${key}**`;
+    return get_translation_t();
 }
 
 /**
@@ -60,7 +61,8 @@ export function update_side_menu(view_name, params = {}, deps) {
  */
 export function update_app_chrome_texts(deps) {
     const { top_action_bar_instance, bottom_action_bar_instance, error_boundary_holder } = deps;
-    if (!window.Translation || typeof window.Translation.t !== 'function') {
+    const Translation = get_registered_translation_module();
+    if (!Translation || typeof Translation.t !== 'function') {
         consoleManager.warn('[Main.js] update_app_chrome_texts: Translation.t is not available.');
         return;
     }
@@ -126,7 +128,8 @@ export async function init_global_components(deps) {
 
     await dependencyManager.initialize();
 
-    if (!window.Translation || !window.Helpers || !notificationComponent || !window.SaveAuditLogic) {
+    const Translation = get_registered_translation_module();
+    if (!Translation || !Helpers || !notificationComponent || !SaveAuditLogic) {
         consoleManager.error('[Main.js] init_global_components: Core dependencies not available!');
         return;
     }
@@ -134,11 +137,11 @@ export async function init_global_components(deps) {
         getState: getState,
         dispatch: dispatch,
         StoreActionTypes: StoreActionTypes,
-        Translation: window.Translation,
-        Helpers: window.Helpers,
+        Translation,
+        Helpers: Helpers,
         NotificationComponent: notificationComponent,
         ModalComponent: modalComponent,
-        SaveAuditLogic: window.SaveAuditLogic,
+        SaveAuditLogic: SaveAuditLogic,
         AuditLogic: AuditLogic,
         ValidationLogic: ValidationLogic,
         AutosaveService: AutosaveService,

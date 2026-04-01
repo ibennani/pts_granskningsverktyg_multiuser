@@ -1,11 +1,11 @@
 // js/audit_logic.js
 
+import * as Helpers from './utils/helpers.js';
+import { get_translation_t } from './utils/translation_access.js';
 import { consoleManager } from './utils/console_manager.js';
 
 function get_t_func() {
-    return (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function')
-        ? window.Translation.t
-        : (key, _replacements) => `**${key}**`;
+    return get_translation_t();
 }
 
 export function formatDeficiencyId(number, totalCount) {
@@ -302,7 +302,7 @@ export function get_ordered_relevant_requirement_keys(rule_file_content, sample_
         relevant_reqs.sort((a, b) => {
             const ref_a = a.standardReference?.text || null;
             const ref_b = b.standardReference?.text || null;
-            if (ref_a && ref_b) return window.Helpers.natural_sort(ref_a, ref_b);
+            if (ref_a && ref_b) return Helpers.natural_sort(ref_a, ref_b);
             if (ref_a && !ref_b) return -1;
             if (!ref_a && ref_b) return 1;
             return (a.title || '').localeCompare(b.title || '');

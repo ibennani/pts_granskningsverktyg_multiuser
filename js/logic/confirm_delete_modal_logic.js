@@ -1,5 +1,7 @@
 // js/logic/confirm_delete_modal_logic.js
 
+import * as Helpers from '../utils/helpers.js';
+import { get_translation_t } from '../utils/translation_access.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 
 /**
@@ -75,8 +77,7 @@ function get_previous_focusable(delete_button) {
  */
 export function show_confirm_delete_modal({ h1_text, warning_text, delete_button, on_confirm, focusOnConfirm, yes_label, no_label }) {
     const ModalComponent = app_runtime_refs.modal_component;
-    const Helpers = window.Helpers;
-    const t = window.Translation?.t || (k => k);
+    const t = get_translation_t();
 
     if (!ModalComponent?.show || !Helpers?.create_element) return;
 

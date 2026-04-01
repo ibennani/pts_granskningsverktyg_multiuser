@@ -9,6 +9,7 @@ import { uiReducer } from './uiReducer.js';
 import { userReducer } from './userReducer.js';
 import { consoleManager } from '../utils/console_manager.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
+import { get_translation_t } from '../utils/translation_access.js';
 
 const APP_STATE_KEY = 'digitalTillsynAppCentralState';
 const APP_STATE_BACKUP_KEY = 'digitalTillsynAppStateBackup';
@@ -326,8 +327,8 @@ function saveStateToSessionStorage(state_to_save) {
         }
     } catch (e) {
         if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[State] Could not save state to sessionStorage:', e);
-        if (app_runtime_refs.notification_component && typeof app_runtime_refs.notification_component.show_global_message === 'function' && typeof window.Translation?.t === 'function') {
-            app_runtime_refs.notification_component.show_global_message(window.Translation.t('critical_error_saving_session_data_lost'), 'error');
+        if (app_runtime_refs.notification_component && typeof app_runtime_refs.notification_component.show_global_message === 'function') {
+            app_runtime_refs.notification_component.show_global_message(get_translation_t()('critical_error_saving_session_data_lost'), 'error');
         }
     }
 }
