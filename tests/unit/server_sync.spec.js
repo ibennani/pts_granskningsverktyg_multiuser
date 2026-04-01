@@ -147,4 +147,72 @@ describe('server_sync', () => {
         await jest.advanceTimersByTimeAsync(500);
         expect(update_rule).toHaveBeenCalled();
     });
+
+    test('flush_sync_to_server rensar debounce och synkar direkt', async () => {
+        jest.useFakeTimers();
+        const dispatch = jest.fn();
+        const state = base_audit_state({ auditId: 'deb', version: 1 });
+        schedule_sync_to_server(state, dispatch);
+        expect(update_audit).not.toHaveBeenCalled();
+        await flush_sync_to_server(() => state, dispatch);
+        expect(update_audit).toHaveBeenCalledWith('deb', expect.any(Object));
+    });
+
+    test('run_sync: 409 med existingAuditId sätter dispatch SET_REMOTE_AUDIT_ID', async () => {
+        const err = Object.assign(new Error('konflikt'), {
+            status: 409,
+            existingAuditId: 'existing-1'
+        });
+        update_audit.mockRejectedValueOnce(err);
+        const dispatch = jest.fn();
+        const state = base_audit_state({ auditId: 'a1', version: 1 });
+        await sync_to_server_now(() => state, dispatch);
+        expect(dispatch).toHaveBeenCalledWith({
+            type: 'SET_REMOTE_AUDIT_ID',
+            payload: {
+                auditId: 'existing-1',
+                ruleSetId: null,
+                version: null,
+                skip_render: true
+            }
+        });
+        expect(clear_audit_sync_pending).toHaveBeenCalled();
+    });
+
+    test('run_sync: 409 utan existingAuditId laddar om från server', async () => {
+        const err = Object.assign(new Error('version'), { status: 409 });
+        update_audit.mockRejectedValueOnce(err);
+        load_audit_with_rule_file.mockResolvedValueOnce({
+            version: 7,
+            saveFileVersion: '2.1.0',
+            samples: [],
+            ruleFileContent: {}
+        });
+        const dispatch = jest.fn();
+        const state = base_audit_state({ auditId: 'a1', version: 1 });
+        await sync_to_server_now(() => state, dispatch);
+        expect(load_audit_with_rule_file).toHaveBeenCalledWith('a1');
+        expect(dispatch).toHaveBeenCalledWith({
+            type: 'REPLACE_STATE_FROM_REMOTE',
+            payload: expect.objectContaining({ version: 7, saveFileVersion: '2.1.0' })
+        });
+    });
+
+    test('run_sync: 404 granskning borttagen visar modalspår', async () => {
+        const err = Object.assign(new Error('Granskning hittades inte'), { status: 404 });
+        update_audit.mockRejectedValueOnce(err);
+        window.__gv_current_view_name = 'metadata';
+        window.__GV_AUDIT_DELETED_MODAL_SHOWN__ = false;
+        const show_global = jest.fn();
+        window.NotificationComponent = { show_global_message: show_global };
+        window.Translation = { t: (k) => k };
+        const dispatch = jest.fn();
+        const state = base_audit_state({ auditId: 'gone', version: 1 });
+        await sync_to_server_now(() => state, dispatch);
+        expect(show_global).toHaveBeenCalled();
+        delete window.__gv_current_view_name;
+        delete window.NotificationComponent;
+        delete window.Translation;
+        delete window.__GV_AUDIT_DELETED_MODAL_SHOWN__;
+    });
 });
