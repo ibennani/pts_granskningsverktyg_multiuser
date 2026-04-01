@@ -2,6 +2,11 @@
  * Tester för connectivity_service.js
  */
 import { jest, describe, test, expect, beforeEach } from '@jest/globals';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const server_sync_path = path.join(__dirname, '../../js/logic/server_sync.js');
 
 describe('connectivity_service', () => {
     let is_fetch_network_error;
@@ -97,6 +102,78 @@ describe('connectivity_service', () => {
 
             window.addEventListener.mockRestore();
             document.getElementById = orig_get;
+        });
+
+        test('online-händelse anropar flush från server_sync', async () => {
+            jest.resetModules();
+            const flush_sync_to_server = jest.fn(async () => {});
+            const flush_sync_rulefile_to_server = jest.fn(async () => {});
+            jest.unstable_mockModule(server_sync_path, () => ({
+                flush_sync_to_server,
+                flush_sync_rulefile_to_server
+            }));
+            const mod = await import('../../js/logic/connectivity_service.js');
+            const {
+                init_connectivity_service,
+                mark_audit_sync_pending,
+                clear_audit_sync_pending
+            } = mod;
+            clear_audit_sync_pending();
+            mark_audit_sync_pending();
+
+            const listeners = [];
+            jest.spyOn(window, 'addEventListener').mockImplementation((ev, fn) => {
+                listeners.push([ev, fn]);
+            });
+            const orig_get = document.getElementById;
+            document.getElementById = jest.fn(() => null);
+            Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
+
+            init_connectivity_service({
+                getState: () => ({ auditId: 'a1' }),
+                dispatch: jest.fn()
+            });
+
+            const online_handler = listeners.find(([e]) => e === 'online')[1];
+            online_handler();
+            await new Promise((r) => setTimeout(r, 0));
+            await new Promise((r) => setTimeout(r, 0));
+
+            expect(flush_sync_to_server).toHaveBeenCalled();
+            expect(flush_sync_rulefile_to_server).toHaveBeenCalled();
+
+            window.addEventListener.mockRestore();
+            document.getElementById = orig_get;
+        });
+
+        test('init med top_bar anropar NotificationComponent', async () => {
+            jest.resetModules();
+            const mod = await import('../../js/logic/connectivity_service.js');
+            const { init_connectivity_service } = mod;
+            const top = document.createElement('div');
+            top.id = 'global-action-bar-top';
+            const orig_get = document.getElementById;
+            document.getElementById = jest.fn((id) => (id === 'global-action-bar-top' ? top : null));
+            const init_p = jest.fn().mockResolvedValue(undefined);
+            const append = jest.fn();
+            window.NotificationComponent = {
+                init: init_p,
+                append_global_message_areas_to: append
+            };
+            Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
+
+            await init_connectivity_service({
+                getState: () => ({}),
+                dispatch: jest.fn()
+            });
+
+            await new Promise((r) => setTimeout(r, 0));
+            await new Promise((r) => setTimeout(r, 0));
+            expect(init_p).toHaveBeenCalled();
+            expect(append).toHaveBeenCalledWith(top);
+
+            document.getElementById = orig_get;
+            delete window.NotificationComponent;
         });
     });
 });
