@@ -23,17 +23,17 @@ class ConsoleManager {
     }
     
     detectProductionMode() {
-        // Check multiple indicators for production mode
+        // Node (t.ex. backend som importerar delad kod) har varken window eller document
+        if (typeof window === 'undefined' || typeof document === 'undefined') {
+            return process.env.NODE_ENV === 'production';
+        }
+        // Webbläsare: flera indikatorer för produktionsläge
         return (
-            // Vite sets NODE_ENV to 'production' during build
             process.env.NODE_ENV === 'production' ||
-            // Check if we're in a built environment
-            window.location.hostname !== 'localhost' && 
-            window.location.hostname !== '127.0.0.1' &&
-            !window.location.hostname.includes('localhost') ||
-            // Check for build artifacts
+            (window.location.hostname !== 'localhost' &&
+                window.location.hostname !== '127.0.0.1' &&
+                !window.location.hostname.includes('localhost')) ||
             document.querySelector('script[src*="assets/"]') !== null ||
-            // Check for minified files
             document.querySelector('script[src*="main-"]') !== null
         );
     }
@@ -115,5 +115,7 @@ const consoleManager = new ConsoleManager();
 // Export for use in other modules
 export { consoleManager, ConsoleManager };
 
-// Also make it available globally for easy access
-window.ConsoleManager = consoleManager;
+// Also make it available globally for easy access (endast webbläsare)
+if (typeof window !== 'undefined') {
+    window.ConsoleManager = consoleManager;
+}
