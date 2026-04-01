@@ -7,6 +7,8 @@ import {
     get_auth_token,
     set_auth_token,
     clear_auth_token,
+    is_current_user_admin,
+    set_current_user_admin,
     get_base_url,
     get_auth_headers,
     login,
@@ -19,11 +21,42 @@ import {
     change_my_password,
     get_admin_contacts,
     get_rules,
+    get_rule,
+    get_rule_version,
     get_audits,
+    get_audit,
+    create_rule,
+    update_rule,
+    delete_rule,
+    publish_rule,
+    copy_rule,
     create_audit,
     delete_audit,
     update_audit,
-    load_audit_with_rule_file
+    load_audit_with_rule_file,
+    get_users,
+    create_user,
+    update_user,
+    delete_user,
+    get_backup_overview,
+    run_backup_now,
+    get_backup_settings,
+    create_password_reset_code,
+    get_websocket_url,
+    get_audit_version,
+    import_audit,
+    import_rule,
+    create_production_rule,
+    publish_production_rule,
+    export_rule,
+    get_backups_for_audit,
+    save_audit_backup_on_server,
+    update_backup_settings,
+    update_current_user_preferences,
+    get_user_audit_count,
+    patch_requirement_result,
+    check_api_available,
+    get_current_user_preferences
 } from '../../js/api/client.js';
 
 describe('api/client – token och bas-URL', () => {
@@ -60,6 +93,15 @@ describe('api/client – token och bas-URL', () => {
         clear_auth_token();
         const h2 = get_auth_headers();
         expect(h2.Authorization).toBeUndefined();
+    });
+
+    test('is_current_user_admin och set_current_user_admin', () => {
+        sessionStorage.removeItem('gv_current_user_is_admin');
+        expect(is_current_user_admin()).toBe(false);
+        set_current_user_admin(true);
+        expect(is_current_user_admin()).toBe(true);
+        set_current_user_admin(false);
+        expect(is_current_user_admin()).toBe(false);
     });
 });
 
@@ -126,6 +168,27 @@ describe('api/client – login och HTTP-metoder', () => {
         expect(call[1].body).toBe(JSON.stringify(body));
     });
 
+    test('api_post vid fel sätter existingAuditId och existingAuditSummary', async () => {
+        set_auth_token('tok');
+        fetch.mockResolvedValue({
+            ok: false,
+            status: 409,
+            json: async () => ({
+                error: 'Finns redan',
+                existingAuditId: 'a-old',
+                existingAuditSummary: { title: 'T' }
+            })
+        });
+        try {
+            await api_post('/audits/import', {});
+            expect.fail('ska kasta');
+        } catch (e) {
+            expect(e.status).toBe(409);
+            expect(e.existingAuditId).toBe('a-old');
+            expect(e.existingAuditSummary).toEqual({ title: 'T' });
+        }
+    });
+
     test('api_put skickar PUT', async () => {
         fetch.mockResolvedValue({
             ok: true,
@@ -137,7 +200,71 @@ describe('api/client – login och HTTP-metoder', () => {
         expect(fetch.mock.calls[0][1].method).toBe('PUT');
     });
 
-    test('api_delete vid 204 returnerar null', async () => {
+    test('api_put vid 401 kastar Inloggning krävs', async () => {
+        set_auth_token('x');
+        fetch.mockResolvedValue({
+            ok: false,
+            status: 401,
+            json: async () => ({ error: 'Nej' })
+        });
+        await expect(api_put('/x', {})).rejects.toMatchObject({
+            message: 'Inloggning krävs',
+            status: 401
+        });
+    });
+
+    test('api_put vid fel med detail kombinerar meddelande', async () => {
+        set_auth_token('tok');
+        fetch.mockResolvedValue({
+            ok: false,
+            status: 400,
+            statusText: 'Bad',
+            json: async () => ({ error: 'Validering', detail: 'fält' })
+        });
+        await expect(api_put('/rules/1', {})).rejects.toMatchObject({
+            message: 'Validering: fält',
+            status: 400
+        });
+    });
+
+    test('api_delete vid 200 returnerar parsat JSON', async () => {
+        fetch.mockResolvedValue({
+            ok: true,
+            status: 200,
+            json: async () => ({ deleted: true })
+        });
+        const out = await api_delete('/a/1');
+        expect(out).toEqual({ deleted: true });
+    });
+
+    test('api_delete vid 401 rensar session', async () => {
+        set_auth_token('tok');
+        fetch.mockResolvedValue({
+            ok: false,
+            status: 401,
+            json: async () => ({ error: 'Ut' })
+        });
+        await expect(api_delete('/x')).rejects.toMatchObject({ status: 401 });
+        expect(get_auth_token()).toBe(null);
+    });
+
+    test('api_delete vid fel sätter responseBody', async () => {
+        set_auth_token('tok');
+        fetch.mockResolvedValue({
+            ok: false,
+            status: 409,
+            json: async () => ({ conflict: true })
+        });
+        try {
+            await api_delete('/x');
+            expect.fail('ska kasta');
+        } catch (e) {
+            expect(e.status).toBe(409);
+            expect(e.responseBody).toEqual({ conflict: true });
+        }
+    });
+
+    test('api_delete vid 204 returnerar null (status 204)', async () => {
         fetch.mockResolvedValue({
             ok: true,
             status: 204,
@@ -160,6 +287,40 @@ describe('api/client – login och HTTP-metoder', () => {
         expect(fetch.mock.calls[0][1].method).toBe('PATCH');
     });
 
+    test('api_patch vid 401 kastar Inloggning krävs', async () => {
+        set_auth_token('t');
+        fetch.mockResolvedValue({
+            ok: false,
+            status: 401,
+            json: async () => ({})
+        });
+        await expect(api_patch('/audits/a', {})).rejects.toMatchObject({
+            message: 'Inloggning krävs',
+            status: 401
+        });
+    });
+
+    test('api_patch vid konflikt sätter serverVersion och existingAuditId', async () => {
+        set_auth_token('t');
+        fetch.mockResolvedValue({
+            ok: false,
+            status: 409,
+            json: async () => ({
+                error: 'Version',
+                serverVersion: 7,
+                existingAuditId: 'aid'
+            })
+        });
+        try {
+            await api_patch('/audits/a', {});
+            expect.fail('ska kasta');
+        } catch (e) {
+            expect(e.status).toBe(409);
+            expect(e.serverVersion).toBe(7);
+            expect(e.existingAuditId).toBe('aid');
+        }
+    });
+
     test('api_get vid 404 kastar med status', async () => {
         fetch.mockResolvedValue({
             ok: false,
@@ -180,6 +341,20 @@ describe('api/client – login och HTTP-metoder', () => {
         await expect(api_get('/boom')).rejects.toMatchObject({ status: 500 });
     });
 
+    test('api_get vid 401 rensar session och kastar Inloggning krävs', async () => {
+        set_auth_token('t');
+        fetch.mockResolvedValue({
+            ok: false,
+            status: 401,
+            json: async () => ({ error: 'Nej' })
+        });
+        await expect(api_get('/secret')).rejects.toMatchObject({
+            message: 'Inloggning krävs',
+            status: 401
+        });
+        expect(get_auth_token()).toBe(null);
+    });
+
     test('api_post (ej login) vid 401 rensar session och kastar', async () => {
         set_auth_token('gammal');
         let auth_event = false;
@@ -194,6 +369,22 @@ describe('api/client – login och HTTP-metoder', () => {
         expect(get_auth_token()).toBe(null);
         expect(auth_event).toBe(true);
         window.removeEventListener('gv-auth-required', h);
+    });
+
+    test('api_get: nätverksfel (fetch kastar) propagerar', async () => {
+        fetch.mockRejectedValue(new TypeError('Failed to fetch'));
+        await expect(api_get('/x')).rejects.toThrow('Failed to fetch');
+    });
+
+    test('api_get: ogiltigt JSON-svar kastar vid parsning', async () => {
+        fetch.mockResolvedValue({
+            ok: true,
+            status: 200,
+            json: async () => {
+                throw new SyntaxError('ogiltig json');
+            }
+        });
+        await expect(api_get('/x')).rejects.toThrow('ogiltig json');
     });
 });
 
@@ -295,6 +486,20 @@ describe('api/client – lösenord och admin-kontakter', () => {
         expect(out.fetched).toBe(false);
         expect(out.list).toEqual([]);
     });
+
+    test('get_admin_contacts: nätverksfel på publikt anrop faller tillbaka', async () => {
+        fetch
+            .mockRejectedValueOnce(new Error('nät ner'))
+            .mockResolvedValueOnce({
+                ok: true,
+                status: 200,
+                json: async () => [{ username: 'fallback' }]
+            });
+        set_auth_token('tok');
+        const out = await get_admin_contacts();
+        expect(out.fetched).toBe(true);
+        expect(out.list[0].username).toBe('fallback');
+    });
 });
 
 describe('api/client – regler och granskningar', () => {
@@ -376,5 +581,256 @@ describe('api/client – regler och granskningar', () => {
             });
         const merged = await load_audit_with_rule_file('a1');
         expect(merged.ruleFileContent).toEqual({ metadata: { v: 1 }, requirements: {} });
+    });
+
+    test('load_audit_with_rule_file: returnerar direkt om ruleFileContent redan finns', async () => {
+        fetch.mockResolvedValueOnce({
+            ok: true,
+            status: 200,
+            json: async () => ({ id: 'a1', ruleFileContent: { k: 1 } })
+        });
+        const out = await load_audit_with_rule_file('a1');
+        expect(out.ruleFileContent).toEqual({ k: 1 });
+        expect(fetch).toHaveBeenCalledTimes(1);
+    });
+
+    test('load_audit_with_rule_file: utan ruleSetId ingen extra regelhämtning', async () => {
+        fetch.mockResolvedValueOnce({
+            ok: true,
+            status: 200,
+            json: async () => ({ id: 'a1', samples: [] })
+        });
+        const out = await load_audit_with_rule_file('a1');
+        expect(fetch).toHaveBeenCalledTimes(1);
+        expect(out.ruleFileContent).toBeUndefined();
+    });
+
+    test('load_audit_with_rule_file: använder content när published_content saknas', async () => {
+        fetch
+            .mockResolvedValueOnce({
+                ok: true,
+                status: 200,
+                json: async () => ({ id: 'a1', ruleSetId: 'rs' })
+            })
+            .mockResolvedValueOnce({
+                ok: true,
+                status: 200,
+                json: async () => ({ content: { metadata: {}, requirements: {} } })
+            });
+        const out = await load_audit_with_rule_file('a1');
+        expect(out.ruleFileContent).toEqual({ metadata: {}, requirements: {} });
+    });
+
+    test('load_audit_with_rule_file: utan regelinnehåll returneras audit oförändrat', async () => {
+        fetch
+            .mockResolvedValueOnce({
+                ok: true,
+                status: 200,
+                json: async () => ({ id: 'a1', ruleSetId: 'rs' })
+            })
+            .mockResolvedValueOnce({
+                ok: true,
+                status: 200,
+                json: async () => ({ id: 'rs' })
+            });
+        const out = await load_audit_with_rule_file('a1');
+        expect(out.ruleFileContent).toBeUndefined();
+        expect(out.id).toBe('a1');
+    });
+
+    test('get_rule och get_rule_version anropar rätt sökvägar', async () => {
+        fetch.mockResolvedValue({
+            ok: true,
+            status: 200,
+            json: async () => ({ id: 'r1' })
+        });
+        await get_rule('r1');
+        expect(fetch.mock.calls[0][0]).toMatch(/\/rules\/r1$/);
+        fetch.mockResolvedValue({
+            ok: true,
+            status: 200,
+            json: async () => ({ version: 2 })
+        });
+        await get_rule_version('r1');
+        expect(fetch.mock.calls[1][0]).toMatch(/\/rules\/r1\/version$/);
+    });
+
+    test('create_rule, update_rule, delete_rule, publish_rule, copy_rule', async () => {
+        fetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({ id: 'new' }) });
+        await create_rule({ name: 'N' });
+        expect(fetch.mock.calls[0][0]).toMatch(/\/rules$/);
+        expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({ name: 'N' });
+
+        fetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({ ok: true }) });
+        await update_rule('rid', { content: {} });
+        expect(fetch.mock.calls[1][1].method).toBe('PUT');
+
+        fetch.mockResolvedValue({
+            ok: true,
+            status: 204,
+            json: async () => {
+                throw new Error('no');
+            }
+        });
+        await delete_rule('rid');
+        expect(fetch.mock.calls[2][1].method).toBe('DELETE');
+
+        fetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({ published: true }) });
+        await publish_rule('rid');
+        expect(fetch.mock.calls[3][0]).toMatch(/\/rules\/rid\/publish$/);
+
+        fetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({ id: 'copy' }) });
+        await copy_rule('rid');
+        expect(fetch.mock.calls[4][0]).toMatch(/\/rules\/rid\/copy$/);
+    });
+
+    test('get_audit hämtar en granskning', async () => {
+        fetch.mockResolvedValue({
+            ok: true,
+            status: 200,
+            json: async () => ({ id: 'a9' })
+        });
+        const a = await get_audit('a9');
+        expect(a.id).toBe('a9');
+        expect(fetch.mock.calls[0][0]).toMatch(/\/audits\/a9$/);
+    });
+
+    test('get_current_user_preferences anropar /users/me', async () => {
+        fetch.mockResolvedValue({
+            ok: true,
+            status: 200,
+            json: async () => ({ language: 'sv' })
+        });
+        const p = await get_current_user_preferences();
+        expect(p.language).toBe('sv');
+        expect(fetch.mock.calls[0][0]).toMatch(/\/users\/me$/);
+    });
+
+    test('get_users, create_user, update_user, delete_user', async () => {
+        fetch.mockResolvedValue({ ok: true, status: 200, json: async () => [] });
+        await get_users();
+        expect(fetch.mock.calls[0][0]).toMatch(/\/users$/);
+
+        fetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({ id: 'u1' }) });
+        await create_user({ username: 'x' });
+        expect(JSON.parse(fetch.mock.calls[1][1].body)).toEqual({ username: 'x' });
+
+        fetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({ ok: true }) });
+        await update_user('u1', { role: 'admin' });
+        expect(fetch.mock.calls[2][1].method).toBe('PUT');
+
+        fetch.mockResolvedValue({
+            ok: true,
+            status: 204,
+            json: async () => {
+                throw new Error('no');
+            }
+        });
+        await delete_user('u1');
+        expect(fetch.mock.calls[3][1].method).toBe('DELETE');
+    });
+
+    test('get_backup_overview, run_backup_now, get_backup_settings', async () => {
+        fetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({ rows: [] }) });
+        await get_backup_overview();
+        expect(fetch.mock.calls[0][0]).toMatch(/\/backup\/list$/);
+
+        fetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({ ran: true }) });
+        await run_backup_now();
+        expect(fetch.mock.calls[1][0]).toMatch(/\/backup\/run$/);
+
+        fetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({}) });
+        await get_backup_settings();
+        expect(fetch.mock.calls[2][0]).toMatch(/\/backup\/settings$/);
+    });
+
+    test('create_password_reset_code', async () => {
+        fetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({ code: 'x' }) });
+        await create_password_reset_code('user-1', 60);
+        expect(fetch.mock.calls[0][0]).toContain('/users/user-1/password-reset-codes');
+        expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({ expires_in_minutes: 60 });
+    });
+
+    test('get_websocket_url bygger ws-URL', () => {
+        delete window.__GV_API_BASE__;
+        const u = get_websocket_url();
+        expect(u).toMatch(/^wss?:\/\//);
+        expect(u).toContain('/ws');
+    });
+
+    test('get_audit_version', async () => {
+        fetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({ v: 1 }) });
+        await get_audit_version('a1');
+        expect(fetch.mock.calls[0][0]).toMatch(/\/audits\/a1\/version$/);
+    });
+
+    test('import_audit med replace_existing_audit_id', async () => {
+        fetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({ auditId: 'x' }) });
+        await import_audit({ samples: [] }, { replace_existing_audit_id: 'old' });
+        const body = JSON.parse(fetch.mock.calls[0][1].body);
+        expect(body.replaceExistingAuditId).toBe('old');
+    });
+
+    test('import_rule, create_production_rule, publish_production_rule, export_rule', async () => {
+        fetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({}) });
+        await import_rule('N', {});
+        expect(fetch.mock.calls[0][0]).toMatch(/\/rules\/import$/);
+
+        fetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({ id: 'p' }) });
+        await create_production_rule({ x: 1 });
+        expect(fetch.mock.calls[1][0]).toMatch(/\/rules\/production$/);
+
+        fetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({}) });
+        await publish_production_rule('rid');
+        expect(fetch.mock.calls[2][0]).toMatch(/publish_production/);
+
+        fetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({ id: 'rid', content: {} }) });
+        await export_rule('rid');
+        expect(fetch.mock.calls[3][0]).toMatch(/\/export$/);
+    });
+
+    test('get_backups_for_audit och save_audit_backup_on_server', async () => {
+        fetch.mockResolvedValue({ ok: true, status: 200, json: async () => [] });
+        await get_backups_for_audit('aid');
+        expect(fetch.mock.calls[0][0]).toContain('/backup/');
+
+        fetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({ ok: true }) });
+        await save_audit_backup_on_server('aid');
+        expect(JSON.parse(fetch.mock.calls[1][1].body)).toEqual({ auditId: 'aid' });
+    });
+
+    test('update_backup_settings och update_current_user_preferences', async () => {
+        fetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({}) });
+        await update_backup_settings({ x: 1 });
+        expect(fetch.mock.calls[0][1].method).toBe('PUT');
+
+        fetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({}) });
+        await update_current_user_preferences({ lang: 'sv' });
+        expect(fetch.mock.calls[1][1].method).toBe('PATCH');
+    });
+
+    test('get_user_audit_count', async () => {
+        fetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({ count: 3 }) });
+        const c = await get_user_audit_count('u1');
+        expect(c.count).toBe(3);
+        expect(fetch.mock.calls[0][0]).toMatch(/audit-count$/);
+    });
+
+    test('patch_requirement_result', async () => {
+        fetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({ ok: true }) });
+        await patch_requirement_result('a', 's', 'r', 2, { status: 'pass' });
+        expect(fetch.mock.calls[0][0]).toMatch(/\/results\/s\/r$/);
+        expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({ version: 2, result: { status: 'pass' } });
+    });
+
+    test('check_api_available: true och false', async () => {
+        fetch.mockResolvedValue({ ok: true, status: 200 });
+        expect(await check_api_available()).toBe(true);
+
+        fetch.mockResolvedValue({ ok: false, status: 503 });
+        expect(await check_api_available()).toBe(false);
+
+        fetch.mockRejectedValue(new Error('nät'));
+        expect(await check_api_available()).toBe(false);
     });
 });
