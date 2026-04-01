@@ -15,6 +15,13 @@ import {
     render_rulefile_classifications_section,
     render_rulefile_coming_soon_section
 } from './rulefile_sections/rulefile_sections_basic_views.js';
+import {
+    flush_info_blocks_order_from_dom,
+    render_rulefile_page_types_section,
+    render_rulefile_content_types_section,
+    render_rulefile_report_template_section,
+    render_rulefile_info_blocks_order_section
+} from './rulefile_sections/rulefile_sections_type_views.js';
 import './rulefile_sections_view.css';
 
 let _last_section_id = null;
@@ -116,231 +123,24 @@ export class RulefileSectionsViewComponent {
     }
 
     _render_page_types_section(metadata) {
-        const t = this.Translation.t;
-        const section = this.Helpers.create_element('section', { class_name: 'rulefile-section-content' });
-        
-        // Försök hämta pageTypes från olika platser i strukturen
-        const vocabularies = metadata.vocabularies || {};
-        let page_types = vocabularies.pageTypes || metadata.pageTypes || [];
-        
-        // Hämta sampleCategories från olika platser i strukturen
-        const samples = metadata.samples || {};
-        let sample_categories = samples.sampleCategories || [];
-        
-        // Om sampleCategories är tom, försök hämta från vocabularies (samma struktur som redigeringsvyn sparar)
-        if (!Array.isArray(sample_categories) || sample_categories.length === 0) {
-            const vocab_samples = vocabularies.sampleTypes || {};
-            if (Array.isArray(vocab_samples.sampleCategories)) {
-                sample_categories = vocab_samples.sampleCategories;
-            }
-        }
-        
-        // Om pageTypes är tom, använd sampleCategories som källa (samma logik som redigeringsvyn)
-        if (!Array.isArray(page_types) || page_types.length === 0) {
-            if (Array.isArray(sample_categories) && sample_categories.length > 0) {
-                page_types = sample_categories.map(cat => cat.text || cat.id).filter(Boolean);
-            }
-        }
-
-        if (!Array.isArray(page_types) || page_types.length === 0) {
-            section.appendChild(this.Helpers.create_element('p', { 
-                class_name: 'metadata-empty', 
-                text_content: t('rulefile_metadata_empty_value') 
-            }));
-            return section;
-        }
-
-        // H2 och kort beskrivning ovanför listan
-        const list_heading = this.Helpers.create_element('h2', { 
-            text_content: t('rulefile_page_types_current_list_title'),
-            class_name: 'page-types-list-heading'
-        });
-        section.appendChild(list_heading);
-        const list_intro = this.Helpers.create_element('p', {
-            class_name: 'field-hint rulefile-sections-header-intro page-types-list-intro',
-            text_content: t('rulefile_page_types_current_list_intro')
-        });
-        section.appendChild(list_intro);
-
-        // För varje sidtyp, visa den som h3 och dess kopplade kategorier som punktlista
-        page_types.forEach((page_type, index) => {
-            // Hitta motsvarande sampleCategory genom att matcha text eller id
-            const page_type_str = this._format_simple_value(page_type) || String(page_type);
-            const page_type_normalized = page_type_str.toLowerCase().trim();
-            
-            // Först försök matcha exakt på text
-            let matching_category = sample_categories.find(cat => {
-                const cat_text = (cat.text || '').toLowerCase().trim();
-                return cat_text === page_type_normalized;
-            });
-            
-            // Om ingen exakt match, försök matcha på id eller normaliserad text
-            if (!matching_category) {
-                matching_category = sample_categories.find(cat => {
-                    const cat_text = (cat.text || '').toLowerCase().trim();
-                    const cat_id = (cat.id || '').toLowerCase().trim();
-                    const cat_id_without_dashes = cat_id.replace(/-/g, ' ').trim();
-                    
-                    return cat_id === page_type_normalized ||
-                           cat_id_without_dashes === page_type_normalized ||
-                           cat_id.replace(/-/g, '') === page_type_normalized.replace(/\s+/g, '') ||
-                           // Matcha även om det finns små skillnader i tecken
-                           cat_text.includes(page_type_normalized) || 
-                           page_type_normalized.includes(cat_text);
-                });
-            }
-            
-            // Fallback: om ingen match hittades, försök matcha på index-position
-            if (!matching_category && index < sample_categories.length) {
-                matching_category = sample_categories[index];
-            }
-            
-            // Debug: logga om matchning misslyckas (kan tas bort senare)
-            if (!matching_category) {
-                console.warn('[RulefileSectionsViewComponent] No matching category found for page type:', page_type_str, 'Available categories:', sample_categories.map(c => c.text || c.id));
-            } else if (!Array.isArray(matching_category.categories) || matching_category.categories.length === 0) {
-                console.warn('[RulefileSectionsViewComponent] Matching category found but no categories array:', matching_category);
-            }
-
-            // Skapa wrapper för varje sidtyp med korrekt styling
-            const page_type_wrapper = this.Helpers.create_element('div', { class_name: 'page-type-item' });
-            
-            // Skapa h3 för sidtypen med korrekt styling (liknande metadata-subsection h2)
-            const heading = this.Helpers.create_element('h3', { 
-                text_content: page_type_str,
-                class_name: 'page-type-heading'
-            });
-            page_type_wrapper.appendChild(heading);
-
-            // Skapa punktlista för kategorierna direkt under h3
-            if (matching_category && Array.isArray(matching_category.categories) && matching_category.categories.length > 0) {
-                const categories_list = this.Helpers.create_element('ul', { class_name: 'metadata-list' });
-                matching_category.categories.forEach(category => {
-                    const category_text = category.text || category.id || t('rulefile_metadata_untitled_item');
-                    const list_item = this.Helpers.create_element('li', { text_content: category_text });
-                    categories_list.appendChild(list_item);
-                });
-                page_type_wrapper.appendChild(categories_list);
-            } else {
-                // Om inga kategorier hittades, visa ett meddelande direkt under h3 utan mellanrum
-                const empty_msg = this.Helpers.create_element('p', { 
-                    class_name: 'metadata-empty page-type-empty', 
-                    text_content: t('rulefile_metadata_empty_value') 
-                });
-                page_type_wrapper.appendChild(empty_msg);
-            }
-            
-            section.appendChild(page_type_wrapper);
-            
-            // Lägg till mellanrum mellan sidtyper (utom efter sista)
-            if (index < page_types.length - 1) {
-                const spacer = this.Helpers.create_element('div', { style: 'margin-bottom: 2rem;' });
-                section.appendChild(spacer);
-            }
-        });
-
-        return section;
+        return render_rulefile_page_types_section(
+            { Helpers: this.Helpers, Translation: this.Translation, getState: this.getState },
+            metadata
+        );
     }
 
     _render_content_types_section(metadata) {
-        const t = this.Translation.t;
-        const section = this.Helpers.create_element('section', { class_name: 'rulefile-section-content' });
-        
-        const vocabularies = metadata.vocabularies || {};
-        const content_types = vocabularies.contentTypes || metadata.contentTypes || [];
-
-        if (!Array.isArray(content_types) || content_types.length === 0) {
-            section.appendChild(this.Helpers.create_element('p', { 
-                class_name: 'metadata-empty', 
-                text_content: t('rulefile_metadata_empty_value') 
-            }));
-        } else {
-            const root_list = this.Helpers.create_element('ul', { class_name: 'metadata-nested-list' });
-            content_types.forEach(parent => {
-                const parent_item = this.Helpers.create_element('li');
-                parent_item.appendChild(this.Helpers.create_element('span', { 
-                    class_name: 'metadata-subject', 
-                    text_content: parent.text || parent.id || t('rulefile_metadata_untitled_item') 
-                }));
-                if (parent.description) {
-                    parent_item.appendChild(this.Helpers.create_element('p', { 
-                        class_name: 'metadata-description', 
-                        text_content: parent.description 
-                    }));
-                }
-                if (Array.isArray(parent.types) && parent.types.length > 0) {
-                    const child_list = this.Helpers.create_element('ul', { class_name: 'metadata-nested-list-child' });
-                    parent.types.forEach(child => {
-                        const child_item = this.Helpers.create_element('li');
-                        child_item.appendChild(this.Helpers.create_element('span', { 
-                            class_name: 'metadata-subject', 
-                            text_content: child.text || child.id || t('rulefile_metadata_untitled_item') 
-                        }));
-                        if (child.description) {
-                            child_item.appendChild(this.Helpers.create_element('p', { 
-                                class_name: 'metadata-description', 
-                                text_content: child.description 
-                            }));
-                        }
-                        child_list.appendChild(child_item);
-                    });
-                    parent_item.appendChild(child_list);
-                }
-                root_list.appendChild(parent_item);
-            });
-            section.appendChild(root_list);
-        }
-
-        return section;
+        return render_rulefile_content_types_section(
+            { Helpers: this.Helpers, Translation: this.Translation },
+            metadata
+        );
     }
 
     _render_report_template_section(ruleFileContent) {
-        const t = this.Translation.t;
-        const section = this.Helpers.create_element('section', { class_name: 'rulefile-section-content' });
-        
-        const report_template = ruleFileContent.reportTemplate || { sections: {} };
-        const sections = report_template.sections || {};
-        const metadata = ruleFileContent.metadata || {};
-        const block_order = metadata?.blockOrders?.reportSections || [];
-
-        if (Object.keys(sections).length === 0) {
-            section.appendChild(this.Helpers.create_element('p', { 
-                class_name: 'metadata-empty', 
-                text_content: t('rulefile_metadata_empty_value') 
-            }));
-        } else {
-            const ordered_section_ids = [...block_order];
-            const extra_section_ids = Object.keys(sections).filter(id => !ordered_section_ids.includes(id));
-            ordered_section_ids.push(...extra_section_ids);
-
-            const sections_list = this.Helpers.create_element('div', { class_name: 'report-sections-list' });
-            ordered_section_ids.forEach(section_id => {
-                const section_data = sections[section_id];
-                if (!section_data) return;
-
-                const section_card = this.Helpers.create_element('article', { class_name: 'metadata-card' });
-                const header = this.Helpers.create_element('div', { class_name: 'report-section-header' });
-                header.appendChild(this.Helpers.create_element('h2', { text_content: section_data.name || section_id }));
-                if (section_data.required) {
-                    const required_tag = this.Helpers.create_element('span', { 
-                        class_name: 'metadata-tag', 
-                        text_content: t('report_section_required')
-                    });
-                    header.appendChild(required_tag);
-                }
-                section_card.appendChild(header);
-                if (section_data.content) {
-                    section_card.appendChild(this.Helpers.create_element('div', { 
-                        class_name: 'report-section-content',
-                        text_content: section_data.content 
-                    }));
-                }
-                sections_list.appendChild(section_card);
-            });
-            section.appendChild(sections_list);
-        }
-
-        return section;
+        return render_rulefile_report_template_section(
+            { Helpers: this.Helpers, Translation: this.Translation },
+            ruleFileContent
+        );
     }
 
     _render_coming_soon_section() {
@@ -348,54 +148,14 @@ export class RulefileSectionsViewComponent {
     }
 
     _flush_info_blocks_order_from_dom() {
-        if (this.info_blocks_edit_component && typeof this.info_blocks_edit_component.flush_to_state === 'function') {
-            this.info_blocks_edit_component.flush_to_state();
-        }
-    }
-
-    _get_block_display_name(block_id) {
-        const t = this.Translation.t;
-        const name_map = {
-            'expectedObservation': t('requirement_expected_observation'),
-            'instructions': t('requirement_instructions'),
-            'exceptions': t('requirement_exceptions'),
-            'commonErrors': t('requirement_common_errors'),
-            'tips': t('requirement_tips'),
-            'examples': t('requirement_examples')
-        };
-        return name_map[block_id] || block_id;
-    }
-
-    _get_custom_block_name_from_requirements(block_id) {
-        const requirements = this.getState()?.ruleFileContent?.requirements || {};
-        for (const req of Object.values(requirements)) {
-            const name = req?.infoBlocks?.[block_id]?.name;
-            if (typeof name === 'string') return name;
-        }
-        return '';
+        flush_info_blocks_order_from_dom({ info_blocks_edit_component: this.info_blocks_edit_component });
     }
 
     _render_info_blocks_order_section(metadata) {
-        const t = this.Translation.t;
-        const section = this.Helpers.create_element('section', { class_name: 'rulefile-section-content' });
-        const block_order = metadata?.blockOrders?.infoBlocks || [
-            'expectedObservation',
-            'instructions',
-            'exceptions',
-            'commonErrors',
-            'tips',
-            'examples'
-        ];
-        const list = this.Helpers.create_element('ol', { class_name: 'info-blocks-order-list' });
-        block_order.forEach((blockId) => {
-            const name = blockId.startsWith('custom_')
-                ? (this._get_custom_block_name_from_requirements(blockId) || t('rulefile_info_blocks_unnamed_block'))
-                : this._get_block_display_name(blockId);
-            const item = this.Helpers.create_element('li', { text_content: name });
-            list.appendChild(item);
-        });
-        section.appendChild(list);
-        return section;
+        return render_rulefile_info_blocks_order_section(
+            { Helpers: this.Helpers, Translation: this.Translation, getState: this.getState },
+            metadata
+        );
     }
 
     async _render_general_edit_form(container, _metadata) {
