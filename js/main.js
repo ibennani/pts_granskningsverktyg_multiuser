@@ -135,7 +135,6 @@ const editPageTypesSectionComponent = new EditPageTypesSectionComponent();
 const confirmDeleteViewComponent = new ConfirmDeleteViewComponent();
 const editRulefileRequirementComponent = new EditRulefileRequirementComponent();
 
-window.getState = getState;
 window.NotificationComponent = notificationComponent;
 window.ModalComponent = modalComponent;
 window.show_confirm_delete_modal = show_confirm_delete_modal;

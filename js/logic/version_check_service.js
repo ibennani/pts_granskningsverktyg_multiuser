@@ -3,6 +3,8 @@
 // Kör endast periodisk kontroll när fliken är synlig – webbläsare throttlar timers i bakgrunden, då syns inte meddelandet förrän användaren växlar tillbaka.
 // Jämför alltid server-mot-server (senast hämtad build vs nu hämtad) så att cachad script-tagg inte ger falska notiser.
 
+import { getState } from '../state.js';
+
 const INITIAL_DELAY_MS = 5000;
 // Cooldown efter att användaren sett/klickat på notisen – undviker att den dyker upp igen direkt efter omladdning
 const NOTIFICATION_COOLDOWN_MS = 180000; // 3 minuter
@@ -91,7 +93,7 @@ export function init_version_check_service() {
                     label,
                     callback: async () => {
                         try {
-                            const state = typeof window.getState === 'function' ? window.getState() : null;
+                            const state = getState();
                             const audit_id = state?.auditId;
                             if (audit_id && state?.ruleFileContent) {
                                 const raw_base = (typeof window !== 'undefined' && window.__GV_API_BASE__) ? window.__GV_API_BASE__ : '/v2/api';
