@@ -420,7 +420,7 @@ export function createExempelComponent() {
 
 1. **Dependency Injection**: Alla beroenden injiceras via init() och sparas som instansvariabler. Inga globala referenser (window.Helpers, window.Translation) i metoder.
 2. **Livscykel**: Alla komponenter ska ha metoderna init(), render() och destroy().
-3. **Storlek**: Max 400 rader per komponentfil.
+3. **Storlek**: Ingen fil får vara längre än 400 rader — varken komponentfiler eller logikfiler. Om en fil växer över 400 rader ska den delas upp innan arbetet committas. När en fil ändras som en del av en annan fix och den filen är över 400 rader — dela upp den i samma commit.
 4. **Notering**: Befintliga singleton-komponenter migreras gradvis — ny kod ska alltid följa klassstandarden.
 
 ---
