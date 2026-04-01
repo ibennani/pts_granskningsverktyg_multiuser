@@ -13,8 +13,6 @@ import * as SaveAuditLogic from './logic/save_audit_logic.js';
 import * as ValidationLogic from './validation_logic.js';
 import * as RulefileUpdaterLogic from './logic/rulefile_updater_logic.js';
 import * as ScoreCalculator from './logic/ScoreCalculator.js';
-import * as RuleDataProcessor from './logic/RuleDataProcessor.js';
-import * as RulefileEditorLogic from './logic/rulefile_editor_logic.js';
 import { AutosaveService, capture_focus_state, restore_focus_state } from './logic/autosave_service.js';
 import { init_version_check_service } from './logic/version_check_service.js';
 import { init_rulefile_view_poll_service } from './logic/rulefile_view_poll_service.js';
@@ -101,7 +99,7 @@ import { flush_sync_to_server } from './logic/server_sync.js';
 
 import { DraftManager } from './draft_manager.js';
 import { get_auth_token, clear_auth_token, get_current_user_preferences, set_current_user_admin } from './api/client.js';
-import { getState, dispatch, subscribe, initState, StoreActionTypes, StoreInitialState, loadStateFromLocalStorageBackup, updateBackupRestorePosition, APP_STATE_KEY } from './state.js';
+import { getState, dispatch, subscribe, initState, StoreActionTypes, loadStateFromLocalStorageBackup, updateBackupRestorePosition, APP_STATE_KEY } from './state.js';
 
 const notificationComponent = new NotificationComponent();
 const modalComponent = new ModalComponent();
@@ -138,9 +136,6 @@ const confirmDeleteViewComponent = new ConfirmDeleteViewComponent();
 const editRulefileRequirementComponent = new EditRulefileRequirementComponent();
 
 window.getState = getState;
-window.dispatch = dispatch;
-window.Store = { getState, dispatch, subscribe, StoreActionTypes, StoreInitialState };
-window.StoreActionTypes = StoreActionTypes;
 window.NotificationComponent = notificationComponent;
 window.ModalComponent = modalComponent;
 window.show_confirm_delete_modal = show_confirm_delete_modal;
@@ -150,8 +145,6 @@ window.Translation = TranslationLogic;
 window.SaveAuditLogic = SaveAuditLogic;
 window.RulefileUpdaterLogic = RulefileUpdaterLogic;
 window.ScoreCalculator = ScoreCalculator;
-window.RuleDataProcessor = RuleDataProcessor;
-window.RulefileEditorLogic = RulefileEditorLogic;
 window.AutosaveService = AutosaveService;
 // Compatibility assignment
 window.ValidationLogic = ValidationLogic;
