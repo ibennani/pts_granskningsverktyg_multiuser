@@ -454,3 +454,15 @@ Cursor får ALDRIG föreslå eller skriva kod som:
 - Innehåller hårdkodade URL:er, IP-adresser eller domännamn
 - Har tomma catch-block utan felhantering: `catch(e) {}`
 
+---
+
+## TypeScript-migrering (gradvis)
+
+Projektet migreras gradvis från JavaScript till TypeScript enligt "boy scout-regeln":
+
+- När du **ändrar** en befintlig `.js`-fil ska du, i samma arbetsgren och i praktiken samma redigering, **konvertera filen till `.ts`** om ändringen inte är ren kosmetik (stavning, formatering utan beteende). Då uppdaterar du även importvägar och tester som pekar på filen.
+- **Nya** moduler under `js/`, `server/` och motsvarande ska skrivas som **`.ts`** när det är rimligt (affärslogik, hjälpfunktioner, API-lager), inte som nya `.js`-filer om det inte finns ett tydligt skäl att vänta.
+- Efter ändringar som rör TypeScript: kör **`npx tsc --noEmit`** och **`npm test`** innan du anser arbetet klart.
+- `checkJs` är avstängt i `tsconfig.json`; befintlig `.js`-kod behöver inte vara typad förrän den konverteras. **Strict** gäller för `.ts`-filer du lägger till eller migrerar.
+- Vite transpilerar `.ts` utan extra plugin; Jest använder `@swc/jest` för både `.js` och `.ts` enligt `jest.config.js`.
+
