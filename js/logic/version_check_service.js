@@ -4,6 +4,7 @@
 // Jämför alltid server-mot-server (senast hämtad build vs nu hämtad) så att cachad script-tagg inte ger falska notiser.
 
 import { getState } from '../state.js';
+import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 
 const INITIAL_DELAY_MS = 5000;
 // Cooldown efter att användaren sett/klickat på notisen – undviker att den dyker upp igen direkt efter omladdning
@@ -88,8 +89,8 @@ export function init_version_check_service() {
             }
             const msg = window.Translation?.t?.('new_version_available') || 'En ny version är tillgänglig.';
             const label = window.Translation?.t?.('reload_page') || 'Ladda om sidan';
-            if (window.NotificationComponent?.show_global_critical_message_with_action) {
-                window.NotificationComponent.show_global_critical_message_with_action(msg, 'warning', {
+            if (app_runtime_refs.notification_component?.show_global_critical_message_with_action) {
+                app_runtime_refs.notification_component.show_global_critical_message_with_action(msg, 'warning', {
                     label,
                     callback: async () => {
                         try {

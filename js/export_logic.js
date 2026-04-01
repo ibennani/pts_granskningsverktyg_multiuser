@@ -6,6 +6,7 @@ import { marked } from './utils/markdown.js';
 import { format_local_date_for_filename } from './utils/filename_utils.js';
 import { recalculateAuditTimes } from './audit_logic.js';
 import { consoleManager } from './utils/console_manager.js';
+import { app_runtime_refs } from './utils/app_runtime_refs.js';
 
 function get_t_internal() {
     if (typeof window.Translation !== 'undefined' && typeof window.Translation.t === 'function') {
@@ -15,8 +16,9 @@ function get_t_internal() {
 }
 
 function show_global_message_internal(message, type, duration) {
-    if (typeof window.NotificationComponent !== 'undefined' && typeof window.NotificationComponent.show_global_message === 'function') {
-        window.NotificationComponent.show_global_message(message, type, duration);
+    const nc = app_runtime_refs.notification_component;
+    if (typeof nc !== 'undefined' && typeof nc.show_global_message === 'function') {
+        nc.show_global_message(message, type, duration);
     }
 }
 

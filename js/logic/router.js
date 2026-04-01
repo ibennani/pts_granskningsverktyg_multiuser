@@ -5,6 +5,7 @@
 
 import { is_current_user_admin, get_auth_token, get_current_user_preferences, set_current_user_admin } from '../api/client.js';
 import { consoleManager } from '../utils/console_manager.js';
+import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import * as ValidationLogic from '../validation_logic.js';
 
 if (typeof window !== 'undefined' && window.__GV_DEBUG_NAV) {
@@ -171,12 +172,12 @@ export async function handle_hash_change(options) {
                 navigate_and_set_hash_fn(next_view, {});
                 return true;
             }
-            if (validation && !validation.isValid && window.NotificationComponent?.show_global_message) {
-                window.NotificationComponent.show_global_message(validation.message || t('error_invalid_saved_audit_file'), 'error');
+            if (validation && !validation.isValid && app_runtime_refs.notification_component?.show_global_message) {
+                app_runtime_refs.notification_component.show_global_message(validation.message || t('error_invalid_saved_audit_file'), 'error');
             }
         } catch (err) {
-            if (window.NotificationComponent?.show_global_message) {
-                window.NotificationComponent.show_global_message(
+            if (app_runtime_refs.notification_component?.show_global_message) {
+                app_runtime_refs.notification_component.show_global_message(
                     t('server_load_audit_error', { message: err.message }) || err.message,
                     'error'
                 );

@@ -2,6 +2,7 @@
 // Egen vy för inställningar för säkerhetskopior (schema + retention).
 
 import { get_backup_settings, update_backup_settings } from '../api/client.js';
+import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import './backup_settings_view_component.css';
 
 const RUNS_PER_DAY_OPTIONS = [1, 2, 3, 4, 6, 8, 12, 24];
@@ -115,7 +116,7 @@ export class BackupSettingsViewComponent {
         const last_run_hour = parseInt(this.last_hour_select_ref?.value ?? '18', 10);
         this._save_in_progress = true;
         const show_msg = (msg, type) => {
-            const nc = this.NotificationComponent || window.NotificationComponent;
+            const nc = this.NotificationComponent || app_runtime_refs.notification_component;
             if (nc?.show_global_message) nc.show_global_message(msg, type);
         };
         const SAVE_TIMEOUT_MS = 15000;

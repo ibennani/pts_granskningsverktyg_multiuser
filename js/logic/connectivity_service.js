@@ -1,6 +1,8 @@
 // js/logic/connectivity_service.js
 // Online/offline-indikering, pending-synk till server och meddelanden i global-message-area.
 
+import { app_runtime_refs } from '../utils/app_runtime_refs.js';
+
 /** @type {boolean} */
 let pending_audit_sync = false;
 /** @type {boolean} */
@@ -64,7 +66,7 @@ export function notify_network_unreachable_for_sync() {
 function show_offline_banner_if_needed() {
     if (showing_offline_banner) return;
     const t = window.Translation?.t;
-    const NotificationComponent = window.NotificationComponent;
+    const NotificationComponent = app_runtime_refs.notification_component;
     if (!t || !NotificationComponent?.show_global_message) return;
     NotificationComponent.show_global_message(t('connectivity_offline_message'), 'warning');
     showing_offline_banner = true;
@@ -72,8 +74,8 @@ function show_offline_banner_if_needed() {
 
 function clear_offline_banner() {
     if (!showing_offline_banner) return;
-    if (window.NotificationComponent?.clear_global_message) {
-        window.NotificationComponent.clear_global_message();
+    if (app_runtime_refs.notification_component?.clear_global_message) {
+        app_runtime_refs.notification_component.clear_global_message();
     }
     showing_offline_banner = false;
 }
@@ -81,7 +83,7 @@ function clear_offline_banner() {
 function show_sync_complete_message() {
     if (typeof window === 'undefined') return;
     const t = window.Translation?.t;
-    const NotificationComponent = window.NotificationComponent;
+    const NotificationComponent = app_runtime_refs.notification_component;
     if (!t || !NotificationComponent?.show_global_message) return;
     if (success_clear_timer) {
         clearTimeout(success_clear_timer);
@@ -90,8 +92,8 @@ function show_sync_complete_message() {
     NotificationComponent.show_global_message(t('connectivity_online_all_saved_message'), 'success');
     success_clear_timer = setTimeout(() => {
         success_clear_timer = null;
-        if (window.NotificationComponent?.clear_global_message) {
-            window.NotificationComponent.clear_global_message();
+        if (app_runtime_refs.notification_component?.clear_global_message) {
+            app_runtime_refs.notification_component.clear_global_message();
         }
     }, 8000);
 }
@@ -137,7 +139,7 @@ export function init_connectivity_service(options) {
     if (typeof window === 'undefined') return;
 
     const top_bar = document.getElementById('global-action-bar-top');
-    const NotificationComponent = window.NotificationComponent;
+    const NotificationComponent = app_runtime_refs.notification_component;
     if (top_bar && NotificationComponent?.init && NotificationComponent.append_global_message_areas_to) {
         NotificationComponent.init().then(() => {
             NotificationComponent.append_global_message_areas_to(top_bar);

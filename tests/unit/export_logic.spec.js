@@ -1,4 +1,5 @@
 import { jest } from '@jest/globals';
+import { app_runtime_refs } from '../../js/utils/app_runtime_refs.js';
 
 // Mock docx library before importing export_logic
 const mockParagraph = jest.fn();
@@ -35,12 +36,12 @@ global.window = {
         t: (key) => key,
         get_current_language_code: () => 'sv-SE'
     },
-    NotificationComponent: {
-        show_global_message: jest.fn()
-    },
     Helpers: {
         format_iso_to_local_datetime: jest.fn((date) => date)
     }
+};
+app_runtime_refs.notification_component = {
+    show_global_message: jest.fn()
 };
 
 // Mock URL globally (not on window)
@@ -91,6 +92,9 @@ describe('ExportLogic - Word Export', () => {
         jest.clearAllMocks();
         paragraphInstances.length = 0;
         textRunInstances.length = 0;
+        app_runtime_refs.notification_component = {
+            show_global_message: jest.fn()
+        };
 
         // Import after mocks are set up
         const module = await import('../../js/export_logic.js');

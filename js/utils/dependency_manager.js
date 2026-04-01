@@ -7,6 +7,7 @@
 
 import * as AuditLogic from '../audit_logic.js';
 import { consoleManager } from './console_manager.js';
+import { app_runtime_refs } from './app_runtime_refs.js';
 
 class DependencyManager {
     constructor() {
@@ -123,7 +124,7 @@ class DependencyManager {
         // Register core dependencies
         this.register('Helpers', () => window.Helpers, true);
         this.register('Translation', () => window.Translation, true);
-        this.register('NotificationComponent', () => window.NotificationComponent, true);
+        this.register('NotificationComponent', () => app_runtime_refs.notification_component, true);
         this.register('AuditLogic', () => AuditLogic, true);
         this.register('SaveAuditLogic', () => window.SaveAuditLogic, true);
         this.register('ScoreCalculator', () => window.ScoreCalculator, false);

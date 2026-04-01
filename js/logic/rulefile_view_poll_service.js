@@ -5,6 +5,7 @@
 // (Upload) finns ingen ruleSetId och polling körs inte.
 
 import { get_rule_version, get_rule } from '../api/client.js';
+import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 
 const POLL_INTERVAL_MS = 3000;
 const RULEFILE_VIEWS = new Set([
@@ -68,9 +69,9 @@ export function init_rulefile_view_poll_service({ getState, dispatch, StoreActio
                             version: version
                         }
                     });
-                    if (window.NotificationComponent?.show_global_message && window.Translation?.t) {
+                    if (app_runtime_refs.notification_component?.show_global_message && window.Translation?.t) {
                         const msg = window.Translation.t('realtime_sync_rulefile_updated') || 'Regelfilen har uppdaterats av en annan enhet';
-                        window.NotificationComponent.show_global_message(msg, 'info');
+                        app_runtime_refs.notification_component.show_global_message(msg, 'info');
                     }
                 }
             }

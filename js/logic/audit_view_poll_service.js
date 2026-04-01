@@ -9,6 +9,7 @@
 // - auditStatus === 'not_started': granskningen är inte synkad till servern än → undviker 404
 
 import { get_audit_version, load_audit_with_rule_file } from '../api/client.js';
+import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 
 const POLL_INTERVAL_MS = 3000;
 const AUDIT_VIEWS = new Set([
@@ -73,9 +74,9 @@ export function init_audit_view_poll_service({ getState, dispatch, StoreActionTy
                             saveFileVersion: full_state.saveFileVersion || '2.1.0'
                         }
                     });
-                    if (window.NotificationComponent?.show_global_message && window.Translation?.t) {
+                    if (app_runtime_refs.notification_component?.show_global_message && window.Translation?.t) {
                         const msg = window.Translation.t('realtime_sync_updated') || 'Granskningen har uppdaterats av en annan enhet';
-                        window.NotificationComponent.show_global_message(msg, 'info');
+                        app_runtime_refs.notification_component.show_global_message(msg, 'info');
                     }
                 }
             }

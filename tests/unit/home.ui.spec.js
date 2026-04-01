@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { jest } from '@jest/globals';
+import { app_runtime_refs } from '../../js/utils/app_runtime_refs.js';
 import { screen } from '@testing-library/dom';
 import axeCore from 'jest-axe';
 
@@ -69,11 +70,12 @@ async function renderStartView() {
     }
   }
 
-  window.NotificationComponent = {
+  const notificationMock = {
     get_global_message_element_reference: jest.fn().mockReturnValue(document.createElement('div')),
     clear_global_message: jest.fn(),
     show_global_message: jest.fn(),
   };
+  app_runtime_refs.notification_component = notificationMock;
 
   const { AuditViewComponent } = await import('../../js/components/AuditViewComponent.js');
   const appContainer = document.getElementById('app-container');
@@ -89,7 +91,7 @@ async function renderStartView() {
       StoreActionTypes: {},
       Translation: window.Translation,
       Helpers: window.Helpers,
-      NotificationComponent: window.NotificationComponent,
+      NotificationComponent: notificationMock,
       ValidationLogic: {
         validate_saved_audit_file: jest.fn().mockReturnValue({ isValid: false }),
         validate_rule_file_json: jest.fn().mockReturnValue({ isValid: false }),

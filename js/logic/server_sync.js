@@ -12,6 +12,7 @@ import {
     notify_network_unreachable_for_sync
 } from './connectivity_service.js';
 import { consoleManager } from '../utils/console_manager.js';
+import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 
 let debounce_timer = null;
 let rulefile_debounce_timer = null;
@@ -90,7 +91,7 @@ function show_audit_deleted_modal_and_navigate() {
     const t = window.Translation?.t || ((key) => key);
 
     if (!ModalComponent?.show || !Helpers?.create_element) {
-        const NotificationComponent = window.NotificationComponent;
+        const NotificationComponent = app_runtime_refs.notification_component;
         if (NotificationComponent?.show_global_message) {
             NotificationComponent.show_global_message(
                 t('audit_deleted_modal_message_fallback'),
@@ -257,15 +258,15 @@ async function run_sync(state, dispatch_fn) {
                         }
                     });
                     clear_audit_sync_pending();
-                    if (window.NotificationComponent?.show_global_message && window.Translation?.t) {
-                        window.NotificationComponent.show_global_message(
+                    if (app_runtime_refs.notification_component?.show_global_message && window.Translation?.t) {
+                        app_runtime_refs.notification_component.show_global_message(
                             window.Translation.t('version_conflict_reload_from_server'),
                             'info'
                         );
                     }
-                } else if (window.NotificationComponent?.show_global_message && window.Translation?.t) {
+                } else if (app_runtime_refs.notification_component?.show_global_message && window.Translation?.t) {
                     mark_audit_sync_pending();
-                    window.NotificationComponent.show_global_message(
+                    app_runtime_refs.notification_component.show_global_message(
                         window.Translation.t('server_sync_error', { message: err.message }) || err.message,
                         'warning'
                     );
@@ -274,9 +275,9 @@ async function run_sync(state, dispatch_fn) {
                 if (is_fetch_network_error(load_err)) {
                     mark_audit_sync_pending();
                     notify_network_unreachable_for_sync();
-                } else if (window.NotificationComponent?.show_global_message && window.Translation?.t) {
+                } else if (app_runtime_refs.notification_component?.show_global_message && window.Translation?.t) {
                     mark_audit_sync_pending();
-                    window.NotificationComponent.show_global_message(
+                    app_runtime_refs.notification_component.show_global_message(
                         window.Translation.t('server_sync_error', { message: err.message }) || err.message,
                         'warning'
                     );
@@ -288,8 +289,8 @@ async function run_sync(state, dispatch_fn) {
             /* Ingen kö – användaren måste logga in på nytt */
         } else {
             mark_audit_sync_pending();
-            if (window.NotificationComponent?.show_global_message && window.Translation?.t) {
-                window.NotificationComponent.show_global_message(
+            if (app_runtime_refs.notification_component?.show_global_message && window.Translation?.t) {
+                app_runtime_refs.notification_component.show_global_message(
                     window.Translation.t('server_sync_error', { message: err.message }) || `Kunde inte spara till servern: ${err.message}`,
                     'error'
                 );
@@ -329,8 +330,8 @@ async function run_sync_rulefile(state, dispatch_fn) {
             return;
         }
         mark_rulefile_sync_pending();
-        if (window.NotificationComponent?.show_global_message && window.Translation?.t) {
-            window.NotificationComponent.show_global_message(
+        if (app_runtime_refs.notification_component?.show_global_message && window.Translation?.t) {
+            app_runtime_refs.notification_component.show_global_message(
                 window.Translation.t('server_sync_error', { message: err.message }) || `Kunde inte spara regelfilen: ${err.message}`,
                 'error'
             );

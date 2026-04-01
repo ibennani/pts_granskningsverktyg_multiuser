@@ -4,6 +4,7 @@
 import { jest, describe, test, expect, beforeAll, beforeEach, afterEach } from '@jest/globals';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { app_runtime_refs } from '../../js/utils/app_runtime_refs.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const client_path = path.join(__dirname, '../../js/api/client.js');
@@ -216,14 +217,14 @@ describe('server_sync', () => {
         window.__gv_current_view_name = 'metadata';
         window.__GV_AUDIT_DELETED_MODAL_SHOWN__ = false;
         const show_global = jest.fn();
-        window.NotificationComponent = { show_global_message: show_global };
+        app_runtime_refs.notification_component = { show_global_message: show_global };
         window.Translation = { t: (k) => k };
         const dispatch = jest.fn();
         const state = base_audit_state({ auditId: 'gone', version: 1 });
         await sync_to_server_now(() => state, dispatch);
         expect(show_global).toHaveBeenCalled();
         delete window.__gv_current_view_name;
-        delete window.NotificationComponent;
+        app_runtime_refs.notification_component = null;
         delete window.Translation;
         delete window.__GV_AUDIT_DELETED_MODAL_SHOWN__;
     });
@@ -242,7 +243,7 @@ describe('server_sync', () => {
         const err = Object.assign(new Error('Konflikt'), { status: 409 });
         update_rule.mockRejectedValueOnce(err);
         const show_global = jest.fn();
-        window.NotificationComponent = { show_global_message: show_global };
+        app_runtime_refs.notification_component = { show_global_message: show_global };
         window.Translation = { t: (k) => `t:${k}` };
         const dispatch = jest.fn();
         const state = base_audit_state({
@@ -253,7 +254,7 @@ describe('server_sync', () => {
         await flush_sync_rulefile_to_server(() => state, dispatch);
         expect(mark_rulefile_sync_pending).toHaveBeenCalled();
         expect(show_global).toHaveBeenCalled();
-        delete window.NotificationComponent;
+        app_runtime_refs.notification_component = null;
         delete window.Translation;
     });
 
@@ -261,7 +262,7 @@ describe('server_sync', () => {
         const err = Object.assign(new Error('Saknas'), { status: 404 });
         update_rule.mockRejectedValueOnce(err);
         const show_global = jest.fn();
-        window.NotificationComponent = { show_global_message: show_global };
+        app_runtime_refs.notification_component = { show_global_message: show_global };
         window.Translation = { t: (k) => `t:${k}` };
         const dispatch = jest.fn();
         const state = base_audit_state({
@@ -272,7 +273,7 @@ describe('server_sync', () => {
         await flush_sync_rulefile_to_server(() => state, dispatch);
         expect(mark_rulefile_sync_pending).toHaveBeenCalled();
         expect(show_global).toHaveBeenCalled();
-        delete window.NotificationComponent;
+        app_runtime_refs.notification_component = null;
         delete window.Translation;
     });
 

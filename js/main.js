@@ -45,6 +45,7 @@ import './utils/console_manager.js';
 import './utils/memory_manager.js';
 import { consoleManager } from './utils/console_manager.js';
 import { memoryManager } from './utils/memory_manager.js';
+import { app_runtime_refs } from './utils/app_runtime_refs.js';
 import { LayoutManager } from './utils/layout_manager.js';
 import { setup_tooltip_overlay } from './utils/overlay_portal.js';
 
@@ -77,7 +78,7 @@ const modalComponent = new ModalComponent();
 const sideMenuComponent = new SideMenuComponent();
 const errorBoundaryComponent = new ErrorBoundaryComponent();
 
-window.NotificationComponent = notificationComponent;
+app_runtime_refs.notification_component = notificationComponent;
 window.ModalComponent = modalComponent;
 window.Helpers = Helpers;
 window.Translation = TranslationLogic;

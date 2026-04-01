@@ -2,6 +2,7 @@
 
 import * as AuditLogic from '../audit_logic.js';
 import { dependencyManager } from './dependency_manager.js';
+import { app_runtime_refs } from './app_runtime_refs.js';
 
 /**
  * Safe Initialization Helper - Provides utilities for safe component initialization
@@ -60,7 +61,7 @@ function getDependencyValue(depName) {
     const windowMap = {
         'Translation': () => window.Translation,
         'Helpers': () => window.Helpers,
-        'NotificationComponent': () => window.NotificationComponent,
+        'NotificationComponent': () => app_runtime_refs.notification_component,
         'AuditLogic': () => AuditLogic,
         'SaveAuditLogic': () => window.SaveAuditLogic,
         'ScoreCalculator': () => window.ScoreCalculator,
@@ -179,7 +180,7 @@ export function createCommonDependencyAssigner() {
         return safeAssignDependencies(target, {
             Translation: () => window.Translation,
             Helpers: () => window.Helpers,
-            NotificationComponent: () => window.NotificationComponent,
+            NotificationComponent: () => app_runtime_refs.notification_component,
             AuditLogic: () => AuditLogic,
             SaveAuditLogic: () => window.SaveAuditLogic
         });

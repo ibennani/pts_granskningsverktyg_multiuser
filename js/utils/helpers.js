@@ -1,6 +1,8 @@
 // js/utils/helpers.js
 'use-strict';
 
+import { app_runtime_refs } from './app_runtime_refs.js';
+
 export function generate_uuid_v4() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
         const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
@@ -110,9 +112,9 @@ export async function load_css_safely(href, componentName = 'Unknown', options =
         if (window.ConsoleManager?.warn) window.ConsoleManager.warn(`[${componentName}] Critical CSS loading failed:`, error);
         
         // Visa varning till användaren om styling kan vara fel
-        if (window.NotificationComponent?.show_global_message) {
+        if (app_runtime_refs.notification_component?.show_global_message) {
             const message = `Varning: Vissa stilar för ${componentName} kunde inte laddas korrekt.`;
-            window.NotificationComponent.show_global_message(message, 'warning');
+            app_runtime_refs.notification_component.show_global_message(message, 'warning');
         }
         
         // Kasta felet vidare så att komponenten kan hantera det

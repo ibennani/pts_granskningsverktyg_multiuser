@@ -97,7 +97,7 @@ export function generateSafeAssignFunction(componentName, dependencies) {
         Translation_t = window.Translation?.t;
         Helpers_create_element = window.Helpers?.create_element;
         Helpers_load_css = window.Helpers?.load_css;
-        ${dependencies.includes('NotificationComponent') ? 'NotificationComponent_show_global_message = window.NotificationComponent?.show_global_message;' : ''}
+        ${dependencies.includes('NotificationComponent') ? 'NotificationComponent_show_global_message = app_runtime_refs.notification_component?.show_global_message;' : ''}
         ${dependencies.includes('AuditLogic') ? 'AuditLogic_calculate_check_status = window.AuditLogic?.calculate_check_status;' : ''}
         ${dependencies.includes('SaveAuditLogic') ? 'SaveAuditLogic_save_audit_to_json_file = window.SaveAuditLogic?.save_audit_to_json_file;' : ''}
         

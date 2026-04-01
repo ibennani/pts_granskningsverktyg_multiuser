@@ -4,6 +4,7 @@
 import { jest, describe, test, expect, beforeEach } from '@jest/globals';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { app_runtime_refs } from '../../js/utils/app_runtime_refs.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const server_sync_path = path.join(__dirname, '../../js/logic/server_sync.js');
@@ -19,7 +20,6 @@ describe('connectivity_service', () => {
     let init_connectivity_service;
 
     beforeEach(async () => {
-        jest.resetModules();
         const mod = await import('../../js/logic/connectivity_service.js');
         is_fetch_network_error = mod.is_fetch_network_error;
         mark_audit_sync_pending = mod.mark_audit_sync_pending;
@@ -76,11 +76,11 @@ describe('connectivity_service', () => {
     describe('notify_network_unreachable_for_sync', () => {
         test('visar varning när NotificationComponent och Translation finns', async () => {
             const show = jest.fn();
-            window.NotificationComponent = { show_global_message: show };
+            app_runtime_refs.notification_component = { show_global_message: show };
             window.Translation = { t: (k) => k };
             notify_network_unreachable_for_sync();
             expect(show).toHaveBeenCalledWith('connectivity_offline_message', 'warning');
-            delete window.NotificationComponent;
+            app_runtime_refs.notification_component = null;
             delete window.Translation;
         });
     });
@@ -148,6 +148,7 @@ describe('connectivity_service', () => {
 
         test('init med top_bar anropar NotificationComponent', async () => {
             jest.resetModules();
+            const { app_runtime_refs: runtime } = await import('../../js/utils/app_runtime_refs.js');
             const mod = await import('../../js/logic/connectivity_service.js');
             const { init_connectivity_service } = mod;
             const top = document.createElement('div');
@@ -156,7 +157,7 @@ describe('connectivity_service', () => {
             document.getElementById = jest.fn((id) => (id === 'global-action-bar-top' ? top : null));
             const init_p = jest.fn().mockResolvedValue(undefined);
             const append = jest.fn();
-            window.NotificationComponent = {
+            runtime.notification_component = {
                 init: init_p,
                 append_global_message_areas_to: append
             };
@@ -173,7 +174,7 @@ describe('connectivity_service', () => {
             expect(append).toHaveBeenCalledWith(top);
 
             document.getElementById = orig_get;
-            delete window.NotificationComponent;
+            runtime.notification_component = null;
         });
     });
 });
