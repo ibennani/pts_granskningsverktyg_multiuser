@@ -22,6 +22,12 @@ import {
     render_rulefile_report_template_section,
     render_rulefile_info_blocks_order_section
 } from './rulefile_sections/rulefile_sections_type_views.js';
+import {
+    render_rulefile_general_edit_form,
+    render_rulefile_page_types_edit_form,
+    render_rulefile_content_types_edit_form,
+    render_rulefile_info_blocks_edit_form
+} from './rulefile_sections/rulefile_sections_edit_forms.js';
 import './rulefile_sections_view.css';
 
 let _last_section_id = null;
@@ -159,124 +165,35 @@ export class RulefileSectionsViewComponent {
     }
 
     async _render_general_edit_form(container, _metadata) {
-        const is_first_render = !this.general_edit_component;
-        
-        // Om formuläret redan är renderat, hoppa över (förhindra re-rendering vid autospar)
-        if (this.general_edit_component && container.children.length > 0) {
-            return;
-        }
-        
-        // Dynamiskt importera EditGeneralSectionComponent
-        const { EditGeneralSectionComponent } = await import('./EditGeneralSectionComponent.js');
-        
-        // Initiera komponenten med container som root
-        await EditGeneralSectionComponent.init({
-            root: container,
-            deps: this.deps
-        });
-        
-        // Rendera formuläret inline
-        EditGeneralSectionComponent.render();
-        
-        // Sätt fokus på första h2 endast när formuläret renderas första gången (när användaren klickar på redigera-knappen)
-        // Inte vid autospar/re-rendering
-        if (is_first_render && !this.general_form_initial_focus_set) {
-            setTimeout(() => {
-                const firstH2 = container.querySelector('h2');
-                if (firstH2) {
-                    firstH2.setAttribute('tabindex', '-1');
-                    firstH2.focus();
-                    this.general_form_initial_focus_set = true;
-                }
-            }, 100);
-        }
-        
-        // Spara referens för cleanup
-        this.general_edit_component = EditGeneralSectionComponent;
+        return render_rulefile_general_edit_form(
+            { deps: this.deps, view: this },
+            container,
+            _metadata
+        );
     }
 
     async _render_page_types_edit_form(container, _metadata) {
-        const is_first_render = !this.page_types_edit_component;
-        
-        // Om formuläret redan är renderat, hoppa över (förhindra re-rendering vid autospar)
-        if (this.page_types_edit_component && container.children.length > 0) {
-            return;
-        }
-        
-        // Dynamiskt importera EditPageTypesSectionComponent
-        const { EditPageTypesSectionComponent } = await import('./EditPageTypesSectionComponent.js');
-        
-        // Initiera komponenten med container som root
-        await EditPageTypesSectionComponent.init({
-            root: container,
-            deps: this.deps
-        });
-        
-        // Rendera formuläret inline
-        EditPageTypesSectionComponent.render();
-        
-        // Sätt fokus på första h2 endast när formuläret renderas första gången (när användaren klickar på redigera-knappen)
-        // Inte vid autospar/re-rendering
-        if (is_first_render && !this.page_types_form_initial_focus_set) {
-            setTimeout(() => {
-                const firstH2 = container.querySelector('h2');
-                if (firstH2) {
-                    firstH2.setAttribute('tabindex', '-1');
-                    firstH2.focus();
-                    this.page_types_form_initial_focus_set = true;
-                }
-            }, 100);
-        }
-        
-        // Spara referens för cleanup
-        this.page_types_edit_component = EditPageTypesSectionComponent;
+        return render_rulefile_page_types_edit_form(
+            { deps: this.deps, view: this },
+            container,
+            _metadata
+        );
     }
 
     async _render_content_types_edit_form(container, _metadata) {
-        const is_first_render = !this.content_types_edit_component;
-        
-        if (this.content_types_edit_component && container.children.length > 0) {
-            return;
-        }
-        
-        const { EditContentTypesSectionComponent } = await import('./EditContentTypesSectionComponent.js');
-        
-        await EditContentTypesSectionComponent.init({
-            root: container,
-            deps: this.deps
-        });
-        
-        EditContentTypesSectionComponent.render();
-        
-        if (is_first_render && !this.content_types_form_initial_focus_set) {
-            setTimeout(() => {
-                const firstH2 = container.querySelector('h2');
-                if (firstH2) {
-                    firstH2.setAttribute('tabindex', '-1');
-                    firstH2.focus();
-                    this.content_types_form_initial_focus_set = true;
-                }
-            }, 100);
-        }
-        
-        this.content_types_edit_component = EditContentTypesSectionComponent;
+        return render_rulefile_content_types_edit_form(
+            { deps: this.deps, view: this },
+            container,
+            _metadata
+        );
     }
 
     async _render_info_blocks_edit_form(container, _metadata) {
-        if (this.info_blocks_edit_component && container.children.length > 0) {
-            return;
-        }
-
-        const { EditInfoBlocksSectionComponent } = await import('./EditInfoBlocksSectionComponent.js');
-
-        await EditInfoBlocksSectionComponent.init({
-            root: container,
-            deps: this.deps
-        });
-
-        EditInfoBlocksSectionComponent.render();
-
-        this.info_blocks_edit_component = EditInfoBlocksSectionComponent;
+        return render_rulefile_info_blocks_edit_form(
+            { deps: this.deps, view: this },
+            container,
+            _metadata
+        );
     }
 
     async render() {
