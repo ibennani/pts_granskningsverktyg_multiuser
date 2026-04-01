@@ -8,12 +8,7 @@ import { render_sample_header } from './requirements_list/requirement_list_sampl
 import { build_requirements_list_dom } from './requirements_list/requirement_list_build_dom.js';
 import { build_all_mode_data } from './requirements_list/requirement_list_all_mode_data.js';
 import { filter_requirements } from './requirements_list/requirement_list_filter_requirements.js';
-import {
-    build_toolbar_initial_filter_state,
-    compute_auto_sort_by_override,
-    ensure_default_status_filter,
-    normalize_status_for_toolbar
-} from './requirements_list/requirement_list_ui_settings.js';
+import { build_toolbar_initial_filter_state, compute_auto_sort_by_override, ensure_default_status_filter, normalize_status_for_toolbar } from './requirements_list/requirement_list_ui_settings.js';
 import { fingerprint_item_keys, can_incremental_update } from '../utils/incremental_list_update.js';
 import './all_requirements_view_component.css';
 import './requirement_list_component.css';
@@ -388,7 +383,6 @@ export class RequirementsListViewComponent {
         }
 
         if (this.root) this.root.innerHTML = '';
-        
         this.root = null;
         this.deps = null;
         this.filter_container_element = null;
