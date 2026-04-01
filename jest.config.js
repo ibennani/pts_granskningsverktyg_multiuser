@@ -1,33 +1,38 @@
 export default {
-  // Testmiljö som simulerar en webbläsare (DOM)
   testEnvironment: 'jsdom',
-
+  setupFilesAfterEnv: ['<rootDir>/tests/setup-jest.js'],
+  moduleNameMapper: {
+    '\\.(css)$': '<rootDir>/tests/styleMock.js',
+  },
+  testMatch: [
+    '<rootDir>/tests/unit/**/*.spec.js',
+    '<rootDir>/tests/unit/**/*.spec.ts',
+  ],
+  testPathIgnorePatterns: ['/node_modules/', '.e2e.spec.js'],
+  transform: {
+    '^.+\\.(t|j)s$': [
+      '@swc/jest',
+      {
+        jsc: {
+          parser: {
+            syntax: 'typescript',
+          },
+          target: 'es2022',
+        },
+        module: {
+          type: 'es6',
+        },
+      },
+    ],
+  },
+  extensionsToTreatAsEsm: ['.ts'],
   collectCoverage: true,
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov'],
   collectCoverageFrom: [
-    'js/logic/**/*.js',
-    'js/api/**/*.js',
-    'js/state/**/*.js',
-    '!js/**/*.spec.js',
+    'js/logic/**/*.{js,ts}',
+    'js/api/**/*.{js,ts}',
+    'js/state/**/*.{js,ts}',
+    '!js/**/*.spec.{js,ts}',
   ],
-  
-  // Filer som körs innan varje testfil (bra för mocks och global setup)
-  setupFilesAfterEnv: ['<rootDir>/tests/setup-jest.js'],
-  
-  // Stubba CSS-importer som annars kraschar i Jest (Vite hanterar CSS i runtime).
-  moduleNameMapper: {
-    '\\.(css)$': '<rootDir>/tests/styleMock.js',
-  },
-
-  // Sökväg till alla enhetstester. 
-  // Vi separerar dessa strikt från E2E-tester för att undvika konflikter.
-  testMatch: ['<rootDir>/tests/unit/**/*.spec.js'],
-  
-  // Ignorera E2E-tester explicit om testMatch inte räcker
-  testPathIgnorePatterns: ['/node_modules/', '.e2e.spec.js'],
-
-  // Eftersom vi använder "type": "module" i package.json och kör Node med --experimental-vm-modules
-  // behöver vi oftast ingen transform för standard JS.
-  transform: {},
 };
