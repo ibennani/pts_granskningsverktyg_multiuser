@@ -1,7 +1,7 @@
 // js/components/RulefileSectionsViewComponent.js
 
-import { can_edit_rulefile } from '../utils/helpers.js';
 import { get_section_config } from './rulefile_sections/rulefile_sections_config.js';
+import { create_rulefile_section_header } from './rulefile_sections/rulefile_sections_header.js';
 import './rulefile_sections_view.css';
 
 let _last_section_id = null;
@@ -52,133 +52,13 @@ export class RulefileSectionsViewComponent {
     }
 
     _create_header(section_config, is_editing = false) {
-        const t = this.Translation.t;
-        const header_wrapper = this.Helpers.create_element('div', { class_name: 'rulefile-sections-header' });
-        
-        const heading_row = this.Helpers.create_element('div', { class_name: 'rulefile-sections-header-row' });
-        const heading_id = `rulefile-section-${section_config.id}-heading`;
-        const heading = this.Helpers.create_element('h1', {
-            text_content: section_config.title,
-            attributes: { id: heading_id }
-        });
-        heading_row.appendChild(heading);
-
-        const state_for_header = typeof this.getState === 'function' ? this.getState() : null;
-        const can_edit = can_edit_rulefile(state_for_header);
-        
-        if (can_edit && section_config.id === 'general' && !is_editing) {
-            const edit_button = this.Helpers.create_element('button', {
-                class_name: ['button', 'button-secondary', 'rulefile-sections-edit-button'],
-                attributes: {
-                    type: 'button',
-                    'aria-label': t('rulefile_sections_edit_general_aria')
-                },
-                html_content: `<span>${t('edit_button_label')}</span>` +
-                              (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('edit') : '')
-            });
-            edit_button.addEventListener('click', () => {
-                this.router('rulefile_sections', { section: 'general', edit: 'true' });
-            });
-            heading_row.appendChild(edit_button);
-        }
-        
-        if (can_edit && section_config.id === 'page_types' && !is_editing) {
-            const edit_button = this.Helpers.create_element('button', {
-                class_name: ['button', 'button-secondary', 'rulefile-sections-edit-button'],
-                attributes: {
-                    type: 'button',
-                    'aria-label': t('rulefile_sections_edit_page_types_aria')
-                },
-                html_content: `<span>${t('edit_button_label')}</span>` +
-                              (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('edit') : '')
-            });
-            edit_button.addEventListener('click', () => {
-                this.router('rulefile_sections', { section: 'page_types', edit: 'true' });
-            });
-            heading_row.appendChild(edit_button);
-        }
-
-        if (can_edit && section_config.id === 'content_types' && !is_editing) {
-            const edit_button = this.Helpers.create_element('button', {
-                class_name: ['button', 'button-secondary', 'rulefile-sections-edit-button'],
-                attributes: {
-                    type: 'button',
-                    'aria-label': t('rulefile_sections_edit_content_types_aria')
-                },
-                html_content: `<span>${t('edit_button_label')}</span>` +
-                              (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('edit') : '')
-            });
-            edit_button.addEventListener('click', () => {
-                this.router('rulefile_sections', { section: 'content_types', edit: 'true' });
-            });
-            heading_row.appendChild(edit_button);
-        }
-
-        if (can_edit && section_config.id === 'info_blocks_order' && !is_editing) {
-            const edit_button = this.Helpers.create_element('button', {
-                class_name: ['button', 'button-secondary', 'rulefile-sections-edit-button'],
-                attributes: {
-                    type: 'button',
-                    'aria-label': t('rulefile_sections_edit_info_blocks_aria')
-                },
-                html_content: `<span>${t('edit_button_label')}</span>` +
-                              (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('edit') : '')
-            });
-            edit_button.addEventListener('click', () => {
-                this.router('rulefile_sections', { section: 'info_blocks_order', edit: 'true' });
-            });
-            heading_row.appendChild(edit_button);
-        }
-
-        header_wrapper.appendChild(heading_row);
-
-        if (section_config.id === 'content_types' && is_editing) {
-            const intro = this.Helpers.create_element('p', {
-                class_name: 'field-hint rulefile-sections-header-intro',
-                text_content: t('rulefile_metadata_content_types_intro')
-            });
-            header_wrapper.appendChild(intro);
-        }
-
-        if (section_config.id === 'info_blocks_order') {
-            const intro = this.Helpers.create_element('p', {
-                class_name: 'field-hint rulefile-sections-header-intro',
-                text_content: t('rulefile_info_blocks_order_intro')
-            });
-            header_wrapper.appendChild(intro);
-        }
-
-        if (section_config.id === 'page_types') {
-            const intro_text = t('rulefile_page_types_intro');
-            const intro_paragraphs = intro_text.split(/\n\n+/).filter(p => p.trim());
-            intro_paragraphs.forEach(paragraph => {
-                const p = this.Helpers.create_element('p', {
-                    class_name: 'field-hint rulefile-sections-header-intro',
-                    text_content: paragraph.trim()
-                });
-                header_wrapper.appendChild(p);
-            });
-        }
-
-        if (can_edit && section_config.id === 'page_types' && is_editing) {
-            const add_button_wrapper = this.Helpers.create_element('div', { class_name: 'rulefile-sections-add-button-wrapper' });
-            const add_button = this.Helpers.create_element('button', {
-                class_name: ['button', 'button-primary', 'button-small', 'rulefile-sections-edit-button'],
-                attributes: {
-                    type: 'button',
-                    'data-action': 'add-page-type'
-                },
-                html_content: `<span>${t('rulefile_metadata_add_page_type')}</span>` +
-                              (this.Helpers.get_icon_svg ? `<span aria-hidden="true">${this.Helpers.get_icon_svg('add', ['currentColor'], 16)}</span>` : '')
-            });
-            add_button.addEventListener('click', () => {
-                this.page_types_edit_component?.handle_add_page_type_click?.();
-            });
-            add_button_wrapper.appendChild(add_button);
-            header_wrapper.appendChild(add_button_wrapper);
-        }
-        
-        return header_wrapper;
+        return create_rulefile_section_header({
+            Helpers: this.Helpers,
+            Translation: this.Translation,
+            router: this.router,
+            getState: this.getState,
+            get_page_types_edit_component: () => this.page_types_edit_component
+        }, section_config, is_editing);
     }
 
     _format_simple_value(value) {
