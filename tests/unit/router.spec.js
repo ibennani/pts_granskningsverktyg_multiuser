@@ -167,6 +167,41 @@ describe('router', () => {
         expect(updatePageTitle).toHaveBeenCalledWith('start', {});
     });
 
+    test('navigate_and_set_hash: blockerar start från metadata vid ny granskning utan allow_new_audit_exit', () => {
+        window.location.hash = '#metadata';
+        const updatePageTitle = jest.fn();
+        const hash_before = window.location.hash;
+        navigate_and_set_hash('start', {}, {
+            nav_debug: jest.fn(),
+            getState: () => ({
+                auditStatus: 'not_started',
+                ruleFileContent: { metadata: {}, requirements: {} }
+            }),
+            get_current_view_name: () => 'metadata',
+            get_current_view_component: () => null,
+            updatePageTitle
+        });
+        expect(window.location.hash).toBe(hash_before);
+        expect(updatePageTitle).not.toHaveBeenCalled();
+    });
+
+    test('navigate_and_set_hash: allow_new_audit_exit tillåter start från metadata', () => {
+        window.location.hash = '#metadata';
+        const updatePageTitle = jest.fn();
+        navigate_and_set_hash('start', { allow_new_audit_exit: '1' }, {
+            nav_debug: jest.fn(),
+            getState: () => ({
+                auditStatus: 'not_started',
+                ruleFileContent: { metadata: {}, requirements: {} }
+            }),
+            get_current_view_name: () => 'metadata',
+            get_current_view_component: () => null,
+            updatePageTitle
+        });
+        expect(window.location.hash).toBe('#start');
+        expect(updatePageTitle).toHaveBeenCalledWith('start', { allow_new_audit_exit: '1' });
+    });
+
     describe('handle_hash_change', () => {
         test('renderar vy och params från hash', async () => {
             window.location.hash = '#metadata?caseNumber=42';
@@ -199,6 +234,21 @@ describe('router', () => {
             expect(replace_spy).toHaveBeenCalledWith(null, '', '#start');
             expect(opts.render_view).toHaveBeenCalledWith('start', {});
             replace_spy.mockRestore();
+        });
+
+        test('audit_overview med auditId: lyckad laddning navigerar till audit_overview', async () => {
+            window.location.hash = '#audit_overview?auditId=ov1';
+            load_audit_with_rule_file.mockResolvedValue({
+                auditStatus: 'in_progress',
+                samples: [{ id: 's1' }],
+                ruleFileContent: { metadata: { version: '1' }, requirements: {} }
+            });
+            const nav_hash = jest.fn();
+            const opts = make_hash_options({ navigate_and_set_hash: nav_hash });
+            await handle_hash_change(opts);
+            expect(opts.dispatch).toHaveBeenCalled();
+            expect(nav_hash).toHaveBeenCalledWith('audit_overview', {});
+            expect(opts.render_view).not.toHaveBeenCalled();
         });
 
         test('upload med auditId: lyckad laddning navigerar till audit_overview', async () => {
