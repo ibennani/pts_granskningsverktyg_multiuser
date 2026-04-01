@@ -43,9 +43,7 @@
     "js/translation_logic.js",
     "js/logic/save_audit_logic.js",
     "js/logic/rulefile_updater_logic.js",
-    "js/logic/ScoreCalculator.js",
-    "js/logic/RuleDataProcessor.js",
-    "js/logic/rulefile_editor_logic.js"
+    "js/logic/ScoreCalculator.js"
   ],
   "modified_files": [
     "js/main.js",
@@ -61,9 +59,7 @@
     "js/translation_logic.js",
     "js/logic/save_audit_logic.js",
     "js/logic/rulefile_updater_logic.js",
-    "js/logic/ScoreCalculator.js",
-    "js/logic/RuleDataProcessor.js",
-    "js/logic/rulefile_editor_logic.js"
+    "js/logic/ScoreCalculator.js"
   ],
   "remaining_files": [],
   "next_steps": [
