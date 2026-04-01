@@ -3,6 +3,8 @@
  * @module js/components/rulefile_metadata/rulefile_metadata_validation
  */
 
+import { app_runtime_refs } from '../../utils/app_runtime_refs.js';
+
 export const REQUIRED_METADATA_FIELDS = [
     { name: 'metadata.title', labelKey: 'rulefile_metadata_field_title' },
     { name: 'metadata.description', labelKey: 'rulefile_metadata_field_description' },
@@ -38,7 +40,7 @@ export function collect_missing_required_metadata_fields(formData) {
  * @param {string|null} focusFieldName
  */
 export function show_rulefile_required_fields_modal(ctx, missingFields, form, focusFieldName) {
-    const ModalComponent = window.ModalComponent;
+    const ModalComponent = app_runtime_refs.modal_component;
     const { Helpers, Translation, NotificationComponent } = ctx;
     const t = Translation.t;
     if (!ModalComponent?.show || !Helpers?.create_element) {

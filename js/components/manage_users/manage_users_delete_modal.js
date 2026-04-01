@@ -3,6 +3,7 @@
  */
 
 import { delete_user, get_user_audit_count } from '../../api/client.js';
+import { app_runtime_refs } from '../../utils/app_runtime_refs.js';
 
 /**
  * @param {object} user
@@ -11,7 +12,7 @@ import { delete_user, get_user_audit_count } from '../../api/client.js';
  * @param {object} deps.Helpers
  * @param {(u: object) => string} deps.get_display_name
  * @param {object} [deps.NotificationComponent]
- * @param {object} [deps.ModalComponent] — standard: window.ModalComponent
+ * @param {object} [deps.ModalComponent] — standard: app_runtime_refs.modal_component
  * @param {() => void} deps.on_prepare_delete_confirmation
  * @param {() => Promise<void>} deps.fetch_users
  * @param {() => void} deps.navigate_to_list_after_delete
@@ -20,7 +21,7 @@ import { delete_user, get_user_audit_count } from '../../api/client.js';
  */
 export async function open_delete_user_modal(user, deps) {
     const t = deps.get_t_func();
-    const ModalComponent = deps.ModalComponent ?? (typeof window !== 'undefined' ? window.ModalComponent : null);
+    const ModalComponent = deps.ModalComponent ?? app_runtime_refs.modal_component;
     const Helpers = deps.Helpers;
     if (!ModalComponent?.show || !Helpers?.create_element) return;
 

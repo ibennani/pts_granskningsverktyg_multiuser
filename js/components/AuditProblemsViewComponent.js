@@ -1,5 +1,6 @@
 import { get_current_user_name } from '../utils/helpers.js';
 import { show_confirm_delete_modal } from '../logic/confirm_delete_modal_logic.js';
+import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import { marked } from '../utils/markdown.js';
 import './audit_problems_view_component.css';
 import { consoleManager } from '../utils/console_manager.js';
@@ -425,7 +426,7 @@ export class AuditProblemsViewComponent {
         const req_id = btn.dataset.requirementId;
         if (!sample_id || !req_id || !this.dispatch || !this.StoreActionTypes) return;
 
-        const ModalComponent = window.ModalComponent;
+        const ModalComponent = app_runtime_refs.modal_component;
         if (!ModalComponent?.show || !this.Helpers?.create_element) return;
 
         const state = this.getState();

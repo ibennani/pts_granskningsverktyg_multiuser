@@ -1,5 +1,7 @@
 // js/logic/confirm_delete_modal_logic.js
 
+import { app_runtime_refs } from '../utils/app_runtime_refs.js';
+
 /**
  * Bygger varningstext för radering baserat på typ (requirement, check, criterion).
  * @param {string} type - 'requirement' | 'check' | 'criterion'
@@ -72,7 +74,7 @@ function get_previous_focusable(delete_button) {
  * @param {string} [opts.no_label] - Anpassad text för avbryt-knappen (t.ex. "Behåll")
  */
 export function show_confirm_delete_modal({ h1_text, warning_text, delete_button, on_confirm, focusOnConfirm, yes_label, no_label }) {
-    const ModalComponent = window.ModalComponent;
+    const ModalComponent = app_runtime_refs.modal_component;
     const Helpers = window.Helpers;
     const t = window.Translation?.t || (k => k);
 

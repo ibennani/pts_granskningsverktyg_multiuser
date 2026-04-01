@@ -3,6 +3,7 @@
 import { get_current_user_name } from '../../utils/helpers.js';
 import { marked } from '../../utils/markdown.js';
 import { consoleManager } from '../../utils/console_manager.js';
+import { app_runtime_refs } from '../../utils/app_runtime_refs.js';
 
 export const ChecklistHandler = {
     container_ref: null,
@@ -282,7 +283,7 @@ export const ChecklistHandler = {
         const pc_id = pc_item.dataset.pcId;
         const check_id = check_item.dataset.checkId;
 
-        const ModalComponent = window.ModalComponent;
+        const ModalComponent = app_runtime_refs.modal_component;
         if (!ModalComponent?.show || !this.Helpers?.create_element) return;
 
         const t = this.Translation.t;
@@ -351,7 +352,7 @@ export const ChecklistHandler = {
         event.preventDefault();
         if (!this.requirement_result_ref) return;
 
-        const ModalComponent = window.ModalComponent;
+        const ModalComponent = app_runtime_refs.modal_component;
         if (!ModalComponent?.show || !this.Helpers?.create_element) return;
 
         const t = this.Translation.t;
@@ -454,7 +455,7 @@ export const ChecklistHandler = {
         const check_id = check_item.dataset.checkId;
         const observations = this.get_observations_from_other_samples(check_id, pc_id);
 
-        const ModalComponent = window.ModalComponent;
+        const ModalComponent = app_runtime_refs.modal_component;
         if (!ModalComponent?.show || !this.Helpers?.create_element) return;
 
         const t = this.Translation.t;

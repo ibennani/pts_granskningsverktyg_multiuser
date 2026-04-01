@@ -3,6 +3,7 @@
  */
 
 import { create_password_reset_code } from '../../api/client.js';
+import { app_runtime_refs } from '../../utils/app_runtime_refs.js';
 
 /**
  * @param {object} user
@@ -11,13 +12,13 @@ import { create_password_reset_code } from '../../api/client.js';
  * @param {object} deps.Helpers
  * @param {(u: object) => string} deps.get_display_name
  * @param {object} [deps.NotificationComponent]
- * @param {object} [deps.ModalComponent] — standard: window.ModalComponent
+ * @param {object} [deps.ModalComponent] — standard: app_runtime_refs.modal_component
  * @param {object} [options]
  * @param {() => void} [options.onClose]
  */
 export function open_reset_code_modal_for_user(user, deps, options = {}) {
     const t = deps.get_t_func();
-    const ModalComponent = deps.ModalComponent ?? (typeof window !== 'undefined' ? window.ModalComponent : null);
+    const ModalComponent = deps.ModalComponent ?? app_runtime_refs.modal_component;
     const Helpers = deps.Helpers;
     if (!ModalComponent?.show || !Helpers?.create_element) return;
     const username = user.username || t('user_fallback_name', { id: user.id });

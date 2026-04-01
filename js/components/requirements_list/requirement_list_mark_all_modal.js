@@ -3,6 +3,8 @@
  * @module js/components/requirements_list/requirement_list_mark_all_modal
  */
 
+import { app_runtime_refs } from '../../utils/app_runtime_refs.js';
+
 /**
  * @param {string} requirement_id
  * @param {HTMLElement} trigger_button
@@ -18,7 +20,7 @@
  */
 export function handle_mark_requirement_passed_in_all_samples(requirement_id, trigger_button, ctx) {
     const t = ctx.Translation.t;
-    const ModalComponent = window.ModalComponent;
+    const ModalComponent = app_runtime_refs.modal_component;
     if (!ModalComponent?.show || !ctx.Helpers?.create_element) return;
 
     const state = ctx.getState();

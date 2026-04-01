@@ -6,6 +6,7 @@ import {
     build_delete_warning_text,
     show_confirm_delete_modal
 } from '../../js/logic/confirm_delete_modal_logic.js';
+import { app_runtime_refs } from '../../js/utils/app_runtime_refs.js';
 
 function mock_create_element(tag, opts = {}) {
     const el = document.createElement(tag);
@@ -102,19 +103,19 @@ describe('confirm_delete_modal_logic', () => {
     });
 
     describe('show_confirm_delete_modal', () => {
-        const orig_modal = global.window.ModalComponent;
+        const orig_modal = app_runtime_refs.modal_component;
         const orig_helpers = global.window.Helpers;
         const orig_translation = global.window.Translation;
 
         afterEach(() => {
-            global.window.ModalComponent = orig_modal;
+            app_runtime_refs.modal_component = orig_modal;
             global.window.Helpers = orig_helpers;
             global.window.Translation = orig_translation;
             document.body.innerHTML = '';
         });
 
         test('gör inget om ModalComponent eller Helpers saknas', () => {
-            global.window.ModalComponent = undefined;
+            app_runtime_refs.modal_component = null;
             global.window.Helpers = { create_element: mock_create_element };
             const btn = document.createElement('button');
             document.body.appendChild(btn);
@@ -134,7 +135,7 @@ describe('confirm_delete_modal_logic', () => {
                 const modal = { close: jest.fn() };
                 on_render(modal_container, modal);
             });
-            global.window.ModalComponent = { show: show_spy };
+            app_runtime_refs.modal_component = { show: show_spy };
             global.window.Helpers = { create_element: mock_create_element };
             global.window.Translation = { t: (k) => k };
 

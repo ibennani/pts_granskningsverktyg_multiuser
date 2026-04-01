@@ -1,5 +1,6 @@
 // js/components/audit_view/AuditViewComponent.js
 import { show_confirm_delete_modal } from '../../logic/confirm_delete_modal_logic.js';
+import { app_runtime_refs } from '../../utils/app_runtime_refs.js';
 import { migrate_rulefile_to_new_structure } from '../../logic/rulefile_migration_logic.js';
 import { analyze_rule_file_changes } from '../../logic/rulefile_updater_logic.js';
 import { version_greater_than } from '../../utils/version_utils.js';
@@ -541,7 +542,7 @@ export class AuditViewComponent {
 
     _show_audit_server_newer_modal(file_content_object, on_upload_anyway, on_close) {
         const t = this.get_t_func();
-        const ModalComponent = window.ModalComponent;
+        const ModalComponent = app_runtime_refs.modal_component;
         if (!ModalComponent?.show || !this.Helpers?.create_element) {
             if (typeof on_close === 'function') on_close();
             return;
@@ -590,7 +591,7 @@ export class AuditViewComponent {
 
     async _show_rule_picker_for_new_audit() {
         const t = this.get_t_func();
-        const ModalComponent = window.ModalComponent;
+        const ModalComponent = app_runtime_refs.modal_component;
         if (!ModalComponent?.show || !this.Helpers?.create_element) return;
         await this.ensure_api_data();
         const available_rules = (this.published_rules && this.published_rules.length > 0)
@@ -796,7 +797,7 @@ export class AuditViewComponent {
 
     _show_rulefile_duplicate_modal(is_older, on_upload_anyway, on_close, options = {}) {
         const t = this.get_t_func();
-        const ModalComponent = window.ModalComponent;
+        const ModalComponent = app_runtime_refs.modal_component;
         if (!ModalComponent?.show || !this.Helpers?.create_element) {
             this.NotificationComponent?.show_global_message(t('rulefile_duplicate_modal_title'), 'error');
             if (typeof on_close === 'function') on_close();
@@ -951,7 +952,7 @@ export class AuditViewComponent {
 
     _show_publish_rule_confirm_modal(rule_base_name, on_confirm, on_cancel) {
         const t = this.get_t_func();
-        const ModalComponent = window.ModalComponent;
+        const ModalComponent = app_runtime_refs.modal_component;
         if (!ModalComponent?.show || !this.Helpers?.create_element) {
             if (typeof on_cancel === 'function') on_cancel();
             return;
@@ -1013,7 +1014,7 @@ export class AuditViewComponent {
 
     _show_publish_with_diff_modal(draft_content, published_content, rule_base_name, on_confirm, on_cancel) {
         const t = this.get_t_func();
-        const ModalComponent = window.ModalComponent;
+        const ModalComponent = app_runtime_refs.modal_component;
         if (!ModalComponent?.show || !this.Helpers?.create_element) {
             if (typeof on_cancel === 'function') on_cancel();
             return;
@@ -1134,7 +1135,7 @@ export class AuditViewComponent {
 
     _show_publish_standalone_modal(rule_base_name, on_confirm, on_cancel) {
         const t = this.get_t_func();
-        const ModalComponent = window.ModalComponent;
+        const ModalComponent = app_runtime_refs.modal_component;
         if (!ModalComponent?.show || !this.Helpers?.create_element) {
             if (typeof on_cancel === 'function') on_cancel();
             return;
@@ -1192,7 +1193,7 @@ export class AuditViewComponent {
 
     _show_audit_duplicate_modal(file_content_object, duplicate_err, on_after_overwrite, on_keep) {
         const t = this.get_t_func();
-        const ModalComponent = window.ModalComponent;
+        const ModalComponent = app_runtime_refs.modal_component;
         if (!ModalComponent?.show || !this.Helpers?.create_element) {
             this.NotificationComponent?.show_global_message(t('audit_audit_already_exists'), 'error');
             if (typeof on_keep === 'function') on_keep();
@@ -1387,7 +1388,7 @@ export class AuditViewComponent {
 
     _show_rule_in_use_modal(rule_name, in_use_count) {
         const t = this.get_t_func();
-        const ModalComponent = window.ModalComponent;
+        const ModalComponent = app_runtime_refs.modal_component;
         if (!ModalComponent?.show || !this.Helpers?.create_element) return;
         ModalComponent.show(
             {
@@ -1419,7 +1420,7 @@ export class AuditViewComponent {
 
     _show_rule_has_production_copies_modal(rule_name, production_copy_count) {
         const t = this.get_t_func();
-        const ModalComponent = window.ModalComponent;
+        const ModalComponent = app_runtime_refs.modal_component;
         if (!ModalComponent?.show || !this.Helpers?.create_element) {
             this.NotificationComponent?.show_global_message(
                 t('audit_rule_has_copies_modal_title') + ' ' + t('audit_rule_has_copies_modal_suffix', { count: production_copy_count }),
@@ -1648,7 +1649,7 @@ export class AuditViewComponent {
 
     async _show_contact_admin_modal(type) {
         const t = this.get_t_func();
-        const ModalComponent = window.ModalComponent;
+        const ModalComponent = app_runtime_refs.modal_component;
         if (!ModalComponent?.show || !this.Helpers?.create_element) return;
         const title_key = type === 'audit' ? 'delete_contact_admin_title_audit' : 'delete_contact_admin_title_rule';
         const message_key = type === 'audit' ? 'delete_contact_admin_message_audit' : 'delete_contact_admin_message_rule';

@@ -1,3 +1,4 @@
+import { app_runtime_refs } from "../utils/app_runtime_refs.js";
 import "./confirm_updates_view_component.css";
 import "./requirement_list_toolbar_component.css";
 
@@ -162,7 +163,7 @@ export class ConfirmUpdatesViewComponent {
 
     handle_confirm_all_click(trigger_button, total_count) {
         const t = this.Translation.t;
-        const ModalComponent = window.ModalComponent;
+        const ModalComponent = app_runtime_refs.modal_component;
         if (!ModalComponent?.show || !this.Helpers?.create_element) {
             this.router('final_confirm_updates');
             return;

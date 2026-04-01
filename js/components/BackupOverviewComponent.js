@@ -2,6 +2,7 @@
 
 import { get_backup_overview, get_backups_for_audit, run_backup_now, get_backup_settings, api_get, get_base_url, get_auth_headers, get_audit_version, update_audit, import_audit } from '../api/client.js';
 import { GenericTableComponent } from './GenericTableComponent.js';
+import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import './backup_overview_component.css';
 
 export class BackupOverviewComponent {
@@ -399,7 +400,7 @@ export class BackupOverviewComponent {
         }
         const overview_row = this.backup_overview.find((r) => r.auditId === audit_id) || null;
         const is_deleted = overview_row?.status === 'deleted';
-        const ModalComponent = window.ModalComponent;
+        const ModalComponent = app_runtime_refs.modal_component;
         if (!ModalComponent?.show || !Helpers?.create_element) return;
 
         if (is_deleted) {

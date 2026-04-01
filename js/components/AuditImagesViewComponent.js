@@ -1,4 +1,5 @@
 import { get_current_user_name } from '../utils/helpers.js';
+import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import './audit_images_view_component.css';
 
 export class AuditImagesViewComponent {
@@ -72,7 +73,7 @@ export class AuditImagesViewComponent {
         const pc_id = btn.getAttribute('data-pc-id');
         if (!sample_id || !req_id || !check_id || !pc_id) return;
 
-        const ModalComponent = window.ModalComponent;
+        const ModalComponent = app_runtime_refs.modal_component;
         if (!ModalComponent?.show || !this.Helpers?.create_element) return;
 
         const state = this.getState();

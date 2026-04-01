@@ -1,6 +1,7 @@
 // js/components/EditInfoBlocksSectionComponent.js
 
 import { show_confirm_delete_modal } from '../logic/confirm_delete_modal_logic.js';
+import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import './rulefile_sections_view.css';
 
 export const EditInfoBlocksSectionComponent = {
@@ -553,7 +554,7 @@ export const EditInfoBlocksSectionComponent = {
             }, {});
             const unnamed_count = Object.values(block_names).filter(n => !n).length;
             if (unnamed_count > 0) {
-                const ModalComponent = window.ModalComponent;
+                const ModalComponent = app_runtime_refs.modal_component;
                 const Helpers = window.Helpers;
                 if (ModalComponent?.show && Helpers?.create_element) {
                     const first_empty = Array.from(inputs).find(inp => !(inp.value || '').trim());

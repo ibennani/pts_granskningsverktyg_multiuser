@@ -86,7 +86,7 @@ function show_audit_deleted_modal_and_navigate() {
     if (window.__GV_AUDIT_DELETED_MODAL_SHOWN__) return;
     window.__GV_AUDIT_DELETED_MODAL_SHOWN__ = true;
 
-    const ModalComponent = window.ModalComponent;
+    const ModalComponent = app_runtime_refs.modal_component;
     const Helpers = window.Helpers;
     const t = window.Translation?.t || ((key) => key);
 

@@ -1,6 +1,7 @@
 import { MetadataFormComponent } from './MetadataFormComponent.js';
 import { get_current_user_name } from '../utils/helpers.js';
 import { sync_to_server_now } from '../logic/server_sync.js';
+import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 
 export class EditMetadataViewComponent {
     constructor() {
@@ -109,7 +110,7 @@ export class EditMetadataViewComponent {
     }
 
     _show_required_fields_modal(form_data, source, on_proceed) {
-        const ModalComponent = window.ModalComponent;
+        const ModalComponent = app_runtime_refs.modal_component;
         if (!ModalComponent?.show || !this.Helpers?.create_element) {
             if (typeof on_proceed === 'function') on_proceed();
             return;
@@ -185,7 +186,7 @@ export class EditMetadataViewComponent {
     }
 
     _show_empty_metadata_modal(form_data, action, on_proceed) {
-        const ModalComponent = window.ModalComponent;
+        const ModalComponent = app_runtime_refs.modal_component;
         if (!ModalComponent?.show || !this.Helpers?.create_element) {
             if (typeof on_proceed === 'function') on_proceed();
             return;

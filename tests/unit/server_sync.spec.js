@@ -322,7 +322,7 @@ describe('server_sync', () => {
             expect(modal_instance.close).toHaveBeenCalled();
         });
 
-        window.ModalComponent = { show: modal_show };
+        app_runtime_refs.modal_component = { show: modal_show };
         window.Helpers = {
             create_element(tag, opts = {}) {
                 const el = document.createElement(tag);
@@ -345,7 +345,7 @@ describe('server_sync', () => {
 
         expect(modal_show).toHaveBeenCalled();
 
-        delete window.ModalComponent;
+        app_runtime_refs.modal_component = null;
         delete window.Helpers;
         delete window.Translation;
         delete window.__gv_current_view_name;

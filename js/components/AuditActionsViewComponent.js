@@ -3,6 +3,7 @@ import { subscribe_rules } from '../logic/list_push_service.js';
 import { version_greater_than } from '../utils/version_utils.js';
 import { find_newer_rule_for_audit } from '../logic/newer_rule_check.js';
 import { audit_status_is_exportable, audit_status_blocks_rulefile_update_offer } from '../utils/audit_status_helpers.js';
+import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import './audit_actions_view_component.css';
 
 export class AuditActionsViewComponent {
@@ -264,7 +265,7 @@ export class AuditActionsViewComponent {
         if (req_count === 0) return;
 
         const trigger_button = event?.currentTarget || null;
-        const ModalComponent = window.ModalComponent;
+        const ModalComponent = app_runtime_refs.modal_component;
         if (!ModalComponent?.show || !this.Helpers?.create_element) return;
 
         ModalComponent.show(

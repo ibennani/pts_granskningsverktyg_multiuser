@@ -79,7 +79,7 @@ const sideMenuComponent = new SideMenuComponent();
 const errorBoundaryComponent = new ErrorBoundaryComponent();
 
 app_runtime_refs.notification_component = notificationComponent;
-window.ModalComponent = modalComponent;
+app_runtime_refs.modal_component = modalComponent;
 window.Helpers = Helpers;
 window.Translation = TranslationLogic;
 window.SaveAuditLogic = SaveAuditLogic;
