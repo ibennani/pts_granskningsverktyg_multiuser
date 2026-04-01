@@ -1,6 +1,7 @@
 // js/components/ManageUsersViewComponent.js
 
-import { get_users, create_password_reset_code, create_user, update_user, delete_user, get_user_audit_count } from '../api/client.js';
+import { get_users, create_password_reset_code, create_user, update_user } from '../api/client.js';
+import { open_delete_user_modal as open_manage_users_delete_modal } from './manage_users/manage_users_delete_modal.js';
 import {
     generate_username_from_full_name,
     get_existing_usernames_set,
@@ -699,85 +700,31 @@ export class ManageUsersViewComponent {
     }
 
     async open_delete_user_modal(user) {
-        const t = this.get_t_func();
-        const ModalComponent = window.ModalComponent;
-        if (!ModalComponent?.show || !this.Helpers?.create_element) return;
-
-        const display_name = this._get_display_name(user);
-        let audit_count = 0;
-
-        try {
-            const result = await get_user_audit_count(user.id);
-            const raw_count = result && (result.audit_count ?? result.count);
-            if (Number.isFinite(Number(raw_count))) {
-                audit_count = Number(raw_count);
-            }
-        } catch (err) {
-            audit_count = 0;
-        }
-
-        ModalComponent.show(
-            {
-                h1_text: t('manage_users_delete_modal_title', { name: display_name }),
-                message_text: t('manage_users_delete_modal_message', { name: display_name, auditCount: audit_count })
+        await open_manage_users_delete_modal(user, {
+            get_t_func: () => this.get_t_func(),
+            Helpers: this.Helpers,
+            get_display_name: (u) => this._get_display_name(u),
+            NotificationComponent: this.NotificationComponent,
+            on_prepare_delete_confirmation: () => {
+                this.return_focus_info = null;
+                this.skip_table_focus_restore_next_render = true;
+                if (this._table) {
+                    this._table._lastFocusPosition = null;
+                    this._table._pendingSortFocusIndex = undefined;
+                }
             },
-            (container, modal_instance) => {
-                const actions = this.Helpers.create_element('div', { class_name: 'modal-actions' });
-
-                const delete_btn = this.Helpers.create_element('button', {
-                    class_name: ['button', 'button-primary'],
-                    text_content: t('manage_users_delete_modal_confirm', { name: display_name }),
-                    attributes: { type: 'button' }
-                });
-                const keep_btn = this.Helpers.create_element('button', {
-                    class_name: ['button', 'button-secondary'],
-                    text_content: t('manage_users_delete_modal_cancel', { name: display_name }),
-                    attributes: { type: 'button' }
-                });
-
-                delete_btn.addEventListener('click', async () => {
-                    try {
-                        this.return_focus_info = null;
-                        this.skip_table_focus_restore_next_render = true;
-                        if (this._table) {
-                            this._table._lastFocusPosition = null;
-                            this._table._pendingSortFocusIndex = undefined;
-                        }
-                        await delete_user(user.id);
-                        this.NotificationComponent?.show_global_message?.(t('manage_users_delete_success'), 'success');
-                        await this.fetch_users();
-                        if (this.router) {
-                            this.router('manage_users', {});
-                        } else {
-                            this.mode = 'list';
-                            this.current_user = null;
-                            this.render();
-                        }
-                        modal_instance.close();
-                    } catch (err) {
-                        const msg = err?.message || t('manage_users_delete_error');
-                        this.NotificationComponent?.show_global_message?.(msg, 'error');
-                        modal_instance.close();
-                    }
-                });
-
-                keep_btn.addEventListener('click', () => {
-                    modal_instance.close();
-                    const btn = this.detail_delete_button_ref;
-                    if (btn && typeof btn.focus === 'function' && document.contains(btn)) {
-                        try {
-                            btn.focus({ preventScroll: true });
-                        } catch (e) {
-                            btn.focus();
-                        }
-                    }
-                });
-
-                actions.appendChild(delete_btn);
-                actions.appendChild(keep_btn);
-                container.appendChild(actions);
-            }
-        );
+            fetch_users: () => this.fetch_users(),
+            navigate_to_list_after_delete: () => {
+                if (this.router) {
+                    this.router('manage_users', {});
+                } else {
+                    this.mode = 'list';
+                    this.current_user = null;
+                    this.render();
+                }
+            },
+            get_detail_delete_button_ref: () => this.detail_delete_button_ref
+        });
     }
 
     open_reset_code_modal_for_user(user, options = {}) {
