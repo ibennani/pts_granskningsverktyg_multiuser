@@ -1,5 +1,6 @@
 // js/components/EditInfoBlocksSectionComponent.js
 
+import { show_confirm_delete_modal } from '../logic/confirm_delete_modal_logic.js';
 import './rulefile_sections_view.css';
 
 export const EditInfoBlocksSectionComponent = {
@@ -271,8 +272,8 @@ export const EditInfoBlocksSectionComponent = {
                 warning_text += '\n\n' + t('modal_message_delete_info_block_warning', { count });
             }
             warning_text += '\n\n' + t('modal_message_delete_info_block_confirm');
-            if (window.show_confirm_delete_modal) {
-                window.show_confirm_delete_modal({
+            if (show_confirm_delete_modal) {
+                show_confirm_delete_modal({
                     h1_text: t('modal_h1_delete_info_block', { name: block_name }),
                     warning_text,
                     delete_button: delete_btn,
@@ -493,8 +494,8 @@ export const EditInfoBlocksSectionComponent = {
                     warning_text += '\n\n' + t('modal_message_delete_info_block_warning', { count });
                 }
                 warning_text += '\n\n' + t('modal_message_delete_info_block_confirm');
-                if (window.show_confirm_delete_modal) {
-                    window.show_confirm_delete_modal({
+                if (show_confirm_delete_modal) {
+                    show_confirm_delete_modal({
                         h1_text: t('modal_h1_delete_info_block', { name: block_name }),
                         warning_text,
                         delete_button: delete_btn,

@@ -52,8 +52,6 @@ import { GlobalActionBarComponent } from './components/GlobalActionBarComponent.
 import { ModalComponent } from './components/ModalComponent.js';
 import { SideMenuComponent } from './components/SideMenuComponent.js';
 import { ErrorBoundaryComponent } from './components/ErrorBoundaryComponent.js';
-import { show_confirm_delete_modal } from './logic/confirm_delete_modal_logic.js';
-
 import { DraftManager } from './draft_manager.js';
 import { get_auth_token, clear_auth_token, get_current_user_preferences, set_current_user_admin } from './api/client.js';
 import { getState, dispatch, subscribe, initState, StoreActionTypes, loadStateFromLocalStorageBackup, updateBackupRestorePosition, APP_STATE_KEY } from './state.js';
@@ -81,7 +79,6 @@ const errorBoundaryComponent = new ErrorBoundaryComponent();
 
 window.NotificationComponent = notificationComponent;
 window.ModalComponent = modalComponent;
-window.show_confirm_delete_modal = show_confirm_delete_modal;
 window.Helpers = Helpers;
 window.Translation = TranslationLogic;
 window.SaveAuditLogic = SaveAuditLogic;

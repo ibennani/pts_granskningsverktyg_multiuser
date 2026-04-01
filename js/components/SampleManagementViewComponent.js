@@ -1,4 +1,5 @@
 import { SampleListComponent } from './SampleListComponent.js';
+import { show_confirm_delete_modal } from '../logic/confirm_delete_modal_logic.js';
 import './sample_management_view_component.css';
 
 export class SampleManagementViewComponent {
@@ -74,8 +75,8 @@ export class SampleManagementViewComponent {
         const warning_text = t('confirm_delete_sample', { sampleName: sample_name });
         const button_el = delete_button && delete_button.tagName === 'BUTTON' ? delete_button : document.activeElement;
 
-        if (window.show_confirm_delete_modal) {
-            window.show_confirm_delete_modal({
+        if (show_confirm_delete_modal) {
+            show_confirm_delete_modal({
                 warning_text,
                 delete_button: button_el,
                 on_confirm: () => {

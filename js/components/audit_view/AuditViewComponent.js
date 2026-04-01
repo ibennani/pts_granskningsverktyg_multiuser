@@ -1,4 +1,5 @@
 // js/components/audit_view/AuditViewComponent.js
+import { show_confirm_delete_modal } from '../../logic/confirm_delete_modal_logic.js';
 import { migrate_rulefile_to_new_structure } from '../../logic/rulefile_migration_logic.js';
 import { analyze_rule_file_changes } from '../../logic/rulefile_updater_logic.js';
 import { version_greater_than } from '../../utils/version_utils.js';
@@ -1609,7 +1610,7 @@ export class AuditViewComponent {
             this._show_contact_admin_modal('audit');
             return;
         }
-        const show_modal = window.show_confirm_delete_modal;
+        const show_modal = show_confirm_delete_modal;
         if (show_modal && delete_button) {
             show_modal({
                 h1_text: t('audit_confirm_delete_audit_title'),
@@ -1630,7 +1631,7 @@ export class AuditViewComponent {
             this._show_contact_admin_modal('rule');
             return;
         }
-        const show_modal = window.show_confirm_delete_modal;
+        const show_modal = show_confirm_delete_modal;
         if (show_modal && delete_button) {
             show_modal({
                 h1_text: t('audit_confirm_delete_rule_title'),

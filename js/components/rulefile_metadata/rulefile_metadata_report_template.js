@@ -3,6 +3,8 @@
  * @module js/components/rulefile_metadata/rulefile_metadata_report_template
  */
 
+import { show_confirm_delete_modal } from '../../logic/confirm_delete_modal_logic.js';
+
 /**
  * @param {{ Helpers: object, Translation: object }} ctx
  * @param {object} reportTemplate
@@ -121,8 +123,8 @@ export function create_report_template_section(ctx, reportTemplate, metadata, ho
             });
             delete_btn.addEventListener('click', () => {
                 const warning_text = t('confirm_delete_report_section');
-                if (window.show_confirm_delete_modal) {
-                    window.show_confirm_delete_modal({
+                if (show_confirm_delete_modal) {
+                    show_confirm_delete_modal({
                         warning_text,
                         delete_button: delete_btn,
                         on_confirm: () => {

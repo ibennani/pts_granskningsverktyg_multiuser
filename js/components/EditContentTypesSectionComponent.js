@@ -5,6 +5,7 @@ import {
     get_requirements_count_for_parent_content_type,
     remove_content_type_from_requirements
 } from '../utils/content_types_helper.js';
+import { show_confirm_delete_modal } from '../logic/confirm_delete_modal_logic.js';
 import './edit_rulefile_metadata_view.css';
 
 export const EditContentTypesSectionComponent = {
@@ -169,8 +170,8 @@ export const EditContentTypesSectionComponent = {
                         count: reqCount
                     })
                     : this.Translation.t('modal_message_delete_content_type', { name: parentDisplayName });
-                if (window.show_confirm_delete_modal) {
-                    window.show_confirm_delete_modal({
+                if (show_confirm_delete_modal) {
+                    show_confirm_delete_modal({
                         h1_text,
                         warning_text: message_text,
                         delete_button: removeParentBtn,
@@ -215,8 +216,8 @@ export const EditContentTypesSectionComponent = {
                         ? (t('rulefile_metadata_remove_content_type_with_requirements', { count: reqCount })
                             || `Denna underkategori är kopplad till ${reqCount} krav. Vill du ta bort den? Kopplingen till kraven tas bort.`)
                         : (t('confirm_delete_content_subtype', { name: childDisplayName }) || `Är du säker på att du vill ta bort undertypen "${childDisplayName}"?`);
-                    if (window.show_confirm_delete_modal) {
-                        window.show_confirm_delete_modal({
+                    if (show_confirm_delete_modal) {
+                        show_confirm_delete_modal({
                             warning_text: msg,
                             delete_button: removeChildBtn,
                             on_confirm: () => this._delete_content_subtype_with_animation(workingMetadata, parentIndex, childIndex, child, container, childCard)

@@ -1,5 +1,6 @@
 // js/components/EditPageTypesSectionComponent.js
 
+import { show_confirm_delete_modal } from '../logic/confirm_delete_modal_logic.js';
 import './edit_rulefile_metadata_view.css';
 
 export class EditPageTypesSectionComponent {
@@ -803,12 +804,12 @@ export class EditPageTypesSectionComponent {
                     const current_metadata = this.working_metadata || this._ensure_metadata_defaults(this._clone_metadata(this.getState().ruleFileContent.metadata));
                     this._delete_page_type_with_animation(current_metadata, index, page_type_wrapper);
                 };
-                if (window.show_confirm_delete_modal) {
+                if (show_confirm_delete_modal) {
                     const h1_text = t('modal_h1_delete_page_type');
                     const message_text = t('modal_message_delete_page_type', { name: page_type_str || t('rulefile_metadata_untitled_item') });
                     const page_h1 = document.querySelector('.rulefile-sections-header h1');
                     if (page_h1) page_h1.setAttribute('tabindex', '-1');
-                    window.show_confirm_delete_modal({
+                    show_confirm_delete_modal({
                         h1_text,
                         warning_text: message_text,
                         delete_button,

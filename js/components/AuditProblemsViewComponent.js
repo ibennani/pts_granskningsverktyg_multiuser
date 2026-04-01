@@ -1,4 +1,5 @@
 import { get_current_user_name } from '../utils/helpers.js';
+import { show_confirm_delete_modal } from '../logic/confirm_delete_modal_logic.js';
 import { marked } from '../utils/markdown.js';
 import './audit_problems_view_component.css';
 import { consoleManager } from '../utils/console_manager.js';
@@ -370,7 +371,6 @@ export class AuditProblemsViewComponent {
         const prev_ids = current_index > 0 ? get_link_ids(cards[current_index - 1]) : null;
         this._focus_after_problem_solved = { next: next_ids, prev: prev_ids };
 
-        const show_confirm_delete_modal = window.show_confirm_delete_modal;
         const t = this.Translation.t;
 
         const perform_delete = () => {
