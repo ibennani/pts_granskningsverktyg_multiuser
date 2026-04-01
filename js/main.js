@@ -135,6 +135,9 @@ const editPageTypesSectionComponent = new EditPageTypesSectionComponent();
 const confirmDeleteViewComponent = new ConfirmDeleteViewComponent();
 const editRulefileRequirementComponent = new EditRulefileRequirementComponent();
 
+// Tillfälliga globala exponeringar för bakåtkompatibilitet.
+// TODO: Ersätt gradvis med explicit dependency injection.
+// Se GitHub-issue för spårning av återstående arbete.
 window.NotificationComponent = notificationComponent;
 window.ModalComponent = modalComponent;
 window.show_confirm_delete_modal = show_confirm_delete_modal;
