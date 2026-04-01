@@ -2,6 +2,13 @@
 
 import { get_section_config } from './rulefile_sections/rulefile_sections_config.js';
 import { create_rulefile_section_header } from './rulefile_sections/rulefile_sections_header.js';
+import {
+    format_simple_value,
+    create_definition_list,
+    format_date_display,
+    create_source_link,
+    create_list
+} from './rulefile_sections/rulefile_sections_display_helpers.js';
 import './rulefile_sections_view.css';
 
 let _last_section_id = null;
@@ -62,84 +69,23 @@ export class RulefileSectionsViewComponent {
     }
 
     _format_simple_value(value) {
-        if (value === undefined || value === null) return '';
-        if (typeof value === 'object') {
-            if (value.text) return value.text;
-            if (value.label) return value.label;
-            if (value.name) return value.name;
-            if (value.title) return value.title;
-            try {
-                return JSON.stringify(value);
-            } catch (error) {
-                console.warn('[RulefileSectionsViewComponent] Could not stringify value', value, error);
-                return '';
-            }
-        }
-        return String(value);
+        return format_simple_value(value);
     }
 
     _create_definition_list(entries) {
-        const dl = this.Helpers.create_element('dl', { class_name: 'metadata-definition-list' });
-        entries.forEach(([label, value]) => {
-            if (value === undefined || value === null || value === '') {
-                return;
-            }
-            dl.appendChild(this.Helpers.create_element('dt', { text_content: String(label) }));
-            if (Array.isArray(value)) {
-                const list = this.Helpers.create_element('ul', { class_name: 'metadata-inline-list' });
-                value.filter(Boolean).forEach(item => {
-                    list.appendChild(this.Helpers.create_element('li', { text_content: this._format_simple_value(item) }));
-                });
-                dl.appendChild(this.Helpers.create_element('dd', {})).appendChild(list);
-            } else {
-                dl.appendChild(this.Helpers.create_element('dd', { text_content: this._format_simple_value(value) }));
-            }
-        });
-        return dl;
+        return create_definition_list(this.Helpers, entries);
     }
 
     _format_date_display(iso_string) {
-        if (!iso_string) return '';
-        try {
-            const date = new Date(iso_string);
-            if (Number.isNaN(date.getTime())) return iso_string;
-            const locale = window.Translation?.getCurrentLocale?.()
-                || window.Translation?.currentLocale
-                || (typeof navigator !== 'undefined' ? navigator.language : 'en-GB');
-            return date.toLocaleDateString(locale, { year: 'numeric', month: '2-digit', day: '2-digit' });
-        } catch (error) {
-            console.warn('[RulefileSectionsViewComponent] Failed to format date', iso_string, error);
-            return iso_string;
-        }
+        return format_date_display(iso_string);
     }
 
     _create_source_link(source_url) {
-        const clean_url = this.Helpers.add_protocol_if_missing ? this.Helpers.add_protocol_if_missing(source_url) : source_url;
-        if (!clean_url) return null;
-        const t = this.Translation?.t || (k => (k === 'opens_in_new_tab' ? '(Öppnas i ny flik)' : k));
-        const icon_html = this.Helpers.get_external_link_icon_html ? this.Helpers.get_external_link_icon_html(t) : ' ↗';
-        return this.Helpers.create_element('a', {
-            html_content: (this.Helpers.escape_html ? this.Helpers.escape_html(source_url) : source_url) + icon_html,
-            attributes: {
-                href: clean_url,
-                target: '_blank',
-                rel: 'noopener noreferrer'
-            }
-        });
+        return create_source_link(this.Helpers, this.Translation, source_url);
     }
 
     _create_list(items, empty_key, class_name = 'metadata-list') {
-        const t = this.Translation.t;
-        if (!Array.isArray(items) || items.length === 0) {
-            return this.Helpers.create_element('p', { class_name: 'metadata-empty', text_content: t(empty_key) });
-        }
-        const ul = this.Helpers.create_element('ul', { class_name });
-        items.filter(Boolean).forEach(item => {
-            const content = this._format_simple_value(item);
-            if (!content) return;
-            ul.appendChild(this.Helpers.create_element('li', { text_content: content }));
-        });
-        return ul;
+        return create_list(this.Helpers, this.Translation.t, items, empty_key, class_name);
     }
 
     _render_general_section(metadata) {
