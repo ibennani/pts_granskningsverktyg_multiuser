@@ -91,6 +91,63 @@ describe('rulefile_updater_logic', () => {
             );
             expect(report.added_requirements.map((a) => a.id)).toContain('n1');
         });
+
+        test('ändring i passCriteria ger passCriteriaChanges', () => {
+            const base = {
+                key: 'k1',
+                title: 'T',
+                standardReference: { text: '' },
+                instructions: '',
+                checks: [
+                    {
+                        id: 'chk1',
+                        condition: 'Vid kontroll',
+                        passCriteria: [{ id: 'pc1', requirement: 'Gammal text' }]
+                    }
+                ]
+            };
+            const new_req = {
+                ...base,
+                checks: [
+                    {
+                        id: 'chk1',
+                        condition: 'Vid kontroll',
+                        passCriteria: [
+                            { id: 'pc1', requirement: 'Gammal text' },
+                            { id: 'pc2', requirement: 'Ny punkt' }
+                        ]
+                    }
+                ]
+            };
+            const report = analyze_rule_file_changes(
+                { ruleFileContent: { requirements: { k1: base } } },
+                { requirements: { k1: new_req } }
+            );
+            expect(report.updated_requirements).toHaveLength(1);
+            expect(report.updated_requirements[0].passCriteriaChanges.added.length).toBeGreaterThan(0);
+        });
+
+        test('samma titel och referens men ny nyckel matchar innehåll', () => {
+            const body = {
+                title: 'Gemensam',
+                standardReference: { text: 'ISO' },
+                instructions: '',
+                checks: []
+            };
+            const report = analyze_rule_file_changes(
+                {
+                    ruleFileContent: {
+                        requirements: { gammal: { key: 'gammal', ...body } }
+                    }
+                },
+                {
+                    requirements: { nyck: { key: 'nyck', ...body } }
+                }
+            );
+            expect(report.removed_requirements).toHaveLength(0);
+            expect(report.added_requirements).toHaveLength(0);
+            expect(report.updated_requirements).toHaveLength(0);
+        });
     });
 
     describe('apply_rule_file_update', () => {
@@ -171,6 +228,66 @@ describe('rulefile_updater_logic', () => {
             const new_content = { metadata: { version: '2' }, requirements: { k1: req_new } };
             const out = apply_rule_file_update(state, new_content, report);
             expect(out.samples[0].requirementResults.k1.needsReview).toBe(true);
+        });
+
+        test('requirementUpdateDetails fylls när passCriteriaChanges finns', () => {
+            const req = {
+                key: 'k1',
+                title: 'T',
+                standardReference: { text: '' },
+                instructions: '',
+                checks: []
+            };
+            const state = {
+                ruleFileContent: { metadata: { version: '1' }, requirements: { k1: req } },
+                uiSettings: {},
+                samples: []
+            };
+            const new_content = { metadata: { version: '2' }, requirements: { k1: req } };
+            const pass_changes = {
+                added: [],
+                updated: [{ checkId: 'c1', passCriterionId: 'p1', text: 'x' }],
+                addedChecks: []
+            };
+            const report = {
+                updated_requirements: [{ id: 'k1', title: 'T', passCriteriaChanges: pass_changes }],
+                removed_requirements: [],
+                added_requirements: []
+            };
+            const out = apply_rule_file_update(state, new_content, report);
+            expect(out.requirementUpdateDetails.k1).toEqual(pass_changes);
+        });
+
+        test('mappar resultat till ny kravnyckel vid titel-matchning', () => {
+            const shared = {
+                title: 'Krav X',
+                standardReference: { text: 'R' },
+                instructions: '',
+                checks: []
+            };
+            const state = {
+                ruleFileContent: {
+                    metadata: { version: '1' },
+                    requirements: { old_key: { key: 'old_key', ...shared } }
+                },
+                uiSettings: {},
+                samples: [
+                    {
+                        id: 's1',
+                        requirementResults: {
+                            old_key: { status: 'pass', checkResults: {} }
+                        }
+                    }
+                ]
+            };
+            const new_content = {
+                metadata: { version: '2' },
+                requirements: { new_key: { key: 'new_key', ...shared } }
+            };
+            const report = analyze_rule_file_changes(state, new_content);
+            const out = apply_rule_file_update(state, new_content, report);
+            expect(out.samples[0].requirementResults.new_key).toBeDefined();
+            expect(out.samples[0].requirementResults.old_key).toBeUndefined();
         });
     });
 });
