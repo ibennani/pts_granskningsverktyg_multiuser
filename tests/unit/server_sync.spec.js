@@ -62,12 +62,24 @@ function base_audit_state(overrides = {}) {
 }
 
 describe('server_sync', () => {
+    let broadcast_instances;
+
     beforeEach(() => {
         jest.clearAllMocks();
+        broadcast_instances = [];
+        if (typeof global.BroadcastChannel !== 'undefined') {
+            delete global.BroadcastChannel;
+        }
+        global.BroadcastChannel = jest.fn().mockImplementation(() => {
+            const inst = { postMessage: jest.fn(), close: jest.fn() };
+            broadcast_instances.push(inst);
+            return inst;
+        });
         Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
         update_audit.mockResolvedValue({ version: 9, ruleSetId: 'rs1' });
         import_audit.mockResolvedValue({ auditId: 'new-a', version: 1, ruleSetId: null });
         update_rule.mockResolvedValue({ content: { ok: true }, version: 2 });
+        is_fetch_network_error.mockImplementation(() => false);
     });
 
     afterEach(() => {
@@ -213,6 +225,129 @@ describe('server_sync', () => {
         delete window.__gv_current_view_name;
         delete window.NotificationComponent;
         delete window.Translation;
+        delete window.__GV_AUDIT_DELETED_MODAL_SHOWN__;
+    });
+
+    test('run_sync: nätverksfel (fetch kastar) markerar väntande synk', async () => {
+        is_fetch_network_error.mockImplementation((e) => e instanceof TypeError);
+        update_audit.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+        const dispatch = jest.fn();
+        const state = base_audit_state({ auditId: 'a1', version: 1 });
+        await sync_to_server_now(() => state, dispatch);
+        expect(mark_audit_sync_pending).toHaveBeenCalled();
+        expect(notify_network_unreachable_for_sync).toHaveBeenCalled();
+    });
+
+    test('run_sync_rulefile: 409 sätter väntande och visar felmeddelande', async () => {
+        const err = Object.assign(new Error('Konflikt'), { status: 409 });
+        update_rule.mockRejectedValueOnce(err);
+        const show_global = jest.fn();
+        window.NotificationComponent = { show_global_message: show_global };
+        window.Translation = { t: (k) => `t:${k}` };
+        const dispatch = jest.fn();
+        const state = base_audit_state({
+            auditStatus: 'rulefile_editing',
+            ruleSetId: 'rs',
+            ruleFileIsPublished: false
+        });
+        await flush_sync_rulefile_to_server(() => state, dispatch);
+        expect(mark_rulefile_sync_pending).toHaveBeenCalled();
+        expect(show_global).toHaveBeenCalled();
+        delete window.NotificationComponent;
+        delete window.Translation;
+    });
+
+    test('run_sync_rulefile: 404 sätter väntande och visar felmeddelande', async () => {
+        const err = Object.assign(new Error('Saknas'), { status: 404 });
+        update_rule.mockRejectedValueOnce(err);
+        const show_global = jest.fn();
+        window.NotificationComponent = { show_global_message: show_global };
+        window.Translation = { t: (k) => `t:${k}` };
+        const dispatch = jest.fn();
+        const state = base_audit_state({
+            auditStatus: 'rulefile_editing',
+            ruleSetId: 'rs',
+            ruleFileIsPublished: false
+        });
+        await flush_sync_rulefile_to_server(() => state, dispatch);
+        expect(mark_rulefile_sync_pending).toHaveBeenCalled();
+        expect(show_global).toHaveBeenCalled();
+        delete window.NotificationComponent;
+        delete window.Translation;
+    });
+
+    test('BroadcastChannel skickar audit-updated efter lyckad PATCH-synk', async () => {
+        const dispatch = jest.fn();
+        const state = base_audit_state({ auditId: 'patch-id', version: 2 });
+        await sync_to_server_now(() => state, dispatch);
+        expect(global.BroadcastChannel).toHaveBeenCalledWith('granskningsverktyget-audit-updates');
+        expect(broadcast_instances.length).toBeGreaterThan(0);
+        const ch = broadcast_instances[broadcast_instances.length - 1];
+        expect(ch.postMessage).toHaveBeenCalledWith({
+            type: 'audit-updated',
+            auditId: 'patch-id'
+        });
+        expect(ch.close).toHaveBeenCalled();
+    });
+
+    test('BroadcastChannel skickas efter lyckad import-synk utan auditId', async () => {
+        const dispatch = jest.fn();
+        const state = base_audit_state({ auditId: null });
+        delete state.auditId;
+        await sync_to_server_now(() => state, dispatch);
+        expect(import_audit).toHaveBeenCalled();
+        expect(global.BroadcastChannel).toHaveBeenCalledWith('granskningsverktyget-audit-updates');
+        const ch = broadcast_instances[broadcast_instances.length - 1];
+        expect(ch.postMessage).toHaveBeenCalledWith({
+            type: 'audit-updated',
+            auditId: 'new-a'
+        });
+    });
+
+    test('404 granskning: ModalComponent.show och navigering till audit_audits', async () => {
+        const err = Object.assign(new Error('Granskning hittades inte'), { status: 404 });
+        update_audit.mockRejectedValueOnce(err);
+        window.__gv_current_view_name = 'metadata';
+        window.__GV_AUDIT_DELETED_MODAL_SHOWN__ = false;
+
+        const modal_show = jest.fn((cfg, render_cb) => {
+            expect(cfg.h1_text).toBe('audit_deleted_modal_title');
+            const container = document.createElement('div');
+            const modal_instance = { close: jest.fn() };
+            render_cb(container, modal_instance);
+            const btn = container.querySelector('button');
+            expect(btn).toBeTruthy();
+            btn.click();
+            expect(modal_instance.close).toHaveBeenCalled();
+        });
+
+        window.ModalComponent = { show: modal_show };
+        window.Helpers = {
+            create_element(tag, opts = {}) {
+                const el = document.createElement(tag);
+                if (opts.class_name) {
+                    el.className = Array.isArray(opts.class_name)
+                        ? opts.class_name.join(' ')
+                        : opts.class_name;
+                }
+                if (opts.text_content) {
+                    el.textContent = opts.text_content;
+                }
+                return el;
+            }
+        };
+        window.Translation = { t: (k) => k };
+
+        const dispatch = jest.fn();
+        const state = base_audit_state({ auditId: 'gone', version: 1 });
+        await sync_to_server_now(() => state, dispatch);
+
+        expect(modal_show).toHaveBeenCalled();
+
+        delete window.ModalComponent;
+        delete window.Helpers;
+        delete window.Translation;
+        delete window.__gv_current_view_name;
         delete window.__GV_AUDIT_DELETED_MODAL_SHOWN__;
     });
 });
