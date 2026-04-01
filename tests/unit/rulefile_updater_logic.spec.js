@@ -127,6 +127,142 @@ describe('rulefile_updater_logic', () => {
             expect(report.updated_requirements[0].passCriteriaChanges.added.length).toBeGreaterThan(0);
         });
 
+        test('passCriteriaChanges: tillagd pass-punkt listas i added', () => {
+            const old_req = {
+                key: 'k1',
+                title: 'T',
+                standardReference: { text: 'R' },
+                instructions: '',
+                checks: [
+                    {
+                        id: 'chk1',
+                        condition: 'Vid kontroll',
+                        passCriteria: [{ id: 'pc1', requirement: 'Kvar' }]
+                    }
+                ]
+            };
+            const new_req = {
+                ...old_req,
+                checks: [
+                    {
+                        id: 'chk1',
+                        condition: 'Vid kontroll',
+                        passCriteria: [
+                            { id: 'pc1', requirement: 'Kvar' },
+                            { id: 'pc3', requirement: 'Helt ny rad' }
+                        ]
+                    }
+                ]
+            };
+            const report = analyze_rule_file_changes(
+                { ruleFileContent: { requirements: { k1: old_req } } },
+                { requirements: { k1: new_req } }
+            );
+            const pc = report.updated_requirements[0].passCriteriaChanges;
+            expect(pc.added.some((a) => a.passCriterionId === 'pc3')).toBe(true);
+        });
+
+        test('passCriteriaChanges: borttagen pass-punkt ger uppdaterat krav (checks-array ändrad)', () => {
+            const old_req = {
+                key: 'k1',
+                title: 'T',
+                standardReference: { text: '' },
+                instructions: '',
+                checks: [
+                    {
+                        id: 'chk1',
+                        condition: 'Vid kontroll',
+                        passCriteria: [
+                            { id: 'pc1', requirement: 'Finns kvar' },
+                            { id: 'pc2', requirement: 'Försvinner' }
+                        ]
+                    }
+                ]
+            };
+            const new_req = {
+                ...old_req,
+                checks: [
+                    {
+                        id: 'chk1',
+                        condition: 'Vid kontroll',
+                        passCriteria: [{ id: 'pc1', requirement: 'Finns kvar' }]
+                    }
+                ]
+            };
+            const report = analyze_rule_file_changes(
+                { ruleFileContent: { requirements: { k1: old_req } } },
+                { requirements: { k1: new_req } }
+            );
+            expect(report.updated_requirements).toHaveLength(1);
+            expect(report.updated_requirements[0].id).toBe('k1');
+        });
+
+        test('passCriteriaChanges: ändrad text för samma pass-id hamnar i updated', () => {
+            const old_req = {
+                key: 'k1',
+                title: 'T',
+                standardReference: { text: '' },
+                instructions: '',
+                checks: [
+                    {
+                        id: 'chk1',
+                        condition: 'Vid kontroll',
+                        passCriteria: [{ id: 'pc1', requirement: 'Gammal' }]
+                    }
+                ]
+            };
+            const new_req = {
+                ...old_req,
+                checks: [
+                    {
+                        id: 'chk1',
+                        condition: 'Vid kontroll',
+                        passCriteria: [{ id: 'pc1', requirement: 'Ny formulering' }]
+                    }
+                ]
+            };
+            const report = analyze_rule_file_changes(
+                { ruleFileContent: { requirements: { k1: old_req } } },
+                { requirements: { k1: new_req } }
+            );
+            const ch = report.updated_requirements[0].passCriteriaChanges;
+            expect(ch.updated.some((u) => u.passCriterionId === 'pc1')).toBe(true);
+        });
+
+        test('passCriteriaChanges: helt ny kontrollpunkt ger addedChecks', () => {
+            const old_req = {
+                key: 'k1',
+                title: 'T',
+                standardReference: { text: '' },
+                instructions: '',
+                checks: [
+                    {
+                        id: 'c1',
+                        condition: 'Första',
+                        passCriteria: [{ id: 'p1', requirement: 'A' }]
+                    }
+                ]
+            };
+            const new_req = {
+                ...old_req,
+                checks: [
+                    ...old_req.checks,
+                    {
+                        id: 'c2',
+                        condition: 'Andra kontrollen',
+                        passCriteria: [{ id: 'p2', requirement: 'B' }]
+                    }
+                ]
+            };
+            const report = analyze_rule_file_changes(
+                { ruleFileContent: { requirements: { k1: old_req } } },
+                { requirements: { k1: new_req } }
+            );
+            const ch = report.updated_requirements[0].passCriteriaChanges;
+            expect(ch.addedChecks).toContain('c2');
+            expect(ch.added.some((a) => a.checkId === 'c2' && a.passCriterionId === 'p2')).toBe(true);
+        });
+
         test('samma titel och referens men ny nyckel matchar innehåll', () => {
             const body = {
                 title: 'Gemensam',
@@ -288,6 +424,187 @@ describe('rulefile_updater_logic', () => {
             const out = apply_rule_file_update(state, new_content, report);
             expect(out.samples[0].requirementResults.new_key).toBeDefined();
             expect(out.samples[0].requirementResults.old_key).toBeUndefined();
+        });
+
+        test('bygger om checkResults och passCriteria när id:n ändras men text matchar', () => {
+            const cond = 'Samma villkor';
+            const req_text = 'Godkänn detta';
+            const old_req = {
+                key: 'k1',
+                title: 'Krav',
+                standardReference: { text: 'S' },
+                instructions: '',
+                checks: [
+                    {
+                        id: 'old_chk',
+                        condition: cond,
+                        passCriteria: [{ id: 'old_pc', requirement: req_text }]
+                    }
+                ]
+            };
+            const new_req = {
+                ...old_req,
+                checks: [
+                    {
+                        id: 'new_chk',
+                        condition: cond,
+                        passCriteria: [{ id: 'new_pc', requirement: req_text }]
+                    }
+                ]
+            };
+            const state = {
+                ruleFileContent: { metadata: { version: '1' }, requirements: { k1: old_req } },
+                uiSettings: {},
+                samples: [
+                    {
+                        id: 's1',
+                        description: 'P',
+                        requirementResults: {
+                            k1: {
+                                status: 'pass',
+                                checkResults: {
+                                    old_chk: {
+                                        passCriteria: {
+                                            old_pc: { status: 'pass', note: 'behålls' }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ]
+            };
+            const new_content = { metadata: { version: '2' }, requirements: { k1: new_req } };
+            const report = analyze_rule_file_changes(state, new_content);
+            const out = apply_rule_file_update(state, new_content, report);
+            const rr = out.samples[0].requirementResults.k1;
+            expect(rr.checkResults.new_chk).toBeDefined();
+            expect(rr.checkResults.new_chk.passCriteria.new_pc.note).toBe('behålls');
+            expect(rr.checkResults.old_chk).toBeUndefined();
+        });
+
+        test('remap_requirement_result: partiell pc-mappning behåller bara kända nya id', () => {
+            const old_req = {
+                key: 'k1',
+                title: 'K',
+                standardReference: { text: '' },
+                instructions: '',
+                checks: [
+                    {
+                        id: 'c1',
+                        condition: 'A',
+                        passCriteria: [
+                            { id: 'p1', requirement: 'X' },
+                            { id: 'p2', requirement: 'Y' }
+                        ]
+                    }
+                ]
+            };
+            const new_req = {
+                ...old_req,
+                checks: [
+                    {
+                        id: 'c1',
+                        condition: 'A',
+                        passCriteria: [{ id: 'p1n', requirement: 'X' }]
+                    }
+                ]
+            };
+            const state = {
+                ruleFileContent: { metadata: { version: '1' }, requirements: { k1: old_req } },
+                uiSettings: {},
+                samples: [
+                    {
+                        id: 's1',
+                        requirementResults: {
+                            k1: {
+                                status: 'pass',
+                                checkResults: {
+                                    c1: {
+                                        passCriteria: {
+                                            p1: { a: 1 },
+                                            p2: { b: 2 }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ]
+            };
+            const new_content = { metadata: { version: '2' }, requirements: { k1: new_req } };
+            const report = analyze_rule_file_changes(state, new_content);
+            const out = apply_rule_file_update(state, new_content, report);
+            const pcs = out.samples[0].requirementResults.k1.checkResults.c1.passCriteria;
+            expect(pcs.p1n).toEqual({ a: 1 });
+            expect(pcs.p2).toBeUndefined();
+        });
+
+        test('apply_rule_file_update: flera ändringstyper samtidigt (nyckelbyte, borttaget krav, needsReview)', () => {
+            const shared = {
+                title: 'Gemensam titel',
+                standardReference: { text: 'ISO' },
+                instructions: '',
+                checks: []
+            };
+            const state = {
+                ruleFileContent: {
+                    metadata: { version: 'v0' },
+                    requirements: {
+                        old_id: { key: 'old_id', ...shared },
+                        stay: {
+                            key: 'stay',
+                            title: 'Stannar',
+                            standardReference: { text: '' },
+                            instructions: '',
+                            checks: []
+                        },
+                        remove_me: {
+                            key: 'remove_me',
+                            title: 'Raderas',
+                            standardReference: { text: '' },
+                            instructions: '',
+                            checks: []
+                        }
+                    }
+                },
+                uiSettings: { theme: 'light' },
+                samples: [
+                    {
+                        id: 's1',
+                        description: 'Prov',
+                        requirementResults: {
+                            old_id: { status: 'pass', checkResults: {} },
+                            stay: { status: 'fail', checkResults: {} },
+                            remove_me: { status: 'pass', checkResults: {} }
+                        }
+                    }
+                ],
+                archivedRequirementResults: []
+            };
+            const new_req_stay = {
+                key: 'stay',
+                title: 'Stannar uppdaterad',
+                standardReference: { text: '' },
+                instructions: '',
+                checks: []
+            };
+            const new_content = {
+                metadata: { version: 'v1' },
+                requirements: {
+                    new_id: { key: 'new_id', ...shared },
+                    stay: new_req_stay
+                }
+            };
+            const report = analyze_rule_file_changes(state, new_content);
+            const out = apply_rule_file_update(state, new_content, report);
+            expect(out.samples[0].requirementResults.new_id).toBeDefined();
+            expect(out.samples[0].requirementResults.old_id).toBeUndefined();
+            expect(out.samples[0].requirementResults.stay.needsReview).toBe(true);
+            const arch = out.archivedRequirementResults.find((a) => a.requirementId === 'remove_me');
+            expect(arch).toBeDefined();
+            expect(out.uiSettings.theme).toBe('light');
+            expect(out.lastRulefileUpdateLog.newRuleVersion).toBe('v1');
         });
     });
 });
