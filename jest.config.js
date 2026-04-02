@@ -9,6 +9,8 @@ export default {
     '<rootDir>/tests/unit/**/*.spec.ts',
   ],
   testPathIgnorePatterns: ['/node_modules/', '.e2e.spec.js'],
+  /** Tillåt transpilering av marked (ESM) så js/utils/markdown.js kan laddas i Jest. */
+  transformIgnorePatterns: ['/node_modules/(?!(marked)/)'],
   transform: {
     '^.+\\.(t|j)s$': [
       '@swc/jest',
