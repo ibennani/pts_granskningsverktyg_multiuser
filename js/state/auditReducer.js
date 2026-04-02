@@ -277,27 +277,44 @@ export function auditReducer(current_state, action) {
             return current_state;
         case ActionTypes.UPDATE_METADATA: {
             const payload = { ...(action.payload || {}) };
+            const skip_internal_sync = action.payload?.skip_server_sync === true;
             delete payload.skip_server_sync;
             if (current_state.auditStatus === 'archived') {
                 const keys = Object.keys(payload);
                 if (keys.length !== 1 || keys[0] !== 'audit_edit_log') return current_state;
             }
-            return { ...current_state, auditMetadata: { ...current_state.auditMetadata, ...payload } };
+            const merged = {
+                ...current_state,
+                auditMetadata: { ...current_state.auditMetadata, ...payload }
+            };
+            if (!skip_internal_sync) {
+                merged.auditLastNonObservationActivityAt = get_current_iso_datetime_utc_internal();
+            }
+            return merged;
         }
         case ActionTypes.ADD_SAMPLE: {
             if (current_state.auditStatus === 'archived') return current_state;
             const new_sample_with_defaults = { sampleCategory: '', sampleType: '', ...action.payload };
-            return { ...current_state, samples: [...current_state.samples, new_sample_with_defaults] };
+            return {
+                ...current_state,
+                samples: [...current_state.samples, new_sample_with_defaults],
+                auditLastNonObservationActivityAt: get_current_iso_datetime_utc_internal()
+            };
         }
         case ActionTypes.UPDATE_SAMPLE:
             if (current_state.auditStatus === 'archived') return current_state;
             return {
                 ...current_state,
-                samples: current_state.samples.map(s => s.id === action.payload.sampleId ? { ...s, ...action.payload.updatedSampleData } : s)
+                samples: current_state.samples.map(s => s.id === action.payload.sampleId ? { ...s, ...action.payload.updatedSampleData } : s),
+                auditLastNonObservationActivityAt: get_current_iso_datetime_utc_internal()
             };
         case ActionTypes.DELETE_SAMPLE:
             if (current_state.auditStatus === 'archived') return current_state;
-            new_state = { ...current_state, samples: current_state.samples.filter(s => s.id !== action.payload.sampleId) };
+            new_state = {
+                ...current_state,
+                samples: current_state.samples.filter(s => s.id !== action.payload.sampleId),
+                auditLastNonObservationActivityAt: get_current_iso_datetime_utc_internal()
+            };
             return AuditLogic.updateIncrementalDeficiencyIds(new_state);
         case ActionTypes.UPDATE_REQUIREMENT_RESULT: {
             if (current_state.auditStatus === 'archived') return current_state;

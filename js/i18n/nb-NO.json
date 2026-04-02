@@ -366,6 +366,7 @@
   "edit_metadata_form_instruction": "Oppdater informasjonen nedenfor. Endringene vil gjenspeiles i eksporterte rapporter.",
   "edit_prefix": "Rediger",
   "edit_sample": "Rediger utvalg",
+  "audit_last_updated": "Sist oppdatert",
   "end_time": "Sluttid",
   "enter_metadata_title": "Angi metadata",
   "error_audit_data_missing_for_list": "Feil: Nødvendige tilsynsdata (regelfil) mangler for å vise listen.",

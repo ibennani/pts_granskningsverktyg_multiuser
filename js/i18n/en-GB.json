@@ -366,6 +366,7 @@
   "edit_metadata_form_instruction": "Update the information below. The changes will be reflected in exported reports.",
   "edit_prefix": "Edit",
   "edit_sample": "Edit sample",
+  "audit_last_updated": "Last updated",
   "end_time": "End time",
   "enter_metadata_title": "Enter Metadata",
   "error_audit_data_missing_for_list": "Error: Required audit data (rule file) is missing to display the list.",

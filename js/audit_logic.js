@@ -538,6 +538,22 @@ export function get_last_activity_timestamp(audit_state) {
 }
 
 /**
+ * Senaste ISO-tid för visning i översikt/export: max av observationstidsstämplar
+ * och valfritt `auditLastNonObservationActivityAt` (metadata, stickprov m.m.).
+ * @param {Object} audit_state
+ * @returns {string|null}
+ */
+export function get_audit_last_updated_display_timestamp(audit_state) {
+    if (!audit_state) return null;
+    const from_samples = get_last_activity_timestamp(audit_state);
+    const from_non_obs = audit_state.auditLastNonObservationActivityAt || null;
+    if (!from_samples && !from_non_obs) return null;
+    if (!from_samples) return from_non_obs;
+    if (!from_non_obs) return from_samples;
+    return from_samples > from_non_obs ? from_samples : from_non_obs;
+}
+
+/**
  * Counts total number of attached images/media across all samples.
  * Each filename in attachedMediaFilenames counts as one.
  */

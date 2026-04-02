@@ -366,6 +366,7 @@
   "edit_metadata_form_instruction": "Uppdatera informationen nedan. Ändringarna kommer att synas i exporterade rapporter.",
   "edit_prefix": "Redigera",
   "edit_sample": "Redigera stickprov",
+  "audit_last_updated": "Senast uppdaterad",
   "end_time": "Sluttid",
   "enter_metadata_title": "Ange metadata",
   "error_audit_data_missing_for_list": "Fel Nödvändig granskningsdata (regelfil) saknas för att visa listan",

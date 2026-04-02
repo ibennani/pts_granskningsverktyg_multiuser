@@ -320,6 +320,7 @@ if (typeof window !== 'undefined') {
             DraftManager,
             capture_focus_state,
             restore_focus_state,
+            updatePageTitle,
             updatePageTitleFromCurrentView,
             update_side_menu,
             get_current_view_component: () => render_ctx.current_view_component_instance,

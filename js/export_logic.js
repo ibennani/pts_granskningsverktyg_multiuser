@@ -4,7 +4,7 @@ import ExcelJS from 'exceljs/dist/exceljs.min.js';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType, UnderlineType, ExternalHyperlink, ShadingType, TabStopType, SectionType, PageOrientation } from 'docx';
 import { marked } from './utils/markdown.js';
 import { format_local_date_for_filename } from './utils/filename_utils.js';
-import { recalculateAuditTimes } from './audit_logic.js';
+import { recalculateAuditTimes, get_audit_last_updated_display_timestamp } from './audit_logic.js';
 import * as Helpers from './utils/helpers.js';
 import * as ScoreCalculator from './logic/ScoreCalculator.js';
 import { consoleManager } from './utils/console_manager.js';
@@ -287,13 +287,14 @@ async function export_to_excel(current_audit) {
         const lang_code = get_current_language_code_from_registry();
 
         const display_times = get_effective_display_times_for_audit(current_audit);
+        const last_updated_ts = get_audit_last_updated_display_timestamp(current_audit);
         const general_info_data = [
             [t('case_number'), strip_markdown_for_excel(String(current_audit.auditMetadata.caseNumber || ''))],
             [t('actor_name'), strip_markdown_for_excel(String(current_audit.auditMetadata.actorName || ''))],
             [t('excel_general_service_link'), strip_markdown_for_excel(String(current_audit.auditMetadata.actorLink || ''))],
             [t('auditor_name'), strip_markdown_for_excel(String(current_audit.auditMetadata.auditorName || ''))],
             [t('start_time'), display_times.startTime ? Helpers.format_iso_to_local_date(display_times.startTime, lang_code) : ''],
-            [t('end_time'), display_times.endTime ? Helpers.format_iso_to_local_date(display_times.endTime, lang_code) : '']
+            [t('audit_last_updated'), last_updated_ts ? Helpers.format_iso_to_local_datetime(last_updated_ts, lang_code, { showSeconds: false }) : '']
         ];
 
         generalSheet.addRows(general_info_data);

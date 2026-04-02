@@ -17,6 +17,7 @@ export const initial_state = {
     auditStatus: 'not_started',
     startTime: null,
     endTime: null,
+    auditLastNonObservationActivityAt: null,
     samples: [],
     archivedRequirementResults: [],
     deficiencyCounter: 1,

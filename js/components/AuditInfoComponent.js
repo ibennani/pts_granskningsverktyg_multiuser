@@ -61,7 +61,9 @@ export class AuditInfoComponent {
             ? audit_logic.recalculateAuditTimes({ ...current_state })
             : null;
         const start_time_iso = current_state.startTime || state_for_times?.startTime || null;
-        const end_time_iso = current_state.endTime || state_for_times?.endTime || null;
+        const last_updated_iso = (audit_logic?.get_audit_last_updated_display_timestamp)
+            ? audit_logic.get_audit_last_updated_display_timestamp(current_state)
+            : null;
 
         const info_panel = this.Helpers.create_element('div', { class_name: 'audit-info-panel' });
 
@@ -118,10 +120,15 @@ export class AuditInfoComponent {
             ? this.Helpers.format_iso_to_local_date(start_time_iso, lang_code)
             : ''));
 
-        if (end_time_iso) {
-            info_panel.appendChild(this.create_info_item('end_time', this.Helpers.format_iso_to_local_date(end_time_iso, lang_code)));
-        } else if (current_state.auditStatus === 'locked' || current_state.auditStatus === 'archived') {
-            info_panel.appendChild(this.create_info_item('end_time', '---'));
+        if (current_state.auditStatus === 'in_progress'
+            || current_state.auditStatus === 'locked'
+            || current_state.auditStatus === 'archived') {
+            info_panel.appendChild(this.create_info_item(
+                'audit_last_updated',
+                last_updated_iso
+                    ? this.Helpers.format_iso_to_local_datetime(last_updated_iso, lang_code, { showSeconds: false })
+                    : ''
+            ));
         }
 
         if (md.internalComment) {

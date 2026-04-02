@@ -41,6 +41,7 @@ function build_translation() {
         version_rulefile: 'Version',
         status: 'Status',
         start_time: 'Start',
+        audit_last_updated: 'Senast uppdaterad',
         end_time: 'Slut',
         audit_status_locked: 'Låst',
         deficiency_index_title: 'Bristindex',

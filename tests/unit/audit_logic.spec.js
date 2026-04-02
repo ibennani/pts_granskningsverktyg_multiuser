@@ -5,7 +5,8 @@ import {
     calculate_requirement_status,
     calculate_overall_audit_progress,
     calculate_sample_requirement_status_counts,
-    calculate_overall_audit_status_counts
+    calculate_overall_audit_status_counts,
+    get_audit_last_updated_display_timestamp
 } from '../../js/audit_logic.js';
 
 describe('AuditLogic', () => {
@@ -309,6 +310,70 @@ describe('AuditLogic', () => {
             expect(c.failed).toBe(1);
             expect(c.not_audited).toBe(1);
             expect(c.partially_audited).toBe(0);
+        });
+    });
+
+    describe('get_audit_last_updated_display_timestamp', () => {
+        test('returnerar null när inga tidsstämplar eller metadata-fält finns', () => {
+            expect(get_audit_last_updated_display_timestamp(null)).toBeNull();
+            expect(get_audit_last_updated_display_timestamp({ samples: [] })).toBeNull();
+        });
+
+        test('använder endast observationstidsstämplar när metadata-fält saknas', () => {
+            const ts = '2025-06-01T10:00:00.000Z';
+            const state = {
+                samples: [{
+                    id: 's1',
+                    requirementResults: {
+                        r1: {
+                            lastStatusUpdate: ts,
+                            checkResults: {}
+                        }
+                    }
+                }]
+            };
+            expect(get_audit_last_updated_display_timestamp(state)).toBe(ts);
+        });
+
+        test('använder endast auditLastNonObservationActivityAt när inga observationer finns', () => {
+            const meta_ts = '2025-07-15T12:30:00.000Z';
+            const state = {
+                samples: [],
+                auditLastNonObservationActivityAt: meta_ts
+            };
+            expect(get_audit_last_updated_display_timestamp(state)).toBe(meta_ts);
+        });
+
+        test('väljer senaste av observation och metadata-tidsstämpel', () => {
+            const older = '2025-01-01T00:00:00.000Z';
+            const newer = '2025-12-31T23:59:59.999Z';
+            const state_samples_only = {
+                samples: [{
+                    id: 's1',
+                    requirementResults: {
+                        r1: {
+                            lastStatusUpdate: older,
+                            checkResults: {}
+                        }
+                    }
+                }],
+                auditLastNonObservationActivityAt: newer
+            };
+            expect(get_audit_last_updated_display_timestamp(state_samples_only)).toBe(newer);
+
+            const state_obs_newer = {
+                samples: [{
+                    id: 's1',
+                    requirementResults: {
+                        r1: {
+                            lastStatusUpdate: newer,
+                            checkResults: {}
+                        }
+                    }
+                }],
+                auditLastNonObservationActivityAt: older
+            };
+            expect(get_audit_last_updated_display_timestamp(state_obs_newer)).toBe(newer);
         });
     });
 

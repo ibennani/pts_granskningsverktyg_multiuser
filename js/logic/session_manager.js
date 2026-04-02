@@ -4,6 +4,7 @@
  */
 
 import { get_current_user_preferences_with_timeout } from '../api/client.js';
+import { parse_view_and_params_from_hash } from './router.js';
 import { format_build_info_object } from '../utils/build_time_format.js';
 import { consoleManager } from '../utils/console_manager.js';
 import { memoryManager } from '../utils/memory_manager.js';
@@ -136,6 +137,7 @@ export async function start_normal_session(deps) {
         DraftManager,
         capture_focus_state,
         restore_focus_state,
+        updatePageTitle,
         updatePageTitleFromCurrentView,
         update_side_menu,
         get_current_view_component,
@@ -256,13 +258,22 @@ export async function start_normal_session(deps) {
                 });
             }
         }
-        updatePageTitleFromCurrentView();
-        try {
-            const parsed_params = JSON.parse(get_current_view_params_rendered_json() || '{}');
-            update_side_menu(get_current_view_name_rendered(), parsed_params);
-        } catch (error) {
-            consoleManager.warn('[Main.js] Failed to parse current view params for side menu update:', error);
-            update_side_menu(get_current_view_name_rendered(), {});
+        {
+            const { viewName: hash_view_name, params: hash_params } = parse_view_and_params_from_hash();
+            const rendered_view_name = get_current_view_name_rendered();
+            if (rendered_view_name && hash_view_name && rendered_view_name !== hash_view_name) {
+                updatePageTitle(hash_view_name, hash_params);
+                update_side_menu(hash_view_name, hash_params);
+            } else {
+                updatePageTitleFromCurrentView();
+                try {
+                    const parsed_params = JSON.parse(get_current_view_params_rendered_json() || '{}');
+                    update_side_menu(get_current_view_name_rendered(), parsed_params);
+                } catch (error) {
+                    consoleManager.warn('[Main.js] Failed to parse current view params for side menu update:', error);
+                    update_side_menu(get_current_view_name_rendered(), {});
+                }
+            }
         }
         const hash = window.location.hash.substring(1);
         const [view_name_from_hash,] = hash.split('?');
