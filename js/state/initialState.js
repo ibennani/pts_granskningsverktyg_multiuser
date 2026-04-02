@@ -18,6 +18,8 @@ export const initial_state = {
     startTime: null,
     endTime: null,
     auditLastNonObservationActivityAt: null,
+    /** ISO-tid för "Senast uppdaterad" fryst vid låsning/arkivering; ändras inte efteråt. */
+    auditLastUpdatedAtFrozen: null,
     samples: [],
     archivedRequirementResults: [],
     deficiencyCounter: 1,

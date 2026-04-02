@@ -527,6 +527,16 @@ export class RequirementAuditComponent {
             check_res.status = this.AuditLogic.calculate_check_status(check_def, check_res.passCriteria, check_res.overallStatus);
         });
         modified_result_object.status = this.AuditLogic.calculate_requirement_status(this.current_requirement, modified_result_object);
+
+        const state_for_compare = this.getState();
+        const sample_row = state_for_compare?.samples?.find(s => String(s.id) === String(this.params.sampleId));
+        const previous_from_store = sample_row?.requirementResults?.[this.params.requirementId];
+        if (previous_from_store
+            && typeof this.AuditLogic.requirement_results_equal_for_last_updated === 'function'
+            && this.AuditLogic.requirement_results_equal_for_last_updated(previous_from_store, modified_result_object)) {
+            return;
+        }
+
         modified_result_object.lastStatusUpdate = this.Helpers.get_current_iso_datetime_utc();
         modified_result_object.lastStatusUpdateBy = get_current_user_name();
 

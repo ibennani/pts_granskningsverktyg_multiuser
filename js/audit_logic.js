@@ -538,12 +538,37 @@ export function get_last_activity_timestamp(audit_state) {
 }
 
 /**
- * Senaste ISO-tid för visning i översikt/export: max av observationstidsstämplar
- * och valfritt `auditLastNonObservationActivityAt` (metadata, stickprov m.m.).
+ * Jämför två kravresultat för persistens: ignorerar `lastStatusUpdate` och `lastStatusUpdateBy`
+ * så att oförändrat innehåll inte räknas som ny aktivitet ("Senast uppdaterad").
+ * @param {object|null|undefined} a
+ * @param {object|null|undefined} b
+ * @returns {boolean}
+ */
+export function requirement_results_equal_for_last_updated(a, b) {
+    if (a === b) return true;
+    if (!a || !b) return false;
+    let ca;
+    let cb;
+    try {
+        ca = JSON.parse(JSON.stringify(a));
+        cb = JSON.parse(JSON.stringify(b));
+    } catch {
+        return false;
+    }
+    delete ca.lastStatusUpdate;
+    delete ca.lastStatusUpdateBy;
+    delete cb.lastStatusUpdate;
+    delete cb.lastStatusUpdateBy;
+    return JSON.stringify(ca) === JSON.stringify(cb);
+}
+
+/**
+ * Beräknar senaste aktivitetstid från observationer och `auditLastNonObservationActivityAt`
+ * (används vid snapshot; påverkas inte av fryst visningsvärde).
  * @param {Object} audit_state
  * @returns {string|null}
  */
-export function get_audit_last_updated_display_timestamp(audit_state) {
+export function compute_audit_last_updated_live_timestamp(audit_state) {
     if (!audit_state) return null;
     const from_samples = get_last_activity_timestamp(audit_state);
     const from_non_obs = audit_state.auditLastNonObservationActivityAt || null;
@@ -551,6 +576,21 @@ export function get_audit_last_updated_display_timestamp(audit_state) {
     if (!from_samples) return from_non_obs;
     if (!from_non_obs) return from_samples;
     return from_samples > from_non_obs ? from_samples : from_non_obs;
+}
+
+/**
+ * Senaste ISO-tid för visning i översikt/export. För låst eller arkiverad granskning
+ * returneras alltid `auditLastUpdatedAtFrozen` om det finns (sätts vid låsning).
+ * @param {Object} audit_state
+ * @returns {string|null}
+ */
+export function get_audit_last_updated_display_timestamp(audit_state) {
+    if (!audit_state) return null;
+    if ((audit_state.auditStatus === 'locked' || audit_state.auditStatus === 'archived')
+        && audit_state.auditLastUpdatedAtFrozen) {
+        return audit_state.auditLastUpdatedAtFrozen;
+    }
+    return compute_audit_last_updated_live_timestamp(audit_state);
 }
 
 /**

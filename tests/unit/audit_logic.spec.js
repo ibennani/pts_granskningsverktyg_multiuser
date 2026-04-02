@@ -6,7 +6,9 @@ import {
     calculate_overall_audit_progress,
     calculate_sample_requirement_status_counts,
     calculate_overall_audit_status_counts,
-    get_audit_last_updated_display_timestamp
+    get_audit_last_updated_display_timestamp,
+    compute_audit_last_updated_live_timestamp,
+    requirement_results_equal_for_last_updated
 } from '../../js/audit_logic.js';
 
 describe('AuditLogic', () => {
@@ -313,6 +315,22 @@ describe('AuditLogic', () => {
         });
     });
 
+    describe('requirement_results_equal_for_last_updated', () => {
+        test('returnerar true när endast lastStatusUpdate skiljer', () => {
+            const base = { status: 'passed', checkResults: {}, commentToAuditor: '', commentToActor: '', stuckProblemDescription: '' };
+            expect(requirement_results_equal_for_last_updated(
+                { ...base, lastStatusUpdate: '2020-01-01T00:00:00.000Z', lastStatusUpdateBy: 'A' },
+                { ...base, lastStatusUpdate: '2025-01-01T00:00:00.000Z', lastStatusUpdateBy: 'B' }
+            )).toBe(true);
+        });
+
+        test('returnerar false när observation innehåll ändrats', () => {
+            const a = { status: 'passed', checkResults: { c1: { passCriteria: { pc1: { observationDetail: 'x' } } } } };
+            const b = { status: 'passed', checkResults: { c1: { passCriteria: { pc1: { observationDetail: 'y' } } } } };
+            expect(requirement_results_equal_for_last_updated(a, b)).toBe(false);
+        });
+    });
+
     describe('get_audit_last_updated_display_timestamp', () => {
         test('returnerar null när inga tidsstämplar eller metadata-fält finns', () => {
             expect(get_audit_last_updated_display_timestamp(null)).toBeNull();
@@ -374,6 +392,32 @@ describe('AuditLogic', () => {
                 auditLastNonObservationActivityAt: older
             };
             expect(get_audit_last_updated_display_timestamp(state_obs_newer)).toBe(newer);
+        });
+
+        test('låst eller arkiverat med fryst värde ignorerar nyare observationstidsstämplar', () => {
+            const frozen = '2020-01-01T12:00:00.000Z';
+            const newer = '2025-06-15T08:00:00.000Z';
+            const base_samples = {
+                samples: [{
+                    id: 's1',
+                    requirementResults: {
+                        r1: {
+                            lastStatusUpdate: newer,
+                            checkResults: {}
+                        }
+                    }
+                }],
+                auditLastUpdatedAtFrozen: frozen
+            };
+            expect(get_audit_last_updated_display_timestamp({ ...base_samples, auditStatus: 'locked' })).toBe(frozen);
+            expect(get_audit_last_updated_display_timestamp({ ...base_samples, auditStatus: 'archived' })).toBe(frozen);
+        });
+
+        test('compute_audit_last_updated_live_timestamp används för max av observation och metadata', () => {
+            expect(compute_audit_last_updated_live_timestamp({
+                samples: [],
+                auditLastNonObservationActivityAt: '2024-01-01T00:00:00.000Z'
+            })).toBe('2024-01-01T00:00:00.000Z');
         });
     });
 
