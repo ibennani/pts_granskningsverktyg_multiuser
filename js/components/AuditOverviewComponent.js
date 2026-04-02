@@ -160,6 +160,7 @@ export class AuditOverviewComponent {
                 class_name: 'audit-overview__newer-rule-banner__lead',
                 text_content: t('audit_overview_newer_rule_available') + ' '
             }));
+            const actions = this.Helpers.create_element('div', { class_name: 'audit-overview__newer-rule-banner__actions' });
             const update_btn = this.Helpers.create_element('button', {
                 class_name: ['button', 'button-default', 'audit-overview__newer-rule-banner__btn'],
                 text_content: t('update_rulefile_button_with_version', { version: newer.version }),
@@ -168,12 +169,14 @@ export class AuditOverviewComponent {
             update_btn.addEventListener('click', () => {
                 this.router('update_rulefile', { ruleId: newer.ruleId, version: newer.version });
             });
-            left.appendChild(update_btn);
-            row.appendChild(left);
+            actions.appendChild(update_btn);
             const later_btn = this.Helpers.create_element('button', {
                 class_name: ['button', 'button-secondary', 'audit-overview__newer-rule-banner__btn'],
-                text_content: t('audit_overview_newer_rule_maybe_later'),
-                attributes: { type: 'button' }
+                text_content: t('audit_overview_newer_rule_update_later'),
+                attributes: {
+                    type: 'button',
+                    'aria-label': t('audit_overview_newer_rule_update_later_aria')
+                }
             });
             later_btn.addEventListener('click', () => {
                 if (typeof sessionStorage !== 'undefined' && newer?.version) {
@@ -181,7 +184,9 @@ export class AuditOverviewComponent {
                 }
                 this.render();
             });
-            row.appendChild(later_btn);
+            actions.appendChild(later_btn);
+            left.appendChild(actions);
+            row.appendChild(left);
             banner.appendChild(row);
             plate_element.appendChild(banner);
         }
