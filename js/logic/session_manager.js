@@ -30,12 +30,15 @@ export function is_dev_build_environment() {
 /**
  * I dev cachar webbläsaren ofta den första modulladdningen av build-info.js.
  * Hämta om med unik URL så att window.BUILD_INFO matchar filen på disk (utan hel sidomladdning).
+ * Måste använda samma bas som index.html (BASE_URL + build-info.js), inte sökväg relativt denna fil —
+ * annars pekar ../build-info.js fel (js/build-info.js) och importen misslyckas tyst.
  */
 export async function refresh_dev_build_info_from_server() {
     if (!is_dev_build_environment()) return;
     try {
-        const url = new URL(`../build-info.js?t=${Date.now()}`, import.meta.url).href;
-        await import(/* @vite-ignore */ url);
+        const base = import.meta.env.BASE_URL || '/';
+        const path = `${base}build-info.js?t=${Date.now()}`;
+        await import(/* @vite-ignore */ path);
     } catch {
         /* ignorera om build-info saknas i vissa lägen */
     }
