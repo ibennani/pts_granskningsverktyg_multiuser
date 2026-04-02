@@ -1,5 +1,6 @@
 import { SampleListComponent } from './SampleListComponent.js';
 import { show_confirm_delete_modal } from '../logic/confirm_delete_modal_logic.js';
+import { show_open_all_sample_urls_modal, sample_url_raw_string } from '../logic/open_all_sample_urls_modal.js';
 import './sample_management_view_component.css';
 
 export class SampleManagementViewComponent {
@@ -36,6 +37,7 @@ export class SampleManagementViewComponent {
         this.handle_edit_sample_request_from_list = this.handle_edit_sample_request_from_list.bind(this);
         this.handle_delete_sample_request_from_list = this.handle_delete_sample_request_from_list.bind(this);
         this.handle_start_audit = this.handle_start_audit.bind(this);
+        this.handle_open_all_sample_urls = this.handle_open_all_sample_urls.bind(this);
         
         // Initialize sub-components and CSS
         this.init_sub_components();
@@ -91,6 +93,15 @@ export class SampleManagementViewComponent {
         this.router('audit_overview');
     }
 
+    handle_open_all_sample_urls(trigger_button) {
+        show_open_all_sample_urls_modal({
+            trigger_element: trigger_button,
+            getState: this.getState,
+            Helpers: this.Helpers,
+            Translation: this.Translation
+        });
+    }
+
     render() {
         if (!this.root) return;
         const t = this.Translation.t;
@@ -124,6 +135,21 @@ export class SampleManagementViewComponent {
             this.router('sample_form');
         });
         top_actions_div.appendChild(add_button);
+
+        const has_any_sample_url = (current_state.samples || []).some(
+            s => sample_url_raw_string(s) !== ''
+        );
+        if (has_any_sample_url) {
+            const open_all_tabs_btn = this.Helpers.create_element('button', {
+                class_name: ['button', 'button-secondary'],
+                text_content: t('open_all_sample_urls_in_tabs_button')
+            });
+            open_all_tabs_btn.addEventListener('click', () => {
+                this.handle_open_all_sample_urls(open_all_tabs_btn);
+            });
+            top_actions_div.appendChild(open_all_tabs_btn);
+        }
+
         this.plate_element_ref.appendChild(top_actions_div);
 
         // Always render list

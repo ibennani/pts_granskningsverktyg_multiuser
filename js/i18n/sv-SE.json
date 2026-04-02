@@ -1375,5 +1375,16 @@
   "rulefile_publish_diff_modal_title": "Publicera arbetskopia",
   "rulefile_publish_diff_modal_heading": "Skillnader mellan arbetskopian och den publicerade regelfilen",
   "rulefile_publish_standalone_modal_title": "Publicera regelfil",
-  "rulefile_publish_standalone_modal_message": "Denna regelfil har ingen publicerad version. Publicering skapar den första publicerade versionen."
+  "rulefile_publish_standalone_modal_message": "Denna regelfil har ingen publicerad version. Publicering skapar den första publicerade versionen.",
+  "open_all_sample_urls_confirm_button": "Öppna alla stickprov",
+  "open_all_sample_urls_in_tabs_button": "Öppna alla stickprov i egna flikar",
+  "open_all_sample_urls_later_button": "Kanske senare",
+  "open_all_sample_urls_modal_browser_note": "Vi räknar först ut hur många unika webbadresser som finns bland stickproven med länk. Sedan öppnas lika många tomma flikar, och därefter laddas varje unik adress in i en flik med ungefär en sekunds mellanrum. Vissa webbläsare kan varna eller blockera många nya fönster, eller om popup-fönster är avstängda för den här webbplatsen – då kanske inte alla flikar skapas.",
+  "open_all_sample_urls_modal_intro_many_lead": "Detta öppnar {count} nya flikar",
+  "open_all_sample_urls_modal_intro_many_tail": ", en för varje unik webbadress bland stickproven som har länk (i den ordning den först förekommer i listan).",
+  "open_all_sample_urls_modal_intro_one_lead": "Detta öppnar en ny flik",
+  "open_all_sample_urls_modal_intro_one_tail": " med den angivna webbadressen.",
+  "open_all_sample_urls_modal_shared_urls_note": "Flera stickprov har samma adress. Varje unik adress öppnas bara en gång.",
+  "open_all_sample_urls_modal_title": "Öppna alla stickprov med länk",
+  "open_all_sample_urls_modal_trust_note": "Öppna bara sidor du litar på."
 }

@@ -1375,5 +1375,16 @@
   "rulefile_publish_diff_modal_title": "Publish working copy",
   "rulefile_publish_diff_modal_heading": "Differences between the working copy and the published rule file",
   "rulefile_publish_standalone_modal_title": "Publish rule file",
-  "rulefile_publish_standalone_modal_message": "This rule file has no published version yet. Publishing will create the first published version."
+  "rulefile_publish_standalone_modal_message": "This rule file has no published version yet. Publishing will create the first published version.",
+  "open_all_sample_urls_confirm_button": "Open all samples",
+  "open_all_sample_urls_in_tabs_button": "Open all samples in separate tabs",
+  "open_all_sample_urls_later_button": "Maybe later",
+  "open_all_sample_urls_modal_browser_note": "We first count how many unique web addresses there are among samples with a link. Then that many empty tabs open, and each unique address loads into a tab about one second apart. Your browser may warn or block many new windows, or if pop-ups are blocked for this site – not all tabs may be created.",
+  "open_all_sample_urls_modal_intro_many_lead": "This opens {count} new tabs",
+  "open_all_sample_urls_modal_intro_many_tail": ", one for each unique web address among samples that have a link (in order of first appearance in the list).",
+  "open_all_sample_urls_modal_intro_one_lead": "This opens one new tab",
+  "open_all_sample_urls_modal_intro_one_tail": " with the specified web address.",
+  "open_all_sample_urls_modal_shared_urls_note": "Several samples share the same address. Each unique address is opened only once.",
+  "open_all_sample_urls_modal_title": "Open all linked samples",
+  "open_all_sample_urls_modal_trust_note": "Only open pages you trust."
 }

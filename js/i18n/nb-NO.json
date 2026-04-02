@@ -1375,5 +1375,16 @@
   "rulefile_publish_diff_modal_title": "Publiser arbeidsutkast",
   "rulefile_publish_diff_modal_heading": "Forskjeller mellom arbeidsutkastet og den publiserte regelfilen",
   "rulefile_publish_standalone_modal_title": "Publiser regelfil",
-  "rulefile_publish_standalone_modal_message": "Denne regelfilen har ingen publisert versjon ennå. Publisering vil opprette den første publiserte versjonen."
+  "rulefile_publish_standalone_modal_message": "Denne regelfilen har ingen publisert versjon ennå. Publisering vil opprette den første publiserte versjonen.",
+  "open_all_sample_urls_confirm_button": "Åpne alle utvalg",
+  "open_all_sample_urls_in_tabs_button": "Åpne alle utvalg i egne faner",
+  "open_all_sample_urls_later_button": "Kanskje senere",
+  "open_all_sample_urls_modal_browser_note": "Vi teller først hvor mange unike nettadresser som finnes blant utvalg med lenke. Deretter åpnes like mange tomme faner, og hver unike adresse lastes inn i en fane med omtrent ett sekunds mellomrom. Nettleseren kan advare eller blokkere mange nye vinduer, eller hvis popup-vinduer er blokkert – da blir kanskje ikke alle faner opprettet.",
+  "open_all_sample_urls_modal_intro_many_lead": "Dette åpner {count} nye faner",
+  "open_all_sample_urls_modal_intro_many_tail": ", én for hver unike nettadresse blant utvalg som har lenke (i den rekkefølgen den først forekommer i listen).",
+  "open_all_sample_urls_modal_intro_one_lead": "Dette åpner én ny fane",
+  "open_all_sample_urls_modal_intro_one_tail": " med den angitte nettadressen.",
+  "open_all_sample_urls_modal_shared_urls_note": "Flere utvalg har samme adresse. Hver unike adresse åpnes bare én gang.",
+  "open_all_sample_urls_modal_title": "Åpne alle utvalg med lenke",
+  "open_all_sample_urls_modal_trust_note": "Åpne bare sider du stoler på."
 }
