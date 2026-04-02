@@ -3,11 +3,11 @@ import express from 'express';
 import bcrypt from 'bcrypt';
 import { query } from '../db.js';
 import { sign_token, refresh_token as issue_refresh_token } from '../auth/jwt.js';
-import { login_rate_limiter } from '../middleware/rateLimiter.js';
+import { auth_rate_limiter } from '../middleware/rateLimiter.js';
 
 const router = express.Router();
 
-router.post('/refresh', (req, res) => {
+router.post('/refresh', auth_rate_limiter, (req, res) => {
     try {
         const auth_header = req.headers.authorization;
         if (!auth_header || !auth_header.startsWith('Bearer ')) {
@@ -25,7 +25,7 @@ router.post('/refresh', (req, res) => {
     }
 });
 
-router.post('/login', login_rate_limiter, async (req, res) => {
+router.post('/login', auth_rate_limiter, async (req, res) => {
     try {
         const { username, name, password } = req.body || {};
 
@@ -67,7 +67,7 @@ router.post('/login', login_rate_limiter, async (req, res) => {
     }
 });
 
-router.post('/reset-password', async (req, res) => {
+router.post('/reset-password', auth_rate_limiter, async (req, res) => {
     try {
         const { code, password } = req.body || {};
         if (!code || typeof code !== 'string' || !code.trim()) {
