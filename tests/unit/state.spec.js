@@ -65,4 +65,47 @@ describe('state (js/state)', () => {
         expect(a.uiSettings.requirementListFilter.searchText).toBe('y');
         expect(b.uiSettings.requirementListFilter.searchText).toBe('y');
     });
+
+    test('okänd action-typ lämnar state oförändrat', async () => {
+        const { initState, dispatch, getState } = await import('../../js/state/index.js');
+        initState();
+        const before = getState();
+        await dispatch({ type: 'UNKNOWN_ACTION_TEST_XYZ', payload: {} });
+        const after = getState();
+        expect(after).toEqual(before);
+    });
+
+    test('subscribe anropar alla lyssnare vid dispatch', async () => {
+        const { initState, dispatch, subscribe, StoreActionTypes } = await import('../../js/state/index.js');
+        initState();
+        const a = jest.fn();
+        const b = jest.fn();
+        subscribe(a);
+        subscribe(b);
+        await dispatch({
+            type: StoreActionTypes.SET_UI_FILTER_SETTINGS,
+            payload: { searchText: 'multi' },
+        });
+        await flush_notify_listeners();
+        expect(a).toHaveBeenCalled();
+        expect(b).toHaveBeenCalled();
+    });
+
+    test('om en lyssnare kastar fortsätter övriga att anropas', async () => {
+        const { initState, dispatch, subscribe, StoreActionTypes } = await import('../../js/state/index.js');
+        initState();
+        const bad = jest.fn(() => {
+            throw new Error('lyssnare fel');
+        });
+        const good = jest.fn();
+        subscribe(bad);
+        subscribe(good);
+        await dispatch({
+            type: StoreActionTypes.SET_UI_FILTER_SETTINGS,
+            payload: { searchText: 'felfri' },
+        });
+        await flush_notify_listeners();
+        expect(bad).toHaveBeenCalled();
+        expect(good).toHaveBeenCalled();
+    });
 });

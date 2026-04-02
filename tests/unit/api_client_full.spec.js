@@ -154,6 +154,45 @@ describe('api/client – login och HTTP-metoder', () => {
         );
     });
 
+    test('api_get vid nätverksfel (fetch kastar) propagerar felet', async () => {
+        set_auth_token('tok');
+        fetch.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+        await expect(api_get('/audits')).rejects.toThrow('Failed to fetch');
+    });
+
+    test('api_get vid 200 men trasig JSON kastar parsningsfel', async () => {
+        set_auth_token('tok');
+        fetch.mockResolvedValue({
+            ok: true,
+            status: 200,
+            json: async () => {
+                throw new SyntaxError('Unexpected token');
+            }
+        });
+        await expect(api_get('/audits')).rejects.toThrow(SyntaxError);
+    });
+
+    test('api_get vid 401 utan lyckad refresh rensar och dispatchar gv-auth-required', async () => {
+        const handler = jest.fn();
+        window.addEventListener('gv-auth-required', handler);
+        set_auth_token('utgången');
+        fetch
+            .mockResolvedValueOnce({
+                ok: false,
+                status: 401,
+                json: async () => ({ error: 'Utgången' })
+            })
+            .mockResolvedValueOnce({
+                ok: false,
+                status: 401,
+                json: async () => ({ error: 'Refresh nej' })
+            });
+        await expect(api_get('/rules')).rejects.toMatchObject({ message: 'Inloggning krävs' });
+        expect(get_auth_token()).toBe(null);
+        expect(handler).toHaveBeenCalled();
+        window.removeEventListener('gv-auth-required', handler);
+    });
+
     test('api_post skickar JSON-kropp', async () => {
         fetch.mockResolvedValue({
             ok: true,
@@ -166,6 +205,29 @@ describe('api/client – login och HTTP-metoder', () => {
         const call = fetch.mock.calls[0];
         expect(call[1].method).toBe('POST');
         expect(call[1].body).toBe(JSON.stringify(body));
+    });
+
+    test('api_post vid timeout-liknande avbrott kastar fel', async () => {
+        set_auth_token('tok');
+        fetch.mockImplementation(
+            () =>
+                new Promise((_, reject) => {
+                    setTimeout(() => reject(new Error('timeout')), 5);
+                })
+        );
+        await expect(api_post('/audits', {})).rejects.toThrow('timeout');
+    });
+
+    test('api_post vid 200 men trasig JSON kastar', async () => {
+        set_auth_token('tok');
+        fetch.mockResolvedValue({
+            ok: true,
+            status: 200,
+            json: async () => {
+                throw new SyntaxError('bad json');
+            }
+        });
+        await expect(api_post('/audits', {})).rejects.toThrow(SyntaxError);
     });
 
     test('api_post vid fel sätter existingAuditId och existingAuditSummary', async () => {

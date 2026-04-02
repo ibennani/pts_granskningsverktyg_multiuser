@@ -2,7 +2,8 @@
 import { jest } from '@jest/globals';
 import {
     calculate_check_status,
-    calculate_requirement_status
+    calculate_requirement_status,
+    calculate_overall_audit_progress
 } from '../../js/audit_logic.js';
 
 describe('AuditLogic', () => {
@@ -112,7 +113,15 @@ describe('AuditLogic', () => {
     describe('calculate_requirement_status', () => {
         test('returns "not_audited" for invalid inputs', () => {
             expect(calculate_requirement_status(null, {})).toBe('not_audited');
+            expect(calculate_requirement_status(undefined, {})).toBe('not_audited');
             expect(calculate_requirement_status({}, null)).toBe('not_audited');
+            expect(calculate_requirement_status({}, undefined)).toBe('not_audited');
+        });
+
+        test('tom checks-array använder resultatets status om den finns', () => {
+            const reqDef = { checks: [] };
+            const reqResult = { status: 'passed', checkResults: {} };
+            expect(calculate_requirement_status(reqDef, reqResult)).toBe('passed');
         });
 
         test('returns "failed" if any check is failed', () => {
@@ -171,6 +180,19 @@ describe('AuditLogic', () => {
                 }
             };
             expect(calculate_requirement_status(reqDef, reqResult)).toBe('partially_audited');
+        });
+    });
+
+    describe('calculate_overall_audit_progress', () => {
+        test('returnerar noll vid null, undefined eller tomma stickprov', () => {
+            expect(calculate_overall_audit_progress(null)).toEqual({ audited: 0, total: 0 });
+            expect(calculate_overall_audit_progress(undefined)).toEqual({ audited: 0, total: 0 });
+            expect(
+                calculate_overall_audit_progress({
+                    samples: [],
+                    ruleFileContent: { requirements: { r1: { id: 'r1', title: 'T', checks: [] } } }
+                })
+            ).toEqual({ audited: 0, total: 0 });
         });
     });
 

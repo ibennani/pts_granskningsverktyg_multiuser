@@ -120,4 +120,30 @@ describe('save_audit_logic', () => {
         await save_audit_to_json_file(audit, t, undefined);
         expect(mock_anchor.click).toHaveBeenCalled();
     });
+
+    test('misslyckad exportintegritet vid nätverksliknande fel visar error_internal', async () => {
+        attach_export_integrity_to_audit_payload.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+        const audit = { id: 'a-net', auditMetadata: { actorName: 'X' } };
+        await save_audit_to_json_file(audit, t, show_notification);
+        expect(show_notification).toHaveBeenCalledWith('error_internal', 'error');
+        expect(mock_anchor.click).not.toHaveBeenCalled();
+    });
+
+    test('misslyckad exportintegritet vid serverfel (500-liknande) visar error_internal', async () => {
+        attach_export_integrity_to_audit_payload.mockRejectedValueOnce(new Error('HTTP 500'));
+        const audit = { id: 'a-500' };
+        await save_audit_to_json_file(audit, t, show_notification);
+        expect(show_notification).toHaveBeenCalledWith('error_internal', 'error');
+    });
+
+    test('sparar utan auditId i payload när metadata finns (filnamn genereras)', async () => {
+        const audit = {
+            auditMetadata: { actorName: 'Namn', caseNumber: '1', auditorName: 'G' },
+            samples: []
+        };
+        generate_audit_filename.mockReturnValueOnce('fil.json');
+        await save_audit_to_json_file(audit, t, show_notification);
+        expect(generate_audit_filename).toHaveBeenCalledWith(audit, t, {});
+        expect(mock_anchor.click).toHaveBeenCalled();
+    });
 });
