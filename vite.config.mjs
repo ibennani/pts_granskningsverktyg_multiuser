@@ -2,6 +2,35 @@
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
+const IGNORABLE_WS_ERROR_CODES = new Set([
+  'ECONNRESET',
+  'ECONNREFUSED',
+  'EPIPE',
+  'ENOTFOUND',
+  'ETIMEDOUT',
+  'ECONNABORTED'
+])
+
+const IGNORABLE_WS_ERROR_MESSAGES = [
+  'read ECONNRESET',
+  'write EPIPE',
+  'socket hang up',
+  'connect ECONNREFUSED',
+  'WebSocket was closed before the connection was established'
+]
+
+function is_ignorable_ws_error (err) {
+  if (!err) return true
+  if (IGNORABLE_WS_ERROR_CODES.has(err.code)) return true
+  if (err.message && IGNORABLE_WS_ERROR_MESSAGES.some(
+    (msg) => err.message.includes(msg)
+  )) return true
+  if (err.name === 'AggregateError' && Array.isArray(err.errors)) {
+    return err.errors.every((e) => is_ignorable_ws_error(e))
+  }
+  return false
+}
+
 /** Redirect /v2 → /v2/ så att index.html alltid laddas (annars 404 och tom sida utan fel i appens konsol). */
 function redirect_base_without_trailing_slash() {
   return {
@@ -52,6 +81,9 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/v2/, ''),
         configure: (proxy) => {
           proxy.on('error', (err, _req, res) => {
+            if (!is_ignorable_ws_error(err)) {
+              console.warn('[vite] api proxy:', err?.message || err)
+            }
             if (res && !res.headersSent) {
               res.writeHead(503, { 'Content-Type': 'application/json' });
               res.end(JSON.stringify({ ok: false, error: 'Backend ej tillgänglig' }));
@@ -65,13 +97,8 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/v2/, ''),
         configure: (proxy) => {
           proxy.on('error', (err, _req, _res) => {
-            const isConnectionRefused = (e) =>
-              e?.code === 'ECONNREFUSED' || e?.code === 'ECONNRESET' ||
-              (e?.message && String(e.message).includes('ECONNREFUSED'));
-            const isIgnorable = isConnectionRefused(err) ||
-              (err?.name === 'AggregateError' && err?.errors?.every?.(isConnectionRefused));
-            if (!isIgnorable) {
-              console.warn('[vite] ws proxy:', err?.message || err);
+            if (!is_ignorable_ws_error(err)) {
+              console.warn('[vite] ws proxy:', err?.message || err)
             }
           });
         }
