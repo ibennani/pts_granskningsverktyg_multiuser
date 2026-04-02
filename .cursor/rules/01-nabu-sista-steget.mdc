@@ -1,0 +1,24 @@
+---
+description: Sista steget — kör alltid klar-notis (alla agenter)
+alwaysApply: true
+---
+
+# Sista steget innan du slutar svara
+
+1. Från **projektets rotmapp** kör **ett** av följande (Windows):
+
+```bat
+notify_done.cmd
+```
+
+eller:
+
+```bat
+cmd.exe /c scripts\nabu_notify.cmd
+```
+
+2. **`notify_done.cmd`** ligger i roten och anropar samma skript — använd det om du är osäker på sökväg.
+
+3. **`NABU_WEBHOOK_URL`** behöver inte vara satt om **`.cursor/rules/nabu-webhook.local.mdc`** finns med webhook-rad — `nabu_notify.ps1` läser den automatiskt.
+
+4. Gäller **alla** Cursor-agenter och **alla** chatt-/composer-lägen. Hoppa aldrig över detta efter en slutförd uppgift eller när en lång terminalkörning är klar.

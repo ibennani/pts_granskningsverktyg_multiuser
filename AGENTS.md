@@ -99,6 +99,7 @@ Projektet är organiserat enligt följande struktur:
 3. **Följ projektets struktur** - Placera kod i rätt kataloger
 4. **Testa ändringar** - Kör tester efter större ändringar
 5. **Använd svenska** - Kommentarer och commit-meddelanden ska vara på svenska
+6. **Klar-notis (Galaxy Watch)** - När en uppgift är klar: kör från projektroten `notify_done.cmd` (eller `scripts\nabu_notify.cmd`). Se `.cursor/rules/01-nabu-sista-steget.mdc`
 
 ## Ytterligare resurser
 

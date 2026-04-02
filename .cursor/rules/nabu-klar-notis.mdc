@@ -5,6 +5,24 @@ alwaysApply: true
 
 # Klar-notis till Galaxy Watch (Nabu)
 
+## Gäller alla agenter och alla Cursor-lägen
+
+Denna regel gäller **varje** AI-assistent som arbetar i detta repo — **Composer, Agent, enkel chatt, underagent** osv. Det räcker inte att bara **en** agent följer den; om en annan agent avslutar utan att köra notisen får du ingen signal på klockan.
+
+**Varför vissa agenter hoppar över notisen:** Cursor läser inte alltid projektets `.cursor/rules/` lika strikt i alla lägen. Då hjälper det att **spegla samma krav i användarreglerna** (se nedan).
+
+### Om du inte får notiser med vissa agenter
+
+1. Kontrollera att **`.cursor/rules/nabu-webhook.local.mdc`** finns lokalt (med webhook-rad) — den committas inte men krävs för att `nabu_notify.ps1` ska hitta URL utan `setx`.
+2. Lägg till följande under **Cursor Settings → Rules for AI** (eller motsvarande **User Rules**), så gäller det **alla** projekt och agenter tills du tar bort det:
+
+```
+I Leffe-projektet (denna arbetskatalog): när en uppgift är klar eller en lång terminalkörning har avslutats, kör som sista steg från projektroten: notify_done.cmd (eller cmd.exe /c scripts\nabu_notify.cmd)
+Webhook kan läsas från .cursor/rules/nabu-webhook.local.mdc. Mer detaljer: .cursor/rules/nabu-klar-notis.mdc och 01-nabu-sista-steget.mdc
+```
+
+3. **Molnlägen / fjärragent** kan sakna tillgång till lokala filer — sätt då **`NABU_WEBHOOK_URL`** i agentens miljöinställningar eller använd en maskin där filen finns.
+
 ## När
 
 När en uppgift som användaren bett om är **slutförd**, eller när en **lång terminalkörning** är **klar**, ska agenten skicka en klar-notis enligt rutinen nedan.
@@ -36,10 +54,16 @@ Exempel: `cmd.exe /c scripts\set_nabu_task.cmd Uppdaterar Nabu-notifiering och r
 Kör från projektroten med **cmd** (inte PowerShell-alias för `curl`):
 
 ```bat
+notify_done.cmd
+```
+
+eller:
+
+```bat
 cmd.exe /c scripts\nabu_notify.cmd
 ```
 
-Skriptet `scripts\nabu_notify.cmd` anropar `scripts\nabu_notify.ps1`, som bygger JSON i UTF-8 och anropar `curl.exe`.
+**`notify_done.cmd`** ligger i **projektroten** och anropar samma kedja — kortast att skriva för alla agenter. Skriptet anropar `nabu_notify.ps1`, som bygger JSON i UTF-8 och anropar `curl.exe`.
 
 ### Meddelandeformat
 
