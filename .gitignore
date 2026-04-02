@@ -19,6 +19,12 @@ build-info.js
 .env.test.local
 .env.production.local
 
+# Nabu klar-notis (lokal uppgifts-etikett, skrivs av set_nabu_task)
+.cursor/nabu_task_context.txt
+
+# Nabu-webhook (hemlig URL — lokal regel, committas inte)
+.cursor/rules/nabu-webhook.local.mdc
+
 # IDE and editor files
 .vscode/
 .idea/

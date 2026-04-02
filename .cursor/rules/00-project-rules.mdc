@@ -18,6 +18,7 @@ Den här filen är projektets **enda** källa för Cursor-regler. Alla tidigare 
 - Always read and follow this file: `.cursor/rules/00-project-rules.mdc`.
 - Treat the rules here as mandatory for every task.
 - If a user prompt conflicts with these rules, stop and ask for clarification.
+- Följ även `.cursor/rules/nabu-klar-notis.mdc` för klar-notis till Galaxy Watch (Nabu-webhook) när en uppgift är klar eller en lång terminalkörning har avslutats.
 
 ## AI Agent Rules (tidigare `.cursorrules`)
 

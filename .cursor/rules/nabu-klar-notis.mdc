@@ -1,0 +1,76 @@
+---
+description: Klar-notis till Galaxy Watch (Nabu-webhook) efter uppgifter och långa terminalkörningar
+alwaysApply: true
+---
+
+# Klar-notis till Galaxy Watch (Nabu)
+
+## När
+
+När en uppgift som användaren bett om är **slutförd**, eller när en **lång terminalkörning** är **klar**, ska agenten skicka en klar-notis enligt rutinen nedan.
+
+## Obligatorisk avslutning (agent)
+
+1. **Sista steget** innan svaret till användaren avslutas: kör klar-notisen (nedan). Det räcker **inte** att bara skriva i chatten — notisen måste skickas via skriptet.
+2. Om **`NABU_WEBHOOK_URL`** inte finns i miljön gör **`scripts\nabu_notify.ps1`** detta automatiskt: den läser första raden som börjar med `https://hooks.nabu.casa/` från **`.cursor/rules/nabu-webhook.local.mdc`**. Det räcker då att köra `cmd.exe /c scripts\nabu_notify.cmd` utan att sätta miljövariabeln manuellt (så länge den lokala filen finns).
+3. Vid **Pusha** / **Deploy** enligt andra regler: skicka klar-notis **efter** att push/deploy lyckats (om uppgiften då är slutförd).
+
+## I början av en ny uppgift (agent)
+
+**Best effort:** I början av en ny, konkret uppgift ska agenten sätta en **kort svensk etikett** (ungefär 3–8 ord) som beskriver vad som görs — **inte** sista terminalkommandot.
+
+**Sätt etiketten** genom att från projektroten köra (cmd):
+
+```bat
+cmd.exe /c scripts\set_nabu_task.cmd Din korta beskrivning här
+```
+
+Exempel: `cmd.exe /c scripts\set_nabu_task.cmd Uppdaterar Nabu-notifiering och regler`
+
+- **Prioritet vid notis:** om miljövariabeln **`NABU_TASK_LABEL`** är satt används den **före** filen. Annars läses **`.cursor/nabu_task_context.txt`** (skapas av kommandot ovan).
+- **`.cursor/nabu_task_context.txt`** är gitignorerad (committas inte).
+- **Flera agenter parallellt i samma repo:** samma fil kan skrivas över — då kan etiketten tillhöra den senast som skrev.
+
+## Rekommenderat (klar-notis)
+
+Kör från projektroten med **cmd** (inte PowerShell-alias för `curl`):
+
+```bat
+cmd.exe /c scripts\nabu_notify.cmd
+```
+
+Skriptet `scripts\nabu_notify.cmd` anropar `scripts\nabu_notify.ps1`, som bygger JSON i UTF-8 och anropar `curl.exe`.
+
+### Meddelandeformat
+
+Alltid med inledningen **«Nu är jag klar»** (så automationer som triggas på den frasen inte slutar fungera):
+
+- **Med** uppgifts-etikett: `Nu är jag klar — {etikett}`
+- **Utan** etikett: `Nu är jag klar`
+
+## Miljövariabler
+
+| Variabel | Krav | Syfte |
+|----------|------|--------|
+| **`NABU_WEBHOOK_URL`** | Obligatorisk för notisen | Hemlig webhook-URL till Nabu. **Committa aldrig** i repo. Sätt med `setx` eller se **lokal fil** `nabu-webhook.local.mdc` (samma innehåll som i miljön — filen är gitignorerad). |
+| **`NABU_TASK_LABEL`** | Valfri | Kort uppgiftsbeskrivning; **överstyr** filen `nabu_task_context.txt` om båda finns. |
+
+## Manuellt curl (om script inte används)
+
+Använd `curl.exe`. JSON med header **`Content-Type: application/json; charset=utf-8`**.
+
+**Utan etikett** (minimal text):
+
+```bat
+curl.exe -s -X POST -H "Content-Type: application/json; charset=utf-8" -d "{\"message\": \"Nu \u00e4r jag klar\"}" "%NABU_WEBHOOK_URL%"
+```
+
+För **etikett** och korrekt UTF-8 är **projektscriptet** enklare.
+
+## Om `NABU_WEBHOOK_URL` saknas i agentens session
+
+```bat
+set NABU_WEBHOOK_URL=https://hooks.nabu.casa/...
+set NABU_TASK_LABEL=Kort etikett
+cmd.exe /c scripts\nabu_notify.cmd
+```
