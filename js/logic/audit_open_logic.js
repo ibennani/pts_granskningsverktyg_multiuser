@@ -26,7 +26,10 @@ export function navigate_to_default_audit_view(full_state, router) {
     } else if (status === 'not_started') {
         next_view = 'metadata';
     }
-    router(next_view, {});
+    const aid = (full_state.auditId !== null && full_state.auditId !== undefined && full_state.auditId !== '')
+        ? String(full_state.auditId)
+        : null;
+    router(next_view, aid ? { auditId: aid } : {});
 }
 
 /**

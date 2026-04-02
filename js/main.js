@@ -270,7 +270,8 @@ if (typeof window !== 'undefined') {
             updatePageTitle,
             render_view,
             load_focus_storage,
-            get_scope_key_from_view_and_params
+            get_scope_key_from_view_and_params,
+            getState
         });
     }
 

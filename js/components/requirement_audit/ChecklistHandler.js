@@ -9,7 +9,11 @@ export const ChecklistHandler = {
     container_ref: null,
     on_status_change_callback: null,
     on_observation_change_callback: null,
+    on_observation_blur_commit_callback: null,
     on_stuck_description_saved_callback: null,
+
+    /** @type {Map<string, string>} */
+    _observation_focus_snapshots: null,
 
     Translation: null,
     Helpers: null,
@@ -180,7 +184,9 @@ export const ChecklistHandler = {
         this.on_status_change_callback = _callbacks.onStatusChange;
         this.on_observation_change_callback = _callbacks.onObservationChange;
         this.on_observation_change_immediate_callback = _callbacks.onObservationChangeImmediate || null;
+        this.on_observation_blur_commit_callback = _callbacks.onObservationBlurCommit || null;
         this.on_stuck_description_saved_callback = _callbacks.onStuckDescriptionSaved || null;
+        this._observation_focus_snapshots = new Map();
         this.is_dom_built = false;
 
         const deps = options.deps || {};
@@ -194,9 +200,65 @@ export const ChecklistHandler = {
         this.handle_attach_media_click = this.handle_attach_media_click.bind(this);
         this.handle_stuck_click = this.handle_stuck_click.bind(this);
         this.handle_copy_observation_click = this.handle_copy_observation_click.bind(this);
+        this.handle_pc_observation_focusin = this.handle_pc_observation_focusin.bind(this);
+        this.handle_pc_observation_focusout = this.handle_pc_observation_focusout.bind(this);
 
         this.container_ref.addEventListener('click', this.handle_checklist_click);
         this.container_ref.addEventListener('input', this.handle_textarea_input);
+        this.container_ref.addEventListener('focusin', this.handle_pc_observation_focusin);
+        this.container_ref.addEventListener('focusout', this.handle_pc_observation_focusout);
+    },
+
+    /**
+     * True när fokus ligger i en observations-textarea för underkänt kriterium (används vid autospar).
+     * @returns {boolean}
+     */
+    has_active_pc_observation_focus() {
+        if (!this.container_ref) return false;
+        const el = document.activeElement;
+        if (!el || el.tagName?.toLowerCase() !== 'textarea') return false;
+        if (!this.container_ref.contains(el)) return false;
+        return el.classList.contains('pc-observation-detail-textarea');
+    },
+
+    handle_pc_observation_focusin(event) {
+        const textarea = event.target;
+        if (!textarea?.classList?.contains('pc-observation-detail-textarea')) return;
+        const pc_item = textarea.closest('.pass-criterion-item[data-pc-id]');
+        const check_item = textarea.closest('.check-item[data-check-id]');
+        if (!pc_item || !check_item) return;
+        const key = `${check_item.dataset.checkId}::${pc_item.dataset.pcId}`;
+        this._observation_focus_snapshots.set(key, textarea.value ?? '');
+    },
+
+    handle_pc_observation_focusout(event) {
+        const textarea = event.target;
+        if (!textarea?.classList?.contains('pc-observation-detail-textarea')) return;
+        const pc_item = textarea.closest('.pass-criterion-item[data-pc-id]');
+        const check_item = textarea.closest('.check-item[data-check-id]');
+        if (!pc_item || !check_item || !this.requirement_result_ref?.checkResults) return;
+        const check_id = check_item.dataset.checkId;
+        const pc_id = pc_item.dataset.pcId;
+        const key = `${check_id}::${pc_id}`;
+        if (!this._observation_focus_snapshots.has(key)) {
+            return;
+        }
+        const snapshot = this._observation_focus_snapshots.get(key);
+        this._observation_focus_snapshots.delete(key);
+        const current = textarea.value ?? '';
+        if (snapshot === current) return;
+
+        const check_result = this.requirement_result_ref.checkResults[check_id];
+        if (check_result?.passCriteria?.[pc_id]) {
+            const ts = this.Helpers?.get_current_iso_datetime_utc
+                ? this.Helpers.get_current_iso_datetime_utc()
+                : new Date().toISOString();
+            check_result.passCriteria[pc_id].timestamp = ts;
+            check_result.passCriteria[pc_id].updatedBy = get_current_user_name();
+        }
+        if (this.on_observation_blur_commit_callback) {
+            this.on_observation_blur_commit_callback();
+        }
     },
     
     handle_checklist_click(event) {
@@ -536,11 +598,8 @@ export const ChecklistHandler = {
                                 check_result.passCriteria[pc_id].updatedBy = get_current_user_name();
                             }
                             textarea.value = text_to_paste;
-                            textarea.dispatchEvent(new Event('input', { bubbles: true }));
-                            if (this.on_observation_change_immediate_callback) {
-                                this.on_observation_change_immediate_callback();
-                            } else if (this.on_observation_change_callback) {
-                                this.on_observation_change_callback();
+                            if (this.on_observation_blur_commit_callback) {
+                                this.on_observation_blur_commit_callback();
                             }
                         }
                     }
@@ -571,11 +630,6 @@ export const ChecklistHandler = {
             const check_result = this.requirement_result_ref.checkResults[check_id];
             if (check_result?.passCriteria?.[pc_id]) {
                 check_result.passCriteria[pc_id].observationDetail = textarea.value;
-                const ts = this.Helpers?.get_current_iso_datetime_utc
-                    ? this.Helpers.get_current_iso_datetime_utc()
-                    : new Date().toISOString();
-                check_result.passCriteria[pc_id].timestamp = ts;
-                check_result.passCriteria[pc_id].updatedBy = get_current_user_name();
             }
             if (event.type === 'input' && this.on_observation_change_callback) {
                 this.on_observation_change_callback();
@@ -1122,8 +1176,11 @@ export const ChecklistHandler = {
             this.flush_observations_before_destroy();
             this.container_ref.removeEventListener('click', this.handle_checklist_click);
             this.container_ref.removeEventListener('input', this.handle_textarea_input);
+            this.container_ref.removeEventListener('focusin', this.handle_pc_observation_focusin);
+            this.container_ref.removeEventListener('focusout', this.handle_pc_observation_focusout);
             this.container_ref.innerHTML = '';
         }
+        this._observation_focus_snapshots = new Map();
         this.is_dom_built = false;
         this.container_ref = null;
     }

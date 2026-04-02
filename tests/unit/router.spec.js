@@ -61,6 +61,7 @@ function make_hash_options(overrides = {}) {
         load_focus_storage: jest.fn(() => ({})),
         get_scope_key_from_view_and_params: (v, p) =>
             `${v || 'start'}:${JSON.stringify(p && typeof p === 'object' ? p : {})}`,
+        getState: () => ({}),
         ...overrides
     };
 }
@@ -148,6 +149,30 @@ describe('router', () => {
         });
         expect(window.location.hash).toContain('metadata');
         expect(updatePageTitle).toHaveBeenCalledWith('metadata', { caseNumber: 'x' });
+    });
+
+    test('navigate_and_set_hash lägger auditId från state i hash för granskningsvy', () => {
+        const updatePageTitle = jest.fn();
+        navigate_and_set_hash('metadata', { caseNumber: 'x' }, {
+            nav_debug: jest.fn(),
+            getState: () => ({ auditId: '99' }),
+            get_current_view_name: () => 'start',
+            get_current_view_component: () => null,
+            updatePageTitle
+        });
+        expect(window.location.hash).toContain('auditId=99');
+        expect(window.location.hash).toContain('caseNumber=x');
+    });
+
+    test('navigate_and_set_hash lägger inte auditId på global vy', () => {
+        navigate_and_set_hash('audit_audits', {}, {
+            nav_debug: jest.fn(),
+            getState: () => ({ auditId: '99' }),
+            get_current_view_name: () => 'metadata',
+            get_current_view_component: () => null,
+            updatePageTitle: jest.fn()
+        });
+        expect(window.location.hash).toBe('#audit_audits');
     });
 
     test('navigate_and_set_hash: icke-admin kan inte öppna manage_users', () => {
@@ -249,9 +274,10 @@ describe('router', () => {
             replace_spy.mockRestore();
         });
 
-        test('audit_overview med auditId: lyckad laddning navigerar till audit_overview', async () => {
+        test('audit_overview med auditId: lyckad laddning renderar audit_overview med auditId', async () => {
             window.location.hash = '#audit_overview?auditId=ov1';
             load_audit_with_rule_file.mockResolvedValue({
+                auditId: 'ov1',
                 auditStatus: 'in_progress',
                 samples: [{ id: 's1' }],
                 ruleFileContent: { metadata: { version: '1' }, requirements: {} }
@@ -260,23 +286,42 @@ describe('router', () => {
             const opts = make_hash_options({ navigate_and_set_hash: nav_hash });
             await handle_hash_change(opts);
             expect(opts.dispatch).toHaveBeenCalled();
-            expect(nav_hash).toHaveBeenCalledWith('audit_overview', {});
+            expect(nav_hash).not.toHaveBeenCalled();
+            expect(opts.render_view).toHaveBeenCalledWith('audit_overview', { auditId: 'ov1' });
+        });
+
+        test('upload med auditId: lyckad laddning navigerar till audit_overview med auditId', async () => {
+            window.location.hash = '#upload?auditId=a99';
+            load_audit_with_rule_file.mockResolvedValue({
+                auditId: 'a99',
+                auditStatus: 'in_progress',
+                samples: [{ id: 's1' }],
+                ruleFileContent: { metadata: { version: '1' }, requirements: {} }
+            });
+            const nav_hash = jest.fn();
+            const opts = make_hash_options({ navigate_and_set_hash: nav_hash });
+            await handle_hash_change(opts);
+            expect(opts.dispatch).toHaveBeenCalled();
+            expect(nav_hash).toHaveBeenCalledWith('audit_overview', { auditId: 'a99' });
             expect(opts.render_view).not.toHaveBeenCalled();
         });
 
-        test('upload med auditId: lyckad laddning navigerar till audit_overview', async () => {
-            window.location.hash = '#upload?auditId=a99';
+        test('requirement_audit med auditId: laddar granskning och renderar vy', async () => {
+            window.location.hash = '#requirement_audit?auditId=1&sampleId=s&requirementId=r1';
             load_audit_with_rule_file.mockResolvedValue({
+                auditId: '1',
                 auditStatus: 'in_progress',
-                samples: [{ id: 's1' }],
-                ruleFileContent: { metadata: { version: '1' }, requirements: {} }
+                samples: [{ id: 's' }],
+                ruleFileContent: { metadata: { version: '1' }, requirements: { r1: { key: 'r1' } } }
             });
-            const nav_hash = jest.fn();
-            const opts = make_hash_options({ navigate_and_set_hash: nav_hash });
+            const opts = make_hash_options();
             await handle_hash_change(opts);
             expect(opts.dispatch).toHaveBeenCalled();
-            expect(nav_hash).toHaveBeenCalledWith('audit_overview', {});
-            expect(opts.render_view).not.toHaveBeenCalled();
+            expect(opts.render_view).toHaveBeenCalledWith('requirement_audit', {
+                auditId: '1',
+                sampleId: 's',
+                requirementId: 'r1'
+            });
         });
 
         test('upload utan lyckad laddning: går till start', async () => {
@@ -320,9 +365,10 @@ describe('router', () => {
             replace_spy.mockRestore();
         });
 
-        test('audit_overview med auditId och not_started utan stickprov: navigerar till sample_management', async () => {
+        test('audit_overview med auditId och not_started utan stickprov: renderar audit_overview', async () => {
             window.location.hash = '#audit_overview?auditId=ns1';
             load_audit_with_rule_file.mockResolvedValue({
+                auditId: 'ns1',
                 auditStatus: 'not_started',
                 samples: [],
                 ruleFileContent: { metadata: { version: '1' }, requirements: {} }
@@ -330,13 +376,14 @@ describe('router', () => {
             const nav_hash = jest.fn();
             const opts = make_hash_options({ navigate_and_set_hash: nav_hash });
             await handle_hash_change(opts);
-            expect(nav_hash).toHaveBeenCalledWith('sample_management', {});
-            expect(opts.render_view).not.toHaveBeenCalled();
+            expect(nav_hash).not.toHaveBeenCalled();
+            expect(opts.render_view).toHaveBeenCalledWith('audit_overview', { auditId: 'ns1' });
         });
 
-        test('audit_overview med auditId och not_started med stickprov: navigerar till metadata', async () => {
+        test('audit_overview med auditId och not_started med stickprov: renderar audit_overview', async () => {
             window.location.hash = '#audit_overview?auditId=ns2';
             load_audit_with_rule_file.mockResolvedValue({
+                auditId: 'ns2',
                 auditStatus: 'not_started',
                 samples: [{ id: 's1' }],
                 ruleFileContent: { metadata: { version: '1' }, requirements: {} }
@@ -344,7 +391,8 @@ describe('router', () => {
             const nav_hash = jest.fn();
             const opts = make_hash_options({ navigate_and_set_hash: nav_hash });
             await handle_hash_change(opts);
-            expect(nav_hash).toHaveBeenCalledWith('metadata', {});
+            expect(nav_hash).not.toHaveBeenCalled();
+            expect(opts.render_view).toHaveBeenCalledWith('audit_overview', { auditId: 'ns2' });
         });
 
         test('audit_overview med auditId och ogiltig fil: notifiering och redirect till start', async () => {

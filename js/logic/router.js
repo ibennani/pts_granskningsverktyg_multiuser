@@ -14,6 +14,95 @@ if (typeof window !== 'undefined' && window.__GV_DEBUG_NAV) {
 
 const SKIP_LINK_ANCHOR_ID = 'main-content-heading';
 
+/** Vyer där auditId inte ska läggas automatiskt i hash (appens globala ytor). */
+export const VIEW_NAMES_GLOBAL_NO_AUDIT_ID_IN_HASH = new Set([
+    'start',
+    'audit',
+    'audit_audits',
+    'audit_rules',
+    'login',
+    'manage_users',
+    'my_settings',
+    'upload'
+]);
+
+/**
+ * Om auditId ska slås ihop med hash-parametrar för en given vy.
+ * @param {string} view_name
+ * @returns {boolean}
+ */
+export function should_merge_audit_id_into_hash(view_name) {
+    if (!view_name) return false;
+    return !VIEW_NAMES_GLOBAL_NO_AUDIT_ID_IN_HASH.has(view_name);
+}
+
+/**
+ * Lägger till auditId från state i params när det är lämpligt.
+ * @param {string} view_name
+ * @param {Record<string, string>} params
+ * @param {() => object|null|undefined} getState
+ * @returns {Record<string, string>}
+ */
+export function merge_audit_id_from_state_into_params(view_name, params, getState) {
+    const out = { ...(params || {}) };
+    if (!should_merge_audit_id_into_hash(view_name)) return out;
+    if (typeof getState !== 'function') return out;
+    const state = getState();
+    const id = state?.auditId;
+    if (id === null || id === undefined || id === '') return out;
+    if (out.auditId !== undefined && out.auditId !== null && out.auditId !== '') return out;
+    out.auditId = String(id);
+    return out;
+}
+
+/**
+ * Standardvy efter att en granskning laddats (t.ex. upload-flöde).
+ * @param {object} full_state
+ * @returns {string}
+ */
+export function default_view_for_loaded_audit_state(full_state) {
+    if (!full_state) return 'audit_overview';
+    const status = full_state.auditStatus || 'not_started';
+    const samples = full_state.samples || [];
+    if (status === 'not_started' && samples.length === 0) return 'sample_management';
+    if (status === 'not_started') return 'metadata';
+    return 'audit_overview';
+}
+
+/**
+ * Laddar granskning från server och dispatchar LOAD_AUDIT_FROM_FILE.
+ * @param {string|number} audit_id
+ * @param {function} dispatch
+ * @param {object} StoreActionTypes
+ * @returns {Promise<{ ok: boolean, full_state?: object }>}
+ */
+export async function load_audit_into_state(audit_id, dispatch, StoreActionTypes) {
+    const t = window.Translation?.t || ((k) => k);
+    try {
+        const { load_audit_with_rule_file } = await import('../api/client.js');
+        const full_state = await load_audit_with_rule_file(audit_id);
+        const validation = ValidationLogic?.validate_saved_audit_file?.(full_state, { t });
+        if (full_state && validation?.isValid) {
+            dispatch({ type: StoreActionTypes.LOAD_AUDIT_FROM_FILE, payload: full_state });
+            return { ok: true, full_state };
+        }
+        if (validation && !validation.isValid && app_runtime_refs.notification_component?.show_global_message) {
+            app_runtime_refs.notification_component.show_global_message(
+                validation.message || t('error_invalid_saved_audit_file'),
+                'error'
+            );
+        }
+    } catch (err) {
+        if (app_runtime_refs.notification_component?.show_global_message) {
+            app_runtime_refs.notification_component.show_global_message(
+                t('server_load_audit_error', { message: err.message }) || err.message,
+                'error'
+            );
+        }
+    }
+    return { ok: false };
+}
+
 export function parse_view_and_params_from_hash() {
     const hash = typeof window !== 'undefined' && window.location?.hash ? window.location.hash.substring(1) : '';
     const is_skip_link = hash === 'main-content-heading';
@@ -95,8 +184,10 @@ export function navigate_and_set_hash(target_view_name, target_params = {}, opti
         delete safe_params.allow_new_audit_exit;
     }
 
-    const target_hash_part = safe_params && Object.keys(safe_params).length > 0 ?
-        `${target_view_name}?${new URLSearchParams(safe_params).toString()}` :
+    const merged_params = merge_audit_id_from_state_into_params(target_view_name, safe_params, getState);
+
+    const target_hash_part = merged_params && Object.keys(merged_params).length > 0 ?
+        `${target_view_name}?${new URLSearchParams(merged_params).toString()}` :
         target_view_name;
     const new_hash = `#${target_hash_part}`;
     const current_view_component_instance = get_current_view_component();
@@ -122,7 +213,8 @@ export async function handle_hash_change(options) {
         updatePageTitle,
         render_view,
         load_focus_storage,
-        get_scope_key_from_view_and_params: get_scope_key_fn
+        get_scope_key_from_view_and_params: get_scope_key_fn,
+        getState
     } = options;
 
     if (get_auth_token()) {
@@ -155,47 +247,18 @@ export async function handle_hash_change(options) {
     let target_view = 'start';
     let target_params = params;
 
-    const load_audit_and_navigate = async (auditId) => {
-        const t = window.Translation?.t || (k => k);
-        try {
-            const { load_audit_with_rule_file } = await import('../api/client.js');
-            const full_state = await load_audit_with_rule_file(auditId);
-            const validation = ValidationLogic?.validate_saved_audit_file?.(full_state, { t });
-            if (full_state && validation?.isValid) {
-                dispatch({ type: StoreActionTypes.LOAD_AUDIT_FROM_FILE, payload: full_state });
-                const status = full_state.auditStatus || 'not_started';
-                const samples = full_state.samples || [];
-                let next_view = 'audit_overview';
-                if (status === 'not_started' && samples.length === 0) {
-                    next_view = 'sample_management';
-                } else if (status === 'not_started') {
-                    next_view = 'metadata';
-                }
-                navigate_and_set_hash_fn(next_view, {});
-                return true;
-            }
-            if (validation && !validation.isValid && app_runtime_refs.notification_component?.show_global_message) {
-                app_runtime_refs.notification_component.show_global_message(validation.message || t('error_invalid_saved_audit_file'), 'error');
-            }
-        } catch (err) {
-            if (app_runtime_refs.notification_component?.show_global_message) {
-                app_runtime_refs.notification_component.show_global_message(
-                    t('server_load_audit_error', { message: err.message }) || err.message,
-                    'error'
-                );
-            }
+    const get_state_safe = typeof getState === 'function' ? getState : () => null;
+
+    if (effective_view_name === 'upload' && params.auditId) {
+        const load_result = await load_audit_into_state(params.auditId, dispatch, StoreActionTypes);
+        if (load_result.ok && load_result.full_state) {
+            const next_view = default_view_for_loaded_audit_state(load_result.full_state);
+            const aid = (load_result.full_state.auditId !== null && load_result.full_state.auditId !== undefined)
+                ? String(load_result.full_state.auditId)
+                : String(params.auditId);
+            navigate_and_set_hash_fn(next_view, { auditId: aid });
+            return;
         }
-        return false;
-    };
-
-    if (effective_view_name === 'upload') {
-        if (params.auditId && (await load_audit_and_navigate(params.auditId))) return;
-        navigate_and_set_hash_fn('start', {});
-        return;
-    }
-
-    if (effective_view_name === 'audit_overview' && params.auditId) {
-        if (await load_audit_and_navigate(params.auditId)) return;
         navigate_and_set_hash_fn('start', {});
         return;
     }
@@ -206,6 +269,21 @@ export async function handle_hash_change(options) {
         target_view = 'start';
         target_params = {};
     }
+
+    if (target_params.auditId) {
+        const st = get_state_safe();
+        const need_load =
+            !st?.ruleFileContent ||
+            String(st.auditId ?? '') !== String(target_params.auditId);
+        if (need_load) {
+            const load_result = await load_audit_into_state(target_params.auditId, dispatch, StoreActionTypes);
+            if (!load_result.ok) {
+                navigate_and_set_hash_fn('start', {});
+                return;
+            }
+        }
+    }
+
     if (target_view === 'manage_users' && !is_current_user_admin()) {
         target_view = 'start';
         target_params = {};

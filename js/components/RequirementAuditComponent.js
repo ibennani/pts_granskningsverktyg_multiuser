@@ -537,8 +537,13 @@ export class RequirementAuditComponent {
             return;
         }
 
-        modified_result_object.lastStatusUpdate = this.Helpers.get_current_iso_datetime_utc();
-        modified_result_object.lastStatusUpdateBy = get_current_user_name();
+        if (options.skipLastStatusBump === true && previous_from_store) {
+            modified_result_object.lastStatusUpdate = previous_from_store.lastStatusUpdate ?? null;
+            modified_result_object.lastStatusUpdateBy = previous_from_store.lastStatusUpdateBy ?? null;
+        } else {
+            modified_result_object.lastStatusUpdate = this.Helpers.get_current_iso_datetime_utc();
+            modified_result_object.lastStatusUpdateBy = get_current_user_name();
+        }
 
         this.dispatch({
             type: this.StoreActionTypes.UPDATE_REQUIREMENT_RESULT,
@@ -551,9 +556,9 @@ export class RequirementAuditComponent {
         });
     }
 
-    save_result_immediately({ skipRender = false } = {}) {
+    save_result_immediately({ skipRender = false, skipLastStatusBump = false } = {}) {
         if (!this.current_result) return;
-        this.dispatch_result_update(this.current_result, { skipRender });
+        this.dispatch_result_update(this.current_result, { skipRender, skipLastStatusBump });
     }
 
     get_observations_from_other_samples(check_id, pc_id) {
@@ -713,6 +718,7 @@ export class RequirementAuditComponent {
                 onStatusChange: this.handle_checklist_status_change,
                 onObservationChange: () => this.autosave_session?.request_autosave?.(),
                 onObservationChangeImmediate: () => this.save_result_immediately({ skipRender: true }),
+                onObservationBlurCommit: () => this.save_result_immediately({ skipRender: true, skipLastStatusBump: false }),
                 onStuckDescriptionSaved: async () => {
                     if (window.__GV_DEBUG_STUCK_SYNC__) {
                         consoleManager.log('[GV-Debug] onStuckDescriptionSaved: sparar, anropar save_result_immediately + flush_sync_to_server');
@@ -895,10 +901,16 @@ export class RequirementAuditComponent {
                     form_element: this.plate_element_ref,
                     focus_root: this.plate_element_ref,
                     debounce_ms: 250,
-                    on_save: ({ should_trim, skip_render }) => {
+                    on_save: ({ is_autosave, should_trim, skip_render }) => {
                         this.handle_comment_input(should_trim);
                         this.checklist_handler_instance?.flush_observations_before_destroy?.({ trim: should_trim });
-                        this.save_result_immediately({ skipRender: skip_render });
+                        const skip_last_bump = is_autosave === true
+                            && typeof this.checklist_handler_instance?.has_active_pc_observation_focus === 'function'
+                            && this.checklist_handler_instance.has_active_pc_observation_focus();
+                        this.save_result_immediately({
+                            skipRender: skip_render,
+                            skipLastStatusBump: skip_last_bump
+                        });
                     }
                 });
             }
