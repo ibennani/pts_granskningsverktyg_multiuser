@@ -5,15 +5,9 @@ import http from 'http';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import logger from './utils/logger.js';
 import { query } from './db.js';
 import { init_ws } from './ws.js';
-process.on('uncaughtException', (err) => {
-    console.error('[Server] Uncaught exception:', err);
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-    console.error('[Server] Unhandled rejection at', promise, 'reason:', reason);
-});
 import { requireAuth } from './auth/middleware.js';
 import authRouter from './routes/auth.js';
 import usersRouter from './routes/users.js';
@@ -22,6 +16,14 @@ import auditsRouter from './routes/audits.js';
 import backupRouter from './routes/backup.js';
 import { get_last_backup_status, start_backup_scheduler } from './backup/audit_backup.js';
 import { JSON_MAX_UPLOAD_BYTES } from '../js/constants/json_upload_limits.js';
+
+process.on('uncaughtException', (err) => {
+    logger.error({ err }, '[Server] Uncaught exception');
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    logger.error({ err: reason, promise }, '[Server] Unhandled rejection');
+});
 
 const app = express();
 const PORT = process.env.API_PORT || 3000;
@@ -56,7 +58,7 @@ const allowed_origins = allowed_origins_env
     : public_app_url
         ? [public_app_url]
         : (() => {
-            console.warn('[Server] ALLOWED_ORIGINS och PUBLIC_APP_URL är inte satta – tillåter http://localhost:5173 som fallback.');
+            logger.warn('[Server] ALLOWED_ORIGINS och PUBLIC_APP_URL är inte satta – tillåter http://localhost:5173 som fallback.');
             return ['http://localhost:5173'];
         })();
 
@@ -164,16 +166,16 @@ app.use((err, _req, res, _next) => {
     if (err && (err.type === 'entity.too.large' || err.status === 413)) {
         return res.status(413).json({ error: 'Begäran överskrider maxstorlek (10 MB).' });
     }
-    console.error('[Server] Ohanterat fel i route:', err);
+    logger.error({ err }, '[Server] Ohanterat fel i route');
     res.status(500).json({ error: 'Ett serverfel inträffade' });
 });
 
 init_ws(http_server);
 
 start_backup_scheduler().catch((err) => {
-    console.warn('[Server] Kunde inte starta backup-schema:', err.message);
+    logger.warn({ err: err.message }, '[Server] Kunde inte starta backup-schema');
 });
 
 http_server.listen(PORT, () => {
-    console.log(`[Server] Kör på port ${PORT}`);
+    logger.info({ port: PORT }, '[Server] Kör');
 });

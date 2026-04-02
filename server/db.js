@@ -1,5 +1,6 @@
 // server/db.js
 import pg from 'pg';
+import logger from './utils/logger.js';
 
 const { Pool } = pg;
 
@@ -13,7 +14,7 @@ const pool = new Pool({
 });
 
 pool.on('error', (err) => {
-    console.error('[DB] Pool error (anslutning tas bort från poolen):', err.message);
+    logger.error({ err: err.message, code: err.code }, '[DB] Pool error (anslutning tas bort från poolen)');
 });
 
 const is_connection_error = (err) => {

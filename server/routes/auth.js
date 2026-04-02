@@ -2,8 +2,9 @@
 import express from 'express';
 import bcrypt from 'bcrypt';
 import { query } from '../db.js';
-import { sign_token, refresh_token as issue_refresh_token } from '../auth/jwt.js';
+import { sign_token, refresh_token as issue_refresh_token, verify_token } from '../auth/jwt.js';
 import { auth_rate_limiter } from '../middleware/rateLimiter.js';
+import logger from '../utils/logger.js';
 
 const router = express.Router();
 
@@ -18,9 +19,11 @@ router.post('/refresh', auth_rate_limiter, (req, res) => {
         if (!new_token) {
             return res.status(401).json({ error: 'Token kan inte förnyas' });
         }
+        const payload = verify_token(new_token);
+        logger.info({ userId: payload?.id }, 'Token förnyad');
         return res.json({ token: new_token });
     } catch (err) {
-        console.error('[auth] refresh error:', err);
+        logger.error({ err }, '[auth] refresh error');
         return res.status(500).json({ error: 'Förnyelse misslyckades' });
     }
 });
@@ -44,15 +47,18 @@ router.post('/login', auth_rate_limiter, async (req, res) => {
             [login_identifier]
         );
         if (result.rows.length === 0) {
+            logger.warn({ username: login_identifier, ip: req.ip }, 'Inloggning misslyckades');
             return res.status(401).json({ error: 'Fel användarnamn eller lösenord' });
         }
         const row = result.rows[0];
         const stored_hash = row.password;
         if (!stored_hash) {
+            logger.warn({ username: login_identifier, ip: req.ip }, 'Inloggning misslyckades');
             return res.status(401).json({ error: 'Användaren har inget lösenord satt. Kontakta administratör.' });
         }
         const match = await bcrypt.compare(password, stored_hash);
         if (!match) {
+            logger.warn({ username: login_identifier, ip: req.ip }, 'Inloggning misslyckades');
             return res.status(401).json({ error: 'Fel användarnamn eller lösenord' });
         }
         const token = sign_token({
@@ -60,9 +66,10 @@ router.post('/login', auth_rate_limiter, async (req, res) => {
             name: row.name,
             is_admin: !!row.is_admin
         });
+        logger.info({ userId: row.id, username: login_identifier }, 'Inloggning lyckad');
         res.json({ token });
     } catch (err) {
-        console.error('[auth] login error:', err);
+        logger.error({ err }, '[auth] login error');
         res.status(500).json({ error: 'Inloggning misslyckades' });
     }
 });
@@ -109,7 +116,7 @@ router.post('/reset-password', auth_rate_limiter, async (req, res) => {
         });
         return res.json({ token });
     } catch (err) {
-        console.error('[auth] reset-password error:', err);
+        logger.error({ err }, '[auth] reset-password error');
         return res.status(500).json({ error: 'Återställning av lösenord misslyckades' });
     }
 });
@@ -126,7 +133,7 @@ router.get('/admin-contacts', async (_req, res) => {
         }));
         res.json(admins);
     } catch (err) {
-        console.error('[auth] admin-contacts error:', err);
+        logger.error({ err }, '[auth] admin-contacts error');
         res.status(500).json({ error: 'Kunde inte hämta administratörer' });
     }
 });
