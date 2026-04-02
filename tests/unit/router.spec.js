@@ -4,6 +4,7 @@
 import { jest, describe, test, expect, beforeEach, afterEach, beforeAll } from '@jest/globals';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { app_runtime_refs } from '../../js/utils/app_runtime_refs.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const client_path = path.join(__dirname, '../../js/api/client.js');
@@ -72,6 +73,7 @@ describe('router', () => {
         window.location.hash = '';
         delete window.__gv_restore_focus_info;
         validate_saved_audit_file_mock.mockImplementation(() => ({ isValid: true }));
+        app_runtime_refs.notification_component = null;
     });
 
     afterEach(() => {
@@ -121,6 +123,15 @@ describe('router', () => {
             current_view_params_rendered_json: '{"a":"1"}'
         });
         expect(key).toBe('foo:{"a":"1"}');
+    });
+
+    test('get_scope_key_from_hash bygger params från hash när renderad vy skiljer sig från route', () => {
+        window.location.hash = '#foo?a=1&b=2';
+        const key = get_scope_key_from_hash({
+            current_view_name_rendered: 'bar',
+            current_view_params_rendered_json: '{}'
+        });
+        expect(key).toBe('foo:{"a":"1","b":"2"}');
     });
 
     test('navigate_and_set_hash sätter hash och sidtitel', () => {
@@ -307,6 +318,74 @@ describe('router', () => {
             expect(replace_spy).toHaveBeenCalled();
             expect(opts.render_view).toHaveBeenCalledWith('start', {});
             replace_spy.mockRestore();
+        });
+
+        test('audit_overview med auditId och not_started utan stickprov: navigerar till sample_management', async () => {
+            window.location.hash = '#audit_overview?auditId=ns1';
+            load_audit_with_rule_file.mockResolvedValue({
+                auditStatus: 'not_started',
+                samples: [],
+                ruleFileContent: { metadata: { version: '1' }, requirements: {} }
+            });
+            const nav_hash = jest.fn();
+            const opts = make_hash_options({ navigate_and_set_hash: nav_hash });
+            await handle_hash_change(opts);
+            expect(nav_hash).toHaveBeenCalledWith('sample_management', {});
+            expect(opts.render_view).not.toHaveBeenCalled();
+        });
+
+        test('audit_overview med auditId och not_started med stickprov: navigerar till metadata', async () => {
+            window.location.hash = '#audit_overview?auditId=ns2';
+            load_audit_with_rule_file.mockResolvedValue({
+                auditStatus: 'not_started',
+                samples: [{ id: 's1' }],
+                ruleFileContent: { metadata: { version: '1' }, requirements: {} }
+            });
+            const nav_hash = jest.fn();
+            const opts = make_hash_options({ navigate_and_set_hash: nav_hash });
+            await handle_hash_change(opts);
+            expect(nav_hash).toHaveBeenCalledWith('metadata', {});
+        });
+
+        test('audit_overview med auditId och ogiltig fil: notifiering och redirect till start', async () => {
+            window.location.hash = '#audit_overview?auditId=badval';
+            validate_saved_audit_file_mock.mockReturnValue({ isValid: false, message: 'fel i fil' });
+            load_audit_with_rule_file.mockResolvedValue({
+                auditStatus: 'in_progress',
+                samples: [],
+                ruleFileContent: {}
+            });
+            const show_msg = jest.fn();
+            app_runtime_refs.notification_component = { show_global_message: show_msg };
+            const nav_hash = jest.fn();
+            const opts = make_hash_options({ navigate_and_set_hash: nav_hash });
+            await handle_hash_change(opts);
+            expect(show_msg).toHaveBeenCalledWith('fel i fil', 'error');
+            expect(nav_hash).toHaveBeenCalledWith('start', {});
+        });
+
+        test('upload med auditId och nätverksfel: notifiering och redirect till start', async () => {
+            window.location.hash = '#upload?auditId=netfail';
+            load_audit_with_rule_file.mockRejectedValue(new Error('timeout'));
+            const show_msg = jest.fn();
+            app_runtime_refs.notification_component = { show_global_message: show_msg };
+            const nav_hash = jest.fn();
+            const opts = make_hash_options({ navigate_and_set_hash: nav_hash });
+            await handle_hash_change(opts);
+            expect(show_msg).toHaveBeenCalled();
+            expect(nav_hash).toHaveBeenCalledWith('start', {});
+        });
+
+        test('handle_hash_change sätter __gv_restore_focus_info när fokuslagring finns för scope', async () => {
+            window.location.hash = '#metadata?caseNumber=9';
+            const focus_payload = { elementId: 'f1', selectionStart: 0, selectionEnd: 0 };
+            const opts = make_hash_options({
+                load_focus_storage: jest.fn(() => ({
+                    'metadata:{"caseNumber":"9"}': focus_payload
+                }))
+            });
+            await handle_hash_change(opts);
+            expect(window.__gv_restore_focus_info).toEqual(focus_payload);
         });
     });
 });
