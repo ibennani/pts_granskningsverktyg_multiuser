@@ -4,6 +4,7 @@
  */
 
 import { get_current_user_preferences_with_timeout } from '../api/client.js';
+import { format_build_info_object } from '../utils/build_time_format.js';
 import { consoleManager } from '../utils/console_manager.js';
 import { memoryManager } from '../utils/memory_manager.js';
 
@@ -55,30 +56,18 @@ export function update_build_timestamp() {
     });
 
     const is_dev = is_dev_build_environment();
+    const include_seconds = is_dev;
 
-    const date_str = window.BUILD_INFO?.date || new Date().toLocaleDateString('sv-SE');
+    let date_str;
     let time_str;
-    const stockholm_time_opts = { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Europe/Stockholm' };
-    const stockholm_time_opts_no_sec = { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Stockholm' };
-    if (is_dev) {
-        // Samma date/time som dev-build-info-watcher skriver och loggar (Europe/Stockholm), inte webbläsarens tidszon.
-        if (window.BUILD_INFO?.time) {
-            time_str = window.BUILD_INFO.time;
-        } else if (window.BUILD_INFO?.timestamp) {
-            const d = new Date(window.BUILD_INFO.timestamp);
-            time_str = d.toLocaleTimeString('sv-SE', stockholm_time_opts);
-        } else {
-            time_str = new Date().toLocaleTimeString('sv-SE', stockholm_time_opts);
-        }
+    if (window.BUILD_INFO?.timestamp) {
+        const formatted = format_build_info_object(window.BUILD_INFO.timestamp, { include_seconds });
+        date_str = formatted.date;
+        time_str = formatted.time;
     } else {
-        if (window.BUILD_INFO?.time) {
-            time_str = window.BUILD_INFO.time;
-        } else if (window.BUILD_INFO?.timestamp) {
-            const d = new Date(window.BUILD_INFO.timestamp);
-            time_str = d.toLocaleTimeString('sv-SE', stockholm_time_opts_no_sec);
-        } else {
-            time_str = new Date().toLocaleTimeString('sv-SE', stockholm_time_opts_no_sec);
-        }
+        const formatted = format_build_info_object(new Date(), { include_seconds });
+        date_str = formatted.date;
+        time_str = formatted.time;
     }
 
     if (is_dev) {

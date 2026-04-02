@@ -3,6 +3,7 @@ import { watch, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { get_latest_project_mtime } from './compute-latest-mtime.js';
+import { format_build_info_object } from '../js/utils/build_time_format.js';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const projectRoot = join(__dirname, '..');
@@ -16,17 +17,7 @@ let last_written_content = null;
 
 function format_build_info_from_mtime(mtime) {
     const buildTime = mtime || new Date();
-    const swedishOptions = { timeZone: 'Europe/Stockholm' };
-    return {
-        timestamp: buildTime.toISOString(),
-        date: buildTime.toLocaleDateString('sv-SE', swedishOptions),
-        time: buildTime.toLocaleTimeString('sv-SE', {
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            timeZone: 'Europe/Stockholm',
-        }),
-    };
+    return format_build_info_object(buildTime, { include_seconds: true });
 }
 
 function write_build_info_file(buildInfo) {

@@ -7,6 +7,7 @@ import {
 } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { format_build_info_object } from '../js/utils/build_time_format.js';
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const projectRoot = join(__dirname, '..');
 const distDir = join(projectRoot, 'dist');
@@ -50,19 +51,9 @@ for (const relativePath of foldersToCopy) {
 
 console.log('[postbuild-copy] Finished copying folders, starting build-info generation...');
 
-// Generate build info file – använd aktuell tid så att "Byggt ..." visar när bygget kördes
+// Generate build info file – aktuell tid i Europe/Stockholm (samma som i webbläsaren efter laddning)
 try {
-  const buildTime = new Date();
-  const swedishOptions = { timeZone: 'Europe/Stockholm' };
-  const buildInfo = {
-    timestamp: buildTime.toISOString(),
-    date: buildTime.toLocaleDateString('sv-SE', swedishOptions),
-    time: buildTime.toLocaleTimeString('sv-SE', {
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: 'Europe/Stockholm',
-    }),
-  };
+  const buildInfo = format_build_info_object(new Date(), { include_seconds: false });
 
   const buildInfoContent = `// Auto-generated build info
 window.BUILD_INFO = ${JSON.stringify(buildInfo, null, 2)};
@@ -73,7 +64,7 @@ window.BUILD_INFO = ${JSON.stringify(buildInfo, null, 2)};
   console.log('[postbuild-copy] Generated build-info.js');
 
   const formattedTimestamp = `Byggt ${buildInfo.date} kl ${buildInfo.time}`;
-  const buildVersion = String(buildTime.getTime());
+  const buildVersion = String(new Date(buildInfo.timestamp).getTime());
   const indexPath = join(distDir, 'index.html');
   if (existsSync(indexPath)) {
     let indexHtml = readFileSync(indexPath, 'utf8');
