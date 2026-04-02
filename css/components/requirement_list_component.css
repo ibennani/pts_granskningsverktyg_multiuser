@@ -56,6 +56,13 @@
     display: block;
 }
 
+.requirement-list-header .audit-status-stack,
+.requirement-list-header .audit-status-stack__track {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
 
 /* Filter section (samma som högerspalten) */
 .requirements-list-filter-section {

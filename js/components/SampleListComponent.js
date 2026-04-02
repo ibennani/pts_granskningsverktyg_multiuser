@@ -72,7 +72,7 @@ export const SampleListComponent = {
         const state = this.getState(); 
 
         const { create_element, get_icon_svg, escape_html, add_protocol_if_missing, get_external_link_icon_html } = this.Helpers;
-        const { get_relevant_requirements_for_sample, find_first_incomplete_requirement_key_for_sample, calculate_requirement_status } = this.AuditLogic;
+        const { find_first_incomplete_requirement_key_for_sample } = this.AuditLogic;
         
         this.root.innerHTML = '';
 
@@ -144,20 +144,25 @@ export const SampleListComponent = {
             type_p.appendChild(document.createTextNode(escape_html(type_info_string)));
             info_div.appendChild(type_p);
 
-            const relevant_reqs = get_relevant_requirements_for_sample(state.ruleFileContent, sample);
-            const total_relevant_reqs = relevant_reqs.length;
-            
-            const audited_reqs_count = relevant_reqs.filter(req => {
-                const status = calculate_requirement_status(req, (sample.requirementResults || {})[req.key || req.id]);
-                return status === 'passed' || status === 'failed';
-            }).length;
+            const status_counts = this.AuditLogic.calculate_sample_requirement_status_counts(state.ruleFileContent, sample);
+            const total_relevant_reqs = status_counts.total;
+            const lang_code = (this.Translation?.get_current_language_code && this.Translation.get_current_language_code()) || 'sv-SE';
+            const format_num = (this.Helpers?.format_number_locally && this.Helpers.format_number_locally.bind(this.Helpers))
+                || ((n) => String(n));
 
-            info_div.appendChild(create_element('p', { 
-                html_content: `<strong>${t('requirements_audited_for_sample')}:</strong> ${audited_reqs_count} / ${total_relevant_reqs}` 
-            }));
-            
             if (ProgressBarComponent) {
-                info_div.appendChild(ProgressBarComponent.create(audited_reqs_count, total_relevant_reqs, {}));
+                info_div.appendChild(ProgressBarComponent.create_audit_status_stack({
+                    counts: status_counts,
+                    t,
+                    create_element,
+                    format_number_locally: format_num,
+                    lang_code,
+                    variant: 'default',
+                    group_labelledby_id: null,
+                    show_total_line: false,
+                    overview_distribution_layout: true,
+                    distribution_heading_id: `sample-distribution-heading-${sample.id}`
+                }));
             }
             
             if (sample.selectedContentTypes?.length > 0) {

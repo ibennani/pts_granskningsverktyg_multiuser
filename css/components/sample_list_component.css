@@ -16,6 +16,14 @@
     width: 100%;
 }
 
+/* Staplad fördelning som i granskningsöversikten */
+.sample-list-item .sample-info .audit-status-stack,
+.sample-list-item .sample-info .audit-status-stack__track {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
 /* --- ÄNDRINGAR FÖR KNAPPLAYOUT PÅ LISTOBJEKT --- */
 .sample-list-item .sample-actions-wrapper {
     display: flex;

@@ -1,0 +1,184 @@
+/* Staplad kravstatusbalk (översikt och stickprov) */
+
+.audit-status-stack {
+    width: 100%;
+}
+
+.audit-status-stack__total {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.95em;
+    color: var(--text-color);
+}
+
+.audit-status-stack--compact .audit-status-stack__total {
+    font-size: 0.88em;
+    margin-bottom: 0.35rem;
+}
+
+.audit-status-stack__group {
+    width: 100%;
+}
+
+.audit-status-stack__track {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    height: 1rem;
+    border-radius: var(--border-radius, 4px);
+    overflow: hidden;
+    box-sizing: border-box;
+    border: 1px solid var(--border-color);
+    /* Samma «tom»-yta som klassisk tvåfärgad progressbalk */
+    background-color: #f8f4f0;
+    margin-bottom: 0.5rem;
+}
+
+[data-theme="dark"] .audit-status-stack__track {
+    background-color: var(--input-background-color);
+}
+
+.audit-status-stack--compact .audit-status-stack__track {
+    height: 0.65rem;
+    margin-bottom: 0.35rem;
+}
+
+.audit-status-stack__segment {
+    flex: 0 1 auto;
+    min-width: 0;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+.audit-status-stack__segment--passed {
+    background-color: var(--success-color);
+}
+
+.audit-status-stack__segment--partially_audited {
+    /* Orange som statusikon «delvis granskad» i kravlistan */
+    background-color: #ff8c00;
+}
+
+.audit-status-stack__segment--failed {
+    background-color: var(--danger-color);
+}
+
+.audit-status-stack__segment--not_audited {
+    /* Genomskinlig: visar spårets ljusa/mörka bakgrund («återstår») */
+    background-color: transparent;
+}
+
+.audit-status-stack__legend {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.audit-status-stack__legend li {
+    margin: 0.2rem 0;
+    font-size: 0.9em;
+    color: var(--text-color);
+}
+
+.audit-status-stack--compact .audit-status-stack__legend li {
+    font-size: 0.82em;
+    margin: 0.12rem 0;
+}
+
+.audit-status-stack__legend .audit-status-stack__legend-label {
+    font-weight: 500;
+}
+
+/* Granskningsöversikt: balk klistrad mot sammanfattning, punktlista under rubriken Fördelning */
+.audit-status-stack--overview .audit-status-stack__track {
+    margin-bottom: 0;
+    flex: 0 0 auto;
+    align-self: stretch;
+}
+
+.audit-status-stack__distribution-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--primary-color-dark);
+    margin: 0.65rem 0 0.35rem 0;
+    padding: 0;
+    border: none;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+[data-theme="dark"] .audit-status-stack__distribution-title {
+    color: var(--heading-color);
+}
+
+.audit-status-stack__distribution-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    color: var(--text-color);
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.audit-status-stack__distribution-item {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0.2rem 0;
+    font-size: 0.9em;
+}
+
+.audit-status-stack__distribution-icon {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.15rem;
+}
+
+/* Samma Unicode-ikoner och färger som kravlistan (.requirements-list-content .status-icon) */
+.audit-status-stack__distribution-icon .status-icon {
+    display: inline-block;
+    font-size: 1rem;
+    line-height: 1;
+    vertical-align: middle;
+    font-weight: normal;
+    font-family: Arial, sans-serif;
+    text-rendering: optimizeLegibility;
+}
+
+.audit-status-stack__distribution-icon .status-icon-not-audited {
+    color: #000000;
+    font-weight: bold;
+    -webkit-text-stroke: 2px currentColor;
+}
+
+[data-theme="dark"] .audit-status-stack__distribution-icon .status-icon-not-audited {
+    color: #ffffff;
+    -webkit-text-stroke: 2px currentColor;
+}
+
+.audit-status-stack__distribution-icon .status-icon-partially-audited {
+    color: #ff8c00;
+}
+
+.audit-status-stack__distribution-icon .status-icon-passed {
+    color: #28a745;
+    font-weight: bold;
+}
+
+.audit-status-stack__distribution-icon .status-icon-failed {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+.audit-status-stack__distribution-text {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.audit-status-stack__distribution-list .audit-status-stack__distribution-label {
+    font-weight: 500;
+}

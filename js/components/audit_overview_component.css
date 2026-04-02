@@ -120,6 +120,38 @@
     font-size: 0.9em;
 }
 
+.audit-overview-progress-summary {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+.dashboard-panel.score-panel {
+    min-width: 0;
+}
+
+.audit-overview-plate .info-item--progress-container {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+.audit-overview-plate .info-item--progress-container .progress-text-wrapper {
+    margin-bottom: 0;
+    gap: 0;
+}
+
+.audit-overview-plate .info-item--progress-container .audit-status-stack,
+.audit-overview-plate .info-item--progress-container .audit-status-stack__group,
+.audit-overview-plate .info-item--progress-container .audit-status-stack__track {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
 
 /* --- Header för stickprovslistan --- */
 .sample-list-header {

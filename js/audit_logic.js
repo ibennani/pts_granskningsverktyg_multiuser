@@ -345,6 +345,56 @@ export function calculate_overall_audit_progress(current_audit_data) {
     return { audited: total_completed_assessments, total: total_possible_assessments };
 }
 
+/**
+ * Räknar krav per status för ett stickprov (relevanta krav enligt regelfil).
+ * Alla tal är heltal ≥ 0.
+ * @param {object} rule_file_content
+ * @param {object} sample_object
+ * @returns {{ passed: number, partially_audited: number, failed: number, not_audited: number, total: number }}
+ */
+export function calculate_sample_requirement_status_counts(rule_file_content, sample_object) {
+    const out = { passed: 0, partially_audited: 0, failed: 0, not_audited: 0, total: 0 };
+    if (!rule_file_content?.requirements || !sample_object) {
+        return out;
+    }
+    const relevant_reqs = get_relevant_requirements_for_sample(rule_file_content, sample_object);
+    relevant_reqs.forEach((req_def) => {
+        const status = calculate_requirement_status(
+            req_def,
+            sample_object.requirementResults?.[req_def.key || req_def.id]
+        );
+        if (status === 'passed') out.passed += 1;
+        else if (status === 'failed') out.failed += 1;
+        else if (status === 'partially_audited') out.partially_audited += 1;
+        else out.not_audited += 1;
+    });
+    out.total = out.passed + out.partially_audited + out.failed + out.not_audited;
+    return out;
+}
+
+/**
+ * Aggregerar kravstatus räknat över alla stickprov.
+ * @param {object} current_audit_data
+ * @returns {{ passed: number, partially_audited: number, failed: number, not_audited: number, total: number }}
+ */
+export function calculate_overall_audit_status_counts(current_audit_data) {
+    const out = { passed: 0, partially_audited: 0, failed: 0, not_audited: 0, total: 0 };
+    if (!current_audit_data?.samples || !current_audit_data.ruleFileContent?.requirements) {
+        return out;
+    }
+    current_audit_data.samples.forEach((sample) => {
+        const sample_counts = calculate_sample_requirement_status_counts(
+            current_audit_data.ruleFileContent,
+            sample
+        );
+        out.passed += sample_counts.passed;
+        out.partially_audited += sample_counts.partially_audited;
+        out.failed += sample_counts.failed;
+        out.not_audited += sample_counts.not_audited;
+    });
+    out.total = out.passed + out.partially_audited + out.failed + out.not_audited;
+    return out;
+}
 
 export function find_first_incomplete_requirement_key_for_sample(rule_file_content, sample_object, exclude_key = null) {
     if (!sample_object || !rule_file_content?.requirements) return null;

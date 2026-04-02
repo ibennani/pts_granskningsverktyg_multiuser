@@ -3,7 +3,9 @@ import { jest } from '@jest/globals';
 import {
     calculate_check_status,
     calculate_requirement_status,
-    calculate_overall_audit_progress
+    calculate_overall_audit_progress,
+    calculate_sample_requirement_status_counts,
+    calculate_overall_audit_status_counts
 } from '../../js/audit_logic.js';
 
 describe('AuditLogic', () => {
@@ -193,6 +195,120 @@ describe('AuditLogic', () => {
                     ruleFileContent: { requirements: { r1: { id: 'r1', title: 'T', checks: [] } } }
                 })
             ).toEqual({ audited: 0, total: 0 });
+        });
+    });
+
+    const minimal_rule_file = {
+        requirements: {
+            r1: { key: 'r1', id: 'r1', title: 'Krav 1', checks: [{ id: 'c1', passCriteria: [{ id: 'pc1' }], passCriteriaLogic: 'AND' }] },
+            r2: { key: 'r2', id: 'r2', title: 'Krav 2', checks: [{ id: 'c1', passCriteria: [{ id: 'pc1' }], passCriteriaLogic: 'AND' }] }
+        }
+    };
+
+    describe('calculate_sample_requirement_status_counts', () => {
+        test('returnerar noll vid saknad data', () => {
+            expect(calculate_sample_requirement_status_counts(null, {})).toEqual({
+                passed: 0, partially_audited: 0, failed: 0, not_audited: 0, total: 0
+            });
+            expect(calculate_sample_requirement_status_counts(minimal_rule_file, null)).toEqual({
+                passed: 0, partially_audited: 0, failed: 0, not_audited: 0, total: 0
+            });
+        });
+
+        test('räknar fyra statusar för ett stickprov', () => {
+            const sample = {
+                id: 's1',
+                requirementResults: {
+                    r1: {
+                        status: 'passed',
+                        checkResults: {
+                            c1: {
+                                overallStatus: 'passed',
+                                passCriteria: { pc1: { status: 'passed' } }
+                            }
+                        }
+                    },
+                    r2: {
+                        status: 'failed',
+                        checkResults: {
+                            c1: {
+                                overallStatus: 'failed',
+                                passCriteria: { pc1: { status: 'failed' } }
+                            }
+                        }
+                    }
+                }
+            };
+            const counts = calculate_sample_requirement_status_counts(minimal_rule_file, sample);
+            expect(counts.total).toBe(2);
+            expect(counts.passed).toBe(1);
+            expect(counts.failed).toBe(1);
+            expect(counts.partially_audited).toBe(0);
+            expect(counts.not_audited).toBe(0);
+        });
+    });
+
+    describe('calculate_overall_audit_status_counts', () => {
+        test('returnerar noll vid null eller tom lista', () => {
+            expect(calculate_overall_audit_status_counts(null)).toEqual({
+                passed: 0, partially_audited: 0, failed: 0, not_audited: 0, total: 0
+            });
+            expect(
+                calculate_overall_audit_status_counts({
+                    samples: [],
+                    ruleFileContent: minimal_rule_file
+                })
+            ).toEqual({
+                passed: 0, partially_audited: 0, failed: 0, not_audited: 0, total: 0
+            });
+        });
+
+        test('summerar över flera stickprov', () => {
+            const audit = {
+                ruleFileContent: minimal_rule_file,
+                samples: [
+                    {
+                        id: 'a',
+                        requirementResults: {
+                            r1: {
+                                status: 'passed',
+                                checkResults: {
+                                    c1: { overallStatus: 'passed', passCriteria: { pc1: { status: 'passed' } } }
+                                }
+                            },
+                            r2: {
+                                status: 'not_audited',
+                                checkResults: {
+                                    c1: { overallStatus: 'not_audited', passCriteria: { pc1: { status: 'not_audited' } } }
+                                }
+                            }
+                        }
+                    },
+                    {
+                        id: 'b',
+                        requirementResults: {
+                            r1: {
+                                status: 'passed',
+                                checkResults: {
+                                    c1: { overallStatus: 'passed', passCriteria: { pc1: { status: 'passed' } } }
+                                }
+                            },
+                            r2: {
+                                status: 'failed',
+                                checkResults: {
+                                    c1: { overallStatus: 'failed', passCriteria: { pc1: { status: 'failed' } } }
+                                }
+                            }
+                        }
+                    }
+                ]
+            };
+            const c = calculate_overall_audit_status_counts(audit);
+            expect(c.total).toBe(4);
+            expect(c.passed).toBe(2);
+            expect(c.failed).toBe(1);
+            expect(c.not_audited).toBe(1);
+            expect(c.partially_audited).toBe(0);
         });
     });
 

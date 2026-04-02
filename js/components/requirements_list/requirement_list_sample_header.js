@@ -50,19 +50,23 @@ export function render_sample_header(state, current_sample_object, all_relevant_
     sample_type_p.appendChild(document.createTextNode(Helpers.escape_html(type_info_string)));
     header_element_ref.appendChild(sample_type_p);
 
-    const audited_requirements_count = all_relevant_requirements.filter(req => {
-        const status = AuditLogic.calculate_requirement_status(req, (current_sample_object.requirementResults || {})[req.key]);
-        return status === 'passed' || status === 'failed';
-    }).length;
-
-    const sample_audit_status_p = Helpers.create_element('p', { class_name: 'sample-info-display sample-audit-progress' });
-    const strong_element2 = Helpers.create_element('strong', { text_content: t('requirements_audited_for_sample') });
-    sample_audit_status_p.appendChild(strong_element2);
-    sample_audit_status_p.appendChild(document.createTextNode(': '));
-    sample_audit_status_p.appendChild(document.createTextNode(`${audited_requirements_count}/${all_relevant_requirements.length}`));
-    header_element_ref.appendChild(sample_audit_status_p);
+    const status_counts = AuditLogic.calculate_sample_requirement_status_counts(state.ruleFileContent, current_sample_object);
+    const lang_code = (Translation.get_current_language_code && Translation.get_current_language_code()) || 'sv-SE';
+    const format_num = (Helpers.format_number_locally && Helpers.format_number_locally.bind(Helpers))
+        || ((n) => String(n));
 
     if (ProgressBarComponent) {
-        header_element_ref.appendChild(ProgressBarComponent.create(audited_requirements_count, all_relevant_requirements.length, {}));
+        header_element_ref.appendChild(ProgressBarComponent.create_audit_status_stack({
+            counts: status_counts,
+            t,
+            create_element: Helpers.create_element,
+            format_number_locally: format_num,
+            lang_code,
+            variant: 'default',
+            group_labelledby_id: null,
+            show_total_line: false,
+            overview_distribution_layout: true,
+            distribution_heading_id: `requirement-list-sample-distribution-${current_sample_object.id}`
+        }));
     }
 }

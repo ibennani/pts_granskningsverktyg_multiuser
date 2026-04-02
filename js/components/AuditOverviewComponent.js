@@ -204,21 +204,57 @@ export class AuditOverviewComponent {
             text_content: t('result_summary_and_deficiency_analysis', { defaultValue: "Result Summary" })
         }));
 
+        const status_counts = this.AuditLogic.calculate_overall_audit_status_counts(current_global_state);
         const progress_data = this.AuditLogic.calculate_overall_audit_progress(current_global_state);
         const lang_code = this.Translation.get_current_language_code();
-        const percentage = (progress_data.total > 0) ? (progress_data.audited / progress_data.total) * 100 : 0;
-        const formatted_percentage = this.Helpers.format_number_locally(percentage, lang_code, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-        const valueText = `${progress_data.audited} / ${progress_data.total} (${formatted_percentage} %)`;
+        const audited = progress_data.audited;
+        const total_req = progress_data.total;
+        const pct_complete = total_req > 0 ? (audited / total_req) * 100 : 0;
+        const formatted_pct = this.Helpers.format_number_locally(pct_complete, lang_code, {
+            minimumFractionDigits: 1,
+            maximumFractionDigits: 1
+        });
 
+        const progress_heading_id = 'audit-overview-progress-heading';
+        const progress_summary_id = 'audit-overview-progress-summary';
         score_panel.appendChild(this.Helpers.create_element('h3', {
             class_name: 'dashboard-panel__subtitle',
+            attributes: { id: progress_heading_id },
             text_content: t('total_audit_progress_header', { defaultValue: "Klart hittills" })
         }));
+
+        const summary_p = this.Helpers.create_element('p', {
+            class_name: ['progress-text-wrapper', 'audit-overview-progress-summary'],
+            attributes: { id: progress_summary_id }
+        });
+        summary_p.appendChild(this.Helpers.create_element('strong', {
+            text_content: `${t('total_audit_progress_header', { defaultValue: 'Klart hittills' })}: `
+        }));
+        const summary_value_span = this.Helpers.create_element('span', { class_name: 'value' });
+        summary_value_span.textContent = t('audit_overview_progress_core', {
+            audited,
+            total: total_req,
+            pct: formatted_pct,
+            defaultValue: '{audited} / {total} kontroller ({pct} %)'
+        }).trim();
+        summary_p.appendChild(summary_value_span);
+
         const progress_container = this.Helpers.create_element('div', { class_name: 'info-item--progress-container' });
-        progress_container.appendChild(this.Helpers.create_element('p', { class_name: 'progress-text-wrapper', html_content: `<strong>${t('total_requirements_audited_label')}:</strong><span class="value">${valueText}</span>` }));
+        progress_container.appendChild(summary_p);
 
         if (ProgressBarComponent) {
-            progress_container.appendChild(ProgressBarComponent.create(progress_data.audited, progress_data.total));
+            progress_container.appendChild(ProgressBarComponent.create_audit_status_stack({
+                counts: status_counts,
+                t,
+                create_element: this.Helpers.create_element,
+                format_number_locally: this.Helpers.format_number_locally,
+                lang_code,
+                variant: 'default',
+                group_labelledby_id: `${progress_heading_id} ${progress_summary_id}`,
+                show_total_line: false,
+                overview_distribution_layout: true,
+                distribution_heading_id: 'audit-overview-distribution-heading'
+            }));
         }
         score_panel.appendChild(progress_container);
 
