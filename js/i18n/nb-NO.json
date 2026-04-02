@@ -223,7 +223,7 @@
   "audit_overview_newer_rule_update_later_aria": "Oppdater regelfilen senere",
   "audit_overview_title": "Tilsynsoversikt",
   "audit_overview_progress_core": "{audited} / {total} kontroller ({pct} %)",
-  "audit_overview_distribution_heading": "Fordeling",
+  "audit_overview_distribution_heading": "Fordeling av kontroller",
   "audit_overview_distribution_passed": "Ingen merknader",
   "audit_overview_distribution_partial": "Delvis gjennomgått",
   "audit_overview_distribution_failed": "Avvik",

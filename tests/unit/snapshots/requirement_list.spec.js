@@ -49,7 +49,7 @@ function build_translation() {
         audit_status_partially_audited: 'Delvis granskad',
         audit_status_failed: 'Underkänt',
         audit_status_not_audited: 'Ej granskat',
-        audit_overview_distribution_heading: 'Fördelning',
+        audit_overview_distribution_heading: 'Fördelning av kontroller',
         audit_overview_distribution_passed: 'Ingen anmärkning',
         audit_overview_distribution_partial: 'Delvis granskad',
         audit_overview_distribution_failed: 'Underkänt',

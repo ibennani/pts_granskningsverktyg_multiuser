@@ -164,7 +164,7 @@ function _build_overview_distribution_stack(create_element, t, safe_counts, ui_o
     root.appendChild(create_element('h3', {
         class_name: 'audit-status-stack__distribution-title',
         attributes: { id: dist_heading_id },
-        text_content: t('audit_overview_distribution_heading', { defaultValue: 'Fördelning' })
+        text_content: t('audit_overview_distribution_heading', { defaultValue: 'Fördelning av kontroller' })
     }));
 
     const ul = create_element('ul', {

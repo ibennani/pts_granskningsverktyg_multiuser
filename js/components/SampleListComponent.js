@@ -166,8 +166,13 @@ export const SampleListComponent = {
             }
             
             if (sample.selectedContentTypes?.length > 0) {
+                const content_types_heading_id = `sample-content-types-heading-${sample.id}`;
                 const content_types_wrapper = create_element('div', { class_name: 'content-types-wrapper' });
-                content_types_wrapper.appendChild(create_element('strong', { class_name: 'content-types-label', text_content: t('content_types') + ':' }));
+                content_types_wrapper.appendChild(create_element('h3', {
+                    class_name: 'audit-status-stack__distribution-title',
+                    id: content_types_heading_id,
+                    text_content: t('content_types') + ':'
+                }));
                 const tags_container = create_element('div', { class_name: 'content-types-tags-container' });
                 sample.selectedContentTypes.forEach(ct_id => {
                     tags_container.appendChild(create_element('span', { class_name: 'content-type-tag', text_content: escape_html(content_types_map.get(ct_id) || ct_id) }));

@@ -223,7 +223,7 @@
   "audit_overview_newer_rule_update_later_aria": "Update the rule file later",
   "audit_overview_title": "Audit overview",
   "audit_overview_progress_core": "{audited} / {total} checks ({pct} %)",
-  "audit_overview_distribution_heading": "Breakdown",
+  "audit_overview_distribution_heading": "Distribution of checks",
   "audit_overview_distribution_passed": "No remarks",
   "audit_overview_distribution_partial": "Partially audited",
   "audit_overview_distribution_failed": "Failed",

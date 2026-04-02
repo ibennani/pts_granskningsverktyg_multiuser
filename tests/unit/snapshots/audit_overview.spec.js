@@ -19,7 +19,7 @@ function build_translation() {
         total_audit_progress_header: 'Klart hittills',
         total_requirements_audited_label: 'Granskade krav',
         audit_overview_progress_core: '{audited} / {total} kontroller ({pct} %)',
-        audit_overview_distribution_heading: 'Fördelning',
+        audit_overview_distribution_heading: 'Fördelning av kontroller',
         audit_overview_distribution_passed: 'Ingen anmärkning',
         audit_overview_distribution_partial: 'Delvis granskad',
         audit_overview_distribution_failed: 'Underkänt',
