@@ -318,6 +318,22 @@ export async function get_current_user_preferences() {
     return api_get('/users/me');
 }
 
+const USERS_ME_FETCH_TIMEOUT_MS = 10000;
+
+/**
+ * Samma som get_current_user_preferences men avbryts efter timeout så att anropet inte kan hänga obegränsat.
+ */
+export async function get_current_user_preferences_with_timeout() {
+    return Promise.race([
+        get_current_user_preferences(),
+        new Promise((_, reject) => {
+            setTimeout(() => {
+                reject(new Error('Tidsgräns vid hämtning av användare'));
+            }, USERS_ME_FETCH_TIMEOUT_MS);
+        })
+    ]);
+}
+
 export async function update_current_user_preferences(prefs) {
     return api_patch('/users/me', prefs);
 }

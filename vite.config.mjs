@@ -2,9 +2,30 @@
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
+/** Redirect /v2 → /v2/ så att index.html alltid laddas (annars 404 och tom sida utan fel i appens konsol). */
+function redirect_base_without_trailing_slash() {
+  return {
+    name: 'redirect-base-without-trailing-slash',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        const url = req.url || ''
+        if (url === '/v2' || url.startsWith('/v2?')) {
+          const q = url.startsWith('/v2?') ? url.slice(3) : '/'
+          res.statusCode = 302
+          res.setHeader('Location', `/v2/${q === '/' ? '' : q}`)
+          res.end()
+          return
+        }
+        next()
+      })
+    }
+  }
+}
+
 export default defineConfig({
   base: '/v2/',
   plugins: [
+    redirect_base_without_trailing_slash(),
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'script',

@@ -12,6 +12,7 @@ const validation_path = path.join(__dirname, '../../js/validation_logic.js');
 const is_current_user_admin = jest.fn(() => true);
 const get_auth_token = jest.fn(() => null);
 const get_current_user_preferences = jest.fn(async () => ({}));
+const get_current_user_preferences_with_timeout = jest.fn(async () => ({}));
 const set_current_user_admin = jest.fn();
 const load_audit_with_rule_file = jest.fn();
 
@@ -19,6 +20,7 @@ jest.unstable_mockModule(client_path, () => ({
     is_current_user_admin,
     get_auth_token,
     get_current_user_preferences,
+    get_current_user_preferences_with_timeout,
     set_current_user_admin,
     load_audit_with_rule_file
 }));
@@ -287,10 +289,12 @@ describe('router', () => {
 
         test('synkar användarpreferenser när token finns', async () => {
             get_auth_token.mockReturnValue('tok');
-            get_current_user_preferences.mockResolvedValue({ name: 'Ada', is_admin: true });
+            get_current_user_preferences_with_timeout.mockResolvedValue({ name: 'Ada', is_admin: true });
             window.location.hash = '#start';
             const opts = make_hash_options();
             await handle_hash_change(opts);
+            await Promise.resolve();
+            await Promise.resolve();
             expect(set_current_user_admin).toHaveBeenCalledWith(true);
             expect(opts.dispatch).toHaveBeenCalledWith({ type: 'GV_USER_PREFERENCES_SYNCED' });
         });

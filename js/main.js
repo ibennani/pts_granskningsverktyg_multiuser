@@ -82,6 +82,10 @@ const errorBoundaryComponent = new ErrorBoundaryComponent();
 app_runtime_refs.notification_component = notificationComponent;
 app_runtime_refs.modal_component = modalComponent;
 register_translation_module(TranslationLogic);
+if (typeof window !== 'undefined') {
+    window.Translation = TranslationLogic;
+    window.Helpers = Helpers;
+}
 
 (function () {
     'use strict';

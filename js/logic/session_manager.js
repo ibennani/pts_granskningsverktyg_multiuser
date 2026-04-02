@@ -3,7 +3,7 @@
  * @module js/logic/session_manager
  */
 
-import { get_current_user_preferences } from '../api/client.js';
+import { get_current_user_preferences_with_timeout } from '../api/client.js';
 import { consoleManager } from '../utils/console_manager.js';
 import { memoryManager } from '../utils/memory_manager.js';
 
@@ -92,7 +92,7 @@ export function update_build_timestamp() {
 export async function apply_user_preferences_from_server({ dispatch, StoreActionTypes }) {
     if (!window.__GV_CURRENT_USER_NAME__) return;
     try {
-        const user = await get_current_user_preferences();
+        const user = await get_current_user_preferences_with_timeout();
         if (user?.language_preference && typeof window.Translation?.set_language === 'function') {
             await window.Translation.set_language(user.language_preference);
         }
@@ -163,8 +163,9 @@ export async function start_normal_session(deps) {
     if (LayoutManager && typeof LayoutManager.init === 'function') {
         LayoutManager.init();
     }
-    await apply_user_preferences_from_server({ dispatch, StoreActionTypes });
     await init_global_components();
+    // Blockerar inte första vyrendering om /users/me hänger (fetch saknar timeout i klienten).
+    void apply_user_preferences_from_server({ dispatch, StoreActionTypes });
     init_connectivity_service({ getState, dispatch });
     if (window.ScoreManager?.init) { window.ScoreManager.init(subscribe, getState, dispatch, StoreActionTypes); }
     if (MarkdownToolbar?.init) { MarkdownToolbar.init(); }

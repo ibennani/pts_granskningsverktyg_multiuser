@@ -3,7 +3,7 @@
  * @module js/logic/router
  */
 
-import { is_current_user_admin, get_auth_token, get_current_user_preferences, set_current_user_admin } from '../api/client.js';
+import { is_current_user_admin, get_auth_token, get_current_user_preferences_with_timeout, set_current_user_admin } from '../api/client.js';
 import { consoleManager } from '../utils/console_manager.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import * as ValidationLogic from '../validation_logic.js';
@@ -126,17 +126,19 @@ export async function handle_hash_change(options) {
     } = options;
 
     if (get_auth_token()) {
-        try {
-            const user = await get_current_user_preferences();
-            if (user?.name) {
-                window.__GV_CURRENT_USER_NAME__ = user.name;
-                if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('gv_current_user_name', user.name);
+        void (async () => {
+            try {
+                const user = await get_current_user_preferences_with_timeout();
+                if (user?.name) {
+                    window.__GV_CURRENT_USER_NAME__ = user.name;
+                    if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('gv_current_user_name', user.name);
+                }
+                set_current_user_admin(!!user?.is_admin);
+                dispatch({ type: 'GV_USER_PREFERENCES_SYNCED' });
+            } catch {
+                /* ignorerar – anropet kan misslyckas utan giltig session */
             }
-            set_current_user_admin(!!user?.is_admin);
-            dispatch({ type: 'GV_USER_PREFERENCES_SYNCED' });
-        } catch {
-            /* ignorerar – anropet kan misslyckas utan giltig session */
-        }
+        })();
     }
     const hash = window.location.hash.substring(1);
     nav_debug('handle_hash_change anropad', { hash, full_url: window.location.href });
