@@ -373,5 +373,9 @@ if (typeof window !== 'undefined') {
         });
     }
 
-    run_when_dom_ready(() => init_app());
+    run_when_dom_ready(async () => {
+        await init_app();
+        const { init_token_refresh_service } = await import('./logic/token_refresh_service.js');
+        init_token_refresh_service();
+    });
 })();

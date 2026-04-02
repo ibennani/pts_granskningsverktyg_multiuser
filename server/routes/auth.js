@@ -2,10 +2,28 @@
 import express from 'express';
 import bcrypt from 'bcrypt';
 import { query } from '../db.js';
-import { sign_token } from '../auth/jwt.js';
+import { sign_token, refresh_token as issue_refresh_token } from '../auth/jwt.js';
 import { login_rate_limiter } from '../middleware/rateLimiter.js';
 
 const router = express.Router();
+
+router.post('/refresh', (req, res) => {
+    try {
+        const auth_header = req.headers.authorization;
+        if (!auth_header || !auth_header.startsWith('Bearer ')) {
+            return res.status(401).json({ error: 'Token saknas' });
+        }
+        const token = auth_header.slice(7).trim();
+        const new_token = issue_refresh_token(token);
+        if (!new_token) {
+            return res.status(401).json({ error: 'Token kan inte förnyas' });
+        }
+        return res.json({ token: new_token });
+    } catch (err) {
+        console.error('[auth] refresh error:', err);
+        return res.status(500).json({ error: 'Förnyelse misslyckades' });
+    }
+});
 
 router.post('/login', login_rate_limiter, async (req, res) => {
     try {

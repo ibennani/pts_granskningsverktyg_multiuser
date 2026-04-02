@@ -4,6 +4,9 @@ const AUTH_TOKEN_KEY = 'gv_auth_token';
 const AUTH_USER_IS_ADMIN_KEY = 'gv_current_user_is_admin';
 const AUTH_REQUIRED_EVENT = 'gv-auth-required';
 
+/** Path till token-förnyelse (samma bas-URL som övriga API-anrop). */
+const AUTH_REFRESH_PATH = '/auth/refresh';
+
 export function is_current_user_admin() {
     if (typeof window === 'undefined') return false;
     return sessionStorage.getItem(AUTH_USER_IS_ADMIN_KEY) === '1';
@@ -96,16 +99,58 @@ export function get_websocket_url() {
     return `${protocol}//${host}${ws_path}`;
 }
 
-export async function api_get(path) {
-    const url = `${get_base_url()}${path}`;
+/**
+ * Försöker förnya access-token via serverns refresh-endpoint.
+ * @returns {Promise<boolean>} true om ny token sparades
+ */
+export async function refresh_auth_token() {
+    const token = get_auth_token();
+    if (!token) return false;
     let res;
     try {
-        res = await fetch(url, {
-            cache: 'no-store',
+        res = await fetch(`${get_base_url()}${AUTH_REFRESH_PATH}`, {
+            method: 'POST',
             headers: get_auth_headers()
         });
+    } catch {
+        handle_unauthorized_response({ status: 401 });
+        return false;
+    }
+    if (!res.ok) {
+        handle_unauthorized_response(res);
+        return false;
+    }
+    const data = await res.json().catch(() => ({}));
+    if (data.token) set_auth_token(data.token);
+    return !!data.token;
+}
+
+export async function api_get(path) {
+    const url = `${get_base_url()}${path}`;
+    const run_fetch = async () => fetch(url, {
+        cache: 'no-store',
+        headers: get_auth_headers()
+    });
+    let res;
+    try {
+        res = await run_fetch();
     } catch (fetchErr) {
         throw fetchErr;
+    }
+    if (res.status === 401 && path !== AUTH_REFRESH_PATH) {
+        if (get_auth_token()) {
+            const refreshed = await refresh_auth_token();
+            if (!refreshed) {
+                const e = new Error('Inloggning krävs');
+                e.status = 401;
+                throw e;
+            }
+            res = await run_fetch();
+        } else if (handle_unauthorized_response(res)) {
+            const e = new Error('Inloggning krävs');
+            e.status = 401;
+            throw e;
+        }
     }
     if (handle_unauthorized_response(res)) {
         const e = new Error('Inloggning krävs');
@@ -126,11 +171,29 @@ export async function api_get(path) {
 }
 
 export async function api_post(path, body) {
-    const res = await fetch(`${get_base_url()}${path}`, {
+    const url = `${get_base_url()}${path}`;
+    const body_json = JSON.stringify(body);
+    const run_fetch = async () => fetch(url, {
         method: 'POST',
         headers: get_auth_headers(),
-        body: JSON.stringify(body)
+        body: body_json
     });
+    let res = await run_fetch();
+    if (path !== '/auth/login' && path !== AUTH_REFRESH_PATH && res.status === 401) {
+        if (get_auth_token()) {
+            const refreshed = await refresh_auth_token();
+            if (!refreshed) {
+                const e = new Error('Inloggning krävs');
+                e.status = 401;
+                throw e;
+            }
+            res = await run_fetch();
+        } else if (handle_unauthorized_response(res)) {
+            const e = new Error('Inloggning krävs');
+            e.status = 401;
+            throw e;
+        }
+    }
     if (path !== '/auth/login' && handle_unauthorized_response(res)) {
         const e = new Error('Inloggning krävs');
         e.status = 401;
