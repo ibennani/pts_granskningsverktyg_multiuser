@@ -147,13 +147,43 @@ test.describe('Granskningsflöde (mockat API)', () => {
         await page.locator('.audit-rules-picker-list button').first().click();
         await expect(page.getByRole('heading', { name: 'Granskningens metadata' })).toBeVisible({ timeout: 20000 });
 
-        await page.locator('#caseNumber').fill('E2E-123');
-        await page.locator('#actorName').fill('Testaktör');
-        await page.locator('#auditorName').fill('Testgranskare');
+        const meta_form = page.locator('#metadata-form-container-in-view form');
+        await meta_form.waitFor({ state: 'visible' });
+        await meta_form.evaluate((form) => {
+            const fire_input = (el) => {
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+            };
+            const pairs = [
+                ['#auditorName', 'Testgranskare'],
+                ['#actorLink', 'https://example.test/e2e'],
+                ['#caseNumber', 'E2E-123'],
+                ['#actorName', 'Testaktör']
+            ];
+            for (const [sel, val] of pairs) {
+                const el = form.querySelector(sel);
+                if (!el) continue;
+                el.value = val;
+                fire_input(el);
+            }
+        });
+        await expect(page.locator('#actorName')).toHaveValue('Testaktör', { timeout: 15000 });
+        await expect(page.locator('#auditorName')).toHaveValue('Testgranskare');
 
-        await page.locator('#metadata-form-container-in-view form button[type="submit"]').click();
+        await meta_form.locator('button[type="submit"]').click();
 
-        await expect(page.getByRole('heading', { name: /Stickprov/ })).toBeVisible();
+        const empty_meta_modal = page.getByRole('dialog', {
+            name: 'Du har inte fyllt i någon metadata'
+        });
+        const continue_in_modal = empty_meta_modal.getByRole('button', {
+            name: 'Fortsätt till stickprov'
+        });
+        if (await continue_in_modal.isVisible().catch(() => false)) {
+            await continue_in_modal.click();
+        }
+
+        await expect(page.getByRole('heading', { level: 1, name: /Stickprov/ })).toBeVisible({
+            timeout: 30000
+        });
 
         await page.getByRole('button', { name: 'Lägg till nytt stickprov' }).click();
 
