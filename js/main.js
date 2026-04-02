@@ -83,6 +83,10 @@ app_runtime_refs.notification_component = notificationComponent;
 app_runtime_refs.modal_component = modalComponent;
 register_translation_module(TranslationLogic);
 if (typeof window !== 'undefined') {
+    // AVSIKTLIGA globala tilldelningar — krävs av appens boot-sekvens.
+    // window.Translation och window.Helpers används som fallback i många
+    // moduler som laddas innan dependency injection är initialiserad.
+    // Ta INTE bort dessa utan att först verifiera manuellt i webbläsaren.
     window.Translation = TranslationLogic;
     window.Helpers = Helpers;
 }
