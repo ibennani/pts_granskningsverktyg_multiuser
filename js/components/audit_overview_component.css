@@ -11,9 +11,33 @@
     font-size: 0.95rem;
 }
 
-.audit-overview__newer-rule-banner a {
-    text-decoration: underline;
-    color: #000000;
+.audit-overview__newer-rule-banner__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem 0.75rem;
+}
+
+.audit-overview__newer-rule-banner__left {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.5rem;
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.audit-overview__newer-rule-banner__lead {
+    flex-shrink: 0;
+}
+
+.audit-overview__newer-rule-banner__btn {
+    margin-right: 0;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.9rem;
+    line-height: 1.25;
+    min-height: 2rem;
 }
 
 [data-theme="dark"] .audit-overview__newer-rule-banner {

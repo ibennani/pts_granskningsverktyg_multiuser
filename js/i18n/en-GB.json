@@ -219,6 +219,7 @@
   "audit_not_locked_for_export": "Complete the audit first before you can export.",
   "audit_not_started_yet": "The audit has not yet been started",
   "audit_overview_newer_rule_available": "A newer rule file is available.",
+  "audit_overview_newer_rule_maybe_later": "Maybe later",
   "audit_overview_title": "Audit overview",
   "landmark_toolbar": "Toolbar",
   "landmark_sidebar": "Right sidebar",

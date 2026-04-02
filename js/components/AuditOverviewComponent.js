@@ -1,8 +1,13 @@
 import { ScoreAnalysisComponent } from './ScoreAnalysisComponent.js';
 import { AuditInfoComponent } from './AuditInfoComponent.js';
 import { ProgressBarComponent } from './ProgressBarComponent.js';
+import * as ScoreCalculator from '../logic/ScoreCalculator.js';
 import { get_rules } from '../api/client.js';
 import { find_newer_rule_for_audit } from '../logic/newer_rule_check.js';
+import {
+    newer_rule_banner_dismissal_storage_key,
+    should_show_newer_rule_banner
+} from '../logic/audit_overview_newer_rule_banner_dismissal.js';
 import { version_greater_than } from '../utils/version_utils.js';
 import "./audit_overview_component.css";
 
@@ -74,7 +79,7 @@ export class AuditOverviewComponent {
                 Helpers: this.Helpers,
                 Translation: this.Translation,
                 getState: this.getState,
-                ScoreCalculator: window.ScoreCalculator
+                ScoreCalculator
             }
         });
     }
@@ -131,18 +136,53 @@ export class AuditOverviewComponent {
                 .catch(() => {});
         }
 
-        if (current_global_state.auditStatus === 'in_progress' && this.newerRuleAvailable?.ruleId && this.newerRuleAvailable?.version) {
-            const banner = this.Helpers.create_element('div', { class_name: 'audit-overview__newer-rule-banner' });
-            const link = this.Helpers.create_element('a', {
-                text_content: t('update_rulefile_button_with_version', { version: this.newerRuleAvailable.version }),
-                attributes: { href: '#', 'aria-live': 'polite' }
+        const newer = this.newerRuleAvailable;
+        const dismissal_key = newer_rule_banner_dismissal_storage_key(
+            current_global_state.auditId,
+            current_global_state.ruleSetId
+        );
+        const dismissed_version = typeof sessionStorage !== 'undefined'
+            ? sessionStorage.getItem(dismissal_key)
+            : null;
+        const show_newer_banner = current_global_state.auditStatus === 'in_progress'
+            && newer?.ruleId
+            && newer?.version
+            && should_show_newer_rule_banner(newer.version, dismissed_version);
+
+        if (show_newer_banner) {
+            const banner = this.Helpers.create_element('div', {
+                class_name: 'audit-overview__newer-rule-banner',
+                attributes: { 'aria-live': 'polite' }
             });
-            link.addEventListener('click', (e) => {
-                e.preventDefault();
-                this.router('update_rulefile', { ruleId: this.newerRuleAvailable.ruleId, version: this.newerRuleAvailable.version });
+            const row = this.Helpers.create_element('div', { class_name: 'audit-overview__newer-rule-banner__row' });
+            const left = this.Helpers.create_element('div', { class_name: 'audit-overview__newer-rule-banner__left' });
+            left.appendChild(this.Helpers.create_element('span', {
+                class_name: 'audit-overview__newer-rule-banner__lead',
+                text_content: t('audit_overview_newer_rule_available') + ' '
+            }));
+            const update_btn = this.Helpers.create_element('button', {
+                class_name: ['button', 'button-default', 'audit-overview__newer-rule-banner__btn'],
+                text_content: t('update_rulefile_button_with_version', { version: newer.version }),
+                attributes: { type: 'button' }
             });
-            banner.appendChild(this.Helpers.create_element('span', { text_content: t('audit_overview_newer_rule_available') + ' ' }));
-            banner.appendChild(link);
+            update_btn.addEventListener('click', () => {
+                this.router('update_rulefile', { ruleId: newer.ruleId, version: newer.version });
+            });
+            left.appendChild(update_btn);
+            row.appendChild(left);
+            const later_btn = this.Helpers.create_element('button', {
+                class_name: ['button', 'button-secondary', 'audit-overview__newer-rule-banner__btn'],
+                text_content: t('audit_overview_newer_rule_maybe_later'),
+                attributes: { type: 'button' }
+            });
+            later_btn.addEventListener('click', () => {
+                if (typeof sessionStorage !== 'undefined' && newer?.version) {
+                    sessionStorage.setItem(dismissal_key, newer.version);
+                }
+                this.render();
+            });
+            row.appendChild(later_btn);
+            banner.appendChild(row);
             plate_element.appendChild(banner);
         }
 

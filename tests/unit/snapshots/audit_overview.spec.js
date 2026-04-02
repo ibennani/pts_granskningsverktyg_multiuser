@@ -54,28 +54,12 @@ function build_translation() {
 }
 
 describe('AuditOverviewComponent snapshot', () => {
-    let orig_score;
-
     beforeEach(() => {
         jest.resetModules();
         register_translation_module(build_translation());
-        orig_score = global.window.ScoreCalculator;
-        global.window.ScoreCalculator = {
-            calculateQualityScore: () => ({
-                totalScore: 10,
-                principles: {
-                    perceivable: { labelKey: 'perceivable', score: 5 },
-                    operable: { labelKey: 'operable', score: 10 },
-                    understandable: { labelKey: 'understandable', score: 15 },
-                    robust: { labelKey: 'robust', score: 8 },
-                },
-                sampleCount: 1,
-            }),
-        };
     });
 
     afterEach(() => {
-        global.window.ScoreCalculator = orig_score;
         document.body.innerHTML = '';
         delete window.Helpers;
         delete window.Translation;
