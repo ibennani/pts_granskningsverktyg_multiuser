@@ -1,3 +1,4 @@
+import { calculateQualityScore } from '../logic/ScoreCalculator.js';
 import "./score_analysis_component.css";
 
 export const ScoreAnalysisComponent = {
@@ -7,12 +8,13 @@ export const ScoreAnalysisComponent = {
         this.Helpers = deps.Helpers;
         this.Translation = deps.Translation;
         this.getState = deps.getState;
-        this.ScoreCalculator = deps.ScoreCalculator;
     },
-    
+
     _performAnalysis() {
-        // Function name is kept for compatibility, but it now returns a deficiency index
-        return this.ScoreCalculator.calculateQualityScore(this.getState());
+        // Function name is kept for compatibility, but it now returns a deficiency index.
+        // calculateQualityScore importeras direkt så render inte kraschar om deps.ScoreCalculator
+        // saknas efter destroy eller vid omritning före init (singleton-livscykel).
+        return calculateQualityScore(this.getState());
     },
 
     _createGaugeSVG(value, lang_code) {
@@ -197,6 +199,5 @@ export const ScoreAnalysisComponent = {
         this.Helpers = null;
         this.Translation = null;
         this.getState = null;
-        this.ScoreCalculator = null;
     }
 };

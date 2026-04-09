@@ -1,7 +1,6 @@
 import { ScoreAnalysisComponent } from './ScoreAnalysisComponent.js';
 import { AuditInfoComponent } from './AuditInfoComponent.js';
 import { ProgressBarComponent } from './ProgressBarComponent.js';
-import * as ScoreCalculator from '../logic/ScoreCalculator.js';
 import { get_rules } from '../api/client.js';
 import { find_newer_rule_for_audit } from '../logic/newer_rule_check.js';
 import {
@@ -78,8 +77,7 @@ export class AuditOverviewComponent {
             deps: {
                 Helpers: this.Helpers,
                 Translation: this.Translation,
-                getState: this.getState,
-                ScoreCalculator
+                getState: this.getState
             }
         });
     }
