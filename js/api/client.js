@@ -273,6 +273,9 @@ export async function api_patch(path, body) {
         if (err.serverVersion !== undefined && err.serverVersion !== null) {
             e.serverVersion = err.serverVersion;
         }
+        if (Object.prototype.hasOwnProperty.call(err, 'lastUpdatedBy')) {
+            e.lastUpdatedBy = err.lastUpdatedBy;
+        }
         if (err.existingAuditId !== undefined) {
             e.existingAuditId = err.existingAuditId;
         }

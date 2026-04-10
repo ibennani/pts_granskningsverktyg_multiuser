@@ -383,6 +383,27 @@ describe('api/client – login och HTTP-metoder', () => {
         }
     });
 
+    test('api_patch vid versionskonflikt sätter lastUpdatedBy', async () => {
+        set_auth_token('t');
+        fetch.mockResolvedValue({
+            ok: false,
+            status: 409,
+            json: async () => ({
+                error: 'Versionskonflikt',
+                serverVersion: 3,
+                lastUpdatedBy: 'Testare'
+            })
+        });
+        try {
+            await api_patch('/audits/a', {});
+            expect.fail('ska kasta');
+        } catch (e) {
+            expect(e.status).toBe(409);
+            expect(e.serverVersion).toBe(3);
+            expect(e.lastUpdatedBy).toBe('Testare');
+        }
+    });
+
     test('api_get vid 404 kastar med status', async () => {
         fetch.mockResolvedValue({
             ok: false,

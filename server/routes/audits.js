@@ -594,13 +594,18 @@ router.patch('/:id', async (req, res) => {
             values
         );
         if (result.rows.length === 0) {
-            const check = await query('SELECT version FROM audits WHERE id = $1', [id]);
+            const check = await query(
+                'SELECT version, last_updated_by FROM audits WHERE id = $1',
+                [id]
+            );
             if (check.rows.length === 0) {
                 return res.status(404).json({ error: 'Granskning hittades inte' });
             }
+            const row = check.rows[0];
             return res.status(409).json({
                 error: 'Versionskonflikt',
-                serverVersion: Number(check.rows[0].version)
+                serverVersion: Number(row.version),
+                lastUpdatedBy: row.last_updated_by ?? null
             });
         }
         const audit = result.rows[0];
