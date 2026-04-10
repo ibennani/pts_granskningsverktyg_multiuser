@@ -78,18 +78,25 @@
 
 .statistics-sampletype-chart__item {
     display: grid;
-    grid-template-columns: minmax(12rem, 16rem) 1fr;
+    /* Samma linjering som tidigare: fast etikettbredd, stapel kolumn till höger */
+    grid-template-columns: minmax(12rem, 16rem) minmax(0, 1fr);
     gap: 0.2rem 0.6rem;
     align-items: center;
 }
 
 .statistics-sampletype-chart__label {
+    display: block;
     min-width: 0;
+    width: 100%;
     white-space: nowrap;
     overflow-x: auto;
     font-variant-numeric: tabular-nums;
     text-align: right;
     justify-self: stretch;
+}
+
+.statistics-sampletype-chart__label strong {
+    white-space: nowrap;
 }
 
 .statistics-sampletype-chart__track {
