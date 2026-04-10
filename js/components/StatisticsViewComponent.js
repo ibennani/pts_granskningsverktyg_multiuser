@@ -58,6 +58,20 @@ export class StatisticsViewComponent {
         return n.toFixed(1);
     }
 
+    /** Median för visning i sammanfattningstext, decimaltecken enligt språk. */
+    _format_median_number_locale(val) {
+        const lang =
+            typeof this.Translation?.get_current_language_code === 'function'
+                ? this.Translation.get_current_language_code()
+                : 'sv-SE';
+        if (val === null || val === undefined || Number.isNaN(Number(val))) return null;
+        const n = Number(val);
+        if (Math.abs(n - Math.round(n)) < 0.05) {
+            return Math.round(n).toLocaleString(lang, { maximumFractionDigits: 0 });
+        }
+        return n.toLocaleString(lang, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    }
+
     /**
      * @param {HTMLElement} el
      * @param {object} Helpers
@@ -136,7 +150,7 @@ export class StatisticsViewComponent {
                     ? [{ text: '.', strong: false }]
                     : [
                           { text: t('statistics_summary_worst_sample_type_mid'), strong: false },
-                          { text: this._format_median_number(worst_score), strong: true },
+                          { text: this._format_median_number_locale(worst_score), strong: true },
                           { text: t('statistics_summary_worst_sample_type_suffix'), strong: false }
                       ])
             ]);
@@ -308,21 +322,43 @@ export class StatisticsViewComponent {
             plate.appendChild(h3);
             const ol = Helpers.create_element('ol', { class_name: 'statistics-top-failed__list' });
             sec.top_requirements.forEach((row) => {
-                const li = Helpers.create_element('li', {});
+                const li = Helpers.create_element('li', {
+                    class_name: 'statistics-top-failed__item'
+                });
                 li.appendChild(
                     Helpers.create_element('strong', {
                         text_content: row.requirement_name
                     })
                 );
-                li.appendChild(document.createTextNode('. '));
-                li.appendChild(
-                    document.createTextNode(
-                        t('statistics_req_fail_line_percent', {
-                            percent: String(row.audit_fail_rate_percent),
-                            count: String(row.audit_count)
-                        })
-                    )
+                const pct = Math.min(
+                    100,
+                    Math.max(0, Number(row.audit_fail_rate_percent) || 0)
                 );
+                const meta_line = t('statistics_req_fail_meta_line', {
+                    percent: String(row.audit_fail_rate_percent),
+                    count: String(row.audit_count)
+                });
+                const meta_row = Helpers.create_element('div', {
+                    class_name: 'statistics-top-failed__meta-row'
+                });
+                meta_row.appendChild(
+                    Helpers.create_element('span', {
+                        class_name: 'statistics-top-failed__meta-count',
+                        text_content: meta_line
+                    })
+                );
+                const track = Helpers.create_element('span', {
+                    class_name: 'statistics-sampletype-chart__track',
+                    attributes: { 'aria-hidden': 'true' }
+                });
+                track.appendChild(
+                    Helpers.create_element('span', {
+                        class_name: 'statistics-sampletype-chart__fill',
+                        attributes: { style: `width: ${pct}%;` }
+                    })
+                );
+                meta_row.appendChild(track);
+                li.appendChild(meta_row);
                 ol.appendChild(li);
             });
             plate.appendChild(ol);
