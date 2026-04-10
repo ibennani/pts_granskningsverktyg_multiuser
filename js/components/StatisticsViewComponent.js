@@ -3,12 +3,15 @@
  */
 import { get_audit_statistics_summary } from '../api/client.js';
 import { ScoreAnalysisComponent } from './ScoreAnalysisComponent.js';
+import {
+    append_statistics_sampletype_chart_block,
+    append_statistics_score_analysis_block,
+    append_statistics_top_failed_block,
+    build_statistics_summary_list
+} from './statistics_view_sections.js';
 import './statistics_view_component.css';
 
 const MONITORING_FALLBACK_SENTINEL = '__GV_STATS_MONITORING_FALLBACK__';
-
-/** Samma ordning som serverns WCAG_PRINCIPLE_IDS. */
-const WCAG_PRINCIPLE_ORDER = ['perceivable', 'operable', 'understandable', 'robust'];
 
 export class StatisticsViewComponent {
     constructor() {
@@ -19,6 +22,7 @@ export class StatisticsViewComponent {
         this.Helpers = null;
         this.router = null;
         this.year_select_ref = null;
+        this.monitoring_type_select_ref = null;
         this._fetch_error = null;
     }
 
@@ -37,6 +41,7 @@ export class StatisticsViewComponent {
     destroy() {
         ScoreAnalysisComponent.destroy();
         this.year_select_ref = null;
+        this.monitoring_type_select_ref = null;
         this.root = null;
         this.deps = null;
     }
@@ -51,326 +56,152 @@ export class StatisticsViewComponent {
         return t('statistics_summary_completed_plural', { count: String(count) });
     }
 
-    _format_median_number(val) {
-        if (val === null || val === undefined || Number.isNaN(Number(val))) return null;
-        const n = Number(val);
-        if (Math.abs(n - Math.round(n)) < 0.05) return String(Math.round(n));
-        return n.toFixed(1);
-    }
-
-    /** Median för visning i sammanfattningstext, decimaltecken enligt språk. */
-    _format_median_number_locale(val) {
-        const lang =
-            typeof this.Translation?.get_current_language_code === 'function'
-                ? this.Translation.get_current_language_code()
-                : 'sv-SE';
-        if (val === null || val === undefined || Number.isNaN(Number(val))) return null;
-        const n = Number(val);
-        if (Math.abs(n - Math.round(n)) < 0.05) {
-            return Math.round(n).toLocaleString(lang, { maximumFractionDigits: 0 });
-        }
-        return n.toLocaleString(lang, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-    }
-
-    /**
-     * @param {HTMLElement} el
-     * @param {object} Helpers
-     * @param {{ text: string, strong: boolean }[]} text_fragments
-     */
-    _append_fragments_to_element(el, Helpers, text_fragments) {
-        text_fragments.forEach((frag) => {
-            if (frag.strong) {
-                el.appendChild(Helpers.create_element('strong', { text_content: frag.text }));
-            } else {
-                el.appendChild(document.createTextNode(frag.text));
-            }
-        });
-    }
-
-    /**
-     * Två punkter: antal slutförda granskningar, sedan mediantid eller att den saknas.
-     * @param {function} t
-     * @param {object} Helpers
-     * @param {number} year
-     * @param {object} year_data
-     * @returns {HTMLElement}
-     */
-    _build_summary_list(t, Helpers, year, year_data) {
-        const ul = Helpers.create_element('ul', { class_name: 'statistics-summary__list' });
-
-        const li1 = Helpers.create_element('li', { class_name: 'statistics-summary__item' });
-        this._append_fragments_to_element(li1, Helpers, [
-            { text: t('statistics_summary_under_year', { year: String(year) }), strong: false },
-            { text: this._completed_strong_text(t, year_data.completed_count), strong: true },
-            { text: '.', strong: false }
-        ]);
-        ul.appendChild(li1);
-
-        const li2 = Helpers.create_element('li', { class_name: 'statistics-summary__item' });
-        const median = year_data.median_duration_weeks;
-        if (median !== null && median !== undefined) {
-            this._append_fragments_to_element(li2, Helpers, [
-                { text: t('statistics_summary_median_word'), strong: true },
-                { text: t('statistics_summary_median_between'), strong: false },
-                {
-                    text: t('statistics_summary_median_weeks_strong', { weeks: String(median) }),
-                    strong: true
-                },
-                { text: '.', strong: false }
-            ]);
-        } else {
-            li2.appendChild(document.createTextNode(t('statistics_summary_median_unknown_inline')));
-        }
-        ul.appendChild(li2);
-
-        const li3 = Helpers.create_element('li', { class_name: 'statistics-summary__item' });
-        const med_samples = this._format_median_number(year_data.median_sample_count);
-        if (med_samples !== null) {
-            this._append_fragments_to_element(li3, Helpers, [
-                { text: t('statistics_summary_median_samples_prefix'), strong: false },
-                { text: med_samples, strong: true },
-                { text: t('statistics_summary_median_samples_suffix'), strong: false }
-            ]);
-        } else {
-            li3.appendChild(document.createTextNode(t('statistics_summary_median_samples_unknown')));
-        }
-        ul.appendChild(li3);
-
-        const li4 = Helpers.create_element('li', { class_name: 'statistics-summary__item' });
-        const worst = year_data.worst_sample_type;
-        const worst_type = worst && typeof worst.sample_type_label === 'string'
-            ? worst.sample_type_label.trim()
-            : (worst && typeof worst.sample_type === 'string' ? worst.sample_type.trim() : '');
-        const worst_score = worst && typeof worst.median_deficiency === 'number' ? worst.median_deficiency : null;
-        if (worst_type) {
-            this._append_fragments_to_element(li4, Helpers, [
-                { text: t('statistics_summary_worst_sample_type_prefix'), strong: false },
-                { text: worst_type, strong: true },
-                ...(worst_score === null || Number.isNaN(Number(worst_score))
-                    ? [{ text: '.', strong: false }]
-                    : [
-                          { text: t('statistics_summary_worst_sample_type_mid'), strong: false },
-                          { text: this._format_median_number_locale(worst_score), strong: true },
-                          { text: t('statistics_summary_worst_sample_type_suffix'), strong: false }
-                      ])
-            ]);
-        } else {
-            li4.appendChild(document.createTextNode(t('statistics_summary_worst_sample_type_unknown')));
-        }
-        ul.appendChild(li4);
-
-        return ul;
-    }
-
-    _append_sampletype_chart_block(plate, t, Helpers, chart_sections) {
-        const sections = Array.isArray(chart_sections) ? chart_sections : [];
-        if (sections.length === 0) return;
-
-        const wrap = Helpers.create_element('section', { class_name: 'statistics-sampletype-chart' });
-        wrap.appendChild(Helpers.create_element('h2', {
-            class_name: 'statistics-sampletype-chart__h2',
-            text_content: t('statistics_sampletype_chart_heading')
-        }));
-        wrap.appendChild(Helpers.create_element('p', {
-            class_name: 'view-intro-text statistics-sampletype-chart__intro',
-            text_content: t('statistics_sampletype_chart_intro')
-        }));
-
-        sections.forEach((sec) => {
-            const h3 = Helpers.create_element('h3', {
-                class_name: 'statistics-sampletype-chart__h3',
-                text_content: this._monitoring_heading(sec.monitoring_type_label)
-            });
-            wrap.appendChild(h3);
-
-            const ul = Helpers.create_element('ul', { class_name: 'statistics-sampletype-chart__list' });
-            (sec.sample_types || []).forEach((row) => {
-                const li = Helpers.create_element('li', { class_name: 'statistics-sampletype-chart__item' });
-                const val = typeof row.median_deficiency === 'number' ? row.median_deficiency : 0;
-                const label_left = Helpers.create_element('span', { class_name: 'statistics-sampletype-chart__label' });
-                label_left.appendChild(document.createTextNode(row.sample_type_label || row.sample_type_id || ''));
-                label_left.appendChild(document.createTextNode(': '));
-                label_left.appendChild(Helpers.create_element('strong', {
-                    text_content: this._format_median_number(val)
-                }));
-                li.appendChild(label_left);
-
-                const track = Helpers.create_element('span', { class_name: 'statistics-sampletype-chart__track' });
-                track.appendChild(Helpers.create_element('span', {
-                    class_name: 'statistics-sampletype-chart__fill',
-                    attributes: { style: `width: ${Math.min(100, Math.max(0, val))}%;` }
-                }));
-                li.appendChild(track);
-                ul.appendChild(li);
-            });
-            wrap.appendChild(ul);
-        });
-
-        plate.appendChild(wrap);
-    }
-
-    /**
-     * Samma visning som på granskningsöversikten (ScoreAnalysisComponent), med medianvärden från API.
-     * @param {HTMLElement} plate
-     * @param {function} t
-     * @param {object} Helpers
-     * @param {object} year_data
-     */
-    _append_score_analysis_block(plate, t, Helpers, year_data) {
-        const pmd = year_data.principle_median_deficiency || {};
-        const has_median_data = WCAG_PRINCIPLE_ORDER.some((id) => {
-            const v = pmd[id];
-            return v !== null && v !== undefined && !Number.isNaN(Number(v));
-        });
-
-        const section = Helpers.create_element('section', {
-            class_name: 'statistics-score-analysis-section',
-            attributes: { 'aria-labelledby': 'statistics-score-analysis-heading' }
-        });
-        section.appendChild(
-            Helpers.create_element('h2', {
-                id: 'statistics-score-analysis-heading',
-                class_name: 'statistics-score-analysis-section__h2',
-                text_content: t('statistics_principles_chart_heading')
-            })
-        );
-        section.appendChild(
-            Helpers.create_element('p', {
-                class_name: 'statistics-score-analysis-section__intro view-intro-text',
-                text_content: t('statistics_principles_chart_intro')
-            })
-        );
-
-        if (!has_median_data) {
-            section.appendChild(
-                Helpers.create_element('p', {
-                    class_name: 'statistics-score-analysis-section__empty',
-                    text_content: t('statistics_principles_chart_empty')
-                })
-            );
-            plate.appendChild(section);
-            return;
-        }
-
-        const container = Helpers.create_element('div', {
-            id: 'statistics-score-analysis-root',
-            class_name: 'statistics-score-analysis-root'
-        });
-        section.appendChild(container);
-        plate.appendChild(section);
-
-        const completed = year_data.completed_count || 0;
-        const get_override = () => {
-            const principles = {};
-            for (const id of WCAG_PRINCIPLE_ORDER) {
-                const raw = pmd[id];
-                const n =
-                    raw !== null && raw !== undefined && !Number.isNaN(Number(raw)) ? Number(raw) : 0;
-                principles[id] = { labelKey: id, score: n };
-            }
-            const tot = year_data.total_median_deficiency;
-            const totalScore =
-                tot !== null && tot !== undefined && !Number.isNaN(Number(tot)) ? Number(tot) : 0;
-            return {
-                totalScore,
-                principles,
-                sampleCount: completed,
-                footnoteTranslationKey: 'statistics_score_based_on_completed_audits',
-                footnoteParams: { count: completed }
-            };
+    _empty_year_payload() {
+        return {
+            completed_count: 0,
+            median_duration_weeks: null,
+            monitoring_type_top_failed: [],
+            principle_median_deficiency: {},
+            total_median_deficiency: null,
+            median_sample_count: null,
+            worst_sample_type: null,
+            monitoring_sampletype_chart: []
         };
-
-        ScoreAnalysisComponent.init({
-            root: container,
-            deps: {
-                Helpers,
-                Translation: this.Translation,
-                getState: () => ({ ruleFileContent: null, samples: [] }),
-                getScoreAnalysisOverride: get_override
-            }
-        });
-        ScoreAnalysisComponent.render();
     }
 
-    _append_top_failed_block(plate, t, Helpers, sections) {
-        plate.appendChild(
-            Helpers.create_element('h2', {
-                class_name: 'statistics-top-failed__h2',
-                text_content: t('statistics_top_failed_heading')
+    /**
+     * All visad statistik ska komma från per_monitoring_type för vald nyckel
+     * (samma år som year_raw). Endast nycklar som har ett slice-objekt används.
+     * @returns {{ year_data: object, selected_monitoring_key: string, should_sync_url: boolean, labels_with_data: string[] }}
+     */
+    _resolve_monitoring_slice(year_raw, params) {
+        const ordered = Array.isArray(year_raw.monitoring_type_labels_ordered)
+            ? year_raw.monitoring_type_labels_ordered
+            : [];
+        const pm =
+            year_raw.per_monitoring_type && typeof year_raw.per_monitoring_type === 'object'
+                ? year_raw.per_monitoring_type
+                : {};
+        const labels_with_data = ordered.filter(
+            (k) => pm[k] !== undefined && pm[k] !== null && typeof pm[k] === 'object'
+        );
+        if (labels_with_data.length === 0) {
+            return {
+                year_data: this._empty_year_payload(),
+                selected_monitoring_key: '',
+                should_sync_url: false,
+                labels_with_data: []
+            };
+        }
+        const raw =
+            params.monitoringType !== undefined && params.monitoringType !== null
+                ? String(params.monitoringType).trim()
+                : '';
+        const want =
+            raw && labels_with_data.includes(raw) ? raw : labels_with_data[0];
+        const year_data = pm[want];
+        const should_sync_url = String(params.monitoringType || '') !== String(want);
+        return {
+            year_data,
+            selected_monitoring_key: want,
+            should_sync_url,
+            labels_with_data
+        };
+    }
+
+    _statistics_nav_params(year_num, monitoring_key) {
+        const out = { year: String(year_num) };
+        if (monitoring_key) out.monitoringType = monitoring_key;
+        return out;
+    }
+
+    _wire_statistics_year_select(Helpers, t, years, selected_year) {
+        const year_field = Helpers.create_element('div', { class_name: 'statistics-filter-row__field' });
+        year_field.appendChild(
+            Helpers.create_element('label', {
+                class_name: 'statistics-filter-row__label',
+                attributes: { for: 'statistics-year-select' },
+                text_content: t('statistics_year_label')
             })
         );
-        plate.appendChild(
-            Helpers.create_element('p', {
-                class_name: 'statistics-top-failed__intro view-intro-text',
-                text_content: t('statistics_top_failed_intro')
-            })
-        );
-        if (!sections.length) {
-            plate.appendChild(
-                Helpers.create_element('p', {
-                    class_name: 'statistics-top-failed__empty',
-                    text_content: t('statistics_top_failed_empty')
+        this.year_select_ref = Helpers.create_element('select', {
+            id: 'statistics-year-select',
+            class_name: ['form-control', 'statistics-year-select']
+        });
+        years.forEach((y) => {
+            this.year_select_ref.appendChild(
+                Helpers.create_element('option', {
+                    attributes: { value: String(y) },
+                    text_content: String(y)
                 })
             );
-            return;
-        }
-        sections.forEach((sec) => {
-            const h3 = Helpers.create_element('h3', {
-                class_name: 'statistics-top-failed__h3',
-                text_content: this._monitoring_heading(sec.monitoring_type_label)
-            });
-            plate.appendChild(h3);
-            const ol = Helpers.create_element('ol', { class_name: 'statistics-top-failed__list' });
-            sec.top_requirements.forEach((row) => {
-                const li = Helpers.create_element('li', {
-                    class_name: 'statistics-top-failed__item'
-                });
-                li.appendChild(
-                    Helpers.create_element('strong', {
-                        text_content: row.requirement_name
-                    })
-                );
-                const pct = Math.min(
-                    100,
-                    Math.max(0, Number(row.audit_fail_rate_percent) || 0)
-                );
-                const meta_line = t('statistics_req_fail_meta_line', {
-                    percent: String(row.audit_fail_rate_percent),
-                    count: String(row.audit_count)
-                });
-                const meta_row = Helpers.create_element('div', {
-                    class_name: 'statistics-top-failed__meta-row'
-                });
-                meta_row.appendChild(
-                    Helpers.create_element('span', {
-                        class_name: 'statistics-top-failed__meta-count',
-                        text_content: meta_line
-                    })
-                );
-                const track = Helpers.create_element('span', {
-                    class_name: 'statistics-sampletype-chart__track',
-                    attributes: { 'aria-hidden': 'true' }
-                });
-                track.appendChild(
-                    Helpers.create_element('span', {
-                        class_name: 'statistics-sampletype-chart__fill',
-                        attributes: { style: `width: ${pct}%;` }
-                    })
-                );
-                meta_row.appendChild(track);
-                li.appendChild(meta_row);
-                ol.appendChild(li);
-            });
-            plate.appendChild(ol);
         });
+        this.year_select_ref.value = String(selected_year);
+        this.year_select_ref.addEventListener('change', () => {
+            const y = parseInt(this.year_select_ref.value, 10);
+            if (!years.includes(y)) return;
+            this.router('statistics', { year: String(y) });
+        });
+        year_field.appendChild(this.year_select_ref);
+        return year_field;
     }
 
-    _handle_year_change(selected_year, available_years) {
-        const y = parseInt(selected_year, 10);
-        if (!available_years.includes(y)) return;
-        if (typeof this.router === 'function') {
-            this.router('statistics', { year: String(y) });
-        }
+    _wire_statistics_monitoring_select(Helpers, t, years, monitoring_labels, selected_monitoring_key) {
+        const type_field = Helpers.create_element('div', { class_name: 'statistics-filter-row__field' });
+        type_field.appendChild(
+            Helpers.create_element('label', {
+                class_name: 'statistics-filter-row__label',
+                attributes: { for: 'statistics-rulefile-type-select' },
+                text_content: t('statistics_rulefile_type_label')
+            })
+        );
+        this.monitoring_type_select_ref = Helpers.create_element('select', {
+            id: 'statistics-rulefile-type-select',
+            class_name: ['form-control', 'statistics-monitoring-select']
+        });
+        monitoring_labels.forEach((key) => {
+            this.monitoring_type_select_ref.appendChild(
+                Helpers.create_element('option', {
+                    attributes: { value: key },
+                    text_content: this._monitoring_heading(key)
+                })
+            );
+        });
+        this.monitoring_type_select_ref.value = selected_monitoring_key;
+        this.monitoring_type_select_ref.addEventListener('change', () => {
+            const y = parseInt(this.year_select_ref?.value || '', 10);
+            if (!years.includes(y)) return;
+            const mk = this.monitoring_type_select_ref.value || '';
+            if (!mk) return;
+            this.router('statistics', this._statistics_nav_params(y, mk));
+        });
+        type_field.appendChild(this.monitoring_type_select_ref);
+        return type_field;
+    }
+
+    _append_filters_section(plate, t, Helpers, years, selected_year, monitoring_labels, selected_monitoring_key) {
+        const section = Helpers.create_element('section', {
+            class_name: 'statistics-filters-section',
+            attributes: { 'aria-labelledby': 'statistics-filters-heading' }
+        });
+        section.appendChild(
+            Helpers.create_element('h2', {
+                id: 'statistics-filters-heading',
+                class_name: 'statistics-filters-section__h2',
+                text_content: t('statistics_filters_section_heading')
+            })
+        );
+        section.appendChild(
+            Helpers.create_element('p', {
+                class_name: 'view-intro-text statistics-filters-section__intro',
+                text_content: t('statistics_filters_section_intro')
+            })
+        );
+        const row = Helpers.create_element('div', { class_name: 'statistics-filter-row form-group' });
+        row.appendChild(this._wire_statistics_year_select(Helpers, t, years, selected_year));
+        row.appendChild(this._wire_statistics_monitoring_select(Helpers, t, years, monitoring_labels, selected_monitoring_key));
+        section.appendChild(row);
+        plate.appendChild(section);
     }
 
     _create_initial_plate(t, Helpers) {
@@ -395,42 +226,6 @@ export class StatisticsViewComponent {
         });
         plate.appendChild(status_el);
         return { plate, status_el };
-    }
-
-    _append_year_dropdown(plate, t, Helpers, years, selected) {
-        const year_row = Helpers.create_element('div', { class_name: 'statistics-year-row form-group' });
-        year_row.appendChild(
-            Helpers.create_element('h2', {
-                class_name: 'statistics-year-row__h2',
-                text_content: t('statistics_year_label')
-            })
-        );
-        this.year_select_ref = Helpers.create_element('select', {
-            id: 'statistics-year-select',
-            class_name: ['form-control', 'statistics-year-select'],
-            attributes: { 'aria-label': t('statistics_year_label') }
-        });
-        year_row.appendChild(
-            Helpers.create_element('label', {
-                class_name: 'statistics-year-row__instruction',
-                attributes: { for: 'statistics-year-select' },
-                text_content: t('statistics_year_instruction')
-            })
-        );
-        years.forEach((y) => {
-            this.year_select_ref.appendChild(
-                Helpers.create_element('option', {
-                    attributes: { value: String(y) },
-                    text_content: String(y)
-                })
-            );
-        });
-        this.year_select_ref.value = String(selected);
-        this.year_select_ref.addEventListener('change', (ev) => {
-            this._handle_year_change(ev.target.value, years);
-        });
-        year_row.appendChild(this.year_select_ref);
-        plate.appendChild(year_row);
     }
 
     async render() {
@@ -472,19 +267,40 @@ export class StatisticsViewComponent {
         let selected = params.year ? parseInt(params.year, 10) : years[0];
         if (!years.includes(selected)) selected = years[0];
 
-        this._append_year_dropdown(plate, t, Helpers, years, selected);
-
         const per = data.per_year || {};
-        const year_data = per[String(selected)] || {
-            completed_count: 0,
-            median_duration_weeks: null,
-            monitoring_type_top_failed: [],
-            principle_median_deficiency: {},
-            total_median_deficiency: null,
-            median_sample_count: null,
-            worst_sample_type: null,
-            monitoring_sampletype_chart: []
-        };
+        const year_raw = per[String(selected)] || this._empty_year_payload();
+
+        const resolved = this._resolve_monitoring_slice(year_raw, params);
+        if (resolved.should_sync_url && typeof this.router === 'function') {
+            this.router(
+                'statistics',
+                this._statistics_nav_params(selected, resolved.selected_monitoring_key)
+            );
+            return;
+        }
+
+        const { year_data, selected_monitoring_key } = resolved;
+        const monitoring_labels = resolved.labels_with_data;
+
+        if (monitoring_labels.length === 0) {
+            plate.appendChild(
+                Helpers.create_element('p', {
+                    class_name: 'statistics-summary',
+                    text_content: t('statistics_no_rulefile_types_for_year')
+                })
+            );
+            return;
+        }
+
+        this._append_filters_section(
+            plate,
+            t,
+            Helpers,
+            years,
+            selected,
+            monitoring_labels,
+            selected_monitoring_key
+        );
 
         const summary_wrap = Helpers.create_element('section', {
             class_name: 'statistics-summary',
@@ -496,13 +312,29 @@ export class StatisticsViewComponent {
                 text_content: t('statistics_summary_section_heading')
             })
         );
-        summary_wrap.appendChild(this._build_summary_list(t, Helpers, selected, year_data));
+        summary_wrap.appendChild(
+            build_statistics_summary_list(t, this.Translation, Helpers, selected, year_data, (tr, c) =>
+                this._completed_strong_text(tr, c)
+            )
+        );
         plate.appendChild(summary_wrap);
 
-        this._append_score_analysis_block(plate, t, Helpers, year_data);
+        append_statistics_score_analysis_block(plate, t, Helpers, this.Translation, year_data);
 
-        this._append_sampletype_chart_block(plate, t, Helpers, year_data.monitoring_sampletype_chart);
+        append_statistics_sampletype_chart_block(
+            plate,
+            t,
+            Helpers,
+            year_data.monitoring_sampletype_chart,
+            (lbl) => this._monitoring_heading(lbl)
+        );
 
-        this._append_top_failed_block(plate, t, Helpers, year_data.monitoring_type_top_failed || []);
+        append_statistics_top_failed_block(
+            plate,
+            t,
+            Helpers,
+            year_data.monitoring_type_top_failed || [],
+            (lbl) => this._monitoring_heading(lbl)
+        );
     }
 }

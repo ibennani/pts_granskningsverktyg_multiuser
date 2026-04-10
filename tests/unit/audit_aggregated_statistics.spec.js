@@ -198,6 +198,12 @@ describe('audit_aggregated_statistics', () => {
         expect(y2024.total_median_deficiency).toBe(0);
         expect(y2024.median_sample_count).toBe(1);
         expect(y2024.worst_sample_type).toBeNull();
+        expect(Array.isArray(y2024.monitoring_type_labels_ordered)).toBe(true);
+        expect(y2024.monitoring_type_labels_ordered).toContain('Webbsida');
+        const web_slice = y2024.per_monitoring_type?.Webbsida;
+        expect(web_slice).toBeTruthy();
+        expect(web_slice.completed_count).toBe(2);
+        expect(web_slice.median_duration_weeks).toBe(y2024.median_duration_weeks);
     });
 
     test('build_statistics_from_audit_rows hittar stickprovstyp med högst bristindex', () => {

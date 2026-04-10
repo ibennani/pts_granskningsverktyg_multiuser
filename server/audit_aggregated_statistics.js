@@ -345,9 +345,81 @@ function worst_sample_type_payload(by_sample_type_scores) {
 }
 
 /**
- * @param {Map<string, Map<string, { label: string, values: number[] }>>|undefined} by_monitoring
- * @returns {object[]}
+ * @returns {{ durations: number[], principle_scores: Record<string, number[]>, total_scores: number[], sample_counts: number[], by_sample_type_scores: Map<string, number[]>, sample_type_labels: Map<string, string> }}
  */
+function create_empty_monitoring_year_detail() {
+    return {
+        durations: [],
+        principle_scores: Object.fromEntries(WCAG_PRINCIPLE_IDS.map((id) => [id, []])),
+        total_scores: [],
+        sample_counts: [],
+        by_sample_type_scores: new Map(),
+        sample_type_labels: new Map()
+    };
+}
+
+/**
+ * @param {{ monitoring_detail?: Map<string, ReturnType<typeof create_empty_monitoring_year_detail>> }} yb
+ * @param {string} label
+ */
+function ensure_monitoring_year_detail(yb, label) {
+    if (!yb.monitoring_detail) yb.monitoring_detail = new Map();
+    if (!yb.monitoring_detail.has(label)) {
+        yb.monitoring_detail.set(label, create_empty_monitoring_year_detail());
+    }
+    return yb.monitoring_detail.get(label);
+}
+
+/**
+ * Svar för en regelfilstyp inom ett år: endast rader vars monitoring_label === label
+ * (via monitoring_detail, by_monitoring och by_monitoring_sampletype_scores för samma nyckel).
+ * @param {object} bucket
+ * @param {string} label
+ * @param {{ audit_count: number, fail_counts: Map<string, number>, req_defs: Map<string, object|null> }} mon
+ * @returns {object|null}
+ */
+function stats_payload_slice_for_monitoring_type(bucket, label, mon) {
+    const md = bucket.monitoring_detail?.get(label);
+    if (!md) return null;
+    const med = median_sorted(md.durations);
+    const median_duration_weeks = med === null ? null : Math.round(med);
+    const top_req = all_failed_requirements_for_monitoring(mon);
+    const monitoring_type_top_failed =
+        top_req.length > 0
+            ? [{ monitoring_type_label: label, audits_in_type: mon.audit_count, top_requirements: top_req }]
+            : [];
+    const principle_median_deficiency = principle_median_deficiency_payload(md.principle_scores);
+    const total_med = median_sorted(md.total_scores || []);
+    const total_median_deficiency =
+        total_med === null ? null : Math.round(total_med * 10) / 10;
+    const sample_med = median_sorted(md.sample_counts || []);
+    const median_sample_count = sample_med === null ? null : Math.round(sample_med * 10) / 10;
+    const worst_sample_type_raw = worst_sample_type_payload(md.by_sample_type_scores);
+    const worst_sample_type =
+        worst_sample_type_raw && worst_sample_type_raw.sample_type
+            ? {
+                  ...worst_sample_type_raw,
+                  sample_type_label:
+                      (md.sample_type_labels && md.sample_type_labels.get(worst_sample_type_raw.sample_type)) ||
+                      worst_sample_type_raw.sample_type
+              }
+            : null;
+    const mon_chart_map = bucket.by_monitoring_sampletype_scores?.get(label);
+    const monitoring_sampletype_chart = mon_chart_map
+        ? monitoring_sampletype_chart_payload(new Map([[label, mon_chart_map]]))
+        : [];
+    return {
+        completed_count: mon.audit_count,
+        median_duration_weeks,
+        monitoring_type_top_failed,
+        principle_median_deficiency,
+        total_median_deficiency,
+        median_sample_count,
+        worst_sample_type,
+        monitoring_sampletype_chart
+    };
+}
+
 function monitoring_sampletype_chart_payload(by_monitoring) {
     if (!by_monitoring || !(by_monitoring instanceof Map)) return [];
     const labels = [...by_monitoring.keys()].sort((a, b) => a.localeCompare(b, 'sv'));
@@ -399,6 +471,16 @@ function stats_payload_for_year(year, bucket, all_rows) {
               }
             : null;
     const monitoring_sampletype_chart = monitoring_sampletype_chart_payload(bucket.by_monitoring_sampletype_scores);
+    const monitoring_type_labels_ordered = [...bucket.by_monitoring.keys()].sort((a, b) =>
+        a.localeCompare(b, 'sv')
+    );
+    /** @type {Record<string, object>} */
+    const per_monitoring_type = {};
+    for (const label of monitoring_type_labels_ordered) {
+        const mon = bucket.by_monitoring.get(label);
+        const slice = stats_payload_slice_for_monitoring_type(bucket, label, mon);
+        if (slice) per_monitoring_type[label] = slice;
+    }
     return {
         completed_count,
         median_duration_weeks,
@@ -407,7 +489,9 @@ function stats_payload_for_year(year, bucket, all_rows) {
         total_median_deficiency,
         median_sample_count,
         worst_sample_type,
-        monitoring_sampletype_chart
+        monitoring_sampletype_chart,
+        per_monitoring_type,
+        monitoring_type_labels_ordered
     };
 }
 
@@ -449,18 +533,25 @@ export function build_statistics_from_audit_rows(rows) {
                 sample_counts: [],
                 by_sample_type_scores: new Map(),
                 sample_type_labels: new Map(),
-                by_monitoring_sampletype_scores: new Map()
+                by_monitoring_sampletype_scores: new Map(),
+                monitoring_detail: new Map()
             });
         }
         const yb = by_year.get(year);
 
-        const dur = duration_weeks_for_audit(row);
-        if (dur !== null) yb.durations.push(dur);
-
         const rule = parse_rule_file_content(row);
         const samples = Array.isArray(row.samples) ? row.samples : [];
-        yb.sample_counts.push(samples.length);
         const monitoring_label = get_monitoring_type_label(rule);
+        const msub = ensure_monitoring_year_detail(yb, monitoring_label);
+
+        const dur = duration_weeks_for_audit(row);
+        if (dur !== null) {
+            yb.durations.push(dur);
+            msub.durations.push(dur);
+        }
+
+        yb.sample_counts.push(samples.length);
+        msub.sample_counts.push(samples.length);
         if (rule && samples.length) {
             for (const sample of samples) {
                 const st = sample_type_key(sample);
@@ -470,6 +561,8 @@ export function build_statistics_from_audit_rows(rows) {
                 if (v === null) continue;
                 if (!yb.by_sample_type_scores.has(st)) yb.by_sample_type_scores.set(st, []);
                 yb.by_sample_type_scores.get(st).push(v);
+                if (!msub.by_sample_type_scores.has(st)) msub.by_sample_type_scores.set(st, []);
+                msub.by_sample_type_scores.get(st).push(v);
 
                 if (!yb.by_monitoring_sampletype_scores.has(monitoring_label)) {
                     yb.by_monitoring_sampletype_scores.set(monitoring_label, new Map());
@@ -479,6 +572,7 @@ export function build_statistics_from_audit_rows(rows) {
                     const lbl = sample_type_label(rule, st);
                     mon.set(st, { label: lbl, values: [] });
                     if (!yb.sample_type_labels.has(st) && lbl) yb.sample_type_labels.set(st, lbl);
+                    if (!msub.sample_type_labels.has(st) && lbl) msub.sample_type_labels.set(st, lbl);
                 }
                 mon.get(st).values.push(v);
             }
@@ -487,11 +581,17 @@ export function build_statistics_from_audit_rows(rows) {
             const qs = calculateQualityScore({ ruleFileContent: rule, samples });
             if (qs && qs.principles) {
                 const ts = typeof qs.totalScore === 'number' && !Number.isNaN(qs.totalScore) ? qs.totalScore : null;
-                if (ts !== null) yb.total_scores.push(ts);
+                if (ts !== null) {
+                    yb.total_scores.push(ts);
+                    msub.total_scores.push(ts);
+                }
                 for (const id of WCAG_PRINCIPLE_IDS) {
                     const p = qs.principles[id];
                     const v = p && typeof p.score === 'number' && !Number.isNaN(p.score) ? p.score : null;
-                    if (v !== null) yb.principle_scores[id].push(v);
+                    if (v !== null) {
+                        yb.principle_scores[id].push(v);
+                        msub.principle_scores[id].push(v);
+                    }
                 }
             }
         }
