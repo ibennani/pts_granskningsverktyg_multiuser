@@ -1,5 +1,6 @@
 import './side_menu_component.css';
 import { consoleManager } from '../utils/console_manager.js';
+import { build_compact_hash_fragment, expand_view_slug_from_hash, normalize_params_from_hash_query } from '../logic/router_url_codec.js';
 
 export class SideMenuComponent {
     static CSS_PATH = './side_menu_component.css';
@@ -152,9 +153,7 @@ export class SideMenuComponent {
     }
 
     build_hash(view_name, params = {}) {
-        const has_params = params && Object.keys(params).length > 0;
-        if (!has_params) return `#${view_name}`;
-        return `#${view_name}?${new URLSearchParams(params).toString()}`;
+        return `#${build_compact_hash_fragment(view_name, params && typeof params === 'object' ? params : {})}`;
     }
 
     get_view_name_from_location_hash() {
@@ -164,7 +163,8 @@ export class SideMenuComponent {
             const raw = window.location?.hash || '';
             const hash = raw.startsWith('#') ? raw.substring(1) : raw;
             const [view_name] = hash.split('?');
-            return view_name || null;
+            if (!view_name) return null;
+            return expand_view_slug_from_hash(view_name);
         } catch (e) {
             return null;
         }
@@ -176,7 +176,7 @@ export class SideMenuComponent {
             const hash = raw.startsWith('#') ? raw.substring(1) : raw;
             const query_part = hash.split('?')[1];
             if (!query_part) return {};
-            return Object.fromEntries(new URLSearchParams(query_part));
+            return normalize_params_from_hash_query(Object.fromEntries(new URLSearchParams(query_part)));
         } catch (e) {
             return {};
         }

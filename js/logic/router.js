@@ -7,6 +7,11 @@ import { is_current_user_admin, get_auth_token, get_current_user_preferences_wit
 import { consoleManager } from '../utils/console_manager.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import * as ValidationLogic from '../validation_logic.js';
+import {
+    build_compact_hash_fragment,
+    expand_view_slug_from_hash,
+    normalize_params_from_hash_query
+} from './router_url_codec.js';
 
 if (typeof window !== 'undefined' && window.__GV_DEBUG_NAV) {
     consoleManager.log('[router] Debug-navigering aktiv.');
@@ -107,23 +112,24 @@ export function parse_view_and_params_from_hash() {
     const hash = typeof window !== 'undefined' && window.location?.hash ? window.location.hash.substring(1) : '';
     const is_skip_link = hash === 'main-content-heading';
     const [view_name, ...param_pairs] = hash.split('?');
-    const params = {};
+    const raw_params = {};
     if (param_pairs.length > 0 && !is_skip_link && view_name) {
         const query_string = param_pairs.join('?');
         const url_params = new URLSearchParams(query_string);
-        for (const [key, value] of url_params) { params[key] = value; }
+        for (const [key, value] of url_params) { raw_params[key] = value; }
     }
-    return {
-        viewName: (is_skip_link || !view_name) ? 'start' : view_name,
-        params: (is_skip_link || !view_name) ? {} : params
-    };
+    const params = (is_skip_link || !view_name) ? {} : normalize_params_from_hash_query(raw_params);
+    const viewName = (is_skip_link || !view_name) ? 'start' : expand_view_slug_from_hash(view_name);
+    return { viewName, params };
 }
 
 export function get_route_key_from_hash() {
     const hash = window.location.hash || '';
     const raw = hash.startsWith('#') ? hash.slice(1) : hash;
     const [view_name] = raw.split('?');
-    return view_name || 'start';
+    if (!view_name) return 'start';
+    if (view_name === SKIP_LINK_ANCHOR_ID) return 'start';
+    return expand_view_slug_from_hash(view_name);
 }
 
 export function get_scope_key_from_hash({ current_view_name_rendered, current_view_params_rendered_json }) {
@@ -137,7 +143,7 @@ export function get_scope_key_from_hash({ current_view_name_rendered, current_vi
     const url_params = new URLSearchParams(query);
     const params_obj = {};
     Array.from(url_params.entries()).forEach(([key, value]) => { params_obj[key] = value; });
-    return `${route_key}:${JSON.stringify(params_obj)}`;
+    return `${route_key}:${JSON.stringify(normalize_params_from_hash_query(params_obj))}`;
 }
 
 export function get_scope_key_from_view_and_params(view, params) {
@@ -186,9 +192,7 @@ export function navigate_and_set_hash(target_view_name, target_params = {}, opti
 
     const merged_params = merge_audit_id_from_state_into_params(target_view_name, safe_params, getState);
 
-    const target_hash_part = merged_params && Object.keys(merged_params).length > 0 ?
-        `${target_view_name}?${new URLSearchParams(merged_params).toString()}` :
-        target_view_name;
+    const target_hash_part = build_compact_hash_fragment(target_view_name, merged_params);
     const new_hash = `#${target_hash_part}`;
     const current_view_component_instance = get_current_view_component();
     if (window.location.hash === new_hash) {
@@ -238,12 +242,13 @@ export async function handle_hash_change(options) {
     const is_skip_link_anchor = view_name_from_hash === SKIP_LINK_ANCHOR_ID;
     const effective_view_name = is_skip_link_anchor ? '' : view_name_from_hash;
 
-    const params = {};
+    const raw_params = {};
     if (param_pairs.length > 0 && !is_skip_link_anchor) {
         const query_string = param_pairs.join('?');
         const url_params = new URLSearchParams(query_string);
-        for (const [key, value] of url_params) { params[key] = value; }
+        for (const [key, value] of url_params) { raw_params[key] = value; }
     }
+    const params = normalize_params_from_hash_query(raw_params);
     let target_view = 'start';
     let target_params = params;
 
@@ -264,7 +269,7 @@ export async function handle_hash_change(options) {
     }
 
     if (effective_view_name) {
-        target_view = effective_view_name;
+        target_view = expand_view_slug_from_hash(effective_view_name);
     } else {
         target_view = 'start';
         target_params = {};
@@ -291,9 +296,7 @@ export async function handle_hash_change(options) {
     }
     nav_debug('handle_hash_change -> render_view', { target_view, target_params, effective_view_name });
     if (is_skip_link_anchor || !effective_view_name) {
-        const target_hash_part = target_params && Object.keys(target_params).length > 0 ?
-            `${target_view}?${new URLSearchParams(target_params).toString()}` :
-            target_view;
+        const target_hash_part = build_compact_hash_fragment(target_view, target_params);
         history.replaceState(null, '', `#${target_hash_part}`);
     }
     try {

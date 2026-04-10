@@ -1,6 +1,7 @@
 import { get_current_user_name } from '../utils/helpers.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import './audit_images_view_component.css';
+import { build_compact_hash_fragment } from '../logic/router_url_codec.js';
 
 export class AuditImagesViewComponent {
     constructor() {
@@ -47,9 +48,7 @@ export class AuditImagesViewComponent {
     }
 
     build_hash(view_name, params = {}) {
-        const has_params = params && Object.keys(params).length > 0;
-        if (!has_params) return `#${view_name}`;
-        return `#${view_name}?${new URLSearchParams(params).toString()}`;
+        return `#${build_compact_hash_fragment(view_name, params && typeof params === 'object' ? params : {})}`;
     }
 
     handle_requirement_link_click(event) {

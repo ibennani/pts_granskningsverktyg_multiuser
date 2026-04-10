@@ -278,10 +278,9 @@ export async function start_normal_session(deps) {
                 }
             }
         }
-        const hash = window.location.hash.substring(1);
-        const [view_name_from_hash,] = hash.split('?');
+        const { viewName: canonical_view_from_hash } = parse_view_and_params_from_hash();
         const current_view_component_instance = get_current_view_component();
-        if (get_current_view_name_rendered() === view_name_from_hash &&
+        if (get_current_view_name_rendered() === canonical_view_from_hash &&
             current_view_component_instance && typeof current_view_component_instance.render === 'function') {
             if (get_current_view_name_rendered() !== 'confirm_sample_edit') {
                 if ((get_current_view_name_rendered() === 'audit' || get_current_view_name_rendered() === 'audit_audits' || get_current_view_name_rendered() === 'audit_rules') && current_view_component_instance._api_load_started && !current_view_component_instance._api_checked) {

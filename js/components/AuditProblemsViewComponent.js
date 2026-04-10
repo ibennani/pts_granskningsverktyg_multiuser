@@ -3,6 +3,7 @@ import { show_confirm_delete_modal } from '../logic/confirm_delete_modal_logic.j
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import { marked } from '../utils/markdown.js';
 import './audit_problems_view_component.css';
+import { build_compact_hash_fragment } from '../logic/router_url_codec.js';
 import { consoleManager } from '../utils/console_manager.js';
 
 export class AuditProblemsViewComponent {
@@ -168,9 +169,7 @@ export class AuditProblemsViewComponent {
     }
 
     build_hash(view_name, params = {}) {
-        const has_params = params && Object.keys(params).length > 0;
-        if (!has_params) return `#${view_name}`;
-        return `#${view_name}?${new URLSearchParams(params).toString()}`;
+        return `#${build_compact_hash_fragment(view_name, params && typeof params === 'object' ? params : {})}`;
     }
 
     _wrap_html_for_clipboard(html_content) {

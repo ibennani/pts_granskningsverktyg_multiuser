@@ -95,6 +95,19 @@ describe('router', () => {
         });
     });
 
+    test('parse_view_and_params_from_hash: kompakt vy och korta id-parametrar', () => {
+        window.location.hash = '#md?caseNumber=1';
+        expect(parse_view_and_params_from_hash()).toEqual({
+            viewName: 'metadata',
+            params: { caseNumber: '1' }
+        });
+        window.location.hash = '#ra?a=1&s=s1&r=rk';
+        expect(parse_view_and_params_from_hash()).toEqual({
+            viewName: 'requirement_audit',
+            params: { auditId: '1', sampleId: 's1', requirementId: 'rk' }
+        });
+    });
+
     test('parse_view_and_params_from_hash: skip-länk → start utan params', () => {
         window.location.hash = '#main-content-heading';
         expect(parse_view_and_params_from_hash()).toEqual({ viewName: 'start', params: {} });
@@ -103,6 +116,10 @@ describe('router', () => {
     test('get_route_key_from_hash returnerar vy eller start', () => {
         window.location.hash = '#metadata?case=x';
         expect(get_route_key_from_hash()).toBe('metadata');
+        window.location.hash = '#md?case=x';
+        expect(get_route_key_from_hash()).toBe('metadata');
+        window.location.hash = '#ov';
+        expect(get_route_key_from_hash()).toBe('audit_overview');
         window.location.hash = '#audit';
         expect(get_route_key_from_hash()).toBe('audit');
         window.location.hash = '';
@@ -118,21 +135,21 @@ describe('router', () => {
     });
 
     test('get_scope_key_from_hash använder renderad JSON när vy matchar route', () => {
-        window.location.hash = '#foo?a=1';
+        window.location.hash = '#foo?x=1';
         const key = get_scope_key_from_hash({
             current_view_name_rendered: 'foo',
-            current_view_params_rendered_json: '{"a":"1"}'
+            current_view_params_rendered_json: '{"x":"1"}'
         });
-        expect(key).toBe('foo:{"a":"1"}');
+        expect(key).toBe('foo:{"x":"1"}');
     });
 
     test('get_scope_key_from_hash bygger params från hash när renderad vy skiljer sig från route', () => {
-        window.location.hash = '#foo?a=1&b=2';
+        window.location.hash = '#foo?x=1&b=2';
         const key = get_scope_key_from_hash({
             current_view_name_rendered: 'bar',
             current_view_params_rendered_json: '{}'
         });
-        expect(key).toBe('foo:{"a":"1","b":"2"}');
+        expect(key).toBe('foo:{"x":"1","b":"2"}');
     });
 
     test('navigate_and_set_hash sätter hash och sidtitel', () => {
@@ -147,7 +164,7 @@ describe('router', () => {
             get_current_view_component,
             updatePageTitle
         });
-        expect(window.location.hash).toContain('metadata');
+        expect(window.location.hash).toMatch(/^#md(\?|$)/);
         expect(updatePageTitle).toHaveBeenCalledWith('metadata', { caseNumber: 'x' });
     });
 
@@ -160,7 +177,7 @@ describe('router', () => {
             get_current_view_component: () => null,
             updatePageTitle
         });
-        expect(window.location.hash).toContain('auditId=99');
+        expect(window.location.hash).toContain('a=99');
         expect(window.location.hash).toContain('caseNumber=x');
     });
 
