@@ -1,0 +1,86 @@
+/* Statistikvy — avslutade granskningar per kalenderår */
+.statistics-plate {
+    max-width: 52rem;
+}
+
+.statistics-year-row {
+    margin-top: 1rem;
+    margin-bottom: 1.25rem;
+    align-items: flex-start;
+}
+
+.statistics-year-select {
+    width: max-content;
+    max-width: 100%;
+    min-width: 4.5rem;
+}
+
+.statistics-summary {
+    margin-top: 1rem;
+    line-height: 1.5;
+}
+
+.statistics-summary h2 {
+    margin: 0 0 0.5rem;
+    font-size: 1.25rem;
+}
+
+.statistics-summary__list {
+    margin: 0 0 1rem;
+    padding-left: 1.35rem;
+    list-style-type: disc;
+}
+
+.statistics-summary__item {
+    margin: 0;
+    padding-left: 0.25rem;
+}
+
+.statistics-top-failed__h2 {
+    margin: 1.5rem 0 0.35rem;
+    font-size: 1.25rem;
+}
+
+.statistics-top-failed__intro {
+    margin: 0 0 0.75rem;
+    max-width: 52rem;
+}
+
+.statistics-top-failed__h3 {
+    margin: 1rem 0 0.35rem;
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+
+.statistics-top-failed__list {
+    margin: 0 0 1rem 1.25rem;
+    padding: 0;
+    list-style: decimal;
+}
+
+.statistics-top-failed__empty {
+    margin: 0 0 1rem;
+}
+
+.statistics-status[aria-busy="true"] {
+    font-style: italic;
+}
+
+/* ScoreAnalysisComponent (samma som översikten) inbäddad under statistik */
+.statistics-score-analysis-section__h2 {
+    margin: 1.5rem 0 0.5rem;
+    font-size: 1.25rem;
+}
+
+.statistics-score-analysis-section__intro {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+}
+
+.statistics-score-analysis-section__empty {
+    margin: 0 0 1rem;
+}
+
+.statistics-score-analysis-root {
+    margin-top: 0.25rem;
+}

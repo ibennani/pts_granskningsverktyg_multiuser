@@ -8,6 +8,8 @@ export const ScoreAnalysisComponent = {
         this.Helpers = deps.Helpers;
         this.Translation = deps.Translation;
         this.getState = deps.getState;
+        /** @type {null|(() => object|null)} */
+        this.getScoreAnalysisOverride = deps.getScoreAnalysisOverride ?? null;
     },
 
     _performAnalysis() {
@@ -83,8 +85,14 @@ export const ScoreAnalysisComponent = {
         
         const t = this.Translation.t;
         const lang_code = this.Translation.get_current_language_code();
-        let analysis = this._performAnalysis();
-        
+        let analysis =
+            typeof this.getScoreAnalysisOverride === 'function'
+                ? this.getScoreAnalysisOverride()
+                : null;
+        if (!analysis || typeof analysis !== 'object') {
+            analysis = this._performAnalysis();
+        }
+
         // Fallback: graferna ska alltid vara synliga även innan något granskats.
         if (!analysis) {
             const safe_sample_count = this.getState()?.samples?.length || 0;
@@ -123,7 +131,19 @@ export const ScoreAnalysisComponent = {
         
         const scoreContext = this.Helpers.create_element('div', { class_name: 'score-analysis-total__context' });
         scoreContext.appendChild(this.Helpers.create_element('p', { class_name: 'score-analysis-total__subtext', text_content: `(${t('lower_is_better', {defaultValue: "Lower is better"})})` }));
-        scoreContext.appendChild(this.Helpers.create_element('p', { class_name: 'score-analysis-total__info', text_content: t('based_on_samples', { count: analysis.sampleCount, defaultValue: `Based on ${analysis.sampleCount} audited samples.`}) }));
+        const footnote_info =
+            analysis.footnoteTranslationKey && typeof analysis.footnoteTranslationKey === 'string'
+                ? t(analysis.footnoteTranslationKey, {
+                      ...(analysis.footnoteParams || {}),
+                      defaultValue: ''
+                  })
+                : t('based_on_samples', {
+                      count: analysis.sampleCount,
+                      defaultValue: `Based on ${analysis.sampleCount} audited samples.`
+                  });
+        scoreContext.appendChild(
+            this.Helpers.create_element('p', { class_name: 'score-analysis-total__info', text_content: footnote_info })
+        );
         
         scoreVisualization.appendChild(gaugeWrapper);
         scoreVisualization.appendChild(scoreContext);
@@ -199,5 +219,6 @@ export const ScoreAnalysisComponent = {
         this.Helpers = null;
         this.Translation = null;
         this.getState = null;
+        this.getScoreAnalysisOverride = null;
     }
 };

@@ -34,6 +34,7 @@ import { AuditViewComponent } from '../components/audit_view/AuditViewComponent.
 import { LoginViewComponent } from '../components/LoginViewComponent.js';
 import { ManageUsersViewComponent } from '../components/ManageUsersViewComponent.js';
 import { SettingsViewComponent } from '../components/SettingsViewComponent.js';
+import { StatisticsViewComponent } from '../components/StatisticsViewComponent.js';
 
 const auditViewComponent = new AuditViewComponent();
 const allRequirementsViewComponent = new AllRequirementsViewComponent();
@@ -56,6 +57,7 @@ const backupOverviewComponent = new BackupOverviewComponent();
 const backupSettingsViewComponent = new BackupSettingsViewComponent();
 const manageUsersViewComponent = new ManageUsersViewComponent();
 const settingsViewComponent = new SettingsViewComponent();
+const statisticsViewComponent = new StatisticsViewComponent();
 const rulefileChangeLogViewComponent = new RulefileChangeLogViewComponent();
 const rulefileRequirementsListComponent = new RulefileRequirementsListComponent();
 const viewRulefileRequirementComponent = new ViewRulefileRequirementComponent();
@@ -81,6 +83,7 @@ export function get_component_class(view_name) {
         case 'audit_rules': return auditViewComponent;
         case 'manage_users': return manageUsersViewComponent;
         case 'my_settings': return settingsViewComponent;
+        case 'statistics': return statisticsViewComponent;
         case 'login': return loginViewComponent;
         case 'metadata': return editMetadataViewComponent;
         case 'edit_metadata': return editMetadataViewComponent;

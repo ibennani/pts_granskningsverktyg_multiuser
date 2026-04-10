@@ -506,6 +506,11 @@ export async function get_audits(status) {
     return api_get(`/audits${q}`);
 }
 
+/** Aggregerad statistik för avslutade granskningar (kalenderår, mediantid, vanligast underkända krav). */
+export async function get_audit_statistics_summary() {
+    return api_get('/audits/statistics/summary');
+}
+
 export async function get_audit(id) {
     return api_get(`/audits/${id}`);
 }

@@ -28,6 +28,7 @@ export const VIEW_NAMES_GLOBAL_NO_AUDIT_ID_IN_HASH = new Set([
     'login',
     'manage_users',
     'my_settings',
+    'statistics',
     'upload'
 ]);
 

@@ -56,6 +56,7 @@ export function get_page_title_prefix(view_name, params, { getState, Translation
                 case 'audit_rules': title_prefix = t('audit_title_rules'); break;
                 case 'manage_users': title_prefix = t('manage_users_title'); break;
                 case 'my_settings': title_prefix = t('menu_link_my_settings'); break;
+                case 'statistics': title_prefix = t('menu_link_statistics'); break;
                 case 'login': title_prefix = t('login_title'); break;
                 case 'metadata': title_prefix = t('audit_metadata_title'); break;
                 case 'edit_metadata': title_prefix = t('edit_audit_metadata_title'); break;
@@ -138,7 +139,7 @@ export function build_page_title(view_name, params, { getState, Translation }) {
 
     let final_title = `${title_prefix}${title_suffix}`;
     const is_inside_audit = audit_status !== 'rulefile_editing' &&
-        !['start', 'audit', 'audit_audits', 'audit_rules', 'login', 'manage_users', 'my_settings'].includes(view_name);
+        !['start', 'audit', 'audit_audits', 'audit_rules', 'login', 'manage_users', 'my_settings', 'statistics'].includes(view_name);
     const actor_name = (is_inside_audit && current_state?.auditMetadata?.actorName)
         ? String(current_state.auditMetadata.actorName).trim()
         : '';

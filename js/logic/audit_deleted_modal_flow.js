@@ -15,6 +15,7 @@ export function show_audit_deleted_modal_and_navigate() {
         'login',
         'manage_users',
         'my_settings',
+        'statistics',
         'backup',
         'backup_detail',
         'backup_settings'

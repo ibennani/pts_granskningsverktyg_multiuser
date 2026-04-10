@@ -9,6 +9,7 @@ import { save_backup_for_audit } from '../backup/audit_backup.js';
 import { requireAdmin } from '../auth/middleware.js';
 import { import_payload_rate_limiter } from '../middleware/rateLimiter.js';
 import { attach_export_integrity_server_payload } from '../utils/export_integrity_node.js';
+import { build_statistics_from_audit_rows } from '../audit_aggregated_statistics.js';
 
 const router = express.Router();
 
@@ -230,6 +231,22 @@ router.get('/', async (req, res) => {
     } catch (err) {
         console.error('[audits] GET list error:', err);
         res.status(500).json({ error: 'Kunde inte hämta granskningar' });
+    }
+});
+
+router.get('/statistics/summary', async (_req, res) => {
+    try {
+        const result = await query(
+            `SELECT status, metadata, samples, rule_file_content, created_at, updated_at
+             FROM audits
+             WHERE status IN ('locked', 'archived')
+             ORDER BY updated_at DESC`
+        );
+        const payload = build_statistics_from_audit_rows(result.rows);
+        res.json(payload);
+    } catch (err) {
+        console.error('[audits] GET statistics summary error:', err);
+        res.status(500).json({ error: 'Kunde inte hämta statistik' });
     }
 });
 
