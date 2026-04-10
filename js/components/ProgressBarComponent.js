@@ -10,6 +10,14 @@ const audit_status_stack_segment_defs = [
     { field: 'not_audited', label_key: 'audit_status_not_audited', css_modifier: 'not_audited' }
 ];
 
+/** Granskningsöversikt: balksegment vänster→höger — underkänt, ingen anmärkning, delvis granskad, ogranskat/återstår */
+const audit_status_stack_overview_segment_defs = [
+    { field: 'failed', label_key: 'audit_status_failed', css_modifier: 'failed' },
+    { field: 'passed', label_key: 'audit_status_passed', css_modifier: 'passed' },
+    { field: 'partially_audited', label_key: 'audit_status_partially_audited', css_modifier: 'partially_audited' },
+    { field: 'not_audited', label_key: 'audit_status_not_audited', css_modifier: 'not_audited' }
+];
+
 /** Minsta andel (%) för att ett färgsegment ska ritas i balken; under detta lämnas ytan som spårets bakgrund. */
 const MIN_AUDIT_STATUS_BAR_SEGMENT_PERCENT = 0.1;
 
@@ -26,11 +34,11 @@ function _should_render_audit_status_bar_segment(n, total) {
     return pct + 1e-9 >= MIN_AUDIT_STATUS_BAR_SEGMENT_PERCENT;
 }
 
-/** Ordning och etiketter för granskningsöversiktens punktlista under balken */
+/** Ordning och etiketter för granskningsöversiktens punktlista under balken (samma ordning som balksegmenten) */
 const overview_distribution_defs = [
+    { field: 'failed', label_key: 'audit_overview_distribution_failed' },
     { field: 'passed', label_key: 'audit_overview_distribution_passed' },
     { field: 'partially_audited', label_key: 'audit_overview_distribution_partial' },
-    { field: 'failed', label_key: 'audit_overview_distribution_failed' },
     { field: 'not_audited', label_key: 'audit_overview_distribution_remaining' }
 ];
 
@@ -68,7 +76,7 @@ function _append_overview_track_segments_four(track_el, create_element, safe_cou
     if (total <= 0) {
         return;
     }
-    audit_status_stack_segment_defs.forEach((def) => {
+    audit_status_stack_overview_segment_defs.forEach((def) => {
         const n = safe_counts[def.field];
         if (!_should_render_audit_status_bar_segment(n, total)) {
             return;
