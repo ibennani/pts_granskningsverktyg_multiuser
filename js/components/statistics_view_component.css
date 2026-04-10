@@ -78,8 +78,8 @@
 
 .statistics-sampletype-chart__item {
     display: grid;
-    /* Samma linjering som tidigare: fast etikettbredd, stapel kolumn till höger */
-    grid-template-columns: minmax(12rem, 16rem) minmax(0, 1fr);
+    /* Fast etikettkolumn (bred nog för långa namn); samma skiljelinje för alla rader; stapel fyller resten */
+    grid-template-columns: minmax(12rem, 28rem) minmax(0, 1fr);
     gap: 0.2rem 0.6rem;
     align-items: center;
 }
@@ -90,6 +90,7 @@
     width: 100%;
     white-space: nowrap;
     overflow-x: auto;
+    scrollbar-width: thin;
     font-variant-numeric: tabular-nums;
     text-align: right;
     justify-self: stretch;
