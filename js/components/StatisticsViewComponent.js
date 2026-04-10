@@ -51,6 +51,13 @@ export class StatisticsViewComponent {
         return t('statistics_summary_completed_plural', { count: String(count) });
     }
 
+    _format_median_number(val) {
+        if (val === null || val === undefined || Number.isNaN(Number(val))) return null;
+        const n = Number(val);
+        if (Math.abs(n - Math.round(n)) < 0.05) return String(Math.round(n));
+        return n.toFixed(1);
+    }
+
     /**
      * @param {HTMLElement} el
      * @param {object} Helpers
@@ -102,7 +109,90 @@ export class StatisticsViewComponent {
         }
         ul.appendChild(li2);
 
+        const li3 = Helpers.create_element('li', { class_name: 'statistics-summary__item' });
+        const med_samples = this._format_median_number(year_data.median_sample_count);
+        if (med_samples !== null) {
+            this._append_fragments_to_element(li3, Helpers, [
+                { text: t('statistics_summary_median_samples_prefix'), strong: false },
+                { text: med_samples, strong: true },
+                { text: t('statistics_summary_median_samples_suffix'), strong: false }
+            ]);
+        } else {
+            li3.appendChild(document.createTextNode(t('statistics_summary_median_samples_unknown')));
+        }
+        ul.appendChild(li3);
+
+        const li4 = Helpers.create_element('li', { class_name: 'statistics-summary__item' });
+        const worst = year_data.worst_sample_type;
+        const worst_type = worst && typeof worst.sample_type_label === 'string'
+            ? worst.sample_type_label.trim()
+            : (worst && typeof worst.sample_type === 'string' ? worst.sample_type.trim() : '');
+        const worst_score = worst && typeof worst.median_deficiency === 'number' ? worst.median_deficiency : null;
+        if (worst_type) {
+            this._append_fragments_to_element(li4, Helpers, [
+                { text: t('statistics_summary_worst_sample_type_prefix'), strong: false },
+                { text: worst_type, strong: true },
+                ...(worst_score === null || Number.isNaN(Number(worst_score))
+                    ? [{ text: '.', strong: false }]
+                    : [
+                          { text: t('statistics_summary_worst_sample_type_mid'), strong: false },
+                          { text: this._format_median_number(worst_score), strong: true },
+                          { text: t('statistics_summary_worst_sample_type_suffix'), strong: false }
+                      ])
+            ]);
+        } else {
+            li4.appendChild(document.createTextNode(t('statistics_summary_worst_sample_type_unknown')));
+        }
+        ul.appendChild(li4);
+
         return ul;
+    }
+
+    _append_sampletype_chart_block(plate, t, Helpers, chart_sections) {
+        const sections = Array.isArray(chart_sections) ? chart_sections : [];
+        if (sections.length === 0) return;
+
+        const wrap = Helpers.create_element('section', { class_name: 'statistics-sampletype-chart' });
+        wrap.appendChild(Helpers.create_element('h2', {
+            class_name: 'statistics-sampletype-chart__h2',
+            text_content: t('statistics_sampletype_chart_heading')
+        }));
+        wrap.appendChild(Helpers.create_element('p', {
+            class_name: 'view-intro-text statistics-sampletype-chart__intro',
+            text_content: t('statistics_sampletype_chart_intro')
+        }));
+
+        sections.forEach((sec) => {
+            const h3 = Helpers.create_element('h3', {
+                class_name: 'statistics-sampletype-chart__h3',
+                text_content: this._monitoring_heading(sec.monitoring_type_label)
+            });
+            wrap.appendChild(h3);
+
+            const ul = Helpers.create_element('ul', { class_name: 'statistics-sampletype-chart__list' });
+            (sec.sample_types || []).forEach((row) => {
+                const li = Helpers.create_element('li', { class_name: 'statistics-sampletype-chart__item' });
+                const val = typeof row.median_deficiency === 'number' ? row.median_deficiency : 0;
+                const label_left = Helpers.create_element('span', { class_name: 'statistics-sampletype-chart__label' });
+                label_left.appendChild(document.createTextNode(row.sample_type_label || row.sample_type_id || ''));
+                label_left.appendChild(document.createTextNode(': '));
+                label_left.appendChild(Helpers.create_element('strong', {
+                    text_content: this._format_median_number(val)
+                }));
+                li.appendChild(label_left);
+
+                const track = Helpers.create_element('span', { class_name: 'statistics-sampletype-chart__track' });
+                track.appendChild(Helpers.create_element('span', {
+                    class_name: 'statistics-sampletype-chart__fill',
+                    attributes: { style: `width: ${Math.min(100, Math.max(0, val))}%;` }
+                }));
+                li.appendChild(track);
+                ul.appendChild(li);
+            });
+            wrap.appendChild(ul);
+        });
+
+        plate.appendChild(wrap);
     }
 
     /**
@@ -274,8 +364,8 @@ export class StatisticsViewComponent {
     _append_year_dropdown(plate, t, Helpers, years, selected) {
         const year_row = Helpers.create_element('div', { class_name: 'statistics-year-row form-group' });
         year_row.appendChild(
-            Helpers.create_element('label', {
-                attributes: { for: 'statistics-year-select' },
+            Helpers.create_element('h2', {
+                class_name: 'statistics-year-row__h2',
                 text_content: t('statistics_year_label')
             })
         );
@@ -284,6 +374,13 @@ export class StatisticsViewComponent {
             class_name: ['form-control', 'statistics-year-select'],
             attributes: { 'aria-label': t('statistics_year_label') }
         });
+        year_row.appendChild(
+            Helpers.create_element('label', {
+                class_name: 'statistics-year-row__instruction',
+                attributes: { for: 'statistics-year-select' },
+                text_content: t('statistics_year_instruction')
+            })
+        );
         years.forEach((y) => {
             this.year_select_ref.appendChild(
                 Helpers.create_element('option', {
@@ -347,7 +444,10 @@ export class StatisticsViewComponent {
             median_duration_weeks: null,
             monitoring_type_top_failed: [],
             principle_median_deficiency: {},
-            total_median_deficiency: null
+            total_median_deficiency: null,
+            median_sample_count: null,
+            worst_sample_type: null,
+            monitoring_sampletype_chart: []
         };
 
         const summary_wrap = Helpers.create_element('section', {
@@ -364,6 +464,8 @@ export class StatisticsViewComponent {
         plate.appendChild(summary_wrap);
 
         this._append_score_analysis_block(plate, t, Helpers, year_data);
+
+        this._append_sampletype_chart_block(plate, t, Helpers, year_data.monitoring_sampletype_chart);
 
         this._append_top_failed_block(plate, t, Helpers, year_data.monitoring_type_top_failed || []);
     }

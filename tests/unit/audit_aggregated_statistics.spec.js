@@ -35,22 +35,22 @@ describe('audit_aggregated_statistics', () => {
         expect(w).toBeLessThan(4.1);
     });
 
-    test('requirement_stats_display_name visar bara titel trots standardReference och intern nyckel', () => {
+    test('requirement_stats_display_name visar standardReference före titel', () => {
         const req = {
             key: 'krav_8639b1f4_b775_4075_b3f9_bc723f5d2806',
             title: 'Tillräckligt med tid',
             standardReference: { text: '9.2.2.1' }
         };
-        expect(requirement_stats_display_name(req)).toBe('Tillräckligt med tid');
+        expect(requirement_stats_display_name(req)).toBe('9.2.2.1 Tillräckligt med tid');
     });
 
-    test('requirement_stats_display_name visar bara titel när referens och nyckel finns', () => {
+    test('requirement_stats_display_name visar standardReference före titel även när nyckel redan är en referens', () => {
         const req = {
             key: '9.2.4.11',
             title: 'Fokus inte dolt',
             standardReference: { text: '9.2.4.11' }
         };
-        expect(requirement_stats_display_name(req)).toBe('Fokus inte dolt');
+        expect(requirement_stats_display_name(req)).toBe('9.2.4.11 Fokus inte dolt');
     });
 
     test('collapse_bilingual_requirement_title tar bort engelsk prefix före Information och', () => {
@@ -65,23 +65,52 @@ describe('audit_aggregated_statistics', () => {
         );
     });
 
-    test('requirement_stats_display_name använder svensk titel efter kollaps av dubbelspråk', () => {
+    test('collapse_bilingual_requirement_title tar bort engelsk WCAG-text före Ledtexter …', () => {
+        const raw = 'Labels or Instructions Ledtexter, instruktioner';
+        expect(collapse_bilingual_requirement_title(raw)).toBe('Ledtexter, instruktioner');
+    });
+
+    test('requirement_stats_display_name behåller hela titeln som del 2 (ingen kollaps)', () => {
         const req = {
             key: 'krav_x',
             title: 'Info and Relationships Information och relationer för rubriker',
             standardReference: { text: '9.1.3.1' }
         };
-        expect(requirement_stats_display_name(req)).toBe('Information och relationer för rubriker');
+        expect(requirement_stats_display_name(req)).toBe(
+            '9.1.3.1 Info and Relationships Information och relationer för rubriker'
+        );
     });
 
-    test('requirement_stats_display_name utan dubbel engelsk+svensk rubrik för 9.2.3.1', () => {
+    test('requirement_stats_display_name behåller dubbelspråkig titel för 9.2.3.1', () => {
         const req = {
             key: 'krav_x',
             title: 'Three Flashes or Below Threshold Tre blinkningar eller under tröskelvärdet',
             standardReference: { text: '9.2.3.1' }
         };
         expect(requirement_stats_display_name(req)).toBe(
-            'Tre blinkningar eller under tröskelvärdet'
+            '9.2.3.1 Three Flashes or Below Threshold Tre blinkningar eller under tröskelvärdet'
+        );
+    });
+
+    test('requirement_stats_display_name behåller engelsk+svensk titel för 9.3.3.2', () => {
+        const req = {
+            key: 'krav_x',
+            title: 'Labels or Instructions Ledtexter, instruktioner',
+            standardReference: { text: '9.3.3.2' }
+        };
+        expect(requirement_stats_display_name(req)).toBe(
+            '9.3.3.2 Labels or Instructions Ledtexter, instruktioner'
+        );
+    });
+
+    test('requirement_stats_display_name tar bara inledande siffror ur standardReference.text', () => {
+        const req = {
+            key: 'krav_x',
+            title: 'Hantera enbart med tangentbord.',
+            standardReference: { text: '9.2.1.1 Keyboard' }
+        };
+        expect(requirement_stats_display_name(req)).toBe(
+            '9.2.1.1 Hantera enbart med tangentbord.'
         );
     });
 
@@ -105,6 +134,12 @@ describe('audit_aggregated_statistics', () => {
         expect(
             requirement_number_sort_key_for_stats({ key: '9.1.1.1', standardReference: {} }, 'x')
         ).toBe('9.1.1.1');
+        expect(
+            requirement_number_sort_key_for_stats(
+                { key: 'krav_x', standardReference: { text: '9.2.1.1 Keyboard' } },
+                'krav_x'
+            )
+        ).toBe('9.2.1.1');
     });
 
     test('build_statistics_from_audit_rows grupperar per år och per regelfilstyp', () => {
@@ -151,7 +186,7 @@ describe('audit_aggregated_statistics', () => {
         const web = y2024.monitoring_type_top_failed.find((s) => s.monitoring_type_label === 'Webbsida');
         expect(web).toBeTruthy();
         expect(web.audits_in_type).toBe(2);
-        expect(web.top_requirements[0].requirement_name).toBe('Tillräckligt med tid');
+        expect(web.top_requirements[0].requirement_name).toBe('9.2.2.1 Tillräckligt med tid');
         expect(web.top_requirements[0].audit_fail_rate_percent).toBe(100);
 
         const pmd = y2024.principle_median_deficiency;
@@ -161,5 +196,121 @@ describe('audit_aggregated_statistics', () => {
         expect(pmd.understandable).toBe(0);
         expect(pmd.robust).toBe(0);
         expect(y2024.total_median_deficiency).toBe(0);
+        expect(y2024.median_sample_count).toBe(1);
+        expect(y2024.worst_sample_type).toBeNull();
+    });
+
+    test('build_statistics_from_audit_rows hittar stickprovstyp med högst bristindex', () => {
+        const rule_web = {
+            metadata: { monitoringType: { text: 'Webbsida' } },
+            requirements: {
+                r1: {
+                    key: 'k1',
+                    title: 'Krav 1',
+                    metadata: { impact: { isCritical: true, primaryScore: 4, secondaryScore: 0 } },
+                    checks: []
+                }
+            }
+        };
+
+        const sample_bad = {
+            id: 's_bad',
+            sampleCategory: 'cat1',
+            sampleType: 'type_bad',
+            selectedContentTypes: [],
+            requirementResults: {
+                k1: {
+                    checkResults: {
+                        c1: {
+                            overallStatus: 'passed',
+                            passCriteria: {
+                                pc1: { status: 'failed' }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+        const sample_good = {
+            id: 's_good',
+            sampleCategory: 'cat1',
+            sampleType: 'type_good',
+            selectedContentTypes: [],
+            requirementResults: {
+                k1: { checkResults: {} }
+            }
+        };
+
+        const out = build_statistics_from_audit_rows([
+            {
+                metadata: { endTime: '2024-01-01T00:00:00.000Z' },
+                samples: [sample_bad, sample_good],
+                rule_file_content: rule_web,
+                updated_at: new Date('2024-01-02')
+            }
+        ]);
+        const y2024 = out.per_year['2024'];
+        expect(y2024.median_sample_count).toBe(2);
+        expect(y2024.worst_sample_type).toEqual({
+            sample_type: 'type_bad',
+            sample_type_label: 'type_bad',
+            median_deficiency: 100
+        });
+    });
+
+    test('sampleType-id mappas till text i worst_sample_type och diagram per regelfilstyp', () => {
+        const rule_web = {
+            metadata: {
+                monitoringType: { text: 'Webbsida' },
+                samples: {
+                    sampleCategories: [{
+                        id: 'cat1',
+                        text: 'Kategori 1',
+                        categories: [
+                            { id: 'sokresultatsida', text: 'Sökresultat' }
+                        ]
+                    }]
+                }
+            },
+            requirements: {
+                r1: {
+                    key: 'k1',
+                    title: 'Krav 1',
+                    metadata: { impact: { isCritical: true, primaryScore: 4, secondaryScore: 0 } },
+                    checks: []
+                }
+            }
+        };
+        const sample = {
+            id: 's1',
+            sampleCategory: 'cat1',
+            sampleType: 'sokresultatsida',
+            selectedContentTypes: [],
+            requirementResults: {
+                k1: {
+                    checkResults: {
+                        c1: {
+                            overallStatus: 'passed',
+                            passCriteria: { pc1: { status: 'failed' } }
+                        }
+                    }
+                }
+            }
+        };
+        const out = build_statistics_from_audit_rows([{
+            metadata: { endTime: '2024-01-01T00:00:00.000Z' },
+            samples: [sample],
+            rule_file_content: rule_web,
+            updated_at: new Date('2024-01-02')
+        }]);
+        const y2024 = out.per_year['2024'];
+        expect(y2024.worst_sample_type.sample_type_label).toBe('Sökresultat');
+        expect(Array.isArray(y2024.monitoring_sampletype_chart)).toBe(true);
+        expect(y2024.monitoring_sampletype_chart[0].monitoring_type_label).toBe('Webbsida');
+        expect(y2024.monitoring_sampletype_chart[0].sample_types[0]).toMatchObject({
+            sample_type_id: 'sokresultatsida',
+            sample_type_label: 'Sökresultat',
+            median_deficiency: 100
+        });
     });
 });
