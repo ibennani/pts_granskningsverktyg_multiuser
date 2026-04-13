@@ -148,7 +148,7 @@ export function append_statistics_sampletype_chart_block(plate, t, Helpers, char
     const sections = Array.isArray(chart_sections) ? chart_sections : [];
     if (sections.length === 0) return;
 
-    const wrap = Helpers.create_element('section', { class_name: 'statistics-sampletype-chart' });
+    const wrap = Helpers.create_element('div', { class_name: 'statistics-sampletype-chart' });
     wrap.appendChild(Helpers.create_element('h2', {
         class_name: 'statistics-sampletype-chart__h2',
         text_content: t('statistics_sampletype_chart_heading')
@@ -209,9 +209,8 @@ export function append_statistics_score_analysis_block(plate, t, Helpers, Transl
         return v !== null && v !== undefined && !Number.isNaN(Number(v));
     });
 
-    const section = Helpers.create_element('section', {
-        class_name: 'statistics-score-analysis-section',
-        attributes: { 'aria-labelledby': 'statistics-score-analysis-heading' }
+    const section = Helpers.create_element('div', {
+        class_name: 'statistics-score-analysis-section'
     });
     section.appendChild(
         Helpers.create_element('h2', {

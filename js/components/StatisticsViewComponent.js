@@ -180,9 +180,8 @@ export class StatisticsViewComponent {
     }
 
     _append_filters_section(plate, t, Helpers, years, selected_year, monitoring_labels, selected_monitoring_key) {
-        const section = Helpers.create_element('section', {
-            class_name: 'statistics-filters-section',
-            attributes: { 'aria-labelledby': 'statistics-filters-heading' }
+        const section = Helpers.create_element('div', {
+            class_name: 'statistics-filters-section'
         });
         section.appendChild(
             Helpers.create_element('h2', {
@@ -302,9 +301,8 @@ export class StatisticsViewComponent {
             selected_monitoring_key
         );
 
-        const summary_wrap = Helpers.create_element('section', {
-            class_name: 'statistics-summary',
-            attributes: { 'aria-labelledby': 'statistics-summary-heading' }
+        const summary_wrap = Helpers.create_element('div', {
+            class_name: 'statistics-summary'
         });
         summary_wrap.appendChild(
             Helpers.create_element('h2', {
