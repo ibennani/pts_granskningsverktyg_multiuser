@@ -5,6 +5,7 @@
 
 import { getState } from '../state.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
+import { clear_same_origin_sw_and_caches } from '../utils/clear_same_origin_sw_and_caches.js';
 
 const INITIAL_DELAY_MS = 5000;
 // Cooldown efter att användaren sett/klickat på notisen – undviker att den dyker upp igen direkt efter omladdning
@@ -122,6 +123,8 @@ export function init_version_check_service() {
                         } catch (_) {
                             // Vid fel försöker vi ändå ladda om till ny version utan att störa användaren.
                         }
+                        // Workbox/VitePWA kan annars servera gamla filer från precache utan hård omladdning.
+                        await clear_same_origin_sw_and_caches();
                         const pathname = window.location.pathname || '/';
                         const hash = window.location.hash || '';
                         window.location.href = pathname + '?_=' + Date.now() + hash;
