@@ -6,6 +6,10 @@
 import { get_current_user_preferences_with_timeout } from '../api/client.js';
 import { parse_view_and_params_from_hash } from './router.js';
 import { format_build_info_object } from '../utils/build_time_format.js';
+import {
+    read_vite_dev_client_timestamp_date,
+    resolve_dev_build_display_moment,
+} from '../utils/vite_dev_client_timestamp.js';
 import { consoleManager } from '../utils/console_manager.js';
 import { memoryManager } from '../utils/memory_manager.js';
 
@@ -64,7 +68,13 @@ export function update_build_timestamp() {
 
     let date_str;
     let time_str;
-    if (window.BUILD_INFO?.timestamp) {
+    if (is_dev) {
+        const vite_m = read_vite_dev_client_timestamp_date();
+        const moment = resolve_dev_build_display_moment(window.BUILD_INFO?.timestamp, vite_m);
+        const formatted = format_build_info_object(moment, { include_seconds });
+        date_str = formatted.date;
+        time_str = formatted.time;
+    } else if (window.BUILD_INFO?.timestamp) {
         const formatted = format_build_info_object(window.BUILD_INFO.timestamp, { include_seconds });
         date_str = formatted.date;
         time_str = formatted.time;

@@ -4,6 +4,7 @@
 import { apply_session_boot_merge_from_backup } from './session_boot_merge.js';
 import { consoleManager } from '../utils/console_manager.js';
 import { memoryManager } from '../utils/memory_manager.js';
+import { install_vite_dev_client_timestamp_listeners } from '../utils/vite_dev_client_timestamp.js';
 
 /**
  * Kör initiering efter att övriga beroenden satts upp i main.
@@ -40,6 +41,9 @@ export async function init_app(deps) {
     const AUTH_REQUIRED_MESSAGE_KEY = 'gv_auth_required_message';
 
     set_initial_theme();
+    if (is_dev_build_environment()) {
+        install_vite_dev_client_timestamp_listeners(update_build_timestamp);
+    }
     const mm = memoryManagerRef || memoryManager;
     mm.setTimeout(() => {
         (async () => {
@@ -130,6 +134,7 @@ export async function init_app(deps) {
         visibility_was_hidden = false;
         const state = deps.getState();
         if (!state?.auditId || state.auditStatus === 'rulefile_editing') return;
+        if (!get_auth_token()) return;
         (async () => {
             try {
                 const { load_audit_with_rule_file } = await import('../api/client.js');
@@ -141,6 +146,7 @@ export async function init_app(deps) {
                     });
                 }
             } catch (e) {
+                if (e?.status === 401) return;
                 if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[Main.js] Synk vid flikbyte:', e);
             }
         })();
@@ -153,6 +159,7 @@ export async function init_app(deps) {
             if (msg?.type !== 'audit-updated' || !msg.auditId) return;
             const state = deps.getState();
             if (!state?.auditId || state.auditId !== msg.auditId || state.auditStatus === 'rulefile_editing') return;
+            if (!get_auth_token()) return;
             (async () => {
                 try {
                     const { load_audit_with_rule_file } = await import('../api/client.js');
@@ -164,6 +171,7 @@ export async function init_app(deps) {
                         });
                     }
                 } catch (e) {
+                    if (e?.status === 401) return;
                     if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[Main.js] Synk från annan flik:', e);
                 }
             })();

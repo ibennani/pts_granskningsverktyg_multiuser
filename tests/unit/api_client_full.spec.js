@@ -349,17 +349,40 @@ describe('api/client – login och HTTP-metoder', () => {
         expect(fetch.mock.calls[0][1].method).toBe('PATCH');
     });
 
-    test('api_patch vid 401 kastar Inloggning krävs', async () => {
-        set_auth_token('t');
-        fetch.mockResolvedValue({
-            ok: false,
-            status: 401,
-            json: async () => ({})
-        });
+    test('api_patch vid 401 utan lyckad refresh kastar Inloggning krävs', async () => {
+        const handler = jest.fn();
+        window.addEventListener('gv-auth-required', handler);
+        set_auth_token('utgången');
+        fetch
+            .mockResolvedValueOnce({
+                ok: false,
+                status: 401,
+                json: async () => ({})
+            })
+            .mockResolvedValueOnce({
+                ok: false,
+                status: 401,
+                json: async () => ({ error: 'Refresh nej' })
+            });
         await expect(api_patch('/audits/a', {})).rejects.toMatchObject({
             message: 'Inloggning krävs',
             status: 401
         });
+        expect(get_auth_token()).toBe(null);
+        expect(handler).toHaveBeenCalled();
+        window.removeEventListener('gv-auth-required', handler);
+    });
+
+    test('api_patch vid 401 och lyckad refresh gör om PATCH', async () => {
+        set_auth_token('gammal');
+        fetch
+            .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) })
+            .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ token: 'ny' }) })
+            .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ version: 5 }) });
+        const out = await api_patch('/audits/a', { samples: [] });
+        expect(out).toEqual({ version: 5 });
+        expect(get_auth_token()).toBe('ny');
+        expect(fetch.mock.calls.length).toBe(3);
     });
 
     test('api_patch vid konflikt sätter serverVersion och existingAuditId', async () => {

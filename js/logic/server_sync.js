@@ -2,7 +2,7 @@
 // Debounced sync av state till server. Om auditId saknas importeras granskningen först.
 // Vid regelfilsredigering synkas innehållet till rule_sets så att updated_at = senast ändrad.
 
-import { update_audit, import_audit, update_rule, load_audit_with_rule_file } from '../api/client.js';
+import { update_audit, import_audit, update_rule, load_audit_with_rule_file, get_auth_token } from '../api/client.js';
 import {
     clear_audit_sync_pending,
     clear_rulefile_sync_pending,
@@ -81,6 +81,14 @@ function count_stuck_in_samples(samples) {
 async function run_sync(state, dispatch_fn) {
     if (!state || !state.ruleFileContent || typeof window === 'undefined') return;
     if (state.auditStatus === 'rulefile_editing') return;
+    let token_present = false;
+    let token_read_error = null;
+    try {
+        token_present = typeof get_auth_token === 'function' && !!get_auth_token();
+    } catch (token_err) {
+        token_read_error = String(token_err?.message || token_err);
+    }
+    if (token_read_error || !token_present) return;
 
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
         mark_audit_sync_pending();

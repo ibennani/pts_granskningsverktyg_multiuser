@@ -256,11 +256,29 @@ export async function api_delete(path) {
 }
 
 export async function api_patch(path, body) {
-    const res = await fetch(`${get_base_url()}${path}`, {
+    const url = `${get_base_url()}${path}`;
+    const body_json = JSON.stringify(body);
+    const run_fetch = async () => fetch(url, {
         method: 'PATCH',
         headers: get_auth_headers(),
-        body: JSON.stringify(body)
+        body: body_json
     });
+    let res = await run_fetch();
+    if (path !== AUTH_REFRESH_PATH && res.status === 401) {
+        if (get_auth_token()) {
+            const refreshed = await refresh_auth_token();
+            if (!refreshed) {
+                const e = new Error('Inloggning krävs');
+                e.status = 401;
+                throw e;
+            }
+            res = await run_fetch();
+        } else if (handle_unauthorized_response(res)) {
+            const e = new Error('Inloggning krävs');
+            e.status = 401;
+            throw e;
+        }
+    }
     if (handle_unauthorized_response(res)) {
         const e = new Error('Inloggning krävs');
         e.status = 401;

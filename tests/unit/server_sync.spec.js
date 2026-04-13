@@ -14,6 +14,7 @@ const update_audit = jest.fn();
 const import_audit = jest.fn();
 const update_rule = jest.fn();
 const load_audit_with_rule_file = jest.fn();
+const get_auth_token = jest.fn(() => 'mock-jwt');
 const clear_audit_sync_pending = jest.fn();
 const clear_rulefile_sync_pending = jest.fn();
 const is_fetch_network_error = jest.fn(() => false);
@@ -25,7 +26,8 @@ jest.unstable_mockModule(client_path, () => ({
     update_audit,
     import_audit,
     update_rule,
-    load_audit_with_rule_file
+    load_audit_with_rule_file,
+    get_auth_token
 }));
 
 jest.unstable_mockModule(connectivity_path, () => ({
@@ -67,6 +69,7 @@ describe('server_sync', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
+        get_auth_token.mockImplementation(() => 'mock-jwt');
         broadcast_instances = [];
         if (typeof global.BroadcastChannel !== 'undefined') {
             delete global.BroadcastChannel;
@@ -121,6 +124,15 @@ describe('server_sync', () => {
     test('flush_sync_to_server hoppar över när not_started utan auditId', async () => {
         const dispatch = jest.fn();
         const state = base_audit_state({ auditStatus: 'not_started' });
+        await flush_sync_to_server(() => state, dispatch);
+        expect(update_audit).not.toHaveBeenCalled();
+        expect(import_audit).not.toHaveBeenCalled();
+    });
+
+    test('flush_sync_to_server hoppar över när ingen auth-token finns', async () => {
+        get_auth_token.mockImplementation(() => null);
+        const dispatch = jest.fn();
+        const state = base_audit_state({ auditId: 'a1', version: 1 });
         await flush_sync_to_server(() => state, dispatch);
         expect(update_audit).not.toHaveBeenCalled();
         expect(import_audit).not.toHaveBeenCalled();
