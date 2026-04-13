@@ -2,6 +2,7 @@
 // Online/offline-indikering, pending-synk till server och meddelanden i global-message-area.
 
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
+import { ensure_main_view_content_host } from './app_dom.js';
 
 /** @type {boolean} */
 let pending_audit_sync = false;
@@ -138,11 +139,12 @@ export function init_connectivity_service(options) {
 
     if (typeof window === 'undefined') return;
 
-    const top_bar = document.getElementById('global-action-bar-top');
+    const main_el = document.getElementById('app-main-view-root');
     const NotificationComponent = app_runtime_refs.notification_component;
-    if (top_bar && NotificationComponent?.init && NotificationComponent.append_global_message_areas_to) {
+    if (main_el && NotificationComponent?.init && NotificationComponent.append_global_message_areas_to) {
+        ensure_main_view_content_host(main_el);
         NotificationComponent.init().then(() => {
-            NotificationComponent.append_global_message_areas_to(top_bar);
+            NotificationComponent.append_global_message_areas_to(main_el);
             if (!navigator.onLine) {
                 show_offline_banner_if_needed();
             }

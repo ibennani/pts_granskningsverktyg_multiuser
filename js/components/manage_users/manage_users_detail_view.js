@@ -143,10 +143,6 @@ export function render_manage_users_detail_view(deps) {
     const plate = Helpers.create_element('div', { class_name: 'content-plate manage-users-plate' });
     deps.set_detail_form_root(plate);
 
-    if (deps.NotificationComponent?.append_global_message_areas_to) {
-        deps.NotificationComponent.append_global_message_areas_to(plate);
-    }
-
     const is_edit = !!deps.current_user;
 
     deps.on_return_focus_for_edit_if_needed();

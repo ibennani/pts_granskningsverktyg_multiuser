@@ -3,6 +3,41 @@
  */
 import { consoleManager } from '../utils/console_manager.js';
 
+const APP_MAIN_VIEW_CONTENT_ID = 'app-main-view-content';
+
+/**
+ * Säkerställer att #app-main-view-content finns i main: all vy-HTML hamnar där så att
+ * globala notiser kan ligga kvar som syskon ovanför (utan att innerHTML på main rensar dem).
+ *
+ * @param {HTMLElement|null} main_el – elementet #app-main-view-root
+ * @returns {HTMLElement|null}
+ */
+export function ensure_main_view_content_host(main_el) {
+    if (!main_el || main_el.id !== 'app-main-view-root') {
+        return null;
+    }
+    let host = main_el.querySelector(`#${APP_MAIN_VIEW_CONTENT_ID}`);
+    if (host) {
+        return host;
+    }
+    host = document.createElement('div');
+    host.id = APP_MAIN_VIEW_CONTENT_ID;
+    host.className = 'app-main-view-content';
+    const skip_ids = new Set([
+        'global-critical-message-area',
+        'global-message-area',
+        APP_MAIN_VIEW_CONTENT_ID
+    ]);
+    for (const child of Array.from(main_el.children)) {
+        if (child.id && skip_ids.has(child.id)) {
+            continue;
+        }
+        host.appendChild(child);
+    }
+    main_el.appendChild(host);
+    return host;
+}
+
 /**
  * Hämtar eller skapar kärncontainrar (wrapper, app, action bars).
  * @returns {{ app_wrapper: HTMLElement, app_container: HTMLElement, top_action_bar_container: HTMLElement, bottom_action_bar_container: HTMLElement }}
@@ -96,6 +131,7 @@ export function ensure_app_layout(refs, opts = {}) {
     if (document.getElementById('app-layout') && document.getElementById('app-main-view-root') && document.getElementById('app-side-menu-root') && existing_right_sidebar_root) {
         refs.side_menu_root = document.getElementById('app-side-menu-root');
         refs.main_view_root = document.getElementById('app-main-view-root');
+        ensure_main_view_content_host(refs.main_view_root);
         refs.right_sidebar_root = existing_right_sidebar_root;
         return;
     }
@@ -114,6 +150,11 @@ export function ensure_app_layout(refs, opts = {}) {
     refs.main_view_root.id = 'app-main-view-root';
     refs.main_view_root.className = 'app-main-view-root main-wrapper';
     refs.main_view_root.setAttribute('tabindex', '-1');
+
+    const main_view_content = document.createElement('div');
+    main_view_content.id = APP_MAIN_VIEW_CONTENT_ID;
+    main_view_content.className = 'app-main-view-content';
+    refs.main_view_root.appendChild(main_view_content);
 
     const right_sidebar = document.createElement('aside');
     right_sidebar.id = 'app-right-sidebar-root';

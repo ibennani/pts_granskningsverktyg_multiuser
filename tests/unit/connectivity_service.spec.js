@@ -146,15 +146,18 @@ describe('connectivity_service', () => {
             document.getElementById = orig_get;
         });
 
-        test('init med top_bar anropar NotificationComponent', async () => {
+        test('init med app-main-view-root anropar NotificationComponent', async () => {
             jest.resetModules();
             const { app_runtime_refs: runtime } = await import('../../js/utils/app_runtime_refs.js');
             const mod = await import('../../js/logic/connectivity_service.js');
             const { init_connectivity_service } = mod;
-            const top = document.createElement('div');
-            top.id = 'global-action-bar-top';
+            const main_el = document.createElement('main');
+            main_el.id = 'app-main-view-root';
+            const host = document.createElement('div');
+            host.id = 'app-main-view-content';
+            main_el.appendChild(host);
             const orig_get = document.getElementById;
-            document.getElementById = jest.fn((id) => (id === 'global-action-bar-top' ? top : null));
+            document.getElementById = jest.fn((id) => (id === 'app-main-view-root' ? main_el : null));
             const init_p = jest.fn().mockResolvedValue(undefined);
             const append = jest.fn();
             runtime.notification_component = {
@@ -171,7 +174,7 @@ describe('connectivity_service', () => {
             await new Promise((r) => setTimeout(r, 0));
             await new Promise((r) => setTimeout(r, 0));
             expect(init_p).toHaveBeenCalled();
-            expect(append).toHaveBeenCalledWith(top);
+            expect(append).toHaveBeenCalledWith(main_el);
 
             document.getElementById = orig_get;
             runtime.notification_component = null;

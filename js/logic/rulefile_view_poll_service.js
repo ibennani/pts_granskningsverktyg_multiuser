@@ -6,6 +6,11 @@
 
 import { get_rule_version, get_rule } from '../api/client.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
+import {
+    ensure_rulefile_baseline_for_current_focus,
+    should_show_rulefile_collaboration_notice,
+    update_rulefile_baseline_from_remote
+} from './rulefile_collaboration_notice.js';
 
 const POLL_INTERVAL_MS = 3000;
 const RULEFILE_VIEWS = new Set([
@@ -48,6 +53,8 @@ export function init_rulefile_view_poll_service({ getState, dispatch, StoreActio
             return;
         }
 
+        ensure_rulefile_baseline_for_current_focus(state);
+
         try {
             const { version } = await get_rule_version(rule_set_id);
             const local_version = state?.ruleFileServerVersion ?? 0;
@@ -62,6 +69,7 @@ export function init_rulefile_view_poll_service({ getState, dispatch, StoreActio
                     }
                 }
                 if (content && typeof content === 'object') {
+                    const should_notice = should_show_rulefile_collaboration_notice({ local_state: state, remote_content: content });
                     dispatch({
                         type: StoreActionTypes.REPLACE_RULEFILE_FROM_REMOTE,
                         payload: {
@@ -69,7 +77,8 @@ export function init_rulefile_view_poll_service({ getState, dispatch, StoreActio
                             version: version
                         }
                     });
-                    if (app_runtime_refs.notification_component?.show_global_message && window.Translation?.t) {
+                    update_rulefile_baseline_from_remote(rule_set_id, content);
+                    if (should_notice && app_runtime_refs.notification_component?.show_global_message && window.Translation?.t) {
                         const msg = window.Translation.t('realtime_sync_rulefile_updated') || 'Regelfilen har uppdaterats av en annan enhet';
                         app_runtime_refs.notification_component.show_global_message(msg, 'info');
                     }

@@ -272,7 +272,6 @@ export class RulefileSectionsViewComponent {
     async _build_main_plate(state, section_id, is_editing) {
         const metadata = state?.ruleFileContent?.metadata || {};
         const main_plate = this.Helpers.create_element('div', { class_name: 'content-plate rulefile-sections-main-plate' });
-        this.NotificationComponent.append_global_message_areas_to(main_plate);
         const layout = this.Helpers.create_element('div', { class_name: 'rulefile-sections-layout' });
         const right_wrapper = this.Helpers.create_element('div', { class_name: 'rulefile-sections-right-wrapper' });
         let section_content;

@@ -770,10 +770,6 @@ export class BackupOverviewComponent {
             class_name: 'content-plate backup-view-plate'
         });
 
-        if (this.NotificationComponent?.append_global_message_areas_to) {
-            this.NotificationComponent.append_global_message_areas_to(plate);
-        }
-
         let pending_message_key = null;
         try {
             pending_message_key = sessionStorage.getItem('gv_backup_settings_saved_message');

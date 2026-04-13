@@ -1107,6 +1107,7 @@
   "new_version_available": "En ny version är tillgänglig.",
   "new_version_reloading": "En ny version är tillgänglig. Sidan laddas om om några sekunder.",
   "reload_page": "Ladda om sidan",
+  "global_message_dismiss_aria_label": "Stäng notisen",
   "server_retry_hint": "Servern svarar inte. Kontrollera att Docker och Postgres körs, sedan klicka nedan.",
   "server_retry_button": "Kontrollera igen",
   "upload_older_audit_warning_title": "Äldre granskning",

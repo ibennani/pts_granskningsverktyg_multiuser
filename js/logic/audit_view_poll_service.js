@@ -10,6 +10,7 @@
 
 import { get_audit_version, load_audit_with_rule_file } from '../api/client.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
+import { should_show_audit_collaboration_notice, update_baseline_from_server_full_state } from './audit_collaboration_notice.js';
 
 const POLL_INTERVAL_MS = 3000;
 const AUDIT_VIEWS = new Set([
@@ -74,7 +75,9 @@ export function init_audit_view_poll_service({ getState, dispatch, StoreActionTy
                             saveFileVersion: full_state.saveFileVersion || '2.1.0'
                         }
                     });
-                    if (app_runtime_refs.notification_component?.show_global_message && window.Translation?.t) {
+                    update_baseline_from_server_full_state(full_state);
+                    const should_notice = should_show_audit_collaboration_notice({ local_state: state, remote_state: full_state });
+                    if (should_notice && app_runtime_refs.notification_component?.show_global_message && window.Translation?.t) {
                         const msg = window.Translation.t('realtime_sync_updated') || 'Granskningen har uppdaterats av en annan enhet';
                         app_runtime_refs.notification_component.show_global_message(msg, 'info');
                     }

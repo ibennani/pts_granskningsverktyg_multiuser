@@ -98,8 +98,6 @@ export class SampleFormViewComponent {
         this.plate_element_ref = this.Helpers.create_element('div', { class_name: 'content-plate' });
         this.root.appendChild(this.plate_element_ref);
 
-        this.NotificationComponent.append_global_message_areas_to(this.plate_element_ref);
-
         const title_text = sample_id_to_edit ? t('edit_sample') : t('add_new_sample');
         this.plate_element_ref.appendChild(this.Helpers.create_element('h1', { text_content: title_text }));
 

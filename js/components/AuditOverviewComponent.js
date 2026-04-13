@@ -115,7 +115,6 @@ export class AuditOverviewComponent {
         const plate_element = this.Helpers.create_element('div', { class_name: 'content-plate audit-overview-plate' });
         this.root.appendChild(plate_element);
 
-        this.NotificationComponent.append_global_message_areas_to(plate_element);
         plate_element.appendChild(this.Helpers.create_element('h1', { text_content: t('audit_overview_title') }));
 
         if (current_global_state.auditStatus !== 'in_progress') {

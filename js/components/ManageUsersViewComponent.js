@@ -130,10 +130,6 @@ export class ManageUsersViewComponent {
 
         const plate = this.Helpers.create_element('div', { class_name: 'content-plate manage-users-plate' });
 
-        if (this.NotificationComponent?.append_global_message_areas_to) {
-            this.NotificationComponent.append_global_message_areas_to(plate);
-        }
-
         const header_row = this.Helpers.create_element('div', { class_name: 'manage-users-header-row' });
 
         const left_header = this.Helpers.create_element('div', {

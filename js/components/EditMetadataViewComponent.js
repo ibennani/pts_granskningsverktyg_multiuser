@@ -259,9 +259,7 @@ export class EditMetadataViewComponent {
         }
 
         const plate_element = this.Helpers.create_element('div', { class_name: 'content-plate metadata-form-plate' });
-        
-        this.NotificationComponent.append_global_message_areas_to(plate_element);
-        
+
         const title = is_new_audit ? t('audit_metadata_title') : t('edit_audit_metadata_title');
         const intro_text = is_new_audit ? t('metadata_form_instruction') : t('edit_metadata_form_instruction');
         

@@ -217,8 +217,6 @@ export class ConfirmUpdatesViewComponent {
         this.plate_element_ref = this.Helpers.create_element('div', { class_name: 'content-plate' });
         this.root.appendChild(this.plate_element_ref);
 
-        this.NotificationComponent.append_global_message_areas_to(this.plate_element_ref);
-
         const { updated_reqs_by_sample, total_count } = this.get_updated_reqs_data();
         
         this.h1_ref = this.Helpers.create_element('h1', { attributes: { tabindex: '-1' } });

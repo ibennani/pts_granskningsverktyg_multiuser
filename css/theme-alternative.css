@@ -422,23 +422,44 @@
 /* --- Notifieringar --- */
 [data-theme="alternative"] #global-message-area.message-info {
     background-color: var(--badge-blue-bg);
-    color: var(--badge-blue-text);
+    color: #000000;
     border-color: var(--primary-alt);
+}
+
+[data-theme="alternative"] #global-message-area.message-info .global-message-close-btn {
+    color: #000000;
 }
 
 [data-theme="alternative"] #global-message-area.message-success {
     background-color: var(--badge-green-bg);
-    color: var(--badge-green-text);
+    color: #000000;
+}
+
+[data-theme="alternative"] #global-message-area.message-success .global-message-close-btn {
+    color: #000000;
 }
 
 [data-theme="alternative"] #global-message-area.message-warning {
     background-color: var(--badge-orange-bg);
-    color: var(--badge-orange-text);
+    color: #000000;
+}
+
+[data-theme="alternative"] #global-message-area.message-warning .global-message-close-btn {
+    color: #000000;
 }
 
 [data-theme="alternative"] #global-message-area.message-error {
     background-color: var(--badge-red-bg);
-    color: var(--badge-red-text);
+    color: #000000;
+}
+
+[data-theme="alternative"] #global-message-area.message-error .global-message-close-btn {
+    color: #000000;
+}
+
+[data-theme="alternative"] #global-message-area .global-message-action-btn {
+    color: #000000;
+    border-color: currentColor;
 }
 
 /* --- Inställningsvy (form-group i settings) --- */

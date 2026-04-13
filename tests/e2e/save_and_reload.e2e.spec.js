@@ -127,7 +127,7 @@ test.describe('Spara och omladdning (mockat API)', () => {
                 body_text
             );
         const has_global_msg = await page
-            .locator('#global-message-area .global-message-content')
+            .locator('#global-message-area.global-message-content')
             .first()
             .isVisible()
             .catch(() => false);

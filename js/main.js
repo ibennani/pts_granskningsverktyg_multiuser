@@ -16,6 +16,7 @@ import * as ScoreCalculator from './logic/ScoreCalculator.js';
 import { AutosaveService, capture_focus_state, restore_focus_state } from './logic/autosave_service.js';
 import { init_version_check_service } from './logic/version_check_service.js';
 import { init_rulefile_view_poll_service } from './logic/rulefile_view_poll_service.js';
+import { init_audit_view_poll_service } from './logic/audit_view_poll_service.js';
 import { init_connectivity_service } from './logic/connectivity_service.js';
 import {
     capture_focus_info_from_element,
@@ -300,6 +301,7 @@ if (typeof window !== 'undefined') {
             init_connectivity_service,
             init_version_check_service,
             init_rulefile_view_poll_service,
+            init_audit_view_poll_service,
             MarkdownToolbar,
             nav_debug,
             on_language_changed_event,

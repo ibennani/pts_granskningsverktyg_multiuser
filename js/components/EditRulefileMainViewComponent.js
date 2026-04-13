@@ -27,8 +27,6 @@ export class EditRulefileMainViewComponent {
         this.root.innerHTML = '';
         const plate_element = this.Helpers.create_element('div', { class_name: 'content-plate' });
 
-        this.NotificationComponent.append_global_message_areas_to(plate_element);
-
         const current_state = this.getState();
         const rulefile_title = current_state?.ruleFileContent?.metadata?.title || t('unknown_rulefile');
 

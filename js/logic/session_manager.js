@@ -119,6 +119,7 @@ export async function start_normal_session(deps) {
         init_connectivity_service,
         init_version_check_service,
         init_rulefile_view_poll_service,
+        init_audit_view_poll_service,
         MarkdownToolbar,
         nav_debug,
         on_language_changed_event,
@@ -165,6 +166,7 @@ export async function start_normal_session(deps) {
     if (MarkdownToolbar?.init) { MarkdownToolbar.init(); }
     init_version_check_service();
     const rulefile_view_poll_instance = init_rulefile_view_poll_service({ getState, dispatch, StoreActionTypes });
+    const audit_view_poll_instance = init_audit_view_poll_service({ getState, dispatch, StoreActionTypes });
     const language_changed_handler = on_language_changed_event;
     const hash_change_handler = handle_hash_change;
     const hash_change_wrapper = (...args) => {

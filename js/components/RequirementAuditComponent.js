@@ -8,6 +8,7 @@ import { RequirementAuditNavigationComponent } from './requirement_audit/Require
 import { RequirementAuditSidebarComponent } from './RequirementAuditSidebarComponent.js';
 import "./requirement_audit_component.css";
 import { consoleManager } from '../utils/console_manager.js';
+import { establish_baseline_for_current_audit_focus } from '../logic/audit_collaboration_notice.js';
 
 export class RequirementAuditComponent {
     constructor() {
@@ -44,6 +45,7 @@ export class RequirementAuditComponent {
         this.right_sidebar_root = null;
         this.sidebar_navigation_state = null;
         this.autosave_session = null;
+        this._baseline_key = null;
     }
 
     async init({ root, deps }) {
@@ -696,8 +698,6 @@ export class RequirementAuditComponent {
         this.root.innerHTML = '';
         this.plate_element_ref = this.Helpers.create_element('div', { class_name: 'content-plate requirement-audit-plate' });
 
-        this.NotificationComponent.append_global_message_areas_to(this.plate_element_ref);
-
         const top_nav_container = this.Helpers.create_element('div', { class_name: 'audit-navigation-buttons top-nav' });
         this.top_navigation_instance = new RequirementAuditNavigationComponent();
         this.top_navigation_instance.init(top_nav_container, this.handle_navigation, { deps: this.deps });
@@ -889,6 +889,12 @@ export class RequirementAuditComponent {
             this.NotificationComponent.show_global_message(this.Translation.t('error_loading_sample_or_requirement_data'), "error");
             this.router('audit_overview');
             return;
+        }
+
+        const baseline_key = `${String(this.params?.sampleId ?? '')}|${String(this.params?.requirementId ?? '')}`;
+        if (baseline_key !== this._baseline_key) {
+            this._baseline_key = baseline_key;
+            establish_baseline_for_current_audit_focus(this.getState());
         }
 
         const plate_exists = this.plate_element_ref && this.root.contains(this.plate_element_ref);

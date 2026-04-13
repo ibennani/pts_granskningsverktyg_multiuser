@@ -105,10 +105,6 @@ export class SampleManagementViewComponent {
         
         this.plate_element_ref.innerHTML = ''; 
 
-        if (this.NotificationComponent.append_global_message_areas_to) {
-            this.NotificationComponent.append_global_message_areas_to(this.plate_element_ref);
-        }
-
         this.plate_element_ref.appendChild(this.Helpers.create_element('h1', {
             text_content: t('sample_management_title_with_count', { count: current_state.samples?.length || 0 })
         }));

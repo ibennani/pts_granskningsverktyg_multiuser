@@ -88,8 +88,6 @@ export class ConfirmSampleEditViewComponent {
         this.plate_element_ref = this.Helpers.create_element('div', { class_name: 'content-plate' });
         this.root.appendChild(this.plate_element_ref);
 
-        this.NotificationComponent.append_global_message_areas_to(this.plate_element_ref);
-
         if (!pending_changes) {
             this.plate_element_ref.appendChild(this.Helpers.create_element('h1', { text_content: t('error_internal') }));
             this.plate_element_ref.appendChild(this.Helpers.create_element('p', { text_content: t('error_no_pending_sample_changes') }));

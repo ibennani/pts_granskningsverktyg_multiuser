@@ -52,10 +52,6 @@ export class FinalConfirmUpdatesViewComponent {
         this.plate_element_ref = this.Helpers.create_element('div', { class_name: 'content-plate' });
         this.root.appendChild(this.plate_element_ref);
 
-        if (this.NotificationComponent?.append_global_message_areas_to) {
-            this.NotificationComponent.append_global_message_areas_to(this.plate_element_ref);
-        }
-
         const state = this.getState();
         const total_count = state.samples.flatMap(s => Object.values(s.requirementResults || {})).filter(r => r.needsReview === true).length;
 

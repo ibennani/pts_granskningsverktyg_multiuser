@@ -16,6 +16,8 @@ import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import { show_audit_deleted_modal_and_navigate } from './audit_deleted_modal_flow.js';
 import { get_current_user_name } from '../utils/helpers.js';
 import { resolve_version_conflict_notice } from './version_conflict_notice.js';
+import { should_show_audit_collaboration_notice, update_baseline_from_server_full_state } from './audit_collaboration_notice.js';
+import { update_rulefile_baseline_from_remote } from './rulefile_collaboration_notice.js';
 
 let debounce_timer = null;
 let audit_sync_tail = Promise.resolve();
@@ -103,6 +105,7 @@ async function run_sync(state, dispatch_fn) {
             if (window.__GV_DEBUG_STUCK_SYNC__) {
                 consoleManager.log('[GV-Debug] run_sync: PATCH lyckades, version:', full_state?.version);
             }
+            update_baseline_from_server_full_state(full_state);
             try {
                 if (typeof BroadcastChannel !== 'undefined') {
                     const ch = new BroadcastChannel('granskningsverktyget-audit-updates');
@@ -204,11 +207,13 @@ async function run_sync(state, dispatch_fn) {
                     });
                     clear_audit_sync_pending();
                     const notice = resolve_version_conflict_notice(err, get_current_user_name());
-                    if (notice && app_runtime_refs.notification_component?.show_global_message && window.Translation?.t) {
+                    const should_notice = notice && should_show_audit_collaboration_notice({ local_state: state, remote_state: full_state });
+                    if (should_notice && app_runtime_refs.notification_component?.show_global_message && window.Translation?.t) {
                         const t = window.Translation.t;
                         const msg = notice.params ? t(notice.key, notice.params) : t(notice.key);
                         app_runtime_refs.notification_component.show_global_message(msg, 'info');
                     }
+                    update_baseline_from_server_full_state(full_state);
                 } else if (app_runtime_refs.notification_component?.show_global_message && window.Translation?.t) {
                     mark_audit_sync_pending();
                     app_runtime_refs.notification_component.show_global_message(
@@ -263,6 +268,9 @@ async function run_sync_rulefile(state, dispatch_fn) {
                     version: updated.version
                 }
             });
+        }
+        if (updated?.content) {
+            update_rulefile_baseline_from_remote(state.ruleSetId, updated.content);
         }
         clear_rulefile_sync_pending();
     } catch (err) {

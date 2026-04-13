@@ -293,10 +293,6 @@ export class UpdateRulefileViewComponent {
         
         this.plate_element_ref.innerHTML = '';
 
-        if (this.NotificationComponent?.append_global_message_areas_to) {
-            this.NotificationComponent.append_global_message_areas_to(this.plate_element_ref);
-        }
-
         this.plate_element_ref.appendChild(this.Helpers.create_element('h1', { text_content: this.get_t_internally()('update_rulefile_title') }));
 
         switch (this.current_step) {

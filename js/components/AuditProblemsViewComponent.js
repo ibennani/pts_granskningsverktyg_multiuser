@@ -561,8 +561,6 @@ export class AuditProblemsViewComponent {
         const plate = this.Helpers.create_element('div', { class_name: 'content-plate audit-problems-plate' });
         this.root.appendChild(plate);
 
-        this.NotificationComponent?.append_global_message_areas_to?.(plate);
-
         const header_row = this.Helpers.create_element('div', { class_name: 'audit-problems-header-row' });
         const problems_count = problems.length;
         const heading_text = problems_count > 1

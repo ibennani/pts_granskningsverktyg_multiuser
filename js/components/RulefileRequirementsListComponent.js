@@ -172,8 +172,6 @@ export class RulefileRequirementsListComponent {
         const t = this.Translation.t;
         this.root.innerHTML = '';
         this.plate_element_ref = this.Helpers.create_element('div', { class_name: 'content-plate rulefile-requirements-list-plate' });
-        
-        this.NotificationComponent.append_global_message_areas_to(this.plate_element_ref);
 
         // Skapa header-container med H1 och knapp på samma rad
         const header_container = this.Helpers.create_element('div', { class_name: 'page-header-container', style: 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;' });

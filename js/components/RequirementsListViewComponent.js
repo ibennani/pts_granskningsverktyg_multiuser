@@ -173,7 +173,6 @@ export class RequirementsListViewComponent {
             mode: this.mode,
             Helpers: this.Helpers,
             Translation: this.Translation,
-            NotificationComponent: this.NotificationComponent,
             handle_requirement_list_click: this.handle_requirement_list_click,
             handle_requirement_list_keydown: this.handle_requirement_list_keydown
         });

@@ -1107,6 +1107,7 @@
   "new_version_available": "A new version is available.",
   "new_version_reloading": "A new version is available. The page will reload in a few seconds.",
   "reload_page": "Reload page",
+  "global_message_dismiss_aria_label": "Close notification",
   "server_retry_hint": "Server not responding. Ensure Docker and Postgres are running, then click below.",
   "server_retry_button": "Check again",
   "upload_older_audit_warning_title": "Older audit",

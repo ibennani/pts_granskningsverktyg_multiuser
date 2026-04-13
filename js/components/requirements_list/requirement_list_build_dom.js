@@ -9,7 +9,6 @@
  * @param {string} ctx.mode
  * @param {object} ctx.Helpers
  * @param {object} ctx.Translation
- * @param {object} [ctx.NotificationComponent]
  * @param {function} ctx.handle_requirement_list_click
  * @param {function} ctx.handle_requirement_list_keydown
  * @returns {{
@@ -24,14 +23,10 @@
  * }}
  */
 export function build_requirements_list_dom(ctx) {
-    const { root, mode, Helpers, Translation, NotificationComponent, handle_requirement_list_click, handle_requirement_list_keydown } = ctx;
+    const { root, mode, Helpers, Translation, handle_requirement_list_click, handle_requirement_list_keydown } = ctx;
 
     const plate_class = 'content-plate requirement-list-plate';
     const plate_element_ref = Helpers.create_element('div', { class_name: plate_class });
-
-    if (mode === 'sample' && NotificationComponent?.append_global_message_areas_to) {
-        NotificationComponent.append_global_message_areas_to(plate_element_ref);
-    }
 
     let h1_element_ref = null;
     let header_element_ref = null;

@@ -1107,6 +1107,7 @@
   "new_version_available": "En ny versjon er tilgjengelig.",
   "new_version_reloading": "En ny versjon er tilgjengelig. Siden lastes inn på nytt om noen sekunder.",
   "reload_page": "Last inn siden på nytt",
+  "global_message_dismiss_aria_label": "Lukk meldingen",
   "server_retry_hint": "Serveren svarer ikke. Kontroller at Docker og Postgres kjører, og klikk nedenfor.",
   "server_retry_button": "Sjekk igjen",
   "upload_older_audit_warning_title": "Eldre tilsyn",

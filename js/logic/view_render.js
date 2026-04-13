@@ -13,6 +13,7 @@ import {
 } from './focus_manager.js';
 import { dependencyManager } from '../utils/dependency_manager.js';
 import { consoleManager } from '../utils/console_manager.js';
+import { ensure_main_view_content_host } from './app_dom.js';
 import { get_component_class, rulefileSectionsViewComponent, requirementListComponent } from './view_components_index.js';
 
 /**
@@ -106,6 +107,9 @@ export async function render_view(view_name_to_render, params_to_render = {}, de
         view_root = main_view_root || app_container;
     }
 
+    /** Rot för vy-init: #app-main-view-content i <main> när layout finns, annars samma som view_root. */
+    let view_init_root = view_root;
+
     update_side_menu(view_name_mut, params_mut);
 
     if (main_view_root) {
@@ -122,6 +126,7 @@ export async function render_view(view_name_to_render, params_to_render = {}, de
     render_ctx.current_view_params_rendered_json = JSON.stringify(params_mut);
     try {
         window.__gv_current_view_name = render_ctx.current_view_name_rendered;
+        window.__gv_current_view_params_json = render_ctx.current_view_params_rendered_json;
     } catch (_) {
         // ignoreras medvetet
     }
@@ -139,7 +144,8 @@ export async function render_view(view_name_to_render, params_to_render = {}, de
         if (!is_focus_in_editable_field(view_root)) {
             current_view_component_instance.render();
         }
-        ensure_skip_link_target(view_root);
+        const skip_target = (view_root?.id === 'app-main-view-root' ? ensure_main_view_content_host(view_root) : null) || view_root;
+        ensure_skip_link_target(skip_target);
         return;
     }
     top_action_bar_instance.render();
@@ -161,11 +167,12 @@ export async function render_view(view_name_to_render, params_to_render = {}, de
         if (renderPromise && typeof renderPromise.then === 'function') {
             await renderPromise;
         }
-        ensure_skip_link_target(view_root);
-        if (DraftManager?.restoreIntoDom) DraftManager.restoreIntoDom(view_root);
+        const skip_target_rf = (view_root?.id === 'app-main-view-root' ? ensure_main_view_content_host(view_root) : null) || view_root;
+        ensure_skip_link_target(skip_target_rf);
+        if (DraftManager?.restoreIntoDom) DraftManager.restoreIntoDom(skip_target_rf);
         update_restore_position(view_name_mut, params_mut, null);
         updateBackupRestorePosition(window.__gv_get_restore_position?.());
-        apply_post_render_focus_instruction({ view_name: view_name_mut, view_root });
+        apply_post_render_focus_instruction({ view_name: view_name_mut, view_root: skip_target_rf });
         return;
     }
 
@@ -206,7 +213,17 @@ export async function render_view(view_name_to_render, params_to_render = {}, de
         }
     }
     if (view_root) {
-        view_root.innerHTML = '';
+        if (view_root.id === 'app-main-view-root') {
+            const host = ensure_main_view_content_host(view_root);
+            if (host) {
+                host.innerHTML = '';
+                view_init_root = host;
+            } else {
+                view_root.innerHTML = '';
+            }
+        } else {
+            view_root.innerHTML = '';
+        }
     }
     render_ctx.current_view_component_instance = null;
 
@@ -217,10 +234,10 @@ export async function render_view(view_name_to_render, params_to_render = {}, de
         error_h1.textContent = t('error_loading_view_details');
         const error_p = document.createElement('p');
         error_p.textContent = t('error_view_not_found', { viewName: local_helpers_escape_html(view_name_mut) });
-        if (view_root) {
-            view_root.appendChild(error_h1);
-            view_root.appendChild(error_p);
-            ensure_skip_link_target(view_root);
+        if (view_init_root) {
+            view_init_root.appendChild(error_h1);
+            view_init_root.appendChild(error_p);
+            ensure_skip_link_target(view_init_root);
         }
         return;
     }
@@ -239,7 +256,7 @@ export async function render_view(view_name_to_render, params_to_render = {}, de
         }
 
         await render_ctx.current_view_component_instance.init({
-            root: view_root,
+            root: view_init_root,
             deps: {
                 router: navigate_and_set_hash,
                 params: params_mut,
@@ -268,20 +285,24 @@ export async function render_view(view_name_to_render, params_to_render = {}, de
         if (render_ctx.current_view_name_rendered === view_name_mut) {
             updatePageTitle(view_name_mut, params_mut);
         }
-        ensure_skip_link_target(view_root);
+        ensure_skip_link_target(view_init_root);
         if (DraftManager?.restoreIntoDom) {
-            DraftManager.restoreIntoDom(view_root);
+            DraftManager.restoreIntoDom(view_init_root);
         }
         update_restore_position(view_name_mut, params_mut, null);
         updateBackupRestorePosition(window.__gv_get_restore_position?.());
 
         apply_post_render_focus_instruction({
             view_name: view_name_mut,
-            view_root
+            view_root: view_init_root
         });
 
         if (typeof update_landmarks_and_skip_link === 'function') {
             update_landmarks_and_skip_link(view_name_mut, params_mut);
+        }
+
+        if (notificationComponent?.append_global_message_areas_to) {
+            notificationComponent.append_global_message_areas_to(null);
         }
 
     } catch (error) {
@@ -300,14 +321,14 @@ export async function render_view(view_name_to_render, params_to_render = {}, de
             }, retry_callback);
         } else {
             const view_name_escaped_for_error = local_helpers_escape_html(view_name_mut);
-            if (view_root) {
+            if (view_init_root) {
                 const error_h1 = document.createElement('h1');
                 error_h1.textContent = t('error_loading_view_details');
                 const error_p = document.createElement('p');
                 error_p.textContent = t('error_loading_view', { viewName: view_name_escaped_for_error, errorMessage: error.message });
-                view_root.appendChild(error_h1);
-                view_root.appendChild(error_p);
-                ensure_skip_link_target(view_root);
+                view_init_root.appendChild(error_h1);
+                view_init_root.appendChild(error_p);
+                ensure_skip_link_target(view_init_root);
             }
         }
     }
