@@ -101,22 +101,29 @@ export async function render_view(view_name_to_render, params_to_render = {}, de
     if (view_name_mut === 'login') {
         document.body.classList.add('view-login');
         ensure_app_layout();
-        view_root = main_view_root || app_container;
     } else {
         document.body.classList.remove('view-login');
-        view_root = main_view_root || app_container;
     }
+
+    // Efter ensure_app_layout uppdateras layout_refs i main — deps.main_view_root kan fortfarande vara
+    // ögonblicksbilden från render_view_deps() före layout. Läs från DOM så vi inte sätter view_root till
+    // #app-container och tömmer hela appen (tom sida).
+    const resolved_main_view_root =
+        (typeof document !== 'undefined' && document.getElementById('app-main-view-root')) || main_view_root;
+    const resolved_app_container =
+        (typeof document !== 'undefined' && document.getElementById('app-container')) || app_container;
+    view_root = resolved_main_view_root || resolved_app_container;
 
     /** Rot för vy-init: #app-main-view-content i <main> när layout finns, annars samma som view_root. */
     let view_init_root = view_root;
 
     update_side_menu(view_name_mut, params_mut);
 
-    if (main_view_root) {
+    if (resolved_main_view_root) {
         if (view_name_mut === 'start') {
-            main_view_root.classList.add('start-view-active');
+            resolved_main_view_root.classList.add('start-view-active');
         } else {
-            main_view_root.classList.remove('start-view-active');
+            resolved_main_view_root.classList.remove('start-view-active');
         }
     }
 
@@ -132,7 +139,9 @@ export async function render_view(view_name_to_render, params_to_render = {}, de
     }
 
     const current_view_component_instance = render_ctx.current_view_component_instance;
+    // login: params innehåller on_login (funktion) som JSON.stringify utelämnar → falsk träff mot '{}' och snabbrender utan init.
     const is_same_view_quick_render = prev_view === view_name_mut &&
+        view_name_mut !== 'login' &&
         prev_params_json === JSON.stringify(params_mut) &&
         current_view_component_instance && typeof current_view_component_instance.render === 'function';
 

@@ -79,6 +79,17 @@ describe('api/client – token och bas-URL', () => {
         expect(get_auth_token()).toBe(null);
     });
 
+    test('get_auth_token returnerar null om sessionStorage.getItem kastar', () => {
+        const spy = jest.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+            throw new DOMException('Saknas', 'SecurityError');
+        });
+        try {
+            expect(get_auth_token()).toBe(null);
+        } finally {
+            spy.mockRestore();
+        }
+    });
+
     test('get_base_url använder standard eller __GV_API_BASE__', () => {
         expect(get_base_url()).toMatch(/v2\/api$/);
         window.__GV_API_BASE__ = '/api/';

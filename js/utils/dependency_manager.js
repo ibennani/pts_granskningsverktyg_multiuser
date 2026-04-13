@@ -229,13 +229,8 @@ class DependencyManager {
 // Create and export singleton instance
 const dependencyManager = new DependencyManager();
 
-// Auto-initialize when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        dependencyManager.initialize();
-    });
-} else {
-    dependencyManager.initialize();
-}
+// Init sker via init_global_components (app_chrome) efter register_translation_module i main —
+// tidigare auto-init här körde ofta före main-body och gav Translation=null → upp till 5 s väntan
+// och misslyckad första init.
 
 export { dependencyManager };

@@ -26,19 +26,30 @@ export const get_base_url = () => {
 
 export function get_auth_token() {
     if (typeof window === 'undefined') return null;
-    return sessionStorage.getItem(AUTH_TOKEN_KEY);
+    try {
+        return sessionStorage.getItem(AUTH_TOKEN_KEY);
+    } catch (_) {
+        /* T.ex. privat läge eller blockerad lagring — behandla som utloggad */
+        return null;
+    }
 }
 
 export function set_auth_token(token) {
-    if (typeof window !== 'undefined' && token) {
+    if (typeof window === 'undefined' || !token) return;
+    try {
         sessionStorage.setItem(AUTH_TOKEN_KEY, token);
+    } catch (_) {
+        /* T.ex. kvot eller blockerad lagring */
     }
 }
 
 export function clear_auth_token() {
-    if (typeof window !== 'undefined') {
+    if (typeof window === 'undefined') return;
+    try {
         sessionStorage.removeItem(AUTH_TOKEN_KEY);
         sessionStorage.removeItem(AUTH_USER_IS_ADMIN_KEY);
+    } catch (_) {
+        /* ignoreras medvetet */
     }
 }
 

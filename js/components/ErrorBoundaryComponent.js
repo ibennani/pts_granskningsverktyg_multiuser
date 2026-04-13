@@ -18,7 +18,13 @@ export class ErrorBoundaryComponent {
         }
 
         this.load_css();
-        this.clear_error();
+        // Kall start: töm inte huvudytan — där ligger vyvärd (t.ex. #app-main-view-content).
+        // clear_error() sätter root.innerHTML = '' och kan lämna singleton-komponenter med frånkopplad root.
+        if (this.root && this.root.querySelector('.error-boundary-container')) {
+            this.clear_error();
+        } else {
+            this.error_info = null;
+        }
     }
 
     load_css() {
@@ -200,7 +206,12 @@ export class ErrorBoundaryComponent {
 
     clear_error() {
         if (this.root) {
-            this.root.innerHTML = '';
+            const err_box = this.root.querySelector('.error-boundary-container');
+            if (err_box) {
+                err_box.remove();
+            }
+            // Töm aldrig hela main: #app-main-view-content ligger där — innerHTML = '' skulle
+            // frånkoppla vykomponentens root utan undantag (ingen rad i konsolen).
         }
         this.error_info = null;
     }
@@ -215,7 +226,10 @@ export class ErrorBoundaryComponent {
 
     destroy() {
         if (this.root) {
-            this.root.innerHTML = '';
+            const err_box = this.root.querySelector('.error-boundary-container');
+            if (err_box) {
+                err_box.remove();
+            }
         }
         this.root = null;
         this.error_info = null;
