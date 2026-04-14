@@ -172,6 +172,7 @@
     background-color: var(--input-background-color);
 }
 
+/* Bristindex 0–100: zoner enligt js/logic/deficiency_color_scale.ts (15 / 30 / 45) */
 /* --- START OF CHANGE: Inverted Gradient --- */
 .principle-row__bar {
     height: 100%;

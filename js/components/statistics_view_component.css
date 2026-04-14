@@ -150,10 +150,23 @@
     background-color: var(--input-background-color);
 }
 
+/* Samma zoner som .principle-row__bar; trösklar ska följa js/logic/deficiency_color_scale.ts */
 .statistics-sampletype-chart__fill {
     display: block;
     height: 100%;
-    background: var(--primary-color, #6d28d9);
+    transition: width 0.35s ease-out;
+    background: linear-gradient(
+        to right,
+        var(--gradient-success-color) 0%,
+        var(--gradient-success-color) 15%,
+        var(--gradient-warning-color) 16%,
+        var(--gradient-warning-color) 30%,
+        var(--gradient-orange-color) 31%,
+        var(--gradient-orange-color) 45%,
+        var(--gradient-danger-color) 46%,
+        var(--gradient-danger-color) 100%
+    );
+    background-size: calc(100% / (var(--score-percent, 0.01) / 100)) 100%;
 }
 
 .statistics-top-failed__intro {

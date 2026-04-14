@@ -73,12 +73,13 @@ export function append_sampletype_deficiency_chart_block(plate, options) {
             li.appendChild(label_left);
 
             const track = Helpers.create_element('span', { class_name: 'statistics-sampletype-chart__track' });
-            track.appendChild(
-                Helpers.create_element('span', {
-                    class_name: 'statistics-sampletype-chart__fill',
-                    attributes: { style: `width: ${Math.min(100, Math.max(0, val))}%;` }
-                })
-            );
+            const w = Math.min(100, Math.max(0, val));
+            const fill = Helpers.create_element('span', {
+                class_name: 'statistics-sampletype-chart__fill',
+                style: { width: `${w}%` }
+            });
+            fill.style.setProperty('--score-percent', String(val));
+            track.appendChild(fill);
             li.appendChild(track);
             ul.appendChild(li);
         });

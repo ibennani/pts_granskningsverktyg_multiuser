@@ -1,4 +1,5 @@
 import { calculateQualityScore } from '../logic/ScoreCalculator.js';
+import { DEFICIENCY_SCORE_ZONE_UPPER_BOUNDS } from '../logic/deficiency_color_scale.ts';
 import "./score_analysis_component.css";
 
 export const ScoreAnalysisComponent = {
@@ -49,11 +50,12 @@ export const ScoreAnalysisComponent = {
             return `<path d="${describeArc(50, 50, 40, startAngle, endAngle)}" stroke="${color}" stroke-width="10" stroke-linecap="butt" fill="none" />`;
         };
 
-        // Calculate angles for each percentage range
+        // Calculate angles for each percentage range (samma trösklar som principrader / stickprovstyper)
         const totalAngle = maxAngle - minAngle; // 270 degrees
-        const greenEndAngle = minAngle + (15 / 100) * totalAngle; // 15% of 270° = 40.5°
-        const yellowEndAngle = minAngle + (30 / 100) * totalAngle; // 30% of 270° = 81°
-        const orangeEndAngle = minAngle + (45 / 100) * totalAngle; // 45% of 270° = 121.5°
+        const [zone_green_max, zone_yellow_max, zone_orange_max] = DEFICIENCY_SCORE_ZONE_UPPER_BOUNDS;
+        const greenEndAngle = minAngle + (zone_green_max / 100) * totalAngle;
+        const yellowEndAngle = minAngle + (zone_yellow_max / 100) * totalAngle;
+        const orangeEndAngle = minAngle + (zone_orange_max / 100) * totalAngle;
 
         const svgContent = `
             <svg viewBox="0 0 100 85" class="score-gauge-svg" aria-hidden="true">
