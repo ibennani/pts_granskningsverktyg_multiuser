@@ -222,6 +222,8 @@
   "audit_overview_newer_rule_update_later": "Update later",
   "audit_overview_newer_rule_update_later_aria": "Update the rule file later",
   "audit_overview_title": "Audit overview",
+  "audit_overview_sampletype_chart_heading": "Deficiency index for each sample",
+  "audit_overview_sampletype_chart_intro": "Deficiency index (0–100) for the samples in this audit, shown by sample type. When several samples share a type, the median is shown. Lower is better.",
   "audit_overview_progress_core": "{audited} / {total} checks ({pct} %)",
   "audit_overview_distribution_heading": "Distribution of checks",
   "audit_overview_distribution_passed": "No remarks",

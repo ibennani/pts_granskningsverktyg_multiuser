@@ -76,6 +76,15 @@
     font-size: 1.25rem;
 }
 
+.statistics-sampletype-chart {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    /* Minsta bredd för stapelkolumnen; kolumnen växer med 1fr så listan kan fylla hela diagrammet */
+    --statistics-sampletype-bar-column-width: 12rem;
+}
+
 .statistics-sampletype-chart__h2 {
     margin: 1.5rem 0 0.35rem;
     font-size: 1.25rem;
@@ -92,33 +101,33 @@
     font-weight: 600;
 }
 
+/* Ett rutnät för hela listan: kolumn 1 = bredaste etikett; kolumn 2 växer så ul fyller .statistics-sampletype-chart */
 .statistics-sampletype-chart__list {
     margin: 0 0 1rem;
     padding: 0;
     list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: 0.2rem;
+    display: grid;
+    grid-template-columns: minmax(0, max-content) minmax(var(--statistics-sampletype-bar-column-width), 1fr);
+    column-gap: 0.35rem;
+    row-gap: 0.2rem;
+    align-items: center;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
 }
 
 .statistics-sampletype-chart__item {
-    display: grid;
-    /* Fast etikettkolumn (bred nog för långa namn); samma skiljelinje för alla rader; stapel fyller resten */
-    grid-template-columns: minmax(12rem, 28rem) minmax(0, 1fr);
-    gap: 0.2rem 0.6rem;
-    align-items: center;
+    display: contents;
 }
 
 .statistics-sampletype-chart__label {
     display: block;
     min-width: 0;
-    width: 100%;
     white-space: nowrap;
-    overflow-x: auto;
-    scrollbar-width: thin;
+    overflow: hidden;
+    text-overflow: ellipsis;
     font-variant-numeric: tabular-nums;
     text-align: right;
-    justify-self: stretch;
 }
 
 .statistics-sampletype-chart__label strong {
@@ -126,8 +135,10 @@
 }
 
 .statistics-sampletype-chart__track {
+    display: block;
+    box-sizing: border-box;
     width: 100%;
-    justify-self: stretch;
+    min-width: 0;
     height: 0.8rem;
     background-color: #F8F4F0;
     border: 1px solid var(--border-color, #ccc);

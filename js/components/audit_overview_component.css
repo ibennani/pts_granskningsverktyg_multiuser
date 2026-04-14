@@ -83,6 +83,13 @@
     color: var(--heading-color);
 }
 
+/* Stickprovstyp-diagram (återanvänder statistics-sampletype-chart) */
+.audit-overview-sampletype-chart-wrap {
+    margin-top: 1rem;
+    width: 100%;
+    min-width: 0;
+}
+
 /* --- ALLMÄNNA SEKTIONSSTILAR --- */
 .audit-overview-section {
     margin-bottom: 0.75rem;

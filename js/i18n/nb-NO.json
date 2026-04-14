@@ -222,6 +222,8 @@
   "audit_overview_newer_rule_update_later": "Oppdater senere",
   "audit_overview_newer_rule_update_later_aria": "Oppdater regelfilen senere",
   "audit_overview_title": "Tilsynsoversikt",
+  "audit_overview_sampletype_chart_heading": "Bristindeks for hvert utvalg",
+  "audit_overview_sampletype_chart_intro": "Bristindeks (0–100) for utvalgene i dette tilsynet, vist per utvalgstype. Når flere utvalg har samme type, vises medianverdien. Lavere verdi er bedre.",
   "audit_overview_progress_core": "{audited} / {total} kontroller ({pct} %)",
   "audit_overview_distribution_heading": "Fordeling av kontroller",
   "audit_overview_distribution_passed": "Ingen merknader",

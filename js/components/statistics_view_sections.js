@@ -3,6 +3,7 @@
  * @module js/components/statistics_view_sections
  */
 import { ScoreAnalysisComponent } from './ScoreAnalysisComponent.js';
+import { append_sampletype_deficiency_chart_block } from './SampleTypeDeficiencyChartComponent.js';
 
 /** Samma ordning som serverns WCAG_PRINCIPLE_IDS. */
 const WCAG_PRINCIPLE_ORDER = ['perceivable', 'operable', 'understandable', 'robust'];
@@ -31,16 +32,6 @@ function format_median_number(val) {
     const n = Number(val);
     if (Math.abs(n - Math.round(n)) < 0.05) return String(Math.round(n));
     return n.toFixed(1);
-}
-
-/**
- * Median bristindex i stickprovstyp-diagrammet: alltid exakt en decimal.
- * @param {number} n
- */
-function format_sampletype_chart_median_one_decimal(n) {
-    const num = Number(n);
-    if (Number.isNaN(num)) return '0.0';
-    return num.toFixed(1);
 }
 
 /**
@@ -145,54 +136,13 @@ export function build_statistics_summary_list(t, Translation, Helpers, year, yea
  * @param {function} monitoring_heading_fn
  */
 export function append_statistics_sampletype_chart_block(plate, t, Helpers, chart_sections, monitoring_heading_fn) {
-    const sections = Array.isArray(chart_sections) ? chart_sections : [];
-    if (sections.length === 0) return;
-
-    const wrap = Helpers.create_element('div', { class_name: 'statistics-sampletype-chart' });
-    wrap.appendChild(Helpers.create_element('h2', {
-        class_name: 'statistics-sampletype-chart__h2',
-        text_content: t('statistics_sampletype_chart_heading')
-    }));
-    wrap.appendChild(Helpers.create_element('p', {
-        class_name: 'view-intro-text statistics-sampletype-chart__intro',
-        text_content: t('statistics_sampletype_chart_intro')
-    }));
-
-    const show_per_type_heading = sections.length > 1;
-    sections.forEach((sec) => {
-        if (show_per_type_heading) {
-            wrap.appendChild(
-                Helpers.create_element('h3', {
-                    class_name: 'statistics-sampletype-chart__h3',
-                    text_content: monitoring_heading_fn(sec.monitoring_type_label)
-                })
-            );
-        }
-
-        const ul = Helpers.create_element('ul', { class_name: 'statistics-sampletype-chart__list' });
-        (sec.sample_types || []).forEach((row) => {
-            const li = Helpers.create_element('li', { class_name: 'statistics-sampletype-chart__item' });
-            const val = typeof row.median_deficiency === 'number' ? row.median_deficiency : 0;
-            const label_left = Helpers.create_element('span', { class_name: 'statistics-sampletype-chart__label' });
-            label_left.appendChild(document.createTextNode(row.sample_type_label || row.sample_type_id || ''));
-            label_left.appendChild(document.createTextNode(': '));
-            label_left.appendChild(Helpers.create_element('strong', {
-                text_content: format_sampletype_chart_median_one_decimal(val)
-            }));
-            li.appendChild(label_left);
-
-            const track = Helpers.create_element('span', { class_name: 'statistics-sampletype-chart__track' });
-            track.appendChild(Helpers.create_element('span', {
-                class_name: 'statistics-sampletype-chart__fill',
-                attributes: { style: `width: ${Math.min(100, Math.max(0, val))}%;` }
-            }));
-            li.appendChild(track);
-            ul.appendChild(li);
-        });
-        wrap.appendChild(ul);
+    append_sampletype_deficiency_chart_block(plate, {
+        Helpers,
+        heading_text: t('statistics_sampletype_chart_heading'),
+        intro_text: t('statistics_sampletype_chart_intro'),
+        chart_sections,
+        monitoring_heading_fn
     });
-
-    plate.appendChild(wrap);
 }
 
 /**

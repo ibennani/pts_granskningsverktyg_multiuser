@@ -1,4 +1,5 @@
 import { ScoreAnalysisComponent } from './ScoreAnalysisComponent.js';
+import { SampleTypeDeficiencyChartComponent } from './SampleTypeDeficiencyChartComponent.js';
 import { AuditInfoComponent } from './AuditInfoComponent.js';
 import { ProgressBarComponent } from './ProgressBarComponent.js';
 import { get_rules } from '../api/client.js';
@@ -27,6 +28,8 @@ export class AuditOverviewComponent {
         this.unsubscribe_from_store_function = null;
         this.audit_info_container_element = null;
         this.scoreAnalysisContainerElement = null;
+        this.sampleTypeChartContainerElement = null;
+        this._sampleTypeChartComponent = null;
         this.previously_focused_element = null;
         this._last_audit_metadata_snapshot = null;
         this.newerRuleAvailable = null;
@@ -74,6 +77,20 @@ export class AuditOverviewComponent {
         this.scoreAnalysisContainerElement = this.Helpers.create_element('div', { id: 'score-analysis-component-container' });
         await ScoreAnalysisComponent.init({
             root: this.scoreAnalysisContainerElement,
+            deps: {
+                Helpers: this.Helpers,
+                Translation: this.Translation,
+                getState: this.getState
+            }
+        });
+
+        this.sampleTypeChartContainerElement = this.Helpers.create_element('div', {
+            id: 'audit-sampletype-chart-root',
+            class_name: 'audit-overview-sampletype-chart-wrap'
+        });
+        this._sampleTypeChartComponent = new SampleTypeDeficiencyChartComponent();
+        await this._sampleTypeChartComponent.init({
+            root: this.sampleTypeChartContainerElement,
             deps: {
                 Helpers: this.Helpers,
                 Translation: this.Translation,
@@ -267,6 +284,12 @@ export class AuditOverviewComponent {
             score_panel.appendChild(this.scoreAnalysisContainerElement);
             ScoreAnalysisComponent.render();
         }
+
+        if (this.sampleTypeChartContainerElement && this._sampleTypeChartComponent) {
+            score_panel.appendChild(this.sampleTypeChartContainerElement);
+            this._sampleTypeChartComponent.render();
+        }
+
         dashboard_container.appendChild(score_panel);
 
         plate_element.appendChild(dashboard_container);
@@ -282,6 +305,10 @@ export class AuditOverviewComponent {
         this._auditInfoComponent?.destroy();
         this._auditInfoComponent = null;
         ScoreAnalysisComponent.destroy();
+
+        this._sampleTypeChartComponent?.destroy();
+        this._sampleTypeChartComponent = null;
+        this.sampleTypeChartContainerElement = null;
 
         this.scoreAnalysisContainerElement = null;
         this.audit_info_container_element = null;
