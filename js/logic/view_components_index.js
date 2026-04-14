@@ -28,7 +28,7 @@ import { AuditProblemsViewComponent } from '../components/AuditProblemsViewCompo
 import { ArchivedRequirementsViewComponent } from '../components/ArchivedRequirementsViewComponent.js';
 import { RulefileChangeLogViewComponent } from '../components/RulefileChangeLogViewComponent.js';
 import { AuditImagesViewComponent } from '../components/AuditImagesViewComponent.js';
-import { BackupOverviewComponent } from '../components/BackupOverviewComponent.js';
+import { BackupOverviewComponent } from '../components/BackupOverviewComponent.ts';
 import { BackupSettingsViewComponent } from '../components/BackupSettingsViewComponent.js';
 import { AuditViewComponent } from '../components/audit_view/AuditViewComponent.js';
 import { LoginViewComponent } from '../components/LoginViewComponent.js';
@@ -114,6 +114,7 @@ export function get_component_class(view_name) {
         case 'rulefile_sections': return rulefileSectionsViewComponent;
         case 'backup': return backupOverviewComponent;
         case 'backup_detail': return backupOverviewComponent;
+        case 'backup_rulefile_detail': return backupOverviewComponent;
         case 'backup_settings': return backupSettingsViewComponent;
         case 'confirm_delete': return confirmDeleteViewComponent;
         default:

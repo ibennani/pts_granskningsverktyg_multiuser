@@ -115,8 +115,8 @@ temp*.modelfile
 *.modelfile
 Modelfile
 
-# Backupfiler
-backup/
+# Backupfiler (endast katalogen i projektroten, inte server/backup eller js/components/backup)
+/backup/
 
 # Testresultat
 test-results/

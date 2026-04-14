@@ -83,6 +83,7 @@ export function get_page_title_prefix(view_name, params, { getState, Translation
                 case 'rulefile_sections': title_prefix = t('rulefile_sections_title'); break;
                 case 'backup':
                 case 'backup_detail':
+                case 'backup_rulefile_detail':
                 case 'backup_settings': title_prefix = t('menu_link_backups'); break;
                 case 'confirm_delete':
                     if (params.type === 'requirement') title_prefix = t('rulefile_confirm_delete_title');

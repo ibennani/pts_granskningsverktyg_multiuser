@@ -185,7 +185,7 @@ export class SideMenuComponent {
     create_menu_link({ label, view_name, params = {}, count_id, count_value }) {
         const view_from_hash = this.get_view_name_from_location_hash();
         let active_view_name = view_from_hash || this.current_view_name;
-        if (active_view_name === 'backup_detail' || active_view_name === 'backup_settings') {
+        if (active_view_name === 'backup_detail' || active_view_name === 'backup_rulefile_detail' || active_view_name === 'backup_settings') {
             active_view_name = 'backup';
         }
         const current_params = this.get_params_from_location_hash();

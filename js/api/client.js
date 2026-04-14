@@ -506,6 +506,14 @@ export async function get_backup_settings() {
     return api_get('/backup/settings');
 }
 
+export async function get_rulefile_backup_overview() {
+    return api_get('/backup/rulefiles/overview');
+}
+
+export async function get_rulefile_backup_history(rule_set_id) {
+    return api_get(`/backup/rulefiles/${encodeURIComponent(rule_set_id)}/history`);
+}
+
 export async function create_password_reset_code(user_id, expires_in_minutes) {
     return api_post(`/users/${encodeURIComponent(user_id)}/password-reset-codes`, { expires_in_minutes });
 }

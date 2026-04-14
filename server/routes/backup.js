@@ -3,6 +3,7 @@ import express from 'express';
 import fs from 'fs/promises';
 import path from 'path';
 import { run_backup, get_last_backup_status, get_backup_status_from_fs, get_backup_dir, get_backup_settings, save_backup_settings, start_backup_scheduler, save_backup_for_audit } from '../backup/audit_backup.js';
+import { build_rulefile_overview_index, list_rulefile_history_rows, resolve_system_rulefile_file_path } from '../backup/rulefile_backup_fs.js';
 import { build_full_state } from './audits.js';
 import { query } from '../db.js';
 import { calculate_overall_audit_progress } from '../../js/audit_logic.js';
@@ -285,6 +286,56 @@ router.get('/list', async (_req, res) => {
     } catch (err) {
         console.error('[backup] list error:', err);
         res.status(500).json({ error: 'Kunde inte hämta backup-lista' });
+    }
+});
+
+// Lista regelfilsbackuper (system-snapshots) – används av backup-vyns regelfilsläge.
+router.get('/rulefiles/overview', async (_req, res) => {
+    try {
+        const items = await build_rulefile_overview_index();
+        res.json(items);
+    } catch (err) {
+        console.warn('[backup] rulefiles overview error:', err?.message || err);
+        res.status(500).json({ error: 'Kunde inte hämta regelfilsbackuper' });
+    }
+});
+
+// Historik för en specifik regelfil (alla snapshots + kategorier).
+router.get('/rulefiles/:ruleSetId/history', async (req, res) => {
+    const { ruleSetId } = req.params;
+    const uuidLike = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!ruleSetId || !uuidLike.test(ruleSetId)) {
+        return res.status(400).json({ error: 'Ogiltigt ruleSetId' });
+    }
+    try {
+        const rows = await list_rulefile_history_rows(ruleSetId);
+        res.json(rows);
+    } catch (err) {
+        console.warn('[backup] rulefiles history error:', err?.message || err);
+        res.status(500).json({ error: 'Kunde inte hämta regelfilshistorik' });
+    }
+});
+
+// Nedladdning av en fil från system-snapshot (regelfiler).
+router.get('/system-files/:snapshotDir/:category/:filename', async (req, res) => {
+    const { snapshotDir, category, filename } = req.params;
+    const file_path = resolve_system_rulefile_file_path(snapshotDir, category, filename);
+    if (!file_path) {
+        return res.status(400).json({ error: 'Ogiltiga parametrar' });
+    }
+    try {
+        await fs.access(file_path);
+        const decoded_filename = decodeURIComponent(filename);
+        res.setHeader('Content-Disposition', `attachment; filename="${decoded_filename.replace(/"/g, '\\"')}"`);
+        res.setHeader('Content-Type', 'application/json');
+        const buffer = await fs.readFile(file_path);
+        res.send(buffer);
+    } catch (err) {
+        if (err?.code === 'ENOENT') {
+            return res.status(404).json({ error: 'Filen hittades inte' });
+        }
+        console.warn('[backup] system-files download failed:', err?.message || err);
+        res.status(500).json({ error: 'Kunde inte ladda ner filen' });
     }
 });
 

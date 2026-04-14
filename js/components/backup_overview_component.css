@@ -15,7 +15,7 @@
     margin-bottom: 1.5rem;
     padding: 0.75rem 1rem;
     border-radius: var(--border-radius);
-    border: 2px solid var(--border-color);
+    border: 1px solid var(--border-color);
     background-color: #FFF5E6; /* Samma ljusa gul/orange nyans som godkännandekriterier (pass-criterion-item) */
 }
 
@@ -82,6 +82,18 @@
     font-size: 0.875rem;
 }
 
+.backup-filter-mode {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 12rem;
+}
+
+.backup-filter-mode label {
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
 .backup-status-deleted {
     color: var(--backup-status-deleted-color, #b32d2e);
 }
@@ -122,6 +134,13 @@
 
 .backup-filter-search input,
 .backup-filter-status select {
+    padding: 0.35rem 0.5rem;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    background-color: var(--input-background-color);
+}
+
+.backup-filter-mode select {
     padding: 0.35rem 0.5rem;
     border-radius: var(--border-radius);
     border: 1px solid var(--border-color);

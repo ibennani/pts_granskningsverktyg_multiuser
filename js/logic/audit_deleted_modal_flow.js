@@ -18,6 +18,7 @@ export function show_audit_deleted_modal_and_navigate() {
         'statistics',
         'backup',
         'backup_detail',
+        'backup_rulefile_detail',
         'backup_settings'
     ]);
     if (current_view && outside_audit_views.has(current_view)) {
