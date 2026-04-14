@@ -11,6 +11,12 @@ export type RulefileBackupOverviewRow = {
     latestBackedMetadataVersion?: string | null;
     has_published_in_any_snapshot?: boolean;
     has_working_in_any_snapshot?: boolean;
+    /** Sätts av servern när DB-slagning lyckats: regeln finns inte längre i rule_sets. */
+    ruleSetDeletedFromDb?: boolean;
+    /** Aktuellt från databasen (för visningsetikett). */
+    is_published?: boolean;
+    production_base_id?: string | null;
+    version_display?: string | null;
 };
 
 export type RulefileBackupHistoryRow = {
@@ -82,12 +88,47 @@ export function build_rulefile_table_columns({
             return;
         }
         if (col_index === 0 && typeof c?.getContent === 'function') {
-            const orig = c.getContent;
             out.push({
                 ...c,
-                getContent: (row: any) => {
+                getSortValue: (row: RulefileBackupOverviewRow) =>
+                    (row.name || `Regelfil ${row.ruleSetId}`).toString().trim(),
+                getContent: (row: RulefileBackupOverviewRow) => {
                     const id = row?.ruleSetId ?? row?.id;
-                    return orig({ ...row, id });
+                    const rule_name = (row.name || `Regelfil ${id}`).trim();
+                    const is_deleted = row.ruleSetDeletedFromDb === true;
+                    const is_production_row = !!row.production_base_id;
+                    const is_published = row.is_published === true;
+                    const version_disp = (row.version_display ?? '').toString().trim();
+
+                    let link_text = rule_name;
+                    if (is_deleted) {
+                        link_text = version_disp
+                            ? `${rule_name} ${version_disp} (${t('backup_status_deleted')})`
+                            : `${rule_name} (${t('backup_status_deleted')})`;
+                        return Helpers.create_element('span', {
+                            class_name: 'backup-rulefile-overview-name backup-rulefile-overview-name--deleted',
+                            text_content: link_text
+                        });
+                    }
+                    if (is_published && !is_production_row) {
+                        link_text = version_disp
+                            ? `${rule_name} ${version_disp} (${t('rulefile_status_published_label')})`
+                            : `${rule_name} (${t('rulefile_status_published_label')})`;
+                    } else {
+                        link_text = version_disp
+                            ? `${rule_name} ${version_disp} (${t('rulefile_status_production_label')})`
+                            : `${rule_name} (${t('rulefile_status_production_label')})`;
+                    }
+                    const link = Helpers.create_element('a', {
+                        class_name: 'generic-table-audit-link',
+                        text_content: link_text,
+                        attributes: {
+                            href: '#edit_rulefile_main',
+                            'aria-label': t('audit_edit_rule_aria', { name: link_text }),
+                            'data-rule-id': String(id ?? '')
+                        }
+                    });
+                    return link;
                 }
             });
             out.push(version_col);

@@ -10,7 +10,7 @@ import cron from 'node-cron';
 import { query } from '../db.js';
 import { build_full_state } from '../routes/audits.js';
 import { generate_audit_filename } from '../../js/utils/filename_utils.js';
-import { save_system_snapshot, cleanup_old_system_snapshots } from './system_backup.js';
+import { save_system_snapshot, cleanup_old_system_snapshots, stable_stringify } from './system_backup.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_RETENTION_DAYS = 30;
@@ -135,9 +135,33 @@ export function get_backup_dir() {
     return path.resolve(base);
 }
 
-function hash_content(data) {
-    const str = JSON.stringify(data);
-    return crypto.createHash('sha256').update(str).digest('hex');
+/** Hash av granskningens backup-innehåll; stabil nyckelordning så fil från disk och nytt state kan jämföras. */
+function hash_audit_backup_payload(data) {
+    return crypto.createHash('sha256').update(stable_stringify(data), 'utf8').digest('hex');
+}
+
+/**
+ * True om det redan finns en .json-backup med samma innehåll (samma semantiska data).
+ */
+async function has_identical_audit_backup_file(audit_dir, full_state) {
+    const current_hash = hash_audit_backup_payload(full_state);
+    let existing_files = [];
+    try {
+        existing_files = await fs.readdir(audit_dir);
+    } catch {
+        return false;
+    }
+    for (const f of existing_files) {
+        if (!f.endsWith('.json')) continue;
+        try {
+            const content = await fs.readFile(path.join(audit_dir, f), 'utf8');
+            const parsed = JSON.parse(content);
+            if (hash_audit_backup_payload(parsed) === current_hash) return true;
+        } catch {
+            // ignorera oläsbar fil
+        }
+    }
+    return false;
 }
 
 async function ensure_dir(dir_path) {
@@ -168,31 +192,11 @@ async function run_scheduled_backup() {
                 rule_set_row = rs.rows[0] || null;
             }
             const full_state = build_full_state(audit_row, rule_set_row);
-            const current_hash = hash_content(full_state);
 
             const audit_dir = path.join(backup_dir, audit_row.id);
             await ensure_dir(audit_dir);
 
-            let existing_files = [];
-            try {
-                existing_files = await fs.readdir(audit_dir);
-            } catch {
-                // Mappen tom eller saknas
-            }
-
-            const json_files = existing_files.filter(f => f.endsWith('.json')).sort().reverse();
-            let skip = false;
-            if (json_files.length > 0) {
-                const latest = json_files[0];
-                try {
-                    const content = await fs.readFile(path.join(audit_dir, latest), 'utf8');
-                    const parsed = JSON.parse(content);
-                    const existing_hash = hash_content(parsed);
-                    if (existing_hash === current_hash) skip = true;
-                } catch (e) {
-                    // Läser inte – skriv ny
-                }
-            }
+            const skip = await has_identical_audit_backup_file(audit_dir, full_state);
 
             if (!skip) {
                 const filename = generate_audit_filename(full_state, server_t_func, {});
@@ -361,6 +365,10 @@ export async function save_backup_for_audit(full_state, options = {}) {
 
     const audit_dir = path.join(backup_dir, audit_id);
     await ensure_dir(audit_dir);
+
+    if (await has_identical_audit_backup_file(audit_dir, full_state)) {
+        return;
+    }
 
     const suffix_key = options.backup_suffix_key || 'filename_archive_suffix';
     const filename = generate_audit_filename(full_state, server_t_func, {

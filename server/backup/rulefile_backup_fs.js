@@ -10,6 +10,7 @@
  */
 import fs from 'fs/promises';
 import path from 'path';
+import { query } from '../db.js';
 import { get_backup_dir } from './audit_backup.js';
 
 const SYSTEM_DIRNAME = '_system';
@@ -152,6 +153,66 @@ function latest_metadata_version_from_history_rows(rows) {
     return ver != null ? String(ver).trim() : null;
 }
 
+let _rule_sets_has_published_column = null;
+
+async function rule_sets_has_published_column() {
+    if (_rule_sets_has_published_column !== null) return _rule_sets_has_published_column;
+    try {
+        const result = await query(
+            `SELECT 1 FROM information_schema.columns
+             WHERE table_name = 'rule_sets' AND column_name = 'published_content' LIMIT 1`
+        );
+        _rule_sets_has_published_column = result.rows.length > 0;
+    } catch {
+        _rule_sets_has_published_column = false;
+    }
+    return _rule_sets_has_published_column;
+}
+
+/**
+ * Fyller på aktuell status från databasen (publicerad / arbetskopia / borttagen från servern).
+ */
+async function enrich_rulefile_overview_rows_from_db(results) {
+    if (!Array.isArray(results) || results.length === 0) return;
+    const ids = results.map((r) => r.ruleSetId).filter(Boolean);
+    if (ids.length === 0) return;
+
+    const has_pub = await rule_sets_has_published_column();
+    let res;
+    if (has_pub) {
+        res = await query(
+            `SELECT id::text AS id,
+                    (published_content IS NOT NULL) AS is_published,
+                    production_base_id,
+                    NULLIF(TRIM(COALESCE(published_content, content)->'metadata'->>'version'), '') AS version_display
+             FROM rule_sets WHERE id = ANY($1::uuid[])`,
+            [ids]
+        );
+    } else {
+        res = await query(
+            `SELECT id::text AS id,
+                    false AS is_published,
+                    production_base_id,
+                    NULLIF(TRIM(content->'metadata'->>'version'), '') AS version_display
+             FROM rule_sets WHERE id = ANY($1::uuid[])`,
+            [ids]
+        );
+    }
+
+    const by_id = new Map((res.rows || []).map((r) => [r.id, r]));
+    for (const item of results) {
+        const row = by_id.get(item.ruleSetId);
+        if (!row) {
+            item.ruleSetDeletedFromDb = true;
+            continue;
+        }
+        item.ruleSetDeletedFromDb = false;
+        item.is_published = row.is_published === true;
+        item.production_base_id = row.production_base_id || null;
+        item.version_display = row.version_display || null;
+    }
+}
+
 export async function build_rulefile_overview_index() {
     const snapshots = await list_snapshot_dirnames();
     const by_id = new Map();
@@ -197,6 +258,12 @@ export async function build_rulefile_overview_index() {
         item.backupFileCount = rows.length;
         item.latestBackedMetadataVersion = latest_metadata_version_from_history_rows(rows);
         results.push(item);
+    }
+
+    try {
+        await enrich_rulefile_overview_rows_from_db(results);
+    } catch (err) {
+        console.warn('[backup] enrich_rulefile_overview_rows_from_db:', err?.message || err);
     }
 
     results.sort((a, b) => String(b.latestSnapshotAt || '').localeCompare(String(a.latestSnapshotAt || '')));

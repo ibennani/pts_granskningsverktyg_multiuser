@@ -57,7 +57,7 @@ function ensure_json_suffix(filename) {
     return f.toLowerCase().endsWith('.json') ? f : `${f}.json`;
 }
 
-function stable_stringify(value) {
+export function stable_stringify(value) {
     const seen = new WeakSet();
     const sorter = (v) => {
         if (v === null || v === undefined) return v;
