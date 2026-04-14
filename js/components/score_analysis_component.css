@@ -172,24 +172,11 @@
     background-color: var(--input-background-color);
 }
 
-/* Bristindex 0–100: zoner enligt js/logic/deficiency_color_scale.ts (15 / 30 / 45) */
-/* --- START OF CHANGE: Inverted Gradient --- */
+/* Gradient för .principle-row__bar injiceras vid app-start (inject_deficiency_score_bar_gradient_styles) */
 .principle-row__bar {
     height: 100%;
     transition: width 0.5s ease-out;
-    background: linear-gradient(to right,
-            var(--gradient-success-color) 0%,
-            var(--gradient-success-color) 15%,
-            var(--gradient-warning-color) 16%,
-            var(--gradient-warning-color) 30%,
-            var(--gradient-orange-color) 31%,
-            var(--gradient-orange-color) 45%,
-            var(--gradient-danger-color) 46%,
-            var(--gradient-danger-color) 100%);
-    background-size: calc(100% / (var(--score-percent, 0.01) / 100)) 100%;
 }
-
-/* --- END OF CHANGE --- */
 
 
 .principle-row__value {

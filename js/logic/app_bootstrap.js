@@ -5,6 +5,7 @@ import { apply_session_boot_merge_from_backup } from './session_boot_merge.js';
 import { consoleManager } from '../utils/console_manager.js';
 import { memoryManager } from '../utils/memory_manager.js';
 import { install_vite_dev_client_timestamp_listeners } from '../utils/vite_dev_client_timestamp.js';
+import { inject_deficiency_score_bar_gradient_styles } from './deficiency_color_scale.ts';
 
 /**
  * Kör initiering efter att övriga beroenden satts upp i main.
@@ -41,6 +42,7 @@ export async function init_app(deps) {
     const AUTH_REQUIRED_MESSAGE_KEY = 'gv_auth_required_message';
 
     set_initial_theme();
+    inject_deficiency_score_bar_gradient_styles();
     if (is_dev_build_environment()) {
         install_vite_dev_client_timestamp_listeners(update_build_timestamp);
     }

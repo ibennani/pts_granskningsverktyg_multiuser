@@ -1,5 +1,8 @@
 import { calculateQualityScore } from '../logic/ScoreCalculator.js';
-import { DEFICIENCY_SCORE_ZONE_UPPER_BOUNDS } from '../logic/deficiency_color_scale.ts';
+import {
+    deficiency_gauge_zone_stroke_css,
+    get_deficiency_gauge_zone_boundary_degrees
+} from '../logic/deficiency_color_scale.ts';
 import "./score_analysis_component.css";
 
 export const ScoreAnalysisComponent = {
@@ -50,12 +53,10 @@ export const ScoreAnalysisComponent = {
             return `<path d="${describeArc(50, 50, 40, startAngle, endAngle)}" stroke="${color}" stroke-width="10" stroke-linecap="butt" fill="none" />`;
         };
 
-        // Calculate angles for each percentage range (samma trösklar som principrader / stickprovstyper)
-        const totalAngle = maxAngle - minAngle; // 270 degrees
-        const [zone_green_max, zone_yellow_max, zone_orange_max] = DEFICIENCY_SCORE_ZONE_UPPER_BOUNDS;
-        const greenEndAngle = minAngle + (zone_green_max / 100) * totalAngle;
-        const yellowEndAngle = minAngle + (zone_yellow_max / 100) * totalAngle;
-        const orangeEndAngle = minAngle + (zone_orange_max / 100) * totalAngle;
+        const [greenEndAngle, yellowEndAngle, orangeEndAngle] = get_deficiency_gauge_zone_boundary_degrees(
+            minAngle,
+            maxAngle
+        );
 
         const svgContent = `
             <svg viewBox="0 0 100 85" class="score-gauge-svg" aria-hidden="true">
@@ -63,10 +64,10 @@ export const ScoreAnalysisComponent = {
                 <path class="score-gauge__track" d="${describeArc(50, 50, 40, minAngle, maxAngle)}" />
                 
                 <!-- Gauge segments with straight boundaries -->
-                ${createGaugeSegment(minAngle, greenEndAngle, 'var(--gradient-success-color)')}
-                ${createGaugeSegment(greenEndAngle, yellowEndAngle, 'var(--gradient-warning-color)')}
-                ${createGaugeSegment(yellowEndAngle, orangeEndAngle, 'var(--gradient-orange-color)')}
-                ${createGaugeSegment(orangeEndAngle, maxAngle, 'var(--gradient-danger-color)')}
+                ${createGaugeSegment(minAngle, greenEndAngle, deficiency_gauge_zone_stroke_css(0))}
+                ${createGaugeSegment(greenEndAngle, yellowEndAngle, deficiency_gauge_zone_stroke_css(1))}
+                ${createGaugeSegment(yellowEndAngle, orangeEndAngle, deficiency_gauge_zone_stroke_css(2))}
+                ${createGaugeSegment(orangeEndAngle, maxAngle, deficiency_gauge_zone_stroke_css(3))}
                 
                 <!-- Value text -->
                 <text x="50" y="55" class="score-gauge__value">${formattedValue}</text>
