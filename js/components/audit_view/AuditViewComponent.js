@@ -134,7 +134,15 @@ export class AuditViewComponent {
     }
 
     _rule_fingerprint(r) {
-        return JSON.stringify({ id: r?.id, updated_at: r?.updated_at, is_published: r?.is_published });
+        // Inkludera samma tidsfält som listan (content_updated_at före updated_at) samt version,
+        // annars uppdateras inte raden vid incremental updateRow när t.ex. PUT bara ändrar innehållstidsstämpeln.
+        return JSON.stringify({
+            id: r?.id,
+            updated_at: r?.updated_at,
+            content_updated_at: r?.content_updated_at,
+            version: r?.version,
+            is_published: r?.is_published
+        });
     }
 
     async _on_audits_changed() {

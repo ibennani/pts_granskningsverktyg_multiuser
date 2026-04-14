@@ -15,6 +15,7 @@ const import_audit = jest.fn();
 const update_rule = jest.fn();
 const load_audit_with_rule_file = jest.fn();
 const get_auth_token = jest.fn(() => 'mock-jwt');
+const get_websocket_url = jest.fn(() => 'ws://localhost');
 const clear_audit_sync_pending = jest.fn();
 const clear_rulefile_sync_pending = jest.fn();
 const is_fetch_network_error = jest.fn(() => false);
@@ -27,7 +28,8 @@ jest.unstable_mockModule(client_path, () => ({
     import_audit,
     update_rule,
     load_audit_with_rule_file,
-    get_auth_token
+    get_auth_token,
+    get_websocket_url
 }));
 
 jest.unstable_mockModule(connectivity_path, () => ({

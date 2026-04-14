@@ -3,6 +3,7 @@
 // Vid regelfilsredigering synkas innehållet till rule_sets så att updated_at = senast ändrad.
 
 import { update_audit, import_audit, update_rule, load_audit_with_rule_file, get_auth_token } from '../api/client.js';
+import { notify_rules_list_changed } from './list_push_service.js';
 import {
     clear_audit_sync_pending,
     clear_rulefile_sync_pending,
@@ -281,6 +282,7 @@ async function run_sync_rulefile(state, dispatch_fn) {
             update_rulefile_baseline_from_remote(state.ruleSetId, updated.content);
         }
         clear_rulefile_sync_pending();
+        notify_rules_list_changed();
     } catch (err) {
         if (is_fetch_network_error(err)) {
             mark_rulefile_sync_pending();

@@ -51,6 +51,14 @@ function _fire_rules_changed() {
     }
 }
 
+/**
+ * Triggar samma lyssnare som vid rules:changed (t.ex. efter lyckat PUT från regelfils-autospar)
+ * så att öppna vyer med subscribe_rules kan hämta om listan utan att vänta på WebSocket.
+ */
+export function notify_rules_list_changed() {
+    _fire_rules_changed();
+}
+
 function _start_fallback_polling() {
     if (_fallback_timer) return;
     _fallback_timer = setInterval(() => {
@@ -216,5 +224,6 @@ export const EVENT_NAMES = {
 export const ListPushService = {
     subscribe_audits,
     subscribe_rules,
+    notify_rules_list_changed,
     EVENT_NAMES
 };

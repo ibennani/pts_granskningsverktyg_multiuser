@@ -17,7 +17,8 @@ export function create_rule_table_columns(deps, handlers) {
     const lang = Translation?.get_current_language_code?.() || 'sv-SE';
     const format_updated_at = (iso) => {
         if (!iso || !Helpers?.format_iso_to_local_datetime) return '';
-        return Helpers.format_iso_to_local_datetime(iso, lang, { showSeconds: false });
+        // Visa sekunder så att flera spar samma minut syns i listan (autospar till server).
+        return Helpers.format_iso_to_local_datetime(iso, lang, { showSeconds: true });
     };
 
     const columns = [
