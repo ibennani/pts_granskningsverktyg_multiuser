@@ -21,6 +21,12 @@
     gap: 0.5rem 0.75rem;
 }
 
+/* När notisen är dold behåller vi klassen global-message-content; den måste ändå inte visa flex-layout (samma specificitet som regeln ovan). */
+#global-critical-message-area.global-message-content[hidden],
+#global-message-area.global-message-content[hidden] {
+    display: none;
+}
+
 #global-message-area .global-message-text {
     flex: 1 1 auto;
     min-width: 0;

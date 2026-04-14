@@ -1,4 +1,5 @@
 import "./notification_component.css";
+import { ensure_main_view_content_host } from '../logic/app_dom.js';
 
 const GLOBAL_MESSAGE_CONTAINER_ID = 'global-message-area';
 const GLOBAL_CRITICAL_MESSAGE_CONTAINER_ID = 'global-critical-message-area';
@@ -77,6 +78,8 @@ export class NotificationComponent {
     }
 
     _update_global_message_content(message, type, action = null, is_critical = false) {
+        /** Montera notisytorna i main ovanför vyinnehållet (därmed ovanför h1) innan innehåll sätts. */
+        this.append_global_message_areas_to(null);
         const element = is_critical ? this._ensure_message_element('critical') : this._ensure_message_element('regular');
         if (!element) {
             if (window.ConsoleManager?.warn) window.ConsoleManager.warn("NotificationComponent: Cannot update message, core dependencies missing or element not ready.");
@@ -246,26 +249,61 @@ export class NotificationComponent {
     }
 
     /**
-     * Placerar kritisk + vanlig notis i <main>, direkt ovanför #app-main-view-content (där vyn byggs),
-     * så att båda ligger ovanför vyns h1. Kritisk först, sedan vanlig.
+     * Tar bort dubletter av samma id (ska inte förekomma; lämnar kvar canonical-instanserna).
+     * @param {HTMLElement} keep_critical
+     * @param {HTMLElement} keep_regular
+     */
+    _remove_duplicate_global_message_nodes(keep_critical, keep_regular) {
+        document.querySelectorAll(`[id="${GLOBAL_CRITICAL_MESSAGE_CONTAINER_ID}"]`).forEach((node) => {
+            if (node !== keep_critical) {
+                node.remove();
+            }
+        });
+        document.querySelectorAll(`[id="${GLOBAL_MESSAGE_CONTAINER_ID}"]`).forEach((node) => {
+            if (node !== keep_regular) {
+                node.remove();
+            }
+        });
+    }
+
+    /**
+     * Placerar kritisk + vanlig notis i main (#app-main-view-root), direkt ovanför #app-main-view-content,
+     * så att båda alltid ligger ovanför vyns h1. Kritisk först, sedan vanlig.
+     * Notiser som ligger någon annanstans i dokumentet flyttas in i main; om main saknas kopplas de från DOM.
      * @param {HTMLElement|null} [_ignored_legacy_container]
      */
     append_global_message_areas_to(_ignored_legacy_container) {
-        const main_el = document.getElementById('app-main-view-root');
-        if (!main_el) {
-            return;
-        }
-        const anchor = main_el.querySelector('#app-main-view-content') || null;
         const critical = this.get_global_critical_message_element_reference();
         const regular = this.get_global_message_element_reference();
         if (!critical || !regular) {
             return;
         }
-        main_el.insertBefore(critical, anchor);
-        const after_critical = critical.nextSibling;
-        if (after_critical !== regular) {
-            main_el.insertBefore(regular, after_critical);
+
+        const main_el = document.getElementById('app-main-view-root');
+        if (!main_el) {
+            [critical, regular].forEach((el) => {
+                if (el && el.isConnected) {
+                    el.remove();
+                }
+            });
+            return;
         }
+
+        ensure_main_view_content_host(main_el);
+        const anchor = main_el.querySelector('#app-main-view-content');
+        if (!anchor) {
+            [critical, regular].forEach((el) => {
+                if (el && el.isConnected && !main_el.contains(el)) {
+                    el.remove();
+                }
+            });
+            return;
+        }
+
+        main_el.insertBefore(critical, anchor);
+        main_el.insertBefore(regular, anchor);
+
+        this._remove_duplicate_global_message_nodes(critical, regular);
     }
 
     cleanup() {

@@ -153,6 +153,9 @@ export async function render_view(view_name_to_render, params_to_render = {}, de
         if (!is_focus_in_editable_field(view_root)) {
             current_view_component_instance.render();
         }
+        if (notificationComponent?.append_global_message_areas_to) {
+            notificationComponent.append_global_message_areas_to(null);
+        }
         const skip_target = (view_root?.id === 'app-main-view-root' ? ensure_main_view_content_host(view_root) : null) || view_root;
         ensure_skip_link_target(skip_target);
         return;

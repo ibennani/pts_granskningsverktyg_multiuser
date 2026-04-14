@@ -55,4 +55,33 @@ describe('NotificationComponent – samma notis efter stäng/dölj', () => {
         expect(msg_el.hidden).toBe(false);
         expect(msg_el.textContent).toContain('A');
     });
+
+    test('append_global_message_areas_to flyttar felplacerad notis in i main före innehållsvärden', () => {
+        document.body.innerHTML = '';
+        const main = document.createElement('main');
+        main.id = 'app-main-view-root';
+        const host = document.createElement('div');
+        host.id = 'app-main-view-content';
+        main.appendChild(host);
+        document.body.appendChild(main);
+
+        const felplacerad = document.createElement('div');
+        felplacerad.id = 'global-message-area';
+        felplacerad.setAttribute('hidden', 'true');
+        document.body.appendChild(felplacerad);
+
+        window.Translation = {
+            t: (key) => key
+        };
+        const nc2 = new NotificationComponent();
+        nc2.append_global_message_areas_to(null);
+        delete window.Translation;
+
+        expect(felplacerad.parentElement).toBe(main);
+        expect(Array.from(main.children).map((n) => n.id)).toEqual([
+            'global-critical-message-area',
+            'global-message-area',
+            'app-main-view-content'
+        ]);
+    });
 });
