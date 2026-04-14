@@ -26,15 +26,18 @@ function format_sampletype_chart_median_one_decimal(n) {
  * @param {string} options.intro_text
  * @param {object[]} options.chart_sections
  * @param {(label: string) => string} options.monitoring_heading_fn
+ * @param {'h2'|'h3'} [options.heading_level] Huvudrubrik: h3 under befintlig h2 (t.ex. granskningsöversikt), annars h2 (statistiksidan).
  */
 export function append_sampletype_deficiency_chart_block(plate, options) {
     const Helpers = options.Helpers;
     const sections = Array.isArray(options.chart_sections) ? options.chart_sections : [];
     if (sections.length === 0 || !Helpers?.create_element) return;
 
+    const heading_tag = options.heading_level === 'h3' ? 'h3' : 'h2';
+
     const wrap = Helpers.create_element('div', { class_name: 'statistics-sampletype-chart' });
     wrap.appendChild(
-        Helpers.create_element('h2', {
+        Helpers.create_element(heading_tag, {
             class_name: 'statistics-sampletype-chart__h2',
             text_content: options.heading_text
         })
@@ -123,6 +126,7 @@ export class SampleTypeDeficiencyChartComponent {
         const t = this.Translation.t;
         append_sampletype_deficiency_chart_block(this.root, {
             Helpers: this.Helpers,
+            heading_level: 'h3',
             heading_text: t('audit_overview_sampletype_chart_heading'),
             intro_text: t('audit_overview_sampletype_chart_intro'),
             chart_sections: sections,
