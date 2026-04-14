@@ -93,31 +93,24 @@ export function build_rulefile_table_columns({
                 getSortValue: (row: RulefileBackupOverviewRow) =>
                     (row.name || `Regelfil ${row.ruleSetId}`).toString().trim(),
                 getContent: (row: RulefileBackupOverviewRow) => {
-                    const id = row?.ruleSetId ?? row?.id;
+                    const id = row?.ruleSetId;
                     const rule_name = (row.name || `Regelfil ${id}`).trim();
                     const is_deleted = row.ruleSetDeletedFromDb === true;
                     const is_production_row = !!row.production_base_id;
                     const is_published = row.is_published === true;
-                    const version_disp = (row.version_display ?? '').toString().trim();
 
                     let link_text = rule_name;
                     if (is_deleted) {
-                        link_text = version_disp
-                            ? `${rule_name} ${version_disp} (${t('backup_status_deleted')})`
-                            : `${rule_name} (${t('backup_status_deleted')})`;
+                        link_text = `${rule_name} (${t('backup_status_deleted')})`;
                         return Helpers.create_element('span', {
                             class_name: 'backup-rulefile-overview-name backup-rulefile-overview-name--deleted',
                             text_content: link_text
                         });
                     }
                     if (is_published && !is_production_row) {
-                        link_text = version_disp
-                            ? `${rule_name} ${version_disp} (${t('rulefile_status_published_label')})`
-                            : `${rule_name} (${t('rulefile_status_published_label')})`;
+                        link_text = `${rule_name} (${t('rulefile_status_published_label')})`;
                     } else {
-                        link_text = version_disp
-                            ? `${rule_name} ${version_disp} (${t('rulefile_status_production_label')})`
-                            : `${rule_name} (${t('rulefile_status_production_label')})`;
+                        link_text = `${rule_name} (${t('rulefile_status_production_label')})`;
                     }
                     const link = Helpers.create_element('a', {
                         class_name: 'generic-table-audit-link',
