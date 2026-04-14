@@ -2,7 +2,7 @@ import { GenericTableComponent } from '../GenericTableComponent.js';
 import { get_rulefile_backup_history, get_rulefile_backup_overview } from '../../api/client.js';
 import { build_rulefile_history_columns, build_rulefile_table_columns, download_rulefile_snapshot_json, type RulefileBackupHistoryRow } from './backup_rulefile_tables';
 
-export type RulefileKind = 'all' | 'published' | 'working';
+export type RulefileKind = 'all' | 'published' | 'working' | 'deleted';
 
 export class BackupRulefileController {
     root: HTMLElement | null = null;
@@ -87,8 +87,14 @@ export class BackupRulefileController {
         const kind = this.rulefile_kind;
         const items = this.rulefile_overview || [];
         this.filtered_rulefiles = items.filter((item) => {
-            if (kind === 'published' && !item.has_published_in_any_snapshot) return false;
-            if (kind === 'working' && !item.has_working_in_any_snapshot) return false;
+            const is_deleted = item.ruleSetDeletedFromDb === true;
+            if (kind === 'deleted') {
+                if (!is_deleted) return false;
+            } else {
+                if (kind !== 'all' && is_deleted) return false;
+                if (kind === 'published' && !item.has_published_in_any_snapshot) return false;
+                if (kind === 'working' && !item.has_working_in_any_snapshot) return false;
+            }
             if (!text) return true;
             const haystack = [item.name || '', item.ruleSetId || ''].join(' ').toLowerCase();
             return haystack.includes(text);

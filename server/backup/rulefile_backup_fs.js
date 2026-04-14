@@ -73,17 +73,23 @@ async function stat_file_maybe(fp) {
     }
 }
 
-/** Läser `metadata.version` från sparad regelfil-JSON (t.ex. 2025.2.r16). */
-async function read_rulefile_metadata_version_json(file_path) {
+/**
+ * Läser `metadata.version` och `metadata.language` från sparad regelfil-JSON (ett filslag).
+ * @returns {{ metadataVersion: string|null, metadataLanguage: string|null }}
+ */
+async function read_rulefile_metadata_snapshot_fields(file_path) {
     try {
         const raw = await fs.readFile(file_path, 'utf8');
         const data = JSON.parse(raw);
         const mv = data?.metadata?.version;
-        if (mv === null || mv === undefined) return null;
-        const s = String(mv).trim();
-        return s || null;
+        const ml = data?.metadata?.language;
+        const version_str =
+            mv === null || mv === undefined ? null : (String(mv).trim() || null);
+        const language_str =
+            ml === null || ml === undefined ? null : (String(ml).trim() || null);
+        return { metadataVersion: version_str, metadataLanguage: language_str };
     } catch {
-        return null;
+        return { metadataVersion: null, metadataLanguage: null };
     }
 }
 
@@ -122,14 +128,16 @@ export async function list_rulefile_history_rows(rule_set_id) {
             if (!paths) continue;
             const stat = await stat_file_maybe(paths.full_path);
             if (!stat || !stat.isFile()) continue;
-            const metadata_version = await read_rulefile_metadata_version_json(paths.full_path);
+            const { metadataVersion: metadata_version, metadataLanguage: metadata_language } =
+                await read_rulefile_metadata_snapshot_fields(paths.full_path);
             rows.push({
                 snapshotDir: snapshot_dirname,
                 createdAt: created_at,
                 category: folder,
                 filename: paths.safe_file,
                 fileSizeBytes: typeof stat.size === 'number' ? stat.size : null,
-                metadataVersion: metadata_version
+                metadataVersion: metadata_version,
+                metadataLanguage: metadata_language
             });
         }
     }

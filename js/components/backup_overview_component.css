@@ -73,7 +73,16 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+}
+
+.backup-filter-search {
     min-width: 12rem;
+}
+
+.backup-filter-status {
+    width: max-content;
+    max-width: 100%;
+    min-width: 0;
 }
 
 .backup-filter-search label,
@@ -86,7 +95,9 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
-    min-width: 12rem;
+    width: max-content;
+    max-width: 100%;
+    min-width: 0;
 }
 
 .backup-filter-mode label {
@@ -132,19 +143,24 @@
     margin: 0;
 }
 
-.backup-filter-search input,
-.backup-filter-status select {
+.backup-filter-search input {
     padding: 0.35rem 0.5rem;
     border-radius: var(--border-radius);
     border: 1px solid var(--border-color);
     background-color: var(--input-background-color);
 }
 
-.backup-filter-mode select {
+/* Min-bredd sätts i JS utifrån det längsta alternativet */
+.backup-filter-mode select,
+.backup-filter-status select {
     padding: 0.35rem 0.5rem;
     border-radius: var(--border-radius);
     border: 1px solid var(--border-color);
     background-color: var(--input-background-color);
+    width: auto;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
 }
 
 .backup-overview-section {

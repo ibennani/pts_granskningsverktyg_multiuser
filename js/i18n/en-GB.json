@@ -814,6 +814,7 @@
   "backup_rulefile_filter_kind_all": "All",
   "backup_rulefile_filter_kind_published": "Published",
   "backup_rulefile_filter_kind_working": "Working copies",
+  "backup_rulefile_filter_kind_deleted": "Deleted",
   "backup_rulefile_detail_heading": "Saved files for the rule file",
   "backup_rulefile_detail_empty": "There are no saved files for this rule file yet.",
   "backup_rulefile_detail_aria_label": "List of backups for selected rule file",

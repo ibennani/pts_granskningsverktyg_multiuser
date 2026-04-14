@@ -815,6 +815,7 @@
   "backup_rulefile_filter_kind_all": "Alla",
   "backup_rulefile_filter_kind_published": "Publicerade",
   "backup_rulefile_filter_kind_working": "Arbetskopior",
+  "backup_rulefile_filter_kind_deleted": "Raderad",
   "backup_rulefile_detail_heading": "Sparade filer för regelfilen",
   "backup_rulefile_detail_empty": "Det finns inga sparade filer för den här regelfilen ännu.",
   "backup_rulefile_detail_aria_label": "Lista över säkerhetskopior för vald regelfil",

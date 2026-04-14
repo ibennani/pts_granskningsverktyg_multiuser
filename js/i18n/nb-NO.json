@@ -815,6 +815,7 @@
   "backup_rulefile_filter_kind_all": "Alle",
   "backup_rulefile_filter_kind_published": "Publiserte",
   "backup_rulefile_filter_kind_working": "Arbeidskopier",
+  "backup_rulefile_filter_kind_deleted": "Slettet",
   "backup_rulefile_detail_heading": "Lagrede filer for regelfilen",
   "backup_rulefile_detail_empty": "Det finnes ingen lagrede filer for denne regelfilen ennå.",
   "backup_rulefile_detail_aria_label": "Liste over sikkerhetskopier for valgt regelfil",

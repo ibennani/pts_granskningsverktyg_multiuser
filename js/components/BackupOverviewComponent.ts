@@ -2,6 +2,7 @@ import './backup_overview_component.css';
 import { BackupAuditController } from './backup/backup_audit_controller';
 import { BackupRulefileController, type RulefileKind } from './backup/backup_rulefile_controller';
 import { load_backup_mode_from_storage, save_backup_mode_to_storage, type BackupMode } from './backup/backup_mode_storage';
+import { measure_backup_select_min_width_px } from '../utils/backup_filter_select_width';
 
 export class BackupOverviewComponent {
     CSS_PATH = './backup_overview_component.css';
@@ -110,45 +111,61 @@ export class BackupOverviewComponent {
         }
 
         const status_select = this.root.querySelector('#backup-filter-status-select') as HTMLSelectElement | null;
-        if (!status_select) return;
+        if (status_select) {
+            status_select.replaceChildren();
 
-        status_select.replaceChildren();
+            const append_opt = (value: string, label: string, selected: boolean) => {
+                const opt = this.Helpers.create_element('option', { text_content: label, attributes: { value } });
+                if (selected) opt.selected = true;
+                status_select.appendChild(opt);
+            };
 
-        const append_opt = (value: string, label: string, selected: boolean) => {
-            const opt = this.Helpers.create_element('option', { text_content: label, attributes: { value } });
-            if (selected) opt.selected = true;
-            status_select.appendChild(opt);
-        };
-
-        if (this.mode === 'audits') {
-            const cur = this.audits.status_filter || 'all';
-            const pairs: [string, string][] = [
-                ['all', t('backup_filter_status_all')],
-                ['in_progress', this.audits.get_status_label('in_progress')],
-                ['not_started', this.audits.get_status_label('not_started')],
-                ['locked', this.audits.get_status_label('locked')],
-                ['archived', this.audits.get_status_label('archived')],
-                ['deleted', t('backup_status_deleted')]
-            ];
-            const valid = pairs.some(([v]) => v === cur) ? cur : 'all';
-            if (valid !== cur) this.audits.status_filter = valid;
-            pairs.forEach(([v, lbl]) => append_opt(v, lbl, v === valid));
-        } else {
-            const cur = this.rulefiles.rulefile_kind || 'all';
-            const pairs: [string, string][] = [
-                ['all', t('backup_rulefile_filter_kind_all')],
-                ['published', t('backup_rulefile_filter_kind_published')],
-                ['working', t('backup_rulefile_filter_kind_working')]
-            ];
-            const valid = (pairs.some(([v]) => v === cur) ? cur : 'all') as RulefileKind;
-            if (valid !== cur) this.rulefiles.rulefile_kind = valid;
-            pairs.forEach(([v, lbl]) => append_opt(v, lbl, v === valid));
+            if (this.mode === 'audits') {
+                const cur = this.audits.status_filter || 'all';
+                const pairs: [string, string][] = [
+                    ['all', t('backup_filter_status_all')],
+                    ['in_progress', this.audits.get_status_label('in_progress')],
+                    ['not_started', this.audits.get_status_label('not_started')],
+                    ['locked', this.audits.get_status_label('locked')],
+                    ['archived', this.audits.get_status_label('archived')],
+                    ['deleted', t('backup_status_deleted')]
+                ];
+                const valid = pairs.some(([v]) => v === cur) ? cur : 'all';
+                if (valid !== cur) this.audits.status_filter = valid;
+                pairs.forEach(([v, lbl]) => append_opt(v, lbl, v === valid));
+            } else {
+                const cur = this.rulefiles.rulefile_kind || 'all';
+                const pairs: [string, string][] = [
+                    ['all', t('backup_rulefile_filter_kind_all')],
+                    ['published', t('backup_rulefile_filter_kind_published')],
+                    ['working', t('backup_rulefile_filter_kind_working')],
+                    ['deleted', t('backup_rulefile_filter_kind_deleted')]
+                ];
+                const valid = (pairs.some(([v]) => v === cur) ? cur : 'all') as RulefileKind;
+                if (valid !== cur) this.rulefiles.rulefile_kind = valid;
+                pairs.forEach(([v, lbl]) => append_opt(v, lbl, v === valid));
+            }
         }
 
         if (this.mode === 'audits') this.audits.apply_filters();
         else this.rulefiles.apply_filters();
 
         this._sync_backup_overview_section_heading();
+        requestAnimationFrame(() => this._sync_backup_filter_select_widths());
+    }
+
+    /**
+     * Sätter min-bredd på filter-selects utifrån det längsta alternativet i listan.
+     */
+    _sync_backup_filter_select_widths() {
+        if (typeof document === 'undefined' || !this.root || this.view_name !== 'backup') return;
+        const apply = (sel: HTMLSelectElement | null) => {
+            if (!sel) return;
+            const px = measure_backup_select_min_width_px(sel);
+            if (px > 0) sel.style.minWidth = `${px}px`;
+        };
+        apply(this.root.querySelector('#backup-filter-mode-select') as HTMLSelectElement | null);
+        apply(this.root.querySelector('#backup-filter-status-select') as HTMLSelectElement | null);
     }
 
     /**
@@ -302,6 +319,7 @@ export class BackupOverviewComponent {
                 add_opt('all', t('backup_rulefile_filter_kind_all'));
                 add_opt('published', t('backup_rulefile_filter_kind_published'));
                 add_opt('working', t('backup_rulefile_filter_kind_working'));
+                add_opt('deleted', t('backup_rulefile_filter_kind_deleted'));
             }
             status_wrapper.appendChild(status_select);
             filter_section.appendChild(status_wrapper);
@@ -381,6 +399,10 @@ export class BackupOverviewComponent {
         }
 
         this.root.appendChild(plate);
+
+        if (this.view_name === 'backup') {
+            requestAnimationFrame(() => this._sync_backup_filter_select_widths());
+        }
     }
 }
 

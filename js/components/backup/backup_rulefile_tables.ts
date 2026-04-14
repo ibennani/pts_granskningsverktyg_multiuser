@@ -1,5 +1,6 @@
 import { create_rule_table_columns } from '../../utils/rule_table_columns.js';
 import { get_base_url, get_auth_headers } from '../../api/client.js';
+import { build_rulefile_backup_download_filename } from '../../logic/backup_download_filename';
 
 export type RulefileBackupOverviewRow = {
     ruleSetId: string;
@@ -27,6 +28,8 @@ export type RulefileBackupHistoryRow = {
     fileSizeBytes: number | null;
     /** `metadata.version` från JSON-filen (t.ex. 2025.2.r16). */
     metadataVersion?: string | null;
+    /** `metadata.language` från JSON-filen (t.ex. sv-SE, en-GB). */
+    metadataLanguage?: string | null;
 };
 
 export function build_rulefile_table_columns({
@@ -214,7 +217,7 @@ export async function download_rulefile_snapshot_json(row: RulefileBackupHistory
     const object_url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = object_url;
-    a.download = row.filename;
+    a.download = build_rulefile_backup_download_filename(row);
     a.setAttribute('aria-hidden', 'true');
     document.body.appendChild(a);
     a.click();
