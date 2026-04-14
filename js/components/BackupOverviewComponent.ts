@@ -35,6 +35,7 @@ export class BackupOverviewComponent {
         const deps_for_backup_child = {
             ...deps,
             backup_overview_refresh_table: () => this._refresh_backup_overview_table_only(),
+            backup_detail_table_refresh: () => this._refresh_backup_detail_table_only(),
             backup_overview_request_full_render: () => {
                 if (this.root) void this.render();
             }
@@ -163,6 +164,20 @@ export class BackupOverviewComponent {
             this.rulefiles.render_rulefiles_overview({ root: host as HTMLElement });
         }
         this._sync_backup_overview_section_heading();
+    }
+
+    /**
+     * Uppdaterar detaljtabell (granskning eller regelfil) vid kolumn-sortering utan full omrendering av vyn.
+     */
+    _refresh_backup_detail_table_only() {
+        if (!this.root) return;
+        const host = this.root.querySelector('.backup-detail-table-root');
+        if (!host) return;
+        if (this.view_name === 'backup_detail') {
+            this.audits.render_audit_detail({ root: host as HTMLElement });
+        } else if (this.view_name === 'backup_rulefile_detail') {
+            this.rulefiles.render_rulefile_detail({ root: host as HTMLElement });
+        }
     }
 
     async render() {
@@ -326,6 +341,16 @@ export class BackupOverviewComponent {
             await this.audits.load_data();
             const detail_section = this.Helpers.create_element('section', { class_name: 'backup-detail-section' });
             detail_section.appendChild(this.Helpers.create_element('h1', { id: 'main-content-heading', text_content: t('backup_detail_heading'), attributes: { tabindex: '-1' } }));
+            const overview_row = this.audits.backup_overview.find((r: any) => r.auditId === this.audits.selected_audit_id) || null;
+            const raw_actor = (overview_row?.actorName ?? '').toString().trim();
+            const base_actor = raw_actor || t('unknown_actor');
+            const actor_display = overview_row?.status === 'deleted'
+                ? t('backup_actor_display_deleted', { name: base_actor })
+                : base_actor;
+            const actor_p = this.Helpers.create_element('p', { class_name: 'backup-detail-h1-actor' });
+            actor_p.appendChild(this.Helpers.create_element('strong', { text_content: t('backup_detail_info_actor') }));
+            actor_p.appendChild(document.createTextNode(` ${actor_display}`));
+            detail_section.appendChild(actor_p);
             const detail_table_root = this.Helpers.create_element('div', { class_name: 'backup-detail-table-root' });
             detail_section.appendChild(detail_table_root);
             this.audits.render_audit_detail({ root: detail_table_root });
@@ -339,6 +364,12 @@ export class BackupOverviewComponent {
             await this.rulefiles.load_data();
             const detail_section = this.Helpers.create_element('section', { class_name: 'backup-detail-section' });
             detail_section.appendChild(this.Helpers.create_element('h1', { id: 'main-content-heading', text_content: t('backup_rulefile_detail_heading'), attributes: { tabindex: '-1' } }));
+            const rf_overview_row = this.rulefiles.rulefile_overview.find((r: any) => r.ruleSetId === this.rulefiles.selected_rule_set_id) || null;
+            const rulefile_display_name = (rf_overview_row?.name ?? '').toString().trim() || '—';
+            const rulefile_name_p = this.Helpers.create_element('p', { class_name: 'backup-detail-h1-actor' });
+            rulefile_name_p.appendChild(this.Helpers.create_element('strong', { text_content: t('backup_rulefile_detail_name_label') }));
+            rulefile_name_p.appendChild(document.createTextNode(` ${rulefile_display_name}`));
+            detail_section.appendChild(rulefile_name_p);
 
             const detail_table_root = this.Helpers.create_element('div', { class_name: 'backup-detail-table-root' });
             detail_section.appendChild(detail_table_root);

@@ -7,6 +7,8 @@ export type RulefileBackupOverviewRow = {
     filename: string;
     latestSnapshotAt: string | null;
     backupFileCount: number;
+    /** `metadata.version` vid senaste backup-tillfället (t.ex. 2025.2.r4). */
+    latestBackedMetadataVersion?: string | null;
     has_published_in_any_snapshot?: boolean;
     has_working_in_any_snapshot?: boolean;
 };
@@ -17,6 +19,8 @@ export type RulefileBackupHistoryRow = {
     category: 'published' | 'drafts' | 'working';
     filename: string;
     fileSizeBytes: number | null;
+    /** `metadata.version` från JSON-filen (t.ex. 2025.2.r16). */
+    metadataVersion?: string | null;
 };
 
 export function build_rulefile_table_columns({
@@ -48,23 +52,50 @@ export function build_rulefile_table_columns({
         }
     );
 
+    const version_col = {
+        headerLabel: t('backup_rulefile_col_latest_version'),
+        getSortValue: (row: RulefileBackupOverviewRow) => (row.latestBackedMetadataVersion ?? '').toString(),
+        getContent: (row: RulefileBackupOverviewRow) => {
+            const v = (row.latestBackedMetadataVersion ?? '').toString().trim();
+            return v || '—';
+        }
+    };
+
     // Byt ut action-kolumnen mot en enda knapp: "Visa säkerhetskopior".
-    return cols.map((c: any) => {
-        if (!c?.isAction) return c;
-        return {
-            headerLabel: t('backup_overview_col_actions'),
-            isAction: true,
-            getContent: (row: any) => {
-                const btn = Helpers.create_element('button', {
-                    class_name: ['button', 'button-default', 'button-small'],
-                    text_content: t('backup_overview_show_backups_button'),
-                    attributes: { type: 'button' }
-                });
-                btn.addEventListener('click', () => on_show_history(String(row?.ruleSetId || '')));
-                return btn;
-            }
-        };
+    // Namnkolumnen från create_rule_table_columns använder `row.id`; backup-rader har `ruleSetId`.
+    const out: any[] = [];
+    cols.forEach((c: any, col_index: number) => {
+        if (c?.isAction) {
+            out.push({
+                headerLabel: t('backup_overview_col_actions'),
+                isAction: true,
+                getContent: (row: any) => {
+                    const btn = Helpers.create_element('button', {
+                        class_name: ['button', 'button-default', 'button-small'],
+                        text_content: t('backup_overview_show_backups_button'),
+                        attributes: { type: 'button' }
+                    });
+                    btn.addEventListener('click', () => on_show_history(String(row?.ruleSetId || row?.id || '')));
+                    return btn;
+                }
+            });
+            return;
+        }
+        if (col_index === 0 && typeof c?.getContent === 'function') {
+            const orig = c.getContent;
+            out.push({
+                ...c,
+                getContent: (row: any) => {
+                    const id = row?.ruleSetId ?? row?.id;
+                    return orig({ ...row, id });
+                }
+            });
+            out.push(version_col);
+            return;
+        }
+        out.push(c);
     });
+    return out;
 }
 
 export function build_rulefile_history_columns({
@@ -112,9 +143,12 @@ export function build_rulefile_history_columns({
             getContent: (row: RulefileBackupHistoryRow) => format_file_size(row.fileSizeBytes)
         },
         {
-            headerLabel: t('backup_detail_col_filename'),
-            getSortValue: (row: RulefileBackupHistoryRow) => (row.filename || '').toString(),
-            getContent: (row: RulefileBackupHistoryRow) => (row.filename || '').toString() || '—'
+            headerLabel: t('backup_rulefile_col_version'),
+            getSortValue: (row: RulefileBackupHistoryRow) => (row.metadataVersion ?? '').toString(),
+            getContent: (row: RulefileBackupHistoryRow) => {
+                const v = (row.metadataVersion ?? '').toString().trim();
+                return v || '—';
+            }
         },
         {
             headerLabel: t('backup_detail_col_actions'),

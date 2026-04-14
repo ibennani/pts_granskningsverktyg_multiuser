@@ -24,7 +24,7 @@
     overflow-y: auto;
 }
 
-/* All vy-HTML; globala notiser ligger som syskon ovanför i <main> */
+/* All vy-HTML; globala notiser är första barn i värden (ovanför h1) */
 .app-main-view-content {
     flex: 1 1 auto;
     min-width: 0;

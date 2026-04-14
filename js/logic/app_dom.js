@@ -5,9 +5,30 @@ import { consoleManager } from '../utils/console_manager.js';
 
 const APP_MAIN_VIEW_CONTENT_ID = 'app-main-view-content';
 
+/** Ordning för globala notiser överst i värden (kritisk först, sedan vanlig). */
+export const GLOBAL_MESSAGE_AREA_IDS_IN_ORDER = ['global-critical-message-area', 'global-message-area'];
+
 /**
- * Säkerställer att #app-main-view-content finns i main: all vy-HTML hamnar där så att
- * globala notiser kan ligga kvar som syskon ovanför (utan att innerHTML på main rensar dem).
+ * Rensar vyinnehåll i #app-main-view-content men lämnar kvar globala notiser (båda typerna).
+ * @param {HTMLElement|null} host_el – #app-main-view-content
+ */
+export function clear_main_view_content_except_global_notifications(host_el) {
+    if (!host_el) {
+        return;
+    }
+    const preserve = new Set(GLOBAL_MESSAGE_AREA_IDS_IN_ORDER);
+    for (const child of Array.from(host_el.children)) {
+        if (child.id && preserve.has(child.id)) {
+            continue;
+        }
+        child.remove();
+    }
+}
+
+/**
+ * Säkerställer att #app-main-view-content finns i main: all vy-HTML hamnar där.
+ * Globala notiser ligger som första barn i värden (ovanför h1) så att innerHTML på värden
+ * inte rensar dem när vyer byts.
  *
  * @param {HTMLElement|null} main_el – elementet #app-main-view-root
  * @returns {HTMLElement|null}
@@ -18,16 +39,24 @@ export function ensure_main_view_content_host(main_el) {
     }
     let host = main_el.querySelector(`#${APP_MAIN_VIEW_CONTENT_ID}`);
     if (host) {
+        for (const mid of [...GLOBAL_MESSAGE_AREA_IDS_IN_ORDER].reverse()) {
+            const el = document.getElementById(mid);
+            if (el && el.parentNode === main_el) {
+                host.insertBefore(el, host.firstChild);
+            }
+        }
         return host;
     }
     host = document.createElement('div');
     host.id = APP_MAIN_VIEW_CONTENT_ID;
     host.className = 'app-main-view-content';
-    const skip_ids = new Set([
-        'global-critical-message-area',
-        'global-message-area',
-        APP_MAIN_VIEW_CONTENT_ID
-    ]);
+    const skip_ids = new Set([...GLOBAL_MESSAGE_AREA_IDS_IN_ORDER, APP_MAIN_VIEW_CONTENT_ID]);
+    for (const mid of GLOBAL_MESSAGE_AREA_IDS_IN_ORDER) {
+        const el = main_el.querySelector(`#${mid}`);
+        if (el && el.parentNode === main_el) {
+            host.appendChild(el);
+        }
+    }
     for (const child of Array.from(main_el.children)) {
         if (child.id && skip_ids.has(child.id)) {
             continue;

@@ -24,6 +24,7 @@ export class BackupRulefileController {
     filter_text = '';
     rulefile_kind: RulefileKind = 'all';
     sort_state: { columnIndex: number; direction: 'asc' | 'desc' } = { columnIndex: 0, direction: 'asc' };
+    rulefile_detail_sort_state: { columnIndex: number; direction: 'asc' | 'desc' } = { columnIndex: 0, direction: 'desc' };
     _overview_table: any;
     _detail_table: any;
     _data_loaded = false;
@@ -147,8 +148,12 @@ export class BackupRulefileController {
             ariaLabel: this.t('backup_rulefile_detail_aria_label'),
             wrapperClassName: 'generic-table-wrapper',
             tableClassName: 'generic-table generic-table--backup-detail',
-            sortState: { columnIndex: 0, direction: 'desc' },
-            onSort: () => {},
+            sortState: this.rulefile_detail_sort_state,
+            onSort: (columnIndex: number, direction: 'asc' | 'desc') => {
+                this.rulefile_detail_sort_state = { columnIndex, direction };
+                const refresh = this.deps?.backup_detail_table_refresh;
+                if (typeof refresh === 'function') refresh();
+            },
             t: this.t
         });
     }

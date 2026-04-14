@@ -156,6 +156,16 @@
     margin-top: 0;
 }
 
+.backup-detail-h1-actor {
+    margin: 0 0 0.75rem;
+    font-size: 1.05rem;
+    font-weight: normal;
+}
+
+.backup-detail-h1-actor strong {
+    font-weight: 600;
+}
+
 .backup-overview-section h2,
 .backup-detail-section h2 {
     margin-top: 0;

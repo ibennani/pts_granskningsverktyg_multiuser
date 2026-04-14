@@ -56,7 +56,7 @@ describe('NotificationComponent – samma notis efter stäng/dölj', () => {
         expect(msg_el.textContent).toContain('A');
     });
 
-    test('append_global_message_areas_to flyttar felplacerad notis in i main före innehållsvärden', () => {
+    test('append_global_message_areas_to flyttar felplacerad notis in i värden före vyns innehåll', () => {
         document.body.innerHTML = '';
         const main = document.createElement('main');
         main.id = 'app-main-view-root';
@@ -77,11 +77,11 @@ describe('NotificationComponent – samma notis efter stäng/dölj', () => {
         nc2.append_global_message_areas_to(null);
         delete window.Translation;
 
-        expect(felplacerad.parentElement).toBe(main);
-        expect(Array.from(main.children).map((n) => n.id)).toEqual([
+        expect(Array.from(main.children).map((n) => n.id)).toEqual(['app-main-view-content']);
+        expect(felplacerad.parentElement).toBe(host);
+        expect(Array.from(host.children).slice(0, 2).map((n) => n.id)).toEqual([
             'global-critical-message-area',
-            'global-message-area',
-            'app-main-view-content'
+            'global-message-area'
         ]);
     });
 });

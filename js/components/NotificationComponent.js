@@ -78,7 +78,7 @@ export class NotificationComponent {
     }
 
     _update_global_message_content(message, type, action = null, is_critical = false) {
-        /** Montera notisytorna i main ovanför vyinnehållet (därmed ovanför h1) innan innehåll sätts. */
+        /** Montera notisytorna i värden (#app-main-view-content) ovanför vyns h1 innan innehåll sätts. */
         this.append_global_message_areas_to(null);
         const element = is_critical ? this._ensure_message_element('critical') : this._ensure_message_element('regular');
         if (!element) {
@@ -267,9 +267,9 @@ export class NotificationComponent {
     }
 
     /**
-     * Placerar kritisk + vanlig notis i main (#app-main-view-root), direkt ovanför #app-main-view-content,
-     * så att båda alltid ligger ovanför vyns h1. Kritisk först, sedan vanlig.
-     * Notiser som ligger någon annanstans i dokumentet flyttas in i main; om main saknas kopplas de från DOM.
+     * Placerar kritisk + vanlig notis i #app-main-view-content som första barn, direkt ovanför vyns innehåll
+     * (därmed ovanför h1#main-content-heading). Kritisk först, sedan vanlig.
+     * Notiser som ligger någon annanstans flyttas hit; om main/värden saknas kopplas de från DOM.
      * @param {HTMLElement|null} [_ignored_legacy_container]
      */
     append_global_message_areas_to(_ignored_legacy_container) {
@@ -290,8 +290,8 @@ export class NotificationComponent {
         }
 
         ensure_main_view_content_host(main_el);
-        const anchor = main_el.querySelector('#app-main-view-content');
-        if (!anchor) {
+        const host = main_el.querySelector('#app-main-view-content');
+        if (!host) {
             [critical, regular].forEach((el) => {
                 if (el && el.isConnected && !main_el.contains(el)) {
                     el.remove();
@@ -300,8 +300,8 @@ export class NotificationComponent {
             return;
         }
 
-        main_el.insertBefore(critical, anchor);
-        main_el.insertBefore(regular, anchor);
+        host.insertBefore(critical, host.firstChild);
+        host.insertBefore(regular, critical.nextSibling);
 
         this._remove_duplicate_global_message_nodes(critical, regular);
     }

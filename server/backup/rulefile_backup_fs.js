@@ -72,6 +72,20 @@ async function stat_file_maybe(fp) {
     }
 }
 
+/** Läser `metadata.version` från sparad regelfil-JSON (t.ex. 2025.2.r16). */
+async function read_rulefile_metadata_version_json(file_path) {
+    try {
+        const raw = await fs.readFile(file_path, 'utf8');
+        const data = JSON.parse(raw);
+        const mv = data?.metadata?.version;
+        if (mv === null || mv === undefined) return null;
+        const s = String(mv).trim();
+        return s || null;
+    } catch {
+        return null;
+    }
+}
+
 function build_rulefile_paths(snapshot_dirname, category, filename) {
     const safe_file = ensure_safe_filename(filename);
     if (!safe_file) return null;
@@ -107,17 +121,35 @@ export async function list_rulefile_history_rows(rule_set_id) {
             if (!paths) continue;
             const stat = await stat_file_maybe(paths.full_path);
             if (!stat || !stat.isFile()) continue;
+            const metadata_version = await read_rulefile_metadata_version_json(paths.full_path);
             rows.push({
                 snapshotDir: snapshot_dirname,
                 createdAt: created_at,
                 category: folder,
                 filename: paths.safe_file,
-                fileSizeBytes: typeof stat.size === 'number' ? stat.size : null
+                fileSizeBytes: typeof stat.size === 'number' ? stat.size : null,
+                metadataVersion: metadata_version
             });
         }
     }
 
     return rows;
+}
+
+/**
+ * Version (`metadata.version`) från den senaste backup-tidpunkten för regelfilen.
+ */
+function latest_metadata_version_from_history_rows(rows) {
+    if (!Array.isArray(rows) || rows.length === 0) return null;
+    const times = rows.map((r) => (r.createdAt ? Date.parse(r.createdAt) || 0 : 0));
+    const max_ts = Math.max(...times);
+    if (!Number.isFinite(max_ts) || max_ts === 0) {
+        const first = rows.map((r) => r.metadataVersion).find((v) => v != null && String(v).trim() !== '');
+        return first != null ? String(first).trim() : null;
+    }
+    const at_max = rows.filter((r) => (r.createdAt ? Date.parse(r.createdAt) || 0 : 0) === max_ts);
+    const ver = at_max.map((r) => r.metadataVersion).find((v) => v != null && String(v).trim() !== '');
+    return ver != null ? String(ver).trim() : null;
 }
 
 export async function build_rulefile_overview_index() {
@@ -163,6 +195,7 @@ export async function build_rulefile_overview_index() {
     for (const item of by_id.values()) {
         const rows = await list_rulefile_history_rows(item.ruleSetId);
         item.backupFileCount = rows.length;
+        item.latestBackedMetadataVersion = latest_metadata_version_from_history_rows(rows);
         results.push(item);
     }
 

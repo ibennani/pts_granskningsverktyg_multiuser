@@ -65,6 +65,9 @@ describe('rulefile_backup_fs', () => {
                     ]
                 });
             }
+            if ((fp.includes('published') || fp.includes('drafts')) && fp.endsWith('a.json')) {
+                return JSON.stringify({ metadata: { version: '2025.2.r16' } });
+            }
             throw new Error('unexpected readFile');
         });
 
@@ -87,6 +90,6 @@ describe('rulefile_backup_fs', () => {
         expect(items[0].has_published_in_any_snapshot).toBe(true);
         expect(items[0].has_working_in_any_snapshot).toBe(true);
         expect(items[0].latestSnapshotAt).toBe('2026-01-02T12:00:00.000Z');
+        expect(items[0].latestBackedMetadataVersion).toBe('2025.2.r16');
     });
 });
-

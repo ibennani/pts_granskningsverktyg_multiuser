@@ -13,7 +13,7 @@ import {
 } from './focus_manager.js';
 import { dependencyManager } from '../utils/dependency_manager.js';
 import { consoleManager } from '../utils/console_manager.js';
-import { ensure_main_view_content_host } from './app_dom.js';
+import { ensure_main_view_content_host, clear_main_view_content_except_global_notifications } from './app_dom.js';
 import { get_component_class, rulefileSectionsViewComponent, requirementListComponent } from './view_components_index.js';
 
 /**
@@ -228,7 +228,7 @@ export async function render_view(view_name_to_render, params_to_render = {}, de
         if (view_root.id === 'app-main-view-root') {
             const host = ensure_main_view_content_host(view_root);
             if (host) {
-                host.innerHTML = '';
+                clear_main_view_content_except_global_notifications(host);
                 view_init_root = host;
             } else {
                 view_root.innerHTML = '';
