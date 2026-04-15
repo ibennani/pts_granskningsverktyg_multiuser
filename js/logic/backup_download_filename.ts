@@ -22,12 +22,28 @@ export function format_local_datetime_for_backup_filename(iso: string | null | u
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}`;
 }
 
+function normalize_server_filename_datetime_for_backup_filename(raw: string | null | undefined): string | null {
+    const s = String(raw || '').trim();
+    if (!s) return null;
+    if (/^\d{8}_\d{6}$/.test(s)) {
+        const date = s.slice(0, 8);
+        const time = s.slice(9, 15);
+        return `${date.slice(0, 4)}-${date.slice(4, 6)}-${date.slice(6, 8)}_${time.slice(0, 2)}-${time.slice(2, 4)}-${time.slice(4, 6)}`;
+    }
+    return null;
+}
+
 export type RulefileBackupDownloadFilenameInput = {
     filename: string;
     metadataVersion?: string | null;
     /** `metadata.language` från regelfilen (styr ordet för "säkerhetskopia" i filnamnet). */
     metadataLanguage?: string | null;
     createdAt?: string | null;
+    /**
+     * Filnamnsvänlig tid från servern (servertid), t.ex. `20260415_134512`.
+     * Om satt används den före `createdAt`.
+     */
+    createdAtFilename?: string | null;
 };
 
 /** Servern lägger vid kollision till `__` + kort hex-id före `.json` – det ska inte med i nedladdningsnamnet. */
@@ -97,7 +113,8 @@ export function build_rulefile_backup_download_filename(row: RulefileBackupDownl
 
     const human_base = strip_rulefile_disk_id_suffix(base_raw) || 'backup';
     const ver_part = metadata_version_to_filename_part((row.metadataVersion ?? '').toString());
-    const dt = format_local_datetime_for_backup_filename(row.createdAt ?? null);
+    const dt = normalize_server_filename_datetime_for_backup_filename(row.createdAtFilename ?? null) ||
+        format_local_datetime_for_backup_filename(row.createdAt ?? null);
     const backup_word = sanitize_filename_segment(backup_word_for_rulefile_language(row.metadataLanguage ?? null));
 
     const middle = ver_part

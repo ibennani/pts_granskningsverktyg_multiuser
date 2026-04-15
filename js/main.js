@@ -9,7 +9,7 @@ import * as TranslationLogic from './translation_logic.js';
 import { NotificationComponent } from './components/NotificationComponent.js';
 import * as AuditLogic from './audit_logic.js';
 import './export_logic.js';
-import * as SaveAuditLogic from './logic/save_audit_logic.js';
+import * as SaveAuditLogic from './logic/save_audit_logic.ts';
 import * as ValidationLogic from './validation_logic.js';
 import * as RulefileUpdaterLogic from './logic/rulefile_updater_logic.js';
 import * as ScoreCalculator from './logic/ScoreCalculator.js';

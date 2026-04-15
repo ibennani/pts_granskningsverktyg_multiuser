@@ -23,6 +23,7 @@ export type RulefileBackupOverviewRow = {
 export type RulefileBackupHistoryRow = {
     snapshotDir: string;
     createdAt: string | null;
+    createdAtFilename?: string | null;
     category: 'published' | 'drafts' | 'working';
     filename: string;
     fileSizeBytes: number | null;

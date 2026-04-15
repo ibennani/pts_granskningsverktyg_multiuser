@@ -7,7 +7,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const filename_utils_path = path.join(__dirname, '../../js/utils/filename_utils.js');
+const filename_utils_path = path.join(__dirname, '../../js/utils/filename_utils.ts');
 const export_integrity_path = path.join(__dirname, '../../js/utils/export_integrity.js');
 
 const generate_audit_filename = jest.fn(() => 'export.json');
@@ -24,7 +24,7 @@ jest.unstable_mockModule(export_integrity_path, () => ({
 let save_audit_to_json_file;
 
 beforeAll(async () => {
-    const mod = await import('../../js/logic/save_audit_logic.js');
+    const mod = await import('../../js/logic/save_audit_logic.ts');
     save_audit_to_json_file = mod.save_audit_to_json_file;
 });
 

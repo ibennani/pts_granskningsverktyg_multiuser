@@ -3,7 +3,7 @@
 import ExcelJS from 'exceljs/dist/exceljs.min.js';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType, UnderlineType, ExternalHyperlink, ShadingType, TabStopType, SectionType, PageOrientation } from 'docx';
 import { marked } from './utils/markdown.js';
-import { format_local_date_for_filename } from './utils/filename_utils.js';
+import { format_local_date_for_filename } from './utils/filename_utils.ts';
 import { recalculateAuditTimes, get_audit_last_updated_display_timestamp } from './audit_logic.js';
 import * as Helpers from './utils/helpers.js';
 import * as ScoreCalculator from './logic/ScoreCalculator.js';

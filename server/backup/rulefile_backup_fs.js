@@ -118,6 +118,7 @@ export async function list_rulefile_history_rows(rule_set_id) {
     for (const snapshot_dirname of snapshots) {
         const manifest = await read_snapshot_manifest(snapshot_dirname);
         const created_at = manifest?.created_at || null;
+            const created_at_filename = manifest?.created_at_filename || null;
         const rules = Array.isArray(manifest?.rulefiles) ? manifest.rulefiles : [];
         const entry = rules.find((r) => String(r?.id || '') === id) || null;
         if (!entry?.filename) continue;
@@ -133,6 +134,7 @@ export async function list_rulefile_history_rows(rule_set_id) {
             rows.push({
                 snapshotDir: snapshot_dirname,
                 createdAt: created_at,
+                createdAtFilename: created_at_filename,
                 category: folder,
                 filename: paths.safe_file,
                 fileSizeBytes: typeof stat.size === 'number' ? stat.size : null,

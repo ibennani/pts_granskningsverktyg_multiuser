@@ -14,6 +14,7 @@ import usersRouter from './routes/users.js';
 import rulesRouter from './routes/rules.js';
 import auditsRouter from './routes/audits.js';
 import backupRouter from './routes/backup.js';
+import timeRouter from './routes/time.js';
 import { get_last_backup_status, start_backup_scheduler } from './backup/audit_backup.js';
 import { JSON_MAX_UPLOAD_BYTES } from '../js/constants/json_upload_limits.js';
 
@@ -89,6 +90,7 @@ app.use('/api/users', requireAuth, usersRouter);
 app.use('/api/rules', requireAuth, rulesRouter);
 app.use('/api/audits', requireAuth, auditsRouter);
 app.use('/api/backup', requireAuth, backupRouter);
+app.use('/api/time', requireAuth, timeRouter);
 
 app.get('/api/health', async (_req, res) => {
     try {

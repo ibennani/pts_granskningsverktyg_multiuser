@@ -2,7 +2,7 @@
  * Globalt skal: sidomeny, action bars, modal, felgräns och gemensamma deps.
  */
 import * as Helpers from '../utils/helpers.js';
-import * as SaveAuditLogic from '../logic/save_audit_logic.js';
+import * as SaveAuditLogic from '../logic/save_audit_logic.ts';
 import { get_registered_translation_module, get_translation_t } from '../utils/translation_access.js';
 import { consoleManager } from '../utils/console_manager.js';
 import { dependencyManager } from '../utils/dependency_manager.js';

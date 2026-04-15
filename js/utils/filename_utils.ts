@@ -1,11 +1,9 @@
 /**
  * Delad filnamnsgenerering för granskningsfiler.
  * Används av både klient (nedladdning) och server (backup).
- *
- * Håll logiken synkad med filename_utils.ts (Vite/TS använder .ts).
  */
 
-export function format_local_date_for_filename(date = new Date(), separator = '') {
+export function format_local_date_for_filename(date: Date = new Date(), separator = ''): string {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
@@ -13,23 +11,42 @@ export function format_local_date_for_filename(date = new Date(), separator = ''
 }
 
 export function format_local_datetime_for_filename(
-    date = new Date(),
+    date: Date = new Date(),
     date_separator = '',
     time_separator = ''
-) {
+): string {
     const date_part = format_local_date_for_filename(date, date_separator);
     const hour = String(date.getHours()).padStart(2, '0');
     const minute = String(date.getMinutes()).padStart(2, '0');
     const second = String(date.getSeconds()).padStart(2, '0');
-    const time_part = time_separator
-        ? `${hour}${time_separator}${minute}${time_separator}${second}`
-        : `${hour}${minute}${second}`;
+    const time_part = time_separator ? `${hour}${time_separator}${minute}${time_separator}${second}` : `${hour}${minute}${second}`;
     return `${date_part}_${time_part}`;
 }
 
-export function generate_audit_filename(audit_data, t_func, options = {}) {
-    const override =
-        typeof options.datetime_str_override === 'string' ? options.datetime_str_override.trim() : '';
+export type GenerateAuditFilenameOptions = {
+    /**
+     * Valfri suffix-nyckel (översättningsnyckel) för filnamnet,
+     * används t.ex. för "backup" i uppdatera-regelfil-flödet.
+     */
+    backup_suffix_key?: string;
+    /**
+     * Om satt används exakt denna tidssträng i filnamnet.
+     * Tänkt för servertid (så filnamnet matchar serverns klockslag),
+     * med fallback till klientens lokala tid om den saknas.
+     *
+     * Format: YYYYMMDD_HHMMSS (samma som format_local_datetime_for_filename()).
+     */
+    datetime_str_override?: string;
+};
+
+type TranslationFunc = (key: string, params?: Record<string, unknown>) => string;
+
+export function generate_audit_filename(
+    audit_data: any,
+    t_func: TranslationFunc,
+    options: GenerateAuditFilenameOptions = {}
+): string {
+    const override = typeof options.datetime_str_override === 'string' ? options.datetime_str_override.trim() : '';
     const datetime_str = override || format_local_datetime_for_filename();
 
     const filename_prefix = t_func('filename_audit_prefix');
@@ -70,3 +87,4 @@ export function generate_audit_filename(audit_data, t_func, options = {}) {
 
     return `${base_name}.json`;
 }
+

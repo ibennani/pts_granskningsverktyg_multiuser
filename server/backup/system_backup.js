@@ -294,9 +294,22 @@ export async function save_system_snapshot({ backup_dir, now = new Date(), reten
     await safe_write_json_atomic(path.join(users_dir, 'users.json'), user_rows);
     await safe_write_json_atomic(path.join(users_dir, 'password_reset_tokens.json'), token_rows);
 
+    const pad2 = (n) => String(n).padStart(2, '0');
+    const created_at_filename = (() => {
+        const d = new Date(now);
+        const y = d.getFullYear();
+        const m = pad2(d.getMonth() + 1);
+        const day = pad2(d.getDate());
+        const hh = pad2(d.getHours());
+        const mm = pad2(d.getMinutes());
+        const ss = pad2(d.getSeconds());
+        return `${y}${m}${day}_${hh}${mm}${ss}`;
+    })();
+
     const manifest = {
         type: 'system_snapshot',
         created_at: new Date(now).toISOString(),
+        created_at_filename,
         retention_days: retention_days,
         content_hash,
         counts: {
