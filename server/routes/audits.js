@@ -10,8 +10,18 @@ import { requireAdmin } from '../auth/middleware.js';
 import { import_payload_rate_limiter } from '../middleware/rateLimiter.js';
 import { attach_export_integrity_server_payload } from '../utils/export_integrity_node.js';
 import { build_statistics_from_audit_rows } from '../audit_aggregated_statistics.js';
+import { parse_audit_part_key } from '../../js/logic/audit_part_keys.js';
+import { broadcast } from '../ws.js';
 
 const router = express.Router();
+
+function broadcast_audits_changed() {
+    broadcast({ type: 'audits:changed' });
+}
+
+function broadcast_audit_locks_changed(audit_id) {
+    broadcast({ type: 'audits:locks_changed', auditId: String(audit_id) });
+}
 
 function count_stuck_in_samples(samples) {
     if (!samples || !Array.isArray(samples)) return 0;
@@ -262,6 +272,139 @@ router.get('/:id/version', async (req, res) => {
     } catch (err) {
         console.error('[audits] GET version error:', err);
         res.status(500).json({ error: 'Kunde inte hämta version' });
+    }
+});
+
+router.get('/:id/locks', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const now = new Date();
+        await query('DELETE FROM audit_edit_locks WHERE lease_until < CURRENT_TIMESTAMP');
+        const result = await query(
+            `SELECT audit_id, part_key, user_id, user_name, client_lock_id, lease_until, updated_at
+             FROM audit_edit_locks
+             WHERE audit_id = $1 AND lease_until >= CURRENT_TIMESTAMP
+             ORDER BY part_key ASC`,
+            [id]
+        );
+        res.json({ auditId: id, now: now.toISOString(), locks: result.rows });
+    } catch (err) {
+        console.error('[audits] GET locks error:', err);
+        res.status(500).json({ error: 'Kunde inte hämta lås' });
+    }
+});
+
+router.post('/:id/locks', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const user = req.user;
+        const part_key = String(req.body?.part_key || '');
+        const client_lock_id = String(req.body?.client_lock_id || '');
+        const requested_ttl_seconds = Number(req.body?.ttl_seconds || 30);
+
+        if (!part_key) return res.status(400).json({ error: 'part_key krävs' });
+        if (!client_lock_id) return res.status(400).json({ error: 'client_lock_id krävs' });
+        const parsed = parse_audit_part_key(part_key);
+        if (!parsed || String(parsed.audit_id) !== String(id)) return res.status(400).json({ error: 'Ogiltig part_key' });
+
+        const ttl_seconds = Math.max(10, Math.min(60, Number.isFinite(requested_ttl_seconds) ? requested_ttl_seconds : 30));
+
+        await query('DELETE FROM audit_edit_locks WHERE lease_until < CURRENT_TIMESTAMP');
+
+        const result = await query(
+            `INSERT INTO audit_edit_locks (audit_id, part_key, user_id, user_name, client_lock_id, lease_until, updated_at)
+             VALUES ($1, $2, $3, $4, $5::uuid, CURRENT_TIMESTAMP + ($6 || ' seconds')::interval, CURRENT_TIMESTAMP)
+             ON CONFLICT (audit_id, part_key) DO UPDATE
+                SET user_id = EXCLUDED.user_id,
+                    user_name = EXCLUDED.user_name,
+                    client_lock_id = EXCLUDED.client_lock_id,
+                    lease_until = EXCLUDED.lease_until,
+                    updated_at = CURRENT_TIMESTAMP
+              WHERE audit_edit_locks.lease_until < CURRENT_TIMESTAMP
+                 OR (audit_edit_locks.user_id = EXCLUDED.user_id AND audit_edit_locks.client_lock_id = EXCLUDED.client_lock_id)
+             RETURNING audit_id, part_key, user_id, user_name, client_lock_id, lease_until, updated_at`,
+            [id, part_key, user.id, user.name, client_lock_id, String(ttl_seconds)]
+        );
+        if (result.rows.length === 0) {
+            const existing = await query(
+                `SELECT audit_id, part_key, user_id, user_name, client_lock_id, lease_until, updated_at
+                 FROM audit_edit_locks WHERE audit_id = $1 AND part_key = $2 LIMIT 1`,
+                [id, part_key]
+            );
+            return res.status(409).json({ error: 'Fältet är redan låst', lock: existing.rows[0] || null });
+        }
+        broadcast_audit_locks_changed(id);
+        res.status(201).json({ lock: result.rows[0] });
+    } catch (err) {
+        console.error('[audits] POST locks error:', err);
+        res.status(500).json({ error: 'Kunde inte ta lås' });
+    }
+});
+
+router.post('/:id/locks/:partKey/heartbeat', async (req, res) => {
+    try {
+        const { id, partKey } = req.params;
+        const user = req.user;
+        const part_key = decodeURIComponent(String(partKey || ''));
+        const client_lock_id = String(req.body?.client_lock_id || '');
+        const requested_ttl_seconds = Number(req.body?.ttl_seconds || 30);
+
+        if (!client_lock_id) return res.status(400).json({ error: 'client_lock_id krävs' });
+        const parsed = parse_audit_part_key(part_key);
+        if (!parsed || String(parsed.audit_id) !== String(id)) return res.status(400).json({ error: 'Ogiltig part_key' });
+
+        const ttl_seconds = Math.max(10, Math.min(60, Number.isFinite(requested_ttl_seconds) ? requested_ttl_seconds : 30));
+
+        const result = await query(
+            `UPDATE audit_edit_locks
+             SET lease_until = CURRENT_TIMESTAMP + ($5 || ' seconds')::interval,
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE audit_id = $1
+               AND part_key = $2
+               AND user_id = $3
+               AND client_lock_id = $4::uuid
+             RETURNING audit_id, part_key, user_id, user_name, client_lock_id, lease_until, updated_at`,
+            [id, part_key, user.id, client_lock_id, String(ttl_seconds)]
+        );
+        if (result.rows.length === 0) {
+            return res.status(409).json({ error: 'Kan inte förlänga lås (saknas eller ägs av annan)' });
+        }
+        broadcast_audit_locks_changed(id);
+        res.json({ lock: result.rows[0] });
+    } catch (err) {
+        console.error('[audits] heartbeat error:', err);
+        res.status(500).json({ error: 'Kunde inte förlänga lås' });
+    }
+});
+
+router.delete('/:id/locks/:partKey', async (req, res) => {
+    try {
+        const { id, partKey } = req.params;
+        const user = req.user;
+        const part_key = decodeURIComponent(String(partKey || ''));
+        const client_lock_id = String(req.query?.client_lock_id || req.body?.client_lock_id || '');
+
+        if (!client_lock_id) return res.status(400).json({ error: 'client_lock_id krävs' });
+        const parsed = parse_audit_part_key(part_key);
+        if (!parsed || String(parsed.audit_id) !== String(id)) return res.status(400).json({ error: 'Ogiltig part_key' });
+
+        const result = await query(
+            `DELETE FROM audit_edit_locks
+             WHERE audit_id = $1
+               AND part_key = $2
+               AND user_id = $3
+               AND client_lock_id = $4::uuid
+             RETURNING audit_id, part_key`,
+            [id, part_key, user.id, client_lock_id]
+        );
+        if (result.rows.length === 0) {
+            return res.status(409).json({ error: 'Kan inte släppa lås (saknas eller ägs av annan)' });
+        }
+        broadcast_audit_locks_changed(id);
+        res.status(204).send();
+    } catch (err) {
+        console.error('[audits] DELETE lock error:', err);
+        res.status(500).json({ error: 'Kunde inte släppa lås' });
     }
 });
 
@@ -645,6 +788,79 @@ router.patch('/:id', async (req, res) => {
     } catch (err) {
         console.error('[audits] PATCH error:', err.message, err.stack);
         res.status(500).json({ error: 'Kunde inte uppdatera granskning' });
+    }
+});
+
+router.patch('/:id/content-part', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const user = req.user;
+        const part_key = String(req.body?.part_key || '');
+        const base_version = Number(req.body?.base_version);
+        const value = req.body?.value;
+
+        if (!part_key) return res.status(400).json({ error: 'part_key krävs' });
+        if (!Number.isFinite(base_version)) return res.status(400).json({ error: 'base_version krävs' });
+        if (typeof value !== 'string') return res.status(400).json({ error: 'value måste vara en sträng' });
+
+        const parsed = parse_audit_part_key(part_key);
+        if (!parsed || String(parsed.audit_id) !== String(id)) return res.status(400).json({ error: 'Ogiltig part_key' });
+
+        // Hämta aktuellt samples och uppdatera minsta möjliga del i Node (v1).
+        const row = await query('SELECT id, version, samples, rule_set_id, rule_file_content, status, metadata, archived_requirement_results, last_rulefile_update_log FROM audits WHERE id = $1', [id]);
+        if (row.rows.length === 0) return res.status(404).json({ error: 'Granskning hittades inte' });
+        const audit = row.rows[0];
+        if (Number(audit.version) !== base_version) {
+            return res.status(409).json({ error: 'Versionskonflikt', serverVersion: Number(audit.version), lastUpdatedBy: audit.last_updated_by ?? null });
+        }
+
+        const samples = Array.isArray(audit.samples) ? JSON.parse(JSON.stringify(audit.samples)) : [];
+        const sample = samples.find(s => String(s?.id) === String(parsed.sample_id));
+        if (!sample) return res.status(400).json({ error: 'Stickprov hittades inte för part_key' });
+        if (!sample.requirementResults) sample.requirementResults = {};
+        const req_res = sample.requirementResults[parsed.requirement_id] || {};
+        sample.requirementResults[parsed.requirement_id] = req_res;
+
+        if (parsed.kind === 'req_text') {
+            req_res[parsed.field] = value;
+        } else if (parsed.kind === 'observation_detail') {
+            if (!req_res.checkResults) req_res.checkResults = {};
+            if (!req_res.checkResults[parsed.check_id]) req_res.checkResults[parsed.check_id] = { passCriteria: {} };
+            if (!req_res.checkResults[parsed.check_id].passCriteria) req_res.checkResults[parsed.check_id].passCriteria = {};
+            if (!req_res.checkResults[parsed.check_id].passCriteria[parsed.pc_id]) req_res.checkResults[parsed.check_id].passCriteria[parsed.pc_id] = {};
+            req_res.checkResults[parsed.check_id].passCriteria[parsed.pc_id].observationDetail = value;
+        } else {
+            return res.status(400).json({ error: 'Denna part_key stöds inte för patch än' });
+        }
+
+        const update = await query(
+            `UPDATE audits
+             SET samples = $1,
+                 version = version + 1,
+                 last_updated_by = $2,
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE id = $3 AND version = $4
+             RETURNING *`,
+            [JSON.stringify(samples), user?.name || null, id, base_version]
+        );
+        if (update.rows.length === 0) {
+            const check = await query('SELECT version, last_updated_by FROM audits WHERE id = $1', [id]);
+            if (check.rows.length === 0) return res.status(404).json({ error: 'Granskning hittades inte' });
+            return res.status(409).json({ error: 'Versionskonflikt', serverVersion: Number(check.rows[0].version), lastUpdatedBy: check.rows[0].last_updated_by ?? null });
+        }
+
+        const updated_audit = update.rows[0];
+        let ruleSet = null;
+        if (updated_audit.rule_set_id) {
+            const ruleResult = await query('SELECT * FROM rule_sets WHERE id = $1', [updated_audit.rule_set_id]);
+            ruleSet = ruleResult.rows[0] || null;
+        }
+        const fullState = build_full_state(updated_audit, ruleSet);
+        broadcast_audits_changed();
+        res.json(fullState);
+    } catch (err) {
+        console.error('[audits] PATCH content-part error:', err);
+        res.status(500).json({ error: 'Kunde inte uppdatera del av granskningen' });
     }
 });
 

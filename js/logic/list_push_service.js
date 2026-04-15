@@ -7,6 +7,7 @@ import { get_websocket_url } from '../api/client.js';
 const EVENT_AUDITS_CHANGED = 'gv-audits-changed';
 const EVENT_RULES_CHANGED = 'gv-rules-changed';
 const EVENT_RULE_LOCKS_CHANGED = 'gv-rule-locks-changed';
+const EVENT_AUDIT_LOCKS_CHANGED = 'gv-audit-locks-changed';
 
 const RECONNECT_INITIAL_MS = 1000;
 const RECONNECT_MAX_MS = 30000;
@@ -22,9 +23,10 @@ let _failed_connect_count = 0;
 const _audits_callbacks = new Set();
 const _rules_callbacks = new Set();
 const _rule_locks_callbacks = new Set();
+const _audit_locks_callbacks = new Set();
 
 function _has_subscribers() {
-    return _audits_callbacks.size > 0 || _rules_callbacks.size > 0 || _rule_locks_callbacks.size > 0;
+    return _audits_callbacks.size > 0 || _rules_callbacks.size > 0 || _rule_locks_callbacks.size > 0 || _audit_locks_callbacks.size > 0;
 }
 
 function _fire_audits_changed() {
@@ -63,6 +65,19 @@ function _fire_rule_locks_changed(payload) {
     });
     if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent(EVENT_RULE_LOCKS_CHANGED, { detail: payload || null }));
+    }
+}
+
+function _fire_audit_locks_changed(payload) {
+    _audit_locks_callbacks.forEach((cb) => {
+        try {
+            cb(payload);
+        } catch {
+            // tyst vid fel i callback
+        }
+    });
+    if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent(EVENT_AUDIT_LOCKS_CHANGED, { detail: payload || null }));
     }
 }
 
@@ -127,6 +142,8 @@ function _connect() {
                 _fire_rules_changed();
             } else if (type === 'rules:locks_changed') {
                 _fire_rule_locks_changed({ ruleSetId: msg?.ruleSetId || null });
+            } else if (type === 'audits:locks_changed') {
+                _fire_audit_locks_changed({ auditId: msg?.auditId || null });
             }
         } catch {
             // ignorera ogiltiga meddelanden
@@ -256,19 +273,47 @@ export function subscribe_rule_locks(callback) {
 }
 
 /**
+ * Prenumerera på push när lås i en granskning har ändrats.
+ * @param {function({auditId: string|null}): void} callback
+ * @returns {function(): void}
+ */
+export function subscribe_audit_locks(callback) {
+    if (typeof callback !== 'function') return () => {};
+    _audit_locks_callbacks.add(callback);
+    _ensure_ws();
+    return () => {
+        _audit_locks_callbacks.delete(callback);
+        if (!_has_subscribers()) {
+            _clear_reconnect_timer();
+            _stop_fallback_polling();
+            if (_ws) {
+                try {
+                    _ws.close();
+                } catch {
+                    /* ignore */
+                }
+                _ws = null;
+            }
+        }
+    };
+}
+
+/**
  * Event-namn för att lyssna via window.addEventListener.
  * Använd t.ex. window.addEventListener(ListPushService.EVENT_AUDITS_CHANGED, handler).
  */
 export const EVENT_NAMES = {
     AUDITS_CHANGED: EVENT_AUDITS_CHANGED,
     RULES_CHANGED: EVENT_RULES_CHANGED,
-    RULE_LOCKS_CHANGED: EVENT_RULE_LOCKS_CHANGED
+    RULE_LOCKS_CHANGED: EVENT_RULE_LOCKS_CHANGED,
+    AUDIT_LOCKS_CHANGED: EVENT_AUDIT_LOCKS_CHANGED
 };
 
 export const ListPushService = {
     subscribe_audits,
     subscribe_rules,
     subscribe_rule_locks,
+    subscribe_audit_locks,
     notify_rules_list_changed,
     EVENT_NAMES
 };

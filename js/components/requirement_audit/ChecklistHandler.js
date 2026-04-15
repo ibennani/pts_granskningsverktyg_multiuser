@@ -4,6 +4,14 @@ import { get_current_user_name } from '../../utils/helpers.js';
 import { marked } from '../../utils/markdown.js';
 import { consoleManager } from '../../utils/console_manager.js';
 import { app_runtime_refs } from '../../utils/app_runtime_refs.js';
+import {
+    init_audit_lock_service,
+    try_acquire_audit_part_lock,
+    release_audit_part_lock,
+    get_current_audit_remote_lock
+} from '../../logic/audit_lock_service.js';
+import { make_observation_detail_part_key } from '../../logic/audit_part_keys.js';
+import { api_patch } from '../../api/client.js';
 
 export const ChecklistHandler = {
     container_ref: null,
@@ -24,6 +32,9 @@ export const ChecklistHandler = {
 
     is_dom_built: false,
     last_language_code: null,
+    audit_id: null,
+    sample_id: null,
+    requirement_id: null,
 
     _build_button_focus_target(button_element) {
         if (!button_element) return null;
@@ -193,6 +204,9 @@ export const ChecklistHandler = {
         this.Translation = deps.Translation || window.Translation;
         this.Helpers = deps.Helpers || window.Helpers;
         this.get_observations_from_other_samples = options.getObservationsFromOtherSamples || (() => []);
+        this.get_audit_lock_context = typeof options.getAuditLockContext === 'function'
+            ? options.getAuditLockContext
+            : null;
 
         // Bind handlers to this instance
         this.handle_checklist_click = this.handle_checklist_click.bind(this);
@@ -814,12 +828,50 @@ export const ChecklistHandler = {
                     text_content: t('pc_observation_detail_label') 
                 });
                 observation_wrapper.appendChild(observation_label);
-                const observation_textarea = this.Helpers.create_element('textarea', {
-                    id: `pc-observation-${check_id}-${pc_id}`,
-                    class_name: 'form-control pc-observation-detail-textarea',
-                    attributes: { rows: '4' }
-                });
-                observation_wrapper.appendChild(observation_textarea);
+                const ctx = this.get_audit_lock_context ? this.get_audit_lock_context() : null;
+                const audit_id = ctx?.audit_id;
+                const sample_id = ctx?.sample_id;
+                const requirement_id = ctx?.requirement_id;
+                if (audit_id && sample_id && requirement_id) {
+                    void init_audit_lock_service(String(audit_id));
+                }
+                const part_key = (audit_id && sample_id && requirement_id)
+                    ? make_observation_detail_part_key(String(audit_id), String(sample_id), String(requirement_id), String(check_id), String(pc_id))
+                    : null;
+                const lock_row = part_key ? get_current_audit_remote_lock(part_key) : null;
+                const locked_by_other = !!(lock_row && lock_row.user_name && lock_row.user_name !== get_current_user_name());
+
+                if (locked_by_other) {
+                    observation_wrapper.appendChild(this.Helpers.create_element('div', {
+                        class_name: 'info-block-locked-message',
+                        text_content: `${lock_row.user_name} redigerar detta fält just nu.`
+                    }));
+                } else {
+                    const observation_textarea = this.Helpers.create_element('textarea', {
+                        id: `pc-observation-${check_id}-${pc_id}`,
+                        class_name: 'form-control pc-observation-detail-textarea',
+                        attributes: { rows: '4' }
+                    });
+                    if (part_key) {
+                        observation_textarea.addEventListener('focus', async () => {
+                            const c = this.get_audit_lock_context ? this.get_audit_lock_context() : null;
+                            const aid = c?.audit_id;
+                            if (!aid) return;
+                            const r = await try_acquire_audit_part_lock({ audit_id: aid, part_key });
+                            if (!r?.ok) {
+                                try { observation_textarea.blur(); } catch (_) { /* ignore */ }
+                                this.update_dom();
+                            }
+                        });
+                        observation_textarea.addEventListener('blur', () => {
+                            const c = this.get_audit_lock_context ? this.get_audit_lock_context() : null;
+                            const aid = c?.audit_id;
+                            if (!aid) return;
+                            void release_audit_part_lock({ audit_id: aid, part_key });
+                        });
+                    }
+                    observation_wrapper.appendChild(observation_textarea);
+                }
 
                 const attach_media_row = this.Helpers.create_element('div', { class_name: 'pc-attach-media-row' });
                 const copy_observation_row = this.Helpers.create_element('div', { class_name: 'pc-copy-observation-row', attributes: { hidden: 'hidden' } });
@@ -1039,19 +1091,25 @@ export const ChecklistHandler = {
                 }
 
                 const observation_wrapper = pc_item_li.querySelector('.pc-observation-detail-wrapper');
-                const observation_textarea = observation_wrapper.querySelector('textarea');
+                const observation_textarea = observation_wrapper ? observation_wrapper.querySelector('textarea') : null;
 
-                observation_wrapper.hidden = (current_pc_status !== 'failed');
+                if (observation_wrapper) {
+                    observation_wrapper.hidden = (current_pc_status !== 'failed');
+                }
 
-                observation_textarea.readOnly = this.is_audit_locked;
+                if (observation_textarea) {
+                    observation_textarea.readOnly = this.is_audit_locked;
+                }
                 const target_observation_value = pc_data.observationDetail || '';
                 const any_textarea_focused = document.activeElement && this.container_ref?.contains(document.activeElement) &&
                     (document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'INPUT');
-                if (!any_textarea_focused && observation_textarea.value !== target_observation_value) {
-                    observation_textarea.value = target_observation_value;
-                }
-                if (this.Helpers?.init_auto_resize_for_textarea) {
-                    this.Helpers.init_auto_resize_for_textarea(observation_textarea);
+                if (observation_textarea) {
+                    if (!any_textarea_focused && observation_textarea.value !== target_observation_value) {
+                        observation_textarea.value = target_observation_value;
+                    }
+                    if (this.Helpers?.init_auto_resize_for_textarea) {
+                        this.Helpers.init_auto_resize_for_textarea(observation_textarea);
+                    }
                 }
 
                 const attach_media_btn = pc_item_li.querySelector('button[data-action="attach-media"]');

@@ -9,6 +9,18 @@ import { RequirementAuditSidebarComponent } from './RequirementAuditSidebarCompo
 import "./requirement_audit_component.css";
 import { consoleManager } from '../utils/console_manager.js';
 import { establish_baseline_for_current_audit_focus } from '../logic/audit_collaboration_notice.js';
+import { subscribe_audit_locks } from '../logic/list_push_service.js';
+import {
+    init_audit_lock_service,
+    try_acquire_audit_part_lock,
+    release_audit_part_lock,
+    get_current_audit_remote_lock
+} from '../logic/audit_lock_service.js';
+import {
+    make_requirement_text_part_key
+} from '../logic/audit_part_keys.js';
+import { api_patch } from '../api/client.js';
+import { make_observation_detail_part_key } from '../logic/audit_part_keys.js';
 
 export class RequirementAuditComponent {
     constructor() {
@@ -46,6 +58,7 @@ export class RequirementAuditComponent {
         this.sidebar_navigation_state = null;
         this.autosave_session = null;
         this._baseline_key = null;
+        this._unsubscribe_audit_locks = null;
     }
 
     async init({ root, deps }) {
@@ -109,6 +122,31 @@ export class RequirementAuditComponent {
         }
 
         document.addEventListener('keydown', this.handle_audit_keydown);
+    }
+
+    async _patch_audit_part_to_server({ part_key, value }) {
+        const state = this.getState();
+        const audit_id = state?.auditId;
+        if (!audit_id) return;
+        const base_version = Number(state?.version ?? 0);
+        try {
+            const full_state = await api_patch(`/audits/${encodeURIComponent(audit_id)}/content-part`, {
+                part_key,
+                base_version,
+                value: String(value ?? '')
+            });
+            if (full_state && typeof this.dispatch === 'function') {
+                this.dispatch({
+                    type: this.StoreActionTypes.REPLACE_STATE_FROM_REMOTE,
+                    payload: {
+                        ...full_state,
+                        saveFileVersion: full_state.saveFileVersion || '2.1.0'
+                    }
+                });
+            }
+        } catch (_) {
+            // poll-servicen/versionskonflikt-notis hanterar inkonsistens
+        }
     }
 
     load_and_prepare_view_data() {
@@ -743,7 +781,15 @@ export class RequirementAuditComponent {
             },
             {
                 deps: this.deps,
-                getObservationsFromOtherSamples: (check_id, pc_id) => this.get_observations_from_other_samples(check_id, pc_id)
+                getObservationsFromOtherSamples: (check_id, pc_id) => this.get_observations_from_other_samples(check_id, pc_id),
+                getAuditLockContext: () => {
+                    const st = this.getState();
+                    return {
+                        audit_id: st?.auditId ? String(st.auditId) : null,
+                        sample_id: this.params?.sampleId ? String(this.params.sampleId) : null,
+                        requirement_id: this.params?.requirementId ? String(this.params.requirementId) : null
+                    };
+                }
             }
         );
         
@@ -786,6 +832,9 @@ export class RequirementAuditComponent {
         const t = this.Translation.t;
         const state = this.getState();
         const is_locked = state.auditStatus === 'locked' || state.auditStatus === 'archived';
+        const audit_id = state?.auditId;
+        const sample_id = this.params?.sampleId;
+        const requirement_id = this.params?.requirementId;
 
         const header = this.plate_element_ref.querySelector('.requirement-audit-header');
         header.innerHTML = '';
@@ -817,6 +866,19 @@ export class RequirementAuditComponent {
         const target_auditor_value = this.current_result.commentToAuditor || '';
         const target_actor_value = this.current_result.commentToActor || '';
 
+        const part_key_auditor = (audit_id && sample_id && requirement_id)
+            ? make_requirement_text_part_key(String(audit_id), String(sample_id), String(requirement_id), 'commentToAuditor')
+            : null;
+        const part_key_actor = (audit_id && sample_id && requirement_id)
+            ? make_requirement_text_part_key(String(audit_id), String(sample_id), String(requirement_id), 'commentToActor')
+            : null;
+
+        const lock_auditor = part_key_auditor ? get_current_audit_remote_lock(part_key_auditor) : null;
+        const lock_actor = part_key_actor ? get_current_audit_remote_lock(part_key_actor) : null;
+
+        const locked_auditor_by_other = !!(lock_auditor && lock_auditor.user_name && lock_auditor.user_name !== get_current_user_name());
+        const locked_actor_by_other = !!(lock_actor && lock_actor.user_name && lock_actor.user_name !== get_current_user_name());
+
         if (this.comment_to_auditor_input) {
             if (document.activeElement !== this.comment_to_auditor_input &&
                 this.comment_to_auditor_input.value !== target_auditor_value) {
@@ -830,7 +892,55 @@ export class RequirementAuditComponent {
             }
         }
 
+        const replace_textarea_with_lock_message = ({ textarea_ref_key, textarea, lock_row }) => {
+            if (!textarea || !lock_row?.user_name) return null;
+            const parent = textarea.parentElement;
+            if (!parent) return null;
+            textarea.remove();
+            const msg = this.Helpers.create_element('div', {
+                class_name: 'info-block-locked-message',
+                text_content: `${lock_row.user_name} redigerar detta fält just nu.`
+            });
+            parent.appendChild(msg);
+            if (textarea_ref_key === 'auditor') this.comment_to_auditor_input = null;
+            if (textarea_ref_key === 'actor') this.comment_to_actor_input = null;
+            return msg;
+        };
+
+        const attach_lock_listeners = ({ textarea, part_key }) => {
+            if (!textarea || !part_key) return;
+            textarea.dataset.partKey = part_key;
+            textarea.addEventListener('focus', async () => {
+                const st = this.getState();
+                const aid = st?.auditId;
+                if (!aid) return;
+                const r = await try_acquire_audit_part_lock({ audit_id: aid, part_key });
+                if (!r?.ok) {
+                    try { textarea.blur(); } catch (_) { /* ignore */ }
+                    this.render();
+                }
+            });
+            textarea.addEventListener('blur', () => {
+                const st = this.getState();
+                const aid = st?.auditId;
+                if (!aid) return;
+                void release_audit_part_lock({ audit_id: aid, part_key });
+            });
+        };
+
+        if (locked_auditor_by_other) {
+            replace_textarea_with_lock_message({ textarea_ref_key: 'auditor', textarea: this.comment_to_auditor_input, lock_row: lock_auditor });
+        } else {
+            attach_lock_listeners({ textarea: this.comment_to_auditor_input, part_key: part_key_auditor });
+        }
+        if (locked_actor_by_other) {
+            replace_textarea_with_lock_message({ textarea_ref_key: 'actor', textarea: this.comment_to_actor_input, lock_row: lock_actor });
+        } else {
+            attach_lock_listeners({ textarea: this.comment_to_actor_input, part_key: part_key_actor });
+        }
+
         [this.comment_to_auditor_input, this.comment_to_actor_input].forEach(input => {
+            if (!input) return;
             input.readOnly = is_locked;
             input.classList.toggle('readonly-textarea', is_locked);
             if (this.Helpers?.init_auto_resize_for_textarea) {
@@ -897,6 +1007,29 @@ export class RequirementAuditComponent {
             establish_baseline_for_current_audit_focus(this.getState());
         }
 
+        const state_for_locks = this.getState();
+        if (state_for_locks?.auditId) {
+            void init_audit_lock_service(String(state_for_locks.auditId));
+            if (!this._unsubscribe_audit_locks) {
+                this._unsubscribe_audit_locks = subscribe_audit_locks((payload) => {
+                    const aid = String(state_for_locks?.auditId || '');
+                    if (!payload?.auditId || String(payload.auditId) !== aid) return;
+                    try {
+                        // Viktigt: uppdatera inte UI på ett sätt som riskerar att flytta fokus
+                        // medan användaren skriver i ett fält i denna vy.
+                        const active = document.activeElement;
+                        const tag = active?.tagName?.toLowerCase();
+                        const is_editing = active && (tag === 'textarea' || tag === 'input' || tag === 'select')
+                            && this.plate_element_ref?.contains(active);
+                        if (is_editing) return;
+                        this.render();
+                    } catch (_) {
+                        // ignoreras
+                    }
+                });
+            }
+        }
+
         const plate_exists = this.plate_element_ref && this.root.contains(this.plate_element_ref);
         if (!plate_exists) {
             this.build_initial_dom();
@@ -917,6 +1050,41 @@ export class RequirementAuditComponent {
                             skipRender: skip_render,
                             skipLastStatusBump: skip_last_bump
                         });
+
+                        // Del-spara: om fokus ligger i kommentar-fält, spara just det fältet.
+                        try {
+                            const st = this.getState();
+                            const audit_id = st?.auditId;
+                            if (audit_id && document?.activeElement?.id && this.params?.sampleId && this.params?.requirementId) {
+                                const ae = document.activeElement;
+                                const id = String(ae.id || '');
+                                if (id === 'commentToAuditor' || id === 'commentToActor') {
+                                    const field = id === 'commentToAuditor' ? 'commentToAuditor' : 'commentToActor';
+                                    const part_key = make_requirement_text_part_key(String(audit_id), String(this.params.sampleId), String(this.params.requirementId), field);
+                                    void this._patch_audit_part_to_server({ part_key, value: ae.value || '' });
+                                } else if (ae.classList?.contains('pc-observation-detail-textarea') && id.startsWith('pc-observation-')) {
+                                    // id: pc-observation-{checkId}-{pcId}
+                                    const rest = id.slice('pc-observation-'.length);
+                                    const first_dash = rest.indexOf('-');
+                                    if (first_dash > 0) {
+                                        const check_id = rest.slice(0, first_dash);
+                                        const pc_id = rest.slice(first_dash + 1);
+                                        if (check_id && pc_id) {
+                                            const part_key = make_observation_detail_part_key(
+                                                String(audit_id),
+                                                String(this.params.sampleId),
+                                                String(this.params.requirementId),
+                                                check_id,
+                                                pc_id
+                                            );
+                                            void this._patch_audit_part_to_server({ part_key, value: ae.value || '' });
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (_) {
+                            // ignoreras
+                        }
                     }
                 });
             }
@@ -959,6 +1127,13 @@ export class RequirementAuditComponent {
             this.handle_comment_input(true);
             this.save_result_immediately({ skipRender: true });
         }
+
+        try {
+            this._unsubscribe_audit_locks?.();
+        } catch (_) {
+            // ignoreras
+        }
+        this._unsubscribe_audit_locks = null;
         
         // Remove event listeners
         if (this.comment_to_auditor_input) {
