@@ -12,6 +12,44 @@ let heartbeat_timer = null;
 let active_locks_by_part = new Map(); // part_key -> { client_lock_id, lease_until }
 let known_remote_locks_by_part = new Map(); // part_key -> lock row
 
+const AUDIT_LOCK_BC_NAME = 'gv-audit-locks-v1';
+let audit_lock_bc_out = null;
+let audit_lock_bc_in = null;
+
+function notify_other_tabs_audit_locks_changed(audit_id) {
+    try {
+        if (typeof BroadcastChannel === 'undefined') return;
+        if (!audit_lock_bc_out) audit_lock_bc_out = new BroadcastChannel(AUDIT_LOCK_BC_NAME);
+        audit_lock_bc_out.postMessage({ auditId: String(audit_id), type: 'locks_changed' });
+    } catch (_) {
+        /* ignoreras */
+    }
+}
+
+function init_audit_lock_broadcast_listener_once() {
+    if (audit_lock_bc_in || typeof BroadcastChannel === 'undefined') return;
+    try {
+        audit_lock_bc_in = new BroadcastChannel(AUDIT_LOCK_BC_NAME);
+        audit_lock_bc_in.onmessage = (ev) => {
+            const aid = ev.data?.auditId;
+            if (!aid || String(current_audit_id) !== String(aid)) return;
+            void refresh_remote_locks(aid).then(() => {
+                try {
+                    if (typeof window !== 'undefined') {
+                        window.dispatchEvent(new CustomEvent('gv-audit-locks-refresh', { detail: { auditId: aid } }));
+                    }
+                } catch (_) {
+                    /* ignoreras */
+                }
+            });
+        };
+    } catch (_) {
+        /* ignoreras */
+    }
+}
+
+init_audit_lock_broadcast_listener_once();
+
 export function ensure_client_lock_id_for_part(part_key) {
     // window.name bevaras vid sidomladdning, men är tomt när en flik dupliceras.
     // Detta låter oss behålla lås vid F5 men tvinga en duplicerad flik (som delar sessionStorage)
@@ -43,9 +81,6 @@ async function refresh_remote_locks(audit_id) {
     try {
         const data = await api_get(`/audits/${encodeURIComponent(audit_id)}/locks`);
         const locks = Array.isArray(data?.locks) ? data.locks : [];
-// #region agent log
-fetch('http://127.0.0.1:7242/ingest/243f7b7c-da6b-4b58-8979-66412ca43ade',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a9c702'},body:JSON.stringify({sessionId:'a9c702',location:'audit_lock_service.js:refresh_remote_locks',message:'Locks retrieved',data:{locks},timestamp:Date.now(),hypothesisId:'2'})}).catch(()=>{});
-// #endregion
         const next = new Map();
         locks.forEach((l) => {
             if (!l?.part_key) return;
@@ -102,21 +137,16 @@ export async function try_acquire_audit_part_lock({ audit_id, part_key }) {
     if (!aid) throw new Error('audit_id saknas');
     const pk = String(part_key || '');
     const client_lock_id = ensure_client_lock_id_for_part(pk);
-// #region agent log
-fetch('http://127.0.0.1:7242/ingest/243f7b7c-da6b-4b58-8979-66412ca43ade',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a9c702'},body:JSON.stringify({sessionId:'a9c702',location:'audit_lock_service.js:try_acquire_audit_part_lock',message:'Attempt acquire',data:{aid, pk, client_lock_id},timestamp:Date.now(),hypothesisId:'1'})}).catch(()=>{});
-// #endregion
     try {
         const r = await api_post(`/audits/${encodeURIComponent(aid)}/locks`, {
             part_key: pk,
             client_lock_id,
             ttl_seconds: DEFAULT_TTL_SECONDS
         });
-// #region agent log
-fetch('http://127.0.0.1:7242/ingest/243f7b7c-da6b-4b58-8979-66412ca43ade',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a9c702'},body:JSON.stringify({sessionId:'a9c702',location:'audit_lock_service.js:try_acquire_audit_part_lock',message:'Acquire success',data:{r},timestamp:Date.now(),hypothesisId:'1'})}).catch(()=>{});
-// #endregion
         const lock = r?.lock;
         active_locks_by_part.set(pk, { client_lock_id, lease_until: lock?.lease_until || null });
         await refresh_remote_locks(aid);
+        notify_other_tabs_audit_locks_changed(aid);
         start_heartbeat();
         return { ok: true, lock, client_lock_id };
     } catch (err) {
@@ -137,6 +167,7 @@ export async function release_audit_part_lock({ audit_id, part_key }) {
     } finally {
         active_locks_by_part.delete(pk);
         await refresh_remote_locks(aid);
+        notify_other_tabs_audit_locks_changed(aid);
         stop_heartbeat_if_idle();
     }
     return { ok: true };

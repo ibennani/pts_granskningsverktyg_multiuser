@@ -96,6 +96,11 @@ export class RequirementAuditComponent {
         this.handle_sidebar_filters_change = this.handle_sidebar_filters_change.bind(this);
         this.handle_audit_keydown = this.handle_audit_keydown.bind(this);
         this._refresh_audit_lock_ui_after_remote_state = this._refresh_audit_lock_ui_after_remote_state.bind(this);
+        this._on_gv_audit_locks_refresh = (ev) => {
+            const aid = ev?.detail?.auditId;
+            if (!aid || String(this.getState()?.auditId || '') !== String(aid)) return;
+            void this._refresh_audit_lock_ui_after_remote_state();
+        };
 
         if (this.right_sidebar_root) {
             this.right_sidebar_component_instance = new RequirementAuditSidebarComponent();
@@ -136,6 +141,7 @@ export class RequirementAuditComponent {
         }
 
         document.addEventListener('keydown', this.handle_audit_keydown);
+        document.addEventListener('gv-audit-locks-refresh', this._on_gv_audit_locks_refresh);
     }
 
     async _patch_audit_part_to_server({ part_key, value }) {
@@ -943,17 +949,9 @@ export class RequirementAuditComponent {
         const my_client_lock_id_auditor = part_key_auditor ? ensure_client_lock_id_for_part(part_key_auditor) : null;
         const my_client_lock_id_actor = part_key_actor ? ensure_client_lock_id_for_part(part_key_actor) : null;
 
-// #region agent log
-fetch('http://127.0.0.1:7242/ingest/243f7b7c-da6b-4b58-8979-66412ca43ade',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a9c702'},body:JSON.stringify({sessionId:'a9c702',location:'RequirementAuditComponent.js:ui_compare',message:'comparing locks',data:{part_key_auditor, lock_auditor, my_client_lock_id_auditor, part_key_actor, lock_actor, my_client_lock_id_actor},timestamp:Date.now(),hypothesisId:'6'})}).catch(()=>{});
-// #endregion
-
         const me = get_current_user_name();
         const locked_auditor_by_other = is_remote_lock_held_by_other_user(lock_auditor, me, my_client_lock_id_auditor);
         const locked_actor_by_other = is_remote_lock_held_by_other_user(lock_actor, me, my_client_lock_id_actor);
-
-// #region agent log
-fetch('http://127.0.0.1:7242/ingest/243f7b7c-da6b-4b58-8979-66412ca43ade',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a9c702'},body:JSON.stringify({sessionId:'a9c702',location:'RequirementAuditComponent.js:_apply_comment_part_lock_ui',message:'lock_ui evaluated',data:{lock_auditor, my_client_lock_id_auditor, locked_auditor_by_other, me, part_key_auditor},timestamp:Date.now(),hypothesisId:'4'})}).catch(()=>{});
-// #endregion
 
         if (this.comment_to_auditor_input) {
             if (part_key_auditor) {
@@ -1004,12 +1002,16 @@ fetch('http://127.0.0.1:7242/ingest/243f7b7c-da6b-4b58-8979-66412ca43ade',{metho
         [this.comment_to_auditor_input, this.comment_to_actor_input].forEach((input) => {
             if (!input) return;
             const lock_pending = input.dataset.gvLockPending === '1';
+            const acquiring_focus_here = lock_pending && document.activeElement === input;
             if (input.disabled) {
                 input.readOnly = false;
             } else {
-                input.readOnly = is_locked || lock_pending;
+                input.readOnly = is_locked || (lock_pending && !acquiring_focus_here);
             }
-            input.classList.toggle('readonly-textarea', (is_locked || lock_pending) && !input.disabled);
+            input.classList.toggle(
+                'readonly-textarea',
+                (is_locked || (lock_pending && !acquiring_focus_here)) && !input.disabled
+            );
         });
     }
 
@@ -1038,11 +1040,8 @@ fetch('http://127.0.0.1:7242/ingest/243f7b7c-da6b-4b58-8979-66412ca43ade',{metho
                 if (!aid) return;
                 const audit_frozen = st.auditStatus === 'locked' || st.auditStatus === 'archived';
                 if (audit_frozen) return;
-// #region agent log
-fetch('http://127.0.0.1:7242/ingest/243f7b7c-da6b-4b58-8979-66412ca43ade',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a9c702'},body:JSON.stringify({sessionId:'a9c702',location:'RequirementAuditComponent.js:focus',message:'textarea focused, acquiring lock',data:{part_key, aid},timestamp:Date.now(),hypothesisId:'1'})}).catch(()=>{});
-// #endregion
-                textarea.readOnly = true;
                 textarea.dataset.gvLockPending = '1';
+                this._apply_comment_part_lock_ui();
                 try {
                     const r = await try_acquire_audit_part_lock({ audit_id: aid, part_key });
                     await init_audit_lock_service(String(aid));
@@ -1315,6 +1314,7 @@ fetch('http://127.0.0.1:7242/ingest/243f7b7c-da6b-4b58-8979-66412ca43ade',{metho
             this.unsubscribe_from_store = null;
         }
         document.removeEventListener('keydown', this.handle_audit_keydown);
+        document.removeEventListener('gv-audit-locks-refresh', this._on_gv_audit_locks_refresh);
         this.checklist_handler_instance?.flush_observations_before_destroy?.();
         if (this.autosave_session) {
             this.autosave_session.flush({ should_trim: true, skip_render: true });

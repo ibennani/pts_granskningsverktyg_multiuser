@@ -863,8 +863,8 @@ export const ChecklistHandler = {
                         const aid = c?.audit_id;
                         if (!aid) return;
                         if (this.is_audit_locked) return;
-                        observation_textarea.readOnly = true;
                         observation_textarea.dataset.gvLockPending = '1';
+                        this.update_dom();
                         try {
                             const r = await try_acquire_audit_part_lock({ audit_id: aid, part_key });
                             await init_audit_lock_service(String(aid));
@@ -1146,18 +1146,16 @@ export const ChecklistHandler = {
                     : null;
                 const lock_row_pc = part_key_pc ? get_current_audit_remote_lock(part_key_pc) : null;
                 const my_client_lock_id_pc = part_key_pc ? ensure_client_lock_id_for_part(part_key_pc) : null;
-// #region agent log
-if(typeof fetch!=='undefined')fetch('http://127.0.0.1:7242/ingest/243f7b7c-da6b-4b58-8979-66412ca43ade',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a9c702'},body:JSON.stringify({sessionId:'a9c702',location:'ChecklistHandler.js:ui_compare',message:'comparing pc locks',data:{part_key_pc, lock_row_pc, my_client_lock_id_pc},timestamp:Date.now(),hypothesisId:'6'})}).catch(()=>{});
-// #endregion
                 const locked_by_other_pc = is_remote_lock_held_by_other_user(lock_row_pc, get_current_user_name(), my_client_lock_id_pc);
 
                 if (observation_textarea) {
                     observation_textarea.disabled = locked_by_other_pc && !this.is_audit_locked;
                     const lock_pending = observation_textarea.dataset.gvLockPending === '1';
+                    const acquiring_focus_here = lock_pending && document.activeElement === observation_textarea;
                     if (observation_textarea.disabled) {
                         observation_textarea.readOnly = false;
                     } else {
-                        observation_textarea.readOnly = this.is_audit_locked || lock_pending;
+                        observation_textarea.readOnly = this.is_audit_locked || (lock_pending && !acquiring_focus_here);
                     }
                 }
                 const lock_hint_el = observation_wrapper?.querySelector('.gv-audit-part-lock-hint');

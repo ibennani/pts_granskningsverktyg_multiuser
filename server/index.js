@@ -39,7 +39,7 @@ app.use((req, res, next) => {
         `script-src 'self' 'nonce-${nonce}'; ` +
         `style-src 'self' 'unsafe-inline'; ` +
         `img-src 'self' data:; ` +
-        `connect-src 'self' ws: wss: http://127.0.0.1:7242/; ` +
+        `connect-src 'self' ws: wss:; ` +
         `font-src 'self' data:; ` +
         `object-src 'none'; ` +
         `base-uri 'self'; ` +
