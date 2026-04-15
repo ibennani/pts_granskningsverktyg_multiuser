@@ -7,6 +7,7 @@ import {
     release_rule_lock,
     get_rule_locks
 } from '../api/client.js';
+import { generate_uuid_v4 } from '../utils/helpers.js';
 
 const DEFAULT_TTL_SECONDS = 30;
 const HEARTBEAT_EVERY_MS = 15000;
@@ -16,15 +17,27 @@ let heartbeat_timer = null;
 let active_locks_by_part = new Map(); // part_key -> { client_lock_id, lease_until }
 let known_remote_locks_by_part = new Map(); // part_key -> lock row
 
-function ensure_client_lock_id_for_part(part_key) {
-    const key = `gv_rule_lock_id\0${String(part_key)}`;
+export function ensure_client_lock_id_for_part(part_key) {
+    // window.name bevaras vid sidomladdning, men är tomt när en flik dupliceras.
+    if (typeof window !== 'undefined') {
+        if (!window.name || !window.name.startsWith('gv_tab_')) {
+            window.name = `gv_tab_${(typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(16).slice(2)}`;
+        }
+    }
+    const tab_id = typeof window !== 'undefined' ? window.name : 'fallback';
+    const key = `gv_rule_lock_id\0${String(part_key)}\0${tab_id}`;
+
     const existing = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(key) : null;
-    if (existing) return existing;
-    const id = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `lock-${Math.random().toString(16).slice(2)}-${Date.now()}`;
+    if (existing) {
+        // Om ett gammalt ogiltigt lock-id ligger kvar (innan vi tvingade UUID v4), kasta det
+        if (!existing.startsWith('lock-')) return existing;
+    }
+
+    const id = generate_uuid_v4();
     try {
         sessionStorage.setItem(key, id);
     } catch (_) {
-        // ignoreras medvetet
+        // ignoreras
     }
     return id;
 }

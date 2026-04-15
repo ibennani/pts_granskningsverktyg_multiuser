@@ -166,7 +166,7 @@ router.post('/:id/locks', async (req, res) => {
                     lease_until = EXCLUDED.lease_until,
                     updated_at = CURRENT_TIMESTAMP
               WHERE rule_edit_locks.lease_until < CURRENT_TIMESTAMP
-                 OR (rule_edit_locks.user_id = EXCLUDED.user_id AND rule_edit_locks.client_lock_id = EXCLUDED.client_lock_id)
+                 OR (rule_edit_locks.user_id = EXCLUDED.user_id)
              RETURNING rule_set_id, part_key, user_id, user_name, client_lock_id, lease_until, updated_at`,
             [id, part_key, user.id, user.name, client_lock_id, String(ttl_seconds)]
         );

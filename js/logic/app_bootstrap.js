@@ -135,8 +135,25 @@ export async function init_app(deps) {
         if (!visibility_was_hidden) return;
         visibility_was_hidden = false;
         const state = deps.getState();
-        if (!state?.auditId || state.auditStatus === 'rulefile_editing') return;
+        if (!state?.auditId) return;
         if (!get_auth_token()) return;
+
+        if (state.auditStatus === 'rulefile_editing') {
+            if (state.ruleSetId) {
+                (async () => {
+                    try {
+                        const { init_rulefile_lock_service } = await import('./rulefile_lock_service.js');
+                        const rsid = String(state.ruleSetId);
+                        await init_rulefile_lock_service(rsid);
+                        window.dispatchEvent(new CustomEvent('gv-refresh-rulefile-locks', { detail: { ruleSetId: rsid } }));
+                    } catch (_) {
+                        /* ignoreras */
+                    }
+                })();
+            }
+            return;
+        }
+
         (async () => {
             try {
                 const { load_audit_with_rule_file } = await import('../api/client.js');

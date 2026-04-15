@@ -123,7 +123,9 @@ function execute_single_dispatch(action, dispatch_fn) {
                 try {
                     const skip_sync_after_internal_metadata =
                         action.type === ActionTypes.UPDATE_METADATA && action.payload?.skip_server_sync === true;
+                    const skip_sync_same_user_tab_broadcast = action.payload?.same_user_tab_broadcast === true;
                     if (!skip_sync_after_internal_metadata &&
+                        !skip_sync_same_user_tab_broadcast &&
                         action.type !== ActionTypes.CLEAR_STAGED_SAMPLE_CHANGES &&
                         action.type !== ActionTypes.REPLACE_STATE_FROM_REMOTE &&
                         action.type !== ActionTypes.REPLACE_RULEFILE_FROM_REMOTE &&
@@ -145,7 +147,8 @@ function execute_single_dispatch(action, dispatch_fn) {
                 }
                 try {
                     notify_listeners({
-                        skip_render: action?.payload?.skip_render === true,
+                        skip_render: action?.payload?.skip_render === true && !action?.payload?.same_user_tab_broadcast,
+                        force_same_user_tab_render: action?.payload?.same_user_tab_broadcast === true,
                         action_type: action.type,
                         requirement_result_update:
                             action.type === ActionTypes.UPDATE_REQUIREMENT_RESULT

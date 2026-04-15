@@ -1,6 +1,7 @@
 // js/components/requirement_audit/ChecklistHandler.js
 
 import { get_current_user_name } from '../../utils/helpers.js';
+import { post_same_user_field_commit } from '../../logic/same_user_tab_field_sync.js';
 import { marked } from '../../utils/markdown.js';
 import { consoleManager } from '../../utils/console_manager.js';
 import { app_runtime_refs } from '../../utils/app_runtime_refs.js';
@@ -8,9 +9,11 @@ import {
     init_audit_lock_service,
     try_acquire_audit_part_lock,
     release_audit_part_lock,
-    get_current_audit_remote_lock
+    get_current_audit_remote_lock,
+    ensure_client_lock_id_for_part
 } from '../../logic/audit_lock_service.js';
 import { make_observation_detail_part_key } from '../../logic/audit_part_keys.js';
+import { is_remote_lock_held_by_other_user } from '../../logic/collab_lock_compare.js';
 import { api_patch } from '../../api/client.js';
 
 export const ChecklistHandler = {
@@ -196,6 +199,7 @@ export const ChecklistHandler = {
         this.on_observation_change_callback = _callbacks.onObservationChange;
         this.on_observation_change_immediate_callback = _callbacks.onObservationChangeImmediate || null;
         this.on_observation_blur_commit_callback = _callbacks.onObservationBlurCommit || null;
+        this.on_before_release_pc_observation_lock_callback = _callbacks.onBeforeReleaseObservationLock || null;
         this.on_stuck_description_saved_callback = _callbacks.onStuckDescriptionSaved || null;
         this._observation_focus_snapshots = new Map();
         this.is_dom_built = false;
@@ -838,40 +842,80 @@ export const ChecklistHandler = {
                 const part_key = (audit_id && sample_id && requirement_id)
                     ? make_observation_detail_part_key(String(audit_id), String(sample_id), String(requirement_id), String(check_id), String(pc_id))
                     : null;
-                const lock_row = part_key ? get_current_audit_remote_lock(part_key) : null;
-                const locked_by_other = !!(lock_row && lock_row.user_name && lock_row.user_name !== get_current_user_name());
+                const lock_hint_id = `pc-obs-lock-hint-${check_id}-${pc_id}`;
+                const lock_hint_el = this.Helpers.create_element('p', {
+                    class_name: 'gv-audit-part-lock-hint text-muted',
+                    attributes: { id: lock_hint_id, hidden: 'hidden' },
+                    text_content: ''
+                });
+                observation_wrapper.appendChild(lock_hint_el);
 
-                if (locked_by_other) {
-                    observation_wrapper.appendChild(this.Helpers.create_element('div', {
-                        class_name: 'info-block-locked-message',
-                        text_content: `${lock_row.user_name} redigerar detta fält just nu.`
-                    }));
-                } else {
-                    const observation_textarea = this.Helpers.create_element('textarea', {
-                        id: `pc-observation-${check_id}-${pc_id}`,
-                        class_name: 'form-control pc-observation-detail-textarea',
-                        attributes: { rows: '4' }
-                    });
-                    if (part_key) {
-                        observation_textarea.addEventListener('focus', async () => {
-                            const c = this.get_audit_lock_context ? this.get_audit_lock_context() : null;
-                            const aid = c?.audit_id;
-                            if (!aid) return;
+                const observation_textarea = this.Helpers.create_element('textarea', {
+                    id: `pc-observation-${check_id}-${pc_id}`,
+                    class_name: 'form-control pc-observation-detail-textarea',
+                    attributes: { rows: '4' }
+                });
+                if (part_key) {
+                    observation_textarea.dataset.gvAuditPartKey = part_key;
+                    observation_textarea.setAttribute('aria-describedby', lock_hint_id);
+                    observation_textarea.addEventListener('focus', async () => {
+                        const c = this.get_audit_lock_context ? this.get_audit_lock_context() : null;
+                        const aid = c?.audit_id;
+                        if (!aid) return;
+                        if (this.is_audit_locked) return;
+                        observation_textarea.readOnly = true;
+                        observation_textarea.dataset.gvLockPending = '1';
+                        try {
                             const r = await try_acquire_audit_part_lock({ audit_id: aid, part_key });
-                            if (!r?.ok) {
-                                try { observation_textarea.blur(); } catch (_) { /* ignore */ }
+                            await init_audit_lock_service(String(aid));
+                            if (r?.ok) {
+                                if (document.activeElement !== observation_textarea) {
+                                    await release_audit_part_lock({ audit_id: aid, part_key });
+                                    await init_audit_lock_service(String(aid));
+                                    delete observation_textarea.dataset.gvLockPending;
+                                    this.update_dom();
+                                    return;
+                                }
+                                delete observation_textarea.dataset.gvLockPending;
+                                observation_textarea.dataset.gvLockAcquired = '1';
+                                this.update_dom();
+                            } else {
+                                delete observation_textarea.dataset.gvLockPending;
                                 this.update_dom();
                             }
-                        });
-                        observation_textarea.addEventListener('blur', () => {
+                        } finally {
+                            delete observation_textarea.dataset.gvLockPending;
+                        }
+                    });
+                    observation_textarea.addEventListener('blur', () => {
+                        void (async () => {
+                            const had_lock = observation_textarea.dataset.gvLockAcquired === '1';
+                            delete observation_textarea.dataset.gvLockAcquired;
+                            if (typeof this.on_before_release_pc_observation_lock_callback === 'function') {
+                                try {
+                                    this.on_before_release_pc_observation_lock_callback();
+                                } catch (_) {
+                                    /* ignoreras */
+                                }
+                            }
                             const c = this.get_audit_lock_context ? this.get_audit_lock_context() : null;
                             const aid = c?.audit_id;
                             if (!aid) return;
-                            void release_audit_part_lock({ audit_id: aid, part_key });
-                        });
-                    }
-                    observation_wrapper.appendChild(observation_textarea);
+                            const v = observation_textarea.value ?? '';
+                            if (had_lock) {
+                                await release_audit_part_lock({ audit_id: aid, part_key });
+                                post_same_user_field_commit({
+                                    userName: get_current_user_name(),
+                                    auditId: aid,
+                                    partKey: part_key,
+                                    value: v
+                                });
+                            }
+                            this.update_dom();
+                        })();
+                    });
                 }
+                observation_wrapper.appendChild(observation_textarea);
 
                 const attach_media_row = this.Helpers.create_element('div', { class_name: 'pc-attach-media-row' });
                 const copy_observation_row = this.Helpers.create_element('div', { class_name: 'pc-copy-observation-row', attributes: { hidden: 'hidden' } });
@@ -1091,20 +1135,48 @@ export const ChecklistHandler = {
                 }
 
                 const observation_wrapper = pc_item_li.querySelector('.pc-observation-detail-wrapper');
-                const observation_textarea = observation_wrapper ? observation_wrapper.querySelector('textarea') : null;
+                const observation_textarea = observation_wrapper ? observation_wrapper.querySelector('textarea.pc-observation-detail-textarea') : null;
 
                 if (observation_wrapper) {
                     observation_wrapper.hidden = (current_pc_status !== 'failed');
                 }
 
+                const part_key_pc = observation_textarea?.dataset?.gvAuditPartKey
+                    ? String(observation_textarea.dataset.gvAuditPartKey)
+                    : null;
+                const lock_row_pc = part_key_pc ? get_current_audit_remote_lock(part_key_pc) : null;
+                const my_client_lock_id_pc = part_key_pc ? ensure_client_lock_id_for_part(part_key_pc) : null;
+// #region agent log
+if(typeof fetch!=='undefined')fetch('http://127.0.0.1:7242/ingest/243f7b7c-da6b-4b58-8979-66412ca43ade',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a9c702'},body:JSON.stringify({sessionId:'a9c702',location:'ChecklistHandler.js:ui_compare',message:'comparing pc locks',data:{part_key_pc, lock_row_pc, my_client_lock_id_pc},timestamp:Date.now(),hypothesisId:'6'})}).catch(()=>{});
+// #endregion
+                const locked_by_other_pc = is_remote_lock_held_by_other_user(lock_row_pc, get_current_user_name(), my_client_lock_id_pc);
+
                 if (observation_textarea) {
-                    observation_textarea.readOnly = this.is_audit_locked;
+                    observation_textarea.disabled = locked_by_other_pc && !this.is_audit_locked;
+                    const lock_pending = observation_textarea.dataset.gvLockPending === '1';
+                    if (observation_textarea.disabled) {
+                        observation_textarea.readOnly = false;
+                    } else {
+                        observation_textarea.readOnly = this.is_audit_locked || lock_pending;
+                    }
+                }
+                const lock_hint_el = observation_wrapper?.querySelector('.gv-audit-part-lock-hint');
+                if (lock_hint_el) {
+                    if (locked_by_other_pc && lock_row_pc?.user_name) {
+                        lock_hint_el.textContent = `${lock_row_pc.user_name} redigerar detta fält just nu.`;
+                        lock_hint_el.hidden = false;
+                    } else {
+                        lock_hint_el.textContent = '';
+                        lock_hint_el.hidden = true;
+                    }
                 }
                 const target_observation_value = pc_data.observationDetail || '';
                 const any_textarea_focused = document.activeElement && this.container_ref?.contains(document.activeElement) &&
                     (document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'INPUT');
                 if (observation_textarea) {
-                    if (!any_textarea_focused && observation_textarea.value !== target_observation_value) {
+                    const is_this_focused = document.activeElement === observation_textarea;
+                    const should_sync_obs = (!is_this_focused && !any_textarea_focused) || locked_by_other_pc;
+                    if (should_sync_obs && observation_textarea.value !== target_observation_value) {
                         observation_textarea.value = target_observation_value;
                     }
                     if (this.Helpers?.init_auto_resize_for_textarea) {

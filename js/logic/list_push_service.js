@@ -102,6 +102,9 @@ function _start_fallback_polling() {
         }
         _fire_audits_changed();
         _fire_rules_changed();
+        /** Tom payload = alla prenumeranter hämtar om lås (samma som vid WS-avbrott utan locks-event). */
+        _fire_audit_locks_changed({});
+        _fire_rule_locks_changed({});
     }, FALLBACK_POLL_INTERVAL_MS);
 }
 

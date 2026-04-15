@@ -106,6 +106,14 @@
     padding: 16px;
 }
 
+[data-theme="alternative"] .app-layout.app-layout--narrow .app-main-shell-nav,
+[data-theme="alternative"] .app-layout.app-layout--medium .app-main-shell-nav {
+    background-color: var(--bg-panel);
+    border: 1px solid var(--border-alt);
+    border-radius: 8px;
+    padding: 16px;
+}
+
 [data-theme="alternative"] #app-main-view-root {
     background-color: var(--bg-page);
 }

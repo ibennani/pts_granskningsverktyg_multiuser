@@ -8,11 +8,16 @@ import {
     init_rulefile_lock_service,
     try_acquire_rulefile_part_lock,
     release_rulefile_part_lock,
-    get_current_rulefile_remote_lock
+    get_current_rulefile_remote_lock,
+    ensure_client_lock_id_for_part
 } from '../../logic/rulefile_lock_service.js';
 import { make_infoblock_text_part_key } from '../../logic/rulefile_part_keys.js';
+import { post_same_user_field_commit } from '../../logic/same_user_tab_field_sync.js';
+import { is_remote_lock_held_by_other_user } from '../../logic/collab_lock_compare.js';
 import './requirement_audit_component.css';
 import './edit_rulefile_requirement_component.css';
+
+const RULEFILE_LOCK_POLL_MS = 4000;
 
 export class EditRulefileRequirementComponent {
     constructor() {
@@ -35,6 +40,8 @@ export class EditRulefileRequirementComponent {
         this.autosave_session = null;
         this.skip_autosave_on_destroy = false;
         this._unsubscribe_rule_locks = null;
+        this._rulefile_lock_poll_timer = null;
+        this._rulefile_lock_visibility_handler = null;
     }
 
     async init({ root, deps }) {
@@ -56,6 +63,16 @@ export class EditRulefileRequirementComponent {
         this.autosave_session = null;
         this.skip_autosave_on_destroy = false;
         this._unsubscribe_rule_locks = null;
+        this._rulefile_lock_poll_timer = null;
+        this._rulefile_lock_visibility_handler = null;
+        this._on_rulefile_locks_visibility_refresh = (ev) => {
+            const rsid = String(this.getState()?.ruleSetId || '');
+            if (!rsid || String(ev?.detail?.ruleSetId) !== rsid) return;
+            void init_rulefile_lock_service(rsid).then(() => {
+                if (this.form_element_ref) this._rerender_all_sections();
+            });
+        };
+        window.addEventListener('gv-refresh-rulefile-locks', this._on_rulefile_locks_visibility_refresh);
 
         // Bind methods
         this.handle_form_submit = this.handle_form_submit.bind(this);
@@ -957,42 +974,94 @@ export class EditRulefileRequirementComponent {
                 const part_key = this.params?.id && this.params.id !== 'new'
                     ? make_infoblock_text_part_key(String(this.params.id), block_id)
                     : null;
-                const remote_lock = part_key ? get_current_rulefile_remote_lock(part_key) : null;
-                const locked_by_other = !!(remote_lock && remote_lock.user_name && remote_lock.user_name !== get_current_user_name());
 
-                let text_group;
-                if (locked_by_other) {
-                    text_group = this.Helpers.create_element('div', { class_name: 'form-group' });
-                    const label_text = this.Translation.t(this._get_translation_key_for_block(block_id) || 'info_block_text');
-                    text_group.appendChild(this.Helpers.create_element('div', { text_content: label_text ? String(label_text) : '' }));
-                    text_group.appendChild(this.Helpers.create_element('div', {
-                        class_name: 'info-block-locked-message',
-                        text_content: `${remote_lock.user_name} redigerar detta fält just nu.`
-                    }));
-                } else {
-                    text_group = this._create_form_group(
-                        this._get_translation_key_for_block(block_id) || 'info_block_text',
-                        `infoBlock_${block_id}_text`,
-                        block.text || '',
-                        true
-                    );
-                    const textarea = text_group.querySelector('textarea');
-                    if (textarea && part_key) {
+                const text_group = this._create_form_group(
+                    this._get_translation_key_for_block(block_id) || 'info_block_text',
+                    `infoBlock_${block_id}_text`,
+                    block.text || '',
+                    true
+                );
+                const textarea = text_group.querySelector('textarea');
+                const lock_hint_id = `infoBlock_${block_id}_text_lock_hint`;
+                const lock_hint_el = this.Helpers.create_element('p', {
+                    class_name: 'gv-rule-part-lock-hint text-muted',
+                    attributes: { id: lock_hint_id, hidden: 'hidden' },
+                    text_content: ''
+                });
+                const label_el = text_group.querySelector('label');
+                if (label_el) {
+                    label_el.insertAdjacentElement('afterend', lock_hint_el);
+                } else if (textarea) {
+                    text_group.insertBefore(lock_hint_el, textarea);
+                }
+                if (textarea) {
+                    textarea.setAttribute('aria-describedby', lock_hint_id);
+                    if (part_key) {
+                        textarea.dataset.gvRulePartKey = part_key;
+                    }
+                    const remote_lock = part_key ? get_current_rulefile_remote_lock(part_key) : null;
+                    const my_client_lock_id = part_key ? ensure_client_lock_id_for_part(part_key) : null;
+                    const locked_by_other = is_remote_lock_held_by_other_user(remote_lock, get_current_user_name(), my_client_lock_id);
+                    textarea.disabled = locked_by_other;
+                    if (locked_by_other && remote_lock?.user_name) {
+                        lock_hint_el.textContent = `${remote_lock.user_name} redigerar detta fält just nu.`;
+                        lock_hint_el.hidden = false;
+                    }
+                    if (part_key) {
                         textarea.addEventListener('focus', async () => {
                             const state = this.getState();
                             const rsid = state?.ruleSetId;
                             if (!rsid) return;
-                            const r = await try_acquire_rulefile_part_lock({ rule_set_id: rsid, part_key });
-                            if (!r?.ok) {
-                                try { textarea.blur(); } catch (_) { /* ignore */ }
-                                this._rerender_all_sections();
+                            textarea.readOnly = true;
+                            textarea.dataset.gvLockPending = '1';
+                            try {
+                                const r = await try_acquire_rulefile_part_lock({ rule_set_id: rsid, part_key });
+                                await init_rulefile_lock_service(String(rsid));
+                                if (r?.ok) {
+                                    if (document.activeElement !== textarea) {
+                                        await release_rulefile_part_lock({ rule_set_id: rsid, part_key });
+                                        await init_rulefile_lock_service(String(rsid));
+                                        delete textarea.dataset.gvLockPending;
+                                        this._rerender_all_sections();
+                                        return;
+                                    }
+                                    delete textarea.dataset.gvLockPending;
+                                    textarea.dataset.gvLockAcquired = '1';
+                                    textarea.disabled = false;
+                                    textarea.readOnly = false;
+                                    if (lock_hint_el) {
+                                        lock_hint_el.textContent = '';
+                                        lock_hint_el.hidden = true;
+                                    }
+                                } else {
+                                    delete textarea.dataset.gvLockPending;
+                                    this._rerender_all_sections();
+                                }
+                            } finally {
+                                delete textarea.dataset.gvLockPending;
                             }
                         });
                         textarea.addEventListener('blur', () => {
-                            const state = this.getState();
-                            const rsid = state?.ruleSetId;
-                            if (!rsid) return;
-                            void release_rulefile_part_lock({ rule_set_id: rsid, part_key });
+                            void (async () => {
+                                const had_lock = textarea.dataset.gvLockAcquired === '1';
+                                delete textarea.dataset.gvLockAcquired;
+                                this.autosave_session?.flush?.({ should_trim: false, skip_render: true });
+                                const state = this.getState();
+                                const rsid = state?.ruleSetId;
+                                if (!rsid) return;
+                                const v = textarea.value ?? '';
+                                if (had_lock) {
+                                    await release_rulefile_part_lock({ rule_set_id: rsid, part_key });
+                                    post_same_user_field_commit({
+                                        userName: get_current_user_name(),
+                                        ruleSetId: rsid,
+                                        partKey: part_key,
+                                        value: v
+                                    });
+                                }
+                                await init_rulefile_lock_service(String(rsid));
+                                this._rerender_all_sections();
+                            })();
                         });
                     }
                 }
@@ -1528,17 +1597,23 @@ export class EditRulefileRequirementComponent {
         const is_new_requirement = requirement_id === 'new';
         const requirement_key = !is_new_requirement ? String(requirement_id || '') : null;
 
+        this._stop_rulefile_lock_poll();
         if (current_state?.ruleSetId) {
             void init_rulefile_lock_service(String(current_state.ruleSetId));
+            this._start_rulefile_lock_poll(current_state.ruleSetId);
             if (!this._unsubscribe_rule_locks) {
                 this._unsubscribe_rule_locks = subscribe_rule_locks((payload) => {
-                    const rid = String(current_state?.ruleSetId || '');
-                    if (!payload?.ruleSetId || String(payload.ruleSetId) !== rid) return;
-                    try {
-                        this._rerender_all_sections();
-                    } catch (_) {
-                        // ignoreras
-                    }
+                    void (async () => {
+                        try {
+                            const rid = String(this.getState()?.ruleSetId || '');
+                            if (!rid) return;
+                            if (payload?.ruleSetId != null && String(payload.ruleSetId) !== rid) return;
+                            await init_rulefile_lock_service(rid);
+                            this._rerender_all_sections();
+                        } catch (_) {
+                            /* ignoreras */
+                        }
+                    })();
                 });
             }
         }
@@ -1697,7 +1772,43 @@ export class EditRulefileRequirementComponent {
         });
     }
 
+    _stop_rulefile_lock_poll() {
+        if (this._rulefile_lock_poll_timer) {
+            clearInterval(this._rulefile_lock_poll_timer);
+            this._rulefile_lock_poll_timer = null;
+        }
+        if (typeof this._rulefile_lock_visibility_handler === 'function' && typeof document !== 'undefined') {
+            document.removeEventListener('visibilitychange', this._rulefile_lock_visibility_handler);
+            this._rulefile_lock_visibility_handler = null;
+        }
+    }
+
+    _start_rulefile_lock_poll(rule_set_id) {
+        this._stop_rulefile_lock_poll();
+        const rsid = String(rule_set_id);
+        const tick = () => {
+            if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+            if (String(this.getState()?.ruleSetId || '') !== rsid) return;
+            void (async () => {
+                try {
+                    await init_rulefile_lock_service(rsid);
+                    if (this.form_element_ref) this._rerender_all_sections();
+                } catch (_) {
+                    /* ignoreras */
+                }
+            })();
+        };
+        this._rulefile_lock_visibility_handler = () => {
+            if (typeof document !== 'undefined' && document.visibilityState === 'visible') tick();
+        };
+        if (typeof document !== 'undefined') {
+            document.addEventListener('visibilitychange', this._rulefile_lock_visibility_handler);
+        }
+        this._rulefile_lock_poll_timer = setInterval(tick, RULEFILE_LOCK_POLL_MS);
+    }
+
     destroy() {
+        this._stop_rulefile_lock_poll();
         if (!this.skip_autosave_on_destroy && this.form_element_ref && this.local_requirement_data && this.params?.id !== 'new') {
             this.autosave_session?.flush({ should_trim: true, skip_render: true });
         }
@@ -1707,6 +1818,11 @@ export class EditRulefileRequirementComponent {
             // ignoreras
         }
         this._unsubscribe_rule_locks = null;
+        try {
+            window.removeEventListener('gv-refresh-rulefile-locks', this._on_rulefile_locks_visibility_refresh);
+        } catch (_) {
+            // ignoreras
+        }
         this.autosave_session?.destroy();
         this.autosave_session = null;
 

@@ -2,6 +2,7 @@
 // Enkel klientservice för fältlås (lease) i granskningar.
 
 import { api_get, api_post, api_delete } from '../api/client.js';
+import { generate_uuid_v4 } from '../utils/helpers.js';
 
 const DEFAULT_TTL_SECONDS = 30;
 const HEARTBEAT_EVERY_MS = 15000;
@@ -11,15 +12,29 @@ let heartbeat_timer = null;
 let active_locks_by_part = new Map(); // part_key -> { client_lock_id, lease_until }
 let known_remote_locks_by_part = new Map(); // part_key -> lock row
 
-function ensure_client_lock_id_for_part(part_key) {
-    const key = `gv_audit_lock_id\0${String(part_key)}`;
+export function ensure_client_lock_id_for_part(part_key) {
+    // window.name bevaras vid sidomladdning, men är tomt när en flik dupliceras.
+    // Detta låter oss behålla lås vid F5 men tvinga en duplicerad flik (som delar sessionStorage)
+    // att ta egna unika lås-id, annars hade båda flikarna trott att de ägde samma lås.
+    if (typeof window !== 'undefined') {
+        if (!window.name || !window.name.startsWith('gv_tab_')) {
+            window.name = `gv_tab_${(typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(16).slice(2)}`;
+        }
+    }
+    const tab_id = typeof window !== 'undefined' ? window.name : 'fallback';
+    const key = `gv_audit_lock_id\0${String(part_key)}\0${tab_id}`;
+
     const existing = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(key) : null;
-    if (existing) return existing;
-    const id = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `lock-${Math.random().toString(16).slice(2)}-${Date.now()}`;
+    if (existing) {
+        // Om ett gammalt ogiltigt lock-id ligger kvar (innan vi tvingade UUID v4), kasta det
+        if (!existing.startsWith('lock-')) return existing;
+    }
+
+    const id = generate_uuid_v4();
     try {
         sessionStorage.setItem(key, id);
     } catch (_) {
-        // ignoreras medvetet
+        // ignoreras
     }
     return id;
 }
@@ -28,6 +43,9 @@ async function refresh_remote_locks(audit_id) {
     try {
         const data = await api_get(`/audits/${encodeURIComponent(audit_id)}/locks`);
         const locks = Array.isArray(data?.locks) ? data.locks : [];
+// #region agent log
+fetch('http://127.0.0.1:7242/ingest/243f7b7c-da6b-4b58-8979-66412ca43ade',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a9c702'},body:JSON.stringify({sessionId:'a9c702',location:'audit_lock_service.js:refresh_remote_locks',message:'Locks retrieved',data:{locks},timestamp:Date.now(),hypothesisId:'2'})}).catch(()=>{});
+// #endregion
         const next = new Map();
         locks.forEach((l) => {
             if (!l?.part_key) return;
@@ -84,12 +102,18 @@ export async function try_acquire_audit_part_lock({ audit_id, part_key }) {
     if (!aid) throw new Error('audit_id saknas');
     const pk = String(part_key || '');
     const client_lock_id = ensure_client_lock_id_for_part(pk);
+// #region agent log
+fetch('http://127.0.0.1:7242/ingest/243f7b7c-da6b-4b58-8979-66412ca43ade',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a9c702'},body:JSON.stringify({sessionId:'a9c702',location:'audit_lock_service.js:try_acquire_audit_part_lock',message:'Attempt acquire',data:{aid, pk, client_lock_id},timestamp:Date.now(),hypothesisId:'1'})}).catch(()=>{});
+// #endregion
     try {
         const r = await api_post(`/audits/${encodeURIComponent(aid)}/locks`, {
             part_key: pk,
             client_lock_id,
             ttl_seconds: DEFAULT_TTL_SECONDS
         });
+// #region agent log
+fetch('http://127.0.0.1:7242/ingest/243f7b7c-da6b-4b58-8979-66412ca43ade',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'a9c702'},body:JSON.stringify({sessionId:'a9c702',location:'audit_lock_service.js:try_acquire_audit_part_lock',message:'Acquire success',data:{r},timestamp:Date.now(),hypothesisId:'1'})}).catch(()=>{});
+// #endregion
         const lock = r?.lock;
         active_locks_by_part.set(pk, { client_lock_id, lease_until: lock?.lease_until || null });
         await refresh_remote_locks(aid);

@@ -12,6 +12,8 @@ import {
 } from '../utils/vite_dev_client_timestamp.js';
 import { consoleManager } from '../utils/console_manager.js';
 import { memoryManager } from '../utils/memory_manager.js';
+import { get_current_user_name } from '../utils/helpers.js';
+import { init_same_user_tab_field_sync_listener } from './same_user_tab_field_sync.js';
 
 export function set_initial_theme() {
     const saved_theme = localStorage.getItem('theme_preference');
@@ -177,6 +179,12 @@ export async function start_normal_session(deps) {
     init_version_check_service();
     const rulefile_view_poll_instance = init_rulefile_view_poll_service({ getState, dispatch, StoreActionTypes });
     const audit_view_poll_instance = init_audit_view_poll_service({ getState, dispatch, StoreActionTypes });
+    const same_user_tab_field_sync_disconnect = init_same_user_tab_field_sync_listener({
+        getState,
+        dispatch,
+        StoreActionTypes,
+        get_current_user_name
+    });
     const language_changed_handler = on_language_changed_event;
     const hash_change_handler = handle_hash_change;
     const hash_change_wrapper = (...args) => {
@@ -221,6 +229,13 @@ export async function start_normal_session(deps) {
     }
 
     window.cleanupGlobalEventListeners = () => {
+        if (typeof same_user_tab_field_sync_disconnect === 'function') {
+            try {
+                same_user_tab_field_sync_disconnect();
+            } catch {
+                /* ignoreras */
+            }
+        }
         if (rulefile_view_poll_instance?.disconnect) rulefile_view_poll_instance.disconnect();
         memoryManager.removeEventListener(document, 'languageChanged', language_changed_handler);
         memoryManager.removeEventListener(window, 'hashchange', hash_change_wrapper);
@@ -294,6 +309,14 @@ export async function start_normal_session(deps) {
         const current_view_component_instance = get_current_view_component();
         if (get_current_view_name_rendered() === canonical_view_from_hash &&
             current_view_component_instance && typeof current_view_component_instance.render === 'function') {
+            if (listener_meta?.force_same_user_tab_render) {
+                try {
+                    current_view_component_instance.render();
+                } catch (error) {
+                    consoleManager.error('[Main.js] Error in subscription same-user tab sync render:', error);
+                }
+                return;
+            }
             if (get_current_view_name_rendered() !== 'confirm_sample_edit') {
                 if ((get_current_view_name_rendered() === 'audit' || get_current_view_name_rendered() === 'audit_audits' || get_current_view_name_rendered() === 'audit_rules') && current_view_component_instance._api_load_started && !current_view_component_instance._api_checked) {
                     return;

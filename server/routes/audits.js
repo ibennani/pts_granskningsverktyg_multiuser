@@ -287,6 +287,9 @@ router.get('/:id/locks', async (req, res) => {
              ORDER BY part_key ASC`,
             [id]
         );
+// #region agent log
+import('fs').then(fs => fs.appendFileSync('debug-a9c702.log', JSON.stringify({sessionId:'a9c702',location:'server/routes/audits.js:get_locks',message:'Fetching locks',data:{id, locks_count: result.rows.length, rows: result.rows},timestamp:Date.now(),hypothesisId:'5'}) + '\n')).catch(()=>{});
+// #endregion
         res.json({ auditId: id, now: now.toISOString(), locks: result.rows });
     } catch (err) {
         console.error('[audits] GET locks error:', err);
@@ -321,10 +324,13 @@ router.post('/:id/locks', async (req, res) => {
                     lease_until = EXCLUDED.lease_until,
                     updated_at = CURRENT_TIMESTAMP
               WHERE audit_edit_locks.lease_until < CURRENT_TIMESTAMP
-                 OR (audit_edit_locks.user_id = EXCLUDED.user_id AND audit_edit_locks.client_lock_id = EXCLUDED.client_lock_id)
+                 OR (audit_edit_locks.user_id = EXCLUDED.user_id)
              RETURNING audit_id, part_key, user_id, user_name, client_lock_id, lease_until, updated_at`,
             [id, part_key, user.id, user.name, client_lock_id, String(ttl_seconds)]
         );
+// #region agent log
+import('fs').then(fs => fs.appendFileSync('debug-a9c702.log', JSON.stringify({sessionId:'a9c702',location:'server/routes/audits.js:locks',message:'Acquiring lock',data:{id, part_key, user: user.name, client_lock_id, success: result.rows.length > 0},timestamp:Date.now(),hypothesisId:'5'}) + '\n')).catch(()=>{});
+// #endregion
         if (result.rows.length === 0) {
             const existing = await query(
                 `SELECT audit_id, part_key, user_id, user_name, client_lock_id, lease_until, updated_at

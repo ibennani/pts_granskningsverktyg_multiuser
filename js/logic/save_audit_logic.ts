@@ -4,6 +4,12 @@ import { generate_audit_filename, type GenerateAuditFilenameOptions } from '../u
 import { attach_export_integrity_to_audit_payload } from '../utils/export_integrity.js';
 import { consoleManager } from '../utils/console_manager.js';
 
+/** Endast för enhetstest — produktion anropar utan detta femte argument. */
+export type SaveAuditToJsonFileDepsOverride = {
+    generate_audit_filename?: typeof generate_audit_filename;
+    attach_export_integrity_to_audit_payload?: typeof attach_export_integrity_to_audit_payload;
+};
+
 async function try_get_server_filename_datetime(): Promise<string | null> {
     try {
         const r = await fetch('/api/time/filename-datetime', { credentials: 'include' });
@@ -16,11 +22,26 @@ async function try_get_server_filename_datetime(): Promise<string | null> {
     }
 }
 
+/** Startar nedladdning av JSON i webbläsaren (Blob + temporär länk). */
+function perform_client_json_download(filename: string, payload_for_file: unknown): void {
+    const data_str = JSON.stringify(payload_for_file, null, 2);
+    const blob = new Blob([data_str], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
 export async function save_audit_to_json_file(
     current_audit_data: any,
     t_func: (key: string, params?: Record<string, unknown>) => string,
     show_notification_func?: ((message: string, type?: string) => void) | null,
-    options?: GenerateAuditFilenameOptions
+    options?: GenerateAuditFilenameOptions,
+    deps_override?: SaveAuditToJsonFileDepsOverride | null
 ): Promise<void> {
     const w = window as any;
     if (!current_audit_data) {
@@ -34,29 +55,22 @@ export async function save_audit_to_json_file(
     if (server_dt) {
         filename_options.datetime_str_override = server_dt;
     }
-    const filename = generate_audit_filename(current_audit_data, t_func, filename_options);
+    const gen_fn = deps_override?.generate_audit_filename ?? generate_audit_filename;
+    const attach_fn = deps_override?.attach_export_integrity_to_audit_payload ?? attach_export_integrity_to_audit_payload;
+
+    const filename = gen_fn(current_audit_data, t_func, filename_options);
 
     let payload_for_file: unknown;
     try {
-        payload_for_file = await attach_export_integrity_to_audit_payload(current_audit_data);
+        payload_for_file = await attach_fn(current_audit_data);
     } catch (e) {
         if (show_notification_func) show_notification_func(t_func('error_internal'), 'error');
         if (w.ConsoleManager?.warn) w.ConsoleManager.warn('[SaveAuditLogic] exportIntegrity misslyckades:', e);
         return;
     }
-    const data_str = JSON.stringify(payload_for_file, null, 2);
-    const blob = new Blob([data_str], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
 
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    perform_client_json_download(filename, payload_for_file);
 
-    // Rensa aktivt utkast efter lyckad manuell sparning
     try {
         if (w.DraftManager?.commitCurrentDraft) {
             w.DraftManager.commitCurrentDraft();
@@ -70,4 +84,3 @@ export async function save_audit_to_json_file(
 }
 
 consoleManager.log('[save_audit_logic.ts] SaveAuditLogic loaded.');
-

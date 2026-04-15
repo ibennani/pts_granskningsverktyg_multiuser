@@ -4,6 +4,18 @@ import { WebSocketServer } from 'ws';
 let broadcast_fn = () => {};
 
 /**
+ * Accepterar uppgradering till /ws (direkt mot Node), /v2/ws (om proxy inte skriver om path),
+ * samt /ws?... med queryparametrar.
+ * @param {string|undefined} req_url
+ * @returns {boolean}
+ */
+function is_websocket_upgrade_path(req_url) {
+    if (!req_url || typeof req_url !== 'string') return false;
+    const path = req_url.split('?')[0];
+    return path === '/ws' || path === '/v2/ws';
+}
+
+/**
  * Initierar WebSocket-server kopplad till HTTP-servern.
  * @param {import('http').Server} http_server
  */
@@ -11,7 +23,7 @@ export function init_ws(http_server) {
     const wss = new WebSocketServer({ noServer: true });
 
     http_server.on('upgrade', (req, socket, head) => {
-        if (req.url === '/ws') {
+        if (is_websocket_upgrade_path(req.url)) {
             wss.handleUpgrade(req, socket, head, (ws) => {
                 wss.emit('connection', ws, req);
             });

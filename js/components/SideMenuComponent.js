@@ -1,9 +1,9 @@
-import './side_menu_component.css';
+import '../../css/components/side_menu_component.css';
 import { consoleManager } from '../utils/console_manager.js';
 import { build_compact_hash_fragment, expand_view_slug_from_hash, normalize_params_from_hash_query } from '../logic/router_url_codec.js';
 
 export class SideMenuComponent {
-    static CSS_PATH = './side_menu_component.css';
+    static CSS_PATH = '../../css/components/side_menu_component.css';
 
     async init({ root, deps }) {
         this.root = root;
@@ -25,15 +25,15 @@ export class SideMenuComponent {
         this.first_link_ref = null;
         this.last_menu_counts = null;
         this.last_menu_structure_key = null;
-
-        this.small_screen_media_query = window.matchMedia
-            ? window.matchMedia('(max-width: 768px)')
-            : null;
+        this.external_menu_button_id = 'app-mobile-menu-toggle';
 
         this.handle_toggle_menu = this.handle_toggle_menu.bind(this);
         this.handle_close_menu = this.handle_close_menu.bind(this);
-        this.handle_document_keydown = this.handle_document_keydown.bind(this);
-        this.handle_media_query_change = this.handle_media_query_change.bind(this);
+        this.handle_compact_escape_keydown = this.handle_compact_escape_keydown.bind(this);
+        this.handle_layout_compact_changed = this.handle_layout_compact_changed.bind(this);
+        this.handle_external_toggle_event = this.handle_external_toggle_event.bind(this);
+        this.handle_close_side_menu_event = this.handle_close_side_menu_event.bind(this);
+        this._compact_escape_listener_registered = false;
 
         if (this.Helpers?.load_css && SideMenuComponent.CSS_PATH) {
             await this.Helpers.load_css(SideMenuComponent.CSS_PATH).catch(() => {});
@@ -66,13 +66,12 @@ export class SideMenuComponent {
             });
         }
 
-        if (this.small_screen_media_query) {
-            try {
-                this.small_screen_media_query.addEventListener('change', this.handle_media_query_change);
-            } catch (e) {
-                // Safari < 14
-                this.small_screen_media_query.addListener(this.handle_media_query_change);
-            }
+        document.addEventListener('gv:layout_compact_changed', this.handle_layout_compact_changed);
+        document.addEventListener('gv:toggle_side_menu', this.handle_external_toggle_event);
+        document.addEventListener('gv:close_side_menu', this.handle_close_side_menu_event);
+
+        if (this.is_small_screen()) {
+            this.add_compact_escape_listener();
         }
     }
 
@@ -82,16 +81,58 @@ export class SideMenuComponent {
     }
 
     is_small_screen() {
-        if (!this.small_screen_media_query) return false;
-        return Boolean(this.small_screen_media_query.matches);
+        if (typeof document === 'undefined') return false;
+        return Boolean(document.getElementById('app-layout')?.classList.contains('app-layout--compact'));
     }
 
-    handle_media_query_change() {
-        if (!this.is_small_screen()) {
+    /**
+     * Uppdaterar bara kompakt menypanel (klass/inert) utan full render — krävs för att CSS-transition ska synas.
+     * @returns {boolean} true om DOM uppdaterades
+     */
+    sync_compact_menu_panel_from_state() {
+        if (!this.is_small_screen() || !this.root) return false;
+        const panel = this.root.querySelector('.side-menu__compact-panel');
+        const nav = this.nav_ref || this.root.querySelector('#side-menu-nav');
+        if (!panel || !nav || !document.contains(nav)) return false;
+        const inner = panel.querySelector('.side-menu__compact-panel-inner');
+        const collapsed = !this.is_menu_open;
+        panel.classList.toggle('side-menu__compact-panel--collapsed', collapsed);
+        if (inner) {
+            inner.inert = collapsed;
+        }
+        if (collapsed) {
+            nav.setAttribute('aria-hidden', 'true');
+        } else {
+            nav.removeAttribute('aria-hidden');
+        }
+        nav.classList.toggle('is-open', this.is_menu_open);
+
+        if (!this.menu_button_ref && typeof document !== 'undefined') {
+            this.menu_button_ref = document.getElementById(this.external_menu_button_id);
+        }
+        if (this.menu_button_ref) {
+            this.menu_button_ref.setAttribute('aria-expanded', this.is_menu_open ? 'true' : 'false');
+        }
+
+        return true;
+    }
+
+    handle_layout_compact_changed(event) {
+        const compact = Boolean(event?.detail?.compact);
+        if (!compact) {
             this.is_menu_open = false;
-            this.remove_escape_listener();
+            this.remove_compact_escape_listener();
+        } else {
+            this.add_compact_escape_listener();
         }
         this.render();
+    }
+
+    handle_close_side_menu_event() {
+        if (!this.is_small_screen()) return;
+        if (this.is_menu_open) {
+            this.handle_close_menu({ restore_focus: false });
+        }
     }
 
     handle_toggle_menu() {
@@ -101,29 +142,34 @@ export class SideMenuComponent {
         }
 
         this.is_menu_open = true;
-        this.add_escape_listener();
-        this.render();
+        const synced = this.sync_compact_menu_panel_from_state();
+        if (!synced) {
+            this.render();
+        }
+    }
 
-        // Fokus på första länken när menyn öppnas
-        requestAnimationFrame(() => {
-            if (this.first_link_ref && document.contains(this.first_link_ref)) {
-                try {
-                    this.first_link_ref.focus({ preventScroll: true });
-                } catch (e) {
-                    this.first_link_ref.focus();
-                }
-            }
-        });
+    handle_external_toggle_event() {
+        if (!this.is_small_screen()) return;
+        if (!this.is_menu_open) {
+            const layout = document.getElementById('app-layout');
+            layout?.classList.remove('app-layout--filter-open');
+        }
+        this.handle_toggle_menu();
     }
 
     handle_close_menu({ restore_focus = false } = {}) {
         if (!this.is_menu_open) return;
         this.is_menu_open = false;
-        this.remove_escape_listener();
-        this.render();
+        const synced = this.sync_compact_menu_panel_from_state();
+        if (!synced) {
+            this.render();
+        }
 
         if (restore_focus) {
             requestAnimationFrame(() => {
+                if (!this.menu_button_ref && typeof document !== 'undefined') {
+                    this.menu_button_ref = document.getElementById(this.external_menu_button_id);
+                }
                 if (this.menu_button_ref && document.contains(this.menu_button_ref)) {
                     try {
                         this.menu_button_ref.focus({ preventScroll: true });
@@ -135,21 +181,30 @@ export class SideMenuComponent {
         }
     }
 
-    add_escape_listener() {
-        document.addEventListener('keydown', this.handle_document_keydown);
+    add_compact_escape_listener() {
+        if (this._compact_escape_listener_registered) return;
+        this._compact_escape_listener_registered = true;
+        document.addEventListener('keydown', this.handle_compact_escape_keydown);
     }
 
-    remove_escape_listener() {
-        document.removeEventListener('keydown', this.handle_document_keydown);
+    remove_compact_escape_listener() {
+        if (!this._compact_escape_listener_registered) return;
+        this._compact_escape_listener_registered = false;
+        document.removeEventListener('keydown', this.handle_compact_escape_keydown);
     }
 
-    handle_document_keydown(event) {
+    handle_compact_escape_keydown(event) {
         if (!this.is_small_screen()) return;
-        if (!this.is_menu_open) return;
-        if (event.key === 'Escape') {
+        if (event.key !== 'Escape') return;
+        const layout = document.getElementById('app-layout');
+        if (layout?.classList.contains('app-layout--filter-open')) {
             event.preventDefault();
-            this.handle_close_menu({ restore_focus: true });
+            layout.classList.remove('app-layout--filter-open');
+            return;
         }
+        if (!this.is_menu_open) return;
+        event.preventDefault();
+        this.handle_close_menu({ restore_focus: true });
     }
 
     build_hash(view_name, params = {}) {
@@ -448,7 +503,6 @@ export class SideMenuComponent {
             this.root.classList.add('hidden');
             this.is_menu_open = false;
             this.nav_ref = null;
-            this.remove_escape_listener();
             return;
         }
 
@@ -457,19 +511,12 @@ export class SideMenuComponent {
         this.first_link_ref = null;
 
         const wrapper = this.Helpers.create_element('div', { class_name: 'side-menu' });
+        if (typeof document !== 'undefined') {
+            this.menu_button_ref = document.getElementById(this.external_menu_button_id);
+        }
 
-        const menu_button = this.Helpers.create_element('button', {
-            class_name: ['button', 'button-default', 'side-menu__toggle'],
-            attributes: {
-                type: 'button',
-                'aria-expanded': this.is_menu_open ? 'true' : 'false',
-                'aria-controls': 'side-menu-nav'
-            },
-            text_content: this.is_menu_open ? t('side_menu_close_button') : t('side_menu_open_button'),
-            event_listeners: { click: this.handle_toggle_menu }
-        });
-        this.menu_button_ref = menu_button;
-        wrapper.appendChild(menu_button);
+        const compact_panel = this.Helpers.create_element('div', { class_name: 'side-menu__compact-panel' });
+        const compact_panel_inner = this.Helpers.create_element('div', { class_name: 'side-menu__compact-panel-inner' });
 
         const nav = this.Helpers.create_element('nav', {
             id: 'side-menu-nav',
@@ -525,10 +572,23 @@ export class SideMenuComponent {
 
         nav.appendChild(list);
 
-        const should_hide_nav = this.is_small_screen() && !this.is_menu_open;
-        nav.hidden = should_hide_nav;
+        const compact_collapsed = this.is_small_screen() && !this.is_menu_open;
+        if (compact_collapsed) {
+            compact_panel.classList.add('side-menu__compact-panel--collapsed');
+            compact_panel_inner.inert = true;
+            nav.setAttribute('aria-hidden', 'true');
+        } else {
+            compact_panel_inner.inert = false;
+            nav.removeAttribute('aria-hidden');
+        }
 
-        wrapper.appendChild(nav);
+        if (this.menu_button_ref) {
+            this.menu_button_ref.setAttribute('aria-expanded', this.is_menu_open ? 'true' : 'false');
+        }
+
+        compact_panel_inner.appendChild(nav);
+        compact_panel.appendChild(compact_panel_inner);
+        wrapper.appendChild(compact_panel);
         this.root.appendChild(wrapper);
 
         this.last_menu_structure_key = this._get_structure_key(menu_model);
@@ -536,19 +596,14 @@ export class SideMenuComponent {
     }
 
     destroy() {
-        this.remove_escape_listener();
+        this.remove_compact_escape_listener();
+        document.removeEventListener('gv:layout_compact_changed', this.handle_layout_compact_changed);
+        document.removeEventListener('gv:toggle_side_menu', this.handle_external_toggle_event);
+        document.removeEventListener('gv:close_side_menu', this.handle_close_side_menu_event);
 
         if (typeof this.unsubscribe === 'function') {
             this.unsubscribe();
             this.unsubscribe = null;
-        }
-
-        if (this.small_screen_media_query) {
-            try {
-                this.small_screen_media_query.removeEventListener('change', this.handle_media_query_change);
-            } catch (e) {
-                this.small_screen_media_query.removeListener(this.handle_media_query_change);
-            }
         }
 
         if (this.root) {
@@ -566,6 +621,5 @@ export class SideMenuComponent {
         this.menu_button_ref = null;
         this.nav_ref = null;
         this.first_link_ref = null;
-        this.small_screen_media_query = null;
     }
 }
