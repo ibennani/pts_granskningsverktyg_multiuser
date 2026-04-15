@@ -461,6 +461,27 @@ export async function update_rule(id, body) {
     return api_put(`/rules/${id}`, body);
 }
 
+export async function get_rule_locks(id) {
+    return api_get(`/rules/${encodeURIComponent(id)}/locks`);
+}
+
+export async function acquire_rule_lock(id, body) {
+    return api_post(`/rules/${encodeURIComponent(id)}/locks`, body);
+}
+
+export async function heartbeat_rule_lock(id, part_key, body) {
+    return api_post(`/rules/${encodeURIComponent(id)}/locks/${encodeURIComponent(part_key)}/heartbeat`, body);
+}
+
+export async function release_rule_lock(id, part_key, client_lock_id) {
+    const q = client_lock_id ? `?client_lock_id=${encodeURIComponent(client_lock_id)}` : '';
+    return api_delete(`/rules/${encodeURIComponent(id)}/locks/${encodeURIComponent(part_key)}${q}`);
+}
+
+export async function patch_rule_content_part(id, body) {
+    return api_patch(`/rules/${encodeURIComponent(id)}/content-part`, body);
+}
+
 export async function delete_rule(id) {
     return api_delete(`/rules/${id}`);
 }

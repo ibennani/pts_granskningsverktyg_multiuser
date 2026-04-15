@@ -1,6 +1,16 @@
 // js/components/rulefile_editor/EditRulefileRequirementComponent.js
 
 import { show_confirm_delete_modal, build_delete_warning_text } from '../../logic/confirm_delete_modal_logic.js';
+import { patch_rule_content_part } from '../../api/client.js';
+import { subscribe_rule_locks } from '../../logic/list_push_service.js';
+import { get_current_user_name } from '../../utils/helpers.js';
+import {
+    init_rulefile_lock_service,
+    try_acquire_rulefile_part_lock,
+    release_rulefile_part_lock,
+    get_current_rulefile_remote_lock
+} from '../../logic/rulefile_lock_service.js';
+import { make_infoblock_text_part_key } from '../../logic/rulefile_part_keys.js';
 import './requirement_audit_component.css';
 import './edit_rulefile_requirement_component.css';
 
@@ -24,6 +34,7 @@ export class EditRulefileRequirementComponent {
         this.initial_requirement_snapshot = null;
         this.autosave_session = null;
         this.skip_autosave_on_destroy = false;
+        this._unsubscribe_rule_locks = null;
     }
 
     async init({ root, deps }) {
@@ -44,6 +55,7 @@ export class EditRulefileRequirementComponent {
         this.initial_requirement_snapshot = null;
         this.autosave_session = null;
         this.skip_autosave_on_destroy = false;
+        this._unsubscribe_rule_locks = null;
 
         // Bind methods
         this.handle_form_submit = this.handle_form_submit.bind(this);
@@ -53,6 +65,48 @@ export class EditRulefileRequirementComponent {
         
         await this.Helpers.load_css(this.CSS_PATH_SHARED).catch(e => console.warn(e));
         await this.Helpers.load_css(this.CSS_PATH_SPECIFIC).catch(e => console.warn(e));
+    }
+
+    async _try_patch_infoblock_text_to_server({ requirement_key, block_id, text_value }) {
+        const state = this.getState();
+        const rule_set_id = state?.ruleSetId;
+        if (!rule_set_id) return;
+        const base_version = Number(state?.ruleFileServerVersion ?? 0);
+        const part_key = make_infoblock_text_part_key(requirement_key, block_id);
+        try {
+            const updated = await patch_rule_content_part(rule_set_id, {
+                part_key,
+                base_version,
+                value: String(text_value ?? '')
+            });
+            let content = updated?.content;
+            if (typeof content === 'string') {
+                try {
+                    content = JSON.parse(content);
+                } catch {
+                    content = null;
+                }
+            }
+            if (content && typeof content === 'object' && typeof this.dispatch === 'function') {
+                this.dispatch({
+                    type: this.StoreActionTypes.REPLACE_RULEFILE_FROM_REMOTE,
+                    payload: {
+                        ruleFileContent: content,
+                        version: updated?.version ?? base_version + 1
+                    }
+                });
+            } else if (typeof this.dispatch === 'function' && updated?.version !== undefined) {
+                this.dispatch({
+                    type: this.StoreActionTypes.REPLACE_RULEFILE_FROM_REMOTE,
+                    payload: {
+                        ruleFileContent: state.ruleFileContent,
+                        version: updated.version
+                    }
+                });
+            }
+        } catch (_) {
+            // Vid versionskonflikt/pollingfel får poll-servicen hämta in senaste.
+        }
     }
 
     _create_move_check_button(direction, check) {
@@ -900,12 +954,48 @@ export class EditRulefileRequirementComponent {
                 expanded_group.appendChild(expanded_label);
                 
                 // Text field (textarea)
-                const text_group = this._create_form_group(
-                    this._get_translation_key_for_block(block_id) || 'info_block_text',
-                    `infoBlock_${block_id}_text`,
-                    block.text || '',
-                    true
-                );
+                const part_key = this.params?.id && this.params.id !== 'new'
+                    ? make_infoblock_text_part_key(String(this.params.id), block_id)
+                    : null;
+                const remote_lock = part_key ? get_current_rulefile_remote_lock(part_key) : null;
+                const locked_by_other = !!(remote_lock && remote_lock.user_name && remote_lock.user_name !== get_current_user_name());
+
+                let text_group;
+                if (locked_by_other) {
+                    text_group = this.Helpers.create_element('div', { class_name: 'form-group' });
+                    const label_text = this.Translation.t(this._get_translation_key_for_block(block_id) || 'info_block_text');
+                    text_group.appendChild(this.Helpers.create_element('div', { text_content: label_text ? String(label_text) : '' }));
+                    text_group.appendChild(this.Helpers.create_element('div', {
+                        class_name: 'info-block-locked-message',
+                        text_content: `${remote_lock.user_name} redigerar detta fält just nu.`
+                    }));
+                } else {
+                    text_group = this._create_form_group(
+                        this._get_translation_key_for_block(block_id) || 'info_block_text',
+                        `infoBlock_${block_id}_text`,
+                        block.text || '',
+                        true
+                    );
+                    const textarea = text_group.querySelector('textarea');
+                    if (textarea && part_key) {
+                        textarea.addEventListener('focus', async () => {
+                            const state = this.getState();
+                            const rsid = state?.ruleSetId;
+                            if (!rsid) return;
+                            const r = await try_acquire_rulefile_part_lock({ rule_set_id: rsid, part_key });
+                            if (!r?.ok) {
+                                try { textarea.blur(); } catch (_) { /* ignore */ }
+                                this._rerender_all_sections();
+                            }
+                        });
+                        textarea.addEventListener('blur', () => {
+                            const state = this.getState();
+                            const rsid = state?.ruleSetId;
+                            if (!rsid) return;
+                            void release_rulefile_part_lock({ rule_set_id: rsid, part_key });
+                        });
+                    }
+                }
                 
                 block_container.appendChild(expanded_group);
                 block_container.appendChild(text_group);
@@ -1436,6 +1526,22 @@ export class EditRulefileRequirementComponent {
         const requirement_id = this.params?.id;
         const current_state = this.getState();
         const is_new_requirement = requirement_id === 'new';
+        const requirement_key = !is_new_requirement ? String(requirement_id || '') : null;
+
+        if (current_state?.ruleSetId) {
+            void init_rulefile_lock_service(String(current_state.ruleSetId));
+            if (!this._unsubscribe_rule_locks) {
+                this._unsubscribe_rule_locks = subscribe_rule_locks((payload) => {
+                    const rid = String(current_state?.ruleSetId || '');
+                    if (!payload?.ruleSetId || String(payload.ruleSetId) !== rid) return;
+                    try {
+                        this._rerender_all_sections();
+                    } catch (_) {
+                        // ignoreras
+                    }
+                });
+            }
+        }
         
         if (is_new_requirement) {
             // Skapa tom kravstruktur för nytt krav
@@ -1539,6 +1645,18 @@ export class EditRulefileRequirementComponent {
                 debounce_ms: 250,
                 on_save: ({ should_trim }) => {
                     this.save_form_data_immediately(should_trim);
+                    // Del-spara: om användaren är i ett infoblock-textfält sparar vi bara den delen till servern.
+                    try {
+                        const ae = typeof document !== 'undefined' ? document.activeElement : null;
+                        const id = ae && ae.id ? String(ae.id) : '';
+                        if (requirement_key && id.startsWith('infoBlock_') && id.endsWith('_text')) {
+                            const block_id = id.slice('infoBlock_'.length, id.length - '_text'.length);
+                            const v = ae && typeof ae.value === 'string' ? ae.value : (this.form_element_ref?.querySelector(`#${CSS.escape(id)}`)?.value || '');
+                            void this._try_patch_infoblock_text_to_server({ requirement_key, block_id, text_value: v });
+                        }
+                    } catch (_) {
+                        // ignoreras medvetet
+                    }
                 }
             });
         }
@@ -1583,6 +1701,12 @@ export class EditRulefileRequirementComponent {
         if (!this.skip_autosave_on_destroy && this.form_element_ref && this.local_requirement_data && this.params?.id !== 'new') {
             this.autosave_session?.flush({ should_trim: true, skip_render: true });
         }
+        try {
+            this._unsubscribe_rule_locks?.();
+        } catch (_) {
+            // ignoreras
+        }
+        this._unsubscribe_rule_locks = null;
         this.autosave_session?.destroy();
         this.autosave_session = null;
 

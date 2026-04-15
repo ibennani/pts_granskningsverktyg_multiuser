@@ -13,6 +13,7 @@ const connectivity_path = path.join(__dirname, '../../js/logic/connectivity_serv
 const update_audit = jest.fn();
 const import_audit = jest.fn();
 const update_rule = jest.fn();
+const patch_rule_content_part = jest.fn();
 const load_audit_with_rule_file = jest.fn();
 const get_auth_token = jest.fn(() => 'mock-jwt');
 const get_websocket_url = jest.fn(() => 'ws://localhost');
@@ -27,6 +28,7 @@ jest.unstable_mockModule(client_path, () => ({
     update_audit,
     import_audit,
     update_rule,
+    patch_rule_content_part,
     load_audit_with_rule_file,
     get_auth_token,
     get_websocket_url

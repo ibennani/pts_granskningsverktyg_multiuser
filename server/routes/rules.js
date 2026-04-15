@@ -5,11 +5,16 @@ import { broadcast } from '../ws.js';
 import { requireAdmin } from '../auth/middleware.js';
 import { import_payload_rate_limiter } from '../middleware/rateLimiter.js';
 import { check_json_structure_depth_and_size } from '../../js/utils/json_structure_guard.js';
+import { parse_part_key } from '../../js/logic/rulefile_part_keys.js';
 
 const router = express.Router();
 
 function broadcast_rules_changed() {
     broadcast({ type: 'rules:changed' });
+}
+
+function broadcast_rule_locks_changed(rule_set_id) {
+    broadcast({ type: 'rules:locks_changed', ruleSetId: String(rule_set_id) });
 }
 
 let has_published_content_column = null;
@@ -108,6 +113,144 @@ router.get('/:id/version', async (req, res) => {
     } catch (err) {
         console.error('[rules] GET version error:', err);
         res.status(500).json({ error: 'Kunde inte hämta version' });
+    }
+});
+
+router.get('/:id/locks', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const now = new Date();
+        // Rensa utgångna lease innan listning (best effort)
+        await query('DELETE FROM rule_edit_locks WHERE lease_until < CURRENT_TIMESTAMP');
+        const result = await query(
+            `SELECT rule_set_id, part_key, user_id, user_name, client_lock_id, lease_until, updated_at
+             FROM rule_edit_locks
+             WHERE rule_set_id = $1 AND lease_until >= CURRENT_TIMESTAMP
+             ORDER BY part_key ASC`,
+            [id]
+        );
+        res.json({
+            ruleSetId: id,
+            now: now.toISOString(),
+            locks: result.rows
+        });
+    } catch (err) {
+        console.error('[rules] GET locks error:', err);
+        res.status(500).json({ error: 'Kunde inte hämta lås' });
+    }
+});
+
+router.post('/:id/locks', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const user = req.user;
+        const part_key = String(req.body?.part_key || '');
+        const client_lock_id = String(req.body?.client_lock_id || '');
+        const requested_ttl_seconds = Number(req.body?.ttl_seconds || 30);
+
+        if (!part_key) return res.status(400).json({ error: 'part_key krävs' });
+        if (!client_lock_id) return res.status(400).json({ error: 'client_lock_id krävs' });
+        if (!parse_part_key(part_key)) return res.status(400).json({ error: 'Ogiltig part_key' });
+
+        const ttl_seconds = Math.max(10, Math.min(60, Number.isFinite(requested_ttl_seconds) ? requested_ttl_seconds : 30));
+
+        await query('DELETE FROM rule_edit_locks WHERE lease_until < CURRENT_TIMESTAMP');
+
+        const result = await query(
+            `INSERT INTO rule_edit_locks (rule_set_id, part_key, user_id, user_name, client_lock_id, lease_until, updated_at)
+             VALUES ($1, $2, $3, $4, $5::uuid, CURRENT_TIMESTAMP + ($6 || ' seconds')::interval, CURRENT_TIMESTAMP)
+             ON CONFLICT (rule_set_id, part_key) DO UPDATE
+                SET user_id = EXCLUDED.user_id,
+                    user_name = EXCLUDED.user_name,
+                    client_lock_id = EXCLUDED.client_lock_id,
+                    lease_until = EXCLUDED.lease_until,
+                    updated_at = CURRENT_TIMESTAMP
+              WHERE rule_edit_locks.lease_until < CURRENT_TIMESTAMP
+                 OR (rule_edit_locks.user_id = EXCLUDED.user_id AND rule_edit_locks.client_lock_id = EXCLUDED.client_lock_id)
+             RETURNING rule_set_id, part_key, user_id, user_name, client_lock_id, lease_until, updated_at`,
+            [id, part_key, user.id, user.name, client_lock_id, String(ttl_seconds)]
+        );
+
+        if (result.rows.length === 0) {
+            const existing = await query(
+                `SELECT rule_set_id, part_key, user_id, user_name, client_lock_id, lease_until, updated_at
+                 FROM rule_edit_locks WHERE rule_set_id = $1 AND part_key = $2 LIMIT 1`,
+                [id, part_key]
+            );
+            const lock = existing.rows[0] || null;
+            return res.status(409).json({ error: 'Fältet är redan låst', lock });
+        }
+
+        broadcast_rule_locks_changed(id);
+        res.status(201).json({ lock: result.rows[0] });
+    } catch (err) {
+        console.error('[rules] POST locks error:', err);
+        res.status(500).json({ error: 'Kunde inte ta lås' });
+    }
+});
+
+router.post('/:id/locks/:partKey/heartbeat', async (req, res) => {
+    try {
+        const { id, partKey } = req.params;
+        const user = req.user;
+        const part_key = decodeURIComponent(String(partKey || ''));
+        const client_lock_id = String(req.body?.client_lock_id || '');
+        const requested_ttl_seconds = Number(req.body?.ttl_seconds || 30);
+
+        if (!client_lock_id) return res.status(400).json({ error: 'client_lock_id krävs' });
+        if (!parse_part_key(part_key)) return res.status(400).json({ error: 'Ogiltig part_key' });
+
+        const ttl_seconds = Math.max(10, Math.min(60, Number.isFinite(requested_ttl_seconds) ? requested_ttl_seconds : 30));
+
+        const result = await query(
+            `UPDATE rule_edit_locks
+             SET lease_until = CURRENT_TIMESTAMP + ($5 || ' seconds')::interval,
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE rule_set_id = $1
+               AND part_key = $2
+               AND user_id = $3
+               AND client_lock_id = $4::uuid
+             RETURNING rule_set_id, part_key, user_id, user_name, client_lock_id, lease_until, updated_at`,
+            [id, part_key, user.id, client_lock_id, String(ttl_seconds)]
+        );
+        if (result.rows.length === 0) {
+            return res.status(409).json({ error: 'Kan inte förlänga lås (saknas eller ägs av annan)' });
+        }
+        broadcast_rule_locks_changed(id);
+        res.json({ lock: result.rows[0] });
+    } catch (err) {
+        console.error('[rules] heartbeat error:', err);
+        res.status(500).json({ error: 'Kunde inte förlänga lås' });
+    }
+});
+
+router.delete('/:id/locks/:partKey', async (req, res) => {
+    try {
+        const { id, partKey } = req.params;
+        const user = req.user;
+        const part_key = decodeURIComponent(String(partKey || ''));
+        const client_lock_id = String(req.query?.client_lock_id || req.body?.client_lock_id || '');
+
+        if (!client_lock_id) return res.status(400).json({ error: 'client_lock_id krävs' });
+        if (!parse_part_key(part_key)) return res.status(400).json({ error: 'Ogiltig part_key' });
+
+        const result = await query(
+            `DELETE FROM rule_edit_locks
+             WHERE rule_set_id = $1
+               AND part_key = $2
+               AND user_id = $3
+               AND client_lock_id = $4::uuid
+             RETURNING rule_set_id, part_key`,
+            [id, part_key, user.id, client_lock_id]
+        );
+        if (result.rows.length === 0) {
+            return res.status(409).json({ error: 'Kan inte släppa lås (saknas eller ägs av annan)' });
+        }
+        broadcast_rule_locks_changed(id);
+        res.status(204).send();
+    } catch (err) {
+        console.error('[rules] DELETE lock error:', err);
+        res.status(500).json({ error: 'Kunde inte släppa lås' });
     }
 });
 
@@ -328,6 +471,56 @@ router.put('/:id', async (req, res) => {
     } catch (err) {
         console.error('[rules] PUT error:', err);
         res.status(500).json({ error: 'Kunde inte uppdatera regelfil' });
+    }
+});
+
+router.patch('/:id/content-part', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const part_key = String(req.body?.part_key || '');
+        const base_version = Number(req.body?.base_version);
+        const value = req.body?.value;
+
+        if (!part_key) return res.status(400).json({ error: 'part_key krävs' });
+        if (!Number.isFinite(base_version)) return res.status(400).json({ error: 'base_version krävs' });
+
+        const parsed = parse_part_key(part_key);
+        if (!parsed) return res.status(400).json({ error: 'Ogiltig part_key' });
+        if (parsed.kind !== 'infoblock_text') {
+            return res.status(400).json({ error: 'Denna part_key stöds inte för patch än' });
+        }
+        if (typeof value !== 'string') return res.status(400).json({ error: 'value måste vara en sträng' });
+
+        const json_path = ['requirements', parsed.requirement_key, 'infoBlocks', parsed.block_id, 'text'];
+
+        const patch_result = await query(
+            `UPDATE rule_sets
+             SET content = jsonb_set(
+                 content,
+                 $2::text[],
+                 to_jsonb($3::text),
+                 true
+             ),
+                 content_updated_at = CURRENT_TIMESTAMP,
+                 version = version + 1,
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE id = $1
+               AND version = $4
+             RETURNING *`,
+            [id, json_path, value, base_version]
+        );
+
+        if (patch_result.rows.length === 0) {
+            const current = await query('SELECT version FROM rule_sets WHERE id = $1', [id]);
+            if (current.rows.length === 0) return res.status(404).json({ error: 'Regelfil hittades inte' });
+            return res.status(409).json({ error: 'Versionskonflikt', version: current.rows[0].version });
+        }
+
+        broadcast_rules_changed();
+        res.json(patch_result.rows[0]);
+    } catch (err) {
+        console.error('[rules] PATCH content-part error:', err);
+        res.status(500).json({ error: 'Kunde inte uppdatera del av regelfilen' });
     }
 });
 

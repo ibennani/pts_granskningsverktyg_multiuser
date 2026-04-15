@@ -2,7 +2,7 @@
 // Debounced sync av state till server. Om auditId saknas importeras granskningen först.
 // Vid regelfilsredigering synkas innehållet till rule_sets så att updated_at = senast ändrad.
 
-import { update_audit, import_audit, update_rule, load_audit_with_rule_file, get_auth_token } from '../api/client.js';
+import { update_audit, import_audit, update_rule, patch_rule_content_part, load_audit_with_rule_file, get_auth_token } from '../api/client.js';
 import { notify_rules_list_changed } from './list_push_service.js';
 import {
     clear_audit_sync_pending,
@@ -268,6 +268,24 @@ async function run_sync_rulefile(state, dispatch_fn) {
     }
 
     try {
+        // Om det finns en pending patch-queue använder vi del-sparning i stället för hel PUT.
+        const queued = Array.isArray(window.__gv_rulefile_part_patch_queue__) ? window.__gv_rulefile_part_patch_queue__ : [];
+        if (queued.length > 0) {
+            const base_version = Number(state?.ruleFileServerVersion ?? 0);
+            const to_send = queued.splice(0, queued.length);
+            window.__gv_rulefile_part_patch_queue__ = queued;
+            for (const p of to_send) {
+                if (!p?.part_key) continue;
+                await patch_rule_content_part(state.ruleSetId, {
+                    part_key: String(p.part_key),
+                    base_version,
+                    value: typeof p.value === 'string' ? p.value : String(p.value ?? '')
+                });
+            }
+            clear_rulefile_sync_pending();
+            notify_rules_list_changed();
+            return;
+        }
         const updated = await update_rule(state.ruleSetId, { content: state.ruleFileContent });
         if (updated?.content && typeof dispatch_fn === 'function') {
             dispatch_fn({
@@ -300,6 +318,23 @@ async function run_sync_rulefile(state, dispatch_fn) {
             );
         }
     }
+}
+
+/**
+ * Köar en del-uppdatering av regelfilen. Används av fältkomponenter för autospar per fält.
+ * Själva nätverksanropet görs av existerande debounced schedule_sync_rulefile_to_server().
+ * @param {{ part_key: string, value: string }} patch
+ */
+export function enqueue_rulefile_part_patch(patch) {
+    if (typeof window === 'undefined') return;
+    if (!patch || typeof patch.part_key !== 'string') return;
+    if (!Array.isArray(window.__gv_rulefile_part_patch_queue__)) {
+        window.__gv_rulefile_part_patch_queue__ = [];
+    }
+    window.__gv_rulefile_part_patch_queue__.push({
+        part_key: patch.part_key,
+        value: typeof patch.value === 'string' ? patch.value : String(patch.value ?? '')
+    });
 }
 
 /**

@@ -25,6 +25,14 @@
     border-bottom: 1px dashed var(--secondary-color);
 }
 
+.info-block-locked-message {
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background: var(--plate-background-color);
+    color: var(--text-color);
+}
+
 [data-theme="dark"] .edit-rulefile-requirement-view .audit-section h2 {
     color: var(--heading-color);
 }
