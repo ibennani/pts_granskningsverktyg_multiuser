@@ -32,6 +32,8 @@ export const ChecklistHandler = {
     is_audit_locked: false,
     /** @type {null|(() => boolean)} */
     get_is_audit_frozen: null,
+    /** @type {null|(() => boolean)} */
+    get_is_audit_archived: null,
     /** @type {null|(() => HTMLElement|null)} */
     get_dom_focus_sync_root: null,
     requirement_definition_ref: null,
@@ -49,6 +51,14 @@ export const ChecklistHandler = {
             return Boolean(this.get_is_audit_frozen());
         }
         return Boolean(this.is_audit_locked);
+    },
+
+    /** Arkiverad granskning: enda läget där observationsfält sätts readOnly. */
+    _audit_archived_for_ui() {
+        if (typeof this.get_is_audit_archived === 'function') {
+            return Boolean(this.get_is_audit_archived());
+        }
+        return false;
     },
 
     _build_button_focus_target(button_element) {
@@ -228,6 +238,9 @@ export const ChecklistHandler = {
             : null;
         this.get_is_audit_frozen = typeof options.getIsAuditFrozen === 'function'
             ? options.getIsAuditFrozen
+            : null;
+        this.get_is_audit_archived = typeof options.getIsAuditArchived === 'function'
+            ? options.getIsAuditArchived
             : null;
 
         // Bind handlers to this instance
@@ -882,7 +895,7 @@ export const ChecklistHandler = {
                         if (!aid) return;
                         if (this._audit_frozen_for_ui()) return;
                         observation_textarea.dataset.gvLockPending = '1';
-                        this.update_dom();
+                        if (this.container_ref) this.update_dom();
                         try {
                             const r = await try_acquire_audit_part_lock({ audit_id: aid, part_key });
                             await init_audit_lock_service(String(aid));
@@ -1022,6 +1035,7 @@ export const ChecklistHandler = {
     update_dom() {
         const t = this.Translation.t;
         const audit_frozen = this._audit_frozen_for_ui();
+        const audit_archived = this._audit_archived_for_ui();
         const sync_focus_root = (typeof this.get_dom_focus_sync_root === 'function' ? this.get_dom_focus_sync_root() : null)
             || this.container_ref;
         const active_el_for_sync = document.activeElement;
@@ -1179,13 +1193,11 @@ export const ChecklistHandler = {
                     if (observation_textarea.disabled !== want_disabled) {
                         observation_textarea.disabled = want_disabled;
                     }
-                    const lock_pending = observation_textarea.dataset.gvLockPending === '1';
-                    const acquiring_focus_here = lock_pending && document.activeElement === observation_textarea;
                     let want_readonly = false;
                     if (observation_textarea.disabled) {
                         want_readonly = false;
                     } else {
-                        want_readonly = audit_frozen || (lock_pending && !acquiring_focus_here);
+                        want_readonly = audit_archived;
                     }
                     if (observation_textarea.readOnly !== want_readonly) {
                         observation_textarea.readOnly = want_readonly;
@@ -1342,6 +1354,7 @@ export const ChecklistHandler = {
         this._observation_focus_snapshots = new Map();
         this.is_dom_built = false;
         this.get_dom_focus_sync_root = null;
+        this.get_is_audit_archived = null;
         this.get_is_audit_frozen = null;
         this.container_ref = null;
     }

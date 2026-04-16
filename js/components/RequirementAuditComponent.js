@@ -817,7 +817,8 @@ export class RequirementAuditComponent {
                 getIsAuditFrozen: () => {
                     const st = this.getState();
                     return st?.auditStatus === 'locked' || st?.auditStatus === 'archived';
-                }
+                },
+                getIsAuditArchived: () => this.getState()?.auditStatus === 'archived'
             }
         );
         
@@ -930,10 +931,12 @@ export class RequirementAuditComponent {
 
     /**
      * Uppdaterar kommentarsfält: värden, disabled vid annan användares lås, samt fokus-/blur-lyssnare (en gång).
+     * readOnly används endast när granskningen är arkiverad; övriga lägen utan readOnly (fältlås hanteras senare).
      */
     _apply_comment_part_lock_ui() {
         const state = this.getState();
-        const is_locked = state.auditStatus === 'locked' || state.auditStatus === 'archived';
+        const exempt_from_remote_disable = state.auditStatus === 'locked' || state.auditStatus === 'archived';
+        const comments_readonly = state.auditStatus === 'archived';
         const audit_id = state?.auditId;
         const sample_id = this.params?.sampleId;
         const requirement_id = this.params?.requirementId;
@@ -980,7 +983,7 @@ export class RequirementAuditComponent {
         const hint_auditor_el = this.plate_element_ref?.querySelector('#commentToAuditor-lock-hint');
         const hint_actor_el = this.plate_element_ref?.querySelector('#commentToActor-lock-hint');
         if (this.comment_to_auditor_input) {
-            this.comment_to_auditor_input.disabled = locked_auditor_by_other && !is_locked;
+            this.comment_to_auditor_input.disabled = locked_auditor_by_other && !exempt_from_remote_disable;
             if (hint_auditor_el) {
                 if (locked_auditor_by_other && lock_auditor?.user_name) {
                     hint_auditor_el.textContent = `${lock_auditor.user_name} redigerar detta fält just nu.`;
@@ -992,7 +995,7 @@ export class RequirementAuditComponent {
             }
         }
         if (this.comment_to_actor_input) {
-            this.comment_to_actor_input.disabled = locked_actor_by_other && !is_locked;
+            this.comment_to_actor_input.disabled = locked_actor_by_other && !exempt_from_remote_disable;
             if (hint_actor_el) {
                 if (locked_actor_by_other && lock_actor?.user_name) {
                     hint_actor_el.textContent = `${lock_actor.user_name} redigerar detta fält just nu.`;
@@ -1006,17 +1009,12 @@ export class RequirementAuditComponent {
 
         [this.comment_to_auditor_input, this.comment_to_actor_input].forEach((input) => {
             if (!input) return;
-            const lock_pending = input.dataset.gvLockPending === '1';
-            const acquiring_focus_here = lock_pending && document.activeElement === input;
             if (input.disabled) {
                 input.readOnly = false;
             } else {
-                input.readOnly = is_locked || (lock_pending && !acquiring_focus_here);
+                input.readOnly = comments_readonly;
             }
-            input.classList.toggle(
-                'readonly-textarea',
-                (is_locked || (lock_pending && !acquiring_focus_here)) && !input.disabled
-            );
+            input.classList.toggle('readonly-textarea', comments_readonly && !input.disabled);
         });
     }
 
@@ -1043,8 +1041,7 @@ export class RequirementAuditComponent {
                 const st = this.getState();
                 const aid = st?.auditId;
                 if (!aid) return;
-                const audit_frozen = st.auditStatus === 'locked' || st.auditStatus === 'archived';
-                if (audit_frozen) return;
+                if (st.auditStatus === 'archived') return;
                 textarea.dataset.gvLockPending = '1';
                 this._apply_comment_part_lock_ui();
                 try {
