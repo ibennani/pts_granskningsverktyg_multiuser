@@ -813,7 +813,11 @@ export class RequirementAuditComponent {
                         requirement_id: this.params?.requirementId ? String(this.params.requirementId) : null
                     };
                 },
-                getDomFocusSyncRoot: () => this.plate_element_ref
+                getDomFocusSyncRoot: () => this.plate_element_ref,
+                getIsAuditFrozen: () => {
+                    const st = this.getState();
+                    return st?.auditStatus === 'locked' || st?.auditStatus === 'archived';
+                }
             }
         );
         

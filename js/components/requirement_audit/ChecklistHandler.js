@@ -30,6 +30,8 @@ export const ChecklistHandler = {
     Helpers: null,
     
     is_audit_locked: false,
+    /** @type {null|(() => boolean)} */
+    get_is_audit_frozen: null,
     /** @type {null|(() => HTMLElement|null)} */
     get_dom_focus_sync_root: null,
     requirement_definition_ref: null,
@@ -40,6 +42,14 @@ export const ChecklistHandler = {
     audit_id: null,
     sample_id: null,
     requirement_id: null,
+
+    /** Aktuell låst/arkiverad-status för UI; läser state när gettaren finns (t.ex. vid update_dom utan render). */
+    _audit_frozen_for_ui() {
+        if (typeof this.get_is_audit_frozen === 'function') {
+            return Boolean(this.get_is_audit_frozen());
+        }
+        return Boolean(this.is_audit_locked);
+    },
 
     _build_button_focus_target(button_element) {
         if (!button_element) return null;
@@ -215,6 +225,9 @@ export const ChecklistHandler = {
             : null;
         this.get_dom_focus_sync_root = typeof options.getDomFocusSyncRoot === 'function'
             ? options.getDomFocusSyncRoot
+            : null;
+        this.get_is_audit_frozen = typeof options.getIsAuditFrozen === 'function'
+            ? options.getIsAuditFrozen
             : null;
 
         // Bind handlers to this instance
@@ -867,7 +880,7 @@ export const ChecklistHandler = {
                         const c = this.get_audit_lock_context ? this.get_audit_lock_context() : null;
                         const aid = c?.audit_id;
                         if (!aid) return;
-                        if (this.is_audit_locked) return;
+                        if (this._audit_frozen_for_ui()) return;
                         observation_textarea.dataset.gvLockPending = '1';
                         this.update_dom();
                         try {
@@ -1008,6 +1021,7 @@ export const ChecklistHandler = {
 
     update_dom() {
         const t = this.Translation.t;
+        const audit_frozen = this._audit_frozen_for_ui();
         const sync_focus_root = (typeof this.get_dom_focus_sync_root === 'function' ? this.get_dom_focus_sync_root() : null)
             || this.container_ref;
         const active_el_for_sync = document.activeElement;
@@ -1046,7 +1060,7 @@ export const ChecklistHandler = {
                     'aria-label',
                     this._button_aria_label_with_context(t('check_does_not_comply'), condition_plain_for_aria)
                 );
-                complies_btn.parentElement.style.display = this.is_audit_locked ? 'none' : 'flex';
+                complies_btn.parentElement.style.display = audit_frozen ? 'none' : 'flex';
             }
             
             const condition_h3 = check_wrapper.querySelector('.check-condition-title');
@@ -1143,7 +1157,7 @@ export const ChecklistHandler = {
                         'aria-label',
                         this._button_aria_label_with_context(t('pass_criterion_failed'), requirement_plain_aria)
                     );
-                    passed_btn.parentElement.style.display = this.is_audit_locked ? 'none' : 'flex';
+                    passed_btn.parentElement.style.display = audit_frozen ? 'none' : 'flex';
                 }
 
                 const observation_wrapper = pc_item_li.querySelector('.pc-observation-detail-wrapper');
@@ -1161,7 +1175,7 @@ export const ChecklistHandler = {
                 const locked_by_other_pc = is_remote_lock_held_by_other_user(lock_row_pc, get_current_user_name(), my_client_lock_id_pc);
 
                 if (observation_textarea) {
-                    const want_disabled = locked_by_other_pc && !this.is_audit_locked;
+                    const want_disabled = locked_by_other_pc && !audit_frozen;
                     if (observation_textarea.disabled !== want_disabled) {
                         observation_textarea.disabled = want_disabled;
                     }
@@ -1171,7 +1185,7 @@ export const ChecklistHandler = {
                     if (observation_textarea.disabled) {
                         want_readonly = false;
                     } else {
-                        want_readonly = this.is_audit_locked || (lock_pending && !acquiring_focus_here);
+                        want_readonly = audit_frozen || (lock_pending && !acquiring_focus_here);
                     }
                     if (observation_textarea.readOnly !== want_readonly) {
                         observation_textarea.readOnly = want_readonly;
@@ -1228,7 +1242,7 @@ export const ChecklistHandler = {
                 const copy_observation_row = pc_item_li.querySelector('.pc-copy-observation-row');
                 if (copy_observation_row) {
                     const observations = this.get_observations_from_other_samples(check_id, pc_id);
-                    const should_show = observations.length > 0 && current_pc_status === 'failed' && !this.is_audit_locked;
+                    const should_show = observations.length > 0 && current_pc_status === 'failed' && !audit_frozen;
                     copy_observation_row.hidden = !should_show;
                 }
             });
@@ -1328,6 +1342,7 @@ export const ChecklistHandler = {
         this._observation_focus_snapshots = new Map();
         this.is_dom_built = false;
         this.get_dom_focus_sync_root = null;
+        this.get_is_audit_frozen = null;
         this.container_ref = null;
     }
 };
