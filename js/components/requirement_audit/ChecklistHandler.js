@@ -30,6 +30,8 @@ export const ChecklistHandler = {
     Helpers: null,
     
     is_audit_locked: false,
+    /** @type {null|(() => HTMLElement|null)} */
+    get_dom_focus_sync_root: null,
     requirement_definition_ref: null,
     requirement_result_ref: null,
 
@@ -210,6 +212,9 @@ export const ChecklistHandler = {
         this.get_observations_from_other_samples = options.getObservationsFromOtherSamples || (() => []);
         this.get_audit_lock_context = typeof options.getAuditLockContext === 'function'
             ? options.getAuditLockContext
+            : null;
+        this.get_dom_focus_sync_root = typeof options.getDomFocusSyncRoot === 'function'
+            ? options.getDomFocusSyncRoot
             : null;
 
         // Bind handlers to this instance
@@ -1003,7 +1008,14 @@ export const ChecklistHandler = {
 
     update_dom() {
         const t = this.Translation.t;
-        
+        const sync_focus_root = (typeof this.get_dom_focus_sync_root === 'function' ? this.get_dom_focus_sync_root() : null)
+            || this.container_ref;
+        const active_el_for_sync = document.activeElement;
+        const any_textarea_or_input_focused_in_sync_root = Boolean(
+            active_el_for_sync && sync_focus_root?.contains(active_el_for_sync) &&
+                (active_el_for_sync.tagName === 'TEXTAREA' || active_el_for_sync.tagName === 'INPUT')
+        );
+
         this.container_ref.querySelectorAll('.check-item[data-check-id]').forEach(check_wrapper => {
             const check_id = check_wrapper.dataset.checkId;
             const check_result_data = this.requirement_result_ref.checkResults?.[check_id]
@@ -1149,13 +1161,20 @@ export const ChecklistHandler = {
                 const locked_by_other_pc = is_remote_lock_held_by_other_user(lock_row_pc, get_current_user_name(), my_client_lock_id_pc);
 
                 if (observation_textarea) {
-                    observation_textarea.disabled = locked_by_other_pc && !this.is_audit_locked;
+                    const want_disabled = locked_by_other_pc && !this.is_audit_locked;
+                    if (observation_textarea.disabled !== want_disabled) {
+                        observation_textarea.disabled = want_disabled;
+                    }
                     const lock_pending = observation_textarea.dataset.gvLockPending === '1';
                     const acquiring_focus_here = lock_pending && document.activeElement === observation_textarea;
+                    let want_readonly = false;
                     if (observation_textarea.disabled) {
-                        observation_textarea.readOnly = false;
+                        want_readonly = false;
                     } else {
-                        observation_textarea.readOnly = this.is_audit_locked || (lock_pending && !acquiring_focus_here);
+                        want_readonly = this.is_audit_locked || (lock_pending && !acquiring_focus_here);
+                    }
+                    if (observation_textarea.readOnly !== want_readonly) {
+                        observation_textarea.readOnly = want_readonly;
                     }
                 }
                 const lock_hint_el = observation_wrapper?.querySelector('.gv-audit-part-lock-hint');
@@ -1169,11 +1188,9 @@ export const ChecklistHandler = {
                     }
                 }
                 const target_observation_value = pc_data.observationDetail || '';
-                const any_textarea_focused = document.activeElement && this.container_ref?.contains(document.activeElement) &&
-                    (document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'INPUT');
                 if (observation_textarea) {
                     const is_this_focused = document.activeElement === observation_textarea;
-                    const should_sync_obs = (!is_this_focused && !any_textarea_focused) || locked_by_other_pc;
+                    const should_sync_obs = (!is_this_focused && !any_textarea_or_input_focused_in_sync_root) || locked_by_other_pc;
                     if (should_sync_obs && observation_textarea.value !== target_observation_value) {
                         observation_textarea.value = target_observation_value;
                     }
@@ -1310,6 +1327,7 @@ export const ChecklistHandler = {
         }
         this._observation_focus_snapshots = new Map();
         this.is_dom_built = false;
+        this.get_dom_focus_sync_root = null;
         this.container_ref = null;
     }
 };

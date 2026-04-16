@@ -446,6 +446,11 @@ export function init_auto_resize_for_textarea(textarea_element) {
         textarea_element.style.height = 'auto';
         textarea_element.style.height = `${textarea_element.scrollHeight}px`;
     };
+    if (textarea_element.dataset.gvAutoResizeInit === '1') {
+        setTimeout(_perform_resize, 0);
+        return;
+    }
+    textarea_element.dataset.gvAutoResizeInit = '1';
     textarea_element.addEventListener('input', _perform_resize);
     setTimeout(_perform_resize, 0);
 }

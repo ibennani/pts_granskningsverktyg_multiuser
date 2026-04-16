@@ -812,7 +812,8 @@ export class RequirementAuditComponent {
                         sample_id: this.params?.sampleId ? String(this.params.sampleId) : null,
                         requirement_id: this.params?.requirementId ? String(this.params.requirementId) : null
                     };
-                }
+                },
+                getDomFocusSyncRoot: () => this.plate_element_ref
             }
         );
         
