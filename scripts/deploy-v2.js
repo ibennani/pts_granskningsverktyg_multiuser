@@ -3,6 +3,10 @@
  * Deploy v2 till servern.
  * Kräver: SSH-åtkomst. Lägg DEPLOY_SSH_PASSWORD i .env för automatisk inloggning (fungerar på Windows).
  *
+ * Miljövariabler (valfritt):
+ * - DEPLOY_HOST, DEPLOY_PATH, DEPLOY_USER — mål (standard: ux-granskningsverktyg.pts.ad, /var/www/granskningsverktyget-v2, …)
+ * - DEPLOY_SSH_READY_TIMEOUT_MS — max väntan på SSH-handshake i ms (standard 90000). Vid "Timed out while waiting for handshake": prova VPN och/eller höj värdet.
+ *
  * Användning:
  *   npm run deploy:v2
  */

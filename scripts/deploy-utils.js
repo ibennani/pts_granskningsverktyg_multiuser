@@ -20,6 +20,14 @@ const remotePath = process.env.DEPLOY_PATH || '/var/www/granskningsverktyget-v2'
 const sshPassword = process.env.DEPLOY_SSH_PASSWORD || '';
 const username = process.env.DEPLOY_USER || sshUser || process.env.USERNAME || process.env.USER || 'granskning';
 
+/** Max väntan på SSH-handshake (ms). Höj vid långsam VPN eller "Timed out while waiting for handshake". */
+const sshReadyTimeoutMs = (() => {
+    const raw = process.env.DEPLOY_SSH_READY_TIMEOUT_MS;
+    if (raw === undefined || raw === '') return 90000;
+    const n = Number.parseInt(String(raw), 10);
+    return Number.isFinite(n) && n >= 5000 ? n : 90000;
+})();
+
 let sshClient = null;
 
 function sshpass_available() {
@@ -44,7 +52,8 @@ async function getSshClient() {
         username,
         password: sshPassword,
         tryKeyboard: true,
-        readyTimeout: 20000
+        readyTimeout: sshReadyTimeoutMs,
+        keepaliveInterval: 10000
     });
     sshClient = ssh;
     return ssh;
@@ -114,13 +123,21 @@ function run(cmd, args, opts = {}) {
             if (cmd === 'ssh') {
                 const [sshHost, ...rest] = args;
                 finalCmd = 'sshpass';
-                finalArgs = ['-p', sshPassword, 'ssh', '-o', 'StrictHostKeyChecking=accept-new', sshHost, ...rest];
+                finalArgs = ['-p', sshPassword, 'ssh', '-o', 'StrictHostKeyChecking=accept-new', '-o', `ConnectTimeout=${Math.ceil(sshReadyTimeoutMs / 1000)}`, sshHost, ...rest];
             } else {
                 finalCmd = 'sshpass';
-                finalArgs = ['-p', sshPassword, 'scp', '-o', 'StrictHostKeyChecking=accept-new', ...args];
+                finalArgs = ['-p', sshPassword, 'scp', '-o', 'StrictHostKeyChecking=accept-new', '-o', `ConnectTimeout=${Math.ceil(sshReadyTimeoutMs / 1000)}`, ...args];
             }
         } else {
             throw new Error('DEPLOY_SSH_PASSWORD satt men sshpass saknas. Använd node-ssh (automatiskt) eller installera sshpass.');
+        }
+    } else if ((cmd === 'ssh' || cmd === 'scp') && !sshClient) {
+        const connect_sec = Math.max(5, Math.ceil(sshReadyTimeoutMs / 1000));
+        if (cmd === 'ssh') {
+            const [sshHost, ...rest] = args;
+            finalArgs = ['-o', `ConnectTimeout=${connect_sec}`, sshHost, ...rest];
+        } else {
+            finalArgs = ['-o', `ConnectTimeout=${connect_sec}`, ...args];
         }
     }
 
