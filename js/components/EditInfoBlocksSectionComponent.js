@@ -65,6 +65,29 @@ export const EditInfoBlocksSectionComponent = {
         return count;
     },
 
+    /**
+     * Lägger till block-id som finns i kravens infoBlocks men saknas i global ordning.
+     * Utan detta försvinner sådana block vid autospar i ordningsvyn (t.ex. efter import eller äldre data).
+     * @param {string[]} block_order
+     * @param {Record<string, unknown>} requirements
+     * @returns {string[]}
+     */
+    _merge_orphan_info_block_ids_into_order(block_order, requirements) {
+        const merged = [...block_order];
+        const seen = new Set(block_order);
+        for (const req of Object.values(requirements || {})) {
+            const ib = req?.infoBlocks;
+            if (!ib || typeof ib !== 'object') continue;
+            for (const id of Object.keys(ib)) {
+                if (!seen.has(id)) {
+                    seen.add(id);
+                    merged.push(id);
+                }
+            }
+        }
+        return merged;
+    },
+
     _save_info_blocks_order(new_order, block_names = {}, skip_render = false) {
         const state = this.getState();
         const currentRulefile = state?.ruleFileContent || {};
@@ -344,6 +367,8 @@ export const EditInfoBlocksSectionComponent = {
             'tips',
             'examples'
         ];
+        const requirements_map = state?.ruleFileContent?.requirements || {};
+        const working_order = this._merge_orphan_info_block_ids_into_order([...block_order], requirements_map);
 
         if (!this.edit_baseline) {
             this.edit_baseline = JSON.parse(JSON.stringify(state?.ruleFileContent || {}));
@@ -356,8 +381,6 @@ export const EditInfoBlocksSectionComponent = {
             text_content: t('rulefile_info_blocks_order_instruction')
         });
         editor.appendChild(info_text);
-
-        const working_order = [...block_order];
 
         const add_button = this.Helpers.create_element('button', {
             class_name: ['button', 'button-default', 'button-small'],
