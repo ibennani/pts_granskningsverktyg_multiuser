@@ -51,6 +51,10 @@ body.view-login .app-main-view-root {
     margin: 0 auto;
 }
 
+.login-plate-form {
+    margin: 0;
+}
+
 .login-plate .login-welcome-heading {
     margin: 0 0 0.75rem;
 }

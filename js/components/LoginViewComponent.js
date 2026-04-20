@@ -79,17 +79,18 @@ export class LoginViewComponent {
             attributes: { type: 'password', autocomplete: 'current-password' }
         });
 
+        let login_form = null;
         if (this.mode === 'login') {
-            plate.appendChild(label_name);
-            plate.appendChild(name_input);
-            plate.appendChild(label_password);
-            plate.appendChild(password_input);
+            login_form = this.Helpers.create_element('form', {
+                class_name: 'login-plate-form',
+                attributes: { novalidate: 'novalidate' }
+            });
         }
 
         const login_btn = this.Helpers.create_element('button', {
             class_name: ['button', 'button-primary'],
             text_content: t('login_button'),
-            attributes: { type: 'button' }
+            attributes: { type: 'submit' }
         });
 
         const forgot_btn = this.Helpers.create_element('button', {
@@ -196,45 +197,48 @@ export class LoginViewComponent {
             }
         };
 
-        login_btn.addEventListener('click', async () => {
-            const username = (name_input.value || '').trim();
-            const password = password_input.value || '';
-            if (!username) {
-                this.login_error_message = t('login_select_first');
-                this._should_focus_error = true;
-                this._last_error_mode = 'login';
-                this.render();
-                return;
-            }
-            if (!password) {
-                this.login_error_message = t('login_password_required');
-                this._should_focus_error = true;
-                this._last_error_mode = 'login';
-                this.render();
-                return;
-            }
-            this.login_error_message = '';
-            try {
-                const data = await login(username, password);
-                set_auth_token(data.token);
-                const user = await get_current_user_preferences();
-                const user_name = user?.name || username;
-                if (typeof sessionStorage !== 'undefined') {
-                    sessionStorage.setItem('gv_current_user_name', user_name);
+        if (login_form) {
+            login_form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const username = (name_input.value || '').trim();
+                const password = password_input.value || '';
+                if (!username) {
+                    this.login_error_message = t('login_select_first');
+                    this._should_focus_error = true;
+                    this._last_error_mode = 'login';
+                    this.render();
+                    return;
                 }
-                set_current_user_admin(!!user?.is_admin);
-                window.__GV_CURRENT_USER_NAME__ = user_name;
-                if (typeof this.on_login_callback === 'function') {
-                    this.on_login_callback();
+                if (!password) {
+                    this.login_error_message = t('login_password_required');
+                    this._should_focus_error = true;
+                    this._last_error_mode = 'login';
+                    this.render();
+                    return;
                 }
-            } catch (err) {
-                const msg = err?.message || (err?.status === 401 ? t('login_error_invalid_credentials') : t('login_error_generic'));
-                this.login_error_message = msg;
-                this._should_focus_error = true;
-                this._last_error_mode = 'login';
-                this.render();
-            }
-        });
+                this.login_error_message = '';
+                try {
+                    const data = await login(username, password);
+                    set_auth_token(data.token);
+                    const user = await get_current_user_preferences();
+                    const user_name = user?.name || username;
+                    if (typeof sessionStorage !== 'undefined') {
+                        sessionStorage.setItem('gv_current_user_name', user_name);
+                    }
+                    set_current_user_admin(!!user?.is_admin);
+                    window.__GV_CURRENT_USER_NAME__ = user_name;
+                    if (typeof this.on_login_callback === 'function') {
+                        this.on_login_callback();
+                    }
+                } catch (err) {
+                    const msg = err?.message || (err?.status === 401 ? t('login_error_invalid_credentials') : t('login_error_generic'));
+                    this.login_error_message = msg;
+                    this._should_focus_error = true;
+                    this._last_error_mode = 'login';
+                    this.render();
+                }
+            });
+        }
 
         forgot_btn.addEventListener('click', async () => {
             this.mode = 'reset';
@@ -308,7 +312,16 @@ export class LoginViewComponent {
             }
         });
 
-        plate.appendChild(mode_container);
+        if (this.mode === 'login' && login_form) {
+            login_form.appendChild(label_name);
+            login_form.appendChild(name_input);
+            login_form.appendChild(label_password);
+            login_form.appendChild(password_input);
+            login_form.appendChild(mode_container);
+            plate.appendChild(login_form);
+        } else {
+            plate.appendChild(mode_container);
+        }
         render_mode();
 
         this.root.appendChild(plate);
