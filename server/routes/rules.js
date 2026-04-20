@@ -6,6 +6,7 @@ import { requireAdmin } from '../auth/middleware.js';
 import { import_payload_rate_limiter } from '../middleware/rateLimiter.js';
 import { check_json_structure_depth_and_size } from '../../js/utils/json_structure_guard.js';
 import { parse_part_key } from '../../js/logic/rulefile_part_keys.js';
+import { normalize_rulefile_content_object } from '../utils/rulefile_content_utils.js';
 
 const router = express.Router();
 
@@ -629,26 +630,39 @@ router.post('/:id/publish_production', async (req, res) => {
         if (!content) {
             return res.status(400).json({ error: 'Produktionskopian saknar innehåll att publicera.' });
         }
+        const content_obj = normalize_rulefile_content_object(content);
+        if (!content_obj) {
+            return res.status(400).json({ error: 'Produktionskopians innehåll kunde inte tolkas som JSON.' });
+        }
 
         const baseResult = await query(
             'SELECT published_content FROM rule_sets WHERE id = $1',
             [base_id]
         );
-        const current_published_version =
-            baseResult.rows.length > 0 && baseResult.rows[0].published_content?.metadata?.version
-                ? String(baseResult.rows[0].published_content.metadata.version).trim()
-                : null;
+        const published_obj = baseResult.rows.length > 0
+            ? normalize_rulefile_content_object(baseResult.rows[0].published_content)
+            : null;
+        const current_published_version = published_obj?.metadata?.version
+            ? String(published_obj.metadata.version).trim()
+            : null;
 
         const now = new Date();
         const current_year = now.getFullYear();
         const current_month = now.getMonth() + 1;
+        const draft_metadata_version = content_obj?.metadata?.version
+            ? String(content_obj.metadata.version).trim()
+            : '';
         const version_match =
             typeof current_published_version === 'string' && current_published_version
                 ? current_published_version.match(/^(\d{4})\.(\d{1,2})\.r(\d+)$/)
                 : null;
 
         let version_str;
-        if (version_match) {
+        if (draft_metadata_version) {
+            // Om arbetskopian redan har ett versionsnummer (t.ex. från uppladdad regelfil),
+            // ska publiceringen behålla exakt samma version.
+            version_str = draft_metadata_version;
+        } else if (version_match) {
             const [, version_year, version_month, release] = version_match;
             const version_year_number = parseInt(version_year, 10);
             const version_month_number = parseInt(version_month, 10);
@@ -664,15 +678,13 @@ router.post('/:id/publish_production', async (req, res) => {
             version_str = `${current_year}.${current_month}.r1`;
         }
 
-        const content_with_version = typeof content === 'object' && content !== null
-            ? {
-                ...content,
-                metadata: {
-                    ...(content.metadata || {}),
-                    version: version_str
-                }
+        const content_with_version = {
+            ...content_obj,
+            metadata: {
+                ...(content_obj.metadata || {}),
+                version: version_str
             }
-            : content;
+        };
 
         const updateBaseResult = await query(
             `UPDATE rule_sets

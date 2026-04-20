@@ -33,29 +33,150 @@ export function render_rulefile_change_log(params) {
     const removed_requirements = Array.isArray(report.removed_requirements) ? report.removed_requirements : [];
     const updated_requirements = Array.isArray(report.updated_requirements) ? report.updated_requirements : [];
 
+    let accordion_auto_id = 0;
+    const next_accordion_id = () => {
+        accordion_auto_id += 1;
+        return `rulefile-change-log-acc-${accordion_auto_id}`;
+    };
+
+    const get_text = (val) => (val === null || val === undefined ? '' : String(val)).trim();
+    const get_check_human_label = (check_obj) => {
+        if (!check_obj || typeof check_obj !== 'object') return '';
+        // Prioritera villkor/condition eftersom det brukar vara det användaren känner igen.
+        const condition = get_text(check_obj.condition);
+        if (condition) return condition;
+        const title = get_text(check_obj.title);
+        if (title) return title;
+        const req_text = get_text(check_obj.requirement);
+        if (req_text) return req_text;
+        return '';
+    };
+    const get_added_check_labels_for_requirement = (req_def, added_check_ids) => {
+        const out = [];
+        const checks = Array.isArray(req_def?.checks) ? req_def.checks : [];
+        const id_to_check = new Map();
+        checks.forEach((c) => {
+            const id = get_text(c?.id || c?.key);
+            if (id) id_to_check.set(id, c);
+        });
+        (added_check_ids || []).forEach((check_id) => {
+            const c = id_to_check.get(get_text(check_id)) || null;
+            const label = get_check_human_label(c);
+            if (label) {
+                out.push(label);
+            } else {
+                // Undvik tekniska id:n i UI.
+                out.push(t('update_rulefile_change_log_new_check_fallback'));
+            }
+        });
+        // Rensa dubbletter utan att förstöra ordningen.
+        const seen = new Set();
+        return out.filter((x) => {
+            const k = get_text(x);
+            if (!k || seen.has(k)) return false;
+            seen.add(k);
+            return true;
+        });
+    };
+
+    const stable_json = (obj) => {
+        try {
+            return JSON.stringify(obj === undefined ? null : obj);
+        } catch {
+            return '';
+        }
+    };
+
+    const summarize_requirement_changes = (old_req_def, new_req_def) => {
+        const changes = [];
+        if (get_text(old_req_def?.title) !== get_text(new_req_def?.title)) changes.push(t('update_rulefile_change_log_changed_title'));
+        if (stable_json(old_req_def?.standardReference) !== stable_json(new_req_def?.standardReference)) changes.push(t('update_rulefile_change_log_changed_reference'));
+        if (stable_json(old_req_def?.contentType) !== stable_json(new_req_def?.contentType)) changes.push(t('update_rulefile_change_log_changed_content_type'));
+        if (stable_json(old_req_def?.expectedObservation) !== stable_json(new_req_def?.expectedObservation)) changes.push(t('update_rulefile_change_log_changed_expected_observation'));
+        if (stable_json(old_req_def?.instructions) !== stable_json(new_req_def?.instructions)) changes.push(t('update_rulefile_change_log_changed_instructions'));
+        if (stable_json(old_req_def?.tips) !== stable_json(new_req_def?.tips)) changes.push(t('update_rulefile_change_log_changed_tips'));
+        if (stable_json(old_req_def?.exceptions) !== stable_json(new_req_def?.exceptions)) changes.push(t('update_rulefile_change_log_changed_exceptions'));
+        if (stable_json(old_req_def?.commonErrors) !== stable_json(new_req_def?.commonErrors)) changes.push(t('update_rulefile_change_log_changed_common_errors'));
+        if (stable_json(old_req_def?.examples) !== stable_json(new_req_def?.examples)) changes.push(t('update_rulefile_change_log_changed_examples'));
+        if (stable_json(old_req_def?.checks) !== stable_json(new_req_def?.checks)) changes.push(t('update_rulefile_change_log_changed_checks'));
+        if (stable_json(old_req_def?.metadata) !== stable_json(new_req_def?.metadata)) changes.push(t('update_rulefile_change_log_changed_other'));
+
+        // Fallback om vi inte kan identifiera något fält (ska vara ovanligt).
+        return changes.length ? changes : [t('update_rulefile_change_log_changed_other')];
+    };
+
     const create_accordion = (title_text, count, build_content_fn) => {
         const section = Helpers.create_element('section', { class_name: 'rulefile-change-log__accordion' });
+        const base_id = next_accordion_id();
+        const header_id = `${base_id}-header`;
+        const content_id = `${base_id}-content`;
 
         const header_button = Helpers.create_element('button', {
             class_name: ['button', 'button-default', 'rulefile-change-log__accordion-header'],
-            text_content: `${title_text} (${count})`
+            attributes: {
+                type: 'button',
+                id: header_id,
+                'aria-controls': content_id,
+                'aria-expanded': 'false'
+            }
         });
 
         const content = Helpers.create_element('div', {
-            class_name: 'rulefile-change-log__accordion-content'
+            class_name: 'rulefile-change-log__accordion-content',
+            attributes: {
+                id: content_id,
+                role: 'region',
+                'aria-labelledby': header_id
+            }
         });
-        content.style.display = 'none';
+        // Rullgardinsanimation: vi styr max-height i JS (se click handler).
+        content.style.maxHeight = '0px';
+
+        const header_inner = Helpers.create_element('span', { class_name: 'rulefile-change-log__accordion-header-inner' });
+        const header_title = Helpers.create_element('span', {
+            class_name: 'rulefile-change-log__accordion-title',
+            text_content: title_text
+        });
+        const header_count = Helpers.create_element('span', {
+            class_name: 'rulefile-change-log__accordion-count',
+            text_content: `(${count})`
+        });
+        const chevron = Helpers.create_element('span', {
+            class_name: 'rulefile-change-log__accordion-chevron',
+            attributes: { 'aria-hidden': 'true' }
+        });
+        header_inner.append(header_title, header_count, chevron);
+        header_button.appendChild(header_inner);
+
+        const content_inner = Helpers.create_element('div', { class_name: 'rulefile-change-log__accordion-content-inner' });
+        content.appendChild(content_inner);
 
         header_button.addEventListener('click', () => {
-            const is_hidden = content.style.display === 'none';
-            content.style.display = is_hidden ? '' : 'none';
+            const is_open = section.classList.contains('rulefile-change-log__accordion--open');
+            header_button.setAttribute('aria-expanded', is_open ? 'false' : 'true');
+            if (!is_open) {
+                section.classList.add('rulefile-change-log__accordion--open');
+                // Expandera mjukt till content_inner höjd.
+                const h = content_inner.scrollHeight;
+                content.style.maxHeight = `${h}px`;
+            } else {
+                section.classList.remove('rulefile-change-log__accordion--open');
+                content.style.maxHeight = '0px';
+            }
         });
 
         section.appendChild(header_button);
-        build_content_fn(content);
+        build_content_fn(content_inner);
         section.appendChild(content);
 
         container.appendChild(section);
+    };
+
+    const create_requirement_heading_text = (title, ref_text) => {
+        const base = get_text(title) || '';
+        const ref = get_text(ref_text);
+        if (base && ref) return `${base} (${ref})`;
+        return base || ref || '';
     };
 
     const build_added_content = (parent) => {
@@ -72,11 +193,8 @@ export function render_rulefile_change_log(params) {
             const li = Helpers.create_element('li', { class_name: 'rulefile-change-log__item' });
             const req_def = new_reqs[item.id] || {};
             const ref_text = req_def?.standardReference?.text;
-            let heading_text = item.title || item.id;
-            if (ref_text) {
-                heading_text += ` (${ref_text})`;
-            }
-            const h4 = Helpers.create_element('h4', { text_content: heading_text });
+            const heading_text = create_requirement_heading_text(item.title || item.id, ref_text);
+            const h4 = Helpers.create_element('h4', { class_name: 'rulefile-change-log__req-title', text_content: heading_text });
             li.appendChild(h4);
 
             const content_type = req_def?.contentType || null;
@@ -107,11 +225,8 @@ export function render_rulefile_change_log(params) {
             const li = Helpers.create_element('li', { class_name: 'rulefile-change-log__item' });
             const req_def = old_reqs[item.id] || {};
             const ref_text = req_def?.standardReference?.text;
-            let heading_text = item.title || item.id;
-            if (ref_text) {
-                heading_text += ` (${ref_text})`;
-            }
-            const h4 = Helpers.create_element('h4', { text_content: heading_text });
+            const heading_text = create_requirement_heading_text(item.title || item.id, ref_text);
+            const h4 = Helpers.create_element('h4', { class_name: 'rulefile-change-log__req-title', text_content: heading_text });
             li.appendChild(h4);
             ul.appendChild(li);
         });
@@ -136,59 +251,69 @@ export function render_rulefile_change_log(params) {
             const new_req_def = new_reqs[item.id] || {};
             const ref_text = (new_req_def.standardReference || old_req_def.standardReference || {})?.text;
 
-            let heading_text = item.title || item.id;
-            if (ref_text) {
-                heading_text += ` (${ref_text})`;
-            }
-
-            li.appendChild(Helpers.create_element('h4', { text_content: heading_text }));
-
-            li.appendChild(Helpers.create_element('p', {
-                class_name: 'text-muted',
+            const heading_text = create_requirement_heading_text(item.title || item.id, ref_text);
+            const article = Helpers.create_element('article', { class_name: 'rulefile-change-log__req' });
+            article.appendChild(Helpers.create_element('h4', { class_name: 'rulefile-change-log__req-title', text_content: heading_text }));
+            const summary_p = Helpers.create_element('p', {
+                class_name: 'rulefile-change-log__req-summary',
                 text_content: t('update_rulefile_change_log_requirement_changed')
-            }));
+            });
+            article.appendChild(summary_p);
 
             const pc_changes = item.passCriteriaChanges || {};
             const added_checks = Array.isArray(pc_changes.addedChecks) ? pc_changes.addedChecks : [];
             const added_pcs = Array.isArray(pc_changes.added) ? pc_changes.added : [];
             const updated_pcs = Array.isArray(pc_changes.updated) ? pc_changes.updated : [];
 
-            if (added_checks.length > 0) {
-                const heading = Helpers.create_element('h5', { text_content: t('update_rulefile_change_log_new_checks_heading') });
-                li.appendChild(heading);
-                const checks_ul = Helpers.create_element('ul', { class_name: 'rulefile-change-log__sublist' });
-                added_checks.forEach((check_id) => {
-                    checks_ul.appendChild(Helpers.create_element('li', {
-                        text_content: String(check_id)
-                    }));
+            // Extra info om vad som ändrats (framförallt när passCriteriaChanges är tomt)
+            const change_labels = summarize_requirement_changes(old_req_def, new_req_def);
+            if (Array.isArray(change_labels) && change_labels.length > 0) {
+                const hint = Helpers.create_element('p', {
+                    class_name: 'rulefile-change-log__req-hint',
+                    text_content: `${t('update_rulefile_change_log_changed_parts_prefix')} ${change_labels.join(', ')}.`
                 });
-                li.appendChild(checks_ul);
+                article.appendChild(hint);
+            }
+
+            if (added_checks.length > 0) {
+                const heading = Helpers.create_element('h5', { class_name: 'rulefile-change-log__subheading', text_content: t('update_rulefile_change_log_new_checks_heading') });
+                const checks_ul = Helpers.create_element('ul', { class_name: 'rulefile-change-log__sublist' });
+                const labels = get_added_check_labels_for_requirement(new_req_def || old_req_def, added_checks);
+                labels.forEach((label) => {
+                    checks_ul.appendChild(Helpers.create_element('li', { text_content: label }));
+                });
+                const block = Helpers.create_element('section', { class_name: 'rulefile-change-log__change-block' });
+                block.append(heading, checks_ul);
+                article.appendChild(block);
             }
 
             if (added_pcs.length > 0) {
-                const heading = Helpers.create_element('h5', { text_content: t('update_rulefile_change_log_new_pass_criteria_heading') });
-                li.appendChild(heading);
+                const heading = Helpers.create_element('h5', { class_name: 'rulefile-change-log__subheading', text_content: t('update_rulefile_change_log_new_pass_criteria_heading') });
                 const pcs_ul = Helpers.create_element('ul', { class_name: 'rulefile-change-log__sublist' });
                 added_pcs.forEach((pc) => {
-                    pcs_ul.appendChild(Helpers.create_element('li', {
-                        text_content: pc.text || ''
-                    }));
+                    const txt = get_text(pc?.text);
+                    if (!txt) return;
+                    pcs_ul.appendChild(Helpers.create_element('li', { text_content: txt }));
                 });
-                li.appendChild(pcs_ul);
+                const block = Helpers.create_element('section', { class_name: 'rulefile-change-log__change-block' });
+                block.append(heading, pcs_ul);
+                article.appendChild(block);
             }
 
             if (updated_pcs.length > 0) {
-                const heading = Helpers.create_element('h5', { text_content: t('update_rulefile_change_log_updated_pass_criteria_heading') });
-                li.appendChild(heading);
+                const heading = Helpers.create_element('h5', { class_name: 'rulefile-change-log__subheading', text_content: t('update_rulefile_change_log_updated_pass_criteria_heading') });
                 const pcs_ul = Helpers.create_element('ul', { class_name: 'rulefile-change-log__sublist' });
                 updated_pcs.forEach((pc) => {
-                    pcs_ul.appendChild(Helpers.create_element('li', {
-                        text_content: pc.text || ''
-                    }));
+                    const txt = get_text(pc?.text);
+                    if (!txt) return;
+                    pcs_ul.appendChild(Helpers.create_element('li', { text_content: txt }));
                 });
-                li.appendChild(pcs_ul);
+                const block = Helpers.create_element('section', { class_name: 'rulefile-change-log__change-block' });
+                block.append(heading, pcs_ul);
+                article.appendChild(block);
             }
 
+            li.appendChild(article);
             ul.appendChild(li);
         });
 

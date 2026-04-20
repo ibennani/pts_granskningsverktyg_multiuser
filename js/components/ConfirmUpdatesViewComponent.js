@@ -197,7 +197,11 @@ export class ConfirmUpdatesViewComponent {
                 });
                 confirm_btn.addEventListener('click', () => {
                     modal.close(trigger_button);
-                    this.router('final_confirm_updates');
+                    this.dispatch({ type: this.StoreActionTypes.CONFIRM_ALL_REVIEWED_REQUIREMENTS });
+                    if (this.NotificationComponent?.show_global_message) {
+                        this.NotificationComponent.show_global_message(t('all_updated_assessments_confirmed_toast'), 'success');
+                    }
+                    this.router('audit_overview');
                 });
                 const later_btn = this.Helpers.create_element('button', {
                     class_name: ['button', 'button-default'],

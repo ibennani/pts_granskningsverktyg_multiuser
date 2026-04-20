@@ -85,3 +85,160 @@
     margin-bottom: 0.3rem;
     color: var(--text-color);
 }
+
+/* ---- Ändringslogg (Uppdatera regelfil) ---- */
+.update-rulefile-view-plate .rulefile-change-log {
+    margin-top: 1rem;
+}
+
+.update-rulefile-view-plate .rulefile-change-log__accordion {
+    border: 2px solid var(--border-color);
+    border-left: 3px solid color-mix(in srgb, var(--primary-color) 60%, transparent);
+    border-radius: var(--border-radius);
+    background: var(--background-color, transparent);
+    margin: 0 0 0.9rem;
+    overflow: hidden;
+}
+
+.update-rulefile-view-plate .rulefile-change-log__accordion-header {
+    width: 100%;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    text-align: left;
+    padding: 0.9rem 1rem;
+    border: none;
+    border-radius: 0;
+    /* Samma känsla som sekundär knapp (button-default) */
+    background-color: var(--button-default-bg);
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.update-rulefile-view-plate .rulefile-change-log__accordion-header:hover {
+    background-color: var(--button-default-hover-bg);
+}
+
+.update-rulefile-view-plate .rulefile-change-log__accordion-header:focus-visible {
+    outline: 3px solid var(--focus-ring-color, #1a73e8);
+    outline-offset: 2px;
+}
+
+.update-rulefile-view-plate .rulefile-change-log__accordion-header-inner {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+.update-rulefile-view-plate .rulefile-change-log__accordion-title {
+    font-size: 1.05rem;
+}
+
+.update-rulefile-view-plate .rulefile-change-log__accordion-count {
+    color: var(--text-color-secondary, #555);
+    font-weight: 500;
+}
+
+.update-rulefile-view-plate .rulefile-change-log__accordion-chevron {
+    margin-left: auto;
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 8px solid currentColor;
+    opacity: 0.75;
+    transform-origin: center;
+    transform: rotate(0deg);
+    transition: transform 120ms ease-in-out;
+}
+
+.update-rulefile-view-plate .rulefile-change-log__accordion--open .rulefile-change-log__accordion-chevron {
+    transform: rotate(180deg);
+}
+
+.update-rulefile-view-plate .rulefile-change-log__accordion-content {
+    padding: 0;
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transition: max-height 0.5s ease, opacity 0.5s ease;
+}
+
+.update-rulefile-view-plate .rulefile-change-log__accordion--open .rulefile-change-log__accordion-content {
+    opacity: 1;
+}
+
+.update-rulefile-view-plate .rulefile-change-log__accordion-content-inner {
+    padding: 0.9rem 1rem 0.2rem;
+    background-color: var(--plate-background-color);
+}
+
+.update-rulefile-view-plate .rulefile-change-log__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.update-rulefile-view-plate .rulefile-change-log__item {
+    margin: 0;
+}
+
+.update-rulefile-view-plate .rulefile-change-log__req {
+    border: 2px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 0.85rem 0.95rem;
+    background-color: #FFF5E6;
+}
+
+.update-rulefile-view-plate .rulefile-change-log__req-title {
+    margin: 0 0 0.25rem;
+    font-size: 1.05rem;
+    line-height: 1.35;
+}
+
+.update-rulefile-view-plate .rulefile-change-log__req-summary {
+    margin: 0 0 0.75rem;
+    color: var(--text-color-secondary, #555);
+    line-height: 1.55;
+}
+
+.update-rulefile-view-plate .rulefile-change-log__req-hint {
+    margin: -0.45rem 0 0.7rem;
+    color: var(--text-color-muted);
+    line-height: 1.55;
+}
+
+.update-rulefile-view-plate .rulefile-change-log__change-block {
+    margin: 0.7rem 0 0;
+    padding-top: 0.7rem;
+    border-top: 1px dashed color-mix(in srgb, var(--secondary-color) 55%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .update-rulefile-view-plate .rulefile-change-log__accordion-content {
+        transition: none;
+    }
+    .update-rulefile-view-plate .rulefile-change-log__accordion-chevron {
+        transition: none;
+    }
+}
+
+.update-rulefile-view-plate .rulefile-change-log__subheading {
+    margin: 0 0 0.35rem;
+    font-size: 0.98rem;
+}
+
+.update-rulefile-view-plate .rulefile-change-log__sublist {
+    margin: 0;
+    padding-left: 1.2rem;
+    list-style: disc;
+}
+
+.update-rulefile-view-plate .rulefile-change-log__sublist li {
+    margin: 0 0 0.25rem;
+    line-height: 1.55;
+}

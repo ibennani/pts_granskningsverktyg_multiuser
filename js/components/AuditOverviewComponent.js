@@ -32,6 +32,9 @@ export class AuditOverviewComponent {
         this._sampleTypeChartComponent = null;
         this.previously_focused_element = null;
         this._last_audit_metadata_snapshot = null;
+        this._last_rulefile_version_snapshot = null;
+        this._last_audit_id_snapshot = null;
+        this._last_rule_set_id_snapshot = null;
         this.newerRuleAvailable = null;
         this._newerRuleCheckRequested = false;
         this._auditInfoComponent = null;
@@ -58,6 +61,15 @@ export class AuditOverviewComponent {
         if (!this.unsubscribe_from_store_function && typeof this.subscribe === 'function') {
             this.unsubscribe_from_store_function = this.subscribe(this.handle_store_update);
         }
+
+        // Den här komponenten är en singleton och kan återanvändas mellan olika granskningar.
+        // Se till att "nyare regelfil?"-kontrollen körs igen när översikten öppnas.
+        this.newerRuleAvailable = null;
+        this._newerRuleCheckRequested = false;
+        this._last_audit_metadata_snapshot = null;
+        this._last_rulefile_version_snapshot = null;
+        this._last_audit_id_snapshot = null;
+        this._last_rule_set_id_snapshot = null;
     }
 
     async init_sub_components() {
@@ -107,7 +119,30 @@ export class AuditOverviewComponent {
         const prev_meta = this._last_audit_metadata_snapshot || {};
         const metadata_changed = JSON.stringify(new_meta) !== JSON.stringify(prev_meta);
 
-        if (metadata_changed) {
+        const next_rulefile_version = (new_state?.ruleFileContent?.metadata?.version || '').toString().trim();
+        const prev_rulefile_version = (this._last_rulefile_version_snapshot || '').toString().trim();
+        const rulefile_version_changed = next_rulefile_version !== prev_rulefile_version;
+
+        const next_audit_id = (new_state?.auditId || '').toString();
+        const next_rule_set_id = (new_state?.ruleSetId || '').toString();
+        const prev_audit_id = (this._last_audit_id_snapshot || '').toString();
+        const prev_rule_set_id = (this._last_rule_set_id_snapshot || '').toString();
+        const audit_identity_changed = next_audit_id !== prev_audit_id || next_rule_set_id !== prev_rule_set_id;
+
+        if (rulefile_version_changed) {
+            // Efter t.ex. "Uppdatera regelfil" måste vi köra en ny kontroll, annars kan den gamla
+            // newerRuleAvailable ligga kvar och fortsätta visa bannern.
+            this._newerRuleCheckRequested = false;
+            this.newerRuleAvailable = null;
+        }
+
+        if (audit_identity_changed) {
+            // När man byter till en annan granskning måste vi alltid göra om kontrollen.
+            this._newerRuleCheckRequested = false;
+            this.newerRuleAvailable = null;
+        }
+
+        if (metadata_changed || rulefile_version_changed || audit_identity_changed) {
             this.render();
         }
     }
@@ -126,8 +161,14 @@ export class AuditOverviewComponent {
                 this.root.appendChild(error_div);
             }
             this._last_audit_metadata_snapshot = null;
+            this._last_rulefile_version_snapshot = null;
+            this._last_audit_id_snapshot = null;
+            this._last_rule_set_id_snapshot = null;
             return;
         }
+        this._last_rulefile_version_snapshot = (current_global_state?.ruleFileContent?.metadata?.version || '').toString().trim();
+        this._last_audit_id_snapshot = (current_global_state?.auditId || '').toString();
+        this._last_rule_set_id_snapshot = (current_global_state?.ruleSetId || '').toString();
 
         const plate_element = this.Helpers.create_element('div', { class_name: 'content-plate audit-overview-plate' });
         this.root.appendChild(plate_element);
