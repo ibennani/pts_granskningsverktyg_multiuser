@@ -16,6 +16,43 @@ const NOTIFICATION_COOLDOWN_KEY = 'gv_version_notification_shown';
 const is_production = typeof window !== 'undefined' && window.location.hostname === 'ux-granskningsverktyg.pts.ad';
 const EFFECTIVE_CHECK_INTERVAL_MS = is_production ? 60000 : 30000;
 
+/**
+ * Bygger en omladdnings-URL som behåller path + query + hash, men uppdaterar/adderar
+ * en cache-busting-parameter så att omladdningen inte fastnar på gamla resurser.
+ *
+ * @param {string} current_href
+ * @param {number} now_ms
+ * @returns {string}
+ */
+export function build_reload_url(current_href, now_ms) {
+    try {
+        const url = new URL(current_href, window.location.origin);
+        url.searchParams.set('__reload', String(now_ms));
+        const pathname = url.pathname || '/';
+        return pathname + url.search + url.hash;
+    } catch (_) {
+        const pathname = (typeof window !== 'undefined' && window.location && window.location.pathname) ? window.location.pathname : '/';
+        const hash = (typeof window !== 'undefined' && window.location && window.location.hash) ? window.location.hash : '';
+        return String(pathname || '/') + `?__reload=${encodeURIComponent(String(now_ms))}` + String(hash || '');
+    }
+}
+
+/**
+ * Fetch-options för att undvika att browserns HTTP-cache påverkar versionskontrollen.
+ * @returns {{ cache: RequestCache }}
+ */
+export function get_build_info_fetch_options() {
+    return { cache: 'no-store' };
+}
+
+/**
+ * @param {number} ms
+ * @returns {Promise<void>}
+ */
+function sleep_ms(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function parse_build_info_from_text(text) {
     const start = text.indexOf('window.BUILD_INFO = ');
     if (start === -1) return null;
@@ -55,7 +92,7 @@ export function init_version_check_service() {
             return null;
         }
         const url = `./build-info.js?t=${Date.now()}`;
-        const res = await fetch(url, { cache: 'no-store' });
+        const res = await fetch(url, get_build_info_fetch_options());
         if (!res.ok) return null;
         const text = await res.text();
         return parse_build_info_from_text(text);
@@ -94,6 +131,9 @@ export function init_version_check_service() {
                 app_runtime_refs.notification_component.show_global_critical_message_with_action(msg, 'warning', {
                     label,
                     callback: async () => {
+                        if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+                            return;
+                        }
                         try {
                             const state = getState();
                             const audit_id = state?.auditId;
@@ -125,9 +165,9 @@ export function init_version_check_service() {
                         }
                         // Workbox/VitePWA kan annars servera gamla filer från precache utan hård omladdning.
                         await clear_same_origin_sw_and_caches();
-                        const pathname = window.location.pathname || '/';
-                        const hash = window.location.hash || '';
-                        window.location.href = pathname + '?_=' + Date.now() + hash;
+                        await sleep_ms(50);
+                        const next_url = build_reload_url(window.location.href, Date.now());
+                        window.location.replace(next_url);
                     }
                 });
             }
