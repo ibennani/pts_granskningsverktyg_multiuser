@@ -237,7 +237,9 @@ function ensure_mobile_controls_nav_dom(state, layout, main_shell, right_sidebar
         menu_button.addEventListener('click', () => {
             try {
                 document.dispatchEvent(new CustomEvent('gv:toggle_side_menu'));
-            } catch (e) {}
+            } catch (e) {
+                console.error(e);
+            }
         });
         const menu_icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
         menu_icon.setAttribute('viewBox', '0 0 24 24');

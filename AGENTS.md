@@ -77,9 +77,14 @@ Projektet är organiserat enligt följande struktur:
 2. Använd `t('nyckel')` i koden
 
 ### Testa ändringar
-- Kör Playwright: `npx playwright test` (med rätt `baseURL`)
-- Kör `npm test` för Jest
-- Kör `npm run lint` för kodkvalitet
+- Kör snabbsviten: `npm run check` (lint + TypeScript-typkontroll + enhetstester)
+- Kör enhetstester: `npm test`
+- Kör lint: `npm run lint`
+- Kör TypeScript-lint (vid behov): `npm run lint:ts`
+- Kör typkontroll: `npm run typecheck`
+- Kör E2E (smoke, Chromium): `npm run test:e2e:smoke`
+- Kör E2E (full svit): `npm run test:e2e`
+- Kör “allt” inför release/PR: `npm run check:full`
 
 ## Kända begränsningar
 
