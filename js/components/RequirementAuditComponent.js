@@ -581,6 +581,14 @@ export class RequirementAuditComponent {
         return addedChecks.length > 0 || added.length > 0 ? { addedChecks, added, updated: [] } : null;
     }
 
+    /**
+     * Kravresultat → store (skip_render / sidomeny):
+     * - `save_requirement_result_spar_bakgrund` / autospar: skip_render true (ingen global omritning).
+     * - `handle_checklist_status_change`: skip_render false så sidomeny/räknare uppdateras; vy patchas via subscribe.
+     * - `onStuckDescriptionSaved`: skip_render false avsiktligt (full synk av UI).
+     * - `_patch_audit_part_to_server` / poll: REPLACE_STATE_FROM_REMOTE utan skip_render; särskild hantering vid fokus i plåt.
+     * - `handle_navigation` confirm_reviewed: dispatch utan skip_render efter timeout.
+     */
     dispatch_result_update(modified_result_object, options = {}) {
         (this.current_requirement.checks || []).forEach(check_def => {
             const check_res = modified_result_object.checkResults[check_def.id];
@@ -594,7 +602,7 @@ export class RequirementAuditComponent {
         if (previous_from_store
             && typeof this.AuditLogic.requirement_results_equal_for_last_updated === 'function'
             && this.AuditLogic.requirement_results_equal_for_last_updated(previous_from_store, modified_result_object)) {
-            return;
+            return Promise.resolve();
         }
 
         if (options.skipLastStatusBump === true && previous_from_store) {
@@ -605,7 +613,7 @@ export class RequirementAuditComponent {
             modified_result_object.lastStatusUpdateBy = get_current_user_name();
         }
 
-        this.dispatch({
+        return this.dispatch({
             type: this.StoreActionTypes.UPDATE_REQUIREMENT_RESULT,
             payload: {
                 sampleId: this.params.sampleId,
@@ -616,9 +624,23 @@ export class RequirementAuditComponent {
         });
     }
 
+    /**
+     * Sparar aktuellt kravresultat med skip_render så global prenumeration inte kör full vyomritning.
+     * Använd när DOM redan har det värde som ska sparas (autospar, observation direkt).
+     * @param {{ skipLastStatusBump?: boolean }} [opts]
+     * @returns {Promise<unknown>}
+     */
+    save_requirement_result_spar_bakgrund(opts = {}) {
+        if (!this.current_result) return Promise.resolve();
+        return this.dispatch_result_update(this.current_result, {
+            skipRender: true,
+            skipLastStatusBump: opts.skipLastStatusBump === true
+        });
+    }
+
     save_result_immediately({ skipRender = false, skipLastStatusBump = false } = {}) {
-        if (!this.current_result) return;
-        this.dispatch_result_update(this.current_result, { skipRender, skipLastStatusBump });
+        if (!this.current_result) return Promise.resolve();
+        return this.dispatch_result_update(this.current_result, { skipRender, skipLastStatusBump });
     }
 
     get_observations_from_other_samples(check_id, pc_id) {
@@ -775,8 +797,8 @@ export class RequirementAuditComponent {
             {
                 onStatusChange: this.handle_checklist_status_change,
                 onObservationChange: () => this.autosave_session?.request_autosave?.(),
-                onObservationChangeImmediate: () => this.save_result_immediately({ skipRender: true }),
-                onObservationBlurCommit: () => this.save_result_immediately({ skipRender: true, skipLastStatusBump: false }),
+                onObservationChangeImmediate: () => { void this.save_requirement_result_spar_bakgrund(); },
+                onObservationBlurCommit: () => { void this.save_requirement_result_spar_bakgrund(); },
                 onBeforeReleaseObservationLock: () => {
                     this.autosave_session?.flush?.({ should_trim: false, skip_render: true });
                 },
@@ -1193,6 +1215,18 @@ export class RequirementAuditComponent {
     }
 
     async render() {
+        if (typeof window !== 'undefined' && window.__GV_DEBUG_AUTOSAVE_FOCUS && this.plate_element_ref) {
+            const ae = document.activeElement;
+            const tag = ae?.tagName?.toLowerCase();
+            if (ae && this.plate_element_ref.contains(ae) && (tag === 'textarea' || tag === 'input')) {
+                consoleManager.log('[GV-Debug autospar-fokus] RequirementAuditComponent.render med fokus i plåt', {
+                    tag,
+                    id: ae.id || null,
+                    className: ae.className || null
+                });
+            }
+        }
+
         if (!this.load_and_prepare_view_data()) {
             this.NotificationComponent.show_global_message(this.Translation.t('error_loading_sample_or_requirement_data'), "error");
             this.router('audit_overview');
@@ -1243,10 +1277,14 @@ export class RequirementAuditComponent {
                         const skip_last_bump = is_autosave === true
                             && typeof this.checklist_handler_instance?.has_active_pc_observation_focus === 'function'
                             && this.checklist_handler_instance.has_active_pc_observation_focus();
-                        this.save_result_immediately({
-                            skipRender: skip_render,
-                            skipLastStatusBump: skip_last_bump
-                        });
+                        if (skip_render) {
+                            void this.save_requirement_result_spar_bakgrund({ skipLastStatusBump: skip_last_bump });
+                        } else {
+                            void this.save_result_immediately({
+                                skipRender: false,
+                                skipLastStatusBump: skip_last_bump
+                            });
+                        }
 
                         // Del-spara: om fokus ligger i kommentar-fält, spara just det fältet.
                         try {
@@ -1324,7 +1362,7 @@ export class RequirementAuditComponent {
             this.autosave_session = null;
         } else if (this.current_result) {
             this.handle_comment_input(true);
-            this.save_result_immediately({ skipRender: true });
+            void this.save_requirement_result_spar_bakgrund();
         }
 
         try {

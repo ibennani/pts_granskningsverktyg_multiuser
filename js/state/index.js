@@ -202,6 +202,14 @@ function subscribe(listener_function) {
 
 function notify_listeners(listener_meta = null) {
     const currentSnapshot = getState();
+    if (typeof window !== 'undefined' && window.__GV_DEBUG_AUTOSAVE_FOCUS) {
+        consoleManager.log('[GV-Debug autospar-fokus] notify_listeners', {
+            action_type: listener_meta?.action_type,
+            skip_render: listener_meta?.skip_render,
+            requirement_result_update: listener_meta?.requirement_result_update ?? null,
+            force_same_user_tab_render: listener_meta?.force_same_user_tab_render ?? null
+        });
+    }
     if (window.__GV_DEBUG_MODAL_SCROLL) {
         consoleManager.log('[GV-ModalDebug] notify_listeners', {
             skip_render: listener_meta?.skip_render,

@@ -1043,6 +1043,7 @@ export const ChecklistHandler = {
             active_el_for_sync && sync_focus_root?.contains(active_el_for_sync) &&
                 (active_el_for_sync.tagName === 'TEXTAREA' || active_el_for_sync.tagName === 'INPUT')
         );
+        const has_pc_observation_textarea_focus = this.has_active_pc_observation_focus();
 
         this.container_ref.querySelectorAll('.check-item[data-check-id]').forEach(check_wrapper => {
             const check_id = check_wrapper.dataset.checkId;
@@ -1216,7 +1217,12 @@ export const ChecklistHandler = {
                 const target_observation_value = pc_data.observationDetail || '';
                 if (observation_textarea) {
                     const is_this_focused = document.activeElement === observation_textarea;
-                    const should_sync_obs = (!is_this_focused && !any_textarea_or_input_focused_in_sync_root) || locked_by_other_pc;
+                    // Synka från state när användaren inte skriver här; undvik att skriva över medan annat fält i plåten eller annan observationsruta har fokus.
+                    const pc_observation_editing_elsewhere = has_pc_observation_textarea_focus && !is_this_focused;
+                    const typing_other_field_in_plate = !is_this_focused && any_textarea_or_input_focused_in_sync_root
+                        && !has_pc_observation_textarea_focus;
+                    const should_sync_obs = locked_by_other_pc
+                        || (!is_this_focused && !pc_observation_editing_elsewhere && !typing_other_field_in_plate);
                     if (should_sync_obs && observation_textarea.value !== target_observation_value) {
                         observation_textarea.value = target_observation_value;
                     }
