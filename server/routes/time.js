@@ -38,8 +38,13 @@ function format_filename_datetime(date) {
 }
 
 function try_parse_iso(iso) {
-    const s = String(iso || '').trim();
+    let s = String(iso || '').trim();
     if (!s) return null;
+    if (s.includes('T') && !s.endsWith('Z') && !s.includes('+') && !s.includes('-')) {
+        s = s + 'Z';
+    } else if (!s.includes('T') && s.length > 10) {
+        s = s.replace(' ', 'T') + 'Z';
+    }
     const d = new Date(s);
     if (Number.isNaN(d.getTime())) return null;
     return d;

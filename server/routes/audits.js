@@ -167,7 +167,7 @@ router.get('/', async (req, res) => {
         const hasPublished = await ensure_rule_sets_published_column();
         let sql;
         if (hasPublished) {
-            sql = `SELECT a.id, a.rule_set_id, a.rule_file_content, a.status, a.metadata, a.samples, a.version, a.last_updated_by, a.created_at, a.updated_at,
+            sql = `SELECT a.id, a.rule_set_id, a.rule_file_content, a.status, a.metadata, a.samples, a.version, a.last_updated_by, a.created_at, a.updated_at::text AS updated_at,
             COALESCE(
                 NULLIF(TRIM(COALESCE(a.rule_file_content, COALESCE(r.published_content, r.content))->'metadata'->>'title'), ''),
                 r.name
@@ -175,7 +175,7 @@ router.get('/', async (req, res) => {
             COALESCE(a.rule_file_content, COALESCE(r.published_content, r.content)) as rule_content
             FROM audits a LEFT JOIN rule_sets r ON a.rule_set_id = r.id`;
         } else {
-            sql = `SELECT a.id, a.rule_set_id, a.rule_file_content, a.status, a.metadata, a.samples, a.version, a.last_updated_by, a.created_at, a.updated_at,
+            sql = `SELECT a.id, a.rule_set_id, a.rule_file_content, a.status, a.metadata, a.samples, a.version, a.last_updated_by, a.created_at, a.updated_at::text AS updated_at,
             COALESCE(
                 NULLIF(TRIM(COALESCE(a.rule_file_content, r.content)->'metadata'->>'title'), ''),
                 r.name
@@ -415,7 +415,10 @@ router.delete('/:id/locks/:partKey', async (req, res) => {
 router.get('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const auditResult = await query('SELECT * FROM audits WHERE id = $1', [id]);
+        const auditResult = await query(
+            `SELECT id, rule_set_id, rule_file_content, status, metadata, samples, version, last_updated_by, created_at, updated_at::text AS updated_at
+             FROM audits WHERE id = $1`, [id]
+        );
         if (auditResult.rows.length === 0) {
             return res.status(404).json({ error: 'Granskning hittades inte' });
         }
@@ -445,7 +448,10 @@ router.get('/:id', async (req, res) => {
 router.get('/:id/export', async (req, res) => {
     try {
         const { id } = req.params;
-        const auditResult = await query('SELECT * FROM audits WHERE id = $1', [id]);
+        const auditResult = await query(
+            `SELECT id, rule_set_id, rule_file_content, status, metadata, samples, version, last_updated_by, created_at, updated_at::text AS updated_at
+             FROM audits WHERE id = $1`, [id]
+        );
         if (auditResult.rows.length === 0) {
             return res.status(404).json({ error: 'Granskning hittades inte' });
         }
@@ -873,7 +879,10 @@ router.patch('/:id/results/:sampleId/:requirementId', async (req, res) => {
         const { id, sampleId, requirementId } = req.params;
         const { version, result: newResult } = req.body;
         const last_updated_by = req.user ? req.user.name : null;
-        const auditResult = await query('SELECT * FROM audits WHERE id = $1', [id]);
+        const auditResult = await query(
+            `SELECT id, rule_set_id, rule_file_content, status, metadata, samples, version, last_updated_by, created_at, updated_at::text AS updated_at
+             FROM audits WHERE id = $1`, [id]
+        );
         if (auditResult.rows.length === 0) {
             return res.status(404).json({ error: 'Granskning hittades inte' });
         }
