@@ -12,23 +12,21 @@ export function sanitize_filename_segment(segment: string): string {
 }
 
 /**
- * Lokal datum- och tidstämpel för filnamn: YYYY-MM-DD_HH-mm-ss
+ * Lokal datum- och tidstämpel för filnamn: YYYYMMDD_HHMMSS
  */
 export function format_local_datetime_for_backup_filename(iso: string | null | undefined): string {
     if (!iso) return 'saknad-tidpunkt';
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return 'saknad-tidpunkt';
     const pad = (n: number) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}`;
+    return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
 }
 
 function normalize_server_filename_datetime_for_backup_filename(raw: string | null | undefined): string | null {
     const s = String(raw || '').trim();
     if (!s) return null;
     if (/^\d{8}_\d{6}$/.test(s)) {
-        const date = s.slice(0, 8);
-        const time = s.slice(9, 15);
-        return `${date.slice(0, 4)}-${date.slice(4, 6)}-${date.slice(6, 8)}_${time.slice(0, 2)}-${time.slice(2, 4)}-${time.slice(4, 6)}`;
+        return s;
     }
     return null;
 }
@@ -102,7 +100,7 @@ export function backup_word_for_rulefile_language(metadata_language: string | nu
 }
 
 /**
- * Slutfilnamn: bas_{backupord}_2026_3_r2_2026-04-14_12-00-01.json
+ * Slutfilnamn: bas_{backupord}_2026_3_r2_20260414_120001.json
  */
 export function build_rulefile_backup_download_filename(row: RulefileBackupDownloadFilenameInput): string {
     const raw = (row.filename || 'backup.json').trim();

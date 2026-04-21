@@ -1,6 +1,7 @@
 // js/components/RulefileChangeLogViewComponent.js
 
 import { render_rulefile_change_log } from '../logic/rulefile_change_log_renderer.js';
+import { get_server_filename_datetime } from '../utils/download_filename_utils.ts';
 
 export class RulefileChangeLogViewComponent {
     constructor() {
@@ -94,10 +95,10 @@ export class RulefileChangeLogViewComponent {
             class_name: ['button', 'button-default'],
             text_content: t('update_rulefile_download_change_log_button')
         });
-        download_log_button.addEventListener('click', () => {
-            const now = new Date();
-            const date_str = `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}`;
-            const filename = `rulefile_change_log_${date_str}.json`;
+        download_log_button.addEventListener('click', async () => {
+            const ts = await get_server_filename_datetime(log.createdAt || null) ||
+                await get_server_filename_datetime(null);
+            const filename = `rulefile_change_log_${ts || 'saknad-tidpunkt'}.json`;
             const payload = {
                 previousRuleVersion: prev_version,
                 newRuleVersion: new_version,

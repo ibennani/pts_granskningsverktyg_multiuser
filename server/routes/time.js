@@ -37,10 +37,21 @@ function format_filename_datetime(date) {
     return `${y}${m}${day}_${hh}${mm}${ss}`;
 }
 
+function try_parse_iso(iso) {
+    const s = String(iso || '').trim();
+    if (!s) return null;
+    const d = new Date(s);
+    if (Number.isNaN(d.getTime())) return null;
+    return d;
+}
+
 const router = express.Router();
 
-router.get('/filename-datetime', (_req, res) => {
-    const now = new Date();
+router.get('/filename-datetime', (req, res) => {
+    console.log('[time API] Received filename-datetime request. Query:', req.query);
+    const iso = req.query.iso;
+    const parsed = try_parse_iso(iso);
+    const now = parsed || new Date();
     res.json({
         filename_datetime: format_filename_datetime(now),
         now_local_iso: format_local_iso_with_offset(now)

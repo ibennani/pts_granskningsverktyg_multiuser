@@ -25,6 +25,7 @@ import { subscribe_audits, subscribe_rules } from '../../logic/list_push_service
 import { GenericTableComponent } from '../GenericTableComponent.js';
 import { AuditListComponent } from '../AuditListComponent.js';
 import { open_audit_by_id, download_audit_by_id } from '../../logic/audit_open_logic.js';
+import { get_server_filename_datetime, sanitize_filename_segment } from '../../utils/download_filename_utils.ts';
 import { render_audit_header } from './AuditHeaderSection.js';
 import { render_audit_requirement_section } from './AuditRequirementSection.js';
 import { render_audit_samples_section } from './AuditSamplesSection.js';
@@ -1859,7 +1860,7 @@ export class AuditViewComponent {
             }
             const json_string = JSON.stringify(rule, null, 2);
             const blob = new Blob([json_string], { type: 'application/json' });
-            const safe_name = (rule.name || 'regelfil').replace(/[\s\\/:*?"<>|]/g, '_').trim() || 'regelfil';
+            const safe_name = sanitize_filename_segment(rule.name || 'regelfil') || 'regelfil';
 
             let version_suffix = '';
             let content_obj = rule.content;
@@ -1880,18 +1881,17 @@ export class AuditViewComponent {
                 const safe_version = meta_version.replace(/[^0-9A-Za-z]+/g, '_');
                 version_suffix = `_${safe_version}`;
             } else if (!rule.is_published) {
-                // Arbetskopia: använd serverns updated_at = när innehållet (krav, metadata osv) senast uppdaterades.
-                const ts = rule.updated_at;
-                const dt = ts ? new Date(ts) : new Date();
-                if (!Number.isNaN(dt.getTime())) {
-                    const yyyy = dt.getFullYear();
-                    const mm = String(dt.getMonth() + 1).padStart(2, '0');
-                    const dd = String(dt.getDate()).padStart(2, '0');
-                    const hh = String(dt.getHours()).padStart(2, '0');
-                    const mi = String(dt.getMinutes()).padStart(2, '0');
+                // Arbetskopia: använd content_updated_at eller updated_at för att matcha tabellens "Senast uppdaterad"
+                const ts = rule.content_updated_at || rule.updated_at;
+                const server_dt = await get_server_filename_datetime(ts || null);
+                if (server_dt) {
                     const label = t('rulefile_status_production_label') || 'Arbetskopia';
-                    const safe_label = String(label).replace(/[^0-9A-Za-z]+/g, '_');
-                    version_suffix = `_${safe_label}_${yyyy}-${mm}-${dd}_${hh}${mi}`;
+                    const safe_label = sanitize_filename_segment(label) || 'Arbetskopia';
+                    // Inkludera versionsnummer även för arbetskopia om det finns, så att namn blir stabilt och tydligt.
+                    const safe_version = meta_version ? meta_version.replace(/[^0-9A-Za-z]+/g, '_') : '';
+                version_suffix = safe_version 
+                    ? `_${safe_version}_${safe_label}_${server_dt}`
+                    : `_${safe_label}_${server_dt}`;
                 }
             }
 

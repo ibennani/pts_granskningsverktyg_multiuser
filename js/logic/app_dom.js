@@ -369,6 +369,15 @@ export function clear_main_view_content_except_global_notifications(host_el) {
         return;
     }
     const preserve = new Set(GLOBAL_MESSAGE_AREA_IDS_IN_ORDER);
+    
+    // Rädda undan globala notiser om de ligger inuti någon vy-komponent
+    for (const mid of [...GLOBAL_MESSAGE_AREA_IDS_IN_ORDER].reverse()) {
+        const el = document.getElementById(mid);
+        if (el && host_el.contains(el) && el.parentNode !== host_el) {
+            host_el.insertBefore(el, host_el.firstChild);
+        }
+    }
+
     for (const child of Array.from(host_el.children)) {
         if (child.id && preserve.has(child.id)) {
             continue;

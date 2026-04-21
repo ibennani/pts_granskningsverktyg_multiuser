@@ -1,11 +1,13 @@
 /* Övre: kritisk info (ny version av koden, ny regelfil). Nedre: vanliga meddelanden (Sparat, fel, etc.) */
 #global-critical-message-area,
 #global-message-area {
-    padding: 0.4rem 0.75rem;
+    padding: 0.25rem 0.5rem;
+    margin-top: 0.5rem;
     margin-bottom: 1rem;
     border: 1px solid transparent;
     border-radius: var(--border-radius);
     position: relative; /* För att positionera knapp absolut */
+    width: 100%;
 }
 
 #global-critical-message-area[hidden],
@@ -18,7 +20,7 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.5rem 0.75rem;
+    gap: 0.25rem 0.5rem;
 }
 
 /* När notisen är dold behåller vi klassen global-message-content; den måste ändå inte visa flex-layout (samma specificitet som regeln ovan). */
@@ -59,12 +61,12 @@
     transform: none;
     margin-left: auto;
     flex-shrink: 0;
-    min-width: 2.75rem;
-    min-height: 2.75rem;
+    width: 1.75rem;
+    height: 1.75rem;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 0 0.25rem;
+    padding: 0;
 }
 
 .global-message-action-btn {

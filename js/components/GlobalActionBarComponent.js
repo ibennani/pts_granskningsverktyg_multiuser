@@ -1,5 +1,6 @@
 import { SaveAuditButtonComponent } from './SaveAuditButtonComponent.js';
 import { can_edit_rulefile } from '../utils/helpers.js';
+import { get_server_filename_datetime } from '../utils/download_filename_utils.ts';
 import './global_action_bar_component.css';
 
 export class GlobalActionBarComponent {
@@ -122,7 +123,7 @@ export class GlobalActionBarComponent {
     return `${base_name}${safe_suffix}${default_extension}`;
   }
 
-  handle_save_rulefile() {
+  async handle_save_rulefile() {
     const t = this.Translation.t;
     const current_state = this.getState();
 
@@ -213,6 +214,13 @@ export class GlobalActionBarComponent {
         title,
         current_version
       );
+    }
+
+    const server_ts = await get_server_filename_datetime(null);
+    if (server_ts && typeof filename_for_download === 'string' && filename_for_download.endsWith('.json')) {
+      const base = filename_for_download.slice(0, -'.json'.length);
+      const safe_label = 'Arbetskopia'; // Hårdkoda eller hämta översättning vid behov
+      filename_for_download = `${base}_${safe_label}_${server_ts}.json`;
     }
 
     const blob = new Blob([data_string_for_download], {

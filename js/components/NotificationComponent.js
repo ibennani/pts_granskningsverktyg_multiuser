@@ -300,8 +300,15 @@ export class NotificationComponent {
             return;
         }
 
-        host.insertBefore(critical, host.firstChild);
-        host.insertBefore(regular, critical.nextSibling);
+        // Hitta första h1 inuti host, och placera notiserna direkt ovanför den
+        const h1 = host.querySelector('h1');
+        if (h1 && h1.parentNode) {
+            h1.parentNode.insertBefore(critical, h1);
+            h1.parentNode.insertBefore(regular, critical.nextSibling);
+        } else {
+            host.insertBefore(critical, host.firstChild);
+            host.insertBefore(regular, critical.nextSibling);
+        }
 
         this._remove_duplicate_global_message_nodes(critical, regular);
     }

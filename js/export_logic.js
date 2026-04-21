@@ -4,7 +4,8 @@ import ExcelJS from 'exceljs/dist/exceljs.min.js';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType, UnderlineType, ExternalHyperlink, ShadingType, TabStopType, SectionType, PageOrientation } from 'docx';
 import { marked } from './utils/markdown.js';
 import { format_local_date_for_filename } from './utils/filename_utils.ts';
-import { recalculateAuditTimes, get_audit_last_updated_display_timestamp } from './audit_logic.js';
+import { get_server_filename_datetime, sanitize_filename_segment } from './utils/download_filename_utils.ts';
+import { recalculateAuditTimes } from './audit_logic.js';
 import * as Helpers from './utils/helpers.js';
 import * as ScoreCalculator from './logic/ScoreCalculator.js';
 import { consoleManager } from './utils/console_manager.js';
@@ -166,7 +167,7 @@ function get_wcag_pour_export_values_for_requirement(req_definition, current_aud
     };
 }
 
-function export_to_csv(current_audit) {
+async function export_to_csv(current_audit) {
     const t = get_t_internal();
     if (!current_audit) {
         show_global_message_internal(t('no_audit_data_to_save'), 'error');
@@ -243,11 +244,14 @@ function export_to_csv(current_audit) {
     const link = document.createElement("a");
     link.setAttribute("href", url);
 
-    const actor_name = (current_audit.auditMetadata.actorName || t('filename_fallback_actor')).replace(/[^a-z0-9åäöÅÄÖ]/gi, '_');
+    const actor_name = sanitize_filename_segment(current_audit.auditMetadata.actorName || t('filename_fallback_actor'));
     const case_number = (current_audit.auditMetadata.caseNumber || '').trim();
     // Behåll bindestreck i ärendenummer (t.ex. "25-18359")
     const sanitized_case_number = case_number ? case_number.replace(/[^a-z0-9åäöÅÄÖ-]/gi, '') : '';
-    const date_str = format_local_date_for_filename(new Date(), '-');
+    const last_updated_iso = current_audit?.updated_at || null;
+    const server_dt = await get_server_filename_datetime(last_updated_iso);
+    const fallback_now = server_dt ? null : await get_server_filename_datetime(null);
+    const date_str = server_dt || fallback_now || format_local_date_for_filename(new Date(), '');
     
     let filename;
     if (sanitized_case_number) {
@@ -287,7 +291,7 @@ async function export_to_excel(current_audit) {
         const lang_code = get_current_language_code_from_registry();
 
         const display_times = get_effective_display_times_for_audit(current_audit);
-        const last_updated_ts = get_audit_last_updated_display_timestamp(current_audit);
+        const last_updated_ts = current_audit?.updated_at || null;
         const general_info_data = [
             [t('case_number'), strip_markdown_for_excel(String(current_audit.auditMetadata.caseNumber || ''))],
             [t('actor_name'), strip_markdown_for_excel(String(current_audit.auditMetadata.actorName || ''))],
@@ -433,11 +437,14 @@ async function export_to_excel(current_audit) {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
 
-        const actor_name = (current_audit.auditMetadata.actorName || t('filename_fallback_actor')).replace(/[^a-z0-9åäöÅÄÖ]/gi, '_');
+        const actor_name = sanitize_filename_segment(current_audit.auditMetadata.actorName || t('filename_fallback_actor'));
         const case_number = (current_audit.auditMetadata.caseNumber || '').trim();
         // Behåll bindestreck i ärendenummer (t.ex. "25-18359")
         const sanitized_case_number = case_number ? case_number.replace(/[^a-z0-9åäöÅÄÖ-]/gi, '') : '';
-        const date_str = format_local_date_for_filename(new Date(), '-');
+        const last_updated_iso = current_audit?.updated_at || null;
+        const server_dt = await get_server_filename_datetime(last_updated_iso);
+        const fallback_now = server_dt ? null : await get_server_filename_datetime(null);
+        const date_str = server_dt || fallback_now || format_local_date_for_filename(new Date(), '');
         
         let filename;
         if (sanitized_case_number) {
@@ -977,14 +984,17 @@ async function export_to_word_wrapper(current_audit, sortBy) {
         const url = URL.createObjectURL(buffer);
         const link = document.createElement('a');
 
-        const actor_name = (current_audit.auditMetadata.actorName || t('filename_fallback_actor')).replace(/[^a-z0-9åäöÅÄÖ]/gi, '_');
+        const actor_name = sanitize_filename_segment(current_audit.auditMetadata.actorName || t('filename_fallback_actor'));
         const case_number = (current_audit.auditMetadata.caseNumber || '').trim();
         
         // Behåll bindestreck i ärendenummer (t.ex. "25-18359")
         const sanitized_case_number = case_number ? case_number.replace(/[^a-z0-9åäöÅÄÖ-]/gi, '') : '';
         
         const sort_suffix = isSortByRequirements ? '_sorterat_på_krav' : '_sorterat_på_stickprov';
-        const date_str = format_local_date_for_filename(new Date(), '-');
+        const last_updated_iso = current_audit?.updated_at || null;
+        const server_dt = await get_server_filename_datetime(last_updated_iso);
+        const fallback_now = server_dt ? null : await get_server_filename_datetime(null);
+        const date_str = server_dt || fallback_now || format_local_date_for_filename(new Date(), '');
         
         let filename;
         if (sanitized_case_number) {
@@ -2115,8 +2125,12 @@ async function _export_to_text_export_deprecated(current_audit) {
 
         const report_prefix = t('filename_audit_report_prefix');
         const deficiencies_suffix = "textexport";
-        const actor_name = (current_audit.auditMetadata.actorName || t('filename_fallback_actor')).replace(/[^a-z0-9åäöÅÄÖ]/gi, '_');
-        const filename = `${report_prefix}_${deficiencies_suffix}_${actor_name}_${format_local_date_for_filename(new Date(), '-')}.docx`;
+        const actor_name = sanitize_filename_segment(current_audit.auditMetadata.actorName || t('filename_fallback_actor'));
+        const last_updated_iso = current_audit?.updated_at || null;
+        const server_dt = await get_server_filename_datetime(last_updated_iso);
+        const fallback_now = server_dt ? null : await get_server_filename_datetime(null);
+        const ts = server_dt || fallback_now || format_local_date_for_filename(new Date(), '');
+        const filename = `${report_prefix}_${deficiencies_suffix}_${actor_name}_${ts}.docx`;
 
         link.download = filename;
         document.body.appendChild(link);
@@ -3766,10 +3780,13 @@ async function export_to_html(current_audit) {
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
 
-        const actor_name = (current_audit.auditMetadata.actorName || t('filename_fallback_actor')).replace(/[^a-z0-9åäöÅÄÖ]/gi, '_');
+        const actor_name = sanitize_filename_segment(current_audit.auditMetadata.actorName || t('filename_fallback_actor'));
         const case_number = (current_audit.auditMetadata.caseNumber || '').trim();
         const sanitized_case_number = case_number ? case_number.replace(/[^a-z0-9åäöÅÄÖ-]/gi, '') : '';
-        const date_str = format_local_date_for_filename(new Date(), '-');
+        const last_updated_iso = current_audit?.updated_at || null;
+        const server_dt = await get_server_filename_datetime(last_updated_iso);
+        const fallback_now = server_dt ? null : await get_server_filename_datetime(null);
+        const date_str = server_dt || fallback_now || format_local_date_for_filename(new Date(), '');
         
         let filename;
         if (sanitized_case_number) {

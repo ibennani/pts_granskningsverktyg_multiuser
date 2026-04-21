@@ -2,6 +2,7 @@
 import { migrate_rulefile_to_new_structure } from '../logic/rulefile_migration_logic.js';
 import { get_rule } from '../api/client.js';
 import { render_rulefile_change_log } from '../logic/rulefile_change_log_renderer.js';
+import { get_server_filename_datetime } from '../utils/download_filename_utils.js';
 import { analyze_rule_file_changes, apply_rule_file_update } from '../logic/rulefile_updater_logic.js';
 import './update_rulefile_view.css';
 
@@ -204,7 +205,7 @@ export class UpdateRulefileViewComponent {
         this.render();
     }
 
-    handle_download_change_log_click() {
+    async handle_download_change_log_click() {
         const t = this.get_t_internally();
         if (!this.staged_analysis_report || !this.staged_new_rule_file_content) return;
 
@@ -243,9 +244,8 @@ export class UpdateRulefileViewComponent {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        const now = new Date();
-        const date_str = `${now.getFullYear()}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}`;
-        a.download = `rulefile_change_log_${date_str}.txt`;
+        const ts = await get_server_filename_datetime(null);
+        a.download = `rulefile_change_log_${ts || 'saknad-tidpunkt'}.txt`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);

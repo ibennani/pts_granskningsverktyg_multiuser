@@ -278,7 +278,8 @@ router.get('/:id/export', async (req, res) => {
                       name,
                       COALESCE(published_content, content) AS content,
                       version,
-                      updated_at,
+                      updated_at::text AS updated_at,
+                      content_updated_at::text AS content_updated_at,
                       (published_content IS NOT NULL) AS is_published
                  FROM rule_sets
                 WHERE id = $1`
@@ -286,7 +287,8 @@ router.get('/:id/export', async (req, res) => {
                       name,
                       content,
                       version,
-                      updated_at,
+                      updated_at::text AS updated_at,
+                      content_updated_at::text AS content_updated_at,
                       false AS is_published
                  FROM rule_sets
                 WHERE id = $1`;

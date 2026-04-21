@@ -13,9 +13,9 @@ describe('backup_download_filename', () => {
         expect(sanitize_filename_segment('  ok  ')).toBe('ok');
     });
 
-    test('format_local_datetime_for_backup_filename ger YYYY-MM-DD_HH-mm-ss', () => {
+    test('format_local_datetime_for_backup_filename ger YYYYMMDD_HHMMSS', () => {
         const s = format_local_datetime_for_backup_filename('2025-06-01T15:04:05.000Z');
-        expect(s).toMatch(/^\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}$/);
+        expect(s).toMatch(/^\d{8}_\d{6}$/);
     });
 
     test('format_local_datetime_for_backup_filename hanterar saknat värde', () => {
@@ -47,7 +47,7 @@ describe('backup_download_filename', () => {
             metadataLanguage: 'sv-SE',
             createdAt: '2025-01-15T14:00:00.000Z'
         });
-        expect(name).toMatch(/^rulesnapshot_säkerhetskopia_2025_2_r4_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.json$/);
+        expect(name).toMatch(/^rulesnapshot_säkerhetskopia_2025_2_r4_\d{8}_\d{6}\.json$/);
     });
 
     test('build_rulefile_backup_download_filename: engelskt regelfilsspråk ger backup i namnet', () => {
@@ -57,7 +57,7 @@ describe('backup_download_filename', () => {
             metadataLanguage: 'en-GB',
             createdAt: '2025-01-15T14:00:00.000Z'
         });
-        expect(name).toMatch(/^rulesnapshot_backup_1_0_r1_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.json$/);
+        expect(name).toMatch(/^rulesnapshot_backup_1_0_r1_\d{8}_\d{6}\.json$/);
     });
 
     test('build_rulefile_backup_download_filename: tar bort __id och rätt mönster (pts…)', () => {
@@ -69,7 +69,7 @@ describe('backup_download_filename', () => {
         expect(name).not.toContain('f6aa1b17');
         expect(name).not.toContain('2026.3.r2');
         expect(name).toMatch(
-            /^pts_tillsynsregler_for_granskning_av_webbplatser_säkerhetskopia_2026_3_r2_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.json$/
+            /^pts_tillsynsregler_for_granskning_av_webbplatser_säkerhetskopia_2026_3_r2_\d{8}_\d{6}\.json$/
         );
     });
 
@@ -79,6 +79,6 @@ describe('backup_download_filename', () => {
             metadataVersion: null,
             createdAt: '2025-03-20T08:00:00.000Z'
         });
-        expect(name).toMatch(/^x_säkerhetskopia_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}\.json$/);
+        expect(name).toMatch(/^x_säkerhetskopia_\d{8}_\d{6}\.json$/);
     });
 });

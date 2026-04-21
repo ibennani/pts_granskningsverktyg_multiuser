@@ -107,6 +107,23 @@ describe('save_audit_logic', () => {
         );
     });
 
+    test('använder granskningens updated_at för filnamnstid (server-lokal) när det finns', async () => {
+        global.fetch = jest.fn(async (url) => {
+            const u = String(url);
+            expect(u).toContain('/api/time/filename-datetime?iso=');
+            return {
+                ok: true,
+                json: async () => ({ filename_datetime: '20260421_101112' })
+            };
+        });
+        const audit = { id: 'a1', updated_at: '2026-04-21T08:11:12.000Z' };
+        await save_audit_to_json_file(audit, t, show_notification, { prefix: 'p' }, test_deps());
+        expect(generate_audit_filename).toHaveBeenCalledWith(audit, t, {
+            prefix: 'p',
+            datetime_str_override: '20260421_101112'
+        });
+    });
+
     test('commitCurrentDraft-fel påverkar inte lyckad notis', async () => {
         window.DraftManager.commitCurrentDraft.mockImplementation(() => {
             throw new Error('draft');
