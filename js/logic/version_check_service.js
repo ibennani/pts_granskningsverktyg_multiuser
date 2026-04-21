@@ -17,6 +17,17 @@ const is_production = typeof window !== 'undefined' && window.location.hostname 
 const EFFECTIVE_CHECK_INTERVAL_MS = is_production ? 60000 : 30000;
 
 /**
+ * @param {string|null|undefined} local_timestamp
+ * @param {string|null|undefined} remote_timestamp
+ * @returns {boolean}
+ */
+export function is_remote_timestamp_newer(local_timestamp, remote_timestamp) {
+    if (!local_timestamp || !remote_timestamp) return false;
+    // ISO-tidsstämplar (YYYY-MM-DDTHH:mm:ss.sssZ) kan jämföras lexikografiskt.
+    return String(remote_timestamp) > String(local_timestamp);
+}
+
+/**
  * Bygger en omladdnings-URL som behåller path + query + hash, men uppdaterar/adderar
  * en cache-busting-parameter så att omladdningen inte fastnar på gamla resurser.
  *
@@ -119,60 +130,65 @@ export function init_version_check_service() {
                 return;
             }
             verified_server_timestamp = remote.timestamp;
-            already_shown = true;
-            try {
-                sessionStorage.setItem(NOTIFICATION_COOLDOWN_KEY, String(Date.now()));
-            } catch (_) {
-                // ignoreras medvetet
-            }
-            const msg = window.Translation?.t?.('new_version_available') || 'En ny version är tillgänglig.';
-            const label = window.Translation?.t?.('reload_page') || 'Ladda om sidan';
-            if (app_runtime_refs.notification_component?.show_global_critical_message_with_action) {
-                app_runtime_refs.notification_component.show_global_critical_message_with_action(msg, 'warning', {
-                    label,
-                    callback: async () => {
-                        if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-                            return;
-                        }
-                        try {
-                            const state = getState();
-                            const audit_id = state?.auditId;
-                            if (audit_id && state?.ruleFileContent) {
-                                const raw_base = (typeof window !== 'undefined' && window.__GV_API_BASE__) ? window.__GV_API_BASE__ : '/v2/api';
-                                const api_base = String(raw_base).replace(/\/$/, '');
-                                let headers = { 'Content-Type': 'application/json' };
-                                try {
-                                    const token = typeof window !== 'undefined' && window.sessionStorage
-                                        ? window.sessionStorage.getItem('gv_auth_token')
-                                        : null;
-                                    if (token) {
-                                        headers = {
-                                            ...headers,
-                                            Authorization: `Bearer ${token}`
-                                        };
-                                    }
-                                } catch (_) {
-                                    // Om sessionStorage inte är tillgängligt fortsätter vi utan auth-header.
-                                }
-                                await fetch(`${api_base}/backup/save-audit`, {
-                                    method: 'POST',
-                                    headers,
-                                    body: JSON.stringify({ auditId: audit_id })
-                                });
-                            }
-                        } catch (_) {
-                            // Vid fel försöker vi ändå ladda om till ny version utan att störa användaren.
-                        }
-                        // Workbox/VitePWA kan annars servera gamla filer från precache utan hård omladdning.
-                        await clear_same_origin_sw_and_caches();
-                        await sleep_ms(50);
-                        const next_url = build_reload_url(window.location.href, Date.now());
-                        window.location.replace(next_url);
-                    }
-                });
-            }
+            show_new_version_notification();
         } catch (_) {
             // Tyst – nätverksfel eller parse-fel
+        }
+    }
+
+    function show_new_version_notification() {
+        if (already_shown) return;
+        already_shown = true;
+        try {
+            sessionStorage.setItem(NOTIFICATION_COOLDOWN_KEY, String(Date.now()));
+        } catch (_) {
+            // ignoreras medvetet
+        }
+        const msg = window.Translation?.t?.('new_version_available') || 'En ny version är tillgänglig.';
+        const label = window.Translation?.t?.('reload_page') || 'Ladda om sidan';
+        if (app_runtime_refs.notification_component?.show_global_critical_message_with_action) {
+            app_runtime_refs.notification_component.show_global_critical_message_with_action(msg, 'warning', {
+                label,
+                callback: async () => {
+                    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+                        return;
+                    }
+                    try {
+                        const state = getState();
+                        const audit_id = state?.auditId;
+                        if (audit_id && state?.ruleFileContent) {
+                            const raw_base = (typeof window !== 'undefined' && window.__GV_API_BASE__) ? window.__GV_API_BASE__ : '/v2/api';
+                            const api_base = String(raw_base).replace(/\/$/, '');
+                            let headers = { 'Content-Type': 'application/json' };
+                            try {
+                                const token = typeof window !== 'undefined' && window.sessionStorage
+                                    ? window.sessionStorage.getItem('gv_auth_token')
+                                    : null;
+                                if (token) {
+                                    headers = {
+                                        ...headers,
+                                        Authorization: `Bearer ${token}`
+                                    };
+                                }
+                            } catch (_) {
+                                // Om sessionStorage inte är tillgängligt fortsätter vi utan auth-header.
+                            }
+                            await fetch(`${api_base}/backup/save-audit`, {
+                                method: 'POST',
+                                headers,
+                                body: JSON.stringify({ auditId: audit_id })
+                            });
+                        }
+                    } catch (_) {
+                        // Vid fel försöker vi ändå ladda om till ny version utan att störa användaren.
+                    }
+                    // Workbox/VitePWA kan annars servera gamla filer från precache utan hård omladdning.
+                    await clear_same_origin_sw_and_caches();
+                    await sleep_ms(50);
+                    const next_url = build_reload_url(window.location.href, Date.now());
+                    window.location.replace(next_url);
+                }
+            });
         }
     }
 
@@ -207,10 +223,28 @@ export function init_version_check_service() {
         }
     });
 
-    // Sätt baseline från servern direkt så att första jämförelsen inte använder cachad data
+    // Sätt baseline från servern direkt så att första jämförelsen inte använder cachad data.
+    // Viktigt: om användaren öppnar en GAMMAL cachad version efter deploy måste vi visa notisen direkt
+    // (annars skulle baseline bli "nya servern" och då triggas aldrig uppdateringsnotisen).
     if (typeof navigator === 'undefined' || navigator.onLine) {
         fetch_build_info_from_server().then((info) => {
-            if (info?.timestamp) verified_server_timestamp = info.timestamp;
+            if (!info?.timestamp) return;
+            if (is_remote_timestamp_newer(window.BUILD_INFO?.timestamp, info.timestamp)) {
+                verified_server_timestamp = info.timestamp;
+                // Respektera cooldown även vid "direkt vid start"-fall.
+                try {
+                    const cooldown = typeof sessionStorage !== 'undefined' && sessionStorage.getItem(NOTIFICATION_COOLDOWN_KEY);
+                    if (cooldown) {
+                        const elapsed = Date.now() - Number(cooldown);
+                        if (elapsed >= 0 && elapsed < NOTIFICATION_COOLDOWN_MS) return;
+                    }
+                } catch (_) {
+                    // ignoreras medvetet
+                }
+                show_new_version_notification();
+                return;
+            }
+            verified_server_timestamp = info.timestamp;
         }).catch(() => {});
     }
 
