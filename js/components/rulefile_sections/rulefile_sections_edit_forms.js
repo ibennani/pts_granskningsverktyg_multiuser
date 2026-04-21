@@ -17,12 +17,14 @@ export async function render_rulefile_general_edit_form(ctx, container, _metadat
 
     const { EditGeneralSectionComponent } = await import('../EditGeneralSectionComponent.js');
 
-    await EditGeneralSectionComponent.init({
+    const comp = new EditGeneralSectionComponent();
+
+    await comp.init({
         root: container,
         deps
     });
 
-    EditGeneralSectionComponent.render();
+    comp.render();
 
     if (is_first_render && !view.general_form_initial_focus_set) {
         setTimeout(() => {
@@ -35,7 +37,7 @@ export async function render_rulefile_general_edit_form(ctx, container, _metadat
         }, 100);
     }
 
-    view.general_edit_component = EditGeneralSectionComponent;
+    view.general_edit_component = comp;
 }
 
 /**
@@ -53,12 +55,14 @@ export async function render_rulefile_page_types_edit_form(ctx, container, _meta
 
     const { EditPageTypesSectionComponent } = await import('../EditPageTypesSectionComponent.js');
 
-    await EditPageTypesSectionComponent.init({
+    const comp = new EditPageTypesSectionComponent();
+
+    await comp.init({
         root: container,
         deps
     });
 
-    EditPageTypesSectionComponent.render();
+    comp.render();
 
     if (is_first_render && !view.page_types_form_initial_focus_set) {
         setTimeout(() => {
@@ -71,7 +75,7 @@ export async function render_rulefile_page_types_edit_form(ctx, container, _meta
         }, 100);
     }
 
-    view.page_types_edit_component = EditPageTypesSectionComponent;
+    view.page_types_edit_component = comp;
 }
 
 /**
