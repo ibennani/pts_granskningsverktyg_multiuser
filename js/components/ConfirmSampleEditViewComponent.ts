@@ -1,4 +1,15 @@
 export class ConfirmSampleEditViewComponent {
+    private root: HTMLElement | null;
+    private deps: any;
+    private router: any;
+    private getState: any;
+    private dispatch: any;
+    private StoreActionTypes: any;
+    private Translation: any;
+    private Helpers: any;
+    private NotificationComponent: any;
+    private plate_element_ref: HTMLElement | null;
+
     constructor() {
         this.root = null;
         this.deps = null;
@@ -12,7 +23,7 @@ export class ConfirmSampleEditViewComponent {
         this.plate_element_ref = null;
     }
 
-    init({ root, deps }) {
+    init({ root, deps }: { root: HTMLElement; deps: any }) {
         this.root = root;
         this.deps = deps;
         this.router = deps.router;
@@ -31,7 +42,7 @@ export class ConfirmSampleEditViewComponent {
         const pending_changes = this.getState().pendingSampleChanges;
         if (!pending_changes) {
             this.NotificationComponent.show_global_message(t('error_no_pending_sample_changes'), 'error');
-            this.router('audit_overview'); // Fallback
+            this.router('sample_management'); // Fallback
             return;
         }
 
@@ -46,36 +57,12 @@ export class ConfirmSampleEditViewComponent {
         this.dispatch({ type: this.StoreActionTypes.CLEAR_STAGED_SAMPLE_CHANGES });
 
         this.NotificationComponent.show_global_message(t('sample_updated_successfully'), "success");
-
-        const current_state = this.getState();
-        const return_view = (current_state.auditStatus === 'not_started') ? 'sample_management' : 'audit_overview';
-        if (return_view === 'audit_overview') {
-            try {
-                if (window.sessionStorage) {
-                    window.sessionStorage.setItem('gv_return_focus_audit_info_h2_v1', JSON.stringify({ focus: 'audit_info_h2' }));
-                }
-            } catch (_) {
-                // ignoreras medvetet
-            }
-        }
-        this.router(return_view);
+        this.router('sample_management');
     }
 
     handle_discard_and_return() {
         this.dispatch({ type: this.StoreActionTypes.CLEAR_STAGED_SAMPLE_CHANGES });
-
-        const current_state = this.getState();
-        const return_view = (current_state.auditStatus === 'not_started') ? 'sample_management' : 'audit_overview';
-        if (return_view === 'audit_overview') {
-            try {
-                if (window.sessionStorage) {
-                    window.sessionStorage.setItem('gv_return_focus_audit_info_h2_v1', JSON.stringify({ focus: 'audit_info_h2' }));
-                }
-            } catch (_) {
-                // ignoreras medvetet
-            }
-        }
-        this.router(return_view);
+        this.router('sample_management');
     }
 
     render() {
@@ -85,29 +72,78 @@ export class ConfirmSampleEditViewComponent {
         const pending_changes = current_state.pendingSampleChanges;
 
         this.root.innerHTML = '';
-        this.plate_element_ref = this.Helpers.create_element('div', { class_name: 'content-plate' });
-        this.root.appendChild(this.plate_element_ref);
+        const plate = this.Helpers.create_element('div', { class_name: 'content-plate' }) as any;
+        this.plate_element_ref = plate;
+        this.root.appendChild(plate);
 
+        // Undvik \"felblink\" om pending_changes hunnit rensas precis innan vybyte.
         if (!pending_changes) {
-            this.plate_element_ref.appendChild(this.Helpers.create_element('h1', { text_content: t('error_internal') }));
-            this.plate_element_ref.appendChild(this.Helpers.create_element('p', { text_content: t('error_no_pending_sample_changes') }));
-            const back_button = this.Helpers.create_element('button', {
-                class_name: ['button', 'button-default'],
-                text_content: t('back_to_audit_overview')
-            });
-            back_button.addEventListener('click', () => this.router('audit_overview'));
-            this.plate_element_ref.appendChild(back_button);
             return;
         }
 
-        this.plate_element_ref.appendChild(this.Helpers.create_element('h1', { text_content: t('sample_edit_confirm_dialog_title') }));
+        plate.appendChild(this.Helpers.create_element('h1', { text_content: t('sample_edit_confirm_dialog_title') }));
 
-        const { added_reqs, removed_reqs, data_will_be_lost } = pending_changes.analysis;
+        const {
+            added_reqs,
+            removed_reqs,
+            data_will_be_lost,
+            changed_fields,
+            content_types_diff
+        } = pending_changes.analysis;
         const rule_file = current_state.ruleFileContent;
 
-        const render_req_list = (req_ids) => {
+        const get_field_label = (key: string) => {
+            switch (key) {
+                case 'sampleCategory': return t('sample_category_title');
+                case 'sampleType': return t('sample_type_label');
+                case 'description': return t('description');
+                case 'url': return t('url');
+                default: return key;
+            }
+        };
+
+        const format_value = (val: any) => {
+            const txt = (val ?? '').toString();
+            return txt ? txt : t('value_not_specified');
+        };
+
+        if (Array.isArray(changed_fields) && changed_fields.length > 0) {
+            const section = this.Helpers.create_element('div', { class_name: 'report-section' });
+            section.appendChild(this.Helpers.create_element('h3', { text_content: t('sample_edit_confirm_changed_fields_header') }));
             const ul = this.Helpers.create_element('ul', { class_name: 'report-list' });
-            req_ids.forEach(id => {
+            changed_fields.forEach((f: any) => {
+                const label = get_field_label(f.key);
+                const old_v = format_value(f.oldValue);
+                const new_v = format_value(f.newValue);
+                ul.appendChild(this.Helpers.create_element('li', { text_content: `${label}: ${old_v} → ${new_v}` }));
+            });
+            section.appendChild(ul);
+            plate.appendChild(section);
+        }
+
+        if (content_types_diff && (Array.isArray(content_types_diff.added) || Array.isArray(content_types_diff.removed))) {
+            const section = this.Helpers.create_element('div', { class_name: 'report-section' });
+            section.appendChild(this.Helpers.create_element('h3', { text_content: t('sample_edit_confirm_changed_content_types_header') }));
+            const added = Array.isArray(content_types_diff.added) ? content_types_diff.added : [];
+            const removed = Array.isArray(content_types_diff.removed) ? content_types_diff.removed : [];
+            if (added.length > 0) {
+                section.appendChild(this.Helpers.create_element('h4', { text_content: t('sample_edit_confirm_added_content_types_header') }));
+                const ul_added = this.Helpers.create_element('ul', { class_name: 'report-list' });
+                added.forEach((txt: any) => ul_added.appendChild(this.Helpers.create_element('li', { text_content: String(txt) })));
+                section.appendChild(ul_added);
+            }
+            if (removed.length > 0) {
+                section.appendChild(this.Helpers.create_element('h4', { text_content: t('sample_edit_confirm_removed_content_types_header') }));
+                const ul_removed = this.Helpers.create_element('ul', { class_name: 'report-list' });
+                removed.forEach((txt: any) => ul_removed.appendChild(this.Helpers.create_element('li', { text_content: String(txt) })));
+                section.appendChild(ul_removed);
+            }
+            plate.appendChild(section);
+        }
+
+        const render_req_list = (req_ids: any[]) => {
+            const ul = this.Helpers.create_element('ul', { class_name: 'report-list' });
+            req_ids.forEach((id) => {
                 const req = rule_file.requirements[id];
                 if (req) {
                     const ref_text = req.standardReference?.text ? ` (${req.standardReference.text})` : '';
@@ -121,14 +157,14 @@ export class ConfirmSampleEditViewComponent {
             const section = this.Helpers.create_element('div', { class_name: 'report-section' });
             section.appendChild(this.Helpers.create_element('h3', { text_content: t('sample_edit_confirm_added_reqs_header') }));
             section.appendChild(render_req_list(added_reqs));
-            this.plate_element_ref.appendChild(section);
+            plate.appendChild(section);
         }
 
         if (removed_reqs.length > 0) {
             const section = this.Helpers.create_element('div', { class_name: 'report-section' });
             section.appendChild(this.Helpers.create_element('h3', { text_content: t('sample_edit_confirm_removed_reqs_header') }));
             section.appendChild(render_req_list(removed_reqs));
-            this.plate_element_ref.appendChild(section);
+            plate.appendChild(section);
         }
 
         if (data_will_be_lost) {
@@ -137,7 +173,7 @@ export class ConfirmSampleEditViewComponent {
                 html_content: (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('warning', ['var(--danger-color)']) + ' ' : '') + t('sample_edit_confirm_data_loss_warning_header')
             }));
             warning_div.appendChild(this.Helpers.create_element('p', { text_content: t('sample_edit_confirm_data_loss_warning_text') }));
-            this.plate_element_ref.appendChild(warning_div);
+            plate.appendChild(warning_div);
         }
 
         const actions_div = this.Helpers.create_element('div', { class_name: 'form-actions', style: 'margin-top: 2rem;' });
@@ -154,7 +190,7 @@ export class ConfirmSampleEditViewComponent {
         discard_btn.addEventListener('click', this.handle_discard_and_return.bind(this));
 
         actions_div.append(confirm_btn, discard_btn);
-        this.plate_element_ref.appendChild(actions_div);
+        plate.appendChild(actions_div);
     }
 
     destroy() {
@@ -164,3 +200,4 @@ export class ConfirmSampleEditViewComponent {
         this.plate_element_ref = null;
     }
 }
+

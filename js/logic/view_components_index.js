@@ -4,8 +4,8 @@
  */
 import { EditMetadataViewComponent } from '../components/EditMetadataViewComponent.js';
 import { SampleManagementViewComponent } from '../components/SampleManagementViewComponent.js';
-import { SampleFormViewComponent } from '../components/SampleFormViewComponent.js';
-import { ConfirmSampleEditViewComponent } from '../components/ConfirmSampleEditViewComponent.js';
+import { SampleFormViewComponent } from '../components/SampleFormViewComponent.ts';
+import { ConfirmSampleEditViewComponent } from '../components/ConfirmSampleEditViewComponent.ts';
 import { AuditOverviewComponent } from '../components/AuditOverviewComponent.js';
 import { RequirementListComponent } from '../components/RequirementListComponent.js';
 import { RequirementAuditComponent } from '../components/RequirementAuditComponent.js';

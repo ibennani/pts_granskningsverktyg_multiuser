@@ -38,8 +38,8 @@ if (existsSync(mainJsPath)) {
 const expectedComponents = [
     'EditMetadataViewComponent.js',
     'SampleManagementViewComponent.js',
-    'SampleFormViewComponent.js',
-    'ConfirmSampleEditViewComponent.js',
+    'SampleFormViewComponent.ts',
+    'ConfirmSampleEditViewComponent.ts',
     'AuditOverviewComponent.js',
     'RequirementListComponent.js',
     'RequirementAuditComponent.js',

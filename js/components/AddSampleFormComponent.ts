@@ -1,7 +1,38 @@
-import { marked } from '../utils/markdown.js';
 import "./add_sample_form_component.css";
+import { compute_sample_edit_field_diff } from '../logic/sample_edit_diff.js';
+import { render_add_sample_form } from './add_sample_form/render_add_sample_form.js';
 
 export class AddSampleFormComponent {
+    private root: HTMLElement | null;
+    private deps: any;
+    private on_sample_saved_callback: any;
+    private discard_callback: any;
+    private router: any;
+    private getState: any;
+    private dispatch: any;
+    private StoreActionTypes: any;
+    private Translation: any;
+    private Helpers: any;
+    private NotificationComponent: any;
+    private AuditLogic: any;
+    private AutosaveService: any;
+
+    private form_element: any;
+    private category_fieldset_element: any;
+    private sample_type_select: any;
+    private description_input: any;
+    private url_input: any;
+    private url_form_group_ref: any;
+    private content_types_container_element: any;
+    private sample_type_container: any;
+
+    private current_editing_sample_id: string | null;
+    private original_content_types_on_load: string[];
+    private previous_sample_type_value: string;
+    private autosave_session: any;
+    private skip_autosave_on_destroy: boolean;
+    private initial_sample_snapshot: any;
+
     constructor() {
         this.root = null;
         this.deps = null;
@@ -16,6 +47,7 @@ export class AddSampleFormComponent {
         this.NotificationComponent = null;
         this.AuditLogic = null;
         this.AutosaveService = null;
+
         this.form_element = null;
         this.category_fieldset_element = null;
         this.sample_type_select = null;
@@ -24,6 +56,7 @@ export class AddSampleFormComponent {
         this.url_form_group_ref = null;
         this.content_types_container_element = null;
         this.sample_type_container = null;
+
         this.current_editing_sample_id = null;
         this.original_content_types_on_load = [];
         this.previous_sample_type_value = '';
@@ -32,16 +65,15 @@ export class AddSampleFormComponent {
         this.initial_sample_snapshot = null;
     }
 
-    init({ root, deps }) {
+    init({ root, deps }: { root: HTMLElement; deps: any }) {
         this.root = root;
         this.deps = deps;
         this.on_sample_saved_callback = deps.on_sample_saved;
-        this.discard_callback = deps.discard; // Not used in render? Check usages.
+        this.discard_callback = deps.discard;
         this.router = deps.router;
         this.getState = deps.getState;
         this.dispatch = deps.dispatch;
         this.StoreActionTypes = deps.StoreActionTypes;
-
         this.Translation = deps.Translation;
         this.Helpers = deps.Helpers;
         this.NotificationComponent = deps.NotificationComponent;
@@ -55,6 +87,7 @@ export class AddSampleFormComponent {
         this.url_input = null;
         this.url_form_group_ref = null;
         this.content_types_container_element = null;
+        this.sample_type_container = null;
 
         this.current_editing_sample_id = null;
         this.original_content_types_on_load = [];
@@ -63,7 +96,6 @@ export class AddSampleFormComponent {
         this.skip_autosave_on_destroy = false;
         this.initial_sample_snapshot = null;
 
-        // Bind methods
         this.handle_form_submit = this.handle_form_submit.bind(this);
         this.update_description_from_sample_type = this.update_description_from_sample_type.bind(this);
         this._handleCheckboxChange = this._handleCheckboxChange.bind(this);
@@ -78,7 +110,6 @@ export class AddSampleFormComponent {
 
         let sample_categories = Array.isArray(samples.sampleCategories) ? samples.sampleCategories : [];
 
-        // Fallback: nyare struktur kan ha sampleCategories i vocabularies
         if (sample_categories.length === 0) {
             const vocab_sample_types = metadata.vocabularies?.sampleTypes || {};
             if (Array.isArray(vocab_sample_types.sampleCategories)) {
@@ -90,7 +121,7 @@ export class AddSampleFormComponent {
     }
 
     get_t_internally() {
-        return this.Translation?.t || ((key) => `**${key}**`);
+        return this.Translation?.t || ((key: string) => `**${key}**`);
     }
 
     update_description_from_sample_type() {
@@ -105,13 +136,12 @@ export class AddSampleFormComponent {
         this.previous_sample_type_value = new_sample_type_text;
     }
 
-    on_category_change(selected_cat_id, preselected_sample_type_id = null) {
+    on_category_change(selected_cat_id: string, preselected_sample_type_id: string | null = null) {
         const sample_categories = this.get_sample_categories_from_state();
-        const selected_category = sample_categories.find(c => c.id === selected_cat_id);
+        const selected_category = sample_categories.find((c: any) => c.id === selected_cat_id);
 
         if (!selected_category) return;
 
-        // Rendera stickprovstyp-fältet först när en kategori är vald (inga disabled-fält)
         if (!this.sample_type_container) return;
         this.sample_type_container.innerHTML = '';
         const t = this.get_t_internally();
@@ -120,7 +150,7 @@ export class AddSampleFormComponent {
         this.sample_type_select.addEventListener('change', this.update_description_from_sample_type);
         const default_option = this.Helpers.create_element('option', { value: '', text_content: t('select_option') });
         this.sample_type_select.appendChild(default_option);
-        (selected_category.categories || []).forEach(subcat => {
+        (selected_category.categories || []).forEach((subcat: any) => {
             this.sample_type_select.appendChild(this.Helpers.create_element('option', { value: subcat.id, text_content: subcat.text }));
         });
         if (preselected_sample_type_id) {
@@ -135,7 +165,7 @@ export class AddSampleFormComponent {
         }
     }
 
-    _updateParentCheckboxState(parentCheckbox) {
+    _updateParentCheckboxState(parentCheckbox: any) {
         const parentId = parentCheckbox.dataset.parentId;
         const children = this.content_types_container_element.querySelectorAll(`input[data-child-for="${parentId}"]`);
         if (children.length === 0) {
@@ -144,12 +174,11 @@ export class AddSampleFormComponent {
             parentCheckbox.setAttribute('aria-checked', 'false');
             return;
         }
-        const allChecked = Array.from(children).every(child => child.checked);
-        const someChecked = Array.from(children).some(child => child.checked);
+        const allChecked = Array.from(children).every((child: any) => child.checked);
+        const someChecked = Array.from(children).some((child: any) => child.checked);
         parentCheckbox.checked = allChecked;
         parentCheckbox.indeterminate = someChecked && !allChecked;
-        
-        // Uppdatera ARIA-attribut för skärmläsare
+
         if (parentCheckbox.indeterminate) {
             parentCheckbox.setAttribute('aria-checked', 'mixed');
         } else {
@@ -157,13 +186,13 @@ export class AddSampleFormComponent {
         }
     }
 
-    _handleCheckboxChange(event) {
+    _handleCheckboxChange(event: any) {
         const target = event.target;
         if (target.type !== 'checkbox') return;
         if (target.dataset.parentId) {
             const parentId = target.dataset.parentId;
             const isChecked = target.checked;
-            this.content_types_container_element.querySelectorAll(`input[data-child-for="${parentId}"]`).forEach(child => child.checked = isChecked);
+            this.content_types_container_element.querySelectorAll(`input[data-child-for="${parentId}"]`).forEach((child: any) => child.checked = isChecked);
         } else if (target.dataset.childFor) {
             const parentId = target.dataset.childFor;
             const parentCheckbox = this.content_types_container_element.querySelector(`input[data-parent-id="${parentId}"]`);
@@ -172,11 +201,11 @@ export class AddSampleFormComponent {
     }
 
     handle_autosave_input() {
-        if (!this.current_editing_sample_id) return; // Autospar endast för redigering, inte för nya stickprov
+        if (!this.current_editing_sample_id) return;
         this.autosave_session?.request_autosave();
     }
 
-    handle_content_type_change(e) {
+    handle_content_type_change(e: any) {
         this._handleCheckboxChange(e);
         this.handle_autosave_input();
     }
@@ -191,7 +220,7 @@ export class AddSampleFormComponent {
         const url_raw = this.url_input?.value || '';
         const selected_raw_values = Array.from(
             this.content_types_container_element?.querySelectorAll('input[name="selectedContentTypes"]:checked') || []
-        ).map(cb => cb.value);
+        ).map((cb: any) => cb.value);
 
         const description = this.Helpers?.sanitize_plain_input
             ? this.Helpers.sanitize_plain_input(description_raw, { trim: should_trim })
@@ -203,7 +232,7 @@ export class AddSampleFormComponent {
 
         const selected_content_types = this.Helpers?.sanitize_plain_array
             ? this.Helpers.sanitize_plain_array(selected_raw_values, { trim: should_trim })
-            : selected_raw_values.map(v => (should_trim ? v.trim() : v.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')));
+            : selected_raw_values.map((v: any) => (should_trim ? v.trim() : v.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')));
 
         if (url_val) url_val = this.Helpers.add_protocol_if_missing(url_val);
 
@@ -226,28 +255,71 @@ export class AddSampleFormComponent {
         }
     }
 
-    _stage_changes_and_navigate(sample_payload_data, is_autosave = false, skip_render_for_trim = false) {
+    _resolve_content_type_label(rule_file: any, id: string) {
+        const groups = rule_file?.metadata?.vocabularies?.contentTypes || rule_file?.metadata?.contentTypes || [];
+        for (const g of groups) {
+            for (const t of (g.types || [])) {
+                if (t.id === id) return String(t.text || id);
+            }
+        }
+        return id;
+    }
+
+    _resolve_sample_category_label(rule_file: any, id: string) {
+        const cats = rule_file?.metadata?.samples?.sampleCategories ||
+            rule_file?.metadata?.vocabularies?.sampleTypes?.sampleCategories ||
+            [];
+        const cat = (cats || []).find((c: any) => c.id === id);
+        return cat ? String(cat.text || id) : id;
+    }
+
+    _resolve_sample_type_label(rule_file: any, id: string) {
+        const cats = rule_file?.metadata?.samples?.sampleCategories ||
+            rule_file?.metadata?.vocabularies?.sampleTypes?.sampleCategories ||
+            [];
+        for (const c of (cats || [])) {
+            const match = (c.categories || []).find((s: any) => s.id === id);
+            if (match) return String(match.text || id);
+        }
+        return id;
+    }
+
+    _stage_changes_and_navigate(sample_payload_data: any, is_autosave = false, skip_render_for_trim = false) {
         const state = this.getState();
         const rule_file = state.ruleFileContent;
-        const sample_being_edited = state.samples.find(s => s.id === this.current_editing_sample_id);
+        const sample_being_edited = state.samples.find((s: any) => s.id === this.current_editing_sample_id);
 
         const old_relevant_reqs = new Set(
             this.AuditLogic
                 .get_relevant_requirements_for_sample(rule_file, { ...sample_being_edited, selectedContentTypes: this.original_content_types_on_load })
-                .map(r => r.key || r.id)
+                .map((r: any) => r.key || r.id)
                 .filter(Boolean)
         );
         const new_relevant_reqs = new Set(
             this.AuditLogic
                 .get_relevant_requirements_for_sample(rule_file, sample_payload_data)
-                .map(r => r.key || r.id)
+                .map((r: any) => r.key || r.id)
                 .filter(Boolean)
         );
 
         const added_req_ids = [...new_relevant_reqs].filter(id => !old_relevant_reqs.has(id));
         const removed_req_ids = [...old_relevant_reqs].filter(id => !new_relevant_reqs.has(id));
 
-        const data_will_be_lost = removed_req_ids.some(id => sample_being_edited.requirementResults[id]);
+        const data_will_be_lost = removed_req_ids.some((id: any) => sample_being_edited.requirementResults[id]);
+
+        const field_diff = compute_sample_edit_field_diff({
+            old_sample: {
+                sampleCategory: sample_being_edited.sampleCategory,
+                sampleType: sample_being_edited.sampleType,
+                description: sample_being_edited.description,
+                url: sample_being_edited.url,
+                selectedContentTypes: this.original_content_types_on_load
+            },
+            new_sample: sample_payload_data,
+            resolve_sample_category_label: (id: string) => this._resolve_sample_category_label(rule_file, id),
+            resolve_sample_type_label: (id: string) => this._resolve_sample_type_label(rule_file, id),
+            resolve_content_type_label: (id: string) => this._resolve_content_type_label(rule_file, id)
+        });
 
         const should_skip_render = is_autosave === true || skip_render_for_trim === true;
         this.dispatch({
@@ -255,17 +327,25 @@ export class AddSampleFormComponent {
             payload: {
                 sampleId: this.current_editing_sample_id,
                 updatedSampleData: sample_payload_data,
-                analysis: { added_reqs: added_req_ids, removed_reqs: removed_req_ids, data_will_be_lost },
+                analysis: {
+                    added_reqs: added_req_ids,
+                    removed_reqs: removed_req_ids,
+                    data_will_be_lost,
+                    ...field_diff
+                },
                 skip_render: should_skip_render
             }
         });
 
         if (!is_autosave) {
+            // Vi navigerar direkt till bekräftelsesidan – undvik att destroy() triggar en extra flush/router.
+            this.skip_autosave_on_destroy = true;
+            this.autosave_session?.cancel_pending?.();
             this.router('confirm_sample_edit');
         }
     }
 
-    _perform_save(sample_payload_data, is_autosave = false, skip_render_for_trim = false) {
+    _perform_save(sample_payload_data: any, is_autosave = false, skip_render_for_trim = false) {
         const t = this.get_t_internally();
         const should_skip_render = is_autosave === true || skip_render_for_trim === true;
         if (this.current_editing_sample_id) {
@@ -278,14 +358,13 @@ export class AddSampleFormComponent {
                 }
             });
 
-            // Update the baseline for content types so future changes are compared against this saved state
             if (sample_payload_data.selectedContentTypes) {
                 this.original_content_types_on_load = [...sample_payload_data.selectedContentTypes];
             }
 
             if (!is_autosave) {
-                if (window.DraftManager?.commitCurrentDraft) {
-                    window.DraftManager.commitCurrentDraft();
+                if ((window as any).DraftManager?.commitCurrentDraft) {
+                    (window as any).DraftManager.commitCurrentDraft();
                 }
                 this.NotificationComponent.show_global_message(t('sample_updated_successfully'), "success");
             }
@@ -295,8 +374,8 @@ export class AddSampleFormComponent {
                 type: this.StoreActionTypes.ADD_SAMPLE,
                 payload: { ...new_sample_object, skip_render: should_skip_render }
             });
-            if (!is_autosave && window.DraftManager?.commitCurrentDraft) {
-                window.DraftManager.commitCurrentDraft();
+            if (!is_autosave && (window as any).DraftManager?.commitCurrentDraft) {
+                (window as any).DraftManager.commitCurrentDraft();
             }
             this.NotificationComponent.show_global_message(t('sample_added_successfully'), "success");
         }
@@ -306,7 +385,7 @@ export class AddSampleFormComponent {
         }
     }
 
-    handle_form_submit(event) {
+    handle_form_submit(event: any) {
         event.preventDefault();
         const t = this.get_t_internally();
         this.NotificationComponent.clear_global_message();
@@ -319,7 +398,7 @@ export class AddSampleFormComponent {
         const url_raw = this.url_input.value;
         const selected_raw_values = Array.from(
             this.content_types_container_element.querySelectorAll('input[name="selectedContentTypes"]:checked')
-        ).map(cb => cb.value);
+        ).map((cb: any) => cb.value);
 
         const description = this.Helpers?.sanitize_plain_input
             ? this.Helpers.sanitize_plain_input(description_raw, { trim: true })
@@ -331,7 +410,7 @@ export class AddSampleFormComponent {
 
         const selected_content_types = this.Helpers?.sanitize_plain_array
             ? this.Helpers.sanitize_plain_array(selected_raw_values, { trim: true })
-            : selected_raw_values.map(v => v.trim().replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ''));
+            : selected_raw_values.map((v: any) => v.trim().replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ''));
 
         if (!sample_category_id) { this.NotificationComponent.show_global_message(t('field_is_required', { fieldName: t('sample_category_title') }), 'error'); return; }
         if (!sample_type_id) { this.NotificationComponent.show_global_message(t('field_is_required', { fieldName: t('sample_type_label') }), 'error'); this.sample_type_select.focus(); return; }
@@ -363,217 +442,9 @@ export class AddSampleFormComponent {
         }
     }
 
-    _restore_initial_state() {
-        if (!this.initial_sample_snapshot || !this.current_editing_sample_id) return;
-        
-        this.dispatch({
-            type: this.StoreActionTypes.UPDATE_SAMPLE,
-            payload: {
-                sampleId: this.current_editing_sample_id,
-                updatedSampleData: this.initial_sample_snapshot
-            }
-        });
-    }
-
-    render(sample_id_to_edit = null) {
-        // Prevent re-rendering (and resetting form state) only when editing the same existing sample and the form is mounted.
-        // For "add new sample" (null) we always re-render so that checkboxes start unchecked.
-        if (sample_id_to_edit !== null && this.current_editing_sample_id === sample_id_to_edit && this.form_element && this.root && this.root.contains(this.form_element)) {
-            return;
-        }
-
-        const t = this.get_t_internally();
-        this.current_editing_sample_id = sample_id_to_edit;
-        const current_state = this.getState();
-        const sample_data = this.current_editing_sample_id ? current_state.samples.find(s => s.id === this.current_editing_sample_id) : null;
-        
-        // Spara ursprungsläget när vyn laddas (endast för redigering)
-        if (sample_data) {
-            this.initial_sample_snapshot = JSON.parse(JSON.stringify(sample_data));
-        } else {
-            this.initial_sample_snapshot = null;
-        }
-        const sample_categories = this.get_sample_categories_from_state();
-        const grouped_content_types = current_state.ruleFileContent.metadata?.vocabularies?.contentTypes || current_state.ruleFileContent.metadata?.contentTypes || [];
-
-        this.original_content_types_on_load = sample_data ? [...sample_data.selectedContentTypes] : [];
-
-        this.root.innerHTML = '';
-        this.form_element = this.Helpers.create_element('form', { class_name: 'add-sample-form' });
-        this.form_element.addEventListener('submit', this.handle_form_submit);
-
-        // --- Category Section ---
-        this.form_element.appendChild(this.Helpers.create_element('h2', { text_content: t('sample_category_title') }));
-        this.category_fieldset_element = this.Helpers.create_element('fieldset', { class_name: 'content-type-parent-group' });
-        this.category_fieldset_element.appendChild(this.Helpers.create_element('legend', { text_content: t('sample_category_title'), class_name: 'visually-hidden' }));
-        sample_categories.forEach((cat, index) => {
-            const radio_id = `sample-cat-${cat.id}`;
-            const radio_wrapper = this.Helpers.create_element('div', { class_name: ['form-check', 'content-type-child-item'] });
-            const radio = this.Helpers.create_element('input', { id: radio_id, class_name: 'form-check-input', attributes: { type: 'radio', name: 'sampleCategory', value: cat.id, required: true } });
-            if ((sample_data && sample_data.sampleCategory === cat.id) || (!sample_data && index === 0)) radio.checked = true;
-            radio.addEventListener('change', () => {
-                this.on_category_change(cat.id);
-            });
-            radio_wrapper.append(radio, this.Helpers.create_element('label', { attributes: { for: radio_id }, text_content: cat.text }));
-            this.category_fieldset_element.appendChild(radio_wrapper);
-        });
-        this.form_element.appendChild(this.category_fieldset_element);
-
-        // --- Sample Info Section ---
-        this.form_element.appendChild(this.Helpers.create_element('h2', { text_content: t('sample_info_title') }));
-        // Container för stickprovstyp – fylls i när användaren valt kategori (on_category_change). Ingen disabled, fältet renderas inte förrän det ska användas.
-        this.sample_type_container = this.Helpers.create_element('div', { class_name: 'form-group' });
-        this.description_input = this.Helpers.create_element('input', { id: 'sampleDescriptionInput', class_name: 'form-control', attributes: { type: 'text', required: true } });
-        this.description_input.addEventListener('input', this.handle_autosave_input);
-        this.url_input = this.Helpers.create_element('input', { id: 'sampleUrlInput', class_name: 'form-control', attributes: { type: 'url' } });
-        this.url_input.addEventListener('input', this.handle_autosave_input);
-        this.url_input.addEventListener('blur', () => {
-            const val = (this.url_input?.value || '').trim();
-            if (val && this.Helpers?.add_protocol_if_missing) {
-                const fixed = this.Helpers.add_protocol_if_missing(val);
-                if (fixed !== val) {
-                    this.url_input.value = fixed;
-                }
-            }
-        });
-        this.url_form_group_ref = this.Helpers.create_element('div', { class_name: 'form-group', children: [this.Helpers.create_element('label', { attributes: { for: 'sampleUrlInput' }, text_content: t('url') }), this.url_input] });
-        this.form_element.append(
-            this.sample_type_container,
-            this.Helpers.create_element('div', { class_name: 'form-group', children: [this.Helpers.create_element('label', { attributes: { for: 'sampleDescriptionInput' }, text_content: t('description') + '*' }), this.description_input] }),
-            this.url_form_group_ref
-        );
-        this.description_input.value = sample_data?.description || "";
-        this.url_input.value = sample_data?.url || "";
-
-        // --- Content Types Section ---
-        this.content_types_container_element = this.Helpers.create_element('div', { class_name: 'content-types-group' });
-        this.content_types_container_element.appendChild(this.Helpers.create_element('h2', { text_content: t('content_types') }));
-        this.content_types_container_element.appendChild(this.Helpers.create_element('p', { text_content: t('content_types_instruction'), style: { 'margin-top': '0', 'color': 'var(--text-color-muted)' } }));
-        grouped_content_types.forEach(group => {
-            const fieldset = this.Helpers.create_element('fieldset', { class_name: 'content-type-parent-group' });
-            const group_children_id = `ct-children-${group.id}`;
-            
-            // Legend för skärmläsare (visuellt dold)
-            const legend = this.Helpers.create_element('legend', { class_name: 'visually-hidden', text_content: group.text });
-            fieldset.appendChild(legend);
-            
-            // Visuell wrapper för parent checkbox
-            const parent_header = this.Helpers.create_element('div', { class_name: 'content-type-parent-header' });
-            const parent_id = `ct-parent-${group.id}`;
-            const parent_checkbox = this.Helpers.create_element('input', { 
-                id: parent_id, 
-                class_name: 'form-check-input', 
-                attributes: { 
-                    type: 'checkbox', 
-                    'data-parent-id': group.id,
-                    'aria-controls': group_children_id,
-                    'aria-label': `${group.text}, välj alla`
-                } 
-            });
-            const parent_h3 = this.Helpers.create_element('h3');
-            const parent_label = this.Helpers.create_element('label', { attributes: { for: parent_id }, text_content: group.text, class_name: 'content-type-parent-label' });
-            parent_h3.appendChild(parent_label);
-            parent_header.append(parent_checkbox, parent_h3);
-            fieldset.appendChild(parent_header);
-            
-            // Container för children med ID för ARIA
-            const children_container = this.Helpers.create_element('div', { class_name: 'content-type-children-container', attributes: { id: group_children_id } });
-            
-            (group.types || []).forEach(child => {
-                const child_id = `ct-child-${child.id}`;
-                const child_wrapper = this.Helpers.create_element('div', { class_name: 'form-check content-type-child-item' });
-                const desc_id = child.description ? `ct-desc-${child.id}` : null;
-                const child_checkbox = this.Helpers.create_element('input', { 
-                    id: child_id, 
-                    class_name: 'form-check-input', 
-                    attributes: { 
-                        type: 'checkbox', 
-                        name: 'selectedContentTypes', 
-                        value: child.id, 
-                        'data-child-for': group.id,
-                        'aria-describedby': desc_id ? desc_id : null,
-                        'aria-labelledby': `${child_id}-label`
-                    } 
-                });
-                const child_label = this.Helpers.create_element('label', { 
-                    attributes: { for: child_id, id: `${child_id}-label` }, 
-                    text_content: child.text 
-                });
-                child_wrapper.append(child_checkbox, child_label);
-                children_container.appendChild(child_wrapper);
-                
-                if (child.description) {
-                    const desc_div = this.Helpers.create_element('div', { 
-                        class_name: 'content-type-description markdown-content',
-                        attributes: { id: desc_id }
-                    });
-                    if (typeof marked !== 'undefined') {
-                        const raw_html = marked.parse(child.description);
-                        desc_div.innerHTML = this.Helpers.sanitize_html
-                            ? this.Helpers.sanitize_html(raw_html)
-                            : raw_html;
-                    } else {
-                        desc_div.textContent = child.description;
-                    }
-                    children_container.appendChild(desc_div);
-                }
-            });
-            fieldset.appendChild(children_container);
-            this.content_types_container_element.appendChild(fieldset);
-        });
-        this.content_types_container_element.addEventListener('change', this.handle_content_type_change);
-        const all_child_checkboxes = this.content_types_container_element.querySelectorAll('input[data-child-for]');
-        all_child_checkboxes.forEach(cb => {
-            cb.checked = sample_data ? (sample_data.selectedContentTypes?.includes(cb.value) || false) : false;
-        });
-        const all_parent_checkboxes = this.content_types_container_element.querySelectorAll('input[data-parent-id]');
-        if (sample_data) {
-            all_parent_checkboxes.forEach(pc => this._updateParentCheckboxState(pc));
-        } else {
-            all_parent_checkboxes.forEach(pc => {
-                pc.checked = false;
-                pc.indeterminate = false;
-                pc.setAttribute('aria-checked', 'false');
-            });
-        }
-        this.form_element.appendChild(this.content_types_container_element);
-
-        // --- Actions ---
-        const actions_div = this.Helpers.create_element('div', { class_name: 'form-actions' });
-        const save_button = this.Helpers.create_element('button', { class_name: ['button', 'button-primary'], attributes: { type: 'submit' } });
-        const button_text = this.current_editing_sample_id ? t('save_changes_button') : t('save_sample_button');
-        const button_span = this.Helpers.create_element('span', { text_content: button_text });
-        save_button.appendChild(button_span);
-        if (this.Helpers.get_icon_svg) {
-            const icon_svg = this.Helpers.get_icon_svg(this.current_editing_sample_id ? 'save' : 'add');
-            if (icon_svg) {
-                save_button.insertAdjacentHTML('beforeend', icon_svg);
-            }
-        }
-        actions_div.appendChild(save_button);
-        this.form_element.appendChild(actions_div);
-
-        this.root.appendChild(this.form_element);
-
-        this.autosave_session?.destroy();
-        this.autosave_session = null;
-        if (this.current_editing_sample_id && this.AutosaveService) {
-            this.autosave_session = this.AutosaveService.create_session({
-                form_element: this.form_element,
-                focus_root: this.form_element,
-                debounce_ms: 250,
-                on_save: ({ is_autosave, skip_render }) => {
-                    this.save_form_data_immediately(is_autosave, !is_autosave, skip_render);
-                }
-            });
-        }
-
-        // --- Post-render initialization ---
-        const selected_cat_id = sample_data?.sampleCategory || sample_categories[0]?.id;
-        if (selected_cat_id) {
-            this.on_category_change(selected_cat_id, sample_data?.sampleType);
-        }
-        this.previous_sample_type_value = sample_data?.sampleType ? this.sample_type_select.options[this.sample_type_select.selectedIndex]?.text : '';
+    render(sample_id_to_edit: string | null = null) {
+        this.skip_autosave_on_destroy = false;
+        render_add_sample_form(this, sample_id_to_edit);
     }
 
     discard() {
@@ -604,3 +475,4 @@ export class AddSampleFormComponent {
         this.initial_sample_snapshot = null;
     }
 }
+

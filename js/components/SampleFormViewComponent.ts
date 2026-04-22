@@ -1,6 +1,21 @@
 import { AddSampleFormComponent } from './AddSampleFormComponent.js';
 
 export class SampleFormViewComponent {
+    private root: HTMLElement | null;
+    private deps: any;
+    private router: any;
+    private params: any;
+    private getState: any;
+    private dispatch: any;
+    private StoreActionTypes: any;
+    private Translation: any;
+    private Helpers: any;
+    private NotificationComponent: any;
+    private AuditLogic: any;
+    private add_sample_form_container_element: HTMLElement | null;
+    private plate_element_ref: HTMLElement | null;
+    private add_sample_form_component_instance: any;
+
     constructor() {
         this.root = null;
         this.deps = null;
@@ -18,7 +33,7 @@ export class SampleFormViewComponent {
         this.add_sample_form_component_instance = new AddSampleFormComponent();
     }
 
-    async init({ root, deps }) {
+    async init({ root, deps }: { root: HTMLElement; deps: any }) {
         this.root = root;
         this.deps = deps;
         this.router = deps.router;
@@ -29,15 +44,13 @@ export class SampleFormViewComponent {
         this.Translation = deps.Translation;
         this.Helpers = deps.Helpers;
         this.NotificationComponent = deps.NotificationComponent;
-        this.AuditLogic = deps.AuditLogic; // Ensure this is passed from main.js if needed by AddSampleFormComponent
+        this.AuditLogic = deps.AuditLogic;
 
         this.add_sample_form_container_element = null;
         this.plate_element_ref = null;
 
-        // Initialize child component container
         this.add_sample_form_container_element = this.Helpers.create_element('div', { id: 'add-sample-form-area-in-view' });
 
-        // Initialize child component
         await this.add_sample_form_component_instance.init({
             root: this.add_sample_form_container_element,
             deps: {
@@ -51,69 +64,46 @@ export class SampleFormViewComponent {
                 Helpers: this.Helpers,
                 NotificationComponent: this.NotificationComponent,
                 AuditLogic: this.AuditLogic,
-                AutosaveService: this.deps?.AutosaveService || window.AutosaveService
+                AutosaveService: this.deps?.AutosaveService || (window as any).AutosaveService
             }
         });
     }
 
-    _request_focus_on_audit_info_h2() {
-        // Instruktion: när användaren återgår till granskningsöversikten ska fokus hamna på
-        // "Granskningsinformation" (h2) i översikten, inte på sidans h1.
-        try {
-            if (window.sessionStorage) {
-                window.sessionStorage.setItem('gv_return_focus_audit_info_h2_v1', JSON.stringify({ focus: 'audit_info_h2' }));
-            }
-        } catch (e) {
-            // Ignorera om sessionStorage inte är tillgängligt.
-        }
-    }
-
     on_form_saved_or_updated() {
-        const current_state = this.getState();
-        const previous_view = (current_state.auditStatus === 'not_started') ? 'sample_management' : 'audit_overview';
-        if (previous_view === 'audit_overview') {
-            this._request_focus_on_audit_info_h2();
-        }
-        this.router(previous_view);
+        this.router('sample_management');
     }
 
     discard_and_return() {
         this.add_sample_form_component_instance.discard?.();
-        const current_state = this.getState();
-        const previous_view = (current_state.auditStatus === 'not_started') ? 'sample_management' : 'audit_overview';
-        if (previous_view === 'audit_overview') {
-            this._request_focus_on_audit_info_h2();
-        }
-        this.router(previous_view);
+        this.router('sample_management');
     }
 
     render() {
+        if (!this.root) return;
         const t = this.Translation.t;
         const sample_id_to_edit = this.params?.editSampleId || null;
         const current_state = this.getState();
         const audit_status = current_state.auditStatus;
         const sample_count = current_state.samples?.length || 0;
 
-        this.root.innerHTML = '';
-        this.plate_element_ref = this.Helpers.create_element('div', { class_name: 'content-plate' });
-        this.root.appendChild(this.plate_element_ref);
+        const root = this.root;
+        root.innerHTML = '';
+        const plate = this.Helpers.create_element('div', { class_name: 'content-plate' }) as any;
+        this.plate_element_ref = plate;
+        root.appendChild(plate);
 
         const title_text = sample_id_to_edit ? t('edit_sample') : t('add_new_sample');
-        this.plate_element_ref.appendChild(this.Helpers.create_element('h1', { text_content: title_text }));
+        plate.appendChild(this.Helpers.create_element('h1', { text_content: title_text }));
 
         const intro_text_key = (audit_status === 'not_started') ? 'add_samples_intro_message' : 'add_sample_form_new_intro';
-        this.plate_element_ref.appendChild(this.Helpers.create_element('p', {
+        plate.appendChild(this.Helpers.create_element('p', {
             class_name: 'view-intro-text',
             text_content: t(intro_text_key)
         }));
 
-        // Rendera formulärkomponenten inuti vår nya vy
         this.add_sample_form_component_instance.render(sample_id_to_edit);
-        this.plate_element_ref.appendChild(this.add_sample_form_container_element);
+        plate.appendChild(this.add_sample_form_container_element as any);
 
-        // Lägg till en nedre navigationsrad med "Tillbaka"-knapp.
-        // Undantag: När användaren lägger till det allra första stickprovet i en ny granskning
-        // ska "Tillbaka till alla stickprov" aldrig renderas.
         const should_hide_back_to_samples_for_first_sample =
             audit_status === 'not_started' &&
             !sample_id_to_edit &&
@@ -121,8 +111,7 @@ export class SampleFormViewComponent {
 
         if (!should_hide_back_to_samples_for_first_sample) {
             const bottom_actions_div = this.Helpers.create_element('div', { class_name: 'form-actions', style: 'margin-top: 2rem; justify-content: flex-start;' });
-
-            const return_button_text_key = (audit_status === 'not_started') ? 'back_to_sample_management' : 'back_to_audit_overview';
+            const return_button_text_key = 'back_to_sample_management';
 
             const return_button = this.Helpers.create_element('button', {
                 class_name: ['button', 'button-default'],
@@ -130,7 +119,7 @@ export class SampleFormViewComponent {
             });
             return_button.addEventListener('click', this.discard_and_return.bind(this));
             bottom_actions_div.appendChild(return_button);
-            this.plate_element_ref.appendChild(bottom_actions_div);
+            plate.appendChild(bottom_actions_div);
         }
     }
 
@@ -138,9 +127,10 @@ export class SampleFormViewComponent {
         if (this.add_sample_form_component_instance?.destroy) {
             this.add_sample_form_component_instance.destroy();
         }
-        this.root.innerHTML = '';
+        if (this.root) this.root.innerHTML = '';
         this.plate_element_ref = null;
         this.root = null;
         this.deps = null;
     }
 }
+
