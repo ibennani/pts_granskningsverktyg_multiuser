@@ -192,7 +192,21 @@ export class AddSampleFormComponent {
         if (target.dataset.parentId) {
             const parentId = target.dataset.parentId;
             const isChecked = target.checked;
-            this.content_types_container_element.querySelectorAll(`input[data-child-for="${parentId}"]`).forEach((child: any) => child.checked = isChecked);
+            const children = this.content_types_container_element.querySelectorAll(`input[data-child-for="${parentId}"]`);
+            children.forEach((child: any) => {
+                child.checked = isChecked;
+                // Viktigt: när vi kryssar i/ur barnrutor programmatiskt triggas inga change/input-events på dem.
+                // DraftManager (utkast) och andra lyssnare ser annars inte att barnen ändrats, vilket kan göra att
+                // återställning efter render skriver över barnens state vid nästa vybyte.
+                const dm = (window as any).DraftManager;
+                if (dm?.captureFieldChange) {
+                    try {
+                        dm.captureFieldChange(child);
+                    } catch (_) {
+                        // ignoreras
+                    }
+                }
+            });
         } else if (target.dataset.childFor) {
             const parentId = target.dataset.childFor;
             const parentCheckbox = this.content_types_container_element.querySelector(`input[data-parent-id="${parentId}"]`);
@@ -472,6 +486,7 @@ export class AddSampleFormComponent {
         this.root = null;
         this.deps = null;
         this.form_element = null;
+        this.current_editing_sample_id = null;
         this.initial_sample_snapshot = null;
     }
 }

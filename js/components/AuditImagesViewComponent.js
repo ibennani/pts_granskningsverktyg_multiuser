@@ -2,6 +2,7 @@ import { get_current_user_name } from '../utils/helpers.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import './audit_images_view_component.css';
 import { build_compact_hash_fragment } from '../logic/router_url_codec.js';
+import { get_requirement_public_key, resolve_requirement_map_key } from '../audit_logic.js';
 
 export class AuditImagesViewComponent {
     constructor() {
@@ -67,17 +68,18 @@ export class AuditImagesViewComponent {
         event.preventDefault();
 
         const sample_id = btn.getAttribute('data-sample-id');
-        const req_id = btn.getAttribute('data-requirement-id');
+        const req_id_public = btn.getAttribute('data-requirement-id');
+        const req_id_map = btn.getAttribute('data-requirement-map-id');
         const check_id = btn.getAttribute('data-check-id');
         const pc_id = btn.getAttribute('data-pc-id');
-        if (!sample_id || !req_id || !check_id || !pc_id) return;
+        if (!sample_id || !req_id_public || !req_id_map || !check_id || !pc_id) return;
 
         const ModalComponent = app_runtime_refs.modal_component;
         if (!ModalComponent?.show || !this.Helpers?.create_element) return;
 
         const state = this.getState();
         const sample = state?.samples?.find(s => s.id === sample_id);
-        const requirement_result_ref = sample?.requirementResults?.[req_id];
+        const requirement_result_ref = sample?.requirementResults?.[req_id_map];
         if (!requirement_result_ref) return;
 
         const t = this.Translation.t;
@@ -127,9 +129,10 @@ export class AuditImagesViewComponent {
                         check_result.passCriteria[pc_id].attachedMediaFilenames = filenames;
 
                         const requirements = state?.ruleFileContent?.requirements;
+                        const resolved_map = resolve_requirement_map_key(requirements, req_id_map) || req_id_map;
                         const requirement = (Array.isArray(requirements)
-                            ? requirements.find(r => (r?.key || r?.id) === req_id)
-                            : requirements?.[req_id]) || null;
+                            ? requirements.find(r => (r?.key || r?.id) === req_id_public)
+                            : requirements?.[resolved_map]) || null;
                         if (requirement && this.AuditLogic) {
                             (requirement.checks || []).forEach(check_def => {
                                 const check_res = requirement_result_ref.checkResults[check_def.id];
@@ -146,7 +149,7 @@ export class AuditImagesViewComponent {
                             type: this.StoreActionTypes.UPDATE_REQUIREMENT_RESULT,
                             payload: {
                                 sampleId: sample_id,
-                                requirementId: req_id,
+                                requirementId: req_id_map,
                                 newRequirementResult: requirement_result_ref,
                                 skip_render: true
                             }
@@ -244,6 +247,9 @@ export class AuditImagesViewComponent {
         const sample_url = group.sample?.url?.trim() || '';
         const total_count = group.items.length;
 
+        const requirements = this.getState()?.ruleFileContent?.requirements;
+        const public_req_id = get_requirement_public_key(requirements, group.reqId) || String(group.reqId || '');
+
         const req_row = this.Helpers.create_element('h2', { class_name: 'audit-image-card__row audit-image-card__requirement-row' });
         const req_label = this.Helpers.create_element('span', {
             class_name: 'audit-image-card__label',
@@ -252,9 +258,10 @@ export class AuditImagesViewComponent {
         req_row.appendChild(req_label);
         const req_link = this.Helpers.create_element('a', {
             attributes: {
-                href: this.build_hash('requirement_audit', { sampleId: group.sample?.id, requirementId: group.reqId }),
+                href: this.build_hash('requirement_audit', { sampleId: group.sample?.id, requirementId: public_req_id }),
                 'data-sample-id': group.sample?.id || '',
-                'data-requirement-id': group.reqId || ''
+                'data-requirement-id': public_req_id,
+                'data-requirement-map-id': group.reqId || ''
             },
             text_content: req_title
         });
@@ -363,7 +370,8 @@ export class AuditImagesViewComponent {
                     attributes: {
                         'data-action': 'attach-media',
                         'data-sample-id': group.sample?.id || '',
-                        'data-requirement-id': group.reqId || '',
+                        'data-requirement-id': public_req_id,
+                        'data-requirement-map-id': group.reqId || '',
                         'data-check-id': check_def.id,
                         'data-pc-id': pc_def.id,
                         type: 'button',

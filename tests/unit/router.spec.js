@@ -206,7 +206,7 @@ describe('router', () => {
         expect(updatePageTitle).not.toHaveBeenCalled();
     });
 
-    test('navigate_and_set_hash: oförändrad hash triggar render om komponent finns', () => {
+    test('navigate_and_set_hash: oförändrad hash triggar render om komponent finns', async () => {
         window.location.hash = '#start';
         const nav_debug = jest.fn();
         const render = jest.fn();
@@ -218,6 +218,8 @@ describe('router', () => {
             get_current_view_component: () => ({ render }),
             updatePageTitle
         });
+        // Render schemaläggs i microtask för att undvika render→router→render-loop (stack overflow)
+        await Promise.resolve();
         expect(render).toHaveBeenCalled();
         expect(updatePageTitle).toHaveBeenCalledWith('start', {});
     });

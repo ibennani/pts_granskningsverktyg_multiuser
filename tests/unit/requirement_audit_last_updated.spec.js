@@ -10,6 +10,7 @@ describe('RequirementAuditComponent dispatch_result_update skipLastStatusBump', 
         const frozen_ts = '2020-06-01T12:00:00.000Z';
         const comp = new RequirementAuditComponent();
         comp.params = { sampleId: '1', requirementId: 'req1' };
+        comp.requirement_map_key = 'req1';
         comp.getState = () => ({
             samples: [{
                 id: '1',
@@ -48,6 +49,7 @@ describe('RequirementAuditComponent dispatch_result_update skipLastStatusBump', 
     test('sätter ny lastStatusUpdate när skipLastStatusBump är false', () => {
         const comp = new RequirementAuditComponent();
         comp.params = { sampleId: '1', requirementId: 'req1' };
+        comp.requirement_map_key = 'req1';
         comp.getState = () => ({
             samples: [{
                 id: '1',

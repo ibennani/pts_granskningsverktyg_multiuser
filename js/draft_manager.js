@@ -83,13 +83,32 @@ function should_skip_element(element) {
     return false;
 }
 
-function get_field_key(element) {
+/**
+ * Unik nyckel per formulärfält för utkast. Flera kryssrutor med samma `name` men olika `value`
+ * (t.ex. innehållstyper) måste inte dela en nyckel — då skrivs bara sista ändringen över och
+ * restoreIntoDom sätter bara första träff (processed_keys).
+ * @param {Element} element
+ * @returns {string|null}
+ */
+export function get_field_key(element) {
     if (!element || !element.getAttribute) return null;
     const explicit_path = element.getAttribute('data-draft-path');
     if (explicit_path) return explicit_path;
     if (element.type === 'radio') {
         const group_name = element.getAttribute('name');
         if (group_name) return `radio:${group_name}`;
+    }
+    const tag = element.tagName ? element.tagName.toLowerCase() : '';
+    if (tag === 'input' && element.type === 'checkbox') {
+        const name_attr = element.getAttribute('name');
+        const value_attr = element.getAttribute('value');
+        if (name_attr && value_attr !== null && String(value_attr).length > 0) {
+            return `checkbox:${name_attr}:${value_attr}`;
+        }
+        if (name_attr) return name_attr;
+        const id_attr = element.getAttribute('id');
+        if (id_attr) return id_attr;
+        return generate_fallback_path(element);
     }
     const name_attr = element.getAttribute('name');
     if (name_attr) return name_attr;

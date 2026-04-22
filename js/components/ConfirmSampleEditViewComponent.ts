@@ -46,22 +46,48 @@ export class ConfirmSampleEditViewComponent {
             return;
         }
 
-        this.dispatch({
-            type: this.StoreActionTypes.UPDATE_SAMPLE,
-            payload: {
-                sampleId: pending_changes.sampleId,
-                updatedSampleData: pending_changes.updatedSampleData
+        void (async () => {
+            try {
+                await this.dispatch({
+                    type: this.StoreActionTypes.UPDATE_SAMPLE,
+                    payload: {
+                        sampleId: pending_changes.sampleId,
+                        updatedSampleData: pending_changes.updatedSampleData
+                    }
+                });
+
+                // Verifiera att innehållstyper faktiskt landade i state.
+                const after = this.getState();
+                const sample_after = after?.samples?.find((s: any) => String(s?.id) === String(pending_changes.sampleId));
+                const expected = pending_changes.updatedSampleData?.selectedContentTypes;
+                const actual = sample_after?.selectedContentTypes;
+                const expected_set = new Set(Array.isArray(expected) ? expected : []);
+                const actual_set = new Set(Array.isArray(actual) ? actual : []);
+                const ok = expected_set.size === actual_set.size && [...expected_set].every(v => actual_set.has(v));
+                if (!ok) {
+                    this.NotificationComponent.show_global_message(
+                        t('server_sync_error', { message: 'Innehållstyper kunde inte sparas i stickprovet. Försök igen – om felet kvarstår kan granskningen ha skrivits över av synk från servern.' })
+                            || 'Innehållstyper kunde inte sparas i stickprovet. Försök igen – om felet kvarstår kan granskningen ha skrivits över av synk från servern.',
+                        'error'
+                    );
+                    return;
+                }
+
+                await this.dispatch({ type: this.StoreActionTypes.CLEAR_STAGED_SAMPLE_CHANGES });
+
+                if ((window as any).DraftManager?.commitCurrentDraft) {
+                    (window as any).DraftManager.commitCurrentDraft();
+                }
+
+                this.NotificationComponent.show_global_message(t('sample_updated_successfully'), "success");
+                this.router('sample_management');
+            } catch (err: any) {
+                this.NotificationComponent.show_global_message(
+                    t('server_sync_error', { message: err?.message || 'Kunde inte spara ändringarna.' }) || (err?.message || 'Kunde inte spara ändringarna.'),
+                    'error'
+                );
             }
-        });
-
-        this.dispatch({ type: this.StoreActionTypes.CLEAR_STAGED_SAMPLE_CHANGES });
-
-        if ((window as any).DraftManager?.commitCurrentDraft) {
-            (window as any).DraftManager.commitCurrentDraft();
-        }
-
-        this.NotificationComponent.show_global_message(t('sample_updated_successfully'), "success");
-        this.router('sample_management');
+        })();
     }
 
     handle_discard_and_return() {

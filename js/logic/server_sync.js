@@ -207,6 +207,43 @@ async function run_sync(state, dispatch_fn) {
             try {
                 const full_state = await load_audit_with_rule_file(state.auditId);
                 if (full_state) {
+                    // Konflikt: servern har nyare version än vår expectedVersion.
+                    // Vi försöker en gång till med serverns version som expectedVersion så att lokala ändringar
+                    // (t.ex. redigerade stickprov) inte tyst försvinner.
+                    try {
+                        const retry_patch = state_to_patch(state);
+                        retry_patch.expectedVersion = Number(full_state.version ?? 0);
+                        const prev_log_retry = Array.isArray(state.auditMetadata?.audit_edit_log) ? state.auditMetadata.audit_edit_log : [];
+                        const entry_retry = { at: new Date().toISOString(), auditStatus: state.auditStatus };
+                        retry_patch.metadata = {
+                            ...(retry_patch.metadata || {}),
+                            audit_edit_log: [...prev_log_retry, entry_retry].slice(-400)
+                        };
+                        const updated_state = await update_audit(state.auditId, retry_patch);
+                        update_baseline_from_server_full_state(updated_state);
+                        dispatch_fn({
+                            type: 'SET_REMOTE_AUDIT_ID',
+                            payload: {
+                                auditId: state.auditId,
+                                ruleSetId: state.ruleSetId ?? updated_state.ruleSetId ?? null,
+                                version: updated_state.version ?? null,
+                                skip_render: true
+                            }
+                        });
+                        dispatch_fn({
+                            type: 'UPDATE_METADATA',
+                            payload: {
+                                audit_edit_log: retry_patch.metadata.audit_edit_log,
+                                skip_server_sync: true
+                            }
+                        });
+                        clear_audit_sync_pending();
+                        return;
+                    } catch (retry_err) {
+                        // Retry misslyckades – fall tillbaka till att ladda serverns state och visa konflikt-notis.
+                        consoleManager.warn('[ServerSync] Versionkonflikt kvarstår efter retry:', retry_err?.message || retry_err);
+                    }
+
                     dispatch_fn({
                         type: 'REPLACE_STATE_FROM_REMOTE',
                         payload: {

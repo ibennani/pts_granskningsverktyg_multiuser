@@ -4,6 +4,7 @@ import { RequirementsFilterComponent } from './RequirementsFilterComponent.js';
 import './requirement_audit_sidebar_component.css';
 import { get_searchable_text_for_requirement as get_searchable_text_util } from '../utils/requirement_search_utils.js';
 import { fingerprint_item_keys, can_incremental_update } from '../utils/incremental_list_update.js';
+import { get_requirement_public_key } from '../audit_logic.js';
 
 export class RequirementAuditSidebarComponent {
     constructor() {
@@ -392,6 +393,9 @@ export class RequirementAuditSidebarComponent {
 
             const li = this.Helpers.create_element('li', { class_name: 'requirement-audit-sidebar__item' });
 
+            // req_key är intern nyckel i rule_file_content.requirements; i URL vill vi alltid använda publik key-etikett.
+            const public_key = get_requirement_public_key(rule_file_content?.requirements, req_key) || String(req_key);
+
             // Länken överst: div.wrapper > länk > h3
             const link_wrapper = this.Helpers.create_element('div', { class_name: 'requirement-audit-sidebar__link-wrapper' });
             const link_heading = this.Helpers.create_element('h3', {});
@@ -399,10 +403,10 @@ export class RequirementAuditSidebarComponent {
                 class_name: 'requirement-audit-sidebar__link',
                 text_content: '',
                 attributes: {
-                    href: this.build_non_anchor_href('requirement_audit', { sampleId: current_sample.id, requirementId: req_key }),
+                    href: this.build_non_anchor_href('requirement_audit', { sampleId: current_sample.id, requirementId: public_key }),
                     'data-requirement-sidebar-link': 'true',
                     'data-sample-id': current_sample.id,
-                    'data-requirement-id': req_key
+                    'data-requirement-id': public_key
                 }
             });
             link_heading.textContent = requirement.title || this.Translation.t('unknown_value', { val: req_key });
@@ -420,7 +424,7 @@ export class RequirementAuditSidebarComponent {
             link_wrapper.appendChild(link);
             li.appendChild(link_wrapper);
 
-            if (String(req_key) === String(requirement_id)) {
+            if (String(public_key) === String(requirement_id)) {
                 link.setAttribute('aria-current', 'page');
                 link.classList.add('is-active');
                 li.classList.add('is-active');

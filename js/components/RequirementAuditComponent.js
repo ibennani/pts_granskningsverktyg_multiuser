@@ -24,6 +24,7 @@ import { api_patch } from '../api/client.js';
 import { make_observation_detail_part_key } from '../logic/audit_part_keys.js';
 import { post_same_user_field_commit } from '../logic/same_user_tab_field_sync.js';
 import { is_remote_lock_held_by_other_user } from '../logic/collab_lock_compare.js';
+import { find_requirement_definition, resolve_requirement_map_key, get_requirement_public_key } from '../audit_logic.js';
 
 /** Intervall för att hämta om lås när WebSocket saknas eller släpper efter — kompletterar push. */
 const AUDIT_LOCK_POLL_MS = 4000;
@@ -59,6 +60,8 @@ export class RequirementAuditComponent {
         this.current_sample = null;
         this.current_requirement = null;
         this.current_result = null;
+        this.requirement_public_key = null;
+        this.requirement_map_key = null;
         this.ordered_requirement_keys = [];
         this.right_sidebar_root = null;
         this.sidebar_navigation_state = null;
@@ -203,13 +206,22 @@ export class RequirementAuditComponent {
             return false;
         }
         
-        this.current_requirement = state.ruleFileContent.requirements?.[this.params.requirementId];
+        // requirementId i route/hash är den publika "key"-etiketten.
+        // För intern lagring (requirementResults, låsnycklar, m.m.) används map-nyckeln i requirements-objektet.
+        this.requirement_public_key = String(this.params.requirementId);
+        this.requirement_map_key =
+            resolve_requirement_map_key(state.ruleFileContent.requirements, this.requirement_public_key)
+            || this.requirement_public_key;
+
+        this.current_requirement =
+            state.ruleFileContent?.requirements?.[this.requirement_map_key]
+            || find_requirement_definition(state.ruleFileContent.requirements, this.requirement_public_key);
         if (!this.current_requirement) {
             if (window.ConsoleManager) window.ConsoleManager.warn('[RequirementAuditComponent] Requirement not found:', this.params.requirementId);
             return false;
         }
-        
-        const result_from_store = (this.current_sample.requirementResults || {})[this.params.requirementId];
+
+        const result_from_store = (this.current_sample.requirementResults || {})[this.requirement_map_key];
         
         this.current_result = result_from_store 
             ? (() => {
@@ -256,12 +268,12 @@ export class RequirementAuditComponent {
         const u = listener_meta.requirement_result_update;
         if (!u || this.params?.sampleId === undefined || this.params?.requirementId === undefined) return false;
         return String(u.sampleId) === String(this.params.sampleId) &&
-            String(u.requirementId) === String(this.params.requirementId);
+            String(u.requirementId) === String(this.requirement_map_key);
     }
 
     _get_checklist_update_details(state) {
         const details_by_key = state.requirementUpdateDetails || {};
-        let update_details = details_by_key[this.params?.requirementId]
+        let update_details = details_by_key[this.requirement_map_key]
             ?? details_by_key[this.current_requirement?.key]
             ?? details_by_key[this.current_requirement?.id]
             ?? null;
@@ -421,7 +433,7 @@ export class RequirementAuditComponent {
             sample_object: this.current_sample,
             rule_file_content: state?.ruleFileContent,
             requirement_result: this.current_result,
-            current_requirement_id: this.params.requirementId,
+            current_requirement_id: this.requirement_public_key || this.params.requirementId,
             previous_aria_label: build_aria_label(t(previous_key), prev_item),
             next_aria_label: build_aria_label(t(next_key), next_item),
             next_unhandled_aria_label: build_aria_label(t(next_unhandled_key), next_unhandled_item),
@@ -454,7 +466,7 @@ export class RequirementAuditComponent {
 
         const current_key = mode === 'requirement_samples'
             ? String(this.params.sampleId)
-            : String(this.params.requirementId);
+            : String(this.requirement_map_key || this.params.requirementId);
         const key_for_item = (item) => mode === 'requirement_samples'
             ? String(item?.sample?.id)
             : String(item?.req_key);
@@ -598,7 +610,7 @@ export class RequirementAuditComponent {
 
         const state_for_compare = this.getState();
         const sample_row = state_for_compare?.samples?.find(s => String(s.id) === String(this.params.sampleId));
-        const previous_from_store = sample_row?.requirementResults?.[this.params.requirementId];
+        const previous_from_store = sample_row?.requirementResults?.[this.requirement_map_key];
         if (previous_from_store
             && typeof this.AuditLogic.requirement_results_equal_for_last_updated === 'function'
             && this.AuditLogic.requirement_results_equal_for_last_updated(previous_from_store, modified_result_object)) {
@@ -617,7 +629,7 @@ export class RequirementAuditComponent {
             type: this.StoreActionTypes.UPDATE_REQUIREMENT_RESULT,
             payload: {
                 sampleId: this.params.sampleId,
-                requirementId: this.params.requirementId,
+                requirementId: this.requirement_map_key,
                 newRequirementResult: modified_result_object,
                 skip_render: options.skipRender === true
             }
@@ -647,7 +659,7 @@ export class RequirementAuditComponent {
         const state = this.getState();
         const samples = state?.samples || [];
         const rule_file_content = state?.ruleFileContent;
-        const requirement_id = this.params?.requirementId;
+        const requirement_id = this.requirement_map_key || this.params?.requirementId;
         const current_sample_id = this.params?.sampleId;
         if (!requirement_id || !current_sample_id || !rule_file_content || !this.AuditLogic?.get_relevant_requirements_for_sample) {
             return [];
@@ -685,9 +697,14 @@ export class RequirementAuditComponent {
         const navigate_to_item = (item) => {
             if (!item) return;
             if (mode === 'requirement_samples') {
-                this.router('requirement_audit', { sampleId: item.sample.id, requirementId: this.params.requirementId });
+                this.router('requirement_audit', {
+                    sampleId: item.sample.id,
+                    requirementId: this.requirement_public_key || this.params.requirementId
+                });
             } else {
-                this.router('requirement_audit', { sampleId: this.params.sampleId, requirementId: item.req_key });
+                const requirements = this.getState()?.ruleFileContent?.requirements;
+                const public_key = get_requirement_public_key(requirements, item.req_key) || String(item.req_key);
+                this.router('requirement_audit', { sampleId: this.params.sampleId, requirementId: public_key });
             }
         };
 
@@ -696,7 +713,7 @@ export class RequirementAuditComponent {
                 try {
                     window.sessionStorage?.setItem('gv_return_focus_all_requirements_v1', JSON.stringify({
                         sampleId: this.params.sampleId,
-                        requirementId: this.params.requirementId,
+                        requirementId: this.requirement_public_key || this.params.requirementId,
                         createdAt: Date.now()
                     }));
                 } catch (_) {
@@ -1233,7 +1250,7 @@ export class RequirementAuditComponent {
             return;
         }
 
-        const baseline_key = `${String(this.params?.sampleId ?? '')}|${String(this.params?.requirementId ?? '')}`;
+        const baseline_key = `${String(this.params?.sampleId ?? '')}|${String(this.requirement_map_key ?? this.params?.requirementId ?? '')}`;
         if (baseline_key !== this._baseline_key) {
             this._baseline_key = baseline_key;
             establish_baseline_for_current_audit_focus(this.getState());
@@ -1290,12 +1307,17 @@ export class RequirementAuditComponent {
                         try {
                             const st = this.getState();
                             const audit_id = st?.auditId;
-                            if (audit_id && document?.activeElement?.id && this.params?.sampleId && this.params?.requirementId) {
+                            if (audit_id && document?.activeElement?.id && this.params?.sampleId && (this.requirement_map_key || this.params?.requirementId)) {
                                 const ae = document.activeElement;
                                 const id = String(ae.id || '');
                                 if (id === 'commentToAuditor' || id === 'commentToActor') {
                                     const field = id === 'commentToAuditor' ? 'commentToAuditor' : 'commentToActor';
-                                    const part_key = make_requirement_text_part_key(String(audit_id), String(this.params.sampleId), String(this.params.requirementId), field);
+                                    const part_key = make_requirement_text_part_key(
+                                        String(audit_id),
+                                        String(this.params.sampleId),
+                                        String(this.requirement_map_key || this.params.requirementId),
+                                        field
+                                    );
                                     void this._patch_audit_part_to_server({ part_key, value: ae.value || '' });
                                 } else if (ae.classList?.contains('pc-observation-detail-textarea') && id.startsWith('pc-observation-')) {
                                     // id: pc-observation-{checkId}-{pcId}
@@ -1308,7 +1330,7 @@ export class RequirementAuditComponent {
                                             const part_key = make_observation_detail_part_key(
                                                 String(audit_id),
                                                 String(this.params.sampleId),
-                                                String(this.params.requirementId),
+                                                String(this.requirement_map_key || this.params.requirementId),
                                                 check_id,
                                                 pc_id
                                             );

@@ -5,6 +5,7 @@ import { marked } from '../utils/markdown.js';
 import './audit_problems_view_component.css';
 import { build_compact_hash_fragment } from '../logic/router_url_codec.js';
 import { consoleManager } from '../utils/console_manager.js';
+import { get_requirement_public_key, resolve_requirement_map_key } from '../audit_logic.js';
 
 export class AuditProblemsViewComponent {
     constructor() {
@@ -180,9 +181,11 @@ export class AuditProblemsViewComponent {
         event.preventDefault();
         const target = event.currentTarget;
         const sample_id = target?.getAttribute?.('data-sample-id');
-        const requirement_id = target?.getAttribute?.('data-requirement-id');
-        if (sample_id && requirement_id && typeof this.router === 'function') {
-            this.router('requirement_audit', { sampleId: sample_id, requirementId: requirement_id });
+        const requirement_map_id = target?.getAttribute?.('data-requirement-map-id');
+        if (sample_id && requirement_map_id && typeof this.router === 'function') {
+            const requirements = this.getState()?.ruleFileContent?.requirements;
+            const public_key = get_requirement_public_key(requirements, requirement_map_id) || String(requirement_map_id);
+            this.router('requirement_audit', { sampleId: sample_id, requirementId: public_key });
         }
     }
 
@@ -641,12 +644,15 @@ export class AuditProblemsViewComponent {
             ? window.location.pathname.split('?')[0].split('#')[0]
             : '/';
         const href_params = new URLSearchParams({ view: 'requirement_audit', sampleId: sample_id, requirementId: req_id });
+        const requirements = this.getState()?.ruleFileContent?.requirements;
+        const public_req_id = get_requirement_public_key(requirements, req_id) || String(req_id);
+        const href_params_public = new URLSearchParams({ view: 'requirement_audit', sampleId: sample_id, requirementId: public_req_id });
         const req_link = this.Helpers.create_element('a', {
             class_name: 'audit-problem-card__requirement-link',
             attributes: {
-                href: `${base_path}?${href_params.toString()}`,
+                href: `${base_path}?${href_params_public.toString()}`,
                 'data-sample-id': sample_id,
-                'data-requirement-id': req_id
+                'data-requirement-map-id': req_id
             },
             text_content: req_title
         });

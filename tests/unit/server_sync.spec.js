@@ -208,9 +208,18 @@ describe('server_sync', () => {
         expect(clear_audit_sync_pending).toHaveBeenCalled();
     });
 
-    test('run_sync: 409 utan existingAuditId laddar om från server', async () => {
+    test('run_sync: 409 utan existingAuditId försöker retry med serverns version', async () => {
         const err = Object.assign(new Error('version'), { status: 409 });
-        update_audit.mockRejectedValueOnce(err);
+        update_audit
+            .mockRejectedValueOnce(err)
+            .mockResolvedValueOnce({
+                auditId: 'a1',
+                ruleSetId: 'rs1',
+                version: 9,
+                saveFileVersion: '2.1.0',
+                samples: [],
+                ruleFileContent: {}
+            });
         load_audit_with_rule_file.mockResolvedValueOnce({
             version: 7,
             saveFileVersion: '2.1.0',
@@ -221,9 +230,14 @@ describe('server_sync', () => {
         const state = base_audit_state({ auditId: 'a1', version: 1 });
         await sync_to_server_now(() => state, dispatch);
         expect(load_audit_with_rule_file).toHaveBeenCalledWith('a1');
+        expect(update_audit).toHaveBeenCalledTimes(2);
         expect(dispatch).toHaveBeenCalledWith({
-            type: 'REPLACE_STATE_FROM_REMOTE',
-            payload: expect.objectContaining({ version: 7, saveFileVersion: '2.1.0' })
+            type: 'SET_REMOTE_AUDIT_ID',
+            payload: expect.objectContaining({ auditId: 'a1', version: 9, skip_render: true })
+        });
+        expect(dispatch).toHaveBeenCalledWith({
+            type: 'UPDATE_METADATA',
+            payload: expect.objectContaining({ skip_server_sync: true })
         });
     });
 

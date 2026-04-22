@@ -199,8 +199,20 @@ export function navigate_and_set_hash(target_view_name, target_params = {}, opti
     if (window.location.hash === new_hash) {
         nav_debug('Hash oförändrad – endast render', { new_hash });
         updatePageTitle(target_view_name, target_params);
+        // Viktigt: rendera inte synkront när hash är oförändrad.
+        // Om en vy (direkt/indirekt) anropar router() under sin render() med samma hash kan det skapa
+        // en render→router→render-loop (stack overflow). Vi schemalägger därför en render i nästa tick
+        // och med en enkel reentrancy-guard.
         if (current_view_component_instance && typeof current_view_component_instance.render === 'function') {
-            current_view_component_instance.render();
+            if (window.__gv_same_hash_render_scheduled === true) return;
+            window.__gv_same_hash_render_scheduled = true;
+            Promise.resolve().then(() => {
+                try {
+                    current_view_component_instance.render();
+                } finally {
+                    window.__gv_same_hash_render_scheduled = false;
+                }
+            });
         }
     } else {
         nav_debug('Sätter hash', { from: window.location.hash, to: new_hash });

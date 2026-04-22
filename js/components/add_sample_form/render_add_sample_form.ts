@@ -3,10 +3,13 @@ import { marked } from '../../utils/markdown.js';
 export function render_add_sample_form(component: any, sample_id_to_edit: string | null = null) {
     // Prevent re-rendering (and resetting form state) only when editing the same existing sample and the form is mounted.
     // For "add new sample" (null) we always re-render so that checkboxes start unchecked.
+    // Kräv isConnected: annars kan contain() vara sant för en frånkopplad subträd efter att värden
+    // (t.ex. parent.innerHTML) tagit bort noden från dokumentet — då måste formuläret byggas om från state.
     if (sample_id_to_edit !== null &&
         component.current_editing_sample_id === sample_id_to_edit &&
         component.form_element &&
         component.root &&
+        component.root.isConnected &&
         component.root.contains(component.form_element)) {
         return;
     }

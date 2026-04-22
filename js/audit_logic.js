@@ -651,7 +651,65 @@ function find_requirement_by_id(requirements, reqId) {
             return (k !== null && k === reqIdStr) || (i !== null && i === reqIdStr);
         }) || null;
     }
-    return requirements[reqId] ?? requirements[reqIdStr] ?? null;
+    const direct = requirements[reqId] ?? requirements[reqIdStr];
+    if (direct) return direct;
+    // Fallback: leta efter match via req.key / req.id när uppslagningen inte är lika med map-nyckeln.
+    for (const value of Object.values(requirements)) {
+        const k = value?.key !== null && value?.key !== undefined ? String(value.key) : null;
+        const i = value?.id !== null && value?.id !== undefined ? String(value.id) : null;
+        if ((k !== null && k === reqIdStr) || (i !== null && i === reqIdStr)) return value;
+    }
+    return null;
+}
+
+/**
+ * Slår upp ett krav via både map-nyckel, req.key och req.id. Tolerant mot skillnader mellan
+ * data-requirement-id (vanligen req.key) och faktisk nyckel i ruleFileContent.requirements.
+ * @param {object|Array|null|undefined} requirements
+ * @param {string|number|null|undefined} reqId
+ * @returns {object|null}
+ */
+export function find_requirement_definition(requirements, reqId) {
+    return find_requirement_by_id(requirements, reqId);
+}
+
+/**
+ * Returnerar map-nyckeln i ruleFileContent.requirements för ett givet reqId (som kan vara map-nyckel,
+ * req.key eller req.id). Returnerar null om inget matchar eller om requirements är en array.
+ * @param {object|Array|null|undefined} requirements
+ * @param {string|number|null|undefined} reqId
+ * @returns {string|null}
+ */
+export function resolve_requirement_map_key(requirements, reqId) {
+    if (!requirements || Array.isArray(requirements) || reqId === null || reqId === undefined) return null;
+    const reqIdStr = String(reqId);
+    if (Object.prototype.hasOwnProperty.call(requirements, reqIdStr)) return reqIdStr;
+    for (const [key, value] of Object.entries(requirements)) {
+        const k = value?.key !== null && value?.key !== undefined ? String(value.key) : null;
+        const i = value?.id !== null && value?.id !== undefined ? String(value.id) : null;
+        if ((k !== null && k === reqIdStr) || (i !== null && i === reqIdStr)) return key;
+    }
+    return null;
+}
+
+/**
+ * Returnerar den publika kravnyckeln (key-etiketten) för en given intern map-nyckel.
+ * Om key saknas faller den tillbaka till map-nyckeln.
+ * @param {object|Array|null|undefined} requirements
+ * @param {string|number|null|undefined} map_key
+ * @returns {string|null}
+ */
+export function get_requirement_public_key(requirements, map_key) {
+    if (!requirements || map_key === null || map_key === undefined) return null;
+    const mapKeyStr = String(map_key);
+    if (Array.isArray(requirements)) {
+        const req = requirements.find(r => String(r?.key || r?.id || '') === mapKeyStr) || null;
+        const pub = req?.key ?? req?.id ?? null;
+        return pub !== null && pub !== undefined && String(pub).trim() !== '' ? String(pub) : mapKeyStr;
+    }
+    const req = requirements?.[mapKeyStr] || null;
+    const pub = req?.key ?? req?.id ?? null;
+    return pub !== null && pub !== undefined && String(pub).trim() !== '' ? String(pub) : mapKeyStr;
 }
 
 export function collect_audit_problems(state) {
