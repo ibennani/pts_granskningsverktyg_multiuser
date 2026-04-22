@@ -60,10 +60,33 @@ export default defineConfig({
       injectRegister: 'script',
       manifest: false,
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,woff}'],
+        // Viktigt: undvik att precacha HTML, annars kan gårdagens index.html ligga kvar via SW.
+        globPatterns: ['**/*.{js,css,ico,png,svg,woff2,woff}'],
+        // build-info används för versionskontroll och ska alltid komma från nätverket (no-store i Nginx).
+        globIgnores: ['**/build-info.js'],
         navigateFallback: 'index.html',
         navigateFallbackDenylist: [/^\/v2\/api\//, /^\/v2\/ws/],
-        maximumFileSizeToCacheInBytes: 6000000
+        maximumFileSizeToCacheInBytes: 6000000,
+        runtimeCaching: [
+          {
+            // För navigering: hämta alltid nätverket först så att ny deploy syns utan hård omladdning.
+            urlPattern: ({ request }) => request.mode === 'navigate',
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'gv-navigate',
+              networkTimeoutSeconds: 3,
+              expiration: {
+                maxEntries: 20,
+                maxAgeSeconds: 3600
+              }
+            }
+          },
+          {
+            // Versionsfingeravtryck: ska aldrig fastna i SW-cache.
+            urlPattern: /\/build-info\.js(\?.*)?$/,
+            handler: 'NetworkOnly'
+          }
+        ]
       },
       devOptions: {
         enabled: false
