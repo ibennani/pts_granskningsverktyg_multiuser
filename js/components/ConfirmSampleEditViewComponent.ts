@@ -56,6 +56,10 @@ export class ConfirmSampleEditViewComponent {
 
         this.dispatch({ type: this.StoreActionTypes.CLEAR_STAGED_SAMPLE_CHANGES });
 
+        if ((window as any).DraftManager?.commitCurrentDraft) {
+            (window as any).DraftManager.commitCurrentDraft();
+        }
+
         this.NotificationComponent.show_global_message(t('sample_updated_successfully'), "success");
         this.router('sample_management');
     }
