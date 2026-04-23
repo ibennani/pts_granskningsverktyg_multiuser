@@ -88,16 +88,22 @@ export const SampleListComponent = {
             this.ul_element_for_delegation.innerHTML = '';
         }
         
-        // --- FIX: Create lookup maps for new hierarchical data ---
+        // Skapa lookup-maps (tål att metadata/vokabulärer saknas i vissa lägen).
         const content_types_map = new Map();
-        const content_types = state.ruleFileContent.metadata?.vocabularies?.contentTypes || state.ruleFileContent.metadata?.contentTypes || [];
+        const content_types = state?.ruleFileContent?.metadata?.vocabularies?.contentTypes
+            || state?.ruleFileContent?.metadata?.contentTypes
+            || [];
         content_types.forEach(parent => {
             (parent.types || []).forEach(child => content_types_map.set(child.id, child.text));
         });
 
         const sample_categories_map = new Map();
         const sample_subcategories_map = new Map();
-        (state.ruleFileContent.metadata.samples?.sampleCategories || []).forEach(cat => {
+        const sample_categories =
+            state?.ruleFileContent?.metadata?.samples?.sampleCategories
+            || state?.ruleFileContent?.metadata?.vocabularies?.sampleTypes?.sampleCategories
+            || [];
+        (sample_categories || []).forEach(cat => {
             sample_categories_map.set(cat.id, cat.text);
             (cat.categories || []).forEach(subcat => {
                 sample_subcategories_map.set(subcat.id, subcat.text);

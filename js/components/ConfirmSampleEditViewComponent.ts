@@ -1,9 +1,12 @@
+import "./confirm_sample_edit_view_component.css";
+
 export class ConfirmSampleEditViewComponent {
     private root: HTMLElement | null;
     private deps: any;
     private router: any;
     private getState: any;
     private dispatch: any;
+    private flush_sync_to_server: any;
     private StoreActionTypes: any;
     private Translation: any;
     private Helpers: any;
@@ -16,6 +19,7 @@ export class ConfirmSampleEditViewComponent {
         this.router = null;
         this.getState = null;
         this.dispatch = null;
+        this.flush_sync_to_server = null;
         this.StoreActionTypes = null;
         this.Translation = null;
         this.Helpers = null;
@@ -29,6 +33,7 @@ export class ConfirmSampleEditViewComponent {
         this.router = deps.router;
         this.getState = deps.getState;
         this.dispatch = deps.dispatch;
+        this.flush_sync_to_server = deps.flush_sync_to_server || null;
         this.StoreActionTypes = deps.StoreActionTypes;
         this.Translation = deps.Translation;
         this.Helpers = deps.Helpers;
@@ -74,13 +79,50 @@ export class ConfirmSampleEditViewComponent {
                 }
 
                 await this.dispatch({ type: this.StoreActionTypes.CLEAR_STAGED_SAMPLE_CHANGES });
+                await this.dispatch({ type: this.StoreActionTypes.CLEAR_SAMPLE_EDIT_DRAFT, payload: { skip_render: true } });
 
                 if ((window as any).DraftManager?.commitCurrentDraft) {
                     (window as any).DraftManager.commitCurrentDraft();
                 }
 
+                // Robusthet: vänta in server-synk innan vi navigerar, så att polling/REPLACE_STATE_FROM_REMOTE
+                // inte hinner skriva över stickprovsändringen direkt efter bekräftelsen.
+                if (typeof this.flush_sync_to_server === 'function' && this.getState && this.dispatch) {
+                    try {
+                        await this.flush_sync_to_server(this.getState, this.dispatch);
+                    } catch (e: any) {
+                        this.NotificationComponent.show_global_message(
+                            t('server_sync_error', { message: e?.message || 'Ändringen sparades lokalt men kunde inte synkas till servern.' })
+                                || (e?.message || 'Ändringen sparades lokalt men kunde inte synkas till servern.'),
+                            'warning'
+                        );
+                    }
+                }
+
                 this.NotificationComponent.show_global_message(t('sample_updated_successfully'), "success");
                 this.router('sample_management');
+
+                // Om synk/poll ersätter state strax efteråt kan ändringen "försvinna" utan att användaren ser fel.
+                // Vi gör en fördröjd kontroll och visar ett tydligt meddelande om det sker.
+                setTimeout(() => {
+                    try {
+                        const after_delay = this.getState();
+                        const sample_after_delay = after_delay?.samples?.find((s: any) => String(s?.id) === String(pending_changes.sampleId));
+                        const expected2 = pending_changes.updatedSampleData?.selectedContentTypes;
+                        const actual2 = sample_after_delay?.selectedContentTypes;
+                        const expected_set2 = new Set(Array.isArray(expected2) ? expected2 : []);
+                        const actual_set2 = new Set(Array.isArray(actual2) ? actual2 : []);
+                        const ok2 = expected_set2.size === actual_set2.size && [...expected_set2].every(v => actual_set2.has(v));
+                        if (!ok2) {
+                            this.NotificationComponent.show_global_message(
+                                'Ändringen sparades först, men skrevs sedan över av en synk från servern. Prova att uppdatera sidan och gör ändringen igen. Om det fortsätter: kontrollera att du är online och att inga andra flikar/enheter har granskningen öppen samtidigt.',
+                                'warning'
+                            );
+                        }
+                    } catch (_) {
+                        // ignoreras
+                    }
+                }, 1500);
             } catch (err: any) {
                 this.NotificationComponent.show_global_message(
                     t('server_sync_error', { message: err?.message || 'Kunde inte spara ändringarna.' }) || (err?.message || 'Kunde inte spara ändringarna.'),
@@ -91,7 +133,24 @@ export class ConfirmSampleEditViewComponent {
     }
 
     handle_discard_and_return() {
+        const pending_changes = this.getState().pendingSampleChanges;
+        // Återställ stickprovet till ursprungsläget om vi har en snapshot.
+        if (pending_changes?.sampleId && pending_changes?.originalSampleData) {
+            try {
+                this.dispatch({
+                    type: this.StoreActionTypes.UPDATE_SAMPLE,
+                    payload: {
+                        sampleId: pending_changes.sampleId,
+                        updatedSampleData: pending_changes.originalSampleData,
+                        skip_render: true
+                    }
+                });
+            } catch (_) {
+                // ignoreras
+            }
+        }
         this.dispatch({ type: this.StoreActionTypes.CLEAR_STAGED_SAMPLE_CHANGES });
+        this.dispatch({ type: this.StoreActionTypes.CLEAR_SAMPLE_EDIT_DRAFT, payload: { skip_render: true } });
         this.router('sample_management');
     }
 
@@ -102,7 +161,7 @@ export class ConfirmSampleEditViewComponent {
         const pending_changes = current_state.pendingSampleChanges;
 
         this.root.innerHTML = '';
-        const plate = this.Helpers.create_element('div', { class_name: 'content-plate' }) as any;
+        const plate = this.Helpers.create_element('div', { class_name: ['content-plate', 'confirm-sample-edit-view-plate'] }) as any;
         this.plate_element_ref = plate;
         this.root.appendChild(plate);
 
@@ -156,17 +215,22 @@ export class ConfirmSampleEditViewComponent {
             section.appendChild(this.Helpers.create_element('h3', { text_content: t('sample_edit_confirm_changed_content_types_header') }));
             const added = Array.isArray(content_types_diff.added) ? content_types_diff.added : [];
             const removed = Array.isArray(content_types_diff.removed) ? content_types_diff.removed : [];
+            const render_bullet_list = (title: string, values: any[]) => {
+                const wrapper = this.Helpers.create_element('div');
+                wrapper.appendChild(this.Helpers.create_element('div', { class_name: 'report-subheading', text_content: title }));
+                const ul = this.Helpers.create_element('ul', { class_name: ['report-list', 'report-list--compact'] });
+                (values || []).forEach((txt: any) => {
+                    ul.appendChild(this.Helpers.create_element('li', { text_content: String(txt) }));
+                });
+                wrapper.appendChild(ul);
+                return wrapper;
+            };
+
             if (added.length > 0) {
-                section.appendChild(this.Helpers.create_element('h4', { text_content: t('sample_edit_confirm_added_content_types_header') }));
-                const ul_added = this.Helpers.create_element('ul', { class_name: 'report-list' });
-                added.forEach((txt: any) => ul_added.appendChild(this.Helpers.create_element('li', { text_content: String(txt) })));
-                section.appendChild(ul_added);
+                section.appendChild(render_bullet_list(t('sample_edit_confirm_added_content_types_header'), added));
             }
             if (removed.length > 0) {
-                section.appendChild(this.Helpers.create_element('h4', { text_content: t('sample_edit_confirm_removed_content_types_header') }));
-                const ul_removed = this.Helpers.create_element('ul', { class_name: 'report-list' });
-                removed.forEach((txt: any) => ul_removed.appendChild(this.Helpers.create_element('li', { text_content: String(txt) })));
-                section.appendChild(ul_removed);
+                section.appendChild(render_bullet_list(t('sample_edit_confirm_removed_content_types_header'), removed));
             }
             plate.appendChild(section);
         }

@@ -103,6 +103,86 @@ export class AddSampleFormComponent {
         this.handle_content_type_change = this.handle_content_type_change.bind(this);
     }
 
+    _get_sample_edit_draft() {
+        const state = this.getState ? this.getState() : null;
+        const d = state?.sampleEditDraft || null;
+        if (!d) return null;
+        if (!this.current_editing_sample_id) return null;
+        if (String(d.sampleId) !== String(this.current_editing_sample_id)) return null;
+        return d;
+    }
+
+    _ensure_sample_edit_draft_initialized() {
+        if (!this.current_editing_sample_id) return;
+        const state = this.getState();
+        const existing = state?.sampleEditDraft;
+        if (existing && String(existing.sampleId) === String(this.current_editing_sample_id)) return;
+
+        const current_sample = state.samples.find((s: any) => String(s.id) === String(this.current_editing_sample_id));
+        if (!current_sample) return;
+
+        // Skapa ett utkast som startar på stickprovets aktuella värden.
+        this.dispatch({
+            type: this.StoreActionTypes.SET_SAMPLE_EDIT_DRAFT,
+            payload: {
+                sampleId: this.current_editing_sample_id,
+                updatedSampleData: {
+                    sampleCategory: current_sample.sampleCategory ?? null,
+                    sampleType: current_sample.sampleType ?? null,
+                    description: current_sample.description ?? '',
+                    url: current_sample.url ?? '',
+                    selectedContentTypes: Array.isArray(current_sample.selectedContentTypes) ? [...current_sample.selectedContentTypes] : []
+                },
+                originalSampleData: this.initial_sample_snapshot ? JSON.parse(JSON.stringify(this.initial_sample_snapshot)) : JSON.parse(JSON.stringify(current_sample))
+            }
+        });
+    }
+
+    _update_sample_edit_draft_from_dom({ should_trim, skip_render }: { should_trim: boolean; skip_render: boolean }) {
+        if (!this.current_editing_sample_id) return;
+        const selected_category_radio = this.form_element?.querySelector('input[name="sampleCategory"]:checked');
+        const sample_category_id = selected_category_radio ? selected_category_radio.value : null;
+        const sample_type_id = this.sample_type_select?.value;
+        const description_raw = this.description_input?.value || '';
+        const url_raw = this.url_input?.value || '';
+        const selected_raw_values = Array.from(
+            this.content_types_container_element?.querySelectorAll('input[name="selectedContentTypes"]:checked') || []
+        ).map((cb: any) => cb.value);
+
+        const description = this.Helpers?.sanitize_plain_input
+            ? this.Helpers.sanitize_plain_input(description_raw, { trim: should_trim })
+            : (should_trim ? description_raw.trim() : description_raw.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ''));
+
+        let url_val = this.Helpers?.sanitize_plain_input
+            ? this.Helpers.sanitize_plain_input(url_raw, { trim: should_trim })
+            : (should_trim ? url_raw.trim() : url_raw.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ''));
+
+        const selected_content_types = this.Helpers?.sanitize_plain_array
+            ? this.Helpers.sanitize_plain_array(selected_raw_values, { trim: should_trim })
+            : selected_raw_values.map((v: any) => (should_trim ? v.trim() : v.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')));
+
+        if (url_val) url_val = this.Helpers.add_protocol_if_missing(url_val);
+
+        const draft = this._get_sample_edit_draft();
+        const original = draft?.originalSampleData || (this.initial_sample_snapshot ? JSON.parse(JSON.stringify(this.initial_sample_snapshot)) : null);
+
+        this.dispatch({
+            type: this.StoreActionTypes.SET_SAMPLE_EDIT_DRAFT,
+            payload: {
+                sampleId: this.current_editing_sample_id,
+                updatedSampleData: {
+                    sampleCategory: sample_category_id,
+                    sampleType: sample_type_id,
+                    description,
+                    url: url_val,
+                    selectedContentTypes: selected_content_types
+                },
+                originalSampleData: original,
+                skip_render
+            }
+        });
+    }
+
     get_sample_categories_from_state() {
         const state = this.getState ? this.getState() : null;
         const metadata = state?.ruleFileContent?.metadata || {};
@@ -147,7 +227,11 @@ export class AddSampleFormComponent {
         const t = this.get_t_internally();
         const label = this.Helpers.create_element('label', { attributes: { for: 'sampleTypeSelect' }, text_content: t('sample_type_label') + '*' });
         this.sample_type_select = this.Helpers.create_element('select', { id: 'sampleTypeSelect', class_name: 'form-control', attributes: { required: true } });
-        this.sample_type_select.addEventListener('change', this.update_description_from_sample_type);
+        this.sample_type_select.addEventListener('change', () => {
+            this.update_description_from_sample_type();
+            // Variant B: typ- och ev. auto-uppdaterad beskrivning ska direkt in i utkastet.
+            this.save_form_data_immediately(true, false, true);
+        });
         const default_option = this.Helpers.create_element('option', { value: '', text_content: t('select_option') });
         this.sample_type_select.appendChild(default_option);
         (selected_category.categories || []).forEach((subcat: any) => {
@@ -227,46 +311,9 @@ export class AddSampleFormComponent {
     save_form_data_immediately(is_autosave = false, should_trim = !is_autosave, skip_render = false) {
         if (!this.current_editing_sample_id) return;
 
-        const selected_category_radio = this.form_element?.querySelector('input[name="sampleCategory"]:checked');
-        const sample_category_id = selected_category_radio ? selected_category_radio.value : null;
-        const sample_type_id = this.sample_type_select?.value;
-        const description_raw = this.description_input?.value || '';
-        const url_raw = this.url_input?.value || '';
-        const selected_raw_values = Array.from(
-            this.content_types_container_element?.querySelectorAll('input[name="selectedContentTypes"]:checked') || []
-        ).map((cb: any) => cb.value);
-
-        const description = this.Helpers?.sanitize_plain_input
-            ? this.Helpers.sanitize_plain_input(description_raw, { trim: should_trim })
-            : (should_trim ? description_raw.trim() : description_raw.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ''));
-
-        let url_val = this.Helpers?.sanitize_plain_input
-            ? this.Helpers.sanitize_plain_input(url_raw, { trim: should_trim })
-            : (should_trim ? url_raw.trim() : url_raw.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ''));
-
-        const selected_content_types = this.Helpers?.sanitize_plain_array
-            ? this.Helpers.sanitize_plain_array(selected_raw_values, { trim: should_trim })
-            : selected_raw_values.map((v: any) => (should_trim ? v.trim() : v.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')));
-
-        if (url_val) url_val = this.Helpers.add_protocol_if_missing(url_val);
-
-        const sample_payload_data = {
-            sampleCategory: sample_category_id,
-            sampleType: sample_type_id,
-            description: description,
-            url: url_val,
-            selectedContentTypes: selected_content_types
-        };
-
-        const original_set = new Set(this.original_content_types_on_load);
-        const new_set = new Set(selected_content_types);
-        const are_sets_equal = original_set.size === new_set.size && [...original_set].every(value => new_set.has(value));
-
-        if (are_sets_equal) {
-            this._perform_save(sample_payload_data, is_autosave, skip_render);
-        } else {
-            this._stage_changes_and_navigate(sample_payload_data, is_autosave, skip_render);
-        }
+        // Variant B: autospar och ändringar skriver alltid till ett "utkast" i state.
+        // Själva stickprovet uppdateras först när användaren bekräftar.
+        this._update_sample_edit_draft_from_dom({ should_trim, skip_render });
     }
 
     _resolve_content_type_label(rule_file: any, id: string) {
@@ -341,6 +388,7 @@ export class AddSampleFormComponent {
             payload: {
                 sampleId: this.current_editing_sample_id,
                 updatedSampleData: sample_payload_data,
+                originalSampleData: this.initial_sample_snapshot ? JSON.parse(JSON.stringify(this.initial_sample_snapshot)) : null,
                 analysis: {
                     added_reqs: added_req_ids,
                     removed_reqs: removed_req_ids,
@@ -445,25 +493,92 @@ export class AddSampleFormComponent {
             return;
         }
 
-        const original_set = new Set(this.original_content_types_on_load);
-        const new_set = new Set(selected_content_types);
-        const are_sets_equal = original_set.size === new_set.size && [...original_set].every(value => new_set.has(value));
+        // Spara senaste formulärvärden som utkast innan vi analyserar och går vidare.
+        this.dispatch({
+            type: this.StoreActionTypes.SET_SAMPLE_EDIT_DRAFT,
+            payload: {
+                sampleId: this.current_editing_sample_id,
+                updatedSampleData: sample_payload_data,
+                originalSampleData: this.initial_sample_snapshot ? JSON.parse(JSON.stringify(this.initial_sample_snapshot)) : null,
+                skip_render: true
+            }
+        });
 
-        if (are_sets_equal) {
-            this._perform_save(sample_payload_data, false, true);
-        } else {
-            this._stage_changes_and_navigate(sample_payload_data);
+        // Alltid bekräftelsevy för redigering av befintligt stickprov.
+        // Om inget faktiskt ändrats, återgå bara till stickprovslistan.
+        const current_state = this.getState();
+        const current_sample = current_state.samples.find((s: any) => s.id === this.current_editing_sample_id);
+        const normalized_current = {
+            sampleCategory: current_sample?.sampleCategory ?? null,
+            sampleType: current_sample?.sampleType ?? null,
+            description: current_sample?.description ?? null,
+            url: current_sample?.url ?? null,
+            selectedContentTypes: Array.isArray(current_sample?.selectedContentTypes) ? current_sample.selectedContentTypes : []
+        };
+        const normalized_new = {
+            sampleCategory: sample_payload_data.sampleCategory ?? null,
+            sampleType: sample_payload_data.sampleType ?? null,
+            description: sample_payload_data.description ?? null,
+            url: sample_payload_data.url ?? null,
+            selectedContentTypes: Array.isArray(sample_payload_data.selectedContentTypes) ? sample_payload_data.selectedContentTypes : []
+        };
+        const same_text_fields =
+            normalized_current.sampleCategory === normalized_new.sampleCategory &&
+            normalized_current.sampleType === normalized_new.sampleType &&
+            String(normalized_current.description ?? '') === String(normalized_new.description ?? '') &&
+            String(normalized_current.url ?? '') === String(normalized_new.url ?? '');
+        const a = new Set(normalized_current.selectedContentTypes);
+        const b = new Set(normalized_new.selectedContentTypes);
+        const same_ct = a.size === b.size && [...a].every(v => b.has(v));
+        if (same_text_fields && same_ct) {
+            this.dispatch({ type: this.StoreActionTypes.CLEAR_SAMPLE_EDIT_DRAFT, payload: { skip_render: true } });
+            this.router('sample_management');
+            return;
         }
+
+        this._stage_changes_and_navigate(sample_payload_data, false, true);
     }
 
     render(sample_id_to_edit: string | null = null) {
         this.skip_autosave_on_destroy = false;
         render_add_sample_form(this, sample_id_to_edit);
+        this._ensure_sample_edit_draft_initialized();
     }
 
     discard() {
         this.skip_autosave_on_destroy = true;
         this.autosave_session?.cancel_pending();
+
+        // Återställ till ursprungsläget så att autosparade ändringar inte blir kvar när användaren väljer att inte bekräfta.
+        if (this.current_editing_sample_id && this.initial_sample_snapshot) {
+            try {
+                const snapshot = JSON.parse(JSON.stringify(this.initial_sample_snapshot));
+                this.dispatch({
+                    type: this.StoreActionTypes.UPDATE_SAMPLE,
+                    payload: {
+                        sampleId: this.current_editing_sample_id,
+                        updatedSampleData: snapshot,
+                        skip_render: true
+                    }
+                });
+                this.original_content_types_on_load = [...(snapshot.selectedContentTypes || [])];
+            } catch (_) {
+                // ignoreras
+            }
+        }
+
+        // Rensa ev. staged ändringar som kan ligga kvar.
+        try {
+            this.dispatch({ type: this.StoreActionTypes.CLEAR_STAGED_SAMPLE_CHANGES, payload: { skip_render: true } });
+        } catch (_) {
+            // ignoreras
+        }
+
+        try {
+            this.dispatch({ type: this.StoreActionTypes.CLEAR_SAMPLE_EDIT_DRAFT, payload: { skip_render: true } });
+        } catch (_) {
+            // ignoreras
+        }
     }
 
     destroy() {

@@ -54,5 +54,6 @@ export const initial_state = {
     },
     auditCalculations: {},
     pendingSampleChanges: null,
+    sampleEditDraft: null,
     manageUsersText: ''
 };

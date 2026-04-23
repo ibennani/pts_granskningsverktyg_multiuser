@@ -20,6 +20,12 @@ export function render_add_sample_form(component: any, sample_id_to_edit: string
     const sample_data = component.current_editing_sample_id
         ? current_state.samples.find((s: any) => s.id === component.current_editing_sample_id)
         : null;
+    const draft = current_state?.sampleEditDraft
+        && component.current_editing_sample_id
+        && String(current_state.sampleEditDraft.sampleId) === String(component.current_editing_sample_id)
+        ? current_state.sampleEditDraft
+        : null;
+    const effective_sample_data = draft?.updatedSampleData ? draft.updatedSampleData : sample_data;
 
     // Spara ursprungsläget när vyn laddas (endast för redigering)
     if (sample_data) {
@@ -48,9 +54,11 @@ export function render_add_sample_form(component: any, sample_id_to_edit: string
         const radio_id = `sample-cat-${cat.id}`;
         const radio_wrapper = component.Helpers.create_element('div', { class_name: ['form-check', 'content-type-child-item'] });
         const radio = component.Helpers.create_element('input', { id: radio_id, class_name: 'form-check-input', attributes: { type: 'radio', name: 'sampleCategory', value: cat.id, required: true } });
-        if ((sample_data && sample_data.sampleCategory === cat.id) || (!sample_data && index === 0)) radio.checked = true;
+        if ((effective_sample_data && effective_sample_data.sampleCategory === cat.id) || (!effective_sample_data && index === 0)) radio.checked = true;
         radio.addEventListener('change', () => {
             component.on_category_change(cat.id);
+            // Variant B: kategoriändring ska direkt uppdatera utkastet (utan att trimma).
+            component.save_form_data_immediately(true, false, true);
         });
         radio_wrapper.append(radio, component.Helpers.create_element('label', { attributes: { for: radio_id }, text_content: cat.text }));
         component.category_fieldset_element.appendChild(radio_wrapper);
@@ -85,8 +93,8 @@ export function render_add_sample_form(component: any, sample_id_to_edit: string
         component.Helpers.create_element('div', { class_name: 'form-group', children: [component.Helpers.create_element('label', { attributes: { for: 'sampleDescriptionInput' }, text_content: t('description') + '*' }), component.description_input] }),
         component.url_form_group_ref
     );
-    component.description_input.value = sample_data?.description || "";
-    component.url_input.value = sample_data?.url || "";
+    component.description_input.value = effective_sample_data?.description || "";
+    component.url_input.value = effective_sample_data?.url || "";
 
     // --- Content Types Section ---
     component.content_types_container_element = component.Helpers.create_element('div', { class_name: 'content-types-group' });
@@ -164,10 +172,12 @@ export function render_add_sample_form(component: any, sample_id_to_edit: string
     component.content_types_container_element.addEventListener('change', component.handle_content_type_change);
     const all_child_checkboxes = component.content_types_container_element.querySelectorAll('input[data-child-for]');
     all_child_checkboxes.forEach((cb: any) => {
-        cb.checked = sample_data ? (sample_data.selectedContentTypes?.includes(cb.value) || false) : false;
+        cb.checked = effective_sample_data
+            ? (effective_sample_data.selectedContentTypes?.includes(cb.value) || false)
+            : false;
     });
     const all_parent_checkboxes = component.content_types_container_element.querySelectorAll('input[data-parent-id]');
-    if (sample_data) {
+    if (effective_sample_data) {
         all_parent_checkboxes.forEach((pc: any) => component._updateParentCheckboxState(pc));
     } else {
         all_parent_checkboxes.forEach((pc: any) => {
@@ -209,11 +219,11 @@ export function render_add_sample_form(component: any, sample_id_to_edit: string
     }
 
     // --- Post-render initialization ---
-    const selected_cat_id = sample_data?.sampleCategory || sample_categories[0]?.id;
+    const selected_cat_id = effective_sample_data?.sampleCategory || sample_categories[0]?.id;
     if (selected_cat_id) {
-        component.on_category_change(selected_cat_id, sample_data?.sampleType);
+        component.on_category_change(selected_cat_id, effective_sample_data?.sampleType);
     }
-    component.previous_sample_type_value = sample_data?.sampleType
+    component.previous_sample_type_value = effective_sample_data?.sampleType
         ? component.sample_type_select.options[component.sample_type_select.selectedIndex]?.text
         : '';
 }

@@ -200,6 +200,10 @@ export function auditReducer(current_state, action) {
             return { ...current_state, pendingSampleChanges: action.payload };
         case ActionTypes.CLEAR_STAGED_SAMPLE_CHANGES:
             return { ...current_state, pendingSampleChanges: null };
+        case ActionTypes.SET_SAMPLE_EDIT_DRAFT:
+            return { ...current_state, sampleEditDraft: action.payload };
+        case ActionTypes.CLEAR_SAMPLE_EDIT_DRAFT:
+            return { ...current_state, sampleEditDraft: null };
         case ActionTypes.INITIALIZE_NEW_AUDIT:
             return {
                 ...initial_state,
@@ -396,7 +400,10 @@ export function auditReducer(current_state, action) {
             let merged_remote = {
                 ...remote,
                 uiSettings: current_state.uiSettings || remote.uiSettings || {},
-                manageUsersText: current_state.manageUsersText ?? ''
+                manageUsersText: current_state.manageUsersText ?? '',
+                // Bevara lokala "utkast"/bekräftelsedata vid server-poll, annars kan användarens val försvinna.
+                pendingSampleChanges: current_state.pendingSampleChanges ?? null,
+                sampleEditDraft: current_state.sampleEditDraft ?? null
             };
             if ((merged_remote.auditStatus === 'locked' || merged_remote.auditStatus === 'archived')
                 && (merged_remote.auditLastUpdatedAtFrozen === undefined || merged_remote.auditLastUpdatedAtFrozen === null)) {

@@ -26,6 +26,8 @@ const AUDIT_ACTIONS = new Set([
     ActionTypes.MARK_REQUIREMENT_AS_PASSED_IN_ALL_SAMPLES,
     ActionTypes.STAGE_SAMPLE_CHANGES,
     ActionTypes.CLEAR_STAGED_SAMPLE_CHANGES,
+    ActionTypes.SET_SAMPLE_EDIT_DRAFT,
+    ActionTypes.CLEAR_SAMPLE_EDIT_DRAFT,
     ActionTypes.INITIALIZE_NEW_AUDIT,
     ActionTypes.INITIALIZE_RULEFILE_EDITING,
     ActionTypes.LOAD_AUDIT_FROM_FILE,
@@ -126,7 +128,12 @@ function execute_single_dispatch(action, dispatch_fn) {
                     const skip_sync_same_user_tab_broadcast = action.payload?.same_user_tab_broadcast === true;
                     if (!skip_sync_after_internal_metadata &&
                         !skip_sync_same_user_tab_broadcast &&
+                        // Stagade stickprovsändringar ska inte synkas till servern förrän användaren bekräftar.
+                        // Annars kan serverstate/poll skriva över pendingSampleChanges och bekräftelsevyn blir tom.
+                        action.type !== ActionTypes.STAGE_SAMPLE_CHANGES &&
                         action.type !== ActionTypes.CLEAR_STAGED_SAMPLE_CHANGES &&
+                        action.type !== ActionTypes.SET_SAMPLE_EDIT_DRAFT &&
+                        action.type !== ActionTypes.CLEAR_SAMPLE_EDIT_DRAFT &&
                         action.type !== ActionTypes.REPLACE_STATE_FROM_REMOTE &&
                         action.type !== ActionTypes.REPLACE_RULEFILE_FROM_REMOTE &&
                         action.type !== ActionTypes.SET_REMOTE_AUDIT_ID &&
