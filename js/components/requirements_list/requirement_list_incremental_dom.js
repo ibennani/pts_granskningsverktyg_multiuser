@@ -3,6 +3,7 @@
  * @module js/components/requirements_list/requirement_list_incremental_dom
  */
 
+import { get_stored_requirement_result_for_def } from '../../audit_logic.js';
 import { create_status_icons_wrapper } from './requirement_list_status_icons.js';
 import { sample_matches_status_filter } from './requirement_list_query.js';
 
@@ -13,9 +14,18 @@ import { sample_matches_status_filter } from './requirement_list_query.js';
  * @param {Map<string, Set<string>>|null|undefined} relevant_ids_by_sample
  * @param {object} filter_opts
  * @param {object} AuditLogic
+ * @param {object|Array|null|undefined} requirements ruleFileContent.requirements
  * @returns {string[]}
  */
-export function build_item_keys(mode, sorted_items, samples, relevant_ids_by_sample, filter_opts = {}, AuditLogic) {
+export function build_item_keys(
+    mode,
+    sorted_items,
+    samples,
+    relevant_ids_by_sample,
+    filter_opts = {},
+    AuditLogic,
+    requirements
+) {
     if (mode === 'sample') {
         return sorted_items.map(req => req?.key || req?.id || '');
     }
@@ -32,7 +42,16 @@ export function build_item_keys(mode, sorted_items, samples, relevant_ids_by_sam
         });
         if (has_status_filters && Object.keys(status_filters).length > 0) {
             matching = matching.filter(sample =>
-                sample_matches_status_filter(sample, req_id, req, status_filters, has_status_filters, requirement_needs_help_fn, AuditLogic)
+                sample_matches_status_filter(
+                    sample,
+                    req_id,
+                    req,
+                    status_filters,
+                    has_status_filters,
+                    requirement_needs_help_fn,
+                    AuditLogic,
+                    requirements
+                )
             );
         }
         matching.forEach(s => keys.push(`${req_key}:${s?.id || ''}`));
@@ -49,7 +68,7 @@ export function build_item_keys(mode, sorted_items, samples, relevant_ids_by_sam
  * @param {object|null|undefined} current_sample_object
  * @param {object} filter_opts
  * @param {object} AuditLogic
- * @param {{ Helpers: object, Translation: object }} icons_ctx
+ * @param {{ Helpers: object, Translation: object, requirements?: object|Array|null }} icons_ctx
  */
 export function update_items_status_only(
     mode,
@@ -64,6 +83,7 @@ export function update_items_status_only(
 ) {
     const t = icons_ctx.Translation.t;
     const needs_help_fn = filter_opts.requirement_needs_help_fn ?? (AuditLogic?.requirement_needs_help || (() => false));
+    const requirements = icons_ctx.requirements;
 
     if (mode === 'sample') {
         const items = content_div_for_delegation?.querySelectorAll?.('ol.requirement-items-ul > li.requirement-item');
@@ -71,7 +91,11 @@ export function update_items_status_only(
         sorted_items.forEach((req, i) => {
             const li = items[i];
             if (!li) return;
-            const req_result = (current_sample_object.requirementResults || {})[req.key];
+            const req_result = get_stored_requirement_result_for_def(
+                current_sample_object?.requirementResults,
+                requirements,
+                req
+            );
             const base_status = AuditLogic.calculate_requirement_status(req, req_result);
             const needs_help = needs_help_fn(req_result);
             const is_updated = req_result?.needsReview === true;
@@ -111,14 +135,28 @@ export function update_items_status_only(
             });
             if (filter_opts.has_status_filters && Object.keys(filter_opts.status_filters || {}).length > 0) {
                 matching_samples = matching_samples.filter(sample =>
-                    sample_matches_status_filter(sample, req_id, req, filter_opts.status_filters, filter_opts.has_status_filters, needs_help_fn, AuditLogic)
+                    sample_matches_status_filter(
+                        sample,
+                        req_id,
+                        req,
+                        filter_opts.status_filters,
+                        filter_opts.has_status_filters,
+                        needs_help_fn,
+                        AuditLogic,
+                        requirements
+                    )
                 );
             }
             const sample_lis = req_li.querySelectorAll('ol.requirement-samples-list > li.requirement-sample-item');
             matching_samples.forEach((sample, si) => {
                 const sample_li = sample_lis[si];
                 if (!sample_li) return;
-                const req_result = (sample.requirementResults || {})[req_key];
+                const req_result = get_stored_requirement_result_for_def(
+                    sample.requirementResults,
+                    requirements,
+                    req,
+                    req_id
+                );
                 const base_status = AuditLogic.calculate_requirement_status(req, req_result);
                 const needs_help = needs_help_fn(req_result);
                 const is_updated = req_result?.needsReview === true;

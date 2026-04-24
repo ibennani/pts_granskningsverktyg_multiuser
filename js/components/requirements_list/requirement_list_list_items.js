@@ -3,6 +3,7 @@
  * @module js/components/requirements_list/requirement_list_list_items
  */
 
+import { get_stored_requirement_result_for_def } from '../../audit_logic.js';
 import { get_status_icon } from './requirement_list_status_icons.js';
 import { sample_matches_status_filter } from './requirement_list_query.js';
 
@@ -12,13 +13,25 @@ import { sample_matches_status_filter } from './requirement_list_query.js';
  * @param {object[]} samples
  * @param {object} filter_opts
  * @param {Map<string, Set<string>>} relevant_ids_by_sample
+ * @param {object|Array|null|undefined} requirements ruleFileContent.requirements
  * @param {() => object} getState
  * @param {object} AuditLogic
  * @param {object} Helpers
  * @param {object} Translation
  * @returns {HTMLElement}
  */
-export function create_all_requirement_list_item(req_id, req, samples, filter_opts, relevant_ids_by_sample, getState, AuditLogic, Helpers, Translation) {
+export function create_all_requirement_list_item(
+    req_id,
+    req,
+    samples,
+    filter_opts,
+    relevant_ids_by_sample,
+    requirements,
+    getState,
+    AuditLogic,
+    Helpers,
+    Translation
+) {
     const t = Translation.t;
     const candidates = new Set([String(req_id)]);
     if (req?.key) candidates.add(String(req.key));
@@ -33,7 +46,16 @@ export function create_all_requirement_list_item(req_id, req, samples, filter_op
     const { status_filters = {}, has_status_filters = false, requirement_needs_help_fn = () => false, has_active_filter = false } = filter_opts;
     if (has_status_filters && Object.keys(status_filters).length > 0) {
         matching_samples = matching_samples.filter(sample =>
-            sample_matches_status_filter(sample, req_id, req, status_filters, has_status_filters, requirement_needs_help_fn, AuditLogic)
+            sample_matches_status_filter(
+                sample,
+                req_id,
+                req,
+                status_filters,
+                has_status_filters,
+                requirement_needs_help_fn,
+                AuditLogic,
+                requirements
+            )
         );
     }
 
@@ -64,7 +86,12 @@ export function create_all_requirement_list_item(req_id, req, samples, filter_op
 
     const needs_help_fn = filter_opts.requirement_needs_help_fn ?? (AuditLogic?.requirement_needs_help || (() => false));
     for (const sample of matching_samples) {
-        const req_result = (sample.requirementResults || {})[req_key];
+        const req_result = get_stored_requirement_result_for_def(
+            sample.requirementResults,
+            requirements,
+            req,
+            req_id
+        );
         const base_status = AuditLogic.calculate_requirement_status(req, req_result);
         const needs_help = needs_help_fn(req_result);
         const is_updated = req_result?.needsReview === true;
@@ -148,7 +175,12 @@ export function create_all_requirement_list_item(req_id, req, samples, filter_op
         return [...candidates].some(id => sample_set.has(id));
     });
     const has_unreviewed = all_samples_for_req.some(sample => {
-        const req_result = (sample.requirementResults || {})[req_key];
+        const req_result = get_stored_requirement_result_for_def(
+            sample.requirementResults,
+            requirements,
+            req,
+            req_id
+        );
         const status = AuditLogic.calculate_requirement_status(req, req_result);
         return status === 'not_audited' || status === 'partially_audited';
     });
@@ -174,14 +206,15 @@ export function create_all_requirement_list_item(req_id, req, samples, filter_op
 /**
  * @param {object} req
  * @param {object} sample
+ * @param {object|Array|null|undefined} requirements ruleFileContent.requirements
  * @param {object} AuditLogic
  * @param {object} Helpers
  * @param {object} Translation
  * @returns {HTMLElement}
  */
-export function create_requirement_list_item(req, sample, AuditLogic, Helpers, Translation) {
+export function create_requirement_list_item(req, sample, requirements, AuditLogic, Helpers, Translation) {
     const t = Translation.t;
-    const req_result = (sample.requirementResults || {})[req.key];
+    const req_result = get_stored_requirement_result_for_def(sample.requirementResults, requirements, req);
     const requirement_needs_help_fn = AuditLogic?.requirement_needs_help || (() => false);
     const base_status = AuditLogic.calculate_requirement_status(req, req_result);
     const needs_help = requirement_needs_help_fn(req_result);

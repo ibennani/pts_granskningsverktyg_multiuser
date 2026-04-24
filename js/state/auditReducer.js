@@ -8,6 +8,19 @@ function get_current_iso_datetime_utc_internal() {
     return new Date().toISOString();
 }
 
+/** Tar bort duplicerat lagert under publikt id när resultatet flyttats till map-nyckel. */
+function remove_stale_requirement_result_aliases(new_results, map_key, req_def) {
+    if (!new_results || map_key == null) return;
+    const mk = String(map_key);
+    for (const pk of [req_def.key, req_def.id]) {
+        if (pk == null) continue;
+        const s = String(pk);
+        if (s !== mk && Object.prototype.hasOwnProperty.call(new_results, s)) {
+            delete new_results[s];
+        }
+    }
+}
+
 export function auditReducer(current_state, action) {
     let new_state;
 
@@ -158,12 +171,27 @@ export function auditReducer(current_state, action) {
                 const relevant_reqs = AuditLogic.get_relevant_requirements_for_sample(current_state.ruleFileContent, sample);
                 const new_results = { ...(sample.requirementResults || {}) };
                 let has_changed = false;
+                const requirements = current_state.ruleFileContent.requirements;
                 relevant_reqs.forEach(req_def => {
-                    const req_key = req_def.key || req_def.id;
-                    const existing = new_results[req_key];
+                    const existing = AuditLogic.get_stored_requirement_result_for_def(
+                        new_results,
+                        requirements,
+                        req_def
+                    );
                     const status = AuditLogic.calculate_requirement_status(req_def, existing);
                     if (status === 'not_audited' || status === 'partially_audited') {
-                        new_results[req_key] = AuditLogic.build_not_applicable_requirement_result(req_def, existing, timestamp, get_current_user_name());
+                        const map_key =
+                            AuditLogic.resolve_requirement_map_key(
+                                requirements,
+                                req_def.key || req_def.id
+                            ) || String(req_def.key || req_def.id);
+                        new_results[map_key] = AuditLogic.build_not_applicable_requirement_result(
+                            req_def,
+                            existing,
+                            timestamp,
+                            get_current_user_name()
+                        );
+                        remove_stale_requirement_result_aliases(new_results, map_key, req_def);
                         has_changed = true;
                     }
                 });
@@ -184,12 +212,26 @@ export function auditReducer(current_state, action) {
                 const relevant_reqs = AuditLogic.get_relevant_requirements_for_sample(current_state.ruleFileContent, sample);
                 const req_def = relevant_reqs.find(r => (r.key || r.id) === requirement_id);
                 if (!req_def) return sample;
-                const req_key = req_def.key || req_def.id;
-                const existing = (sample.requirementResults || {})[req_key];
+                const new_results = { ...(sample.requirementResults || {}) };
+                const existing = AuditLogic.get_stored_requirement_result_for_def(
+                    new_results,
+                    current_state.ruleFileContent.requirements,
+                    req_def
+                );
                 const status = AuditLogic.calculate_requirement_status(req_def, existing);
                 if (status !== 'not_audited' && status !== 'partially_audited') return sample;
-                const new_results = { ...(sample.requirementResults || {}) };
-                new_results[req_key] = AuditLogic.build_not_applicable_requirement_result(req_def, existing, timestamp, get_current_user_name());
+                const map_key =
+                    AuditLogic.resolve_requirement_map_key(
+                        current_state.ruleFileContent.requirements,
+                        req_def.key || req_def.id
+                    ) || String(req_def.key || req_def.id);
+                new_results[map_key] = AuditLogic.build_not_applicable_requirement_result(
+                    req_def,
+                    existing,
+                    timestamp,
+                    get_current_user_name()
+                );
+                remove_stale_requirement_result_aliases(new_results, map_key, req_def);
                 return { ...sample, requirementResults: new_results };
             });
             new_state = { ...current_state, samples: new_samples };

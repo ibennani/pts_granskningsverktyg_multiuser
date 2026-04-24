@@ -18,6 +18,7 @@ import { create_all_requirement_list_item, create_requirement_list_item } from '
  * @param {string|null|undefined} ctx.RETURN_FOCUS_SESSION_KEY
  * @param {string|null|undefined} ctx.sample_params_id
  * @param {() => object} ctx.getState
+ * @param {object|Array|null|undefined} ctx.requirements ruleFileContent.requirements
  * @param {Array} items sorterade krav (entries eller kravobjekt)
  * @param {object} params
  * @param {object[]} params.samples
@@ -58,7 +59,18 @@ export function render_requirements_content(ctx, items, params) {
 
         const req_ul = ctx.Helpers.create_element('ul', { class_name: 'requirement-items-ul' });
         items.forEach(([req_id, req]) => {
-            req_ul.appendChild(create_all_requirement_list_item(req_id, req, samples, filter_opts, ctx.relevant_ids_by_sample, ctx.getState, ctx.AuditLogic, ctx.Helpers, ctx.Translation));
+            req_ul.appendChild(create_all_requirement_list_item(
+                req_id,
+                req,
+                samples,
+                filter_opts,
+                ctx.relevant_ids_by_sample,
+                ctx.requirements,
+                ctx.getState,
+                ctx.AuditLogic,
+                ctx.Helpers,
+                ctx.Translation
+            ));
         });
         ctx.content_div_for_delegation.appendChild(req_ul);
 
@@ -75,7 +87,14 @@ export function render_requirements_content(ctx, items, params) {
         } else {
             const req_ol = ctx.Helpers.create_element('ol', { class_name: 'requirement-items-ul' });
             items.forEach(req => {
-                req_ol.appendChild(create_requirement_list_item(req, current_sample_object, ctx.AuditLogic, ctx.Helpers, ctx.Translation));
+                req_ol.appendChild(create_requirement_list_item(
+                    req,
+                    current_sample_object,
+                    ctx.requirements,
+                    ctx.AuditLogic,
+                    ctx.Helpers,
+                    ctx.Translation
+                ));
             });
             if (ctx.content_div_for_delegation) {
                 ctx.content_div_for_delegation.appendChild(req_ol);

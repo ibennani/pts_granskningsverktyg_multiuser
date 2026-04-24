@@ -335,7 +335,12 @@ export function calculate_overall_audit_progress(current_audit_data) {
         total_possible_assessments += relevant_reqs.length;
 
         relevant_reqs.forEach(req_def => {
-            const status = calculate_requirement_status(req_def, sample.requirementResults?.[req_def.key || req_def.id]);
+            const stored = get_stored_requirement_result_for_def(
+                sample.requirementResults,
+                current_audit_data.ruleFileContent?.requirements,
+                req_def
+            );
+            const status = calculate_requirement_status(req_def, stored);
             if (status === 'passed' || status === 'failed') {
                 total_completed_assessments++;
             }
@@ -359,10 +364,12 @@ export function calculate_sample_requirement_status_counts(rule_file_content, sa
     }
     const relevant_reqs = get_relevant_requirements_for_sample(rule_file_content, sample_object);
     relevant_reqs.forEach((req_def) => {
-        const status = calculate_requirement_status(
-            req_def,
-            sample_object.requirementResults?.[req_def.key || req_def.id]
+        const stored = get_stored_requirement_result_for_def(
+            sample_object.requirementResults,
+            rule_file_content?.requirements,
+            req_def
         );
+        const status = calculate_requirement_status(req_def, stored);
         if (status === 'passed') out.passed += 1;
         else if (status === 'failed') out.failed += 1;
         else if (status === 'partially_audited') out.partially_audited += 1;
@@ -401,9 +408,17 @@ export function find_first_incomplete_requirement_key_for_sample(rule_file_conte
     const ordered_keys = get_ordered_relevant_requirement_keys(rule_file_content, sample_object, 'default');
     for (const req_key of ordered_keys) {
         if (exclude_key && req_key === exclude_key) continue; // Hoppa över det aktuella kravet
-        const req_def = rule_file_content.requirements[req_key];
+        const req_def =
+            find_requirement_definition(rule_file_content.requirements, req_key)
+            || rule_file_content.requirements[req_key];
         if (!req_def) continue;
-        const status = calculate_requirement_status(req_def, sample_object.requirementResults?.[req_key]);
+        const stored = get_stored_requirement_result_for_def(
+            sample_object.requirementResults,
+            rule_file_content.requirements,
+            req_def,
+            req_key
+        );
+        const status = calculate_requirement_status(req_def, stored);
         if (status === 'not_audited' || status === 'partially_audited') return req_key;
     }
     return null;
@@ -690,6 +705,53 @@ export function resolve_requirement_map_key(requirements, reqId) {
         if ((k !== null && k === reqIdStr) || (i !== null && i === reqIdStr)) return key;
     }
     return null;
+}
+
+/**
+ * Hämtar lagrat kravresultat med samma uppslagning som granskningsvyn: försöker map-nyckel först,
+ * därefter reserv (publikt id) om resultatet sparats under en äldre nyckel.
+ * @param {Record<string, object>|null|undefined} requirement_results
+ * @param {object|Array|null|undefined} requirements ruleFileContent.requirements
+ * @param {object} req_def
+ * @param {string|number|null|undefined} [entry_map_key] Nyckel från t.ex. Object.entries
+ * @returns {object|undefined}
+ */
+export function get_stored_requirement_result_for_def(
+    requirement_results,
+    requirements,
+    req_def,
+    entry_map_key
+) {
+    if (!requirement_results || !req_def || typeof requirement_results !== 'object') {
+        return undefined;
+    }
+    const try_keys = [];
+    const add = (k) => {
+        if (k === null || k === undefined) return;
+        const s = String(k).trim();
+        if (s === '' || try_keys.includes(s)) return;
+        try_keys.push(s);
+    };
+    add(resolve_requirement_map_key(requirements, req_def.key));
+    add(resolve_requirement_map_key(requirements, req_def.id));
+    if (requirements && !Array.isArray(requirements) && entry_map_key != null) {
+        const em = String(entry_map_key);
+        if (Object.prototype.hasOwnProperty.call(requirements, em)) {
+            add(em);
+        }
+        add(resolve_requirement_map_key(requirements, em));
+    }
+    add(req_def.key);
+    add(req_def.id);
+    if (entry_map_key != null) {
+        add(entry_map_key);
+    }
+    for (const k of try_keys) {
+        if (Object.prototype.hasOwnProperty.call(requirement_results, k) && requirement_results[k] != null) {
+            return requirement_results[k];
+        }
+    }
+    return undefined;
 }
 
 /**

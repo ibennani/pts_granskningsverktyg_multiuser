@@ -3,6 +3,7 @@
  * @module js/components/requirements_list/requirement_list_query
  */
 
+import { get_stored_requirement_result_for_def } from '../../audit_logic.js';
 import { get_searchable_text_for_requirement as get_searchable_text_util } from '../../utils/requirement_search_utils.js';
 
 /**
@@ -62,10 +63,18 @@ export function compare_strings_locale(a, b) {
  * @param {object} req
  * @param {object[]} samples
  * @param {Map<string, Set<string>>} relevant_ids_by_sample
+ * @param {object|Array|null|undefined} requirements ruleFileContent.requirements
  * @param {object} AuditLogic
  * @returns {string}
  */
-export function get_aggregated_display_status_for_requirement(req_id, req, samples, relevant_ids_by_sample, AuditLogic) {
+export function get_aggregated_display_status_for_requirement(
+    req_id,
+    req,
+    samples,
+    relevant_ids_by_sample,
+    requirements,
+    AuditLogic
+) {
     const candidates = new Set([String(req_id)]);
     if (req?.key) candidates.add(String(req.key));
     if (req?.id) candidates.add(String(req.id));
@@ -76,12 +85,16 @@ export function get_aggregated_display_status_for_requirement(req_id, req, sampl
         return [...candidates].some(id => sample_set.has(id));
     });
 
-    const req_key = req?.key || req?.id || req_id;
     let display_status = 'not_audited';
 
     const requirement_needs_help_fn = AuditLogic?.requirement_needs_help || (() => false);
     for (const sample of matching_samples) {
-        const req_result = (sample.requirementResults || {})[req_key];
+        const req_result = get_stored_requirement_result_for_def(
+            sample.requirementResults,
+            requirements,
+            req,
+            req_id
+        );
         if (!req_result) continue;
         if (requirement_needs_help_fn(req_result)) return 'needs_help';
         const status = req_result.needsReview ? 'updated' : AuditLogic.calculate_requirement_status(req, req_result);
@@ -104,11 +117,25 @@ export function get_aggregated_display_status_for_requirement(req_id, req, sampl
  * @param {boolean} has_status_filters
  * @param {function} requirement_needs_help_fn
  * @param {object} AuditLogic
+ * @param {object|Array|null|undefined} requirements ruleFileContent.requirements
  * @returns {boolean}
  */
-export function sample_matches_status_filter(sample, req_id, req, status_filters, has_status_filters, requirement_needs_help_fn, AuditLogic) {
-    const req_key = req?.key || req?.id || req_id;
-    const req_result = (sample.requirementResults || {})[req_key];
+export function sample_matches_status_filter(
+    sample,
+    req_id,
+    req,
+    status_filters,
+    has_status_filters,
+    requirement_needs_help_fn,
+    AuditLogic,
+    requirements
+) {
+    const req_result = get_stored_requirement_result_for_def(
+        sample.requirementResults,
+        requirements,
+        req,
+        req_id
+    );
     const display_status = req_result?.needsReview ? 'updated' : AuditLogic.calculate_requirement_status(req, req_result);
     const needs_help = requirement_needs_help_fn(req_result);
     const status_match = !has_status_filters || status_filters[display_status] === true;

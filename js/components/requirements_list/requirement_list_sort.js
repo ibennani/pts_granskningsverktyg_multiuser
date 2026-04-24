@@ -3,6 +3,7 @@
  * @module js/components/requirements_list/requirement_list_sort
  */
 
+import { get_stored_requirement_result_for_def } from '../../audit_logic.js';
 import {
     compare_strings_locale,
     get_aggregated_display_status_for_requirement,
@@ -39,11 +40,22 @@ export function get_sort_options(mode) {
  * @param {object|null|undefined} current_sample_object
  * @param {object[]} samples
  * @param {Map<string, Set<string>>|null|undefined} relevant_ids_by_sample
+ * @param {object|Array|null|undefined} requirements ruleFileContent.requirements
  * @param {object} AuditLogic
  * @param {object} Helpers
  * @returns {Array}
  */
-export function sort_items(mode, items, sort_by, current_sample_object, samples, relevant_ids_by_sample, AuditLogic, Helpers) {
+export function sort_items(
+    mode,
+    items,
+    sort_by,
+    current_sample_object,
+    samples,
+    relevant_ids_by_sample,
+    requirements,
+    AuditLogic,
+    Helpers
+) {
     const sorted = [...items];
 
     if (mode === 'all') {
@@ -71,8 +83,12 @@ export function sort_items(mode, items, sort_by, current_sample_object, samples,
             });
         } else if (sort_by === 'updated_first') {
             sorted.sort((a, b) => {
-                const status_a = get_aggregated_display_status_for_requirement(a?.[0], a?.[1], samples, relevant_ids_by_sample, AuditLogic);
-                const status_b = get_aggregated_display_status_for_requirement(b?.[0], b?.[1], samples, relevant_ids_by_sample, AuditLogic);
+                const status_a = get_aggregated_display_status_for_requirement(
+                    a?.[0], a?.[1], samples, relevant_ids_by_sample, requirements, AuditLogic
+                );
+                const status_b = get_aggregated_display_status_for_requirement(
+                    b?.[0], b?.[1], samples, relevant_ids_by_sample, requirements, AuditLogic
+                );
                 const a_updated = status_a === 'updated' ? 0 : 1;
                 const b_updated = status_b === 'updated' ? 0 : 1;
                 if (a_updated !== b_updated) return a_updated - b_updated;
@@ -88,8 +104,16 @@ export function sort_items(mode, items, sort_by, current_sample_object, samples,
             'title_asc': (a, b) => (a.title || '').localeCompare(b.title || ''),
             'title_desc': (a, b) => (b.title || '').localeCompare(a.title || ''),
             'updated_first': (a, b) => {
-                const resA = (current_sample_object.requirementResults || {})[a.key];
-                const resB = (current_sample_object.requirementResults || {})[b.key];
+                const resA = get_stored_requirement_result_for_def(
+                    current_sample_object?.requirementResults,
+                    requirements,
+                    a
+                );
+                const resB = get_stored_requirement_result_for_def(
+                    current_sample_object?.requirementResults,
+                    requirements,
+                    b
+                );
                 const isAUpdated = resA?.needsReview === true ? 0 : 1;
                 const isBUpdated = resB?.needsReview === true ? 0 : 1;
                 if (isAUpdated !== isBUpdated) {

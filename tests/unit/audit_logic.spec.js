@@ -8,6 +8,7 @@ import {
     calculate_overall_audit_status_counts,
     get_audit_last_updated_display_timestamp,
     compute_audit_last_updated_live_timestamp,
+    get_stored_requirement_result_for_def,
     requirement_results_equal_for_last_updated
 } from '../../js/audit_logic.js';
 
@@ -248,6 +249,50 @@ describe('AuditLogic', () => {
             expect(counts.failed).toBe(1);
             expect(counts.partially_audited).toBe(0);
             expect(counts.not_audited).toBe(0);
+        });
+
+        test('räknar map-nyckel och publik nyckel likvärdigt när endast en finns i requirementResults', () => {
+            const rule_split_key = {
+                requirements: {
+                    key_map_only: {
+                        key: 'pub_k',
+                        id: 'pub_k',
+                        title: 'K',
+                        checks: [{ id: 'c1', passCriteria: [{ id: 'pc1' }], passCriteriaLogic: 'AND' }]
+                    }
+                }
+            };
+            const res_obj = {
+                status: 'passed',
+                checkResults: {
+                    c1: { overallStatus: 'passed', passCriteria: { pc1: { status: 'passed' } } }
+                }
+            };
+            const under_map = calculate_sample_requirement_status_counts(
+                rule_split_key,
+                { id: 's1', requirementResults: { key_map_only: { ...res_obj } } }
+            );
+            const under_public = calculate_sample_requirement_status_counts(
+                rule_split_key,
+                { id: 's1', requirementResults: { pub_k: { ...res_obj } } }
+            );
+            expect(under_map.passed).toBe(1);
+            expect(under_public.passed).toBe(1);
+        });
+    });
+
+    describe('get_stored_requirement_result_for_def', () => {
+        test('prioriterar träff under map-nyckel före publik alias-nyckel', () => {
+            const requirements = { map_a: { key: 'p', id: 'p', title: 'T', checks: [] } };
+            const a = { status: 'not_audited' };
+            const b = { status: 'passed' };
+            const r = get_stored_requirement_result_for_def(
+                { map_a: a, p: b },
+                requirements,
+                { key: 'p', id: 'p' },
+                'map_a'
+            );
+            expect(r).toBe(a);
         });
     });
 

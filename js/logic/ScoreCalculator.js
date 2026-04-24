@@ -1,6 +1,7 @@
 // js/logic/ScoreCalculator.js
 'use-strict';
 
+import { get_stored_requirement_result_for_def } from '../audit_logic.js';
 import { consoleManager } from '../utils/console_manager.js';
 
 /**
@@ -109,7 +110,6 @@ export function calculateQualityScore(auditState) {
         const relevantReqsForSample = _getRelevantRequirementsForSample(auditState.ruleFileContent, sample);
         
         relevantReqsForSample.forEach(reqDef => {
-            const reqKey = reqDef.key || reqDef.id;
             const reqWeight = _calculateRequirementWeight(reqDef);
             
             totalMaxWeight += reqWeight;
@@ -119,7 +119,12 @@ export function calculateQualityScore(auditState) {
                 principleScores[principleId].maxWeight += reqWeight;
             }
 
-            const reqResult = sample.requirementResults?.[reqKey];
+            const requirements_obj = auditState.ruleFileContent?.requirements;
+            const reqResult = get_stored_requirement_result_for_def(
+                sample.requirementResults,
+                requirements_obj,
+                reqDef
+            );
             let deficiencyPointsForReq = 0;
             if (reqResult?.checkResults) {
                 let failureCountForReq = 0;

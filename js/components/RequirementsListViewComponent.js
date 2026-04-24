@@ -317,7 +317,8 @@ export class RequirementsListViewComponent {
             samples,
             relevant_ids_by_sample: this.relevant_ids_by_sample,
             current_sample_object,
-            AuditLogic: this.AuditLogic
+            AuditLogic: this.AuditLogic,
+            requirements: rule_file_content?.requirements
         });
 
         const filtered_count = filtered_items.length;
@@ -330,7 +331,17 @@ export class RequirementsListViewComponent {
 
         // Sort items
         const sort_by = current_ui_settings.sortBy || 'ref_asc';
-        const sorted_items = sort_items(this.mode, filtered_items, sort_by, current_sample_object, samples, this.relevant_ids_by_sample, this.AuditLogic, this.Helpers);
+        const sorted_items = sort_items(
+            this.mode,
+            filtered_items,
+            sort_by,
+            current_sample_object,
+            samples,
+            this.relevant_ids_by_sample,
+            rule_file_content?.requirements,
+            this.AuditLogic,
+            this.Helpers
+        );
 
         const search_term = (current_ui_settings.searchText || '').toLowerCase().trim();
         const status_keys_for_filter = ['needs_help', 'passed', 'failed', 'partially_audited', 'not_audited', 'updated'];
@@ -340,10 +351,32 @@ export class RequirementsListViewComponent {
 
         // Render items eller inkrementell uppdatering
         const filter_opts = { status_filters, has_status_filters, requirement_needs_help_fn, has_active_filter };
-        const item_keys = build_item_keys(this.mode, sorted_items, samples, this.relevant_ids_by_sample, filter_opts, this.AuditLogic);
+        const item_keys = build_item_keys(
+            this.mode,
+            sorted_items,
+            samples,
+            this.relevant_ids_by_sample,
+            filter_opts,
+            this.AuditLogic,
+            rule_file_content?.requirements
+        );
 
         if (can_incremental_update(this._last_rendered_fingerprint, fingerprint_item_keys(item_keys))) {
-            update_items_status_only(this.mode, this.content_div_for_delegation, this.relevant_ids_by_sample, sorted_items, samples, current_sample_object, filter_opts, this.AuditLogic, { Helpers: this.Helpers, Translation: this.Translation });
+            update_items_status_only(
+                this.mode,
+                this.content_div_for_delegation,
+                this.relevant_ids_by_sample,
+                sorted_items,
+                samples,
+                current_sample_object,
+                filter_opts,
+                this.AuditLogic,
+                {
+                    Helpers: this.Helpers,
+                    Translation: this.Translation,
+                    requirements: rule_file_content?.requirements
+                }
+            );
         } else {
             render_requirements_content(
                 {
@@ -356,7 +389,8 @@ export class RequirementsListViewComponent {
                     relevant_ids_by_sample: this.relevant_ids_by_sample,
                     RETURN_FOCUS_SESSION_KEY: this.RETURN_FOCUS_SESSION_KEY,
                     sample_params_id: this.params?.sampleId || null,
-                    getState: () => this.getState()
+                    getState: () => this.getState(),
+                    requirements: rule_file_content?.requirements
                 },
                 sorted_items,
                 { samples, current_sample_object, total_count, filtered_count, filter_opts }
