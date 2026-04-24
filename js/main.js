@@ -37,6 +37,7 @@ import {
     set_initial_theme,
     is_dev_build_environment,
     refresh_dev_build_info_from_server,
+    refresh_production_build_info_from_server,
     update_build_timestamp,
     start_normal_session as start_normal_session_impl
 } from './logic/session_manager.js';
@@ -351,6 +352,7 @@ if (typeof window !== 'undefined') {
             set_initial_theme,
             is_dev_build_environment,
             refresh_dev_build_info_from_server,
+            refresh_production_build_info_from_server,
             update_build_timestamp,
             APP_STATE_KEY,
             initState,

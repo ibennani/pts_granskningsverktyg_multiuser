@@ -4,6 +4,7 @@
  */
 
 import { get_current_user_preferences_with_timeout } from '../api/client.js';
+import { parse_build_info_from_text } from './version_check_service.js';
 import { parse_view_and_params_from_hash } from './router.js';
 import { format_build_info_object } from '../utils/build_time_format.js';
 import {
@@ -47,6 +48,27 @@ export async function refresh_dev_build_info_from_server() {
         await import(/* @vite-ignore */ path);
     } catch {
         /* ignorera om build-info saknas i vissa lägen */
+    }
+}
+
+/**
+ * I produktion: hämta build-info med no-store så att byggstämpeln inte fastnar på gammal modul
+ * (t.ex. HTTP-cache / äldre SW-beteende) trots att index bytts ut.
+ */
+export async function refresh_production_build_info_from_server() {
+    if (is_dev_build_environment()) return;
+    try {
+        const base = import.meta.env.BASE_URL || '/';
+        const url = `${base}build-info.js?t=${Date.now()}`;
+        const res = await fetch(url, { cache: 'no-store' });
+        if (!res.ok) return;
+        const text = await res.text();
+        const parsed = parse_build_info_from_text(text);
+        if (parsed && parsed.timestamp) {
+            window.BUILD_INFO = parsed;
+        }
+    } catch {
+        /* ignoreras */
     }
 }
 

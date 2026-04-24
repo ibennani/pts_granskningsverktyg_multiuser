@@ -64,7 +64,7 @@ function sleep_ms(ms) {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function parse_build_info_from_text(text) {
+export function parse_build_info_from_text(text) {
     const start = text.indexOf('window.BUILD_INFO = ');
     if (start === -1) return null;
     const jsonStart = text.indexOf('{', start);

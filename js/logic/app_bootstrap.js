@@ -16,6 +16,7 @@ export async function init_app(deps) {
         set_initial_theme,
         is_dev_build_environment,
         refresh_dev_build_info_from_server,
+        refresh_production_build_info_from_server,
         update_build_timestamp,
         APP_STATE_KEY,
         initState,
@@ -49,7 +50,11 @@ export async function init_app(deps) {
     const mm = memoryManagerRef || memoryManager;
     mm.setTimeout(() => {
         (async () => {
-            await refresh_dev_build_info_from_server();
+            if (is_dev_build_environment()) {
+                await refresh_dev_build_info_from_server();
+            } else {
+                await refresh_production_build_info_from_server();
+            }
             update_build_timestamp();
         })();
     }, 100);

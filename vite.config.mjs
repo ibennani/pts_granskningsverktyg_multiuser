@@ -69,17 +69,10 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 6000000,
         runtimeCaching: [
           {
-            // För navigering: hämta alltid nätverket först så att ny deploy syns utan hård omladdning.
+            // Navigering: aldrig cache i SW. NetworkFirst + timeout gav gamla index.html (t.ex. gammal
+            // "Byggt …") vid långsam anslutning eller tills maxAge (1 h) löpt ut trots Ctrl+Shift+F5.
             urlPattern: ({ request }) => request.mode === 'navigate',
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'gv-navigate',
-              networkTimeoutSeconds: 3,
-              expiration: {
-                maxEntries: 20,
-                maxAgeSeconds: 3600
-              }
-            }
+            handler: 'NetworkOnly'
           },
           {
             // Versionsfingeravtryck: ska aldrig fastna i SW-cache.
