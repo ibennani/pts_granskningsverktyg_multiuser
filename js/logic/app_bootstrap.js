@@ -44,6 +44,15 @@ export async function init_app(deps) {
 
     set_initial_theme();
     inject_deficiency_score_bar_gradient_styles();
+    update_build_timestamp();
+    if (!is_dev_build_environment()) {
+        try {
+            await refresh_production_build_info_from_server();
+        } catch (_) {
+            /* ignoreras */
+        }
+        update_build_timestamp();
+    }
     if (is_dev_build_environment()) {
         install_vite_dev_client_timestamp_listeners(update_build_timestamp);
     }

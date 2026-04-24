@@ -58,9 +58,12 @@ export async function refresh_dev_build_info_from_server() {
 export async function refresh_production_build_info_from_server() {
     if (is_dev_build_environment()) return;
     try {
-        const base = import.meta.env.BASE_URL || '/';
-        const url = `${base}build-info.js?t=${Date.now()}`;
-        const res = await fetch(url, { cache: 'no-store' });
+        const script_url = new URL('build-info.js', window.location.href);
+        script_url.searchParams.set('_cb', String(Date.now()));
+        const res = await fetch(script_url.href, {
+            cache: 'no-store',
+            credentials: 'same-origin'
+        });
         if (!res.ok) return;
         const text = await res.text();
         const parsed = parse_build_info_from_text(text);
