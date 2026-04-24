@@ -211,7 +211,7 @@ export function validate_saved_audit_file(json_object, options = {}) {
         return { isValid: false, message: t('error_invalid_saved_audit_file') };
     }
 
-    const required_keys = ['saveFileVersion', 'ruleFileContent', 'auditMetadata', 'auditStatus', 'samples'];
+    const required_keys = ['ruleFileContent', 'auditMetadata', 'auditStatus', 'samples'];
     const missing_keys = required_keys.filter(key => !(key in json_object));
 
     if (missing_keys.length > 0) {
