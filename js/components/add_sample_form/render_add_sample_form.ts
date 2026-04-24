@@ -97,7 +97,16 @@ export function render_add_sample_form(component: any, sample_id_to_edit: string
     component.url_input.value = effective_sample_data?.url || "";
 
     // --- Content Types Section ---
-    component.content_types_container_element = component.Helpers.create_element('div', { class_name: 'content-types-group' });
+    // Vid redigering kommer kryssrutorna från state/utkast i Redux. DraftManager.restoreIntoDom körs
+    // efter render och skrev annars över barnrutor från session-/localStorage-utkast utan att
+    // förälderkryssor räknas om → urkryssad förälder men ikryssade barn.
+    const content_types_group_options: { class_name: string; attributes?: Record<string, string> } = {
+        class_name: 'content-types-group'
+    };
+    if (sample_id_to_edit !== null) {
+        content_types_group_options.attributes = { 'data-draft-ignore': 'true' };
+    }
+    component.content_types_container_element = component.Helpers.create_element('div', content_types_group_options);
     component.content_types_container_element.appendChild(component.Helpers.create_element('h2', { text_content: t('content_types') }));
     component.content_types_container_element.appendChild(component.Helpers.create_element('p', { text_content: t('content_types_instruction'), style: { 'margin-top': '0', 'color': 'var(--text-color-muted)' } }));
     grouped_content_types.forEach((group: any) => {
