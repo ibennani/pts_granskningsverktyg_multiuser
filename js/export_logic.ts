@@ -1,4 +1,5 @@
-// js/export_logic.js
+// @ts-nocheck
+// js/export_logic.ts
 
 import ExcelJS from 'exceljs/dist/exceljs.min.js';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Table, TableRow, TableCell, WidthType, UnderlineType, ExternalHyperlink, ShadingType, TabStopType, SectionType, PageOrientation } from 'docx';
@@ -3159,7 +3160,7 @@ async function export_to_html(current_audit) {
         }
         
         // Minifieringsfunktion för HTML (behålls för bakåtkompatibilitet, men används inte längre)
-        // Måste matcha EXAKT samma logik som i export_logic.js
+        // Måste matcha EXAKT samma logik som i export_logic.ts
         // I template literal behöver vi fyra backslashes för att få en backslash i regex-strängen
         function minify_html_for_hash(html_string) {
             if (!html_string) return '';

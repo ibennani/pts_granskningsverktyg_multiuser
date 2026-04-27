@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Fingeravtryck och partiell DOM-uppdatering för kravlistor.
  * @module js/components/requirements_list/requirement_list_incremental_dom

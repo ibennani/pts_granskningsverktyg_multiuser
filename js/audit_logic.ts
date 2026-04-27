@@ -1,4 +1,5 @@
-// js/audit_logic.js
+// @ts-nocheck
+// js/audit_logic.ts
 
 import * as Helpers from './utils/helpers.js';
 import { get_translation_t } from './utils/translation_access.js';

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * DOM-byggande för enskilda rader i kravlistor (alla stickprov respektive ett stickprov).
  * @module js/components/requirements_list/requirement_list_list_items

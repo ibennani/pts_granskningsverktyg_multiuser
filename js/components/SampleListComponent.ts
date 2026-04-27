@@ -1,3 +1,4 @@
+// @ts-nocheck
 import "./sample_list_component.css";
 import { ProgressBarComponent } from './ProgressBarComponent.js';
 

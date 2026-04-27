@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Synkar textarea-innehåll mellan flikar för samma inloggade användare (BroadcastChannel).
  * Olika användare påverkas inte — de följer server/lås som tidigare.

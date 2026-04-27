@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { get_current_user_name } from '../utils/helpers.js';
 import { show_confirm_delete_modal } from '../logic/confirm_delete_modal_logic.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';

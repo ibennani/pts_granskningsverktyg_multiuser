@@ -1,4 +1,5 @@
-// js/components/RequirementAuditSidebarComponent.js
+// @ts-nocheck
+// js/components/RequirementAuditSidebarComponent.ts
 
 import { RequirementsFilterComponent } from './RequirementsFilterComponent.js';
 import './requirement_audit_sidebar_component.css';

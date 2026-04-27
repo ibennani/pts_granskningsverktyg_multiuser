@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Hjälpfunktioner för kravlistor: poster, referenser, söktext och statusmatchning.
  * @module js/components/requirements_list/requirement_list_query

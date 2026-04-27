@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Filtrerar kravlistor utifrån söktext och status (samma logik som högerspalten).
  * @module js/components/requirements_list/requirement_list_filter_requirements

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { get_rules, save_audit_backup_on_server } from '../api/client.js';
 import { subscribe_rules } from '../logic/list_push_service.js';
 import { version_greater_than } from '../utils/version_utils.js';

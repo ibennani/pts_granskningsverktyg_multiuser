@@ -1,4 +1,5 @@
-// js/state/auditReducer.js
+// @ts-nocheck
+// js/state/auditReducer.ts
 import * as AuditLogic from '../audit_logic.js';
 import { get_current_user_name } from '../utils/helpers.js';
 import { ActionTypes } from './actionTypes.js';

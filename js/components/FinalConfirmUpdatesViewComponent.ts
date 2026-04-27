@@ -1,4 +1,5 @@
-// js/components/FinalConfirmUpdatesViewComponent.js
+// @ts-nocheck
+// js/components/FinalConfirmUpdatesViewComponent.ts
 
 export class FinalConfirmUpdatesViewComponent {
     constructor() {

@@ -1,4 +1,5 @@
-// js/components/RequirementAuditComponent.js
+// @ts-nocheck
+// js/components/RequirementAuditComponent.ts
 
 import { get_current_user_name } from '../utils/helpers.js';
 import { AutosaveService } from '../logic/autosave_service.js';

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Modal för att markera ett krav som godkänt i alla relevanta stickprov.
  * @module js/components/requirements_list/requirement_list_mark_all_modal
