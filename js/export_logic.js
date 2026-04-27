@@ -5,7 +5,7 @@ import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, Tabl
 import { marked } from './utils/markdown.js';
 import { format_local_date_for_filename } from './utils/filename_utils.ts';
 import { get_server_filename_datetime, sanitize_filename_segment } from './utils/download_filename_utils.ts';
-import { recalculateAuditTimes } from './audit_logic.js';
+import { recalculateAuditTimes, get_stored_requirement_result_for_def } from './audit_logic.js';
 import * as Helpers from './utils/helpers.js';
 import * as ScoreCalculator from './logic/ScoreCalculator.js';
 import { consoleManager } from './utils/console_manager.js';
@@ -21,6 +21,17 @@ function show_global_message_internal(message, type, duration) {
     if (typeof nc !== 'undefined' && typeof nc.show_global_message === 'function') {
         nc.show_global_message(message, type, duration);
     }
+}
+
+/** Kanoniskt kravresultat per stickprov (samma uppslag som granskning och audit_logic.get_effective_*). */
+function get_export_requirement_result(requirements, sample, req_definition) {
+    if (!requirements || !sample || !req_definition) return undefined;
+    return get_stored_requirement_result_for_def(
+        sample.requirementResults,
+        requirements,
+        req_definition,
+        null
+    );
 }
 
 function create_paragraphs_with_line_breaks(text, options = {}) {
@@ -192,11 +203,11 @@ async function export_to_csv(current_audit) {
     ];
     csv_content_array.push(headers.join(';'));
 
+    const requirements_for_export = current_audit.ruleFileContent?.requirements || {};
     (current_audit.samples || []).forEach(sample => {
-        const all_reqs = Object.values(current_audit.ruleFileContent.requirements || {});
+        const all_reqs = Object.values(requirements_for_export);
         all_reqs.forEach(req_definition => {
-            const req_key = req_definition.key || req_definition.id;
-            const result = (sample.requirementResults || {})[req_key];
+            const result = get_export_requirement_result(requirements_for_export, sample, req_definition);
             if (!result || !result.checkResults) return;
 
             Object.keys(result.checkResults).forEach(check_id => {
@@ -309,11 +320,11 @@ async function export_to_excel(current_audit) {
         const deficienciesSheet = workbook.addWorksheet(t('excel_sheet_deficiencies'));
 
         const deficiencies_data = [];
+        const requirements_for_export = current_audit.ruleFileContent?.requirements || {};
         (current_audit.samples || []).forEach(sample => {
-            const all_reqs = Object.values(current_audit.ruleFileContent.requirements || {});
+            const all_reqs = Object.values(requirements_for_export);
             all_reqs.forEach(req_definition => {
-                const req_key = req_definition.key || req_definition.id;
-                const result = (sample.requirementResults || {})[req_key];
+                const result = get_export_requirement_result(requirements_for_export, sample, req_definition);
                 if (!result || !result.checkResults) return;
                 Object.keys(result.checkResults).forEach(check_id => {
                     const check_res = result.checkResults[check_id];
@@ -650,10 +661,9 @@ function create_observation_paragraphs(deficiency, _t) {
 }
 
 // Gemensam hjälpfunktion för att skapa kommentar-paragraf
-function create_comment_paragraphs(requirement, sample, _t) {
+function create_comment_paragraphs(requirement, sample, requirements, _t) {
     const paragraphs = [];
-    const req_key = requirement.key || requirement.id;
-    const sample_result = (sample.requirementResults || {})[req_key];
+    const sample_result = get_export_requirement_result(requirements, sample, requirement);
     if (sample_result && sample_result.commentToActor && sample_result.commentToActor.trim()) {
         paragraphs.push(
             new Paragraph({
@@ -799,7 +809,7 @@ async function export_to_word_wrapper(current_audit, sortBy) {
                     }
 
                     // Kommentarer
-                    children.push(...create_comment_paragraphs(req, sample, t));
+                    children.push(...create_comment_paragraphs(req, sample, current_audit.ruleFileContent.requirements, t));
                 }
             }
         } else {
@@ -878,7 +888,7 @@ async function export_to_word_wrapper(current_audit, sortBy) {
                     }
 
                     // Kommentarer
-                    children.push(...create_comment_paragraphs(req, sample, t));
+                    children.push(...create_comment_paragraphs(req, sample, current_audit.ruleFileContent.requirements, t));
                 }
             }
         }
@@ -1325,11 +1335,11 @@ function create_sample_section(sample, requirement, current_audit, t) {
 
 // Hjälpfunktioner
 function get_requirements_with_deficiencies(current_audit) {
-    const requirements = Object.values(current_audit.ruleFileContent.requirements || {});
+    const requirements_obj = current_audit.ruleFileContent?.requirements || {};
+    const requirements = Object.values(requirements_obj);
     return requirements.filter(req => {
-        const req_key = req.key || req.id;
         return (current_audit.samples || []).some(sample => {
-            const result = (sample.requirementResults || {})[req_key];
+            const result = get_export_requirement_result(requirements_obj, sample, req);
             if (!result || !result.checkResults) return false;
 
             return Object.values(result.checkResults).some(check_res => {
@@ -1355,9 +1365,9 @@ function get_requirements_percentage(current_audit) {
 }
 
 function get_samples_for_requirement(requirement, current_audit) {
-    const req_key = requirement.key || requirement.id;
+    const requirements_obj = current_audit.ruleFileContent?.requirements || {};
     return (current_audit.samples || []).filter(sample => {
-        const result = (sample.requirementResults || {})[req_key];
+        const result = get_export_requirement_result(requirements_obj, sample, requirement);
         if (!result || !result.checkResults) return false;
 
         return Object.values(result.checkResults).some(check_res => {
@@ -1667,11 +1677,11 @@ function natural_sort(a, b) {
 
 // Hämtar stickprov som har underkännanden för ett specifikt krav
 function get_samples_with_deficiencies_for_requirement(requirement, current_audit) {
-    const req_key = requirement.key || requirement.id;
+    const requirements_obj = current_audit.ruleFileContent?.requirements || {};
     const samples_with_deficiencies = [];
 
     (current_audit.samples || []).forEach(sample => {
-        const result = (sample.requirementResults || {})[req_key];
+        const result = get_export_requirement_result(requirements_obj, sample, requirement);
         if (!result || !result.checkResults) return;
 
         // Kontrollera om det finns underkännanden
@@ -1690,10 +1700,10 @@ function get_samples_with_deficiencies_for_requirement(requirement, current_audi
     return samples_with_deficiencies;
 }
 
-function get_deficiencies_for_sample(requirement, sample, _current_audit, _t) {
+function get_deficiencies_for_sample(requirement, sample, current_audit, _t) {
     const deficiencies = [];
-    const req_key = requirement.key || requirement.id;
-    const result = (sample.requirementResults || {})[req_key];
+    const requirements_obj = current_audit?.ruleFileContent?.requirements || {};
+    const result = get_export_requirement_result(requirements_obj, sample, requirement);
 
     if (!result || !result.checkResults) return deficiencies;
 
@@ -2015,8 +2025,11 @@ async function _export_to_text_export_deprecated(current_audit) {
                 } // slut loop observationer
 
                 // Kommentar för detta krav på detta stickprov
-                const req_key = req.key || req.id;
-                const sample_result = (sample.requirementResults || {})[req_key];
+                const sample_result = get_export_requirement_result(
+                    current_audit.ruleFileContent.requirements,
+                    sample,
+                    req
+                );
                 if (sample_result && sample_result.commentToActor && sample_result.commentToActor.trim()) {
                     children.push(new Paragraph({
                         children: [new TextRun({ text: "" })],
@@ -2344,10 +2357,9 @@ function create_html_observations(deficiency, _t) {
 }
 
 // Hjälpfunktion för att skapa HTML-kommentarer
-function create_html_comments(requirement, sample, _t) {
+function create_html_comments(requirement, sample, requirements, _t) {
     let html = '';
-    const req_key = requirement.key || requirement.id;
-    const sample_result = (sample.requirementResults || {})[req_key];
+    const sample_result = get_export_requirement_result(requirements, sample, requirement);
     if (sample_result && sample_result.commentToActor && sample_result.commentToActor.trim()) {
         html += '<p style="margin-top: 0.5em;"></p>';
         const renderedMarkdown = render_markdown_to_html(sample_result.commentToActor.trim());
@@ -2359,14 +2371,14 @@ function create_html_comments(requirement, sample, _t) {
 // Hjälpfunktion för att hämta alla stickprov med brister
 function get_samples_with_deficiencies(current_audit) {
     const samples_with_deficiencies = [];
-    const requirements = Object.values(current_audit.ruleFileContent.requirements || {});
+    const requirements_obj = current_audit.ruleFileContent?.requirements || {};
+    const requirements = Object.values(requirements_obj);
     
     (current_audit.samples || []).forEach(sample => {
         let has_deficiencies = false;
         
         requirements.forEach(req => {
-            const req_key = req.key || req.id;
-            const result = (sample.requirementResults || {})[req_key];
+            const result = get_export_requirement_result(requirements_obj, sample, req);
             if (!result || !result.checkResults) return;
             
             const has_deficiencies_for_req = Object.values(result.checkResults).some(check_res => {
@@ -2391,10 +2403,10 @@ function get_samples_with_deficiencies(current_audit) {
 
 // Hjälpfunktion för att hämta krav med brister för ett specifikt stickprov
 function get_requirements_with_deficiencies_for_sample(sample, current_audit) {
-    const requirements = Object.values(current_audit.ruleFileContent.requirements || {});
+    const requirements_obj = current_audit.ruleFileContent?.requirements || {};
+    const requirements = Object.values(requirements_obj);
     return requirements.filter(req => {
-        const req_key = req.key || req.id;
-        const result = (sample.requirementResults || {})[req_key];
+        const result = get_export_requirement_result(requirements_obj, sample, req);
         if (!result || !result.checkResults) return false;
         
         return Object.values(result.checkResults).some(check_res => {
@@ -2468,7 +2480,7 @@ function build_content_sorted_by_requirement(current_audit, t) {
                 content_html += create_html_observations(deficiency, t);
             }
 
-            content_html += create_html_comments(req, sample, t);
+            content_html += create_html_comments(req, sample, current_audit.ruleFileContent.requirements, t);
         }
         sidebar_html += '</li>';
     }
@@ -2542,7 +2554,7 @@ function build_content_sorted_by_sample(current_audit, t) {
                 content_html += create_html_observations(deficiency, t);
             }
 
-            content_html += create_html_comments(req, sample, t);
+            content_html += create_html_comments(req, sample, current_audit.ruleFileContent.requirements, t);
         }
         sidebar_html += '</ul></li>';
     }

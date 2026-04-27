@@ -9,6 +9,7 @@ import {
     get_audit_last_updated_display_timestamp,
     compute_audit_last_updated_live_timestamp,
     get_stored_requirement_result_for_def,
+    get_effective_requirement_audit_status,
     requirement_results_equal_for_last_updated
 } from '../../js/audit_logic.js';
 
@@ -293,6 +294,28 @@ describe('AuditLogic', () => {
                 'map_a'
             );
             expect(r).toBe(a);
+        });
+    });
+
+    describe('get_effective_requirement_audit_status', () => {
+        test('hittar resultat lagrat endast under map-nyckel', () => {
+            const requirements = {
+                key_map_only: {
+                    key: 'pub_k',
+                    id: 'pub_k',
+                    title: 'K',
+                    checks: [{ id: 'c1', passCriteria: [{ id: 'pc1' }], passCriteriaLogic: 'AND' }]
+                }
+            };
+            const req_def = requirements.key_map_only;
+            const requirement_results = {
+                key_map_only: {
+                    checkResults: {
+                        c1: { overallStatus: 'passed', passCriteria: { pc1: { status: 'passed' } } }
+                    }
+                }
+            };
+            expect(get_effective_requirement_audit_status(requirements, requirement_results, req_def, null)).toBe('passed');
         });
     });
 

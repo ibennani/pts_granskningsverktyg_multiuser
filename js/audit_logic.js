@@ -254,6 +254,22 @@ export function calculate_requirement_status(requirement_object, requirement_res
     }
 }
 
+/**
+ * Kanonisk beräknad granskningsstatus för ett krav i ett stickprov.
+ * Använder get_stored_requirement_result_for_def + calculate_requirement_status — samma kedja som
+ * framstegsräkning, listor och export ska följa.
+ *
+ * @param {object|Array|null|undefined} requirements ruleFileContent.requirements
+ * @param {Record<string, object>|null|undefined} requirement_results sample.requirementResults
+ * @param {object} req_def kravdefinition
+ * @param {string|number|null|undefined} [entry_map_key]
+ * @returns {'passed'|'failed'|'partially_audited'|'not_audited'}
+ */
+export function get_effective_requirement_audit_status(requirements, requirement_results, req_def, entry_map_key = null) {
+    const stored = get_stored_requirement_result_for_def(requirement_results, requirements, req_def, entry_map_key);
+    return calculate_requirement_status(req_def, stored);
+}
+
 export function get_relevant_requirements_for_sample(rule_file_content, sample) {
     // Förbättrad null-säkerhet och validering
     if (!rule_file_content || typeof rule_file_content !== 'object') {

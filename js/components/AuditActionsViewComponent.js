@@ -246,9 +246,12 @@ export class AuditActionsViewComponent {
             let sample_has_unreviewed = false;
             const relevant_reqs = this.AuditLogic.get_relevant_requirements_for_sample(state.ruleFileContent, sample);
             relevant_reqs.forEach(req_def => {
-                const req_key = req_def.key || req_def.id;
-                const existing = (sample.requirementResults || {})[req_key];
-                const status = this.AuditLogic.calculate_requirement_status(req_def, existing);
+                const status = this.AuditLogic.get_effective_requirement_audit_status(
+                    state.ruleFileContent.requirements,
+                    sample.requirementResults,
+                    req_def,
+                    null
+                );
                 if (status === 'not_audited' || status === 'partially_audited') {
                     req_count++;
                     sample_has_unreviewed = true;

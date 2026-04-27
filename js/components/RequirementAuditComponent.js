@@ -287,7 +287,9 @@ export class RequirementAuditComponent {
         const p = this.plate_element_ref?.querySelector('.overall-requirement-status-display');
         if (!p || !this.Helpers?.create_element) return;
         const t = this.Translation.t;
-        const status_key = this.current_result?.status || 'not_audited';
+        const status_key = this.current_requirement && this.current_result
+            ? this.AuditLogic.calculate_requirement_status(this.current_requirement, this.current_result)
+            : 'not_audited';
         const status_text = t(`audit_status_${status_key}`);
         let span = p.querySelector('.status-text');
         if (!span) {
@@ -1209,7 +1211,9 @@ export class RequirementAuditComponent {
                 p.appendChild(document.createTextNode(context_text));
             }
         } else if (className === 'overall-requirement-status-display') {
-            const status_key = this.current_result?.status || 'not_audited';
+            const status_key = this.current_requirement && this.current_result
+                ? this.AuditLogic.calculate_requirement_status(this.current_requirement, this.current_result)
+                : 'not_audited';
             const status_text = this.Translation.t(`audit_status_${status_key}`);
             const span = this.Helpers.create_element('span', {
                 class_name: `status-text status-${status_key}`,
