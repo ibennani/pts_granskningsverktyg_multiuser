@@ -1,17 +1,20 @@
 /**
- * Tester för page_title_manager.js
+ * Tester för page_title_manager.ts
  */
 import { describe, test, expect, beforeEach, afterEach } from '@jest/globals';
 import {
     build_page_title,
     get_page_title_prefix,
     updatePageTitle,
-    updatePageTitleFromCurrentView
-} from '../../js/logic/page_title_manager.js';
+    updatePageTitleFromCurrentView,
+    type PageTitleAppState,
+    type PageTitleContext,
+    type PageTitleRouteParams
+} from '../../js/logic/page_title_manager.ts';
 
 /** Rik översättningskarta för switch och regelfilsgrenar */
-function make_t() {
-    const map = {
+function make_t_simple() {
+    const map: Record<string, string> = {
         app_title: 'Leffe',
         app_title_suffix: 'Digital tillsyn',
         menu_link_manage_audits: 'Hantera granskningar',
@@ -60,15 +63,15 @@ function make_t() {
         rulefile_section_classifications_title: 'Klassificeringar',
         rulefile_section_report_template_title: 'Mall'
     };
-    return (key, vars) => {
+    return (key: string, vars?: Record<string, unknown>) => {
         if (key === 'handle_updated_assessments_title' && vars?.count === '') return 'Uppdateringar';
         return map[key] ?? key;
     };
 }
 
 describe('page_title_manager', () => {
-    let getState;
-    const Translation = { t: make_t() };
+    let getState: () => PageTitleAppState;
+    const Translation: PageTitleContext['Translation'] = { t: make_t_simple() };
 
     beforeEach(() => {
         document.title = '';
@@ -92,7 +95,7 @@ describe('page_title_manager', () => {
     });
 
     test('get_page_title_prefix för huvudvyer i switch', () => {
-        const cases = [
+        const cases: [string, PageTitleRouteParams, string][] = [
             ['start', {}, 'Hantera granskningar'],
             ['audit', {}, 'Granskning'],
             ['audit_audits', {}, 'Mina granskningar'],
@@ -116,7 +119,7 @@ describe('page_title_manager', () => {
             ['final_confirm_updates', {}, 'Slutlig bekräftelse'],
             ['edit_rulefile_main', {}, 'Redigera regelfil'],
             ['rulefile_requirements', {}, 'Krav'],
-            ['rulefile_view_requirement', {}, 'Visa krav'],
+            ['rulefile_view_requirement', {}, 'Krav'],
             ['rulefile_edit_requirement', {}, 'Redigera krav'],
             ['rulefile_add_requirement', {}, 'Nytt krav'],
             ['rulefile_metadata_edit', {}, 'Metadata regelfil'],
@@ -206,7 +209,7 @@ describe('page_title_manager', () => {
     });
 
     test('prefix vid regelfilsredigering: sektioner och vyer', () => {
-        const rf_state = {
+        const rf_state: PageTitleAppState = {
             auditStatus: 'rulefile_editing',
             auditMetadata: {},
             uiSettings: {},
@@ -258,7 +261,7 @@ describe('page_title_manager', () => {
 
     test('rulefile_edit_requirement: i regelfilsredigeringsläge samma format', () => {
         const gs = () => ({
-            auditStatus: 'rulefile_editing',
+            auditStatus: 'rulefile_editing' as const,
             auditMetadata: {},
             uiSettings: {},
             samples: [],
@@ -271,6 +274,51 @@ describe('page_title_manager', () => {
         expect(
             get_page_title_prefix('rulefile_edit_requirement', { id: 'rk1' }, { getState: gs, Translation })
         ).toBe('Redigera krav | E-tjänst');
+    });
+
+    test('rulefile_view_requirement: Krav | kravets titel i sidtitel-prefix', () => {
+        getState = () => ({
+            auditStatus: 'not_started',
+            auditMetadata: {},
+            uiSettings: {},
+            samples: [],
+            ruleFileContent: {
+                requirements: {
+                    rk1: { title: 'Brandskyddsnivå' }
+                }
+            }
+        });
+        expect(
+            get_page_title_prefix(
+                'rulefile_view_requirement',
+                { id: 'rk1' },
+                { getState, Translation }
+            )
+        ).toBe('Krav | Brandskyddsnivå');
+        expect(
+            build_page_title(
+                'rulefile_view_requirement',
+                { id: 'rk1' },
+                { getState, Translation }
+            )
+        ).toBe('Krav | Brandskyddsnivå | Digital tillsyn');
+    });
+
+    test('rulefile_view_requirement: i regelfilsredigeringsläge samma format', () => {
+        const gs = () => ({
+            auditStatus: 'rulefile_editing' as const,
+            auditMetadata: {},
+            uiSettings: {},
+            samples: [],
+            ruleFileContent: {
+                requirements: {
+                    rk1: { title: 'E-tjänst' }
+                }
+            }
+        });
+        expect(
+            get_page_title_prefix('rulefile_view_requirement', { id: 'rk1' }, { getState: gs, Translation })
+        ).toBe('Krav | E-tjänst');
     });
 
     test('build_page_title med actorName och metadata-vy', () => {
