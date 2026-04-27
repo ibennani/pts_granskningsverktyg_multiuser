@@ -33,6 +33,12 @@ Projektet är organiserat enligt följande struktur:
 - Exportera med `export const ComponentName = { init({ root, deps }), render(), destroy() }` (INGEN IIFE)
 - Importera relativt (`../utils/foo.js`)
 
+### TypeScript-filer och import med `.js`-suffix
+- Vid migrering **`.js` → `.ts`** ska importvägar ofta **behålla `.js`-ändelsen** (TypeScripts rekommendation mot utdatafiler). Källan ligger då som **`.ts`** på disk.
+- **Vite** är konfigurerad med `resolve.extensionAlias` så att en begäran om `*.js` i dev/bygge **först** matchar motsvarande **`.ts` / `.tsx`**, sedan en riktig **`.js`**-fil. Det undviker **404 i webbläsaren** och tom startsida när bara `.ts` finns.
+- **Node-backend** (utan Vite) tolkar inte detta automatiskt: importera där **`*.ts`** om filen bara finns som TypeScript, och kör servern med **`tsx`** (se `package.json` / `nodemon.json`).
+- Efter konvertering: kör **`npm run dev`** eller **`npm run build`** och öppna appen en gång; vid tvekan kör **`npm run check`**.
+
 ### Indentering och formatering
 - 4 mellanslag för indentering
 - Använd semikolon
@@ -41,7 +47,7 @@ Projektet är organiserat enligt följande struktur:
 ## Viktiga funktioner att känna till
 
 ### Export-funktionalitet
-- Exponeras via `window.ExportLogic` (skapas i `js/export_logic.js`)
+- Exponeras via `window.ExportLogic` (skapas i `js/export_logic.ts`; importeras ofta som `export_logic.js` enligt regeln ovan)
 - Word-export (sorterat på krav): `window.ExportLogic.export_to_word_criterias()`
 - Word-export (sorterat på stickprov): `window.ExportLogic.export_to_word_samples()`
 - Excel-export: `window.ExportLogic.export_to_excel()`

@@ -134,7 +134,16 @@ export default defineConfig({
     strictPort: true
   },
   resolve: {
-    preserveSymlinks: true
+    preserveSymlinks: true,
+    /**
+     * TypeScript rekommenderar import med .js-suffix mot .ts-källfiler.
+     * Utan extensionAlias försöker dev-servern leverera den fysiska .js-filen → 404 om bara .ts finns.
+     * Ordning: prova .ts/.tsx först, sedan riktig .js (så befintliga .js-moduler påverkas inte).
+     */
+    extensionAlias: {
+      '.js': ['.ts', '.tsx', '.js'],
+      '.mjs': ['.mts', '.mjs']
+    }
   },
   build: {
     rollupOptions: {

@@ -5,7 +5,7 @@
 import {
     calculate_requirement_status,
     get_relevant_requirements_for_sample
-} from '../js/audit_logic.js';
+} from '../js/audit_logic.ts';
 import { calculateQualityScore } from '../js/logic/ScoreCalculator.js';
 
 /** Ordning för WCAG 2.2 POUR-principer (samma som i ScoreCalculator). */

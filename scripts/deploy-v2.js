@@ -150,7 +150,7 @@ async function main() {
 
         console.log('[deploy] Kör kommandon på servern...');
         const pm2Start = [
-            '(npx pm2 restart granskningsverktyget-v2 2>/dev/null || npx pm2 start server/index.js --name granskningsverktyget-v2)',
+            '(npx pm2 delete granskningsverktyget-v2 2>/dev/null || true) && npx pm2 start npm --name granskningsverktyget-v2 -- run dev:server',
             '(npx pm2 restart granskningsverktyget-watchdog 2>/dev/null || npx pm2 start scripts/healthcheck-watchdog.js --name granskningsverktyget-watchdog)',
             'npx pm2 save 2>/dev/null || true'
         ].join(' && ');

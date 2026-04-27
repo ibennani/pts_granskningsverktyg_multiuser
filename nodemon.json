@@ -2,7 +2,7 @@
     "watch": ["server"],
     "ext": "js,json",
     "delay": "2",
-    "exec": "node server/index.js",
+    "exec": "tsx server/index.js",
     "signal": "SIGTERM",
     "legacyWatch": true,
     "ignore": ["node_modules", "dist", "*.test.js", "*.spec.js"],

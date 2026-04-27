@@ -6,7 +6,7 @@ import { run_backup, get_last_backup_status, get_backup_status_from_fs, get_back
 import { build_rulefile_overview_index, list_rulefile_history_rows, resolve_system_rulefile_file_path } from '../backup/rulefile_backup_fs.js';
 import { build_full_state } from './audits.js';
 import { query } from '../db.js';
-import { calculate_overall_audit_progress } from '../../js/audit_logic.js';
+import { calculate_overall_audit_progress } from '../../js/audit_logic.ts';
 const router = express.Router();
 
 async function read_latest_backup_metadata(audit_path, json_files) {

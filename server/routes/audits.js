@@ -1,7 +1,7 @@
 // server/routes/audits.js
 import express from 'express';
 import { query } from '../db.js';
-import { calculate_overall_audit_progress } from '../../js/audit_logic.js';
+import { calculate_overall_audit_progress } from '../../js/audit_logic.ts';
 import { calculateQualityScore } from '../../js/logic/ScoreCalculator.js';
 import { validate_saved_audit_file } from '../../js/validation_logic.js';
 import { check_json_structure_depth_and_size } from '../../js/utils/json_structure_guard.js';
