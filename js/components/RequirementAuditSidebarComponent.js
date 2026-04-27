@@ -4,7 +4,12 @@ import { RequirementsFilterComponent } from './RequirementsFilterComponent.js';
 import './requirement_audit_sidebar_component.css';
 import { get_searchable_text_for_requirement as get_searchable_text_util } from '../utils/requirement_search_utils.js';
 import { fingerprint_item_keys, can_incremental_update } from '../utils/incremental_list_update.js';
-import { get_requirement_public_key } from '../audit_logic.js';
+import {
+    get_requirement_public_key,
+    get_stored_requirement_result_for_def,
+    find_requirement_definition,
+    resolve_requirement_map_key
+} from '../audit_logic.js';
 
 export class RequirementAuditSidebarComponent {
     constructor() {
@@ -393,8 +398,9 @@ export class RequirementAuditSidebarComponent {
 
             const li = this.Helpers.create_element('li', { class_name: 'requirement-audit-sidebar__item' });
 
-            // req_key är intern nyckel i rule_file_content.requirements; i URL vill vi alltid använda publik key-etikett.
-            const public_key = get_requirement_public_key(rule_file_content?.requirements, req_key) || String(req_key);
+            // req_key kan vara publik key/id eller map-nyckel — slå upp map-nyckel innan publik etikett till URL.
+            const map_key_resolved = resolve_requirement_map_key(rule_file_content?.requirements, req_key) || String(req_key);
+            const public_key = get_requirement_public_key(rule_file_content?.requirements, map_key_resolved) || String(req_key);
 
             // Länken överst: div.wrapper > länk > h3
             const link_wrapper = this.Helpers.create_element('div', { class_name: 'requirement-audit-sidebar__link-wrapper' });
@@ -672,9 +678,15 @@ export class RequirementAuditSidebarComponent {
 
         const filtered_items = ordered_keys
             .map(req_key => {
-                const requirement = rule_file_content?.requirements?.[req_key];
+                const requirement = find_requirement_definition(rule_file_content.requirements, req_key)
+                    || rule_file_content?.requirements?.[req_key];
                 if (!requirement) return null;
-                const req_result = current_sample.requirementResults?.[req_key];
+                const req_result = get_stored_requirement_result_for_def(
+                    current_sample.requirementResults,
+                    rule_file_content.requirements,
+                    requirement,
+                    null
+                );
                 const display_status = this.get_display_status(requirement, req_result);
                 const needs_help = requirement_needs_help_fn(req_result);
                 return {
@@ -704,11 +716,17 @@ export class RequirementAuditSidebarComponent {
     get_filtered_sample_items(rule_file_content, current_requirement, samples, requirement_id, current_sample_id) {
         if (!rule_file_content || !current_requirement || !Array.isArray(samples)) return [];
         const requirement_key = current_requirement?.key || requirement_id;
+        const requirements_obj = rule_file_content?.requirements;
         const requirement_id_candidates = new Set(
             [requirement_key, current_requirement?.key, current_requirement?.id, requirement_id]
                 .filter(val => val !== undefined && val !== null)
                 .map(val => String(val))
         );
+        [requirement_id, current_requirement?.key, current_requirement?.id, requirement_key].forEach((id) => {
+            if (id === undefined || id === null) return;
+            const mk = resolve_requirement_map_key(requirements_obj, id);
+            if (mk) requirement_id_candidates.add(String(mk));
+        });
         const filters = this.filters_by_mode.requirement_samples || this.get_current_filters();
         const search_term = (filters.searchText || '').toLowerCase().trim();
         const status_filters = filters.status || {};
@@ -738,10 +756,12 @@ export class RequirementAuditSidebarComponent {
                 });
             })
             .map(sample => {
-                const req_result = sample?.requirementResults?.[requirement_key]
-                    || sample?.requirementResults?.[current_requirement?.key]
-                    || sample?.requirementResults?.[current_requirement?.id]
-                    || sample?.requirementResults?.[requirement_id];
+                const req_result = get_stored_requirement_result_for_def(
+                    sample?.requirementResults,
+                    requirements_obj,
+                    current_requirement,
+                    null
+                );
                 const display_status = this.get_display_status(current_requirement, req_result);
                 const needs_help = (this.AuditLogic?.requirement_needs_help || (() => false))(req_result);
                 const original_index = sample_index_map.get(sample.id) ?? Infinity;
