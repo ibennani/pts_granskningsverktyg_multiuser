@@ -3,7 +3,7 @@
  * @module js/components/requirements_list/requirement_list_filter_requirements
  */
 
-import { get_stored_requirement_result_for_def } from '../../audit_logic.js';
+import { get_stored_requirement_result_for_def, get_effective_requirement_audit_status } from '../../audit_logic.js';
 import { get_searchable_text_for_requirement, sample_matches_status_filter } from './requirement_list_query.js';
 
 /**
@@ -65,7 +65,14 @@ export function filter_requirements(items, filter_settings, state) {
             requirements,
             req
         );
-        const display_status = result?.needsReview ? 'updated' : AuditLogic.calculate_requirement_status(req, result);
+        const display_status = result?.needsReview
+            ? 'updated'
+            : get_effective_requirement_audit_status(
+                requirements,
+                current_sample_object.requirementResults,
+                req,
+                null
+            );
         const needs_help = requirement_needs_help_fn(result);
         const status_match = !has_status_filters || status_filters[display_status] === true;
         const needs_help_checked = status_filters.needs_help === true;

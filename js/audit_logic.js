@@ -72,7 +72,8 @@ export function assignSortedDeficiencyIdsOnLock(auditState) {
 
         sortedReqKeys.forEach(reqKey => {
             const reqResult = sample.requirementResults[reqKey];
-            const reqDef = newState.ruleFileContent.requirements[reqKey];
+            const reqDef = find_requirement_definition(newState.ruleFileContent.requirements, reqKey)
+                || newState.ruleFileContent.requirements?.[reqKey];
             if (!reqDef || !reqResult) return;
 
             // Sortera checks enligt JSON-objektets ordning
@@ -450,10 +451,17 @@ export function recalculateStatusesOnLoad(auditState) {
     const newState = JSON.parse(JSON.stringify(auditState));
     
     (newState.samples || []).forEach(sample => {
+        const requirements = newState.ruleFileContent.requirements;
         Object.keys(sample.requirementResults || {}).forEach(reqKey => {
-            const reqResult = sample.requirementResults[reqKey];
-            const reqDef = newState.ruleFileContent.requirements[reqKey];
-            if (!reqDef || !reqResult || !reqResult.checkResults) return;
+            const reqDef = find_requirement_definition(requirements, reqKey) || requirements?.[reqKey];
+            if (!reqDef) return;
+            const reqResult = get_stored_requirement_result_for_def(
+                sample.requirementResults,
+                requirements,
+                reqDef,
+                reqKey
+            );
+            if (!reqResult || !reqResult.checkResults) return;
 
             // Beräkna om status för varje kontrollpunkt
             Object.keys(reqResult.checkResults).forEach(checkKey => {

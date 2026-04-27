@@ -502,10 +502,25 @@ export class RequirementAuditComponent {
             this.current_sample,
             'default'
         );
+        const requirements_obj = rule_file_content.requirements;
         let items = (ordered_keys || []).map(req_key => {
-            const requirement = rule_file_content.requirements?.[req_key];
-            const req_result = this.current_sample.requirementResults?.[req_key];
-            const display_status = req_result?.needsReview ? 'updated' : this.AuditLogic.calculate_requirement_status(requirement, req_result);
+            const requirement = find_requirement_definition(requirements_obj, req_key)
+                || requirements_obj?.[req_key];
+            if (!requirement) return null;
+            const req_result = this.AuditLogic.get_stored_requirement_result_for_def(
+                this.current_sample.requirementResults,
+                requirements_obj,
+                requirement,
+                req_key
+            );
+            const display_status = req_result?.needsReview
+                ? 'updated'
+                : this.AuditLogic.get_effective_requirement_audit_status(
+                    requirements_obj,
+                    this.current_sample.requirementResults,
+                    requirement,
+                    req_key
+                );
             return {
                 req_key,
                 requirement,
@@ -513,7 +528,7 @@ export class RequirementAuditComponent {
                 link_text: requirement?.title || this.Translation.t('unknown_value', { val: req_key }),
                 ref_text: requirement?.standardReference?.text || ''
             };
-        }).filter(item => item.requirement);
+        }).filter(item => item && item.requirement);
 
         const sort_by = state?.uiSettings?.requirementAuditSidebar?.filtersByMode?.sample_requirements?.sortBy;
         if (sort_by && this.right_sidebar_component_instance?.sort_requirement_items) {
@@ -528,6 +543,7 @@ export class RequirementAuditComponent {
         const samples = state?.samples || [];
         if (!rule_file_content || !this.current_requirement) return [];
         const requirement_key = this.current_requirement?.key || this.params.requirementId;
+        const requirements_obj = rule_file_content.requirements;
         const sample_index_map = new Map();
         samples.forEach((s, idx) => { if (s?.id) sample_index_map.set(s.id, idx); });
         const matching = samples.filter(sample => {
@@ -535,8 +551,20 @@ export class RequirementAuditComponent {
             return (relevant_requirements || []).some(req => String(req?.key || req?.id) === String(requirement_key));
         });
         let items = matching.map(sample => {
-            const req_result = sample?.requirementResults?.[requirement_key];
-            const display_status = req_result?.needsReview ? 'updated' : this.AuditLogic.calculate_requirement_status(this.current_requirement, req_result);
+            const req_result = this.AuditLogic.get_stored_requirement_result_for_def(
+                sample.requirementResults,
+                requirements_obj,
+                this.current_requirement,
+                this.params?.requirementId
+            );
+            const display_status = req_result?.needsReview
+                ? 'updated'
+                : this.AuditLogic.get_effective_requirement_audit_status(
+                    requirements_obj,
+                    sample.requirementResults,
+                    this.current_requirement,
+                    this.params?.requirementId
+                );
             return {
                 sample,
                 display_status,

@@ -276,12 +276,25 @@ export class UpdateRulefileViewComponent {
         let needs_review_count = 0;
         (state_with_recalculated_statuses.samples || []).forEach((sample: any) => {
             Object.keys(sample.requirementResults || {}).forEach((reqId) => {
-                if (sample.requirementResults[reqId]?.needsReview !== true) return;
-                const req_def = requirements && (Array.isArray(requirements) ? requirements.find((r: any) => (r?.key || r?.id) === reqId) : requirements[reqId]);
+                const req_def = requirements && this.AuditLogic.find_requirement_definition
+                    ? this.AuditLogic.find_requirement_definition(requirements, reqId)
+                    : (Array.isArray(requirements) ? requirements.find((r: any) => (r?.key || r?.id) === reqId) : requirements?.[reqId]);
                 if (!req_def) return;
-                const display_status = this.AuditLogic?.calculate_requirement_status
-                    ? this.AuditLogic.calculate_requirement_status(req_def, sample.requirementResults[reqId])
-                    : (sample.requirementResults[reqId]?.status || 'not_audited');
+                const resolved = this.AuditLogic.get_stored_requirement_result_for_def(
+                    sample.requirementResults,
+                    requirements,
+                    req_def,
+                    reqId
+                );
+                if (resolved?.needsReview !== true) return;
+                const display_status = this.AuditLogic.get_effective_requirement_audit_status
+                    ? this.AuditLogic.get_effective_requirement_audit_status(
+                        requirements,
+                        sample.requirementResults,
+                        req_def,
+                        reqId
+                    )
+                    : 'not_audited';
                 if (display_status === 'passed' || display_status === 'failed') needs_review_count++;
             });
         });

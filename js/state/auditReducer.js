@@ -178,7 +178,12 @@ export function auditReducer(current_state, action) {
                         requirements,
                         req_def
                     );
-                    const status = AuditLogic.calculate_requirement_status(req_def, existing);
+                    const status = AuditLogic.get_effective_requirement_audit_status(
+                        requirements,
+                        new_results,
+                        req_def,
+                        null
+                    );
                     if (status === 'not_audited' || status === 'partially_audited') {
                         const map_key =
                             AuditLogic.resolve_requirement_map_key(
@@ -218,7 +223,12 @@ export function auditReducer(current_state, action) {
                     current_state.ruleFileContent.requirements,
                     req_def
                 );
-                const status = AuditLogic.calculate_requirement_status(req_def, existing);
+                const status = AuditLogic.get_effective_requirement_audit_status(
+                    current_state.ruleFileContent.requirements,
+                    new_results,
+                    req_def,
+                    null
+                );
                 if (status !== 'not_audited' && status !== 'partially_audited') return sample;
                 const map_key =
                     AuditLogic.resolve_requirement_map_key(

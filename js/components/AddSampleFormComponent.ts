@@ -366,7 +366,18 @@ export class AddSampleFormComponent {
         const added_req_ids = [...new_relevant_reqs].filter(id => !old_relevant_reqs.has(id));
         const removed_req_ids = [...old_relevant_reqs].filter(id => !new_relevant_reqs.has(id));
 
-        const data_will_be_lost = removed_req_ids.some((id: any) => sample_being_edited.requirementResults[id]);
+        const reqs_obj = rule_file?.requirements;
+        const data_will_be_lost = removed_req_ids.some((id: any) => {
+            const req_def = this.AuditLogic.find_requirement_definition?.(reqs_obj, id);
+            if (!req_def) return !!(sample_being_edited.requirementResults || {})[id];
+            const stored = this.AuditLogic.get_stored_requirement_result_for_def(
+                sample_being_edited.requirementResults,
+                reqs_obj,
+                req_def,
+                id
+            );
+            return !!stored;
+        });
 
         const field_diff = compute_sample_edit_field_diff({
             old_sample: {

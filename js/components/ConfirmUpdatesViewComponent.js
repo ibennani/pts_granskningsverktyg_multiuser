@@ -109,23 +109,34 @@ export class ConfirmUpdatesViewComponent {
         samples.forEach(sample => {
             const sample_reqs = [];
             Object.keys(sample.requirementResults || {}).forEach(reqId => {
-                if (sample.requirementResults[reqId]?.needsReview === true) {
-                    const req_def = requirements && (Array.isArray(requirements) ? requirements.find(r => (r?.key || r?.id) === reqId) : requirements[reqId]);
-                    if (req_def) {
-                        const result = sample.requirementResults[reqId];
-                        const display_status = this.AuditLogic?.calculate_requirement_status
-                            ? this.AuditLogic.calculate_requirement_status(req_def, result)
-                            : (result?.status || 'not_audited');
-                        // Visa bara krav som du faktiskt bedömt (godkänd/underkänd). Krav som ännu inte har en tydlig status behöver inte bekräftas här.
-                        if (display_status === 'passed' || display_status === 'failed') {
-                            sample_reqs.push({
-                                id: reqId,
-                                title: req_def.title,
-                                reference: req_def.standardReference?.text || '',
-                                status: display_status
-                            });
-                            total_count++;
-                        }
+                const req_def = requirements && this.AuditLogic.find_requirement_definition
+                    ? this.AuditLogic.find_requirement_definition(requirements, reqId)
+                    : (Array.isArray(requirements) ? requirements.find(r => (r?.key || r?.id) === reqId) : requirements?.[reqId]);
+                if (!req_def) return;
+                const resolved = this.AuditLogic.get_stored_requirement_result_for_def(
+                    sample.requirementResults,
+                    requirements,
+                    req_def,
+                    reqId
+                );
+                if (resolved?.needsReview === true) {
+                    const display_status = this.AuditLogic.get_effective_requirement_audit_status
+                        ? this.AuditLogic.get_effective_requirement_audit_status(
+                            requirements,
+                            sample.requirementResults,
+                            req_def,
+                            reqId
+                        )
+                        : 'not_audited';
+                    // Visa bara krav som du faktiskt bedömt (godkänd/underkänd). Krav som ännu inte har en tydlig status behöver inte bekräftas här.
+                    if (display_status === 'passed' || display_status === 'failed') {
+                        sample_reqs.push({
+                            id: reqId,
+                            title: req_def.title,
+                            reference: req_def.standardReference?.text || '',
+                            status: display_status
+                        });
+                        total_count++;
                     }
                 }
             });

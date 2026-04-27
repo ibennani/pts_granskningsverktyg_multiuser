@@ -3,7 +3,7 @@
  * @module js/components/requirements_list/requirement_list_query
  */
 
-import { get_stored_requirement_result_for_def } from '../../audit_logic.js';
+import { get_stored_requirement_result_for_def, get_effective_requirement_audit_status } from '../../audit_logic.js';
 import { get_searchable_text_for_requirement as get_searchable_text_util } from '../../utils/requirement_search_utils.js';
 
 /**
@@ -97,7 +97,9 @@ export function get_aggregated_display_status_for_requirement(
         );
         if (!req_result) continue;
         if (requirement_needs_help_fn(req_result)) return 'needs_help';
-        const status = req_result.needsReview ? 'updated' : AuditLogic.calculate_requirement_status(req, req_result);
+        const status = req_result.needsReview
+            ? 'updated'
+            : get_effective_requirement_audit_status(requirements, sample.requirementResults, req, req_id);
         if (status === 'failed') return 'failed';
         if (status === 'updated') display_status = 'updated';
         if (status === 'partially_audited' && display_status !== 'updated') display_status = 'partially_audited';
@@ -136,7 +138,9 @@ export function sample_matches_status_filter(
         req,
         req_id
     );
-    const display_status = req_result?.needsReview ? 'updated' : AuditLogic.calculate_requirement_status(req, req_result);
+    const display_status = req_result?.needsReview
+        ? 'updated'
+        : get_effective_requirement_audit_status(requirements, sample.requirementResults, req, req_id);
     const needs_help = requirement_needs_help_fn(req_result);
     const status_match = !has_status_filters || status_filters[display_status] === true;
     const needs_help_checked = status_filters.needs_help === true;

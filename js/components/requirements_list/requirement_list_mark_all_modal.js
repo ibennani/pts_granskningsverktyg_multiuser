@@ -4,6 +4,7 @@
  */
 
 import { app_runtime_refs } from '../../utils/app_runtime_refs.js';
+import { get_effective_requirement_audit_status } from '../../audit_logic.js';
 
 /**
  * @param {string} requirement_id
@@ -38,8 +39,12 @@ export function handle_mark_requirement_passed_in_all_samples(requirement_id, tr
             const relevant_reqs = ctx.AuditLogic.get_relevant_requirements_for_sample(rule_file, sample);
             const req = relevant_reqs.find(r => (r.key || r.id) === requirement_id);
             if (req) {
-                const existing = (sample.requirementResults || {})[requirement_id];
-                const status = ctx.AuditLogic.calculate_requirement_status(req, existing);
+                const status = get_effective_requirement_audit_status(
+                    requirements,
+                    sample.requirementResults,
+                    req,
+                    null
+                );
                 if (status === 'not_audited' || status === 'partially_audited') {
                     affected_samples.push(sample);
                 }

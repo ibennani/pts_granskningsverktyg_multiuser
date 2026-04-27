@@ -3,7 +3,7 @@
  * @module js/components/requirements_list/requirement_list_list_items
  */
 
-import { get_stored_requirement_result_for_def } from '../../audit_logic.js';
+import { get_stored_requirement_result_for_def, get_effective_requirement_audit_status } from '../../audit_logic.js';
 import { get_status_icon } from './requirement_list_status_icons.js';
 import { sample_matches_status_filter } from './requirement_list_query.js';
 
@@ -92,7 +92,12 @@ export function create_all_requirement_list_item(
             req,
             req_id
         );
-        const base_status = AuditLogic.calculate_requirement_status(req, req_result);
+        const base_status = get_effective_requirement_audit_status(
+            requirements,
+            sample.requirementResults,
+            req,
+            req_id
+        );
         const needs_help = needs_help_fn(req_result);
         const is_updated = req_result?.needsReview === true;
         const status_text = t(`audit_status_${base_status}`) +
@@ -181,7 +186,12 @@ export function create_all_requirement_list_item(
             req,
             req_id
         );
-        const status = AuditLogic.calculate_requirement_status(req, req_result);
+        const status = get_effective_requirement_audit_status(
+            requirements,
+            sample.requirementResults,
+            req,
+            req_id
+        );
         return status === 'not_audited' || status === 'partially_audited';
     });
 
@@ -216,7 +226,12 @@ export function create_requirement_list_item(req, sample, requirements, AuditLog
     const t = Translation.t;
     const req_result = get_stored_requirement_result_for_def(sample.requirementResults, requirements, req);
     const requirement_needs_help_fn = AuditLogic?.requirement_needs_help || (() => false);
-    const base_status = AuditLogic.calculate_requirement_status(req, req_result);
+    const base_status = get_effective_requirement_audit_status(
+        requirements,
+        sample.requirementResults,
+        req,
+        null
+    );
     const needs_help = requirement_needs_help_fn(req_result);
     const is_updated = req_result?.needsReview === true;
 

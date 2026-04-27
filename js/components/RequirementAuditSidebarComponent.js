@@ -392,7 +392,12 @@ export class RequirementAuditSidebarComponent {
 
         sorted_items.forEach(item => {
             const { req_key, requirement, req_result, needs_help } = item;
-            const base_status = this.AuditLogic.calculate_requirement_status(requirement, req_result);
+            const base_status = this.AuditLogic.get_effective_requirement_audit_status(
+                rule_file_content.requirements,
+                current_sample.requirementResults,
+                requirement,
+                req_key
+            );
             const is_updated = req_result?.needsReview === true;
             const base_text = t(`audit_status_${base_status}`);
 
@@ -517,7 +522,12 @@ export class RequirementAuditSidebarComponent {
             const sample = item.sample;
             const req_result = item.req_result;
             const needs_help = item.needs_help;
-            const base_status = this.AuditLogic.calculate_requirement_status(current_requirement, req_result);
+            const base_status = this.AuditLogic.get_effective_requirement_audit_status(
+                rule_file_content.requirements,
+                sample.requirementResults,
+                current_requirement,
+                requirement_key
+            );
             const is_updated = req_result?.needsReview === true;
             const t = this.Translation.t;
             const base_text = t(`audit_status_${base_status}`);
@@ -687,7 +697,13 @@ export class RequirementAuditSidebarComponent {
                     requirement,
                     null
                 );
-                const display_status = this.get_display_status(requirement, req_result);
+                const display_status = this.get_display_status(
+                    requirement,
+                    req_result,
+                    rule_file_content.requirements,
+                    current_sample.requirementResults,
+                    req_key
+                );
                 const needs_help = requirement_needs_help_fn(req_result);
                 return {
                     req_key,
@@ -762,7 +778,13 @@ export class RequirementAuditSidebarComponent {
                     current_requirement,
                     null
                 );
-                const display_status = this.get_display_status(current_requirement, req_result);
+                const display_status = this.get_display_status(
+                    current_requirement,
+                    req_result,
+                    requirements_obj,
+                    sample.requirementResults,
+                    requirement_id
+                );
                 const needs_help = (this.AuditLogic?.requirement_needs_help || (() => false))(req_result);
                 const original_index = sample_index_map.get(sample.id) ?? Infinity;
                 return {
@@ -863,8 +885,14 @@ export class RequirementAuditSidebarComponent {
         });
     }
 
-    get_display_status(requirement, requirement_result) {
-        return requirement_result?.needsReview ? 'updated' : this.AuditLogic.calculate_requirement_status(requirement, requirement_result);
+    get_display_status(requirement, requirement_result, requirements, sample_requirement_results, entry_hint = null) {
+        if (requirement_result?.needsReview) return 'updated';
+        return this.AuditLogic.get_effective_requirement_audit_status(
+            requirements,
+            sample_requirement_results,
+            requirement,
+            entry_hint
+        );
     }
 
     get_status_icon(status) {

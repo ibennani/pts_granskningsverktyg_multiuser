@@ -3,7 +3,7 @@
  * @module js/components/requirements_list/requirement_list_incremental_dom
  */
 
-import { get_stored_requirement_result_for_def } from '../../audit_logic.js';
+import { get_stored_requirement_result_for_def, get_effective_requirement_audit_status } from '../../audit_logic.js';
 import { create_status_icons_wrapper } from './requirement_list_status_icons.js';
 import { sample_matches_status_filter } from './requirement_list_query.js';
 
@@ -96,7 +96,12 @@ export function update_items_status_only(
                 requirements,
                 req
             );
-            const base_status = AuditLogic.calculate_requirement_status(req, req_result);
+            const base_status = get_effective_requirement_audit_status(
+                requirements,
+                current_sample_object?.requirementResults,
+                req,
+                null
+            );
             const needs_help = needs_help_fn(req_result);
             const is_updated = req_result?.needsReview === true;
             const status_parts = [t(`audit_status_${base_status}`)];
@@ -157,7 +162,12 @@ export function update_items_status_only(
                     req,
                     req_id
                 );
-                const base_status = AuditLogic.calculate_requirement_status(req, req_result);
+                const base_status = get_effective_requirement_audit_status(
+                    requirements,
+                    sample.requirementResults,
+                    req,
+                    req_id
+                );
                 const needs_help = needs_help_fn(req_result);
                 const is_updated = req_result?.needsReview === true;
                 const status_text = t(`audit_status_${base_status}`) +
