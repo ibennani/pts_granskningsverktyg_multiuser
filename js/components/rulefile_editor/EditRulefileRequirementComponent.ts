@@ -1,4 +1,8 @@
-// js/components/rulefile_editor/EditRulefileRequirementComponent.js
+// @ts-nocheck
+/**
+ * Kravredigering i regelfilen: formulär, kontrollpunkter, infoblock och delpatch mot server.
+ * @file js/components/rulefile_editor/EditRulefileRequirementComponent.ts
+ */
 
 import { show_confirm_delete_modal, build_delete_warning_text } from '../../logic/confirm_delete_modal_logic.js';
 import { patch_rule_content_part } from '../../api/client.js';
@@ -17,33 +21,42 @@ import { is_remote_lock_held_by_other_user } from '../../logic/collab_lock_compa
 import './requirement_audit_component.css';
 import './edit_rulefile_requirement_component.css';
 
+declare global {
+    interface Window {
+        customFocusApplied?: boolean;
+        focusProtectionActive?: boolean;
+        skipRulefileRequirementRender?: number;
+        DraftManager?: { commitCurrentDraft?: () => void };
+        Helpers?: { init_auto_resize_for_textarea?: (el: HTMLTextAreaElement) => void };
+    }
+}
+
 const RULEFILE_LOCK_POLL_MS = 4000;
 
 export class EditRulefileRequirementComponent {
-    constructor() {
-        this.CSS_PATH_SHARED = './requirement_audit_component.css';
-        this.CSS_PATH_SPECIFIC = './edit_rulefile_requirement_component.css';
-        this.root = null;
-        this.deps = null;
-        this.router = null;
-        this.params = null;
-        this.getState = null;
-        this.dispatch = null;
-        this.StoreActionTypes = null;
-        this.Translation = null;
-        this.Helpers = null;
-        this.NotificationComponent = null;
-        this.form_element_ref = null;
-        this.local_requirement_data = null;
-        this.initial_requirement_snapshot = null;
-        this._requirement_key_for_server_patch = null;
-        this.skip_autosave_on_destroy = false;
-        this._unsubscribe_rule_locks = null;
-        this._rulefile_lock_poll_timer = null;
-        this._rulefile_lock_visibility_handler = null;
-    }
+    CSS_PATH_SHARED = './requirement_audit_component.css';
+    CSS_PATH_SPECIFIC = './edit_rulefile_requirement_component.css';
+    root: HTMLElement | null = null;
+    deps: any = null;
+    router: any = null;
+    params: Record<string, any> | null = null;
+    getState: (() => any) | null = null;
+    dispatch: any = null;
+    StoreActionTypes: any = null;
+    Translation: any = null;
+    Helpers: any = null;
+    NotificationComponent: any = null;
+    form_element_ref: HTMLFormElement | null = null;
+    local_requirement_data: any = null;
+    initial_requirement_snapshot: any = null;
+    _requirement_key_for_server_patch: string | null = null;
+    skip_autosave_on_destroy = false;
+    _unsubscribe_rule_locks: (() => void) | null = null;
+    _rulefile_lock_poll_timer: ReturnType<typeof setInterval> | null = null;
+    _rulefile_lock_visibility_handler: (() => void) | null = null;
+    _on_rulefile_locks_visibility_refresh: ((ev: Event) => void) | null = null;
 
-    async init({ root, deps }) {
+    async init({ root, deps }: { root: HTMLElement; deps: any }) {
         this.root = root;
         this.deps = deps;
         this.router = deps.router;
@@ -1614,6 +1627,7 @@ export class EditRulefileRequirementComponent {
                         try {
                             const rid = String(this.getState()?.ruleSetId || '');
                             if (!rid) return;
+                            // eslint-disable-next-line eqeqeq -- avsiktligt != null (täcker både null och undefined)
                             if (payload?.ruleSetId != null && String(payload.ruleSetId) !== rid) return;
                             await init_rulefile_lock_service(rid);
                             this._rerender_all_sections();

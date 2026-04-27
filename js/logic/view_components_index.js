@@ -15,7 +15,7 @@ import { FinalConfirmUpdatesViewComponent } from '../components/FinalConfirmUpda
 import { EditRulefileMainViewComponent } from '../components/EditRulefileMainViewComponent.js';
 import { RulefileRequirementsListComponent } from '../components/RulefileRequirementsListComponent.js';
 import { ViewRulefileRequirementComponent } from '../components/ViewRulefileRequirementComponent.js';
-import { EditRulefileRequirementComponent } from '../components/rulefile_editor/EditRulefileRequirementComponent.js';
+import { EditRulefileRequirementComponent } from '../components/rulefile_editor/EditRulefileRequirementComponent.ts';
 import { ConfirmDeleteViewComponent } from '../components/ConfirmDeleteViewComponent.js';
 import { EditRulefileMetadataViewComponent } from '../components/EditRulefileMetadataViewComponent.js';
 import { RulefileMetadataViewComponent } from '../components/RulefileMetadataViewComponent.js';
