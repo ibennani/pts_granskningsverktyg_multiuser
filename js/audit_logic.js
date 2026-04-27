@@ -420,6 +420,51 @@ export function calculate_overall_audit_status_counts(current_audit_data) {
     return out;
 }
 
+/**
+ * Sant om något relevant krav i stickprovet har needsReview på lagrat resultat (kanonisk uppslagning).
+ * @param {object} rule_file_content
+ * @param {object} sample
+ * @returns {boolean}
+ */
+export function sample_has_any_requirement_needing_review(rule_file_content, sample) {
+    if (!rule_file_content?.requirements || !sample) return false;
+    const reqs = rule_file_content.requirements;
+    const relevant_reqs = get_relevant_requirements_for_sample(rule_file_content, sample);
+    return relevant_reqs.some((req_def) => {
+        const stored = get_stored_requirement_result_for_def(
+            sample.requirementResults,
+            reqs,
+            req_def
+        );
+        return !!(stored && stored.needsReview === true);
+    });
+}
+
+/**
+ * Antal relevanta krav med needsReview över alla stickprov (ett tillfälle per krav och stickprov).
+ * @param {object} current_audit_data
+ * @returns {number}
+ */
+export function count_requirements_needing_review_in_audit(current_audit_data) {
+    if (!current_audit_data?.samples || !current_audit_data.ruleFileContent?.requirements) {
+        return 0;
+    }
+    const rule = current_audit_data.ruleFileContent;
+    let n = 0;
+    current_audit_data.samples.forEach((sample) => {
+        const relevant_reqs = get_relevant_requirements_for_sample(rule, sample);
+        relevant_reqs.forEach((req_def) => {
+            const stored = get_stored_requirement_result_for_def(
+                sample.requirementResults,
+                rule.requirements,
+                req_def
+            );
+            if (stored?.needsReview === true) n += 1;
+        });
+    });
+    return n;
+}
+
 export function find_first_incomplete_requirement_key_for_sample(rule_file_content, sample_object, exclude_key = null) {
     if (!sample_object || !rule_file_content?.requirements) return null;
     const ordered_keys = get_ordered_relevant_requirement_keys(rule_file_content, sample_object, 'default');

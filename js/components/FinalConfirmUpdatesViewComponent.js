@@ -24,6 +24,7 @@ export class FinalConfirmUpdatesViewComponent {
         this.Translation = deps.Translation;
         this.Helpers = deps.Helpers;
         this.NotificationComponent = deps.NotificationComponent;
+        this.AuditLogic = deps.AuditLogic ?? null;
 
         this.plate_element_ref = null;
     }
@@ -53,7 +54,9 @@ export class FinalConfirmUpdatesViewComponent {
         this.root.appendChild(this.plate_element_ref);
 
         const state = this.getState();
-        const total_count = state.samples.flatMap(s => Object.values(s.requirementResults || {})).filter(r => r.needsReview === true).length;
+        const total_count = this.AuditLogic?.count_requirements_needing_review_in_audit
+            ? this.AuditLogic.count_requirements_needing_review_in_audit(state)
+            : state.samples.flatMap((s) => Object.values(s.requirementResults || {})).filter((r) => r.needsReview === true).length;
 
         this.plate_element_ref.appendChild(this.Helpers.create_element('h1', { text_content: t('final_confirm_updates_title') }));
         this.plate_element_ref.appendChild(this.Helpers.create_element('p', { class_name: 'view-intro-text', text_content: t('final_confirm_updates_intro', { count: total_count }) }));

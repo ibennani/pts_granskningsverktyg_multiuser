@@ -121,7 +121,9 @@ export const SampleListComponent = {
             const info_div = create_element('div', { class_name: 'sample-info' });
             
             const desc_h2 = create_element('h2');
-            const sample_needs_review = Object.values(sample.requirementResults || {}).some(res => res.needsReview === true);
+            const sample_needs_review = state?.ruleFileContent && this.AuditLogic?.sample_has_any_requirement_needing_review
+                ? this.AuditLogic.sample_has_any_requirement_needing_review(state.ruleFileContent, sample)
+                : Object.values(sample.requirementResults || {}).some((res) => res.needsReview === true);
 
             if (sample_needs_review && get_icon_svg) {
                 desc_h2.innerHTML = get_icon_svg('update', ['currentColor'], 20) + ' ';

@@ -10,7 +10,9 @@ import {
     compute_audit_last_updated_live_timestamp,
     get_stored_requirement_result_for_def,
     get_effective_requirement_audit_status,
-    requirement_results_equal_for_last_updated
+    requirement_results_equal_for_last_updated,
+    sample_has_any_requirement_needing_review,
+    count_requirements_needing_review_in_audit
 } from '../../js/audit_logic.js';
 
 describe('AuditLogic', () => {
@@ -316,6 +318,56 @@ describe('AuditLogic', () => {
                 }
             };
             expect(get_effective_requirement_audit_status(requirements, requirement_results, req_def, null)).toBe('passed');
+        });
+    });
+
+    describe('sample_has_any_requirement_needing_review och count_requirements_needing_review_in_audit', () => {
+        test('hittar needsReview lagrat endast under map-nyckel', () => {
+            const rule_split_key = {
+                requirements: {
+                    key_map_only: {
+                        key: 'pub_k',
+                        id: 'pub_k',
+                        title: 'K',
+                        checks: [{ id: 'c1', passCriteria: [{ id: 'pc1' }], passCriteriaLogic: 'AND' }]
+                    }
+                }
+            };
+            const sample = {
+                id: 's1',
+                selectedContentTypes: [],
+                requirementResults: {
+                    key_map_only: { needsReview: true, status: 'passed', checkResults: {} }
+                }
+            };
+            expect(sample_has_any_requirement_needing_review(rule_split_key, sample)).toBe(true);
+        });
+
+        test('count_requirements_needing_review_in_audit räknar relevant krav en gång per stickprov', () => {
+            const audit = {
+                ruleFileContent: minimal_rule_file,
+                samples: [
+                    {
+                        id: 'a',
+                        selectedContentTypes: [],
+                        requirementResults: {
+                            r1: {
+                                needsReview: true,
+                                checkResults: {
+                                    c1: { overallStatus: 'passed', passCriteria: { pc1: { status: 'passed' } } }
+                                }
+                            },
+                            r2: {
+                                needsReview: false,
+                                checkResults: {
+                                    c1: { overallStatus: 'passed', passCriteria: { pc1: { status: 'passed' } } }
+                                }
+                            }
+                        }
+                    }
+                ]
+            };
+            expect(count_requirements_needing_review_in_audit(audit)).toBe(1);
         });
     });
 

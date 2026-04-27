@@ -24,6 +24,32 @@ describe('same_user_tab_field_sync', () => {
         expect(out.newRequirementResult.status).toBe('not_audited');
     });
 
+    it('merge_audit_result_from_broadcast använder map-nyckel när resultat bara ligger under intern nyckel', () => {
+        const state = {
+            ruleFileContent: {
+                requirements: {
+                    int_key: {
+                        key: 'pub_r',
+                        id: 'pub_r',
+                        title: 'T',
+                        checks: []
+                    }
+                }
+            },
+            samples: [{
+                id: 's1',
+                requirementResults: {
+                    int_key: { commentToAuditor: 'gammal', status: 'not_audited' }
+                }
+            }]
+        };
+        const pk = 'audit:a1:sample:s1:req:pub_r:commentToAuditor';
+        const parsed = parse_audit_part_key(pk);
+        const out = merge_audit_result_from_broadcast(state, parsed, 'från annan flik');
+        expect(out.requirementId).toBe('int_key');
+        expect(out.newRequirementResult.commentToAuditor).toBe('från annan flik');
+    });
+
     it('merge_rulefile_infoblock uppdaterar infoblock-text', () => {
         const state = {
             ruleFileContent: {

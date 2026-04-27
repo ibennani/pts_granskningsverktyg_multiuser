@@ -101,15 +101,33 @@ export function auditReducer(current_state, action) {
                 if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[State] Cannot delete requirement: ruleFileContent or requirements is null/undefined');
                 return current_state;
             }
-            const newRequirementsAfterDelete = { ...current_state.ruleFileContent.requirements };
+            const reqs_before = current_state.ruleFileContent.requirements;
+            const newRequirementsAfterDelete = { ...reqs_before };
             delete newRequirementsAfterDelete[deleteReqId];
-            const updatedSamples = current_state.samples.map(sample => {
-                if (sample.requirementResults && sample.requirementResults[deleteReqId]) {
-                    const newResults = { ...sample.requirementResults };
-                    delete newResults[deleteReqId];
-                    return { ...sample, requirementResults: newResults };
+            const req_def_for_delete =
+                AuditLogic.find_requirement_definition(reqs_before, deleteReqId)
+                || (!Array.isArray(reqs_before) ? reqs_before[deleteReqId] : null);
+            const updatedSamples = current_state.samples.map((sample) => {
+                if (!sample.requirementResults) return sample;
+                const keys_to_remove = new Set([String(deleteReqId)]);
+                if (req_def_for_delete) {
+                    const mk = AuditLogic.resolve_requirement_map_key(
+                        reqs_before,
+                        req_def_for_delete.key || req_def_for_delete.id
+                    );
+                    if (mk) keys_to_remove.add(mk);
+                    if (req_def_for_delete.key != null) keys_to_remove.add(String(req_def_for_delete.key));
+                    if (req_def_for_delete.id != null) keys_to_remove.add(String(req_def_for_delete.id));
                 }
-                return sample;
+                let changed = false;
+                const newResults = { ...sample.requirementResults };
+                keys_to_remove.forEach((k) => {
+                    if (Object.prototype.hasOwnProperty.call(newResults, k)) {
+                        delete newResults[k];
+                        changed = true;
+                    }
+                });
+                return changed ? { ...sample, requirementResults: newResults } : sample;
             });
             return {
                 ...current_state,
@@ -128,15 +146,36 @@ export function auditReducer(current_state, action) {
             return {
                 ...current_state,
                 requirementUpdateDetails: new_update_details,
-                samples: current_state.samples.map(sample => {
-                    if (sample.id === sampleId && sample.requirementResults?.[requirementId]?.needsReview) {
+                samples: current_state.samples.map((sample) => {
+                    if (sample.id !== sampleId) return sample;
+                    const requirements = current_state.ruleFileContent.requirements;
+                    const req_def =
+                        AuditLogic.find_requirement_definition(requirements, requirementId)
+                        || (!Array.isArray(requirements) ? requirements?.[requirementId] : null);
+                    if (!req_def) {
+                        if (!sample.requirementResults?.[requirementId]?.needsReview) return sample;
                         const newResults = { ...sample.requirementResults };
                         const newReqResult = { ...newResults[requirementId] };
                         delete newReqResult.needsReview;
                         newResults[requirementId] = newReqResult;
                         return { ...sample, requirementResults: newResults };
                     }
-                    return sample;
+                    const stored = AuditLogic.get_stored_requirement_result_for_def(
+                        sample.requirementResults,
+                        requirements,
+                        req_def,
+                        requirementId
+                    );
+                    if (!stored?.needsReview) return sample;
+                    const map_key =
+                        AuditLogic.resolve_requirement_map_key(requirements, req_def.key || req_def.id)
+                        || String(req_def.key || req_def.id);
+                    const newResults = { ...sample.requirementResults };
+                    const newReqResult = { ...stored };
+                    delete newReqResult.needsReview;
+                    newResults[map_key] = newReqResult;
+                    remove_stale_requirement_result_aliases(newResults, map_key, req_def);
+                    return { ...sample, requirementResults: newResults };
                 })
             };
         }
@@ -145,18 +184,40 @@ export function auditReducer(current_state, action) {
             return {
                 ...current_state,
                 requirementUpdateDetails: {},
-                samples: current_state.samples.map(sample => {
-                    const newResults = {};
+                samples: current_state.samples.map((sample) => {
+                    const requirements = current_state.ruleFileContent.requirements;
+                    const newResults = { ...(sample.requirementResults || {}) };
                     let hasChanged = false;
-                    Object.keys(sample.requirementResults || {}).forEach(reqId => {
-                        const originalResult = sample.requirementResults[reqId];
-                        if (originalResult?.needsReview) {
-                            hasChanged = true;
-                            newResults[reqId] = { ...originalResult };
-                            delete newResults[reqId].needsReview;
-                        } else {
-                            newResults[reqId] = originalResult;
+                    const processed_map_keys = new Set();
+                    Object.keys(newResults).forEach((reqId) => {
+                        const req_def =
+                            AuditLogic.find_requirement_definition(requirements, reqId)
+                            || (!Array.isArray(requirements) ? requirements?.[reqId] : null);
+                        if (!req_def) {
+                            const r = newResults[reqId];
+                            if (r?.needsReview) {
+                                hasChanged = true;
+                                newResults[reqId] = { ...r };
+                                delete newResults[reqId].needsReview;
+                            }
+                            return;
                         }
+                        const map_key =
+                            AuditLogic.resolve_requirement_map_key(requirements, req_def.key || req_def.id)
+                            || String(req_def.key || req_def.id);
+                        if (processed_map_keys.has(map_key)) return;
+                        const stored = AuditLogic.get_stored_requirement_result_for_def(
+                            sample.requirementResults,
+                            requirements,
+                            req_def,
+                            reqId
+                        );
+                        if (!stored?.needsReview) return;
+                        processed_map_keys.add(map_key);
+                        hasChanged = true;
+                        newResults[map_key] = { ...stored };
+                        delete newResults[map_key].needsReview;
+                        remove_stale_requirement_result_aliases(newResults, map_key, req_def);
                     });
                     return hasChanged ? { ...sample, requirementResults: newResults } : sample;
                 })

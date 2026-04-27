@@ -46,6 +46,33 @@ export class AuditProblemsViewComponent {
         return this.Helpers?.sanitize_html ? this.Helpers.sanitize_html(parsed) : parsed;
     }
 
+    /**
+     * Lagrat kravresultat, definition och nyckel för UPDATE_REQUIREMENT_RESULT (kanonisk map-nyckel).
+     * @returns {{ req_result: object, req_def: object|null, save_key: string }|null}
+     */
+    _get_requirement_problem_edit_context(state, sample, req_id) {
+        const requirements = state?.ruleFileContent?.requirements;
+        if (!sample || !requirements) return null;
+        const req_def =
+            this.AuditLogic?.find_requirement_definition?.(requirements, req_id)
+            ?? (!Array.isArray(requirements) ? requirements[req_id] : null);
+        const req_result = req_def && this.AuditLogic?.get_stored_requirement_result_for_def
+            ? this.AuditLogic.get_stored_requirement_result_for_def(
+                sample.requirementResults,
+                requirements,
+                req_def,
+                req_id
+            )
+            : sample?.requirementResults?.[req_id];
+        if (!req_result) return null;
+        const save_key =
+            req_def && !Array.isArray(requirements) && this.AuditLogic?.resolve_requirement_map_key
+                ? (this.AuditLogic.resolve_requirement_map_key(requirements, req_def.key || req_def.id)
+                    || String(req_def.key || req_id))
+                : req_id;
+        return { req_result, req_def, save_key };
+    }
+
     async init({ root, deps }) {
         if (window.__GV_DEBUG_PROBLEMS_UPDATE__) consoleManager.log('[GV-Debug problems] init: start');
         this.root = root;
@@ -379,17 +406,14 @@ export class AuditProblemsViewComponent {
         const perform_delete = () => {
             const state = this.getState();
             const sample = (state?.samples || []).find(s => String(s.id) === String(sample_id));
-            const req_result = sample?.requirementResults?.[req_id];
-            if (!req_result) return;
+            const ctx = this._get_requirement_problem_edit_context(state, sample, req_id);
+            if (!ctx) return;
+            const { req_result, req_def, save_key } = ctx;
 
             const modified_result = JSON.parse(JSON.stringify(req_result));
             modified_result.stuckProblemDescription = '';
             modified_result.lastStatusUpdate = this.Helpers?.get_current_iso_datetime_utc?.() || new Date().toISOString();
             modified_result.lastStatusUpdateBy = get_current_user_name();
-            const req_def = (state?.ruleFileContent?.requirements || {})[req_id]
-                || (Array.isArray(state?.ruleFileContent?.requirements)
-                    ? state.ruleFileContent.requirements.find(r => (r?.key || r?.id) === req_id)
-                    : null);
             if (req_def && this.AuditLogic?.calculate_requirement_status) {
                 modified_result.status = this.AuditLogic.calculate_requirement_status(req_def, modified_result);
             }
@@ -397,7 +421,7 @@ export class AuditProblemsViewComponent {
                 type: this.StoreActionTypes.UPDATE_REQUIREMENT_RESULT,
                 payload: {
                     sampleId: sample_id,
-                    requirementId: req_id,
+                    requirementId: save_key,
                     newRequirementResult: modified_result
                 }
             });
@@ -433,8 +457,9 @@ export class AuditProblemsViewComponent {
 
         const state = this.getState();
         const sample = (state?.samples || []).find(s => String(s.id) === String(sample_id));
-        const req_result = sample?.requirementResults?.[req_id];
-        if (!req_result) return;
+        const ctx_open = this._get_requirement_problem_edit_context(state, sample, req_id);
+        if (!ctx_open) return;
+        const { req_result } = ctx_open;
 
         const t = this.Translation.t;
         const existing_description = (typeof req_result.stuckProblemDescription === 'string')
@@ -476,19 +501,23 @@ export class AuditProblemsViewComponent {
                     const description = this.Helpers?.trim_textarea_preserve_lines
                         ? this.Helpers.trim_textarea_preserve_lines(raw)
                         : raw.trim();
-                    const req_def = (state?.ruleFileContent?.requirements || {})[req_id] || (Array.isArray(state?.ruleFileContent?.requirements) ? state.ruleFileContent.requirements.find(r => (r?.key || r?.id) === req_id) : null);
-                    const modified_result = JSON.parse(JSON.stringify(req_result));
+                    const st2 = this.getState();
+                    const smp2 = (st2?.samples || []).find((s) => String(s.id) === String(sample_id));
+                    const ctx2 = this._get_requirement_problem_edit_context(st2, smp2, req_id);
+                    if (!ctx2) return;
+                    const { req_result: base_res, req_def: rd2, save_key: sk2 } = ctx2;
+                    const modified_result = JSON.parse(JSON.stringify(base_res));
                     modified_result.stuckProblemDescription = description;
                     modified_result.lastStatusUpdate = this.Helpers?.get_current_iso_datetime_utc?.() || new Date().toISOString();
                     modified_result.lastStatusUpdateBy = get_current_user_name();
-                    if (req_def && this.AuditLogic?.calculate_requirement_status) {
-                        modified_result.status = this.AuditLogic.calculate_requirement_status(req_def, modified_result);
+                    if (rd2 && this.AuditLogic?.calculate_requirement_status) {
+                        modified_result.status = this.AuditLogic.calculate_requirement_status(rd2, modified_result);
                     }
                     this.dispatch({
                         type: this.StoreActionTypes.UPDATE_REQUIREMENT_RESULT,
                         payload: {
                             sampleId: sample_id,
-                            requirementId: req_id,
+                            requirementId: sk2,
                             newRequirementResult: modified_result
                         }
                     });
@@ -512,19 +541,23 @@ export class AuditProblemsViewComponent {
                         text_content: t('stuck_modal_problem_solved')
                     });
                     problem_solved_btn.addEventListener('click', () => {
-                        const modified_result = JSON.parse(JSON.stringify(req_result));
+                        const st3 = this.getState();
+                        const smp3 = (st3?.samples || []).find((s) => String(s.id) === String(sample_id));
+                        const ctx3 = this._get_requirement_problem_edit_context(st3, smp3, req_id);
+                        if (!ctx3) return;
+                        const { req_result: base3, req_def: rd3, save_key: sk3 } = ctx3;
+                        const modified_result = JSON.parse(JSON.stringify(base3));
                         modified_result.stuckProblemDescription = '';
                         modified_result.lastStatusUpdate = this.Helpers?.get_current_iso_datetime_utc?.() || new Date().toISOString();
                         modified_result.lastStatusUpdateBy = get_current_user_name();
-                        const req_def = (state?.ruleFileContent?.requirements || {})[req_id] || (Array.isArray(state?.ruleFileContent?.requirements) ? state.ruleFileContent.requirements.find(r => (r?.key || r?.id) === req_id) : null);
-                        if (req_def && this.AuditLogic?.calculate_requirement_status) {
-                            modified_result.status = this.AuditLogic.calculate_requirement_status(req_def, modified_result);
+                        if (rd3 && this.AuditLogic?.calculate_requirement_status) {
+                            modified_result.status = this.AuditLogic.calculate_requirement_status(rd3, modified_result);
                         }
                         this.dispatch({
                             type: this.StoreActionTypes.UPDATE_REQUIREMENT_RESULT,
                             payload: {
                                 sampleId: sample_id,
-                                requirementId: req_id,
+                                requirementId: sk3,
                                 newRequirementResult: modified_result
                             }
                         });

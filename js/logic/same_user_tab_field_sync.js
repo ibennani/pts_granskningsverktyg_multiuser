@@ -5,6 +5,11 @@
 
 import { parse_audit_part_key } from './audit_part_keys.js';
 import { parse_part_key as parse_rulefile_part_key } from './rulefile_part_keys.js';
+import {
+    find_requirement_definition,
+    get_stored_requirement_result_for_def,
+    resolve_requirement_map_key
+} from '../audit_logic.js';
 
 const CHANNEL_NAME = 'gv-same-user-field-sync';
 
@@ -64,8 +69,21 @@ export function merge_audit_result_from_broadcast(state, parsed, value) {
     const req_id = parsed.requirement_id;
     const sample = state.samples?.find((s) => String(s.id) === String(sample_id));
     if (!sample) return null;
-    const prev = sample.requirementResults?.[req_id];
-    const cur = prev ? JSON.parse(JSON.stringify(prev)) : {};
+    const requirements = state.ruleFileContent?.requirements;
+    const req_def = requirements ? find_requirement_definition(requirements, req_id) : null;
+    const stored_base = req_def
+        ? get_stored_requirement_result_for_def(
+            sample.requirementResults,
+            requirements,
+            req_def,
+            req_id
+        )
+        : sample.requirementResults?.[req_id];
+    const save_key = req_def && requirements && !Array.isArray(requirements)
+        ? (resolve_requirement_map_key(requirements, req_def.key || req_def.id)
+            || String(req_def.key ?? req_def.id ?? req_id))
+        : String(req_id);
+    const cur = stored_base ? JSON.parse(JSON.stringify(stored_base)) : {};
     if (parsed.kind === 'req_text') {
         cur[parsed.field] = value;
     } else if (parsed.kind === 'observation_detail') {
@@ -80,7 +98,7 @@ export function merge_audit_result_from_broadcast(state, parsed, value) {
     } else {
         return null;
     }
-    return { sampleId: sample_id, requirementId: req_id, newRequirementResult: cur };
+    return { sampleId: sample_id, requirementId: save_key, newRequirementResult: cur };
 }
 
 /** Exporteras för enhetstester */
