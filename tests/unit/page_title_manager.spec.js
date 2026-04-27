@@ -228,6 +228,51 @@ describe('page_title_manager', () => {
         ).toBe('Allmänt');
     });
 
+    test('rulefile_edit_requirement: kravets titel i sidtitel-prefix', () => {
+        getState = () => ({
+            auditStatus: 'not_started',
+            auditMetadata: {},
+            uiSettings: {},
+            samples: [],
+            ruleFileContent: {
+                requirements: {
+                    rk1: { title: 'Brandskyddsnivå' }
+                }
+            }
+        });
+        expect(
+            get_page_title_prefix(
+                'rulefile_edit_requirement',
+                { id: 'rk1' },
+                { getState, Translation }
+            )
+        ).toBe('Redigera krav | Brandskyddsnivå');
+        expect(
+            build_page_title(
+                'rulefile_edit_requirement',
+                { id: 'rk1' },
+                { getState, Translation }
+            )
+        ).toBe('Redigera krav | Brandskyddsnivå | Digital tillsyn');
+    });
+
+    test('rulefile_edit_requirement: i regelfilsredigeringsläge samma format', () => {
+        const gs = () => ({
+            auditStatus: 'rulefile_editing',
+            auditMetadata: {},
+            uiSettings: {},
+            samples: [],
+            ruleFileContent: {
+                requirements: {
+                    rk1: { title: 'E-tjänst' }
+                }
+            }
+        });
+        expect(
+            get_page_title_prefix('rulefile_edit_requirement', { id: 'rk1' }, { getState: gs, Translation })
+        ).toBe('Redigera krav | E-tjänst');
+    });
+
     test('build_page_title med actorName och metadata-vy', () => {
         getState = () => ({
             auditStatus: 'in_progress',

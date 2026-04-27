@@ -5,6 +5,42 @@
 
 import { consoleManager } from '../utils/console_manager.js';
 
+/**
+ * Hittar kravobjekt i regelfilens innehåll utifrån route-param (id/nyckel).
+ * @param {object} current_state
+ * @param {string} req_id
+ * @returns {object|null}
+ */
+function find_requirement_in_rulefile_content(current_state, req_id) {
+    if (!req_id) return null;
+    const requirements_map = current_state?.ruleFileContent?.requirements || {};
+    let requirement = requirements_map[req_id];
+    if (!requirement) {
+        requirement = Object.values(requirements_map).find((req) => {
+            if (!req || typeof req !== 'object') return false;
+            const key = req.key !== undefined && req.key !== null ? String(req.key) : '';
+            const id = req.id !== undefined && req.id !== null ? String(req.id) : '';
+            return key === String(req_id) || id === String(req_id);
+        }) || null;
+    }
+    return requirement;
+}
+
+/**
+ * Bygger prefix för document.title på vyn "redigera krav" i regelfilen.
+ * @param {object} params
+ * @param {object} current_state
+ * @param {function(string): string} t Översättningsfunktion
+ * @returns {string}
+ */
+function get_rulefile_edit_requirement_title_prefix(params, current_state, t) {
+    const edit_label = t('rulefile_edit_requirement_title');
+    const req_id = params?.id != null ? String(params.id) : '';
+    const requirement = find_requirement_in_rulefile_content(current_state, req_id);
+    const name_part = (requirement && String(requirement.title || '').trim()) || (req_id || '');
+    return name_part ? `${edit_label} | ${name_part}` : edit_label;
+}
+
 function get_t_fallback(Translation) {
     return (Translation && typeof Translation.t === 'function')
         ? Translation.t.bind(Translation)
@@ -31,7 +67,9 @@ export function get_page_title_prefix(view_name, params, { getState, Translation
             const section = params.section || params.editSection || 'general';
             if (view_name === 'rulefile_sections' && section_to_menu_key[section]) {
                 title_prefix = t(section_to_menu_key[section]);
-            } else if (['rulefile_requirements', 'rulefile_view_requirement', 'rulefile_edit_requirement', 'rulefile_add_requirement'].includes(view_name)) {
+            } else if (view_name === 'rulefile_edit_requirement') {
+                title_prefix = get_rulefile_edit_requirement_title_prefix(params, current_state, t);
+            } else if (['rulefile_requirements', 'rulefile_view_requirement', 'rulefile_add_requirement'].includes(view_name)) {
                 title_prefix = t('rulefile_requirements_menu_title');
             } else if (view_name === 'rulefile_metadata_edit') {
                 title_prefix = t(section && section_to_menu_key[section] ? section_to_menu_key[section] : 'rulefile_section_general_title');
@@ -75,7 +113,9 @@ export function get_page_title_prefix(view_name, params, { getState, Translation
                 case 'edit_rulefile_main': title_prefix = t('edit_rulefile_title'); break;
                 case 'rulefile_requirements': title_prefix = t('rulefile_requirements_menu_title'); break;
                 case 'rulefile_view_requirement': title_prefix = t('rulefile_view_requirement_title'); break;
-                case 'rulefile_edit_requirement': title_prefix = t('rulefile_edit_requirement_title'); break;
+                case 'rulefile_edit_requirement':
+                    title_prefix = get_rulefile_edit_requirement_title_prefix(params, current_state, t);
+                    break;
                 case 'rulefile_add_requirement': title_prefix = t('rulefile_add_requirement_title'); break;
                 case 'rulefile_metadata_edit': title_prefix = t('rulefile_metadata_edit_title'); break;
                 case 'rulefile_sections_edit_general': title_prefix = t('rulefile_sections_edit_general_title'); break;
