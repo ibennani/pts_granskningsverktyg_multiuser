@@ -6,7 +6,7 @@
   "audit_title": "Rule files & Audits",
   "audit_title_audits": "Manage audits",
   "audit_title_rules": "Manage rule files",
-  "audit_filter_label": "Filter by case number or actor name",
+  "audit_filter_label": "Filter by case number, actor name, or auditor",
   "audit_type_filter_label": "Type",
   "audit_type_filter_all": "All",
   "audit_type_filter_webb": "Web",

@@ -6,7 +6,7 @@
   "audit_title": "Regelfiler & Granskningar",
   "audit_title_audits": "Hantera granskningar",
   "audit_title_rules": "Hantera regelfiler",
-  "audit_filter_label": "Filtrera på diarienummer eller aktörens namn",
+  "audit_filter_label": "Filtrera på diarienummer, aktör eller granskare",
   "audit_type_filter_label": "Typ",
   "audit_type_filter_all": "Alla",
   "audit_type_filter_webb": "Webb",

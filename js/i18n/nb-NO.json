@@ -6,7 +6,7 @@
   "audit_title": "Regelfiler og tilsyn",
   "audit_title_audits": "Administrer tilsyn",
   "audit_title_rules": "Administrer regelfiler",
-  "audit_filter_label": "Filtrer etter saksnummer eller virksomhetsnavn",
+  "audit_filter_label": "Filtrer etter saksnummer, virksomhetsnavn eller revisor",
   "audit_type_filter_label": "Type",
   "audit_type_filter_all": "Alle",
   "audit_type_filter_webb": "Web",

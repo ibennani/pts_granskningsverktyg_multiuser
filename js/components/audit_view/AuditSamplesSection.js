@@ -32,7 +32,8 @@ export function render_audit_samples_section(ctx) {
                 const meta = a.metadata || {};
                 const case_number = (meta.caseNumber ?? '').toString().trim();
                 const actor_name = (meta.actorName ?? '').toString().trim();
-                const combined = `${case_number} ${actor_name}`.trim();
+                const auditor_name = (meta.auditorName ?? '').toString().trim();
+                const combined = `${case_number} ${actor_name} ${auditor_name}`.trim();
                 if (!combined) return false;
                 return filter_text_matches(combined, query_raw);
             });
