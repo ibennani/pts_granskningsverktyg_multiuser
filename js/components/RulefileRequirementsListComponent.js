@@ -1,6 +1,7 @@
 // js/components/RulefileRequirementsListComponent.js
 import { RequirementListToolbarComponent } from './RequirementListToolbarComponent.js';
 import { get_searchable_text_for_requirement } from '../utils/requirement_search_utils.js';
+import { prepareString } from '../utils/string_filter_normalize.js';
 import { show_confirm_delete_modal, build_delete_warning_text } from '../logic/confirm_delete_modal_logic.js';
 import { can_edit_rulefile } from '../utils/helpers.js';
 import './rulefile_requirements_list_component.css';
@@ -292,7 +293,7 @@ export class RulefileRequirementsListComponent {
              this.toolbar_component_instance.render(filter_settings);
         }
 
-        const search_term = (filter_settings.searchText || '').toLowerCase();
+        const search_term = prepareString((filter_settings.searchText || '').trim());
         
         const all_requirements = Object.values(current_global_state.ruleFileContent.requirements);
 

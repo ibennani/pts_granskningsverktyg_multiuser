@@ -2,6 +2,8 @@
  * @fileoverview Tabell och fokusåterställning för listan Hantera användare.
  */
 
+import { filter_text_matches } from '../../utils/string_filter_normalize.js';
+
 /**
  * @param {object} deps
  * @param {HTMLElement | null} deps.table_root
@@ -29,15 +31,13 @@ export function render_manage_users_table_view(deps) {
 
     const raw_users = Array.isArray(deps.users) ? deps.users : [];
     const query_raw = deps.user_filter_query || '';
-    const query = query_raw.trim().toLowerCase();
-    const has_filter = query.length > 0;
+    const has_filter = query_raw.trim().length > 0;
     const data = !has_filter
         ? raw_users
         : raw_users.filter((user) => {
-            const username = (user && user.username ? String(user.username) : '').trim().toLowerCase();
-            const display_name = deps.get_display_name(user).toString().trim().toLowerCase();
-            if (!query) return true;
-            return username.includes(query) || display_name.includes(query);
+            const username = user && user.username ? String(user.username) : '';
+            const display_name = deps.get_display_name(user).toString();
+            return filter_text_matches(username, query_raw) || filter_text_matches(display_name, query_raw);
         });
     const fetch_err = deps.fetch_users_error;
     const is_forbidden = fetch_err && fetch_err.status === 403;

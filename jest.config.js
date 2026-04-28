@@ -23,6 +23,8 @@ export default {
     '^.+/requirement_list_list_items\\.js$': '<rootDir>/js/components/requirements_list/requirement_list_list_items.ts',
     '^.+/requirement_list_mark_all_modal\\.js$':
       '<rootDir>/js/components/requirements_list/requirement_list_mark_all_modal.ts',
+    '^.+/requirement_search_utils\\.js$': '<rootDir>/js/utils/requirement_search_utils.ts',
+    '^.+/string_filter_normalize\\.js$': '<rootDir>/js/utils/string_filter_normalize.ts',
   },
   testMatch: [
     '<rootDir>/tests/unit/**/*.spec.js',

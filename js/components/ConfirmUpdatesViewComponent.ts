@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { app_runtime_refs } from "../utils/app_runtime_refs.js";
+import { filter_text_matches } from "../utils/string_filter_normalize.js";
 import "./confirm_updates_view_component.css";
 import "./requirement_list_toolbar_component.css";
 
@@ -294,13 +295,12 @@ export class ConfirmUpdatesViewComponent {
         filter_wrapper.appendChild(toolbar);
         this.plate_element_ref.appendChild(filter_wrapper);
 
-        const filter_term = (this._filter_search || '').toLowerCase().trim();
+        const filter_raw = this._filter_search || '';
         const matches_search = (sampleId, data) => {
-            if (!filter_term) return true;
-            const name_ok = (data.sampleName || '').toLowerCase().includes(filter_term);
+            const name_ok = filter_text_matches(data.sampleName || '', filter_raw);
             const req_ok = (data.requirements || []).some(r =>
-                (r.title || '').toLowerCase().includes(filter_term) ||
-                (r.reference || '').toLowerCase().includes(filter_term)
+                filter_text_matches(r.title || '', filter_raw) ||
+                filter_text_matches(r.reference || '', filter_raw)
             );
             return name_ok || req_ok;
         };

@@ -12,6 +12,7 @@ import {
     get_auth_headers
 } from '../../api/client.js';
 import { app_runtime_refs } from '../../utils/app_runtime_refs.js';
+import { filter_text_matches } from '../../utils/string_filter_normalize.js';
 import { build_audit_detail_columns, build_audit_overview_columns, download_audit_backup_json } from './backup_audit_tables';
 
 export class BackupAuditController {
@@ -170,14 +171,13 @@ export class BackupAuditController {
     }
 
     apply_filters() {
-        const text = (this.filter_text || '').toLowerCase();
+        const raw = this.filter_text || '';
         const status_filter = this.status_filter;
         const items = this.backup_overview || [];
         this.filtered_overview = items.filter((item) => {
             if (status_filter !== 'all' && item.status && item.status !== status_filter) return false;
-            if (!text) return true;
-            const haystack = [item.caseNumber || '', item.actorName || '', item.auditId || ''].join(' ').toLowerCase();
-            return haystack.includes(text);
+            const haystack = [item.caseNumber || '', item.actorName || '', item.auditId || ''].join(' ');
+            return filter_text_matches(haystack, raw);
         });
     }
 

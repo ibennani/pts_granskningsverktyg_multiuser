@@ -1,6 +1,8 @@
 // js/components/audit_view/AuditSamplesSection.js
 // Bygger högerkolumnen: granskningar (listor eller sektioner beroende på audit_mode).
 
+import { filter_text_matches } from '../../utils/string_filter_normalize.js';
+
 export function render_audit_samples_section(ctx) {
     const t = ctx.get_t_func();
     const right_col = ctx.Helpers.create_element(
@@ -20,16 +22,15 @@ export function render_audit_samples_section(ctx) {
             return ca.localeCompare(cb, undefined, { numeric: true });
         });
         const query_raw = ctx.audit_filter_query || '';
-        const query = query_raw.trim().toLowerCase();
         const filter_and_sort_audits = (list) => {
-            if (!query) return sort_audits(list);
+            if (!query_raw.trim()) return sort_audits(list);
             const filtered = list.filter((a) => {
                 const meta = a.metadata || {};
-                const case_number = (meta.caseNumber ?? '').toString().trim().toLowerCase();
-                const actor_name = (meta.actorName ?? '').toString().trim().toLowerCase();
+                const case_number = (meta.caseNumber ?? '').toString().trim();
+                const actor_name = (meta.actorName ?? '').toString().trim();
                 const combined = `${case_number} ${actor_name}`.trim();
                 if (!combined) return false;
-                return combined.includes(query);
+                return filter_text_matches(combined, query_raw);
             });
             return sort_audits(filtered);
         };
@@ -47,7 +48,7 @@ export function render_audit_samples_section(ctx) {
             { heading_key: 'start_view_completed_audits_heading', audits: completed },
             { heading_key: 'start_view_archived_audits_heading', audits: archived_audits }
         ];
-        const has_filter = !!query;
+        const has_filter = !!query_raw.trim();
         const visible_section_configs = has_filter
             ? section_configs.filter((config) => (config.audits || []).length > 0)
             : section_configs;

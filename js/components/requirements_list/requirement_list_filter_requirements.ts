@@ -5,6 +5,7 @@
  */
 
 import { get_stored_requirement_result_for_def, get_effective_requirement_audit_status } from '../../audit_logic.js';
+import { prepareString } from '../../utils/string_filter_normalize.js';
 import { get_searchable_text_for_requirement, sample_matches_status_filter } from './requirement_list_query.js';
 
 /**
@@ -21,7 +22,7 @@ export function filter_requirements(items, filter_settings, state) {
 
     if (mode === 'all') {
         const total_count = items.length;
-        const search_term = (filter_settings.searchText || '').toLowerCase().trim();
+        const search_term = prepareString((filter_settings.searchText || '').trim());
 
         const filtered_items = items.filter(([req_id, req]) => {
             const candidates = new Set([String(req_id)]);
@@ -58,7 +59,7 @@ export function filter_requirements(items, filter_settings, state) {
     }
 
     const total_count = items.length;
-    const search_term = (filter_settings.searchText || '').toLowerCase();
+    const search_term = prepareString((filter_settings.searchText || '').trim());
 
     const filtered_items = items.filter(req => {
         const result = get_stored_requirement_result_for_def(

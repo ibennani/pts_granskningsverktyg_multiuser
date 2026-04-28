@@ -1,4 +1,5 @@
 import { GenericTableComponent } from '../GenericTableComponent.js';
+import { filter_text_matches } from '../../utils/string_filter_normalize.js';
 import { get_rulefile_backup_history, get_rulefile_backup_overview } from '../../api/client.js';
 import { build_rulefile_history_columns, build_rulefile_table_columns, download_rulefile_snapshot_json, type RulefileBackupHistoryRow } from './backup_rulefile_tables';
 
@@ -83,7 +84,7 @@ export class BackupRulefileController {
     }
 
     apply_filters() {
-        const text = (this.filter_text || '').toLowerCase();
+        const raw = this.filter_text || '';
         const kind = this.rulefile_kind;
         const items = this.rulefile_overview || [];
         this.filtered_rulefiles = items.filter((item) => {
@@ -95,9 +96,8 @@ export class BackupRulefileController {
                 if (kind === 'published' && !item.has_published_in_any_snapshot) return false;
                 if (kind === 'working' && !item.has_working_in_any_snapshot) return false;
             }
-            if (!text) return true;
-            const haystack = [item.name || '', item.ruleSetId || ''].join(' ').toLowerCase();
-            return haystack.includes(text);
+            const haystack = [item.name || '', item.ruleSetId || ''].join(' ');
+            return filter_text_matches(haystack, raw);
         });
     }
 

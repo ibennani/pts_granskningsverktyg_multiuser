@@ -4,6 +4,7 @@
 import { RequirementsFilterComponent } from './RequirementsFilterComponent.js';
 import './requirement_audit_sidebar_component.css';
 import { get_searchable_text_for_requirement as get_searchable_text_util } from '../utils/requirement_search_utils.js';
+import { prepareString, filter_text_matches } from '../utils/string_filter_normalize.js';
 import { fingerprint_item_keys, can_incremental_update } from '../utils/incremental_list_update.js';
 import {
     get_requirement_public_key,
@@ -681,7 +682,7 @@ export class RequirementAuditSidebarComponent {
         if (!ordered_keys || ordered_keys.length === 0) return [];
 
         const filters = this.filters_by_mode.sample_requirements || this.get_current_filters();
-        const search_term = (filters.searchText || '').toLowerCase().trim();
+        const search_term = prepareString((filters.searchText || '').trim());
         const status_filters = filters.status || {};
         const has_status_filters = Object.keys(status_filters).length > 0;
 
@@ -745,7 +746,7 @@ export class RequirementAuditSidebarComponent {
             if (mk) requirement_id_candidates.add(String(mk));
         });
         const filters = this.filters_by_mode.requirement_samples || this.get_current_filters();
-        const search_term = (filters.searchText || '').toLowerCase().trim();
+        const search_term = prepareString((filters.searchText || '').trim());
         const status_filters = filters.status || {};
         const has_status_filters = Object.keys(status_filters).length > 0;
 
@@ -804,8 +805,7 @@ export class RequirementAuditSidebarComponent {
                 const hide_by_needs_help = status_filters.needs_help === false && item.needs_help;
                 if (!show_by_status || hide_by_needs_help) return false;
                 if (!search_term) return true;
-                const text = (item.sample?.description || '').toLowerCase();
-                return text.includes(search_term);
+                return filter_text_matches(item.sample?.description || '', filters.searchText || '');
             });
 
         return this.sort_sample_items(matching_samples, filters.sortBy, current_requirement, rule_file_content);
