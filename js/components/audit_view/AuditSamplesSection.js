@@ -23,8 +23,12 @@ export function render_audit_samples_section(ctx) {
         });
         const query_raw = ctx.audit_filter_query || '';
         const filter_and_sort_audits = (list) => {
-            if (!query_raw.trim()) return sort_audits(list);
-            const filtered = list.filter((a) => {
+            const want_type = String(ctx.audit_type_filter || '').trim();
+            const typed = want_type
+                ? list.filter((a) => String(a?.audit_type || '').trim() === want_type)
+                : list;
+            if (!query_raw.trim()) return sort_audits(typed);
+            const filtered = typed.filter((a) => {
                 const meta = a.metadata || {};
                 const case_number = (meta.caseNumber ?? '').toString().trim();
                 const actor_name = (meta.actorName ?? '').toString().trim();
@@ -48,7 +52,7 @@ export function render_audit_samples_section(ctx) {
             { heading_key: 'start_view_completed_audits_heading', audits: completed },
             { heading_key: 'start_view_archived_audits_heading', audits: archived_audits }
         ];
-        const has_filter = !!query_raw.trim();
+        const has_filter = !!query_raw.trim() || !!String(ctx.audit_type_filter || '').trim();
         const visible_section_configs = has_filter
             ? section_configs.filter((config) => (config.audits || []).length > 0)
             : section_configs;

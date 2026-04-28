@@ -26,6 +26,7 @@ import { GenericTableComponent } from '../GenericTableComponent.js';
 import { AuditListComponent } from '../AuditListComponent.js';
 import { open_audit_by_id, download_audit_by_id } from '../../logic/audit_open_logic.js';
 import { get_server_filename_datetime, sanitize_filename_segment } from '../../utils/download_filename_utils.ts';
+import { measure_backup_select_min_width_px } from '../../utils/backup_filter_select_width.ts';
 import { render_audit_header } from './AuditHeaderSection.js';
 import { render_audit_requirement_section } from './AuditRequirementSection.js';
 import { render_audit_samples_section } from './AuditSamplesSection.js';
@@ -47,9 +48,11 @@ export class AuditViewComponent {
         this.production_rules = [];
         this.audits = [];
         this.audit_filter_query = '';
+        this.audit_type_filter = '';
         this._auditFilterHadFocus = false;
         this._auditFilterSelection = null;
         this._auditFilterInputRef = null;
+        this._auditTypeSelectRef = null;
         this.router = deps.router;
         this.getState = deps.getState;
         this.NotificationComponent?.clear_global_message?.();
@@ -91,6 +94,7 @@ export class AuditViewComponent {
         this.handle_open_audit = this.handle_open_audit.bind(this);
         this.handle_start_new_audit = this.handle_start_new_audit.bind(this);
         this.handle_filter_input = this.handle_filter_input.bind(this);
+        this.handle_type_filter_change = this.handle_type_filter_change.bind(this);
 
         if (this.Helpers?.load_css_safely) {
             await this.Helpers.load_css_safely(AuditViewComponent.CSS_PATH, 'AuditViewComponent', {
@@ -132,6 +136,14 @@ export class AuditViewComponent {
         if (this.root) {
             this.render();
         }
+    }
+
+    handle_type_filter_change(event) {
+        const target = event && event.target ? event.target : null;
+        const value = target ? String(target.value || '') : '';
+        if (this.audit_type_filter === value) return;
+        this.audit_type_filter = value;
+        if (this.root) this.render();
     }
 
     _rule_fingerprint(r) {
@@ -1939,6 +1951,7 @@ export class AuditViewComponent {
         const plate = this.Helpers.create_element('div', { class_name: 'content-plate audit-plate' });
 
         this._auditFilterInputRef = null;
+        this._auditTypeSelectRef = null;
 
         const header = render_audit_header(this);
         plate.appendChild(header);
@@ -1968,6 +1981,17 @@ export class AuditViewComponent {
         }
 
         this.root.appendChild(plate);
+
+        if (this.audit_mode === 'audits' && this._auditTypeSelectRef) {
+            const sel = this._auditTypeSelectRef;
+            setTimeout(() => {
+                if (!sel || !document.contains(sel)) return;
+                const px = measure_backup_select_min_width_px(sel);
+                if (px > 0) {
+                    sel.style.minWidth = `${px}px`;
+                }
+            }, 0);
+        }
 
         if (this.audit_mode === 'audits' && this._auditFilterHadFocus && this._auditFilterInputRef) {
             const input = this._auditFilterInputRef;

@@ -52,6 +52,11 @@ export function create_audit_table_columns(deps, handlers, opts = {}) {
             }
         },
         {
+            headerLabel: t('start_view_col_type'),
+            getSortValue: (row) => (row.audit_type ?? '').toString().trim(),
+            getContent: (row) => (row.audit_type ?? '').toString().trim() || EMPTY_PLACEHOLDER
+        },
+        {
             headerLabel: t('start_view_col_status'),
             getSortValue: (row) => (row.status ?? '').toString(),
             getContent: (row) => (row.status ? get_status_label(row.status) : EMPTY_PLACEHOLDER)

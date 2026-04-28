@@ -85,6 +85,17 @@ function count_business_days(startDate, endDate) {
     return count;
 }
 
+function normalize_audit_type(rule_content) {
+    const m = rule_content?.metadata?.monitoringType;
+    const text = typeof m?.text === 'string' ? m.text.trim() : '';
+    const typ = typeof m?.type === 'string' ? m.type.trim() : '';
+    const raw = (typ || text).toLowerCase();
+    if (!raw) return null;
+    if (raw.includes('pdf')) return 'pdf';
+    if (raw === 'web' || raw.includes('webb') || raw.includes('web')) return 'webb';
+    return raw;
+}
+
 export function build_full_state(audit_row, rule_set_row) {
     let ruleFileContent = audit_row?.rule_file_content
         ?? (rule_set_row
@@ -216,6 +227,7 @@ router.get('/', async (req, res) => {
                     if (typeof rule_content === 'string') {
                         rule_content = JSON.parse(rule_content);
                     }
+                    out.audit_type = normalize_audit_type(rule_content);
                     const full_state = {
                         ruleFileContent: rule_content,
                         auditStatus: row.status,
@@ -233,10 +245,12 @@ router.get('/', async (req, res) => {
                     console.warn('[audits] Beräkning progress/bristindex misslyckades för audit', row.id, ':', e.message);
                     out.progress = null;
                     out.deficiency_index = null;
+                    out.audit_type = null;
                 }
             } else {
                 out.progress = null;
                 out.deficiency_index = null;
+                out.audit_type = null;
             }
             return out;
         });

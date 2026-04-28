@@ -12,6 +12,10 @@ export function render_audit_header(ctx) {
     header.appendChild(title);
     if (ctx.audit_mode === 'audits') {
         const filter_wrapper = ctx.Helpers.create_element('div', { class_name: 'audit-filter-wrapper' });
+
+        const row = ctx.Helpers.create_element('div', { class_name: 'audit-filter-row form-group' });
+
+        const text_field = ctx.Helpers.create_element('div', { class_name: ['audit-filter-row__field', 'audit-filter-row__field--text'] });
         const filter_label = ctx.Helpers.create_element('label', { attributes: { for: 'audit-filter-input' } });
         const filter_label_strong = ctx.Helpers.create_element('strong', { text_content: t('audit_filter_label') });
         filter_label.appendChild(filter_label_strong);
@@ -26,8 +30,40 @@ export function render_audit_header(ctx) {
         });
         filter_input.addEventListener('input', ctx.handle_filter_input);
         ctx._auditFilterInputRef = filter_input;
-        filter_wrapper.appendChild(filter_label);
-        filter_wrapper.appendChild(filter_input);
+        text_field.appendChild(filter_label);
+        text_field.appendChild(filter_input);
+
+        const type_field = ctx.Helpers.create_element('div', { class_name: ['audit-filter-row__field', 'audit-filter-row__field--type'] });
+        const type_label = ctx.Helpers.create_element('label', { attributes: { for: 'audit-type-filter-select' } });
+        type_label.appendChild(
+            ctx.Helpers.create_element('strong', { text_content: t('audit_type_filter_label') })
+        );
+        type_field.appendChild(type_label);
+        const type_select = ctx.Helpers.create_element('select', {
+            id: 'audit-type-filter-select',
+            class_name: ['form-control', 'audit-type-filter-select']
+        });
+        const opts = [
+            { value: '', label: t('audit_type_filter_all') },
+            { value: 'webb', label: t('audit_type_filter_webb') },
+            { value: 'pdf', label: t('audit_type_filter_pdf') }
+        ];
+        opts.forEach((o) => {
+            type_select.appendChild(
+                ctx.Helpers.create_element('option', {
+                    attributes: { value: o.value },
+                    text_content: o.label
+                })
+            );
+        });
+        type_select.value = ctx.audit_type_filter || '';
+        type_select.addEventListener('change', ctx.handle_type_filter_change);
+        ctx._auditTypeSelectRef = type_select;
+        type_field.appendChild(type_select);
+
+        row.appendChild(text_field);
+        row.appendChild(type_field);
+        filter_wrapper.appendChild(row);
         header.appendChild(filter_wrapper);
     }
     if (ctx.audit_mode !== 'audits') {
