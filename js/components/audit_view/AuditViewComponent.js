@@ -31,7 +31,7 @@ import { render_audit_header } from './AuditHeaderSection.js';
 import { render_audit_requirement_section } from './AuditRequirementSection.js';
 import { render_audit_samples_section } from './AuditSamplesSection.js';
 import { JSON_MAX_UPLOAD_BYTES } from '../../constants/json_upload_limits.js';
-import { check_json_structure_depth_and_size } from '../../utils/json_structure_guard.js';
+import { check_json_structure_depth_and_size } from '../../../shared/json/json_structure_guard.js';
 import './audit_view_component.css';
 
 export class AuditViewComponent {

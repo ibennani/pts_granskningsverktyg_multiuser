@@ -4,7 +4,7 @@ import { query } from '../db.js';
 import { broadcast } from '../ws.js';
 import { requireAdmin } from '../auth/middleware.js';
 import { import_payload_rate_limiter } from '../middleware/rateLimiter.js';
-import { check_json_structure_depth_and_size } from '../../js/utils/json_structure_guard.js';
+import { check_json_structure_depth_and_size } from '../../shared/json/json_structure_guard.js';
 import { parse_part_key } from '../../js/logic/rulefile_part_keys.js';
 import { normalize_rulefile_content_object } from '../utils/rulefile_content_utils.js';
 import {
