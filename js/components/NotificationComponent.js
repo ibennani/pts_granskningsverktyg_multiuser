@@ -1,26 +1,25 @@
 import "./notification_component.css";
-import { ensure_main_view_content_host } from '../logic/app_dom.js';
-
-const GLOBAL_MESSAGE_CONTAINER_ID = 'global-message-area';
-const GLOBAL_CRITICAL_MESSAGE_CONTAINER_ID = 'global-critical-message-area';
+import {
+    create_notification_dedupe_state,
+    should_skip_regular_message_display,
+    mark_regular_message_shown,
+    apply_clear_regular_message,
+    reset_notification_dedupe_state
+} from '../notifications/notification_state.js';
+import {
+    mount_critical_message_dom,
+    mount_regular_message_dom,
+    apply_visible_message_presentation
+} from '../notifications/notification_renderer.js';
+import {
+    append_global_message_areas_to_host,
+    GLOBAL_MESSAGE_CONTAINER_ID,
+    GLOBAL_CRITICAL_MESSAGE_CONTAINER_ID
+} from '../notifications/notification_portal.js';
 
 export class NotificationComponent {
     constructor() {
-        /** Fingeravtryck för senast dolda vanliga notisen – samma får inte visas igen förrän en annan notis visats. */
-        this.regular_message_block_fp = null;
-        /** Senast visade vanliga notis (sätts när något faktiskt renderats). */
-        this.last_regular_shown_fp = null;
-    }
-
-    /**
-     * @param {string} message
-     * @param {string} [type]
-     * @returns {string}
-     */
-    _fingerprint_regular_message(message, type) {
-        const t = type && String(type).trim() !== '' ? String(type).trim() : 'info';
-        const m = typeof message === 'string' ? message.trim() : '';
-        return `${t}|${m}`;
+        this._dedupe = create_notification_dedupe_state();
     }
 
     init() {
@@ -90,19 +89,9 @@ export class NotificationComponent {
             element.setAttribute('aria-live', 'polite');
         }
 
-        if (type === 'error' || type === 'warning' || is_critical) {
-            element.setAttribute('role', 'alert');
-        } else {
-            element.removeAttribute('role');
-        }
-
         if (!is_critical && message && message.trim() !== '') {
-            const fp = this._fingerprint_regular_message(message, type);
-            if (this.regular_message_block_fp && fp === this.regular_message_block_fp) {
+            if (should_skip_regular_message_display(this._dedupe, message, type)) {
                 return;
-            }
-            if (this.regular_message_block_fp && fp !== this.regular_message_block_fp) {
-                this.regular_message_block_fp = null;
             }
         }
 
@@ -110,58 +99,33 @@ export class NotificationComponent {
 
         if (message && message.trim() !== '') {
             if (is_critical) {
-                const textNode = document.createTextNode(message);
-                element.appendChild(textNode);
-                if (action && typeof action.callback === 'function') {
-                    const btn = document.createElement('button');
-                    btn.type = 'button';
-                    btn.className = 'global-message-action-btn button button-default';
-                    btn.textContent = action.label || (typeof window.Translation?.t === 'function' ? window.Translation.t('ok') : 'Ok');
-                    const clear_fn = this.clear_global_critical_message.bind(this);
-                    btn.addEventListener('click', () => {
-                        clear_fn();
+                const clear_critical = this.clear_global_critical_message.bind(this);
+                mount_critical_message_dom(element, message, action, () => {
+                    clear_critical();
+                    if (action && typeof action.callback === 'function') {
                         action.callback();
-                    });
-                    element.appendChild(document.createTextNode(' '));
-                    element.appendChild(btn);
-                }
-            } else {
-                const text_wrap = document.createElement('span');
-                text_wrap.className = 'global-message-text';
-                text_wrap.textContent = message;
-                element.appendChild(text_wrap);
-                if (action && typeof action.callback === 'function') {
-                    const btn = document.createElement('button');
-                    btn.type = 'button';
-                    btn.className = 'global-message-action-btn';
-                    btn.textContent = action.label || (typeof window.Translation?.t === 'function' ? window.Translation.t('ok') : 'Ok');
-                    const clear_fn = this.clear_global_message.bind(this);
-                    btn.addEventListener('click', () => {
-                        clear_fn();
-                        action.callback();
-                    });
-                    element.appendChild(btn);
-                }
-                const close_btn = document.createElement('button');
-                close_btn.type = 'button';
-                close_btn.className = 'global-message-close-btn';
-                const close_label = typeof window.Translation?.t === 'function'
-                    ? window.Translation.t('global_message_dismiss_aria_label')
-                    : 'Stäng notisen';
-                close_btn.setAttribute('aria-label', close_label);
-                close_btn.appendChild(document.createTextNode('\u00D7'));
-                close_btn.addEventListener('click', () => {
-                    this.clear_global_message();
+                    }
                 });
-                element.appendChild(close_btn);
+            } else {
+                const clear_regular = this.clear_global_message.bind(this);
+                mount_regular_message_dom(
+                    element,
+                    message,
+                    action,
+                    () => {
+                        clear_regular();
+                        if (action && typeof action.callback === 'function') {
+                            action.callback();
+                        }
+                    },
+                    () => {
+                        this.clear_global_message();
+                    }
+                );
             }
-            element.className = '';
-            element.classList.add('global-message-content');
-            element.classList.add(`message-${type}`);
-
-            element.removeAttribute('hidden');
+            apply_visible_message_presentation(element, type, is_critical);
             if (!is_critical) {
-                this.last_regular_shown_fp = this._fingerprint_regular_message(message, type);
+                mark_regular_message_shown(this._dedupe, message, type);
             }
         } else {
             if (is_critical) {
@@ -219,11 +183,8 @@ export class NotificationComponent {
     clear_global_message() {
         if (this.global_message_element) {
             const el = this.global_message_element;
-            const was_visible = !el.hidden && Boolean(this.last_regular_shown_fp);
-            if (was_visible) {
-                this.regular_message_block_fp = this.last_regular_shown_fp;
-            }
-            this.last_regular_shown_fp = null;
+            const was_visible = !el.hidden && Boolean(this._dedupe.last_regular_shown_fp);
+            apply_clear_regular_message(this._dedupe, was_visible);
             el.textContent = '';
             el.setAttribute('hidden', 'true');
             el.className = 'global-message-content';
@@ -249,73 +210,20 @@ export class NotificationComponent {
     }
 
     /**
-     * Tar bort dubletter av samma id (ska inte förekomma; lämnar kvar canonical-instanserna).
-     * @param {HTMLElement} keep_critical
-     * @param {HTMLElement} keep_regular
-     */
-    _remove_duplicate_global_message_nodes(keep_critical, keep_regular) {
-        document.querySelectorAll(`[id="${GLOBAL_CRITICAL_MESSAGE_CONTAINER_ID}"]`).forEach((node) => {
-            if (node !== keep_critical) {
-                node.remove();
-            }
-        });
-        document.querySelectorAll(`[id="${GLOBAL_MESSAGE_CONTAINER_ID}"]`).forEach((node) => {
-            if (node !== keep_regular) {
-                node.remove();
-            }
-        });
-    }
-
-    /**
      * Placerar kritisk + vanlig notis i #app-main-view-content som första barn, direkt ovanför vyns innehåll
      * (därmed ovanför h1#main-content-heading). Kritisk först, sedan vanlig.
      * Notiser som ligger någon annanstans flyttas hit; om main/värden saknas kopplas de från DOM.
      * @param {HTMLElement|null} [_ignored_legacy_container]
      */
     append_global_message_areas_to(_ignored_legacy_container) {
-        const critical = this.get_global_critical_message_element_reference();
-        const regular = this.get_global_message_element_reference();
-        if (!critical || !regular) {
-            return;
-        }
-
-        const main_el = document.getElementById('app-main-view-root');
-        if (!main_el) {
-            [critical, regular].forEach((el) => {
-                if (el && el.isConnected) {
-                    el.remove();
-                }
-            });
-            return;
-        }
-
-        ensure_main_view_content_host(main_el);
-        const host = main_el.querySelector('#app-main-view-content');
-        if (!host) {
-            [critical, regular].forEach((el) => {
-                if (el && el.isConnected && !main_el.contains(el)) {
-                    el.remove();
-                }
-            });
-            return;
-        }
-
-        // Hitta första h1 inuti host, och placera notiserna direkt ovanför den
-        const h1 = host.querySelector('h1');
-        if (h1 && h1.parentNode) {
-            h1.parentNode.insertBefore(critical, h1);
-            h1.parentNode.insertBefore(regular, critical.nextSibling);
-        } else {
-            host.insertBefore(critical, host.firstChild);
-            host.insertBefore(regular, critical.nextSibling);
-        }
-
-        this._remove_duplicate_global_message_nodes(critical, regular);
+        append_global_message_areas_to_host(
+            this.get_global_critical_message_element_reference(),
+            this.get_global_message_element_reference()
+        );
     }
 
     cleanup() {
-        this.regular_message_block_fp = null;
-        this.last_regular_shown_fp = null;
+        reset_notification_dedupe_state(this._dedupe);
         if (this.global_message_element) {
             this.global_message_element.innerHTML = '';
             this.global_message_element = null;
