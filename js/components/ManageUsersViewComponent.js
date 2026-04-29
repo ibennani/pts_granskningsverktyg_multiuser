@@ -10,6 +10,7 @@ import {
 import { render_manage_users_detail_view } from './manage_users/manage_users_detail_view.js';
 import './manage_users_view_component.css';
 import { GenericTableComponent } from './GenericTableComponent.js';
+import { clear_restore_focus_info, get_restore_focus_info } from '../app/browser_globals.js';
 
 export class ManageUsersViewComponent {
     constructor() {
@@ -109,8 +110,8 @@ export class ManageUsersViewComponent {
     async render() {
         if (!this.root || !this.Helpers?.create_element) return;
 
-        if (typeof window !== 'undefined' && window.__gv_restore_focus_info) {
-            window.__gv_restore_focus_info = null;
+        if (typeof window !== 'undefined' && get_restore_focus_info()) {
+            clear_restore_focus_info();
         }
 
         await this.fetch_users();

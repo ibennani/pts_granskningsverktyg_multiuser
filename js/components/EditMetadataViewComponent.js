@@ -2,6 +2,7 @@ import { MetadataFormComponent } from './MetadataFormComponent.js';
 import { get_current_user_name } from '../utils/helpers.js';
 import { sync_to_server_now } from '../logic/server_sync.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
+import { get_show_empty_metadata_form, clear_show_empty_metadata_form } from '../app/browser_globals.js';
 
 export class EditMetadataViewComponent {
     constructor() {
@@ -291,11 +292,9 @@ export class EditMetadataViewComponent {
         });
 
         const metadata = (() => {
-            const show_empty = is_new_audit && typeof window !== 'undefined' && window.__GV_SHOW_EMPTY_METADATA_FORM === true;
+            const show_empty = is_new_audit && typeof window !== 'undefined' && get_show_empty_metadata_form();
             if (show_empty) {
-                if (typeof window !== 'undefined') {
-                    window.__GV_SHOW_EMPTY_METADATA_FORM = false;
-                }
+                clear_show_empty_metadata_form();
                 return {
                     caseNumber: '',
                     actorName: '',

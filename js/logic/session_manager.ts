@@ -15,6 +15,8 @@ import {
 import { consoleManager } from '../utils/console_manager.js';
 import { memoryManager } from '../utils/memory_manager.js';
 import { get_current_user_name } from '../utils/helpers.js';
+import { get_current_user_name_window, get_restore_position_via_hook } from '../app/browser_globals.js';
+import { is_debug_modal_scroll } from '../app/runtime_flags.js';
 import { init_same_user_tab_field_sync_listener } from './same_user_tab_field_sync.js';
 
 /** Bygg-info som läses in dynamiskt i webbläsaren. */
@@ -228,7 +230,7 @@ export async function apply_user_preferences_from_server({
     dispatch,
     StoreActionTypes
 }: ApplyUserPreferencesDeps): Promise<void> {
-    if (!window.__GV_CURRENT_USER_NAME__) return;
+    if (!get_current_user_name_window()) return;
     try {
         const user = await get_current_user_preferences_with_timeout();
         if (user?.language_preference && typeof window.Translation?.set_language === 'function') {
@@ -355,7 +357,7 @@ export async function start_normal_session(deps: StartNormalSessionDeps): Promis
                     parsed_params = {};
                 }
                 update_restore_position(get_current_view_name_rendered(), parsed_params, info);
-                updateBackupRestorePosition(window.__gv_get_restore_position?.());
+                updateBackupRestorePosition(get_restore_position_via_hook());
                 try {
                     const scope_key = get_scope_key_from_view_and_params(
                         get_current_view_name_rendered(),
@@ -404,12 +406,12 @@ export async function start_normal_session(deps: StartNormalSessionDeps): Promis
 
     subscribe((_new_state, listener_meta) => {
         if (listener_meta?.skip_render) {
-            if (window.__GV_DEBUG_MODAL_SCROLL) {
+            if (is_debug_modal_scroll()) {
                 consoleManager.log('[GV-ModalDebug] subscribe: skip_render – ingen render');
             }
             return;
         }
-        if (window.__GV_DEBUG_MODAL_SCROLL) {
+        if (is_debug_modal_scroll()) {
             consoleManager.log(
                 '[GV-ModalDebug] subscribe: RENDERAR top_action_bar, bottom_action_bar, current_view'
             );

@@ -10,6 +10,8 @@ import { userReducer } from './userReducer.js';
 import { consoleManager } from '../utils/console_manager.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import { get_translation_t } from '../utils/translation_access.js';
+import { is_debug_autosave_focus, is_debug_modal_scroll } from '../app/runtime_flags.js';
+import { get_restore_position_via_hook } from '../app/browser_globals.js';
 
 const APP_STATE_KEY = 'digitalTillsynAppCentralState';
 const APP_STATE_BACKUP_KEY = 'digitalTillsynAppStateBackup';
@@ -164,7 +166,7 @@ function execute_single_dispatch(action, dispatch_fn) {
                                     requirementId: action.payload.requirementId
                                 }
                                 : null,
-                        _debug_action_type: window.__GV_DEBUG_MODAL_SCROLL ? action?.type : undefined
+                        _debug_action_type: is_debug_modal_scroll() ? action?.type : undefined
                     });
                 } catch (listenerError) {
                     if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[State] Error notifying state listeners:', listenerError);
@@ -209,7 +211,7 @@ function subscribe(listener_function) {
 
 function notify_listeners(listener_meta = null) {
     const currentSnapshot = getState();
-    if (typeof window !== 'undefined' && window.__GV_DEBUG_AUTOSAVE_FOCUS) {
+    if (typeof window !== 'undefined' && is_debug_autosave_focus()) {
         consoleManager.log('[GV-Debug autospar-fokus] notify_listeners', {
             action_type: listener_meta?.action_type,
             skip_render: listener_meta?.skip_render,
@@ -217,7 +219,7 @@ function notify_listeners(listener_meta = null) {
             force_same_user_tab_render: listener_meta?.force_same_user_tab_render ?? null
         });
     }
-    if (window.__GV_DEBUG_MODAL_SCROLL) {
+    if (is_debug_modal_scroll()) {
         consoleManager.log('[GV-ModalDebug] notify_listeners', {
             skip_render: listener_meta?.skip_render,
             action_type: listener_meta?._debug_action_type,
@@ -336,7 +338,7 @@ function saveStateToSessionStorage(state_to_save) {
         sessionStorage.setItem(APP_STATE_KEY, serializedState);
         if (has_restorable_state(complete_state_to_save)) {
             try {
-                const restore_position = typeof window.__gv_get_restore_position === 'function' ? window.__gv_get_restore_position() : null;
+                const restore_position = get_restore_position_via_hook();
                 const backup = { state: complete_state_to_save, restorePosition: restore_position };
                 localStorage.setItem(APP_STATE_BACKUP_KEY, JSON.stringify(backup));
             } catch (localE) {

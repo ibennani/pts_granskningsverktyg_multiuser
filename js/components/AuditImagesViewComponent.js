@@ -3,6 +3,7 @@ import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import './audit_images_view_component.css';
 import { build_compact_hash_fragment } from '../logic/router_url_codec.js';
 import { get_requirement_public_key, resolve_requirement_map_key } from '../audit_logic.js';
+import { get_current_view_name } from '../app/browser_globals.js';
 
 export class AuditImagesViewComponent {
     constructor() {
@@ -41,7 +42,7 @@ export class AuditImagesViewComponent {
         this.unsubscribe = null;
         if (typeof deps.subscribe === 'function') {
             this.unsubscribe = deps.subscribe(() => {
-                if (this.root && window.__gv_current_view_name === 'audit_images' && typeof this.render === 'function') {
+                if (this.root && get_current_view_name() === 'audit_images' && typeof this.render === 'function') {
                     this.render();
                 }
             });

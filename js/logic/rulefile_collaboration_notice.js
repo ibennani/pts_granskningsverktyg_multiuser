@@ -11,6 +11,8 @@
  * @module js/logic/rulefile_collaboration_notice
  */
 
+import { get_current_view_name, get_current_view_params_json } from '../app/browser_globals.js';
+
 /** @type {Map<string, string>} */
 const baseline_serial_by_part = new Map();
 
@@ -40,11 +42,11 @@ function make_key(rule_set_id, part_key) {
  */
 function get_rulefile_view_and_params_from_window() {
     if (typeof window === 'undefined') return null;
-    const view_name = String(window.__gv_current_view_name || '');
+    const view_name = String(get_current_view_name() || '');
     if (view_name === '') return null;
     let params = {};
     try {
-        params = JSON.parse(window.__gv_current_view_params_json || '{}');
+        params = JSON.parse(get_current_view_params_json() || '{}');
     } catch {
         params = {};
     }

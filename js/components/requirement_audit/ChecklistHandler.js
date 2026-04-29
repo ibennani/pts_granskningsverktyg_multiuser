@@ -15,6 +15,11 @@ import {
 import { make_observation_detail_part_key } from '../../logic/audit_part_keys.js';
 import { is_remote_lock_held_by_other_user } from '../../logic/collab_lock_compare.js';
 import { api_patch } from '../../api/client.js';
+import {
+    get_pending_checklist_focus_target,
+    set_pending_checklist_focus_target
+} from '../../app/browser_globals.js';
+import { is_debug_stuck_sync } from '../../app/runtime_flags.js';
 
 export const ChecklistHandler = {
     container_ref: null,
@@ -75,7 +80,7 @@ export const ChecklistHandler = {
     },
 
     _reapply_pending_status_button_focus() {
-        const pending = window.__gv_pending_checklist_focus_target;
+        const pending = get_pending_checklist_focus_target();
         if (!pending?.action || !this.container_ref) return;
         if (typeof pending.set_at !== 'number' || Date.now() - pending.set_at > 5000) return;
         const target = { action: pending.action, check_id: pending.check_id, pc_id: pending.pc_id };
@@ -369,12 +374,12 @@ export const ChecklistHandler = {
             const prev_custom_focus_flag = window.customFocusApplied;
             if (should_keep_focus_on_status_button) {
                 window.customFocusApplied = true;
-                window.__gv_pending_checklist_focus_target = {
+                set_pending_checklist_focus_target({
                     action: button_focus_target.action,
                     check_id: button_focus_target.check_id,
                     pc_id: button_focus_target.pc_id,
                     set_at: Date.now()
-                };
+                });
             }
             this.on_status_change_callback(change_info);
             if (should_keep_focus_on_status_button) {
@@ -509,7 +514,7 @@ export const ChecklistHandler = {
                     this.requirement_result_ref.stuckProblemDescription = description;
                     this.requirement_result_ref.lastStatusUpdate = this.Helpers?.get_current_iso_datetime_utc?.() || new Date().toISOString();
                     this.requirement_result_ref.lastStatusUpdateBy = get_current_user_name();
-                    if (window.__GV_DEBUG_STUCK_SYNC__) {
+                    if (is_debug_stuck_sync()) {
                         consoleManager.log('[GV-Debug] Modal: Spara klickad, textlängd:', description.length);
                     }
                     if (this.on_stuck_description_saved_callback) {
@@ -539,7 +544,7 @@ export const ChecklistHandler = {
                         this.requirement_result_ref.stuckProblemDescription = '';
                         this.requirement_result_ref.lastStatusUpdate = this.Helpers?.get_current_iso_datetime_utc?.() || new Date().toISOString();
                         this.requirement_result_ref.lastStatusUpdateBy = get_current_user_name();
-                        if (window.__GV_DEBUG_STUCK_SYNC__) {
+                        if (is_debug_stuck_sync()) {
                             consoleManager.log('[GV-Debug] Modal: Problemet är löst klickad');
                         }
                         if (this.on_stuck_description_saved_callback) {

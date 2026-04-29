@@ -12,8 +12,15 @@ import {
     expand_view_slug_from_hash,
     normalize_params_from_hash_query
 } from './router_url_codec.js';
+import { is_debug_nav } from '../app/runtime_flags.js';
+import {
+    set_current_user_name_window,
+    set_restore_focus_info,
+    is_same_hash_render_scheduled,
+    set_same_hash_render_scheduled
+} from '../app/browser_globals.js';
 
-if (typeof window !== 'undefined' && window.__GV_DEBUG_NAV) {
+if (typeof window !== 'undefined' && is_debug_nav()) {
     consoleManager.log('[router] Debug-navigering aktiv.');
 }
 
@@ -204,13 +211,13 @@ export function navigate_and_set_hash(target_view_name, target_params = {}, opti
         // en render→router→render-loop (stack overflow). Vi schemalägger därför en render i nästa tick
         // och med en enkel reentrancy-guard.
         if (current_view_component_instance && typeof current_view_component_instance.render === 'function') {
-            if (window.__gv_same_hash_render_scheduled === true) return;
-            window.__gv_same_hash_render_scheduled = true;
+            if (is_same_hash_render_scheduled()) return;
+            set_same_hash_render_scheduled(true);
             Promise.resolve().then(() => {
                 try {
                     current_view_component_instance.render();
                 } finally {
-                    window.__gv_same_hash_render_scheduled = false;
+                    set_same_hash_render_scheduled(false);
                 }
             });
         }
@@ -239,7 +246,7 @@ export async function handle_hash_change(options) {
             try {
                 const user = await get_current_user_preferences_with_timeout();
                 if (user?.name) {
-                    window.__GV_CURRENT_USER_NAME__ = user.name;
+                    set_current_user_name_window(user.name);
                     if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('gv_current_user_name', user.name);
                 }
                 set_current_user_admin(!!user?.is_admin);
@@ -318,7 +325,7 @@ export async function handle_hash_change(options) {
             const focus_storage = load_focus_storage();
             const focus_info = focus_storage[scope_key];
             if (focus_info) {
-                window.__gv_restore_focus_info = focus_info;
+                set_restore_focus_info(focus_info);
             }
         }
     } catch {

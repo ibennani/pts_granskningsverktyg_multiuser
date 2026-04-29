@@ -1,9 +1,12 @@
-/**
- * App-start: tema, översättning, auth, synk mellan flikar, boot-merge, inloggning.
- */
+import {
+    is_auth_required_in_progress,
+    set_auth_required_in_progress,
+    set_current_user_name_window,
+    clear_current_user_name_window
+} from '../app/browser_globals.js';
 import { apply_session_boot_merge_from_backup } from './session_boot_merge.js';
-import { consoleManager } from '../utils/console_manager.js';
 import { memoryManager } from '../utils/memory_manager.js';
+import { consoleManager } from '../utils/console_manager.js';
 import { install_vite_dev_client_timestamp_listeners } from '../utils/vite_dev_client_timestamp.js';
 import { inject_deficiency_score_bar_gradient_styles } from './deficiency_color_scale.ts';
 
@@ -101,8 +104,8 @@ export async function init_app(deps) {
     init_draft_manager();
 
     const on_auth_required = async () => {
-        if (window.__gv_auth_required_in_progress) return;
-        window.__gv_auth_required_in_progress = true;
+        if (is_auth_required_in_progress()) return;
+        set_auth_required_in_progress(true);
         try {
             if (typeof sessionStorage !== 'undefined') sessionStorage.setItem(AUTH_REQUIRED_MESSAGE_KEY, '1');
         } catch (_) {
@@ -243,7 +246,7 @@ export async function init_app(deps) {
                 // ignoreras medvetet
             }
             try {
-                delete window.__GV_CURRENT_USER_NAME__;
+                clear_current_user_name_window();
             } catch (_) {
                 // ignoreras medvetet
             }
@@ -291,13 +294,13 @@ export async function init_app(deps) {
     }
 
     if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('gv_current_user_name')) {
-        window.__GV_CURRENT_USER_NAME__ = sessionStorage.getItem('gv_current_user_name');
+        set_current_user_name_window(sessionStorage.getItem('gv_current_user_name'));
     }
     const has_token = get_auth_token();
     if (has_token) {
         get_current_user_preferences().then((user) => {
             if (user?.name) {
-                window.__GV_CURRENT_USER_NAME__ = user.name;
+                set_current_user_name_window(user.name);
                 if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('gv_current_user_name', user.name);
             }
             set_current_user_admin(!!user?.is_admin);
@@ -308,7 +311,7 @@ export async function init_app(deps) {
         if (document.visibilityState !== 'visible' || !get_auth_token()) return;
         get_current_user_preferences().then((user) => {
             if (user?.name) {
-                window.__GV_CURRENT_USER_NAME__ = user.name;
+                set_current_user_name_window(user.name);
                 if (typeof sessionStorage !== 'undefined') sessionStorage.setItem('gv_current_user_name', user.name);
             }
             set_current_user_admin(!!user?.is_admin);

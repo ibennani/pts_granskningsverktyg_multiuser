@@ -25,7 +25,8 @@ import {
     is_same_view_quick_render,
     render_quick_view
 } from '../view/view_lifecycle.js';
-import { handle_view_lifecycle_error, render_view_not_found } from '../view/view_error_handler.js';
+import { render_view_not_found, handle_view_lifecycle_error } from '../view/view_error_handler.js';
+import { set_current_view_tracking, get_restore_position_via_hook } from '../app/browser_globals.js';
 
 /**
  * Renderar en vy utifrån namn och parametrar.
@@ -90,8 +91,10 @@ export async function render_view(view_name_to_render, params_to_render = {}, de
     render_ctx.current_view_name_rendered = view_name_mut;
     render_ctx.current_view_params_rendered_json = JSON.stringify(params_mut);
     try {
-        window.__gv_current_view_name = render_ctx.current_view_name_rendered;
-        window.__gv_current_view_params_json = render_ctx.current_view_params_rendered_json;
+        set_current_view_tracking(
+            render_ctx.current_view_name_rendered,
+            render_ctx.current_view_params_rendered_json
+        );
     } catch (_) {
         // ignoreras medvetet
     }
@@ -143,7 +146,7 @@ export async function render_view(view_name_to_render, params_to_render = {}, de
         ensure_skip_link_target(skip_target_rf);
         if (DraftManager?.restoreIntoDom) DraftManager.restoreIntoDom(skip_target_rf);
         update_restore_position(view_name_mut, params_mut, null);
-        updateBackupRestorePosition(window.__gv_get_restore_position?.());
+        updateBackupRestorePosition(get_restore_position_via_hook());
         apply_post_render_focus_instruction({ view_name: view_name_mut, view_root: skip_target_rf });
         return;
     }
@@ -209,7 +212,7 @@ export async function render_view(view_name_to_render, params_to_render = {}, de
             DraftManager.restoreIntoDom(view_init_root);
         }
         update_restore_position(view_name_mut, params_mut, null);
-        updateBackupRestorePosition(window.__gv_get_restore_position?.());
+        updateBackupRestorePosition(get_restore_position_via_hook());
 
         apply_post_render_focus_instruction({
             view_name: view_name_mut,

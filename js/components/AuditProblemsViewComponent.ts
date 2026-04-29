@@ -7,6 +7,8 @@ import './audit_problems_view_component.css';
 import { build_compact_hash_fragment } from '../logic/router_url_codec.js';
 import { consoleManager } from '../utils/console_manager.js';
 import { get_requirement_public_key, resolve_requirement_map_key } from '../audit_logic.js';
+import { get_current_view_name } from '../app/browser_globals.js';
+import { is_debug_problems_update } from '../app/runtime_flags.js';
 
 export class AuditProblemsViewComponent {
     constructor() {
@@ -75,7 +77,7 @@ export class AuditProblemsViewComponent {
     }
 
     async init({ root, deps }) {
-        if (window.__GV_DEBUG_PROBLEMS_UPDATE__) consoleManager.log('[GV-Debug problems] init: start');
+        if (is_debug_problems_update()) consoleManager.log('[GV-Debug problems] init: start');
         this.root = root;
         this.deps = deps;
 
@@ -90,7 +92,7 @@ export class AuditProblemsViewComponent {
 
         // Hämta senaste granskningen från servern så att antal och lista stämmer med DB (t.ex. vid återbesök eller flik med gammal session).
         const state = this.getState();
-        if (window.__GV_DEBUG_PROBLEMS_UPDATE__) {
+        if (is_debug_problems_update()) {
             const before_count = this.AuditLogic?.count_audit_problems ? this.AuditLogic.count_audit_problems(state) : -1;
             consoleManager.log('[GV-Debug problems] init: state innan fetch, kört-fast i state:', before_count, 'auditId:', state?.auditId || 'saknas');
         }
@@ -98,7 +100,7 @@ export class AuditProblemsViewComponent {
             try {
                 const { load_audit_with_rule_file } = await import('../api/client.js');
                 const full_state = await load_audit_with_rule_file(state.auditId);
-                if (window.__GV_DEBUG_PROBLEMS_UPDATE__ && full_state?.samples) {
+                if (is_debug_problems_update() && full_state?.samples) {
                     const stuck_from_server = (full_state.samples || []).reduce((n, s) => {
                         return n + Object.values(s?.requirementResults || {}).filter((r) => (r?.stuckProblemDescription || '').trim() !== '').length;
                     }, 0);
@@ -109,19 +111,19 @@ export class AuditProblemsViewComponent {
                         type: this.StoreActionTypes.REPLACE_STATE_FROM_REMOTE,
                         payload: { ...full_state, saveFileVersion: full_state.saveFileVersion || '2.1.0' }
                     });
-                    if (window.__GV_DEBUG_PROBLEMS_UPDATE__) {
+                    if (is_debug_problems_update()) {
                         const after_state = this.getState();
                         const after_count = this.AuditLogic?.count_audit_problems ? this.AuditLogic.count_audit_problems(after_state) : -1;
                         consoleManager.log('[GV-Debug problems] init: efter dispatch, kört-fast i state:', after_count);
                     }
-                } else if (window.__GV_DEBUG_PROBLEMS_UPDATE__) {
+                } else if (is_debug_problems_update()) {
                     consoleManager.log('[GV-Debug problems] init: full_state saknas eller samples saknas', { has_full_state: !!full_state, has_samples: !!full_state?.samples });
                 }
             } catch (e) {
-                if (window.__GV_DEBUG_PROBLEMS_UPDATE__) console.warn('[GV-Debug problems] init: fetch/dispatch fel', e);
+                if (is_debug_problems_update()) console.warn('[GV-Debug problems] init: fetch/dispatch fel', e);
                 if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[AuditProblemsViewComponent] Kunde inte hämta granskning från servern:', e);
             }
-        } else if (window.__GV_DEBUG_PROBLEMS_UPDATE__) {
+        } else if (is_debug_problems_update()) {
             consoleManager.log('[GV-Debug problems] init: hoppar över fetch', { has_auditId: !!state?.auditId, has_dispatch: typeof this.dispatch === 'function' });
         }
 
@@ -140,7 +142,7 @@ export class AuditProblemsViewComponent {
         this.unsubscribe = null;
         if (typeof deps.subscribe === 'function') {
             this.unsubscribe = deps.subscribe(() => {
-                if (!this.root || window.__gv_current_view_name !== 'audit_problems' || typeof this.render !== 'function') return;
+                if (!this.root || get_current_view_name() !== 'audit_problems' || typeof this.render !== 'function') return;
                 const state = this.getState();
                 const problems = this.AuditLogic?.collect_audit_problems ? this.AuditLogic.collect_audit_problems(state) : [];
                 const signature = JSON.stringify(problems.map((p) => ({ s: p.sample?.id, r: p.reqId, l: (p.stuck_text || '').length })));
@@ -589,7 +591,7 @@ export class AuditProblemsViewComponent {
         }
 
         const problems = this.AuditLogic?.collect_audit_problems ? this.AuditLogic.collect_audit_problems(state) : [];
-        if (window.__GV_DEBUG_PROBLEMS_UPDATE__) {
+        if (is_debug_problems_update()) {
             consoleManager.log('[GV-Debug problems] render: antal problem att rita:', problems.length, 'ruleFileContent.requirements:', state?.ruleFileContent?.requirements ? 'finns' : 'saknas');
         }
         this._problems_signature = JSON.stringify(problems.map((p) => ({ s: p.sample?.id, r: p.reqId, l: (p.stuck_text || '').length })));

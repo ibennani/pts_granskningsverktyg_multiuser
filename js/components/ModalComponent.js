@@ -2,6 +2,7 @@
 
 import './modal_component.css';
 import { consoleManager } from '../utils/console_manager.js';
+import { is_debug_modal_scroll } from '../app/runtime_flags.js';
 
 export class ModalComponent {
     static CSS_PATH = './modal_component.css';
@@ -295,7 +296,7 @@ export class ModalComponent {
             this._scroll_state.mainViewRoot = main_view_root.scrollTop;
         }
 
-        if (window.__GV_DEBUG_MODAL_SCROLL) {
+        if (is_debug_modal_scroll()) {
             const debug_count = { n: 0 };
             this._debug_observer = new MutationObserver((mutations) => {
                 debug_count.n += mutations.length;
@@ -354,7 +355,7 @@ export class ModalComponent {
         const debug_observer = this._debug_observer;
         const debug_mutation_count = this._debug_mutation_count?.n ?? 0;
 
-        if (window.__GV_DEBUG_MODAL_SCROLL) {
+        if (is_debug_modal_scroll()) {
             consoleManager.log('[GV-ModalDebug] _finish_close – sparad scroll:', scroll_state);
             consoleManager.log('[GV-ModalDebug] _finish_close – scroll FÖRE cleanup:', {
                 w: window.scrollY,
@@ -409,7 +410,7 @@ export class ModalComponent {
             document.documentElement.scrollTop = scroll_state.windowY;
             document.body.scrollTop = scroll_state.windowY;
 
-            if (window.__GV_DEBUG_MODAL_SCROLL) {
+            if (is_debug_modal_scroll()) {
                 consoleManager.log('[GV-ModalDebug] Efter sync restore:', {
                     w: window.scrollY,
                     ac: app_container?.scrollTop,
@@ -439,7 +440,7 @@ export class ModalComponent {
                 if (main_view_root && scroll_state.mainViewRoot !== null) {
                     main_view_root.scrollTop = scroll_state.mainViewRoot;
                 }
-                if (window.__GV_DEBUG_MODAL_SCROLL) {
+                if (is_debug_modal_scroll()) {
                     consoleManager.log('[GV-ModalDebug] Efter setTimeout(0) restore:', {
                         w: window.scrollY,
                         ac: app_container?.scrollTop,
@@ -454,7 +455,7 @@ export class ModalComponent {
                             focus_element.focus();
                         }
                     }
-                    if (window.__GV_DEBUG_MODAL_SCROLL) {
+                    if (is_debug_modal_scroll()) {
                         consoleManager.log('[GV-ModalDebug] Efter fokus:', {
                             w: window.scrollY,
                             ac: document.getElementById('app-container')?.scrollTop,

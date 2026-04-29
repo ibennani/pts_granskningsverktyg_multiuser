@@ -1,4 +1,4 @@
-// js/api/client.js
+import { get_api_base_url, clear_current_user_name_window } from '../app/browser_globals.js';
 
 const AUTH_TOKEN_KEY = 'gv_auth_token';
 const AUTH_USER_IS_ADMIN_KEY = 'gv_current_user_is_admin';
@@ -20,7 +20,7 @@ export function set_current_user_admin(is_admin) {
 
 export const get_base_url = () => {
     if (typeof window === 'undefined') return '/api';
-    const base = window.__GV_API_BASE__ || '/v2/api';
+    const base = get_api_base_url();
     return base.replace(/\/$/, '');
 };
 
@@ -69,7 +69,7 @@ function handle_unauthorized_response(res) {
         // ignoreras medvetet
     }
     try {
-        delete window.__GV_CURRENT_USER_NAME__;
+        clear_current_user_name_window();
     } catch (_) {
         // ignoreras medvetet
     }
@@ -105,7 +105,7 @@ export function get_websocket_url() {
     if (typeof window === 'undefined') return 'ws://localhost:3000/ws';
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host;
-    const base = window.__GV_API_BASE__ || '/v2/api';
+    const base = get_api_base_url();
     const ws_path = base.replace(/\/api\/?$/, '/ws').replace(/\/$/, '') || '/v2/ws';
     return `${protocol}//${host}${ws_path}`;
 }

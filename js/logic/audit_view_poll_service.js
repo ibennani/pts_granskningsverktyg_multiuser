@@ -10,7 +10,11 @@
 
 import { get_audit_version, load_audit_with_rule_file } from '../api/client.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
-import { should_show_audit_collaboration_notice, update_baseline_from_server_full_state } from './audit_collaboration_notice.js';
+import { get_current_view_name } from '../app/browser_globals.js';
+import {
+    should_show_audit_collaboration_notice,
+    update_baseline_from_server_full_state
+} from './audit_collaboration_notice.js';
 
 const POLL_INTERVAL_MS = 3000;
 const AUDIT_VIEWS = new Set([
@@ -31,7 +35,7 @@ const AUDIT_VIEWS = new Set([
 ]);
 
 function is_audit_view() {
-    const view = typeof window !== 'undefined' && window.__gv_current_view_name;
+    const view = typeof window !== 'undefined' && get_current_view_name();
     return view && AUDIT_VIEWS.has(view);
 }
 

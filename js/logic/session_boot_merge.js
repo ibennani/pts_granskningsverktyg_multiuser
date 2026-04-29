@@ -2,6 +2,7 @@
 // Vid cold start (ingen sessionStorage) men localStorage-backup: jämför med servern, högst version vinner.
 
 import { load_audit_with_rule_file } from '../api/client.js';
+import { set_restore_focus_info } from '../app/browser_globals.js';
 import { sync_to_server_now } from './server_sync.js';
 import { navigate_to_default_audit_view } from './audit_open_logic.js';
 
@@ -46,7 +47,7 @@ export async function apply_session_boot_merge_from_backup(options) {
     function navigate_after_merge() {
         if (restore_position?.view && typeof navigate_and_set_hash === 'function') {
             try {
-                window.__gv_restore_focus_info = restore_position.focusInfo || null;
+                set_restore_focus_info(restore_position.focusInfo || null);
                 navigate_and_set_hash(restore_position.view, restore_position.params || {});
                 if (typeof handle_hash_change === 'function') {
                     handle_hash_change();

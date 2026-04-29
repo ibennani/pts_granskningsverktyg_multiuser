@@ -6,6 +6,7 @@
 import { getState } from '../state.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import { clear_same_origin_sw_and_caches } from '../utils/clear_same_origin_sw_and_caches.js';
+import { get_api_base_url } from '../app/browser_globals.js';
 
 const INITIAL_DELAY_MS = 5000;
 // Cooldown efter att användaren sett/klickat på notisen – undviker att den dyker upp igen direkt efter omladdning
@@ -157,8 +158,7 @@ export function init_version_check_service() {
                         const state = getState();
                         const audit_id = state?.auditId;
                         if (audit_id && state?.ruleFileContent) {
-                            const raw_base = (typeof window !== 'undefined' && window.__GV_API_BASE__) ? window.__GV_API_BASE__ : '/v2/api';
-                            const api_base = String(raw_base).replace(/\/$/, '');
+                            const api_base = String(get_api_base_url()).replace(/\/$/, '');
                             let headers = { 'Content-Type': 'application/json' };
                             try {
                                 const token = typeof window !== 'undefined' && window.sessionStorage

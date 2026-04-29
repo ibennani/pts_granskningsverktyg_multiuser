@@ -26,6 +26,11 @@ import { make_observation_detail_part_key } from '../logic/audit_part_keys.js';
 import { post_same_user_field_commit } from '../logic/same_user_tab_field_sync.js';
 import { is_remote_lock_held_by_other_user } from '../logic/collab_lock_compare.js';
 import { find_requirement_definition, resolve_requirement_map_key, get_requirement_public_key } from '../audit_logic.js';
+import {
+    is_debug_autosave_focus,
+    is_debug_modal_scroll,
+    is_debug_stuck_sync
+} from '../app/runtime_flags.js';
 
 /** Intervall för att hämta om lås när WebSocket saknas eller släpper efter — kompletterar push. */
 const AUDIT_LOCK_POLL_MS = 4000;
@@ -138,7 +143,7 @@ export class RequirementAuditComponent {
                         void this.patch_dom_after_current_requirement_result_change();
                         return;
                     }
-                    if (window.__GV_DEBUG_MODAL_SCROLL && window.ConsoleManager) window.ConsoleManager.log('[GV-ModalDebug] RequirementAuditComponent: render');
+                    if (is_debug_modal_scroll() && window.ConsoleManager) window.ConsoleManager.log('[GV-ModalDebug] RequirementAuditComponent: render');
                     this.render();
                 }
             });
@@ -851,23 +856,23 @@ export class RequirementAuditComponent {
                     this.autosave_session?.flush?.({ should_trim: false, skip_render: true });
                 },
                 onStuckDescriptionSaved: async () => {
-                    if (window.__GV_DEBUG_STUCK_SYNC__) {
+                    if (is_debug_stuck_sync()) {
                         consoleManager.log('[GV-Debug] onStuckDescriptionSaved: sparar, anropar save_result_immediately + flush_sync_to_server');
                     }
                     this.save_result_immediately({ skipRender: false });
                     if (typeof this.flush_sync_to_server === 'function' && this.getState && this.dispatch) {
                         try {
                             await this.flush_sync_to_server(this.getState, this.dispatch);
-                            if (window.__GV_DEBUG_STUCK_SYNC__) {
+                            if (is_debug_stuck_sync()) {
                                 consoleManager.log('[GV-Debug] onStuckDescriptionSaved: flush_sync_to_server klar');
                             }
                         } catch (e) {
-                            if (window.__GV_DEBUG_STUCK_SYNC__) {
+                            if (is_debug_stuck_sync()) {
                                 console.warn('[GV-Debug] onStuckDescriptionSaved: flush_sync_to_server fel', e);
                             }
                             if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[RequirementAuditComponent] flush_sync_to_server efter kört fast:', e);
                         }
-                    } else if (window.__GV_DEBUG_STUCK_SYNC__) {
+                    } else if (is_debug_stuck_sync()) {
                         console.warn('[GV-Debug] onStuckDescriptionSaved: flush_sync_to_server inte tillgänglig');
                     }
                 }
@@ -1265,7 +1270,7 @@ export class RequirementAuditComponent {
     }
 
     async render() {
-        if (typeof window !== 'undefined' && window.__GV_DEBUG_AUTOSAVE_FOCUS && this.plate_element_ref) {
+        if (typeof window !== 'undefined' && is_debug_autosave_focus() && this.plate_element_ref) {
             const ae = document.activeElement;
             const tag = ae?.tagName?.toLowerCase();
             if (ae && this.plate_element_ref.contains(ae) && (tag === 'textarea' || tag === 'input')) {

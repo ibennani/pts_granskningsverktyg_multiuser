@@ -4,13 +4,18 @@
  */
 
 import { memoryManager } from '../utils/memory_manager.js';
+import {
+    clear_restore_focus_info,
+    get_restore_focus_info,
+    set_restore_position_getter
+} from '../app/browser_globals.js';
 
 const FOCUS_STORAGE_KEY = 'gv_focus_by_scope_v1';
 
 let restore_position_state = { view: null, params: {}, focusInfo: null };
 
 if (typeof window !== 'undefined') {
-    window.__gv_get_restore_position = () => restore_position_state;
+    set_restore_position_getter(() => restore_position_state);
 }
 
 export function load_focus_storage() {
@@ -111,9 +116,9 @@ export function update_restore_position(view, params, focus_info) {
 
 export function apply_restore_focus_instruction({ view_root }) {
     if (!view_root) return false;
-    const focus_info = window.__gv_restore_focus_info;
+    const focus_info = get_restore_focus_info();
     if (!focus_info) return false;
-    window.__gv_restore_focus_info = null;
+    clear_restore_focus_info();
     window.customFocusApplied = true;
 
     const try_focus = (attempts_left) => {

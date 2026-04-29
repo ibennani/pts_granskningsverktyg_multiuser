@@ -75,6 +75,7 @@ import {
 } from './logic/a11y_shell.js';
 import { render_view as render_view_impl } from './logic/view_render.js';
 import { init_app as init_app_impl, run_when_dom_ready } from './logic/app_bootstrap.js';
+import { set_debug_nav, is_debug_nav } from './app/runtime_flags.js';
 
 const notificationComponent = new NotificationComponent();
 const modalComponent = new ModalComponent();
@@ -97,12 +98,12 @@ if (typeof window !== 'undefined') {
     'use strict';
 
     if (typeof window !== 'undefined' && window.location.search.includes('debug=nav')) {
-        window.__GV_DEBUG_NAV = true;
+        set_debug_nav(true);
         consoleManager.log('[GV-NAV] Debug aktiverad via URL (?debug=nav). Klicka Granskningar från Start och titta i konsolen.');
     }
 
     const nav_debug = (msg, data) => {
-        if (window.__GV_DEBUG_NAV) {
+        if (is_debug_nav()) {
             consoleManager.log(`[GV-NAV] ${msg}`, data !== undefined ? data : '');
         }
     };

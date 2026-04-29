@@ -21,6 +21,7 @@ import {
     get_admin_contacts,
     is_current_user_admin
 } from '../../api/client.js';
+import { set_show_empty_metadata_form } from '../../app/browser_globals.js';
 import { subscribe_audits, subscribe_rules } from '../../logic/list_push_service.js';
 import { GenericTableComponent } from '../GenericTableComponent.js';
 import { AuditListComponent } from '../AuditListComponent.js';
@@ -699,7 +700,7 @@ export class AuditViewComponent {
                 payload: { ruleFileContent: migrated_content }
             });
             if (typeof window !== 'undefined') {
-                window.__GV_SHOW_EMPTY_METADATA_FORM = true;
+                set_show_empty_metadata_form(true);
             }
             this.router('metadata');
         } catch (error) {

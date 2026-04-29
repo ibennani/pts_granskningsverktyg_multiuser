@@ -4,9 +4,15 @@
 
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 
+import {
+    get_current_view_name,
+    is_audit_deleted_modal_shown,
+    set_audit_deleted_modal_shown
+} from '../app/browser_globals.js';
+
 export function show_audit_deleted_modal_and_navigate() {
     if (typeof window === 'undefined') return;
-    const current_view = window.__gv_current_view_name || null;
+    const current_view = get_current_view_name() || null;
     const outside_audit_views = new Set([
         'start',
         'audit',
@@ -24,8 +30,8 @@ export function show_audit_deleted_modal_and_navigate() {
     if (current_view && outside_audit_views.has(current_view)) {
         return;
     }
-    if (window.__GV_AUDIT_DELETED_MODAL_SHOWN__) return;
-    window.__GV_AUDIT_DELETED_MODAL_SHOWN__ = true;
+    if (is_audit_deleted_modal_shown()) return;
+    set_audit_deleted_modal_shown(true);
 
     const ModalComponent = app_runtime_refs.modal_component;
     const Helpers = window.Helpers;

@@ -11,6 +11,7 @@ import {
     should_show_rulefile_collaboration_notice,
     update_rulefile_baseline_from_remote
 } from './rulefile_collaboration_notice.js';
+import { get_current_view_name } from '../app/browser_globals.js';
 
 const POLL_INTERVAL_MS = 3000;
 const RULEFILE_VIEWS = new Set([
@@ -27,7 +28,7 @@ const RULEFILE_VIEWS = new Set([
 ]);
 
 function is_rulefile_view() {
-    const view = typeof window !== 'undefined' && window.__gv_current_view_name;
+    const view = typeof window !== 'undefined' && get_current_view_name();
     return view && RULEFILE_VIEWS.has(view);
 }
 

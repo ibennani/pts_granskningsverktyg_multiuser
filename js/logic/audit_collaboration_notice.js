@@ -9,6 +9,8 @@
  * @module js/logic/audit_collaboration_notice
  */
 
+import { get_current_view_name, get_current_view_params_json } from '../app/browser_globals.js';
+
 /** @type {Map<string, string>} */
 const baseline_serial_by_key = new Map();
 
@@ -46,10 +48,10 @@ export function clear_all_audit_baselines_for_testing() {
  */
 function get_focus_from_window() {
     if (typeof window === 'undefined') return null;
-    if (String(window.__gv_current_view_name || '') !== 'requirement_audit') return null;
+    if (String(get_current_view_name() || '') !== 'requirement_audit') return null;
     let params = {};
     try {
-        params = JSON.parse(window.__gv_current_view_params_json || '{}');
+        params = JSON.parse(get_current_view_params_json() || '{}');
     } catch {
         return null;
     }

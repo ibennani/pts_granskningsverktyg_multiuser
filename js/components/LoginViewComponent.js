@@ -1,6 +1,7 @@
 // js/components/LoginViewComponent.js
 
 import { login, set_auth_token, set_current_user_admin, get_current_user_preferences, reset_password_with_code, get_admin_contacts } from '../api/client.js';
+import { set_current_user_name_window } from '../app/browser_globals.js';
 import './login_view_component.css';
 
 export class LoginViewComponent {
@@ -226,7 +227,7 @@ export class LoginViewComponent {
                         sessionStorage.setItem('gv_current_user_name', user_name);
                     }
                     set_current_user_admin(!!user?.is_admin);
-                    window.__GV_CURRENT_USER_NAME__ = user_name;
+                    set_current_user_name_window(user_name);
                     if (typeof this.on_login_callback === 'function') {
                         this.on_login_callback();
                     }
@@ -297,7 +298,7 @@ export class LoginViewComponent {
                 }
                 set_current_user_admin(!!user?.is_admin);
                 if (user_name) {
-                    window.__GV_CURRENT_USER_NAME__ = user_name;
+                    set_current_user_name_window(user_name);
                 }
                 this.NotificationComponent?.show_global_message?.(t('login_reset_success'), 'success');
                 if (typeof this.on_login_callback === 'function') {

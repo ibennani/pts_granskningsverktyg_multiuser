@@ -14,6 +14,7 @@ import { should_show_audit_collaboration_notice, update_baseline_from_server_ful
 import { count_stuck_in_samples } from '../../shared/audit/audit_metrics.js';
 import { state_to_import, state_to_patch } from './sync_payload_mapper.js';
 import { broadcast_audit_updated } from './sync_broadcast.js';
+import { is_debug_stuck_sync } from '../app/runtime_flags.js';
 
 let debounce_timer = null;
 let audit_sync_tail = Promise.resolve();
@@ -54,11 +55,11 @@ async function run_sync(state, dispatch_fn) {
                 audit_edit_log: [...prev_log, entry].slice(-400)
             };
             const stuck_count = count_stuck_in_samples(patch.samples);
-            if (window.__GV_DEBUG_STUCK_SYNC__) {
+            if (is_debug_stuck_sync()) {
                 consoleManager.log('[GV-Debug] run_sync: skickar PATCH till servern,', stuck_count, 'kört-fast i payload, auditId:', state.auditId);
             }
             const full_state = await update_audit(state.auditId, patch);
-            if (window.__GV_DEBUG_STUCK_SYNC__) {
+            if (is_debug_stuck_sync()) {
                 consoleManager.log('[GV-Debug] run_sync: PATCH lyckades, version:', full_state?.version);
             }
             update_baseline_from_server_full_state(full_state);
@@ -108,7 +109,7 @@ async function run_sync(state, dispatch_fn) {
             clear_audit_sync_pending();
         }
     } catch (err) {
-        if (window.__GV_DEBUG_STUCK_SYNC__) {
+        if (is_debug_stuck_sync()) {
             console.warn('[GV-Debug] run_sync: PATCH misslyckades', err?.message || err, err);
         }
         if (is_fetch_network_error(err)) {
