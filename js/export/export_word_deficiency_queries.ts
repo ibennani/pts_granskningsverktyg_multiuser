@@ -3,24 +3,20 @@
  * @fileoverview Word-export: uppslag av krav/stickprov och brister för sortering och listor.
  */
 import { get_export_requirement_result } from './export_bootstrap.js';
+import {
+    for_each_failed_export_pass_criterion,
+    for_each_failed_in_requirement_result
+} from './export_deficiency_traversal.js';
+import { traverse_all_pass_criteria } from '../utils/traverse_audit_data.js';
 
 // Hjälpfunktioner
 export function get_requirements_with_deficiencies(current_audit) {
     const requirements_obj = current_audit.ruleFileContent?.requirements || {};
-    const requirements = Object.values(requirements_obj);
-    return requirements.filter(req => {
-        return (current_audit.samples || []).some(sample => {
-            const result = get_export_requirement_result(requirements_obj, sample, req);
-            if (!result || !result.checkResults) return false;
-
-            return Object.values(result.checkResults).some(check_res => {
-                if (!check_res || !check_res.passCriteria) return false;
-                return Object.values(check_res.passCriteria).some(pc_obj =>
-                    pc_obj && pc_obj.status === 'failed' && pc_obj.deficiencyId
-                );
-            });
-        });
+    const defs_hit = new Set();
+    for_each_failed_export_pass_criterion(current_audit, ({ req_definition }) => {
+        defs_hit.add(req_definition);
     });
+    return Object.values(requirements_obj).filter((req) => defs_hit.has(req));
 }
 
 export function get_total_requirements_count(current_audit) {
@@ -37,16 +33,13 @@ export function get_requirements_percentage(current_audit) {
 
 export function get_samples_for_requirement(requirement, current_audit) {
     const requirements_obj = current_audit.ruleFileContent?.requirements || {};
-    return (current_audit.samples || []).filter(sample => {
+    return (current_audit.samples || []).filter((sample) => {
         const result = get_export_requirement_result(requirements_obj, sample, requirement);
-        if (!result || !result.checkResults) return false;
-
-        return Object.values(result.checkResults).some(check_res => {
-            if (!check_res || !check_res.passCriteria) return false;
-            return Object.values(check_res.passCriteria).some(pc_obj =>
-                pc_obj && pc_obj.status === 'failed' && pc_obj.deficiencyId
-            );
+        let found = false;
+        for_each_failed_in_requirement_result(result, () => {
+            found = true;
         });
+        return found;
     });
 }
 
@@ -101,18 +94,12 @@ export function get_samples_with_deficiencies_for_requirement(requirement, curre
     const requirements_obj = current_audit.ruleFileContent?.requirements || {};
     const samples_with_deficiencies = [];
 
-    (current_audit.samples || []).forEach(sample => {
+    (current_audit.samples || []).forEach((sample) => {
         const result = get_export_requirement_result(requirements_obj, sample, requirement);
-        if (!result || !result.checkResults) return;
-
-        // Kontrollera om det finns underkännanden
-        const has_deficiencies = Object.values(result.checkResults).some(check_res => {
-            if (!check_res || !check_res.passCriteria) return false;
-            return Object.values(check_res.passCriteria).some(pc_obj =>
-                pc_obj && pc_obj.status === 'failed' && pc_obj.deficiencyId
-            );
+        let has_deficiencies = false;
+        for_each_failed_in_requirement_result(result, () => {
+            has_deficiencies = true;
         });
-
         if (has_deficiencies) {
             samples_with_deficiencies.push(sample);
         }
@@ -128,31 +115,23 @@ export function get_deficiencies_for_sample(requirement, sample, current_audit, 
 
     if (!result || !result.checkResults) return deficiencies;
 
-    Object.keys(result.checkResults).forEach(check_id => {
-        const check_res = result.checkResults[check_id];
-        if (!check_res || !check_res.passCriteria) return;
+    for_each_failed_in_requirement_result(result, ({ check_id, pc_id, pc_obj }) => {
+        const pc_def = requirement.checks?.find((c) => c.id === check_id)?.passCriteria?.find((p) => p.id === pc_id);
+        const templateObservation = pc_def?.failureStatementTemplate || '';
+        const userObservation = pc_obj.observationDetail || '';
+        const passCriterionText = pc_def?.requirement || '';
 
-        Object.keys(check_res.passCriteria).forEach(pc_id => {
-            const pc_obj = check_res.passCriteria[pc_id];
-            if (pc_obj && pc_obj.status === 'failed' && pc_obj.deficiencyId) {
-                const pc_def = requirement.checks?.find(c => c.id === check_id)?.passCriteria?.find(p => p.id === pc_id);
-                const templateObservation = pc_def?.failureStatementTemplate || '';
-                const userObservation = pc_obj.observationDetail || '';
-                const passCriterionText = pc_def?.requirement || '';
+        let finalObservation = userObservation;
+        let isStandardText = false;
+        if (!userObservation.trim() || userObservation.trim() === templateObservation.trim()) {
+            finalObservation = passCriterionText;
+            isStandardText = true;
+        }
 
-                let finalObservation = userObservation;
-                let isStandardText = false;
-                if (!userObservation.trim() || userObservation.trim() === templateObservation.trim()) {
-                    finalObservation = passCriterionText;
-                    isStandardText = true;
-                }
-
-                deficiencies.push({
-                    observationDetail: finalObservation,
-                    deficiencyId: pc_obj.deficiencyId,
-                    isStandardText: isStandardText
-                });
-            }
+        deficiencies.push({
+            observationDetail: finalObservation,
+            deficiencyId: pc_obj.deficiencyId,
+            isStandardText: isStandardText
         });
     });
 
@@ -194,23 +173,14 @@ export function group_deficiencies_by_requirement(deficiencies, current_audit) {
 
 // Helper to get failing requirement IDs for a specific sample
 export function get_failing_requirement_ids_for_sample(sample) {
-    const failing_ids = [];
-    const results = sample.requirementResults || {};
-    Object.keys(results).forEach(req_key => {
-        const result = results[req_key];
-        if (result.checkResults) {
-            let hasFailure = false;
-            Object.values(result.checkResults).forEach(check => {
-                if (check.passCriteria) {
-                    Object.values(check.passCriteria).forEach(pc => {
-                        if (pc.status === 'failed') hasFailure = true;
-                    });
-                }
-            });
-            if (hasFailure) failing_ids.push(req_key);
+    const failing_set = new Set();
+    traverse_all_pass_criteria({ samples: sample ? [sample] : [] }, (ctx) => {
+        const pc = ctx.pc_result;
+        if (pc && pc.status === 'failed') {
+            failing_set.add(ctx.req_key);
         }
     });
-    return failing_ids;
+    return [...failing_set];
 }
 
 // Helper to get deficiencies for a specific sample and requirement
@@ -227,4 +197,4 @@ export function get_all_deficiencies_for_sample_generic(sample, current_audit) {
         deficiencies.push(...defs);
     });
     return deficiencies;
-}
+}

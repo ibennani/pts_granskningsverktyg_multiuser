@@ -16,6 +16,7 @@ import {
     strip_markdown_for_excel
 } from './export_format_helpers.js';
 import { get_export_requirement_result, get_t_internal, show_global_message_internal } from './export_bootstrap.js';
+import { for_each_failed_in_requirement_result } from './export_deficiency_traversal.js';
 
 export async function export_to_excel(current_audit) {
     const t = get_t_internal();
@@ -63,54 +64,46 @@ export async function export_to_excel(current_audit) {
             const all_reqs = Object.values(requirements_for_export);
             all_reqs.forEach((req_definition) => {
                 const result = get_export_requirement_result(requirements_for_export, sample, req_definition);
-                if (!result || !result.checkResults) return;
-                Object.keys(result.checkResults).forEach((check_id) => {
-                    const check_res = result.checkResults[check_id];
-                    if (!check_res || !check_res.passCriteria) return;
-                    Object.keys(check_res.passCriteria).forEach((pc_id) => {
-                        const pc_obj = check_res.passCriteria[pc_id];
-                        if (pc_obj && pc_obj.status === 'failed' && pc_obj.deficiencyId) {
-                            const pc_def = req_definition.checks?.find((c) => c.id === check_id)?.passCriteria?.find((p) => p.id === pc_id);
-                            const templateObservation = pc_def?.failureStatementTemplate || '';
-                            const userObservation = pc_obj.observationDetail || '';
-                            const passCriterionText = pc_def?.requirement || '';
+                for_each_failed_in_requirement_result(result, ({ check_id, pc_id, pc_obj }) => {
+                    const pc_def = req_definition.checks?.find((c) => c.id === check_id)?.passCriteria?.find((p) => p.id === pc_id);
+                    const templateObservation = pc_def?.failureStatementTemplate || '';
+                    const userObservation = pc_obj.observationDetail || '';
+                    const passCriterionText = pc_def?.requirement || '';
 
-                            let finalObservation = userObservation;
-                            if (!userObservation.trim() || userObservation.trim() === templateObservation.trim()) {
-                                finalObservation = passCriterionText;
-                            }
-                            finalObservation = strip_markdown_for_excel(finalObservation);
+                    let finalObservation = userObservation;
+                    if (!userObservation.trim() || userObservation.trim() === templateObservation.trim()) {
+                        finalObservation = passCriterionText;
+                    }
+                    finalObservation = strip_markdown_for_excel(finalObservation);
 
-                            const ref_text_raw = req_definition.standardReference?.text || '';
-                            const reference_obj = { text: strip_markdown_for_excel(ref_text_raw) };
-                            if (req_definition.standardReference?.url) {
-                                reference_obj.hyperlink = Helpers.add_protocol_if_missing(req_definition.standardReference.url);
-                            }
+                    const ref_text_raw = req_definition.standardReference?.text || '';
+                    const reference_obj = { text: strip_markdown_for_excel(ref_text_raw) };
+                    if (req_definition.standardReference?.url) {
+                        reference_obj.hyperlink = Helpers.add_protocol_if_missing(req_definition.standardReference.url);
+                    }
 
-                            const url_obj = sample.url
-                                ? {
-                                    text: strip_markdown_for_excel(String(sample.url)),
-                                    hyperlink: Helpers.add_protocol_if_missing(sample.url)
-                                }
-                                : null;
-
-                            const pour_vals = get_wcag_pour_export_values_for_requirement(req_definition, current_audit, t);
-                            const comment_text = strip_markdown_for_excel((result.commentToAuditor || '').trim());
-                            deficiencies_data.push({
-                                id: extractDeficiencyNumber(pc_obj.deficiencyId),
-                                reqTitle: strip_markdown_for_excel(String(req_definition.title || '')),
-                                reference: reference_obj,
-                                sampleName: strip_markdown_for_excel(String(sample.description || '')),
-                                sampleUrl: url_obj,
-                                deficiencyType: '',
-                                observation: finalObservation,
-                                comment: comment_text,
-                                wcagPerceivable: pour_vals.wcagPerceivable,
-                                wcagOperable: pour_vals.wcagOperable,
-                                wcagUnderstandable: pour_vals.wcagUnderstandable,
-                                wcagRobust: pour_vals.wcagRobust
-                            });
+                    const url_obj = sample.url
+                        ? {
+                            text: strip_markdown_for_excel(String(sample.url)),
+                            hyperlink: Helpers.add_protocol_if_missing(sample.url)
                         }
+                        : null;
+
+                    const pour_vals = get_wcag_pour_export_values_for_requirement(req_definition, current_audit, t);
+                    const comment_text = strip_markdown_for_excel((result.commentToAuditor || '').trim());
+                    deficiencies_data.push({
+                        id: extractDeficiencyNumber(pc_obj.deficiencyId),
+                        reqTitle: strip_markdown_for_excel(String(req_definition.title || '')),
+                        reference: reference_obj,
+                        sampleName: strip_markdown_for_excel(String(sample.description || '')),
+                        sampleUrl: url_obj,
+                        deficiencyType: '',
+                        observation: finalObservation,
+                        comment: comment_text,
+                        wcagPerceivable: pour_vals.wcagPerceivable,
+                        wcagOperable: pour_vals.wcagOperable,
+                        wcagUnderstandable: pour_vals.wcagUnderstandable,
+                        wcagRobust: pour_vals.wcagRobust
                     });
                 });
             });

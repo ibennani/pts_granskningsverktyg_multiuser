@@ -18,6 +18,7 @@ export default {
     '^.+[\\\\/]export_format_helpers\\.js$': '<rootDir>/js/export/export_format_helpers.ts',
     '^.+[\\\\/]export_bootstrap\\.js$': '<rootDir>/js/export/export_bootstrap.ts',
     '^.+[\\\\/]export_csv\\.js$': '<rootDir>/js/export/export_csv.ts',
+    '^.+[\\\\/]export_deficiency_traversal\\.js$': '<rootDir>/js/export/export_deficiency_traversal.ts',
     '^.+[\\\\/]export_excel\\.js$': '<rootDir>/js/export/export_excel.ts',
     '^.+[\\\\/]export_word_markdown_docx\\.js$': '<rootDir>/js/export/export_word_markdown_docx.ts',
     '^.+[\\\\/]export_word_requirement_sections\\.js$': '<rootDir>/js/export/export_word_requirement_sections.ts',

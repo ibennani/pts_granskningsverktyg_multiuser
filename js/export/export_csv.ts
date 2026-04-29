@@ -11,6 +11,7 @@ import {
     get_wcag_pour_export_values_for_requirement
 } from './export_format_helpers.js';
 import { get_export_requirement_result, get_t_internal, show_global_message_internal } from './export_bootstrap.js';
+import { for_each_failed_in_requirement_result } from './export_deficiency_traversal.js';
 
 export async function export_to_csv(current_audit) {
     const t = get_t_internal();
@@ -42,43 +43,33 @@ export async function export_to_csv(current_audit) {
         const all_reqs = Object.values(requirements_for_export);
         all_reqs.forEach((req_definition) => {
             const result = get_export_requirement_result(requirements_for_export, sample, req_definition);
-            if (!result || !result.checkResults) return;
+            for_each_failed_in_requirement_result(result, ({ check_id, pc_id, pc_obj }) => {
+                const pc_def = req_definition.checks?.find((c) => c.id === check_id)?.passCriteria?.find((p) => p.id === pc_id);
+                const templateObservation = pc_def?.failureStatementTemplate || '';
+                const userObservation = pc_obj.observationDetail || '';
+                const passCriterionText = pc_def?.requirement || '';
 
-            Object.keys(result.checkResults).forEach((check_id) => {
-                const check_res = result.checkResults[check_id];
-                if (!check_res || !check_res.passCriteria) return;
+                let finalObservation = userObservation;
+                if (!userObservation.trim() || userObservation.trim() === templateObservation.trim()) {
+                    finalObservation = passCriterionText;
+                }
 
-                Object.keys(check_res.passCriteria).forEach((pc_id) => {
-                    const pc_obj = check_res.passCriteria[pc_id];
-                    if (pc_obj && pc_obj.status === 'failed' && pc_obj.deficiencyId) {
-                        const pc_def = req_definition.checks?.find((c) => c.id === check_id)?.passCriteria?.find((p) => p.id === pc_id);
-                        const templateObservation = pc_def?.failureStatementTemplate || '';
-                        const userObservation = pc_obj.observationDetail || '';
-                        const passCriterionText = pc_def?.requirement || '';
-
-                        let finalObservation = userObservation;
-                        if (!userObservation.trim() || userObservation.trim() === templateObservation.trim()) {
-                            finalObservation = passCriterionText;
-                        }
-
-                        const pour_vals = get_wcag_pour_export_values_for_requirement(req_definition, current_audit, t);
-                        const row_values = [
-                            escape_for_csv(extractDeficiencyNumber(pc_obj.deficiencyId)),
-                            escape_for_csv(req_definition.title),
-                            escape_for_csv(req_definition.standardReference?.text || ''),
-                            escape_for_csv(sample.description),
-                            escape_for_csv(sample.url),
-                            escape_for_csv('Här kommer en ny text visas. Denna text är ännu inte klar.'),
-                            escape_for_csv(''),
-                            escape_for_csv(finalObservation),
-                            escape_for_csv(pour_vals.wcagPerceivable),
-                            escape_for_csv(pour_vals.wcagOperable),
-                            escape_for_csv(pour_vals.wcagUnderstandable),
-                            escape_for_csv(pour_vals.wcagRobust)
-                        ];
-                        csv_content_array.push(row_values.join(';'));
-                    }
-                });
+                const pour_vals = get_wcag_pour_export_values_for_requirement(req_definition, current_audit, t);
+                const row_values = [
+                    escape_for_csv(extractDeficiencyNumber(pc_obj.deficiencyId)),
+                    escape_for_csv(req_definition.title),
+                    escape_for_csv(req_definition.standardReference?.text || ''),
+                    escape_for_csv(sample.description),
+                    escape_for_csv(sample.url),
+                    escape_for_csv('Här kommer en ny text visas. Denna text är ännu inte klar.'),
+                    escape_for_csv(''),
+                    escape_for_csv(finalObservation),
+                    escape_for_csv(pour_vals.wcagPerceivable),
+                    escape_for_csv(pour_vals.wcagOperable),
+                    escape_for_csv(pour_vals.wcagUnderstandable),
+                    escape_for_csv(pour_vals.wcagRobust)
+                ];
+                csv_content_array.push(row_values.join(';'));
             });
         });
     });
