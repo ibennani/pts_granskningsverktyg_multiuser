@@ -3,24 +3,26 @@
 import * as AuditLogic from '../audit_logic.js';
 import { get_current_user_name } from '../utils/helpers.js';
 import { ActionTypes } from './actionTypes.js';
-import { initial_state, APP_STATE_VERSION } from './initialState.js';
-
-function get_current_iso_datetime_utc_internal() {
-    return new Date().toISOString();
-}
-
-/** Tar bort duplicerat lagert under publikt id när resultatet flyttats till map-nyckel. */
-function remove_stale_requirement_result_aliases(new_results, map_key, req_def) {
-    if (!new_results || map_key == null) return;
-    const mk = String(map_key);
-    for (const pk of [req_def.key, req_def.id]) {
-        if (pk == null) continue;
-        const s = String(pk);
-        if (s !== mk && Object.prototype.hasOwnProperty.call(new_results, s)) {
-            delete new_results[s];
-        }
-    }
-}
+import { get_current_iso_datetime_utc } from './audit_reducer_time.js';
+import { remove_stale_requirement_result_aliases } from './auditResultAliases.js';
+import { reduce_update_metadata } from './metadataHandlers.js';
+import { reduce_set_audit_status } from './auditStatusHandlers.js';
+import {
+    reduce_stage_sample_changes,
+    reduce_clear_staged_sample_changes,
+    reduce_set_sample_edit_draft,
+    reduce_clear_sample_edit_draft,
+    reduce_add_sample,
+    reduce_update_sample,
+    reduce_delete_sample
+} from './sampleHandlers.js';
+import {
+    reduce_initialize_new_audit,
+    reduce_initialize_rulefile_editing,
+    reduce_load_audit_from_file,
+    reduce_set_remote_audit_id,
+    reduce_replace_state_from_remote
+} from './remoteStateHandlers.js';
 
 export function auditReducer(current_state, action) {
     let new_state;
@@ -228,7 +230,7 @@ export function auditReducer(current_state, action) {
             if (!current_state.ruleFileContent?.requirements || !current_state.samples?.length) {
                 return current_state;
             }
-            const timestamp = get_current_iso_datetime_utc_internal();
+            const timestamp = get_current_iso_datetime_utc();
             const new_samples = current_state.samples.map(sample => {
                 const relevant_reqs = AuditLogic.get_relevant_requirements_for_sample(current_state.ruleFileContent, sample);
                 const new_results = { ...(sample.requirementResults || {}) };
@@ -274,7 +276,7 @@ export function auditReducer(current_state, action) {
             if (!requirement_id || !current_state.ruleFileContent?.requirements || !current_state.samples?.length) {
                 return current_state;
             }
-            const timestamp = get_current_iso_datetime_utc_internal();
+            const timestamp = get_current_iso_datetime_utc();
             const new_samples = current_state.samples.map(sample => {
                 const relevant_reqs = AuditLogic.get_relevant_requirements_for_sample(current_state.ruleFileContent, sample);
                 const req_def = relevant_reqs.find(r => (r.key || r.id) === requirement_id);
@@ -311,150 +313,27 @@ export function auditReducer(current_state, action) {
             return AuditLogic.updateIncrementalDeficiencyIds(new_state);
         }
         case ActionTypes.STAGE_SAMPLE_CHANGES:
-            return { ...current_state, pendingSampleChanges: action.payload };
+            return reduce_stage_sample_changes(current_state, action);
         case ActionTypes.CLEAR_STAGED_SAMPLE_CHANGES:
-            return { ...current_state, pendingSampleChanges: null };
+            return reduce_clear_staged_sample_changes(current_state);
         case ActionTypes.SET_SAMPLE_EDIT_DRAFT:
-            return { ...current_state, sampleEditDraft: action.payload };
+            return reduce_set_sample_edit_draft(current_state, action);
         case ActionTypes.CLEAR_SAMPLE_EDIT_DRAFT:
-            return { ...current_state, sampleEditDraft: null };
+            return reduce_clear_sample_edit_draft(current_state);
         case ActionTypes.INITIALIZE_NEW_AUDIT:
-            return {
-                ...initial_state,
-                saveFileVersion: APP_STATE_VERSION,
-                ruleFileContent: action.payload.ruleFileContent,
-                auditMetadata: {
-                    caseNumber: '', actorName: '', actorLink: '', auditorName: '', caseHandler: '', internalComment: ''
-                },
-                uiSettings: JSON.parse(JSON.stringify(initial_state.uiSettings)),
-                auditStatus: 'not_started'
-            };
+            return reduce_initialize_new_audit(current_state, action);
         case ActionTypes.INITIALIZE_RULEFILE_EDITING:
-            return {
-                ...initial_state,
-                saveFileVersion: APP_STATE_VERSION,
-                ruleFileContent: action.payload.ruleFileContent,
-                ruleFileIsPublished: action.payload.ruleFileIsPublished ?? false,
-                uiSettings: JSON.parse(JSON.stringify(initial_state.uiSettings)),
-                auditStatus: 'rulefile_editing',
-                ruleFileOriginalContentString: action.payload.originalRuleFileContentString || null,
-                ruleFileOriginalFilename: action.payload.originalRuleFileFilename || '',
-                ruleSetId: action.payload.ruleSetId ?? null,
-                ruleFileServerVersion: action.payload.ruleFileServerVersion ?? 0
-            };
+            return reduce_initialize_rulefile_editing(current_state, action);
         case ActionTypes.LOAD_AUDIT_FROM_FILE:
-            if (action.payload && typeof action.payload === 'object') {
-                const loaded_data = action.payload;
-                const new_state_base = JSON.parse(JSON.stringify(initial_state));
-                let merged_state = {
-                    ...new_state_base,
-                    ...loaded_data,
-                    uiSettings: { ...new_state_base.uiSettings, ...(loaded_data.uiSettings || {}) },
-                    saveFileVersion: APP_STATE_VERSION
-                };
-                if (!Array.isArray(merged_state.archivedRequirementResults)) {
-                    merged_state.archivedRequirementResults = [];
-                }
-                (merged_state.samples || []).forEach(sample => {
-                    Object.values(sample.requirementResults || {}).forEach(reqResult => {
-                        Object.values(reqResult.checkResults || {}).forEach(checkResult => {
-                            if (checkResult.passCriteria) {
-                                Object.keys(checkResult.passCriteria).forEach(pcId => {
-                                    const pcValue = checkResult.passCriteria[pcId];
-                                    if (typeof pcValue === 'string') {
-                                        checkResult.passCriteria[pcId] = {
-                                            status: pcValue,
-                                            observationDetail: '',
-                                            timestamp: merged_state.startTime || null,
-                                            attachedMediaFilenames: []
-                                        };
-                                    } else if (typeof pcValue === 'object' && pcValue !== null && !Array.isArray(pcValue.attachedMediaFilenames)) {
-                                        pcValue.attachedMediaFilenames = [];
-                                    }
-                                });
-                            }
-                        });
-                        const stuck_parts = [];
-                        Object.values(reqResult.checkResults || {}).forEach(checkResult => {
-                            Object.values(checkResult.passCriteria || {}).forEach(pcResult => {
-                                const s = (pcResult?.stuckProblemDescription || '').trim();
-                                if (s) stuck_parts.push(s);
-                                if (pcResult && typeof pcResult === 'object') delete pcResult.stuckProblemDescription;
-                            });
-                        });
-                        if (stuck_parts.length > 0) reqResult.stuckProblemDescription = stuck_parts.join('\n\n');
-                        if (typeof reqResult.stuckProblemDescription !== 'string') reqResult.stuckProblemDescription = '';
-                    });
-                });
-                if (!merged_state.deficiencyCounter) merged_state.deficiencyCounter = 1;
-                merged_state = AuditLogic.recalculateAuditTimes(merged_state);
-                merged_state.manageUsersText = current_state.manageUsersText ?? '';
-                let loaded_final = AuditLogic.recalculateStatusesOnLoad(merged_state);
-                if ((loaded_final.auditStatus === 'locked' || loaded_final.auditStatus === 'archived')
-                    && (loaded_final.auditLastUpdatedAtFrozen === undefined || loaded_final.auditLastUpdatedAtFrozen === null)) {
-                    loaded_final = {
-                        ...loaded_final,
-                        auditLastUpdatedAtFrozen: AuditLogic.compute_audit_last_updated_live_timestamp(loaded_final)
-                    };
-                }
-                return loaded_final;
-            }
-            if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[State] LOAD_AUDIT_FROM_FILE: Invalid payload.', action.payload);
-            return current_state;
-        case ActionTypes.UPDATE_METADATA: {
-            const payload = { ...(action.payload || {}) };
-            const skip_internal_sync = action.payload?.skip_server_sync === true;
-            delete payload.skip_server_sync;
-            if (current_state.auditStatus === 'archived') {
-                const keys = Object.keys(payload);
-                if (keys.length !== 1 || keys[0] !== 'audit_edit_log') return current_state;
-            }
-            const merged = {
-                ...current_state,
-                auditMetadata: { ...current_state.auditMetadata, ...payload }
-            };
-            const may_bump_non_obs = !skip_internal_sync
-                && current_state.auditStatus !== 'locked'
-                && current_state.auditStatus !== 'archived';
-            if (may_bump_non_obs) {
-                merged.auditLastNonObservationActivityAt = get_current_iso_datetime_utc_internal();
-            }
-            return merged;
-        }
-        case ActionTypes.ADD_SAMPLE: {
-            if (current_state.auditStatus === 'archived') return current_state;
-            const new_sample_with_defaults = { sampleCategory: '', sampleType: '', ...action.payload };
-            const out = {
-                ...current_state,
-                samples: [...current_state.samples, new_sample_with_defaults]
-            };
-            if (current_state.auditStatus !== 'locked') {
-                out.auditLastNonObservationActivityAt = get_current_iso_datetime_utc_internal();
-            }
-            return out;
-        }
+            return reduce_load_audit_from_file(current_state, action);
+        case ActionTypes.UPDATE_METADATA:
+            return reduce_update_metadata(current_state, action);
+        case ActionTypes.ADD_SAMPLE:
+            return reduce_add_sample(current_state, action);
         case ActionTypes.UPDATE_SAMPLE:
-            if (current_state.auditStatus === 'archived') return current_state;
-            {
-                const base = {
-                    ...current_state,
-                    samples: current_state.samples.map(s => s.id === action.payload.sampleId ? { ...s, ...action.payload.updatedSampleData } : s)
-                };
-                if (current_state.auditStatus !== 'locked') {
-                    base.auditLastNonObservationActivityAt = get_current_iso_datetime_utc_internal();
-                }
-                return base;
-            }
+            return reduce_update_sample(current_state, action);
         case ActionTypes.DELETE_SAMPLE:
-            if (current_state.auditStatus === 'archived') return current_state;
-            new_state = {
-                ...current_state,
-                samples: current_state.samples.filter(s => s.id !== action.payload.sampleId)
-            };
-            if (current_state.auditStatus !== 'locked') {
-                new_state.auditLastNonObservationActivityAt = get_current_iso_datetime_utc_internal();
-            }
-            return AuditLogic.updateIncrementalDeficiencyIds(new_state);
+            return reduce_delete_sample(current_state, action);
         case ActionTypes.UPDATE_REQUIREMENT_RESULT: {
             if (current_state.auditStatus === 'archived') return current_state;
             const { sampleId: updateSampleId, requirementId: updateRequirementId, newRequirementResult } = action.payload;
@@ -470,64 +349,12 @@ export function auditReducer(current_state, action) {
             new_state = AuditLogic.recalculateAuditTimes(new_state);
             return AuditLogic.updateIncrementalDeficiencyIds(new_state);
         }
-        case ActionTypes.SET_AUDIT_STATUS: {
-            const newStatus = action.payload.status;
-            let state_before_status_change = current_state;
-            let frozen_last_updated = current_state.auditLastUpdatedAtFrozen ?? null;
-            if (newStatus === 'locked' && current_state.auditStatus === 'in_progress') {
-                if (current_state.deficiencyCounter === 1) {
-                    state_before_status_change = AuditLogic.assignSortedDeficiencyIdsOnLock(current_state);
-                }
-                state_before_status_change = AuditLogic.recalculateAuditTimes(state_before_status_change);
-                if (!state_before_status_change.endTime) {
-                    state_before_status_change = { ...state_before_status_change, endTime: get_current_iso_datetime_utc_internal() };
-                }
-                frozen_last_updated = AuditLogic.compute_audit_last_updated_live_timestamp(state_before_status_change);
-            } else if (newStatus === 'in_progress' && current_state.auditStatus === 'locked') {
-                state_before_status_change = AuditLogic.removeAllDeficiencyIds(current_state);
-                state_before_status_change = { ...AuditLogic.recalculateAuditTimes(state_before_status_change), endTime: null };
-                frozen_last_updated = null;
-            } else if (newStatus === 'in_progress' && current_state.auditStatus === 'not_started') {
-                state_before_status_change = AuditLogic.removeAllDeficiencyIds(current_state);
-                state_before_status_change = AuditLogic.recalculateAuditTimes(state_before_status_change);
-            } else if (newStatus === 'archived' && current_state.auditStatus === 'locked') {
-                state_before_status_change = current_state;
-            } else if (newStatus === 'locked' && current_state.auditStatus === 'archived') {
-                state_before_status_change = current_state;
-            }
-            return {
-                ...state_before_status_change,
-                auditStatus: newStatus,
-                auditLastUpdatedAtFrozen: frozen_last_updated
-            };
-        }
+        case ActionTypes.SET_AUDIT_STATUS:
+            return reduce_set_audit_status(current_state, action);
         case ActionTypes.SET_REMOTE_AUDIT_ID:
-            return {
-                ...current_state,
-                auditId: action.payload.auditId,
-                ruleSetId: action.payload.ruleSetId ?? current_state.ruleSetId,
-                version: action.payload.version ?? current_state.version
-            };
-        case ActionTypes.REPLACE_STATE_FROM_REMOTE: {
-            const remote = action.payload;
-            if (!remote || typeof remote !== 'object') return current_state;
-            let merged_remote = {
-                ...remote,
-                uiSettings: current_state.uiSettings || remote.uiSettings || {},
-                manageUsersText: current_state.manageUsersText ?? '',
-                // Bevara lokala "utkast"/bekräftelsedata vid server-poll, annars kan användarens val försvinna.
-                pendingSampleChanges: current_state.pendingSampleChanges ?? null,
-                sampleEditDraft: current_state.sampleEditDraft ?? null
-            };
-            if ((merged_remote.auditStatus === 'locked' || merged_remote.auditStatus === 'archived')
-                && (merged_remote.auditLastUpdatedAtFrozen === undefined || merged_remote.auditLastUpdatedAtFrozen === null)) {
-                merged_remote = {
-                    ...merged_remote,
-                    auditLastUpdatedAtFrozen: AuditLogic.compute_audit_last_updated_live_timestamp(merged_remote)
-                };
-            }
-            return merged_remote;
-        }
+            return reduce_set_remote_audit_id(current_state, action);
+        case ActionTypes.REPLACE_STATE_FROM_REMOTE:
+            return reduce_replace_state_from_remote(current_state, action);
         default:
             return current_state;
     }
