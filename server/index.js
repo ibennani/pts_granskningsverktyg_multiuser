@@ -16,7 +16,7 @@ import auditsRouter from './routes/audits.js';
 import backupRouter from './routes/backup.js';
 import timeRouter from './routes/time.js';
 import { get_last_backup_status, start_backup_scheduler } from './backup/audit_backup.js';
-import { JSON_MAX_UPLOAD_BYTES } from '../js/constants/json_upload_limits.js';
+import { JSON_MAX_UPLOAD_BYTES } from '../shared/constants/json_upload_limits.js';
 
 process.on('uncaughtException', (err) => {
     logger.error({ err }, '[Server] Uncaught exception');

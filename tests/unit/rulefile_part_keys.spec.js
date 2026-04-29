@@ -3,7 +3,7 @@ import {
     make_requirement_part_key,
     make_infoblock_text_part_key,
     parse_part_key
-} from '../../js/logic/rulefile_part_keys.js';
+} from '../../shared/rulefile/rulefile_part_keys.js';
 
 describe('rulefile_part_keys', () => {
     test('bygger och tolkar infoblock-nyckel', () => {

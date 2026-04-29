@@ -3,7 +3,7 @@ import {
     make_requirement_text_part_key,
     make_observation_detail_part_key,
     parse_audit_part_key
-} from '../../js/logic/audit_part_keys.js';
+} from '../../shared/audit/audit_part_keys.js';
 
 describe('audit_part_keys', () => {
     test('bygger och tolkar req_text', () => {

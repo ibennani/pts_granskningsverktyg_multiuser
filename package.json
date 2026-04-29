@@ -24,7 +24,7 @@
     "remote:fix-prod-deps": "node scripts/remote-fix-prod-deps.js",
     "build": "vite build && node scripts/postbuild-copy.js",
     "preview": "vite preview",
-    "lint:js": "eslint \"js/**/*.js\" --quiet",
+    "lint:js": "eslint \"js/**/*.js\" \"shared/**/*.js\" --quiet",
     "lint:ts": "eslint \"js/**/*.ts\" --quiet",
     "lint": "npm run lint:js",
     "typecheck": "tsc --noEmit",

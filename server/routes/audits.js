@@ -10,7 +10,7 @@ import { requireAdmin } from '../auth/middleware.js';
 import { import_payload_rate_limiter } from '../middleware/rateLimiter.js';
 import { attach_export_integrity_server_payload } from '../utils/export_integrity_node.js';
 import { build_statistics_from_audit_rows } from '../audit_aggregated_statistics.js';
-import { parse_audit_part_key } from '../../js/logic/audit_part_keys.js';
+import { parse_audit_part_key } from '../../shared/audit/audit_part_keys.js';
 import { broadcast } from '../ws.js';
 import { count_stuck_in_samples } from '../../shared/audit/audit_metrics.js';
 import {
