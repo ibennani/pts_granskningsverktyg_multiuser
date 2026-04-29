@@ -13,6 +13,14 @@ import { build_statistics_from_audit_rows } from '../audit_aggregated_statistics
 import { parse_audit_part_key } from '../../js/logic/audit_part_keys.js';
 import { broadcast } from '../ws.js';
 import { count_stuck_in_samples } from '../../shared/audit/audit_metrics.js';
+import {
+    fetch_audits_index_rows,
+    fetch_statistics_audits_locked_archived,
+    select_audit_id_exists,
+    select_audit_id_by_sample_id,
+    fetch_audit_summary_for_import_conflict
+} from '../repositories/audit_repository.js';
+import { fetch_rule_set_by_id } from '../repositories/rule_repository.js';
 
 const router = express.Router();
 
@@ -119,24 +127,6 @@ export function build_full_state(audit_row, rule_set_row) {
     };
 }
 
-let has_rule_sets_published_column = null;
-
-async function ensure_rule_sets_published_column() {
-    if (has_rule_sets_published_column !== null) return has_rule_sets_published_column;
-    try {
-        const result = await query(
-            `SELECT 1 FROM information_schema.columns
-             WHERE table_name = 'rule_sets' AND column_name = 'published_content'
-             LIMIT 1`
-        );
-        has_rule_sets_published_column = result.rows.length > 0;
-    } catch (err) {
-        console.warn('[audits] Kunde inte kontrollera published_content-kolumn på rule_sets:', err.message);
-        has_rule_sets_published_column = false;
-    }
-    return has_rule_sets_published_column;
-}
-
 /** Returnerar audit-data UTAN ruleFileContent – regelfilen hämtas separat via rule_set_id. */
 function build_audit_state_without_rule_file(audit_row) {
     const samples = audit_row.samples || [];
@@ -163,32 +153,7 @@ function build_audit_state_without_rule_file(audit_row) {
 router.get('/', async (req, res) => {
     try {
         const { status } = req.query;
-        const hasPublished = await ensure_rule_sets_published_column();
-        let sql;
-        if (hasPublished) {
-            sql = `SELECT a.id, a.rule_set_id, a.rule_file_content, a.status, a.metadata, a.samples, a.version, a.last_updated_by, a.created_at, a.updated_at::text AS updated_at,
-            COALESCE(
-                NULLIF(TRIM(COALESCE(a.rule_file_content, COALESCE(r.published_content, r.content))->'metadata'->>'title'), ''),
-                r.name
-            ) as rule_set_name,
-            COALESCE(a.rule_file_content, COALESCE(r.published_content, r.content)) as rule_content
-            FROM audits a LEFT JOIN rule_sets r ON a.rule_set_id = r.id`;
-        } else {
-            sql = `SELECT a.id, a.rule_set_id, a.rule_file_content, a.status, a.metadata, a.samples, a.version, a.last_updated_by, a.created_at, a.updated_at::text AS updated_at,
-            COALESCE(
-                NULLIF(TRIM(COALESCE(a.rule_file_content, r.content)->'metadata'->>'title'), ''),
-                r.name
-            ) as rule_set_name,
-            COALESCE(a.rule_file_content, r.content) as rule_content
-            FROM audits a LEFT JOIN rule_sets r ON a.rule_set_id = r.id`;
-        }
-        const params = [];
-        if (status) {
-            params.push(status);
-            sql += ' WHERE a.status = $1';
-        }
-        sql += ' ORDER BY a.updated_at DESC';
-        const result = await query(sql, params);
+        const result = await fetch_audits_index_rows(status);
 
         const rows = result.rows.map((row) => {
             const out = {
@@ -252,12 +217,7 @@ router.get('/', async (req, res) => {
 
 router.get('/statistics/summary', async (_req, res) => {
     try {
-        const result = await query(
-            `SELECT status, metadata, samples, rule_file_content, created_at, updated_at
-             FROM audits
-             WHERE status IN ('locked', 'archived')
-             ORDER BY updated_at DESC`
-        );
+        const result = await fetch_statistics_audits_locked_archived();
         const payload = build_statistics_from_audit_rows(result.rows);
         res.json(payload);
     } catch (err) {
@@ -460,7 +420,7 @@ router.get('/:id/export', async (req, res) => {
         const audit = auditResult.rows[0];
         let ruleSet = null;
         if (audit.rule_set_id) {
-            const ruleResult = await query('SELECT * FROM rule_sets WHERE id = $1', [audit.rule_set_id]);
+            const ruleResult = await fetch_rule_set_by_id(audit.rule_set_id);
             ruleSet = ruleResult.rows[0] || null;
         }
         const fullState = build_full_state(audit, ruleSet);
@@ -480,7 +440,7 @@ router.post('/', async (req, res) => {
         if (!rule_set_id) {
             return res.status(400).json({ error: 'rule_set_id krävs' });
         }
-        const ruleResult = await query('SELECT * FROM rule_sets WHERE id = $1', [rule_set_id]);
+        const ruleResult = await fetch_rule_set_by_id(rule_set_id);
         if (ruleResult.rows.length === 0) {
             return res.status(404).json({ error: 'Regelfil hittades inte' });
         }
@@ -503,7 +463,7 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 
 async function find_import_conflict_audit_id(data) {
     if (data.auditId && UUID_REGEX.test(data.auditId)) {
-        const existingById = await query('SELECT id FROM audits WHERE id = $1', [data.auditId]);
+        const existingById = await select_audit_id_exists(data.auditId);
         if (existingById.rows.length > 0) {
             return data.auditId;
         }
@@ -513,11 +473,7 @@ async function find_import_conflict_audit_id(data) {
         .filter(id => id && UUID_REGEX.test(id));
     if (sample_ids.length > 0) {
         const first_sample_id = sample_ids[0];
-        const existingBySample = await query(
-            `SELECT a.id FROM audits a, jsonb_array_elements(COALESCE(a.samples, '[]'::jsonb)) AS s
-             WHERE s->>'id' = $1 LIMIT 1`,
-            [first_sample_id]
-        );
+        const existingBySample = await select_audit_id_by_sample_id(first_sample_id);
         if (existingBySample.rows.length > 0) {
             return existingBySample.rows[0].id;
         }
@@ -526,11 +482,7 @@ async function find_import_conflict_audit_id(data) {
 }
 
 async function build_existing_audit_summary_for_response(audit_id) {
-    const result = await query(
-        `SELECT version, updated_at, status, metadata, samples, last_updated_by
-         FROM audits WHERE id = $1`,
-        [audit_id]
-    );
+    const result = await fetch_audit_summary_for_import_conflict(audit_id);
     if (result.rows.length === 0) {
         return null;
     }
@@ -783,7 +735,7 @@ router.patch('/:id', async (req, res) => {
         const audit = result.rows[0];
         let ruleSet = null;
         if (audit.rule_set_id) {
-            const ruleResult = await query('SELECT * FROM rule_sets WHERE id = $1', [audit.rule_set_id]);
+            const ruleResult = await fetch_rule_set_by_id(audit.rule_set_id);
             ruleSet = ruleResult.rows[0] || null;
         }
         const fullState = build_full_state(audit, ruleSet);
@@ -864,7 +816,7 @@ router.patch('/:id/content-part', async (req, res) => {
         const updated_audit = update.rows[0];
         let ruleSet = null;
         if (updated_audit.rule_set_id) {
-            const ruleResult = await query('SELECT * FROM rule_sets WHERE id = $1', [updated_audit.rule_set_id]);
+            const ruleResult = await fetch_rule_set_by_id(updated_audit.rule_set_id);
             ruleSet = ruleResult.rows[0] || null;
         }
         const fullState = build_full_state(updated_audit, ruleSet);
@@ -907,7 +859,7 @@ router.patch('/:id/results/:sampleId/:requirementId', async (req, res) => {
         const updated = updateResult.rows[0];
         let ruleSet = null;
         if (updated.rule_set_id) {
-            const ruleResult = await query('SELECT * FROM rule_sets WHERE id = $1', [updated.rule_set_id]);
+            const ruleResult = await fetch_rule_set_by_id(updated.rule_set_id);
             ruleSet = ruleResult.rows[0] || null;
         }
         const fullState = build_full_state(updated, ruleSet);

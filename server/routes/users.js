@@ -3,6 +3,20 @@ import express from 'express';
 import bcrypt from 'bcrypt';
 import { query } from '../db.js';
 import { requireAdmin } from '../auth/middleware.js';
+import { get_admin_contacts_for_api } from '../services/admin_contacts_service.js';
+import {
+    select_user_profile_by_id,
+    list_all_users_for_admin,
+    check_username_exists,
+    insert_user_row,
+    find_user_by_id_or_username_or_name,
+    select_expires_at_from_minutes_interval,
+    insert_password_reset_token,
+    update_user_password_by_id,
+    select_user_id_name_by_id,
+    count_audits_by_metadata_auditor_name,
+    delete_user_by_id
+} from '../repositories/user_repository.js';
 
 const router = express.Router();
 
@@ -54,14 +68,7 @@ function bump_last_character(value) {
 
 router.get('/admin-contacts', async (_req, res) => {
     try {
-        const result = await query(
-            'SELECT id, name, username FROM users WHERE is_admin = TRUE ORDER BY COALESCE(NULLIF(TRIM(name), \'\'), username) ASC',
-            []
-        );
-        const admins = result.rows.map((row) => ({
-            id: row.id,
-            name: (row.name && String(row.name).trim()) || (row.username && String(row.username).trim()) || ''
-        }));
+        const admins = await get_admin_contacts_for_api();
         res.json(admins);
     } catch (err) {
         console.error('[users] GET /admin-contacts error:', err);
@@ -72,10 +79,7 @@ router.get('/admin-contacts', async (_req, res) => {
 router.get('/me', async (req, res) => {
     try {
         const user = req.user;
-        const result = await query(
-            'SELECT id, name, is_admin, language_preference, theme_preference, review_sort_preference, created_at FROM users WHERE id = $1 LIMIT 1',
-            [user.id]
-        );
+        const result = await select_user_profile_by_id(user.id);
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Användare hittades inte' });
         }
@@ -127,7 +131,7 @@ router.patch('/me', async (req, res) => {
 
 router.get('/', requireAdmin, async (_req, res) => {
     try {
-        const result = await query('SELECT id, username, name, is_admin, created_at FROM users ORDER BY username, name');
+        const result = await list_all_users_for_admin();
         res.json(result.rows);
     } catch (err) {
         console.error('[users] GET error:', err);
@@ -165,7 +169,7 @@ router.post('/', requireAdmin, async (req, res) => {
             let candidate = username_final;
             // Begränsa antalet försök för att undvika evig loop
             for (let i = 0; i < 26; i += 1) {
-                const existing = await query('SELECT 1 FROM users WHERE username = $1 LIMIT 1', [candidate]);
+                const existing = await check_username_exists(candidate);
                 if (existing.rows.length === 0) {
                     username_final = candidate;
                     break;
@@ -181,10 +185,7 @@ router.post('/', requireAdmin, async (req, res) => {
         if (password != null && typeof password === 'string' && password.trim() !== '') {
             password_hash = await bcrypt.hash(password.trim(), 10);
         }
-        const result = await query(
-            'INSERT INTO users (username, name, is_admin, password) VALUES ($1, $2, $3, $4) RETURNING id, username, name, is_admin, created_at',
-            [username_final, full_name, is_admin_bool, password_hash]
-        );
+        const result = await insert_user_row(username_final, full_name, is_admin_bool, password_hash);
         res.status(201).json(result.rows[0]);
     } catch (err) {
         console.error('[users] POST error:', err);
@@ -278,24 +279,17 @@ router.post('/:id/password-reset-codes', requireAdmin, async (req, res) => {
 
         const minutes = Math.min(raw_minutes, 240);
 
-        const userResult = await query(
-            'SELECT id, username, name FROM users WHERE id::text = $1 OR username = $1 OR name = $1 LIMIT 1',
-            [id]
-        );
+        const userResult = await find_user_by_id_or_username_or_name(id);
         if (userResult.rows.length === 0) {
             return res.status(404).json({ error: 'Användare hittades inte' });
         }
 
         const code = generate_reset_code(10);
         const hash = await bcrypt.hash(code, 10);
-        const expiresAtResult = await query('SELECT (NOW() + ($1 || \' minutes\')::interval) AS expires_at', [minutes]);
+        const expiresAtResult = await select_expires_at_from_minutes_interval(minutes);
         const expires_at = expiresAtResult.rows[0].expires_at;
 
-        await query(
-            `INSERT INTO password_reset_tokens (user_id, code_hash, expires_at)
-             VALUES ($1, $2, $3)`,
-            [userResult.rows[0].id, hash, expires_at]
-        );
+        await insert_password_reset_token(userResult.rows[0].id, hash, expires_at);
 
         return res.status(201).json({
             code,
@@ -316,10 +310,7 @@ router.put('/:id/password', requireAdmin, async (req, res) => {
             return res.status(400).json({ error: 'Lösenord krävs' });
         }
         const hash = await bcrypt.hash(password.trim(), 10);
-        const result = await query(
-            'UPDATE users SET password = $1 WHERE id = $2 RETURNING id, name, is_admin, created_at',
-            [hash, id]
-        );
+        const result = await update_user_password_by_id(id, hash);
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Användare hittades inte' });
         }
@@ -333,16 +324,13 @@ router.put('/:id/password', requireAdmin, async (req, res) => {
 router.get('/:id/audit-count', requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
-        const userResult = await query('SELECT id, name FROM users WHERE id = $1', [id]);
+        const userResult = await select_user_id_name_by_id(id);
         if (userResult.rows.length === 0) {
             return res.status(404).json({ error: 'Användare hittades inte' });
         }
 
         const user_name = userResult.rows[0].name;
-        const auditResult = await query(
-            "SELECT COUNT(*) AS count FROM audits WHERE metadata->>'auditorName' = $1",
-            [user_name]
-        );
+        const auditResult = await count_audits_by_metadata_auditor_name(user_name);
         const raw_count = auditResult.rows[0] && auditResult.rows[0].count;
         const audit_count = Number.isFinite(Number(raw_count)) ? Number(raw_count) : 0;
 
@@ -356,7 +344,7 @@ router.get('/:id/audit-count', requireAdmin, async (req, res) => {
 router.delete('/:id', requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
-        const result = await query('DELETE FROM users WHERE id = $1 RETURNING id', [id]);
+        const result = await delete_user_by_id(id);
         if (result.rowCount === 0) {
             return res.status(404).json({ error: 'Användare hittades inte' });
         }

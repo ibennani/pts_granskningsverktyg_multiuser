@@ -2,6 +2,8 @@
 import express from 'express';
 import bcrypt from 'bcrypt';
 import { query } from '../db.js';
+import { select_user_for_login_by_username } from '../repositories/user_repository.js';
+import { get_admin_contacts_for_api } from '../services/admin_contacts_service.js';
 import { sign_token, refresh_token as issue_refresh_token, verify_token } from '../auth/jwt.js';
 import { auth_rate_limiter } from '../middleware/rateLimiter.js';
 import logger from '../utils/logger.js';
@@ -42,10 +44,7 @@ router.post('/login', auth_rate_limiter, async (req, res) => {
         if (!password || typeof password !== 'string') {
             return res.status(400).json({ error: 'Lösenord krävs' });
         }
-        const result = await query(
-            'SELECT id, name, is_admin, password FROM users WHERE username = $1 LIMIT 1',
-            [login_identifier]
-        );
+        const result = await select_user_for_login_by_username(login_identifier);
         if (result.rows.length === 0) {
             logger.warn({ username: login_identifier, ip: req.ip }, 'Inloggning misslyckades');
             return res.status(401).json({ error: 'Fel användarnamn eller lösenord' });
@@ -123,14 +122,7 @@ router.post('/reset-password', auth_rate_limiter, async (req, res) => {
 
 router.get('/admin-contacts', async (_req, res) => {
     try {
-        const result = await query(
-            'SELECT id, name, username FROM users WHERE is_admin = TRUE ORDER BY COALESCE(NULLIF(TRIM(name), \'\'), username) ASC',
-            []
-        );
-        const admins = result.rows.map((row) => ({
-            id: row.id,
-            name: (row.name && String(row.name).trim()) || (row.username && String(row.username).trim()) || ''
-        }));
+        const admins = await get_admin_contacts_for_api();
         res.json(admins);
     } catch (err) {
         logger.error({ err }, '[auth] admin-contacts error');

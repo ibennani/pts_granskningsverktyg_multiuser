@@ -7,6 +7,16 @@ import { import_payload_rate_limiter } from '../middleware/rateLimiter.js';
 import { check_json_structure_depth_and_size } from '../../js/utils/json_structure_guard.js';
 import { parse_part_key } from '../../js/logic/rulefile_part_keys.js';
 import { normalize_rulefile_content_object } from '../utils/rulefile_content_utils.js';
+import {
+    fetch_rule_sets_list,
+    fetch_rule_set_version_row,
+    fetch_rule_set_by_id,
+    fetch_rule_set_for_export,
+    fetch_rule_set_by_content_json,
+    fetch_active_audits_count_for_rule,
+    clear_production_base_id_refs,
+    has_rule_sets_published_content_column
+} from '../repositories/rule_repository.js';
 
 const router = express.Router();
 
@@ -18,70 +28,9 @@ function broadcast_rule_locks_changed(rule_set_id) {
     broadcast({ type: 'rules:locks_changed', ruleSetId: String(rule_set_id) });
 }
 
-let has_published_content_column = null;
-
-async function ensure_published_column_flag() {
-    if (has_published_content_column !== null) return has_published_content_column;
-    try {
-        const result = await query(
-            `SELECT 1 FROM information_schema.columns
-             WHERE table_name = 'rule_sets' AND column_name = 'published_content'
-             LIMIT 1`
-        );
-        has_published_content_column = result.rows.length > 0;
-    } catch (err) {
-        console.warn('[rules] Kunde inte kontrollera published_content-kolumn:', err.message);
-        has_published_content_column = false;
-    }
-    return has_published_content_column;
-}
-
 router.get('/', async (_req, res) => {
     try {
-        const hasPublished = await ensure_published_column_flag();
-        const sql = hasPublished
-            ? `SELECT id,
-                    published_content IS NOT NULL AS is_published,
-                    (production_base_id IS NOT NULL OR published_content IS NULL) AS list_as_arbetskopia,
-                    COALESCE(
-                        NULLIF(TRIM(COALESCE(published_content, content)->'metadata'->>'title'), ''),
-                        name
-                    ) AS name,
-                    NULLIF(TRIM(COALESCE(published_content, content)->'metadata'->>'version'), '') AS version_display,
-                    COALESCE(published_content, content)->'metadata'->>'version' AS metadata_version,
-                    COALESCE(
-                        NULLIF(TRIM(COALESCE(published_content, content)->'metadata'->'monitoringType'->>'text'), ''),
-                        NULLIF(TRIM(COALESCE(published_content, content)->'metadata'->'monitoringType'->>'label'), '')
-                    ) AS monitoring_type_text,
-                    (published_content IS NOT NULL AND content::text <> published_content::text) AS has_draft,
-                    CASE
-                        WHEN published_content IS NOT NULL AND content::text <> published_content::text
-                        THEN content->'metadata'->>'version'
-                        ELSE NULL
-                    END AS draft_version,
-                    version, created_at::text AS created_at, updated_at::text AS updated_at,
-                    content_updated_at::text AS content_updated_at,
-                    production_base_id
-               FROM rule_sets
-               ORDER BY updated_at DESC`
-            : `SELECT id,
-                    false AS is_published,
-                    true AS list_as_arbetskopia,
-                    COALESCE(NULLIF(TRIM(content->'metadata'->>'title'), ''), name) AS name,
-                    NULLIF(TRIM(content->'metadata'->>'version'), '') AS version_display,
-                    content->'metadata'->>'version' AS metadata_version,
-                    COALESCE(
-                        NULLIF(TRIM(content->'metadata'->'monitoringType'->>'text'), ''),
-                        NULLIF(TRIM(content->'metadata'->'monitoringType'->>'label'), '')
-                    ) AS monitoring_type_text,
-                    false AS has_draft,
-                    NULL AS draft_version,
-                    version, created_at::text AS created_at, updated_at::text AS updated_at,
-                    content_updated_at::text AS content_updated_at,
-                    production_base_id
-               FROM rule_sets
-               ORDER BY updated_at DESC`;
-        const result = await query(sql);
+        const result = await fetch_rule_sets_list();
         const rows = result.rows.map((row) => {
             const out = { ...row };
             ['created_at', 'updated_at', 'content_updated_at'].forEach((key) => {
@@ -105,7 +54,7 @@ router.get('/', async (_req, res) => {
 router.get('/:id/version', async (req, res) => {
     try {
         const { id } = req.params;
-        const result = await query('SELECT version, updated_at FROM rule_sets WHERE id = $1', [id]);
+        const result = await fetch_rule_set_version_row(id);
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Regelfil hittades inte' });
         }
@@ -258,7 +207,7 @@ router.delete('/:id/locks/:partKey', async (req, res) => {
 router.get('/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const result = await query('SELECT * FROM rule_sets WHERE id = $1', [id]);
+        const result = await fetch_rule_set_by_id(id);
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Regelfil hittades inte' });
         }
@@ -272,27 +221,7 @@ router.get('/:id', async (req, res) => {
 router.get('/:id/export', async (req, res) => {
     try {
         const { id } = req.params;
-        const hasPublished = await ensure_published_column_flag();
-        const sql = hasPublished
-            ? `SELECT id,
-                      name,
-                      COALESCE(published_content, content) AS content,
-                      version,
-                      updated_at::text AS updated_at,
-                      content_updated_at::text AS content_updated_at,
-                      (published_content IS NOT NULL) AS is_published
-                 FROM rule_sets
-                WHERE id = $1`
-            : `SELECT id,
-                      name,
-                      content,
-                      version,
-                      updated_at::text AS updated_at,
-                      content_updated_at::text AS content_updated_at,
-                      false AS is_published
-                 FROM rule_sets
-                WHERE id = $1`;
-        const result = await query(sql, [id]);
+        const result = await fetch_rule_set_for_export(id);
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Regelfil hittades inte' });
         }
@@ -339,10 +268,7 @@ router.post('/import', import_payload_rate_limiter, async (req, res) => {
             return res.status(400).json({ error: 'Content krävs' });
         }
         const contentJson = JSON.stringify(content);
-        const existing = await query(
-            'SELECT * FROM rule_sets WHERE content = $1::jsonb LIMIT 1',
-            [contentJson]
-        );
+        const existing = await fetch_rule_set_by_content_json(contentJson);
         if (existing.rows.length > 0) {
             broadcast_rules_changed();
             return res.status(200).json(existing.rows[0]);
@@ -386,10 +312,7 @@ router.post('/production', async (req, res) => {
 router.delete('/:id', requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
-        const ruleResult = await query(
-            'SELECT id, production_base_id FROM rule_sets WHERE id = $1',
-            [id]
-        );
+        const ruleResult = await fetch_rule_set_by_id(id);
         if (ruleResult.rows.length === 0) {
             return res.status(404).json({ error: 'Regelfil hittades inte' });
         }
@@ -406,11 +329,7 @@ router.delete('/:id', requireAdmin, async (req, res) => {
             return res.status(204).send();
         }
 
-        const activeCountResult = await query(
-            `SELECT COUNT(*) AS count FROM audits
-             WHERE rule_set_id = $1 AND status IN ('not_started', 'in_progress')`,
-            [id]
-        );
+        const activeCountResult = await fetch_active_audits_count_for_rule(id);
         const inUseCount = parseInt(activeCountResult.rows[0]?.count ?? '0', 10);
         if (inUseCount > 0) {
             return res.status(409).json({
@@ -418,10 +337,7 @@ router.delete('/:id', requireAdmin, async (req, res) => {
                 inUseCount
             });
         }
-        await query(
-            'UPDATE rule_sets SET production_base_id = NULL WHERE production_base_id = $1',
-            [id]
-        );
+        await clear_production_base_id_refs(id);
         await query('DELETE FROM rule_sets WHERE id = $1', [id]);
         broadcast_rules_changed();
         res.status(204).send();
@@ -567,12 +483,12 @@ router.post('/:id/copy', async (req, res) => {
     try {
         const { id } = req.params;
 
-        const hasPublished = await ensure_published_column_flag();
+        const hasPublished = await has_rule_sets_published_content_column();
         if (!hasPublished) {
             return res.status(400).json({ error: 'Publiceringsstöd saknas för regelfiler i denna databas.' });
         }
 
-        const sourceResult = await query('SELECT * FROM rule_sets WHERE id = $1', [id]);
+        const sourceResult = await fetch_rule_set_by_id(id);
         if (sourceResult.rows.length === 0) {
             return res.status(404).json({ error: 'Regelfil hittades inte' });
         }
