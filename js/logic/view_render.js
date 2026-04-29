@@ -15,6 +15,17 @@ import { dependencyManager } from '../utils/dependency_manager.js';
 import { consoleManager } from '../utils/console_manager.js';
 import { ensure_main_view_content_host, clear_main_view_content_except_global_notifications } from './app_dom.js';
 import { get_component_class, rulefileSectionsViewComponent, requirementListComponent } from './view_components_index.js';
+import { resolve_view_request } from '../view/resolve_view_request.js';
+import { resolve_skip_target, resolve_view_dom_host } from '../view/view_dom_host.js';
+import {
+    clear_view_root_for_next_view,
+    destroy_previous_view_component,
+    flush_before_view_switch,
+    init_and_render_view_component,
+    is_same_view_quick_render,
+    render_quick_view
+} from '../view/view_lifecycle.js';
+import { handle_view_lifecycle_error, render_view_not_found } from '../view/view_error_handler.js';
 
 /**
  * Renderar en vy utifrån namn och parametrar.
@@ -53,79 +64,26 @@ export async function render_view(view_name_to_render, params_to_render = {}, de
         updateBackupRestorePosition
     } = deps;
 
-    let view_name_mut = view_name_to_render;
-    let params_mut = { ...params_to_render };
+    const resolved = resolve_view_request({ view_name_to_render, params_to_render, deps });
+    let view_name_mut = resolved.view_name;
+    let params_mut = resolved.params;
 
     nav_debug('render_view startar', { view_name_to_render: view_name_mut, params_to_render: params_mut });
-    if (view_name_mut === 'edit_rulefile_main') {
-        view_name_mut = 'rulefile_sections';
-        params_mut = { ...params_mut, section: 'general' };
-    }
     const t = get_t_fallback();
     const local_helpers_escape_html = (typeof Helpers.escape_html === 'function')
         ? Helpers.escape_html
         : (s) => s;
 
-    try {
-        const state_for_view = typeof getState === 'function' ? getState() : null;
-        const is_published_rulefile = state_for_view?.ruleFileIsPublished === true;
-        if (is_published_rulefile &&
-            (view_name_mut === 'rulefile_edit_requirement' || view_name_mut === 'rulefile_add_requirement')) {
-            if (view_name_mut === 'rulefile_edit_requirement' && params_mut?.id) {
-                view_name_mut = 'rulefile_view_requirement';
-            } else {
-                view_name_mut = 'rulefile_requirements';
-                params_mut = {};
-            }
-        }
-    } catch (e) {
-        consoleManager.warn('[Main.js] Kunde inte kontrollera ruleFileIsPublished vid vybyte:', e?.message || e);
-    }
-
-    if (view_name_mut === 'login' && typeof (params_mut?.on_login) !== 'function') {
-        params_mut = {
-            ...params_mut,
-            on_login: () => {
-                start_normal_session().catch((err) =>
-                    consoleManager.error('Error starting session after login:', err)
-                );
-            }
-        };
-    }
-
-    if (view_name_mut !== 'login') {
-        ensure_app_layout();
-    }
-
     let view_root;
-    if (view_name_mut === 'login') {
-        document.body.classList.add('view-login');
-        ensure_app_layout();
-    } else {
-        document.body.classList.remove('view-login');
-    }
-
-    // Efter ensure_app_layout uppdateras layout_refs i main — deps.main_view_root kan fortfarande vara
-    // ögonblicksbilden från render_view_deps() före layout. Läs från DOM så vi inte sätter view_root till
-    // #app-container och tömmer hela appen (tom sida).
-    const resolved_main_view_root =
-        (typeof document !== 'undefined' && document.getElementById('app-main-view-root')) || main_view_root;
-    const resolved_app_container =
-        (typeof document !== 'undefined' && document.getElementById('app-container')) || app_container;
-    view_root = resolved_main_view_root || resolved_app_container;
-
-    /** Rot för vy-init: #app-main-view-content i <main> när layout finns, annars samma som view_root. */
-    let view_init_root = view_root;
+    // Rot för vy-init: #app-main-view-content i <main> när layout finns, annars samma som view_root.
+    let view_init_root;
+    const resolved_dom = resolve_view_dom_host({ view_name: view_name_mut, deps });
+    view_root = resolved_dom.view_root;
+    view_init_root = resolved_dom.view_init_root;
 
     update_side_menu(view_name_mut, params_mut);
 
-    if (resolved_main_view_root) {
-        if (view_name_mut === 'start') {
-            resolved_main_view_root.classList.add('start-view-active');
-        } else {
-            resolved_main_view_root.classList.remove('start-view-active');
-        }
-    }
+    const resolved_main_view_root = resolved_dom.resolved_main_view_root;
 
     const prev_view = render_ctx.current_view_name_rendered;
     const prev_params_json = render_ctx.current_view_params_rendered_json;
@@ -139,25 +97,27 @@ export async function render_view(view_name_to_render, params_to_render = {}, de
     }
 
     const current_view_component_instance = render_ctx.current_view_component_instance;
-    // login: params innehåller on_login (funktion) som JSON.stringify utelämnar → falsk träff mot '{}' och snabbrender utan init.
-    const is_same_view_quick_render = prev_view === view_name_mut &&
-        view_name_mut !== 'login' &&
-        prev_params_json === JSON.stringify(params_mut) &&
-        current_view_component_instance && typeof current_view_component_instance.render === 'function';
+    const is_quick = is_same_view_quick_render({
+        prev_view,
+        view_name: view_name_mut,
+        prev_params_json,
+        params: params_mut,
+        current_view_component_instance
+    });
 
-    if (is_same_view_quick_render) {
-        top_action_bar_instance.render();
-        bottom_action_bar_container.style.display = '';
-        bottom_action_bar_instance.render();
-        update_landmarks_and_skip_link();
-        if (!is_focus_in_editable_field(view_root)) {
-            current_view_component_instance.render();
-        }
-        if (notificationComponent?.append_global_message_areas_to) {
-            notificationComponent.append_global_message_areas_to(null);
-        }
-        const skip_target = (view_root?.id === 'app-main-view-root' ? ensure_main_view_content_host(view_root) : null) || view_root;
-        ensure_skip_link_target(skip_target);
+    if (is_quick) {
+        await render_quick_view({
+            view_root,
+            current_view_component_instance,
+            top_action_bar_instance,
+            bottom_action_bar_container,
+            bottom_action_bar_instance,
+            update_landmarks_and_skip_link,
+            is_focus_in_editable_field,
+            notificationComponent,
+            ensure_skip_link_target,
+            resolve_skip_target
+        });
         return;
     }
     top_action_bar_instance.render();
@@ -179,7 +139,7 @@ export async function render_view(view_name_to_render, params_to_render = {}, de
         if (renderPromise && typeof renderPromise.then === 'function') {
             await renderPromise;
         }
-        const skip_target_rf = (view_root?.id === 'app-main-view-root' ? ensure_main_view_content_host(view_root) : null) || view_root;
+        const skip_target_rf = resolve_skip_target({ view_root }) || view_root;
         ensure_skip_link_target(skip_target_rf);
         if (DraftManager?.restoreIntoDom) DraftManager.restoreIntoDom(skip_target_rf);
         update_restore_position(view_name_mut, params_mut, null);
@@ -188,69 +148,36 @@ export async function render_view(view_name_to_render, params_to_render = {}, de
         return;
     }
 
-    try {
-        await flush_sync_to_server(getState, dispatch);
-    } catch (flushErr) {
-        consoleManager.warn('[Main.js] flush_sync_to_server:', flushErr?.message || flushErr);
-    }
+    await flush_before_view_switch({ flush_sync_to_server, getState, dispatch, consoleManager });
 
-    if (current_view_component_instance && typeof current_view_component_instance.destroy === 'function') {
-        notificationComponent?.clear_global_message?.();
-        if (current_view_component_instance === requirementListComponent && view_name_mut === 'rulefile_requirements') {
-            try {
-                current_view_component_instance.destroy();
-            } catch (err) {
-                consoleManager.warn('[Main.js] Warning destroying RequirementListComponent before switching to rulefile view:', err);
-                if (error_boundary_holder.instance && error_boundary_holder.instance.show_error) {
-                    error_boundary_holder.instance.show_error({
-                        message: `Component destruction failed: ${err.message}`,
-                        stack: err.stack,
-                        component: 'RequirementListComponent'
-                    });
-                }
-            }
-        } else {
-            try {
-                current_view_component_instance.destroy();
-            } catch (err) {
-                consoleManager.error('[Main.js] Error destroying component:', err);
-                if (error_boundary_holder.instance && error_boundary_holder.instance.show_error) {
-                    error_boundary_holder.instance.show_error({
-                        message: `Component destruction failed: ${err.message}`,
-                        stack: err.stack,
-                        component: render_ctx.current_view_name_rendered || 'Unknown'
-                    });
-                }
-            }
-        }
-    }
-    if (view_root) {
-        if (view_root.id === 'app-main-view-root') {
-            const host = ensure_main_view_content_host(view_root);
-            if (host) {
-                clear_main_view_content_except_global_notifications(host);
-                view_init_root = host;
-            } else {
-                view_root.innerHTML = '';
-            }
-        } else {
-            view_root.innerHTML = '';
-        }
-    }
+    destroy_previous_view_component({
+        current_view_component_instance,
+        notificationComponent,
+        requirementListComponent,
+        view_name_to_render: view_name_mut,
+        error_boundary_holder,
+        render_ctx,
+        consoleManager
+    });
+
+    const cleared_host = clear_view_root_for_next_view({
+        view_root,
+        ensure_main_view_content_host,
+        clear_main_view_content_except_global_notifications
+    });
+    if (cleared_host) view_init_root = cleared_host;
     render_ctx.current_view_component_instance = null;
 
     const ComponentClass = get_component_class(view_name_mut);
     if (!ComponentClass) {
-        consoleManager.error(`[Main.js] View "${view_name_mut}" not found in render_view switch.`);
-        const error_h1 = document.createElement('h1');
-        error_h1.textContent = t('error_loading_view_details');
-        const error_p = document.createElement('p');
-        error_p.textContent = t('error_view_not_found', { viewName: local_helpers_escape_html(view_name_mut) });
-        if (view_init_root) {
-            view_init_root.appendChild(error_h1);
-            view_init_root.appendChild(error_p);
-            ensure_skip_link_target(view_init_root);
-        }
+        render_view_not_found({
+            view_name: view_name_mut,
+            t,
+            local_helpers_escape_html,
+            view_init_root,
+            ensure_skip_link_target,
+            consoleManager
+        });
         return;
     }
 
@@ -259,41 +186,21 @@ export async function render_view(view_name_to_render, params_to_render = {}, de
             error_boundary_holder.instance.clear_error();
         }
 
-        await dependencyManager.waitForDependencies();
-
-        render_ctx.current_view_component_instance = ComponentClass;
-
-        if (!render_ctx.current_view_component_instance || typeof render_ctx.current_view_component_instance.init !== 'function' || typeof render_ctx.current_view_component_instance.render !== 'function') {
-            throw new Error('Component is invalid or missing required methods.');
-        }
-
-        await render_ctx.current_view_component_instance.init({
-            root: view_init_root,
-            deps: {
-                router: navigate_and_set_hash,
-                params: params_mut,
-                view_name: view_name_mut,
-                getState,
-                dispatch,
-                StoreActionTypes,
-                subscribe,
-                flush_sync_to_server,
-                Translation: get_registered_translation_module(),
-                Helpers: Helpers,
-                NotificationComponent: notificationComponent,
-                SaveAuditLogic: SaveAuditLogic,
-                AuditLogic: AuditLogic,
-                ExportLogic: ExportLogicApi,
-                ValidationLogic: ValidationLogic,
-                AutosaveService: AutosaveService,
-                rightSidebarRoot: right_sidebar_root
-            }
+        await init_and_render_view_component({
+            ComponentClass,
+            view_init_root,
+            view_name: view_name_mut,
+            params: params_mut,
+            deps,
+            render_ctx,
+            dependencyManager,
+            get_registered_translation_module,
+            Helpers,
+            SaveAuditLogic,
+            ExportLogicApi,
+            right_sidebar_root,
+            flush_sync_to_server
         });
-
-        const render_promise = render_ctx.current_view_component_instance.render();
-        if (render_promise && typeof render_promise.then === 'function') {
-            await render_promise;
-        }
         if (render_ctx.current_view_name_rendered === view_name_mut) {
             updatePageTitle(view_name_mut, params_mut);
         }
@@ -318,30 +225,18 @@ export async function render_view(view_name_to_render, params_to_render = {}, de
         }
 
     } catch (error) {
-        consoleManager.error(`[Main.js] CATCH BLOCK: Error during view ${view_name_mut} lifecycle:`, error);
-
-        if (error_boundary_holder.instance && error_boundary_holder.instance.show_error) {
-            const retry_callback = () => {
-                consoleManager.log(`[Main.js] Retrying view ${view_name_mut}`);
-                render_view(view_name_mut, params_mut, deps);
-            };
-
-            error_boundary_holder.instance.show_error({
-                message: error.message,
-                stack: error.stack,
-                component: view_name_mut
-            }, retry_callback);
-        } else {
-            const view_name_escaped_for_error = local_helpers_escape_html(view_name_mut);
-            if (view_init_root) {
-                const error_h1 = document.createElement('h1');
-                error_h1.textContent = t('error_loading_view_details');
-                const error_p = document.createElement('p');
-                error_p.textContent = t('error_loading_view', { viewName: view_name_escaped_for_error, errorMessage: error.message });
-                view_init_root.appendChild(error_h1);
-                view_init_root.appendChild(error_p);
-                ensure_skip_link_target(view_init_root);
-            }
-        }
+        handle_view_lifecycle_error({
+            error,
+            view_name: view_name_mut,
+            params: params_mut,
+            deps,
+            error_boundary_holder,
+            view_init_root,
+            t,
+            local_helpers_escape_html,
+            ensure_skip_link_target,
+            consoleManager,
+            render_view
+        });
     }
 }
