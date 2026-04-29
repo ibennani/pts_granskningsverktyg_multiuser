@@ -12,6 +12,7 @@ import { attach_export_integrity_server_payload } from '../utils/export_integrit
 import { build_statistics_from_audit_rows } from '../audit_aggregated_statistics.js';
 import { parse_audit_part_key } from '../../js/logic/audit_part_keys.js';
 import { broadcast } from '../ws.js';
+import { count_stuck_in_samples } from '../../shared/audit/audit_metrics.js';
 
 const router = express.Router();
 
@@ -21,19 +22,6 @@ function broadcast_audits_changed() {
 
 function broadcast_audit_locks_changed(audit_id) {
     broadcast({ type: 'audits:locks_changed', auditId: String(audit_id) });
-}
-
-function count_stuck_in_samples(samples) {
-    if (!samples || !Array.isArray(samples)) return 0;
-    let n = 0;
-    samples.forEach((s) => {
-        const results = s?.requirementResults || {};
-        Object.values(results).forEach((r) => {
-            const t = (r?.stuckProblemDescription || '').trim();
-            if (t !== '') n += 1;
-        });
-    });
-    return n;
 }
 
 function extract_min_max_timestamps(samples) {

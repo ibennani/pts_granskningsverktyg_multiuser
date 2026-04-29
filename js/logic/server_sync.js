@@ -19,6 +19,7 @@ import { get_current_user_name } from '../utils/helpers.js';
 import { resolve_version_conflict_notice } from './version_conflict_notice.js';
 import { should_show_audit_collaboration_notice, update_baseline_from_server_full_state } from './audit_collaboration_notice.js';
 import { update_rulefile_baseline_from_remote } from './rulefile_collaboration_notice.js';
+import { count_stuck_in_samples } from '../../shared/audit/audit_metrics.js';
 
 let debounce_timer = null;
 let audit_sync_tail = Promise.resolve();
@@ -64,19 +65,6 @@ function state_to_import(state) {
         auditStatus: normalize_status_for_server(state.auditStatus || 'not_started'),
         samples: state.samples || []
     };
-}
-
-function count_stuck_in_samples(samples) {
-    if (!Array.isArray(samples)) return 0;
-    let n = 0;
-    samples.forEach((sample) => {
-        const results = sample?.requirementResults || {};
-        Object.values(results).forEach((r) => {
-            const t = (r?.stuckProblemDescription || '').trim();
-            if (t !== '') n += 1;
-        });
-    });
-    return n;
 }
 
 async function run_sync(state, dispatch_fn) {
