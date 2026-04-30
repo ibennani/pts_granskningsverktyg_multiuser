@@ -14,6 +14,7 @@ import path from 'path';
 
 /** Tunna bryggor som måste finnas kvar (bygg ut listan när nya tillkommer). */
 const REQUIRED_JS_REEXPORT_BRIDGES = [
+    'js/audit_logic.js',
     'js/logic/requirement_lookup.js',
     'js/logic/rulefile_updater_logic.js',
     'js/components/SideMenuComponent.js',

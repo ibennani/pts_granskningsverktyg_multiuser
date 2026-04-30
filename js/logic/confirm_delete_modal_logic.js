@@ -3,6 +3,7 @@
 import * as Helpers from '../utils/helpers.js';
 import { get_translation_t } from '../utils/translation_access.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
+import { find_requirement_definition } from '../audit_logic.js';
 
 /**
  * Bygger varningstext för radering baserat på typ (requirement, check, criterion).
@@ -17,7 +18,7 @@ export function build_delete_warning_text(type, params, getState, Translation, _
     const state = getState?.();
     const t = Translation?.t || (k => k);
     const { reqId, checkId, pcId } = params || {};
-    const requirement = state?.ruleFileContent?.requirements?.[reqId];
+    const requirement = find_requirement_definition(state?.ruleFileContent?.requirements, reqId);
 
     if (!requirement) return null;
 
