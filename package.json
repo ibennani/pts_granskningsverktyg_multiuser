@@ -30,6 +30,7 @@
     "typecheck": "tsc --noEmit",
     "check:export-facades": "node scripts/check-export-facades.mjs",
     "check:js-ts-imports": "node scripts/verify_js_only_imports.mjs",
+    "fix:js-ts-bridges": "node scripts/verify_js_only_imports.mjs --fix",
     "extract:html-export": "node scripts/extract_html_export.cjs",
     "check": "npm run lint && npm run check:export-facades && npm run check:js-ts-imports && npm run typecheck && npm test",
     "check:full": "npm run lint:js && npm run lint:ts && npm run check:export-facades && npm run check:js-ts-imports && npm run typecheck && npm test && npm run build",
