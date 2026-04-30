@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Fingeravtryck och partiell DOM-uppdatering för kravlistor.
  * @module js/components/requirements_list/requirement_list_incremental_dom
@@ -19,30 +18,30 @@ import { sample_matches_status_filter } from './requirement_list_query.js';
  * @returns {string[]}
  */
 export function build_item_keys(
-    mode,
-    sorted_items,
-    samples,
-    relevant_ids_by_sample,
-    filter_opts = {},
-    AuditLogic,
-    requirements
+    mode: any,
+    sorted_items: any,
+    samples: any,
+    relevant_ids_by_sample: any,
+    filter_opts: any = {},
+    AuditLogic: any,
+    requirements: any
 ) {
     if (mode === 'sample') {
-        return sorted_items.map(req => req?.key || req?.id || '');
+        return sorted_items.map((req: any) => req?.key || req?.id || '');
     }
-    const keys = [];
+    const keys: string[] = [];
     const { status_filters = {}, has_status_filters = false, requirement_needs_help_fn = () => false } = filter_opts;
-    const candidates = (req_id, req) => new Set([String(req_id), ...(req?.key ? [String(req.key)] : []), ...(req?.id ? [String(req.id)] : [])]);
+    const candidates = (req_id: any, req: any) => new Set([String(req_id), ...(req?.key ? [String(req.key)] : []), ...(req?.id ? [String(req.id)] : [])]);
 
-    sorted_items.forEach(([req_id, req]) => {
+    sorted_items.forEach(([req_id, req]: [any, any]) => {
         const req_key = req?.key || req?.id || req_id;
-        let matching = samples.filter(sample => {
+        let matching = samples.filter((sample: any) => {
             const sample_set = sample?.id ? relevant_ids_by_sample?.get(sample.id) : null;
             if (!sample_set) return false;
             return [...candidates(req_id, req)].some(id => sample_set.has(id));
         });
         if (has_status_filters && Object.keys(status_filters).length > 0) {
-            matching = matching.filter(sample =>
+            matching = matching.filter((sample: any) =>
                 sample_matches_status_filter(
                     sample,
                     req_id,
@@ -55,7 +54,7 @@ export function build_item_keys(
                 )
             );
         }
-        matching.forEach(s => keys.push(`${req_key}:${s?.id || ''}`));
+        matching.forEach((s: any) => keys.push(`${req_key}:${s?.id || ''}`));
     });
     return keys;
 }
@@ -72,15 +71,15 @@ export function build_item_keys(
  * @param {{ Helpers: object, Translation: object, requirements?: object|Array|null }} icons_ctx
  */
 export function update_items_status_only(
-    mode,
-    content_div_for_delegation,
-    relevant_ids_by_sample,
-    sorted_items,
-    samples,
-    current_sample_object,
-    filter_opts,
-    AuditLogic,
-    icons_ctx
+    mode: any,
+    content_div_for_delegation: any,
+    relevant_ids_by_sample: any,
+    sorted_items: any,
+    samples: any,
+    current_sample_object: any,
+    filter_opts: any,
+    AuditLogic: any,
+    icons_ctx: any
 ) {
     const t = icons_ctx.Translation.t;
     const needs_help_fn = filter_opts.requirement_needs_help_fn ?? (AuditLogic?.requirement_needs_help || (() => false));
@@ -89,7 +88,7 @@ export function update_items_status_only(
     if (mode === 'sample') {
         const items = content_div_for_delegation?.querySelectorAll?.('ol.requirement-items-ul > li.requirement-item');
         if (!items || items.length !== sorted_items.length) return;
-        sorted_items.forEach((req, i) => {
+        sorted_items.forEach((req: any, i: any) => {
             const li = items[i];
             if (!li) return;
             const req_result = get_stored_requirement_result_for_def(
@@ -129,18 +128,18 @@ export function update_items_status_only(
     } else {
         const req_lis = content_div_for_delegation?.querySelectorAll?.('ul.requirement-items-ul > li.requirement-item-with-actions');
         if (!req_lis || req_lis.length !== sorted_items.length) return;
-        sorted_items.forEach(([req_id, req], ri) => {
+        sorted_items.forEach(([req_id, req]: [any, any], ri: any) => {
             const req_li = req_lis[ri];
             if (!req_li) return;
             const req_key = req?.key || req?.id || req_id;
             const cand = new Set([String(req_id), ...(req?.key ? [String(req.key)] : []), ...(req?.id ? [String(req.id)] : [])]);
-            let matching_samples = samples.filter(sample => {
+            let matching_samples = samples.filter((sample: any) => {
                 const sample_set = sample?.id ? relevant_ids_by_sample?.get(sample.id) : null;
                 if (!sample_set) return false;
                 return [...cand].some(id => sample_set.has(id));
             });
             if (filter_opts.has_status_filters && Object.keys(filter_opts.status_filters || {}).length > 0) {
-                matching_samples = matching_samples.filter(sample =>
+                matching_samples = matching_samples.filter((sample: any) =>
                     sample_matches_status_filter(
                         sample,
                         req_id,
@@ -154,7 +153,7 @@ export function update_items_status_only(
                 );
             }
             const sample_lis = req_li.querySelectorAll('ol.requirement-samples-list > li.requirement-sample-item');
-            matching_samples.forEach((sample, si) => {
+            matching_samples.forEach((sample: any, si: any) => {
                 const sample_li = sample_lis[si];
                 if (!sample_li) return;
                 const req_result = get_stored_requirement_result_for_def(

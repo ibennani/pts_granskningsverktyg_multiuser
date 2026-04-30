@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * DOM-byggande för enskilda rader i kravlistor (alla stickprov respektive ett stickprov).
  * @module js/components/requirements_list/requirement_list_list_items
@@ -22,23 +21,23 @@ import { sample_matches_status_filter } from './requirement_list_query.js';
  * @returns {HTMLElement}
  */
 export function create_all_requirement_list_item(
-    req_id,
-    req,
-    samples,
-    filter_opts,
-    relevant_ids_by_sample,
-    requirements,
-    getState,
-    AuditLogic,
-    Helpers,
-    Translation
+    req_id: any,
+    req: any,
+    samples: any,
+    filter_opts: any,
+    relevant_ids_by_sample: any,
+    requirements: any,
+    getState: any,
+    AuditLogic: any,
+    Helpers: any,
+    Translation: any
 ) {
     const t = Translation.t;
     const candidates = new Set([String(req_id)]);
     if (req?.key) candidates.add(String(req.key));
     if (req?.id) candidates.add(String(req.id));
 
-    let matching_samples = samples.filter(sample => {
+    let matching_samples = samples.filter((sample: any) => {
         const sample_set = sample?.id ? relevant_ids_by_sample.get(sample.id) : null;
         if (!sample_set) return false;
         return [...candidates].some(id => sample_set.has(id));
@@ -46,7 +45,7 @@ export function create_all_requirement_list_item(
 
     const { status_filters = {}, has_status_filters = false, requirement_needs_help_fn = () => false, has_active_filter = false } = filter_opts;
     if (has_status_filters && Object.keys(status_filters).length > 0) {
-        matching_samples = matching_samples.filter(sample =>
+        matching_samples = matching_samples.filter((sample: any) =>
             sample_matches_status_filter(
                 sample,
                 req_id,
@@ -175,12 +174,12 @@ export function create_all_requirement_list_item(
     li.appendChild(samples_ol);
 
     const audit_status = getState()?.auditStatus;
-    const all_samples_for_req = samples.filter(sample => {
+    const all_samples_for_req = samples.filter((sample: any) => {
         const sample_set = sample?.id ? relevant_ids_by_sample.get(sample.id) : null;
         if (!sample_set) return false;
         return [...candidates].some(id => sample_set.has(id));
     });
-    const has_unreviewed = all_samples_for_req.some(sample => {
+    const has_unreviewed = all_samples_for_req.some((sample: any) => {
         const req_result = get_stored_requirement_result_for_def(
             sample.requirementResults,
             requirements,
@@ -223,7 +222,7 @@ export function create_all_requirement_list_item(
  * @param {object} Translation
  * @returns {HTMLElement}
  */
-export function create_requirement_list_item(req, sample, requirements, AuditLogic, Helpers, Translation) {
+export function create_requirement_list_item(req: any, sample: any, requirements: any, AuditLogic: any, Helpers: any, Translation: any) {
     const t = Translation.t;
     const req_result = get_stored_requirement_result_for_def(sample.requirementResults, requirements, req);
     const requirement_needs_help_fn = AuditLogic?.requirement_needs_help || (() => false);
@@ -312,11 +311,11 @@ export function create_requirement_list_item(req, sample, requirements, AuditLog
     details_row_div.appendChild(icons_wrapper);
 
     const total_checks = req.checks?.length || 0;
-    const audited_checks = req_result?.checkResults ? Object.values(req_result.checkResults).filter(res => res.status === 'passed' || res.status === 'failed').length : 0;
+    const audited_checks = req_result?.checkResults ? Object.values(req_result.checkResults).filter((res: any) => res.status === 'passed' || res.status === 'failed').length : 0;
     details_row_div.appendChild(Helpers.create_element('span', { class_name: 'requirement-checks-info', text_content: `(${audited_checks}/${total_checks} ${t('checks_short')})` }));
 
     if (req.standardReference?.text) {
-        const t_ref = Translation?.t || (k => (k === 'opens_in_new_tab' ? '(Öppnas i ny flik)' : k));
+        const t_ref = Translation?.t || ((k: string) => (k === 'opens_in_new_tab' ? '(Öppnas i ny flik)' : k));
         const icon_html = Helpers.get_external_link_icon_html ? Helpers.get_external_link_icon_html(t_ref) : ' ↗';
         details_row_div.appendChild(req.standardReference.url
             ? Helpers.create_element('a', { class_name: 'list-reference-link', html_content: (Helpers.escape_html ? Helpers.escape_html(req.standardReference.text) : req.standardReference.text) + icon_html, attributes: { href: req.standardReference.url, target: '_blank', rel: 'noopener noreferrer' } })

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Modal för att markera ett krav som godkänt i alla relevanta stickprov.
  * @module js/components/requirements_list/requirement_list_mark_all_modal
@@ -20,9 +19,9 @@ import { get_effective_requirement_audit_status, find_requirement_definition } f
  * @param {object} [ctx.NotificationComponent]
  * @param {() => void} ctx.rerender
  */
-export function handle_mark_requirement_passed_in_all_samples(requirement_id, trigger_button, ctx) {
+export function handle_mark_requirement_passed_in_all_samples(requirement_id: any, trigger_button: any, ctx: any) {
     const t = ctx.Translation.t;
-    const ModalComponent = app_runtime_refs.modal_component;
+    const ModalComponent = app_runtime_refs.modal_component as { show?: (opts: any, render: (container: any, modal: any) => void) => void } | null;
     if (!ModalComponent?.show || !ctx.Helpers?.create_element) return;
 
     const state = ctx.getState();
@@ -32,11 +31,11 @@ export function handle_mark_requirement_passed_in_all_samples(requirement_id, tr
     const req_def = requirements ? find_requirement_definition(requirements, requirement_id) : null;
     const requirement_title = req_def?.title || requirement_id;
 
-    const affected_samples = [];
+    const affected_samples: any[] = [];
     if (ctx.AuditLogic?.get_relevant_requirements_for_sample) {
-        samples.forEach(sample => {
+        samples.forEach((sample: any) => {
             const relevant_reqs = ctx.AuditLogic.get_relevant_requirements_for_sample(rule_file, sample);
-            const req = relevant_reqs.find(r => (r.key || r.id) === requirement_id);
+            const req = relevant_reqs.find((r: any) => (r.key || r.id) === requirement_id);
             if (req) {
                 const status = get_effective_requirement_audit_status(
                     requirements,
@@ -57,7 +56,7 @@ export function handle_mark_requirement_passed_in_all_samples(requirement_id, tr
             h1_text: t('mark_requirement_passed_in_all_samples_confirm_title', { sample_count }),
             message_text: ''
         },
-        (container, modal) => {
+        (container: any, modal: any) => {
             const msg_wrapper = ctx.Helpers.create_element('div', { class_name: 'modal-message-block' });
             const p1 = ctx.Helpers.create_element('p', {
                 text_content: t('mark_requirement_passed_in_all_samples_confirm_p1', { requirement_title, sample_count })
@@ -78,7 +77,7 @@ export function handle_mark_requirement_passed_in_all_samples(requirement_id, tr
                 text_content: t('mark_requirement_passed_in_all_samples_affected_list')
             });
             const samples_ul = ctx.Helpers.create_element('ul', { class_name: 'modal-affected-samples-ul' });
-            affected_samples.forEach(sample => {
+            affected_samples.forEach((sample: any) => {
                 const sample_name = sample?.description || t('undefined_description');
                 const li = ctx.Helpers.create_element('li', { text_content: sample_name });
                 samples_ul.appendChild(li);

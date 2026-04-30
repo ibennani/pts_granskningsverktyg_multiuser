@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * @file Handlare för granskningsstatus (låst, pågår, arkiverad m.m.) i audit-reducern.
  */
@@ -6,7 +5,7 @@
 import * as AuditLogic from '../audit_logic.js';
 import { get_current_iso_datetime_utc } from './audit_reducer_time.js';
 
-export function reduce_set_audit_status(current_state, action) {
+export function reduce_set_audit_status(current_state: any, action: any) {
     const newStatus = action.payload.status;
     let state_before_status_change = current_state;
     let frozen_last_updated = current_state.auditLastUpdatedAtFrozen ?? null;

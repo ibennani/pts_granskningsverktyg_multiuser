@@ -2,7 +2,6 @@
  * @fileoverview Fältutkast (session/localStorage) med debounced flush och konflikt mellan flikar.
  * Typer för DOM/storage lämnas lösa; filen migrerad från JS.
  */
-// @ts-nocheck
 const SCHEMA_VERSION = 1;
 const STORAGE_PREFIX = 'draft:';
 const DRAFT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -35,13 +34,15 @@ function safe_json_parse(raw: string | null): unknown {
     }
 }
 
-function normalize_string(value) {
+function normalize_string(value: unknown): string {
     if (typeof value !== 'string') return '';
     return value;
 }
 
-function get_storage_entries(storage) {
-    const entries = [];
+type StorageEntry = { key: string; value: { schemaVersion?: number; updatedAt?: number } };
+
+function get_storage_entries(storage: Storage | null): StorageEntry[] {
+    const entries: StorageEntry[] = [];
     if (!storage) return entries;
     for (let i = 0; i < storage.length; i += 1) {
         const key = storage.key(i);
@@ -54,7 +55,10 @@ function get_storage_entries(storage) {
     return entries;
 }
 
-function cleanup_storage(storage, { max_age_ms = DRAFT_TTL_MS, remove_oldest_count = 0 } = {}) {
+function cleanup_storage(
+    storage: Storage | null,
+    { max_age_ms = DRAFT_TTL_MS, remove_oldest_count = 0 }: { max_age_ms?: number; remove_oldest_count?: number } = {}
+): number {
     if (!storage) return 0;
     const now = now_ms();
     let removed = 0;
@@ -80,13 +84,15 @@ function cleanup_storage(storage, { max_age_ms = DRAFT_TTL_MS, remove_oldest_cou
     return removed;
 }
 
-function should_skip_element(element) {
+function should_skip_element(element: Element | null): boolean {
     if (!element) return true;
     if (element.closest('[data-draft-ignore="true"]')) return true;
     if (element.getAttribute && element.getAttribute('data-draft-ignore') === 'true') return true;
     if (element.getAttribute && element.getAttribute('data-draft-sensitive') === 'true') return true;
-    if (element.type === 'password') return true;
-    if (element.type === 'file') return true;
+    if (element.tagName === 'INPUT') {
+        const inp = element as HTMLInputElement;
+        if (inp.type === 'password' || inp.type === 'file') return true;
+    }
     return false;
 }
 
@@ -99,12 +105,12 @@ export function get_field_key(element: Element | null): string | null {
     if (!element || !element.getAttribute) return null;
     const explicit_path = element.getAttribute('data-draft-path');
     if (explicit_path) return explicit_path;
-    if (element.type === 'radio') {
+    if (element.tagName === 'INPUT' && (element as HTMLInputElement).type === 'radio') {
         const group_name = element.getAttribute('name');
         if (group_name) return `radio:${group_name}`;
     }
     const tag = element.tagName ? element.tagName.toLowerCase() : '';
-    if (tag === 'input' && element.type === 'checkbox') {
+    if (tag === 'input' && (element as HTMLInputElement).type === 'checkbox') {
         const name_attr = element.getAttribute('name');
         const value_attr = element.getAttribute('value');
         if (name_attr && value_attr !== null && String(value_attr).length > 0) {
@@ -123,24 +129,25 @@ export function get_field_key(element: Element | null): string | null {
 }
 
 function generate_fallback_path(element: Element): string {
-    const parts = [];
-    let current = element;
+    const parts: string[] = [];
+    let current: Element | null = element;
     let depth = 0;
     while (current && current.nodeType === 1 && depth < 4) {
-        const tag = current.tagName.toLowerCase();
-        if (current.id) {
-            parts.unshift(`${tag}#${current.id}`);
+        const cur: Element = current;
+        const tag = cur.tagName.toLowerCase();
+        if (cur.id) {
+            parts.unshift(`${tag}#${cur.id}`);
             break;
         }
         let part = tag;
-        const parent = current.parentElement;
+        const parent = cur.parentElement;
         if (parent) {
-            const siblings = Array.from(parent.children).filter(child => child.tagName === current.tagName);
-            const index = siblings.indexOf(current) + 1;
+            const siblings = Array.from(parent.children).filter((child: Element) => child.tagName === cur.tagName);
+            const index = siblings.indexOf(cur) + 1;
             part += `:nth-of-type(${index})`;
         }
         parts.unshift(part);
-        current = current.parentElement;
+        current = cur.parentElement;
         depth += 1;
     }
     return parts.join('>');
@@ -158,19 +165,20 @@ function get_field_record(element: Element | null): {
     const field_key = get_field_key(element);
     if (!field_key) return null;
 
-    if (element.isContentEditable) {
+    if ((element as HTMLElement).isContentEditable) {
         return {
             field_key,
             type: 'contenteditable',
-            value: normalize_string(element.textContent),
+            value: normalize_string((element as HTMLElement).textContent),
             extra: {}
         };
     }
 
     const tag = element.tagName ? element.tagName.toLowerCase() : '';
     if (tag === 'select') {
-        if (element.multiple) {
-            const values = Array.from(element.selectedOptions || []).map(option => option.value);
+        const sel = element as HTMLSelectElement;
+        if (sel.multiple) {
+            const values = Array.from(sel.selectedOptions || []).map((option: HTMLOptionElement) => option.value);
             return {
                 field_key,
                 type: 'select',
@@ -181,50 +189,52 @@ function get_field_record(element: Element | null): {
         return {
             field_key,
             type: 'select',
-            value: element.value,
+            value: sel.value,
             extra: { multiple: false }
         };
     }
 
     if (tag === 'textarea') {
+        const ta = element as HTMLTextAreaElement;
         return {
             field_key,
             type: 'text',
-            value: normalize_string(element.value),
+            value: normalize_string(ta.value),
             extra: {}
         };
     }
 
     if (tag === 'input') {
-        if (element.type === 'checkbox') {
+        const inp = element as HTMLInputElement;
+        if (inp.type === 'checkbox') {
             return {
                 field_key,
                 type: 'checkbox',
-                value: Boolean(element.checked),
+                value: Boolean(inp.checked),
                 extra: {}
             };
         }
-        if (element.type === 'radio') {
-            if (!element.checked) return null;
+        if (inp.type === 'radio') {
+            if (!inp.checked) return null;
             return {
                 field_key,
                 type: 'radio',
-                value: element.value,
+                value: inp.value,
                 extra: {}
             };
         }
         return {
             field_key,
             type: 'text',
-            value: normalize_string(element.value),
-            extra: { inputType: element.type || 'text' }
+            value: normalize_string(inp.value),
+            extra: { inputType: inp.type || 'text' }
         };
     }
 
     return null;
 }
 
-function is_empty_like(value) {
+function is_empty_like(value: unknown): boolean {
     if (value === null || value === undefined) return true;
     if (Array.isArray(value)) return value.length === 0;
     if (typeof value === 'string') return value.trim() === '';
@@ -234,7 +244,16 @@ function is_empty_like(value) {
 
 /** Singleton-objekt med dynamiska fält; `any` undviker felaktiga `this`-typer i metoderna. */
 export const DraftManager: any = {
-    init({ getRouteKey, getScopeKey, rootProvider, restorePolicy = {}, onConflict } = {}) {
+    init(
+        opts: {
+            getRouteKey?: () => string;
+            getScopeKey?: () => string;
+            rootProvider?: () => HTMLElement;
+            restorePolicy?: { max_auto_restore_age_ms?: number };
+            onConflict?: (incoming: unknown) => void;
+        } = {}
+    ) {
+        const { getRouteKey, getScopeKey, rootProvider, restorePolicy = {}, onConflict } = opts;
         this.get_route_key = getRouteKey || (() => window.location?.hash?.split('?')[0] || 'unknown');
         this.get_scope_key = getScopeKey || (() => 'default');
         this.root_provider = rootProvider || (() => document.body);
@@ -267,7 +286,7 @@ export const DraftManager: any = {
         return this.memory_store[draft_key] || null;
     },
 
-    captureFieldChange(element) {
+    captureFieldChange(element: Element | null) {
         if (this.suspend_capture) return;
         const record = get_field_record(element);
         if (!record) return;
@@ -308,7 +327,7 @@ export const DraftManager: any = {
         this._persist_current_draft(reason);
     },
 
-    restoreIntoDom(root_el) {
+    restoreIntoDom(root_el: HTMLElement | null | undefined) {
         const root = root_el || (this.root_provider ? this.root_provider() : document.body);
         if (!root) return;
 
@@ -329,13 +348,13 @@ export const DraftManager: any = {
             const field_nodes = this._collect_fields(root);
             const processed_keys = new Set();
 
-            field_nodes.forEach(element => {
+            field_nodes.forEach((element: Element) => {
                 const field_key = get_field_key(element);
                 if (!field_key || processed_keys.has(field_key)) return;
                 const record = draft.fields[field_key];
                 if (!record) return;
 
-                if (element.type === 'radio') {
+                if ((element as HTMLInputElement).type === 'radio') {
                     if (processed_keys.has(field_key)) return;
                     processed_keys.add(field_key);
                     this._apply_radio_group(root, element, record, empty_only);
@@ -378,7 +397,7 @@ export const DraftManager: any = {
         });
     },
 
-    handleStorageEvent(event) {
+    handleStorageEvent(event: StorageEvent) {
         if (!event || !event.key || !event.key.startsWith(STORAGE_PREFIX)) return;
         const current_key = `${STORAGE_PREFIX}${this.get_current_draft_key()}`;
         if (event.key !== current_key) return;
@@ -409,7 +428,7 @@ export const DraftManager: any = {
         }, FLUSH_DEBOUNCE_MS);
     },
 
-    _persist_current_draft(reason) {
+    _persist_current_draft(reason: string) {
         if (!this.current_draft) return;
         const draft_key = this.current_draft.draftKey;
         const storage_key = `${STORAGE_PREFIX}${draft_key}`;
@@ -436,7 +455,7 @@ export const DraftManager: any = {
         }
     },
 
-    _write_to_storage(storage, key, value) {
+    _write_to_storage(storage: Storage | null, key: string, value: string): boolean {
         if (!storage) return false;
         try {
             storage.setItem(key, value);
@@ -455,7 +474,7 @@ export const DraftManager: any = {
         }
     },
 
-    _read_from_storage(storage, draft_key) {
+    _read_from_storage(storage: Storage | null, draft_key: string): Record<string, unknown> | null {
         if (!storage) return null;
         const raw = storage.getItem(`${STORAGE_PREFIX}${draft_key}`);
         const parsed = safe_json_parse(raw) as { schemaVersion?: number; updatedAt?: number } | null;
@@ -464,17 +483,17 @@ export const DraftManager: any = {
         return parsed;
     },
 
-    _remove_from_storage(storage, draft_key) {
+    _remove_from_storage(storage: Storage | null, draft_key: string): void {
         if (!storage) return;
         storage.removeItem(`${STORAGE_PREFIX}${draft_key}`);
     },
 
-    _strip_sensitive_fields(draft) {
+    _strip_sensitive_fields(draft: Record<string, unknown> | null | undefined): Record<string, unknown> | null {
         if (!draft || !draft.fields) return null;
-        const safe_fields = {};
-        Object.entries(draft.fields).forEach(([key, value]) => {
+        const safe_fields: Record<string, unknown> = {};
+        Object.entries(draft.fields as Record<string, Record<string, unknown>>).forEach(([key, value]) => {
             if (!value) return;
-            if (value.type === 'text' && value.extra?.inputType === 'password') return;
+            if (value.type === 'text' && (value.extra as Record<string, unknown> | undefined)?.inputType === 'password') return;
             safe_fields[key] = value;
         });
         if (Object.keys(safe_fields).length === 0) return null;
@@ -484,8 +503,8 @@ export const DraftManager: any = {
         };
     },
 
-    _collect_fields(root) {
-        const nodes = [];
+    _collect_fields(root: ParentNode | null): Element[] {
+        const nodes: Element[] = [];
         if (!root) return nodes;
         const selectors = [
             'input',
@@ -493,75 +512,84 @@ export const DraftManager: any = {
             'select',
             '[contenteditable="true"]'
         ];
-        root.querySelectorAll(selectors.join(',')).forEach(element => {
+        root.querySelectorAll(selectors.join(',')).forEach((element: Element) => {
             if (should_skip_element(element)) return;
             nodes.push(element);
         });
         return nodes;
     },
 
-    _should_apply_to_element(element, record, empty_only) {
+    _should_apply_to_element(element: HTMLElement, record: Record<string, unknown>, empty_only: boolean): boolean {
         if (!element || !record) return false;
         if (should_skip_element(element)) return false;
 
         if (record.type === 'checkbox') {
-            if (empty_only) return element.checked === element.defaultChecked;
-            return element.checked === element.defaultChecked || is_empty_like(element.checked);
+            const el = element as HTMLInputElement;
+            if (empty_only) return el.checked === el.defaultChecked;
+            return el.checked === el.defaultChecked || is_empty_like(el.checked);
         }
-        if (record.type === 'select' && record.extra?.multiple) {
-            const selected = Array.from(element.selectedOptions || []).map(opt => opt.value);
+        if (record.type === 'select' && (record.extra as Record<string, unknown> | undefined)?.multiple) {
+            const sel = element as HTMLSelectElement;
+            const selected = Array.from(sel.selectedOptions || []).map((opt: HTMLOptionElement) => opt.value);
             if (empty_only) return selected.length === 0;
-            return selected.length === 0 || selected.join(',') === (record.value || []).join(',');
+            const rec_val = record.value as string[] | undefined;
+            return selected.length === 0 || selected.join(',') === (rec_val || []).join(',');
         }
         if (record.type === 'select') {
-            if (empty_only) return is_empty_like(element.value);
-            return element.value === element.defaultValue || is_empty_like(element.value);
+            const sel = element as HTMLSelectElement;
+            const sel_default = (sel as unknown as { defaultValue?: string }).defaultValue ?? '';
+            if (empty_only) return is_empty_like(sel.value);
+            return sel.value === sel_default || is_empty_like(sel.value);
         }
         if (record.type === 'contenteditable') {
             const current = normalize_string(element.textContent);
             if (empty_only) return is_empty_like(current);
             return is_empty_like(current);
         }
-        const current_value = normalize_string(element.value);
+        const inp = element as HTMLInputElement;
+        const current_value = normalize_string(inp.value);
         if (empty_only) return is_empty_like(current_value);
-        return current_value === element.defaultValue || is_empty_like(current_value);
+        return current_value === inp.defaultValue || is_empty_like(current_value);
     },
 
-    _apply_value_to_element(element, record) {
+    _apply_value_to_element(element: HTMLElement, record: Record<string, unknown>): void {
         if (!element || !record) return;
         if (record.type === 'checkbox') {
-            element.checked = Boolean(record.value);
+            (element as HTMLInputElement).checked = Boolean(record.value);
             return;
         }
         if (record.type === 'select') {
-            if (record.extra?.multiple && Array.isArray(record.value)) {
-                const values = new Set(record.value);
-                Array.from(element.options || []).forEach(opt => {
+            const sel = element as HTMLSelectElement;
+            if ((record.extra as Record<string, unknown> | undefined)?.multiple && Array.isArray(record.value)) {
+                const values = new Set(record.value as string[]);
+                Array.from(sel.options || []).forEach((opt: HTMLOptionElement) => {
                     opt.selected = values.has(opt.value);
                 });
                 return;
             }
-            element.value = record.value ?? '';
+            sel.value = (record.value ?? '') as string;
             return;
         }
         if (record.type === 'contenteditable') {
             element.textContent = normalize_string(record.value);
             return;
         }
-        element.value = record.value ?? '';
+        (element as HTMLInputElement).value = (record.value ?? '') as string;
     },
 
-    _apply_radio_group(root, element, record, empty_only) {
+    _apply_radio_group(root: ParentNode, element: HTMLElement, record: Record<string, unknown>, empty_only: boolean): void {
         const group_name = element.getAttribute('name');
         if (!group_name) return;
         const radios = root.querySelectorAll(`input[type="radio"][name="${CSS.escape(group_name)}"]`);
         let any_checked = false;
-        radios.forEach(radio => {
-            if (radio.checked) any_checked = true;
+        radios.forEach((radio: Element) => {
+            const r = radio as HTMLInputElement;
+            if (r.checked) any_checked = true;
         });
         if (empty_only && any_checked) return;
-        radios.forEach(radio => {
-            radio.checked = radio.value === record.value;
+        radios.forEach((radio: Element) => {
+            const r = radio as HTMLInputElement;
+            r.checked = r.value === record.value;
         });
     }
 };

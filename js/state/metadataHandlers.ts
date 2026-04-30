@@ -1,11 +1,10 @@
-// @ts-nocheck
 /**
  * @file Handlare för granskningsmetadata i audit-reducern.
  */
 
 import { get_current_iso_datetime_utc } from './audit_reducer_time.js';
 
-export function reduce_update_metadata(current_state, action) {
+export function reduce_update_metadata(current_state: any, action: any) {
     const payload = { ...(action.payload || {}) };
     const skip_internal_sync = action.payload?.skip_server_sync === true;
     delete payload.skip_server_sync;

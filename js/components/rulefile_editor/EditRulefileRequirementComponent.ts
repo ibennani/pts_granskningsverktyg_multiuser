@@ -1,8 +1,8 @@
-// @ts-nocheck
 /**
  * Kravredigering i regelfilen: formulär, kontrollpunkter, infoblock och delpatch mot server.
  * @file js/components/rulefile_editor/EditRulefileRequirementComponent.ts
  */
+// @ts-nocheck
 
 import { show_confirm_delete_modal, build_delete_warning_text } from '../../logic/confirm_delete_modal_logic.js';
 import { patch_rule_content_part } from '../../api/client.js';

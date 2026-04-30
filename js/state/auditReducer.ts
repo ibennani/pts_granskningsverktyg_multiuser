@@ -1,4 +1,3 @@
-// @ts-nocheck
 // js/state/auditReducer.ts
 import * as AuditLogic from '../audit_logic.js';
 import { get_current_user_name } from '../utils/helpers.js';
@@ -24,8 +23,8 @@ import {
     reduce_replace_state_from_remote
 } from './remoteStateHandlers.js';
 
-export function auditReducer(current_state, action) {
-    let new_state;
+export function auditReducer(current_state: any, action: any) {
+    let new_state: any;
 
     switch (action.type) {
         case ActionTypes.DELETE_CHECK_FROM_REQUIREMENT: {
@@ -36,7 +35,7 @@ export function auditReducer(current_state, action) {
             }
             const reqToUpdateCheck = current_state.ruleFileContent.requirements[reqIdForCheck];
             if (reqToUpdateCheck) {
-                const updatedChecks = reqToUpdateCheck.checks.filter(c => c.id !== checkId);
+                const updatedChecks = reqToUpdateCheck.checks.filter((c: any) => c.id !== checkId);
                 const updatedReq = { ...reqToUpdateCheck, checks: updatedChecks };
                 const newRequirements = { ...current_state.ruleFileContent.requirements, [reqIdForCheck]: updatedReq };
                 return { ...current_state, ruleFileContent: { ...current_state.ruleFileContent, requirements: newRequirements } };
@@ -51,9 +50,9 @@ export function auditReducer(current_state, action) {
             }
             const reqToUpdatePc = current_state.ruleFileContent.requirements[reqIdForPc];
             if (reqToUpdatePc) {
-                const updatedChecksForPc = reqToUpdatePc.checks.map(c => {
+                const updatedChecksForPc = reqToUpdatePc.checks.map((c: any) => {
                     if (c.id === checkIdForPc) {
-                        const updatedPassCriteria = c.passCriteria.filter(pc => pc.id !== passCriterionId);
+                        const updatedPassCriteria = c.passCriteria.filter((pc: any) => pc.id !== passCriterionId);
                         return { ...c, passCriteria: updatedPassCriteria };
                     }
                     return c;
@@ -108,7 +107,7 @@ export function auditReducer(current_state, action) {
             const newRequirementsAfterDelete = { ...reqs_before };
             delete newRequirementsAfterDelete[deleteReqId];
             const req_def_for_delete = AuditLogic.find_requirement_definition(reqs_before, deleteReqId);
-            const updatedSamples = current_state.samples.map((sample) => {
+            const updatedSamples = current_state.samples.map((sample: any) => {
                 if (!sample.requirementResults) return sample;
                 const keys_to_remove = new Set([String(deleteReqId)]);
                 if (req_def_for_delete) {
@@ -147,7 +146,7 @@ export function auditReducer(current_state, action) {
             return {
                 ...current_state,
                 requirementUpdateDetails: new_update_details,
-                samples: current_state.samples.map((sample) => {
+                samples: current_state.samples.map((sample: any) => {
                     if (sample.id !== sampleId) return sample;
                     const requirements = current_state.ruleFileContent.requirements;
                     const req_def = AuditLogic.find_requirement_definition(requirements, requirementId);
@@ -183,7 +182,7 @@ export function auditReducer(current_state, action) {
             return {
                 ...current_state,
                 requirementUpdateDetails: {},
-                samples: current_state.samples.map((sample) => {
+                samples: current_state.samples.map((sample: any) => {
                     const requirements = current_state.ruleFileContent.requirements;
                     const newResults = { ...(sample.requirementResults || {}) };
                     let hasChanged = false;
@@ -225,7 +224,7 @@ export function auditReducer(current_state, action) {
                 return current_state;
             }
             const timestamp = get_current_iso_datetime_utc();
-            const new_samples = current_state.samples.map(sample => {
+            const new_samples = current_state.samples.map((sample: any) => {
                 const relevant_reqs = AuditLogic.get_relevant_requirements_for_sample(current_state.ruleFileContent, sample);
                 const new_results = { ...(sample.requirementResults || {}) };
                 let has_changed = false;
@@ -271,7 +270,7 @@ export function auditReducer(current_state, action) {
                 return current_state;
             }
             const timestamp = get_current_iso_datetime_utc();
-            const new_samples = current_state.samples.map(sample => {
+            const new_samples = current_state.samples.map((sample: any) => {
                 const relevant_reqs = AuditLogic.get_relevant_requirements_for_sample(current_state.ruleFileContent, sample);
                 const req_def = relevant_reqs.find(r => (r.key || r.id) === requirement_id);
                 if (!req_def) return sample;
@@ -334,7 +333,7 @@ export function auditReducer(current_state, action) {
             const result_to_save = { ...newRequirementResult };
             new_state = {
                 ...current_state,
-                samples: current_state.samples.map(sample =>
+                samples: current_state.samples.map((sample: any) =>
                     (sample.id === updateSampleId)
                         ? { ...sample, requirementResults: { ...(sample.requirementResults || {}), [updateRequirementId]: result_to_save } }
                         : sample

@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * @file Init, inläsning från fil och fjärrsynkad state i audit-reducern.
  */
@@ -6,7 +5,7 @@
 import * as AuditLogic from '../audit_logic.js';
 import { initial_state, APP_STATE_VERSION } from './initialState.js';
 
-export function reduce_initialize_new_audit(_current_state, action) {
+export function reduce_initialize_new_audit(_current_state: any, action: any) {
     return {
         ...initial_state,
         saveFileVersion: APP_STATE_VERSION,
@@ -19,7 +18,7 @@ export function reduce_initialize_new_audit(_current_state, action) {
     };
 }
 
-export function reduce_initialize_rulefile_editing(_current_state, action) {
+export function reduce_initialize_rulefile_editing(_current_state: any, action: any) {
     return {
         ...initial_state,
         saveFileVersion: APP_STATE_VERSION,
@@ -34,11 +33,11 @@ export function reduce_initialize_rulefile_editing(_current_state, action) {
     };
 }
 
-export function reduce_load_audit_from_file(current_state, action) {
+export function reduce_load_audit_from_file(current_state: any, action: any) {
     if (action.payload && typeof action.payload === 'object') {
         const loaded_data = action.payload;
         const new_state_base = JSON.parse(JSON.stringify(initial_state));
-        let merged_state = {
+        let merged_state: any = {
             ...new_state_base,
             ...loaded_data,
             uiSettings: { ...new_state_base.uiSettings, ...(loaded_data.uiSettings || {}) },
@@ -47,11 +46,11 @@ export function reduce_load_audit_from_file(current_state, action) {
         if (!Array.isArray(merged_state.archivedRequirementResults)) {
             merged_state.archivedRequirementResults = [];
         }
-        (merged_state.samples || []).forEach(sample => {
-            Object.values(sample.requirementResults || {}).forEach(reqResult => {
-                Object.values(reqResult.checkResults || {}).forEach(checkResult => {
+        (merged_state.samples || []).forEach((sample: any) => {
+            Object.values(sample.requirementResults || {}).forEach((reqResult: any) => {
+                Object.values(reqResult.checkResults || {}).forEach((checkResult: any) => {
                     if (checkResult.passCriteria) {
-                        Object.keys(checkResult.passCriteria).forEach(pcId => {
+                        Object.keys(checkResult.passCriteria).forEach((pcId) => {
                             const pcValue = checkResult.passCriteria[pcId];
                             if (typeof pcValue === 'string') {
                                 checkResult.passCriteria[pcId] = {
@@ -60,16 +59,16 @@ export function reduce_load_audit_from_file(current_state, action) {
                                     timestamp: merged_state.startTime || null,
                                     attachedMediaFilenames: []
                                 };
-                            } else if (typeof pcValue === 'object' && pcValue !== null && !Array.isArray(pcValue.attachedMediaFilenames)) {
-                                pcValue.attachedMediaFilenames = [];
+                            } else if (typeof pcValue === 'object' && pcValue !== null && !Array.isArray((pcValue as Record<string, unknown>).attachedMediaFilenames)) {
+                                (pcValue as Record<string, unknown>).attachedMediaFilenames = [];
                             }
                         });
                     }
                 });
-                const stuck_parts = [];
-                Object.values(reqResult.checkResults || {}).forEach(checkResult => {
-                    Object.values(checkResult.passCriteria || {}).forEach(pcResult => {
-                        const s = (pcResult?.stuckProblemDescription || '').trim();
+                const stuck_parts: string[] = [];
+                Object.values(reqResult.checkResults || {}).forEach((checkResult: any) => {
+                    Object.values(checkResult.passCriteria || {}).forEach((pcResult: any) => {
+                        const s = (String(pcResult?.stuckProblemDescription || '')).trim();
                         if (s) stuck_parts.push(s);
                         if (pcResult && typeof pcResult === 'object') delete pcResult.stuckProblemDescription;
                     });
@@ -81,7 +80,7 @@ export function reduce_load_audit_from_file(current_state, action) {
         if (!merged_state.deficiencyCounter) merged_state.deficiencyCounter = 1;
         merged_state = AuditLogic.recalculateAuditTimes(merged_state);
         merged_state.manageUsersText = current_state.manageUsersText ?? '';
-        let loaded_final = AuditLogic.recalculateStatusesOnLoad(merged_state);
+        let loaded_final: any = AuditLogic.recalculateStatusesOnLoad(merged_state);
         if ((loaded_final.auditStatus === 'locked' || loaded_final.auditStatus === 'archived')
             && (loaded_final.auditLastUpdatedAtFrozen === undefined || loaded_final.auditLastUpdatedAtFrozen === null)) {
             loaded_final = {
@@ -95,7 +94,7 @@ export function reduce_load_audit_from_file(current_state, action) {
     return current_state;
 }
 
-export function reduce_set_remote_audit_id(current_state, action) {
+export function reduce_set_remote_audit_id(current_state: any, action: any) {
     return {
         ...current_state,
         auditId: action.payload.auditId,
@@ -104,10 +103,10 @@ export function reduce_set_remote_audit_id(current_state, action) {
     };
 }
 
-export function reduce_replace_state_from_remote(current_state, action) {
+export function reduce_replace_state_from_remote(current_state: any, action: any) {
     const remote = action.payload;
     if (!remote || typeof remote !== 'object') return current_state;
-    let merged_remote = {
+    let merged_remote: any = {
         ...remote,
         uiSettings: current_state.uiSettings || remote.uiSettings || {},
         manageUsersText: current_state.manageUsersText ?? '',

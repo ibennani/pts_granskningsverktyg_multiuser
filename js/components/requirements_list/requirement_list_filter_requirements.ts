@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * Filtrerar kravlistor utifrån söktext och status (samma logik som högerspalten).
  * @module js/components/requirements_list/requirement_list_filter_requirements
@@ -14,7 +13,7 @@ import { get_searchable_text_for_requirement, sample_matches_status_filter } fro
  * @param {object} state mode, samples, relevant_ids_by_sample, current_sample_object, AuditLogic
  * @returns {{ filtered_items: Array, total_count: number }}
  */
-export function filter_requirements(items, filter_settings, state) {
+export function filter_requirements(items: any, filter_settings: any, state: any) {
     const { mode, samples, relevant_ids_by_sample, current_sample_object, AuditLogic, requirements } = state;
     const status_filters = filter_settings.status || {};
     const has_status_filters = Object.keys(status_filters).length > 0;
@@ -24,18 +23,18 @@ export function filter_requirements(items, filter_settings, state) {
         const total_count = items.length;
         const search_term = prepareString((filter_settings.searchText || '').trim());
 
-        const filtered_items = items.filter(([req_id, req]) => {
+        const filtered_items = items.filter(([req_id, req]: [any, any]) => {
             const candidates = new Set([String(req_id)]);
             if (req?.key) candidates.add(String(req.key));
             if (req?.id) candidates.add(String(req.id));
 
-            const samples_for_req = samples.filter(sample => {
+            const samples_for_req = samples.filter((sample: any) => {
                 const sample_set = sample?.id ? relevant_ids_by_sample.get(sample.id) : null;
                 if (!sample_set) return false;
                 return [...candidates].some(id => sample_set.has(id));
             });
 
-            const at_least_one_sample_matches = samples_for_req.some(sample =>
+            const at_least_one_sample_matches = samples_for_req.some((sample: any) =>
                 sample_matches_status_filter(
                     sample,
                     req_id,
@@ -61,7 +60,7 @@ export function filter_requirements(items, filter_settings, state) {
     const total_count = items.length;
     const search_term = prepareString((filter_settings.searchText || '').trim());
 
-    const filtered_items = items.filter(req => {
+    const filtered_items = items.filter((req: any) => {
         const result = get_stored_requirement_result_for_def(
             current_sample_object.requirementResults,
             requirements,
