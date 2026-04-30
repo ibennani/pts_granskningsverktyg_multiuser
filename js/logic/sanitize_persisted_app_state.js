@@ -1,5 +1,5 @@
 /**
  * Brygga: behåller import med .js-suffix (Vite extensionAlias + verify_js_only_imports).
- * Källan: ScoreCalculator.ts
+ * Källan: sanitize_persisted_app_state.ts
  */
-export * from './ScoreCalculator.ts';
+export * from './sanitize_persisted_app_state.ts';

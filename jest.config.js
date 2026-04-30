@@ -14,6 +14,7 @@ export default {
     '^.+/audit_logic_progress\\.js$': '<rootDir>/js/logic/audit_logic_progress.ts',
     '^.+/audit_logic_recalc\\.js$': '<rootDir>/js/logic/audit_logic_recalc.ts',
     '^.+/audit_logic_problems_media\\.js$': '<rootDir>/js/logic/audit_logic_problems_media.ts',
+    '^.+/ScoreCalculator\\.js$': '<rootDir>/js/logic/ScoreCalculator.ts',
     '^.+/score_calculator_passed_check_failures\\.js$': '<rootDir>/js/logic/score_calculator_passed_check_failures.ts',
     '^.+/export_logic\\.js$': '<rootDir>/js/export_logic.ts',
     '^.+[\\\\/]export_format_helpers\\.js$': '<rootDir>/js/export/export_format_helpers.ts',
@@ -70,6 +71,7 @@ export default {
     '^.+/rulefile_updater_logic\\.js$': '<rootDir>/js/logic/rulefile_updater_logic.ts',
     '^.+/validation_logic\\.js$': '<rootDir>/js/validation_logic.ts',
     '^.+[\\\\/]validation_rulefile_requirements\\.js$': '<rootDir>/js/logic/validation_rulefile_requirements.ts',
+    '^.+[\\\\/]sanitize_persisted_app_state\\.js$': '<rootDir>/js/logic/sanitize_persisted_app_state.ts',
     '^.+/translation_logic\\.js$': '<rootDir>/js/translation_logic.ts',
   },
   testMatch: [

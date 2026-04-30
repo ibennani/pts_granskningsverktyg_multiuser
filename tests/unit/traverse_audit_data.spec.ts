@@ -6,7 +6,8 @@ import { describe, test, expect } from '@jest/globals';
 import {
     traverse_all_pass_criteria,
     traverse_all_check_results,
-    traverse_all_requirement_results
+    traverse_all_requirement_results,
+    traverse_pass_criteria_in_requirement_result
 } from '../../js/utils/traverse_audit_data.js';
 
 describe('traverse_audit_data', () => {
@@ -52,6 +53,25 @@ describe('traverse_audit_data', () => {
             keys.push(req_key);
         });
         expect(keys).toEqual(['r1']);
+    });
+
+    test('traverse_pass_criteria_in_requirement_result besöker kriterier i ett kravresultat', () => {
+        const req_result = {
+            checkResults: {
+                c1: {
+                    overallStatus: 'passed',
+                    passCriteria: {
+                        p1: { status: 'failed' },
+                        p2: { status: 'passed' }
+                    }
+                }
+            }
+        };
+        const keys: string[] = [];
+        traverse_pass_criteria_in_requirement_result(req_result, ({ pc_key }) => {
+            keys.push(pc_key);
+        });
+        expect(keys.sort()).toEqual(['p1', 'p2']);
     });
 
     test('hanterar tom state', () => {

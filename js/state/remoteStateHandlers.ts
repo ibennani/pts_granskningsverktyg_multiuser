@@ -4,8 +4,13 @@
 
 import * as AuditLogic from '../audit_logic.js';
 import { initial_state, APP_STATE_VERSION } from './initialState.js';
+import {
+    traverse_all_pass_criteria,
+    traverse_all_requirement_results
+} from '../utils/traverse_audit_data.js';
+import type { RequirementResultNode } from '../utils/traverse_audit_data.js';
 
-export function reduce_initialize_new_audit(_current_state: any, action: any) {
+export function reduce_initialize_new_audit (_current_state: any, action: any) {
     return {
         ...initial_state,
         saveFileVersion: APP_STATE_VERSION,
@@ -18,7 +23,7 @@ export function reduce_initialize_new_audit(_current_state: any, action: any) {
     };
 }
 
-export function reduce_initialize_rulefile_editing(_current_state: any, action: any) {
+export function reduce_initialize_rulefile_editing (_current_state: any, action: any) {
     return {
         ...initial_state,
         saveFileVersion: APP_STATE_VERSION,
@@ -33,7 +38,7 @@ export function reduce_initialize_rulefile_editing(_current_state: any, action: 
     };
 }
 
-export function reduce_load_audit_from_file(current_state: any, action: any) {
+export function reduce_load_audit_from_file (current_state: any, action: any) {
     if (action.payload && typeof action.payload === 'object') {
         const loaded_data = action.payload;
         const new_state_base = JSON.parse(JSON.stringify(initial_state));
@@ -46,37 +51,53 @@ export function reduce_load_audit_from_file(current_state: any, action: any) {
         if (!Array.isArray(merged_state.archivedRequirementResults)) {
             merged_state.archivedRequirementResults = [];
         }
-        (merged_state.samples || []).forEach((sample: any) => {
-            Object.values(sample.requirementResults || {}).forEach((reqResult: any) => {
-                Object.values(reqResult.checkResults || {}).forEach((checkResult: any) => {
-                    if (checkResult.passCriteria) {
-                        Object.keys(checkResult.passCriteria).forEach((pcId) => {
-                            const pcValue = checkResult.passCriteria[pcId];
-                            if (typeof pcValue === 'string') {
-                                checkResult.passCriteria[pcId] = {
-                                    status: pcValue,
-                                    observationDetail: '',
-                                    timestamp: merged_state.startTime || null,
-                                    attachedMediaFilenames: []
-                                };
-                            } else if (typeof pcValue === 'object' && pcValue !== null && !Array.isArray((pcValue as Record<string, unknown>).attachedMediaFilenames)) {
-                                (pcValue as Record<string, unknown>).attachedMediaFilenames = [];
-                            }
-                        });
-                    }
-                });
-                const stuck_parts: string[] = [];
-                Object.values(reqResult.checkResults || {}).forEach((checkResult: any) => {
-                    Object.values(checkResult.passCriteria || {}).forEach((pcResult: any) => {
-                        const s = (String(pcResult?.stuckProblemDescription || '')).trim();
-                        if (s) stuck_parts.push(s);
-                        if (pcResult && typeof pcResult === 'object') delete pcResult.stuckProblemDescription;
-                    });
-                });
-                if (stuck_parts.length > 0) reqResult.stuckProblemDescription = stuck_parts.join('\n\n');
-                if (typeof reqResult.stuckProblemDescription !== 'string') reqResult.stuckProblemDescription = '';
-            });
+
+        traverse_all_pass_criteria(merged_state, ({ check_result, pc_key, pc_result }) => {
+            const pc_value = pc_result as Record<string, unknown> | string;
+            if (typeof pc_value === 'string') {
+                check_result.passCriteria = check_result.passCriteria ?? {};
+                (check_result.passCriteria as Record<string, unknown>)[pc_key] = {
+                    status: pc_value,
+                    observationDetail: '',
+                    timestamp: merged_state.startTime || null,
+                    attachedMediaFilenames: []
+                };
+            } else if (
+                typeof pc_value === 'object' &&
+                pc_value !== null &&
+                !Array.isArray((pc_value as Record<string, unknown>).attachedMediaFilenames)
+            ) {
+                (pc_value as Record<string, unknown>).attachedMediaFilenames = [];
+            }
         });
+
+        const stuck_accum = new WeakMap<RequirementResultNode, string[]>();
+        traverse_all_pass_criteria(merged_state, ({ req_result, pc_result }) => {
+            const s = (String((pc_result as { stuckProblemDescription?: string })?.stuckProblemDescription || '')).trim();
+            if (s) {
+                let arr = stuck_accum.get(req_result as RequirementResultNode);
+                if (!arr) {
+                    arr = [];
+                    stuck_accum.set(req_result as RequirementResultNode, arr);
+                }
+                arr.push(s);
+            }
+            if (pc_result && typeof pc_result === 'object') {
+                delete (pc_result as { stuckProblemDescription?: string }).stuckProblemDescription;
+            }
+        });
+
+        traverse_all_requirement_results(merged_state, ({ req_result }) => {
+            const rr = req_result as RequirementResultNode & { stuckProblemDescription?: unknown };
+            const parts = stuck_accum.get(req_result as RequirementResultNode);
+            if (parts && parts.length > 0) {
+                rr.stuckProblemDescription = parts.join('\n\n');
+            }
+            if (typeof rr.stuckProblemDescription !== 'string') {
+                rr.stuckProblemDescription = '';
+            }
+        });
+
         if (!merged_state.deficiencyCounter) merged_state.deficiencyCounter = 1;
         merged_state = AuditLogic.recalculateAuditTimes(merged_state);
         merged_state.manageUsersText = current_state.manageUsersText ?? '';
@@ -94,7 +115,7 @@ export function reduce_load_audit_from_file(current_state: any, action: any) {
     return current_state;
 }
 
-export function reduce_set_remote_audit_id(current_state: any, action: any) {
+export function reduce_set_remote_audit_id (current_state: any, action: any) {
     return {
         ...current_state,
         auditId: action.payload.auditId,
@@ -103,7 +124,7 @@ export function reduce_set_remote_audit_id(current_state: any, action: any) {
     };
 }
 
-export function reduce_replace_state_from_remote(current_state: any, action: any) {
+export function reduce_replace_state_from_remote (current_state: any, action: any) {
     const remote = action.payload;
     if (!remote || typeof remote !== 'object') return current_state;
     let merged_remote: any = {
