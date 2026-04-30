@@ -120,5 +120,6 @@ Projektet är organiserat enligt följande struktur:
 - Se `README.md` för allmän projektinformation
 - Se `docs/rulefile_editing_flow.md` för redigeringsflöde av regelfilsektioner
 - Se `docs/metadata_flow.md` för hur granskningsmetadata lagras och uppdateras
+- Se `docs/requirements_data_shape.md` för hur kravlista (objekt eller array) ska hanteras i kod och export
 - Se `package.json` för beroenden och scripts
 - Se `docs/` för detaljerad dokumentation

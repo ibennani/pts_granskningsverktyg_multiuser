@@ -690,8 +690,7 @@ export class RequirementAuditSidebarComponent {
 
         const filtered_items = ordered_keys
             .map(req_key => {
-                const requirement = find_requirement_definition(rule_file_content.requirements, req_key)
-                    || rule_file_content?.requirements?.[req_key];
+                const requirement = find_requirement_definition(rule_file_content.requirements, req_key);
                 if (!requirement) return null;
                 const req_result = get_stored_requirement_result_for_def(
                     current_sample.requirementResults,

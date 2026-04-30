@@ -5,6 +5,7 @@
 import * as Helpers from '../utils/helpers.js';
 import type { RequirementDef, RuleFileForAudit, SampleStored } from './audit_logic_types.js';
 import { get_audit_translation_t } from './audit_logic_i18n.js';
+import { RequirementLookup } from './requirement_lookup.js';
 
 export function get_relevant_requirements_for_sample(
     rule_file_content: RuleFileForAudit | null | undefined,
@@ -32,9 +33,16 @@ export function get_relevant_requirements_for_sample(
     }
 
     try {
-        const all_reqs = Object.values(rule_file_content.requirements).filter((req): req is RequirementDef => {
-            return !!(req && typeof req === 'object' && ((req as RequirementDef).key || (req as RequirementDef).id));
-        });
+        const look = RequirementLookup.from(rule_file_content.requirements);
+        if (!look) {
+            return [];
+        }
+        const all_reqs = look
+            .entries()
+            .map(([, req]) => req)
+            .filter((req): req is RequirementDef => {
+                return !!(req && typeof req === 'object' && ((req as RequirementDef).key || (req as RequirementDef).id));
+            });
 
         if (!sample.selectedContentTypes || !Array.isArray(sample.selectedContentTypes) || sample.selectedContentTypes.length === 0) {
             return all_reqs;

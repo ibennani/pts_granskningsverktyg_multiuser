@@ -2,6 +2,7 @@
 
 import { marked, auto_convert_code_like_to_codeblocks } from '../utils/markdown.js';
 import { can_edit_rulefile } from '../utils/helpers.js';
+import { find_requirement_definition } from '../audit_logic.js';
 import './requirement_audit_component.css';
 
 export class ViewRulefileRequirementComponent {
@@ -98,7 +99,7 @@ export class ViewRulefileRequirementComponent {
         
         const requirement_id = this.params?.id;
         const current_state = this.getState();
-        const requirement = current_state?.ruleFileContent?.requirements[requirement_id];
+        const requirement = find_requirement_definition(current_state?.ruleFileContent?.requirements, requirement_id);
 
         if (!requirement) {
             this.plate_element_ref.appendChild(this.Helpers.create_element('h1', { text_content: t('error_internal') }));

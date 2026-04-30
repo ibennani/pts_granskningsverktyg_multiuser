@@ -18,6 +18,7 @@ import {
 import { make_infoblock_text_part_key } from '../../logic/rulefile_part_keys.js';
 import { post_same_user_field_commit } from '../../logic/same_user_tab_field_sync.js';
 import { is_remote_lock_held_by_other_user } from '../../logic/collab_lock_compare.js';
+import { find_requirement_definition } from '../../audit_logic.js';
 import './requirement_audit_component.css';
 import './edit_rulefile_requirement_component.css';
 
@@ -1682,7 +1683,10 @@ export class EditRulefileRequirementComponent {
                 this.local_requirement_data.examples = '';
             }
         } else {
-            const requirement_from_store = current_state?.ruleFileContent?.requirements[requirement_id];
+            const requirement_from_store = find_requirement_definition(
+                current_state?.ruleFileContent?.requirements,
+                requirement_id
+            );
             if (!requirement_from_store) {
                 plate_element.appendChild(this.Helpers.create_element('h1', { text_content: t('error_internal') }));
                 this.root.appendChild(plate_element);

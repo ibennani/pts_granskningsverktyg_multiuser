@@ -1,5 +1,7 @@
 // js/utils/content_types_helper.js
 
+import { RequirementLookup, normalize_requirements_to_record } from '../logic/requirement_lookup.js';
+
 /**
  * Räknar antal unika krav som är kopplade till en innehållstyp (parent + alla underkategorier).
  * @param {Object} ruleFileContent - Innehåller requirements
@@ -29,8 +31,9 @@ export function get_requirements_count_for_parent_content_type(ruleFileContent, 
  */
 export function get_requirements_count_by_content_type_id(ruleFileContent, contentTypeId) {
     if (!ruleFileContent?.requirements || !contentTypeId) return 0;
-    const requirements = Object.values(ruleFileContent.requirements);
-    return requirements.filter(req => {
+    const look = RequirementLookup.from(ruleFileContent.requirements);
+    if (!look) return 0;
+    return look.entries().filter(([, req]) => {
         const ct = req.contentType;
         return Array.isArray(ct) && ct.includes(contentTypeId);
     }).length;
@@ -44,10 +47,18 @@ export function get_requirements_count_by_content_type_id(ruleFileContent, conte
  */
 export function get_requirements_by_content_type_id(ruleFileContent, contentTypeId) {
     if (!ruleFileContent?.requirements || !contentTypeId) return [];
-    return Object.entries(ruleFileContent.requirements).filter(([, req]) => {
-        const ct = req.contentType;
-        return Array.isArray(ct) && ct.includes(contentTypeId);
-    }).map(([id, req]) => ({ id, requirement: req }));
+    const look = RequirementLookup.from(ruleFileContent.requirements);
+    if (!look) return [];
+    return look
+        .entries()
+        .filter(([, req]) => {
+            const ct = req.contentType;
+            return Array.isArray(ct) && ct.includes(contentTypeId);
+        })
+        .map(([storage_key, req]) => ({
+            id: String(req.key ?? req.id ?? storage_key),
+            requirement: req
+        }));
 }
 
 /**
@@ -59,14 +70,28 @@ export function get_requirements_by_content_type_id(ruleFileContent, contentType
  */
 export function remove_content_type_from_requirements(ruleFileContent, contentTypeId) {
     if (!ruleFileContent?.requirements || !contentTypeId) return ruleFileContent;
-    const newRequirements = { ...ruleFileContent.requirements };
+    const raw = ruleFileContent.requirements;
+    const look = RequirementLookup.from(raw);
+    if (!look) return ruleFileContent;
+    const is_array = look.isArrayFormat();
+    const rec = normalize_requirements_to_record(raw);
+    const newRequirements = { ...rec };
     for (const [reqId, req] of Object.entries(newRequirements)) {
+        if (!req || typeof req !== 'object') continue;
         if (!Array.isArray(req.contentType)) continue;
         const idx = req.contentType.indexOf(contentTypeId);
         if (idx === -1) continue;
         const updatedCt = [...req.contentType];
         updatedCt.splice(idx, 1);
         newRequirements[reqId] = { ...req, contentType: updatedCt };
+    }
+    if (is_array && Array.isArray(raw)) {
+        const updatedArr = raw.map((r) => {
+            if (!r || typeof r !== 'object') return r;
+            const k = String(r.key ?? r.id ?? '');
+            return newRequirements[k] !== undefined ? newRequirements[k] : r;
+        });
+        return { ...ruleFileContent, requirements: updatedArr };
     }
     return { ...ruleFileContent, requirements: newRequirements };
 }

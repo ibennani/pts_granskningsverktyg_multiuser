@@ -1,4 +1,5 @@
 import "./confirm_delete_requirement_view_component.css";
+import { find_requirement_definition } from '../audit_logic.js';
 
 export class ConfirmDeleteViewComponent {
     constructor() {
@@ -29,7 +30,7 @@ export class ConfirmDeleteViewComponent {
 
     get_config_for_delete_type(type, state, params) {
         const { reqId, checkId, pcId } = params;
-        const requirement = state?.ruleFileContent?.requirements[reqId];
+        const requirement = find_requirement_definition(state?.ruleFileContent?.requirements, reqId);
         const Helpers = this.Helpers;
 
         switch (type) {

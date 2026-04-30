@@ -1,4 +1,5 @@
 import "./confirm_sample_edit_view_component.css";
+import { find_requirement_definition } from '../audit_logic.js';
 
 export class ConfirmSampleEditViewComponent {
     private root: HTMLElement | null;
@@ -238,7 +239,7 @@ export class ConfirmSampleEditViewComponent {
         const render_req_list = (req_ids: any[]) => {
             const ul = this.Helpers.create_element('ul', { class_name: 'report-list' });
             req_ids.forEach((id) => {
-                const req = rule_file.requirements[id];
+                const req = find_requirement_definition(rule_file.requirements, id);
                 if (req) {
                     const ref_text = req.standardReference?.text ? ` (${req.standardReference.text})` : '';
                     ul.appendChild(this.Helpers.create_element('li', { text_content: `${req.title}${ref_text}` }));

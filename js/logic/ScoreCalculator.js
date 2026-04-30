@@ -3,6 +3,7 @@
 
 import { get_stored_requirement_result_for_def } from '../audit_logic.ts';
 import { consoleManager } from '../utils/console_manager.js';
+import { normalize_requirements_to_record } from '../logic/requirement_lookup.js';
 
 /**
  * Calculates the weight (omega, ωp) for a single requirement based on its impact.
@@ -31,7 +32,7 @@ function _calculateRequirementWeight(requirement) {
  */
 function _getRelevantRequirementsForSample(ruleFileContent, sample) {
     if (!ruleFileContent?.requirements || !sample) return [];
-    const all_reqs = Object.values(ruleFileContent.requirements);
+    const all_reqs = Object.values(normalize_requirements_to_record(ruleFileContent.requirements));
 
     if (!sample.selectedContentTypes?.length) {
         // Om stickprovet saknar innehållstyper: behandla som "alla krav är relevanta"

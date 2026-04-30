@@ -219,9 +219,10 @@ export class RequirementAuditComponent {
             resolve_requirement_map_key(state.ruleFileContent.requirements, this.requirement_public_key)
             || this.requirement_public_key;
 
-        this.current_requirement =
-            state.ruleFileContent?.requirements?.[this.requirement_map_key]
-            || find_requirement_definition(state.ruleFileContent.requirements, this.requirement_public_key);
+        this.current_requirement = find_requirement_definition(
+            state.ruleFileContent.requirements,
+            this.requirement_public_key
+        );
         if (!this.current_requirement) {
             if (window.ConsoleManager) window.ConsoleManager.warn('[RequirementAuditComponent] Requirement not found:', this.params.requirementId);
             return false;
