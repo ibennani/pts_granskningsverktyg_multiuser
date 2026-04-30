@@ -14,6 +14,7 @@ import path from 'path';
 
 /** Tunna bryggor som måste finnas kvar (bygg ut listan när nya tillkommer). */
 const REQUIRED_JS_REEXPORT_BRIDGES = [
+    'js/state/index.js',
     'js/audit_logic.js',
     'js/logic/ScoreCalculator.js',
     'js/logic/sanitize_persisted_app_state.js',
