@@ -91,3 +91,7 @@ const value = trim_text ? trim_text(rawValue) : rawValue;
 - `MetadataFormComponent` – granskningsmetadata
 - `AddSampleFormComponent` – stickprovsformulär (vid redigering)
 - `EditRulefileRequirementComponent` – kravredigering
+
+## Se även
+
+- **`docs/state_and_persistence.md`** — central `dispatch`, `sessionStorage`/`localStorage`-backup, serversynk och skillnad mot detta formulärautospar.

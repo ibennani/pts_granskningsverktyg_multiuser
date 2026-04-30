@@ -69,23 +69,19 @@ Projektet följer en standardiserad struktur för webbapplikationer:
     *   Lyssnar på `languageChanged`-eventet (utsänt av `translation_logic.js`) och anropar `update_app_chrome_texts()` samt renderar om den aktiva vyn för att applicera det nya språket.
 *   **Felhantering:** Grundläggande felhantering om en specificerad vykomponent inte kan laddas eller om renderingen misslyckas.
 
-### 3.2 `state.js`
-*   **Ansvar:** Hanterar det globala applikationstillståndet med Redux-liknande pattern. Exporterar funktioner för state-hantering.
-*   **State-struktur:** State-objektet innehåller `ruleFileContent`, `auditMetadata`, `auditStatus`, `samples`, `uiSettings`, `auditCalculations`, etc. Strukturen är detaljerad i den tekniska specifikationen (avsnitt 6.1-6.3).
+### 3.2 `state.js` (re-export från `js/state/index.js`)
+*   **Ansvar:** Hanterar det globala applikationstillståndet med Redux-liknande pattern. Själva reducerlogiken är uppdelad i `js/state/*.ts` och `*.js`; den publika ytan är `js/state.js`.
+*   **State-struktur:** State-objektet innehåller bland annat `ruleFileContent`, `auditMetadata`, `auditStatus`, `samples`, `uiSettings`, `auditCalculations`, fjärrfält som `auditId` / `version` / `ruleSetId` i pågående session, m.m. Strukturen beskrivs i `js/state/initialState.js` och i den tekniska specifikationen (avsnitt 6.1–6.3).
 *   **Lagringsmekanism:** 
-    *   Vid varje `dispatch()` sparas state direkt till `sessionStorage` (ingen debounce).
-    *   En backup sparas till `localStorage` för återställning vid fel.
-    *   State serialiseras till JSON innan lagring och deserialiseras vid läsning.
-*   **Exporterade funktioner:**
-    *   `getState()`: Returnerar en kopia av det aktuella state-objektet.
-    *   `dispatch(action)`: Dispatcherar en action som uppdaterar state via reducer. Returnerar Promise.
-    *   `subscribe(listener)`: Prenumererar på state-ändringar. Returnerar unsubscribe-funktion.
-    *   `initState()`: Initierar state från localStorage eller skapar initial state.
-    *   `loadStateFromLocalStorage()`: Laddar state från localStorage.
-    *   `clearAutosavedState()`: Rensar autosparat state.
-    *   `forceSaveStateToLocalStorage(state)`: Tvingar sparning av state.
-*   **Action Types:** Exporteras som `StoreActionTypes` (tidigare `ActionTypes`).
-*   **Bakåtkompatibilitet:** För bakåtkompatibilitet exponeras även via `window.Store` och `window.StoreActionTypes`.
+    *   Vid varje lyckad `dispatch()` som ändrar state sparas hela state till **`sessionStorage`** under nyckeln `digitalTillsynAppCentralState` (ingen debounce i state-lagret).
+    *   När innehållet bedöms återställningsbart skrivs en **backup** till **`localStorage`** (`digitalTillsynAppStateBackup`) tillsammans med valfri `restorePosition` (hash-vy). Backup används vid cold start om sessionStorage var tom; jämförelse med server sker i `session_boot_merge.js` när användaren är inloggad.
+    *   State serialiseras till JSON; ogiltig eller för gammal version rensas och ersätts med standardtillstånd.
+*   **Exporterade funktioner (urval):**
+    *   `getState()`, `dispatch(action)`, `subscribe(listener)`, `initState()` — se `docs/state_and_persistence.md` för full tabell och flöden.
+    *   `loadStateFromLocalStorageBackup()`, `clearLocalStorageBackup()`, `updateBackupRestorePosition()` — backup-API.
+    *   `APP_STATE_KEY` — sessionStorage-nyckel för diagnostik.
+*   **Action Types:** Exporteras som `StoreActionTypes`.
+*   **Utförlig dokumentation:** `docs/state_and_persistence.md` (nycklar, serversynk, undantag, skillnad mot formulär-autospar).
 
 ### 3.3 `translation_logic.js`
 *   **Ansvar:** Tillhandahåller funktionalitet för internationalisering (i18n).

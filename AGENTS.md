@@ -57,10 +57,11 @@ Projektet är organiserat enligt följande struktur:
 - **Regression:** `npm run check:export-facades` (ingår i `npm run check`) varnar om `export_logic.ts` eller `audit_logic.ts` växer över satta radgränser.
 
 ### State-hantering
-- Central state i `js/state.js`
-- Exporterar `getState`, `dispatch`, `subscribe`, `StoreActionTypes` från modulen
-- För bakåtkompatibilitet exponeras även via `window.Store` och `window.StoreActionTypes`
+- Central state i `js/state.js` (implementation i `js/state/index.js` och reducerfiler under `js/state/`)
+- Exporterar bland annat `getState`, `dispatch`, `subscribe`, `StoreActionTypes`, `loadStateFromLocalStorageBackup`, `clearLocalStorageBackup`, `APP_STATE_KEY`
+- **`window.Store` används inte** i nuvarande kodbas — importera från `state.js`
 - I komponenter: använd `deps.getState()` och `deps.dispatch()` (från deps-objektet)
+- **Persistens, backup och serversynk:** `docs/state_and_persistence.md`
 
 ### Översättningar
 - Använd `deps.Translation.t()` eller `window.Translation.t()` för översättningar

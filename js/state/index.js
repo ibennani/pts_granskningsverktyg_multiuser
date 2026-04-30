@@ -4,6 +4,7 @@
  * delegerar till auditReducer / rulefileReducer / uiReducer / userReducer → nytt state sparas
  * i sessionStorage (saveStateToSessionStorage) och lyssnare notifieras; server synkas via
  * schedule_sync_to_server när det är lämpligt. Autospar för formulär sker separat (autosave_service).
+ * Utförlig beskrivning: docs/state_and_persistence.md
  */
 import * as AuditLogic from '../audit_logic.ts';
 import { schedule_sync_to_server, schedule_sync_rulefile_to_server } from '../logic/server_sync.js';

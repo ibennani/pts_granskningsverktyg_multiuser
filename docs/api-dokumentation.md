@@ -22,24 +22,34 @@ Leffe använder en modulär arkitektur med tydliga API:er för varje komponent. 
 
 ### API-struktur
 
-```
-window.Store          # State management
-window.Helpers        # Hjälpfunktioner
-window.Translation    # Internationalisering
-window.ExportLogic    # Export-funktionalitet
-window.AuditLogic     # Granskningslogik
-window.ValidationLogic # Validering
-```
+- **State:** `import { getState, dispatch, subscribe, … } from './state.js'` — se avsnitt 2.
+- **`window.Helpers`** — hjälpfunktioner
+- **`window.Translation`** — internationalisering
+- **`window.ExportLogic`** — export
+- **`window.AuditLogic`** — granskningslogik
+- **`window.ValidationLogic`** — validering
+
+State sätts **inte** på `window.Store` i nuvarande kodbas.
 
 ## 2. State Management API
 
 ### Store API
 
-State management exponeras både som ES-modul och via `window.Store` för bakåtkompatibilitet.
+State management exponeras som **ES-modul** från `js/state.js` (implementation i `js/state/index.js`). För **lagringsnycklar**, **backup**, **serversynk** och **startflöde**, se `docs/state_and_persistence.md`.
 
-**ES-modul (rekommenderat):**
+**ES-modul:**
 ```javascript
-import { getState, dispatch, subscribe, StoreActionTypes } from './state.js';
+import {
+    getState,
+    dispatch,
+    subscribe,
+    StoreActionTypes,
+    initState,
+    loadStateFromLocalStorageBackup,
+    clearLocalStorageBackup,
+    updateBackupRestorePosition,
+    APP_STATE_KEY
+} from './state.js';
 
 // Hämta aktuell state
 const state = getState();
@@ -54,29 +64,9 @@ await dispatch({
 const unsubscribe = subscribe((newState) => {
     console.log('State updated:', newState);
 });
-```
 
-**Via window (bakåtkompatibilitet):**
-```javascript
-// Hämta aktuell state
-const state = window.Store.getState();
-
-// Dispatch action
-await window.Store.dispatch({
-    type: window.StoreActionTypes.UPDATE_METADATA,
-    payload: { caseNumber: '12345' }
-});
-
-// Prenumerera på state-ändringar
-const unsubscribe = window.Store.subscribe((newState) => {
-    console.log('State updated:', newState);
-});
-
-// Rensa autosave
-window.Store.clearAutosavedState();
-
-// Tvinga sparning till localStorage
-window.Store.forceSaveStateToLocalStorage(state);
+// Backup (t.ex. efter manuell återställning)
+clearLocalStorageBackup();
 ```
 
 ### Action Types
@@ -317,7 +307,8 @@ interface ExportLogic {
 }
 
 // Exempel
-const state = window.Store.getState();
+import { getState } from './state.js';
+const state = getState();
 window.ExportLogic.export_to_csv(state);
 await window.ExportLogic.export_to_excel(state);
 await window.ExportLogic.export_to_word_criterias(state);
@@ -451,7 +442,8 @@ document.addEventListener('languageChanged', (event) => {
 });
 
 // State-ändringar
-window.Store.subscribe((newState) => {
+import { subscribe } from './state.js';
+subscribe((newState) => {
     console.log('State updated:', newState);
 });
 
@@ -612,11 +604,9 @@ export const ExampleComponent = {
 ### State management-exempel
 
 ```javascript
-// Importera från modul (rekommenderat)
+// Importera från modul
 import { dispatch, getState, StoreActionTypes } from './state.js';
-
-// Eller använd window (bakåtkompatibilitet)
-const { dispatch, getState, StoreActionTypes } = window.Store;
+import * as Helpers from './utils/helpers.js';
 
 // Skapa ny granskning
 await dispatch({
@@ -640,7 +630,7 @@ await dispatch({
 await dispatch({
     type: StoreActionTypes.ADD_SAMPLE,
     payload: {
-        id: window.Helpers.generate_uuid_v4(),
+        id: Helpers.generate_uuid_v4(),
         description: 'Startsida',
         url: 'https://example.com',
         selectedContentTypes: ['text', 'images']
@@ -666,7 +656,9 @@ await dispatch({
 
 ```javascript
 // Exportera till olika format
-const state = window.Store.getState();
+import { getState } from './state.js';
+
+const state = getState();
 
 // CSV-export
 window.ExportLogic.export_to_csv(state);

@@ -24,3 +24,5 @@ Regelfilens `requirements` kan levereras som **nycklat objekt** (varje krav unde
 - **Fristående regelfil** valideras med `validate_rule_file_json` (metadata, ordböcker, innehållstyper, krav m.m.). Feltext hämtas från språkfiler (`rule_file_*`, `rule_file_err_*`).
 - **Sparad granskning** valideras med `validate_saved_audit_file`: obligatoriska toppfält, att `auditMetadata` är objekt, `samples` är en array, `auditStatus` är en sträng, samt att inbäddad regelfil antingen genomgår samma kontroll som vid regelfilsuppladdning (när både `metadata` och `requirements` finns) eller att minst kravlistan kontrolleras om metadata saknas.
 - **Schemaverktyg (Zod/JSON Schema)** används inte som separat lager i detta projekt; valideringen är uttryckligen kodad i `validation_logic.ts` och `validation_rulefile_requirements.ts` så felmeddelanden och regler hålls synkade med i18n.
+
+Det serialiserade tillstånd som sparas i webbläsaren och på server följer samma **toppstruktur** som vid import av sparad granskning; `ruleFileContent.requirements` kan alltså vara objekt eller array enligt samma regler som ovan. Se `docs/state_and_persistence.md` för var detta lagras.

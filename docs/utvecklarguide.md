@@ -383,10 +383,12 @@ export const ExampleComponent = {
 
 ## 6. State Management
 
+För **var data sparas**, **cold start med backup** och **när server synkas**, se `docs/state_and_persistence.md`. Reducerlogiken ligger i `js/state/index.js` och tillhörande filer (inte längre en enda stor `state.js`-fil).
+
 ### State-struktur
 
 ```javascript
-// js/state.js
+// js/state/initialState.js (förenklad vy)
 const initial_state = {
     saveFileVersion: '2.1.0',
     ruleFileContent: null,
@@ -473,7 +475,7 @@ await dispatch({
 
 ### Reducers
 
-Reducer-funktionen (`root_reducer`) finns i `js/state.js` och hanterar alla action types. Den är privat och anropas internt av `dispatch()`-funktionen.
+Reducer-funktionen (`root_reducer`) finns i `js/state/index.js` och hanterar alla action types. Den är privat och anropas internt av `dispatch()`-funktionen.
 
 **Viktigt:** Reducer-funktionen är inte direkt tillgänglig utanför `state.js`. Använd `dispatch()` för att uppdatera state.
 
