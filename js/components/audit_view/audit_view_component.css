@@ -101,7 +101,7 @@
 
 .audit-page-size-select {
     width: auto;
-    min-width: 100px;
+    min-width: max(5rem, 5.5ch);
 }
 
 .audit-header-page-size-row {
