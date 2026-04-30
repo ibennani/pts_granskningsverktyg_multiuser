@@ -710,7 +710,7 @@ try {
 
 - Max storlek för JSON-body (t.ex. `POST /api/audits/import`) är **10 MiB** (`JSON_MAX_UPLOAD_BYTES` i `js/constants/json_upload_limits.js`), samma värde som `express.json` använder i `server/index.js`.
 - Klienten avvisar uppladdade JSON-filer större än samma gräns innan parsning (gransknings-/regeluppladdning i granskningsvyn).
-- **Import av granskning** valideras på servern med samma **grov** kontroll som `validate_saved_audit_file` (obligatoriska toppnivåfält och att `ruleFileContent` är ett objekt).
+- **Import av granskning** valideras på servern med samma logik som `validate_saved_audit_file` (toppfält, metadata/stickprov/typ av status, samt inbäddad regelfil enligt `validation_logic.ts`). Felmeddelanden byggs från `js/i18n/sv-SE.json` via `audit_import_t` i `server/routes/audits.js`.
 - **JSON-struktur:** `js/utils/json_structure_guard.js` begränsar nästlingsdjup och antal noder på importerad data (klient och server).
 - **Rate limit:** `POST /api/audits/import` och `POST /api/rules/import` använder `import_payload_rate_limiter` i `server/middleware/rateLimiter.js` (svar **429** vid för många försök).
 - I **produktion** bakom t.ex. **nginx**: sätt `client_max_body_size` till minst **10m** så proxyn inte avvisar begäran innan den når Node (annars kan användaren få otydliga fel). `server/index.js` använder `trust proxy` för korrekt klient-IP bakom proxy.

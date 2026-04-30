@@ -1,5 +1,8 @@
 // server/routes/audits.js
 import express from 'express';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import path from 'path';
 import { query } from '../db.js';
 import { calculate_overall_audit_progress } from '../../js/audit_logic.ts';
 import { calculateQualityScore } from '../../js/logic/ScoreCalculator.js';
@@ -23,6 +26,29 @@ import {
 import { fetch_rule_set_by_id } from '../repositories/rule_repository.js';
 
 const router = express.Router();
+
+const __dirname_audits = path.dirname(fileURLToPath(import.meta.url));
+const SV_I18N_PATH = path.join(__dirname_audits, '../../js/i18n/sv-SE.json');
+let _sv_i18n_cache = null;
+
+function get_sv_messages() {
+    if (!_sv_i18n_cache) {
+        _sv_i18n_cache = JSON.parse(readFileSync(SV_I18N_PATH, 'utf8'));
+    }
+    return _sv_i18n_cache;
+}
+
+/** Översättning för importvalidering (samma nycklar som klientens i18n). */
+function audit_import_t(key, replacements = {}) {
+    const msgs = get_sv_messages();
+    let s = msgs[key] ?? key;
+    if (replacements && typeof replacements === 'object') {
+        for (const [k, v] of Object.entries(replacements)) {
+            s = s.split(`{${k}}`).join(String(v));
+        }
+    }
+    return s;
+}
 
 function broadcast_audits_changed() {
     broadcast({ type: 'audits:changed' });
@@ -519,13 +545,7 @@ router.post('/import', import_payload_rate_limiter, async (req, res) => {
         }
         const last_updated_by = req.user ? req.user.name : null;
         const audit_validation = validate_saved_audit_file(data, {
-            t: (key) => {
-                const map = {
-                    error_invalid_saved_audit_file: 'Ogiltig sparad granskningsfil',
-                    error_audit_missing_rulefile: 'Saknar regelfilsinnehåll'
-                };
-                return map[key] || key;
-            }
+            t: (key, replacements) => audit_import_t(key, replacements || {})
         });
         if (!audit_validation?.isValid) {
             return res.status(400).json({

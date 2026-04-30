@@ -98,12 +98,11 @@ Projektet följer en standardiserad struktur för webbapplikationer:
     *   `Translation.get_supported_languages()`: Returnerar ett objekt med de språk som applikationen har språkfiler för.
     *   `Translation.ensure_initial_load()`: En promise som löses när den initiala språkfilen har laddats, vilket säkerställer att applikationen inte försöker rendera text innan översättningar är tillgängliga.
 
-### 3.4 `validation_logic.js`
-*   **Ansvar:** Validerar strukturen och datatyperna i de JSON-filer som användaren laddar upp (både regelfiler och sparade granskningssessioner).
-*   **`RULE_FILE_SCHEMA`:** Ett internt definierat JavaScript-objekt som agerar som ett schema för regelfiler. Det specificerar obligatoriska nycklar på olika nivåer, förväntade datatyper (t.ex. array av strängar, objekt), och vissa villkor (t.ex. att strängar inte får vara tomma). Se den tekniska specifikationens avsnitt 10 för en detaljerad beskrivning av det förväntade regelfilsformatet som detta schema validerar mot.
+### 3.4 `validation_logic.ts` (klient och server-import)
+*   **Ansvar:** Validerar JSON för **regelfiler** och **sparade granskningar** innan de laddas in eller sparas. Regler och felmeddelanden underhålls i kod tillsammans med översättningsnycklar i `js/i18n/*.json` (ingen separat JSON Schema-/Zod-fil).
 *   **Nyckelfunktioner:**
-    *   `validate_rule_file_json(jsonObject)`: Tar emot ett parsat JSON-objekt (från en regelfil) och validerar det rekursivt mot `RULE_FILE_SCHEMA`. Returnerar ett objekt `{ isValid: boolean, message: string }` där `message` innehåller en beskrivning av det första felet som hittades, eller ett framgångsmeddelande.
-    *   `validate_saved_audit_file(jsonObject)`: Utför en mer grundläggande validering av en sparad granskningsfil, primärt för att säkerställa att nödvändiga toppnivånycklar (`saveFileVersion`, `ruleFileContent`, `auditMetadata`, `auditStatus`, `samples`) finns. Returnerar `{ isValid: boolean, message: string }`.
+    *   `validate_rule_file_json(jsonObject, options?)`: Kontrollerar att regelfilen har obligatoriska delar (metadata med titel, innehållstyper/stickprovstyper, `requirements` som objekt eller array med giltiga krav m.m.). Returnerar `{ isValid, message }`. Vid lyckad validering används meddelandenyckeln `rule_file_validation_complete`.
+    *   `validate_saved_audit_file(jsonObject, options?)`: Kontrollerar toppnivåfält (`ruleFileContent`, `auditMetadata`, `auditStatus`, `samples`), att metadata är objekt, att stickprov är en array, att status är en sträng, samt den inbäddade regelfilen: om både `metadata` och `requirements` finns anropas samma regelkedja som för fristående regelfil; annars kontrolleras åtminstone kravlistan. Returnerar `{ isValid, message }` med texter från `saved_audit_validation_ok` respektive `error_saved_audit_*` / `error_saved_audit_embedded_rulefile_invalid` (med detalj från underliggande fel).
 
 ### 3.5 `audit_logic.js`
 *   **Ansvar:** Innehåller central affärslogik för granskningsprocessen, främst relaterad till statusberäkningar och att avgöra vilka krav som är relevanta.

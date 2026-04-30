@@ -67,6 +67,7 @@ export default {
     '^.+/SideMenuComponent\\.js$': '<rootDir>/js/components/SideMenuComponent.ts',
     '^.+/rulefile_updater_logic\\.js$': '<rootDir>/js/logic/rulefile_updater_logic.ts',
     '^.+/validation_logic\\.js$': '<rootDir>/js/validation_logic.ts',
+    '^.+[\\\\/]validation_rulefile_requirements\\.js$': '<rootDir>/js/logic/validation_rulefile_requirements.ts',
     '^.+/translation_logic\\.js$': '<rootDir>/js/translation_logic.ts',
   },
   testMatch: [
