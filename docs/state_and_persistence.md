@@ -37,10 +37,11 @@ När du ändrar sparformat: uppdatera `APP_STATE_VERSION` medvetet och dokumente
 ## 4. Livscykel: från start till sparning
 
 1. **Före `initState()`** läser bootstrap om `sessionStorage` redan innehöll `APP_STATE_KEY` (`had_session_storage`).
-2. **`initState()`** läser `sessionStorage`, mergar med `initial_state`, kör vid behov `AuditLogic.updateIncrementalDeficiencyIds` och skriver tillbaka till session.
-3. **Cold start utan session:** om `loadStateFromLocalStorageBackup()` returnerar giltig backup körs **`apply_session_boot_merge_from_backup`** (inloggad direkt, eller efter lyckad inloggning om användaren var utloggad). Logiken jämför **versionsnummer** mot servern när `auditId` finns; annars laddas lokalt state som fil.
-4. **Varje `dispatch`** som ger nytt state-objekt: serialisera till `sessionStorage`; om `has_restorable_state` — uppdatera **localStorage-backup** inklusive valfri `restorePosition` (hash-vy + fokusinfo) från app-hook.
-5. **Fel vid sparning** (t.ex. kvot): varning till användare via notifiering; inget kraschande kast från lagret.
+2. **`initState()`** läser `sessionStorage`. Om parsad JSON är ett **vanligt objekt** (inte array) och `saveFileVersion` stämmer mergas med `initial_state` och körs genom **`sanitize_persisted_app_state_shape`** (`js/logic/sanitize_persisted_app_state.ts`) så att listor, metadata, `auditStatus`, `ruleFileContent` m.m. får typer som reducers förväntar sig. Därefter körs vid behov `AuditLogic.updateIncrementalDeficiencyIds` och state skrivs tillbaka till session.
+3. **Cold start utan session:** om `loadStateFromLocalStorageBackup()` returnerar giltig backup har inläst `state` genomgått samma **sanering** innan `has_restorable_state` prövas. Därefter körs **`apply_session_boot_merge_from_backup`** (inloggad direkt, eller efter lyckad inloggning om användaren var utloggad). Logiken jämför **versionsnummer** mot servern när `auditId` finns; annars laddas lokalt state som fil.
+4. **Ogiltig rot i session** (t.ex. `null`, array eller saknad version): nyckeln `digitalTillsynAppCentralState` rensas och appen startar med standardtillstånd.
+5. **Varje `dispatch`** som ger nytt state-objekt: serialisera till `sessionStorage`; om `has_restorable_state` — uppdatera **localStorage-backup** inklusive valfri `restorePosition` (hash-vy + fokusinfo) från app-hook.
+6. **Fel vid sparning** (t.ex. kvot): varning till användare via notifiering; inget kraschande kast från lagret.
 
 ## 5. När synkas till servern?
 

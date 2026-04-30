@@ -75,6 +75,30 @@ describe('state (js/state)', () => {
         expect(after).toEqual(before);
     });
 
+    test('initState() normaliserar korrupt samples-fält från sessionStorage', async () => {
+        const { APP_STATE_KEY } = await import('../../js/state/index.js');
+        const { APP_STATE_VERSION } = await import('../../js/state/initialState.js');
+        sessionStorage.setItem(
+            APP_STATE_KEY,
+            JSON.stringify({
+                saveFileVersion: APP_STATE_VERSION,
+                samples: {},
+                archivedRequirementResults: 'x',
+                auditMetadata: { caseNumber: '', actorName: '', actorLink: '', auditorName: '', caseHandler: '', internalComment: '' },
+                auditStatus: 'in_progress',
+                ruleFileContent: null
+            })
+        );
+        jest.resetModules();
+        const { initState, getState } = await import('../../js/state/index.js');
+        initState();
+        const s = getState();
+        expect(Array.isArray(s.samples)).toBe(true);
+        expect(s.samples).toEqual([]);
+        expect(Array.isArray(s.archivedRequirementResults)).toBe(true);
+        expect(s.archivedRequirementResults).toEqual([]);
+    });
+
     test('subscribe anropar alla lyssnare vid dispatch', async () => {
         const { initState, dispatch, subscribe, StoreActionTypes } = await import('../../js/state/index.js');
         initState();

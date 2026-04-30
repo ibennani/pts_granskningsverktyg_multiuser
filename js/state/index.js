@@ -19,6 +19,7 @@ import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import { get_translation_t } from '../utils/translation_access.js';
 import { is_debug_autosave_focus, is_debug_modal_scroll } from '../app/runtime_flags.js';
 import { get_restore_position_via_hook } from '../app/browser_globals.js';
+import { sanitize_persisted_app_state_shape } from '../logic/sanitize_persisted_app_state.js';
 
 const APP_STATE_KEY = 'digitalTillsynAppCentralState';
 const APP_STATE_BACKUP_KEY = 'digitalTillsynAppStateBackup';
@@ -274,6 +275,14 @@ function loadStateFromLocalStorageBackup() {
         } else {
             return null;
         }
+        if (typeof state_to_merge !== 'object' || state_to_merge === null || Array.isArray(state_to_merge)) {
+            try {
+                localStorage.removeItem(APP_STATE_BACKUP_KEY);
+            } catch (_) {
+                // ignoreras medvetet
+            }
+            return null;
+        }
         if (!state_to_merge.saveFileVersion || !state_to_merge.saveFileVersion.startsWith(APP_STATE_VERSION.split('.')[0])) {
             localStorage.removeItem(APP_STATE_BACKUP_KEY);
             return null;
@@ -283,8 +292,9 @@ function loadStateFromLocalStorageBackup() {
             ...state_to_merge,
             saveFileVersion: APP_STATE_VERSION
         };
-        if (!has_restorable_state(merged)) return null;
-        return { state: merged, restorePosition: restore_position };
+        const safe_merged = sanitize_persisted_app_state_shape(merged);
+        if (!has_restorable_state(safe_merged)) return null;
+        return { state: safe_merged, restorePosition: restore_position };
     } catch {
         try {
             localStorage.removeItem(APP_STATE_BACKUP_KEY);
@@ -323,12 +333,17 @@ function loadStateFromSessionStorage() {
     }
     try {
         const storedState = JSON.parse(serializedState);
+        if (!storedState || typeof storedState !== 'object' || Array.isArray(storedState)) {
+            sessionStorage.removeItem(APP_STATE_KEY);
+            return { ...initial_state, saveFileVersion: APP_STATE_VERSION };
+        }
         if (storedState.saveFileVersion && storedState.saveFileVersion.startsWith(APP_STATE_VERSION.split('.')[0])) {
-            return {
+            const merged = {
                 ...JSON.parse(JSON.stringify(initial_state)),
                 ...storedState,
                 saveFileVersion: APP_STATE_VERSION
             };
+            return sanitize_persisted_app_state_shape(merged);
         }
         sessionStorage.removeItem(APP_STATE_KEY);
         return { ...initial_state, saveFileVersion: APP_STATE_VERSION };
