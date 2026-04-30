@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * @fileoverview Word-export: huvudflöde (krav- respektive stickprovssortering).
  */
@@ -12,8 +11,8 @@ import {
     PageOrientation,
     ExternalHyperlink
 } from 'docx';
-import { format_local_date_for_filename } from '../utils/filename_utils.ts';
-import { get_server_filename_datetime, sanitize_filename_segment } from '../utils/download_filename_utils.ts';
+import { format_local_date_for_filename } from '../utils/filename_utils.js';
+import { get_server_filename_datetime, sanitize_filename_segment } from '../utils/download_filename_utils.js';
 import { consoleManager } from '../utils/console_manager.js';
 import { get_t_internal, show_global_message_internal } from './export_bootstrap.js';
 import { extractDeficiencyNumber } from './export_format_helpers.js';
@@ -32,9 +31,11 @@ import {
     create_comment_paragraphs
 } from './export_word_requirement_sections.js';
 
+type ExportT = (key: string, opts?: Record<string, unknown>) => string;
+
 // sortBy kan vara 'requirements' (sorterar på krav) eller 'samples' (sorterar på stickprov)
-export async function export_to_word_wrapper(current_audit, sortBy) {
-    const t = get_t_internal();
+export async function export_to_word_wrapper(current_audit: any, sortBy: any) {
+    const t = get_t_internal() as ExportT;
     if (!current_audit) {
         show_global_message_internal(t('no_audit_data_to_save'), 'error');
         return;
@@ -113,7 +114,9 @@ export async function export_to_word_wrapper(current_audit, sortBy) {
                         }
                     }
                 }
-                const sorted_deficiency_ids = Array.from(all_deficiency_ids).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+                const sorted_deficiency_ids = Array.from(all_deficiency_ids).sort(
+                    (a, b) => parseInt(String(a), 10) - parseInt(String(b), 10)
+                );
                 children.push(...create_metadata_paragraphs(req, current_audit, sorted_deficiency_ids, t));
 
                 // H3 för varje stickprov när sorterat på krav
@@ -122,7 +125,9 @@ export async function export_to_word_wrapper(current_audit, sortBy) {
                     const deficiencies = get_deficiencies_for_sample(req, sample, current_audit, t);
                     const sampleName = sample.description || sample.url || "";
 
-                    const h3_children = [new TextRun({ text: "Stickprov: ", color: "000000" })];
+                    const h3_children: Array<TextRun | InstanceType<typeof ExternalHyperlink>> = [
+                        new TextRun({ text: "Stickprov: ", color: "000000" })
+                    ];
                     if (sample.url) {
                         h3_children.push(
                             new ExternalHyperlink({
@@ -154,7 +159,7 @@ export async function export_to_word_wrapper(current_audit, sortBy) {
         } else {
             // Sortera på stickprov först
             const all_samples = current_audit.samples || [];
-            const samples_with_deficiencies = all_samples.filter(sample => {
+            const samples_with_deficiencies = all_samples.filter((sample: any) => {
                 const defs = get_all_deficiencies_for_sample_generic(sample, current_audit);
                 return defs.length > 0;
             });
@@ -177,14 +182,14 @@ export async function export_to_word_wrapper(current_audit, sortBy) {
 
                 // Get failing requirements for this sample
                 const failing_req_ids = get_failing_requirement_ids_for_sample(sample);
-                const failing_reqs = [];
+                const failing_reqs: any[] = [];
                 const all_reqs = current_audit.ruleFileContent.requirements || {};
 
                 failing_req_ids.forEach(req_id => {
                     let req = null;
                     if (all_reqs[req_id]) req = all_reqs[req_id];
                     else {
-                        req = Object.values(all_reqs).find(r => r.id === req_id || r.key === req_id);
+                        req = Object.values(all_reqs).find((r: any) => r.id === req_id || r.key === req_id);
                     }
                     if (req) failing_reqs.push(req);
                 });
@@ -360,16 +365,17 @@ export async function export_to_word_wrapper(current_audit, sortBy) {
         URL.revokeObjectURL(url);
         show_global_message_internal(t('audit_saved_as_file', { filename: filename }), 'success');
 
-    } catch (error) {
+    } catch (error: unknown) {
         if (window.ConsoleManager?.warn) window.ConsoleManager.warn("Error exporting to Word:", error);
-        show_global_message_internal(t('error_exporting_word') + ` ${error.message}`, 'error');
+        const msg = error instanceof Error ? error.message : String(error);
+        show_global_message_internal(t('error_exporting_word') + ` ${msg}`, 'error');
     }
 }
 
-export async function export_to_word_criterias(current_audit) {
+export async function export_to_word_criterias(current_audit: any) {
     return await export_to_word_wrapper(current_audit, 'requirements');
 }
 
-export async function export_to_word_samples(current_audit) {
+export async function export_to_word_samples(current_audit: any) {
     return await export_to_word_wrapper(current_audit, 'samples');
-}
+}

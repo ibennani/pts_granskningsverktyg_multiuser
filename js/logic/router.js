@@ -6,7 +6,7 @@
 import { is_current_user_admin, get_auth_token, get_current_user_preferences_with_timeout, set_current_user_admin } from '../api/client.js';
 import { consoleManager } from '../utils/console_manager.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
-import * as ValidationLogic from '../validation_logic.js';
+import * as ValidationLogic from '../validation_logic.ts';
 import {
     build_compact_hash_fragment,
     expand_view_slug_from_hash,

@@ -3,7 +3,7 @@ import express from 'express';
 import { query } from '../db.js';
 import { calculate_overall_audit_progress } from '../../js/audit_logic.ts';
 import { calculateQualityScore } from '../../js/logic/ScoreCalculator.js';
-import { validate_saved_audit_file } from '../../js/validation_logic.js';
+import { validate_saved_audit_file } from '../../js/validation_logic.ts';
 import { check_json_structure_depth_and_size } from '../../shared/json/json_structure_guard.js';
 import { save_backup_for_audit } from '../backup/audit_backup.js';
 import { requireAdmin } from '../auth/middleware.js';

@@ -28,8 +28,10 @@
     "lint:ts": "eslint \"js/**/*.ts\" --quiet",
     "lint": "npm run lint:js",
     "typecheck": "tsc --noEmit",
-    "check": "npm run lint && npm run typecheck && npm test",
-    "check:full": "npm run lint:js && npm run lint:ts && npm run typecheck && npm test && npm run build",
+    "check:export-facades": "node scripts/check-export-facades.mjs",
+    "extract:html-export": "node scripts/extract_html_export.cjs",
+    "check": "npm run lint && npm run check:export-facades && npm run typecheck && npm test",
+    "check:full": "npm run lint:js && npm run lint:ts && npm run check:export-facades && npm run typecheck && npm test && npm run build",
     "test:e2e": "playwright test",
     "test:e2e:smoke": "playwright test --project=Chromium",
     "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config jest.config.js --passWithNoTests"

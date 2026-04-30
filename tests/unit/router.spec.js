@@ -8,7 +8,7 @@ import { app_runtime_refs } from '../../js/utils/app_runtime_refs.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const client_path = path.join(__dirname, '../../js/api/client.js');
-const validation_path = path.join(__dirname, '../../js/validation_logic.js');
+const validation_path = path.join(__dirname, '../../js/validation_logic.ts');
 
 const is_current_user_admin = jest.fn(() => true);
 const get_auth_token = jest.fn(() => null);

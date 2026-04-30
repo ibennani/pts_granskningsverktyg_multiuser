@@ -1,3 +1,8 @@
+/**
+ * @fileoverview Fältutkast (session/localStorage) med debounced flush och konflikt mellan flikar.
+ * Typer för DOM/storage lämnas lösa; filen migrerad från JS.
+ */
+// @ts-nocheck
 const SCHEMA_VERSION = 1;
 const STORAGE_PREFIX = 'draft:';
 const DRAFT_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -12,18 +17,20 @@ function now_ms() {
     return Date.now();
 }
 
-function is_quota_error(error) {
-    if (!error) return false;
-    if (error.name === 'QuotaExceededError') return true;
-    if (error.name === 'NS_ERROR_DOM_QUOTA_REACHED') return true;
-    if (error.code === 22 || error.code === 1014) return true;
+function is_quota_error(error: unknown): boolean {
+    if (!error || typeof error !== 'object') return false;
+    const err = error as { name?: string; code?: number };
+    if (err.name === 'QuotaExceededError') return true;
+    if (err.name === 'NS_ERROR_DOM_QUOTA_REACHED') return true;
+    if (err.code === 22 || err.code === 1014) return true;
     return false;
 }
 
-function safe_json_parse(raw) {
+function safe_json_parse(raw: string | null): unknown {
+    if (raw == null) return null;
     try {
         return JSON.parse(raw);
-    } catch (e) {
+    } catch {
         return null;
     }
 }
@@ -40,7 +47,7 @@ function get_storage_entries(storage) {
         const key = storage.key(i);
         if (!key || !key.startsWith(STORAGE_PREFIX)) continue;
         const raw = storage.getItem(key);
-        const parsed = safe_json_parse(raw);
+        const parsed = safe_json_parse(raw) as { schemaVersion?: number; updatedAt?: number } | null;
         if (!parsed || parsed.schemaVersion !== SCHEMA_VERSION) continue;
         entries.push({ key, value: parsed });
     }
@@ -87,10 +94,8 @@ function should_skip_element(element) {
  * Unik nyckel per formulärfält för utkast. Flera kryssrutor med samma `name` men olika `value`
  * (t.ex. innehållstyper) måste inte dela en nyckel — då skrivs bara sista ändringen över och
  * restoreIntoDom sätter bara första träff (processed_keys).
- * @param {Element} element
- * @returns {string|null}
  */
-export function get_field_key(element) {
+export function get_field_key(element: Element | null): string | null {
     if (!element || !element.getAttribute) return null;
     const explicit_path = element.getAttribute('data-draft-path');
     if (explicit_path) return explicit_path;
@@ -117,7 +122,7 @@ export function get_field_key(element) {
     return generate_fallback_path(element);
 }
 
-function generate_fallback_path(element) {
+function generate_fallback_path(element: Element): string {
     const parts = [];
     let current = element;
     let depth = 0;
@@ -141,7 +146,12 @@ function generate_fallback_path(element) {
     return parts.join('>');
 }
 
-function get_field_record(element) {
+function get_field_record(element: Element | null): {
+    field_key: string;
+    type: string;
+    value: unknown;
+    extra: Record<string, unknown>;
+} | null {
     if (!element) return null;
     if (should_skip_element(element)) return null;
 
@@ -222,7 +232,8 @@ function is_empty_like(value) {
     return false;
 }
 
-export const DraftManager = {
+/** Singleton-objekt med dynamiska fält; `any` undviker felaktiga `this`-typer i metoderna. */
+export const DraftManager: any = {
     init({ getRouteKey, getScopeKey, rootProvider, restorePolicy = {}, onConflict } = {}) {
         this.get_route_key = getRouteKey || (() => window.location?.hash?.split('?')[0] || 'unknown');
         this.get_scope_key = getScopeKey || (() => 'default');
@@ -371,7 +382,7 @@ export const DraftManager = {
         if (!event || !event.key || !event.key.startsWith(STORAGE_PREFIX)) return;
         const current_key = `${STORAGE_PREFIX}${this.get_current_draft_key()}`;
         if (event.key !== current_key) return;
-        const incoming = safe_json_parse(event.newValue);
+        const incoming = safe_json_parse(event.newValue) as { schemaVersion?: number; tabId?: string; updatedAt?: number } | null;
         if (!incoming || incoming.schemaVersion !== SCHEMA_VERSION) return;
         if (incoming.tabId === this.tab_id) return;
 
@@ -447,7 +458,7 @@ export const DraftManager = {
     _read_from_storage(storage, draft_key) {
         if (!storage) return null;
         const raw = storage.getItem(`${STORAGE_PREFIX}${draft_key}`);
-        const parsed = safe_json_parse(raw);
+        const parsed = safe_json_parse(raw) as { schemaVersion?: number; updatedAt?: number } | null;
         if (!parsed || parsed.schemaVersion !== SCHEMA_VERSION) return null;
         if (parsed.updatedAt && now_ms() - parsed.updatedAt > DRAFT_TTL_MS) return null;
         return parsed;

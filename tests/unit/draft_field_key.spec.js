@@ -1,7 +1,7 @@
 /**
  * @jest-environment jsdom
  */
-import { get_field_key, DraftManager } from '../../js/draft_manager.js';
+import { get_field_key, DraftManager } from '../../js/draft_manager.ts';
 
 describe('get_field_key', () => {
     test('ger unika nycklar för flera kryssrutor med samma name och olika value', () => {

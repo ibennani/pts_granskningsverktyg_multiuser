@@ -2,7 +2,7 @@
  * Underhållsskript: extraherar HTML-export från en FULL export_logic.ts till js/export/.
  * VARNING: Skriver över js/export_logic.ts med en tunn fasad. Kör endast mot en backup
  * av monolitfilen (t.ex. git show HEAD:js/export_logic.ts > tmp.ts och peka SOURCE).
- * Kör: node scripts/extract_html_export.cjs
+ * Kör: npm run extract:html-export  (eller: node scripts/extract_html_export.cjs)
  */
 const fs = require('fs');
 const path = require('path');

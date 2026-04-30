@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * @fileoverview Word-export: förstasidetabell och kravsidor (legacy, ej kopplade till huvudexport).
  */
@@ -6,7 +5,11 @@ import { Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType
 import * as Helpers from '../utils/helpers.js';
 import * as ScoreCalculator from '../logic/ScoreCalculator.js';
 import { get_current_language_code_from_registry } from '../utils/translation_access.js';
-import { create_paragraphs_with_line_breaks, formatDeficiencyForWord } from './export_format_helpers.js';
+import {
+    create_paragraphs_with_line_breaks,
+    create_text_runs_with_line_breaks,
+    formatDeficiencyForWord
+} from './export_format_helpers.js';
 import {
     get_total_requirements_count,
     get_requirements_percentage,
@@ -17,26 +20,28 @@ import {
 } from './export_word_deficiency_queries.js';
 
 // Hjälpfunktioner för formatering
-export function create_heading_text(text, level = 2) {
-    const sizes = { 1: 24, 2: 22, 3: 20 };
+export function create_heading_text(text: string, level = 2) {
+    const sizes: Record<number, number> = { 1: 24, 2: 22, 3: 20 };
     return new TextRun({
         text,
         bold: true,
-        size: sizes[level] || 22,
+        size: sizes[level] ?? 22,
         font: "Calibri Light"
     });
 }
 
-export function create_body_text(text, size = 22) {
+export function create_body_text(text: string, size = 22) {
     return create_text_runs_with_line_breaks(text, {
         size,
         font: "Calibri"
     });
 }
 
-export function _create_overview_page(current_audit, t) {
+export function _create_overview_page(current_audit: any, t: (key: string, opts?: Record<string, unknown>) => string) {
     const lang_code = get_current_language_code_from_registry();
-    const score_analysis = ScoreCalculator.calculateQualityScore(current_audit);
+    const score_analysis = ScoreCalculator.calculateQualityScore(current_audit) as {
+        totalScore?: number;
+    } | null;
 
     // Skapa tabell för förstasida
     const table = new Table({
@@ -164,7 +169,11 @@ export function _create_overview_page(current_audit, t) {
     return table;
 }
 
-export function _create_requirement_page(requirement, current_audit, t) {
+export function _create_requirement_page(
+    requirement: any,
+    current_audit: any,
+    t: (key: string, opts?: Record<string, unknown>) => string
+) {
     const children = [];
 
     // H1: Kravets titel
@@ -202,7 +211,12 @@ export function _create_requirement_page(requirement, current_audit, t) {
     return children;
 }
 
-export function create_sample_section(sample, requirement, current_audit, t) {
+export function create_sample_section(
+    sample: any,
+    requirement: any,
+    current_audit: any,
+    t: (key: string, opts?: Record<string, unknown>) => string
+) {
     const children = [];
 
     // H2: Stickprovets namn
@@ -333,4 +347,4 @@ export function create_sample_section(sample, requirement, current_audit, t) {
     }
 
     return children;
-}
+}

@@ -1,9 +1,8 @@
-// @ts-nocheck
 // Deprekerad stickprovsbaserad Word-textexport (behålls tills vidare).
 import { Document, Packer, Paragraph, TextRun, ExternalHyperlink, TabStopType } from 'docx';
 import * as Helpers from '../utils/helpers.js';
-import { format_local_date_for_filename } from '../utils/filename_utils.ts';
-import { get_server_filename_datetime, sanitize_filename_segment } from '../utils/download_filename_utils.ts';
+import { format_local_date_for_filename } from '../utils/filename_utils.js';
+import { get_server_filename_datetime, sanitize_filename_segment } from '../utils/download_filename_utils.js';
 import { consoleManager } from '../utils/console_manager.js';
 import { get_t_internal, show_global_message_internal, get_export_requirement_result } from './export_bootstrap.js';
 import { extractDeficiencyNumber } from './export_format_helpers.js';
@@ -13,9 +12,11 @@ import {
     natural_sort
 } from './export_word_deficiency_queries.js';
 
-export async function _export_to_text_export_deprecated(current_audit) {
+type ExportT = (key: string, opts?: Record<string, unknown>) => string;
+
+export async function _export_to_text_export_deprecated(current_audit: any) {
     consoleManager.log('[Text Export] Starting export_to_text_export function');
-    const t = get_t_internal();
+    const t = get_t_internal() as ExportT;
     if (!current_audit) {
         show_global_message_internal(t('no_audit_data_to_save'), 'error');
         return;
@@ -48,7 +49,7 @@ export async function _export_to_text_export_deprecated(current_audit) {
                 new Paragraph({
                     children: [
                         new TextRun({
-                            text: sample.description || sample.url || get_t_internal()('export_unnamed_sample')
+                            text: sample.description || sample.url || t('export_unnamed_sample')
                         })
                     ],
                     heading: "Heading2",
@@ -129,13 +130,15 @@ export async function _export_to_text_export_deprecated(current_audit) {
                 // Principer
                 {
                     const classifications = Array.isArray(req.classifications) ? req.classifications : [];
-                    const taxonomy = current_audit?.ruleFileContent?.metadata?.taxonomies?.find(t => t.id === 'wcag22-pour');
-                    const norm = v => String(v ?? '').trim().toLowerCase();
+                    const taxonomy = current_audit?.ruleFileContent?.metadata?.taxonomies?.find(
+                        (taxonomy_entry: any) => taxonomy_entry.id === 'wcag22-pour'
+                    );
+                    const norm = (v: any) => String(v ?? '').trim().toLowerCase();
                     const principle_texts = taxonomy
                         ? classifications
-                            .filter(c => norm(c.taxonomyId) === 'wcag22-pour')
-                            .map(c => {
-                                const concept = taxonomy.concepts?.find?.(x => norm(x?.id) === norm(c.conceptId));
+                            .filter((c: any) => norm(c.taxonomyId) === 'wcag22-pour')
+                            .map((c: any) => {
+                                const concept = taxonomy.concepts?.find?.((x: any) => norm(x?.id) === norm(c.conceptId));
                                 return (typeof concept?.label === 'string' && concept.label.trim())
                                     ? concept.label
                                     : c.conceptId;
@@ -391,8 +394,9 @@ export async function _export_to_text_export_deprecated(current_audit) {
 
         show_global_message_internal(t('audit_saved_as_file', { filename: filename }), 'success');
 
-    } catch (error) {
+    } catch (error: unknown) {
         if (window.ConsoleManager?.warn) window.ConsoleManager.warn("Error exporting to Word (Textexport):", error);
-        show_global_message_internal(t('error_exporting_word') + ` ${error.message}`, 'error');
+        const msg = error instanceof Error ? error.message : String(error);
+        show_global_message_internal(t('error_exporting_word') + ` ${msg}`, 'error');
     }
 }

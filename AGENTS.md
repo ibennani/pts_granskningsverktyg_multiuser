@@ -53,6 +53,8 @@ Projektet är organiserat enligt följande struktur:
 - Excel-export: `window.ExportLogic.export_to_excel()`
 - CSV-export: `window.ExportLogic.export_to_csv()`
 - HTML-export: `window.ExportLogic.export_to_html()`
+- **Underhåll:** `npm run extract:html-export` kör `scripts/extract_html_export.cjs`. Använd endast mot en **backup av full export_logic** (miljövariabel `EXPORT_LOGIC_SOURCE`), annars skrivs fasaden över i onödan.
+- **Regression:** `npm run check:export-facades` (ingår i `npm run check`) varnar om `export_logic.ts` eller `audit_logic.ts` växer över satta radgränser.
 
 ### State-hantering
 - Central state i `js/state.js`

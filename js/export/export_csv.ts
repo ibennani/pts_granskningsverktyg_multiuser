@@ -1,10 +1,9 @@
-// @ts-nocheck
 /**
  * @fileoverview CSV-export av brister (samma innehåll som tidigare i export_logic).
  */
 
-import { format_local_date_for_filename } from '../utils/filename_utils.ts';
-import { get_server_filename_datetime, sanitize_filename_segment } from '../utils/download_filename_utils.ts';
+import { format_local_date_for_filename } from '../utils/filename_utils.js';
+import { get_server_filename_datetime, sanitize_filename_segment } from '../utils/download_filename_utils.js';
 import {
     escape_for_csv,
     extractDeficiencyNumber,
@@ -13,8 +12,8 @@ import {
 import { get_export_requirement_result, get_t_internal, show_global_message_internal } from './export_bootstrap.js';
 import { for_each_failed_in_requirement_result } from './export_deficiency_traversal.js';
 
-export async function export_to_csv(current_audit) {
-    const t = get_t_internal();
+export async function export_to_csv(current_audit: any) {
+    const t = get_t_internal() as (key: string, opts?: Record<string, unknown>) => string;
     if (!current_audit) {
         show_global_message_internal(t('no_audit_data_to_save'), 'error');
         return;
@@ -39,12 +38,12 @@ export async function export_to_csv(current_audit) {
     csv_content_array.push(headers.join(';'));
 
     const requirements_for_export = current_audit.ruleFileContent?.requirements || {};
-    (current_audit.samples || []).forEach((sample) => {
+    (current_audit.samples || []).forEach((sample: any) => {
         const all_reqs = Object.values(requirements_for_export);
-        all_reqs.forEach((req_definition) => {
+        all_reqs.forEach((req_definition: any) => {
             const result = get_export_requirement_result(requirements_for_export, sample, req_definition);
             for_each_failed_in_requirement_result(result, ({ check_id, pc_id, pc_obj }) => {
-                const pc_def = req_definition.checks?.find((c) => c.id === check_id)?.passCriteria?.find((p) => p.id === pc_id);
+                const pc_def = req_definition.checks?.find((c: any) => c.id === check_id)?.passCriteria?.find((p: any) => p.id === pc_id);
                 const templateObservation = pc_def?.failureStatementTemplate || '';
                 const userObservation = pc_obj.observationDetail || '';
                 const passCriterionText = pc_def?.requirement || '';

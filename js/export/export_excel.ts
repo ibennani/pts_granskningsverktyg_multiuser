@@ -1,12 +1,11 @@
-// @ts-nocheck
 /**
  * @fileoverview Excel-export av granskning (samma innehåll som tidigare i export_logic).
  */
 
 import ExcelJS from 'exceljs/dist/exceljs.min.js';
 import * as Helpers from '../utils/helpers.js';
-import { format_local_date_for_filename } from '../utils/filename_utils.ts';
-import { get_server_filename_datetime, sanitize_filename_segment } from '../utils/download_filename_utils.ts';
+import { format_local_date_for_filename } from '../utils/filename_utils.js';
+import { get_server_filename_datetime, sanitize_filename_segment } from '../utils/download_filename_utils.js';
 import { get_current_language_code_from_registry } from '../utils/translation_access.js';
 import {
     apply_excel_cell_alignment_top_left_wrap,
@@ -18,8 +17,8 @@ import {
 import { get_export_requirement_result, get_t_internal, show_global_message_internal } from './export_bootstrap.js';
 import { for_each_failed_in_requirement_result } from './export_deficiency_traversal.js';
 
-export async function export_to_excel(current_audit) {
-    const t = get_t_internal();
+export async function export_to_excel(current_audit: any) {
+    const t = get_t_internal() as (key: string, opts?: Record<string, unknown>) => string;
     if (!current_audit) {
         show_global_message_internal(t('no_audit_data_to_save'), 'error');
         return;
@@ -58,14 +57,15 @@ export async function export_to_excel(current_audit) {
 
         const deficienciesSheet = workbook.addWorksheet(t('excel_sheet_deficiencies'));
 
-        const deficiencies_data = [];
+        const deficiencies_data: any[] = [];
         const requirements_for_export = current_audit.ruleFileContent?.requirements || {};
-        (current_audit.samples || []).forEach((sample) => {
+        (current_audit.samples || []).forEach((sample: any) => {
             const all_reqs = Object.values(requirements_for_export);
-            all_reqs.forEach((req_definition) => {
+            all_reqs.forEach((req_definition: any) => {
                 const result = get_export_requirement_result(requirements_for_export, sample, req_definition);
+                if (!result) return;
                 for_each_failed_in_requirement_result(result, ({ check_id, pc_id, pc_obj }) => {
-                    const pc_def = req_definition.checks?.find((c) => c.id === check_id)?.passCriteria?.find((p) => p.id === pc_id);
+                    const pc_def = req_definition.checks?.find((c: any) => c.id === check_id)?.passCriteria?.find((p: any) => p.id === pc_id);
                     const templateObservation = pc_def?.failureStatementTemplate || '';
                     const userObservation = pc_obj.observationDetail || '';
                     const passCriterionText = pc_def?.requirement || '';
@@ -77,7 +77,7 @@ export async function export_to_excel(current_audit) {
                     finalObservation = strip_markdown_for_excel(finalObservation);
 
                     const ref_text_raw = req_definition.standardReference?.text || '';
-                    const reference_obj = { text: strip_markdown_for_excel(ref_text_raw) };
+                    const reference_obj: { text: string; hyperlink?: string } = { text: strip_markdown_for_excel(ref_text_raw) };
                     if (req_definition.standardReference?.url) {
                         reference_obj.hyperlink = Helpers.add_protocol_if_missing(req_definition.standardReference.url);
                     }
@@ -148,7 +148,7 @@ export async function export_to_excel(current_audit) {
         const id_column_width = Math.min(Math.max(max_id_cell_len + 2, 8), 45);
         deficienciesSheet.getColumn('id').width = id_column_width;
 
-        deficienciesSheet.eachRow({ includeEmpty: false }, function (row, rowNumber) {
+        deficienciesSheet.eachRow({ includeEmpty: false }, function (row: any, rowNumber: number) {
             if (rowNumber > 1) {
                 const isEvenRow = rowNumber % 2 === 0;
                 row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: isEvenRow ? 'FFF4F1EE' : 'FFFFFFFF' } };
@@ -166,7 +166,7 @@ export async function export_to_excel(current_audit) {
         });
 
         apply_excel_cell_alignment_top_left_wrap(deficienciesSheet);
-        deficienciesSheet.getRow(1).eachCell({ includeEmpty: true }, (cell) => {
+        deficienciesSheet.getRow(1).eachCell({ includeEmpty: true }, (cell: any) => {
             cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6E3282' } };
             cell.font = { color: { argb: 'FFFFFFFF' }, bold: true };
         });
@@ -201,8 +201,9 @@ export async function export_to_excel(current_audit) {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
         show_global_message_internal(t('audit_saved_as_file', { filename: filename }), 'success');
-    } catch (error) {
+    } catch (error: unknown) {
         if (window.ConsoleManager?.warn) window.ConsoleManager.warn('Error exporting to Excel with ExcelJS:', error);
-        show_global_message_internal(t('error_exporting_excel') + ` ${error.message}`, 'error');
+        const msg = error instanceof Error ? error.message : String(error);
+        show_global_message_internal(t('error_exporting_excel') + ` ${msg}`, 'error');
     }
 }

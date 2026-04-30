@@ -1,9 +1,8 @@
-// @ts-nocheck
 /**
  * @fileoverview HTML-export: bygger nedladdningsbar rapportfil.
  */
-import { format_local_date_for_filename } from '../utils/filename_utils.ts';
-import { get_server_filename_datetime, sanitize_filename_segment } from '../utils/download_filename_utils.ts';
+import { format_local_date_for_filename } from '../utils/filename_utils.js';
+import { get_server_filename_datetime, sanitize_filename_segment } from '../utils/download_filename_utils.js';
 import { consoleManager } from '../utils/console_manager.js';
 import { get_t_internal, show_global_message_internal } from './export_bootstrap.js';
 import {
@@ -17,9 +16,9 @@ import { HTML_EXPORT_CSS } from './export_html_styles_generated.js';
 import { HTML_EXPORT_EMBEDDED_SCRIPT } from './export_html_script_generated.js';
 
 // HTML-exportfunktion (sorterar på krav)
-export async function export_to_html(current_audit) {
+export async function export_to_html(current_audit: Record<string, unknown> | null | undefined): Promise<void> {
     consoleManager.log('[ExportLogic] export_to_html called');
-    const t = get_t_internal();
+    const t = get_t_internal() as (key: string, opts?: Record<string, unknown>) => string;
     if (!current_audit) {
         if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[ExportLogic] No audit data provided');
         show_global_message_internal(t('no_audit_data_to_save'), 'error');
@@ -28,16 +27,24 @@ export async function export_to_html(current_audit) {
 
     try {
         consoleManager.log('[ExportLogic] Starting HTML export...');
+        const audit = current_audit as Record<string, unknown> & {
+            auditMetadata?: Record<string, unknown>;
+            updated_at?: string | null;
+        };
         // Beräkna hash och timestamp för ändringsdetektering
         consoleManager.log('[ExportLogic] Calculating hash and timestamp...');
         const export_timestamp = new Date().toISOString();
-        const audit_hash = await calculate_audit_hash(current_audit);
+        const audit_hash = await calculate_audit_hash(audit);
         consoleManager.log('[ExportLogic] Audit hash calculated:', audit_hash ? audit_hash.substring(0, 16) + '...' : 'null');
         
         // Bygg innehåll sorterat på krav (default)
         consoleManager.log('[ExportLogic] Building content...');
-        const { sidebar_html: sidebar_html_requirement, content_html: content_html_requirement } = build_content_sorted_by_requirement(current_audit, t);
-        const { sidebar_html: sidebar_html_sample, content_html: content_html_sample } = build_content_sorted_by_sample(current_audit, t);
+        const { sidebar_html: sidebar_html_requirement, content_html: content_html_requirement } =
+            build_content_sorted_by_requirement(audit, t as (key: string, opts?: Record<string, unknown>) => string);
+        const { sidebar_html: sidebar_html_sample, content_html: content_html_sample } = build_content_sorted_by_sample(
+            audit,
+            t as (key: string, opts?: Record<string, unknown>) => string
+        );
         consoleManager.log('[ExportLogic] Content built successfully');
 
         // Bygg sidebar med länkar (nested structure) inklusive sorteringsalternativ
@@ -102,7 +109,10 @@ export async function export_to_html(current_audit) {
         // CSS med variabler från appens style.css
 
         // Skapa titeltext för banner och title
-        const title_text = `Granskningsrapport - ${escape_html_internal(current_audit.auditMetadata.actorName || t('filename_fallback_actor'))}${current_audit.auditMetadata.caseNumber ? ' - ' + escape_html_internal(current_audit.auditMetadata.caseNumber) : ''}`;
+        const am = audit.auditMetadata ?? {};
+        const actor_label = am.actorName != null && String(am.actorName).trim() !== '' ? String(am.actorName) : t('filename_fallback_actor');
+        const case_num = am.caseNumber != null ? String(am.caseNumber) : '';
+        const title_text = `Granskningsrapport - ${escape_html_internal(actor_label)}${case_num ? ' - ' + escape_html_internal(case_num) : ''}`;
 
         // Bygg komplett HTML-dokument
         const html_document = `<!DOCTYPE html>
@@ -141,10 +151,11 @@ ${HTML_EXPORT_EMBEDDED_SCRIPT}
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
 
-        const actor_name = sanitize_filename_segment(current_audit.auditMetadata.actorName || t('filename_fallback_actor'));
-        const case_number = (current_audit.auditMetadata.caseNumber || '').trim();
+        const actor_name = sanitize_filename_segment(actor_label);
+        const case_number = case_num.trim();
         const sanitized_case_number = case_number ? case_number.replace(/[^a-z0-9åäöÅÄÖ-]/gi, '') : '';
-        const last_updated_iso = current_audit?.updated_at || null;
+        const last_updated_iso =
+            typeof audit.updated_at === 'string' || audit.updated_at === null ? (audit.updated_at as string | null) : null;
         const server_dt = await get_server_filename_datetime(last_updated_iso);
         const fallback_now = server_dt ? null : await get_server_filename_datetime(null);
         const date_str = server_dt || fallback_now || format_local_date_for_filename(new Date(), '');
@@ -166,9 +177,11 @@ ${HTML_EXPORT_EMBEDDED_SCRIPT}
         consoleManager.log('[ExportLogic] HTML export completed successfully');
         show_global_message_internal(t('audit_saved_as_file', { filename: filename }), 'success');
 
-    } catch (error) {
-        if (window.ConsoleManager?.warn) window.ConsoleManager.warn("[ExportLogic] Error exporting to HTML:", error);
-        if (window.ConsoleManager?.warn) window.ConsoleManager.warn("[ExportLogic] Error stack:", error?.stack);
-        show_global_message_internal(t('error_exporting_html') + ` ${error.message}`, 'error');
+    } catch (error: unknown) {
+        if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[ExportLogic] Error exporting to HTML:', error);
+        const err = error as { stack?: string; message?: string };
+        if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[ExportLogic] Error stack:', err?.stack);
+        const msg = error instanceof Error ? error.message : String(error);
+        show_global_message_internal(t('error_exporting_html') + ` ${msg}`, 'error');
     }
 }

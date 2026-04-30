@@ -7,7 +7,7 @@ import {
     traverse_all_check_results,
     traverse_all_requirement_results
 } from '../utils/traverse_audit_data.js';
-import type { AuditStateShape, CheckDef, RequirementDef } from './audit_logic_types.js';
+import type { AuditStateShape, CheckDef, CheckResultStored, RequirementDef, RequirementResultStored } from './audit_logic_types.js';
 import { find_requirement_definition, get_stored_requirement_result_for_def } from './audit_logic_lookup.js';
 import { calculate_check_status, calculate_requirement_status } from './audit_logic_status.js';
 import { assignSortedDeficiencyIdsOnLock } from './audit_logic_deficiency.js';
@@ -20,38 +20,39 @@ export function recalculateStatusesOnLoad(auditState: AuditStateShape | null | u
     const newState = JSON.parse(JSON.stringify(auditState)) as AuditStateShape;
     const rule_file = newState.ruleFileContent!;
 
-    (newState.samples ?? []).forEach((sample) => {
+    traverse_all_check_results(newState, ({ sample, req_key, check_key, check_result }) => {
         const requirements = rule_file.requirements;
         if (!requirements) return;
-        Object.keys(sample.requirementResults ?? {}).forEach((reqKey) => {
-            const reqDef =
-                find_requirement_definition(requirements, reqKey) ||
-                (!Array.isArray(requirements) ? (requirements as Record<string, RequirementDef>)[reqKey] : undefined);
-            if (!reqDef) return;
-            const reqResult = get_stored_requirement_result_for_def(
+        const reqDef =
+            find_requirement_definition(requirements, req_key) ||
+            (!Array.isArray(requirements) ? (requirements as Record<string, RequirementDef>)[req_key] : undefined);
+        if (!reqDef) return;
+        const cr = check_result as CheckResultStored;
+        const checkDef = (reqDef.checks ?? []).find((c: CheckDef) => c.id === check_key);
+        if (!checkDef || !cr) return;
+
+        const recalculatedStatus = calculate_check_status(checkDef, cr.passCriteria, cr.overallStatus);
+        cr.status = recalculatedStatus;
+    });
+
+    traverse_all_requirement_results(newState, ({ sample, req_key, req_result }) => {
+        const requirements = rule_file.requirements;
+        if (!requirements) return;
+        const reqDef =
+            find_requirement_definition(requirements, req_key) ||
+            (!Array.isArray(requirements) ? (requirements as Record<string, RequirementDef>)[req_key] : undefined);
+        if (!reqDef) return;
+        const rr =
+            get_stored_requirement_result_for_def(
                 sample.requirementResults,
                 requirements,
                 reqDef,
-                reqKey
-            );
-            if (!reqResult || !reqResult.checkResults) return;
+                req_key
+            ) ?? (req_result as RequirementResultStored);
+        if (!rr?.checkResults) return;
 
-            Object.keys(reqResult.checkResults).forEach((checkKey) => {
-                const checkResult = reqResult.checkResults![checkKey];
-                const checkDef = (reqDef.checks ?? []).find((c: CheckDef) => c.id === checkKey);
-                if (!checkDef || !checkResult) return;
-
-                const recalculatedStatus = calculate_check_status(
-                    checkDef,
-                    checkResult.passCriteria,
-                    checkResult.overallStatus
-                );
-                checkResult.status = recalculatedStatus;
-            });
-
-            const recalculatedReqStatus = calculate_requirement_status(reqDef, reqResult);
-            reqResult.status = recalculatedReqStatus;
-        });
+        const recalculatedReqStatus = calculate_requirement_status(reqDef, rr);
+        rr.status = recalculatedReqStatus;
     });
 
     if (newState.auditStatus === 'locked') {

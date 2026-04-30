@@ -1,6 +1,6 @@
 /**
  * Ger helpers och dependency_manager tillgång till översättningsmodulen utan
- * att importera translation_logic.js (Vite import.meta.glob fungerar inte i Jest).
+ * att importera translation_logic direkt (Vite import.meta.glob fungerar inte i Jest).
  */
 
 /** @type {null | { t?: function(string, object?): string }} */

@@ -5,12 +5,12 @@ import '@fontsource/roboto/500.css';
 import '@fontsource/roboto/700.css';
 
 import * as Helpers from './utils/helpers.js';
-import * as TranslationLogic from './translation_logic.js';
+import * as TranslationLogic from './translation_logic.ts';
 import { NotificationComponent } from './components/NotificationComponent.js';
 import * as AuditLogic from './audit_logic.js';
 import './export_logic.js';
 import * as SaveAuditLogic from './logic/save_audit_logic.ts';
-import * as ValidationLogic from './validation_logic.js';
+import * as ValidationLogic from './validation_logic.ts';
 import * as RulefileUpdaterLogic from './logic/rulefile_updater_logic.js';
 import * as ScoreCalculator from './logic/ScoreCalculator.js';
 import { AutosaveService, capture_focus_state, restore_focus_state } from './logic/autosave_service.js';
@@ -56,7 +56,7 @@ import { GlobalActionBarComponent } from './components/GlobalActionBarComponent.
 import { ModalComponent } from './components/ModalComponent.js';
 import { SideMenuComponent } from './components/SideMenuComponent.js';
 import { ErrorBoundaryComponent } from './components/ErrorBoundaryComponent.js';
-import { DraftManager } from './draft_manager.js';
+import { DraftManager } from './draft_manager.ts';
 import { get_auth_token, clear_auth_token, get_current_user_preferences, set_current_user_admin } from './api/client.js';
 import { getState, dispatch, subscribe, initState, StoreActionTypes, loadStateFromLocalStorageBackup, updateBackupRestorePosition, APP_STATE_KEY } from './state.js';
 

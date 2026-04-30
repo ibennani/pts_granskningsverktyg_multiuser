@@ -2,7 +2,7 @@
  * @fileoverview Media-räkning, "kört fast"-problem, byggande av resultatobjekt, bifogade bilder.
  */
 
-import { traverse_all_pass_criteria } from '../utils/traverse_audit_data.js';
+import { traverse_all_pass_criteria, traverse_all_requirement_results } from '../utils/traverse_audit_data.js';
 import type {
     AuditStateShape,
     CheckDef,
@@ -56,21 +56,19 @@ export function collect_audit_problems(state: AuditStateShape): Array<{
     }> = [];
     const requirements = state.ruleFileContent.requirements;
 
-    (state.samples || []).forEach((sample) => {
-        Object.entries(sample.requirementResults || {}).forEach(([reqId, reqResult]) => {
-            const stuck_text = (reqResult?.stuckProblemDescription || '').trim();
-            if (!stuck_text) return;
+    traverse_all_requirement_results(state, ({ sample, req_key, req_result }) => {
+        const stuck_text = String((req_result as RequirementResultStored)?.stuckProblemDescription || '').trim();
+        if (!stuck_text) return;
 
-            const requirement =
-                find_requirement_by_id(requirements, reqId) || { id: reqId, key: reqId, title: String(reqId) };
+        const requirement =
+            find_requirement_by_id(requirements, req_key) || { id: req_key, key: req_key, title: String(req_key) };
 
-            problems.push({
-                requirement,
-                sample,
-                reqId,
-                stuck_text,
-                lastStatusUpdate: reqResult?.lastStatusUpdate || null
-            });
+        problems.push({
+            requirement,
+            sample,
+            reqId: req_key,
+            stuck_text,
+            lastStatusUpdate: (req_result as RequirementResultStored)?.lastStatusUpdate || null
         });
     });
     problems.sort((a, b) => {
@@ -181,45 +179,38 @@ export function collect_attached_images(state: AuditStateShape): Array<Record<st
     const images: Array<Record<string, unknown>> = [];
     const requirements = state.ruleFileContent.requirements;
 
-    (state.samples ?? []).forEach((sample) => {
-        Object.entries(sample.requirementResults ?? {}).forEach(([reqId, reqResultRaw]) => {
-            const reqResult = reqResultRaw as RequirementResultStored;
-            const requirement =
-                (Array.isArray(requirements)
-                    ? requirements.find((r: RequirementDef) => (r?.key || r?.id) === reqId)
-                    : (requirements as Record<string, RequirementDef>)[reqId]) || null;
-            if (!requirement) return;
+    traverse_all_pass_criteria(state, ({ sample, req_key, check_key, pc_key, pc_result }) => {
+        const requirement =
+            (Array.isArray(requirements)
+                ? requirements.find((r: RequirementDef) => (r?.key || r?.id) === req_key)
+                : (requirements as Record<string, RequirementDef>)[req_key]) || null;
+        if (!requirement) return;
 
-            const checks_arr = requirement.checks ?? [];
-            Object.entries(reqResult.checkResults ?? {}).forEach(([checkId, checkResultRaw]) => {
-                const checkResult = checkResultRaw as CheckResultStored;
-                const check_def = checks_arr.find((c) => (c?.id || c?.key) === checkId);
-                const check_index = check_def ? checks_arr.indexOf(check_def) : -1;
-                const pc_arr = check_def?.passCriteria ?? [];
-                Object.entries(checkResult.passCriteria ?? {}).forEach(([pcId, pcResultRaw]) => {
-                    const pcResult = pcResultRaw as PassCriterionStored;
-                    const filenames = pcResult?.attachedMediaFilenames;
-                    if (!Array.isArray(filenames) || filenames.length === 0) return;
-                    const pc_def = pc_arr.find((p) => (p?.id || p?.key) === pcId) || {};
-                    const pc_index = pc_arr.indexOf(pc_def);
-                    filenames.forEach((filename: unknown) => {
-                        if (filename && String(filename).trim()) {
-                            images.push({
-                                requirement,
-                                sample,
-                                reqId,
-                                checkId,
-                                pcId,
-                                check_def: check_def || null,
-                                pc_def,
-                                check_index,
-                                pc_index,
-                                filename: String(filename).trim()
-                            });
-                        }
-                    });
+        const checks_arr = requirement.checks ?? [];
+        const check_def = checks_arr.find((c) => (c?.id || c?.key) === check_key);
+        const check_index = check_def ? checks_arr.indexOf(check_def) : -1;
+        const pc_arr = check_def?.passCriteria ?? [];
+        const pcResult = pc_result as PassCriterionStored;
+        const filenames = pcResult?.attachedMediaFilenames;
+        if (!Array.isArray(filenames) || filenames.length === 0) return;
+        const pc_def = pc_arr.find((p) => (p?.id || p?.key) === pc_key) || {};
+        const pc_index = pc_arr.indexOf(pc_def as PassCriterionDef);
+
+        filenames.forEach((filename: unknown) => {
+            if (filename && String(filename).trim()) {
+                images.push({
+                    requirement,
+                    sample,
+                    reqId: req_key,
+                    checkId: check_key,
+                    pcId: pc_key,
+                    check_def: check_def || null,
+                    pc_def,
+                    check_index,
+                    pc_index,
+                    filename: String(filename).trim()
                 });
-            });
+            }
         });
     });
     return images;

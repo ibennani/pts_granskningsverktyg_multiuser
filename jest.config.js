@@ -14,6 +14,7 @@ export default {
     '^.+/audit_logic_progress\\.js$': '<rootDir>/js/logic/audit_logic_progress.ts',
     '^.+/audit_logic_recalc\\.js$': '<rootDir>/js/logic/audit_logic_recalc.ts',
     '^.+/audit_logic_problems_media\\.js$': '<rootDir>/js/logic/audit_logic_problems_media.ts',
+    '^.+/score_calculator_passed_check_failures\\.js$': '<rootDir>/js/logic/score_calculator_passed_check_failures.ts',
     '^.+/export_logic\\.js$': '<rootDir>/js/export_logic.ts',
     '^.+[\\\\/]export_format_helpers\\.js$': '<rootDir>/js/export/export_format_helpers.ts',
     '^.+[\\\\/]export_bootstrap\\.js$': '<rootDir>/js/export/export_bootstrap.ts',
@@ -27,6 +28,8 @@ export default {
     '^.+[\\\\/]export_word_main_flow\\.js$': '<rootDir>/js/export/export_word_main_flow.ts',
     '^.+[\\\\/]export_word_deprecated_text_export\\.js$': '<rootDir>/js/export/export_word_deprecated_text_export.ts',
     '^.+[\\\\/]export_html_build\\.js$': '<rootDir>/js/export/export_html_build.ts',
+    '^.+[\\\\/]export_html_build_primitives\\.js$': '<rootDir>/js/export/export_html_build_primitives.ts',
+    '^.+[\\\\/]export_html_build_layouts\\.js$': '<rootDir>/js/export/export_html_build_layouts.ts',
     '^.+[\\\\/]export_html_audit_hash\\.js$': '<rootDir>/js/export/export_html_audit_hash.ts',
     '^.+[\\\\/]export_html_styles_generated\\.js$': '<rootDir>/js/export/export_html_styles_generated.ts',
     '^.+[\\\\/]export_html_script_generated\\.js$': '<rootDir>/js/export/export_html_script_generated.ts',
@@ -56,14 +59,19 @@ export default {
       '<rootDir>/js/components/requirements_list/requirement_list_mark_all_modal.ts',
     '^.+/requirement_search_utils\\.js$': '<rootDir>/js/utils/requirement_search_utils.ts',
     '^.+/string_filter_normalize\\.js$': '<rootDir>/js/utils/string_filter_normalize.ts',
+    '^.+/filename_utils\\.js$': '<rootDir>/js/utils/filename_utils.ts',
+    '^.+/download_filename_utils\\.js$': '<rootDir>/js/utils/download_filename_utils.ts',
     '^.+/traverse_audit_data\\.js$': '<rootDir>/js/utils/traverse_audit_data.ts',
+    '^.+/draft_manager\\.js$': '<rootDir>/js/draft_manager.ts',
+    '^.+/validation_logic\\.js$': '<rootDir>/js/validation_logic.ts',
+    '^.+/translation_logic\\.js$': '<rootDir>/js/translation_logic.ts',
   },
   testMatch: [
     '<rootDir>/tests/unit/**/*.spec.js',
     '<rootDir>/tests/unit/**/*.spec.ts',
   ],
   testPathIgnorePatterns: ['/node_modules/', '.e2e.spec.js'],
-  /** Tillåt transpilering av marked (ESM) så js/utils/markdown.js kan laddas i Jest. */
+  /** Tillåt transpilering av marked (ESM) så js/utils/markdown.ts kan laddas i Jest. */
   transformIgnorePatterns: ['/node_modules/(?!(marked)/)'],
   transform: {
     '^.+\\.(t|j)s$': [

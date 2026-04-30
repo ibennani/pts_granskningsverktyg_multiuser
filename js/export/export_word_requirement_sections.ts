@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * @fileoverview Word-export: metadata-, observations- och kommentarstycken per krav/stickprov.
  */
@@ -8,7 +7,7 @@ import { get_export_requirement_result } from './export_bootstrap.js';
 import { parse_markdown_to_text_runs } from './export_word_markdown_docx.js';
 
 // Gemensam hjälpfunktion för att extrahera referensnummer från en krav-referens
-export function extract_reference_number(requirement) {
+export function extract_reference_number(requirement: any) {
     let referenceNumber = "";
     if (requirement.standardReference?.text) {
         const refText = requirement.standardReference.text.trim();
@@ -29,7 +28,12 @@ export function extract_reference_number(requirement) {
 }
 
 // Gemensam hjälpfunktion för att skapa metadata-paragraf (Referens, Principer, Brist)
-export function create_metadata_paragraphs(requirement, current_audit, deficiencyIds, _t) {
+export function create_metadata_paragraphs(
+    requirement: any,
+    current_audit: any,
+    deficiencyIds: any,
+    _t: any
+) {
     const metadata_items = [];
 
     // Referens
@@ -63,13 +67,15 @@ export function create_metadata_paragraphs(requirement, current_audit, deficienc
     // Principer
     {
         const classifications = Array.isArray(requirement.classifications) ? requirement.classifications : [];
-        const taxonomy = current_audit?.ruleFileContent?.metadata?.taxonomies?.find(t => t.id === 'wcag22-pour');
-        const norm = v => String(v ?? '').trim().toLowerCase();
+        const taxonomy = current_audit?.ruleFileContent?.metadata?.taxonomies?.find(
+            (taxonomy_entry: any) => taxonomy_entry.id === 'wcag22-pour'
+        );
+        const norm = (v: any) => String(v ?? '').trim().toLowerCase();
         const principle_texts = taxonomy
             ? classifications
-                .filter(c => norm(c.taxonomyId) === 'wcag22-pour')
-                .map(c => {
-                    const concept = taxonomy.concepts?.find?.(x => norm(x?.id) === norm(c.conceptId));
+                .filter((c: any) => norm(c.taxonomyId) === 'wcag22-pour')
+                .map((c: any) => {
+                    const concept = taxonomy.concepts?.find?.((x: any) => norm(x?.id) === norm(c.conceptId));
                     return (typeof concept?.label === 'string' && concept.label.trim())
                         ? concept.label
                         : c.conceptId;
@@ -105,7 +111,7 @@ export function create_metadata_paragraphs(requirement, current_audit, deficienc
 }
 
 // Gemensam hjälpfunktion för att formatera observationer som paragraf
-export function create_observation_paragraphs(deficiency, _t) {
+export function create_observation_paragraphs(deficiency: any, _t: any) {
     const paragraphs = [];
     let observationText = (deficiency.observationDetail || '').trim();
     observationText = observationText.replace(/^[\s]*[-*]\s/gm, '• ');
@@ -190,7 +196,7 @@ export function create_observation_paragraphs(deficiency, _t) {
 }
 
 // Gemensam hjälpfunktion för att skapa kommentar-paragraf
-export function create_comment_paragraphs(requirement, sample, requirements, _t) {
+export function create_comment_paragraphs(requirement: any, sample: any, requirements: any, _t: any) {
     const paragraphs = [];
     const sample_result = get_export_requirement_result(requirements, sample, requirement);
     if (sample_result && sample_result.commentToActor && sample_result.commentToActor.trim()) {
@@ -219,4 +225,4 @@ export function create_comment_paragraphs(requirement, sample, requirements, _t)
         );
     }
     return paragraphs;
-}
+}

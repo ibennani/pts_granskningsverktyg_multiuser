@@ -1,12 +1,19 @@
-// js/translation_logic.js
+/**
+ * @fileoverview Inläsning av översättningsmoduler (Vite glob), språkbyte och t().
+ */
 'use strict';
 
 import { escape_html } from './utils/helpers.js';
 import { consoleManager } from './utils/console_manager.js';
 
-const translationModules = import.meta.glob('./i18n/*.json', { eager: true });
+type TranslationJson = Record<string, string>;
 
-const supported_languages = {
+const translationModules = import.meta.glob('./i18n/*.json', { eager: true }) as Record<
+    string,
+    { default?: TranslationJson } | TranslationJson
+>;
+
+const supported_languages: Record<string, string> = {
     'sv-SE': 'Svenska (Sverige)',
     'en-GB': 'English (UK)',
     'nb-NO': 'Norsk bokmål (Norge)'
@@ -15,29 +22,29 @@ const supported_languages = {
 const DEFAULT_LANGUAGE_TAG = 'en-GB';
 
 let current_language_tag = DEFAULT_LANGUAGE_TAG;
-let loaded_translations = {};
-let initial_load_promise = null;
+let loaded_translations: TranslationJson = {};
+let initial_load_promise: Promise<TranslationJson> | null = null;
 
-function log(...args) {
+function log(...args: unknown[]) {
     consoleManager.log('[Translation]', ...args);
 }
 
-function warn(...args) {
+function warn(...args: unknown[]) {
     console.warn('[Translation]', ...args);
 }
 
-function error(...args) {
+function error(...args: unknown[]) {
     if (typeof window !== 'undefined' && window.ConsoleManager?.warn) {
         window.ConsoleManager.warn('[Translation]', ...args);
     }
 }
 
-function getModuleKey(lang_tag) {
+function getModuleKey(lang_tag: string) {
     return `./i18n/${lang_tag}.json`;
 }
 
 /** Normaliserar BCP 47 (bindestreck, versaler för region). nb_NO → nb-NO så att DB/inställningar matchar. */
-function normalize_bcp47_tag(tag) {
+function normalize_bcp47_tag(tag: string | null | undefined): string {
     if (tag === null || tag === undefined || typeof tag !== 'string') {
         return DEFAULT_LANGUAGE_TAG;
     }
@@ -59,7 +66,7 @@ function normalize_bcp47_tag(tag) {
     return [lang, ...rest].join('-');
 }
 
-function get_translation_module_data(lang_tag) {
+function get_translation_module_data(lang_tag: string) {
     const key = getModuleKey(lang_tag);
     if (translationModules[key]) {
         return translationModules[key];
@@ -69,29 +76,29 @@ function get_translation_module_data(lang_tag) {
     return found_key ? translationModules[found_key] : null;
 }
 
-function unwrap_translation_object(moduleData) {
+function unwrap_translation_object(moduleData: unknown): TranslationJson | null {
     if (!moduleData) {
         return null;
     }
-    const raw = moduleData.default !== undefined ? moduleData.default : moduleData;
+    const mod = moduleData as { default?: TranslationJson };
+    const raw = mod.default !== undefined ? mod.default : (moduleData as TranslationJson);
     if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
         return null;
     }
-    return raw;
+    return raw as TranslationJson;
 }
 
-function resolve_effective_language_tag(requested_tag) {
-    const normalized = normalize_bcp47_tag(requested_tag);
+function resolve_effective_language_tag(requested_tag: string | null | undefined): string {
+    const normalized = normalize_bcp47_tag(requested_tag ?? undefined);
 
     if (supported_languages[normalized]) {
         return normalized;
     }
 
-    // Special handling for common language codes that should map to our supported variants
-    const language_mappings = {
-        'sv': 'sv-SE',  // Swedish maps to Swedish (Sweden)
-        'en': 'en-GB',  // English maps to British English
-        'nb': 'nb-NO'   // Norwegian Bokmål maps to Norwegian (Norway)
+    const language_mappings: Record<string, string> = {
+        sv: 'sv-SE',
+        en: 'en-GB',
+        nb: 'nb-NO'
     };
 
     if (language_mappings[normalized]) {
@@ -100,18 +107,22 @@ function resolve_effective_language_tag(requested_tag) {
 
     const base_lang = normalized.split('-')[0];
     const matching_supported_base = Object.keys(supported_languages).find(
-        key => key === base_lang || key.startsWith(`${base_lang}-`)
+        (key) => key === base_lang || key.startsWith(`${base_lang}-`)
     );
     if (matching_supported_base) {
-        warn(`Language tag "${requested_tag}" (normaliserad: "${normalized}") stöds inte direkt. Använder "${matching_supported_base}".`);
+        warn(
+            `Language tag "${String(requested_tag)}" (normaliserad: "${normalized}") stöds inte direkt. Använder "${matching_supported_base}".`
+        );
         return matching_supported_base;
     }
 
-    warn(`Language tag "${requested_tag}" (normaliserad: "${normalized}") stöds inte. Använder standard "${DEFAULT_LANGUAGE_TAG}".`);
+    warn(
+        `Language tag "${String(requested_tag)}" (normaliserad: "${normalized}") stöds inte. Använder standard "${DEFAULT_LANGUAGE_TAG}".`
+    );
     return DEFAULT_LANGUAGE_TAG;
 }
 
-async function load_language_file(lang_tag_to_load) {
+async function load_language_file(lang_tag_to_load: string | null | undefined): Promise<TranslationJson> {
     const effective_lang_tag = resolve_effective_language_tag(lang_tag_to_load || DEFAULT_LANGUAGE_TAG);
     const moduleData = get_translation_module_data(effective_lang_tag);
 
@@ -121,9 +132,7 @@ async function load_language_file(lang_tag_to_load) {
         if (effective_lang_tag !== DEFAULT_LANGUAGE_TAG) {
             return load_language_file(DEFAULT_LANGUAGE_TAG);
         }
-        // Use a hardcoded fallback translation key since we can't use Translation.t() here
-        // This is the only exception where we need a hardcoded fallback
-        loaded_translations = { 
+        loaded_translations = {
             app_title: 'Audit Tool - Missing translations',
             translation_missing_translations: 'Audit Tool - Missing translations'
         };
@@ -147,14 +156,13 @@ async function load_language_file(lang_tag_to_load) {
         return loaded_translations;
     }
 
-    let merged = JSON.parse(JSON.stringify(primary_obj));
+    let merged: TranslationJson = JSON.parse(JSON.stringify(primary_obj)) as TranslationJson;
 
-    // Ofullständiga språkfiler (t.ex. nb-NO): innehåll från vald fil ligger ovanpå en-GB; saknade nycklar blir engelska.
     if (effective_lang_tag !== DEFAULT_LANGUAGE_TAG) {
         const fallback_module_data = get_translation_module_data(DEFAULT_LANGUAGE_TAG);
         const fallback_obj = unwrap_translation_object(fallback_module_data);
         if (fallback_obj) {
-            const fallback_copy = JSON.parse(JSON.stringify(fallback_obj));
+            const fallback_copy = JSON.parse(JSON.stringify(fallback_obj)) as TranslationJson;
             merged = { ...fallback_copy, ...merged };
         }
     }
@@ -167,53 +175,53 @@ async function load_language_file(lang_tag_to_load) {
     return loaded_translations;
 }
 
-export async function set_language(lang_tag) {
+export async function set_language(lang_tag: string) {
     log(`set_language called with: ${lang_tag}. Current: ${current_language_tag}`);
     await load_language_file(lang_tag);
     document.dispatchEvent(new CustomEvent('languageChanged', { detail: { lang_tag: current_language_tag } }));
 }
 
-export function t(key, replacements = {}) {
+export function t(key: string, replacements: Record<string, string> = {}): string {
     const translation_value = loaded_translations?.[key];
     if (translation_value === undefined) {
         warn(`t(): Missing key "${key}" for lang "${current_language_tag}". Returning key.`);
         return `**${key}**`;
     }
-    
-    // Sanitize replacement values to prevent XSS
-    const sanitized_replacements = {};
+
+    const sanitized_replacements: Record<string, string | number | boolean | null | undefined> = {};
     for (const [replacement_key, replacement_value] of Object.entries(replacements)) {
         if (typeof replacement_value === 'string') {
-            // Escape HTML in replacement values
             sanitized_replacements[replacement_key] = escape_html(replacement_value) || replacement_value;
         } else {
             sanitized_replacements[replacement_key] = replacement_value;
         }
     }
-    
-    return translation_value.replace(/{([^{}]+)}/g, (match, placeholder_key) => (
-        sanitized_replacements[placeholder_key] !== undefined ? sanitized_replacements[placeholder_key] : match
-    ));
+
+    return translation_value.replace(/{([^{}]+)}/g, (match, placeholder_key: string) =>
+        sanitized_replacements[placeholder_key] !== undefined
+            ? String(sanitized_replacements[placeholder_key])
+            : match
+    );
 }
 
-export function get_current_language_code() {
+export function get_current_language_code(): string {
     return current_language_tag;
 }
 
-export function get_supported_languages() {
+export function get_supported_languages(): Record<string, string> {
     return { ...supported_languages };
 }
 
-function resolve_browser_language() {
-    const navigator_lang = navigator.language || DEFAULT_LANGUAGE_TAG;
-    return resolve_effective_language_tag(navigator_lang);
+function resolve_browser_language(): string {
+    const navigator_lang = typeof navigator !== 'undefined' ? navigator.language : DEFAULT_LANGUAGE_TAG;
+    return resolve_effective_language_tag(navigator_lang || DEFAULT_LANGUAGE_TAG);
 }
 
 const initial_lang = resolve_browser_language();
 log('Initial browser language resolved to:', initial_lang);
 initial_load_promise = load_language_file(initial_lang);
 
-export function ensure_initial_load() {
+export function ensure_initial_load(): Promise<TranslationJson> | null {
     return initial_load_promise;
 }
 

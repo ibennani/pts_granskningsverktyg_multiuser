@@ -1,4 +1,3 @@
-// @ts-nocheck
 /* eslint-disable max-len */
 /** Autogenererad – HTML_EXPORT_EMBEDDED_SCRIPT. */
 export const HTML_EXPORT_EMBEDDED_SCRIPT =

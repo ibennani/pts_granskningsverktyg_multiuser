@@ -1,13 +1,13 @@
 /**
  * Initiering av DraftManager och globala lyssnare för utkast.
  */
-import { DraftManager } from '../draft_manager.js';
+import { DraftManager } from '../draft_manager.ts';
 import { get_route_key_from_hash, get_scope_key_from_hash } from './router.js';
 import { consoleManager } from '../utils/console_manager.js';
 
 /**
  * @param {object} deps
- * @param {import('../draft_manager.js').DraftManager} deps.DraftManagerRef - samma som window.DraftManager
+ * @param {import('../draft_manager.ts').DraftManager} deps.DraftManagerRef - samma som window.DraftManager
  * @param {object} deps.notificationComponent
  * @param {object} deps.render_ctx - current_view_name_rendered, current_view_params_rendered_json
  * @param {function} deps.main_view_root_provider

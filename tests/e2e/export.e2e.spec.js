@@ -108,4 +108,58 @@ test.describe('Export (mockat API)', () => {
         const download = await download_promise;
         expect(download.suggestedFilename()).toMatch(/\.csv$/i);
     });
+
+    test('HTML-export triggar nedladdning av .html-fil', async ({ page }) => {
+        const rule = JSON.parse(
+            readFileSync(path.join(__dirname, '../fixtures/minimal-rulefile.json'), 'utf8')
+        );
+        const session_state = {
+            ...JSON.parse(JSON.stringify(initial_state)),
+            auditStatus: 'locked',
+            ruleFileContent: rule,
+            auditMetadata: {
+                caseNumber: 'E2E-EXP',
+                actorName: 'Exportaktör',
+                actorLink: '',
+                auditorName: 'Exportgranskare',
+                caseHandler: '',
+                internalComment: ''
+            },
+            samples: [
+                {
+                    id: 's-exp-html',
+                    description: 'Exportprov HTML',
+                    url: 'https://example.com',
+                    sampleCategory: 'cat1',
+                    sampleType: 'stype1',
+                    selectedContentTypes: ['plain'],
+                    requirementResults: {}
+                }
+            ]
+        };
+
+        await page.addInitScript(
+            ({ key, state_json, token }) => {
+                sessionStorage.setItem(key, state_json);
+                sessionStorage.setItem('gv_auth_token', token);
+                sessionStorage.setItem('gv_current_user_is_admin', '0');
+            },
+            {
+                key: 'digitalTillsynAppCentralState',
+                state_json: JSON.stringify(session_state),
+                token: 'e2e-export-jwt'
+            }
+        );
+
+        await setupExportApiMocks(page);
+        await page.goto('/v2/#audit_actions');
+        await ensureSwedishAndDismissRestore(page);
+
+        await expect(page.getByRole('heading', { name: 'Export' })).toBeVisible();
+
+        const download_promise = page.waitForEvent('download');
+        await page.locator('#audit-action-btn-export-html').click();
+        const download = await download_promise;
+        expect(download.suggestedFilename()).toMatch(/\.html$/i);
+    });
 });
