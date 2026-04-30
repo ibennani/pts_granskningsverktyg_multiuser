@@ -33,6 +33,7 @@ import { render_audit_requirement_section } from './AuditRequirementSection.js';
 import { render_audit_samples_section } from './AuditSamplesSection.js';
 import { JSON_MAX_UPLOAD_BYTES } from '../../../shared/constants/json_upload_limits.js';
 import { check_json_structure_depth_and_size } from '../../../shared/json/json_structure_guard.js';
+import { audit_page_size_string_to_number } from '../../logic/table_pagination_logic.js';
 import './audit_view_component.css';
 
 export class AuditViewComponent {
@@ -50,10 +51,12 @@ export class AuditViewComponent {
         this.audits = [];
         this.audit_filter_query = '';
         this.audit_type_filter = '';
+        this.audit_table_page_size = '10';
         this._auditFilterHadFocus = false;
         this._auditFilterSelection = null;
         this._auditFilterInputRef = null;
         this._auditTypeSelectRef = null;
+        this._auditPageSizeSelectRef = null;
         this.router = deps.router;
         this.getState = deps.getState;
         this.NotificationComponent?.clear_global_message?.();
@@ -96,6 +99,7 @@ export class AuditViewComponent {
         this.handle_start_new_audit = this.handle_start_new_audit.bind(this);
         this.handle_filter_input = this.handle_filter_input.bind(this);
         this.handle_type_filter_change = this.handle_type_filter_change.bind(this);
+        this.handle_audit_table_page_size_change = this.handle_audit_table_page_size_change.bind(this);
 
         if (this.Helpers?.load_css_safely) {
             await this.Helpers.load_css_safely(AuditViewComponent.CSS_PATH, 'AuditViewComponent', {
@@ -119,6 +123,33 @@ export class AuditViewComponent {
         this.draft_rules = [];
     }
 
+    get_audit_table_page_size_number() {
+        return audit_page_size_string_to_number(this.audit_table_page_size);
+    }
+
+    _reset_all_audit_table_pages() {
+        const keys = [
+            '_auditListPage_start_view_audits_heading',
+            '_auditListPage_start_view_new_audits_heading',
+            '_auditListPage_start_view_completed_audits_heading',
+            '_auditListPage_start_view_archived_audits_heading'
+        ];
+        keys.forEach((k) => {
+            this[k] = 0;
+        });
+        this._rulesPublishedPage = 0;
+        this._rulesDraftPage = 0;
+    }
+
+    handle_audit_table_page_size_change(event) {
+        const target = event && event.target ? event.target : null;
+        const value = target ? String(target.value || '10') : '10';
+        if (this.audit_table_page_size === value) return;
+        this.audit_table_page_size = value;
+        this._reset_all_audit_table_pages();
+        if (this.root) this.render();
+    }
+
     handle_filter_input(event) {
         const target = event && event.target ? event.target : null;
         const value = target ? target.value : '';
@@ -130,6 +161,7 @@ export class AuditViewComponent {
             selectionEnd = target.selectionEnd;
         }
         this.audit_filter_query = value;
+        this._reset_all_audit_table_pages();
         this._auditFilterHadFocus = document.activeElement === target;
         this._auditFilterSelection = selectionStart !== null && selectionStart !== undefined && selectionEnd !== null && selectionEnd !== undefined
             ? { selectionStart, selectionEnd }
@@ -144,6 +176,7 @@ export class AuditViewComponent {
         const value = target ? String(target.value || '') : '';
         if (this.audit_type_filter === value) return;
         this.audit_type_filter = value;
+        this._reset_all_audit_table_pages();
         if (this.root) this.render();
     }
 
@@ -1953,6 +1986,7 @@ export class AuditViewComponent {
 
         this._auditFilterInputRef = null;
         this._auditTypeSelectRef = null;
+        this._auditPageSizeSelectRef = null;
 
         const header = render_audit_header(this);
         plate.appendChild(header);
@@ -1983,8 +2017,20 @@ export class AuditViewComponent {
 
         this.root.appendChild(plate);
 
-        if (this.audit_mode === 'audits' && this._auditTypeSelectRef) {
-            const sel = this._auditTypeSelectRef;
+        if (this.audit_mode === 'audits' && (this._auditTypeSelectRef || this._auditPageSizeSelectRef)) {
+            const measure = (sel) => {
+                if (!sel || !document.contains(sel)) return;
+                const px = measure_backup_select_min_width_px(sel);
+                if (px > 0) {
+                    sel.style.minWidth = `${px}px`;
+                }
+            };
+            setTimeout(() => {
+                measure(this._auditTypeSelectRef);
+                measure(this._auditPageSizeSelectRef);
+            }, 0);
+        } else if ((this.audit_mode === 'rules' || this.audit_mode === 'both') && this._auditPageSizeSelectRef) {
+            const sel = this._auditPageSizeSelectRef;
             setTimeout(() => {
                 if (!sel || !document.contains(sel)) return;
                 const px = measure_backup_select_min_width_px(sel);

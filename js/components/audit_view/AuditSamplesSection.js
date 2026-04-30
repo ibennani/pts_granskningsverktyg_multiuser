@@ -2,6 +2,7 @@
 // Bygger högerkolumnen: granskningar (listor eller sektioner beroende på audit_mode).
 
 import { filter_text_matches } from '../../utils/string_filter_normalize.js';
+import { clamp_page_index } from '../../logic/table_pagination_logic.js';
 
 export function render_audit_samples_section(ctx) {
     const t = ctx.get_t_func();
@@ -124,6 +125,21 @@ export function render_audit_samples_section(ctx) {
                             ? '_archivedTableSortState'
                             : '_completedTableSortState';
             ctx[sort_state_key] = ctx[sort_state_key] ?? { columnIndex: 0, direction: 'asc' };
+            const page_state_key = `_auditListPage_${config.heading_key}`;
+            const page_size_num = ctx.get_audit_table_page_size_number();
+            const total_audits = (config.audits || []).length;
+            ctx[page_state_key] = clamp_page_index(ctx[page_state_key] ?? 0, total_audits, page_size_num);
+            const pagination =
+                page_size_num !== null && total_audits > 0
+                    ? {
+                        current_page: ctx[page_state_key],
+                        page_size: page_size_num,
+                        on_page_change: (p) => {
+                            ctx[page_state_key] = p;
+                            ctx.render();
+                        }
+                    }
+                    : undefined;
             ctx._auditListComponent.render({
                 root: table_wrapper,
                 audits: config.audits,
@@ -138,7 +154,8 @@ export function render_audit_samples_section(ctx) {
                 onOpenAudit: (id) => ctx.handle_open_audit(id),
                 onDownloadAudit: (id) => ctx.handle_download_audit(id),
                 onDeleteAudit: (id, displayName, deleteButton) => ctx.handle_delete_audit_click(id, displayName, deleteButton),
-                get_status_label: ctx.get_status_label.bind(ctx)
+                get_status_label: ctx.get_status_label.bind(ctx),
+                pagination
             });
             section.appendChild(table_wrapper);
             right_col.appendChild(section);

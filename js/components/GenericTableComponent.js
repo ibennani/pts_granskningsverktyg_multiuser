@@ -1,9 +1,12 @@
 // js/components/GenericTableComponent.js
 // Generell tabellkomponent för återanvändning i flera vyer. Tar kolumndefinitioner och data.
 
+import { slice_rows_for_page } from '../logic/table_pagination_logic.js';
+import { create_table_pagination_element } from './table_pagination_bar.js';
 import './generic_table_component.css';
 
-export class GenericTableComponent {    static CSS_PATH = './generic_table_component.css';
+export class GenericTableComponent {
+    static CSS_PATH = './generic_table_component.css';
 
     async init({ root, deps }) {
         this.root = root;
@@ -31,6 +34,7 @@ export class GenericTableComponent {    static CSS_PATH = './generic_table_comp
      * @param {function(number, 'asc'|'desc')} [opts.onSort] - Anropas vid klick på rubrik (columnIndex, direction). Krävs för sorterbara rubriker.
      * @param {function(string): string} [opts.t] - Översättningsfunktion för sorteringsknappar (aria-label).
      * @param {function(any): string|number} [opts.getRowId] - Returnerar rad-id för data-row-id (för updateRow). Default: row => row?.id.
+     * @param {{ current_page?: number, page_size: number|null, on_page_change: function(number): void }} [opts.pagination] - Sidindelning efter sortering; page_size null = alla rader.
      */
     render(opts) {
         const root_el = opts.root ?? this.root;
@@ -64,6 +68,15 @@ export class GenericTableComponent {    static CSS_PATH = './generic_table_comp
                 return sa.localeCompare(sb, undefined, { numeric: true }) * dir;
             });
         }
+
+        const pag = opts.pagination;
+        const page_size = pag && Object.prototype.hasOwnProperty.call(pag, 'page_size')
+            ? pag.page_size
+            : null;
+        const rows_to_show =
+            pag && page_size !== null && page_size > 0 && data_to_render.length > 0
+                ? slice_rows_for_page(data_to_render, pag.current_page ?? 0, page_size)
+                : data_to_render;
 
         const wrapper = this.Helpers.create_element('div', { class_name: wrapper_class });
         const live_region = this.Helpers.create_element('div', {
@@ -141,7 +154,7 @@ export class GenericTableComponent {    static CSS_PATH = './generic_table_comp
             this._lastRoot = root_el;
             this._lastWrapper = wrapper;
 
-            data_to_render.forEach((row) => {
+            rows_to_show.forEach((row) => {
                 const tr = this.Helpers.create_element('tr');
                 const row_id = get_row_id(row);
                 if (row_id !== undefined && row_id !== null) {
@@ -180,7 +193,20 @@ export class GenericTableComponent {    static CSS_PATH = './generic_table_comp
         }
         table.appendChild(tbody);
         wrapper.appendChild(table);
-        root_el.appendChild(wrapper);
+
+        const stack = this.Helpers.create_element('div', { class_name: 'generic-table-stack' });
+        stack.appendChild(wrapper);
+        if (pag && typeof pag.on_page_change === 'function' && page_size !== null && page_size > 0) {
+            const pag_el = create_table_pagination_element(this.Helpers.create_element, {
+                current_page: pag.current_page ?? 0,
+                total_rows: data_to_render.length,
+                page_size,
+                t,
+                on_page_change: pag.on_page_change
+            });
+            if (pag_el) stack.appendChild(pag_el);
+        }
+        root_el.appendChild(stack);
 
         wrapper.addEventListener('focusin', (e) => {
             const cell = e.target.closest('td') || e.target.closest('th');

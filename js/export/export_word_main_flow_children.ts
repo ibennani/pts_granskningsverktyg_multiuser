@@ -67,6 +67,7 @@ export function append_word_export_body_sorted_by_requirements (
     t: ExportWordMainFlowT
 ): void {
     const c = children as Array<InstanceType<typeof Paragraph>>;
+    const requirements_map = current_audit.ruleFileContent?.requirements ?? {};
     const requirements_with_deficiencies = get_requirements_with_deficiencies(current_audit);
     consoleManager.log('[Word Export] Found requirements with deficiencies:', requirements_with_deficiencies.length);
 
@@ -134,7 +135,7 @@ export function append_word_export_body_sorted_by_requirements (
                 c.push(...create_observation_paragraphs(deficiency, t));
             }
 
-            c.push(...create_comment_paragraphs(req, sample, current_audit.ruleFileContent.requirements, t));
+            c.push(...create_comment_paragraphs(req, sample, requirements_map, t));
         }
     }
 }
@@ -169,7 +170,7 @@ export function append_word_export_body_sorted_by_samples (
 
         const failing_req_ids = get_failing_requirement_ids_for_sample(sample);
         const failing_reqs: any[] = [];
-        const all_reqs = current_audit.ruleFileContent.requirements || {};
+        const all_reqs = current_audit.ruleFileContent?.requirements || {};
 
         failing_req_ids.forEach((req_id) => {
             let req = null;
@@ -216,7 +217,7 @@ export function append_word_export_body_sorted_by_samples (
                 c.push(...create_observation_paragraphs(deficiency, t));
             }
 
-            c.push(...create_comment_paragraphs(req, sample, current_audit.ruleFileContent.requirements, t));
+            c.push(...create_comment_paragraphs(req, sample, all_reqs, t));
         }
     }
 }

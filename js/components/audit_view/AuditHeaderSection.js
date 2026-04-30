@@ -1,6 +1,38 @@
 // js/components/audit_view/AuditHeaderSection.js
 // Bygger header: titel, filter (vid audits), filuppladdning, knapp "Starta ny granskning".
 
+function render_audit_page_size_field(ctx) {
+    const t = ctx.get_t_func();
+    const field = ctx.Helpers.create_element('div', {
+        class_name: ['audit-filter-row__field', 'audit-filter-row__field--page-size']
+    });
+    const label = ctx.Helpers.create_element('label', { attributes: { for: 'audit-table-page-size-select' } });
+    label.appendChild(ctx.Helpers.create_element('strong', { text_content: t('audit_table_page_size_label') }));
+    field.appendChild(label);
+    const sel = ctx.Helpers.create_element('select', {
+        id: 'audit-table-page-size-select',
+        class_name: ['form-control', 'audit-page-size-select']
+    });
+    [
+        { value: '10', label: t('audit_table_page_size_10') },
+        { value: '25', label: t('audit_table_page_size_25') },
+        { value: '50', label: t('audit_table_page_size_50') },
+        { value: 'all', label: t('audit_table_page_size_all') }
+    ].forEach((o) => {
+        sel.appendChild(
+            ctx.Helpers.create_element('option', {
+                attributes: { value: o.value },
+                text_content: o.label
+            })
+        );
+    });
+    sel.value = ctx.audit_table_page_size || '10';
+    sel.addEventListener('change', ctx.handle_audit_table_page_size_change);
+    ctx._auditPageSizeSelectRef = sel;
+    field.appendChild(sel);
+    return field;
+}
+
 export function render_audit_header(ctx) {
     const t = ctx.get_t_func();
     const header_class_name = ctx.audit_mode === 'audits'
@@ -10,6 +42,11 @@ export function render_audit_header(ctx) {
     const title_text = ctx.audit_mode === 'rules' ? t('audit_title_rules') : ctx.audit_mode === 'audits' ? t('audit_title_audits') : t('audit_title');
     const title = ctx.Helpers.create_element('h1', { text_content: title_text });
     header.appendChild(title);
+    if (ctx.audit_mode === 'rules' || ctx.audit_mode === 'both') {
+        const page_row = ctx.Helpers.create_element('div', { class_name: 'audit-header-page-size-row' });
+        page_row.appendChild(render_audit_page_size_field(ctx));
+        header.appendChild(page_row);
+    }
     if (ctx.audit_mode === 'audits') {
         const filter_wrapper = ctx.Helpers.create_element('div', { class_name: 'audit-filter-wrapper' });
 
@@ -63,6 +100,7 @@ export function render_audit_header(ctx) {
 
         row.appendChild(text_field);
         row.appendChild(type_field);
+        row.appendChild(render_audit_page_size_field(ctx));
         filter_wrapper.appendChild(row);
         header.appendChild(filter_wrapper);
     }
