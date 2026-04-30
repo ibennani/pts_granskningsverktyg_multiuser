@@ -3,29 +3,12 @@
  */
 
 import type { RequirementDef, RequirementResultStored } from './audit_logic_types.js';
+import { RequirementLookup } from './requirement_lookup.js';
 
 export function find_requirement_by_id(requirements: unknown, reqId: unknown): RequirementDef | null {
-    if (!requirements || reqId === null || reqId === undefined) return null;
-    const reqIdStr = String(reqId);
-    if (Array.isArray(requirements)) {
-        return (
-            requirements.find((r: RequirementDef) => {
-                const k = r?.key !== null && r?.key !== undefined ? String(r.key) : null;
-                const i = r?.id !== null && r?.id !== undefined ? String(r.id) : null;
-                return (k !== null && k === reqIdStr) || (i !== null && i === reqIdStr);
-            }) || null
-        );
-    }
-    const direct =
-        (requirements as Record<string, RequirementDef>)[reqIdStr] ??
-        (requirements as Record<string, RequirementDef>)[String(reqId)];
-    if (direct) return direct;
-    for (const value of Object.values(requirements as Record<string, RequirementDef>)) {
-        const k = value?.key !== null && value?.key !== undefined ? String(value.key) : null;
-        const i = value?.id !== null && value?.id !== undefined ? String(value.id) : null;
-        if ((k !== null && k === reqIdStr) || (i !== null && i === reqIdStr)) return value;
-    }
-    return null;
+    if (reqId === null || reqId === undefined) return null;
+    const look = RequirementLookup.from(requirements);
+    return look ? look.findById(reqId) : null;
 }
 
 export function find_requirement_definition(requirements: unknown, reqId: unknown): RequirementDef | null {
@@ -33,15 +16,9 @@ export function find_requirement_definition(requirements: unknown, reqId: unknow
 }
 
 export function resolve_requirement_map_key(requirements: unknown, reqId: unknown): string | null {
-    if (!requirements || Array.isArray(requirements) || reqId === null || reqId === undefined) return null;
-    const reqIdStr = String(reqId);
-    if (Object.prototype.hasOwnProperty.call(requirements, reqIdStr)) return reqIdStr;
-    for (const [key, value] of Object.entries(requirements as Record<string, RequirementDef>)) {
-        const k = value?.key !== null && value?.key !== undefined ? String(value.key) : null;
-        const i = value?.id !== null && value?.id !== undefined ? String(value.id) : null;
-        if ((k !== null && k === reqIdStr) || (i !== null && i === reqIdStr)) return key;
-    }
-    return null;
+    if (reqId === null || reqId === undefined) return null;
+    const look = RequirementLookup.from(requirements);
+    return look ? look.resolveMapKey(reqId) : null;
 }
 
 export function get_stored_requirement_result_for_def(
@@ -53,6 +30,7 @@ export function get_stored_requirement_result_for_def(
     if (!requirement_results || !req_def || typeof requirement_results !== 'object') {
         return undefined;
     }
+    const look = RequirementLookup.from(requirements);
     const try_keys: string[] = [];
     const add = (k: string | number | null | undefined) => {
         if (k === null || k === undefined) return;
@@ -60,14 +38,15 @@ export function get_stored_requirement_result_for_def(
         if (s === '' || try_keys.includes(s)) return;
         try_keys.push(s);
     };
-    add(resolve_requirement_map_key(requirements, req_def.key));
-    add(resolve_requirement_map_key(requirements, req_def.id));
-    if (requirements && !Array.isArray(requirements) && entry_map_key !== null && entry_map_key !== undefined) {
+    add(look?.resolveMapKey(req_def.key));
+    add(look?.resolveMapKey(req_def.id));
+    if (look && !look.isArrayFormat() && entry_map_key !== null && entry_map_key !== undefined) {
+        const raw = look.getRaw() as Record<string, RequirementDef>;
         const em = String(entry_map_key);
-        if (Object.prototype.hasOwnProperty.call(requirements, em)) {
+        if (Object.prototype.hasOwnProperty.call(raw, em)) {
             add(em);
         }
-        add(resolve_requirement_map_key(requirements, em));
+        add(look.resolveMapKey(em));
     }
     add(req_def.key);
     add(req_def.id);
@@ -87,15 +66,7 @@ export function get_stored_requirement_result_for_def(
 }
 
 export function get_requirement_public_key(requirements: unknown, map_key: unknown): string | null {
-    if (!requirements || map_key === null || map_key === undefined) return null;
-    const mapKeyStr = String(map_key);
-    if (Array.isArray(requirements)) {
-        const req =
-            (requirements as RequirementDef[]).find((r) => String(r?.key || r?.id || '') === mapKeyStr) || null;
-        const pub = req?.key ?? req?.id ?? null;
-        return pub !== null && pub !== undefined && String(pub).trim() !== '' ? String(pub) : mapKeyStr;
-    }
-    const req = (requirements as Record<string, RequirementDef>)[mapKeyStr] || null;
-    const pub = req?.key ?? req?.id ?? null;
-    return pub !== null && pub !== undefined && String(pub).trim() !== '' ? String(pub) : mapKeyStr;
+    if (map_key === null || map_key === undefined) return null;
+    const look = RequirementLookup.from(requirements);
+    return look ? look.getPublicKey(map_key) : null;
 }

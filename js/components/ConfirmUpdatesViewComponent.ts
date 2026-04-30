@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { app_runtime_refs } from "../utils/app_runtime_refs.js";
 import { filter_text_matches } from "../utils/string_filter_normalize.js";
+import { find_requirement_definition } from "../audit_logic.js";
 import "./confirm_updates_view_component.css";
 import "./requirement_list_toolbar_component.css";
 
@@ -111,9 +112,7 @@ export class ConfirmUpdatesViewComponent {
         samples.forEach(sample => {
             const sample_reqs = [];
             Object.keys(sample.requirementResults || {}).forEach(reqId => {
-                const req_def = requirements && this.AuditLogic.find_requirement_definition
-                    ? this.AuditLogic.find_requirement_definition(requirements, reqId)
-                    : (Array.isArray(requirements) ? requirements.find(r => (r?.key || r?.id) === reqId) : requirements?.[reqId]);
+                const req_def = requirements ? find_requirement_definition(requirements, reqId) : null;
                 if (!req_def) return;
                 const resolved = this.AuditLogic.get_stored_requirement_result_for_def(
                     sample.requirementResults,

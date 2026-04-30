@@ -2,7 +2,7 @@ import { get_current_user_name } from '../utils/helpers.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import './audit_images_view_component.css';
 import { build_compact_hash_fragment } from '../logic/router_url_codec.js';
-import { get_requirement_public_key, resolve_requirement_map_key } from '../audit_logic.ts';
+import { get_requirement_public_key, find_requirement_definition } from '../audit_logic.ts';
 import { get_current_view_name } from '../app/browser_globals.js';
 
 export class AuditImagesViewComponent {
@@ -130,10 +130,8 @@ export class AuditImagesViewComponent {
                         check_result.passCriteria[pc_id].attachedMediaFilenames = filenames;
 
                         const requirements = state?.ruleFileContent?.requirements;
-                        const resolved_map = resolve_requirement_map_key(requirements, req_id_map) || req_id_map;
-                        const requirement = (Array.isArray(requirements)
-                            ? requirements.find(r => (r?.key || r?.id) === req_id_public)
-                            : requirements?.[resolved_map]) || null;
+                        const requirement =
+                            find_requirement_definition(requirements, req_id_public) || null;
                         if (requirement && this.AuditLogic) {
                             (requirement.checks || []).forEach(check_def => {
                                 const check_res = requirement_result_ref.checkResults[check_def.id];

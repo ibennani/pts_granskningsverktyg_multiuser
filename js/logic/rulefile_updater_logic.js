@@ -1,6 +1,8 @@
 // js/logic/rulefile_updater_logic.js
 'use-strict';
 
+import { normalize_requirements_to_record } from './requirement_lookup.js';
+
 /**
  * Djup jämförelse av två objekt genom att konvertera dem till JSON-strängar.
  * @param {object} obj1
@@ -26,8 +28,8 @@ export function analyze_rule_file_changes(current_audit_state, new_rule_file_con
         throw new Error("Analysfel: 'requirements' saknas i gamla eller nya regelfilen.");
     }
 
-    const old_reqs = normalize_requirements_to_object(current_audit_state.ruleFileContent.requirements);
-    const new_reqs = normalize_requirements_to_object(new_rule_file_content.requirements);
+    const old_reqs = normalize_requirements_to_record(current_audit_state.ruleFileContent.requirements);
+    const new_reqs = normalize_requirements_to_record(new_rule_file_content.requirements);
 
     const old_req_keys = Object.keys(old_reqs);
     const new_req_keys = Object.keys(new_reqs);
@@ -189,23 +191,6 @@ function get_check_id(check_obj) {
 
 function get_pc_id(pc_obj) {
     return pc_obj?.id ?? pc_obj?.key ?? null;
-}
-
-/**
- * Normaliserar requirements till ett objekt keyat av req.key eller req.id.
- * @param {object|Array} requirements
- * @returns {object}
- */
-function normalize_requirements_to_object(requirements) {
-    if (!requirements || typeof requirements !== 'object') return {};
-    if (!Array.isArray(requirements)) return requirements;
-    const out = {};
-    requirements.forEach(req => {
-        if (!req || typeof req !== 'object') return;
-        const key = req.key || req.id;
-        if (key !== null && key !== undefined) out[key] = req;
-    });
-    return out;
 }
 
 /**
@@ -399,8 +384,8 @@ export function apply_rule_file_update(current_audit_state, new_rule_file_conten
 
     const old_reqs_raw = current_audit_state.ruleFileContent?.requirements;
     const new_reqs_raw = new_rule_file_content?.requirements;
-    const old_reqs = normalize_requirements_to_object(old_reqs_raw);
-    const new_reqs = normalize_requirements_to_object(new_reqs_raw);
+    const old_reqs = normalize_requirements_to_record(old_reqs_raw);
+    const new_reqs = normalize_requirements_to_record(new_reqs_raw);
 
     const new_rule_content_normalized = { ...new_rule_file_content, requirements: new_reqs };
     new_reconciled_state.ruleFileContent = new_rule_content_normalized;

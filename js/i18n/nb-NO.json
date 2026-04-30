@@ -627,7 +627,7 @@
   "rule_file_requirement_id_empty": "Kravets ID (for '{requirementTitleOrKey}') må være en ikke-tom streng.",
   "rule_file_requirement_invalid_object": "Et krav (nøkkel: {requirementKey}) i regelfilen er ikke et gyldig objekt.",
   "rule_file_requirement_missing_keys": "Et krav i regelfilen (ID: {requirementId}) mangler obligatoriske felt: {missingKeys}",
-  "rule_file_requirements_must_be_object": "'requirements'-delen av regelfilen må være et objekt (ikke en rekke).",
+  "rule_file_requirements_must_be_object": "'requirements' i regelfilen må være et nøkkelobjekt eller en ikke-tom tabell med kravobjekter.",
   "rule_file_title": "Regelfil",
   "rule_file_validation_failed": "Validering av regelfil mislyktes.",
   "sample_added_successfully": "Utvalget er lagt til listen.",

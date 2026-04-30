@@ -1,4 +1,5 @@
 import '../../css/components/side_menu_component.css';
+import { RequirementLookup } from '../logic/requirement_lookup.js';
 import { consoleManager } from '../utils/console_manager.js';
 import { build_compact_hash_fragment, expand_view_slug_from_hash, normalize_params_from_hash_query } from '../logic/router_url_codec.js';
 import { is_debug_modal_scroll, is_debug_nav, is_debug_problems_update } from '../app/runtime_flags.js';
@@ -317,14 +318,11 @@ export class SideMenuComponent {
         );
 
         const requirement_ids_in_rulefile = new Set();
-        if (Array.isArray(requirements)) {
-            requirements.forEach((req, idx) => {
-                const req_id = (req && typeof req === 'object') ? (req.key || req.id || String(idx)) : String(idx);
-                if (req_id) requirement_ids_in_rulefile.add(String(req_id));
-            });
-        } else if (requirements && typeof requirements === 'object') {
-            Object.entries(requirements).forEach(([req_id, req]) => {
-                const effective_id = (req && typeof req === 'object') ? (req.key || req.id || req_id) : req_id;
+        const look = RequirementLookup.from(requirements);
+        if (look) {
+            look.forEachDef((req, storage_key) => {
+                const effective_id =
+                    req && typeof req === 'object' ? (req.key || req.id || storage_key) : storage_key;
                 if (effective_id) requirement_ids_in_rulefile.add(String(effective_id));
             });
         }

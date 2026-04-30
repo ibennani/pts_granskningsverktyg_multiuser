@@ -23,9 +23,7 @@ export function recalculateStatusesOnLoad(auditState: AuditStateShape | null | u
     traverse_all_check_results(newState, ({ sample, req_key, check_key, check_result }) => {
         const requirements = rule_file.requirements;
         if (!requirements) return;
-        const reqDef =
-            find_requirement_definition(requirements, req_key) ||
-            (!Array.isArray(requirements) ? (requirements as Record<string, RequirementDef>)[req_key] : undefined);
+        const reqDef = find_requirement_definition(requirements, req_key);
         if (!reqDef) return;
         const cr = check_result as CheckResultStored;
         const checkDef = (reqDef.checks ?? []).find((c: CheckDef) => c.id === check_key);
@@ -38,9 +36,7 @@ export function recalculateStatusesOnLoad(auditState: AuditStateShape | null | u
     traverse_all_requirement_results(newState, ({ sample, req_key, req_result }) => {
         const requirements = rule_file.requirements;
         if (!requirements) return;
-        const reqDef =
-            find_requirement_definition(requirements, req_key) ||
-            (!Array.isArray(requirements) ? (requirements as Record<string, RequirementDef>)[req_key] : undefined);
+        const reqDef = find_requirement_definition(requirements, req_key);
         if (!reqDef) return;
         const rr =
             get_stored_requirement_result_for_def(

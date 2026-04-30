@@ -627,7 +627,7 @@
   "rule_file_requirement_id_empty": "Kravets ID (för '{requirementTitleOrKey}') måste vara en icke-tom sträng",
   "rule_file_requirement_invalid_object": "Ett krav (nyckel: {requirementKey}) i regelfilen är inte ett giltigt objekt",
   "rule_file_requirement_missing_keys": "Ett krav i regelfilen (ID: {requirementId}) saknar obligatoriska fält: {missingKeys}",
-  "rule_file_requirements_must_be_object": "Regelfilens 'requirements'-sektion måste vara ett objekt (inte en array)",
+  "rule_file_requirements_must_be_object": "Regelfilens 'requirements' måste vara ett objekt (nycklad map) eller en icke-tom array med kravobjekt",
   "rule_file_title": "Regelfil",
   "rule_file_validation_failed": "Validering av regelfil misslyckades",
   "sample_added_successfully": "Stickprov tillagt i listan",

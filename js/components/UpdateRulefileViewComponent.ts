@@ -4,6 +4,7 @@ import { get_rule } from '../api/client.js';
 import { render_rulefile_change_log } from '../logic/rulefile_change_log_renderer.js';
 import { get_server_filename_datetime } from '../utils/download_filename_utils.js';
 import { analyze_rule_file_changes, apply_rule_file_update } from '../logic/rulefile_updater_logic.js';
+import { find_requirement_definition } from '../audit_logic.js';
 import './update_rulefile_view.css';
 
 export class UpdateRulefileViewComponent {
@@ -276,9 +277,7 @@ export class UpdateRulefileViewComponent {
         let needs_review_count = 0;
         (state_with_recalculated_statuses.samples || []).forEach((sample: any) => {
             Object.keys(sample.requirementResults || {}).forEach((reqId) => {
-                const req_def = requirements && this.AuditLogic.find_requirement_definition
-                    ? this.AuditLogic.find_requirement_definition(requirements, reqId)
-                    : (Array.isArray(requirements) ? requirements.find((r: any) => (r?.key || r?.id) === reqId) : requirements?.[reqId]);
+                const req_def = requirements ? find_requirement_definition(requirements, reqId) : null;
                 if (!req_def) return;
                 const resolved = this.AuditLogic.get_stored_requirement_result_for_def(
                     sample.requirementResults,

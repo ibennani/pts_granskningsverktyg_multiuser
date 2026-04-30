@@ -5,6 +5,7 @@
  */
 
 import { get_stored_requirement_result_for_def, get_effective_requirement_audit_status } from '../../audit_logic.js';
+import { RequirementLookup } from '../../logic/requirement_lookup.js';
 import { get_searchable_text_for_requirement as get_searchable_text_util } from '../../utils/requirement_search_utils.js';
 
 /**
@@ -13,17 +14,8 @@ import { get_searchable_text_for_requirement as get_searchable_text_util } from 
  */
 export function get_requirements_entries(rule_file_content) {
     const requirements = rule_file_content?.requirements;
-    if (!requirements) return [];
-
-    if (Array.isArray(requirements)) {
-        return requirements.map((req, idx) => [req?.id || String(idx), req]);
-    }
-
-    if (typeof requirements === 'object') {
-        return Object.entries(requirements);
-    }
-
-    return [];
+    const look = RequirementLookup.from(requirements);
+    return look ? look.entries() : [];
 }
 
 /**

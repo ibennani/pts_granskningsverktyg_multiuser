@@ -6,7 +6,8 @@ import { marked } from '../utils/markdown.js';
 import './audit_problems_view_component.css';
 import { build_compact_hash_fragment } from '../logic/router_url_codec.js';
 import { consoleManager } from '../utils/console_manager.js';
-import { get_requirement_public_key, resolve_requirement_map_key } from '../audit_logic.js';
+import { get_requirement_public_key, resolve_requirement_map_key, find_requirement_definition } from '../audit_logic.js';
+import { RequirementLookup } from '../logic/requirement_lookup.js';
 import { get_current_view_name } from '../app/browser_globals.js';
 import { is_debug_problems_update } from '../app/runtime_flags.js';
 
@@ -56,9 +57,7 @@ export class AuditProblemsViewComponent {
     _get_requirement_problem_edit_context(state, sample, req_id) {
         const requirements = state?.ruleFileContent?.requirements;
         if (!sample || !requirements) return null;
-        const req_def =
-            this.AuditLogic?.find_requirement_definition?.(requirements, req_id)
-            ?? (!Array.isArray(requirements) ? requirements[req_id] : null);
+        const req_def = find_requirement_definition(requirements, req_id);
         const req_result = req_def && this.AuditLogic?.get_stored_requirement_result_for_def
             ? this.AuditLogic.get_stored_requirement_result_for_def(
                 sample.requirementResults,
@@ -68,8 +67,9 @@ export class AuditProblemsViewComponent {
             )
             : sample?.requirementResults?.[req_id];
         if (!req_result) return null;
+        const look = RequirementLookup.from(requirements);
         const save_key =
-            req_def && !Array.isArray(requirements) && this.AuditLogic?.resolve_requirement_map_key
+            req_def && look && !look.isArrayFormat() && this.AuditLogic?.resolve_requirement_map_key
                 ? (this.AuditLogic.resolve_requirement_map_key(requirements, req_def.key || req_def.id)
                     || String(req_def.key || req_id))
                 : req_id;

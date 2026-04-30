@@ -180,10 +180,7 @@ export function collect_attached_images(state: AuditStateShape): Array<Record<st
     const requirements = state.ruleFileContent.requirements;
 
     traverse_all_pass_criteria(state, ({ sample, req_key, check_key, pc_key, pc_result }) => {
-        const requirement =
-            (Array.isArray(requirements)
-                ? requirements.find((r: RequirementDef) => (r?.key || r?.id) === req_key)
-                : (requirements as Record<string, RequirementDef>)[req_key]) || null;
+        const requirement = find_requirement_by_id(requirements, req_key) || null;
         if (!requirement) return;
 
         const checks_arr = requirement.checks ?? [];

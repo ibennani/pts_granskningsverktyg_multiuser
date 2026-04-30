@@ -15,6 +15,10 @@ export type {
     SampleStored
 } from './logic/audit_logic_types.js';
 
+export type { RequirementsInput } from './logic/requirement_lookup.js';
+
+export { RequirementLookup, normalize_requirements_to_record } from './logic/requirement_lookup.js';
+
 export {
     find_requirement_definition,
     get_requirement_public_key,

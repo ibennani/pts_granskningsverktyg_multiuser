@@ -5,7 +5,7 @@
  */
 
 import { app_runtime_refs } from '../../utils/app_runtime_refs.js';
-import { get_effective_requirement_audit_status } from '../../audit_logic.js';
+import { get_effective_requirement_audit_status, find_requirement_definition } from '../../audit_logic.js';
 
 /**
  * @param {string} requirement_id
@@ -29,9 +29,7 @@ export function handle_mark_requirement_passed_in_all_samples(requirement_id, tr
     const rule_file = state?.ruleFileContent;
     const samples = state?.samples || [];
     const requirements = rule_file?.requirements;
-    const req_def = Array.isArray(requirements)
-        ? requirements.find(r => (r?.key || r?.id) === requirement_id)
-        : requirements?.[requirement_id];
+    const req_def = requirements ? find_requirement_definition(requirements, requirement_id) : null;
     const requirement_title = req_def?.title || requirement_id;
 
     const affected_samples = [];

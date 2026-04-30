@@ -11,6 +11,7 @@ import {
     get_stored_requirement_result_for_def,
     resolve_requirement_map_key
 } from '../audit_logic.js';
+import { RequirementLookup } from './requirement_lookup.js';
 
 const CHANNEL_NAME = 'gv-same-user-field-sync';
 
@@ -80,10 +81,12 @@ export function merge_audit_result_from_broadcast(state, parsed, value) {
             req_id
         )
         : sample.requirementResults?.[req_id];
-    const save_key = req_def && requirements && !Array.isArray(requirements)
-        ? (resolve_requirement_map_key(requirements, req_def.key || req_def.id)
-            || String(req_def.key ?? req_def.id ?? req_id))
-        : String(req_id);
+    const look = RequirementLookup.from(requirements);
+    const save_key =
+        req_def && look && !look.isArrayFormat()
+            ? resolve_requirement_map_key(requirements, req_def.key || req_def.id) ||
+              String(req_def.key ?? req_def.id ?? req_id)
+            : String(req_id);
     const cur = stored_base ? JSON.parse(JSON.stringify(stored_base)) : {};
     if (parsed.kind === 'req_text') {
         cur[parsed.field] = value;

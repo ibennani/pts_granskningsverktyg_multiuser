@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { find_requirement_definition } from '../audit_logic.js';
 import { get_rules, save_audit_backup_on_server } from '../api/client.js';
 import { subscribe_rules } from '../logic/list_push_service.js';
 import { version_greater_than } from '../utils/version_utils.js';
@@ -481,9 +482,7 @@ export class AuditActionsViewComponent {
         let updated_reqs_count = 0;
         (state.samples || []).forEach(sample => {
             Object.keys(sample.requirementResults || {}).forEach(reqId => {
-                const req_def = requirements && this.AuditLogic.find_requirement_definition
-                    ? this.AuditLogic.find_requirement_definition(requirements, reqId)
-                    : (Array.isArray(requirements) ? requirements.find(r => (r?.key || r?.id) === reqId) : requirements?.[reqId]);
+                const req_def = requirements ? find_requirement_definition(requirements, reqId) : null;
                 if (!req_def) return;
                 const resolved = this.AuditLogic.get_stored_requirement_result_for_def(
                     sample.requirementResults,

@@ -627,7 +627,7 @@
   "rule_file_requirement_id_empty": "The requirement's ID (for '{requirementTitleOrKey}') must be a non-empty string.",
   "rule_file_requirement_invalid_object": "A requirement (key: {requirementKey}) in the rule file is not a valid object.",
   "rule_file_requirement_missing_keys": "A requirement in the rule file (ID: {requirementId}) is missing required fields: {missingKeys}",
-  "rule_file_requirements_must_be_object": "The 'requirements' section of the rule file must be an object (not an array).",
+  "rule_file_requirements_must_be_object": "The rule file's 'requirements' must be a keyed object map or a non-empty array of requirement objects.",
   "rule_file_title": "Rule file",
   "rule_file_validation_failed": "Rule file validation failed.",
   "sample_added_successfully": "Sample added to the list.",

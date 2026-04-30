@@ -1,6 +1,7 @@
 /**
  * @fileoverview Validering av regelfils-JSON och sparad granskningsfil (server och klient).
  */
+import { validate_rulefile_requirements_section } from './logic/validation_rulefile_requirements.js';
 import { consoleManager } from './utils/console_manager.js';
 
 type TranslateFn = (key: string, replacements?: Record<string, string>) => string;
@@ -172,104 +173,9 @@ export function validate_rule_file_json(json_object: unknown, options: ValidateO
         }
     }
 
-    const requirements = root.requirements;
-    if (typeof requirements !== 'object' || requirements === null) {
-        return { isValid: false, message: t('rule_file_requirements_must_be_object') };
-    }
-
-    const requirement_keys = Object.keys(requirements as Record<string, unknown>);
-    if (requirement_keys.length === 0) {
-        return { isValid: false, message: t('rule_file_must_have_at_least_one_requirement') };
-    }
-
-    for (const [req_id, req_obj] of Object.entries(requirements as Record<string, unknown>)) {
-        if (!req_obj || typeof req_obj !== 'object') {
-            return { isValid: false, message: `Requirement '${req_id}' must be an object` };
-        }
-        const req = req_obj as Record<string, unknown>;
-
-        if (!req.title || typeof req.title !== 'string' || req.title.trim() === '') {
-            return { isValid: false, message: `Requirement '${req_id}' must have a non-empty title` };
-        }
-
-        if (!req.id || typeof req.id !== 'string' || req.id.trim() === '') {
-            return { isValid: false, message: `Requirement '${req_id}' must have a valid id` };
-        }
-
-        if (req.checks && Array.isArray(req.checks)) {
-            for (const [check_index, check_obj] of (req.checks as unknown[]).entries()) {
-                if (!check_obj || typeof check_obj !== 'object') {
-                    return {
-                        isValid: false,
-                        message: `Requirement '${req_id}', check ${check_index} must be an object`
-                    };
-                }
-                const check = check_obj as Record<string, unknown>;
-
-                if (!check.id || typeof check.id !== 'string' || check.id.trim() === '') {
-                    return {
-                        isValid: false,
-                        message: `Requirement '${req_id}', check ${check_index} must have a valid id`
-                    };
-                }
-
-                if (check.passCriteria && Array.isArray(check.passCriteria)) {
-                    for (const [pc_index, pc_obj] of (check.passCriteria as unknown[]).entries()) {
-                        if (!pc_obj || typeof pc_obj !== 'object') {
-                            return {
-                                isValid: false,
-                                message: `Requirement '${req_id}', check ${check_index}, passCriterion ${pc_index} must be an object`
-                            };
-                        }
-                        const pc = pc_obj as Record<string, unknown>;
-
-                        if (!pc.id || typeof pc.id !== 'string' || pc.id.trim() === '') {
-                            return {
-                                isValid: false,
-                                message: `Requirement '${req_id}', check ${check_index}, passCriterion ${pc_index} must have a valid id`
-                            };
-                        }
-                    }
-                }
-            }
-        }
-
-        if (req.contentType && !Array.isArray(req.contentType)) {
-            return { isValid: false, message: `Requirement '${req_id}' contentType must be an array if provided` };
-        }
-
-        if (req.infoBlocks) {
-            if (typeof req.infoBlocks !== 'object') {
-                return { isValid: false, message: `Requirement '${req_id}' infoBlocks måste vara ett objekt` };
-            }
-            for (const [block_id, block] of Object.entries(req.infoBlocks as Record<string, unknown>)) {
-                if (typeof block !== 'object' || block === null) {
-                    return {
-                        isValid: false,
-                        message: `Requirement '${req_id}' infoBlocks['${block_id}'] måste vara ett objekt`
-                    };
-                }
-                const b = block as Record<string, unknown>;
-                if (typeof b.name !== 'string') {
-                    return {
-                        isValid: false,
-                        message: `Requirement '${req_id}' infoBlocks['${block_id}'].name måste vara en sträng`
-                    };
-                }
-                if (typeof b.expanded !== 'boolean') {
-                    return {
-                        isValid: false,
-                        message: `Requirement '${req_id}' infoBlocks['${block_id}'].expanded måste vara en boolean`
-                    };
-                }
-                if (b.text !== undefined && typeof b.text !== 'string') {
-                    return {
-                        isValid: false,
-                        message: `Requirement '${req_id}' infoBlocks['${block_id}'].text måste vara en sträng`
-                    };
-                }
-            }
-        }
+    const rq = validate_rulefile_requirements_section(root.requirements, t);
+    if (!rq.isValid) {
+        return { isValid: false, message: rq.message };
     }
 
     consoleManager.log('[ValidationLogic] Validation passed for hierarchical structure.');
@@ -304,6 +210,14 @@ export function validate_saved_audit_file(json_object: unknown, options: Validat
 
     if (!root.ruleFileContent || typeof root.ruleFileContent !== 'object') {
         return { isValid: false, message: t('error_audit_missing_rulefile') };
+    }
+
+    const rf = root.ruleFileContent as Record<string, unknown>;
+    if (rf.requirements !== undefined && rf.requirements !== null) {
+        const rq = validate_rulefile_requirements_section(rf.requirements, t);
+        if (!rq.isValid) {
+            return { isValid: false, message: rq.message };
+        }
     }
 
     return { isValid: true, message: 'Validation of saved audit file OK.' };

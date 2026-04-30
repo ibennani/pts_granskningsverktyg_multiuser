@@ -107,9 +107,7 @@ export function auditReducer(current_state, action) {
             const reqs_before = current_state.ruleFileContent.requirements;
             const newRequirementsAfterDelete = { ...reqs_before };
             delete newRequirementsAfterDelete[deleteReqId];
-            const req_def_for_delete =
-                AuditLogic.find_requirement_definition(reqs_before, deleteReqId)
-                || (!Array.isArray(reqs_before) ? reqs_before[deleteReqId] : null);
+            const req_def_for_delete = AuditLogic.find_requirement_definition(reqs_before, deleteReqId);
             const updatedSamples = current_state.samples.map((sample) => {
                 if (!sample.requirementResults) return sample;
                 const keys_to_remove = new Set([String(deleteReqId)]);
@@ -152,9 +150,7 @@ export function auditReducer(current_state, action) {
                 samples: current_state.samples.map((sample) => {
                     if (sample.id !== sampleId) return sample;
                     const requirements = current_state.ruleFileContent.requirements;
-                    const req_def =
-                        AuditLogic.find_requirement_definition(requirements, requirementId)
-                        || (!Array.isArray(requirements) ? requirements?.[requirementId] : null);
+                    const req_def = AuditLogic.find_requirement_definition(requirements, requirementId);
                     if (!req_def) {
                         if (!sample.requirementResults?.[requirementId]?.needsReview) return sample;
                         const newResults = { ...sample.requirementResults };
@@ -193,9 +189,7 @@ export function auditReducer(current_state, action) {
                     let hasChanged = false;
                     const processed_map_keys = new Set();
                     Object.keys(newResults).forEach((reqId) => {
-                        const req_def =
-                            AuditLogic.find_requirement_definition(requirements, reqId)
-                            || (!Array.isArray(requirements) ? requirements?.[reqId] : null);
+                        const req_def = AuditLogic.find_requirement_definition(requirements, reqId);
                         if (!req_def) {
                             const r = newResults[reqId];
                             if (r?.needsReview) {

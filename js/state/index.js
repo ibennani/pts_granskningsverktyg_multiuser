@@ -1,4 +1,10 @@
 // js/state/index.js
+/**
+ * Tillståndsflöde (kort): komponenter anropar dispatch({ type, payload }) → root_reducer
+ * delegerar till auditReducer / rulefileReducer / uiReducer / userReducer → nytt state sparas
+ * i sessionStorage (saveStateToSessionStorage) och lyssnare notifieras; server synkas via
+ * schedule_sync_to_server när det är lämpligt. Autospar för formulär sker separat (autosave_service).
+ */
 import * as AuditLogic from '../audit_logic.ts';
 import { schedule_sync_to_server, schedule_sync_rulefile_to_server } from '../logic/server_sync.js';
 import { ActionTypes } from './actionTypes.js';
