@@ -19,7 +19,9 @@ const REQUIRED_JS_REEXPORT_BRIDGES = [
     'js/logic/rulefile_updater_logic.js',
     'js/components/SideMenuComponent.js',
     'js/utils/string_filter_normalize.js',
-    'js/utils/requirement_search_utils.js'
+    'js/utils/requirement_search_utils.js',
+    'js/utils/vite_dev_client_timestamp.js',
+    'js/utils/vite_dev_client_timestamp_hmr.js'
 ];
 
 const importReStatic = /(?:from|import)\s+['"](\.\.?\/[^'"]+\.js)['"]/g;
