@@ -242,8 +242,10 @@ function is_empty_like(value: unknown): boolean {
     return false;
 }
 
-/** Singleton-objekt med dynamiska fält; `any` undviker felaktiga `this`-typer i metoderna. */
-export const DraftManager: any = {
+/** Singleton för fältutkast; utökad `Record` tills refaktor till klass med korrekta `this`-typer. */
+export interface DraftManagerSingleton extends Record<string, any> {}
+
+export const DraftManager: DraftManagerSingleton = {
     init(
         opts: {
             getRouteKey?: () => string;
