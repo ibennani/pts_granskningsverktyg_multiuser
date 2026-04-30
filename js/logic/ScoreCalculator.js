@@ -1,7 +1,7 @@
 // js/logic/ScoreCalculator.js
 'use-strict';
 
-import { get_stored_requirement_result_for_def } from '../audit_logic.js';
+import { get_stored_requirement_result_for_def } from '../audit_logic.ts';
 import { consoleManager } from '../utils/console_manager.js';
 
 /**

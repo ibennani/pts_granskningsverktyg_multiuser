@@ -3,7 +3,7 @@
  * @module js/components/requirements_list/requirement_list_ui_settings
  */
 
-import { get_reference_string_for_sort } from './requirement_list_query.js';
+import { get_reference_string_for_sort } from './requirement_list_query.ts';
 
 /** Samma default som högerspalten */
 export const DEFAULT_REQUIREMENT_LIST_STATUS = {

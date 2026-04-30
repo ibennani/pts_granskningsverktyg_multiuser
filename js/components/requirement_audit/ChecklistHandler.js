@@ -1,7 +1,7 @@
 // js/components/requirement_audit/ChecklistHandler.js
 
 import { get_current_user_name } from '../../utils/helpers.js';
-import { post_same_user_field_commit } from '../../logic/same_user_tab_field_sync.js';
+import { post_same_user_field_commit } from '../../logic/same_user_tab_field_sync.ts';
 import { marked } from '../../utils/markdown.js';
 import { consoleManager } from '../../utils/console_manager.js';
 import { app_runtime_refs } from '../../utils/app_runtime_refs.js';

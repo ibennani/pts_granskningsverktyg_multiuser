@@ -3,12 +3,12 @@
  * @module js/components/requirements_list/requirement_list_sort
  */
 
-import { get_stored_requirement_result_for_def } from '../../audit_logic.js';
+import { get_stored_requirement_result_for_def } from '../../audit_logic.ts';
 import {
     compare_strings_locale,
     get_aggregated_display_status_for_requirement,
     get_reference_string_for_sort
-} from './requirement_list_query.js';
+} from './requirement_list_query.ts';
 
 /**
  * @param {string} mode

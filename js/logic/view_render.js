@@ -6,7 +6,7 @@ import { DraftManager } from '../draft_manager.ts';
 import * as Helpers from '../utils/helpers.js';
 import * as SaveAuditLogic from '../logic/save_audit_logic.ts';
 import { get_registered_translation_module } from '../utils/translation_access.js';
-import { public_api as ExportLogicApi } from '../export_logic.js';
+import { public_api as ExportLogicApi } from '../export_logic.ts';
 import {
     apply_post_render_focus_instruction,
     update_restore_position

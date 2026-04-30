@@ -8,10 +8,10 @@ import { SampleFormViewComponent } from '../components/SampleFormViewComponent.t
 import { ConfirmSampleEditViewComponent } from '../components/ConfirmSampleEditViewComponent.ts';
 import { AuditOverviewComponent } from '../components/AuditOverviewComponent.js';
 import { RequirementListComponent } from '../components/RequirementListComponent.js';
-import { RequirementAuditComponent } from '../components/RequirementAuditComponent.js';
+import { RequirementAuditComponent } from '../components/RequirementAuditComponent.ts';
 import { UpdateRulefileViewComponent } from '../components/UpdateRulefileViewComponent.js';
-import { ConfirmUpdatesViewComponent } from '../components/ConfirmUpdatesViewComponent.js';
-import { FinalConfirmUpdatesViewComponent } from '../components/FinalConfirmUpdatesViewComponent.js';
+import { ConfirmUpdatesViewComponent } from '../components/ConfirmUpdatesViewComponent.ts';
+import { FinalConfirmUpdatesViewComponent } from '../components/FinalConfirmUpdatesViewComponent.ts';
 import { EditRulefileMainViewComponent } from '../components/EditRulefileMainViewComponent.js';
 import { RulefileRequirementsListComponent } from '../components/RulefileRequirementsListComponent.js';
 import { ViewRulefileRequirementComponent } from '../components/ViewRulefileRequirementComponent.js';
@@ -22,9 +22,9 @@ import { RulefileMetadataViewComponent } from '../components/RulefileMetadataVie
 import { EditGeneralSectionComponent } from '../components/EditGeneralSectionComponent.js';
 import { EditPageTypesSectionComponent } from '../components/EditPageTypesSectionComponent.js';
 import { RulefileSectionsViewComponent } from '../components/RulefileSectionsViewComponent.js';
-import { AuditActionsViewComponent } from '../components/AuditActionsViewComponent.js';
+import { AuditActionsViewComponent } from '../components/AuditActionsViewComponent.ts';
 import { AllRequirementsViewComponent } from '../components/AllRequirementsViewComponent.js';
-import { AuditProblemsViewComponent } from '../components/AuditProblemsViewComponent.js';
+import { AuditProblemsViewComponent } from '../components/AuditProblemsViewComponent.ts';
 import { ArchivedRequirementsViewComponent } from '../components/ArchivedRequirementsViewComponent.js';
 import { RulefileChangeLogViewComponent } from '../components/RulefileChangeLogViewComponent.js';
 import { AuditImagesViewComponent } from '../components/AuditImagesViewComponent.js';

@@ -4,7 +4,7 @@
  */
 
 import { apply_return_focus_if_needed } from './requirement_list_return_focus.js';
-import { create_all_requirement_list_item, create_requirement_list_item } from './requirement_list_list_items.js';
+import { create_all_requirement_list_item, create_requirement_list_item } from './requirement_list_list_items.ts';
 
 /**
  * @param {object} ctx

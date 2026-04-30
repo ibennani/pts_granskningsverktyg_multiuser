@@ -1,10 +1,10 @@
 // js/utils/safe_init_helper.js
 
-import * as AuditLogic from '../audit_logic.js';
+import * as AuditLogic from '../audit_logic.ts';
 import * as Helpers from './helpers.js';
 import * as SaveAuditLogic from '../logic/save_audit_logic.ts';
 import * as ScoreCalculator from '../logic/ScoreCalculator.js';
-import { public_api as ExportLogicApi } from '../export_logic.js';
+import { public_api as ExportLogicApi } from '../export_logic.ts';
 import { dependencyManager } from './dependency_manager.js';
 import { app_runtime_refs } from './app_runtime_refs.js';
 import { get_registered_translation_module } from './translation_access.js';

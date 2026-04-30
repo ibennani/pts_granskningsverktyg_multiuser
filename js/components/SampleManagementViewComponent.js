@@ -1,4 +1,4 @@
-import { SampleListComponent } from './SampleListComponent.js';
+import { SampleListComponent } from './SampleListComponent.ts';
 import { show_confirm_delete_modal } from '../logic/confirm_delete_modal_logic.js';
 import './sample_management_view_component.css';
 

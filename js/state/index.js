@@ -1,9 +1,9 @@
 // js/state/index.js
-import * as AuditLogic from '../audit_logic.js';
+import * as AuditLogic from '../audit_logic.ts';
 import { schedule_sync_to_server, schedule_sync_rulefile_to_server } from '../logic/server_sync.js';
 import { ActionTypes } from './actionTypes.js';
 import { initial_state, APP_STATE_VERSION } from './initialState.js';
-import { auditReducer } from './auditReducer.js';
+import { auditReducer } from './auditReducer.ts';
 import { rulefileReducer } from './rulefileReducer.js';
 import { uiReducer } from './uiReducer.js';
 import { userReducer } from './userReducer.js';

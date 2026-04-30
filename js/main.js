@@ -7,8 +7,8 @@ import '@fontsource/roboto/700.css';
 import * as Helpers from './utils/helpers.js';
 import * as TranslationLogic from './translation_logic.ts';
 import { NotificationComponent } from './components/NotificationComponent.js';
-import * as AuditLogic from './audit_logic.js';
-import './export_logic.js';
+import * as AuditLogic from './audit_logic.ts';
+import './export_logic.ts';
 import * as SaveAuditLogic from './logic/save_audit_logic.ts';
 import * as ValidationLogic from './validation_logic.ts';
 import * as RulefileUpdaterLogic from './logic/rulefile_updater_logic.js';
@@ -32,7 +32,7 @@ import {
 import {
     updatePageTitle as updatePageTitle_impl,
     updatePageTitleFromCurrentView as updatePageTitleFromCurrentView_impl
-} from './logic/page_title_manager.js';
+} from './logic/page_title_manager.ts';
 import {
     set_initial_theme,
     is_dev_build_environment,
@@ -40,7 +40,7 @@ import {
     refresh_production_build_info_from_server,
     update_build_timestamp,
     start_normal_session as start_normal_session_impl
-} from './logic/session_manager.js';
+} from './logic/session_manager.ts';
 import { MarkdownToolbar } from './features/markdown_toolbar.js';
 import './utils/dependency_manager.js';
 import './utils/console_manager.js';

@@ -1,13 +1,13 @@
 import { RequirementListToolbarComponent } from './RequirementListToolbarComponent.js';
-import { get_requirements_entries } from './requirements_list/requirement_list_query.js';
+import { get_requirements_entries } from './requirements_list/requirement_list_query.ts';
 import { get_sort_options, sort_items } from './requirements_list/requirement_list_sort.js';
-import { build_item_keys, update_items_status_only } from './requirements_list/requirement_list_incremental_dom.js';
+import { build_item_keys, update_items_status_only } from './requirements_list/requirement_list_incremental_dom.ts';
 import { render_requirements_content } from './requirements_list/requirement_list_render_content.js';
-import { handle_mark_requirement_passed_in_all_samples } from './requirements_list/requirement_list_mark_all_modal.js';
+import { handle_mark_requirement_passed_in_all_samples } from './requirements_list/requirement_list_mark_all_modal.ts';
 import { render_sample_header } from './requirements_list/requirement_list_sample_header.js';
 import { build_requirements_list_dom } from './requirements_list/requirement_list_build_dom.js';
 import { build_all_mode_data } from './requirements_list/requirement_list_all_mode_data.js';
-import { filter_requirements } from './requirements_list/requirement_list_filter_requirements.js';
+import { filter_requirements } from './requirements_list/requirement_list_filter_requirements.ts';
 import { build_toolbar_initial_filter_state, compute_auto_sort_by_override, ensure_default_status_filter, normalize_status_for_toolbar } from './requirements_list/requirement_list_ui_settings.js';
 import { fingerprint_item_keys, can_incremental_update } from '../utils/incremental_list_update.js';
 import './all_requirements_view_component.css';
