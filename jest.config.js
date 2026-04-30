@@ -26,6 +26,8 @@ export default {
     '^.+[\\\\/]export_word_deficiency_queries\\.js$': '<rootDir>/js/export/export_word_deficiency_queries.ts',
     '^.+[\\\\/]export_word_detail_pages\\.js$': '<rootDir>/js/export/export_word_detail_pages.ts',
     '^.+[\\\\/]export_word_main_flow\\.js$': '<rootDir>/js/export/export_word_main_flow.ts',
+    '^.+[\\\\/]export_word_main_flow_children\\.js$': '<rootDir>/js/export/export_word_main_flow_children.ts',
+    '^.+[\\\\/]export_word_main_flow_document\\.js$': '<rootDir>/js/export/export_word_main_flow_document.ts',
     '^.+[\\\\/]export_word_deprecated_text_export\\.js$': '<rootDir>/js/export/export_word_deprecated_text_export.ts',
     '^.+[\\\\/]export_html_build\\.js$': '<rootDir>/js/export/export_html_build.ts',
     '^.+[\\\\/]export_html_build_primitives\\.js$': '<rootDir>/js/export/export_html_build_primitives.ts',
