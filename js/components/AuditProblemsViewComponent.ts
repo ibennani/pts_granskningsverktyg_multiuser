@@ -5,6 +5,7 @@ import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import { marked } from '../utils/markdown.js';
 import './audit_problems_view_component.css';
 import { build_compact_hash_fragment } from '../logic/router_url_codec.js';
+import { build_app_location_href_for_view } from '../logic/shareable_app_location.js';
 import { consoleManager } from '../utils/console_manager.js';
 import { get_requirement_public_key, resolve_requirement_map_key, find_requirement_definition } from '../audit_logic.js';
 import { RequirementLookup } from '../logic/requirement_lookup.js';
@@ -676,17 +677,16 @@ export class AuditProblemsViewComponent {
             text_content: `${t('audit_images_card_requirement_label')} `
         });
         req_row.appendChild(req_label);
-        const base_path = (window.location && window.location.pathname)
-            ? window.location.pathname.split('?')[0].split('#')[0]
-            : '/';
-        const href_params = new URLSearchParams({ view: 'requirement_audit', sampleId: sample_id, requirementId: req_id });
         const requirements = this.getState()?.ruleFileContent?.requirements;
         const public_req_id = get_requirement_public_key(requirements, req_id) || String(req_id);
-        const href_params_public = new URLSearchParams({ view: 'requirement_audit', sampleId: sample_id, requirementId: public_req_id });
+        const req_href = build_app_location_href_for_view('requirement_audit', {
+            sampleId: String(sample_id),
+            requirementId: String(public_req_id)
+        }, this.getState);
         const req_link = this.Helpers.create_element('a', {
             class_name: 'audit-problem-card__requirement-link',
             attributes: {
-                href: `${base_path}?${href_params_public.toString()}`,
+                href: req_href,
                 'data-sample-id': sample_id,
                 'data-requirement-map-id': req_id
             },

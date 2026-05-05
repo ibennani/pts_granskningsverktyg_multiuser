@@ -212,13 +212,17 @@ if (typeof window !== 'undefined') {
         error_boundary_instance = error_boundary_holder.instance;
     }
 
-    function navigate_and_set_hash(target_view_name, target_params = {}) {
+    function navigate_and_set_hash(target_view_name, target_params = {}, nav_opts = {}) {
+        const nav = nav_opts && typeof nav_opts === 'object' ? nav_opts : {};
+        const { sync_route_from_location: sync_override, ...nav_rest } = nav;
         return navigate_and_set_hash_impl(target_view_name, target_params, {
             nav_debug,
             getState,
             get_current_view_name: () => render_ctx.current_view_name_rendered,
             get_current_view_component: () => render_ctx.current_view_component_instance,
-            updatePageTitle
+            updatePageTitle,
+            ...nav_rest,
+            sync_route_from_location: sync_override ?? handle_hash_change
         });
     }
 

@@ -12,6 +12,18 @@ import {
     expand_view_slug_from_hash,
     normalize_params_from_hash_query
 } from './router_url_codec.js';
+import {
+    url_params_to_requirement_audit_sidebar_patch,
+    merge_requirement_audit_sidebar_patch,
+    strip_requirement_audit_ui_keys
+} from './requirement_audit_url_ui.js';
+import {
+    url_params_to_requirement_list_filter_patch,
+    url_params_to_all_requirements_filter_patch,
+    merge_list_filter,
+    strip_requirement_list_filter_url_keys,
+    strip_all_requirements_filter_url_keys
+} from './requirements_list_filters_url_ui.js';
 import { is_debug_nav } from '../app/runtime_flags.js';
 import {
     set_current_user_name_window,
@@ -22,6 +34,23 @@ import {
 
 if (typeof window !== 'undefined' && is_debug_nav()) {
     consoleManager.log('[router] Debug-navigering aktiv.');
+}
+
+function coerce_route_params_to_strings(params) {
+    const o = {};
+    for (const [k, v] of Object.entries(params || {})) {
+        if (v === undefined || v === null) continue;
+        o[k] = String(v);
+    }
+    return o;
+}
+
+function strip_shareable_ui_route_params(record) {
+    let x = { ...record };
+    x = strip_requirement_audit_ui_keys(x);
+    x = strip_requirement_list_filter_url_keys(x);
+    x = strip_all_requirements_filter_url_keys(x);
+    return x;
 }
 
 const SKIP_LINK_ANCHOR_ID = 'main-content-heading';
@@ -166,7 +195,9 @@ export function navigate_and_set_hash(target_view_name, target_params = {}, opti
         getState,
         get_current_view_name,
         get_current_view_component,
-        updatePageTitle
+        updatePageTitle,
+        replace_state = false,
+        sync_route_from_location = null
     } = options;
 
     nav_debug('navigate_and_set_hash anropad', { target_view_name, target_params, current_hash: window.location.hash });
@@ -203,6 +234,20 @@ export function navigate_and_set_hash(target_view_name, target_params = {}, opti
     const target_hash_part = build_compact_hash_fragment(target_view_name, merged_params);
     const new_hash = `#${target_hash_part}`;
     const current_view_component_instance = get_current_view_component();
+    const apply_replace_hash = () => {
+        try {
+            const u = new URL(window.location.href);
+            const next_url = `${u.pathname}${u.search}${new_hash}`;
+            history.replaceState(null, '', next_url);
+        } catch (_e) {
+            window.location.hash = new_hash;
+        }
+        updatePageTitle(target_view_name, target_params);
+        if (typeof sync_route_from_location === 'function') {
+            void sync_route_from_location();
+        }
+    };
+
     if (window.location.hash === new_hash) {
         nav_debug('Hash oförändrad – endast render', { new_hash });
         updatePageTitle(target_view_name, target_params);
@@ -221,6 +266,9 @@ export function navigate_and_set_hash(target_view_name, target_params = {}, opti
                 }
             });
         }
+    } else if (replace_state) {
+        nav_debug('replaceState för hash', { to: new_hash });
+        apply_replace_hash();
     } else {
         nav_debug('Sätter hash', { from: window.location.hash, to: new_hash });
         window.location.hash = new_hash;
@@ -319,8 +367,42 @@ export async function handle_hash_change(options) {
         const target_hash_part = build_compact_hash_fragment(target_view, target_params);
         history.replaceState(null, '', `#${target_hash_part}`);
     }
+
+    const params_for_hydrate_strings = coerce_route_params_to_strings(target_params);
+
+    if (target_view === 'requirement_audit') {
+        const ra_patch = url_params_to_requirement_audit_sidebar_patch(params_for_hydrate_strings);
+        if (ra_patch) {
+            const prev_sidebar = get_state_safe()?.uiSettings?.requirementAuditSidebar;
+            const merged_sidebar = merge_requirement_audit_sidebar_patch(prev_sidebar, ra_patch);
+            dispatch({ type: StoreActionTypes.SET_REQUIREMENT_AUDIT_SIDEBAR_SETTINGS, payload: merged_sidebar });
+        }
+    }
+    if (target_view === 'requirement_list') {
+        const list_patch = url_params_to_requirement_list_filter_patch(params_for_hydrate_strings);
+        if (list_patch) {
+            const prev_f = get_state_safe()?.uiSettings?.requirementListFilter;
+            dispatch({
+                type: StoreActionTypes.SET_UI_FILTER_SETTINGS,
+                payload: merge_list_filter(prev_f, list_patch)
+            });
+        }
+    }
+    if (target_view === 'all_requirements') {
+        const all_patch = url_params_to_all_requirements_filter_patch(params_for_hydrate_strings);
+        if (all_patch) {
+            const prev_f = get_state_safe()?.uiSettings?.allRequirementsFilter;
+            dispatch({
+                type: StoreActionTypes.SET_ALL_REQUIREMENTS_FILTER_SETTINGS,
+                payload: merge_list_filter(prev_f, all_patch)
+            });
+        }
+    }
+
+    const render_params = strip_shareable_ui_route_params(coerce_route_params_to_strings(target_params));
+
     try {
-        const scope_key = get_scope_key_fn(target_view, target_params);
+        const scope_key = get_scope_key_fn(target_view, render_params);
         if (scope_key && window.sessionStorage) {
             const focus_storage = load_focus_storage();
             const focus_info = focus_storage[scope_key];
@@ -331,6 +413,6 @@ export async function handle_hash_change(options) {
     } catch {
         /* ignorerar fokuslagringsfel */
     }
-    updatePageTitle(target_view, target_params);
-    render_view(target_view, target_params);
+    updatePageTitle(target_view, render_params);
+    render_view(target_view, render_params);
 }

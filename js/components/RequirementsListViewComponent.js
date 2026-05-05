@@ -10,6 +10,11 @@ import { build_all_mode_data } from './requirements_list/requirement_list_all_mo
 import { filter_requirements } from './requirements_list/requirement_list_filter_requirements.ts';
 import { build_toolbar_initial_filter_state, compute_auto_sort_by_override, ensure_default_status_filter, normalize_status_for_toolbar } from './requirements_list/requirement_list_ui_settings.js';
 import { fingerprint_item_keys, can_incremental_update } from '../utils/incremental_list_update.js';
+import { parse_view_and_params_from_hash } from '../logic/router.js';
+import {
+    list_filter_settings_to_url_params_for_all_requirements,
+    list_filter_settings_to_url_params_for_requirement_list
+} from '../logic/requirements_list_filters_url_ui.js';
 import './all_requirements_view_component.css';
 import './requirement_list_component.css';
 
@@ -61,6 +66,7 @@ export class RequirementsListViewComponent {
         this.content_div_for_delegation = null;
 
         this._last_rendered_fingerprint = null;
+        this._list_filters_hash_sync_timer = null;
 
         // Event handlers för både sample och all mode
         this.handle_requirement_list_click = this.handle_requirement_list_click.bind(this);
@@ -109,6 +115,36 @@ export class RequirementsListViewComponent {
                 status: new_state.status
             }
         });
+        this._schedule_list_filters_hash_sync();
+    }
+
+    _schedule_list_filters_hash_sync() {
+        if (!this.router || typeof parse_view_and_params_from_hash !== 'function') return;
+        if (this._list_filters_hash_sync_timer) {
+            clearTimeout(this._list_filters_hash_sync_timer);
+        }
+        this._list_filters_hash_sync_timer = setTimeout(() => {
+            this._list_filters_hash_sync_timer = null;
+            try {
+                const parsed = parse_view_and_params_from_hash();
+                const want_view = this.mode === 'all' ? 'all_requirements' : 'requirement_list';
+                if (parsed.viewName !== want_view) return;
+                const ui = this.getState()?.uiSettings?.[this.state_filter_key];
+                const extra =
+                    this.mode === 'all'
+                        ? list_filter_settings_to_url_params_for_all_requirements(ui)
+                        : list_filter_settings_to_url_params_for_requirement_list(ui);
+                const merged = { ...parsed.params, ...extra };
+                const flat = {};
+                for (const [k, v] of Object.entries(merged)) {
+                    if (v === undefined || v === null) continue;
+                    flat[k] = String(v);
+                }
+                this.router(want_view, flat, { replace_state: true });
+            } catch {
+                /* ignoreras medvetet */
+            }
+        }, 400);
     }
 
     handle_requirement_list_click(event) {
@@ -400,6 +436,10 @@ export class RequirementsListViewComponent {
     }
 
     destroy() {
+        if (this._list_filters_hash_sync_timer) {
+            clearTimeout(this._list_filters_hash_sync_timer);
+            this._list_filters_hash_sync_timer = null;
+        }
         if (typeof this.unsubscribe_from_store === 'function') {
             this.unsubscribe_from_store();
             this.unsubscribe_from_store = null;
@@ -428,4 +468,4 @@ export class RequirementsListViewComponent {
         this.empty_message_element_ref = null;
         this.list_element_ref = null;
     }
-};
+}

@@ -6,6 +6,10 @@ import * as SaveAuditLogic from '../logic/save_audit_logic.ts';
 import { get_registered_translation_module, get_translation_t } from '../utils/translation_access.js';
 import { consoleManager } from '../utils/console_manager.js';
 import { dependencyManager } from '../utils/dependency_manager.js';
+import { CopyViewLinkComponent } from '../components/CopyViewLinkComponent.js';
+
+/** @type {CopyViewLinkComponent|null} */
+let copy_view_link_instance = null;
 
 export function get_t_fallback() {
     return get_translation_t();
@@ -61,6 +65,13 @@ export function update_side_menu(view_name, params = {}, deps) {
  */
 export function update_app_chrome_texts(deps) {
     const { top_action_bar_instance, bottom_action_bar_instance, error_boundary_holder } = deps;
+    if (copy_view_link_instance && typeof copy_view_link_instance.render === 'function') {
+        try {
+            copy_view_link_instance.render();
+        } catch (_e) {
+            /* ignoreras medvetet */
+        }
+    }
     const Translation = get_registered_translation_module();
     if (!Translation || typeof Translation.t !== 'function') {
         consoleManager.warn('[Main.js] update_app_chrome_texts: Translation.t is not available.');
@@ -202,6 +213,22 @@ export async function init_global_components(deps) {
             await modalComponent.init({ root: modal_root, deps: common_deps });
         } catch (error) {
             consoleManager.error('[Main.js] Failed to initialize modal:', error);
+        }
+    }
+
+    const copy_host = typeof document !== 'undefined' ? document.getElementById('gv-copy-view-link-host') : null;
+    if (copy_host && !copy_view_link_instance) {
+        try {
+            copy_view_link_instance = new CopyViewLinkComponent();
+            await copy_view_link_instance.init({
+                root: copy_host,
+                deps: {
+                    ...common_deps,
+                    subscribe
+                }
+            });
+        } catch (error) {
+            consoleManager.error('[Main.js] Failed to initialize copy-view link:', error);
         }
     }
 }

@@ -7,6 +7,7 @@
 import { get_current_user_preferences_with_timeout } from '../api/client.js';
 import { parse_build_info_from_text } from './version_check_service.js';
 import { parse_view_and_params_from_hash } from './router.js';
+import { migrate_legacy_view_query_to_hash } from './migrate_legacy_query_to_hash.js';
 import { format_build_info_object } from '../utils/build_time_format.js';
 import {
     read_vite_dev_client_timestamp_date,
@@ -554,6 +555,7 @@ export async function start_normal_session(deps: StartNormalSessionDeps): Promis
     }
 
     {
+        migrate_legacy_view_query_to_hash(window);
         const hash = (window.location.hash || '').replace(/^#/, '');
         const view_from_hash = hash.split('?')[0];
         if (view_from_hash === 'login') {

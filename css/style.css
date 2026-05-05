@@ -340,6 +340,18 @@ body {
     margin-top: 0.25rem;
 }
 
+.gv-copy-view-link-host {
+    display: flex;
+    justify-content: flex-end;
+    width: 100%;
+    padding: 0.15rem var(--spacing-unit, 0.75rem);
+    box-sizing: border-box;
+}
+
+.gv-copy-view-link-host:empty {
+    display: none;
+}
+
 .view-container,
 .content-plate {
     background-color: var(--plate-background-color);

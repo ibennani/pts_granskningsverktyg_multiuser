@@ -3,6 +3,7 @@ import '../../css/components/side_menu_component.css';
 import { RequirementLookup } from '../logic/requirement_lookup.js';
 import { consoleManager } from '../utils/console_manager.js';
 import { build_compact_hash_fragment, expand_view_slug_from_hash, normalize_params_from_hash_query } from '../logic/router_url_codec.js';
+import { build_app_location_href_for_view } from '../logic/shareable_app_location.js';
 import { is_debug_modal_scroll, is_debug_nav, is_debug_problems_update } from '../app/runtime_flags.js';
 
 export class SideMenuComponent {
@@ -252,11 +253,12 @@ export class SideMenuComponent {
             is_active = current_params.section === params.section;
         }
 
-        const base_path = (window.location && window.location.pathname)
-            ? window.location.pathname.split('?')[0].split('#')[0]
-            : '/';
-        const search_params = new URLSearchParams({ view: view_name, ...params });
-        const href = `${base_path}?${search_params.toString()}`;
+        const flat_params = {};
+        for (const [k, v] of Object.entries(params && typeof params === 'object' ? params : {})) {
+            if (v === undefined || v === null) continue;
+            flat_params[k] = String(v);
+        }
+        const href = build_app_location_href_for_view(view_name, flat_params, this.getState);
 
         const link = this.Helpers.create_element('a', {
             attributes: {

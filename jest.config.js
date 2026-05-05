@@ -75,6 +75,10 @@ export default {
     '^.+[\\\\/]sanitize_persisted_app_state\\.js$': '<rootDir>/js/logic/sanitize_persisted_app_state.ts',
     '^.+[\\\\/]coerce_audit_for_export\\.js$': '<rootDir>/js/logic/coerce_audit_for_export.ts',
     '^.+/translation_logic\\.js$': '<rootDir>/js/translation_logic.ts',
+    '^.+/requirement_audit_url_ui\\.js$': '<rootDir>/js/logic/requirement_audit_url_ui.ts',
+    '^.+/requirements_list_filters_url_ui\\.js$': '<rootDir>/js/logic/requirements_list_filters_url_ui.ts',
+    '^.+/migrate_legacy_query_to_hash\\.js$': '<rootDir>/js/logic/migrate_legacy_query_to_hash.ts',
+    '^.+/shareable_app_location\\.js$': '<rootDir>/js/logic/shareable_app_location.ts',
   },
   testMatch: [
     '<rootDir>/tests/unit/**/*.spec.js',

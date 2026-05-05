@@ -6,6 +6,9 @@ import './requirement_audit_sidebar_component.css';
 import { get_searchable_text_for_requirement as get_searchable_text_util } from '../utils/requirement_search_utils.js';
 import { prepareString, filter_text_matches } from '../utils/string_filter_normalize.js';
 import { fingerprint_item_keys, can_incremental_update } from '../utils/incremental_list_update.js';
+import { parse_view_and_params_from_hash } from '../logic/router.js';
+import { requirement_audit_sidebar_settings_to_url_params } from '../logic/requirement_audit_url_ui.js';
+import { build_app_location_href_for_view } from '../logic/shareable_app_location.js';
 import {
     get_requirement_public_key,
     get_stored_requirement_result_for_def,
@@ -42,6 +45,8 @@ export class RequirementAuditSidebarComponent {
         this.heading_ref = null;
         this.filter_heading_ref = null;
         this.list_heading_ref = null;
+        /** @type {ReturnType<typeof setTimeout>|null} */
+        this._sidebar_hash_sync_timer = null;
 
         this.filters_by_mode = {
             sample_requirements: {
@@ -209,12 +214,13 @@ export class RequirementAuditSidebarComponent {
 
     build_non_anchor_href(view_name, params = {}) {
         try {
-            const base_path = (window.location && window.location.pathname)
-                ? window.location.pathname.split('?')[0].split('#')[0]
-                : '/';
-            const search_params = new URLSearchParams({ view: view_name, ...params });
-            return `${base_path}?${search_params.toString()}`;
-        } catch (e) {
+            const flat_params = {};
+            for (const [k, v] of Object.entries(params && typeof params === 'object' ? params : {})) {
+                if (v === undefined || v === null) continue;
+                flat_params[k] = String(v);
+            }
+            return build_app_location_href_for_view(view_name, flat_params, this.getState);
+        } catch (_e) {
             return '#';
         }
     }
@@ -883,6 +889,35 @@ export class RequirementAuditSidebarComponent {
                 }
             }
         });
+        this.schedule_sidebar_route_hash_replace();
+    }
+
+    schedule_sidebar_route_hash_replace() {
+        if (!this.router || typeof parse_view_and_params_from_hash !== 'function') return;
+        if (this._sidebar_hash_sync_timer) {
+            clearTimeout(this._sidebar_hash_sync_timer);
+        }
+        this._sidebar_hash_sync_timer = setTimeout(() => {
+            this._sidebar_hash_sync_timer = null;
+            try {
+                const parsed = parse_view_and_params_from_hash();
+                if (parsed.viewName !== 'requirement_audit') return;
+                const st = typeof this.getState === 'function' ? this.getState() : null;
+                const sidebar = st?.uiSettings?.requirementAuditSidebar;
+                if (!sidebar) return;
+                const ui_flat = requirement_audit_sidebar_settings_to_url_params(sidebar);
+                const merged = { ...parsed.params, ...ui_flat };
+                /** @type {Record<string,string>} */
+                const flat_params = {};
+                for (const [k, v] of Object.entries(merged)) {
+                    if (v === undefined || v === null) continue;
+                    flat_params[k] = String(v);
+                }
+                this.router('requirement_audit', flat_params, { replace_state: true });
+            } catch {
+                /* ignoreras medvetet */
+            }
+        }, 350);
     }
 
     get_display_status(requirement, requirement_result, requirements, sample_requirement_results, entry_hint = null) {
@@ -990,6 +1025,10 @@ export class RequirementAuditSidebarComponent {
     }
 
     destroy() {
+        if (this._sidebar_hash_sync_timer) {
+            clearTimeout(this._sidebar_hash_sync_timer);
+            this._sidebar_hash_sync_timer = null;
+        }
         if (this.root) {
             this.root.removeEventListener('click', this.handle_link_click);
             this.root.innerHTML = '';
