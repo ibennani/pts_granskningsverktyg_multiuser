@@ -1,13 +1,6 @@
-import {
-  existsSync,
-  mkdirSync,
-  cpSync,
-  writeFileSync,
-  readFileSync,
-} from 'node:fs';
+import { existsSync, mkdirSync, cpSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { format_build_info_object } from '../js/utils/build_time_format.js';
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const projectRoot = join(__dirname, '..');
 const distDir = join(projectRoot, 'dist');
@@ -49,42 +42,7 @@ for (const relativePath of foldersToCopy) {
   }
 }
 
-console.log('[postbuild-copy] Finished copying folders, starting build-info generation...');
-
-// Generate build info file – aktuell tid i Europe/Stockholm (samma som i webbläsaren efter laddning)
-try {
-  const buildInfo = format_build_info_object(new Date(), { include_seconds: false });
-
-  const buildInfoContent = `// Auto-generated build info
-window.BUILD_INFO = ${JSON.stringify(buildInfo, null, 2)};
-`;
-
-  const buildInfoPath = join(distDir, 'build-info.js');
-  writeFileSync(buildInfoPath, buildInfoContent, 'utf8');
-  console.log('[postbuild-copy] Generated build-info.js');
-
-  const formattedTimestamp = `Byggt ${buildInfo.date} kl ${buildInfo.time}`;
-  const buildVersion = String(new Date(buildInfo.timestamp).getTime());
-  const indexPath = join(distDir, 'index.html');
-  if (existsSync(indexPath)) {
-    let indexHtml = readFileSync(indexPath, 'utf8');
-    indexHtml = indexHtml.replace(
-      /<div id="build-timestamp">[\s\S]*?<\/div>/,
-      `<div id="build-timestamp">${formattedTimestamp}</div>`
-    );
-    indexHtml = indexHtml.replace(
-      /(src=")(build-info\.js)(")/,
-      `$1$2?v=${buildVersion}$3`
-    );
-    writeFileSync(indexPath, indexHtml, 'utf8');
-    console.log('[postbuild-copy] Injected build timestamp and cache-busting version into index.html');
-  }
-} catch (error) {
-  console.error(
-    '[postbuild-copy] Failed to generate build-info.js:',
-    error.message
-  );
-  process.exitCode = 1;
-}
+// build-info.js och byggstämpel i index.html skrivs redan i Vite closeBundle
+// (inject_dist_build_metadata) före service worker / precache.
 
 console.log('[postbuild-copy] Completed successfully');

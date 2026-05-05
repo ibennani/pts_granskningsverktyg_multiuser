@@ -1,6 +1,11 @@
 // vite.config.mjs
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
+import { inject_dist_build_metadata } from './scripts/inject_dist_build_metadata.js'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
 
 const IGNORABLE_WS_ERROR_CODES = new Set([
   'ECONNRESET',
@@ -51,17 +56,33 @@ function redirect_base_without_trailing_slash() {
   }
 }
 
+/** Måste köras i `closeBundle` före vite-plugin-pwa så att precache av `index.html` matchar filen på disk. */
+function inject_dist_metadata_before_pwa () {
+  return {
+    name: 'inject-dist-build-metadata-before-pwa',
+    apply: 'build',
+    closeBundle: {
+      order: 'pre',
+      handler () {
+        inject_dist_build_metadata(join(__dirname, 'dist'))
+      }
+    }
+  }
+}
+
 export default defineConfig({
   base: '/v2/',
   plugins: [
     redirect_base_without_trailing_slash(),
+    inject_dist_metadata_before_pwa(),
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'script',
       manifest: false,
       workbox: {
-        // Viktigt: undvik att precacha HTML, annars kan gårdagens index.html ligga kvar via SW.
-        globPatterns: ['**/*.{js,css,ico,png,svg,woff2,woff}'],
+        // `index.html` måste precachas: navigateFallback använder createHandlerBoundToURL (annars non-precached-url).
+        // Övrig HTML undviks; byggstämpel injiceras i closeBundle före PWA så revision stämmer.
+        globPatterns: ['**/*.{js,css,ico,png,svg,woff2,woff}', 'index.html'],
         // build-info används för versionskontroll och ska alltid komma från nätverket (no-store i Nginx).
         globIgnores: ['**/build-info.js'],
         navigateFallback: 'index.html',
