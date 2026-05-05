@@ -57,12 +57,12 @@ function redirect_base_without_trailing_slash() {
 }
 
 /**
- * I dev: servera rotens gitignorerade `build-info.js` (från build-info-watchern) före statiska `public/`,
- * så att byggtid i sidfoten följer filändringar. Produktion använder fryst `public/build-info.js`.
+ * I dev: servera fryst `public/build-info.js` när den finns (samma som produktion), annars rotens
+ * `build-info.js` från build-info-watchern. Tidigare prioriterades roten → ändringar i public syntes inte.
  */
-function dev_serve_root_build_info_first () {
+function dev_serve_build_info_public_first () {
   return {
-    name: 'dev-serve-root-build-info-first',
+    name: 'dev-serve-build-info-public-first',
     apply: 'serve',
     enforce: 'pre',
     configureServer (server) {
@@ -70,10 +70,12 @@ function dev_serve_root_build_info_first () {
         if (req.method !== 'GET') return next()
         const path_only = (req.url || '').split('?')[0]
         if (path_only !== '/v2/build-info.js' && path_only !== '/build-info.js') return next()
+        const public_file = join(__dirname, 'public', 'build-info.js')
         const root_file = join(__dirname, 'build-info.js')
-        if (existsSync(root_file)) {
+        const pick = existsSync(public_file) ? public_file : existsSync(root_file) ? root_file : null
+        if (pick) {
           res.setHeader('Content-Type', 'application/javascript; charset=utf-8')
-          res.end(readFileSync(root_file, 'utf8'))
+          res.end(readFileSync(pick, 'utf8'))
           return
         }
         next()
@@ -86,7 +88,7 @@ export default defineConfig({
   base: '/v2/',
   plugins: [
     redirect_base_without_trailing_slash(),
-    dev_serve_root_build_info_first(),
+    dev_serve_build_info_public_first(),
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'script',
