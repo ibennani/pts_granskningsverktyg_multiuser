@@ -81,7 +81,7 @@ export class EditRulefileRequirementComponent {
             const rsid = String(this.getState()?.ruleSetId || '');
             if (!rsid || String(ev?.detail?.ruleSetId) !== rsid) return;
             void init_rulefile_lock_service(rsid).then(() => {
-                if (this.form_element_ref) this._rerender_all_sections();
+                if (this.form_element_ref) this._sync_rulefile_part_lock_ui();
             });
         };
         window.addEventListener('gv-refresh-rulefile-locks', this._on_rulefile_locks_visibility_refresh);
@@ -136,6 +136,40 @@ export class EditRulefileRequirementComponent {
         } catch (_) {
             // Vid versionskonflikt/pollingfel får poll-servicen hämta in senaste.
         }
+    }
+
+    /**
+     * Uppdaterar disabled/readOnly och lås-hint för infoblock-textfält utan att tömma formuläret,
+     * så fokus bevaras när låslista kommer via WebSocket/poll (full omritning stal tidigare fokus).
+     */
+    _sync_rulefile_part_lock_ui() {
+        if (!this.form_element_ref) return;
+        const user = get_current_user_name();
+        const textareas = this.form_element_ref.querySelectorAll('textarea[data-gv-rule-part-key]');
+        textareas.forEach((textarea) => {
+            const part_key = textarea.dataset.gvRulePartKey;
+            if (!part_key) return;
+            const remote_lock = get_current_rulefile_remote_lock(part_key);
+            const my_client_lock_id = ensure_client_lock_id_for_part(part_key);
+            const locked_by_other = is_remote_lock_held_by_other_user(
+                remote_lock,
+                user,
+                my_client_lock_id
+            );
+            const pending = textarea.dataset.gvLockPending === '1';
+            textarea.disabled = locked_by_other;
+            textarea.readOnly = Boolean(pending) && !locked_by_other;
+            const hint_id = textarea.getAttribute('aria-describedby');
+            const hint_el = hint_id ? document.getElementById(hint_id) : null;
+            if (!hint_el) return;
+            if (locked_by_other && remote_lock?.user_name) {
+                hint_el.textContent = `${remote_lock.user_name} redigerar detta fält just nu.`;
+                hint_el.hidden = false;
+            } else {
+                hint_el.textContent = '';
+                hint_el.hidden = true;
+            }
+        });
     }
 
     _create_move_check_button(direction, check) {
@@ -1047,7 +1081,7 @@ export class EditRulefileRequirementComponent {
                                         await release_rulefile_part_lock({ rule_set_id: rsid, part_key });
                                         await init_rulefile_lock_service(String(rsid));
                                         delete textarea.dataset.gvLockPending;
-                                        this._rerender_all_sections();
+                                        this._sync_rulefile_part_lock_ui();
                                         return;
                                     }
                                     delete textarea.dataset.gvLockPending;
@@ -1060,7 +1094,7 @@ export class EditRulefileRequirementComponent {
                                     }
                                 } else {
                                     delete textarea.dataset.gvLockPending;
-                                    this._rerender_all_sections();
+                                    this._sync_rulefile_part_lock_ui();
                                 }
                             } finally {
                                 delete textarea.dataset.gvLockPending;
@@ -1084,7 +1118,7 @@ export class EditRulefileRequirementComponent {
                                     });
                                 }
                                 await init_rulefile_lock_service(String(rsid));
-                                this._rerender_all_sections();
+                                this._sync_rulefile_part_lock_ui();
                             })();
                         });
                     }
@@ -1632,7 +1666,7 @@ export class EditRulefileRequirementComponent {
                             // eslint-disable-next-line eqeqeq -- avsiktligt != null (täcker både null och undefined)
                             if (payload?.ruleSetId != null && String(payload.ruleSetId) !== rid) return;
                             await init_rulefile_lock_service(rid);
-                            this._rerender_all_sections();
+                            this._sync_rulefile_part_lock_ui();
                         } catch (_) {
                             /* ignoreras */
                         }
@@ -1795,7 +1829,7 @@ export class EditRulefileRequirementComponent {
             void (async () => {
                 try {
                     await init_rulefile_lock_service(rsid);
-                    if (this.form_element_ref) this._rerender_all_sections();
+                    if (this.form_element_ref) this._sync_rulefile_part_lock_ui();
                 } catch (_) {
                     /* ignoreras */
                 }
