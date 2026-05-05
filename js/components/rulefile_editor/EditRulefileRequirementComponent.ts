@@ -139,7 +139,7 @@ export class EditRulefileRequirementComponent {
     }
 
     /**
-     * Uppdaterar disabled/readOnly och lås-hint för infoblock-textfält utan att tömma formuläret,
+     * Uppdaterar disabled och lås-hint för infoblock-textfält utan att tömma formuläret,
      * så fokus bevaras när låslista kommer via WebSocket/poll (full omritning stal tidigare fokus).
      */
     _sync_rulefile_part_lock_ui() {
@@ -156,9 +156,7 @@ export class EditRulefileRequirementComponent {
                 user,
                 my_client_lock_id
             );
-            const pending = textarea.dataset.gvLockPending === '1';
             textarea.disabled = locked_by_other;
-            textarea.readOnly = Boolean(pending) && !locked_by_other;
             const hint_id = textarea.getAttribute('aria-describedby');
             const hint_el = hint_id ? document.getElementById(hint_id) : null;
             if (!hint_el) return;
@@ -1071,7 +1069,7 @@ export class EditRulefileRequirementComponent {
                             const state = this.getState();
                             const rsid = state?.ruleSetId;
                             if (!rsid) return;
-                            textarea.readOnly = true;
+                            // Sätt inte readOnly här – då blockeras tangentbord tills lås svarar (känns som dubbelklick).
                             textarea.dataset.gvLockPending = '1';
                             try {
                                 const r = await try_acquire_rulefile_part_lock({ rule_set_id: rsid, part_key });
@@ -1087,7 +1085,6 @@ export class EditRulefileRequirementComponent {
                                     delete textarea.dataset.gvLockPending;
                                     textarea.dataset.gvLockAcquired = '1';
                                     textarea.disabled = false;
-                                    textarea.readOnly = false;
                                     if (lock_hint_el) {
                                         lock_hint_el.textContent = '';
                                         lock_hint_el.hidden = true;
