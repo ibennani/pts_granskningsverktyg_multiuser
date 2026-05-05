@@ -22,6 +22,7 @@ import {
     reduce_set_remote_audit_id,
     reduce_replace_state_from_remote
 } from './remoteStateHandlers.js';
+import { RequirementLookup } from '../logic/requirement_lookup.js';
 
 export function auditReducer(current_state: any, action: any) {
     let new_state: any;
@@ -65,20 +66,39 @@ export function auditReducer(current_state: any, action: any) {
         }
         case ActionTypes.UPDATE_REQUIREMENT_DEFINITION: {
             const { requirementId: updateReqId, updatedRequirementData } = action.payload;
-            if (current_state.ruleFileContent?.requirements?.[updateReqId]) {
-                const newRequirements = {
-                    ...current_state.ruleFileContent.requirements,
-                    [updateReqId]: updatedRequirementData
-                };
+            const requirements = current_state.ruleFileContent?.requirements;
+            if (!requirements || !updatedRequirementData) return current_state;
+            const look = RequirementLookup.from(requirements);
+            if (!look || !look.findById(updateReqId)) return current_state;
+            if (look.isArrayFormat()) {
+                const raw = look.getRaw() as unknown[];
+                const idx = raw.findIndex((r: any) => {
+                    const rk = r?.key != null ? String(r.key) : '';
+                    const ri = r?.id != null ? String(r.id) : '';
+                    return rk === String(updateReqId) || ri === String(updateReqId);
+                });
+                if (idx === -1) return current_state;
+                const arr = [...raw];
+                arr[idx] = updatedRequirementData;
                 return {
                     ...current_state,
                     ruleFileContent: {
                         ...current_state.ruleFileContent,
-                        requirements: newRequirements
+                        requirements: arr
                     }
                 };
             }
-            return current_state;
+            const map_key = look.resolveMapKey(updateReqId);
+            if (!map_key) return current_state;
+            const rec = look.getRaw() as Record<string, unknown>;
+            const newRequirements = { ...rec, [map_key]: updatedRequirementData };
+            return {
+                ...current_state,
+                ruleFileContent: {
+                    ...current_state.ruleFileContent,
+                    requirements: newRequirements
+                }
+            };
         }
         case ActionTypes.ADD_REQUIREMENT_DEFINITION: {
             const { requirementId: addReqId, newRequirementData } = action.payload;

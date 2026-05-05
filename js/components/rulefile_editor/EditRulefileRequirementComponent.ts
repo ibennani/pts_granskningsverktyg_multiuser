@@ -19,6 +19,7 @@ import { make_infoblock_text_part_key } from '../../logic/rulefile_part_keys.js'
 import { post_same_user_field_commit } from '../../logic/same_user_tab_field_sync.js';
 import { is_remote_lock_held_by_other_user } from '../../logic/collab_lock_compare.js';
 import { find_requirement_definition } from '../../audit_logic.js';
+import { RequirementLookup } from '../../logic/requirement_lookup.js';
 import './requirement_audit_component.css';
 import './edit_rulefile_requirement_component.css';
 
@@ -1028,8 +1029,12 @@ export class EditRulefileRequirementComponent {
                 expanded_group.appendChild(expanded_label);
                 
                 // Text field (textarea)
-                const part_key = this.params?.id && this.params.id !== 'new'
-                    ? make_infoblock_text_part_key(String(this.params.id), block_id)
+                const req_key_for_part =
+                    this.params?.id && this.params.id !== 'new'
+                        ? (this._requirement_key_for_server_patch || String(this.params.id))
+                        : null;
+                const part_key = req_key_for_part
+                    ? make_infoblock_text_part_key(req_key_for_part, block_id)
                     : null;
 
                 const text_group = this._create_form_group(
@@ -1767,7 +1772,15 @@ export class EditRulefileRequirementComponent {
         this.form_element_ref = this.Helpers.create_element('form');
         this.form_element_ref.addEventListener('submit', this.handle_form_submit);
         this.form_element_ref.addEventListener('click', this.handle_form_click);
-        this._requirement_key_for_server_patch = requirement_key;
+        let patch_req_key = requirement_key;
+        if (!is_new_requirement) {
+            const rl = RequirementLookup.from(current_state?.ruleFileContent?.requirements);
+            if (rl && !rl.isArrayFormat()) {
+                const mk = rl.resolveMapKey(requirement_id);
+                if (mk) patch_req_key = mk;
+            }
+        }
+        this._requirement_key_for_server_patch = patch_req_key;
         this.form_element_ref.addEventListener('focusout', this._handle_edit_requirement_focusout_save);
 
         this._rerender_all_sections();
