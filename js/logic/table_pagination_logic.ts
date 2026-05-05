@@ -8,7 +8,6 @@ export function audit_page_size_string_to_number(value: string | undefined | nul
     if (v === 'all' || v === 'alla') return null;
     const n = parseInt(v, 10);
     if (!Number.isFinite(n) || n < 1) return 10;
-    if (n < 5) return 5;
     return n;
 }
 

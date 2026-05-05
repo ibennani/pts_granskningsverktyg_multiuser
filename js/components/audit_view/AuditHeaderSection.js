@@ -14,7 +14,6 @@ function render_audit_page_size_field(ctx) {
         class_name: ['form-control', 'audit-page-size-select']
     });
     [
-        { value: '5', label: t('audit_table_page_size_5') },
         { value: '10', label: t('audit_table_page_size_10') },
         { value: '25', label: t('audit_table_page_size_25') },
         { value: '50', label: t('audit_table_page_size_50') },
@@ -27,12 +26,7 @@ function render_audit_page_size_field(ctx) {
             })
         );
     });
-    const allowed_sizes = ['5', '10', '25', '50', 'all'];
-    const stored = ctx.audit_table_page_size || '10';
-    if (!allowed_sizes.includes(stored)) {
-        ctx.audit_table_page_size = '10';
-    }
-    sel.value = ctx.audit_table_page_size;
+    sel.value = ctx.audit_table_page_size || '10';
     sel.addEventListener('change', ctx.handle_audit_table_page_size_change);
     ctx._auditPageSizeSelectRef = sel;
     field.appendChild(sel);

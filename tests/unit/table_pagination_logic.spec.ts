@@ -18,13 +18,7 @@ describe('audit_page_size_string_to_number', () => {
     });
 
     it('returnerar heltal för siffror', () => {
-        expect(audit_page_size_string_to_number('5')).toBe(5);
         expect(audit_page_size_string_to_number('25')).toBe(25);
-    });
-
-    it('klampar uppåt till minst 5 rader för små tal', () => {
-        expect(audit_page_size_string_to_number('3')).toBe(5);
-        expect(audit_page_size_string_to_number('4')).toBe(5);
     });
 
     it('fallback 10 för ogiltigt', () => {

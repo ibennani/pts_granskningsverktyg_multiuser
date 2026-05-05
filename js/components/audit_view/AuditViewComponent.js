@@ -53,8 +53,6 @@ export class AuditViewComponent {
         this.audit_type_filter = '';
         this.audit_table_page_size = '10';
         this._auditFilterHadFocus = false;
-        this._auditTypeSelectHadFocus = false;
-        this._auditPageSizeSelectHadFocus = false;
         this._auditFilterSelection = null;
         this._auditFilterInputRef = null;
         this._auditTypeSelectRef = null;
@@ -145,11 +143,8 @@ export class AuditViewComponent {
 
     handle_audit_table_page_size_change(event) {
         const target = event && event.target ? event.target : null;
-        const raw = target ? String(target.value || '10') : '10';
-        const allowed_sizes = ['5', '10', '25', '50', 'all'];
-        const value = allowed_sizes.includes(raw) ? raw : '10';
+        const value = target ? String(target.value || '10') : '10';
         if (this.audit_table_page_size === value) return;
-        this._auditPageSizeSelectHadFocus = document.activeElement === target;
         this.audit_table_page_size = value;
         this._reset_all_audit_table_pages();
         if (this.root) this.render();
@@ -180,7 +175,6 @@ export class AuditViewComponent {
         const target = event && event.target ? event.target : null;
         const value = target ? String(target.value || '') : '';
         if (this.audit_type_filter === value) return;
-        this._auditTypeSelectHadFocus = document.activeElement === target;
         this.audit_type_filter = value;
         this._reset_all_audit_table_pages();
         if (this.root) this.render();
@@ -2067,29 +2061,6 @@ export class AuditViewComponent {
         }
         this._auditFilterHadFocus = false;
         this._auditFilterSelection = null;
-
-        const focus_select_restore = (el) => {
-            if (!el || !document.contains(el)) return;
-            try {
-                el.focus({ preventScroll: true });
-            } catch {
-                el.focus();
-            }
-        };
-        if (this.audit_mode === 'audits' && this._auditTypeSelectHadFocus && this._auditTypeSelectRef) {
-            const type_sel = this._auditTypeSelectRef;
-            setTimeout(() => focus_select_restore(type_sel), 0);
-        }
-        if (this.audit_mode === 'audits' && this._auditPageSizeSelectHadFocus && this._auditPageSizeSelectRef) {
-            const page_sel = this._auditPageSizeSelectRef;
-            setTimeout(() => focus_select_restore(page_sel), 0);
-        }
-        if ((this.audit_mode === 'rules' || this.audit_mode === 'both') && this._auditPageSizeSelectHadFocus && this._auditPageSizeSelectRef) {
-            const page_sel_rules = this._auditPageSizeSelectRef;
-            setTimeout(() => focus_select_restore(page_sel_rules), 0);
-        }
-        this._auditTypeSelectHadFocus = false;
-        this._auditPageSizeSelectHadFocus = false;
 
         if (this.audit_mode === 'audits' && this.deps.params?.startNew === '1') {
             setTimeout(() => {
