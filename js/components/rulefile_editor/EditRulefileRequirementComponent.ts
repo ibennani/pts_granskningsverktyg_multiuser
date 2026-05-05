@@ -20,6 +20,7 @@ import { post_same_user_field_commit } from '../../logic/same_user_tab_field_syn
 import { is_remote_lock_held_by_other_user } from '../../logic/collab_lock_compare.js';
 import { find_requirement_definition } from '../../audit_logic.js';
 import { RequirementLookup } from '../../logic/requirement_lookup.js';
+import { load_focus_storage, save_focus_storage } from '../../logic/focus_manager.js';
 import './requirement_audit_component.css';
 import './edit_rulefile_requirement_component.css';
 
@@ -415,6 +416,41 @@ export class EditRulefileRequirementComponent {
         });
     }
 
+    /**
+     * Tar bort sparad fokus för denna kravredigerings-vy så att återkomst från visningsläge
+     * inte flyttar fokus till t.ex. spara-knappen (gv_focus_by_scope_v1 / apply_restore_focus_instruction).
+     */
+    _clear_stored_focus_for_requirement_editor() {
+        try {
+            const focus_storage = load_focus_storage();
+            let changed = false;
+            const req_id = String(this.params?.id || '');
+            for (const key of Object.keys(focus_storage)) {
+                if (key.startsWith('rulefile_add_requirement:')) {
+                    if (req_id === 'new') {
+                        delete focus_storage[key];
+                        changed = true;
+                    }
+                    continue;
+                }
+                if (!key.startsWith('rulefile_edit_requirement:')) continue;
+                try {
+                    const json_part = key.slice('rulefile_edit_requirement:'.length);
+                    const p = JSON.parse(json_part);
+                    if (String(p.id || '') === req_id) {
+                        delete focus_storage[key];
+                        changed = true;
+                    }
+                } catch (_) {
+                    /* ignoreras */
+                }
+            }
+            if (changed) save_focus_storage(focus_storage);
+        } catch (_) {
+            /* ignoreras */
+        }
+    }
+
     handle_form_submit(event) {
         event.preventDefault();
         this._update_local_data_from_form(true);
@@ -449,6 +485,7 @@ export class EditRulefileRequirementComponent {
             }
             
             this.NotificationComponent.show_global_message(t('requirement_added_successfully', { reqTitle: this.local_requirement_data.title }), 'success');
+            this._clear_stored_focus_for_requirement_editor();
             this.router('rulefile_view_requirement', { id: new_key });
         } else {
             this.dispatch({
@@ -464,6 +501,7 @@ export class EditRulefileRequirementComponent {
             }
             
             this.NotificationComponent.show_global_message(t('rulefile_requirement_saved'), 'success');
+            this._clear_stored_focus_for_requirement_editor();
             this.router('rulefile_view_requirement', { id: this.params.id });
         }
     }
