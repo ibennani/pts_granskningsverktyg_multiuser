@@ -38,7 +38,6 @@ export async function _export_to_text_export_deprecated(current_audit: any) {
         );
 
         const samples = current_audit.samples || [];
-        const requirements_root = current_audit.ruleFileContent?.requirements ?? {};
 
         for (const sample of samples) {
             // Kontrollera om stickprovet har några brister alls
@@ -63,17 +62,15 @@ export async function _export_to_text_export_deprecated(current_audit: any) {
 
             // Sortera krav enligt referens
             const sorted_req_ids = Object.keys(requirements_map).sort((a, b) => {
-                const root = requirements_root as Record<string, { standardReference?: { text?: string } }>;
-                const reqA = root[a];
-                const reqB = root[b];
+                const reqA = current_audit.ruleFileContent.requirements[a];
+                const reqB = current_audit.ruleFileContent.requirements[b];
                 const refA = reqA?.standardReference?.text || '';
                 const refB = reqB?.standardReference?.text || '';
                 return natural_sort(refA, refB);
             });
 
             for (const reqId of sorted_req_ids) {
-                const req = (requirements_root as Record<string, any>)[reqId];
-                if (!req) continue;
+                const req = current_audit.ruleFileContent.requirements[reqId];
                 const reqDeficiencies = requirements_map[reqId];
 
                 // H3: Kravets titel
@@ -271,7 +268,7 @@ export async function _export_to_text_export_deprecated(current_audit: any) {
 
                 // Kommentar för detta krav på detta stickprov
                 const sample_result = get_export_requirement_result(
-                    requirements_root,
+                    current_audit.ruleFileContent.requirements,
                     sample,
                     req
                 );

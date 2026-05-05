@@ -9,49 +9,6 @@
     box-shadow: none;
 }
 
-.generic-table-stack {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    width: 100%;
-}
-
-.table-pagination-nav {
-    padding: 0.35rem 0.25rem 0.15rem;
-}
-
-.table-pagination-controls {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.75rem;
-    justify-content: space-between;
-}
-
-.table-pagination-status {
-    margin: 0;
-    font-size: 0.875rem;
-    color: var(--text-color-muted, #555);
-}
-
-.table-pagination-buttons {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.table-pagination-page-of {
-    font-size: 0.875rem;
-    color: var(--text-color-muted, #555);
-    padding: 0 0.25rem;
-}
-
-.table-pagination-btn {
-    min-height: 24px;
-    min-width: 24px;
-}
-
 .generic-table {
     width: 100%;
     border-collapse: collapse;

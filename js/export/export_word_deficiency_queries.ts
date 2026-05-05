@@ -19,7 +19,7 @@ export function get_requirements_with_deficiencies(current_audit: any): any[] {
 }
 
 export function get_total_requirements_count(current_audit: any): number {
-    return Object.keys(current_audit.ruleFileContent?.requirements || {}).length;
+    return Object.keys(current_audit.ruleFileContent.requirements || {}).length;
 }
 
 export function get_requirements_percentage(current_audit: any): number {
@@ -171,7 +171,7 @@ export function get_failing_requirement_ids_for_sample(sample: any): string[] {
 
 export function get_all_deficiencies_for_sample_generic(sample: any, current_audit: any): any[] {
     const deficiencies: any[] = [];
-    const all_reqs = current_audit.ruleFileContent?.requirements || {};
+    const all_reqs = current_audit.ruleFileContent.requirements || {};
     Object.values(all_reqs).forEach((req: any) => {
         const defs = get_deficiencies_for_sample(req, sample, current_audit, () => undefined);
         deficiencies.push(...defs);

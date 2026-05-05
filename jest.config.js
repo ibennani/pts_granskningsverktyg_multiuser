@@ -38,7 +38,6 @@ export default {
     '^.+[\\\\/]export_html_script_generated\\.js$': '<rootDir>/js/export/export_html_script_generated.ts',
     '^.+[\\\\/]export_html_export\\.js$': '<rootDir>/js/export/export_html_export.ts',
     '^.+/state/index\\.js$': '<rootDir>/js/state/index.ts',
-    '^.+/state/index\\.js$': '<rootDir>/js/state/index.ts',
     '^.+/auditReducer\\.js$': '<rootDir>/js/state/auditReducer.ts',
     '^.+/audit_reducer_time\\.js$': '<rootDir>/js/state/audit_reducer_time.ts',
     '^.+/auditResultAliases\\.js$': '<rootDir>/js/state/auditResultAliases.ts',
@@ -75,7 +74,6 @@ export default {
     '^.+[\\\\/]validation_rulefile_requirements\\.js$': '<rootDir>/js/logic/validation_rulefile_requirements.ts',
     '^.+[\\\\/]sanitize_persisted_app_state\\.js$': '<rootDir>/js/logic/sanitize_persisted_app_state.ts',
     '^.+[\\\\/]coerce_audit_for_export\\.js$': '<rootDir>/js/logic/coerce_audit_for_export.ts',
-    '^.+[\\\\/]table_pagination_logic\\.js$': '<rootDir>/js/logic/table_pagination_logic.ts',
     '^.+/translation_logic\\.js$': '<rootDir>/js/translation_logic.ts',
   },
   testMatch: [

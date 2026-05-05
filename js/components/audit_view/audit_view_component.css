@@ -66,7 +66,7 @@
     gap: 0.25rem;
     width: 100%;
     min-width: 30ch;
-    max-width: 920px;
+    max-width: 760px;
 }
 
 .audit-filter-row {
@@ -93,23 +93,6 @@
 
 .audit-filter-row__field--type {
     flex: 0 0 auto;
-}
-
-.audit-filter-row__field--page-size {
-    flex: 0 0 auto;
-}
-
-.audit-page-size-select {
-    width: auto;
-    min-width: 100px;
-}
-
-.audit-header-page-size-row {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    width: 100%;
-    margin-top: 0.35rem;
 }
 
 .audit-type-filter-select {
