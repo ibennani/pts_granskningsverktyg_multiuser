@@ -959,14 +959,15 @@ export class EditRulefileRequirementComponent {
             ordered_block_ids.push(...extra_block_ids);
             
             ordered_block_ids.forEach(block_id => {
-                const block = info_blocks[block_id];
+                let block = info_blocks[block_id];
                 if (!block) {
-                    // Create empty block if it doesn't exist
-                    info_blocks[block_id] = {
+                    // Skapa tomt block om det saknas (samma referens måste användas nedan)
+                    block = {
                         name: this._get_default_block_name(block_id),
                         expanded: true,
                         text: ''
                     };
+                    info_blocks[block_id] = block;
                 }
                 
                 const block_container = this.Helpers.create_element('div', { class_name: 'info-block-edit-container', attributes: { 'data-block-id': block_id } });
