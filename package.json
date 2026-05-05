@@ -22,6 +22,7 @@
     "deploy:v2": "node scripts/deploy-v2.js",
     "diagnose:v2": "node scripts/diagnose-v2-remote.js",
     "remote:fix-prod-deps": "node scripts/remote-fix-prod-deps.js",
+    "uppdatera:byggstämpel": "node scripts/update_public_build_info.js",
     "build": "vite build && node scripts/postbuild-copy.js",
     "preview": "vite preview",
     "lint:js": "eslint \"js/**/*.js\" \"shared/**/*.js\" --quiet",

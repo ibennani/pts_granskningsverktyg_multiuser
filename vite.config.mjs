@@ -1,9 +1,9 @@
 // vite.config.mjs
+import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
-import { inject_dist_build_metadata } from './scripts/inject_dist_build_metadata.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -56,16 +56,28 @@ function redirect_base_without_trailing_slash() {
   }
 }
 
-/** Måste köras i `closeBundle` före vite-plugin-pwa så att precache av `index.html` matchar filen på disk. */
-function inject_dist_metadata_before_pwa () {
+/**
+ * I dev: servera rotens gitignorerade `build-info.js` (från build-info-watchern) före statiska `public/`,
+ * så att byggtid i sidfoten följer filändringar. Produktion använder fryst `public/build-info.js`.
+ */
+function dev_serve_root_build_info_first () {
   return {
-    name: 'inject-dist-build-metadata-before-pwa',
-    apply: 'build',
-    closeBundle: {
-      order: 'pre',
-      handler () {
-        inject_dist_build_metadata(join(__dirname, 'dist'))
-      }
+    name: 'dev-serve-root-build-info-first',
+    apply: 'serve',
+    enforce: 'pre',
+    configureServer (server) {
+      server.middlewares.use((req, res, next) => {
+        if (req.method !== 'GET') return next()
+        const path_only = (req.url || '').split('?')[0]
+        if (path_only !== '/v2/build-info.js' && path_only !== '/build-info.js') return next()
+        const root_file = join(__dirname, 'build-info.js')
+        if (existsSync(root_file)) {
+          res.setHeader('Content-Type', 'application/javascript; charset=utf-8')
+          res.end(readFileSync(root_file, 'utf8'))
+          return
+        }
+        next()
+      })
     }
   }
 }
@@ -74,14 +86,14 @@ export default defineConfig({
   base: '/v2/',
   plugins: [
     redirect_base_without_trailing_slash(),
-    inject_dist_metadata_before_pwa(),
+    dev_serve_root_build_info_first(),
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'script',
       manifest: false,
       workbox: {
         // `index.html` måste precachas: navigateFallback använder createHandlerBoundToURL (annars non-precached-url).
-        // Övrig HTML undviks; byggstämpel injiceras i closeBundle före PWA så revision stämmer.
+        // Byggstämpel i produktion: fryst `public/build-info.js` (uppdateras med `npm run uppdatera:byggstämpel`).
         globPatterns: ['**/*.{js,css,ico,png,svg,woff2,woff}', 'index.html'],
         // build-info används för versionskontroll och ska alltid komma från nätverket (no-store i Nginx).
         globIgnores: ['**/build-info.js'],

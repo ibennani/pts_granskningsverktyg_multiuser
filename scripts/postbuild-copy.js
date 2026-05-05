@@ -42,7 +42,7 @@ for (const relativePath of foldersToCopy) {
   }
 }
 
-// build-info.js och byggstämpel i index.html skrivs redan i Vite closeBundle
-// (inject_dist_build_metadata) före service worker / precache.
+// Produktion: byggtid kommer från fryst public/build-info.js (kopieras till dist av Vite).
+// Uppdatera med: npm run uppdatera:byggstämpel
 
 console.log('[postbuild-copy] Completed successfully');

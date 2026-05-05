@@ -8,7 +8,8 @@ yarn-error.log*
 dist/
 build/
 .vite/
-build-info.js
+# Endast rot: dev-watchern; public/build-info.js ska versioneras (fryst produktionstext).
+/build-info.js
 
 # Environment variables
 .env
