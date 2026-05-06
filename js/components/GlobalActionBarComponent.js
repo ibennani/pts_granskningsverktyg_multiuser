@@ -1,6 +1,7 @@
 import { SaveAuditButtonComponent } from './SaveAuditButtonComponent.js';
 import { can_edit_rulefile } from '../utils/helpers.js';
 import { get_server_filename_datetime } from '../utils/download_filename_utils.ts';
+import { compute_next_rulefile_metadata_version } from '../../shared/rulefile/rulefile_metadata_version.js';
 import './global_action_bar_component.css';
 
 export class GlobalActionBarComponent {
@@ -75,26 +76,7 @@ export class GlobalActionBarComponent {
   }
 
   compute_next_version(current_version_string, today) {
-    const current_year = today.getFullYear();
-    const current_month = today.getMonth() + 1;
-    const version_match =
-      typeof current_version_string === 'string'
-        ? current_version_string.match(/^(\d{4})\.(\d{1,2})\.r(\d+)$/)
-        : null;
-
-    if (version_match) {
-      const [, version_year, version_month, release] = version_match;
-      const version_year_number = parseInt(version_year, 10);
-      const version_month_number = parseInt(version_month, 10);
-      if (
-        version_year_number === current_year &&
-        version_month_number === current_month
-      ) {
-        return `${current_year}.${current_month}.r${parseInt(release, 10) + 1}`;
-      }
-    }
-
-    return `${current_year}.${current_month}.r1`;
+    return compute_next_rulefile_metadata_version(current_version_string, today);
   }
 
   to_filename_version_suffix(version_string) {
@@ -151,10 +133,6 @@ export class GlobalActionBarComponent {
         current_state.ruleFileContent
       );
       const current_metadata = updated_rulefile_content.metadata || {};
-      const next_version = this.compute_next_version(
-        current_metadata.version,
-        today
-      );
       const rule_set_id = current_state.ruleSetId ?? current_metadata.ruleSetId ??
         (this.Helpers?.generate_uuid_v4 ? this.Helpers.generate_uuid_v4() : null) ??
         (typeof crypto !== 'undefined' && crypto?.randomUUID ? crypto.randomUUID() : null) ??
@@ -162,7 +140,6 @@ export class GlobalActionBarComponent {
       updated_rulefile_content.metadata = {
         ...current_metadata,
         dateModified: today_iso_date,
-        version: next_version,
         ruleSetId: rule_set_id,
       };
 
@@ -172,9 +149,10 @@ export class GlobalActionBarComponent {
         2
       );
       const title = updated_rulefile_content.metadata?.title || 'rulefile';
+      const current_version = updated_rulefile_content.metadata?.version || null;
       filename_for_download = this.generate_rulefile_filename(
         title,
-        next_version
+        current_version
       );
 
       if (typeof this.dispatch === 'function' && this.StoreActionTypes) {

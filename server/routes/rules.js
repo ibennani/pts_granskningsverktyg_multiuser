@@ -6,6 +6,7 @@ import { requireAdmin } from '../auth/middleware.js';
 import { import_payload_rate_limiter } from '../middleware/rateLimiter.js';
 import { check_json_structure_depth_and_size } from '../../shared/json/json_structure_guard.js';
 import { parse_part_key } from '../../shared/rulefile/rulefile_part_keys.js';
+import { compute_next_rulefile_metadata_version } from '../../shared/rulefile/rulefile_metadata_version.js';
 import { normalize_rulefile_content_object } from '../utils/rulefile_content_utils.js';
 import {
     fetch_rule_sets_list,
@@ -412,12 +413,31 @@ router.patch('/:id/content-part', async (req, res) => {
 
         const json_path = ['requirements', parsed.requirement_key, 'infoBlocks', parsed.block_id, 'text'];
 
+        const select_result = await query(
+            'SELECT content FROM rule_sets WHERE id = $1 AND version = $2 LIMIT 1',
+            [id, base_version]
+        );
+        if (select_result.rows.length === 0) {
+            const current = await query('SELECT version FROM rule_sets WHERE id = $1', [id]);
+            if (current.rows.length === 0) return res.status(404).json({ error: 'Regelfil hittades inte' });
+            return res.status(409).json({ error: 'Versionskonflikt', version: current.rows[0].version });
+        }
+
+        const content_obj = normalize_rulefile_content_object(select_result.rows[0].content);
+        const current_version_string = content_obj?.metadata?.version;
+        const next_metadata_version = compute_next_rulefile_metadata_version(current_version_string, new Date());
+
         const patch_result = await query(
             `UPDATE rule_sets
              SET content = jsonb_set(
-                 content,
-                 $2::text[],
-                 to_jsonb($3::text),
+                 jsonb_set(
+                     content,
+                     $2::text[],
+                     to_jsonb($3::text),
+                     true
+                 ),
+                 '{metadata,version}'::text[],
+                 to_jsonb($5::text),
                  true
              ),
                  content_updated_at = CURRENT_TIMESTAMP,
@@ -426,7 +446,7 @@ router.patch('/:id/content-part', async (req, res) => {
              WHERE id = $1
                AND version = $4
              RETURNING *`,
-            [id, json_path, value, base_version]
+            [id, json_path, value, base_version, next_metadata_version]
         );
 
         if (patch_result.rows.length === 0) {

@@ -160,7 +160,16 @@ describe('server_sync', () => {
             ruleFileIsPublished: false
         });
         await flush_sync_rulefile_to_server(() => state, dispatch);
-        expect(update_rule).toHaveBeenCalledWith('rs', { content: state.ruleFileContent });
+        expect(update_rule).toHaveBeenCalledWith(
+            'rs',
+            expect.objectContaining({
+                content: expect.objectContaining({
+                    metadata: expect.objectContaining({
+                        version: expect.stringMatching(/^\d{4}\.\d{1,2}\.r\d+$/)
+                    })
+                })
+            })
+        );
         expect(clear_rulefile_sync_pending).toHaveBeenCalled();
     });
 

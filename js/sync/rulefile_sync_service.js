@@ -9,6 +9,7 @@ import {
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import { update_rulefile_baseline_from_remote } from '../logic/rulefile_collaboration_notice.js';
 import { drain_rulefile_patch_queue } from './rulefile_patch_queue.js';
+import { compute_next_rulefile_metadata_version } from '../../shared/rulefile/rulefile_metadata_version.js';
 
 let rulefile_debounce_timer = null;
 const RULEFILE_DEBOUNCE_MS = 500;
@@ -40,7 +41,21 @@ async function run_sync_rulefile(state, dispatch_fn) {
             return;
         }
 
-        const updated = await update_rule(state.ruleSetId, { content: state.ruleFileContent });
+        const today = new Date();
+        const current_content = state.ruleFileContent;
+        const current_metadata = current_content?.metadata && typeof current_content.metadata === 'object'
+            ? current_content.metadata
+            : {};
+        const next_version = compute_next_rulefile_metadata_version(current_metadata.version, today);
+        const content_to_send = {
+            ...current_content,
+            metadata: {
+                ...current_metadata,
+                version: next_version
+            }
+        };
+
+        const updated = await update_rule(state.ruleSetId, { content: content_to_send });
         if (updated?.content && typeof dispatch_fn === 'function') {
             dispatch_fn({
                 type: 'REPLACE_RULEFILE_FROM_REMOTE',
