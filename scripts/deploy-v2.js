@@ -9,13 +9,67 @@
  *
  * Användning:
  *   npm run deploy:v2
+ *
+ * Byggstämpel oförändrad på servern:
+ *   npm run deploy:v2:keep-build-info
+ *   (sätter DEPLOY_KEEP_BUILD_INFO=1 — läser befintlig build-info.js på servern före build
+ *   och skriver samma innehåll till dist/ efter npm run build, så visad "Byggt …"-tid ändras inte.)
  */
 import { existsSync, readFileSync, writeFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
-import { run, exec, putFile, putDirectory, disconnect, host, remotePath, projectRoot, sshPassword } from './deploy-utils.js';
+import { spawnSync } from 'child_process';
+import {
+    run,
+    exec,
+    putFile,
+    putDirectory,
+    disconnect,
+    host,
+    remotePath,
+    projectRoot,
+    sshPassword,
+    username,
+    getSshClient
+} from './deploy-utils.js';
 
 const distDir = join(projectRoot, 'dist');
 const serverDir = join(projectRoot, 'server');
+
+const keep_remote_build_info =
+    process.env.DEPLOY_KEEP_BUILD_INFO === '1' || process.env.DEPLOY_KEEP_BUILD_INFO === 'true';
+
+/**
+ * Hämtar innehållet i build-info.js från fjärrservern (samma DEPLOY_PATH som vid uppladdning).
+ * @returns {Promise<string|null>}
+ */
+async function try_fetch_remote_build_info_js() {
+    const remoteFile = `${String(remotePath).replace(/\\/g, '/').replace(/\/+$/, '')}/build-info.js`;
+    const inner = `test -f ${JSON.stringify(remoteFile)} && cat ${JSON.stringify(remoteFile)}`;
+    try {
+        if (sshPassword) {
+            const client = await getSshClient();
+            const r = await client.execCommand(`bash -l -c ${JSON.stringify(inner)}`, { cwd: '/' });
+            if (r.code !== 0) return null;
+            const body = r.stdout || '';
+            return body.trim().length > 0 ? body : null;
+        }
+        const connect_sec = Math.max(5, Math.ceil(Number(process.env.DEPLOY_SSH_READY_TIMEOUT_MS || 90000) / 1000));
+        const ssh_target = process.env.DEPLOY_HOST && String(process.env.DEPLOY_HOST).includes('@')
+            ? process.env.DEPLOY_HOST
+            : `${username}@${host}`;
+        const r = spawnSync(
+            'ssh',
+            ['-o', 'BatchMode=yes', '-o', `ConnectTimeout=${connect_sec}`, '-o', 'StrictHostKeyChecking=accept-new', ssh_target, 'bash', '-l', '-c', inner],
+            { encoding: 'utf8', maxBuffer: 512 * 1024 }
+        );
+        if (r.error || r.status !== 0) return null;
+        const out = r.stdout || '';
+        return out.trim().length > 0 ? out : null;
+    } catch (e) {
+        console.warn('[deploy] Kunde inte läsa fjärr-build-info.js:', e.message);
+        return null;
+    }
+}
 
 async function sshOrRun(sshCmd, spawnArgs, execOpts = {}) {
     if (sshPassword) {
@@ -43,11 +97,27 @@ async function scpDir(local, remote) {
 
 async function main() {
     try {
+        let preserved_build_info = null;
+        if (keep_remote_build_info) {
+            console.log('[deploy] DEPLOY_KEEP_BUILD_INFO: försöker läsa befintlig build-info.js på servern...');
+            preserved_build_info = await try_fetch_remote_build_info_js();
+            if (preserved_build_info) {
+                console.log('[deploy] Fjärr-build-info.js hittades; samma innehåll skrivs till dist efter build.');
+            } else {
+                console.log('[deploy] Ingen fjärr-build-info.js (eller SSH misslyckades); använder lokalt build som vanligt.');
+            }
+        }
+
         console.log('[deploy] Bygger projektet...');
         await run('npm', ['run', 'build']);
 
         if (!existsSync(distDir)) {
             throw new Error('dist/ saknas efter build');
+        }
+
+        if (preserved_build_info) {
+            writeFileSync(join(distDir, 'build-info.js'), preserved_build_info, 'utf8');
+            console.log('[deploy] dist/build-info.js ersatt med fjärrversion (byggstämpel oförändrad).');
         }
 
         console.log(`[deploy] Laddar upp till ${host}:${remotePath}...`);

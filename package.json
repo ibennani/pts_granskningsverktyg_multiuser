@@ -20,6 +20,7 @@
     "cleanup:docker:remote": "node scripts/cleanup-docker-remote.js",
     "db:dedupe": "node server/scripts/dedupe-rules.js",
     "deploy:v2": "node scripts/deploy-v2.js",
+    "deploy:v2:keep-build-info": "cross-env DEPLOY_KEEP_BUILD_INFO=1 node scripts/deploy-v2.js",
     "diagnose:v2": "node scripts/diagnose-v2-remote.js",
     "remote:fix-prod-deps": "node scripts/remote-fix-prod-deps.js",
     "uppdatera:byggstämpel": "node scripts/update_public_build_info.js",
