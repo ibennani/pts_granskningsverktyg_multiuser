@@ -137,12 +137,16 @@ export class ManageUsersViewComponent {
             class_name: 'manage-users-header-left'
         });
 
+        const title_row = this.Helpers.create_element('div', {
+            class_name: 'manage-users-title-row'
+        });
+
         const heading = this.Helpers.create_element('h1', {
             id: 'main-content-heading',
             text_content: t('manage_users_title'),
             attributes: { tabindex: '-1' }
         });
-        left_header.appendChild(heading);
+        title_row.appendChild(heading);
 
         const add_btn = this.Helpers.create_element('button', {
             class_name: ['button', 'button-primary', 'manage-users-add-button'],
@@ -158,7 +162,8 @@ export class ManageUsersViewComponent {
                 this.render_detail_view();
             }
         });
-        left_header.appendChild(add_btn);
+        title_row.appendChild(add_btn);
+        left_header.appendChild(title_row);
 
         this._userFilterInputRef = null;
         const filter_wrapper = this.Helpers.create_element('div', {
