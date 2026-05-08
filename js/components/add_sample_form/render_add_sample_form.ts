@@ -44,6 +44,11 @@ export function render_add_sample_form(component: any, sample_id_to_edit: string
 
     component.root.innerHTML = '';
     component.form_element = component.Helpers.create_element('form', { class_name: 'add-sample-form' });
+    // Nytt stickprov: ignorera DraftManager (samma route-nyckel som tidigare partiellt ifyllt formulär)
+    // annars återställs kryssrutor/radio/text från localStorage/sessionStorage efter render.
+    if (sample_id_to_edit === null) {
+        component.form_element.setAttribute('data-draft-ignore', 'true');
+    }
     component.form_element.addEventListener('submit', component.handle_form_submit);
 
     // --- Category Section ---
