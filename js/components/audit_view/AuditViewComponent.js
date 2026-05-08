@@ -722,7 +722,13 @@ export class AuditViewComponent {
         const t = this.get_t_func();
         const base = (r.name || `Regelfil ${r.id}`).trim();
         const is_production = !!r.production_base_id;
-        if (is_production) return `${base} (${t('rulefile_status_production_label')})`;
+        if (is_production) {
+            const ver_raw = r.content_metadata_version ?? r.version_display;
+            const ver = ver_raw != null ? String(ver_raw).trim() : '';
+            return ver
+                ? `${base} ${ver} (${t('rulefile_status_production_label')})`
+                : `${base} (${t('rulefile_status_production_label')})`;
+        }
         if (r.version_display) return `${base} ${r.version_display} (${t('rulefile_status_published_label')})`;
         return base;
     }
