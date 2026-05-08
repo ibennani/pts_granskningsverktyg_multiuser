@@ -416,7 +416,6 @@ export class RequirementAuditComponent {
     build_navigation_options() {
         const t = this.Translation.t;
         const state = this.getState();
-        const is_locked = state?.auditStatus === 'locked' || state?.auditStatus === 'archived';
         const navigation_state = this.get_navigation_state();
         const { mode, is_first, is_last, prev_item, next_item, next_unhandled_item } = navigation_state;
 
@@ -436,7 +435,6 @@ export class RequirementAuditComponent {
         };
 
         return {
-            is_audit_locked: is_locked,
             is_first_requirement: is_first,
             is_last_requirement: is_last,
             sample_object: this.current_sample,
@@ -806,20 +804,16 @@ export class RequirementAuditComponent {
         const shortcut_key = (k) => ((t(k) || k).toString().charAt(0) || '').toLowerCase();
 
         const nav = this.get_navigation_state();
-        const state = this.getState();
-        const is_locked = state?.auditStatus === 'locked' || state?.auditStatus === 'archived';
 
         let action = null;
         if (key_lower === shortcut_key('shortcut_key_back_to_list')) {
             action = 'back_to_list';
-        } else if (!is_locked) {
-            if (key_lower === shortcut_key('shortcut_key_previous') && !nav.is_first) {
-                action = 'previous';
-            } else if (key_lower === shortcut_key('shortcut_key_next') && !nav.is_last) {
-                action = 'next';
-            } else if (key_lower === shortcut_key('shortcut_key_next_unhandled') && nav.next_unhandled_item) {
-                action = 'next_unhandled';
-            }
+        } else if (key_lower === shortcut_key('shortcut_key_previous') && !nav.is_first) {
+            action = 'previous';
+        } else if (key_lower === shortcut_key('shortcut_key_next') && !nav.is_last) {
+            action = 'next';
+        } else if (key_lower === shortcut_key('shortcut_key_next_unhandled') && nav.next_unhandled_item) {
+            action = 'next_unhandled';
         }
 
         if (action) {
