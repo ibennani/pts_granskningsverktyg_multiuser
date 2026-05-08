@@ -24,6 +24,7 @@ import {
     strip_requirement_list_filter_url_keys,
     strip_all_requirements_filter_url_keys
 } from './requirements_list_filters_url_ui.js';
+import { default_view_for_loaded_audit_state } from './audit_default_entry_view.js';
 import { is_debug_nav } from '../app/runtime_flags.js';
 import {
     set_current_user_name_window,
@@ -97,19 +98,7 @@ export function merge_audit_id_from_state_into_params(view_name, params, getStat
     return out;
 }
 
-/**
- * Standardvy efter att en granskning laddats (t.ex. upload-flöde).
- * @param {object} full_state
- * @returns {string}
- */
-export function default_view_for_loaded_audit_state(full_state) {
-    if (!full_state) return 'audit_overview';
-    const status = full_state.auditStatus || 'not_started';
-    const samples = full_state.samples || [];
-    if (status === 'not_started' && samples.length === 0) return 'sample_management';
-    if (status === 'not_started') return 'metadata';
-    return 'audit_overview';
-}
+export { default_view_for_loaded_audit_state } from './audit_default_entry_view.js';
 
 /**
  * Laddar granskning från server och dispatchar LOAD_AUDIT_FROM_FILE.

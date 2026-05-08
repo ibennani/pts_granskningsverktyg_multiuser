@@ -2,6 +2,7 @@
 // Gemensam logik för att öppna och ladda ner granskningar baserat på audit-id.
 
 import { load_audit_with_rule_file } from '../api/client.js';
+import { default_view_for_loaded_audit_state } from './audit_default_entry_view.js';
 import { is_fetch_network_error } from './connectivity_service.js';
 
 function get_translation_func(Translation) {
@@ -18,14 +19,7 @@ function get_translation_func(Translation) {
  */
 export function navigate_to_default_audit_view(full_state, router) {
     if (!full_state || typeof router !== 'function') return;
-    const status = full_state.auditStatus || 'not_started';
-    const samples = full_state.samples || [];
-    let next_view = 'audit_overview';
-    if (status === 'not_started' && samples.length === 0) {
-        next_view = 'sample_management';
-    } else if (status === 'not_started') {
-        next_view = 'metadata';
-    }
+    const next_view = default_view_for_loaded_audit_state(full_state);
     const aid = (full_state.auditId !== null && full_state.auditId !== undefined && full_state.auditId !== '')
         ? String(full_state.auditId)
         : null;
