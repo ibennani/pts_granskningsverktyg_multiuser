@@ -206,6 +206,10 @@ export class AddSampleFormComponent {
 
     update_description_from_sample_type() {
         if (!this.sample_type_select || !this.description_input) return;
+        if (!this.sample_type_select.value) {
+            this.previous_sample_type_value = '';
+            return;
+        }
 
         const current_description = this.description_input.value.trim();
         const new_sample_type_text = this.sample_type_select.options[this.sample_type_select.selectedIndex]?.text;
@@ -247,6 +251,10 @@ export class AddSampleFormComponent {
             this.url_form_group_ref.style.display = selected_category.hasUrl ? '' : 'none';
             if (!selected_category.hasUrl) this.url_input.value = '';
         }
+
+        this.previous_sample_type_value = this.sample_type_select.value
+            ? (this.sample_type_select.options[this.sample_type_select.selectedIndex]?.text || '')
+            : '';
     }
 
     _updateParentCheckboxState(parentCheckbox: any) {
@@ -465,6 +473,14 @@ export class AddSampleFormComponent {
 
         const selected_category_radio = this.form_element.querySelector('input[name="sampleCategory"]:checked');
         const sample_category_id = selected_category_radio ? selected_category_radio.value : null;
+        if (!sample_category_id) {
+            this.NotificationComponent.show_global_message(t('field_is_required', { fieldName: t('sample_category_title') }), 'error');
+            return;
+        }
+        if (!this.sample_type_select) {
+            this.NotificationComponent.show_global_message(t('add_sample_select_category_before_type'), 'error');
+            return;
+        }
         const sample_type_id = this.sample_type_select.value;
 
         const description_raw = this.description_input.value;
@@ -485,7 +501,6 @@ export class AddSampleFormComponent {
             ? this.Helpers.sanitize_plain_array(selected_raw_values, { trim: true })
             : selected_raw_values.map((v: any) => v.trim().replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ''));
 
-        if (!sample_category_id) { this.NotificationComponent.show_global_message(t('field_is_required', { fieldName: t('sample_category_title') }), 'error'); return; }
         if (!sample_type_id) { this.NotificationComponent.show_global_message(t('field_is_required', { fieldName: t('sample_type_label') }), 'error'); this.sample_type_select.focus(); return; }
         if (!description) { this.NotificationComponent.show_global_message(t('field_is_required', { fieldName: t('description') }), 'error'); this.description_input.focus(); return; }
         if (selected_content_types.length === 0) { this.NotificationComponent.show_global_message(t('error_min_one_content_type'), 'error'); return; }

@@ -50,11 +50,11 @@ export function render_add_sample_form(component: any, sample_id_to_edit: string
     component.form_element.appendChild(component.Helpers.create_element('h2', { text_content: t('sample_category_title') }));
     component.category_fieldset_element = component.Helpers.create_element('fieldset', { class_name: 'content-type-parent-group' });
     component.category_fieldset_element.appendChild(component.Helpers.create_element('legend', { text_content: t('sample_category_title'), class_name: 'visually-hidden' }));
-    sample_categories.forEach((cat: any, index: number) => {
+    sample_categories.forEach((cat: any) => {
         const radio_id = `sample-cat-${cat.id}`;
         const radio_wrapper = component.Helpers.create_element('div', { class_name: ['form-check', 'content-type-child-item'] });
         const radio = component.Helpers.create_element('input', { id: radio_id, class_name: 'form-check-input', attributes: { type: 'radio', name: 'sampleCategory', value: cat.id, required: true } });
-        if ((effective_sample_data && effective_sample_data.sampleCategory === cat.id) || (!effective_sample_data && index === 0)) radio.checked = true;
+        if (effective_sample_data && effective_sample_data.sampleCategory === cat.id) radio.checked = true;
         radio.addEventListener('change', () => {
             component.on_category_change(cat.id);
             // Variant B: kategoriändring ska direkt uppdatera utkastet (utan att trimma).
@@ -228,12 +228,27 @@ export function render_add_sample_form(component: any, sample_id_to_edit: string
     }
 
     // --- Post-render initialization ---
-    const selected_cat_id = effective_sample_data?.sampleCategory || sample_categories[0]?.id;
+    const selected_cat_id = effective_sample_data?.sampleCategory ?? null;
     if (selected_cat_id) {
-        component.on_category_change(selected_cat_id, effective_sample_data?.sampleType);
+        component.on_category_change(selected_cat_id, effective_sample_data?.sampleType ?? null);
+    } else if (sample_id_to_edit === null) {
+        // Nytt stickprov: ingen förvald kategori — typväljaren visas efter att användaren valt kategori.
+        component.sample_type_container.innerHTML = '';
+        const hint = component.Helpers.create_element('p', {
+            class_name: 'add-sample-category-hint',
+            text_content: t('add_sample_select_category_before_type'),
+            style: { margin: '0', color: 'var(--text-color-muted)' }
+        });
+        component.sample_type_container.appendChild(hint);
+        component.sample_type_select = null;
+        if (component.url_form_group_ref) {
+            component.url_form_group_ref.style.display = 'none';
+            if (component.url_input) component.url_input.value = '';
+        }
     }
-    component.previous_sample_type_value = effective_sample_data?.sampleType
-        ? component.sample_type_select.options[component.sample_type_select.selectedIndex]?.text
-        : '';
+    component.previous_sample_type_value =
+        component.sample_type_select && effective_sample_data?.sampleType
+            ? component.sample_type_select.options[component.sample_type_select.selectedIndex]?.text
+            : '';
 }
 
