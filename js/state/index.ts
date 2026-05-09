@@ -5,7 +5,8 @@
  * Tillståndsflöde (kort): komponenter anropar dispatch({ type, payload }) → root_reducer
  * delegerar till auditReducer / rulefileReducer / uiReducer / userReducer → nytt state sparas
  * i sessionStorage (saveStateToSessionStorage) och lyssnare notifieras; server synkas via
- * schedule_sync_to_server när det är lämpligt. Autospar för formulär sker separat (autosave_service).
+ * schedule_sync_to_server(getState, …) när det är lämpligt; synk läser alltid färsk state vid körning.
+ * Autospar för övriga formulär sker separat (autosave_service).
  */
 import * as AuditLogic from '../audit_logic.js';
 import { schedule_sync_to_server, schedule_sync_rulefile_to_server } from '../logic/server_sync.js';
@@ -160,7 +161,7 @@ function execute_single_dispatch(
                         action.type !== ActionTypes.REPLACE_RULEFILE_FROM_REMOTE &&
                         action.type !== ActionTypes.SET_REMOTE_AUDIT_ID &&
                         internal_state.auditStatus !== 'not_started') {
-                        schedule_sync_to_server(internal_state, dispatch_fn);
+                        schedule_sync_to_server(() => getState(), dispatch_fn);
                     }
                 } catch {
                     // ignoreras medvetet

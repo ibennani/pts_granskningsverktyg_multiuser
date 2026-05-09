@@ -17,7 +17,10 @@ import {
 } from '../../logic/rulefile_lock_service.js';
 import { make_infoblock_text_part_key } from '../../logic/rulefile_part_keys.js';
 import { post_same_user_field_commit } from '../../logic/same_user_tab_field_sync.js';
-import { is_remote_lock_held_by_other_user } from '../../logic/collab_lock_compare.js';
+import {
+    is_remote_lock_held_by_other_user,
+    is_lock_held_by_different_logged_in_user
+} from '../../logic/collab_lock_compare.js';
 import { find_requirement_definition } from '../../audit_logic.js';
 import { RequirementLookup } from '../../logic/requirement_lookup.js';
 import { load_focus_storage, save_focus_storage } from '../../logic/focus_manager.js';
@@ -141,7 +144,7 @@ export class EditRulefileRequirementComponent {
     }
 
     /**
-     * Uppdaterar disabled och lås-hint för infoblock-textfält utan att tömma formuläret,
+     * Uppdaterar readOnly och lås-hint för infoblock-textfält utan att tömma formuläret,
      * så fokus bevaras när låslista kommer via WebSocket/poll (full omritning stal tidigare fokus).
      */
     _sync_rulefile_part_lock_ui() {
@@ -158,7 +161,9 @@ export class EditRulefileRequirementComponent {
                 user,
                 my_client_lock_id
             );
-            textarea.disabled = locked_by_other;
+            textarea.disabled = false;
+            textarea.readOnly = locked_by_other;
+            textarea.classList.toggle('readonly-textarea', locked_by_other);
             const hint_id = textarea.getAttribute('aria-describedby');
             const hint_el = hint_id ? document.getElementById(hint_id) : null;
             if (!hint_el) return;
@@ -1102,7 +1107,9 @@ export class EditRulefileRequirementComponent {
                     const remote_lock = part_key ? get_current_rulefile_remote_lock(part_key) : null;
                     const my_client_lock_id = part_key ? ensure_client_lock_id_for_part(part_key) : null;
                     const locked_by_other = is_remote_lock_held_by_other_user(remote_lock, get_current_user_name(), my_client_lock_id);
-                    textarea.disabled = locked_by_other;
+                    textarea.disabled = false;
+                    textarea.readOnly = locked_by_other;
+                    textarea.classList.toggle('readonly-textarea', locked_by_other);
                     if (locked_by_other && remote_lock?.user_name) {
                         lock_hint_el.textContent = `${remote_lock.user_name} redigerar detta fält just nu.`;
                         lock_hint_el.hidden = false;
@@ -1112,32 +1119,40 @@ export class EditRulefileRequirementComponent {
                             const state = this.getState();
                             const rsid = state?.ruleSetId;
                             if (!rsid) return;
-                            // Sätt inte readOnly här – då blockeras tangentbord tills lås svarar (känns som dubbelklick).
-                            textarea.dataset.gvLockPending = '1';
                             try {
+                                await init_rulefile_lock_service(String(rsid));
+                                this._sync_rulefile_part_lock_ui();
+                                const lock_row_refresh = part_key ? get_current_rulefile_remote_lock(part_key) : null;
+                                const my_cid_rf = part_key ? ensure_client_lock_id_for_part(part_key) : null;
+                                if (
+                                    part_key &&
+                                    is_remote_lock_held_by_other_user(lock_row_refresh, get_current_user_name(), my_cid_rf) &&
+                                    is_lock_held_by_different_logged_in_user(lock_row_refresh, get_current_user_name())
+                                ) {
+                                    return;
+                                }
                                 const r = await try_acquire_rulefile_part_lock({ rule_set_id: rsid, part_key });
                                 await init_rulefile_lock_service(String(rsid));
                                 if (r?.ok) {
                                     if (document.activeElement !== textarea) {
                                         await release_rulefile_part_lock({ rule_set_id: rsid, part_key });
                                         await init_rulefile_lock_service(String(rsid));
-                                        delete textarea.dataset.gvLockPending;
                                         this._sync_rulefile_part_lock_ui();
                                         return;
                                     }
-                                    delete textarea.dataset.gvLockPending;
                                     textarea.dataset.gvLockAcquired = '1';
-                                    textarea.disabled = false;
+                                    textarea.readOnly = false;
+                                    textarea.classList.remove('readonly-textarea');
                                     if (lock_hint_el) {
                                         lock_hint_el.textContent = '';
                                         lock_hint_el.hidden = true;
                                     }
+                                    this._sync_rulefile_part_lock_ui();
                                 } else {
-                                    delete textarea.dataset.gvLockPending;
                                     this._sync_rulefile_part_lock_ui();
                                 }
-                            } finally {
-                                delete textarea.dataset.gvLockPending;
+                            } catch (_) {
+                                this._sync_rulefile_part_lock_ui();
                             }
                         });
                         textarea.addEventListener('blur', () => {

@@ -1,5 +1,6 @@
 // js/logic/audit_view_poll_service.js
 // Pollar granskningsversion när användaren har en granskning öppen. Uppdaterar state om annan enhet ändrat.
+// Lyssnar även på WebSocket-driven gv-audits-changed (detail.auditId) för snabbare synk.
 //
 // Vyer som INTE ingår (avsiktligt):
 // - start, upload, audit: inte i en granskning
@@ -15,8 +16,11 @@ import {
     should_show_audit_collaboration_notice,
     update_baseline_from_server_full_state
 } from './audit_collaboration_notice.js';
+import { subscribe_audits } from './list_push_service.js';
 
-const POLL_INTERVAL_MS = 3000;
+const POLL_INTERVAL_MS = 2000;
+const AUDIT_PUSH_EVENT = 'gv-audits-changed';
+
 const AUDIT_VIEWS = new Set([
     'audit_overview',
     'requirement_list',
@@ -42,12 +46,58 @@ function is_audit_view() {
 export function init_audit_view_poll_service({ getState, dispatch, StoreActionTypes }) {
     if (typeof window === 'undefined') return null;
 
+    const unsub_audits = subscribe_audits(() => {
+        /* Tom callback: håller WebSocket öppen för audits:changed även innan StartView/AuditView prenumererar. */
+    });
+
     let poll_timer = null;
 
     function stop_polling() {
         if (poll_timer) {
             clearTimeout(poll_timer);
             poll_timer = null;
+        }
+    }
+
+    async function try_pull_newer_audit_state({ triggered_by_audit_id } = {}) {
+        const state = getState();
+        const audit_id = state?.auditId;
+        if (!audit_id || !is_audit_view()) return;
+        if (state?.auditStatus === 'rulefile_editing' || state?.auditStatus === 'not_started') return;
+        if (
+            triggered_by_audit_id != null &&
+            String(triggered_by_audit_id) !== '' &&
+            String(triggered_by_audit_id) !== String(audit_id)
+        ) {
+            return;
+        }
+
+        try {
+            const { version: remote_version } = await get_audit_version(audit_id);
+            const state_now = getState();
+            if (!state_now?.auditId || String(state_now.auditId) !== String(audit_id)) return;
+            if (state_now?.auditStatus === 'rulefile_editing' || state_now?.auditStatus === 'not_started') return;
+            const local_version = state_now?.version ?? 0;
+            if (remote_version !== null && remote_version !== undefined && remote_version > local_version) {
+                const full_state = await load_audit_with_rule_file(audit_id);
+                if (full_state) {
+                    dispatch({
+                        type: StoreActionTypes.REPLACE_STATE_FROM_REMOTE,
+                        payload: {
+                            ...full_state,
+                            saveFileVersion: full_state.saveFileVersion || '2.1.0'
+                        }
+                    });
+                    update_baseline_from_server_full_state(full_state);
+                    const should_notice = should_show_audit_collaboration_notice({ local_state: state_now, remote_state: full_state });
+                    if (should_notice && app_runtime_refs.notification_component?.show_global_message && window.Translation?.t) {
+                        const msg = window.Translation.t('realtime_sync_updated') || 'Granskningen har uppdaterats av en annan enhet';
+                        app_runtime_refs.notification_component.show_global_message(msg, 'info');
+                    }
+                }
+            }
+        } catch {
+            /* tyst vid poll-fel */
         }
     }
 
@@ -66,33 +116,16 @@ export function init_audit_view_poll_service({ getState, dispatch, StoreActionTy
             return;
         }
 
-        try {
-            const { version } = await get_audit_version(audit_id);
-            const local_version = state?.version ?? 0;
-            if (version !== null && version !== undefined && version > local_version) {
-                const full_state = await load_audit_with_rule_file(audit_id);
-                if (full_state) {
-                    dispatch({
-                        type: StoreActionTypes.REPLACE_STATE_FROM_REMOTE,
-                        payload: {
-                            ...full_state,
-                            saveFileVersion: full_state.saveFileVersion || '2.1.0'
-                        }
-                    });
-                    update_baseline_from_server_full_state(full_state);
-                    const should_notice = should_show_audit_collaboration_notice({ local_state: state, remote_state: full_state });
-                    if (should_notice && app_runtime_refs.notification_component?.show_global_message && window.Translation?.t) {
-                        const msg = window.Translation.t('realtime_sync_updated') || 'Granskningen har uppdaterats av en annan enhet';
-                        app_runtime_refs.notification_component.show_global_message(msg, 'info');
-                    }
-                }
-            }
-        } catch {
-            /* tyst vid poll-fel */
-        }
-
+        await try_pull_newer_audit_state({});
         poll_timer = setTimeout(poll_once, POLL_INTERVAL_MS);
     }
+
+    function on_audits_push(ev) {
+        const pushed = ev?.detail?.auditId ?? null;
+        void try_pull_newer_audit_state({ triggered_by_audit_id: pushed });
+    }
+
+    window.addEventListener(AUDIT_PUSH_EVENT, on_audits_push);
 
     function start() {
         stop_polling();
@@ -104,6 +137,8 @@ export function init_audit_view_poll_service({ getState, dispatch, StoreActionTy
     return {
         disconnect() {
             stop_polling();
+            window.removeEventListener(AUDIT_PUSH_EVENT, on_audits_push);
+            if (typeof unsub_audits === 'function') unsub_audits();
         }
     };
 }

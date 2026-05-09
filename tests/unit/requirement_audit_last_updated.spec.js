@@ -1,6 +1,6 @@
 /**
- * Tester för att debouncad autospar i observationsfält inte höjer lastStatusUpdate
- * (skipLastStatusBump) medan blur-commit använder full bump.
+ * Tester för att debouncad lagring till Redux från observationsfält inte höjer lastStatusUpdate
+ * (skipLastStatusBump) medan omedelbar commit använder full bump.
  */
 import { jest } from '@jest/globals';
 import { RequirementAuditComponent } from '../../js/components/RequirementAuditComponent.js';

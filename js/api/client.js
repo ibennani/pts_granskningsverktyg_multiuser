@@ -218,6 +218,9 @@ export async function api_post(path, body) {
         if (err.existingAuditSummary !== undefined && err.existingAuditSummary !== null) {
             e.existingAuditSummary = err.existingAuditSummary;
         }
+        if (err.lock !== undefined && err.lock !== null) {
+            e.lock = err.lock;
+        }
         throw e;
     }
     return res.json();

@@ -220,16 +220,23 @@ async function run_sync(state, dispatch_fn) {
     }
 }
 
-export function schedule_sync_to_server(state, dispatch_fn) {
-    if (!state) return;
-    if (!state.ruleFileContent) return;
+/**
+ * @param {() => unknown | null | undefined} get_state_fn Returnerar aktuellt state (t.ex. getState).
+ *        Viktigt: vid varje köad körning läses state om så expectedVersion följer lyckade PATCH:ar i samma kö.
+ */
+export function schedule_sync_to_server(get_state_fn, dispatch_fn) {
+    const state_now = typeof get_state_fn === 'function' ? get_state_fn() : null;
+    if (!state_now || !state_now.ruleFileContent) return;
     if (typeof window === 'undefined') return;
-    if (state.auditStatus === 'rulefile_editing') return;
+    if (state_now.auditStatus === 'rulefile_editing') return;
 
     if (debounce_timer) clearTimeout(debounce_timer);
     debounce_timer = setTimeout(() => {
         debounce_timer = null;
-        void enqueue_audit_sync(() => run_sync(state, dispatch_fn));
+        void enqueue_audit_sync(() => {
+            const s = typeof get_state_fn === 'function' ? get_state_fn() : null;
+            return run_sync(s, dispatch_fn);
+        });
     }, DEBOUNCE_MS);
 }
 
@@ -242,10 +249,10 @@ export async function sync_to_server_now(get_state_fn, dispatch_fn) {
         clearTimeout(debounce_timer);
         debounce_timer = null;
     }
-    const state = typeof get_state_fn === 'function' ? get_state_fn() : null;
-    if (state) {
-        await enqueue_audit_sync(() => run_sync(state, dispatch_fn));
-    }
+    await enqueue_audit_sync(() => {
+        const state = typeof get_state_fn === 'function' ? get_state_fn() : null;
+        return state ? run_sync(state, dispatch_fn) : Promise.resolve();
+    });
 }
 
 /**
@@ -257,11 +264,11 @@ export async function flush_sync_to_server(get_state_fn, dispatch_fn) {
         clearTimeout(debounce_timer);
         debounce_timer = null;
     }
-    const state = typeof get_state_fn === 'function' ? get_state_fn() : null;
-    if (!state) return;
-    // För helt nya granskningar (status not_started utan remote auditId) ska server-sync
-    // endast ske via explicita anrop (t.ex. från metadata-flödet), inte vid generell navigering.
-    if (state.auditStatus === 'not_started' && !state.auditId) return;
-    await enqueue_audit_sync(() => run_sync(state, dispatch_fn));
+    await enqueue_audit_sync(() => {
+        const state = typeof get_state_fn === 'function' ? get_state_fn() : null;
+        if (!state) return Promise.resolve();
+        if (state.auditStatus === 'not_started' && !state.auditId) return Promise.resolve();
+        return run_sync(state, dispatch_fn);
+    });
 }
 

@@ -1,20 +1,9 @@
 // js/components/requirement_audit/ChecklistHandler.js
 
 import { get_current_user_name } from '../../utils/helpers.js';
-import { post_same_user_field_commit } from '../../logic/same_user_tab_field_sync.ts';
 import { marked } from '../../utils/markdown.js';
 import { consoleManager } from '../../utils/console_manager.js';
 import { app_runtime_refs } from '../../utils/app_runtime_refs.js';
-import {
-    init_audit_lock_service,
-    try_acquire_audit_part_lock,
-    release_audit_part_lock,
-    get_current_audit_remote_lock,
-    ensure_client_lock_id_for_part
-} from '../../logic/audit_lock_service.js';
-import { make_observation_detail_part_key } from '../../logic/audit_part_keys.js';
-import { is_remote_lock_held_by_other_user } from '../../logic/collab_lock_compare.js';
-import { api_patch } from '../../api/client.js';
 import {
     get_pending_checklist_focus_target,
     set_pending_checklist_focus_target
@@ -226,7 +215,6 @@ export const ChecklistHandler = {
         this.on_observation_change_callback = _callbacks.onObservationChange;
         this.on_observation_change_immediate_callback = _callbacks.onObservationChangeImmediate || null;
         this.on_observation_blur_commit_callback = _callbacks.onObservationBlurCommit || null;
-        this.on_before_release_pc_observation_lock_callback = _callbacks.onBeforeReleaseObservationLock || null;
         this.on_stuck_description_saved_callback = _callbacks.onStuckDescriptionSaved || null;
         this._observation_focus_snapshots = new Map();
         this.is_dom_built = false;
@@ -235,9 +223,6 @@ export const ChecklistHandler = {
         this.Translation = deps.Translation || window.Translation;
         this.Helpers = deps.Helpers || window.Helpers;
         this.get_observations_from_other_samples = options.getObservationsFromOtherSamples || (() => []);
-        this.get_audit_lock_context = typeof options.getAuditLockContext === 'function'
-            ? options.getAuditLockContext
-            : null;
         this.get_dom_focus_sync_root = typeof options.getDomFocusSyncRoot === 'function'
             ? options.getDomFocusSyncRoot
             : null;
@@ -264,7 +249,7 @@ export const ChecklistHandler = {
     },
 
     /**
-     * True när fokus ligger i en observations-textarea för underkänt kriterium (används vid autospar).
+     * True när fokus ligger i en observations-textarea för underkänt kriterium (används vid sparning till store).
      * @returns {boolean}
      */
     has_active_pc_observation_focus() {
@@ -868,89 +853,12 @@ export const ChecklistHandler = {
                     text_content: t('pc_observation_detail_label') 
                 });
                 observation_wrapper.appendChild(observation_label);
-                const ctx = this.get_audit_lock_context ? this.get_audit_lock_context() : null;
-                const audit_id = ctx?.audit_id;
-                const sample_id = ctx?.sample_id;
-                const requirement_id = ctx?.requirement_id;
-                if (audit_id && sample_id && requirement_id) {
-                    void init_audit_lock_service(String(audit_id));
-                }
-                const part_key = (audit_id && sample_id && requirement_id)
-                    ? make_observation_detail_part_key(String(audit_id), String(sample_id), String(requirement_id), String(check_id), String(pc_id))
-                    : null;
-                const lock_hint_id = `pc-obs-lock-hint-${check_id}-${pc_id}`;
-                const lock_hint_el = this.Helpers.create_element('p', {
-                    class_name: 'gv-audit-part-lock-hint text-muted',
-                    attributes: { id: lock_hint_id, hidden: 'hidden' },
-                    text_content: ''
-                });
-                observation_wrapper.appendChild(lock_hint_el);
 
                 const observation_textarea = this.Helpers.create_element('textarea', {
                     id: `pc-observation-${check_id}-${pc_id}`,
                     class_name: 'form-control pc-observation-detail-textarea',
                     attributes: { rows: '4' }
                 });
-                if (part_key) {
-                    observation_textarea.dataset.gvAuditPartKey = part_key;
-                    observation_textarea.setAttribute('aria-describedby', lock_hint_id);
-                    observation_textarea.addEventListener('focus', async () => {
-                        const c = this.get_audit_lock_context ? this.get_audit_lock_context() : null;
-                        const aid = c?.audit_id;
-                        if (!aid) return;
-                        if (this._audit_frozen_for_ui()) return;
-                        observation_textarea.dataset.gvLockPending = '1';
-                        if (this.container_ref) this.update_dom();
-                        try {
-                            const r = await try_acquire_audit_part_lock({ audit_id: aid, part_key });
-                            await init_audit_lock_service(String(aid));
-                            if (r?.ok) {
-                                if (document.activeElement !== observation_textarea) {
-                                    await release_audit_part_lock({ audit_id: aid, part_key });
-                                    await init_audit_lock_service(String(aid));
-                                    delete observation_textarea.dataset.gvLockPending;
-                                    this.update_dom();
-                                    return;
-                                }
-                                delete observation_textarea.dataset.gvLockPending;
-                                observation_textarea.dataset.gvLockAcquired = '1';
-                                this.update_dom();
-                            } else {
-                                delete observation_textarea.dataset.gvLockPending;
-                                this.update_dom();
-                            }
-                        } finally {
-                            delete observation_textarea.dataset.gvLockPending;
-                        }
-                    });
-                    observation_textarea.addEventListener('blur', () => {
-                        void (async () => {
-                            const had_lock = observation_textarea.dataset.gvLockAcquired === '1';
-                            delete observation_textarea.dataset.gvLockAcquired;
-                            if (typeof this.on_before_release_pc_observation_lock_callback === 'function') {
-                                try {
-                                    this.on_before_release_pc_observation_lock_callback();
-                                } catch (_) {
-                                    /* ignoreras */
-                                }
-                            }
-                            const c = this.get_audit_lock_context ? this.get_audit_lock_context() : null;
-                            const aid = c?.audit_id;
-                            if (!aid) return;
-                            const v = observation_textarea.value ?? '';
-                            if (had_lock) {
-                                await release_audit_part_lock({ audit_id: aid, part_key });
-                                post_same_user_field_commit({
-                                    userName: get_current_user_name(),
-                                    auditId: aid,
-                                    partKey: part_key,
-                                    value: v
-                                });
-                            }
-                            this.update_dom();
-                        })();
-                    });
-                }
                 observation_wrapper.appendChild(observation_textarea);
 
                 const attach_media_row = this.Helpers.create_element('div', { class_name: 'pc-attach-media-row' });
@@ -1187,37 +1095,13 @@ export const ChecklistHandler = {
                     observation_wrapper.hidden = (current_pc_status !== 'failed');
                 }
 
-                const part_key_pc = observation_textarea?.dataset?.gvAuditPartKey
-                    ? String(observation_textarea.dataset.gvAuditPartKey)
-                    : null;
-                const lock_row_pc = part_key_pc ? get_current_audit_remote_lock(part_key_pc) : null;
-                const my_client_lock_id_pc = part_key_pc ? ensure_client_lock_id_for_part(part_key_pc) : null;
-                const locked_by_other_pc = is_remote_lock_held_by_other_user(lock_row_pc, get_current_user_name(), my_client_lock_id_pc);
-
                 if (observation_textarea) {
-                    const want_disabled = locked_by_other_pc && !audit_frozen;
-                    if (observation_textarea.disabled !== want_disabled) {
-                        observation_textarea.disabled = want_disabled;
-                    }
-                    let want_readonly = false;
-                    if (observation_textarea.disabled) {
-                        want_readonly = false;
-                    } else {
-                        want_readonly = audit_archived;
-                    }
+                    observation_textarea.disabled = false;
+                    const want_readonly = audit_archived;
                     if (observation_textarea.readOnly !== want_readonly) {
                         observation_textarea.readOnly = want_readonly;
                     }
-                }
-                const lock_hint_el = observation_wrapper?.querySelector('.gv-audit-part-lock-hint');
-                if (lock_hint_el) {
-                    if (locked_by_other_pc && lock_row_pc?.user_name) {
-                        lock_hint_el.textContent = `${lock_row_pc.user_name} redigerar detta fält just nu.`;
-                        lock_hint_el.hidden = false;
-                    } else {
-                        lock_hint_el.textContent = '';
-                        lock_hint_el.hidden = true;
-                    }
+                    observation_textarea.classList.toggle('readonly-textarea', want_readonly);
                 }
                 const target_observation_value = pc_data.observationDetail || '';
                 if (observation_textarea) {
@@ -1226,8 +1110,7 @@ export const ChecklistHandler = {
                     const pc_observation_editing_elsewhere = has_pc_observation_textarea_focus && !is_this_focused;
                     const typing_other_field_in_plate = !is_this_focused && any_textarea_or_input_focused_in_sync_root
                         && !has_pc_observation_textarea_focus;
-                    const should_sync_obs = locked_by_other_pc
-                        || (!is_this_focused && !pc_observation_editing_elsewhere && !typing_other_field_in_plate);
+                    const should_sync_obs = !is_this_focused && !pc_observation_editing_elsewhere && !typing_other_field_in_plate;
                     if (should_sync_obs && observation_textarea.value !== target_observation_value) {
                         observation_textarea.value = target_observation_value;
                     }
@@ -1328,9 +1211,9 @@ export const ChecklistHandler = {
 
     /**
      * Synkar innehållet från alla observationstextareas i DOM till requirement_result_ref.
-     * Anropas före sparning så att autospar alltid har senaste värdet, och vid destroy/navigering.
+     * Anropas före sparning så att senaste textarea-värden följer med, och vid destroy/navigering.
      * @param {Object} options
-     * @param {boolean} [options.trim=true] - om true trimmas värdena (vid manuell sparning/navigering). Vid autospar skicka false.
+     * @param {boolean} [options.trim=true] - om true trimmas värdena (vid navigering bort). Annars rå text.
      */
     flush_observations_before_destroy(options = {}) {
         const should_trim = options.trim !== false;

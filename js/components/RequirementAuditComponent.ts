@@ -2,7 +2,6 @@
 // @ts-nocheck
 
 import { get_current_user_name } from '../utils/helpers.js';
-import { AutosaveService } from '../logic/autosave_service.js';
 import { ChecklistHandler } from './requirement_audit/ChecklistHandler.js';
 import { RequirementInfoSections } from './requirement_audit/RequirementInfoSections.js';
 import { RequirementAuditNavigationComponent } from './requirement_audit/RequirementAuditNavigation.js';
@@ -10,30 +9,12 @@ import { RequirementAuditSidebarComponent } from './RequirementAuditSidebarCompo
 import "./requirement_audit_component.css";
 import { consoleManager } from '../utils/console_manager.js';
 import { establish_baseline_for_current_audit_focus } from '../logic/audit_collaboration_notice.js';
-import { subscribe_audit_locks } from '../logic/list_push_service.js';
-import {
-    init_audit_lock_service,
-    try_acquire_audit_part_lock,
-    release_audit_part_lock,
-    get_current_audit_remote_lock,
-    ensure_client_lock_id_for_part
-} from '../logic/audit_lock_service.js';
-import {
-    make_requirement_text_part_key
-} from '../logic/audit_part_keys.js';
-import { api_patch } from '../api/client.js';
-import { make_observation_detail_part_key } from '../logic/audit_part_keys.js';
-import { post_same_user_field_commit } from '../logic/same_user_tab_field_sync.js';
-import { is_remote_lock_held_by_other_user } from '../logic/collab_lock_compare.js';
 import { find_requirement_definition, resolve_requirement_map_key, get_requirement_public_key } from '../audit_logic.js';
 import {
     is_debug_autosave_focus,
     is_debug_modal_scroll,
     is_debug_stuck_sync
 } from '../app/runtime_flags.js';
-
-/** Intervall för att hämta om lås när WebSocket saknas eller släpper efter — kompletterar push. */
-const AUDIT_LOCK_POLL_MS = 4000;
 
 export class RequirementAuditComponent {
     constructor() {
@@ -48,7 +29,6 @@ export class RequirementAuditComponent {
         this.Helpers = null;
         this.NotificationComponent = null;
         this.AuditLogic = null;
-        this.AutosaveService = null;
         this.subscribe = null;
         this.flush_sync_to_server = null;
         this.unsubscribe_from_store = null;
@@ -71,11 +51,7 @@ export class RequirementAuditComponent {
         this.ordered_requirement_keys = [];
         this.right_sidebar_root = null;
         this.sidebar_navigation_state = null;
-        this.autosave_session = null;
         this._baseline_key = null;
-        this._unsubscribe_audit_locks = null;
-        this._audit_lock_poll_timer = null;
-        this._audit_lock_visibility_handler = null;
     }
 
     async init({ root, deps }) {
@@ -91,7 +67,6 @@ export class RequirementAuditComponent {
         this.Helpers = deps.Helpers;
         this.NotificationComponent = deps.NotificationComponent;
         this.AuditLogic = deps.AuditLogic;
-        this.AutosaveService = deps.AutosaveService || AutosaveService;
         this.right_sidebar_root = deps.rightSidebarRoot || null;
         this.subscribe = deps.subscribe;
         this.flush_sync_to_server = deps.flush_sync_to_server || null;
@@ -101,16 +76,10 @@ export class RequirementAuditComponent {
         this.handle_checklist_status_change = this.handle_checklist_status_change.bind(this);
         this.handle_navigation = this.handle_navigation.bind(this);
         this.handle_comment_input = this.handle_comment_input.bind(this);
-        this.handle_comment_input_with_autosave = this.handle_comment_input_with_autosave.bind(this);
+        this.handle_comment_input_only = this.handle_comment_input_only.bind(this);
+        this.handle_comment_blur_save = this.handle_comment_blur_save.bind(this);
         this.handle_sidebar_filters_change = this.handle_sidebar_filters_change.bind(this);
         this.handle_audit_keydown = this.handle_audit_keydown.bind(this);
-        this._refresh_audit_lock_ui_after_remote_state = this._refresh_audit_lock_ui_after_remote_state.bind(this);
-        this._on_gv_audit_locks_refresh = (ev) => {
-            const aid = ev?.detail?.auditId;
-            if (!aid || String(this.getState()?.auditId || '') !== String(aid)) return;
-            void this._refresh_audit_lock_ui_after_remote_state();
-        };
-
         if (this.right_sidebar_root) {
             this.right_sidebar_component_instance = new RequirementAuditSidebarComponent();
             await this.right_sidebar_component_instance.init({
@@ -133,7 +102,7 @@ export class RequirementAuditComponent {
                     const focus_in_plate = active && (tag === 'textarea' || tag === 'input' || tag === 'select') &&
                         this.plate_element_ref?.contains(active);
                     if (focus_in_plate && listener_meta?.action_type === this.StoreActionTypes.REPLACE_STATE_FROM_REMOTE) {
-                        void this._refresh_audit_lock_ui_after_remote_state();
+                        void this.patch_dom_after_current_requirement_result_change();
                         return;
                     }
                     if (focus_in_plate) {
@@ -150,32 +119,39 @@ export class RequirementAuditComponent {
         }
 
         document.addEventListener('keydown', this.handle_audit_keydown);
-        document.addEventListener('gv-audit-locks-refresh', this._on_gv_audit_locks_refresh);
     }
 
-    async _patch_audit_part_to_server({ part_key, value }) {
-        const state = this.getState();
-        const audit_id = state?.auditId;
-        if (!audit_id) return;
-        const base_version = Number(state?.version ?? 0);
+    /**
+     * Sparar kravresultat till server via hel-PATCH (anropas vid blur på textfält och efter vissa åtgärder).
+     */
+    async _flush_audit_requirement_to_server() {
+        if (typeof this.flush_sync_to_server !== 'function' || !this.getState || !this.dispatch) return;
         try {
-            const full_state = await api_patch(`/audits/${encodeURIComponent(audit_id)}/content-part`, {
-                part_key,
-                base_version,
-                value: String(value ?? '')
-            });
-            if (full_state && typeof this.dispatch === 'function') {
-                this.dispatch({
-                    type: this.StoreActionTypes.REPLACE_STATE_FROM_REMOTE,
-                    payload: {
-                        ...full_state,
-                        saveFileVersion: full_state.saveFileVersion || '2.1.0'
-                    }
-                });
+            await this.flush_sync_to_server(this.getState, this.dispatch);
+        } catch (e) {
+            if (window.ConsoleManager?.warn) {
+                window.ConsoleManager.warn('[RequirementAuditComponent] flush_sync_to_server vid kravvy:', e);
             }
-        } catch (_) {
-            // poll-servicen/versionskonflikt-notis hanterar inkonsistens
         }
+    }
+
+    /** Synkar kommentarer + observationer från DOM till Redux (utan trim om should_trim false). */
+    _save_plate_to_redux({ should_trim = false, skip_last_status_bump = false } = {}) {
+        if (!this.plate_element_ref) return;
+        this.handle_comment_input(should_trim);
+        this.checklist_handler_instance?.flush_observations_before_destroy?.({ trim: should_trim });
+        void this.save_requirement_result_spar_bakgrund({
+            skipLastStatusBump: skip_last_status_bump === true
+        });
+    }
+
+    handle_comment_input_only() {
+        this.handle_comment_input(false);
+    }
+
+    handle_comment_blur_save() {
+        this._save_plate_to_redux({ should_trim: false, skip_last_status_bump: false });
+        void this._flush_audit_requirement_to_server();
     }
 
     load_and_prepare_view_data() {
@@ -213,7 +189,7 @@ export class RequirementAuditComponent {
         }
         
         // requirementId i route/hash är den publika "key"-etiketten.
-        // För intern lagring (requirementResults, låsnycklar, m.m.) används map-nyckeln i requirements-objektet.
+        // För intern lagring (requirementResults m.m.) används map-nyckeln i requirements-objektet.
         this.requirement_public_key = String(this.params.requirementId);
         this.requirement_map_key =
             resolve_requirement_map_key(state.ruleFileContent.requirements, this.requirement_public_key)
@@ -343,7 +319,6 @@ export class RequirementAuditComponent {
     }
 
     handle_checklist_status_change(change_info) {
-        this.autosave_session?.cancel_pending?.();
 
         let modified_result;
         try {
@@ -394,11 +369,6 @@ export class RequirementAuditComponent {
             const val = this.comment_to_actor_input.value || '';
             this.current_result.commentToActor = should_trim && trim_fn ? trim_fn(val) : val;
         }
-    }
-
-    handle_comment_input_with_autosave() {
-        this.handle_comment_input();
-        this.autosave_session?.request_autosave?.();
     }
 
     handle_sidebar_filters_change(payload) {
@@ -630,10 +600,10 @@ export class RequirementAuditComponent {
 
     /**
      * Kravresultat → store (skip_render / sidomeny):
-     * - `save_requirement_result_spar_bakgrund` / autospar: skip_render true (ingen global omritning).
+     * - `save_requirement_result_spar_bakgrund`: skip_render true (ingen global omritning).
      * - `handle_checklist_status_change`: skip_render false så sidomeny/räknare uppdateras; vy patchas via subscribe.
      * - `onStuckDescriptionSaved`: skip_render false avsiktligt (full synk av UI).
-     * - `_patch_audit_part_to_server` / poll: REPLACE_STATE_FROM_REMOTE utan skip_render; särskild hantering vid fokus i plåt.
+     * - Poll/WebSocket: REPLACE_STATE_FROM_REMOTE utan skip_render; särskild hantering vid fokus i plåt.
      * - `handle_navigation` confirm_reviewed: dispatch utan skip_render efter timeout.
      */
     dispatch_result_update(modified_result_object, options = {}) {
@@ -721,9 +691,7 @@ export class RequirementAuditComponent {
     }
 
     handle_navigation(action) {
-        this.autosave_session?.cancel_pending?.();
-        this.autosave_session?.flush?.({ should_trim: true, skip_render: true });
-        this.checklist_handler_instance?.flush_observations_before_destroy?.();
+        this._save_plate_to_redux({ should_trim: true, skip_last_status_bump: false });
 
         const navigation_state = this.get_navigation_state();
         const mode = navigation_state.mode;
@@ -844,11 +812,9 @@ export class RequirementAuditComponent {
             checklist_container,
             {
                 onStatusChange: this.handle_checklist_status_change,
-                onObservationChange: () => this.autosave_session?.request_autosave?.(),
-                onObservationChangeImmediate: () => { void this.save_requirement_result_spar_bakgrund(); },
-                onObservationBlurCommit: () => { void this.save_requirement_result_spar_bakgrund(); },
-                onBeforeReleaseObservationLock: () => {
-                    this.autosave_session?.flush?.({ should_trim: false, skip_render: true });
+                onObservationBlurCommit: () => {
+                    this._save_plate_to_redux({ should_trim: false, skip_last_status_bump: false });
+                    void this._flush_audit_requirement_to_server();
                 },
                 onStuckDescriptionSaved: async () => {
                     if (is_debug_stuck_sync()) {
@@ -875,14 +841,6 @@ export class RequirementAuditComponent {
             {
                 deps: this.deps,
                 getObservationsFromOtherSamples: (check_id, pc_id) => this.get_observations_from_other_samples(check_id, pc_id),
-                getAuditLockContext: () => {
-                    const st = this.getState();
-                    return {
-                        audit_id: st?.auditId ? String(st.auditId) : null,
-                        sample_id: this.params?.sampleId ? String(this.params.sampleId) : null,
-                        requirement_id: this.params?.requirementId ? String(this.params.requirementId) : null
-                    };
-                },
                 getDomFocusSyncRoot: () => this.plate_element_ref,
                 getIsAuditFrozen: () => {
                     const st = this.getState();
@@ -912,35 +870,25 @@ export class RequirementAuditComponent {
         const fg1 = this.Helpers.create_element('div', { class_name: 'form-group' });
         const label1 = this.Helpers.create_element('label', { attributes: { for: 'commentToAuditor' }, text_content: t('comment_to_auditor') });
         fg1.appendChild(label1);
-        const hint_auditor = this.Helpers.create_element('p', {
-            class_name: 'gv-audit-part-lock-hint text-muted',
-            attributes: { id: 'commentToAuditor-lock-hint', hidden: 'hidden' },
-            text_content: ''
-        });
-        fg1.appendChild(hint_auditor);
         this.comment_to_auditor_input = this.Helpers.create_element('textarea', {
             id: 'commentToAuditor',
             class_name: 'form-control',
-            attributes: { rows: '4', 'aria-describedby': 'commentToAuditor-lock-hint' }
+            attributes: { rows: '4' }
         });
-        this.comment_to_auditor_input.addEventListener('input', this.handle_comment_input_with_autosave);
+        this.comment_to_auditor_input.addEventListener('input', this.handle_comment_input_only);
+        this.comment_to_auditor_input.addEventListener('blur', this.handle_comment_blur_save);
         fg1.appendChild(this.comment_to_auditor_input);
 
         const fg2 = this.Helpers.create_element('div', { class_name: 'form-group' });
         const label2 = this.Helpers.create_element('label', { attributes: { for: 'commentToActor' }, text_content: t('comment_to_actor') });
         fg2.appendChild(label2);
-        const hint_actor = this.Helpers.create_element('p', {
-            class_name: 'gv-audit-part-lock-hint text-muted',
-            attributes: { id: 'commentToActor-lock-hint', hidden: 'hidden' },
-            text_content: ''
-        });
-        fg2.appendChild(hint_actor);
         this.comment_to_actor_input = this.Helpers.create_element('textarea', {
             id: 'commentToActor',
             class_name: 'form-control',
-            attributes: { rows: '4', 'aria-describedby': 'commentToActor-lock-hint' }
+            attributes: { rows: '4' }
         });
-        this.comment_to_actor_input.addEventListener('input', this.handle_comment_input_with_autosave);
+        this.comment_to_actor_input.addEventListener('input', this.handle_comment_input_only);
+        this.comment_to_actor_input.addEventListener('blur', this.handle_comment_blur_save);
         fg2.appendChild(this.comment_to_actor_input);
         
         container.append(fg1, fg2);
@@ -951,9 +899,6 @@ export class RequirementAuditComponent {
         const t = this.Translation.t;
         const state = this.getState();
         const is_locked = state.auditStatus === 'locked' || state.auditStatus === 'archived';
-        const audit_id = state?.auditId;
-        const sample_id = this.params?.sampleId;
-        const requirement_id = this.params?.requirementId;
 
         const header = this.plate_element_ref.querySelector('.requirement-audit-header');
         header.innerHTML = '';
@@ -982,8 +927,7 @@ export class RequirementAuditComponent {
             if (label2) label2.textContent = t('comment_to_actor');
         }
         
-        this._apply_comment_part_lock_ui();
-        this._attach_comment_field_lock_listeners_once();
+        this._apply_comment_fields_ui();
 
         [this.comment_to_auditor_input, this.comment_to_actor_input].forEach(input => {
             if (!input) return;
@@ -1000,227 +944,32 @@ export class RequirementAuditComponent {
     }
 
     /**
-     * Uppdaterar kommentarsfält: värden, disabled vid annan användares lås, samt fokus-/blur-lyssnare (en gång).
-     * readOnly används endast när granskningen är arkiverad; övriga lägen utan readOnly (fältlås hanteras senare).
+     * Synkar kommentarsfält med aktuellt kravresultat. readOnly endast för arkiverad granskning.
      */
-    _apply_comment_part_lock_ui() {
+    _apply_comment_fields_ui() {
         const state = this.getState();
-        const exempt_from_remote_disable = state.auditStatus === 'locked' || state.auditStatus === 'archived';
         const comments_readonly = state.auditStatus === 'archived';
-        const audit_id = state?.auditId;
-        const sample_id = this.params?.sampleId;
-        const requirement_id = this.params?.requirementId;
-
         const target_auditor_value = this.current_result.commentToAuditor || '';
         const target_actor_value = this.current_result.commentToActor || '';
 
-        const part_key_auditor = (audit_id && sample_id && requirement_id)
-            ? make_requirement_text_part_key(String(audit_id), String(sample_id), String(requirement_id), 'commentToAuditor')
-            : null;
-        const part_key_actor = (audit_id && sample_id && requirement_id)
-            ? make_requirement_text_part_key(String(audit_id), String(sample_id), String(requirement_id), 'commentToActor')
-            : null;
-
-        const lock_auditor = part_key_auditor ? get_current_audit_remote_lock(part_key_auditor) : null;
-        const lock_actor = part_key_actor ? get_current_audit_remote_lock(part_key_actor) : null;
-
-        const my_client_lock_id_auditor = part_key_auditor ? ensure_client_lock_id_for_part(part_key_auditor) : null;
-        const my_client_lock_id_actor = part_key_actor ? ensure_client_lock_id_for_part(part_key_actor) : null;
-
-        const me = get_current_user_name();
-        const locked_auditor_by_other = is_remote_lock_held_by_other_user(lock_auditor, me, my_client_lock_id_auditor);
-        const locked_actor_by_other = is_remote_lock_held_by_other_user(lock_actor, me, my_client_lock_id_actor);
-
         if (this.comment_to_auditor_input) {
-            if (part_key_auditor) {
-                this.comment_to_auditor_input.dataset.gvAuditPartKey = part_key_auditor;
-            }
             if (document.activeElement !== this.comment_to_auditor_input &&
                 this.comment_to_auditor_input.value !== target_auditor_value) {
                 this.comment_to_auditor_input.value = target_auditor_value;
             }
+            this.comment_to_auditor_input.disabled = false;
+            this.comment_to_auditor_input.readOnly = comments_readonly;
+            this.comment_to_auditor_input.classList.toggle('readonly-textarea', comments_readonly);
         }
         if (this.comment_to_actor_input) {
-            if (part_key_actor) {
-                this.comment_to_actor_input.dataset.gvAuditPartKey = part_key_actor;
-            }
             if (document.activeElement !== this.comment_to_actor_input &&
                 this.comment_to_actor_input.value !== target_actor_value) {
                 this.comment_to_actor_input.value = target_actor_value;
             }
+            this.comment_to_actor_input.disabled = false;
+            this.comment_to_actor_input.readOnly = comments_readonly;
+            this.comment_to_actor_input.classList.toggle('readonly-textarea', comments_readonly);
         }
-
-        const hint_auditor_el = this.plate_element_ref?.querySelector('#commentToAuditor-lock-hint');
-        const hint_actor_el = this.plate_element_ref?.querySelector('#commentToActor-lock-hint');
-        if (this.comment_to_auditor_input) {
-            this.comment_to_auditor_input.disabled = locked_auditor_by_other && !exempt_from_remote_disable;
-            if (hint_auditor_el) {
-                if (locked_auditor_by_other && lock_auditor?.user_name) {
-                    hint_auditor_el.textContent = `${lock_auditor.user_name} redigerar detta fält just nu.`;
-                    hint_auditor_el.hidden = false;
-                } else {
-                    hint_auditor_el.textContent = '';
-                    hint_auditor_el.hidden = true;
-                }
-            }
-        }
-        if (this.comment_to_actor_input) {
-            this.comment_to_actor_input.disabled = locked_actor_by_other && !exempt_from_remote_disable;
-            if (hint_actor_el) {
-                if (locked_actor_by_other && lock_actor?.user_name) {
-                    hint_actor_el.textContent = `${lock_actor.user_name} redigerar detta fält just nu.`;
-                    hint_actor_el.hidden = false;
-                } else {
-                    hint_actor_el.textContent = '';
-                    hint_actor_el.hidden = true;
-                }
-            }
-        }
-
-        [this.comment_to_auditor_input, this.comment_to_actor_input].forEach((input) => {
-            if (!input) return;
-            if (input.disabled) {
-                input.readOnly = false;
-            } else {
-                input.readOnly = comments_readonly;
-            }
-            input.classList.toggle('readonly-textarea', comments_readonly && !input.disabled);
-        });
-    }
-
-    /**
-     * Kopplar lås vid fokus/blur en gång per kommentarsfält (anropas från populate_dom_with_data).
-     */
-    _attach_comment_field_lock_listeners_once() {
-        const state = this.getState();
-        const audit_id = state?.auditId;
-        const sample_id = this.params?.sampleId;
-        const requirement_id = this.params?.requirementId;
-        const part_key_auditor = (audit_id && sample_id && requirement_id)
-            ? make_requirement_text_part_key(String(audit_id), String(sample_id), String(requirement_id), 'commentToAuditor')
-            : null;
-        const part_key_actor = (audit_id && sample_id && requirement_id)
-            ? make_requirement_text_part_key(String(audit_id), String(sample_id), String(requirement_id), 'commentToActor')
-            : null;
-
-        const attach_comment_lock_listeners = ({ textarea, part_key }) => {
-            if (!textarea || !part_key) return;
-            if (textarea.dataset.gvCommentLockListeners === '1') return;
-            textarea.dataset.gvCommentLockListeners = '1';
-            textarea.addEventListener('focus', async () => {
-                const st = this.getState();
-                const aid = st?.auditId;
-                if (!aid) return;
-                if (st.auditStatus === 'archived') return;
-                textarea.dataset.gvLockPending = '1';
-                this._apply_comment_part_lock_ui();
-                try {
-                    const r = await try_acquire_audit_part_lock({ audit_id: aid, part_key });
-                    await init_audit_lock_service(String(aid));
-                    if (r?.ok) {
-                        if (document.activeElement !== textarea) {
-                            await release_audit_part_lock({ audit_id: aid, part_key });
-                            await init_audit_lock_service(String(aid));
-                            delete textarea.dataset.gvLockPending;
-                            this._apply_audit_remote_lock_states_after_refresh();
-                            return;
-                        }
-                        delete textarea.dataset.gvLockPending;
-                        textarea.dataset.gvLockAcquired = '1';
-                        this._apply_audit_remote_lock_states_after_refresh();
-                    } else {
-                        delete textarea.dataset.gvLockPending;
-                        this._apply_audit_remote_lock_states_after_refresh();
-                    }
-                } finally {
-                    delete textarea.dataset.gvLockPending;
-                }
-            });
-            textarea.addEventListener('blur', () => {
-                void (async () => {
-                    const had_lock = textarea.dataset.gvLockAcquired === '1';
-                    delete textarea.dataset.gvLockAcquired;
-                    this.autosave_session?.flush?.({ should_trim: false, skip_render: true });
-                    const st = this.getState();
-                    const aid = st?.auditId;
-                    if (!aid) return;
-                    const v = textarea.value ?? '';
-                    if (had_lock) {
-                        await release_audit_part_lock({ audit_id: aid, part_key });
-                        post_same_user_field_commit({
-                            userName: get_current_user_name(),
-                            auditId: aid,
-                            partKey: part_key,
-                            value: v
-                        });
-                    }
-                    this._apply_comment_part_lock_ui();
-                })();
-            });
-        };
-
-        attach_comment_lock_listeners({ textarea: this.comment_to_auditor_input, part_key: part_key_auditor });
-        attach_comment_lock_listeners({ textarea: this.comment_to_actor_input, part_key: part_key_actor });
-    }
-
-    /**
-     * Efter refresh av låslista: uppdatera disabled/hint på kommentarer och checklista utan full render.
-     */
-    _apply_audit_remote_lock_states_after_refresh() {
-        this._apply_comment_part_lock_ui();
-        this.checklist_handler_instance?.update_dom?.();
-    }
-
-    /**
-     * Hämtar om lås från servern och uppdaterar UI (t.ex. efter REPLACE_STATE_FROM_REMOTE medan fokus ligger i fält).
-     */
-    async _refresh_audit_lock_ui_after_remote_state() {
-        const aid = this.getState()?.auditId;
-        if (!aid) return;
-        try {
-            await init_audit_lock_service(String(aid));
-            this._apply_audit_remote_lock_states_after_refresh();
-        } catch (_) {
-            /* ignoreras */
-        }
-    }
-
-    _stop_audit_lock_poll() {
-        if (this._audit_lock_poll_timer) {
-            clearInterval(this._audit_lock_poll_timer);
-            this._audit_lock_poll_timer = null;
-        }
-        if (typeof this._audit_lock_visibility_handler === 'function' && typeof document !== 'undefined') {
-            document.removeEventListener('visibilitychange', this._audit_lock_visibility_handler);
-            this._audit_lock_visibility_handler = null;
-        }
-    }
-
-    /**
-     * Pollning säkerställer att lås uppdateras även utan fungerande WebSocket eller vid missad push.
-     */
-    _start_audit_lock_poll(aid) {
-        this._stop_audit_lock_poll();
-        const aid_str = String(aid);
-        const tick = () => {
-            if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
-            if (String(this.getState()?.auditId || '') !== aid_str) return;
-            void (async () => {
-                try {
-                    await init_audit_lock_service(aid_str);
-                    this._apply_audit_remote_lock_states_after_refresh();
-                } catch (_) {
-                    /* ignoreras */
-                }
-            })();
-        };
-        this._audit_lock_visibility_handler = () => {
-            if (typeof document !== 'undefined' && document.visibilityState === 'visible') tick();
-        };
-        if (typeof document !== 'undefined') {
-            document.addEventListener('visibilitychange', this._audit_lock_visibility_handler);
-        }
-        this._audit_lock_poll_timer = setInterval(tick, AUDIT_LOCK_POLL_MS);
     }
 
     create_header_paragraph(className, label, data, isSampleLink = false) {
@@ -1289,95 +1038,9 @@ export class RequirementAuditComponent {
             establish_baseline_for_current_audit_focus(this.getState());
         }
 
-        const state_for_locks = this.getState();
-        this._stop_audit_lock_poll();
-        if (state_for_locks?.auditId) {
-            void init_audit_lock_service(String(state_for_locks.auditId));
-            this._start_audit_lock_poll(state_for_locks.auditId);
-            if (!this._unsubscribe_audit_locks) {
-                this._unsubscribe_audit_locks = subscribe_audit_locks((payload) => {
-                    void (async () => {
-                        try {
-                            const aid = String(this.getState()?.auditId || '');
-                            if (!aid) return;
-                            if (payload?.auditId != null && String(payload.auditId) !== aid) return;
-                            await init_audit_lock_service(aid);
-                            this._apply_audit_remote_lock_states_after_refresh();
-                        } catch (_) {
-                            /* ignoreras */
-                        }
-                    })();
-                });
-            }
-        }
-
         const plate_exists = this.plate_element_ref && this.root.contains(this.plate_element_ref);
         if (!plate_exists) {
             this.build_initial_dom();
-            this.autosave_session?.destroy?.();
-            this.autosave_session = null;
-            if (this.plate_element_ref && this.AutosaveService?.create_session) {
-                this.autosave_session = this.AutosaveService.create_session({
-                    form_element: this.plate_element_ref,
-                    focus_root: this.plate_element_ref,
-                    debounce_ms: 250,
-                    on_save: ({ is_autosave, should_trim, skip_render }) => {
-                        this.handle_comment_input(should_trim);
-                        this.checklist_handler_instance?.flush_observations_before_destroy?.({ trim: should_trim });
-                        const skip_last_bump = is_autosave === true
-                            && typeof this.checklist_handler_instance?.has_active_pc_observation_focus === 'function'
-                            && this.checklist_handler_instance.has_active_pc_observation_focus();
-                        if (skip_render) {
-                            void this.save_requirement_result_spar_bakgrund({ skipLastStatusBump: skip_last_bump });
-                        } else {
-                            void this.save_result_immediately({
-                                skipRender: false,
-                                skipLastStatusBump: skip_last_bump
-                            });
-                        }
-
-                        // Del-spara: om fokus ligger i kommentar-fält, spara just det fältet.
-                        try {
-                            const st = this.getState();
-                            const audit_id = st?.auditId;
-                            if (audit_id && document?.activeElement?.id && this.params?.sampleId && (this.requirement_map_key || this.params?.requirementId)) {
-                                const ae = document.activeElement;
-                                const id = String(ae.id || '');
-                                if (id === 'commentToAuditor' || id === 'commentToActor') {
-                                    const field = id === 'commentToAuditor' ? 'commentToAuditor' : 'commentToActor';
-                                    const part_key = make_requirement_text_part_key(
-                                        String(audit_id),
-                                        String(this.params.sampleId),
-                                        String(this.requirement_map_key || this.params.requirementId),
-                                        field
-                                    );
-                                    void this._patch_audit_part_to_server({ part_key, value: ae.value || '' });
-                                } else if (ae.classList?.contains('pc-observation-detail-textarea') && id.startsWith('pc-observation-')) {
-                                    // id: pc-observation-{checkId}-{pcId}
-                                    const rest = id.slice('pc-observation-'.length);
-                                    const first_dash = rest.indexOf('-');
-                                    if (first_dash > 0) {
-                                        const check_id = rest.slice(0, first_dash);
-                                        const pc_id = rest.slice(first_dash + 1);
-                                        if (check_id && pc_id) {
-                                            const part_key = make_observation_detail_part_key(
-                                                String(audit_id),
-                                                String(this.params.sampleId),
-                                                String(this.requirement_map_key || this.params.requirementId),
-                                                check_id,
-                                                pc_id
-                                            );
-                                            void this._patch_audit_part_to_server({ part_key, value: ae.value || '' });
-                                        }
-                                    }
-                                }
-                            }
-                        } catch (_) {
-                            // ignoreras
-                        }
-                    }
-                });
-            }
         }
 
         this.populate_dom_with_data();
@@ -1403,40 +1066,24 @@ export class RequirementAuditComponent {
     }
 
     destroy() {
-        this._stop_audit_lock_poll();
         if (typeof this.unsubscribe_from_store === 'function') {
             this.unsubscribe_from_store();
             this.unsubscribe_from_store = null;
         }
         document.removeEventListener('keydown', this.handle_audit_keydown);
-        document.removeEventListener('gv-audit-locks-refresh', this._on_gv_audit_locks_refresh);
         this.checklist_handler_instance?.flush_observations_before_destroy?.();
-        if (this.autosave_session) {
-            this.autosave_session.flush({ should_trim: true, skip_render: true });
-            this.autosave_session.destroy();
-            this.autosave_session = null;
-        } else if (this.current_result) {
-            this.handle_comment_input(true);
-            void this.save_requirement_result_spar_bakgrund();
-        }
+        this._save_plate_to_redux({ should_trim: true, skip_last_status_bump: false });
 
-        try {
-            this._unsubscribe_audit_locks?.();
-        } catch (_) {
-            // ignoreras
-        }
-        this._unsubscribe_audit_locks = null;
-        
-        // Remove event listeners
         if (this.comment_to_auditor_input) {
-            this.comment_to_auditor_input.removeEventListener('input', this.handle_comment_input_with_autosave);
+            this.comment_to_auditor_input.removeEventListener('input', this.handle_comment_input_only);
+            this.comment_to_auditor_input.removeEventListener('blur', this.handle_comment_blur_save);
             this.comment_to_auditor_input = null;
         }
         if (this.comment_to_actor_input) {
-            this.comment_to_actor_input.removeEventListener('input', this.handle_comment_input_with_autosave);
+            this.comment_to_actor_input.removeEventListener('input', this.handle_comment_input_only);
+            this.comment_to_actor_input.removeEventListener('blur', this.handle_comment_blur_save);
             this.comment_to_actor_input = null;
         }
-        
         this.checklist_handler_instance?.destroy();
         this.info_sections_instance?.destroy();
         this.top_navigation_instance?.destroy();

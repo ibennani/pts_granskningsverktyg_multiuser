@@ -29,16 +29,19 @@ function _has_subscribers() {
     return _audits_callbacks.size > 0 || _rules_callbacks.size > 0 || _rule_locks_callbacks.size > 0 || _audit_locks_callbacks.size > 0;
 }
 
-function _fire_audits_changed() {
+/**
+ * @param {{ auditId?: string|null }} [payload]
+ */
+function _fire_audits_changed(payload = {}) {
     _audits_callbacks.forEach((cb) => {
         try {
-            cb();
+            cb(payload);
         } catch {
             // tyst vid fel i callback
         }
     });
     if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent(EVENT_AUDITS_CHANGED));
+        window.dispatchEvent(new CustomEvent(EVENT_AUDITS_CHANGED, { detail: payload }));
     }
 }
 
@@ -100,7 +103,7 @@ function _start_fallback_polling() {
             _stop_fallback_polling();
             return;
         }
-        _fire_audits_changed();
+        _fire_audits_changed({});
         _fire_rules_changed();
         /** Tom payload = alla prenumeranter hämtar om lås (samma som vid WS-avbrott utan locks-event). */
         _fire_audit_locks_changed({});
@@ -140,7 +143,7 @@ function _connect() {
             const msg = JSON.parse(e.data);
             const type = msg?.type;
             if (type === 'audits:changed') {
-                _fire_audits_changed();
+                _fire_audits_changed({ auditId: msg?.auditId ?? null });
             } else if (type === 'rules:changed') {
                 _fire_rules_changed();
             } else if (type === 'rules:locks_changed') {
@@ -198,7 +201,7 @@ function _ensure_ws() {
 /**
  * Prenumerera på push när granskningslistan har ändrats.
  * Vid WebSocket-avbrott återansluts automatiskt (med backoff). Vid upprepade fel används fallback-polling (30 s).
- * @param {function(): void} callback - Anropas vid audits:changed (eller vid fallback-polling).
+ * @param {function({ auditId?: string|null }): void} callback - Anropas vid audits:changed (eller vid fallback-polling).
  * @returns {function(): void} Avprenumerera-funktion.
  */
 export function subscribe_audits(callback) {

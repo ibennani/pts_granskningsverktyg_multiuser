@@ -146,7 +146,7 @@ describe('server_sync', () => {
         jest.useFakeTimers();
         const dispatch = jest.fn();
         const state = base_audit_state({ auditId: 'z', version: 1 });
-        schedule_sync_to_server(state, dispatch);
+        schedule_sync_to_server(() => state, dispatch);
         expect(update_audit).not.toHaveBeenCalled();
         await jest.advanceTimersByTimeAsync(500);
         expect(update_audit).toHaveBeenCalledWith('z', expect.any(Object));
@@ -190,7 +190,7 @@ describe('server_sync', () => {
         jest.useFakeTimers();
         const dispatch = jest.fn();
         const state = base_audit_state({ auditId: 'deb', version: 1 });
-        schedule_sync_to_server(state, dispatch);
+        schedule_sync_to_server(() => state, dispatch);
         expect(update_audit).not.toHaveBeenCalled();
         await flush_sync_to_server(() => state, dispatch);
         expect(update_audit).toHaveBeenCalledWith('deb', expect.any(Object));

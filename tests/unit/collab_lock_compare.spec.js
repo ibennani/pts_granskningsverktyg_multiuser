@@ -1,4 +1,23 @@
-import { is_remote_lock_held_by_other_user } from '../../js/logic/collab_lock_compare.js';
+import {
+    is_remote_lock_held_by_other_user,
+    is_lock_held_by_different_logged_in_user
+} from '../../js/logic/collab_lock_compare.js';
+
+describe('is_lock_held_by_different_logged_in_user', () => {
+    test('saknad rad eller namn ger false', () => {
+        expect(is_lock_held_by_different_logged_in_user(null, 'Ada')).toBe(false);
+        expect(is_lock_held_by_different_logged_in_user({ user_name: '' }, 'Ada')).toBe(false);
+        expect(is_lock_held_by_different_logged_in_user({ user_name: 'Bob' }, '')).toBe(false);
+    });
+
+    test('samma namn ger false', () => {
+        expect(is_lock_held_by_different_logged_in_user({ user_name: 'Ada' }, 'ada')).toBe(false);
+    });
+
+    test('annat namn ger true', () => {
+        expect(is_lock_held_by_different_logged_in_user({ user_name: 'Bob' }, 'Ada')).toBe(true);
+    });
+});
 
 describe('is_remote_lock_held_by_other_user', () => {
     test('tom rad eller saknat namn ger false', () => {

@@ -7,8 +7,6 @@ import { build_app_location_href_for_view } from '../logic/shareable_app_locatio
 import { is_debug_modal_scroll, is_debug_nav, is_debug_problems_update } from '../app/runtime_flags.js';
 
 export class SideMenuComponent {
-    static CSS_PATH = '../../css/components/side_menu_component.css';
-
     async init({ root, deps }) {
         this.root = root;
         this.deps = deps;
@@ -39,9 +37,7 @@ export class SideMenuComponent {
         this.handle_close_side_menu_event = this.handle_close_side_menu_event.bind(this);
         this._compact_escape_listener_registered = false;
 
-        if (this.Helpers?.load_css && SideMenuComponent.CSS_PATH) {
-            await this.Helpers.load_css(SideMenuComponent.CSS_PATH).catch(() => {});
-        }
+        // Stilar laddas via statisk import högst upp; load_css med relativ path mot /v2 ger fel URL (404).
 
         this.unsubscribe = null;
         if (typeof deps.subscribe === 'function') {
