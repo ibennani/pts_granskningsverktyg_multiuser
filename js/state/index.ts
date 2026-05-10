@@ -177,7 +177,11 @@ function execute_single_dispatch(
                 }
                 try {
                     notify_listeners({
-                        skip_render: action_payload?.skip_render === true && !action_payload?.same_user_tab_broadcast,
+                        /** Hoppar över tunga chrome-uppdateringar (top/bottom bar, sidtitel, vänstermeny). */
+                        skip_render:
+                            action_payload?.skip_render === true ||
+                            action_payload?.same_user_tab_broadcast === true,
+                        /** Samma flik / BroadcastChannel: kör endast aktuell vykomponents render (ingen chrome). */
                         force_same_user_tab_render: action_payload?.same_user_tab_broadcast === true,
                         action_type: action.type,
                         requirement_result_update:

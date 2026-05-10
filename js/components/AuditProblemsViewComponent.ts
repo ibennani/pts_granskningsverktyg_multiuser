@@ -426,7 +426,8 @@ export class AuditProblemsViewComponent {
                 payload: {
                     sampleId: sample_id,
                     requirementId: save_key,
-                    newRequirementResult: modified_result
+                    newRequirementResult: modified_result,
+                    skip_render: true
                 }
             });
             this.render();
@@ -522,7 +523,8 @@ export class AuditProblemsViewComponent {
                         payload: {
                             sampleId: sample_id,
                             requirementId: sk2,
-                            newRequirementResult: modified_result
+                            newRequirementResult: modified_result,
+                            skip_render: true
                         }
                     });
                     this.render();
@@ -562,7 +564,8 @@ export class AuditProblemsViewComponent {
                             payload: {
                                 sampleId: sample_id,
                                 requirementId: sk3,
-                                newRequirementResult: modified_result
+                                newRequirementResult: modified_result,
+                                skip_render: true
                             }
                         });
                         this.render();

@@ -15,6 +15,20 @@ import {
     is_debug_modal_scroll,
     is_debug_stuck_sync
 } from '../app/runtime_flags.js';
+import { subscribe_audit_locks } from '../logic/list_push_service.js';
+import {
+    init_audit_lock_service,
+    try_acquire_audit_part_lock,
+    release_audit_part_lock,
+    get_current_audit_remote_lock,
+    ensure_client_lock_id_for_part,
+    refresh_remote_locks
+} from '../logic/audit_lock_service.js';
+import { make_requirement_text_part_key, make_observation_detail_part_key } from '../logic/audit_part_keys.js';
+import {
+    is_remote_lock_held_by_other_user,
+    is_lock_held_by_different_logged_in_user
+} from '../logic/collab_lock_compare.js';
 
 export class RequirementAuditComponent {
     constructor() {
@@ -52,6 +66,10 @@ export class RequirementAuditComponent {
         this.right_sidebar_root = null;
         this.sidebar_navigation_state = null;
         this._baseline_key = null;
+        this._unsubscribe_audit_locks = null;
+        this._on_audit_locks_visibility_refresh = null;
+        /** Anropas efter skip_render-dispatch för att uppdatera sidtitel/vänstermeny (injiceras från main). */
+        this.refresh_side_menu_and_title = null;
     }
 
     async init({ root, deps }) {
@@ -71,6 +89,8 @@ export class RequirementAuditComponent {
         this.subscribe = deps.subscribe;
         this.flush_sync_to_server = deps.flush_sync_to_server || null;
         this.unsubscribe_from_store = null;
+        this.refresh_side_menu_and_title =
+            typeof deps.refreshSideMenuAndTitle === 'function' ? deps.refreshSideMenuAndTitle : null;
 
         // Bind methods
         this.handle_checklist_status_change = this.handle_checklist_status_change.bind(this);
@@ -78,8 +98,45 @@ export class RequirementAuditComponent {
         this.handle_comment_input = this.handle_comment_input.bind(this);
         this.handle_comment_input_only = this.handle_comment_input_only.bind(this);
         this.handle_comment_blur_save = this.handle_comment_blur_save.bind(this);
+        this.handle_comment_focusin = this.handle_comment_focusin.bind(this);
+        this.handle_comment_focusout = this.handle_comment_focusout.bind(this);
         this.handle_sidebar_filters_change = this.handle_sidebar_filters_change.bind(this);
         this.handle_audit_keydown = this.handle_audit_keydown.bind(this);
+        
+        this._on_audit_locks_visibility_refresh = (ev) => {
+            const aid = ev.detail?.auditId;
+            const current_audit_id = this.getState()?.auditId || this.params?.auditId || this.params?.id;
+            if (!aid || String(aid) !== String(current_audit_id)) return;
+            if (this.plate_element_ref) {
+                this._sync_audit_part_lock_ui();
+                this.checklist_handler_instance?.update_dom?.();
+            }
+        };
+        window.addEventListener('gv-audit-locks-refresh', this._on_audit_locks_visibility_refresh);
+
+        this._unsubscribe_audit_locks = subscribe_audit_locks((payload) => {
+            const current_audit_id = this.getState()?.auditId || this.params?.auditId || this.params?.id;
+            if (!payload || !payload.auditId || String(payload.auditId) === String(current_audit_id)) {
+                if (current_audit_id) {
+                    refresh_remote_locks(current_audit_id).then(() => {
+                        if (typeof window !== 'undefined') {
+                            window.dispatchEvent(new CustomEvent('gv-audit-locks-refresh', { detail: { auditId: current_audit_id } }));
+                        }
+                    });
+                } else if (typeof window !== 'undefined') {
+                    window.dispatchEvent(new CustomEvent('gv-audit-locks-refresh', { detail: { auditId: payload?.auditId } }));
+                }
+            }
+        });
+
+        const initial_audit_id = this.getState()?.auditId || this.params?.auditId || this.params?.id;
+        if (initial_audit_id) {
+            init_audit_lock_service(initial_audit_id).then(() => {
+                if (typeof window !== 'undefined') {
+                    window.dispatchEvent(new CustomEvent('gv-audit-locks-refresh', { detail: { auditId: initial_audit_id } }));
+                }
+            });
+        }
         if (this.right_sidebar_root) {
             this.right_sidebar_component_instance = new RequirementAuditSidebarComponent();
             await this.right_sidebar_component_instance.init({
@@ -98,18 +155,34 @@ export class RequirementAuditComponent {
                 if (listener_meta?.skip_render) return;
                 if (this.root && typeof this.render === 'function') {
                     const active = document.activeElement;
+                    const active_in_plate = Boolean(active && this.plate_element_ref?.contains(active));
                     const tag = active?.tagName?.toLowerCase();
-                    const focus_in_plate = active && (tag === 'textarea' || tag === 'input' || tag === 'select') &&
-                        this.plate_element_ref?.contains(active);
-                    if (focus_in_plate && listener_meta?.action_type === this.StoreActionTypes.REPLACE_STATE_FROM_REMOTE) {
+                    const typing_in_plate = Boolean(
+                        active_in_plate &&
+                            active &&
+                            (tag === 'textarea' || tag === 'input' || tag === 'select')
+                    );
+                    const interactive_in_plate = Boolean(
+                        active_in_plate &&
+                            active &&
+                            (typing_in_plate ||
+                                tag === 'button' ||
+                                (tag === 'a' &&
+                                    (active.getAttribute?.('href') || '').trim() !== '' &&
+                                    !(active.getAttribute?.('href') || '').trim().toLowerCase().startsWith('javascript:')))
+                    );
+                    if (
+                        listener_meta?.action_type === this.StoreActionTypes.REPLACE_STATE_FROM_REMOTE &&
+                        active_in_plate
+                    ) {
                         void this.patch_dom_after_current_requirement_result_change();
-                        return;
-                    }
-                    if (focus_in_plate) {
                         return;
                     }
                     if (this._should_patch_requirement_result_only(listener_meta)) {
                         void this.patch_dom_after_current_requirement_result_change();
+                        return;
+                    }
+                    if (interactive_in_plate) {
                         return;
                     }
                     if (is_debug_modal_scroll() && window.ConsoleManager) window.ConsoleManager.log('[GV-ModalDebug] RequirementAuditComponent: render');
@@ -149,7 +222,45 @@ export class RequirementAuditComponent {
         this.handle_comment_input(false);
     }
 
-    handle_comment_blur_save() {
+    handle_comment_focusin(event) {
+        const textarea = event.target;
+        if (!textarea || !this.params?.sampleId || !this.requirement_map_key) return;
+        
+        // Hämta auditId från state
+        const state = this.getState();
+        const audit_id = state?.auditId || this.params?.auditId || this.params?.id;
+        if (!audit_id) return;
+
+        let field = null;
+        if (textarea.id === 'commentToAuditor') field = 'commentToAuditor';
+        else if (textarea.id === 'commentToActor') field = 'commentToActor';
+        
+        if (field) {
+            const part_key = make_requirement_text_part_key(audit_id, this.params.sampleId, this.requirement_map_key, field);
+            void try_acquire_audit_part_lock({ audit_id, part_key });
+        }
+    }
+
+    handle_comment_focusout(event) {
+        const textarea = event.target;
+        if (!textarea || !this.params?.sampleId || !this.requirement_map_key) return;
+        
+        const state = this.getState();
+        const audit_id = state?.auditId || this.params?.auditId || this.params?.id;
+        if (!audit_id) return;
+
+        let field = null;
+        if (textarea.id === 'commentToAuditor') field = 'commentToAuditor';
+        else if (textarea.id === 'commentToActor') field = 'commentToActor';
+        
+        if (field) {
+            const part_key = make_requirement_text_part_key(audit_id, this.params.sampleId, this.requirement_map_key, field);
+            void release_audit_part_lock({ audit_id, part_key });
+        }
+    }
+
+    handle_comment_blur_save(event) {
+        this.handle_comment_focusout(event);
         this._save_plate_to_redux({ should_trim: false, skip_last_status_bump: false });
         void this._flush_audit_requirement_to_server();
     }
@@ -287,17 +398,10 @@ export class RequirementAuditComponent {
         }
     }
 
-    async patch_dom_after_current_requirement_result_change() {
-        if (!this.load_and_prepare_view_data()) {
-            await this.render();
-            return;
-        }
-        const plate_exists = this.plate_element_ref && this.root.contains(this.plate_element_ref);
-        if (!plate_exists) {
-            await this.render();
-            return;
-        }
-
+    /**
+     * Checklista, rubrik, notifiering, högersidebar och nav utan full RequirementAudit.render().
+     */
+    async _refresh_plate_ui_after_result_sync_from_store() {
         const state = this.getState();
         const is_locked = state.auditStatus === 'locked' || state.auditStatus === 'archived';
         const t = this.Translation.t;
@@ -318,7 +422,21 @@ export class RequirementAuditComponent {
         this.checklist_handler_instance?._reapply_pending_status_button_focus?.();
     }
 
-    handle_checklist_status_change(change_info) {
+    async patch_dom_after_current_requirement_result_change() {
+        if (!this.load_and_prepare_view_data()) {
+            await this.render();
+            return;
+        }
+        const plate_exists = this.plate_element_ref && this.root.contains(this.plate_element_ref);
+        if (!plate_exists) {
+            await this.render();
+            return;
+        }
+
+        await this._refresh_plate_ui_after_result_sync_from_store();
+    }
+
+    async handle_checklist_status_change(change_info) {
 
         let modified_result;
         try {
@@ -355,7 +473,22 @@ export class RequirementAuditComponent {
         }
         
         delete modified_result.needsReview;
-        this.dispatch_result_update(modified_result);
+        try {
+            await this.dispatch_result_update(modified_result, { skipRender: true });
+        } catch (e) {
+            if (window.ConsoleManager?.warn) {
+                window.ConsoleManager.warn('[RequirementAuditComponent] Kunde inte spara kravresultat efter statusändring:', e);
+            }
+            return;
+        }
+        if (!this.load_and_prepare_view_data()) {
+            await this.render();
+            return;
+        }
+        await this._refresh_plate_ui_after_result_sync_from_store();
+        if (typeof this.refresh_side_menu_and_title === 'function') {
+            this.refresh_side_menu_and_title();
+        }
     }
 
     handle_comment_input(should_trim = false) {
@@ -600,11 +733,11 @@ export class RequirementAuditComponent {
 
     /**
      * Kravresultat → store (skip_render / sidomeny):
-     * - `save_requirement_result_spar_bakgrund`: skip_render true (ingen global omritning).
-     * - `handle_checklist_status_change`: skip_render false så sidomeny/räknare uppdateras; vy patchas via subscribe.
-     * - `onStuckDescriptionSaved`: skip_render false avsiktligt (full synk av UI).
+     * - `save_requirement_result_spar_bakgrund`: skip_render true (ingen global omritning); sidtitel/meny uppdateras via blur-flöde vid behov.
+     * - `handle_checklist_status_change`: skip_render true; checklista, sidebar och vänstermeny uppdateras lokalt + `refreshSideMenuAndTitle`.
+     * - `onStuckDescriptionSaved`: skip_render false avsiktligt (full synk av UI) eller motsv.
      * - Poll/WebSocket: REPLACE_STATE_FROM_REMOTE utan skip_render; särskild hantering vid fokus i plåt.
-     * - `handle_navigation` confirm_reviewed: dispatch utan skip_render efter timeout.
+     * - `handle_navigation` confirm_reviewed: skip_render true + lokal uppdatering av plåt/sidebar/meny.
      */
     dispatch_result_update(modified_result_object, options = {}) {
         (this.current_requirement.checks || []).forEach(check_def => {
@@ -751,7 +884,23 @@ export class RequirementAuditComponent {
                 }
                 delete result.needsReview;
                 setTimeout(() => {
-                    this.dispatch_result_update(result);
+                    void (async () => {
+                        try {
+                            await this.dispatch_result_update(result, { skipRender: true });
+                            if (!this.load_and_prepare_view_data()) {
+                                await this.render();
+                                return;
+                            }
+                            await this._refresh_plate_ui_after_result_sync_from_store();
+                            if (typeof this.refresh_side_menu_and_title === 'function') {
+                                this.refresh_side_menu_and_title();
+                            }
+                        } catch (err) {
+                            if (window.ConsoleManager?.warn) {
+                                window.ConsoleManager.warn('[RequirementAuditComponent] Bekräfta status / dispatch:', err);
+                            }
+                        }
+                    })();
                 }, 250);
                 break;
             }
@@ -846,7 +995,18 @@ export class RequirementAuditComponent {
                     const st = this.getState();
                     return st?.auditStatus === 'locked' || st?.auditStatus === 'archived';
                 },
-                getIsAuditArchived: () => this.getState()?.auditStatus === 'archived'
+                getIsAuditArchived: () => this.getState()?.auditStatus === 'archived',
+                lockHelpers: {
+                    tryAcquireLock: try_acquire_audit_part_lock,
+                    releaseLock: release_audit_part_lock,
+                    getRemoteLock: get_current_audit_remote_lock,
+                    ensureClientLockId: ensure_client_lock_id_for_part,
+                    isRemoteLockHeldByOtherUser: is_remote_lock_held_by_other_user,
+                    makeObservationDetailPartKey: make_observation_detail_part_key
+                },
+                getAuditId: () => this.getState()?.auditId || this.params?.auditId || this.params?.id,
+                getSampleId: () => this.params?.sampleId,
+                getRequirementMapKey: () => this.requirement_map_key
             }
         );
         
@@ -870,24 +1030,44 @@ export class RequirementAuditComponent {
         const fg1 = this.Helpers.create_element('div', { class_name: 'form-group' });
         const label1 = this.Helpers.create_element('label', { attributes: { for: 'commentToAuditor' }, text_content: t('comment_to_auditor') });
         fg1.appendChild(label1);
+        
+        const hint1 = this.Helpers.create_element('div', { class_name: 'lock-hint text-muted' });
+        hint1.id = 'lock-hint-commentToAuditor';
+        hint1.style.fontSize = '0.85em';
+        hint1.style.fontWeight = 'bold';
+        hint1.style.color = '#d32f2f';
+        hint1.setAttribute('aria-live', 'polite');
+        fg1.appendChild(hint1);
+
         this.comment_to_auditor_input = this.Helpers.create_element('textarea', {
             id: 'commentToAuditor',
             class_name: 'form-control',
             attributes: { rows: '4' }
         });
         this.comment_to_auditor_input.addEventListener('input', this.handle_comment_input_only);
+        this.comment_to_auditor_input.addEventListener('focusin', this.handle_comment_focusin);
         this.comment_to_auditor_input.addEventListener('blur', this.handle_comment_blur_save);
         fg1.appendChild(this.comment_to_auditor_input);
 
         const fg2 = this.Helpers.create_element('div', { class_name: 'form-group' });
         const label2 = this.Helpers.create_element('label', { attributes: { for: 'commentToActor' }, text_content: t('comment_to_actor') });
         fg2.appendChild(label2);
+        
+        const hint2 = this.Helpers.create_element('div', { class_name: 'lock-hint text-muted' });
+        hint2.id = 'lock-hint-commentToActor';
+        hint2.style.fontSize = '0.85em';
+        hint2.style.fontWeight = 'bold';
+        hint2.style.color = '#d32f2f';
+        hint2.setAttribute('aria-live', 'polite');
+        fg2.appendChild(hint2);
+
         this.comment_to_actor_input = this.Helpers.create_element('textarea', {
             id: 'commentToActor',
             class_name: 'form-control',
             attributes: { rows: '4' }
         });
         this.comment_to_actor_input.addEventListener('input', this.handle_comment_input_only);
+        this.comment_to_actor_input.addEventListener('focusin', this.handle_comment_focusin);
         this.comment_to_actor_input.addEventListener('blur', this.handle_comment_blur_save);
         fg2.appendChild(this.comment_to_actor_input);
         
@@ -944,11 +1124,75 @@ export class RequirementAuditComponent {
     }
 
     /**
+     * Uppdaterar readOnly och lås-hint för kommentarstextfält.
+     */
+    _sync_audit_part_lock_ui() {
+        if (!this.params?.sampleId || !this.requirement_map_key) return;
+        
+        const state = this.getState();
+        const audit_id = state?.auditId || this.params?.auditId || this.params?.id;
+        if (!audit_id) return;
+
+        const update_field_lock = (textarea, field_name) => {
+            if (!textarea) return;
+            
+            const part_key = make_requirement_text_part_key(audit_id, this.params.sampleId, this.requirement_map_key, field_name);
+            const remote_lock = get_current_audit_remote_lock(part_key);
+            const my_client_lock_id = ensure_client_lock_id_for_part(part_key);
+            const locked_by_other = is_remote_lock_held_by_other_user(
+                remote_lock,
+                get_current_user_name(),
+                my_client_lock_id
+            );
+
+            // Om granskningen är arkiverad är fältet alltid låst
+            const is_archived = state.auditStatus === 'archived';
+            const want_readonly = locked_by_other || is_archived;
+
+            if (textarea.readOnly !== want_readonly) {
+                const had_focus = document.activeElement === textarea;
+                textarea.readOnly = want_readonly;
+                if (had_focus && !want_readonly) {
+                    // Använd setTimeout för att undvika att störa pågående blur-events
+                    setTimeout(() => {
+                        const active = document.activeElement;
+                        if (active !== textarea && (active === document.body || active === null)) {
+                            textarea.focus({ preventScroll: true });
+                        }
+                    }, 0);
+                }
+            }
+            textarea.classList.toggle('readonly-textarea', want_readonly);
+
+            // Hantera lås-hint
+            const wrapper = textarea.closest('.form-group');
+            if (wrapper) {
+                let hint_el = wrapper.querySelector('.lock-hint');
+                if (hint_el) {
+                    if (locked_by_other) {
+                        const display_name = remote_lock?.user_name || this.Translation.t('another_user');
+                        hint_el.textContent = this.Translation.t('user_is_editing_field', { name: display_name });
+                        hint_el.style.marginBottom = '4px';
+                        textarea.setAttribute('aria-describedby', hint_el.id);
+                        textarea.style.border = '4px solid #d32f2f';
+                    } else {
+                        hint_el.textContent = '';
+                        hint_el.style.marginBottom = '0';
+                        textarea.removeAttribute('aria-describedby');
+                        textarea.style.border = '';
+                    }
+                }
+            }
+        };
+
+        update_field_lock(this.comment_to_auditor_input, 'commentToAuditor');
+        update_field_lock(this.comment_to_actor_input, 'commentToActor');
+    }
+
+    /**
      * Synkar kommentarsfält med aktuellt kravresultat. readOnly endast för arkiverad granskning.
      */
     _apply_comment_fields_ui() {
-        const state = this.getState();
-        const comments_readonly = state.auditStatus === 'archived';
         const target_auditor_value = this.current_result.commentToAuditor || '';
         const target_actor_value = this.current_result.commentToActor || '';
 
@@ -958,8 +1202,6 @@ export class RequirementAuditComponent {
                 this.comment_to_auditor_input.value = target_auditor_value;
             }
             this.comment_to_auditor_input.disabled = false;
-            this.comment_to_auditor_input.readOnly = comments_readonly;
-            this.comment_to_auditor_input.classList.toggle('readonly-textarea', comments_readonly);
         }
         if (this.comment_to_actor_input) {
             if (document.activeElement !== this.comment_to_actor_input &&
@@ -967,9 +1209,9 @@ export class RequirementAuditComponent {
                 this.comment_to_actor_input.value = target_actor_value;
             }
             this.comment_to_actor_input.disabled = false;
-            this.comment_to_actor_input.readOnly = comments_readonly;
-            this.comment_to_actor_input.classList.toggle('readonly-textarea', comments_readonly);
         }
+        
+        this._sync_audit_part_lock_ui();
     }
 
     create_header_paragraph(className, label, data, isSampleLink = false) {
@@ -1076,11 +1318,13 @@ export class RequirementAuditComponent {
 
         if (this.comment_to_auditor_input) {
             this.comment_to_auditor_input.removeEventListener('input', this.handle_comment_input_only);
+            this.comment_to_auditor_input.removeEventListener('focusin', this.handle_comment_focusin);
             this.comment_to_auditor_input.removeEventListener('blur', this.handle_comment_blur_save);
             this.comment_to_auditor_input = null;
         }
         if (this.comment_to_actor_input) {
             this.comment_to_actor_input.removeEventListener('input', this.handle_comment_input_only);
+            this.comment_to_actor_input.removeEventListener('focusin', this.handle_comment_focusin);
             this.comment_to_actor_input.removeEventListener('blur', this.handle_comment_blur_save);
             this.comment_to_actor_input = null;
         }
@@ -1089,6 +1333,15 @@ export class RequirementAuditComponent {
         this.top_navigation_instance?.destroy();
         this.bottom_navigation_instance?.destroy();
         this.right_sidebar_component_instance?.destroy();
+        
+        if (typeof window !== 'undefined' && this._on_audit_locks_visibility_refresh) {
+            window.removeEventListener('gv-audit-locks-refresh', this._on_audit_locks_visibility_refresh);
+            this._on_audit_locks_visibility_refresh = null;
+        }
+        if (typeof this._unsubscribe_audit_locks === 'function') {
+            this._unsubscribe_audit_locks();
+            this._unsubscribe_audit_locks = null;
+        }
         
         if (this.root) this.root.innerHTML = '';
         this.root = null;

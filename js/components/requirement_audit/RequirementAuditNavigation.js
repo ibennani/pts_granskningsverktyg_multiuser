@@ -53,6 +53,19 @@ export class RequirementAuditNavigationComponent {
         } = options;
 
         const t = this.Translation.t;
+
+        /** Behåll tangentbordsfokus om navigeringen byggs om medan en knapp redan är fokuserad. */
+        let restore_focus_action = null;
+        const ae_before_clear = document.activeElement;
+        if (
+            ae_before_clear &&
+            this.container_ref.contains(ae_before_clear) &&
+            ae_before_clear.tagName === 'BUTTON'
+        ) {
+            const da = ae_before_clear.getAttribute('data-action');
+            if (da) restore_focus_action = da;
+        }
+
         this.container_ref.innerHTML = '';
 
         const shortcut_display = (key) => (t(key) || key).toString().charAt(0).toUpperCase();
@@ -102,7 +115,10 @@ export class RequirementAuditNavigationComponent {
             const prev_btn = this.Helpers.create_element('button', {
                 class_name: 'button button-secondary',
                 html_content: `<span>${t(previous_text_key)}</span>` + this.Helpers.get_icon_svg('arrow_back', [], 18),
-                attributes: { 'aria-keyshortcuts': aria_keyshortcuts(prev_shortcut_key) }
+                attributes: {
+                    'aria-keyshortcuts': aria_keyshortcuts(prev_shortcut_key),
+                    'data-action': 'audit-nav-previous'
+                }
             });
             if (previous_aria_label) {
                 prev_btn.setAttribute('aria-label', previous_aria_label);
@@ -124,7 +140,10 @@ export class RequirementAuditNavigationComponent {
             const next_btn = this.Helpers.create_element('button', {
                 class_name: 'button button-secondary',
                 html_content: `<span>${t(next_text_key)}</span>` + this.Helpers.get_icon_svg('arrow_forward', [], 18),
-                attributes: { 'aria-keyshortcuts': aria_keyshortcuts(next_shortcut_key) }
+                attributes: {
+                    'aria-keyshortcuts': aria_keyshortcuts(next_shortcut_key),
+                    'data-action': 'audit-nav-next'
+                }
             });
             if (next_aria_label) {
                 next_btn.setAttribute('aria-label', next_aria_label);
@@ -150,7 +169,10 @@ export class RequirementAuditNavigationComponent {
             const next_unhandled_btn = this.Helpers.create_element('button', {
                 class_name: 'button button-primary',
                 html_content: `<span>${t(next_unhandled_text_key)}</span>` + this.Helpers.get_icon_svg('arrow_forward_alt', [], 18),
-                attributes: { 'aria-keyshortcuts': aria_keyshortcuts(next_unhandled_shortcut_key) }
+                attributes: {
+                    'aria-keyshortcuts': aria_keyshortcuts(next_unhandled_shortcut_key),
+                    'data-action': 'audit-nav-next-unhandled'
+                }
             });
             if (next_unhandled_aria_label) {
                 next_unhandled_btn.setAttribute('aria-label', next_unhandled_aria_label);
@@ -170,6 +192,22 @@ export class RequirementAuditNavigationComponent {
         this.container_ref.appendChild(nav_group_left);
         if (nav_group_right.hasChildNodes()) {
             this.container_ref.appendChild(nav_group_right);
+        }
+
+        if (restore_focus_action) {
+            const action = restore_focus_action;
+            requestAnimationFrame(() => {
+                const root = this.container_ref;
+                if (!root) return;
+                const btn = root.querySelector(`button[data-action="${CSS.escape(action)}"]`);
+                if (btn && document.contains(btn)) {
+                    try {
+                        btn.focus({ preventScroll: true });
+                    } catch (_) {
+                        btn.focus();
+                    }
+                }
+            });
         }
     }
 

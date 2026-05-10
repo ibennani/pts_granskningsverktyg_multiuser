@@ -30,6 +30,10 @@ export const ChecklistHandler = {
     get_is_audit_archived: null,
     /** @type {null|(() => HTMLElement|null)} */
     get_dom_focus_sync_root: null,
+    lock_helpers: null,
+    get_audit_id: null,
+    get_sample_id: null,
+    get_requirement_map_key: null,
     requirement_definition_ref: null,
     requirement_result_ref: null,
 
@@ -68,16 +72,11 @@ export const ChecklistHandler = {
         };
     },
 
-    _reapply_pending_status_button_focus() {
-        const pending = get_pending_checklist_focus_target();
-        if (!pending?.action || !this.container_ref) return;
-        if (typeof pending.set_at !== 'number' || Date.now() - pending.set_at > 5000) return;
-        const target = { action: pending.action, check_id: pending.check_id, pc_id: pending.pc_id };
-        this._try_focus_button_target(target);
-    },
-
-    _try_focus_button_target(button_target) {
-        if (!button_target || !this.container_ref) return false;
+    /**
+     * Hittar status-/kryssknapp utan att sätta fokus (används för jämförelse vid återfokus).
+     */
+    _resolve_status_button_element(button_target) {
+        if (!button_target || !this.container_ref) return null;
 
         let search_root = this.container_ref;
         if (button_target.check_id) {
@@ -91,12 +90,56 @@ export const ChecklistHandler = {
             if (pc_item) search_root = pc_item;
         }
 
-        const button_to_focus = search_root.querySelector(`button[data-action="${CSS.escape(button_target.action)}"]`);
-        const has_layout = button_to_focus && typeof button_to_focus.getClientRects === 'function'
-            ? button_to_focus.getClientRects().length > 0
+        const button_el = search_root.querySelector(`button[data-action="${CSS.escape(button_target.action)}"]`);
+        const has_layout = button_el && typeof button_el.getClientRects === 'function'
+            ? button_el.getClientRects().length > 0
             : false;
 
-        if (!button_to_focus || !has_layout || !document.contains(button_to_focus)) return false;
+        if (!button_el || !has_layout || !document.contains(button_el)) return null;
+        return button_el;
+    },
+
+    /**
+     * Återapplicerar väntande kryssfokus bara när fokus saknas eller redan ligger på rätt knapp —
+     * inte när användaren flyttat fokus till kommentar, navigering eller annan kontroll.
+     */
+    _reapply_pending_status_button_focus() {
+        const pending = get_pending_checklist_focus_target();
+        if (!pending?.action || !this.container_ref) return;
+        if (typeof pending.set_at !== 'number' || Date.now() - pending.set_at > 5000) return;
+
+        const target = { action: pending.action, check_id: pending.check_id, pc_id: pending.pc_id };
+        const pending_btn = this._resolve_status_button_element(target);
+
+        const ae = document.activeElement;
+        if (ae && ae !== document.body && ae !== document.documentElement) {
+            const has_layout = typeof ae.getClientRects === 'function' ? ae.getClientRects().length > 0 : true;
+            if (has_layout && document.contains(ae)) {
+                if (!this.container_ref.contains(ae)) {
+                    return;
+                }
+                const tag = ae.tagName?.toLowerCase();
+                if (tag === 'textarea' || tag === 'input' || tag === 'select') {
+                    return;
+                }
+                if (tag === 'button' || tag === 'a') {
+                    return;
+                }
+                return;
+            }
+        }
+
+        if (!pending_btn) return;
+        try {
+            pending_btn.focus({ preventScroll: true });
+        } catch (e) {
+            pending_btn.focus();
+        }
+    },
+
+    _try_focus_button_target(button_target) {
+        const button_to_focus = this._resolve_status_button_element(button_target);
+        if (!button_to_focus) return false;
         try {
             button_to_focus.focus({ preventScroll: true });
         } catch (e) {
@@ -232,6 +275,10 @@ export const ChecklistHandler = {
         this.get_is_audit_archived = typeof options.getIsAuditArchived === 'function'
             ? options.getIsAuditArchived
             : null;
+        this.lock_helpers = options.lockHelpers || null;
+        this.get_audit_id = typeof options.getAuditId === 'function' ? options.getAuditId : null;
+        this.get_sample_id = typeof options.getSampleId === 'function' ? options.getSampleId : null;
+        this.get_requirement_map_key = typeof options.getRequirementMapKey === 'function' ? options.getRequirementMapKey : null;
 
         // Bind handlers to this instance
         this.handle_checklist_click = this.handle_checklist_click.bind(this);
@@ -266,8 +313,21 @@ export const ChecklistHandler = {
         const pc_item = textarea.closest('.pass-criterion-item[data-pc-id]');
         const check_item = textarea.closest('.check-item[data-check-id]');
         if (!pc_item || !check_item) return;
-        const key = `${check_item.dataset.checkId}::${pc_item.dataset.pcId}`;
+        
+        const check_id = check_item.dataset.checkId;
+        const pc_id = pc_item.dataset.pcId;
+        const key = `${check_id}::${pc_id}`;
         this._observation_focus_snapshots.set(key, textarea.value ?? '');
+        
+        if (this.lock_helpers && this.get_audit_id && this.get_sample_id && this.get_requirement_map_key) {
+            const audit_id = this.get_audit_id();
+            const sample_id = this.get_sample_id();
+            const req_id = this.get_requirement_map_key();
+            if (audit_id && sample_id && req_id) {
+                const part_key = this.lock_helpers.makeObservationDetailPartKey(audit_id, sample_id, req_id, check_id, pc_id);
+                void this.lock_helpers.tryAcquireLock({ audit_id, part_key });
+            }
+        }
     },
 
     handle_pc_observation_focusout(event) {
@@ -279,6 +339,16 @@ export const ChecklistHandler = {
         const check_id = check_item.dataset.checkId;
         const pc_id = pc_item.dataset.pcId;
         const key = `${check_id}::${pc_id}`;
+        
+        if (this.lock_helpers && this.get_audit_id && this.get_sample_id && this.get_requirement_map_key) {
+            const audit_id = this.get_audit_id();
+            const sample_id = this.get_sample_id();
+            const req_id = this.get_requirement_map_key();
+            if (audit_id && sample_id && req_id) {
+                const part_key = this.lock_helpers.makeObservationDetailPartKey(audit_id, sample_id, req_id, check_id, pc_id);
+                void this.lock_helpers.releaseLock({ audit_id, part_key });
+            }
+        }
         if (!this._observation_focus_snapshots.has(key)) {
             return;
         }
@@ -366,7 +436,14 @@ export const ChecklistHandler = {
                     set_at: Date.now()
                 });
             }
-            this.on_status_change_callback(change_info);
+            const callback_result = this.on_status_change_callback(change_info);
+            if (callback_result != null && typeof callback_result.then === 'function') {
+                callback_result.catch((e) => {
+                    if (window.ConsoleManager?.warn) {
+                        window.ConsoleManager.warn('[ChecklistHandler] onStatusChange:', e);
+                    }
+                });
+            }
             if (should_keep_focus_on_status_button) {
                 this._restore_focus_to_button_with_retry(button_focus_target, {
                     restore_custom_flag_to: prev_custom_focus_flag
@@ -853,6 +930,14 @@ export const ChecklistHandler = {
                     text_content: t('pc_observation_detail_label') 
                 });
                 observation_wrapper.appendChild(observation_label);
+                
+                const observation_hint = this.Helpers.create_element('div', { class_name: 'lock-hint text-muted' });
+                observation_hint.id = `lock-hint-${check_id}-${pc_id}`;
+                observation_hint.style.fontSize = '0.85em';
+                observation_hint.style.fontWeight = 'bold';
+                observation_hint.style.color = '#d32f2f';
+                observation_hint.setAttribute('aria-live', 'polite');
+                observation_wrapper.appendChild(observation_hint);
 
                 const observation_textarea = this.Helpers.create_element('textarea', {
                     id: `pc-observation-${check_id}-${pc_id}`,
@@ -1089,20 +1174,72 @@ export const ChecklistHandler = {
                 }
 
                 const observation_wrapper = pc_item_li.querySelector('.pc-observation-detail-wrapper');
-                const observation_textarea = observation_wrapper ? observation_wrapper.querySelector('textarea.pc-observation-detail-textarea') : null;
+                const update_observation_lock_ui = (textarea) => {
+                    if (!textarea) return;
+                    textarea.disabled = false;
+                    let locked_by_other = false;
+                    let remote_lock = null;
+                    if (this.lock_helpers && this.get_audit_id && this.get_sample_id && this.get_requirement_map_key) {
+                        const audit_id = this.get_audit_id();
+                        const sample_id = this.get_sample_id();
+                        const req_id = this.get_requirement_map_key();
+                        if (audit_id && sample_id && req_id) {
+                            const part_key = this.lock_helpers.makeObservationDetailPartKey(audit_id, sample_id, req_id, check_id, pc_id);
+                            remote_lock = this.lock_helpers.getRemoteLock(part_key);
+                            const my_client_lock_id = this.lock_helpers.ensureClientLockId(part_key);
+                            locked_by_other = this.lock_helpers.isRemoteLockHeldByOtherUser(
+                                remote_lock,
+                                get_current_user_name(),
+                                my_client_lock_id
+                            );
+                        }
+                    }
 
+                    const want_readonly = locked_by_other || audit_archived;
+                    if (textarea.readOnly !== want_readonly) {
+                        const had_focus = document.activeElement === textarea;
+                        textarea.readOnly = want_readonly;
+                        if (had_focus && !want_readonly) {
+                            setTimeout(() => {
+                                const active = document.activeElement;
+                                if (active !== textarea && (active === document.body || active === null)) {
+                                    textarea.focus({ preventScroll: true });
+                                }
+                            }, 0);
+                        }
+                    }
+                    textarea.classList.toggle('readonly-textarea', want_readonly);
+
+                    const wrapper = textarea.closest('.form-group');
+                    if (wrapper) {
+                        let hint_el = wrapper.querySelector('.lock-hint');
+                        if (hint_el) {
+                            if (locked_by_other) {
+                                const display_name = remote_lock?.user_name || t('another_user');
+                                hint_el.textContent = t('user_is_editing_field', { name: display_name });
+                                hint_el.style.marginBottom = '4px';
+                                textarea.setAttribute('aria-describedby', hint_el.id);
+                                textarea.style.border = '4px solid #d32f2f';
+                            } else {
+                                hint_el.textContent = '';
+                                hint_el.style.marginBottom = '0';
+                                textarea.removeAttribute('aria-describedby');
+                                textarea.style.border = '';
+                            }
+                        }
+                    }
+                };
+
+                const observation_textarea = observation_wrapper ? observation_wrapper.querySelector('textarea.pc-observation-detail-textarea') : null;
+                
                 if (observation_wrapper) {
                     observation_wrapper.hidden = (current_pc_status !== 'failed');
                 }
 
                 if (observation_textarea) {
-                    observation_textarea.disabled = false;
-                    const want_readonly = audit_archived;
-                    if (observation_textarea.readOnly !== want_readonly) {
-                        observation_textarea.readOnly = want_readonly;
-                    }
-                    observation_textarea.classList.toggle('readonly-textarea', want_readonly);
+                    update_observation_lock_ui(observation_textarea);
                 }
+
                 const target_observation_value = pc_data.observationDetail || '';
                 if (observation_textarea) {
                     const is_this_focused = document.activeElement === observation_textarea;

@@ -132,7 +132,8 @@ export async function init_and_render_view_component({
         notificationComponent,
         AuditLogic,
         ValidationLogic,
-        AutosaveService
+        AutosaveService,
+        refreshSideMenuAndTitle
     } = deps;
 
     await render_ctx.current_view_component_instance.init({
@@ -154,7 +155,8 @@ export async function init_and_render_view_component({
             ExportLogic: ExportLogicApi,
             ValidationLogic,
             AutosaveService,
-            rightSidebarRoot: right_sidebar_root
+            rightSidebarRoot: right_sidebar_root,
+            refreshSideMenuAndTitle
         }
     });
 

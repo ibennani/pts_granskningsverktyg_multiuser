@@ -516,14 +516,15 @@
     font-size: 0.95rem;
 }
 
-.input-fields-container textarea.form-control.readonly-textarea {
+/* Alla skrivskyddade textfält i kravplåten (kommentarer + checklistobservationer). */
+.requirement-audit-plate textarea.form-control.readonly-textarea {
     background-color: color-mix(in srgb, var(--input-background-color) 90%, var(--border-color));
     color: var(--text-color-muted);
     cursor: default;
     border-color: var(--border-color);
 }
 
-[data-theme="dark"] .input-fields-container textarea.form-control.readonly-textarea {
+[data-theme="dark"] .requirement-audit-plate textarea.form-control.readonly-textarea {
     background-color: color-mix(in srgb, var(--input-background-color) 85%, black);
     border-color: var(--border-color);
 }

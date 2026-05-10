@@ -406,59 +406,60 @@ export async function start_normal_session(deps: StartNormalSessionDeps): Promis
     };
 
     subscribe((_new_state, listener_meta) => {
-        if (listener_meta?.skip_render) {
+        const skip_global_chrome = listener_meta?.skip_render === true;
+
+        if (!skip_global_chrome) {
             if (is_debug_modal_scroll()) {
-                consoleManager.log('[GV-ModalDebug] subscribe: skip_render – ingen render');
+                consoleManager.log(
+                    '[GV-ModalDebug] subscribe: RENDERAR top_action_bar, bottom_action_bar, sidtitel, meny'
+                );
             }
-            return;
-        }
-        if (is_debug_modal_scroll()) {
-            consoleManager.log(
-                '[GV-ModalDebug] subscribe: RENDERAR top_action_bar, bottom_action_bar, current_view'
-            );
-        }
-        try {
-            top_action_bar_instance.render();
-        } catch (error) {
-            const err = error instanceof Error ? error : new Error(String(error));
-            consoleManager.error('[Main.js] Error in subscription top action bar render:', err);
-            if (error_boundary_instance && error_boundary_instance.show_error) {
-                error_boundary_instance.show_error({
-                    message: `Top action bar subscription render failed: ${err.message}`,
-                    stack: err.stack,
-                    component: 'TopActionBar',
-                });
+            try {
+                top_action_bar_instance.render();
+            } catch (error) {
+                const err = error instanceof Error ? error : new Error(String(error));
+                consoleManager.error('[Main.js] Error in subscription top action bar render:', err);
+                if (error_boundary_instance && error_boundary_instance.show_error) {
+                    error_boundary_instance.show_error({
+                        message: `Top action bar subscription render failed: ${err.message}`,
+                        stack: err.stack,
+                        component: 'TopActionBar',
+                    });
+                }
             }
+
+            try {
+                bottom_action_bar_instance.render();
+            } catch (error) {
+                const err = error instanceof Error ? error : new Error(String(error));
+                consoleManager.error('[Main.js] Error in subscription bottom action bar render:', err);
+                if (error_boundary_instance && error_boundary_instance.show_error) {
+                    error_boundary_instance.show_error({
+                        message: `Bottom action bar subscription render failed: ${err.message}`,
+                        stack: err.stack,
+                        component: 'BottomActionBar',
+                    });
+                }
+            }
+            {
+                // Sidtitel och meny följer faktiskt renderad vy: hash kan skilja sig (t.ex. publicerad
+                // regelfil mappar rulefile_edit_requirement → rulefile_view_requirement i view_render).
+                updatePageTitleFromCurrentView();
+                try {
+                    const parsed_params = JSON.parse(get_current_view_params_rendered_json() || '{}');
+                    update_side_menu(get_current_view_name_rendered(), parsed_params);
+                } catch (error) {
+                    consoleManager.warn(
+                        '[Main.js] Failed to parse current view params for side menu update:',
+                        error
+                    );
+                    update_side_menu(get_current_view_name_rendered(), {});
+                }
+            }
+        } else if (is_debug_modal_scroll()) {
+            consoleManager.log('[GV-ModalDebug] subscribe: skip_render – hoppar över chrome (bars/meny)');
         }
 
-        try {
-            bottom_action_bar_instance.render();
-        } catch (error) {
-            const err = error instanceof Error ? error : new Error(String(error));
-            consoleManager.error('[Main.js] Error in subscription bottom action bar render:', err);
-            if (error_boundary_instance && error_boundary_instance.show_error) {
-                error_boundary_instance.show_error({
-                    message: `Bottom action bar subscription render failed: ${err.message}`,
-                    stack: err.stack,
-                    component: 'BottomActionBar',
-                });
-            }
-        }
-        {
-            // Sidtitel och meny följer faktiskt renderad vy: hash kan skilja sig (t.ex. publicerad
-            // regelfil mappar rulefile_edit_requirement → rulefile_view_requirement i view_render).
-            updatePageTitleFromCurrentView();
-            try {
-                const parsed_params = JSON.parse(get_current_view_params_rendered_json() || '{}');
-                update_side_menu(get_current_view_name_rendered(), parsed_params);
-            } catch (error) {
-                consoleManager.warn(
-                    '[Main.js] Failed to parse current view params for side menu update:',
-                    error
-                );
-                update_side_menu(get_current_view_name_rendered(), {});
-            }
-        }
         const { viewName: canonical_view_from_hash } = parse_view_and_params_from_hash();
         const current_view_component_instance = get_current_view_component();
         if (
@@ -475,6 +476,9 @@ export async function start_normal_session(deps: StartNormalSessionDeps): Promis
                         error
                     );
                 }
+                return;
+            }
+            if (skip_global_chrome) {
                 return;
             }
             if (get_current_view_name_rendered() !== 'confirm_sample_edit') {

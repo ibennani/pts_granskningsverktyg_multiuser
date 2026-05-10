@@ -99,12 +99,14 @@ export const MarkdownToolbar = {
                 e.preventDefault();
                 const instance = instanceMap.get(textarea.id);
                 if (instance) {
+                    window.customFocusApplied = true;
                     if (instance.toolbarVisible) {
                         const firstButton = toolbar.querySelector('.md-toolbar-btn');
-                        if (firstButton) firstButton.focus();
+                        if (firstButton) firstButton.focus({ preventScroll: true });
                     } else {
-                        instance.toggleBtn.focus();
+                        instance.toggleBtn.focus({ preventScroll: true });
                     }
+                    setTimeout(() => { window.customFocusApplied = false; }, 50);
                 }
             }
         });
@@ -247,18 +249,33 @@ export const MarkdownToolbar = {
             if (!instance) return;
             instance.toolbarVisible = !instance.toolbarVisible;
             this.applyToolbarVisibility(instance.toolbar, wrapper, instance.toggleBtn, instance.labelRow, instance.previewDiv, instance.toolbarVisible, instance.previewVisible);
+            
+            // Sätt tillfälligt en flagga för att förhindra att andra blur-handlers (som lås-logiken)
+            // omedelbart stjäl tillbaka fokus när vi klickar på formateringsknappen
+            window.customFocusApplied = true;
+            setTimeout(() => {
+                if (instance.toolbarVisible) {
+                    const firstButton = instance.toolbar.querySelector('.md-toolbar-btn');
+                    if (firstButton) firstButton.focus({ preventScroll: true });
+                } else {
+                    textarea.focus({ preventScroll: true });
+                }
+                setTimeout(() => { window.customFocusApplied = false; }, 50);
+            }, 0);
         });
         btn.addEventListener('keydown', (e) => {
             if (e.key === 'Tab' && !e.shiftKey) {
                 const instance = instanceMap.get(textarea.id);
                 if (instance) {
                     e.preventDefault();
+                    window.customFocusApplied = true;
                     if (instance.toolbarVisible) {
                         const firstButton = instance.toolbar.querySelector('.md-toolbar-btn');
-                        if (firstButton) firstButton.focus();
+                        if (firstButton) firstButton.focus({ preventScroll: true });
                     } else {
-                        textarea.focus();
+                        textarea.focus({ preventScroll: true });
                     }
+                    setTimeout(() => { window.customFocusApplied = false; }, 50);
                 }
             }
         });
@@ -330,7 +347,9 @@ export const MarkdownToolbar = {
                 // Om Tab utan Shift, gå till textarean
                 if (!e.shiftKey) {
                     e.preventDefault();
-                    textarea.focus();
+                    window.customFocusApplied = true;
+                    textarea.focus({ preventScroll: true });
+                    setTimeout(() => { window.customFocusApplied = false; }, 50);
                     handled = true;
                 }
                 // Om Shift+Tab, låt standardbeteendet hända (gå tillbaka)

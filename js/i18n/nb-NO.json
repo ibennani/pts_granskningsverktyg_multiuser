@@ -4,6 +4,8 @@
   "add_sample_to_list": "Legg utvalg til listen",
   "add_samples_intro_message": "Legg til det som skal gjennomgås som utvalg. Et utvalg kan være en side, en visning, et dokument, gjentakende innhold eller en annen representativ del.",
   "add_sample_select_category_before_type": "Velg utvalgskategori ovenfor. Deretter kan du velge type fra listen.",
+  "another_user": "En annen bruker",
+  "user_is_editing_field": "{name} redigerer dette feltet akkurat nå.",
   "audit_title": "Regelfiler og tilsyn",
   "audit_title_audits": "Administrer tilsyn",
   "audit_title_rules": "Administrer regelfiler",

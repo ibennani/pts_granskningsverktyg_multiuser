@@ -8,6 +8,13 @@ import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import { clear_same_origin_sw_and_caches } from '../utils/clear_same_origin_sw_and_caches.js';
 import { get_api_base_url } from '../app/browser_globals.js';
 
+/**
+ * Ny-versionsdialog ("En ny version är tillgänglig" / "Ladda om sidan").
+ * Sätt till `false` innan du deployar om aktiva användare inte ska störas under bytet;
+ * sätt till `true` igen i samma commit eller direkt efter lyckad deploy.
+ */
+export const ENABLE_VERSION_RELOAD_PROMPT = true;
+
 const INITIAL_DELAY_MS = 5000;
 // Cooldown efter att användaren sett/klickat på notisen – undviker att den dyker upp igen direkt efter omladdning
 const NOTIFICATION_COOLDOWN_MS = 180000; // 3 minuter
@@ -92,6 +99,7 @@ export function parse_build_info_from_text(text) {
 
 export function init_version_check_service() {
     if (typeof window === 'undefined') return;
+    if (!ENABLE_VERSION_RELOAD_PROMPT) return;
     if (!window.BUILD_INFO?.timestamp) return;
 
     let check_timer = null;

@@ -184,6 +184,19 @@ if (typeof window !== 'undefined') {
         });
     }
 
+    /**
+     * Uppdaterar sidtitel och vänstermeny när kravresultat sparats med skip_render (ingen global chrome-körning).
+     */
+    function refresh_side_menu_and_title_after_skip_render() {
+        updatePageTitleFromCurrentView();
+        try {
+            const parsed_params = JSON.parse(render_ctx.current_view_params_rendered_json || '{}');
+            update_side_menu(render_ctx.current_view_name_rendered, parsed_params);
+        } catch {
+            update_side_menu(render_ctx.current_view_name_rendered, {});
+        }
+    }
+
     async function init_global_components() {
         await init_global_components_impl({
             getState,
@@ -226,12 +239,22 @@ if (typeof window !== 'undefined') {
         });
     }
 
+    /**
+     * Sant om fokus i huvudvyn är på något där en hel omritning av aktuell vy stör:
+     * formulärfält eller tangentnavigerade kontroller (knapp/länk utan id kan annars inte återställas efter render).
+     */
     function is_focus_in_editable_field(view_root) {
         if (!view_root) return false;
         const active = document.activeElement;
         if (!active || !view_root.contains(active)) return false;
         const tag = active.tagName ? active.tagName.toLowerCase() : '';
-        return tag === 'input' || tag === 'textarea' || tag === 'select';
+        if (tag === 'input' || tag === 'textarea' || tag === 'select') return true;
+        if (tag === 'button') return true;
+        if (tag === 'a') {
+            const href = active.getAttribute && active.getAttribute('href');
+            return Boolean(href && href.trim() !== '' && !href.trim().toLowerCase().startsWith('javascript:'));
+        }
+        return false;
     }
 
     const render_view_deps = () => ({
@@ -261,7 +284,8 @@ if (typeof window !== 'undefined') {
         ValidationLogic,
         updatePageTitle,
         start_normal_session,
-        updateBackupRestorePosition
+        updateBackupRestorePosition,
+        refreshSideMenuAndTitle: refresh_side_menu_and_title_after_skip_render
     });
 
     async function render_view(view_name_to_render, params_to_render = {}) {

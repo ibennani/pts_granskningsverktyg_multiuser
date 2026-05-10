@@ -4,6 +4,8 @@
   "add_sample_to_list": "Add sample to list",
   "add_samples_intro_message": "Add what should be reviewed as samples. A sample can be a page, a view, a document, recurring content, or another representative part.",
   "add_sample_select_category_before_type": "Choose a sample category above. You can then pick a type from the list.",
+  "another_user": "Another user",
+  "user_is_editing_field": "{name} is currently editing this field.",
   "audit_title": "Rule files & Audits",
   "audit_title_audits": "Manage audits",
   "audit_title_rules": "Manage rule files",

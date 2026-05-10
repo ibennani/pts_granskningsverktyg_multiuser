@@ -36,7 +36,7 @@ describe('audit_part_keys', () => {
         expect(parse_audit_part_key('audit:')).toBeNull();
         expect(parse_audit_part_key('audit:a:sample:s:req:r:commentToAuditor:extra')).toBeNull();
         expect(parse_audit_part_key('audit:a:sample:s:req:r:commentToSomeone')).toBeNull();
-        expect(parse_audit_part_key('audit:a:sample:s:req:r:check:c:pc:p:other')).toBeNull();
+        expect(parse_audit_part_key('audit:a:sample:s:req:r:check:c:pc:p:otherField')).toBeNull();
     });
 });
 

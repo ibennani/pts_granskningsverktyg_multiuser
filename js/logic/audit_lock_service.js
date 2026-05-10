@@ -60,7 +60,7 @@ export function ensure_client_lock_id_for_part(part_key) {
         }
     }
     const tab_id = typeof window !== 'undefined' ? window.name : 'fallback';
-    const key = `gv_audit_lock_id\0${String(part_key)}\0${tab_id}`;
+    const key = `gv_audit_lock_id|${String(part_key)}|${tab_id}`;
 
     const existing = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(key) : null;
     if (existing) {
@@ -77,7 +77,7 @@ export function ensure_client_lock_id_for_part(part_key) {
     return id;
 }
 
-async function refresh_remote_locks(audit_id) {
+export async function refresh_remote_locks(audit_id) {
     try {
         const data = await api_get(`/audits/${encodeURIComponent(audit_id)}/locks`);
         const locks = Array.isArray(data?.locks) ? data.locks : [];
@@ -150,8 +150,11 @@ export async function try_acquire_audit_part_lock({ audit_id, part_key }) {
         start_heartbeat();
         return { ok: true, lock, client_lock_id };
     } catch (err) {
+        if (typeof window !== 'undefined' && window.ConsoleManager) {
+            window.ConsoleManager.warn(`[audit_lock_service] try_acquire_audit_part_lock FAILED:`, err);
+        }
         await refresh_remote_locks(aid);
-        return { ok: false, error: err, lock: err?.responseBody?.lock || null };
+        return { ok: false, error: err, lock: err?.lock || null };
     }
 }
 

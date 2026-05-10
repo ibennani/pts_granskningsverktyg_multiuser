@@ -4,6 +4,8 @@
   "add_sample_to_list": "Lägg till stickprovet i listan",
   "add_samples_intro_message": "Lägg till det som ska granskas som stickprov. Ett stickprov kan vara en sida, en vy, ett dokument, återkommande innehåll eller en annan representativ del.",
   "add_sample_select_category_before_type": "Välj stickprovskategori ovan. Därefter kan du välja typ i listan.",
+  "another_user": "En annan användare",
+  "user_is_editing_field": "{name} redigerar detta fält just nu.",
   "audit_title": "Regelfiler & Granskningar",
   "audit_title_audits": "Hantera granskningar",
   "audit_title_rules": "Hantera regelfiler",
