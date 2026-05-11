@@ -322,7 +322,7 @@ router.delete('/:id', requireAdmin, async (req, res) => {
 
         if (is_arbetskopia) {
             await query(
-                'UPDATE audits SET rule_set_id = $1 WHERE rule_set_id = $2',
+                'UPDATE audits SET rule_set_id = $1, updated_at = CURRENT_TIMESTAMP WHERE rule_set_id = $2',
                 [rule.production_base_id, id]
             );
             await query('DELETE FROM rule_sets WHERE id = $1', [id]);

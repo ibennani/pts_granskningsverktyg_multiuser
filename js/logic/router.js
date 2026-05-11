@@ -395,7 +395,11 @@ export async function handle_hash_change(options) {
         if (scope_key && window.sessionStorage) {
             const focus_storage = load_focus_storage();
             const focus_info = focus_storage[scope_key];
-            if (focus_info) {
+            // Nytt stickprov delar samma scope-nyckel mellan besök (sample_form + auditId).
+            // Utan undantag återanvänds sparad fokus/scroll från förra gången formuläret öppnades.
+            const skip_stored_focus_for_new_sample_form =
+                target_view === 'sample_form' && !render_params.editSampleId;
+            if (focus_info && !skip_stored_focus_for_new_sample_form) {
                 set_restore_focus_info(focus_info);
             }
         }

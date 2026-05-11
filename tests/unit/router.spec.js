@@ -486,5 +486,38 @@ describe('router', () => {
             await handle_hash_change(opts);
             expect(window.__gv_restore_focus_info).toEqual(focus_payload);
         });
+
+        test('handle_hash_change sätter inte sparad fokus för nytt stickprov (sample_form utan editSampleId)', async () => {
+            window.location.hash = '#sample_form?auditId=aud1';
+            const focus_payload = { elementId: 'sampleDescriptionInput' };
+            const opts = make_hash_options({
+                load_focus_storage: jest.fn(() => ({
+                    'sample_form:{"auditId":"aud1"}': focus_payload
+                })),
+                getState: () => ({
+                    auditId: 'aud1',
+                    ruleFileContent: { metadata: { version: '1' }, requirements: {} }
+                })
+            });
+            await handle_hash_change(opts);
+            expect(window.__gv_restore_focus_info).toBeUndefined();
+            expect(opts.render_view).toHaveBeenCalledWith('sample_form', { auditId: 'aud1' });
+        });
+
+        test('handle_hash_change sätter sparad fokus vid redigering av stickprov (editSampleId)', async () => {
+            window.location.hash = '#sample_form?auditId=aud1&editSampleId=s1';
+            const focus_payload = { elementId: 'sampleUrlInput' };
+            const opts = make_hash_options({
+                load_focus_storage: jest.fn(() => ({
+                    'sample_form:{"auditId":"aud1","editSampleId":"s1"}': focus_payload
+                })),
+                getState: () => ({
+                    auditId: 'aud1',
+                    ruleFileContent: { metadata: { version: '1' }, requirements: {} }
+                })
+            });
+            await handle_hash_change(opts);
+            expect(window.__gv_restore_focus_info).toEqual(focus_payload);
+        });
     });
 });
