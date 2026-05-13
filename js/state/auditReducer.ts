@@ -24,6 +24,7 @@ import {
 } from './remoteStateHandlers.js';
 import { RequirementLookup } from '../logic/requirement_lookup.js';
 import { map_samples_bulk_pass_fully_unreviewed_only } from './audit_reducer_bulk_pass.js';
+import { definition_primary_id, same_storage_id } from '../logic/entity_id_match.js';
 
 export function auditReducer(current_state: any, action: any) {
     let new_state: any;
@@ -37,7 +38,9 @@ export function auditReducer(current_state: any, action: any) {
             }
             const reqToUpdateCheck = current_state.ruleFileContent.requirements[reqIdForCheck];
             if (reqToUpdateCheck) {
-                const updatedChecks = reqToUpdateCheck.checks.filter((c: any) => c.id !== checkId);
+                const updatedChecks = reqToUpdateCheck.checks.filter(
+                    (c: any) => !same_storage_id(definition_primary_id(c), checkId)
+                );
                 const updatedReq = { ...reqToUpdateCheck, checks: updatedChecks };
                 const newRequirements = { ...current_state.ruleFileContent.requirements, [reqIdForCheck]: updatedReq };
                 return { ...current_state, ruleFileContent: { ...current_state.ruleFileContent, requirements: newRequirements } };
@@ -53,8 +56,10 @@ export function auditReducer(current_state: any, action: any) {
             const reqToUpdatePc = current_state.ruleFileContent.requirements[reqIdForPc];
             if (reqToUpdatePc) {
                 const updatedChecksForPc = reqToUpdatePc.checks.map((c: any) => {
-                    if (c.id === checkIdForPc) {
-                        const updatedPassCriteria = c.passCriteria.filter((pc: any) => pc.id !== passCriterionId);
+                    if (same_storage_id(definition_primary_id(c), checkIdForPc)) {
+                        const updatedPassCriteria = (c.passCriteria || []).filter(
+                            (pc: any) => !same_storage_id(definition_primary_id(pc), passCriterionId)
+                        );
                         return { ...c, passCriteria: updatedPassCriteria };
                     }
                     return c;
@@ -318,7 +323,7 @@ export function auditReducer(current_state: any, action: any) {
             new_state = {
                 ...current_state,
                 samples: current_state.samples.map((sample: any) =>
-                    (sample.id === updateSampleId)
+                    (String(sample.id) === String(updateSampleId))
                         ? { ...sample, requirementResults: { ...(sample.requirementResults || {}), [updateRequirementId]: result_to_save } }
                         : sample
                 )

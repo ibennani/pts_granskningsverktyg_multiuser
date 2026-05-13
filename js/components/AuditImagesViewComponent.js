@@ -2,7 +2,7 @@ import { get_current_user_name } from '../utils/helpers.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import './audit_images_view_component.css';
 import { build_compact_hash_fragment } from '../logic/router_url_codec.js';
-import { get_requirement_public_key, find_requirement_definition } from '../audit_logic.ts';
+import { get_requirement_public_key, find_requirement_definition, definition_primary_id, resolve_map_entry } from '../audit_logic.ts';
 import { get_current_view_name } from '../app/browser_globals.js';
 
 export class AuditImagesViewComponent {
@@ -79,7 +79,7 @@ export class AuditImagesViewComponent {
         if (!ModalComponent?.show || !this.Helpers?.create_element) return;
 
         const state = this.getState();
-        const sample = state?.samples?.find(s => s.id === sample_id);
+        const sample = state?.samples?.find((s) => String(s.id) === String(sample_id));
         const requirement_result_ref = sample?.requirementResults?.[req_id_map];
         if (!requirement_result_ref) return;
 
@@ -97,7 +97,12 @@ export class AuditImagesViewComponent {
                 });
                 form_group.appendChild(label);
 
-                const existing_filenames = requirement_result_ref?.checkResults?.[check_id]?.passCriteria?.[pc_id]?.attachedMediaFilenames;
+                const chk_resolved = resolve_map_entry(requirement_result_ref.checkResults, check_id);
+                const check_result_for_read = chk_resolved?.value;
+                const pc_resolved = check_result_for_read?.passCriteria
+                    ? resolve_map_entry(check_result_for_read.passCriteria, pc_id)
+                    : null;
+                const existing_filenames = pc_resolved?.value?.attachedMediaFilenames;
                 const initial_text = Array.isArray(existing_filenames) ? existing_filenames.join('\n') : '';
                 const textarea = this.Helpers.create_element('textarea', {
                     id: 'attach-media-filenames',
@@ -125,18 +130,30 @@ export class AuditImagesViewComponent {
                         .split('\n')
                         .map(s => s.trim())
                         .filter(Boolean);
-                    const check_result = requirement_result_ref?.checkResults?.[check_id];
-                    if (check_result?.passCriteria?.[pc_id]) {
-                        check_result.passCriteria[pc_id].attachedMediaFilenames = filenames;
+                    const chk_save = resolve_map_entry(requirement_result_ref.checkResults, check_id);
+                    const check_result = chk_save?.value;
+                    const pc_save = check_result?.passCriteria
+                        ? resolve_map_entry(check_result.passCriteria, pc_id)
+                        : null;
+                    if (pc_save?.value) {
+                        pc_save.value.attachedMediaFilenames = filenames;
 
                         const requirements = state?.ruleFileContent?.requirements;
                         const requirement =
                             find_requirement_definition(requirements, req_id_public) || null;
                         if (requirement && this.AuditLogic) {
-                            (requirement.checks || []).forEach(check_def => {
-                                const check_res = requirement_result_ref.checkResults[check_def.id];
+                            (requirement.checks || []).forEach((check_def) => {
+                                const resolved = resolve_map_entry(
+                                    requirement_result_ref.checkResults,
+                                    definition_primary_id(check_def)
+                                );
+                                const check_res = resolved?.value;
                                 if (check_res) {
-                                    check_res.status = this.AuditLogic.calculate_check_status(check_def, check_res.passCriteria, check_res.overallStatus);
+                                    check_res.status = this.AuditLogic.calculate_check_status(
+                                        check_def,
+                                        check_res.passCriteria,
+                                        check_res.overallStatus
+                                    );
                                 }
                             });
                             requirement_result_ref.status = this.AuditLogic.calculate_requirement_status(requirement, requirement_result_ref);
@@ -147,12 +164,15 @@ export class AuditImagesViewComponent {
                         this.dispatch({
                             type: this.StoreActionTypes.UPDATE_REQUIREMENT_RESULT,
                             payload: {
-                                sampleId: sample_id,
+                                sampleId: sample.id,
                                 requirementId: req_id_map,
                                 newRequirementResult: requirement_result_ref,
                                 skip_render: true
                             }
                         });
+                        if (this.root && typeof this.render === 'function' && get_current_view_name() === 'audit_images') {
+                            this.render();
+                        }
                     }
                     modal.close(save_btn);
                 });
@@ -357,7 +377,9 @@ export class AuditImagesViewComponent {
             });
             section.appendChild(ul);
 
-            if (!is_audit_locked && check_def?.id && pc_def?.id) {
+            const dom_check_id = definition_primary_id(check_def);
+            const dom_pc_id = definition_primary_id(pc_def);
+            if (!is_audit_locked && dom_check_id && dom_pc_id) {
                 const image_icon = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('image', ['currentColor'], 16) : '';
                 const video_icon = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('videocam', ['currentColor'], 16) : '';
                 const attach_icons_html = (image_icon || video_icon)
@@ -371,8 +393,8 @@ export class AuditImagesViewComponent {
                         'data-sample-id': group.sample?.id || '',
                         'data-requirement-id': public_req_id,
                         'data-requirement-map-id': group.reqId || '',
-                        'data-check-id': check_def.id,
-                        'data-pc-id': pc_def.id,
+                        'data-check-id': dom_check_id,
+                        'data-pc-id': dom_pc_id,
                         type: 'button',
                         'aria-label': `${attach_btn_label} ${t('attach_media_aria_label_for')} ${t('pass_criterion_label')} ${check_index >= 0 && pc_index >= 0 ? `${check_index + 1}.${pc_index + 1}` : ''}`
                     },

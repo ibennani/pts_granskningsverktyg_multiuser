@@ -16,6 +16,7 @@ import {
 } from './export_format_helpers.js';
 import { get_export_requirement_result, get_t_internal, show_global_message_internal } from './export_bootstrap.js';
 import { for_each_failed_in_requirement_result } from './export_deficiency_traversal.js';
+import { find_check_def_by_storage_id, find_pass_criterion_def_by_storage_id } from '../logic/entity_id_match.js';
 
 export async function export_to_excel(current_audit: any) {
     const t = get_t_internal() as (key: string, opts?: Record<string, unknown>) => string;
@@ -65,7 +66,11 @@ export async function export_to_excel(current_audit: any) {
                 const result = get_export_requirement_result(requirements_for_export, sample, req_definition);
                 if (!result) return;
                 for_each_failed_in_requirement_result(result, ({ check_id, pc_id, pc_obj }) => {
-                    const pc_def = req_definition.checks?.find((c: any) => c.id === check_id)?.passCriteria?.find((p: any) => p.id === pc_id);
+                    const check_def = find_check_def_by_storage_id(req_definition.checks as any[], check_id);
+                    const pc_def = find_pass_criterion_def_by_storage_id(check_def?.passCriteria, pc_id) as {
+                        failureStatementTemplate?: string;
+                        requirement?: string;
+                    } | undefined;
                     const templateObservation = pc_def?.failureStatementTemplate || '';
                     const userObservation = pc_obj.observationDetail || '';
                     const passCriterionText = pc_def?.requirement || '';

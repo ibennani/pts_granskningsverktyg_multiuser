@@ -9,6 +9,7 @@ import {
     set_pending_checklist_focus_target
 } from '../../app/browser_globals.js';
 import { is_debug_stuck_sync } from '../../app/runtime_flags.js';
+import { resolve_map_entry } from '../../audit_logic.js';
 
 export const ChecklistHandler = {
     container_ref: null,
@@ -357,17 +358,28 @@ export const ChecklistHandler = {
         const current = textarea.value ?? '';
         if (snapshot === current) return;
 
-        const check_result = this.requirement_result_ref.checkResults[check_id];
-        if (check_result?.passCriteria?.[pc_id]) {
-            const ts = this.Helpers?.get_current_iso_datetime_utc
-                ? this.Helpers.get_current_iso_datetime_utc()
-                : new Date().toISOString();
-            check_result.passCriteria[pc_id].timestamp = ts;
-            check_result.passCriteria[pc_id].updatedBy = get_current_user_name();
-        }
-        if (this.on_observation_blur_commit_callback) {
-            this.on_observation_blur_commit_callback();
-        }
+        const run_observation_blur_commit = () => {
+            if (!this.requirement_result_ref?.checkResults) return;
+            const chk_resolved = resolve_map_entry(this.requirement_result_ref.checkResults, check_id);
+            const check_result = chk_resolved?.value;
+            const pc_resolved = check_result?.passCriteria
+                ? resolve_map_entry(check_result.passCriteria, pc_id)
+                : null;
+            const pc_entry = pc_resolved?.value;
+            if (pc_entry) {
+                const ts = this.Helpers?.get_current_iso_datetime_utc
+                    ? this.Helpers.get_current_iso_datetime_utc()
+                    : new Date().toISOString();
+                pc_entry.timestamp = ts;
+                pc_entry.updatedBy = get_current_user_name();
+            }
+            if (this.on_observation_blur_commit_callback) {
+                this.on_observation_blur_commit_callback();
+            }
+        };
+        // Kör efter aktuell pekar-/fokuskedja (t.ex. klick på statusknapp) så blur-sparning
+        // inte lägger sig före click och gör att första klicket tappas i vissa webbläsare.
+        queueMicrotask(run_observation_blur_commit);
     },
     
     handle_checklist_click(event) {
@@ -478,7 +490,12 @@ export const ChecklistHandler = {
                 });
                 form_group.appendChild(label);
 
-                const existing_filenames = this.requirement_result_ref?.checkResults?.[check_id]?.passCriteria?.[pc_id]?.attachedMediaFilenames;
+                const chk_open = resolve_map_entry(this.requirement_result_ref?.checkResults, check_id);
+                const check_open = chk_open?.value;
+                const pc_open = check_open?.passCriteria
+                    ? resolve_map_entry(check_open.passCriteria, pc_id)
+                    : null;
+                const existing_filenames = pc_open?.value?.attachedMediaFilenames;
                 const initial_text = Array.isArray(existing_filenames) ? existing_filenames.join('\n') : '';
                 const textarea = this.Helpers.create_element('textarea', {
                     id: 'attach-media-filenames',
@@ -502,12 +519,18 @@ export const ChecklistHandler = {
                         .split('\n')
                         .map(s => s.trim())
                         .filter(Boolean);
-                    const check_result = this.requirement_result_ref?.checkResults?.[check_id];
-                    if (check_result?.passCriteria?.[pc_id]) {
-                        check_result.passCriteria[pc_id].attachedMediaFilenames = filenames;
+                    const chk_save = resolve_map_entry(this.requirement_result_ref?.checkResults, check_id);
+                    const check_result = chk_save?.value;
+                    const pc_save = check_result?.passCriteria
+                        ? resolve_map_entry(check_result.passCriteria, pc_id)
+                        : null;
+                    if (pc_save?.value) {
+                        pc_save.value.attachedMediaFilenames = filenames;
                         if (this.on_observation_change_callback) {
                             this.on_observation_change_callback();
                         }
+                        // Uppdatera bifoga-media-knappens text/aria direkt (annars väntar UI tills annat fokus triggar update_dom).
+                        this.update_dom();
                     }
                     modal.close(attach_btn);
                 });
@@ -704,14 +727,18 @@ export const ChecklistHandler = {
                         const textarea_id = `pc-observation-${check_id}-${pc_id}`;
                         const textarea = this.container_ref.querySelector(`#${CSS.escape(textarea_id)}`);
                         if (textarea && typeof text_to_paste === 'string') {
-                            const check_result = this.requirement_result_ref?.checkResults?.[check_id];
-                            if (check_result?.passCriteria?.[pc_id]) {
-                                check_result.passCriteria[pc_id].observationDetail = text_to_paste;
+                            const chk_paste = resolve_map_entry(this.requirement_result_ref?.checkResults, check_id);
+                            const check_result_paste = chk_paste?.value;
+                            const pc_paste = check_result_paste?.passCriteria
+                                ? resolve_map_entry(check_result_paste.passCriteria, pc_id)
+                                : null;
+                            if (pc_paste?.value) {
+                                pc_paste.value.observationDetail = text_to_paste;
                                 const ts = this.Helpers?.get_current_iso_datetime_utc
                                     ? this.Helpers.get_current_iso_datetime_utc()
                                     : new Date().toISOString();
-                                check_result.passCriteria[pc_id].timestamp = ts;
-                                check_result.passCriteria[pc_id].updatedBy = get_current_user_name();
+                                pc_paste.value.timestamp = ts;
+                                pc_paste.value.updatedBy = get_current_user_name();
                             }
                             textarea.value = text_to_paste;
                             if (this.on_observation_blur_commit_callback) {
@@ -743,9 +770,13 @@ export const ChecklistHandler = {
         if (pc_item && check_item && this.requirement_result_ref?.checkResults) {
             const check_id = check_item.dataset.checkId;
             const pc_id = pc_item.dataset.pcId;
-            const check_result = this.requirement_result_ref.checkResults[check_id];
-            if (check_result?.passCriteria?.[pc_id]) {
-                check_result.passCriteria[pc_id].observationDetail = textarea.value;
+            const chk_in = resolve_map_entry(this.requirement_result_ref.checkResults, check_id);
+            const check_result_in = chk_in?.value;
+            const pc_in = check_result_in?.passCriteria
+                ? resolve_map_entry(check_result_in.passCriteria, pc_id)
+                : null;
+            if (pc_in?.value) {
+                pc_in.value.observationDetail = textarea.value;
             }
             if (event.type === 'input' && this.on_observation_change_callback) {
                 this.on_observation_change_callback();
@@ -835,6 +866,7 @@ export const ChecklistHandler = {
                 this.Helpers.create_element('button', {
                     class_name: ['button', 'button-success', 'button-small'],
                     attributes: {
+                        type: 'button',
                         'data-action': 'set-check-complies',
                         'aria-pressed': 'false',
                         'aria-label': complies_aria
@@ -844,6 +876,7 @@ export const ChecklistHandler = {
                 this.Helpers.create_element('button', {
                     class_name: ['button', 'button-danger', 'button-small'],
                     attributes: {
+                        type: 'button',
                         'data-action': 'set-check-not-complies',
                         'aria-pressed': 'false',
                         'aria-label': not_complies_aria
@@ -906,6 +939,7 @@ export const ChecklistHandler = {
                     this.Helpers.create_element('button', {
                         class_name: ['button', 'button-success', 'button-small'],
                         attributes: { 
+                            type: 'button',
                             'data-action': 'set-pc-passed', 
                             'aria-pressed': 'false',
                             'aria-label': passed_aria
@@ -915,6 +949,7 @@ export const ChecklistHandler = {
                     this.Helpers.create_element('button', {
                         class_name: ['button', 'button-danger', 'button-small'],
                         attributes: { 
+                            type: 'button',
                             'data-action': 'set-pc-failed', 
                             'aria-pressed': 'false',
                             'aria-label': failed_aria
@@ -1362,10 +1397,14 @@ export const ChecklistHandler = {
             if (pc_item && check_item) {
                 const check_id = check_item.dataset.checkId;
                 const pc_id = pc_item.dataset.pcId;
-                const check_result = this.requirement_result_ref.checkResults[check_id];
-                if (check_result?.passCriteria?.[pc_id]) {
+                const chk_flush = resolve_map_entry(this.requirement_result_ref.checkResults, check_id);
+                const check_result_flush = chk_flush?.value;
+                const pc_flush = check_result_flush?.passCriteria
+                    ? resolve_map_entry(check_result_flush.passCriteria, pc_id)
+                    : null;
+                if (pc_flush?.value) {
                     const raw = textarea.value || '';
-                    check_result.passCriteria[pc_id].observationDetail = should_trim && this.Helpers?.trim_textarea_preserve_lines
+                    pc_flush.value.observationDetail = should_trim && this.Helpers?.trim_textarea_preserve_lines
                         ? this.Helpers.trim_textarea_preserve_lines(raw)
                         : should_trim ? raw.trim() : raw;
                 }

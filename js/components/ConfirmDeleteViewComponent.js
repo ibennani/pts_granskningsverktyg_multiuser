@@ -1,5 +1,5 @@
 import "./confirm_delete_requirement_view_component.css";
-import { find_requirement_definition } from '../audit_logic.js';
+import { find_requirement_definition, find_check_def_by_storage_id, find_pass_criterion_def_by_storage_id, definition_primary_id } from '../audit_logic.js';
 
 export class ConfirmDeleteViewComponent {
     constructor() {
@@ -51,7 +51,8 @@ export class ConfirmDeleteViewComponent {
                     focusOnCancelSelector: `button[data-action="delete-req"][data-requirement-id="${reqId}"]`
                 };
             case 'check': {
-                const check = requirement?.checks.find(c => c.id === checkId);
+                const check = find_check_def_by_storage_id(requirement?.checks, checkId);
+                const dom_check_id = check ? definition_primary_id(check) : String(checkId ?? '');
                 return {
                     isValid: !!check,
                     titleKey: 'confirm_delete_check_title',
@@ -64,12 +65,13 @@ export class ConfirmDeleteViewComponent {
                     returnRoute: 'rulefile_edit_requirement',
                     returnParams: { id: reqId },
                     focusOnSuccess: '#checks-section-heading',
-                    focusOnCancelSelector: `.check-item-edit[data-check-id="${checkId}"] button[data-action="delete-check"]`
+                    focusOnCancelSelector: `.check-item-edit[data-check-id="${dom_check_id}"] button[data-action="delete-check"]`
                 };
             }
             case 'criterion': {
-                const parentCheck = requirement?.checks.find(c => c.id === checkId);
-                const criterion = parentCheck?.passCriteria.find(pc => pc.id === pcId);
+                const parentCheck = find_check_def_by_storage_id(requirement?.checks, checkId);
+                const criterion = find_pass_criterion_def_by_storage_id(parentCheck?.passCriteria, pcId);
+                const dom_pc_id = criterion ? definition_primary_id(criterion) : String(pcId ?? '');
                 return {
                     isValid: !!criterion,
                     titleKey: 'confirm_delete_criterion_title',
@@ -82,7 +84,7 @@ export class ConfirmDeleteViewComponent {
                     returnRoute: 'rulefile_edit_requirement',
                     returnParams: { id: reqId },
                     focusOnSuccess: '#checks-section-heading',
-                    focusOnCancelSelector: `.pc-item-edit[data-pc-id="${pcId}"] button[data-action="delete-pass-criterion"]`
+                    focusOnCancelSelector: `.pc-item-edit[data-pc-id="${dom_pc_id}"] button[data-action="delete-pass-criterion"]`
                 };
             }
             default:

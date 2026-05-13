@@ -33,6 +33,16 @@ export {
 } from './logic/audit_logic_status.js';
 
 export {
+    same_storage_id,
+    definition_primary_id,
+    find_check_def_by_storage_id,
+    find_pass_criterion_def_by_storage_id,
+    index_of_check_def_by_storage_id,
+    index_of_pass_criterion_def_by_storage_id,
+    resolve_map_entry
+} from './logic/entity_id_match.js';
+
+export {
     assignSortedDeficiencyIdsOnLock,
     formatDeficiencyId,
     removeAllDeficiencyIds,

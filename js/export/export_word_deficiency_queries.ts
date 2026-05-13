@@ -7,6 +7,7 @@ import {
     for_each_failed_in_requirement_result
 } from './export_deficiency_traversal.js';
 import { traverse_all_pass_criteria } from '../utils/traverse_audit_data.js';
+import { find_check_def_by_storage_id, find_pass_criterion_def_by_storage_id } from '../logic/entity_id_match.js';
 
 // Hjälpfunktioner
 export function get_requirements_with_deficiencies(current_audit: any): any[] {
@@ -108,9 +109,11 @@ export function get_deficiencies_for_sample(requirement: any, sample: any, curre
     if (!result || !result.checkResults) return deficiencies;
 
     for_each_failed_in_requirement_result(result, ({ check_id, pc_id, pc_obj }) => {
-        const pc_def = requirement.checks
-            ?.find((c: any) => c.id === check_id)
-            ?.passCriteria?.find((p: any) => p.id === pc_id);
+        const check_def = find_check_def_by_storage_id(requirement.checks as any[], check_id);
+        const pc_def = find_pass_criterion_def_by_storage_id(check_def?.passCriteria, pc_id) as {
+            failureStatementTemplate?: string;
+            requirement?: string;
+        } | undefined;
         const templateObservation = pc_def?.failureStatementTemplate || '';
         const userObservation = pc_obj.observationDetail || '';
         const passCriterionText = pc_def?.requirement || '';

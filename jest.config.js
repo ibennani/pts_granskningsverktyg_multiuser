@@ -9,6 +9,7 @@ export default {
     '^.+/audit_logic_i18n\\.js$': '<rootDir>/js/logic/audit_logic_i18n.ts',
     '^.+/audit_logic_lookup\\.js$': '<rootDir>/js/logic/audit_logic_lookup.ts',
     '^.+/audit_logic_status\\.js$': '<rootDir>/js/logic/audit_logic_status.ts',
+    '^.+[\\\\/]entity_id_match\\.js$': '<rootDir>/js/logic/entity_id_match.ts',
     '^.+/audit_logic_deficiency\\.js$': '<rootDir>/js/logic/audit_logic_deficiency.ts',
     '^.+/audit_logic_requirements_lists\\.js$': '<rootDir>/js/logic/audit_logic_requirements_lists.ts',
     '^.+/audit_logic_progress\\.js$': '<rootDir>/js/logic/audit_logic_progress.ts',

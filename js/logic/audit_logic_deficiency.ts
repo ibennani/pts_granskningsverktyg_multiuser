@@ -14,6 +14,12 @@ import type {
     RequirementDef
 } from './audit_logic_types.js';
 import { find_requirement_definition } from './audit_logic_lookup.js';
+import {
+    definition_primary_id,
+    find_check_def_by_storage_id,
+    find_pass_criterion_def_by_storage_id,
+    same_storage_id
+} from './entity_id_match.js';
 import { get_audit_translation_t } from './audit_logic_i18n.js';
 
 type FailedCriterionRow = {
@@ -83,24 +89,32 @@ export function assignSortedDeficiencyIdsOnLock(auditState: AuditStateShape): Au
             if (!reqDef || !reqResult) return;
 
             const sortedCheckKeys = Object.keys(reqResult.checkResults ?? {}).sort((a, b) => {
-                const checkOrder = (reqDef.checks ?? []).map((c: CheckDef) => c.id ?? '');
-                return checkOrder.indexOf(a) - checkOrder.indexOf(b);
+                const check_order_ids = (reqDef.checks ?? [])
+                    .map((c: CheckDef) => definition_primary_id(c))
+                    .filter((id) => id !== '');
+                const ia = check_order_ids.findIndex((oid) => same_storage_id(oid, a));
+                const ib = check_order_ids.findIndex((oid) => same_storage_id(oid, b));
+                return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
             });
 
             sortedCheckKeys.forEach((checkKey) => {
                 const checkResult = (reqResult.checkResults ?? {})[checkKey];
-                const checkDef = (reqDef.checks ?? []).find((c: CheckDef) => c.id === checkKey);
+                const checkDef = find_check_def_by_storage_id(reqDef.checks ?? [], checkKey);
                 if (!checkDef || !checkResult) return;
 
                 const sortedPcKeys = Object.keys(checkResult.passCriteria ?? {}).sort((a, b) => {
-                    const pcOrder = (checkDef.passCriteria ?? []).map((pc: PassCriterionDef) => pc.id ?? '');
-                    return pcOrder.indexOf(a) - pcOrder.indexOf(b);
+                    const pc_order_ids = (checkDef.passCriteria ?? [])
+                        .map((pc: PassCriterionDef) => definition_primary_id(pc))
+                        .filter((id) => id !== '');
+                    const ia = pc_order_ids.findIndex((oid) => same_storage_id(oid, a));
+                    const ib = pc_order_ids.findIndex((oid) => same_storage_id(oid, b));
+                    return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
                 });
 
                 sortedPcKeys.forEach((pcKey) => {
                     const pcMap = checkResult.passCriteria ?? {};
                     const pcResult = pcMap[pcKey];
-                    const pcDef = (checkDef.passCriteria ?? []).find((pc: PassCriterionDef) => pc.id === pcKey);
+                    const pcDef = find_pass_criterion_def_by_storage_id(checkDef.passCriteria ?? [], pcKey);
                     const originalPcResultRef = samples
                         .find((s) => s.id === sample.id)
                         ?.requirementResults?.[reqKey]

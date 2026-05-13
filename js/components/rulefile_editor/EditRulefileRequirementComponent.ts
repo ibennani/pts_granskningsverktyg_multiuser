@@ -22,6 +22,14 @@ import {
     is_lock_held_by_different_logged_in_user
 } from '../../logic/collab_lock_compare.js';
 import { find_requirement_definition } from '../../audit_logic.js';
+import {
+    definition_primary_id,
+    find_check_def_by_storage_id,
+    find_pass_criterion_def_by_storage_id,
+    index_of_check_def_by_storage_id,
+    index_of_pass_criterion_def_by_storage_id,
+    same_storage_id
+} from '../../logic/entity_id_match.js';
 import { RequirementLookup } from '../../logic/requirement_lookup.js';
 import { load_focus_storage, save_focus_storage } from '../../logic/focus_manager.js';
 import './requirement_audit_component.css';
@@ -553,7 +561,9 @@ export class EditRulefileRequirementComponent {
                 if (check_id) {
                     const is_new_req_del = this.params.id === 'new';
                     if (is_new_req_del) {
-                        this.local_requirement_data.checks = this.local_requirement_data.checks.filter(c => c.id !== check_id);
+                        this.local_requirement_data.checks = this.local_requirement_data.checks.filter(
+                            (c) => !same_storage_id(definition_primary_id(c), check_id)
+                        );
                         this._rerender_checks_section();
                     } else {
                         const warning_text = build_delete_warning_text(
@@ -585,7 +595,7 @@ export class EditRulefileRequirementComponent {
                 check_id = button.closest('.check-item-edit')?.dataset.checkId;
                 if (check_id) {
                     const checks = this.local_requirement_data.checks || [];
-                    const current_index = checks.findIndex(c => c.id === check_id);
+                    const current_index = index_of_check_def_by_storage_id(checks, check_id);
                     if (current_index !== -1) {
                         const direction = action === 'move-check-up' ? -1 : 1;
                         const target_index = current_index + direction;
@@ -611,7 +621,7 @@ export class EditRulefileRequirementComponent {
                             action_order.push('delete-check');
                             const focus_target = {
                                 type: 'check',
-                                checkId: moved_check.id,
+                                checkId: definition_primary_id(moved_check),
                                 actionOrder: action_order,
                                 forceScroll: true
                             };
@@ -619,7 +629,7 @@ export class EditRulefileRequirementComponent {
                                 focusTarget: focus_target,
                                 animateInfo: {
                                     type: 'check',
-                                    checkId: moved_check.id,
+                                    checkId: definition_primary_id(moved_check),
                                     animationClass: 'item-swap-animation',
                                     animationDuration: 1000
                                 },
@@ -632,7 +642,7 @@ export class EditRulefileRequirementComponent {
 
             case 'add-pass-criterion':
                 check_id = button.closest('.check-item-edit')?.dataset.checkId;
-                const check = this.local_requirement_data.checks.find(c => c.id === check_id);
+                const check = find_check_def_by_storage_id(this.local_requirement_data.checks, check_id);
                 if (check) {
                     const new_pc_id = `new-pc-${this.Helpers.generate_uuid_v4()}`;
                     check.passCriteria.push({
@@ -662,9 +672,11 @@ export class EditRulefileRequirementComponent {
                 if (check_id && pc_id) {
                     const is_new_req_del_pc = this.params.id === 'new';
                     if (is_new_req_del_pc) {
-                        const check = this.local_requirement_data.checks.find(c => c.id === check_id);
+                        const check = find_check_def_by_storage_id(this.local_requirement_data.checks, check_id);
                         if (check) {
-                            check.passCriteria = check.passCriteria.filter(pc => pc.id !== pc_id);
+                            check.passCriteria = check.passCriteria.filter(
+                                (pc) => !same_storage_id(definition_primary_id(pc), pc_id)
+                            );
                             this._rerender_checks_section();
                         }
                     } else {
@@ -698,9 +710,9 @@ export class EditRulefileRequirementComponent {
                 check_id = button.closest('.check-item-edit')?.dataset.checkId;
                 pc_id = button.closest('.pc-item-edit')?.dataset.pcId;
                 if (check_id && pc_id) {
-                    const check_for_move = this.local_requirement_data.checks.find(c => c.id === check_id);
+                    const check_for_move = find_check_def_by_storage_id(this.local_requirement_data.checks, check_id);
                     if (check_for_move && Array.isArray(check_for_move.passCriteria)) {
-                        const current_pc_index = check_for_move.passCriteria.findIndex(pc => pc.id === pc_id);
+                        const current_pc_index = index_of_pass_criterion_def_by_storage_id(check_for_move.passCriteria, pc_id);
                         if (current_pc_index !== -1) {
                             const direction = action === 'move-pass-criterion-up' ? -1 : 1;
                             const target_pc_index = current_pc_index + direction;
@@ -727,7 +739,7 @@ export class EditRulefileRequirementComponent {
                                 const focus_target_pc = {
                                     type: 'passCriterion',
                                     checkId: check_id,
-                                    passCriterionId: moved_pc.id,
+                                    passCriterionId: definition_primary_id(moved_pc),
                                     actionOrder: pc_action_order,
                                     forceScroll: true
                                 };
@@ -736,7 +748,7 @@ export class EditRulefileRequirementComponent {
                                     animateInfo: {
                                         type: 'passCriterion',
                                         checkId: check_id,
-                                        passCriterionId: moved_pc.id,
+                                        passCriterionId: definition_primary_id(moved_pc),
                                         animationClass: 'item-swap-animation',
                                         animationDuration: 1000
                                     },
@@ -1440,10 +1452,10 @@ export class EditRulefileRequirementComponent {
         if (!checks_section) return;
         
         const checks = this.local_requirement_data.checks || [];
-        const check = checks.find(c => c.id === check_id);
+        const check = find_check_def_by_storage_id(checks, check_id);
         if (!check) return;
         
-        const index = checks.findIndex(c => c.id === check_id);
+        const index = index_of_check_def_by_storage_id(checks, check_id);
         const check_el = this._create_check_fieldset(check, index, checks.length);
         
         // Lägg till elementet före "Lägg till kontrollpunkt"-knappen
@@ -1489,14 +1501,14 @@ export class EditRulefileRequirementComponent {
         const pc_container = check_element.querySelector('.pc-container-edit');
         if (!pc_container) return;
         
-        const check = this.local_requirement_data.checks.find(c => c.id === check_id);
+        const check = find_check_def_by_storage_id(this.local_requirement_data.checks, check_id);
         if (!check) return;
         
-        const pc = check.passCriteria.find(pc => pc.id === pc_id);
+        const pc = find_pass_criterion_def_by_storage_id(check.passCriteria, pc_id);
         if (!pc) return;
         
-        const pc_index = check.passCriteria.findIndex(pc => pc.id === pc_id);
-        const check_index = this.local_requirement_data.checks.findIndex(c => c.id === check_id);
+        const pc_index = index_of_pass_criterion_def_by_storage_id(check.passCriteria, pc_id);
+        const check_index = index_of_check_def_by_storage_id(this.local_requirement_data.checks, check_id);
         const pc_el = this._create_pc_item(check, pc, this.Helpers.sanitize_id_for_css_selector(check_id), pc_index, check.passCriteria.length, check_index);
         
         // Lägg till elementet före "Lägg till kriterium"-knappen
@@ -1580,8 +1592,9 @@ export class EditRulefileRequirementComponent {
 
     _create_check_fieldset(check, index, total_checks) {
         const t = this.Translation.t;
-        const sane_check_id = this.Helpers.sanitize_id_for_css_selector(check.id);
-        const check_el = this.Helpers.create_element('div', { class_name: 'check-item-edit', attributes: { 'data-check-id': check.id }});
+        const dom_check_id = definition_primary_id(check);
+        const sane_check_id = this.Helpers.sanitize_id_for_css_selector(dom_check_id);
+        const check_el = this.Helpers.create_element('div', { class_name: 'check-item-edit', attributes: { 'data-check-id': dom_check_id }});
 
         const header_wrapper = this.Helpers.create_element('div', { class_name: 'form-group-header' });
         const check_label_text = `${t('check_item_title')} ${index + 1}`;
@@ -1651,8 +1664,9 @@ export class EditRulefileRequirementComponent {
 
     _create_pc_item(check, pc, sane_check_id, pc_index, total_pass_criteria, check_index) {
         const t = this.Translation.t;
-        const sane_pc_id = this.Helpers.sanitize_id_for_css_selector(pc.id);
-        const pc_el = this.Helpers.create_element('div', { class_name: 'pc-item-edit', attributes: { 'data-pc-id': pc.id } });
+        const dom_pc_id = definition_primary_id(pc);
+        const sane_pc_id = this.Helpers.sanitize_id_for_css_selector(dom_pc_id);
+        const pc_el = this.Helpers.create_element('div', { class_name: 'pc-item-edit', attributes: { 'data-pc-id': dom_pc_id } });
 
         const numbering = `${check_index + 1}.${pc_index + 1}`;
         const numbered_label_text = `${t('pass_criterion_label')} ${numbering}`;

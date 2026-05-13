@@ -4,11 +4,13 @@
 
 import type {
     CheckDef,
+    CheckResultStored,
     PassCriterionStatusMapVal,
     RequirementDef,
     RequirementResultStored
 } from './audit_logic_types.js';
 import { get_stored_requirement_result_for_def } from './audit_logic_lookup.js';
+import { definition_primary_id, resolve_map_entry } from './entity_id_match.js';
 
 export function calculate_check_status(
     check_object: CheckDef | null | undefined,
@@ -22,7 +24,9 @@ export function calculate_check_status(
     if (overall_manual_status === 'not_audited') return 'not_audited';
 
     const pc_statuses = (check_object.passCriteria ?? []).map((pc) => {
-        const pc_data = (pass_criteria_statuses_map ?? {})[pc.id ?? ''];
+        const pc_key = definition_primary_id(pc);
+        const resolved = pc_key ? resolve_map_entry(pass_criteria_statuses_map ?? {}, pc_key) : null;
+        const pc_data = resolved?.value;
         return typeof pc_data === 'object' && pc_data !== null
             ? (pc_data as { status?: string }).status
             : (pc_data || 'not_audited');
@@ -75,13 +79,18 @@ export function calculate_requirement_status(
         let has_any_button_pressed = false;
 
         for (const check_definition of requirement_object.checks) {
-            if (!check_definition || typeof check_definition !== 'object' || !check_definition.id) {
+            const check_storage_key = definition_primary_id(check_definition);
+            if (!check_definition || typeof check_definition !== 'object' || !check_storage_key) {
                 console.warn('[AuditLogic] calculate_requirement_status: Invalid check_definition:', check_definition);
                 has_not_audited_check = true;
                 continue;
             }
 
-            const checkResultForDef = requirement_result_object.checkResults?.[check_definition.id ?? ''];
+            const resolved_check = resolve_map_entry(
+                requirement_result_object.checkResults as Record<string, CheckResultStored>,
+                check_storage_key
+            );
+            const checkResultForDef = resolved_check?.value;
             let status = 'not_audited';
 
             const overall = checkResultForDef?.overallStatus;

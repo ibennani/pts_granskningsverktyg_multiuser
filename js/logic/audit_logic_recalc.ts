@@ -7,10 +7,11 @@ import {
     traverse_all_check_results,
     traverse_all_requirement_results
 } from '../utils/traverse_audit_data.js';
-import type { AuditStateShape, CheckDef, CheckResultStored, RequirementDef, RequirementResultStored } from './audit_logic_types.js';
+import type { AuditStateShape, CheckResultStored, RequirementDef, RequirementResultStored } from './audit_logic_types.js';
 import { find_requirement_definition, get_stored_requirement_result_for_def } from './audit_logic_lookup.js';
 import { calculate_check_status, calculate_requirement_status } from './audit_logic_status.js';
 import { assignSortedDeficiencyIdsOnLock } from './audit_logic_deficiency.js';
+import { find_check_def_by_storage_id } from './entity_id_match.js';
 
 export function recalculateStatusesOnLoad(auditState: AuditStateShape | null | undefined): AuditStateShape | null | undefined {
     if (!auditState || !auditState.ruleFileContent || !auditState.samples) {
@@ -26,7 +27,7 @@ export function recalculateStatusesOnLoad(auditState: AuditStateShape | null | u
         const reqDef = find_requirement_definition(requirements, req_key);
         if (!reqDef) return;
         const cr = check_result as CheckResultStored;
-        const checkDef = (reqDef.checks ?? []).find((c: CheckDef) => c.id === check_key);
+        const checkDef = find_check_def_by_storage_id(reqDef.checks ?? [], check_key);
         if (!checkDef || !cr) return;
 
         const recalculatedStatus = calculate_check_status(checkDef, cr.passCriteria, cr.overallStatus);

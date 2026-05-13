@@ -11,6 +11,12 @@ import { consoleManager } from '../utils/console_manager.js';
 import { establish_baseline_for_current_audit_focus } from '../logic/audit_collaboration_notice.js';
 import { find_requirement_definition, resolve_requirement_map_key, get_requirement_public_key } from '../audit_logic.js';
 import {
+    definition_primary_id,
+    find_check_def_by_storage_id,
+    find_pass_criterion_def_by_storage_id,
+    resolve_map_entry
+} from '../logic/entity_id_match.js';
+import {
     is_debug_autosave_focus,
     is_debug_modal_scroll,
     is_debug_stuck_sync
@@ -332,14 +338,22 @@ export class RequirementAuditComponent {
             this.current_result.stuckProblemDescription = '';
         }
 
-        (this.current_requirement.checks || []).forEach(check_def => {
-            if (!this.current_result.checkResults[check_def.id]) {
-                this.current_result.checkResults[check_def.id] = { status: 'not_audited', overallStatus: 'not_audited', passCriteria: {} };
+        (this.current_requirement.checks || []).forEach((check_def) => {
+            const check_storage_key = definition_primary_id(check_def);
+            if (!check_storage_key) return;
+            if (!this.current_result.checkResults[check_storage_key]) {
+                this.current_result.checkResults[check_storage_key] = {
+                    status: 'not_audited',
+                    overallStatus: 'not_audited',
+                    passCriteria: {}
+                };
             }
-            (check_def.passCriteria || []).forEach(pc_def => {
-                const pc_data = this.current_result.checkResults[check_def.id].passCriteria[pc_def.id];
+            (check_def.passCriteria || []).forEach((pc_def) => {
+                const pc_storage_key = definition_primary_id(pc_def);
+                if (!pc_storage_key) return;
+                const pc_data = this.current_result.checkResults[check_storage_key].passCriteria[pc_storage_key];
                 if (typeof pc_data !== 'object' || pc_data === null) {
-                    this.current_result.checkResults[check_def.id].passCriteria[pc_def.id] = {
+                    this.current_result.checkResults[check_storage_key].passCriteria[pc_storage_key] = {
                         status: typeof pc_data === 'string' ? pc_data : 'not_audited',
                         observationDetail: '',
                         timestamp: null,
@@ -445,8 +459,19 @@ export class RequirementAuditComponent {
             if (window.ConsoleManager) window.ConsoleManager.warn('[RequirementAuditComponent] Failed to clone current result for status change:', error);
             return;
         }
-        const check_result = modified_result.checkResults[change_info.checkId];
-        const check_definition = this.current_requirement.checks.find(c => c.id === change_info.checkId);
+        const check_definition = find_check_def_by_storage_id(this.current_requirement.checks, change_info.checkId);
+        const resolved_check = resolve_map_entry(modified_result.checkResults, change_info.checkId);
+        const check_result = resolved_check?.value;
+        if (!check_result) {
+            if (window.ConsoleManager?.warn) {
+                window.ConsoleManager.warn(
+                    '[RequirementAuditComponent] checkResults saknar post för checkId:',
+                    change_info.checkId
+                );
+            }
+            return;
+        }
+
         const current_time = this.Helpers.get_current_iso_datetime_utc();
 
         const current_user = get_current_user_name();
@@ -459,13 +484,23 @@ export class RequirementAuditComponent {
                 this.NotificationComponent.show_global_message(this.Translation.t('error_set_check_status_first'), 'warning');
                 return;
             }
-            const pc_result = check_result.passCriteria[change_info.pcId];
+            const resolved_pc = resolve_map_entry(check_result.passCriteria, change_info.pcId);
+            const pc_result = resolved_pc?.value;
+            if (!pc_result) {
+                if (window.ConsoleManager?.warn) {
+                    window.ConsoleManager.warn(
+                        '[RequirementAuditComponent] passCriteria saknar post för pcId:',
+                        change_info.pcId
+                    );
+                }
+                return;
+            }
             pc_result.status = pc_result.status === change_info.newStatus ? 'not_audited' : change_info.newStatus;
             pc_result.timestamp = current_time;
             pc_result.updatedBy = current_user;
             
             if (pc_result.status === 'failed' && (!pc_result.observationDetail || pc_result.observationDetail.trim() === '')) {
-                const pc_def = check_definition.passCriteria.find(pc => pc.id === change_info.pcId);
+                const pc_def = find_pass_criterion_def_by_storage_id(check_definition?.passCriteria, change_info.pcId);
                 if (pc_def?.failureStatementTemplate) {
                     pc_result.observationDetail = pc_def.failureStatementTemplate;
                 }
@@ -740,8 +775,20 @@ export class RequirementAuditComponent {
      * - `handle_navigation` confirm_reviewed: skip_render true + lokal uppdatering av plåt/sidebar/meny.
      */
     dispatch_result_update(modified_result_object, options = {}) {
-        (this.current_requirement.checks || []).forEach(check_def => {
-            const check_res = modified_result_object.checkResults[check_def.id];
+        (this.current_requirement.checks || []).forEach((check_def) => {
+            const storage_key = definition_primary_id(check_def);
+            if (!storage_key) return;
+            const resolved = resolve_map_entry(modified_result_object.checkResults, storage_key);
+            const check_res = resolved?.value;
+            if (!check_res) {
+                if (window.ConsoleManager?.warn) {
+                    window.ConsoleManager.warn(
+                        '[RequirementAuditComponent] dispatch_result_update: saknar checkResults-post för',
+                        storage_key
+                    );
+                }
+                return;
+            }
             check_res.status = this.AuditLogic.calculate_check_status(check_def, check_res.passCriteria, check_res.overallStatus);
         });
         modified_result_object.status = this.AuditLogic.calculate_requirement_status(this.current_requirement, modified_result_object);

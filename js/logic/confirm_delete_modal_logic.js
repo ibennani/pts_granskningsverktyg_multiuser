@@ -3,7 +3,7 @@
 import * as Helpers from '../utils/helpers.js';
 import { get_translation_t } from '../utils/translation_access.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
-import { find_requirement_definition } from '../audit_logic.js';
+import { find_requirement_definition, find_check_def_by_storage_id, find_pass_criterion_def_by_storage_id } from '../audit_logic.js';
 
 /**
  * Bygger varningstext för radering baserat på typ (requirement, check, criterion).
@@ -30,15 +30,15 @@ export function build_delete_warning_text(type, params, getState, Translation, _
             return `${intro} ${item}\n\n${warning}`;
         }
         case 'check': {
-            const check = requirement.checks?.find(c => c.id === checkId);
+            const check = find_check_def_by_storage_id(requirement.checks, checkId);
             if (!check) return null;
             const intro = t('confirm_delete_check_intro');
             const item = check.condition || '';
             return `${intro} ${item}`;
         }
         case 'criterion': {
-            const parentCheck = requirement.checks?.find(c => c.id === checkId);
-            const criterion = parentCheck?.passCriteria?.find(pc => pc.id === pcId);
+            const parentCheck = find_check_def_by_storage_id(requirement.checks, checkId);
+            const criterion = find_pass_criterion_def_by_storage_id(parentCheck?.passCriteria, pcId);
             if (!criterion) return null;
             const intro = t('confirm_delete_criterion_intro');
             const item = criterion.requirement || '';
