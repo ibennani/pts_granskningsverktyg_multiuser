@@ -28,7 +28,7 @@
     overflow: hidden;
     box-sizing: border-box;
     border: 1px solid var(--border-color);
-    /* Samma «tom»-yta som klassisk tvåfärgad progressbalk */
+    /* Samma "tom"-yta som klassisk tvåfärgad progressbalk */
     background-color: #f8f4f0;
     margin-bottom: 0.5rem;
 }
@@ -54,7 +54,7 @@
 }
 
 .audit-status-stack__segment--partially_audited {
-    /* Orange som statusikon «delvis granskad» i kravlistan */
+    /* Orange som statusikon "delvis granskad" i kravlistan */
     background-color: #ff8c00;
 }
 
@@ -63,7 +63,7 @@
 }
 
 .audit-status-stack__segment--not_audited {
-    /* Genomskinlig: visar spårets ljusa/mörka bakgrund («återstår») */
+    /* Genomskinlig: visar spårets ljusa/mörka bakgrund ("återstår") */
     background-color: transparent;
 }
 

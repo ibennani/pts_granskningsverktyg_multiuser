@@ -20,7 +20,7 @@ export function get_current_iso_datetime_utc() {
     return new Date().toISOString();
 }
 
-export { escape_html } from './html_escape.js';
+export { escape_html, escape_html_for_text_interpolation } from './html_escape.js';
 export { get_external_link_icon_html, get_icon_svg } from '../ui/icons.js';
 export {
     sanitize_plain_input,

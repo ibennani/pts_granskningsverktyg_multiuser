@@ -69,3 +69,5 @@ export {
     count_audit_problems,
     requirement_needs_help
 } from './logic/audit_logic_problems_media.js';
+
+export { effective_status_is_fully_unreviewed_for_bulk_pass } from './logic/bulk_pass_unreviewed_policy.js';

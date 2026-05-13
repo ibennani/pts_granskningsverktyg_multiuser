@@ -10,7 +10,7 @@ Granskningsdata (regelfil, metadata, stickprov, observationer med mera) lever i 
 |-----|--------|
 | Publik API (re-export) | `js/state.js` → `js/state/index.js` |
 | Startvärden och versionskonstant | `js/state/initialState.js` (`APP_STATE_VERSION`) |
-| Action-typer | `js/state/actionTypes.js` (exporteras som `StoreActionTypes`) |
+| Action-typer | `js/state/actionTypes.ts` (via brygga `actionTypes.js`; exporteras som `StoreActionTypes`) |
 | Reducers | `auditReducer.ts`, `rulefileReducer.js`, `uiReducer.js`, `userReducer.js` |
 | Appstart, sessionStorage-koll, backup-merge | `js/logic/app_bootstrap.js`, `js/logic/session_boot_merge.js` |
 | Synk mot server | `js/sync/audit_sync_service.js`, `js/sync/rulefile_sync_service.js` (körs från `index.js` via `schedule_sync_*`) |

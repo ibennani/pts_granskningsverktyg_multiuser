@@ -39,7 +39,7 @@ export function format_nonzero_percent_suffix(count, total, format_number_locall
 
 /**
  * Procentsuffix för granskningsöversiktens fördelningslista: alltid ett värde när total > 0,
- * inklusive 0 st → « (0,0 %)».
+ * inklusive 0 st → " (0,0 %)".
  *
  * @param {number} count
  * @param {number} total

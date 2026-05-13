@@ -51,7 +51,7 @@ $max_task = 200
 if ($task.Length -gt $max_task) {
     $task = $task.Substring(0, $max_task)
 }
-# Alltid börja med «Nu är jag klar» så Home Assistant-/Nabu-automationer som lyssnar på den frasen fortsätter fungera.
+# Alltid börja med "Nu är jag klar" så Home Assistant-/Nabu-automationer som lyssnar på den frasen fortsätter fungera.
 $em = [char]0x2014
 $a = [char]0x00E4
 if ($task.Length -gt 0) {

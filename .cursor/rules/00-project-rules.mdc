@@ -36,6 +36,11 @@ Adhere to the following rules at all times.
 - **Language:** All communication, code comments, and commit messages MUST be in **Swedish** (Svenska).
 - **Tone:** Professional, helpful, and concise.
 
+### Typografi: citationstecken (inga vinkelcitat)
+
+- **Använd aldrig** vinkelcitat (**«** och **»**) i produkttexter, översättningsfiler under `js/i18n/`, användardokumentation eller kommentarer som beskriver text som användaren ser.
+- **Använd alltid** vanliga citationstecken: i första hand ASCII-dubbelstreck **"** … **"** kring citat. Vid **nästlade** citat inom en sträng som redan avgränsas med dubbelstreck (t.ex. modaltext som parsas på `\"`), använd **enkelstreck** **'** … **'** i stället för vinkelcitat eller Unicode-typografiska citat (**“** **”** / `\u201c` `\u201d`), så att formuleringen är konsekvent och parsning inte bryts.
+
 ### Coding Standards
 
 - Follow the component standard defined below under **"Standard för JavaScript-komponenter"**.

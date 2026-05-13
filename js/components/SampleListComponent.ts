@@ -1,6 +1,7 @@
 // @ts-nocheck
 import "./sample_list_component.css";
 import { ProgressBarComponent } from './ProgressBarComponent.js';
+import { effective_status_is_fully_unreviewed_for_bulk_pass } from '../audit_logic.js';
 
 export const SampleListComponent = {
     init({ root, deps }) {
@@ -8,6 +9,7 @@ export const SampleListComponent = {
         this.deps = deps;
         this.on_edit_callback = deps.on_edit || null;
         this.on_delete_callback = deps.on_delete || null;
+        this.on_mark_sample_bulk_pass = deps.on_mark_sample_bulk_pass_fully_unreviewed || null;
         this.router = deps.router;
         this.getState = deps.getState;
         this.Translation = deps.Translation;
@@ -61,6 +63,11 @@ export const SampleListComponent = {
                     } else { 
                         this.router('requirement_list', { sampleId: sample.id });
                     }
+                }
+                break;
+            case 'mark-sample-bulk-pass-not-audited':
+                if (typeof this.on_mark_sample_bulk_pass === 'function') {
+                    this.on_mark_sample_bulk_pass(sample_id, action_button);
                 }
                 break;
         }
@@ -220,6 +227,28 @@ export const SampleListComponent = {
                 }));
             }
 
+            if (state.auditStatus === 'in_progress' && total_relevant_reqs > 0 && typeof this.on_mark_sample_bulk_pass === 'function' && state.ruleFileContent && this.AuditLogic?.get_relevant_requirements_for_sample) {
+                const has_fully_unreviewed = this.AuditLogic.get_relevant_requirements_for_sample(state.ruleFileContent, sample).some((req_def) => {
+                    const st = this.AuditLogic.get_effective_requirement_audit_status(
+                        state.ruleFileContent.requirements,
+                        sample.requirementResults,
+                        req_def,
+                        null
+                    );
+                    return effective_status_is_fully_unreviewed_for_bulk_pass(st);
+                });
+                if (has_fully_unreviewed) {
+                    main_actions_div.appendChild(create_element('button', {
+                        class_name: ['button', 'button-secondary', 'button-small'],
+                        attributes: {
+                            'data-action': 'mark-sample-bulk-pass-not-audited',
+                            'aria-label': `${t('sample_mark_bulk_pass_not_audited_button')}: ${sample.description}`
+                        },
+                        html_content: `<span>${t('sample_mark_bulk_pass_not_audited_button')}</span>` + (get_icon_svg ? get_icon_svg('check_circle', ['currentColor'], 16) : '')
+                    }));
+                }
+            }
+
             if (state.auditStatus === 'in_progress' && total_relevant_reqs > 0) {
                 const first_incomplete = find_first_incomplete_requirement_key_for_sample(state.ruleFileContent, sample);
                 if (first_incomplete) {
@@ -252,6 +281,7 @@ export const SampleListComponent = {
         this.deps = null;
         this.on_edit_callback = null;
         this.on_delete_callback = null;
+        this.on_mark_sample_bulk_pass = null;
         this.router = null;
         this.getState = null;
         this.Translation = null;

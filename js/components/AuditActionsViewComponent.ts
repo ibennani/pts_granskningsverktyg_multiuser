@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { find_requirement_definition } from '../audit_logic.js';
+import { find_requirement_definition, effective_status_is_fully_unreviewed_for_bulk_pass } from '../audit_logic.js';
 import { get_rules, save_audit_backup_on_server } from '../api/client.js';
 import { subscribe_rules } from '../logic/list_push_service.js';
 import { version_greater_than } from '../utils/version_utils.js';
@@ -254,7 +254,7 @@ export class AuditActionsViewComponent {
                     req_def,
                     null
                 );
-                if (status === 'not_audited' || status === 'partially_audited') {
+                if (effective_status_is_fully_unreviewed_for_bulk_pass(status)) {
                     req_count++;
                     sample_has_unreviewed = true;
                 }

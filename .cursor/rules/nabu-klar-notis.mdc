@@ -67,7 +67,7 @@ cmd.exe /c scripts\nabu_notify.cmd
 
 ### Meddelandeformat
 
-Alltid med inledningen **«Nu är jag klar»** (så automationer som triggas på den frasen inte slutar fungera):
+Alltid med inledningen **"Nu är jag klar"** (så automationer som triggas på den frasen inte slutar fungera):
 
 - **Med** uppgifts-etikett: `Nu är jag klar — {etikett}`
 - **Utan** etikett: `Nu är jag klar`

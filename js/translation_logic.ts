@@ -3,7 +3,7 @@
  */
 'use strict';
 
-import { escape_html } from './utils/helpers.js';
+import { escape_html_for_text_interpolation } from './utils/helpers.js';
 import { consoleManager } from './utils/console_manager.js';
 
 type TranslationJson = Record<string, string>;
@@ -191,7 +191,7 @@ export function t(key: string, replacements: Record<string, string> = {}): strin
     const sanitized_replacements: Record<string, string | number | boolean | null | undefined> = {};
     for (const [replacement_key, replacement_value] of Object.entries(replacements)) {
         if (typeof replacement_value === 'string') {
-            sanitized_replacements[replacement_key] = escape_html(replacement_value) || replacement_value;
+            sanitized_replacements[replacement_key] = escape_html_for_text_interpolation(replacement_value) || replacement_value;
         } else {
             sanitized_replacements[replacement_key] = replacement_value;
         }

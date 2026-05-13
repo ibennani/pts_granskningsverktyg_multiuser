@@ -23,6 +23,7 @@ import {
     reduce_replace_state_from_remote
 } from './remoteStateHandlers.js';
 import { RequirementLookup } from '../logic/requirement_lookup.js';
+import { map_samples_bulk_pass_fully_unreviewed_only } from './audit_reducer_bulk_pass.js';
 
 export function auditReducer(current_state: any, action: any) {
     let new_state: any;
@@ -244,41 +245,29 @@ export function auditReducer(current_state: any, action: any) {
                 return current_state;
             }
             const timestamp = get_current_iso_datetime_utc();
-            const new_samples = current_state.samples.map((sample: any) => {
-                const relevant_reqs = AuditLogic.get_relevant_requirements_for_sample(current_state.ruleFileContent, sample);
-                const new_results = { ...(sample.requirementResults || {}) };
-                let has_changed = false;
-                const requirements = current_state.ruleFileContent.requirements;
-                relevant_reqs.forEach(req_def => {
-                    const existing = AuditLogic.get_stored_requirement_result_for_def(
-                        new_results,
-                        requirements,
-                        req_def
-                    );
-                    const status = AuditLogic.get_effective_requirement_audit_status(
-                        requirements,
-                        new_results,
-                        req_def,
-                        null
-                    );
-                    if (status === 'not_audited' || status === 'partially_audited') {
-                        const map_key =
-                            AuditLogic.resolve_requirement_map_key(
-                                requirements,
-                                req_def.key || req_def.id
-                            ) || String(req_def.key || req_def.id);
-                        new_results[map_key] = AuditLogic.build_not_applicable_requirement_result(
-                            req_def,
-                            existing,
-                            timestamp,
-                            get_current_user_name()
-                        );
-                        remove_stale_requirement_result_aliases(new_results, map_key, req_def);
-                        has_changed = true;
-                    }
-                });
-                return has_changed ? { ...sample, requirementResults: new_results } : sample;
-            });
+            const new_samples = map_samples_bulk_pass_fully_unreviewed_only(
+                current_state,
+                { target_sample_id: null, requirement_id: null },
+                timestamp,
+                get_current_user_name()
+            );
+            new_state = { ...current_state, samples: new_samples };
+            new_state = AuditLogic.recalculateAuditTimes(new_state);
+            return AuditLogic.updateIncrementalDeficiencyIds(new_state);
+        }
+        case ActionTypes.MARK_ALL_UNREVIEWED_AS_PASSED_IN_SAMPLE: {
+            if (current_state.auditStatus === 'archived') return current_state;
+            const sample_id = action.payload?.sampleId;
+            if (!sample_id || !current_state.ruleFileContent?.requirements || !current_state.samples?.length) {
+                return current_state;
+            }
+            const timestamp = get_current_iso_datetime_utc();
+            const new_samples = map_samples_bulk_pass_fully_unreviewed_only(
+                current_state,
+                { target_sample_id: sample_id, requirement_id: null },
+                timestamp,
+                get_current_user_name()
+            );
             new_state = { ...current_state, samples: new_samples };
             new_state = AuditLogic.recalculateAuditTimes(new_state);
             return AuditLogic.updateIncrementalDeficiencyIds(new_state);
@@ -290,37 +279,12 @@ export function auditReducer(current_state: any, action: any) {
                 return current_state;
             }
             const timestamp = get_current_iso_datetime_utc();
-            const new_samples = current_state.samples.map((sample: any) => {
-                const relevant_reqs = AuditLogic.get_relevant_requirements_for_sample(current_state.ruleFileContent, sample);
-                const req_def = relevant_reqs.find(r => (r.key || r.id) === requirement_id);
-                if (!req_def) return sample;
-                const new_results = { ...(sample.requirementResults || {}) };
-                const existing = AuditLogic.get_stored_requirement_result_for_def(
-                    new_results,
-                    current_state.ruleFileContent.requirements,
-                    req_def
-                );
-                const status = AuditLogic.get_effective_requirement_audit_status(
-                    current_state.ruleFileContent.requirements,
-                    new_results,
-                    req_def,
-                    null
-                );
-                if (status !== 'not_audited' && status !== 'partially_audited') return sample;
-                const map_key =
-                    AuditLogic.resolve_requirement_map_key(
-                        current_state.ruleFileContent.requirements,
-                        req_def.key || req_def.id
-                    ) || String(req_def.key || req_def.id);
-                new_results[map_key] = AuditLogic.build_not_applicable_requirement_result(
-                    req_def,
-                    existing,
-                    timestamp,
-                    get_current_user_name()
-                );
-                remove_stale_requirement_result_aliases(new_results, map_key, req_def);
-                return { ...sample, requirementResults: new_results };
-            });
+            const new_samples = map_samples_bulk_pass_fully_unreviewed_only(
+                current_state,
+                { target_sample_id: null, requirement_id },
+                timestamp,
+                get_current_user_name()
+            );
             new_state = { ...current_state, samples: new_samples };
             new_state = AuditLogic.recalculateAuditTimes(new_state);
             return AuditLogic.updateIncrementalDeficiencyIds(new_state);

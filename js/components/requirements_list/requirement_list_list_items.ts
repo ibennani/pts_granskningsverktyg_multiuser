@@ -3,7 +3,11 @@
  * @module js/components/requirements_list/requirement_list_list_items
  */
 
-import { get_stored_requirement_result_for_def, get_effective_requirement_audit_status } from '../../audit_logic.js';
+import {
+    get_stored_requirement_result_for_def,
+    get_effective_requirement_audit_status,
+    effective_status_is_fully_unreviewed_for_bulk_pass
+} from '../../audit_logic.js';
 import { get_status_icon } from './requirement_list_status_icons.js';
 import { sample_matches_status_filter } from './requirement_list_query.js';
 
@@ -192,7 +196,7 @@ export function create_all_requirement_list_item(
             req,
             req_id
         );
-        return status === 'not_audited' || status === 'partially_audited';
+        return effective_status_is_fully_unreviewed_for_bulk_pass(status);
     });
 
     if (audit_status === 'in_progress' && has_unreviewed) {

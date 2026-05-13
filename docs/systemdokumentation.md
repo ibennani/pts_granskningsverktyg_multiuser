@@ -159,7 +159,7 @@ export const ComponentName = {
     *   **Interaktioner:** Läser metadata från `deps.getState().auditMetadata`. Om granskningens status är `not_started`, är fälten redigerbara. Vid submit sparas datan via `deps.dispatch()` och `sync_to_server_now()` anropas för befintliga granskningar så att servern uppdateras innan navigering. Metadata kan redigeras även under pågående granskning via knappen "Redigera" i granskningsinfopanelens header.
     *   **CSS:** `css/components/edit_metadata_view_component.css`.
 
-*   **`SampleManagementViewComponent.js`**
+*   **`SampleManagementViewComponent.ts`**
     *   **Syfte:** Hanterar skapande, listning, redigering och radering av stickprov *innan* en granskning har startat (dvs. när `auditStatus === 'not_started'`).
     *   **Internt tillstånd:** Håller reda på om formuläret för att lägga till/redigera stickprov är synligt (`is_form_visible`).
     *   **Interaktioner:** Använder/initierar `SampleFormViewComponent` för att visa formuläret och `SampleListComponent` för att visa listan över befintliga stickprov. Knapparna "Lägg till nytt stickprov" och "Starta granskning" renderas villkorligt. Vid start av granskning uppdateras `auditStatus` via `deps.dispatch()` och `deps.router()` navigerar till `AuditOverviewComponent`.
@@ -192,7 +192,7 @@ export const ComponentName = {
 
 *   **`SampleListComponent.js`**
     *   **Syfte:** Renderar en lista (`<ul>`) av stickprov (`<li>`). Varje listobjekt visar information om stickprovet och åtgärdsknappar.
-    *   **Interaktioner:** Används av `SampleManagementViewComponent` och `AuditOverviewComponent`. Läser `deps.getState().samples`. Renderar knappar ("Redigera", "Radera", "Visa krav", "Granska", "Besök url") villkorligt baserat på `auditStatus` och antal stickprov. Använder eventdelegering för att hantera klick på dessa knappar, och anropar sedan antingen `deps.router()` för navigering eller `on_edit_callback`/`on_delete_callback` som tillhandahålls av föräldern.
+    *   **Interaktioner:** Används av `SampleManagementViewComponent` och `AuditOverviewComponent`. Läser `deps.getState().samples`. Renderar knappar ("Redigera", "Radera", "Visa krav", "Ogranskade utan anmärkning" under pågående granskning när det finns helt ogranskade krav, "Granska nästa", "Besök url") villkorligt baserat på `auditStatus` och antal stickprov. Använder eventdelegering för att hantera klick på dessa knappar, och anropar sedan antingen `deps.router()` för navigering eller `on_edit_callback`/`on_delete_callback`/`on_mark_sample_bulk_pass_fully_unreviewed` som tillhandahålls av föräldern.
     *   **CSS:** `css/components/sample_list_component.css`.
 
 *   **`RequirementCardComponent.js`**

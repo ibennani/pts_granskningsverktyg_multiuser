@@ -183,7 +183,9 @@ export class ModalComponent {
         for (const part of parts) {
             if (!part?.value && part?.value !== '') continue;
             if (part.type === 'strong') {
+                frag.appendChild(document.createTextNode('"'));
                 frag.appendChild(this.Helpers.create_element('strong', { text_content: part.value }));
+                frag.appendChild(document.createTextNode('"'));
             } else {
                 frag.appendChild(document.createTextNode(part.value));
             }
@@ -207,6 +209,8 @@ export class ModalComponent {
                     if (!parent) return NodeFilter.FILTER_REJECT;
                     if (excluded_tags.has(parent.tagName)) return NodeFilter.FILTER_REJECT;
                     if (parent.closest && parent.closest('pre, code, textarea')) return NodeFilter.FILTER_REJECT;
+                    /** Rubrik ska visa bokstavliga citattecken; omvandling gäller brödtext (t.ex. statusnamn med <strong>). */
+                    if (parent.id === 'modal-dialog-title' && parent.tagName === 'H1') return NodeFilter.FILTER_REJECT;
 
                     const v = node.nodeValue ?? '';
                     if (!v) return NodeFilter.FILTER_REJECT;

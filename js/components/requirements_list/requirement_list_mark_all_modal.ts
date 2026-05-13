@@ -4,7 +4,11 @@
  */
 
 import { app_runtime_refs } from '../../utils/app_runtime_refs.js';
-import { get_effective_requirement_audit_status, find_requirement_definition } from '../../audit_logic.js';
+import {
+    get_effective_requirement_audit_status,
+    find_requirement_definition,
+    effective_status_is_fully_unreviewed_for_bulk_pass
+} from '../../audit_logic.js';
 
 /**
  * @param {string} requirement_id
@@ -43,7 +47,7 @@ export function handle_mark_requirement_passed_in_all_samples(requirement_id: an
                     req,
                     null
                 );
-                if (status === 'not_audited' || status === 'partially_audited') {
+                if (effective_status_is_fully_unreviewed_for_bulk_pass(status)) {
                     affected_samples.push(sample);
                 }
             }

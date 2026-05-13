@@ -3,7 +3,7 @@
  * Används av view_render.js — samma instanser som tidigare i main.js.
  */
 import { EditMetadataViewComponent } from '../components/EditMetadataViewComponent.js';
-import { SampleManagementViewComponent } from '../components/SampleManagementViewComponent.js';
+import { SampleManagementViewComponent } from '../components/SampleManagementViewComponent.ts';
 import { SampleFormViewComponent } from '../components/SampleFormViewComponent.ts';
 import { ConfirmSampleEditViewComponent } from '../components/ConfirmSampleEditViewComponent.ts';
 import { AuditOverviewComponent } from '../components/AuditOverviewComponent.js';
