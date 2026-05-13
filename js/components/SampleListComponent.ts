@@ -2,6 +2,7 @@
 import "./sample_list_component.css";
 import { ProgressBarComponent } from './ProgressBarComponent.js';
 import { effective_status_is_fully_unreviewed_for_bulk_pass } from '../audit_logic.js';
+import { user_may_use_sample_mark_bulk_pass_not_audited } from '../logic/sample_bulk_pass_not_audited_gate.js';
 
 export const SampleListComponent = {
     init({ root, deps }) {
@@ -66,6 +67,7 @@ export const SampleListComponent = {
                 }
                 break;
             case 'mark-sample-bulk-pass-not-audited':
+                if (!user_may_use_sample_mark_bulk_pass_not_audited()) break;
                 if (typeof this.on_mark_sample_bulk_pass === 'function') {
                     this.on_mark_sample_bulk_pass(sample_id, action_button);
                 }
@@ -119,6 +121,7 @@ export const SampleListComponent = {
         });
         
         const can_edit_or_delete = state.auditStatus !== 'locked' && state.auditStatus !== 'archived';
+        const pilot_may_bulk_sample = user_may_use_sample_mark_bulk_pass_not_audited();
 
         state.samples.forEach(sample => {
             const li = create_element('li', { 
@@ -227,7 +230,7 @@ export const SampleListComponent = {
                 }));
             }
 
-            if (state.auditStatus === 'in_progress' && total_relevant_reqs > 0 && typeof this.on_mark_sample_bulk_pass === 'function' && state.ruleFileContent && this.AuditLogic?.get_relevant_requirements_for_sample) {
+            if (state.auditStatus === 'in_progress' && total_relevant_reqs > 0 && typeof this.on_mark_sample_bulk_pass === 'function' && pilot_may_bulk_sample && state.ruleFileContent && this.AuditLogic?.get_relevant_requirements_for_sample) {
                 const has_fully_unreviewed = this.AuditLogic.get_relevant_requirements_for_sample(state.ruleFileContent, sample).some((req_def) => {
                     const st = this.AuditLogic.get_effective_requirement_audit_status(
                         state.ruleFileContent.requirements,

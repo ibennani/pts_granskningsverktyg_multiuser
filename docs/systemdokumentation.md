@@ -192,7 +192,7 @@ export const ComponentName = {
 
 *   **`SampleListComponent.js`**
     *   **Syfte:** Renderar en lista (`<ul>`) av stickprov (`<li>`). Varje listobjekt visar information om stickprovet och åtgärdsknappar.
-    *   **Interaktioner:** Används av `SampleManagementViewComponent` och `AuditOverviewComponent`. Läser `deps.getState().samples`. Renderar knappar ("Redigera", "Radera", "Visa krav", "Ogranskade utan anmärkning" under pågående granskning när det finns helt ogranskade krav, "Granska nästa", "Besök url") villkorligt baserat på `auditStatus` och antal stickprov. Använder eventdelegering för att hantera klick på dessa knappar, och anropar sedan antingen `deps.router()` för navigering eller `on_edit_callback`/`on_delete_callback`/`on_mark_sample_bulk_pass_fully_unreviewed` som tillhandahålls av föräldern.
+    *   **Interaktioner:** Används av `SampleManagementViewComponent` och `AuditOverviewComponent`. Läser `deps.getState().samples`. Renderar knappar ("Redigera", "Radera", "Visa krav", "Ogranskade utan anmärkning" endast för utvald inloggning under pågående granskning när det finns helt ogranskade krav, "Granska nästa", "Besök url") villkorligt baserat på `auditStatus` och antal stickprov. Använder eventdelegering för klick och anropar `deps.router()`, `on_edit_callback`, `on_delete_callback` eller `on_mark_sample_bulk_pass_fully_unreviewed` från föräldern.
     *   **CSS:** `css/components/sample_list_component.css`.
 
 *   **`RequirementCardComponent.js`**

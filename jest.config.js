@@ -41,6 +41,7 @@ export default {
     '^.+/actionTypes\\.js$': '<rootDir>/js/state/actionTypes.ts',
     '^.+/audit_reducer_bulk_pass\\.js$': '<rootDir>/js/state/audit_reducer_bulk_pass.ts',
     '^.+/bulk_pass_unreviewed_policy\\.js$': '<rootDir>/js/logic/bulk_pass_unreviewed_policy.ts',
+    '^.+/sample_bulk_pass_not_audited_gate\\.js$': '<rootDir>/js/logic/sample_bulk_pass_not_audited_gate.ts',
     '^.+/auditReducer\\.js$': '<rootDir>/js/state/auditReducer.ts',
     '^.+/audit_reducer_time\\.js$': '<rootDir>/js/state/audit_reducer_time.ts',
     '^.+/auditResultAliases\\.js$': '<rootDir>/js/state/auditResultAliases.ts',

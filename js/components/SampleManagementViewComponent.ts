@@ -1,5 +1,5 @@
 /**
- * @fileoverview Vy för hantering av stickprov: lista, tillägg, start av granskning och bulk "ingen anmärkning" för helt ogranskade krav per stickprov.
+ * @fileoverview Vy för hantering av stickprov: lista, tillägg, start av granskning och bulk "ingen anmärkning" för helt ogranskade krav per stickprov (endast viss inloggning).
  */
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- vydeps matchar befintlig init-konvention
@@ -9,6 +9,7 @@ import { SampleListComponent } from './SampleListComponent.js';
 import { show_confirm_delete_modal } from '../logic/confirm_delete_modal_logic.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import { effective_status_is_fully_unreviewed_for_bulk_pass } from '../audit_logic.js';
+import { user_may_use_sample_mark_bulk_pass_not_audited } from '../logic/sample_bulk_pass_not_audited_gate.js';
 import './sample_management_view_component.css';
 
 export class SampleManagementViewComponent {
@@ -135,6 +136,7 @@ export class SampleManagementViewComponent {
     }
 
     handle_mark_bulk_pass_fully_unreviewed_in_sample(sample_id: string, trigger_button: HTMLElement | null) {
+        if (!user_may_use_sample_mark_bulk_pass_not_audited()) return;
         const t = this.Translation?.t;
         const ModalComponent = app_runtime_refs.modal_component as {
             show?: (opts: { h1_text: string; message_text: string }, fn: (c: HTMLElement, m: { close: (el: HTMLElement | null) => void }) => void) => void;
