@@ -1,5 +1,5 @@
 /**
- * @fileoverview Vy för hantering av stickprov: lista, tillägg, start av granskning och bulk "ingen anmärkning" för helt ogranskade krav per stickprov (endast viss inloggning).
+ * @fileoverview Vy för hantering av stickprov: lista, tillägg, start av granskning och bulk "ingen anmärkning" för helt ogranskade krav per stickprov (endast viss inloggning och när samma person är angiven granskare i metadata).
  */
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- vydeps matchar befintlig init-konvention
@@ -136,7 +136,8 @@ export class SampleManagementViewComponent {
     }
 
     handle_mark_bulk_pass_fully_unreviewed_in_sample(sample_id: string, trigger_button: HTMLElement | null) {
-        if (!user_may_use_sample_mark_bulk_pass_not_audited()) return;
+        const st = this.getState?.() as { auditMetadata?: { auditorName?: string } } | null;
+        if (!user_may_use_sample_mark_bulk_pass_not_audited(undefined, () => st?.auditMetadata?.auditorName)) return;
         const t = this.Translation?.t;
         const ModalComponent = app_runtime_refs.modal_component as {
             show?: (opts: { h1_text: string; message_text: string }, fn: (c: HTMLElement, m: { close: (el: HTMLElement | null) => void }) => void) => void;

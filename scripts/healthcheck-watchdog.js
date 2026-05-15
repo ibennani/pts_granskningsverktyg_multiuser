@@ -3,6 +3,9 @@
  * Watchdog som kontrollerar backend var minut.
  * Om /api/health inte svarar 200 – startar om PM2.
  * Körs med PM2: npx pm2 start scripts/healthcheck-watchdog.js --name granskningsverktyget-watchdog
+ *
+ * Docker Compose-projektnamn ska matcha name: i docker-compose.yml (standard sessionversion).
+ * Överstyr med GV_DOCKER_PROJECT vid behov (t.ex. äldre server med annat projektnamn).
  */
 import { execSync } from 'child_process';
 
@@ -10,7 +13,7 @@ const INTERVAL_MS = 60 * 1000;
 const HEALTH_URL = 'http://localhost:3000/api/health';
 const APP_NAME = 'granskningsverktyget-v2';
 const PROJECT_DIR = process.env.GV_SERVER_DIR || '/var/www/granskningsverktyget-v2';
-const DOCKER_PROJECT = process.env.GV_DOCKER_PROJECT || 'granskningsverktyget-v2';
+const DOCKER_PROJECT = process.env.GV_DOCKER_PROJECT || 'sessionversion';
 const DB_CONTAINER = process.env.GV_DB_CONTAINER || 'granskningsverktyget-db';
 
 function safe_exec(cmd) {

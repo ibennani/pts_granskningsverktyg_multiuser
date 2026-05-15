@@ -7,12 +7,14 @@
  *
  * Hämtning (exempel):
  *   scp ux-granskningsverktyg.pts.ad:/var/www/granskningsverktyget-v2/backups/db/<filnamn> .
+ *
+ * Compose-projekt standard sessionversion (samma som docker-compose.yml name:). Överstyr med GV_DOCKER_PROJECT.
  */
 import { exec, disconnect, remotePath } from './deploy-utils.js';
  
 const BACKUP_DIR = process.env.GV_DB_BACKUP_DIR || '/var/www/granskningsverktyget-v2/backups/db';
 const KEEP = parseInt(process.env.GV_DB_BACKUP_KEEP || '30', 10);
-const DOCKER_PROJECT = process.env.GV_DOCKER_PROJECT || 'granskningsverktyget-v2';
+const DOCKER_PROJECT = process.env.GV_DOCKER_PROJECT || 'sessionversion';
 const DB_CONTAINER = process.env.GV_DB_CONTAINER || 'granskningsverktyget-db';
 const DB_USER = process.env.GV_DB_USER || 'granskning';
 const DB_NAME = process.env.GV_DB_NAME || 'granskningsverktyget';

@@ -67,7 +67,7 @@ export const SampleListComponent = {
                 }
                 break;
             case 'mark-sample-bulk-pass-not-audited':
-                if (!user_may_use_sample_mark_bulk_pass_not_audited()) break;
+                if (!user_may_use_sample_mark_bulk_pass_not_audited(undefined, () => current_global_state?.auditMetadata?.auditorName)) break;
                 if (typeof this.on_mark_sample_bulk_pass === 'function') {
                     this.on_mark_sample_bulk_pass(sample_id, action_button);
                 }
@@ -121,7 +121,7 @@ export const SampleListComponent = {
         });
         
         const can_edit_or_delete = state.auditStatus !== 'locked' && state.auditStatus !== 'archived';
-        const pilot_may_bulk_sample = user_may_use_sample_mark_bulk_pass_not_audited();
+        const pilot_may_bulk_sample = user_may_use_sample_mark_bulk_pass_not_audited(undefined, () => state?.auditMetadata?.auditorName);
 
         state.samples.forEach(sample => {
             const li = create_element('li', { 

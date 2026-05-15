@@ -16,4 +16,31 @@ describe('user_may_use_sample_mark_bulk_pass_not_audited', () => {
     it('returnerar false för annat användarnamn', () => {
         expect(user_may_use_sample_mark_bulk_pass_not_audited(() => 'annan')).toBe(false);
     });
+
+    it('med granskarkontroll: true när inloggad och metadata-granskare matchar', () => {
+        expect(
+            user_may_use_sample_mark_bulk_pass_not_audited(
+                () => 'Ilias Bennani',
+                () => '  Ilias Bennani  '
+            )
+        ).toBe(true);
+    });
+
+    it('med granskarkontroll: false när inloggad Ilias men annan granskare i metadata', () => {
+        expect(
+            user_may_use_sample_mark_bulk_pass_not_audited(
+                () => 'Ilias Bennani',
+                () => 'Anna Andersson'
+            )
+        ).toBe(false);
+    });
+
+    it('med granskarkontroll: false när inloggad Ilias men granskare saknas i metadata', () => {
+        expect(
+            user_may_use_sample_mark_bulk_pass_not_audited(
+                () => 'Ilias Bennani',
+                () => ''
+            )
+        ).toBe(false);
+    });
 });
