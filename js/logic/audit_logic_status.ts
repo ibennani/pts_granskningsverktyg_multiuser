@@ -46,8 +46,10 @@ export function calculate_check_status(
         if (has_not_audited && !has_passed) return 'partially_audited';
         return 'failed';
     }
-    if (pc_statuses.some((s) => s === 'failed')) return 'failed';
-    if (pc_statuses.some((s) => s === 'not_audited')) return 'partially_audited';
+    const has_not_audited = pc_statuses.some((s) => s === 'not_audited');
+    const has_failed = pc_statuses.some((s) => s === 'failed');
+    if (has_not_audited) return 'partially_audited';
+    if (has_failed) return 'failed';
     return 'passed';
 }
 
@@ -111,17 +113,18 @@ export function calculate_requirement_status(
                 }
             }
 
-            if (status === 'failed') {
-                has_failed_check = true;
-                break;
-            }
+            if (status === 'failed') has_failed_check = true;
             if (status === 'partially_audited') has_partially_audited_check = true;
             if (status === 'not_audited') has_not_audited_check = true;
         }
 
-        if (has_failed_check) return 'failed';
-        if (!has_not_audited_check && !has_partially_audited_check) return 'passed';
-        if (has_any_button_pressed) return 'partially_audited';
+        const is_fully_audited = !has_not_audited_check && !has_partially_audited_check;
+        if (is_fully_audited) {
+            return has_failed_check ? 'failed' : 'passed';
+        }
+        if (has_failed_check || has_partially_audited_check || has_any_button_pressed) {
+            return 'partially_audited';
+        }
         return 'not_audited';
     } catch (error) {
         if (window.ConsoleManager?.warn) {
