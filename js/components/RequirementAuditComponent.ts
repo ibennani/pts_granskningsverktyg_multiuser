@@ -76,6 +76,8 @@ export class RequirementAuditComponent {
         this._on_audit_locks_visibility_refresh = null;
         /** Anropas efter skip_render-dispatch för att uppdatera sidtitel/vänstermeny (injiceras från main). */
         this.refresh_side_menu_and_title = null;
+        /** Serialiserar snabba checklist-statusklick så varje dispatch utgår från senaste state. */
+        this._status_change_queue_tail = Promise.resolve();
     }
 
     async init({ root, deps }) {
@@ -450,7 +452,25 @@ export class RequirementAuditComponent {
         await this._refresh_plate_ui_after_result_sync_from_store();
     }
 
-    async handle_checklist_status_change(change_info) {
+    /**
+     * Köar statusändringar så snabba klick/tangentbord inte skriver över varandra i store.
+     * @returns {Promise<void>}
+     */
+    handle_checklist_status_change(change_info) {
+        const run = () => this._run_checklist_status_change(change_info);
+        const next = this._status_change_queue_tail.then(run, run);
+        this._status_change_queue_tail = next.then(
+            () => undefined,
+            () => undefined
+        );
+        return next;
+    }
+
+    async _run_checklist_status_change(change_info) {
+        if (!this.load_and_prepare_view_data()) {
+            await this.render();
+            return;
+        }
 
         let modified_result;
         try {
@@ -498,7 +518,7 @@ export class RequirementAuditComponent {
             pc_result.status = pc_result.status === change_info.newStatus ? 'not_audited' : change_info.newStatus;
             pc_result.timestamp = current_time;
             pc_result.updatedBy = current_user;
-            
+
             if (pc_result.status === 'failed' && (!pc_result.observationDetail || pc_result.observationDetail.trim() === '')) {
                 const pc_def = find_pass_criterion_def_by_storage_id(check_definition?.passCriteria, change_info.pcId);
                 if (pc_def?.failureStatementTemplate) {
@@ -506,7 +526,7 @@ export class RequirementAuditComponent {
                 }
             }
         }
-        
+
         delete modified_result.needsReview;
         try {
             await this.dispatch_result_update(modified_result, { skipRender: true });
@@ -1355,6 +1375,7 @@ export class RequirementAuditComponent {
     }
 
     destroy() {
+        this._status_change_queue_tail = Promise.resolve();
         if (typeof this.unsubscribe_from_store === 'function') {
             this.unsubscribe_from_store();
             this.unsubscribe_from_store = null;
