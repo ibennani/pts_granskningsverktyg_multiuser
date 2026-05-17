@@ -108,6 +108,24 @@ export const RequirementsFilterComponent = {
         this.root.appendChild(this._filter_container_ref);
     },
 
+    get_pending_search_text() {
+        if (this._search_input_ref) {
+            return this._search_input_ref.value || '';
+        }
+        const current = this.get_current_filters ? this.get_current_filters() : {};
+        return current.searchText || '';
+    },
+
+    flush_search_debounce() {
+        if (!this._search_debounce_timer) return;
+        clearTimeout(this._search_debounce_timer);
+        this._search_debounce_timer = null;
+        const value = this.get_pending_search_text();
+        if (this.on_filter_change) {
+            this.on_filter_change({ searchText: value });
+        }
+    },
+
     _handle_search_input(event) {
         const value = event?.target?.value || '';
         if (this._search_debounce_timer) {

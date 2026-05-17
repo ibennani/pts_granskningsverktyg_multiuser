@@ -187,12 +187,31 @@ export class RequirementAuditSidebarComponent {
         const new_value = event?.target?.value;
         if (!new_value || new_value === this.selected_mode) return;
 
+        const search_text = this.capture_current_search_text();
+        this.sync_search_text_across_modes(search_text);
+
         this.selected_mode = new_value;
         this.save_settings_to_state();
 
         if (this.last_render_options) {
             this.render(this.last_render_options);
         }
+    }
+
+    capture_current_search_text() {
+        if (this.requirements_filter_component?.flush_search_debounce) {
+            this.requirements_filter_component.flush_search_debounce();
+        }
+        if (this.requirements_filter_component?.get_pending_search_text) {
+            return this.requirements_filter_component.get_pending_search_text();
+        }
+        return this.get_current_filters().searchText || '';
+    }
+
+    sync_search_text_across_modes(search_text) {
+        const value = typeof search_text === 'string' ? search_text : '';
+        this.filters_by_mode.sample_requirements.searchText = value;
+        this.filters_by_mode.requirement_samples.searchText = value;
     }
 
     handle_link_click(event) {
