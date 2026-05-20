@@ -23,6 +23,7 @@ const is_fetch_network_error = jest.fn(() => false);
 const mark_audit_sync_pending = jest.fn();
 const mark_rulefile_sync_pending = jest.fn();
 const notify_network_unreachable_for_sync = jest.fn();
+const refresh_connectivity_banner = jest.fn();
 
 jest.unstable_mockModule(client_path, () => ({
     update_audit,
@@ -40,7 +41,8 @@ jest.unstable_mockModule(connectivity_path, () => ({
     is_fetch_network_error,
     mark_audit_sync_pending,
     mark_rulefile_sync_pending,
-    notify_network_unreachable_for_sync
+    notify_network_unreachable_for_sync,
+    refresh_connectivity_banner
 }));
 
 let schedule_sync_rulefile_to_server;
@@ -194,6 +196,30 @@ describe('server_sync', () => {
         expect(update_audit).not.toHaveBeenCalled();
         await flush_sync_to_server(() => state, dispatch);
         expect(update_audit).toHaveBeenCalledWith('deb', expect.any(Object));
+    });
+
+    test('lyckad PATCH sätter SET_REMOTE_AUDIT_ID med skip_render och last_server_sync_at', async () => {
+        const dispatch = jest.fn();
+        const state = base_audit_state({ auditId: 'sync-1', version: 2 });
+        await sync_to_server_now(() => state, dispatch);
+        expect(dispatch).toHaveBeenCalledWith({
+            type: 'SET_REMOTE_AUDIT_ID',
+            payload: expect.objectContaining({
+                auditId: 'sync-1',
+                version: 9,
+                skip_render: true
+            })
+        });
+        expect(dispatch).toHaveBeenCalledWith({
+            type: 'UPDATE_METADATA',
+            payload: expect.objectContaining({
+                last_server_sync_at: expect.any(String),
+                skip_server_sync: true
+            })
+        });
+        expect(dispatch).not.toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'REPLACE_STATE_FROM_REMOTE' })
+        );
     });
 
     test('run_sync: 409 med existingAuditId sätter dispatch SET_REMOTE_AUDIT_ID', async () => {

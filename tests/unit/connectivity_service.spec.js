@@ -78,8 +78,40 @@ describe('connectivity_service', () => {
             const show = jest.fn();
             app_runtime_refs.notification_component = { show_global_message: show };
             window.Translation = { t: (k) => k };
+            Object.defineProperty(navigator, 'onLine', { configurable: true, value: false });
             notify_network_unreachable_for_sync();
             expect(show).toHaveBeenCalledWith('connectivity_offline_message', 'warning');
+            app_runtime_refs.notification_component = null;
+            delete window.Translation;
+        });
+    });
+
+    describe('refresh_connectivity_banner', () => {
+        test('visar osynkad-varning när lokalt är nyare än server', async () => {
+            const mod = await import('../../js/logic/connectivity_service.js');
+            const { refresh_connectivity_banner, clear_audit_sync_pending } = mod;
+            clear_audit_sync_pending();
+            const show = jest.fn();
+            app_runtime_refs.notification_component = { show_global_message: show, clear_global_message: jest.fn() };
+            window.Translation = { t: (k) => k };
+            Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
+
+            refresh_connectivity_banner();
+            expect(show).not.toHaveBeenCalled();
+
+            mod.init_connectivity_service({
+                getState: () => ({
+                    auditMetadata: {
+                        last_local_change_at: '2026-05-20T14:00:00.000Z',
+                        last_server_sync_at: '2026-05-19T08:00:00.000Z'
+                    },
+                    samples: []
+                }),
+                dispatch: jest.fn()
+            });
+            refresh_connectivity_banner();
+            expect(show).toHaveBeenCalledWith('connectivity_unsynced_local_message', 'warning');
+
             app_runtime_refs.notification_component = null;
             delete window.Translation;
         });

@@ -25,6 +25,7 @@ import {
 import { RequirementLookup } from '../logic/requirement_lookup.js';
 import { map_samples_bulk_pass_fully_unreviewed_only } from './audit_reducer_bulk_pass.js';
 import { definition_primary_id, same_storage_id } from '../logic/entity_id_match.js';
+import { build_last_local_change_metadata_patch } from '../logic/audit_sync_tracking.js';
 
 export function auditReducer(current_state: any, action: any) {
     let new_state: any;
@@ -329,7 +330,14 @@ export function auditReducer(current_state: any, action: any) {
                 )
             };
             new_state = AuditLogic.recalculateAuditTimes(new_state);
-            return AuditLogic.updateIncrementalDeficiencyIds(new_state);
+            new_state = AuditLogic.updateIncrementalDeficiencyIds(new_state);
+            return {
+                ...new_state,
+                auditMetadata: {
+                    ...new_state.auditMetadata,
+                    ...build_last_local_change_metadata_patch(result_to_save, get_current_iso_datetime_utc())
+                }
+            };
         }
         case ActionTypes.SET_AUDIT_STATUS:
             return reduce_set_audit_status(current_state, action);

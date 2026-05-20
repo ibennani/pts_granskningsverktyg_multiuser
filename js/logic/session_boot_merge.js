@@ -5,6 +5,7 @@ import { load_audit_with_rule_file } from '../api/client.js';
 import { set_restore_focus_info } from '../app/browser_globals.js';
 import { sync_to_server_now } from './server_sync.js';
 import { navigate_to_default_audit_view } from './audit_open_logic.js';
+import { is_local_audit_content_newer_than } from './audit_sync_tracking.js';
 
 /**
  * Applicerar backup mot servern utan dialog. Kräver inloggning för serverhämtning när auditId finns.
@@ -96,18 +97,20 @@ export async function apply_session_boot_merge_from_backup(options) {
 
         const rv = Number(remote.version ?? 0);
         const lv = Number(local_state.version ?? 0);
+        const use_local =
+            lv > rv || (rv === lv && is_local_audit_content_newer_than(local_state, remote));
 
-        if (rv >= lv) {
-            await dispatch({
-                type: StoreActionTypes.REPLACE_STATE_FROM_REMOTE,
-                payload: { ...remote, saveFileVersion: remote.saveFileVersion || '2.1.0' }
-            });
-        } else {
+        if (use_local) {
             await dispatch({
                 type: StoreActionTypes.LOAD_AUDIT_FROM_FILE,
                 payload: local_state
             });
             await sync_to_server_now(getState, dispatch);
+        } else {
+            await dispatch({
+                type: StoreActionTypes.REPLACE_STATE_FROM_REMOTE,
+                payload: { ...remote, saveFileVersion: remote.saveFileVersion || '2.1.0' }
+            });
         }
         navigate_after_merge();
         return { applied: true };

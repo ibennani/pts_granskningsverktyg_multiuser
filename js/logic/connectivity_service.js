@@ -3,6 +3,7 @@
 
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import { ensure_main_view_content_host } from './app_dom.js';
+import { has_unsynced_local_audit_changes } from './audit_sync_tracking.js';
 
 /** @type {boolean} */
 let pending_audit_sync = false;
@@ -10,6 +11,8 @@ let pending_audit_sync = false;
 let pending_rulefile_sync = false;
 /** @type {boolean} */
 let showing_offline_banner = false;
+/** @type {boolean} */
+let showing_unsynced_banner = false;
 /** @type {function(): Object|null} */
 let get_state_fn = null;
 /** @type {function(Object): void} */
@@ -38,6 +41,7 @@ export function is_fetch_network_error(err) {
 
 export function mark_audit_sync_pending() {
     pending_audit_sync = true;
+    refresh_connectivity_banner();
 }
 
 export function mark_rulefile_sync_pending() {
@@ -46,6 +50,7 @@ export function mark_rulefile_sync_pending() {
 
 export function clear_audit_sync_pending() {
     pending_audit_sync = false;
+    refresh_connectivity_banner();
 }
 
 export function clear_rulefile_sync_pending() {
@@ -61,7 +66,7 @@ export function has_pending_server_sync() {
  */
 export function notify_network_unreachable_for_sync() {
     if (typeof window === 'undefined') return;
-    show_offline_banner_if_needed();
+    refresh_connectivity_banner();
 }
 
 function show_offline_banner_if_needed() {
@@ -75,10 +80,58 @@ function show_offline_banner_if_needed() {
 
 function clear_offline_banner() {
     if (!showing_offline_banner) return;
-    if (app_runtime_refs.notification_component?.clear_global_message) {
-        app_runtime_refs.notification_component.clear_global_message();
-    }
     showing_offline_banner = false;
+    refresh_connectivity_banner();
+}
+
+function clear_unsynced_banner() {
+    showing_unsynced_banner = false;
+}
+
+function show_unsynced_local_banner_if_needed() {
+    if (showing_unsynced_banner) return;
+    if (typeof navigator !== 'undefined' && !navigator.onLine) return;
+    const t = window.Translation?.t;
+    const NotificationComponent = app_runtime_refs.notification_component;
+    if (!t || !NotificationComponent?.show_global_message) return;
+    NotificationComponent.show_global_message(t('connectivity_unsynced_local_message'), 'warning');
+    showing_unsynced_banner = true;
+}
+
+/**
+ * Uppdaterar global varning: offline, väntande synk eller lokalt nyare än server.
+ */
+export function refresh_connectivity_banner() {
+    if (typeof window === 'undefined') return;
+    const NotificationComponent = app_runtime_refs.notification_component;
+    if (!NotificationComponent?.show_global_message) return;
+
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        clear_unsynced_banner();
+        show_offline_banner_if_needed();
+        return;
+    }
+
+    if (showing_offline_banner) {
+        if (NotificationComponent.clear_global_message) {
+            NotificationComponent.clear_global_message();
+        }
+        showing_offline_banner = false;
+    }
+
+    const state = typeof get_state_fn === 'function' ? get_state_fn() : null;
+    const needs_unsynced =
+        has_pending_server_sync() || has_unsynced_local_audit_changes(state);
+
+    if (needs_unsynced) {
+        show_unsynced_local_banner_if_needed();
+        return;
+    }
+
+    if (showing_unsynced_banner && NotificationComponent.clear_global_message) {
+        NotificationComponent.clear_global_message();
+    }
+    clear_unsynced_banner();
 }
 
 function show_sync_complete_message() {
@@ -115,8 +168,9 @@ async function handle_online_event() {
 
     await flush_pending_syncs_from_server_module();
 
+    refresh_connectivity_banner();
+
     if (has_pending_server_sync()) {
-        show_offline_banner_if_needed();
         return;
     }
 
@@ -126,7 +180,7 @@ async function handle_online_event() {
 }
 
 function handle_offline_event() {
-    show_offline_banner_if_needed();
+    refresh_connectivity_banner();
 }
 
 /**
@@ -145,12 +199,10 @@ export function init_connectivity_service(options) {
         ensure_main_view_content_host(main_el);
         NotificationComponent.init().then(() => {
             NotificationComponent.append_global_message_areas_to(main_el);
-            if (!navigator.onLine) {
-                show_offline_banner_if_needed();
-            }
+            refresh_connectivity_banner();
         });
-    } else if (!navigator.onLine) {
-        show_offline_banner_if_needed();
+    } else {
+        refresh_connectivity_banner();
     }
 
     window.addEventListener('online', () => {

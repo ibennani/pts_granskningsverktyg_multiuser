@@ -19,6 +19,7 @@ import { get_current_user_name } from '../utils/helpers.js';
 import { get_current_user_name_window, get_restore_position_via_hook } from '../app/browser_globals.js';
 import { is_debug_modal_scroll } from '../app/runtime_flags.js';
 import { init_same_user_tab_field_sync_listener } from './same_user_tab_field_sync.js';
+import { init_audit_sync_lifecycle } from './audit_sync_lifecycle.js';
 
 /** Bygg-info som läses in dynamiskt i webbläsaren. */
 interface BuildInfoPayload {
@@ -319,6 +320,10 @@ export async function start_normal_session(deps: StartNormalSessionDeps): Promis
     // Blockerar inte första vyrendering om /users/me hänger (fetch saknar timeout i klienten).
     void apply_user_preferences_from_server({ dispatch, StoreActionTypes });
     init_connectivity_service({ getState, dispatch });
+    init_audit_sync_lifecycle({
+        getState: getState as () => object,
+        dispatch: dispatch as (action: object) => void
+    });
     if (window.ScoreManager?.init) {
         window.ScoreManager.init(subscribe, getState, dispatch, StoreActionTypes);
     }

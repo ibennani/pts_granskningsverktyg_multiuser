@@ -1168,6 +1168,7 @@
   "server_create_audit_error": "Kunde inte skapa granskning: {message}",
   "server_load_audit_error": "Kunde inte ladda granskning: {message}",
   "connectivity_offline_message": "Ingen uppkoppling. Allt arbete sparas lokalt så länge.",
+  "connectivity_unsynced_local_message": "Ändringar är sparade på den här datorn men väntar på att sparas på servern. Håll fliken öppen eller gå online igen.",
   "connectivity_online_all_saved_message": "Uppkoppling återställd. Allt arbete är sparat på servern.",
   "connectivity_offline_cannot_open_audit": "Ingen uppkoppling. Öppna granskningen igen när du är online.",
   "server_sync_error": "Kunde inte spara till servern: {message}",

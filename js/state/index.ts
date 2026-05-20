@@ -10,6 +10,7 @@
  */
 import * as AuditLogic from '../audit_logic.js';
 import { schedule_sync_to_server, schedule_sync_rulefile_to_server } from '../logic/server_sync.js';
+import { refresh_connectivity_banner } from '../logic/connectivity_service.js';
 import { ActionTypes } from './actionTypes.js';
 import { initial_state, APP_STATE_VERSION } from './initialState.js';
 import { auditReducer } from './auditReducer.js';
@@ -163,6 +164,13 @@ function execute_single_dispatch(
                         action.type !== ActionTypes.SET_REMOTE_AUDIT_ID &&
                         internal_state.auditStatus !== 'not_started') {
                         schedule_sync_to_server(() => getState(), dispatch_fn);
+                    }
+                    if (action.type === ActionTypes.UPDATE_REQUIREMENT_RESULT) {
+                        try {
+                            refresh_connectivity_banner();
+                        } catch {
+                            // ignoreras medvetet
+                        }
                     }
                 } catch {
                     // ignoreras medvetet

@@ -43,7 +43,15 @@ När du ändrar sparformat: uppdatera `APP_STATE_VERSION` medvetet och dokumente
 5. **Varje `dispatch`** som ger nytt state-objekt: serialisera till `sessionStorage`; om `has_restorable_state` — uppdatera **localStorage-backup** inklusive valfri `restorePosition` (hash-vy + fokusinfo) från app-hook.
 6. **Fel vid sparning** (t.ex. kvot): varning till användare via notifiering; inget kraschande kast från lagret.
 
-## 5. När synkas till servern?
+## 5. Serversynk – säkerställande och indikator
+
+- Efter varje `dispatch` som synkas schemaläggs PATCH med **500 ms** debounce (`audit_sync_service.ts`).
+- **Flush** (omedelbar PATCH, utan extra vy-render): vid byte av vy, `pagehide`, dold flik (`visibilitychange`), efter checklist-status, vid observation blur, och när nätverket återkommer (`connectivity_service`).
+- Lyckad PATCH uppdaterar endast `version` via `SET_REMOTE_AUDIT_ID` med `skip_render: true` — ingen full omritning av granskingsvyn.
+- Metadata: `auditMetadata.last_local_change_at` sätts vid `UPDATE_REQUIREMENT_RESULT`; `auditMetadata.last_server_sync_at` vid lyckad PATCH. Om lokalt är nyare visas varningen `connectivity_unsynced_local_message` (persisteras i backup).
+- **Cold start:** om `remote.version === local.version` men lokalt innehåll är nyare (tidsstämplar i kravresultat/metadata) laddas backup och pushas till server (`session_boot_merge.js`).
+
+## 6. När synkas till servern?
 
 Efter lyckad sparning till session anropas **`schedule_sync_to_server`** så när dess debounce löpt ut körs PATCH eller import (se `audit_sync_service.ts`). Följande **utesluter** synk i `js/state/index.ts` (för att undvika loopar, tappad staging-data eller irrelevant trafik):
 
@@ -55,7 +63,7 @@ Efter lyckad sparning till session anropas **`schedule_sync_to_server`** så nä
 
 Regelfilsredigering: vid `UPDATE_RULEFILE_CONTENT` i status `rulefile_editing` med `ruleSetId` körs **`schedule_sync_rulefile_to_server`**.
 
-## 6. Publik API från `js/state.js`
+## 7. Publik API från `js/state.js`
 
 Importera från `./state.js` (eller alias enligt projektets Vite-inställningar):
 
@@ -74,19 +82,19 @@ Importera från `./state.js` (eller alias enligt projektets Vite-inställningar)
 
 **OBS:** `window.Store` sätts **inte** i nuvarande kodbas; använd ES-modulimport i ny kod. Äldre dokumentation som nämner `window.Store.clearAutosavedState` eller `forceSaveStateToLocalStorage` är föråldrad.
 
-## 7. Relation till formulär-autospar
+## 8. Relation till formulär-autospar
 
 - **Centralt state:** sparas direkt vid `dispatch` (ingen debounce i state-lagret).
 - **Formulär:** använder `AutosaveService` med **250 ms** debounce på `input`, trimmar först vid manuell sparning eller när vyn lämnas; anrop till `dispatch` kan använda `skip_render` i payload för att undvika visuella hopp. Se `docs/autosave_integration.md`.
 
-## 8. Felsökning för utvecklare
+## 9. Felsökning för utvecklare
 
 1. **Data försvinner när fliken stängs** — förväntat för ren `sessionStorage`; användaren ska exportera eller arbeta mot server där granskning har `auditId`.
 2. **Gammal data efter omstart** — kontrollera `digitalTillsynAppStateBackup` i **Application → Local Storage** och boot-merge-loggen i konsolen.
 3. **Synk sker inte** — kontrollera `auditStatus`, token, `navigator.onLine`, och att action-typen inte finns på exklusionslistan ovan.
 4. **Korrupt JSON i session** — nyckeln rensas vid parse-fel; användaren får blank start om backup saknas eller är ogiltig.
 
-## 9. Närliggande dokument
+## 10. Närliggande dokument
 
 - `docs/systemdokumentation.md` — arkitekturöversikt.
 - `docs/requirements_data_shape.md` — form av `requirements` i regelfil och validering av sparad fil.

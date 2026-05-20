@@ -7,8 +7,10 @@ import {
     clear_audit_sync_pending,
     is_fetch_network_error,
     mark_audit_sync_pending,
-    notify_network_unreachable_for_sync
+    notify_network_unreachable_for_sync,
+    refresh_connectivity_banner
 } from '../logic/connectivity_service.js';
+import { build_last_server_sync_metadata_patch } from '../logic/audit_sync_tracking.js';
 import { consoleManager } from '../utils/console_manager.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import { show_audit_deleted_modal_and_navigate } from '../logic/audit_deleted_modal_flow.js';
@@ -36,6 +38,18 @@ type NotificationLike = { show_global_message?: (msg: string, level: string) => 
 
 function get_notification_component(): NotificationLike | undefined {
     return app_runtime_refs.notification_component as unknown as NotificationLike | undefined;
+}
+
+function record_successful_audit_server_sync(dispatch_fn: DispatchFn | undefined) {
+    if (!dispatch_fn) return;
+    dispatch_fn({
+        type: 'UPDATE_METADATA',
+        payload: {
+            ...build_last_server_sync_metadata_patch(new Date().toISOString()),
+            skip_server_sync: true
+        }
+    });
+    refresh_connectivity_banner();
 }
 
 let debounce_timer: ReturnType<typeof setTimeout> | null = null;
@@ -101,6 +115,7 @@ async function run_sync(state: SyncPayloadState | null | undefined, dispatch_fn:
                     }
                 });
             }
+            record_successful_audit_server_sync(dispatch_fn);
             clear_audit_sync_pending();
         } else {
             const import_payload = state_to_import(state);
@@ -130,6 +145,7 @@ async function run_sync(state: SyncPayloadState | null | undefined, dispatch_fn:
                             skip_server_sync: true
                         }
                     });
+                    record_successful_audit_server_sync(dispatch_fn);
                 }, 0);
             }
             clear_audit_sync_pending();
@@ -188,6 +204,7 @@ async function run_sync(state: SyncPayloadState | null | undefined, dispatch_fn:
                                 skip_server_sync: true
                             }
                         });
+                        record_successful_audit_server_sync(dispatch_fn);
                         clear_audit_sync_pending();
                         return;
                     } catch (retry_err: unknown) {

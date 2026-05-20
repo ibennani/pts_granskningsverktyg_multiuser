@@ -544,6 +544,7 @@ export class RequirementAuditComponent {
         if (typeof this.refresh_side_menu_and_title === 'function') {
             this.refresh_side_menu_and_title();
         }
+        void this._flush_audit_requirement_to_server();
     }
 
     handle_comment_input(should_trim = false) {

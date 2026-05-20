@@ -80,6 +80,7 @@ export default {
     '^.+/validation_logic\\.js$': '<rootDir>/js/validation_logic.ts',
     '^.+[\\\\/]validation_rulefile_requirements\\.js$': '<rootDir>/js/logic/validation_rulefile_requirements.ts',
     '^.+[\\\\/]sanitize_persisted_app_state\\.js$': '<rootDir>/js/logic/sanitize_persisted_app_state.ts',
+    '^.+[\\\\/]audit_sync_tracking\\.js$': '<rootDir>/js/logic/audit_sync_tracking.ts',
     '^.+[\\\\/]coerce_audit_for_export\\.js$': '<rootDir>/js/logic/coerce_audit_for_export.ts',
     '^.+/translation_logic\\.js$': '<rootDir>/js/translation_logic.ts',
     '^.+/requirement_audit_url_ui\\.js$': '<rootDir>/js/logic/requirement_audit_url_ui.ts',
