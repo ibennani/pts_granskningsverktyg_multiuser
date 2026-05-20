@@ -8,12 +8,12 @@ Granskningsdata (regelfil, metadata, stickprov, observationer med mera) lever i 
 
 | Del | Plats |
 |-----|--------|
-| Publik API (re-export) | `js/state.js` → `js/state/index.js` |
+| Publik API (re-export) | `js/state.js` → `js/state/index.ts` (via brygga `js/state/index.js`) |
 | Startvärden och versionskonstant | `js/state/initialState.js` (`APP_STATE_VERSION`) |
 | Action-typer | `js/state/actionTypes.ts` (via brygga `actionTypes.js`; exporteras som `StoreActionTypes`) |
 | Reducers | `auditReducer.ts`, `rulefileReducer.js`, `uiReducer.js`, `userReducer.js` |
 | Appstart, sessionStorage-koll, backup-merge | `js/logic/app_bootstrap.js`, `js/logic/session_boot_merge.js` |
-| Synk mot server | `js/sync/audit_sync_service.js`, `js/sync/rulefile_sync_service.js` (körs från `index.js` via `schedule_sync_*`) |
+| Synk mot server | `js/sync/audit_sync_service.ts`, `js/sync/rulefile_sync_service.ts` (körs från `js/state/index.ts` via `schedule_sync_*`) |
 
 ## 2. Webbläsarens nycklar
 
@@ -22,7 +22,7 @@ Granskningsdata (regelfil, metadata, stickprov, observationer med mera) lever i 
 | `digitalTillsynAppCentralState` | `sessionStorage` | Hela serialiserade appstate efter varje lyckad `dispatch` som ändrar state. Försvinner när fliken stängs. |
 | `digitalTillsynAppStateBackup` | `localStorage` | Objekt `{ state, restorePosition }` när sparat state bedöms **återställningsbart** (`has_restorable_state`). Används vid cold start om sessionStorage var tom. |
 | `gv_current_user_name` | `sessionStorage` | Visningsnamn för inloggad användare (parallellt till token-hantering). |
-| Utkast till fält | `localStorage` | Hanteras av **draft manager**, inte av centrala `dispatch` (se `js/draft_manager.js`). |
+| Utkast till fält | `localStorage` | Hanteras av **draft manager**, inte av centrala `dispatch` (se `js/draft_manager.ts`). |
 
 Konstanten **`APP_STATE_KEY`** exporteras från `state.js` och används t.ex. i bootstrap för att avgöra om det fanns data i session innan `initState()`.
 
@@ -45,7 +45,7 @@ När du ändrar sparformat: uppdatera `APP_STATE_VERSION` medvetet och dokumente
 
 ## 5. När synkas till servern?
 
-Efter lyckad sparning till session anropas **`schedule_sync_to_server`** så när dess debounce löpt ut körs PATCH eller import (se `audit_sync_service.js`). Följande **utesluter** synk i `index.js` (för att undvika loopar, tappad staging-data eller irrelevant trafik):
+Efter lyckad sparning till session anropas **`schedule_sync_to_server`** så när dess debounce löpt ut körs PATCH eller import (se `audit_sync_service.ts`). Följande **utesluter** synk i `js/state/index.ts` (för att undvika loopar, tappad staging-data eller irrelevant trafik):
 
 - Intern metadata med `skip_server_sync: true`
 - `same_user_tab_broadcast` (fält synk mellan egna flikar)

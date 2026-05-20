@@ -2,7 +2,9 @@
 
 **Syfte:** Denna plan styr stegvis refaktorering utan att bygga nya features. Varje steg ska vara litet, verifierbart och bakåtkompatibelt i möjligaste mån.
 
-**Repo:** `ibennani/pts_granskningsverktyg_frontend_only` (lokal kopia: detta arbetskatalogsträd).
+**Status (2026-05):** Många steg är redan genomförda i kodbasen (t.ex. `js/state/index.ts`, `js/export/`, `shared/`, vyregister i `view_components_index.js`, klassbaserade vykomponenter). Använd planen som **kvarvarande backlog**, inte som exakt beskrivning av nuvarande filstruktur. Aktuell arkitektur: `docs/systemdokumentation.md` och `AGENTS.md`.
+
+**Repo:** Leffe / `sessionversion` (lokal arbetskatalog).
 
 ---
 

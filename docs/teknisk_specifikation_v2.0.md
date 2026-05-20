@@ -316,15 +316,17 @@ Varje objekt representerar resultatet för ett enskilt krav på ett enskilt stic
 *   `index.html`: Minimalt startdokument.
 *   `css/style.css`: Globala stilar och css-variabler.
 *   `css/components/`: Komponentspecifika css-filer.
-*   `js/main.js`: Huvudlogik för applikationen, routing, initiering av vyer.
-*   `js/state.js`: Hantering av applikationens tillstånd (`current_audit`).
-*   `js/audit_logic.js`: Logik för att beräkna status för krav och kontrollpunkter.
-*   `js/export_logic.js`: Logik för att exportera data till csv/xlsx.
-*   `js/validation_logic.js`: Validering av regelfiler och sparade granskningsfiler.
-*   `js/translation_logic.js`: Hantering av internationalisering.
+*   `js/main.js`: Bootstrap, globala UI-komponenter och `deps`; delegerar till `logic/app_bootstrap.js`.
+*   `js/logic/router.js`, `view_render.js`, `view_components_index.js`: Hash-routing och vybyte.
+*   `js/state.js` / `js/state/index.ts`: Applikationstillstånd och persistens.
+*   `js/audit_logic.ts`: Status för krav och kontrollpunkter.
+*   `js/export_logic.ts` och `js/export/`: Export till CSV, Excel, Word och HTML (`window.ExportLogic`).
+*   `js/validation_logic.ts`: Validering av regelfiler och sparade granskningar.
+*   `js/translation_logic.ts`: Internationalisering.
 *   `js/utils/helpers.js`: Allmänna hjälpfunktioner.
-*   `js/i18n/`: Json-filer för språköversättningar (t.ex. `sv-SE.json`, `en-GB.json`).
-*   `js/components/`: Återanvändbara ui-komponenter (t.ex. för vyer, formulär, listor). Varje komponent är en ES6-modul som exporterar ett objekt med `init({ root, deps })`, `render()`, och `destroy()` metoder. Komponenter använder INTE IIFE.
+*   `js/i18n/`: JSON-filer per språk.
+*   `js/components/`: UI-komponenter – vykomponenter som **klasser** (`init`, `render`, `destroy`), vissa äldre som objektliteral. Inga IIFE.
+*   `server/`: Express-backend, PostgreSQL, JWT, WebSocket.
 
 ## 9. Internationalisering (i18n) – Detaljer
 

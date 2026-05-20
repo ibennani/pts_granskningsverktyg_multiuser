@@ -66,8 +66,10 @@ npm run preview
 | `npm run dev:stop` | Stoppar Docker-containrar (behåller volymer) |
 | `npm run build` | Bygger frontend till `dist/` |
 | `npm run preview` | Förhandsgranskning av bygge |
-| `npm run lint` | ESLint |
+| `npm run lint` | ESLint (JavaScript) |
+| `npm run check` | Lint, importkontroller, TypeScript, Jest |
 | `npm test` | Jest-enhetstester |
+| `npm run test:e2e:smoke` | Playwright (Chromium) |
 | `npm run db:migrate` | Kör databasmigreringar |
 | `npm run deploy:v2` | Deploy till konfigurerad server (se `docs/deploy-v2-workflow.md`) |
 
@@ -76,10 +78,11 @@ E2E-tester körs med Playwright, t.ex. `npx playwright test` (kräver att appen 
 ### Teknik
 
 - **Vite** (dev port 5173), **Express**-backend, **PostgreSQL**
-- **State**: central store i `js/state.js` med sparning i webbläsaren och synk mot server när backend används
+- **State**: central store i `js/state.js` (implementation i `js/state/index.ts`) med sparning i webbläsaren och synk mot server när backend används
 - **Formulärautospar**: `js/logic/autosave_service.js` (debounce 250 ms, endast `input`)
-- **Fältutkast (drafts)**: `js/draft_manager.js` (localStorage, bl.a. `data-draft-path`)
-- **Export**: `js/export_logic.js` (exponeras som `window.ExportLogic`) – använder npm-paket (t.ex. exceljs, docx), inte CDN
+- **Fältutkast (drafts)**: `js/draft_manager.ts` (localStorage, bl.a. `data-draft-path`) – separat från central state
+- **Export**: `js/export_logic.ts` (exponeras som `window.ExportLogic`) – använder npm-paket (t.ex. exceljs, docx), inte CDN
+- **Vykomponenter**: registreras i `js/logic/view_components_index.js`; routing via `js/logic/view_render.js` och `js/logic/app_bootstrap.js`
 
 ## Dokumentation
 
@@ -107,4 +110,4 @@ Miljövariabler för backend och bygge beskrivs i `docs/installationsguide.md` o
 
 ---
 
-**Senast uppdaterad**: 2026-03-27
+**Senast uppdaterad**: 2026-05-20

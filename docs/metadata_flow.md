@@ -20,13 +20,13 @@ Granskningsmetadata lagras centralt i `state.auditMetadata` i [js/state.js](../j
 
 1. Användaren sparar i [EditMetadataViewComponent](../js/components/EditMetadataViewComponent.js) via [MetadataFormComponent](../js/components/MetadataFormComponent.js).
 2. `dispatch({ type: UPDATE_METADATA, payload: form_data })` anropas.
-3. Reducern i `state.js` uppdaterar `auditMetadata`.
+3. Reducern i `js/state/auditReducer.ts` uppdaterar `auditMetadata`.
 4. Alla `subscribe`-lyssnare triggas (utan `skip_render` för metadata).
 5. I [main.js](../js/main.js) körs global subscribe-callback som:
    - renderar top/bottom action bar
-   - uppdaterar sidtiteln via `updatePageTitleFromCurrentView()`
+   - uppdaterar sidtiteln via `page_title_manager.ts` (`updatePageTitleFromCurrentView()`)
    - uppdaterar sidomenyn
-   - re-renderar aktuell vy
+   - re-renderar aktuell vy via `view_render.js`
 6. [AuditOverviewComponent](../js/components/AuditOverviewComponent.js) har egen prenumeration och reagerar explicit på metadata-ändringar i `handle_store_update`.
 
 ## Komponenter som visar metadata
@@ -34,11 +34,11 @@ Granskningsmetadata lagras centralt i `state.auditMetadata` i [js/state.js](../j
 | Plats | Komponent | Fält som visas |
 |-------|-----------|----------------|
 | Granskningsöversikt | [AuditInfoComponent](../js/components/AuditInfoComponent.js) | Alla fält |
-| Sidtitel (flik) | [main.js](../js/main.js) `build_page_title` | `actorName` |
+| Sidtitel (flik) | [page_title_manager.ts](../js/logic/page_title_manager.ts) | `actorName` |
 | Stickprovslista (header) | [RequirementsListViewComponent](../js/components/RequirementsListViewComponent.js) | `actorName` |
 | Kravgranskning (kontext) | [RequirementAuditComponent](../js/components/RequirementAuditComponent.js) | `actorName` |
-| Export (Word, Excel, CSV, HTML) | [export_logic.js](../js/export_logic.js) | Alla fält |
-| Sparfilnamn | [save_audit_logic.js](../js/logic/save_audit_logic.js) | `actorName`, `caseNumber` |
+| Export (Word, Excel, CSV, HTML) | [export_logic.ts](../js/export_logic.ts) | Alla fält |
+| Sparfilnamn | [save_audit_logic.ts](../js/logic/save_audit_logic.ts) | `actorName`, `caseNumber` |
 
 Alla komponenter läser från `getState().auditMetadata` vid render, vilket säkerställer att uppdaterad metadata visas överallt.
 
@@ -48,9 +48,9 @@ Metadata redigeras via vyn "Redigera granskningsinformation" (`edit_metadata`), 
 
 Metadata kan redigeras både innan granskningen startats (`not_started`) och när den är pågående (`in_progress`). Vid sparning anropas `sync_to_server_now()` direkt (i [EditMetadataViewComponent](../js/components/EditMetadataViewComponent.js)) så att servern uppdateras innan navigering – detta säkerställer att listan över granskningar visar korrekt metadata direkt.
 
-## Lista över granskningar (StartViewComponent)
+## Lista över granskningar (startvyn)
 
-När applikationen är ansluten till en server visas [StartViewComponent](../js/components/StartViewComponent.js) med en tabell över alla granskningar. Tabellen visar endast data från granskningsmetadata:
+När applikationen är ansluten till en server visar startvyn (`#start`, [AuditViewComponent](../js/components/audit_view/AuditViewComponent.js)) en tabell över alla granskningar via [AuditListComponent](../js/components/AuditListComponent.js). Tabellen visar data från granskningsmetadata och serverberäknade fält:
 
 | Kolumn | Källa | Saknad data |
 |--------|-------|-------------|

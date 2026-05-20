@@ -88,9 +88,13 @@ const value = trim_text ? trim_text(rawValue) : rawValue;
 
 - `EditGeneralSectionComponent` – regelfilsmetadata (allmän sektion)
 - `EditPageTypesSectionComponent` – sidtyper
+- `EditContentTypesSectionComponent` – innehållstyper
+- `EditInfoBlocksSectionComponent` – informationsblock
+- `EditSampleTypesSectionComponent` – stickprovstyper
 - `MetadataFormComponent` – granskningsmetadata
-- `AddSampleFormComponent` – stickprovsformulär (vid redigering)
-- `EditRulefileRequirementComponent` – kravredigering
+- `AddSampleFormComponent` / `SampleFormViewComponent` – stickprovsformulär
+
+**OBS:** `ChecklistHandler` (observationer i kravgranskning) använder **inte** `AutosaveService` utan egen `input`-hantering med callback. `EditRulefileRequirementComponent` sparar via manuella knappar, inte central autospar-session.
 
 ## Se även
 

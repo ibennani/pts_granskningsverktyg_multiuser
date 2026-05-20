@@ -1,7 +1,7 @@
 # API-dokumentation – Leffe
 
-**Version:** 1.0  
-**Datum:** 2025-01-27
+**Version:** 1.1  
+**Datum:** 2026-05-20
 
 ## Innehållsförteckning
 
@@ -35,7 +35,7 @@ State sätts **inte** på `window.Store` i nuvarande kodbas.
 
 ### Store API
 
-State management exponeras som **ES-modul** från `js/state.js` (implementation i `js/state/index.js`). För **lagringsnycklar**, **backup**, **serversynk** och **startflöde**, se `docs/state_and_persistence.md`.
+State management exponeras som **ES-modul** från `js/state.js` (implementation i `js/state/index.ts`). För **lagringsnycklar**, **backup**, **serversynk** och **startflöde**, se `docs/state_and_persistence.md`.
 
 **ES-modul:**
 ```javascript
@@ -153,10 +153,10 @@ interface RequirementResult {
 
 ### Komponentbasstruktur
 
-Alla komponenter följer samma API-mönster:
+Vykomponenter ska exponera samma livscykel (`init`, `render`, `destroy`). **Nya** komponenter implementeras som **klasser**; äldre sektioner kan fortfarande vara objektliteral.
 
 ```javascript
-// Komponent API
+// Komponent API (gemensamt kontrakt)
 interface Component {
     init({ root, deps }): Promise<void>;
     render(): void;
@@ -164,36 +164,31 @@ interface Component {
 }
 ```
 
-### Exempel: StartViewComponent
+### Exempel: vykomponent som klass
 
 ```javascript
-// js/components/StartViewComponent.js
-export const StartViewComponent = {
+// js/components/audit_view/AuditViewComponent.js
+export class AuditViewComponent {
+    static CSS_PATH = './audit_view_component.css';
+
     async init({ root, deps }) {
         this.root = root;
         this.deps = deps;
-        this.router = deps.router;
-        this.Translation = deps.Translation;
-        this.Helpers = deps.Helpers;
-        this.NotificationComponent = deps.NotificationComponent;
-        
-        // Ladda CSS
-        if (this.Helpers?.load_css_safely) {
-            await this.Helpers.load_css_safely(this.CSS_PATH, 'StartViewComponent');
+        if (deps.Helpers?.load_css_safely) {
+            await deps.Helpers.load_css_safely(AuditViewComponent.CSS_PATH, 'AuditViewComponent');
         }
-    },
-    
-    render() {
-        // Rendering
-    },
-    
+    }
+
+    render() { /* ... */ }
+
     destroy() {
-        // Cleanup
         this.root = null;
         this.deps = null;
     }
-};
+}
 ```
+
+Registrering sker i `js/logic/view_components_index.js` (en instans per vy), inte i `main.js`.
 
 ### Komponentparametrar
 
@@ -294,7 +289,7 @@ window.memoryManager.addEventListener(document, 'click', handleClick);
 
 ### ExportLogic API
 
-ExportLogic exponeras via `window.ExportLogic` och skapas i `js/export_logic.js`.
+ExportLogic exponeras via `window.ExportLogic` och skapas i `js/export_logic.ts` (importeras i bootstrap som `./export_logic.ts`).
 
 ```javascript
 // window.ExportLogic

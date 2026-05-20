@@ -1,7 +1,7 @@
 # Installationsguide – Leffe
 
-**Version:** 1.1  
-**Datum:** 2026-03-27
+**Version:** 1.2  
+**Datum:** 2026-05-20
 
 ## Innehållsförteckning
 
@@ -70,10 +70,10 @@ npm install
 ### Steg 4: Verifiera installation (minimalt)
 
 ```bash
-npm run lint
+npm run check
 ```
 
-(Valfritt) Kör enhetstester: `npm test`.
+(`check` = lint, importkontroller, TypeScript, Jest.) Endast lint: `npm run lint`.
 
 ### Steg 5: Starta utvecklingsmiljö
 
@@ -132,11 +132,12 @@ Faktiska nycklar för backend (databas, JWT, CORS m.m.) dokumenteras i serverns 
 
 1. `npm run dev` – inga uppenbara fel i terminalen.
 2. Öppna `http://localhost:5173` – startvy laddas (efter inloggning om server krävs).
-3. `npm run lint` ska gå igenom.
+3. `npm run check` ska gå igenom.
 4. E2E (kräver att appen svarar på baseURL):
    ```bash
-   npx playwright test
+   npm run test:e2e:smoke
    ```
+   Full svit: `npm run test:e2e`.
 
 ### Produktionsmiljö
 

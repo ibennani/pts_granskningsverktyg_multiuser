@@ -14,7 +14,34 @@ Målet är:
 
 ## 1. Grundstruktur för komponenter
 
-Varje komponent ligger i en egen JS-fil, t.ex. `MyComponent.js`, och exporterar ett objekt med metoderna `init`, `render` och `destroy`.
+Varje komponent ligger i en egen fil (`.ts` eller `.js`). **Nya vykomponenter** ska vara **klasser**; äldre sektioner kan fortfarande använda objektliteral tills de migreras.
+
+### 1.1 Föredraget mönster (klass, nya vyer)
+
+```js
+// MyViewComponent.ts
+export class MyViewComponent {
+  async init({ root, deps }) {
+    this.root = root;
+    this.deps = deps;
+    await deps.Helpers?.load_css_safely('./MyViewComponent.css', 'MyViewComponent');
+  }
+
+  render() {
+    if (!this.root) return;
+    // Uppdatera DOM
+  }
+
+  destroy() {
+    this.root = null;
+    this.deps = null;
+  }
+}
+```
+
+Registrera vykomponenter som **en instans per vy** i `js/logic/view_components_index.js`.
+
+### 1.2 Legacy-mönster (objektliteral, befintliga sektioner)
 
 ```js
 // MyComponent.js
@@ -241,7 +268,8 @@ Målet är att alla komponenter till slut följer mallen i detta dokument.
 
 När du skapar eller uppdaterar en komponent, kontrollera följande:
 
-- [ ] Filen exporterar ett objekt: `export const MyComponent = { init, render, destroy }`.
+- [ ] Ny vy: `export class MyComponent { init, render, destroy }` och registrering i `view_components_index.js`.
+- [ ] Legacy: objektliteral `export const MyComponent = { init, render, destroy }` får finnas kvar tills migrering.
 - [ ] Ingen IIFE runt komponenten.
 - [ ] Komponenten läggs inte på `window`.
 - [ ] CSS importeras överst i filen: `import "./MyComponent.css";`.

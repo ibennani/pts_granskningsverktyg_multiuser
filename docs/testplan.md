@@ -18,7 +18,7 @@ Detta dokument riktar sig till utvecklare, testare och kvalitetssäkringsansvari
 
 ### 2.1 Testnivåer
 Följande testnivåer kommer att tillämpas:
-*   **Enhetstester:** (Om tillämpligt och resurser finns) Testning av enskilda javascript-funktioner och moduler isolerat, särskilt för komplex logik i `audit_logic.js` och `validation_logic.js`.
+*   **Enhetstester:** Jest (`npm test`) för logik under `js/logic/`, `js/state/`, `shared/` m.m., särskilt `audit_logic.ts` och `validation_logic.ts`.
 *   **Komponenttester:** Manuell eller (om möjligt) automatiserad testning av enskilda ui-komponenters rendering, grundläggande interaktioner och databindning.
 *   **Integrationstester:** Verifiering av att olika komponenter och moduler interagerar korrekt med varandra (t.ex. hur `AuditOverviewComponent` använder `SampleListComponent` och `AddSampleFormComponent`).
 *   **Systemtester / End-to-End (E2E) tester:** Testning av kompletta användarflöden genom hela applikationen, från start till export. Detta är den primära testformen för denna applikation.
@@ -29,7 +29,7 @@ Följande testnivåer kommer att tillämpas:
 ### 2.2 Testmiljö
 *   **Webbläsare:** Testning ska primärt ske på de senaste stabila versionerna av Google Chrome, Mozilla Firefox och Microsoft Edge.
 *   **Operativsystem:** Testning bör övervägas på både Windows och macOS.
-*   **Lokal körning:** Applikationen körs från lokala filer via en enkel http-server.
+*   **Lokal körning:** `npm run dev` (Vite port 5173, backend port 3000) eller `npm run dev:client` för enbart frontend. Playwright: `npm run test:e2e` / `npm run test:e2e:smoke`. Snabb kontroll före commit: `npm run check`.
 
 ### 2.3 Testdata
 *   **Regelfiler:** Minst en omfattande och korrekt formaterad json-regelfil. En regelfil med avsiktliga fel för att testa validering. En minimal regelfil.

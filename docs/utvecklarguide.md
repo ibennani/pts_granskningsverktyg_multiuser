@@ -1,7 +1,7 @@
 # Utvecklarguide – Leffe
 
-**Version:** 1.0  
-**Datum:** 2025-01-27
+**Version:** 1.1  
+**Datum:** 2026-05-20
 
 ## Innehållsförteckning
 
@@ -53,18 +53,20 @@ VITE_API_BASE_URL=http://localhost:3000/api
 ```
 Leffe (projektmapp)/
 ├── js/
-│   ├── main.js                 # Applikationsstartpunkt
-│   ├── state.js               # State management
-│   ├── components/             # UI-komponenter
-│   ├── logic/                 # Affärslogik
-│   ├── utils/                 # Hjälpfunktioner
+│   ├── main.js                 # Bootstrap, deps, global chrome
+│   ├── state.js               # Re-export av state-API
+│   ├── state/                 # index.ts, reducers
+│   ├── components/            # UI-komponenter (klasser + legacy)
+│   ├── logic/                 # router, view_render, app_bootstrap, autospar
+│   ├── export/                # Exportmoduler
+│   ├── sync/                  # Serversynk
+│   ├── api/                   # REST-klient
 │   └── i18n/                  # Språkfiler
+├── server/                    # Express, PostgreSQL, JWT
+├── shared/                    # Gemensam klient/server-kod
 ├── css/
-│   ├── style.css              # Globala stilar
-│   ├── components/            # Komponentspecifika stilar
-│   └── features/              # Funktionsspecifika stilar
-├── tests/                     # Tester
-└── docs/                      # Dokumentation
+├── tests/
+└── docs/
 ```
 
 ### Arkitekturprinciper
@@ -220,22 +222,16 @@ function calculateQualityScore(auditData) {
 
 ### Commit-meddelanden
 
-Följ [Conventional Commits](https://www.conventionalcommits.org/):
+**Alltid på svenska** (se `.cursor/rules/00-project-rules.mdc`). Beskriv vad användaren upplever, inte filnamn eller kodstrukturer.
 
 ```bash
-# Typer
-feat: ny funktion
-fix: buggfix
-docs: dokumentation
-style: formatering
-refactor: omstrukturering
-test: tester
-chore: underhåll
+# Exempel (en ändring)
+Fixa: Bristindex visas nu korrekt när sidan laddas
 
-# Exempel
-feat: lägg till export till Word-format
-fix: korrigera validering av regelfiler
-docs: uppdatera användarmanual
+# Exempel (flera ändringar)
+Uppdatera: Flera funktioner för bättre användarupplevelsen
+- Ändrat sortering av kravlistan så att krav sorteras efter prioritet
+- Lagt till export till Word sorterat på stickprov
 ```
 
 ### Code Review
@@ -250,7 +246,24 @@ docs: uppdatera användarmanual
 
 ## 5. Komponentutveckling
 
-### Komponentstruktur
+Ny kod ska följa **klassmönstret** och registreras i `js/logic/view_components_index.js`. Se `docs/component_standard.md`.
+
+### Komponentstruktur (klass, rekommenderat)
+
+```javascript
+// js/components/ExampleViewComponent.ts
+export class ExampleViewComponent {
+    async init({ root, deps }) {
+        this.root = root;
+        this.deps = deps;
+        // ...
+    }
+    render() { /* ... */ }
+    destroy() { /* ... */ }
+}
+```
+
+### Legacy-exempel (objektliteral)
 
 ```javascript
 // js/components/ExampleComponent.js
@@ -383,7 +396,7 @@ export const ExampleComponent = {
 
 ## 6. State Management
 
-För **var data sparas**, **cold start med backup** och **när server synkas**, se `docs/state_and_persistence.md`. Reducerlogiken ligger i `js/state/index.js` och tillhörande filer (inte längre en enda stor `state.js`-fil).
+För **var data sparas**, **cold start med backup** och **när server synkas**, se `docs/state_and_persistence.md`. Reducerlogiken ligger i `js/state/index.ts` och tillhörande filer under `js/state/` (publik yta via `js/state.js`).
 
 ### State-struktur
 
@@ -475,7 +488,7 @@ await dispatch({
 
 ### Reducers
 
-Reducer-funktionen (`root_reducer`) finns i `js/state/index.js` och hanterar alla action types. Den är privat och anropas internt av `dispatch()`-funktionen.
+Reducer-funktionen (`root_reducer`) finns i `js/state/index.ts` och hanterar alla action types. Den är privat och anropas internt av `dispatch()`-funktionen.
 
 **Viktigt:** Reducer-funktionen är inte direkt tillgänglig utanför `state.js`. Använd `dispatch()` för att uppdatera state.
 
