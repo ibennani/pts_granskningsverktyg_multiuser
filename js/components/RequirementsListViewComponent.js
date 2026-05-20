@@ -10,6 +10,7 @@ import { build_all_mode_data } from './requirements_list/requirement_list_all_mo
 import { filter_requirements } from './requirements_list/requirement_list_filter_requirements.ts';
 import { build_toolbar_initial_filter_state, compute_auto_sort_by_override, ensure_default_status_filter, normalize_status_for_toolbar } from './requirements_list/requirement_list_ui_settings.js';
 import { fingerprint_item_keys, can_incremental_update } from '../utils/incremental_list_update.js';
+import { parse_deficiency_search_number } from '../utils/requirement_deficiency_search.js';
 import { parse_view_and_params_from_hash } from '../logic/router.js';
 import {
     list_filter_settings_to_url_params_for_all_requirements,
@@ -327,11 +328,16 @@ export class RequirementsListViewComponent {
                             showStatusFilter: true,
                             sortOptions: get_sort_options(this.mode),
                             idPrefix: this.state_filter_key === 'allRequirementsFilter' ? 'all-requirements-filter' : 'requirement-list-filter',
-                            searchDebounceMs: 400
+                            searchDebounceMs: 400,
+                            auditFrozen: state.auditStatus === 'locked' || state.auditStatus === 'archived'
                         }
                     }
                 });
                 this._toolbar_inited = true;
+            }
+            if (this.filter_component_instance.component_config) {
+                this.filter_component_instance.component_config.auditFrozen =
+                    state.auditStatus === 'locked' || state.auditStatus === 'archived';
             }
             const normalized_status = normalize_status_for_toolbar(current_ui_settings);
             this.filter_component_instance.render({
@@ -348,13 +354,15 @@ export class RequirementsListViewComponent {
         const requirement_needs_help_fn = this.AuditLogic?.requirement_needs_help || (() => false);
 
         const filter_items_input = this.mode === 'all' ? entries : all_relevant_requirements;
+        const audit_frozen = state.auditStatus === 'locked' || state.auditStatus === 'archived';
         const { filtered_items, total_count } = filter_requirements(filter_items_input, current_ui_settings, {
             mode: this.mode,
             samples,
             relevant_ids_by_sample: this.relevant_ids_by_sample,
             current_sample_object,
             AuditLogic: this.AuditLogic,
-            requirements: rule_file_content?.requirements
+            requirements: rule_file_content?.requirements,
+            audit_frozen
         });
 
         const filtered_count = filtered_items.length;
@@ -385,8 +393,19 @@ export class RequirementsListViewComponent {
         const has_status_filter_excluding = has_status_filters && status_keys_for_filter.some(key => status_filters[key] !== true);
         const has_active_filter = has_search_filter || has_status_filter_excluding;
 
+        const deficiency_search_number =
+            this.mode === 'all' && audit_frozen
+                ? parse_deficiency_search_number(current_ui_settings.searchText)
+                : null;
+
         // Render items eller inkrementell uppdatering
-        const filter_opts = { status_filters, has_status_filters, requirement_needs_help_fn, has_active_filter };
+        const filter_opts = {
+            status_filters,
+            has_status_filters,
+            requirement_needs_help_fn,
+            has_active_filter,
+            deficiency_search_number
+        };
         const item_keys = build_item_keys(
             this.mode,
             sorted_items,

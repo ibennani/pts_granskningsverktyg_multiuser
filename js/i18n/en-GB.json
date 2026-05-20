@@ -694,6 +694,7 @@
   "score_by_principle_deficiency": "Breakdown by Principle",
   "score_progress_bar_could_not_be_loaded": "Score progress bar could not be loaded.",
   "search_in_help_texts_label": "Search in help texts:",
+  "search_in_help_texts_and_deficiency_id_label": "Search in help texts and deficiency ID:",
   "search_placeholder_default": "Search in requirement texts...",
   "select_option": "Select",
   "select_rule_file": "Select a JSON rule file",

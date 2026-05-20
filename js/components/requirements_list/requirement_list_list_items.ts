@@ -10,6 +10,7 @@ import {
 } from '../../audit_logic.js';
 import { get_status_icon } from './requirement_list_status_icons.js';
 import { sample_matches_status_filter } from './requirement_list_query.js';
+import { sample_has_deficiency_search_for_requirement } from '../../utils/requirement_deficiency_search.js';
 
 /**
  * @param {string|number} req_id
@@ -47,7 +48,13 @@ export function create_all_requirement_list_item(
         return [...candidates].some(id => sample_set.has(id));
     });
 
-    const { status_filters = {}, has_status_filters = false, requirement_needs_help_fn = () => false, has_active_filter = false } = filter_opts;
+    const {
+        status_filters = {},
+        has_status_filters = false,
+        requirement_needs_help_fn = () => false,
+        has_active_filter = false,
+        deficiency_search_number = null
+    } = filter_opts;
     if (has_status_filters && Object.keys(status_filters).length > 0) {
         matching_samples = matching_samples.filter((sample: any) =>
             sample_matches_status_filter(
@@ -59,6 +66,17 @@ export function create_all_requirement_list_item(
                 requirement_needs_help_fn,
                 AuditLogic,
                 requirements
+            )
+        );
+    }
+    if (deficiency_search_number !== null && deficiency_search_number !== undefined) {
+        matching_samples = matching_samples.filter((sample: any) =>
+            sample_has_deficiency_search_for_requirement(
+                sample,
+                req_id,
+                req,
+                requirements,
+                deficiency_search_number
             )
         );
     }

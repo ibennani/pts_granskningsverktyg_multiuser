@@ -6,6 +6,7 @@
 import { get_stored_requirement_result_for_def, get_effective_requirement_audit_status } from '../../audit_logic.js';
 import { create_status_icons_wrapper } from './requirement_list_status_icons.js';
 import { sample_matches_status_filter } from './requirement_list_query.js';
+import { sample_has_deficiency_search_for_requirement } from '../../utils/requirement_deficiency_search.js';
 
 /**
  * @param {string} mode
@@ -30,7 +31,12 @@ export function build_item_keys(
         return sorted_items.map((req: any) => req?.key || req?.id || '');
     }
     const keys: string[] = [];
-    const { status_filters = {}, has_status_filters = false, requirement_needs_help_fn = () => false } = filter_opts;
+    const {
+        status_filters = {},
+        has_status_filters = false,
+        requirement_needs_help_fn = () => false,
+        deficiency_search_number = null
+    } = filter_opts;
     const candidates = (req_id: any, req: any) => new Set([String(req_id), ...(req?.key ? [String(req.key)] : []), ...(req?.id ? [String(req.id)] : [])]);
 
     sorted_items.forEach(([req_id, req]: [any, any]) => {
@@ -51,6 +57,17 @@ export function build_item_keys(
                     requirement_needs_help_fn,
                     AuditLogic,
                     requirements
+                )
+            );
+        }
+        if (deficiency_search_number !== null && deficiency_search_number !== undefined) {
+            matching = matching.filter((sample: any) =>
+                sample_has_deficiency_search_for_requirement(
+                    sample,
+                    req_id,
+                    req,
+                    requirements,
+                    deficiency_search_number
                 )
             );
         }
@@ -149,6 +166,18 @@ export function update_items_status_only(
                         needs_help_fn,
                         AuditLogic,
                         requirements
+                    )
+                );
+            }
+            const deficiency_search_number = filter_opts.deficiency_search_number;
+            if (deficiency_search_number !== null && deficiency_search_number !== undefined) {
+                matching_samples = matching_samples.filter((sample: any) =>
+                    sample_has_deficiency_search_for_requirement(
+                        sample,
+                        req_id,
+                        req,
+                        requirements,
+                        deficiency_search_number
                     )
                 );
             }

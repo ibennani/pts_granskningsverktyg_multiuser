@@ -108,7 +108,8 @@ export class GenericTableComponent {    static CSS_PATH = './generic_table_comp
                     }
                 });
                 btn.addEventListener('click', () => {
-                    const next_dir = is_active && direction === 'asc' ? 'desc' : 'asc';
+                    // Första klick på en kolumn: högst/senast överst (desc). Samma kolumn igen: växla riktning.
+                    const next_dir = is_active ? (direction === 'desc' ? 'asc' : 'desc') : 'desc';
                     this._pendingSortFocusIndex = col_index;
                     onSort(col_index, next_dir);
                 });

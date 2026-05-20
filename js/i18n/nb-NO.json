@@ -694,6 +694,7 @@
   "score_by_principle_deficiency": "Fordeling per prinsipp",
   "score_progress_bar_could_not_be_loaded": "Fremdriftsindikatoren for poengsum kunne ikke lastes inn.",
   "search_in_help_texts_label": "Søk i hjelpetekster:",
+  "search_in_help_texts_and_deficiency_id_label": "Søk i hjelpetekster og avviks-ID:",
   "search_placeholder_default": "Søk i kravtekster...",
   "select_option": "Velg",
   "select_rule_file": "Velg en JSON-regelfil",

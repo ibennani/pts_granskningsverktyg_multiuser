@@ -16,7 +16,8 @@ export const RequirementListToolbarComponent = {
             showStatusFilter: _config.showStatusFilter !== false,
             sortOptions: _config.sortOptions || [],
             searchDebounceMs: _config.searchDebounceMs ?? 0,  // 0 = direkt som högerspalten
-            idPrefix: _config.idPrefix || deps.idPrefix || 'requirement-list-toolbar'
+            idPrefix: _config.idPrefix || deps.idPrefix || 'requirement-list-toolbar',
+            auditFrozen: _config.auditFrozen === true
         };
 
         this.is_dom_built = false;
@@ -60,7 +61,10 @@ export const RequirementListToolbarComponent = {
 
         // Search Group
         const search_group = this.Helpers_create_element('div', { class_name: 'toolbar-group search-group' });
-        const search_label = this.Helpers_create_element('label', { attributes: { for: 'req-list-search' }, text_content: t('search_in_help_texts_label') });
+        const search_label_key = this.component_config.auditFrozen
+            ? 'search_in_help_texts_and_deficiency_id_label'
+            : 'search_in_help_texts_label';
+        const search_label = this.Helpers_create_element('label', { attributes: { for: 'req-list-search' }, text_content: t(search_label_key) });
         search_group.appendChild(search_label);
         const search_input = this.Helpers_create_element('input', { id: 'req-list-search', class_name: 'form-control', attributes: { type: 'search' } });
         if (window.MemoryManager) {
@@ -164,7 +168,10 @@ export const RequirementListToolbarComponent = {
         // Update search label
         const search_label = this.root.querySelector('label[for="req-list-search"]');
         if (search_label) {
-            search_label.textContent = t('search_in_help_texts_label');
+            const search_label_key = this.component_config.auditFrozen
+                ? 'search_in_help_texts_and_deficiency_id_label'
+                : 'search_in_help_texts_label';
+            search_label.textContent = t(search_label_key);
         }
         
         // Update filter label

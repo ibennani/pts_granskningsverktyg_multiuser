@@ -69,6 +69,7 @@ export default {
     '^.+/requirement_list_mark_all_modal\\.js$':
       '<rootDir>/js/components/requirements_list/requirement_list_mark_all_modal.ts',
     '^.+/requirement_search_utils\\.js$': '<rootDir>/js/utils/requirement_search_utils.ts',
+    '^.+/requirement_deficiency_search\\.js$': '<rootDir>/js/utils/requirement_deficiency_search.ts',
     '^.+/string_filter_normalize\\.js$': '<rootDir>/js/utils/string_filter_normalize.ts',
     '^.+/filename_utils\\.js$': '<rootDir>/js/utils/filename_utils.ts',
     '^.+/download_filename_utils\\.js$': '<rootDir>/js/utils/download_filename_utils.ts',

@@ -694,6 +694,7 @@
   "score_by_principle_deficiency": "Uppdelning per princip",
   "score_progress_bar_could_not_be_loaded": "Poängstapeln kunde inte laddas",
   "search_in_help_texts_label": "Sök i hjälptexter:",
+  "search_in_help_texts_and_deficiency_id_label": "Sök i hjälptexter och brist-id:",
   "search_placeholder_default": "Sök i kravtexter...",
   "select_option": "Välj",
   "select_rule_file": "Välj en JSON-regelfil",
