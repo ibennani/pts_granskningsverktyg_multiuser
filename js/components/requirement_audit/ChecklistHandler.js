@@ -10,6 +10,10 @@ import {
 } from '../../app/browser_globals.js';
 import { is_debug_stuck_sync } from '../../app/runtime_flags.js';
 import { resolve_map_entry } from '../../audit_logic.js';
+import {
+    format_deficiency_id_label,
+    should_show_deficiency_id_in_title
+} from '../../utils/deficiency_id_display.js';
 
 export const ChecklistHandler = {
     container_ref: null,
@@ -803,6 +807,71 @@ export const ChecklistHandler = {
         return span;
     },
 
+    _get_pc_result_data(check_result_data, pc_id) {
+        return check_result_data?.passCriteria?.[pc_id]
+            ?? check_result_data?.passCriteria?.[String(pc_id)]
+            ?? { status: 'not_audited', observationDetail: '' };
+    },
+
+    _sync_pass_criterion_deficiency_id_on_title(pc_title_h4, audit_frozen, pc_status, deficiency_id) {
+        const t = this.Translation.t;
+        const show = should_show_deficiency_id_in_title(audit_frozen, pc_status, deficiency_id);
+        let el = pc_title_h4.querySelector('.pass-criterion-deficiency-id');
+        if (!show) {
+            el?.remove();
+            return;
+        }
+        const label = format_deficiency_id_label(deficiency_id, t);
+        if (!label) {
+            el?.remove();
+            return;
+        }
+        if (!el) {
+            el = this.Helpers.create_element('span', { class_name: 'pass-criterion-deficiency-id' });
+            pc_title_h4.appendChild(el);
+        }
+        el.textContent = label;
+    },
+
+    _set_pass_criterion_title_aria_label(pc_title_h4, criterion_title, pc_status_text, audit_frozen, pc_status, deficiency_id) {
+        const t = this.Translation.t;
+        const parts = [criterion_title, pc_status_text];
+        if (should_show_deficiency_id_in_title(audit_frozen, pc_status, deficiency_id)) {
+            const def_label = format_deficiency_id_label(deficiency_id, t);
+            if (def_label) parts.push(def_label);
+        }
+        pc_title_h4.setAttribute('aria-label', parts.join('. '));
+    },
+
+    _create_pass_criterion_title_h4({ numbering, check_id, pc_id, check_result_data, details }) {
+        const t = this.Translation.t;
+        const audit_frozen = this._audit_frozen_for_ui();
+        const pc_data = this._get_pc_result_data(check_result_data, pc_id);
+        const current_pc_status = pc_data.status || 'not_audited';
+        const criterion_title = `${t('pass_criterion_label')} ${numbering}`;
+        const pc_status_text = t(`audit_status_${current_pc_status}`);
+
+        const pc_title_h4 = this.Helpers.create_element('h4', { class_name: 'pass-criterion-title' });
+        const title_main = this.Helpers.create_element('span', { class_name: 'pass-criterion-title-main' });
+        title_main.appendChild(this.Helpers.create_element('strong', { text_content: criterion_title }));
+
+        const in_added = check_id && pc_id && details?.added?.some(e => e.checkId === check_id && e.passCriterionId === pc_id);
+        const in_updated = check_id && pc_id && details?.updated?.some(e => e.checkId === check_id && e.passCriterionId === pc_id);
+        if (in_added) {
+            title_main.appendChild(document.createTextNode(' '));
+            title_main.appendChild(this._create_update_badge('new'));
+        } else if (in_updated) {
+            title_main.appendChild(document.createTextNode(' '));
+            title_main.appendChild(this._create_update_badge('updated'));
+        }
+        pc_title_h4.appendChild(title_main);
+        this._sync_pass_criterion_deficiency_id_on_title(pc_title_h4, audit_frozen, current_pc_status, pc_data.deficiencyId);
+        this._set_pass_criterion_title_aria_label(
+            pc_title_h4, criterion_title, pc_status_text, audit_frozen, current_pc_status, pc_data.deficiencyId
+        );
+        return pc_title_h4;
+    },
+
     build_initial_dom() {
         const t = this.Translation.t;
         const details = this.requirement_update_details;
@@ -831,6 +900,8 @@ export const ChecklistHandler = {
 
         this.requirement_definition_ref.checks.forEach((check_definition, check_index) => {
             const check_id = check_definition?.id ?? check_definition?.key;
+            const check_result_data = this.requirement_result_ref?.checkResults?.[check_id]
+                ?? this.requirement_result_ref?.checkResults?.[String(check_id)];
             const check_wrapper = this.Helpers.create_element('div', { 
                 class_name: 'check-item',
                 attributes: {'data-check-id': check_id }
@@ -897,21 +968,13 @@ export const ChecklistHandler = {
                 });
 
                 const numbering = `${check_index + 1}.${pc_index + 1}`;
-                const pc_title_h4 = this.Helpers.create_element('h4', { class_name: 'pass-criterion-title' });
-                const strong = this.Helpers.create_element('strong', {
-                    text_content: `${t('pass_criterion_label')} ${numbering}`
-                });
-                pc_title_h4.appendChild(strong);
-                const in_added = check_id && pc_id && details?.added?.some(e => e.checkId === check_id && e.passCriterionId === pc_id);
-                const in_updated = check_id && pc_id && details?.updated?.some(e => e.checkId === check_id && e.passCriterionId === pc_id);
-                if (in_added) {
-                    pc_title_h4.appendChild(document.createTextNode(' '));
-                    pc_title_h4.appendChild(this._create_update_badge('new'));
-                } else if (in_updated) {
-                    pc_title_h4.appendChild(document.createTextNode(' '));
-                    pc_title_h4.appendChild(this._create_update_badge('updated'));
-                }
-                pc_item_li.appendChild(pc_title_h4);
+                pc_item_li.appendChild(this._create_pass_criterion_title_h4({
+                    numbering,
+                    check_id,
+                    pc_id,
+                    check_result_data,
+                    details
+                }));
 
                 const requirement_content_div = this.Helpers.create_element('div', {
                     class_name: ['pass-criterion-requirement', 'markdown-content'],
@@ -1180,7 +1243,12 @@ export const ChecklistHandler = {
                     const pc_idx = pc_def ? (check_def?.passCriteria?.indexOf(pc_def) ?? 0) : 0;
                     const numbering = `${check_idx + 1}.${pc_idx + 1}`;
                     const criterion_title = `${t('pass_criterion_label')} ${numbering}`;
-                    pc_title_h4.setAttribute('aria-label', `${criterion_title}. ${pc_status_text}`);
+                    this._sync_pass_criterion_deficiency_id_on_title(
+                        pc_title_h4, audit_frozen, current_pc_status, pc_data.deficiencyId
+                    );
+                    this._set_pass_criterion_title_aria_label(
+                        pc_title_h4, criterion_title, pc_status_text, audit_frozen, current_pc_status, pc_data.deficiencyId
+                    );
                 }
 
                 const passed_btn = pc_item_li.querySelector('button[data-action="set-pc-passed"]');

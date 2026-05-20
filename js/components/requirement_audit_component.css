@@ -401,6 +401,22 @@
     font-weight: 600;
 }
 
+.pass-criterion-title {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem 1rem;
+}
+
+.pass-criterion-deficiency-id {
+    margin-left: auto;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-color-muted);
+    white-space: nowrap;
+}
+
 .pass-criterion-number-label {
     font-size: 0.95rem;
     font-weight: 600;

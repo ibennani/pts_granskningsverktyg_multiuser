@@ -1399,6 +1399,7 @@
   "delete_prefix": "Slett",
   "edit_rulefile_button": "Rediger regelfil",
   "pass_criterion_label": "Godkjenningskriterium",
+  "pass_criterion_deficiency_id_label": "Avviks-ID: {id}",
   "pass_criterion_badge_new": "Ny",
   "pass_criterion_badge_updated": "Oppdatert",
   "pass_criterion_field_label": "Hva kan godkjennes eller avvises?",

@@ -1399,6 +1399,7 @@
   "delete_prefix": "Radera",
   "edit_rulefile_button": "Redigera regelfil",
   "pass_criterion_label": "Godkännandekriterium",
+  "pass_criterion_deficiency_id_label": "Brist-id: {id}",
   "pass_criterion_badge_new": "Ny",
   "pass_criterion_badge_updated": "Uppdaterad",
   "pass_criterion_field_label": "Vad är det som kan godkännas eller underkännas?",
