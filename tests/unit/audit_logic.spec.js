@@ -51,9 +51,17 @@ describe('AuditLogic', () => {
                 passCriteria: [ { id: 'pc1' }, { id: 'pc2' } ]
             };
 
-            test('returns "failed" if all criteria are audited and any is failed', () => {
+            test('returns "partially_audited" if any criterion is failed but not all are failed', () => {
                 const pcStatuses = {
                     'pc1': { status: 'passed' },
+                    'pc2': { status: 'failed' }
+                };
+                expect(calculate_check_status(checkDef, pcStatuses, 'passed')).toBe('partially_audited');
+            });
+
+            test('returns "failed" only when all criteria are failed', () => {
+                const pcStatuses = {
+                    'pc1': { status: 'failed' },
                     'pc2': { status: 'failed' }
                 };
                 expect(calculate_check_status(checkDef, pcStatuses, 'passed')).toBe('failed');
@@ -92,15 +100,15 @@ describe('AuditLogic', () => {
                 passCriteria: [ { id: 'pc1' }, { id: 'pc2' } ]
             };
 
-            test('returns "passed" if at least one criterion is passed', () => {
+            test('returns "failed" if at least one criterion is failed', () => {
                 const pcStatuses = {
                     'pc1': { status: 'passed' },
                     'pc2': { status: 'failed' }
                 };
-                expect(calculate_check_status(checkDef, pcStatuses, 'passed')).toBe('passed');
+                expect(calculate_check_status(checkDef, pcStatuses, 'passed')).toBe('failed');
             });
 
-            test('returns "failed" if all audited criteria are failed (and none passed)', () => {
+            test('returns "failed" when all criteria are failed', () => {
                 const pcStatuses = {
                     'pc1': { status: 'failed' },
                     'pc2': { status: 'failed' }
@@ -108,12 +116,12 @@ describe('AuditLogic', () => {
                 expect(calculate_check_status(checkDef, pcStatuses, 'passed')).toBe('failed');
             });
 
-            test('returns "partially_audited" if some not_audited and none passed', () => {
+            test('returns "failed" if one criterion is failed even when another is not_audited', () => {
                 const pcStatuses = {
                     'pc1': { status: 'failed' },
                     'pc2': { status: 'not_audited' }
                 };
-                expect(calculate_check_status(checkDef, pcStatuses, 'passed')).toBe('partially_audited');
+                expect(calculate_check_status(checkDef, pcStatuses, 'passed')).toBe('failed');
             });
 
             test('returns "partially_audited" if all criteria not_audited but user selected Stämmer (at least one button selected)', () => {
@@ -145,24 +153,51 @@ describe('AuditLogic', () => {
             const reqDefWithDetails = {
                 checks: [
                     { id: 'check1', passCriteria: [] },
-                    { 
-                        id: 'check2', 
-                        passCriteria: [{ id: 'pc1' }] 
+                    {
+                        id: 'check2',
+                        logic: 'OR',
+                        passCriteria: [{ id: 'pc1' }]
                     }
                 ]
             };
-            
+
             const reqResult = {
                 checkResults: {
                     'check1': { overallStatus: 'passed', passCriteria: {} },
-                    'check2': { 
-                        overallStatus: 'passed', 
-                        passCriteria: { 'pc1': { status: 'failed' } } 
-                    } 
+                    'check2': {
+                        overallStatus: 'passed',
+                        passCriteria: { 'pc1': { status: 'failed' } }
+                    }
                 }
             };
 
             expect(calculate_requirement_status(reqDefWithDetails, reqResult)).toBe('failed');
+        });
+
+        test('returns "partially_audited" when AND-check has only one failed criterion among several', () => {
+            const reqDefWithDetails = {
+                checks: [
+                    {
+                        id: 'check1',
+                        logic: 'AND',
+                        passCriteria: [{ id: 'pc1' }, { id: 'pc2' }]
+                    }
+                ]
+            };
+
+            const reqResult = {
+                checkResults: {
+                    check1: {
+                        overallStatus: 'passed',
+                        passCriteria: {
+                            pc1: { status: 'failed' },
+                            pc2: { status: 'passed' }
+                        }
+                    }
+                }
+            };
+
+            expect(calculate_requirement_status(reqDefWithDetails, reqResult)).toBe('partially_audited');
         });
 
         test('returns "partially_audited" when one check is failed but another is not started', () => {

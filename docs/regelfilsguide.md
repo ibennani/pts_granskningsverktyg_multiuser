@@ -189,8 +189,8 @@ Varje objekt i ett kravs `checks`-array definierar en specifik kontrollpunkt ell
     *   **Beskrivning:** Anger hur statusen för de individuella `passCriteria` (om sådana finns) ska kombineras för att bestämma den beräknade statusen för kontrollpunkten (förutsatt att kontrollpunktens `condition` har bedömts som "Stämmer").
     *   **Tillåtna värden:** `"AND"` eller `"OR"`.
     *   **Default:** Om fältet utelämnas, antas `"AND"`.
-    *   **`"AND"`:** Alla godkännandekriterier måste ha status "Godkänt" för att kontrollpunkten ska beräknas som "Godkänd". Om något kriterium är "Underkänt", blir kontrollpunkten "Underkänd". Om något är "Ej bedömt" och resten "Godkänt", blir kontrollpunkten "Delvis granskad".
-    *   **`"OR"`:** Minst ett godkännandekriterium måste ha status "Godkänt" för att kontrollpunkten ska beräknas som "Godkänd". Kontrollpunkten blir "Underkänd" endast om *alla* bedömda kriterier är "Underkända". Om alla är "Ej bedömda" blir den "Ej granskad". Om några är "Ej bedömda" och inga "Godkända", blir den "Delvis granskad".
+    *   **`"AND"`:** Kontrollpunkten blir "Underkänd" endast om *alla* godkännandekriterier är "Underkända". Om minst ett kriterium är "Underkänt" men inte alla, blir kontrollpunkten "Delvis granskad". Om något är "Ej bedömt", blir kontrollpunkten "Delvis granskad" (såvida inte alla redan är underkända).
+    *   **`"OR"`:** Kontrollpunkten blir "Underkänd" så snart *minst ett* godkännandekriterium är "Underkänt". Om inget kriterium är underkänt men något är "Ej bedömt", blir kontrollpunkten "Delvis granskad". Annars (alla bedömda utan underkännande) blir kontrollpunkten utan anmärkning.
 
 ### 5.3 Godkännandekriterieobjektets struktur (element i `passCriteria`-arrayen)
 

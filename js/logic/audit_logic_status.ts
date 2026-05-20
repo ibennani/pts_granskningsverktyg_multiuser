@@ -33,23 +33,20 @@ export function calculate_check_status(
     });
 
     const logic = (check_object.logic || 'AND').toUpperCase();
-
-    if (logic === 'OR') {
-        const has_passed = pc_statuses.some((s) => s === 'passed');
-        const has_not_audited = pc_statuses.some((s) => s === 'not_audited');
-        const all_not_audited = pc_statuses.every((s) => s === 'not_audited');
-        const all_audited_and_failed = !pc_statuses.some((s) => s === 'not_audited') && !has_passed;
-
-        if (has_passed) return 'passed';
-        if (all_not_audited) return 'partially_audited';
-        if (all_audited_and_failed) return 'failed';
-        if (has_not_audited && !has_passed) return 'partially_audited';
-        return 'failed';
-    }
     const has_not_audited = pc_statuses.some((s) => s === 'not_audited');
     const has_failed = pc_statuses.some((s) => s === 'failed');
-    if (has_not_audited) return 'partially_audited';
-    if (has_failed) return 'failed';
+    const all_failed = pc_statuses.length > 0 && pc_statuses.every((s) => s === 'failed');
+
+    // OR: ett underkänt kriterium räcker för underkänd kontrollpunkt.
+    if (logic === 'OR') {
+        if (has_failed) return 'failed';
+        if (has_not_audited) return 'partially_audited';
+        return 'passed';
+    }
+
+    // AND: alla kriterier måste vara underkända för underkänd kontrollpunkt.
+    if (all_failed) return 'failed';
+    if (has_not_audited || has_failed) return 'partially_audited';
     return 'passed';
 }
 
