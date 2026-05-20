@@ -158,22 +158,29 @@ export class LoginViewComponent {
 
                 if (Array.isArray(this.admin_contacts) && this.admin_contacts.length > 0) {
                     const contacts_intro = this.Helpers.create_element('p', {
+                        class_name: 'login-reset-contacts-intro',
                         text_content: t('login_reset_contacts_intro')
                     });
                     contacts_wrapper.appendChild(contacts_intro);
-                    const list = this.Helpers.create_element('div', {
-                        class_name: 'login-reset-contacts-list',
-                        attributes: { role: 'list' }
+                    const list = this.Helpers.create_element('ul', {
+                        class_name: 'login-reset-contacts-list'
                     });
                     this.admin_contacts.forEach((admin) => {
-                        const item = this.Helpers.create_element('div', {
-                            class_name: 'login-reset-contacts-item',
-                            text_content: String(admin.name || '').trim(),
-                            attributes: { role: 'listitem' }
+                        const display_name = String(admin.name || admin.username || '').trim();
+                        if (!display_name) return;
+                        const item = this.Helpers.create_element('li', {
+                            text_content: display_name
                         });
                         list.appendChild(item);
                     });
-                    contacts_wrapper.appendChild(list);
+                    if (list.childElementCount > 0) {
+                        contacts_wrapper.appendChild(list);
+                        const contacts_outro = this.Helpers.create_element('p', {
+                            class_name: 'login-reset-contacts-outro',
+                            text_content: t('login_reset_contacts_outro')
+                        });
+                        contacts_wrapper.appendChild(contacts_outro);
+                    }
                 } else if (this._admin_contacts_loaded) {
                     const fallback = this.Helpers.create_element('p', {
                         text_content: t('login_reset_contacts_fallback')

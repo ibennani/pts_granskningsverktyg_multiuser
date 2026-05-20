@@ -1,4 +1,4 @@
-/* LoginViewComponent */
+/* LoginViewComponent – OBS: aktiv fil är js/components/login_view_component.css (Vite-import) */
 
 /* Login-container: centrerad i viewport */
 /* När vi använder app-layout structuren (standard) */
@@ -94,13 +94,38 @@ body.view-login .app-main-view-root {
     margin-bottom: 0.75rem;
 }
 
-.login-reset-contacts-list {
-    margin: 0.25rem 0 0;
+.login-reset-contacts > p {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
 }
 
-.login-reset-contacts-list .login-reset-contacts-item {
-    margin: 0;
+.login-reset-contacts > p:last-child {
+    margin-bottom: 0;
+}
+
+.login-plate .login-reset-contacts-intro,
+.login-plate .login-reset-contacts-outro {
+    margin-bottom: 0;
+}
+
+.login-plate .login-reset-contacts-list {
+    list-style: disc;
+    list-style-position: inside;
+    margin: 0.75rem 0;
     padding: 0;
+    line-height: 1.5;
+}
+
+.login-plate .login-reset-contacts-list li {
+    margin-bottom: 0.35rem;
+}
+
+.login-plate .login-reset-contacts-list li:last-child {
+    margin-bottom: 0;
+}
+
+.login-plate .login-reset-contacts-outro {
+    margin-top: 0;
 }
 
 .login-reset-password-group {

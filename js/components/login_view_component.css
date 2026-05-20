@@ -88,3 +88,56 @@ body.view-login .app-main-view-root {
 .login-plate .button {
     margin-top: 0.5rem;
 }
+
+.login-inline-error {
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--border-radius);
+    border: 1px solid var(--error-border-color, #b11);
+    background-color: var(--error-background-color, #fdeaea);
+    color: var(--error-text-color, #600);
+}
+
+.login-mode-container {
+    margin-top: 1rem;
+}
+
+.login-plate .login-reset-contacts {
+    margin-top: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.login-plate .login-reset-contacts > p {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+}
+
+.login-plate .login-reset-contacts-intro,
+.login-plate .login-reset-contacts-outro {
+    margin-bottom: 0;
+}
+
+.login-plate .login-reset-contacts-list {
+    list-style: disc;
+    list-style-position: inside;
+    margin: 0.75rem 0;
+    padding: 0;
+    line-height: 1.5;
+}
+
+.login-plate .login-reset-contacts-list li {
+    margin-bottom: 0.35rem;
+}
+
+.login-plate .login-reset-contacts-list li:last-child {
+    margin-bottom: 0;
+}
+
+.login-plate .login-reset-contacts-outro {
+    margin-top: 0;
+}
+
+.login-plate .login-reset-password-group {
+    margin-top: 1rem;
+}

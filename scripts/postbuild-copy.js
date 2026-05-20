@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, cpSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { inject_dist_build_metadata } from './inject_dist_build_metadata.js';
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const projectRoot = join(__dirname, '..');
 const distDir = join(projectRoot, 'dist');
@@ -42,7 +43,8 @@ for (const relativePath of foldersToCopy) {
   }
 }
 
-// Produktion: byggtid kommer från fryst public/build-info.js (kopieras till dist av Vite).
-// Uppdatera med: npm run uppdatera:byggstämpel
+// Produktion: skriv aktuell byggtid till dist (build-info.js + index.html) efter varje build.
+inject_dist_build_metadata(distDir, { at: new Date() });
+console.log('[postbuild-copy] Uppdaterade dist/build-info.js med byggtid.');
 
 console.log('[postbuild-copy] Completed successfully');
