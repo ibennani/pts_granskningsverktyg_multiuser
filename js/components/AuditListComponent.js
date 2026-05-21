@@ -57,7 +57,9 @@ export class AuditListComponent {
             t,
             Helpers: this.Helpers,
             Translation: this.Translation,
-            get_status_label
+            get_status_label,
+            get_live_audit_state:
+                typeof this.deps?.getState === 'function' ? () => this.deps.getState() : undefined
         };
 
         const handlers = {

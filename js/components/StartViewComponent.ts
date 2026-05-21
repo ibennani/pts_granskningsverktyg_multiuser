@@ -7,6 +7,7 @@ import './start_view_component.css';
 import { GenericTableComponent } from './GenericTableComponent.js';
 import { create_audit_table_columns } from '../utils/audit_table_columns.js';
 import { open_audit_by_id, download_audit_by_id } from '../logic/audit_open_logic.js';
+import { enrich_audits_with_live_progress } from '../logic/audit_list_progress.js';
 import { subscribe_audits } from '../logic/list_push_service.js';
 
 const GV_AUDITS_LIST_CACHE_KEY = 'gv_audits_list_cache_v1';
@@ -48,6 +49,7 @@ const START_VIEW_SECTION_COUNT = 4;
 type StartViewDeps = {
     router: (view: string, params?: Record<string, string>) => void;
     dispatch: (...args: unknown[]) => void;
+    getState?: () => { auditId?: string | null; ruleFileContent?: unknown; samples?: unknown[] } | null;
     StoreActionTypes: Record<string, string>;
     Translation: { t: (key: string, replacements?: Record<string, string | number>) => string };
     Helpers: Record<string, unknown> & {
@@ -201,12 +203,14 @@ export class StartViewComponent {
             }
             this.audits = fresh;
             if (changed.length === 0) return;
+            const live_state = typeof this.deps?.getState === 'function' ? this.deps.getState() : null;
             for (const audit of changed) {
                 if (audit.id === undefined || audit.id === null) continue;
                 const section_index = this._section_index_for_audit(audit);
                 const table = this._genericTables[section_index];
                 if (table && typeof table.updateRow === 'function') {
-                    table.updateRow(audit.id, audit);
+                    const [row_for_table] = enrich_audits_with_live_progress([audit], live_state);
+                    table.updateRow(audit.id, row_for_table);
                 }
             }
         } catch {
@@ -348,11 +352,14 @@ export class StartViewComponent {
                 { heading_key: 'start_view_archived_audits_heading', audits: sort_audits(archived), empty_key: 'start_view_no_archived_audits' }
             ];
 
+            const live_state = typeof this.deps?.getState === 'function' ? this.deps.getState() : null;
             const table_deps = {
                 t: this.get_t_func(),
                 Helpers: this.Helpers,
                 Translation: this.Translation,
-                get_status_label: this.get_status_label.bind(this)
+                get_status_label: this.get_status_label.bind(this),
+                get_live_audit_state:
+                    typeof this.deps?.getState === 'function' ? () => this.deps!.getState!() : undefined
             };
             const table_handlers = {
                 onOpenAudit: (id: string | number) => {
@@ -365,6 +372,7 @@ export class StartViewComponent {
             const audit_columns = create_audit_table_columns(table_deps, table_handlers, { includeDelete: false });
 
             section_configs.forEach((config, index) => {
+                const audits_for_table = enrich_audits_with_live_progress(config.audits, live_state);
                 const section = create_el('section', {
                     class_name:
                         index === 0 ? 'start-view-audits-section' : 'start-view-audits-section start-view-audits-section-following'
@@ -409,7 +417,7 @@ export class StartViewComponent {
                 table_instance.render({
                     root: table_wrapper,
                     columns: audit_columns,
-                    data: config.audits,
+                    data: audits_for_table,
                     emptyMessage: t(config.empty_key),
                     ariaLabel: section_heading_text,
                     wrapperClassName: 'generic-table-wrapper',

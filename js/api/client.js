@@ -581,8 +581,9 @@ export async function get_audit_version(id) {
 }
 
 /**
- * Hämtar granskning med regelfil. Om svaret saknar ruleFileContent men har ruleSetId,
- * hämtas regelfilen separat via rules-API och slås ihop. Regelfilen läggs inte till separat.
+ * Hämtar granskning med regelfil. Servern ska returnera ruleFileContent från granskningens
+ * sparade regelfilsögonblicksbild när den finns. Saknas ruleFileContent men ruleSetId finns,
+ * hämtas aktuell publicerad regelfil via rules-API (reserv).
  */
 export async function load_audit_with_rule_file(id) {
     const audit_data = await get_audit(id);

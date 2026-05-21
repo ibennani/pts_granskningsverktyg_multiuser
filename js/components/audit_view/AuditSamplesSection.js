@@ -1,6 +1,7 @@
 // js/components/audit_view/AuditSamplesSection.js
 // Bygger högerkolumnen: granskningar (listor eller sektioner beroende på audit_mode).
 
+import { enrich_audits_with_live_progress } from '../../logic/audit_list_progress.js';
 import { filter_text_matches } from '../../utils/string_filter_normalize.js';
 
 export function render_audit_samples_section(ctx) {
@@ -120,9 +121,11 @@ export function render_audit_samples_section(ctx) {
                             ? '_archivedTableSortState'
                             : '_completedTableSortState';
             ctx[sort_state_key] = ctx[sort_state_key] ?? { columnIndex: 0, direction: 'asc' };
+            const live_state = typeof ctx.getState === 'function' ? ctx.getState() : null;
+            const audits_for_table = enrich_audits_with_live_progress(config.audits, live_state);
             ctx._auditListComponent.render({
                 root: table_wrapper,
-                audits: config.audits,
+                audits: audits_for_table,
                 emptyMessage: t(empty_key),
                 ariaLabel: section_heading_text,
                 includeDelete: true,

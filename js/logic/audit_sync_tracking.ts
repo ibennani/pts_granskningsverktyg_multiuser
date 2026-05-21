@@ -29,6 +29,18 @@ export function get_latest_requirement_status_update_iso(state: AuditStateLike |
 }
 
 /**
+ * Om lokalt state ska skrivas över server (synk, boot-merge, 409-retry).
+ * Versionsnummer ensamt räcker inte — äldre innehåll med högre version ska inte vinna.
+ */
+export function should_push_local_audit_to_server(
+    local_state: AuditStateLike | null | undefined,
+    remote_state: AuditStateLike | null | undefined
+): boolean {
+    if (!local_state || !remote_state) return false;
+    return is_local_audit_content_newer_than(local_state, remote_state);
+}
+
+/**
  * Om lokalt state har nyare granskningsinnehåll än remote (vid samma versionsnummer).
  */
 export function is_local_audit_content_newer_than(

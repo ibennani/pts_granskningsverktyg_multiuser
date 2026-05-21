@@ -2,7 +2,13 @@
  * @fileoverview Debouncad serversynk för granskningar (PATCH / import).
  */
 
-import { update_audit, import_audit, load_audit_with_rule_file, get_auth_token } from '../api/client.js';
+import {
+    update_audit,
+    import_audit,
+    load_audit_with_rule_file,
+    get_auth_token,
+    get_audit_version
+} from '../api/client.js';
 import {
     clear_audit_sync_pending,
     is_fetch_network_error,
@@ -10,7 +16,11 @@ import {
     notify_network_unreachable_for_sync,
     refresh_connectivity_banner
 } from '../logic/connectivity_service.js';
-import { build_last_server_sync_metadata_patch } from '../logic/audit_sync_tracking.js';
+import {
+    build_last_server_sync_metadata_patch,
+    should_push_local_audit_to_server,
+    type AuditStateLike
+} from '../logic/audit_sync_tracking.js';
 import { consoleManager } from '../utils/console_manager.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import { show_audit_deleted_modal_and_navigate } from '../logic/audit_deleted_modal_flow.js';
@@ -38,6 +48,58 @@ type NotificationLike = { show_global_message?: (msg: string, level: string) => 
 
 function get_notification_component(): NotificationLike | undefined {
     return app_runtime_refs.notification_component as unknown as NotificationLike | undefined;
+}
+
+function dispatch_replace_state_from_remote(
+    dispatch_fn: DispatchFn | undefined,
+    full_state: Record<string, unknown>
+) {
+    if (!dispatch_fn) return;
+    dispatch_fn({
+        type: 'REPLACE_STATE_FROM_REMOTE',
+        payload: {
+            ...full_state,
+            saveFileVersion: full_state.saveFileVersion || '2.1.0'
+        }
+    });
+}
+
+function notify_audit_reloaded_from_server(message_key = 'version_conflict_external_update') {
+    const notif = get_notification_component();
+    if (notif?.show_global_message && window.Translation?.t) {
+        const t = window.Translation.t;
+        notif.show_global_message(t(message_key) || message_key, 'info');
+    }
+}
+
+async function reload_local_from_remote_if_server_ahead(
+    state: SyncPayloadState,
+    dispatch_fn: DispatchFn | undefined
+): Promise<boolean> {
+    if (!state.auditId) return false;
+    try {
+        const { version: remote_version } = (await get_audit_version(state.auditId)) as {
+            version?: number | null;
+        };
+        const local_version = Number(state.version ?? 0);
+        if (
+            remote_version === null ||
+            remote_version === undefined ||
+            !Number.isFinite(Number(remote_version)) ||
+            Number(remote_version) <= local_version
+        ) {
+            return false;
+        }
+        const full_state = (await load_audit_with_rule_file(state.auditId)) as Record<string, unknown> | null;
+        if (!full_state) return false;
+        dispatch_replace_state_from_remote(dispatch_fn, full_state);
+        update_baseline_from_server_full_state(full_state);
+        clear_audit_sync_pending();
+        notify_audit_reloaded_from_server();
+        return true;
+    } catch {
+        return false;
+    }
 }
 
 function record_successful_audit_server_sync(dispatch_fn: DispatchFn | undefined) {
@@ -82,6 +144,9 @@ async function run_sync(state: SyncPayloadState | null | undefined, dispatch_fn:
 
     try {
         if (state.auditId) {
+            if (await reload_local_from_remote_if_server_ahead(state, dispatch_fn)) {
+                return;
+            }
             const patch = state_to_patch(state);
             const prev_log = Array.isArray(state.auditMetadata?.audit_edit_log) ? state.auditMetadata.audit_edit_log : [];
             const entry = { at: new Date().toISOString(), auditStatus: state.auditStatus };
@@ -175,6 +240,18 @@ async function run_sync(state: SyncPayloadState | null | undefined, dispatch_fn:
             try {
                 const full_state = (await load_audit_with_rule_file(state.auditId)) as Record<string, unknown> | null;
                 if (full_state) {
+                    if (
+                        !should_push_local_audit_to_server(
+                            state as AuditStateLike,
+                            full_state as AuditStateLike
+                        )
+                    ) {
+                        dispatch_replace_state_from_remote(dispatch_fn, full_state);
+                        clear_audit_sync_pending();
+                        notify_audit_reloaded_from_server('version_conflict_external_update');
+                        update_baseline_from_server_full_state(full_state);
+                        return;
+                    }
                     try {
                         const retry_patch = state_to_patch(state);
                         retry_patch.expectedVersion = Number(full_state.version ?? 0);
@@ -214,13 +291,7 @@ async function run_sync(state: SyncPayloadState | null | undefined, dispatch_fn:
                         );
                     }
 
-                    dispatch_fn({
-                        type: 'REPLACE_STATE_FROM_REMOTE',
-                        payload: {
-                            ...full_state,
-                            saveFileVersion: full_state.saveFileVersion || '2.1.0'
-                        }
-                    });
+                    dispatch_replace_state_from_remote(dispatch_fn, full_state);
                     clear_audit_sync_pending();
                     const notice = resolve_version_conflict_notice(
                         e as { lastUpdatedBy?: string | null },

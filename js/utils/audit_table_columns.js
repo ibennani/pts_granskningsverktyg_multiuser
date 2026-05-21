@@ -1,11 +1,16 @@
 // js/utils/audit_table_columns.js
 // Returnerar kolumndefinitioner för granskningstabellen, används med GenericTableComponent.
 
+import {
+    format_audit_row_progress_display,
+    progress_percent_for_audit_row
+} from '../logic/audit_list_progress.js';
+
 const EMPTY_PLACEHOLDER = '—';
 
 /**
  * Skapar kolumndefinitioner för granskningstabellen.
- * @param {Object} deps - { t, Helpers, Translation, get_status_label }
+ * @param {Object} deps - { t, Helpers, Translation, get_status_label, get_live_audit_state? }
  * @param {Object} handlers - { onOpenAudit(auditId), onDownloadAudit(auditId), onDeleteAudit?(auditId) }
  * @param {{ includeDelete: boolean }} [opts] - includeDelete true för audit-vyn (kolumn Radera).
  * @returns {Array<{ headerLabel: string, getContent: (row: any) => string | HTMLElement }>}
@@ -58,8 +63,25 @@ export function create_audit_table_columns(deps, handlers, opts = {}) {
         },
         {
             headerLabel: t('start_view_col_progress'),
-            getSortValue: (row) => (row.progress !== null && row.progress !== undefined) ? Number(row.progress) : -1,
-            getContent: (row) => (row.progress !== null && row.progress !== undefined ? `${row.progress}%` : EMPTY_PLACEHOLDER)
+            getSortValue: (row) => {
+                const pct = progress_percent_for_audit_row(
+                    row,
+                    typeof deps.get_live_audit_state === 'function' ? deps.get_live_audit_state() : null
+                );
+                return pct !== null && pct !== undefined ? Number(pct) : -1;
+            },
+            getContent: (row) => {
+                const live =
+                    typeof deps.get_live_audit_state === 'function' ? deps.get_live_audit_state() : null;
+                const lang = Translation?.get_current_language_code?.() || 'sv-SE';
+                const formatted = format_audit_row_progress_display(
+                    row,
+                    live,
+                    lang,
+                    Helpers?.format_number_locally
+                );
+                return formatted ?? EMPTY_PLACEHOLDER;
+            }
         },
         {
             headerLabel: t('start_view_col_deficiency'),

@@ -53,6 +53,7 @@ export class AuditViewComponent {
         this._auditFilterInputRef = null;
         this.router = deps.router;
         this.getState = deps.getState;
+        this.subscribe = deps.subscribe;
         this.NotificationComponent?.clear_global_message?.();
         this.dispatch = deps.dispatch;
         this.StoreActionTypes = deps.StoreActionTypes;
@@ -103,6 +104,7 @@ export class AuditViewComponent {
         }
         this._unsubscribe_audits = null;
         this._unsubscribe_rules = null;
+        this._unsubscribe_store = null;
 
         this._auditsTable = new GenericTableComponent();
         await this._auditsTable.init({ deps });
@@ -2020,6 +2022,19 @@ export class AuditViewComponent {
                 this._unsubscribe_rules = subscribe_rules(() => this._on_rules_changed());
             }
         }
+
+        if (
+            this.audit_mode === 'audits' &&
+            !this._unsubscribe_store &&
+            typeof this.subscribe === 'function'
+        ) {
+            this._unsubscribe_store = this.subscribe((_state, listener_meta) => {
+                if (listener_meta?.skip_render) return;
+                if (this.audit_mode === 'audits' && this.root) {
+                    this.render();
+                }
+            });
+        }
     }
 
     destroy() {
@@ -2030,6 +2045,10 @@ export class AuditViewComponent {
         if (typeof this._unsubscribe_rules === 'function') {
             this._unsubscribe_rules();
             this._unsubscribe_rules = null;
+        }
+        if (typeof this._unsubscribe_store === 'function') {
+            this._unsubscribe_store();
+            this._unsubscribe_store = null;
         }
         this.upload_file_input = null;
         this.upload_audit_file_input = null;

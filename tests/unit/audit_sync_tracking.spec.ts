@@ -5,6 +5,7 @@ import { describe, test, expect } from '@jest/globals';
 import {
     get_latest_requirement_status_update_iso,
     is_local_audit_content_newer_than,
+    should_push_local_audit_to_server,
     has_unsynced_local_audit_changes,
     build_last_local_change_metadata_patch,
     build_last_server_sync_metadata_patch
@@ -23,6 +24,20 @@ describe('audit_sync_tracking', () => {
             ]
         };
         expect(get_latest_requirement_status_update_iso(state)).toBe('2026-05-20T12:00:00.000Z');
+    });
+
+    test('should_push_local_audit_to_server följer innehållsnyhet', () => {
+        const local = {
+            auditMetadata: { last_local_change_at: '2026-05-20T12:00:00.000Z' },
+            samples: []
+        };
+        const remote = {
+            auditMetadata: { last_server_sync_at: '2026-05-19T10:00:00.000Z' },
+            samples: []
+        };
+        expect(should_push_local_audit_to_server(local, remote)).toBe(true);
+        expect(should_push_local_audit_to_server(remote, local)).toBe(false);
+        expect(should_push_local_audit_to_server(null, remote)).toBe(false);
     });
 
     test('is_local_audit_content_newer_than vid samma version', () => {

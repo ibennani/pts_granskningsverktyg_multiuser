@@ -17,7 +17,7 @@ import {
 } from '../repositories/audit_repository.js';
 import { fetch_rule_set_by_id } from '../repositories/rule_repository.js';
 import type { Request, Response } from 'express';
-import { build_audit_state_without_rule_file, build_full_state, type AuditRow } from './audit_build_state.js';
+import { build_full_state, type AuditRow } from './audit_build_state.js';
 import { broadcast_audit_locks_changed } from './audit_route_support.js';
 import { map_audit_index_row_to_list_item } from './audit_index_row_mapper.js';
 import { register_audit_import_route } from './audit_import_routes.js';
@@ -214,19 +214,16 @@ router.get('/:id', async (req: Request, res: Response) => {
         const audit = auditResult.rows[0] as AuditRow;
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
         res.setHeader('Pragma', 'no-cache');
+        let ruleSet: { published_content?: unknown; content?: unknown } | null = null;
         if (audit.rule_set_id) {
-            const state = build_audit_state_without_rule_file(audit);
-            if (process.env.GV_DEBUG_STUCK_SYNC) {
-                console.log('[audits] GET', id, 'kört-fast i svar:', count_stuck_in_samples(state.samples as never));
-            }
-            res.json(state);
-        } else {
-            const fullState = build_full_state(audit, null);
-            if (process.env.GV_DEBUG_STUCK_SYNC) {
-                console.log('[audits] GET', id, 'kört-fast i svar:', count_stuck_in_samples(fullState.samples as never));
-            }
-            res.json(fullState);
+            const ruleResult = await fetch_rule_set_by_id(audit.rule_set_id);
+            ruleSet = (ruleResult.rows[0] || null) as { published_content?: unknown; content?: unknown } | null;
         }
+        const fullState = build_full_state(audit, ruleSet);
+        if (process.env.GV_DEBUG_STUCK_SYNC) {
+            console.log('[audits] GET', id, 'kört-fast i svar:', count_stuck_in_samples(fullState.samples as never));
+        }
+        res.json(fullState);
     } catch (err) {
         console.error('[audits] GET one error:', err);
         res.status(500).json({ error: 'Kunde inte hämta granskning' });

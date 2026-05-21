@@ -2,7 +2,7 @@
  * @fileoverview Mappar databasrad från granskningslistan till API-objekt (progress, bristindex m.m.).
  */
 
-import { calculate_overall_audit_progress } from '../../js/audit_logic.js';
+import { compute_audit_progress_percent } from '../../js/logic/audit_list_progress.ts';
 import { calculateQualityScore } from '../../js/logic/ScoreCalculator.js';
 import { count_business_days, extract_min_max_timestamps } from './audit_route_support.js';
 
@@ -39,7 +39,18 @@ export function map_audit_index_row_to_list_item(row: IndexRow): Record<string, 
     const lastTs = maxTime || (metadata.endTime as string) || (row.status === 'locked' ? row.updated_at : null);
     const endForCalc = lastTs || new Date().toISOString();
     out.business_days = firstTs ? count_business_days(firstTs, endForCalc) : null;
-    if (row.rule_content && row.samples) {
+    const samples_parsed =
+        typeof row.samples === 'string'
+            ? (() => {
+                  try {
+                      return JSON.parse(row.samples);
+                  } catch {
+                      return null;
+                  }
+              })()
+            : row.samples;
+
+    if (row.rule_content && samples_parsed) {
         try {
             let rule_content: unknown = row.rule_content;
             if (typeof rule_content === 'string') {
@@ -48,11 +59,9 @@ export function map_audit_index_row_to_list_item(row: IndexRow): Record<string, 
             const full_state = {
                 ruleFileContent: rule_content,
                 auditStatus: row.status,
-                samples: row.samples
+                samples: samples_parsed
             };
-            const progress = calculate_overall_audit_progress(full_state as never);
-            out.progress =
-                progress.total > 0 ? Math.round((100 * progress.audited) / progress.total) : null;
+            out.progress = compute_audit_progress_percent(full_state);
             const score = calculateQualityScore(full_state as never);
             out.deficiency_index =
                 score != null && typeof score.totalScore === 'number' ? Math.round(score.totalScore * 10) / 10 : null;

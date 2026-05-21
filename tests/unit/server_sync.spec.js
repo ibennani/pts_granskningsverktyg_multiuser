@@ -15,6 +15,7 @@ const import_audit = jest.fn();
 const update_rule = jest.fn();
 const patch_rule_content_part = jest.fn();
 const load_audit_with_rule_file = jest.fn();
+const get_audit_version = jest.fn(async () => ({ version: null }));
 const get_auth_token = jest.fn(() => 'mock-jwt');
 const get_websocket_url = jest.fn(() => 'ws://localhost');
 const clear_audit_sync_pending = jest.fn();
@@ -31,6 +32,7 @@ jest.unstable_mockModule(client_path, () => ({
     update_rule,
     patch_rule_content_part,
     load_audit_with_rule_file,
+    get_audit_version,
     get_auth_token,
     get_websocket_url
 }));
@@ -87,6 +89,7 @@ describe('server_sync', () => {
         });
         Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
         update_audit.mockResolvedValue({ version: 9, ruleSetId: 'rs1' });
+        get_audit_version.mockResolvedValue({ version: null });
         import_audit.mockResolvedValue({ auditId: 'new-a', version: 1, ruleSetId: null });
         update_rule.mockResolvedValue({ content: { ok: true }, version: 2 });
         is_fetch_network_error.mockImplementation(() => false);
@@ -243,7 +246,7 @@ describe('server_sync', () => {
         expect(clear_audit_sync_pending).toHaveBeenCalled();
     });
 
-    test('run_sync: 409 utan existingAuditId försöker retry med serverns version', async () => {
+    test('run_sync: 409 utan existingAuditId och lokalt nyare innehåll retryar med serverns version', async () => {
         const err = Object.assign(new Error('version'), { status: 409 });
         update_audit
             .mockRejectedValueOnce(err)
@@ -258,11 +261,19 @@ describe('server_sync', () => {
         load_audit_with_rule_file.mockResolvedValueOnce({
             version: 7,
             saveFileVersion: '2.1.0',
+            auditMetadata: { last_server_sync_at: '2026-05-19T08:00:00.000Z' },
             samples: [],
             ruleFileContent: {}
         });
         const dispatch = jest.fn();
-        const state = base_audit_state({ auditId: 'a1', version: 1 });
+        const state = base_audit_state({
+            auditId: 'a1',
+            version: 1,
+            auditMetadata: { last_local_change_at: '2026-05-20T14:00:00.000Z' },
+            samples: []
+        });
+        window.Translation = { t: (k) => k };
+        app_runtime_refs.notification_component = { show_global_message: jest.fn() };
         await sync_to_server_now(() => state, dispatch);
         expect(load_audit_with_rule_file).toHaveBeenCalledWith('a1');
         expect(update_audit).toHaveBeenCalledTimes(2);
@@ -270,10 +281,76 @@ describe('server_sync', () => {
             type: 'SET_REMOTE_AUDIT_ID',
             payload: expect.objectContaining({ auditId: 'a1', version: 9, skip_render: true })
         });
-        expect(dispatch).toHaveBeenCalledWith({
-            type: 'UPDATE_METADATA',
-            payload: expect.objectContaining({ skip_server_sync: true })
+        delete window.Translation;
+        app_runtime_refs.notification_component = null;
+    });
+
+    test('run_sync: 409 utan existingAuditId och äldre lokalt innehåll laddar om från server', async () => {
+        const err = Object.assign(new Error('version'), { status: 409 });
+        update_audit.mockRejectedValueOnce(err);
+        load_audit_with_rule_file.mockResolvedValueOnce({
+            version: 7,
+            saveFileVersion: '2.1.0',
+            auditMetadata: { last_server_sync_at: '2026-05-20T14:00:00.000Z' },
+            samples: [
+                {
+                    requirementResults: {
+                        req1: { lastStatusUpdate: '2026-05-20T14:00:00.000Z' }
+                    }
+                }
+            ],
+            ruleFileContent: {}
         });
+        const dispatch = jest.fn();
+        const state = base_audit_state({
+            auditId: 'a1',
+            version: 1,
+            auditMetadata: { last_local_change_at: '2026-05-19T08:00:00.000Z' },
+            samples: [
+                {
+                    requirementResults: {
+                        req1: { lastStatusUpdate: '2026-05-19T08:00:00.000Z' }
+                    }
+                }
+            ]
+        });
+        window.Translation = { t: (k) => k };
+        app_runtime_refs.notification_component = { show_global_message: jest.fn() };
+        await sync_to_server_now(() => state, dispatch);
+        expect(update_audit).toHaveBeenCalledTimes(1);
+        expect(dispatch).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: 'REPLACE_STATE_FROM_REMOTE',
+                payload: expect.objectContaining({ version: 7 })
+            })
+        );
+        delete window.Translation;
+        app_runtime_refs.notification_component = null;
+    });
+
+    test('run_sync: serverversion högre än lokal laddar om innan PATCH', async () => {
+        get_audit_version.mockResolvedValueOnce({ version: 8 });
+        load_audit_with_rule_file.mockResolvedValueOnce({
+            version: 8,
+            saveFileVersion: '2.1.0',
+            samples: [],
+            ruleFileContent: {}
+        });
+        const dispatch = jest.fn();
+        const state = base_audit_state({ auditId: 'a1', version: 3 });
+        window.Translation = { t: (k) => k };
+        app_runtime_refs.notification_component = { show_global_message: jest.fn() };
+        await sync_to_server_now(() => state, dispatch);
+        expect(get_audit_version).toHaveBeenCalledWith('a1');
+        expect(update_audit).not.toHaveBeenCalled();
+        expect(dispatch).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: 'REPLACE_STATE_FROM_REMOTE',
+                payload: expect.objectContaining({ version: 8 })
+            })
+        );
+        delete window.Translation;
+        app_runtime_refs.notification_component = null;
     });
 
     test('run_sync: 404 granskning borttagen visar modalspår', async () => {

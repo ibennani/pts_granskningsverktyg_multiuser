@@ -9,6 +9,10 @@ import {
     should_show_newer_rule_banner
 } from '../logic/audit_overview_newer_rule_banner_dismissal.js';
 import { version_greater_than } from '../utils/version_utils.js';
+import {
+    format_progress_percent_like_overview,
+    get_overall_audit_progress_summary
+} from '../logic/audit_list_progress.js';
 import "./audit_overview_component.css";
 
 export class AuditOverviewComponent {
@@ -260,15 +264,18 @@ export class AuditOverviewComponent {
         }));
 
         const status_counts = this.AuditLogic.calculate_overall_audit_status_counts(current_global_state);
-        const progress_data = this.AuditLogic.calculate_overall_audit_progress(current_global_state);
         const lang_code = this.Translation.get_current_language_code();
-        const audited = progress_data.audited;
-        const total_req = progress_data.total;
-        const pct_complete = total_req > 0 ? (audited / total_req) * 100 : 0;
-        const formatted_pct = this.Helpers.format_number_locally(pct_complete, lang_code, {
-            minimumFractionDigits: 1,
-            maximumFractionDigits: 1
-        });
+        const progress_summary = get_overall_audit_progress_summary(current_global_state);
+        const audited = progress_summary?.audited ?? 0;
+        const total_req = progress_summary?.total ?? 0;
+        const formatted_pct =
+            progress_summary != null
+                ? format_progress_percent_like_overview(
+                      progress_summary.percent,
+                      lang_code,
+                      this.Helpers.format_number_locally
+                  )
+                : '0,0';
 
         const progress_heading_id = 'audit-overview-progress-heading';
         const progress_summary_id = 'audit-overview-progress-summary';

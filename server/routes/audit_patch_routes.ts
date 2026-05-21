@@ -8,6 +8,7 @@ import { fetch_rule_set_by_id } from '../repositories/rule_repository.js';
 import { save_backup_for_audit } from '../backup/audit_backup.js';
 import { count_stuck_in_samples } from '../../shared/audit/audit_metrics.js';
 import { has_meaningful_audit_patch_change } from '../logic/audit_meaningful_change.js';
+import { is_incoming_audit_samples_older_than_existing } from '../logic/audit_incoming_stale_guard.js';
 import { build_full_state, type AuditRow } from './audit_build_state.js';
 import { broadcast_audits_changed } from './audit_route_support.js';
 
@@ -97,6 +98,17 @@ export function register_audit_patch_routes(router: IRouter): void {
             if (Number(existing_row.version) !== expect_num) {
                 return res.status(409).json({
                     error: 'Versionskonflikt',
+                    serverVersion: Number(existing_row.version),
+                    lastUpdatedBy: existing_row.last_updated_by ?? null
+                });
+            }
+
+            if (
+                samples !== undefined &&
+                is_incoming_audit_samples_older_than_existing(existing_row.samples, samples)
+            ) {
+                return res.status(409).json({
+                    error: 'Inkommande granskning är äldre än versionen på servern',
                     serverVersion: Number(existing_row.version),
                     lastUpdatedBy: existing_row.last_updated_by ?? null
                 });
