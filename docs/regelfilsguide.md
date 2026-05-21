@@ -189,8 +189,8 @@ Varje objekt i ett kravs `checks`-array definierar en specifik kontrollpunkt ell
     *   **Beskrivning:** Anger hur statusen för de individuella `passCriteria` (om sådana finns) ska kombineras för att bestämma den beräknade statusen för kontrollpunkten (förutsatt att kontrollpunktens `condition` har bedömts som "Stämmer").
     *   **Tillåtna värden:** `"AND"` eller `"OR"`.
     *   **Default:** Om fältet utelämnas, antas `"AND"`.
-    *   **`"AND"`:** Kontrollpunkten blir "Underkänd" endast om *alla* godkännandekriterier är "Underkända". Om minst ett kriterium är "Underkänt" men inte alla, blir kontrollpunkten "Delvis granskad". Om något är "Ej bedömt", blir kontrollpunkten "Delvis granskad" (såvida inte alla redan är underkända).
-    *   **`"OR"`:** Kontrollpunkten blir "Underkänd" så snart *minst ett* godkännandekriterium är "Underkänt". Om inget kriterium är underkänt men något är "Ej bedömt", blir kontrollpunkten "Delvis granskad". Annars (alla bedömda utan underkännande) blir kontrollpunkten utan anmärkning.
+    *   **Gemensam modell (AND och OR):** Inget kriterium bedömt → kontrollpunkten "Ej granskad" (om "Stämmer" inte valts) eller "Delvis granskad" (om "Stämmer" valts men inget kriterium bedömts). Några men inte alla kriterier bedömda → "Delvis granskad". Alla kriterier bedömda → "Underkänd" om minst ett är "Underkänt", annars utan anmärkning. Fältet `logic` (AND/OR) påverkar inte slututfallet när alla kriterier är bedömda; skillnaden syns under granskningen när inte alla kriterier är klara.
+    *   **Inte aktuellt:** Om kontrollpunkten är "Inte aktuellt" räknas alla underliggande godkännandekriterier som utan anmärkning vid statusberäkning, oavsett sparad status på kriterierna.
 
 ### 5.3 Godkännandekriterieobjektets struktur (element i `passCriteria`-arrayen)
 

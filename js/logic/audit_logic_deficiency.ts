@@ -121,7 +121,12 @@ export function assignSortedDeficiencyIdsOnLock(auditState: AuditStateShape): Au
                         ?.checkResults?.[checkKey]
                         ?.passCriteria?.[pcKey];
 
-                    if (pcResult?.status === 'failed' && pcDef && originalPcResultRef) {
+                    if (
+                        checkResult.overallStatus !== 'not_applicable' &&
+                        pcResult?.status === 'failed' &&
+                        pcDef &&
+                        originalPcResultRef
+                    ) {
                         failedCriteria.push({
                             sampleDescription: sample.description as string | undefined,
                             reqRefText: (reqDef.standardReference?.text || reqDef.title) as string | undefined,

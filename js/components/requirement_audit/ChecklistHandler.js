@@ -1220,7 +1220,8 @@ export const ChecklistHandler = {
             check_wrapper.querySelectorAll('.pass-criterion-item[data-pc-id]').forEach(pc_item_li => {
                 const pc_id = pc_item_li.dataset.pcId;
                 const pc_data = check_result_data?.passCriteria?.[pc_id] ?? check_result_data?.passCriteria?.[String(pc_id)] ?? { status: 'not_audited', observationDetail: '' };
-                const current_pc_status = pc_data.status;
+                const current_pc_status =
+                    overall_manual_status === 'not_applicable' ? 'passed' : (pc_data.status || 'not_audited');
 
                 const pc_status_text_container = pc_item_li.querySelector('.pass-criterion-status');
                 pc_status_text_container.innerHTML = '';
