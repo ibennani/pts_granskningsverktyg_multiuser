@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const projectRoot = join(__dirname, '..');
 
-console.log('[validate-components] Checking for missing components...');
+console.info('[validate-components] Checking for missing components...');
 
 let hasErrors = false;
 
@@ -93,5 +93,5 @@ if (hasErrors) {
     console.error('\n❌ Component validation failed!');
     process.exit(1);
 } else {
-    console.log('✅ Component validation passed!');
+    console.info('✅ Component validation passed!');
 }

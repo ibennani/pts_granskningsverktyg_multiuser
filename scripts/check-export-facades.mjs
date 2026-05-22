@@ -41,4 +41,4 @@ if (failed) {
     process.exit(1);
 }
 
-console.log(`[check-export-facades] OK (export_logic ${export_lines} rader, audit_logic ${audit_lines} rader).`);
+console.info(`[check-export-facades] OK (export_logic ${export_lines} rader, audit_logic ${audit_lines} rader).`);

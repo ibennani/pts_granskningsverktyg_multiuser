@@ -12,7 +12,7 @@ const DB_CONTAINER = process.env.GV_DB_CONTAINER || 'granskningsverktyget-db';
 
 async function main() {
     try {
-        console.log('[verify] Verifierar senaste backup...');
+        console.info('[verify] Verifierar senaste backup...');
         const cmd = [
             `DUMP=$(ls -1t ${BACKUP_DIR}/gv_postgres_*.dump 2>/dev/null | head -1)`,
             `test -n "$DUMP" || { echo "Ingen backup-fil hittades"; exit 1; }`,
@@ -20,7 +20,7 @@ async function main() {
             `cat "$DUMP" | docker exec -i ${DB_CONTAINER} pg_restore --list -Fc > /dev/null`
         ].join(' && ');
         await exec(cmd);
-        console.log('[verify] Dump-filen är giltig (pg_restore --list lyckades).');
+        console.info('[verify] Dump-filen är giltig (pg_restore --list lyckades).');
     } finally {
         await disconnect();
     }

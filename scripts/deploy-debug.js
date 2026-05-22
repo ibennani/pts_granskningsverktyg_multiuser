@@ -8,7 +8,7 @@ import { run, exec, disconnect, host, remotePath, sshPassword } from './deploy-u
 
 async function main() {
     try {
-        console.log('[debug] Kör diagnostik på servern...\n');
+        console.info('[debug] Kör diagnostik på servern...\n');
 
         const cmds = [
             'echo "=== PM2 status ===" && (npx pm2 list 2>/dev/null || pm2 list 2>/dev/null || echo "PM2 ej installerat")',
@@ -25,7 +25,7 @@ async function main() {
             await run('ssh', [host, `cd ${remotePath} && ${cmds.join(' && ')}`]);
         }
 
-        console.log('\n[debug] Klart. Om backend svarar 503 eller "Databas ej tillgänglig" – starta Postgres med rätt data: cd ' + remotePath + ' && docker compose -p sessionversion up -d postgres');
+        console.info('\n[debug] Klart. Om backend svarar 503 eller "Databas ej tillgänglig" – starta Postgres med rätt data: cd ' + remotePath + ' && docker compose -p sessionversion up -d postgres');
     } finally {
         await disconnect();
     }

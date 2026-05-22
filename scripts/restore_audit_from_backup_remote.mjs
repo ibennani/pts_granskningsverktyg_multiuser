@@ -41,8 +41,8 @@ if (before.rows.length === 0) {
     console.error('[restore] Granskning saknas:', audit_id);
     process.exit(1);
 }
-console.log('[restore] Före — version:', before.rows[0].version, 'status:', before.rows[0].status, 'av:', before.rows[0].last_updated_by);
-console.log('[restore] Backup:', fp, 'backup-version:', data.version, 'status:', data.auditStatus);
+console.info('[restore] Före — version:', before.rows[0].version, 'status:', before.rows[0].status, 'av:', before.rows[0].last_updated_by);
+console.info('[restore] Backup:', fp, 'backup-version:', data.version, 'status:', data.auditStatus);
 
 const meta = JSON.stringify(data.auditMetadata || {});
 const samples = JSON.stringify(data.samples || []);
@@ -68,7 +68,7 @@ const updated = await pool.query(
 );
 
 const row = updated.rows[0];
-console.log('[restore] Efter — version:', row.version, 'status:', row.status, 'updated_at:', row.updated_at);
+console.info('[restore] Efter — version:', row.version, 'status:', row.status, 'updated_at:', row.updated_at);
 await pool.end();
 `;
 
@@ -76,10 +76,10 @@ async function main() {
     const { writeFileSync } = await import('fs');
     writeFileSync(runner_local, runner_source, 'utf8');
     try {
-        console.log(`[restore] Laddar upp och kör på servern (${audit_id})…`);
+        console.info(`[restore] Laddar upp och kör på servern (${audit_id})…`);
         await putFile(runner_local, runner_remote);
         await exec(`node scripts/${runner_name} ${audit_id} ${backup_filename}`);
-        console.log('[restore] Klart.');
+        console.info('[restore] Klart.');
     } finally {
         await disconnect();
     }

@@ -25,18 +25,18 @@ async function run() {
     // Samma som servern: SELECT * (eller id, rule_set_id, samples)
     const result = await pool.query('SELECT id, rule_set_id, samples FROM audits WHERE id = $1', [AUDIT_ID]);
     if (result.rows.length === 0) {
-        console.log('Audit hittades inte');
+        console.info('Audit hittades inte');
         await pool.end();
         return;
     }
     const row = result.rows[0];
     const stuck = count_stuck_in_samples(row.samples);
-    console.log('GET /audits/:id – rad från DB (parsad av node-pg):');
-    console.log('  audit id:', row.id);
-    console.log('  rule_set_id:', row.rule_set_id);
-    console.log('  samples är array:', Array.isArray(row.samples));
-    console.log('  samples.length:', row.samples?.length);
-    console.log('  kört-fast i row.samples:', stuck);
+    console.info('GET /audits/:id – rad från DB (parsad av node-pg):');
+    console.info('  audit id:', row.id);
+    console.info('  rule_set_id:', row.rule_set_id);
+    console.info('  samples är array:', Array.isArray(row.samples));
+    console.info('  samples.length:', row.samples?.length);
+    console.info('  kört-fast i row.samples:', stuck);
 
     // Räkna i SQL på samma rad (så som count_stuck_in_db gör)
     const countResult = await pool.query(
@@ -44,17 +44,17 @@ async function run() {
         [AUDIT_ID]
     );
     const sql_count = parseInt(countResult.rows[0].n, 10);
-    console.log('  kört-fast enligt SQL (samma rad):', sql_count);
+    console.info('  kört-fast enligt SQL (samma rad):', sql_count);
 
     // Hämta samples som text och räkna manuellt
     const rawResult = await pool.query('SELECT samples::text AS samples_text FROM audits WHERE id = $1', [AUDIT_ID]);
     const rawText = rawResult.rows[0]?.samples_text || '';
     const occurrences = (rawText.match(/stuckProblemDescription/g) || []).length;
-    console.log('  förekomster av "stuckProblemDescription" i raw JSON-text:', occurrences);
+    console.info('  förekomster av "stuckProblemDescription" i raw JSON-text:', occurrences);
     if (rawText.length < 500) {
-        console.log('  raw samples (kort):', rawText);
+        console.info('  raw samples (kort):', rawText);
     } else {
-        console.log('  raw samples längd:', rawText.length, 'tecken');
+        console.info('  raw samples längd:', rawText.length, 'tecken');
     }
     await pool.end();
 }

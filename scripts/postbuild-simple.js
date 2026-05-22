@@ -13,7 +13,7 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const projectRoot = join(__dirname, '..');
 const distDir = join(projectRoot, 'dist');
 
-console.log('[postbuild-simple] Starting...');
+console.info('[postbuild-simple] Starting...');
 
 if (!existsSync(distDir)) {
   console.error('[postbuild-simple] dist directory not found. Did the Vite build succeed?');
@@ -24,7 +24,7 @@ if (!existsSync(distDir)) {
 const foldersToCopy = ['css'];
 
 for (const relativePath of foldersToCopy) {
-  console.log(`[postbuild-simple] Processing: ${relativePath}`);
+  console.info(`[postbuild-simple] Processing: ${relativePath}`);
   const sourcePath = join(projectRoot, relativePath);
   const targetPath = join(distDir, relativePath);
 
@@ -36,7 +36,7 @@ for (const relativePath of foldersToCopy) {
   try {
     mkdirSync(targetPath, { recursive: true });
     cpSync(sourcePath, targetPath, { recursive: true });
-    console.log(`[postbuild-simple] Successfully copied ${relativePath}`);
+    console.info(`[postbuild-simple] Successfully copied ${relativePath}`);
   } catch (error) {
     console.error(`[postbuild-simple] Failed to copy ${relativePath}:`, error.message);
     process.exitCode = 1;
@@ -69,7 +69,7 @@ window.BUILD_INFO = ${JSON.stringify(buildInfo, null, 2)};
 
   const buildInfoPath = join(distDir, 'build-info.js');
   writeFileSync(buildInfoPath, buildInfoContent, 'utf8');
-  console.log('[postbuild-simple] Generated build-info.js');
+  console.info('[postbuild-simple] Generated build-info.js');
 
   const formattedTimestamp = `Byggt ${buildInfo.date} kl ${buildInfo.time}`;
   const indexPath = join(distDir, 'index.html');
@@ -80,11 +80,11 @@ window.BUILD_INFO = ${JSON.stringify(buildInfo, null, 2)};
       `<div id="build-timestamp">${formattedTimestamp}</div>`
     );
     writeFileSync(indexPath, updatedHtml, 'utf8');
-    console.log('[postbuild-simple] Injected build timestamp into index.html');
+    console.info('[postbuild-simple] Injected build timestamp into index.html');
   }
 } catch (error) {
   console.error('[postbuild-simple] Failed to generate build-info.js:', error.message);
   process.exitCode = 1;
 }
 
-console.log('[postbuild-simple] Completed successfully');
+console.info('[postbuild-simple] Completed successfully');

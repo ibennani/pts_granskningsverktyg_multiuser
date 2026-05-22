@@ -53,7 +53,6 @@ function try_parse_iso(iso) {
 const router = express.Router();
 
 router.get('/filename-datetime', (req, res) => {
-    console.log('[time API] Received filename-datetime request. Query:', req.query);
     const iso = req.query.iso;
     const parsed = try_parse_iso(iso);
     const now = parsed || new Date();

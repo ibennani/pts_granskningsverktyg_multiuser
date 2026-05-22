@@ -21,9 +21,9 @@ async function main() {
             "DELETE FROM users WHERE username = 'claudioquidral' RETURNING id, username, name"
         );
         if (del.rows.length > 0) {
-            console.log('Borttagen användare:', del.rows[0].username, del.rows[0].name);
+            console.info('Borttagen användare:', del.rows[0].username, del.rows[0].name);
         } else {
-            console.log('Användaren claudioquidral fanns inte (redan borttagen?).');
+            console.info('Användaren claudioquidral fanns inte (redan borttagen?).');
         }
 
         // 2. Sätt lösenord för iliasbennani till erikbebis
@@ -33,9 +33,9 @@ async function main() {
             [hash]
         );
         if (pwd.rows.length > 0) {
-            console.log('Lösenord satt för:', pwd.rows[0].name, '(' + pwd.rows[0].username + ')');
+            console.info('Lösenord satt för:', pwd.rows[0].name, '(' + pwd.rows[0].username + ')');
         } else {
-            console.log('Användaren iliasbennani hittades inte.');
+            console.info('Användaren iliasbennani hittades inte.');
         }
 
         // 3. Uppdatera alla användarnamn: tre första i förnamn + tre första i efternamn, gemener
@@ -59,11 +59,11 @@ async function main() {
 
             if (candidate !== user.username) {
                 await query('UPDATE users SET username = $1 WHERE id = $2', [candidate, user.id]);
-                console.log(user.name, ':', user.username, '->', candidate);
+                console.info(user.name, ':', user.username, '->', candidate);
             }
         }
 
-        console.log('Klart.');
+        console.info('Klart.');
         process.exit(0);
     } catch (err) {
         console.error('Fel:', err.message);

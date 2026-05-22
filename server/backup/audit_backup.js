@@ -293,7 +293,7 @@ export async function start_backup_scheduler() {
     backup_cron_task = cron.schedule(cron_expr, () => {
         run_backup()
             .then((s) => {
-                console.log('[Server] Backup kördes:', s?.audits_processed, 'granskningar,', s?.new_files, 'nya filer');
+                console.info('[Server] Backup kördes:', s?.audits_processed, 'granskningar,', s?.new_files, 'nya filer');
             })
             .catch((err) => {
                 console.warn('[Server] Backup misslyckades:', err.message);

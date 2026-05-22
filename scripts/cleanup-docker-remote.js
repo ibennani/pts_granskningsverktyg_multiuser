@@ -9,9 +9,9 @@ import { exec, disconnect } from './deploy-utils.js';
 
 async function main() {
     try {
-        console.log('[cleanup] Kör Docker-städning på servern...');
+        console.info('[cleanup] Kör Docker-städning på servern...');
         await exec('bash scripts/cleanup-docker-remote.sh');
-        console.log('[cleanup] Klar.');
+        console.info('[cleanup] Klar.');
     } finally {
         await disconnect();
     }

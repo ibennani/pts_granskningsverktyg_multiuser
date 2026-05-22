@@ -19,7 +19,7 @@ async function main() {
         } else {
             await run('ssh', [host, cmd]);
         }
-        console.log('[setup-cron] Cron konfigurerad som backup (var 5:e minut). Primär: watchdog var minut.');
+        console.info('[setup-cron] Cron konfigurerad som backup (var 5:e minut). Primär: watchdog var minut.');
     } finally {
         await disconnect();
     }

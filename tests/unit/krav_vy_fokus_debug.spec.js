@@ -53,7 +53,7 @@ describe('krav_vy_fokus_debug', () => {
         warn_spy.mockRestore();
     });
 
-    test('log_krav_vy_knapp skriver till konsolen när debug-flagga är på', async () => {
+    test('log_krav_vy_knapp skriver inte till konsolen även med debug-flagga', async () => {
         const { set_debug_krav_vy } = await import('../../js/app/runtime_flags.js');
         set_debug_krav_vy(true);
         const { log_krav_vy_knapp } = await import(
@@ -62,7 +62,7 @@ describe('krav_vy_fokus_debug', () => {
         const { consoleManager } = await import('../../js/utils/console_manager.js');
         const warn_spy = jest.spyOn(consoleManager.originalConsole, 'warn').mockImplementation(() => {});
         log_krav_vy_knapp('Klick', { flow_id: 'test-flow' });
-        expect(warn_spy).toHaveBeenCalled();
+        expect(warn_spy).not.toHaveBeenCalled();
         warn_spy.mockRestore();
         set_debug_krav_vy(false);
     });

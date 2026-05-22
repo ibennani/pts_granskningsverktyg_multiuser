@@ -99,16 +99,16 @@ async function main() {
     try {
         let preserved_build_info = null;
         if (keep_remote_build_info) {
-            console.log('[deploy] DEPLOY_KEEP_BUILD_INFO: försöker läsa befintlig build-info.js på servern...');
+            console.info('[deploy] DEPLOY_KEEP_BUILD_INFO: försöker läsa befintlig build-info.js på servern...');
             preserved_build_info = await try_fetch_remote_build_info_js();
             if (preserved_build_info) {
-                console.log('[deploy] Fjärr-build-info.js hittades; samma innehåll skrivs till dist efter build.');
+                console.info('[deploy] Fjärr-build-info.js hittades; samma innehåll skrivs till dist efter build.');
             } else {
-                console.log('[deploy] Ingen fjärr-build-info.js (eller SSH misslyckades); använder lokalt build som vanligt.');
+                console.info('[deploy] Ingen fjärr-build-info.js (eller SSH misslyckades); använder lokalt build som vanligt.');
             }
         }
 
-        console.log('[deploy] Bygger projektet...');
+        console.info('[deploy] Bygger projektet...');
         await run('npm', ['run', 'build']);
 
         if (!existsSync(distDir)) {
@@ -117,10 +117,10 @@ async function main() {
 
         if (preserved_build_info) {
             writeFileSync(join(distDir, 'build-info.js'), preserved_build_info, 'utf8');
-            console.log('[deploy] dist/build-info.js ersatt med fjärrversion (byggstämpel oförändrad).');
+            console.info('[deploy] dist/build-info.js ersatt med fjärrversion (byggstämpel oförändrad).');
         }
 
-        console.log(`[deploy] Laddar upp till ${host}:${remotePath}...`);
+        console.info(`[deploy] Laddar upp till ${host}:${remotePath}...`);
 
         // Säkerställ mappstruktur för backend + statiska filer
         await sshOrRun(
@@ -165,7 +165,7 @@ async function main() {
 
         const nginxConf = join(projectRoot, 'scripts', 'ux-granskning-with-v2.conf');
         if (existsSync(nginxConf)) {
-            console.log('[deploy] Laddar upp Nginx-konfiguration...');
+            console.info('[deploy] Laddar upp Nginx-konfiguration...');
             await scpFile(nginxConf, `${remotePath}/nginx-ux-granskning.conf`);
         }
 
@@ -177,7 +177,7 @@ async function main() {
         //
         // OBS: Kedjefilen på servern heter "pts-ad-chain.crt_används-ej" men används här som källa.
         try {
-            console.log('[deploy] Bygger fullchain-cert för nginx...');
+            console.info('[deploy] Bygger fullchain-cert för nginx...');
             await sshOrRun(
                 [
                     `mkdir -p ${remotePath}/ssl`,
@@ -205,7 +205,7 @@ async function main() {
 
         const envPath = join(projectRoot, '.env');
         if (existsSync(envPath)) {
-            console.log('[deploy] Kopierar .env till servern (utan DEPLOY_*)...');
+            console.info('[deploy] Kopierar .env till servern (utan DEPLOY_*)...');
             let envContent = readFileSync(envPath, 'utf8');
             envContent = envContent.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
             if (envContent.charCodeAt(0) === 0xFEFF) envContent = envContent.slice(1);
@@ -218,10 +218,10 @@ async function main() {
                 try { unlinkSync(envCleanPath); } catch (_) {}
             }
         } else {
-            console.log('[deploy] OBS: .env saknas – skapa den lokalt för att använda eget databaslösenord vid deploy');
+            console.info('[deploy] OBS: .env saknas – skapa den lokalt för att använda eget databaslösenord vid deploy');
         }
 
-        console.log('[deploy] Kör kommandon på servern...');
+        console.info('[deploy] Kör kommandon på servern...');
         const pm2Start = [
             '(npx pm2 delete granskningsverktyget-v2 2>/dev/null || true) && npx pm2 start npm --name granskningsverktyget-v2 -- run dev:server',
             '(npx pm2 restart granskningsverktyget-watchdog 2>/dev/null || npx pm2 start scripts/healthcheck-watchdog.js --name granskningsverktyget-watchdog)',
@@ -232,7 +232,7 @@ async function main() {
             ['ssh', [host, `cd ${remotePath} && npm install --omit=dev --ignore-scripts && npm run db:migrate && ${pm2Start}`]]
         );
 
-        console.log('[deploy] Verifierar att backend svarar på /api/health...');
+        console.info('[deploy] Verifierar att backend svarar på /api/health...');
         const rp_esc = remotePath.replace(/'/g, "'\\''");
         const health_verify = [
             'set +e',
@@ -256,15 +256,15 @@ async function main() {
             ? `echo ${JSON.stringify(Buffer.from(sudoPassword, 'utf8').toString('base64'))} | base64 -d | sudo -S bash -c ${JSON.stringify(nginxCopyAndReload)}`
             : `sudo cp ${remotePath}/nginx-ux-granskning.conf ${nginxConfigPath} && sudo nginx -t && sudo systemctl reload nginx`;
         try {
-            console.log('[deploy] Uppdaterar Nginx och laddar om...');
+            console.info('[deploy] Uppdaterar Nginx och laddar om...');
             await exec(nginxCmd, { cwd: false });
-            console.log('[deploy] Nginx uppdaterad.');
+            console.info('[deploy] Nginx uppdaterad.');
         } catch (err) {
             console.warn('[deploy] Nginx-uppdatering misslyckades (kräver sudo):', err.message);
             console.warn('[deploy] Kör manuellt på servern: sudo cp', `${remotePath}/nginx-ux-granskning.conf`, nginxConfigPath, '&& sudo nginx -t && sudo systemctl reload nginx');
         }
 
-        console.log('[deploy] Klart! https://ux-granskningsverktyg.pts.ad/v2/');
+        console.info('[deploy] Klart! https://ux-granskningsverktyg.pts.ad/v2/');
     } finally {
         await disconnect();
     }

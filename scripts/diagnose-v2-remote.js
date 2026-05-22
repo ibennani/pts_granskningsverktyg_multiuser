@@ -11,7 +11,7 @@ import { exec, disconnect, host, remotePath } from './deploy-utils.js';
 
 async function main() {
     try {
-        console.log(`[diagnose] Ansluter till ${host} (${remotePath})...\n`);
+        console.info(`[diagnose] Ansluter till ${host} (${remotePath})...\n`);
         const rp = remotePath.replace(/'/g, "'\\''");
         const script = [
             'set +e',
@@ -34,8 +34,8 @@ async function main() {
             'echo "========== Klart =========="'
         ].join('; ');
         await exec(script, { cwd: false });
-        console.log('\n[diagnose] Om HTTP-kod mot localhost:3000 inte är 200: kontrollera att PM2-processen granskningsverktyget-v2 finns och kör, .env (DATABASE_URL), att Postgres körs och PM2-loggar ovan.');
-        console.log('[diagnose] Om localhost är 200 men HTTPS /v2/api/health inte: kontrollera nginx-config och SELinux.');
+        console.info('\n[diagnose] Om HTTP-kod mot localhost:3000 inte är 200: kontrollera att PM2-processen granskningsverktyget-v2 finns och kör, .env (DATABASE_URL), att Postgres körs och PM2-loggar ovan.');
+        console.info('[diagnose] Om localhost är 200 men HTTPS /v2/api/health inte: kontrollera nginx-config och SELinux.');
     } finally {
         await disconnect();
     }

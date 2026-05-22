@@ -51,7 +51,7 @@ async function main() {
         }
 
         const user = result.rows[0];
-        console.log('Lösenord uppdaterat för användare:', user.username || user.name, user.id, 'is_admin:', user.is_admin);
+        console.info('Lösenord uppdaterat för användare:', user.username || user.name, user.id, 'is_admin:', user.is_admin);
         process.exit(0);
     } catch (err) {
         console.error('[set_user_password] Fel:', err?.message || err);

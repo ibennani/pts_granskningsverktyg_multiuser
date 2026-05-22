@@ -168,4 +168,4 @@ for (const fn of ['export_html_script_generated.ts', 'export_html_styles_generat
     fs.writeFileSync(p, s);
 }
 
-console.log('Klar: export_html_*.ts genererade och export_logic.ts ersatt med fasad.');
+console.info('Klar: export_html_*.ts genererade och export_logic.ts ersatt med fasad.');

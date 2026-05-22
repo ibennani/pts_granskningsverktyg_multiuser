@@ -38,7 +38,7 @@ async function run() {
             ...(domain && { domain })
         };
         const listener = await ngrok.forward(opts);
-        console.log('[ngrok] Ingress aktiverad:', listener.url());
+        console.info('[ngrok] Ingress aktiverad:', listener.url());
         process.stdin.resume();
         setInterval(() => {}, 60000);
     } catch (err) {

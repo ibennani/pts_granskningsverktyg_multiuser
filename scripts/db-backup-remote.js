@@ -30,7 +30,7 @@ async function main() {
     const fullpath = `${BACKUP_DIR}/${filename}`;
  
     try {
-        console.log('[backup] Skapar backup på servern...');
+        console.info('[backup] Skapar backup på servern...');
         const cmds = [
             `mkdir -p ${BACKUP_DIR}`,
             // Säkerställ att Postgres är igång med rätt projektnamn/volym.

@@ -34,7 +34,7 @@ async function main() {
         const res = await query('SELECT id, name FROM users ORDER BY id', []);
         const users = res.rows || [];
         if (users.length === 0) {
-            console.log('[regenerate_usernames_from_names] Inga användare hittades.');
+            console.info('[regenerate_usernames_from_names] Inga användare hittades.');
             process.exit(0);
         }
 
@@ -68,7 +68,7 @@ async function main() {
             updated_count += 1;
         }
 
-        console.log(`[regenerate_usernames_from_names] Uppdaterade användarnamn för ${updated_count} användare.`);
+        console.info(`[regenerate_usernames_from_names] Uppdaterade användarnamn för ${updated_count} användare.`);
         process.exit(0);
     } catch (err) {
         console.error('[regenerate_usernames_from_names] Fel:', err?.message || err);

@@ -31,4 +31,4 @@ if (issues.length) {
     process.exit(1);
 }
 
-console.log('OK: audit_logic-fasad och audit_logic_*-moduler utan @ts-nocheck.');
+console.info('OK: audit_logic-fasad och audit_logic_*-moduler utan @ts-nocheck.');

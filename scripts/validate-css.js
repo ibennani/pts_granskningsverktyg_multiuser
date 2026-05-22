@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const projectRoot = join(__dirname, '..');
 
-console.log('[validate-css] Checking for CSS issues...');
+console.info('[validate-css] Checking for CSS issues...');
 
 let hasErrors = false;
 
@@ -89,5 +89,5 @@ if (hasErrors) {
     console.error('\n❌ CSS validation failed!');
     process.exit(1);
 } else {
-    console.log('✅ CSS validation passed!');
+    console.info('✅ CSS validation passed!');
 }

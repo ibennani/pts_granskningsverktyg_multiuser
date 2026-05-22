@@ -53,9 +53,9 @@ async function check() {
     const ts = new Date().toISOString();
     const db = ensure_postgres_running();
     if (!db.ok) {
-        console.log(`[watchdog] ${ts} Postgres verkar nere (${db.reason}) – försökte starta. docker ps:\n${db.ps || '(ingen output)'}`);
+        console.info(`[watchdog] ${ts} Postgres verkar nere (${db.reason}) – försökte starta. docker ps:\n${db.ps || '(ingen output)'}`);
     }
-    console.log(`[watchdog] ${ts} Backend svarar inte – startar om ${APP_NAME}`);
+    console.info(`[watchdog] ${ts} Backend svarar inte – startar om ${APP_NAME}`);
     try {
         execSync(`npx pm2 restart ${APP_NAME}`, { stdio: 'inherit' });
     } catch (e) {

@@ -14,7 +14,7 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const projectRoot = join(__dirname, '..');
 const distDir = join(projectRoot, 'dist');
 
-console.log('[postbuild-final] Starting...');
+console.info('[postbuild-final] Starting...');
 
 if (!existsSync(distDir)) {
   console.error('[postbuild-final] dist directory not found. Did the Vite build succeed?');
@@ -22,7 +22,7 @@ if (!existsSync(distDir)) {
 }
 
 // Copy all CSS files
-console.log('[postbuild-final] Copying CSS files...');
+console.info('[postbuild-final] Copying CSS files...');
 const cssDir = join(distDir, 'css');
 const featuresDir = join(distDir, 'css', 'features');
 const componentsDir = join(distDir, 'css', 'components');
@@ -37,7 +37,7 @@ try {
   const mainCssTarget = join(cssDir, 'style.css');
   if (existsSync(mainCssSource)) {
     copyFileSync(mainCssSource, mainCssTarget);
-    console.log('[postbuild-final] Copied style.css');
+    console.info('[postbuild-final] Copied style.css');
   }
   
   // Copy features CSS file
@@ -45,7 +45,7 @@ try {
   const featuresCssTarget = join(featuresDir, 'markdown_toolbar.css');
   if (existsSync(featuresCssSource)) {
     copyFileSync(featuresCssSource, featuresCssTarget);
-    console.log('[postbuild-final] Copied markdown_toolbar.css');
+    console.info('[postbuild-final] Copied markdown_toolbar.css');
   }
   
   // Copy all component CSS files
@@ -63,10 +63,10 @@ try {
       }
     }
     
-    console.log(`[postbuild-final] Copied ${copiedCount} component CSS files`);
+    console.info(`[postbuild-final] Copied ${copiedCount} component CSS files`);
   }
   
-  console.log('[postbuild-final] CSS files copied successfully');
+  console.info('[postbuild-final] CSS files copied successfully');
 } catch (error) {
   console.error('[postbuild-final] Failed to copy CSS files:', error.message);
   // Continue with build-info even if CSS copy fails
@@ -98,7 +98,7 @@ window.BUILD_INFO = ${JSON.stringify(buildInfo, null, 2)};
 
   const buildInfoPath = join(distDir, 'build-info.js');
   writeFileSync(buildInfoPath, buildInfoContent, 'utf8');
-  console.log('[postbuild-final] Generated build-info.js');
+  console.info('[postbuild-final] Generated build-info.js');
 
   const formattedTimestamp = `Byggt ${buildInfo.date} kl ${buildInfo.time}`;
   const indexPath = join(distDir, 'index.html');
@@ -135,11 +135,11 @@ window.BUILD_INFO = ${JSON.stringify(buildInfo, null, 2)};
     );
     
     writeFileSync(indexPath, updatedHtml, 'utf8');
-    console.log('[postbuild-final] Updated CSS references and injected build timestamp into index.html');
+    console.info('[postbuild-final] Updated CSS references and injected build timestamp into index.html');
   }
 } catch (error) {
   console.error('[postbuild-final] Failed to generate build-info.js:', error.message);
   process.exitCode = 1;
 }
 
-console.log('[postbuild-final] Completed successfully');
+console.info('[postbuild-final] Completed successfully');

@@ -28,13 +28,13 @@ async function main() {
             full_name,
             username
         ]);
-        console.log(JSON.stringify({ ok: true, action: 'lösenord_och_namn_uppdaterade', username }, null, 2));
+        console.info(JSON.stringify({ ok: true, action: 'lösenord_och_namn_uppdaterade', username }, null, 2));
     } else {
         await query(
             'INSERT INTO users (username, name, is_admin, password) VALUES ($1, $2, $3, $4)',
             [username, full_name, false, password_hash]
         );
-        console.log(JSON.stringify({ ok: true, action: 'skapad', username, name: full_name }, null, 2));
+        console.info(JSON.stringify({ ok: true, action: 'skapad', username, name: full_name }, null, 2));
     }
 
     await pool.end();

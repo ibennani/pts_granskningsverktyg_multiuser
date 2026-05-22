@@ -17,10 +17,10 @@ async function status() {
         const orphaned = await client.query(
             'SELECT COUNT(*) FROM audits a LEFT JOIN rule_sets r ON a.rule_set_id = r.id WHERE a.rule_set_id IS NOT NULL AND r.id IS NULL'
         );
-        console.log('[db-status] Databas: ansluten');
-        console.log('[db-status] Regelfiler:', rules.rows[0].count);
-        console.log('[db-status] Granskningar:', audits.rows[0].count);
-        console.log('[db-status] Granskningar med regelfil:', auditsWithRule.rows[0].count);
+        console.info('[db-status] Databas: ansluten');
+        console.info('[db-status] Regelfiler:', rules.rows[0].count);
+        console.info('[db-status] Granskningar:', audits.rows[0].count);
+        console.info('[db-status] Granskningar med regelfil:', auditsWithRule.rows[0].count);
         if (parseInt(orphaned.rows[0].count, 10) > 0) {
             console.warn('[db-status] Varning: Granskningar utan giltig regelfil:', orphaned.rows[0].count);
         }

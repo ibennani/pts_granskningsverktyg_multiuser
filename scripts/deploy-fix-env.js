@@ -16,7 +16,7 @@ async function main() {
             process.exit(1);
         }
 
-        console.log('[fix-env] Kopierar .env till servern (utan DEPLOY_*-variabler)...');
+        console.info('[fix-env] Kopierar .env till servern (utan DEPLOY_*-variabler)...');
         let envContent = readFileSync(envPath, 'utf8');
         envContent = envContent.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
         if (envContent.charCodeAt(0) === 0xFEFF) envContent = envContent.slice(1);
@@ -36,7 +36,7 @@ async function main() {
             try { unlinkSync(tmpPath); } catch (_) {}
         }
 
-        console.log('[fix-env] Startar om backend...');
+        console.info('[fix-env] Startar om backend...');
         const pm2Cmd = 'chmod 600 .env && (npx pm2 delete granskningsverktyget-v2 2>/dev/null || true) && npx pm2 start npm --name granskningsverktyget-v2 -- run dev:server && (npx pm2 restart granskningsverktyget-watchdog 2>/dev/null || npx pm2 start scripts/healthcheck-watchdog.js --name granskningsverktyget-watchdog)';
         if (sshPassword) {
             await exec(pm2Cmd);
@@ -44,7 +44,7 @@ async function main() {
             await run('ssh', [host, `cd ${remotePath} && ${pm2Cmd}`]);
         }
 
-        console.log('[fix-env] Klart. Kör deploy:debug för att verifiera.');
+        console.info('[fix-env] Klart. Kör deploy:debug för att verifiera.');
     } finally {
         await disconnect();
     }

@@ -34,16 +34,16 @@ async function main() {
     }
 
     try {
-        console.log('[set-user-password-remote] Kopierar set_user_password.js till servern...');
+        console.info('[set-user-password-remote] Kopierar set_user_password.js till servern...');
         const scriptPath = join(projectRoot, 'server', 'scripts', 'set_user_password.js');
         await putFile(scriptPath, `${remotePath}/server/scripts/set_user_password.js`);
 
-        console.log('[set-user-password-remote] Sätter lösenord för', name, 'på servern...');
+        console.info('[set-user-password-remote] Sätter lösenord för', name, 'på servern...');
         const esc = (s) => String(s).replace(/'/g, "'\\''");
         await exec(
             `node server/scripts/set_user_password.js --name='${esc(name)}' --password='${esc(password)}'`
         );
-        console.log('[set-user-password-remote] Klart.');
+        console.info('[set-user-password-remote] Klart.');
     } catch (err) {
         console.error('[set-user-password-remote] Fel:', err.message);
         process.exit(1);

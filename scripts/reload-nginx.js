@@ -17,7 +17,7 @@ async function main() {
             ? `echo ${JSON.stringify(pwB64)} | base64 -d | sudo -S nginx -t && echo ${JSON.stringify(pwB64)} | base64 -d | sudo -S systemctl reload nginx`
             : 'sudo nginx -t && sudo systemctl reload nginx';
         await exec(cmd, { cwd: false });
-        console.log('[reload-nginx] Nginx testad och omstartad.');
+        console.info('[reload-nginx] Nginx testad och omstartad.');
     } finally {
         await disconnect();
     }

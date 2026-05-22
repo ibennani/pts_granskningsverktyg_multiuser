@@ -127,7 +127,7 @@ function write_missing_bridges (cwd) {
         fs.mkdirSync(path.dirname(abs), { recursive: true });
         fs.writeFileSync(abs, bridge_body_for(rel), 'utf8');
         written += 1;
-        console.log(`Skrev brygga: ${rel}`);
+        console.info(`Skrev brygga: ${rel}`);
     }
     return written;
 }
@@ -140,7 +140,7 @@ const js_only = all_files.filter((p) => p.endsWith('.js'));
 const do_fix = process.argv.includes('--fix');
 if (do_fix) {
     const n = write_missing_bridges(cwd);
-    if (n === 0) console.log('Inga saknade bryggor att skriva.');
+    if (n === 0) console.info('Inga saknade bryggor att skriva.');
 }
 
 const issues_bridge = verify_required_bridges(cwd);
@@ -153,6 +153,6 @@ if (all_issues.length) {
     process.exit(1);
 }
 
-console.log(
+console.info(
     'OK: obligatoriska bryggor finns, inga .js-filer importerar endast-.ts-mål, alla relativa .js-importmål löser sig.'
 );

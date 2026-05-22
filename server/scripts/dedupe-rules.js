@@ -24,15 +24,15 @@ async function dedupe() {
         `);
 
         if (dupPairs.rows.length === 0) {
-            console.log('[Dedupe] Inga dubletter hittades.');
+            console.info('[Dedupe] Inga dubletter hittades.');
             return;
         }
 
-        console.log(`[Dedupe] Hittade ${dupPairs.rows.length} dublett(er) att ta bort.`);
+        console.info(`[Dedupe] Hittade ${dupPairs.rows.length} dublett(er) att ta bort.`);
 
         for (const row of dupPairs.rows) {
             const { dup_id, dup_name, keep_id } = row;
-            console.log(`[Dedupe] Behåller ${keep_id}, tar bort ${dup_id} (${dup_name}).`);
+            console.info(`[Dedupe] Behåller ${keep_id}, tar bort ${dup_id} (${dup_name}).`);
             await client.query(
                 'UPDATE audits SET rule_set_id = $1 WHERE rule_set_id = $2',
                 [keep_id, dup_id]
@@ -40,7 +40,7 @@ async function dedupe() {
             await client.query('DELETE FROM rule_sets WHERE id = $1', [dup_id]);
         }
 
-        console.log('[Dedupe] Klar.');
+        console.info('[Dedupe] Klar.');
     } catch (err) {
         console.error('[Dedupe] Fel:', err.message);
         process.exit(1);

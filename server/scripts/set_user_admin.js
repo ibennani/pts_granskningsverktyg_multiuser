@@ -16,7 +16,7 @@ async function main() {
             console.error(`Ingen användare med användarnamn "${username}" hittades.`);
             process.exit(1);
         }
-        console.log(JSON.stringify(res.rows[0], null, 2));
+        console.info(JSON.stringify(res.rows[0], null, 2));
         process.exit(0);
     } catch (err) {
         console.error('[set_user_admin] Fel:', err?.message || err);

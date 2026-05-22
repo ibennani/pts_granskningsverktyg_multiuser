@@ -18,17 +18,17 @@ async function run() {
         HAVING COUNT(*) FILTER (WHERE NULLIF(TRIM(req_entry.value->>'stuckProblemDescription'), '') IS NOT NULL) > 0
     `;
     const res = await pool.query(q);
-    console.log('Antal granskningar med minst en kört-fast-post:', res.rows.length);
+    console.info('Antal granskningar med minst en kört-fast-post:', res.rows.length);
     let total = 0;
     res.rows.forEach((r) => {
-        console.log('  Audit', r.audit_id, ':', r.stuck_count, 'st');
+        console.info('  Audit', r.audit_id, ':', r.stuck_count, 'st');
         total += parseInt(r.stuck_count, 10);
     });
-    console.log('Totalt antal kört-fast-poster:', total);
+    console.info('Totalt antal kört-fast-poster:', total);
 
     const q2 = `SELECT COUNT(*) AS n FROM audits a, jsonb_array_elements(COALESCE(a.samples, '[]'::jsonb)) AS sample, jsonb_each(COALESCE(sample->'requirementResults', '{}'::jsonb)) AS req_entry WHERE NULLIF(TRIM(req_entry.value->>'stuckProblemDescription'), '') IS NOT NULL`;
     const r2 = await pool.query(q2);
-    console.log('Verifiering totalt:', r2.rows[0].n);
+    console.info('Verifiering totalt:', r2.rows[0].n);
 
     await pool.end();
 }

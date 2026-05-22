@@ -3,7 +3,6 @@
  * Spårar klick → logisk status → DOM → serversynk med tidsstämpel och flow_id.
  */
 
-import { consoleManager } from '../../utils/console_manager.js';
 import { is_debug_krav_vy } from '../../app/runtime_flags.js';
 
 export type KravVyKnappHandelse =
@@ -56,19 +55,11 @@ function now_ms(): number {
 export function log_krav_vy_knapp(
     kind: KravVyKnappHandelse,
     payload: Record<string, unknown>,
-    options: LogOptions = {}
+    _options: LogOptions = {}
 ): void {
     if (!is_debug_krav_vy()) return;
-    const entry = {
-        ts_ms: now_ms(),
-        händelse: kind,
-        ...payload
-    };
-    if (options.critical) {
-        consoleManager.originalConsole.error('[Krav-vy knapp]', entry);
-        return;
-    }
-    consoleManager.originalConsole.warn('[Krav-vy knapp]', entry);
+    void kind;
+    void payload;
 }
 
 export function start_krav_vy_knapp_flow(payload: Record<string, unknown>): string {
@@ -240,9 +231,6 @@ export function log_krav_vy_textarea(
     payload: Record<string, unknown> = {}
 ): void {
     if (!is_debug_krav_vy()) return;
-    consoleManager.originalConsole.warn('[Krav-vy textarea]', {
-        ts_ms: now_ms(),
-        händelse: kind,
-        ...payload
-    });
+    void kind;
+    void payload;
 }

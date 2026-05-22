@@ -44,7 +44,7 @@ function update_build_info() {
         const buildInfo = format_build_info_from_mtime(latestMtime);
         const did_write = write_build_info_file(buildInfo);
         if (did_write) {
-            console.log(`[BUILDINFO] Senaste dev: ${buildInfo.date} kl ${buildInfo.time}`);
+            console.info(`[BUILDINFO] Senaste dev: ${buildInfo.date} kl ${buildInfo.time}`);
         }
     } catch (error) {
         console.warn('[BUILDINFO] Kunde inte uppdatera build-info.js:', error.message);
@@ -70,4 +70,4 @@ watch(projectRoot, { recursive: true }, (eventType, filename) => {
     schedule_update();
 });
 
-console.log('[BUILDINFO] Bevakar filändringar – uppdaterar vid ändring (ingen polling)');
+console.info('[BUILDINFO] Bevakar filändringar – uppdaterar vid ändring (ingen polling)');

@@ -7,7 +7,7 @@ function startApp() {
     if (started) return;
     started = true;
 
-    console.log('[DOCKER] Startar Backend (nodemon)...');
+    console.info('[DOCKER] Startar Backend (nodemon)...');
     const backend = spawn('npx', ['nodemon'], {
         stdio: 'inherit',
         shell: true
@@ -33,7 +33,7 @@ function startApp() {
 // Tvingar projektnamn 'sessionversion' och väntar på hälsa
 const dockerCmd = 'docker compose -p sessionversion up -d --wait';
 
-console.log('[DOCKER] Initierar containrar (sessionversion)...');
+console.info('[DOCKER] Initierar containrar (sessionversion)...');
 
 const docker = spawn(dockerCmd, [], {
     stdio: 'inherit',
@@ -47,7 +47,7 @@ docker.on('error', (err) => {
 
 docker.on('close', (code) => {
     if (code === 0) {
-        console.log('[DOCKER] Docker-containrar är redo.');
+        console.info('[DOCKER] Docker-containrar är redo.');
         // Vänta på Postgres port 5432
         const waitDb = spawn('npx', ['wait-on', 'tcp:localhost:5432', '--timeout', '6000'], {
             stdio: 'pipe',

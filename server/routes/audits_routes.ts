@@ -10,7 +10,6 @@ import { import_payload_rate_limiter } from '../middleware/rateLimiter.js';
 import { attach_export_integrity_server_payload } from '../utils/export_integrity_node.js';
 import { build_statistics_from_audit_rows } from '../audit_aggregated_statistics.js';
 import { parse_audit_part_key } from '../../shared/audit/audit_part_keys.js';
-import { count_stuck_in_samples } from '../../shared/audit/audit_metrics.js';
 import {
     fetch_audits_index_rows,
     fetch_statistics_audits_locked_archived
@@ -220,9 +219,6 @@ router.get('/:id', async (req: Request, res: Response) => {
             ruleSet = (ruleResult.rows[0] || null) as { published_content?: unknown; content?: unknown } | null;
         }
         const fullState = build_full_state(audit, ruleSet);
-        if (process.env.GV_DEBUG_STUCK_SYNC) {
-            console.log('[audits] GET', id, 'kört-fast i svar:', count_stuck_in_samples(fullState.samples as never));
-        }
         res.json(fullState);
     } catch (err) {
         console.error('[audits] GET one error:', err);

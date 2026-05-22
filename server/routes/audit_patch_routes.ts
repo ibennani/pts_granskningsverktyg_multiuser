@@ -6,7 +6,6 @@ import type { IRouter, Request, Response } from 'express';
 import { query } from '../db.js';
 import { fetch_rule_set_by_id } from '../repositories/rule_repository.js';
 import { save_backup_for_audit } from '../backup/audit_backup.js';
-import { count_stuck_in_samples } from '../../shared/audit/audit_metrics.js';
 import { has_meaningful_audit_patch_change } from '../logic/audit_meaningful_change.js';
 import { is_incoming_audit_samples_older_than_existing } from '../logic/audit_incoming_stale_guard.js';
 import { build_full_state, type AuditRow } from './audit_build_state.js';
@@ -50,17 +49,6 @@ export function register_audit_patch_routes(router: IRouter): void {
                 values.push(status);
             }
             if (samples !== undefined) {
-                const stuck_count = count_stuck_in_samples(samples as never);
-                if (process.env.GV_DEBUG_STUCK_SYNC) {
-                    console.log(
-                        '[GV-Debug] PATCH audit',
-                        id,
-                        'samples:',
-                        Array.isArray(samples) ? samples.length : 0,
-                        'kört-fast i payload:',
-                        stuck_count
-                    );
-                }
                 updates.push(`samples = $${i++}`);
                 values.push(JSON.stringify(samples));
             }
