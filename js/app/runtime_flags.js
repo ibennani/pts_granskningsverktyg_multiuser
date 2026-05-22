@@ -32,3 +32,13 @@ export function is_debug_autosave_focus() {
 export function is_debug_problems_update() {
     return typeof window !== 'undefined' && !!window.__GV_DEBUG_PROBLEMS_UPDATE__;
 }
+
+/** @returns {boolean} */
+export function is_debug_krav_vy() {
+    return typeof window !== 'undefined' && !!window.__GV_DEBUG_KRAV_VY__;
+}
+
+/** @param {boolean} value */
+export function set_debug_krav_vy(value) {
+    if (typeof window !== 'undefined') window.__GV_DEBUG_KRAV_VY__ = value;
+}

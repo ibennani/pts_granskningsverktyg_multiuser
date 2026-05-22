@@ -18,6 +18,7 @@ import {
 } from '../logic/entity_id_match.js';
 import {
     is_debug_autosave_focus,
+    is_debug_krav_vy,
     is_debug_modal_scroll,
     is_debug_stuck_sync
 } from '../app/runtime_flags.js';
@@ -387,7 +388,7 @@ export class RequirementAuditComponent {
     }
 
     _bind_krav_vy_focus_debug_listeners(root_el) {
-        if (!root_el || this._krav_vy_focus_debug_roots.includes(root_el)) return;
+        if (!is_debug_krav_vy() || !root_el || this._krav_vy_focus_debug_roots.includes(root_el)) return;
         root_el.addEventListener('focusin', this.handle_krav_vy_focusin);
         root_el.addEventListener('focusout', this.handle_krav_vy_focusout);
         this._krav_vy_focus_debug_roots.push(root_el);

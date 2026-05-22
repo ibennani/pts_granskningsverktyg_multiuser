@@ -4,6 +4,7 @@
  */
 
 import { consoleManager } from '../../utils/console_manager.js';
+import { is_debug_krav_vy } from '../../app/runtime_flags.js';
 
 export type KravVyKnappHandelse =
     | 'Klick'
@@ -57,6 +58,7 @@ export function log_krav_vy_knapp(
     payload: Record<string, unknown>,
     options: LogOptions = {}
 ): void {
+    if (!is_debug_krav_vy()) return;
     const entry = {
         ts_ms: now_ms(),
         händelse: kind,
@@ -70,6 +72,7 @@ export function log_krav_vy_knapp(
 }
 
 export function start_krav_vy_knapp_flow(payload: Record<string, unknown>): string {
+    if (!is_debug_krav_vy()) return '';
     const flow_id = `kvk-${now_ms()}-${++flow_counter}`;
     log_krav_vy_knapp('Klick', { flow_id, ...payload });
     return flow_id;
@@ -175,6 +178,7 @@ export function log_krav_vy_fokus_from_event(
 }
 
 export function register_krav_vy_knapp_dom_watch(flow_id: string, key: string): void {
+    if (!is_debug_krav_vy() || !flow_id) return;
     pending_dom_flow_ids.set(key, flow_id);
 }
 
@@ -187,7 +191,7 @@ export function consume_krav_vy_dom_flow(key: string): string | null {
 }
 
 export function register_krav_vy_knapp_sync(flow_id: string | null | undefined): void {
-    if (!flow_id) return;
+    if (!is_debug_krav_vy() || !flow_id) return;
     pending_sync_flow_ids.push(flow_id);
 }
 
@@ -200,7 +204,7 @@ export function consume_krav_vy_sync_flow(): string | null {
 }
 
 export function warn_krav_vy_sync_not_available(flow_id: string | null | undefined, reason: string): void {
-    if (!flow_id) return;
+    if (!flow_id || !is_debug_krav_vy()) return;
     consume_krav_vy_sync_flow();
     log_krav_vy_knapp('Synk hoppades över', {
         flow_id,
@@ -235,6 +239,7 @@ export function log_krav_vy_textarea(
     kind: KravVyTextareaHandelse,
     payload: Record<string, unknown> = {}
 ): void {
+    if (!is_debug_krav_vy()) return;
     consoleManager.originalConsole.warn('[Krav-vy textarea]', {
         ts_ms: now_ms(),
         händelse: kind,

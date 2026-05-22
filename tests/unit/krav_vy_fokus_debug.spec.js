@@ -1,11 +1,13 @@
 /**
  * Tester för fokus-debug i krav-vy.
  */
-import { describe, test, expect, beforeEach } from '@jest/globals';
+import { describe, test, expect, beforeEach, jest } from '@jest/globals';
 
 describe('krav_vy_fokus_debug', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
         document.body.innerHTML = '';
+        const { set_debug_krav_vy } = await import('../../js/app/runtime_flags.js');
+        set_debug_krav_vy(false);
     });
 
     test('build_krav_vy_focus_payload beskriver observations-textarea', async () => {
@@ -38,5 +40,30 @@ describe('krav_vy_fokus_debug', () => {
         expect(() => {
             log_krav_vy_fokus_from_event('Fokus fick', { target: div, relatedTarget: null });
         }).not.toThrow();
+    });
+
+    test('log_krav_vy_knapp skriver inte till konsolen utan debug-flagga', async () => {
+        const { log_krav_vy_knapp } = await import(
+            '../../js/components/requirement_audit/krav_vy_knapp_debug_log.js'
+        );
+        const { consoleManager } = await import('../../js/utils/console_manager.js');
+        const warn_spy = jest.spyOn(consoleManager.originalConsole, 'warn').mockImplementation(() => {});
+        log_krav_vy_knapp('Klick', { flow_id: 'test' });
+        expect(warn_spy).not.toHaveBeenCalled();
+        warn_spy.mockRestore();
+    });
+
+    test('log_krav_vy_knapp skriver till konsolen när debug-flagga är på', async () => {
+        const { set_debug_krav_vy } = await import('../../js/app/runtime_flags.js');
+        set_debug_krav_vy(true);
+        const { log_krav_vy_knapp } = await import(
+            '../../js/components/requirement_audit/krav_vy_knapp_debug_log.js'
+        );
+        const { consoleManager } = await import('../../js/utils/console_manager.js');
+        const warn_spy = jest.spyOn(consoleManager.originalConsole, 'warn').mockImplementation(() => {});
+        log_krav_vy_knapp('Klick', { flow_id: 'test-flow' });
+        expect(warn_spy).toHaveBeenCalled();
+        warn_spy.mockRestore();
+        set_debug_krav_vy(false);
     });
 });
