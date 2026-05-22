@@ -419,8 +419,39 @@ function initState() {
     }
 }
 
+/**
+ * Synkron persistens för pagehide/unload: reducer + sessionStorage utan async-kö,
+ * lyssnare eller serversynk. Använd när sidan kan stängas innan dispatch()-kö hinner köras.
+ * @returns true om state ändrades och sparades till sessionStorage
+ */
+function dispatch_persist_sync(action: { type: string; payload?: unknown }): boolean {
+    try {
+        const previous_state_for_comparison = internal_state;
+        const state_after_reducer = root_reducer(internal_state, action);
+        if (state_after_reducer === previous_state_for_comparison) {
+            return false;
+        }
+        if (!state_after_reducer || typeof state_after_reducer !== 'object') {
+            throw new Error(`Reducer returned invalid state for action type: ${action.type}`);
+        }
+        if (!Object.prototype.hasOwnProperty.call(state_after_reducer, 'saveFileVersion') ||
+            !Object.prototype.hasOwnProperty.call(state_after_reducer, 'auditStatus')) {
+            throw new Error(`Reducer returned state missing critical properties for action type: ${action.type}`);
+        }
+        internal_state = state_after_reducer;
+        saveStateToSessionStorage(internal_state);
+        return true;
+    } catch (error: unknown) {
+        if (window.ConsoleManager?.warn) {
+            window.ConsoleManager.warn('[State] dispatch_persist_sync failed:', error, 'Action:', action);
+        }
+        return false;
+    }
+}
+
 export {
     dispatch,
+    dispatch_persist_sync,
     getState,
     subscribe,
     initState,

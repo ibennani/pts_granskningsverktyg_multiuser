@@ -31,8 +31,47 @@ import { count_stuck_in_samples } from '../../shared/audit/audit_metrics.js';
 import { state_to_import, state_to_patch, type SyncPayloadState } from './sync_payload_mapper.js';
 import { broadcast_audit_updated } from './sync_broadcast.js';
 import { is_debug_stuck_sync } from '../app/runtime_flags.js';
+import {
+    log_krav_vy_sync_fel,
+    log_krav_vy_sync_skipped,
+    log_krav_vy_sync_slut,
+    log_krav_vy_sync_start,
+    peek_krav_vy_sync_flow
+} from '../components/requirement_audit/krav_vy_knapp_debug_log.js';
 
 type DispatchFn = (action: { type: string; payload?: Record<string, unknown> }) => void;
+
+type KravVySyncTracker = {
+    flow_id: string | null;
+    settled: boolean;
+};
+
+function create_krav_vy_sync_tracker(): KravVySyncTracker {
+    return { flow_id: peek_krav_vy_sync_flow(), settled: false };
+}
+
+function krav_vy_sync_start(tracker: KravVySyncTracker, extra: Record<string, unknown> = {}): void {
+    if (!tracker.flow_id || tracker.settled) return;
+    log_krav_vy_sync_start(tracker.flow_id, extra);
+}
+
+function krav_vy_sync_slut(tracker: KravVySyncTracker, extra: Record<string, unknown> = {}): void {
+    if (!tracker.flow_id || tracker.settled) return;
+    log_krav_vy_sync_slut(tracker.flow_id, extra);
+    tracker.settled = true;
+}
+
+function krav_vy_sync_fel(tracker: KravVySyncTracker, extra: Record<string, unknown> = {}): void {
+    if (!tracker.flow_id || tracker.settled) return;
+    log_krav_vy_sync_fel(tracker.flow_id, extra);
+    tracker.settled = true;
+}
+
+function krav_vy_sync_skipped(tracker: KravVySyncTracker, reason: string, extra: Record<string, unknown> = {}): void {
+    if (!tracker.flow_id || tracker.settled) return;
+    log_krav_vy_sync_skipped(tracker.flow_id, reason, extra);
+    tracker.settled = true;
+}
 
 type ApiError = Error & {
     status?: number;
@@ -108,7 +147,8 @@ function record_successful_audit_server_sync(dispatch_fn: DispatchFn | undefined
         type: 'UPDATE_METADATA',
         payload: {
             ...build_last_server_sync_metadata_patch(new Date().toISOString()),
-            skip_server_sync: true
+            skip_server_sync: true,
+            skip_render: true
         }
     });
     refresh_connectivity_banner();
@@ -125,8 +165,12 @@ function enqueue_audit_sync(fn: () => Promise<void>): Promise<void> {
 }
 
 async function run_sync(state: SyncPayloadState | null | undefined, dispatch_fn: DispatchFn | undefined) {
+    const krav_vy_sync = create_krav_vy_sync_tracker();
     if (!state || !state.ruleFileContent || typeof window === 'undefined') return;
-    if (state.auditStatus === 'rulefile_editing') return;
+    if (state.auditStatus === 'rulefile_editing') {
+        krav_vy_sync_skipped(krav_vy_sync, 'Regelfil redigeras — synkas inte till servern');
+        return;
+    }
     let token_present = false;
     let token_read_error: string | null = null;
     try {
@@ -134,17 +178,26 @@ async function run_sync(state: SyncPayloadState | null | undefined, dispatch_fn:
     } catch (token_err: unknown) {
         token_read_error = String((token_err as Error)?.message || token_err);
     }
-    if (token_read_error || !token_present) return;
+    if (token_read_error || !token_present) {
+        krav_vy_sync_skipped(krav_vy_sync, 'Ingen inloggning — synkas inte till servern', {
+            token_read_error
+        });
+        return;
+    }
 
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
         mark_audit_sync_pending();
         notify_network_unreachable_for_sync();
+        krav_vy_sync_skipped(krav_vy_sync, 'Offline — synkas inte till servern');
         return;
     }
+
+    krav_vy_sync_start(krav_vy_sync, { auditId: state.auditId ?? null });
 
     try {
         if (state.auditId) {
             if (await reload_local_from_remote_if_server_ahead(state, dispatch_fn)) {
+                krav_vy_sync_skipped(krav_vy_sync, 'Servern hade nyare version — lokal state laddades om');
                 return;
             }
             const patch = state_to_patch(state);
@@ -182,6 +235,10 @@ async function run_sync(state: SyncPayloadState | null | undefined, dispatch_fn:
             }
             record_successful_audit_server_sync(dispatch_fn);
             clear_audit_sync_pending();
+            krav_vy_sync_slut(krav_vy_sync, {
+                auditId: state.auditId,
+                version: full_state?.version ?? null
+            });
         } else {
             const import_payload = state_to_import(state);
             const prev_log_i = Array.isArray(state.auditMetadata?.audit_edit_log) ? state.auditMetadata.audit_edit_log : [];
@@ -207,13 +264,15 @@ async function run_sync(state: SyncPayloadState | null | undefined, dispatch_fn:
                         type: 'UPDATE_METADATA',
                         payload: {
                             audit_edit_log: import_payload.auditMetadata.audit_edit_log,
-                            skip_server_sync: true
+                            skip_server_sync: true,
+                            skip_render: true
                         }
                     });
                     record_successful_audit_server_sync(dispatch_fn);
                 }, 0);
             }
             clear_audit_sync_pending();
+            krav_vy_sync_slut(krav_vy_sync, { auditId: full_state?.auditId ?? null, import: true });
         }
     } catch (err: unknown) {
         if (is_debug_stuck_sync()) {
@@ -222,6 +281,11 @@ async function run_sync(state: SyncPayloadState | null | undefined, dispatch_fn:
         if (is_fetch_network_error(err)) {
             mark_audit_sync_pending();
             notify_network_unreachable_for_sync();
+            krav_vy_sync_fel(krav_vy_sync, {
+                http_status: null,
+                meddelande: is_api_error(err) ? err.message : String(err),
+                anledning: 'Nätverksfel'
+            });
             return;
         }
         const e = err as ApiError;
@@ -236,6 +300,7 @@ async function run_sync(state: SyncPayloadState | null | undefined, dispatch_fn:
                 }
             });
             clear_audit_sync_pending();
+            krav_vy_sync_slut(krav_vy_sync, { auditId: e.existingAuditId, conflict_merge: true });
         } else if (e.status === 409 && state.auditId && dispatch_fn && !e.existingAuditId) {
             try {
                 const full_state = (await load_audit_with_rule_file(state.auditId)) as Record<string, unknown> | null;
@@ -250,8 +315,14 @@ async function run_sync(state: SyncPayloadState | null | undefined, dispatch_fn:
                         clear_audit_sync_pending();
                         notify_audit_reloaded_from_server('version_conflict_external_update');
                         update_baseline_from_server_full_state(full_state);
+                        krav_vy_sync_fel(krav_vy_sync, {
+                            http_status: 409,
+                            meddelande: e.message,
+                            anledning: 'Versionskonflikt — lokal state skrevs om från servern'
+                        });
                         return;
                     }
+                    let retry_error_message: string | null = null;
                     try {
                         const retry_patch = state_to_patch(state);
                         retry_patch.expectedVersion = Number(full_state.version ?? 0);
@@ -278,17 +349,24 @@ async function run_sync(state: SyncPayloadState | null | undefined, dispatch_fn:
                             type: 'UPDATE_METADATA',
                             payload: {
                                 audit_edit_log: retry_patch.metadata.audit_edit_log,
-                                skip_server_sync: true
+                                skip_server_sync: true,
+                                skip_render: true
                             }
                         });
                         record_successful_audit_server_sync(dispatch_fn);
                         clear_audit_sync_pending();
+                        krav_vy_sync_slut(krav_vy_sync, {
+                            auditId: state.auditId,
+                            version: updated_state?.version ?? null,
+                            retry_efter_konflikt: true
+                        });
                         return;
                     } catch (retry_err: unknown) {
                         consoleManager.warn(
                             '[ServerSync] Versionkonflikt kvarstår efter retry:',
                             is_api_error(retry_err) ? retry_err.message : retry_err
                         );
+                        retry_error_message = is_api_error(retry_err) ? retry_err.message : String(retry_err);
                     }
 
                     dispatch_replace_state_from_remote(dispatch_fn, full_state);
@@ -306,20 +384,27 @@ async function run_sync(state: SyncPayloadState | null | undefined, dispatch_fn:
                         notif.show_global_message(msg, 'info');
                     }
                     update_baseline_from_server_full_state(full_state);
-                } else if (window.Translation?.t) {
-                    const nc = get_notification_component();
-                    if (nc?.show_global_message) {
-                        mark_audit_sync_pending();
-                        nc.show_global_message(
-                            window.Translation.t('server_sync_error', { message: e.message }) || e.message,
-                            'warning'
-                        );
-                    }
+                    krav_vy_sync_fel(krav_vy_sync, {
+                        http_status: 409,
+                        meddelande: e.message,
+                        anledning: 'Versionskonflikt kvar efter retry — lokal state skrevs om från servern',
+                        retry_err: retry_error_message
+                    });
+                } else {
+                    krav_vy_sync_fel(krav_vy_sync, {
+                        http_status: 409,
+                        meddelande: e.message,
+                        anledning: 'Versionskonflikt — kunde inte ladda granskning från servern'
+                    });
                 }
             } catch (load_err: unknown) {
                 if (is_fetch_network_error(load_err)) {
                     mark_audit_sync_pending();
                     notify_network_unreachable_for_sync();
+                    krav_vy_sync_fel(krav_vy_sync, {
+                        meddelande: is_api_error(load_err) ? load_err.message : String(load_err),
+                        anledning: 'Nätverksfel vid laddning efter versionskonflikt'
+                    });
                 } else if (window.Translation?.t) {
                     const nc2 = get_notification_component();
                     if (nc2?.show_global_message) {
@@ -330,6 +415,10 @@ async function run_sync(state: SyncPayloadState | null | undefined, dispatch_fn:
                             'warning'
                         );
                     }
+                    krav_vy_sync_fel(krav_vy_sync, {
+                        meddelande: is_api_error(load_err) ? load_err.message : String(load_err),
+                        anledning: 'Kunde inte ladda granskning efter versionskonflikt'
+                    });
                 }
             }
         } else if (
@@ -338,8 +427,13 @@ async function run_sync(state: SyncPayloadState | null | undefined, dispatch_fn:
             e.message.toLowerCase().includes('granskning hittades inte')
         ) {
             show_audit_deleted_modal_and_navigate();
+            krav_vy_sync_fel(krav_vy_sync, {
+                http_status: 404,
+                meddelande: e.message,
+                anledning: 'Granskningen finns inte på servern'
+            });
         } else if (e.status === 401) {
-            /* Ingen kö – användaren måste logga in på nytt */
+            krav_vy_sync_skipped(krav_vy_sync, 'Sessionen utgick (401) — synkas inte till servern', { http_status: 401 });
         } else {
             mark_audit_sync_pending();
             if (window.Translation?.t) {
@@ -352,6 +446,18 @@ async function run_sync(state: SyncPayloadState | null | undefined, dispatch_fn:
                     );
                 }
             }
+            krav_vy_sync_fel(krav_vy_sync, {
+                http_status: e.status ?? null,
+                meddelande: e.message,
+                anledning: 'API-fel vid serversynk — ändringen kanske inte sparades på servern'
+            });
+        }
+        if (!krav_vy_sync.settled && krav_vy_sync.flow_id) {
+            krav_vy_sync_fel(krav_vy_sync, {
+                http_status: e.status ?? null,
+                meddelande: e.message,
+                anledning: 'Ohanterat synkfel — kontrollera om ändringen sparades på servern'
+            });
         }
     }
 }
@@ -404,7 +510,15 @@ export async function flush_sync_to_server(
     await enqueue_audit_sync(() => {
         const st = typeof get_state_fn === 'function' ? get_state_fn() : null;
         if (!st) return Promise.resolve();
-        if (st.auditStatus === 'not_started' && !st.auditId) return Promise.resolve();
+        if (st.auditStatus === 'not_started' && !st.auditId) {
+            const flow_id = peek_krav_vy_sync_flow();
+            if (flow_id) {
+                log_krav_vy_sync_skipped(flow_id, 'Granskningen har inte startats på servern — synkas inte', {
+                    auditStatus: st.auditStatus
+                });
+            }
+            return Promise.resolve();
+        }
         return run_sync(st, dispatch_fn);
     });
 }

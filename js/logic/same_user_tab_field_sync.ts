@@ -12,29 +12,11 @@ import {
 } from '../audit_logic.js';
 import type { RequirementResultStored } from './audit_logic_types.js';
 import { RequirementLookup } from './requirement_lookup.js';
+import { get_tab_origin_id } from '../utils/tab_origin_id.js';
 
 const CHANNEL_NAME = 'gv-same-user-field-sync';
 
 let _channel: BroadcastChannel | null = null;
-let _tab_origin_id: string | null = null;
-
-function get_tab_origin_id(): string {
-    if (_tab_origin_id) return _tab_origin_id;
-    try {
-        const k = 'gv_tab_sync_origin';
-        let id = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem(k) : null;
-        if (!id) {
-            id = (typeof crypto !== 'undefined' && crypto.randomUUID)
-                ? crypto.randomUUID()
-                : `t-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-            sessionStorage.setItem(k, id);
-        }
-        _tab_origin_id = id;
-    } catch {
-        _tab_origin_id = `t-${Date.now()}`;
-    }
-    return _tab_origin_id;
-}
 
 function safe_attr_escape(value: unknown): string {
     if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') {

@@ -142,7 +142,8 @@ export class AuditProblemsViewComponent {
         this._previous_problems_keys = null;
         this.unsubscribe = null;
         if (typeof deps.subscribe === 'function') {
-            this.unsubscribe = deps.subscribe(() => {
+            this.unsubscribe = deps.subscribe((_new_state, listener_meta) => {
+                if (listener_meta?.skip_render) return;
                 if (!this.root || get_current_view_name() !== 'audit_problems' || typeof this.render !== 'function') return;
                 const state = this.getState();
                 const problems = this.AuditLogic?.collect_audit_problems ? this.AuditLogic.collect_audit_problems(state) : [];

@@ -9,6 +9,7 @@ import { memoryManager } from '../utils/memory_manager.js';
 import { consoleManager } from '../utils/console_manager.js';
 import { install_vite_dev_client_timestamp_listeners } from '../utils/vite_dev_client_timestamp_hmr.js';
 import { inject_deficiency_score_bar_gradient_styles } from './deficiency_color_scale.ts';
+import { get_tab_origin_id } from '../utils/tab_origin_id.js';
 
 /**
  * Kör initiering efter att övriga beroenden satts upp i main.
@@ -193,6 +194,7 @@ export async function init_app(deps) {
         audit_updates_channel.onmessage = (event) => {
             const msg = event?.data;
             if (msg?.type !== 'audit-updated' || !msg.auditId) return;
+            if (msg.originId && msg.originId === get_tab_origin_id()) return;
             const state = deps.getState();
             if (!state?.auditId || state.auditId !== msg.auditId || state.auditStatus === 'rulefile_editing') return;
             if (!get_auth_token()) return;

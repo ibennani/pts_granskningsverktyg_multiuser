@@ -217,7 +217,8 @@ describe('server_sync', () => {
             type: 'UPDATE_METADATA',
             payload: expect.objectContaining({
                 last_server_sync_at: expect.any(String),
-                skip_server_sync: true
+                skip_server_sync: true,
+                skip_render: true
             })
         });
         expect(dispatch).not.toHaveBeenCalledWith(
@@ -426,10 +427,13 @@ describe('server_sync', () => {
         expect(global.BroadcastChannel).toHaveBeenCalledWith('granskningsverktyget-audit-updates');
         expect(broadcast_instances.length).toBeGreaterThan(0);
         const ch = broadcast_instances[broadcast_instances.length - 1];
-        expect(ch.postMessage).toHaveBeenCalledWith({
-            type: 'audit-updated',
-            auditId: 'patch-id'
-        });
+        expect(ch.postMessage).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: 'audit-updated',
+                auditId: 'patch-id',
+                originId: expect.any(String)
+            })
+        );
         expect(ch.close).toHaveBeenCalled();
     });
 
@@ -441,10 +445,13 @@ describe('server_sync', () => {
         expect(import_audit).toHaveBeenCalled();
         expect(global.BroadcastChannel).toHaveBeenCalledWith('granskningsverktyget-audit-updates');
         const ch = broadcast_instances[broadcast_instances.length - 1];
-        expect(ch.postMessage).toHaveBeenCalledWith({
-            type: 'audit-updated',
-            auditId: 'new-a'
-        });
+        expect(ch.postMessage).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: 'audit-updated',
+                auditId: 'new-a',
+                originId: expect.any(String)
+            })
+        );
     });
 
     test('404 granskning: ModalComponent.show och navigering till audit_audits', async () => {

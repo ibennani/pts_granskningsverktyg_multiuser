@@ -100,7 +100,10 @@ export function handle_mark_requirement_passed_in_all_samples(requirement_id: an
             });
             yes_btn.addEventListener('click', () => {
                 modal.close(trigger_button);
-                ctx.dispatch({ type: ctx.StoreActionTypes.MARK_REQUIREMENT_AS_PASSED_IN_ALL_SAMPLES, payload: { requirementId: requirement_id } });
+                ctx.dispatch({
+                    type: ctx.StoreActionTypes.MARK_REQUIREMENT_AS_PASSED_IN_ALL_SAMPLES,
+                    payload: { requirementId: requirement_id, skip_render: true }
+                });
                 ctx.NotificationComponent?.show_global_message?.(t('mark_requirement_passed_in_all_samples_toast'), 'success');
                 ctx.rerender();
             });

@@ -35,6 +35,16 @@ import {
     is_remote_lock_held_by_other_user,
     is_lock_held_by_different_logged_in_user
 } from '../logic/collab_lock_compare.js';
+import { dispatch_persist_sync } from '../state/index.js';
+import {
+    log_krav_vy_knapp,
+    peek_krav_vy_sync_flow,
+    register_krav_vy_knapp_sync,
+    warn_krav_vy_sync_not_available,
+    log_krav_vy_sync_fel,
+    log_krav_vy_fokus_from_event,
+    log_krav_vy_textarea
+} from './requirement_audit/krav_vy_knapp_debug_log.js';
 
 export class RequirementAuditComponent {
     constructor() {
@@ -78,6 +88,14 @@ export class RequirementAuditComponent {
         this.refresh_side_menu_and_title = null;
         /** Serialiserar snabba checklist-statusklick så varje dispatch utgår från senaste state. */
         this._status_change_queue_tail = Promise.resolve();
+        /** Begränsar checklistuppdatering till en kontrollpunkt/kriterium efter statusklick. */
+        this._checklist_patch_scope = null;
+        /** Roter där fokus-debug lyssnar (plåt + högersidebar). */
+        this._krav_vy_focus_debug_roots = [];
+        /** Debounce-timer för autospar av observations- och kommentarsfält. */
+        this._plate_text_autosave_timer = null;
+        this._handle_plate_unload_save = null;
+        this._handle_plate_visibility_save = null;
     }
 
     async init({ root, deps }) {
@@ -108,6 +126,13 @@ export class RequirementAuditComponent {
         this.handle_comment_blur_save = this.handle_comment_blur_save.bind(this);
         this.handle_comment_focusin = this.handle_comment_focusin.bind(this);
         this.handle_comment_focusout = this.handle_comment_focusout.bind(this);
+        this.handle_krav_vy_focusin = this.handle_krav_vy_focusin.bind(this);
+        this.handle_krav_vy_focusout = this.handle_krav_vy_focusout.bind(this);
+        this._handle_plate_unload_save = this._flush_plate_text_autosave_for_unload.bind(this);
+        this._handle_plate_visibility_save = this._flush_plate_text_autosave_on_visibility_hidden.bind(this);
+        window.addEventListener('pagehide', this._handle_plate_unload_save);
+        window.addEventListener('beforeunload', this._handle_plate_unload_save);
+        document.addEventListener('visibilitychange', this._handle_plate_visibility_save);
         this.handle_sidebar_filters_change = this.handle_sidebar_filters_change.bind(this);
         this.handle_audit_keydown = this.handle_audit_keydown.bind(this);
         
@@ -156,6 +181,7 @@ export class RequirementAuditComponent {
                     onSidebarFiltersChange: this.handle_sidebar_filters_change
                 }
             });
+            this._bind_krav_vy_focus_debug_listeners(this.right_sidebar_root);
         }
 
         if (typeof this.subscribe === 'function') {
@@ -206,10 +232,24 @@ export class RequirementAuditComponent {
      * Sparar kravresultat till server via hel-PATCH (anropas vid blur på textfält och efter vissa åtgärder).
      */
     async _flush_audit_requirement_to_server() {
-        if (typeof this.flush_sync_to_server !== 'function' || !this.getState || !this.dispatch) return;
+        const pending_flow_id = peek_krav_vy_sync_flow();
+        if (typeof this.flush_sync_to_server !== 'function' || !this.getState || !this.dispatch) {
+            warn_krav_vy_sync_not_available(
+                pending_flow_id,
+                'flush_sync_to_server saknas eller state/dispatch saknas — sparas inte till servern'
+            );
+            return;
+        }
         try {
             await this.flush_sync_to_server(this.getState, this.dispatch);
         } catch (e) {
+            const flow_id = peek_krav_vy_sync_flow();
+            if (flow_id) {
+                log_krav_vy_sync_fel(flow_id, {
+                    meddelande: e instanceof Error ? e.message : String(e),
+                    anledning: 'flush_sync_to_server kastade undantag'
+                });
+            }
             if (window.ConsoleManager?.warn) {
                 window.ConsoleManager.warn('[RequirementAuditComponent] flush_sync_to_server vid kravvy:', e);
             }
@@ -217,17 +257,161 @@ export class RequirementAuditComponent {
     }
 
     /** Synkar kommentarer + observationer från DOM till Redux (utan trim om should_trim false). */
-    _save_plate_to_redux({ should_trim = false, skip_last_status_bump = false } = {}) {
-        if (!this.plate_element_ref) return;
+    _save_plate_to_redux({ should_trim = false, skip_last_status_bump = false, sync_persist = false } = {}) {
+        if (!this.plate_element_ref) return false;
         this.handle_comment_input(should_trim);
         this.checklist_handler_instance?.flush_observations_before_destroy?.({ trim: should_trim });
+        return this._persist_current_result_to_store({
+            skip_last_status_bump,
+            sync_persist
+        });
+    }
+
+    _persist_current_result_to_store({ skip_last_status_bump = false, sync_persist = false } = {}) {
+        if (!this.current_result) return false;
+        if (sync_persist) {
+            return this._dispatch_result_persist_sync(this.current_result, {
+                skipLastStatusBump: skip_last_status_bump === true
+            });
+        }
         void this.save_requirement_result_spar_bakgrund({
             skipLastStatusBump: skip_last_status_bump === true
         });
+        return true;
+    }
+
+    _dispatch_result_persist_sync(modified_result_object, options = {}) {
+        (this.current_requirement.checks || []).forEach((check_def) => {
+            const storage_key = definition_primary_id(check_def);
+            if (!storage_key) return;
+            const resolved = resolve_map_entry(modified_result_object.checkResults, storage_key);
+            const check_res = resolved?.value;
+            if (!check_res) return;
+            check_res.status = this.AuditLogic.calculate_check_status(check_def, check_res.passCriteria, check_res.overallStatus);
+        });
+        modified_result_object.status = this.AuditLogic.calculate_requirement_status(this.current_requirement, modified_result_object);
+
+        const state_for_compare = this.getState();
+        const sample_row = state_for_compare?.samples?.find(s => String(s.id) === String(this.params.sampleId));
+        const previous_from_store = sample_row?.requirementResults?.[this.requirement_map_key];
+        if (previous_from_store
+            && typeof this.AuditLogic.requirement_results_equal_for_last_updated === 'function'
+            && this.AuditLogic.requirement_results_equal_for_last_updated(previous_from_store, modified_result_object)) {
+            log_krav_vy_textarea('Autospar hoppades över (oförändrat)', {
+                sampleId: this.params?.sampleId,
+                requirementId: this.requirement_map_key
+            });
+            return false;
+        }
+
+        if (options.skipLastStatusBump === true && previous_from_store) {
+            modified_result_object.lastStatusUpdate = previous_from_store.lastStatusUpdate ?? null;
+            modified_result_object.lastStatusUpdateBy = previous_from_store.lastStatusUpdateBy ?? null;
+        } else {
+            modified_result_object.lastStatusUpdate = this.Helpers.get_current_iso_datetime_utc();
+            modified_result_object.lastStatusUpdateBy = get_current_user_name();
+        }
+
+        const saved = dispatch_persist_sync({
+            type: this.StoreActionTypes.UPDATE_REQUIREMENT_RESULT,
+            payload: {
+                sampleId: this.params.sampleId,
+                requirementId: this.requirement_map_key,
+                newRequirementResult: modified_result_object,
+                skip_render: true
+            }
+        });
+        return saved;
+    }
+
+    _cancel_plate_text_autosave_timer() {
+        if (this._plate_text_autosave_timer) {
+            clearTimeout(this._plate_text_autosave_timer);
+            this._plate_text_autosave_timer = null;
+        }
+    }
+
+    /** Debouncad autospar (250 ms) av textarea-innehåll till sessionStorage via store. */
+    _request_plate_text_autosave() {
+        this._cancel_plate_text_autosave_timer();
+        log_krav_vy_textarea('Autospar timer startad', {
+            sampleId: this.params?.sampleId,
+            requirementId: this.requirement_map_key
+        });
+        this._plate_text_autosave_timer = setTimeout(() => {
+            this._plate_text_autosave_timer = null;
+            log_krav_vy_textarea('Autospar till sessionStorage (debounce)', {
+                sampleId: this.params?.sampleId,
+                requirementId: this.requirement_map_key
+            });
+            this._save_plate_to_redux({ should_trim: false, skip_last_status_bump: true });
+        }, 250);
+    }
+
+    /** Omedelbar synkron sparning vid pagehide/beforeunload så omladdning utan blur behåller text. */
+    _flush_plate_text_autosave_for_unload() {
+        this._cancel_plate_text_autosave_timer();
+        if (!this.plate_element_ref || !this.current_result) return;
+        log_krav_vy_textarea('Autospar till sessionStorage (unload)', {
+            sampleId: this.params?.sampleId,
+            requirementId: this.requirement_map_key
+        });
+        this._save_plate_to_redux({ should_trim: false, skip_last_status_bump: true, sync_persist: true });
+    }
+
+    /** Sparar väntande textarea-text när fliken döljs (t.ex. innan omladdning i annan flik). */
+    _flush_plate_text_autosave_on_visibility_hidden() {
+        if (!document.hidden) return;
+        if (!this.plate_element_ref || !this.current_result) return;
+        const active = document.activeElement;
+        const in_plate_text_field = active instanceof HTMLElement
+            && this.plate_element_ref.contains(active)
+            && (
+                active.classList.contains('pc-observation-detail-textarea')
+                || active.id === 'commentToAuditor'
+                || active.id === 'commentToActor'
+            );
+        if (!this._plate_text_autosave_timer && !in_plate_text_field) return;
+        log_krav_vy_textarea('Autospar till sessionStorage (flik dold)', {
+            sampleId: this.params?.sampleId,
+            requirementId: this.requirement_map_key,
+            hade_väntande_timer: Boolean(this._plate_text_autosave_timer),
+            fokus_i_textfält: in_plate_text_field
+        });
+        this._flush_plate_text_autosave_for_unload();
     }
 
     handle_comment_input_only() {
         this.handle_comment_input(false);
+        this._request_plate_text_autosave();
+    }
+
+    _bind_krav_vy_focus_debug_listeners(root_el) {
+        if (!root_el || this._krav_vy_focus_debug_roots.includes(root_el)) return;
+        root_el.addEventListener('focusin', this.handle_krav_vy_focusin);
+        root_el.addEventListener('focusout', this.handle_krav_vy_focusout);
+        this._krav_vy_focus_debug_roots.push(root_el);
+    }
+
+    _unbind_krav_vy_focus_debug_listeners(root_el) {
+        if (!root_el) return;
+        root_el.removeEventListener('focusin', this.handle_krav_vy_focusin);
+        root_el.removeEventListener('focusout', this.handle_krav_vy_focusout);
+        this._krav_vy_focus_debug_roots = this._krav_vy_focus_debug_roots.filter((el) => el !== root_el);
+    }
+
+    _unbind_all_krav_vy_focus_debug_listeners() {
+        [...this._krav_vy_focus_debug_roots].forEach((root_el) => {
+            this._unbind_krav_vy_focus_debug_listeners(root_el);
+        });
+    }
+
+    handle_krav_vy_focusin(event) {
+        log_krav_vy_fokus_from_event('Fokus fick', event);
+    }
+
+    handle_krav_vy_focusout(event) {
+        log_krav_vy_fokus_from_event('Fokus förlorade', event);
     }
 
     handle_comment_focusin(event) {
@@ -268,7 +452,13 @@ export class RequirementAuditComponent {
     }
 
     handle_comment_blur_save(event) {
+        this._cancel_plate_text_autosave_timer();
         this.handle_comment_focusout(event);
+        log_krav_vy_textarea('Autospar till sessionStorage (blur)', {
+            sampleId: this.params?.sampleId,
+            requirementId: this.requirement_map_key,
+            fält: event?.target?.id || null
+        });
         this._save_plate_to_redux({ should_trim: false, skip_last_status_bump: false });
         void this._flush_audit_requirement_to_server();
     }
@@ -381,6 +571,21 @@ export class RequirementAuditComponent {
             String(u.requirementId) === String(this.requirement_map_key);
     }
 
+    _snapshot_requirement_result_for_compare(result) {
+        if (!result || typeof result !== 'object') return '';
+        try {
+            return JSON.stringify({
+                status: result.status,
+                stuckProblemDescription: result.stuckProblemDescription,
+                commentToAuditor: result.commentToAuditor,
+                commentToActor: result.commentToActor,
+                checkResults: result.checkResults
+            });
+        } catch {
+            return '';
+        }
+    }
+
     _get_checklist_update_details(state) {
         const details_by_key = state.requirementUpdateDetails || {};
         let update_details = details_by_key[this.requirement_map_key]
@@ -425,7 +630,13 @@ export class RequirementAuditComponent {
         this._refresh_overall_requirement_status_in_header();
 
         const update_details = this._get_checklist_update_details(state);
-        this.checklist_handler_instance.render(this.current_requirement, this.current_result, is_locked, update_details);
+        this.checklist_handler_instance.render(
+            this.current_requirement,
+            this.current_result,
+            is_locked,
+            update_details,
+            this._checklist_patch_scope
+        );
 
         if (this.current_result?.needsReview === true) {
             this.NotificationComponent.show_global_message(t('requirement_updated_needs_review'), 'info');
@@ -439,6 +650,7 @@ export class RequirementAuditComponent {
     }
 
     async patch_dom_after_current_requirement_result_change() {
+        const result_before = this._snapshot_requirement_result_for_compare(this.current_result);
         if (!this.load_and_prepare_view_data()) {
             await this.render();
             return;
@@ -446,6 +658,11 @@ export class RequirementAuditComponent {
         const plate_exists = this.plate_element_ref && this.root.contains(this.plate_element_ref);
         if (!plate_exists) {
             await this.render();
+            return;
+        }
+
+        const result_after = this._snapshot_requirement_result_for_compare(this.current_result);
+        if (result_before !== '' && result_before === result_after) {
             return;
         }
 
@@ -495,10 +712,23 @@ export class RequirementAuditComponent {
         const current_time = this.Helpers.get_current_iso_datetime_utc();
 
         const current_user = get_current_user_name();
+        let logical_change_payload: Record<string, unknown> | null = null;
         if (change_info.type === 'check_overall_status_change') {
+            const previous_status = check_result.overallStatus || 'not_audited';
             check_result.overallStatus = check_result.overallStatus === change_info.newStatus ? 'not_audited' : change_info.newStatus;
             check_result.timestamp = current_time;
             check_result.updatedBy = current_user;
+            if (previous_status !== check_result.overallStatus) {
+                logical_change_payload = {
+                    typ: 'kontrollpunkt',
+                    check_id: change_info.checkId,
+                    pc_id: null,
+                    knapp: change_info.newStatus === 'passed' ? 'Kontrollpunkt: Stämmer' : 'Kontrollpunkt: Stämmer inte',
+                    tidigare: previous_status,
+                    nytt: check_result.overallStatus,
+                    orsak: change_info.trigger?.source || 'okänd'
+                };
+            }
         } else if (change_info.type === 'pc_status_change') {
             if (check_result.overallStatus !== 'passed') {
                 this.NotificationComponent.show_global_message(this.Translation.t('error_set_check_status_first'), 'warning');
@@ -515,9 +745,22 @@ export class RequirementAuditComponent {
                 }
                 return;
             }
+            const previous_pc_status = pc_result.status || 'not_audited';
             pc_result.status = pc_result.status === change_info.newStatus ? 'not_audited' : change_info.newStatus;
             pc_result.timestamp = current_time;
             pc_result.updatedBy = current_user;
+
+            if (previous_pc_status !== pc_result.status) {
+                logical_change_payload = {
+                    typ: 'godkännandekriterium',
+                    check_id: change_info.checkId,
+                    pc_id: change_info.pcId,
+                    knapp: change_info.newStatus === 'passed' ? 'Godkännandekriterium: Godkänt' : 'Godkännandekriterium: Underkänt',
+                    tidigare: previous_pc_status,
+                    nytt: pc_result.status,
+                    orsak: change_info.trigger?.source || 'okänd'
+                };
+            }
 
             if (pc_result.status === 'failed' && (!pc_result.observationDetail || pc_result.observationDetail.trim() === '')) {
                 const pc_def = find_pass_criterion_def_by_storage_id(check_definition?.passCriteria, change_info.pcId);
@@ -525,6 +768,13 @@ export class RequirementAuditComponent {
                     pc_result.observationDetail = pc_def.failureStatementTemplate;
                 }
             }
+        }
+
+        if (logical_change_payload && change_info.flow_id) {
+            log_krav_vy_knapp('Logisk statusändring', {
+                flow_id: change_info.flow_id,
+                ...logical_change_payload
+            });
         }
 
         delete modified_result.needsReview;
@@ -540,9 +790,20 @@ export class RequirementAuditComponent {
             await this.render();
             return;
         }
-        await this._refresh_plate_ui_after_result_sync_from_store();
+        this._checklist_patch_scope = {
+            check_id: change_info.checkId,
+            pc_id: change_info.type === 'pc_status_change' ? change_info.pcId : null
+        };
+        try {
+            await this._refresh_plate_ui_after_result_sync_from_store();
+        } finally {
+            this._checklist_patch_scope = null;
+        }
         if (typeof this.refresh_side_menu_and_title === 'function') {
             this.refresh_side_menu_and_title();
+        }
+        if (change_info.flow_id) {
+            register_krav_vy_knapp_sync(change_info.flow_id);
         }
         void this._flush_audit_requirement_to_server();
     }
@@ -1008,6 +1269,9 @@ export class RequirementAuditComponent {
     }
 
     build_initial_dom() {
+        if (this.plate_element_ref) {
+            this._unbind_krav_vy_focus_debug_listeners(this.plate_element_ref);
+        }
         this.root.innerHTML = '';
         this.plate_element_ref = this.Helpers.create_element('div', { class_name: 'content-plate requirement-audit-plate' });
 
@@ -1029,7 +1293,16 @@ export class RequirementAuditComponent {
             checklist_container,
             {
                 onStatusChange: this.handle_checklist_status_change,
+                onObservationChange: () => {
+                    this._request_plate_text_autosave();
+                },
                 onObservationBlurCommit: () => {
+                    this._cancel_plate_text_autosave_timer();
+                    log_krav_vy_textarea('Autospar till sessionStorage (blur)', {
+                        sampleId: this.params?.sampleId,
+                        requirementId: this.requirement_map_key,
+                        fält: 'observation'
+                    });
                     this._save_plate_to_redux({ should_trim: false, skip_last_status_bump: false });
                     void this._flush_audit_requirement_to_server();
                 },
@@ -1088,6 +1361,7 @@ export class RequirementAuditComponent {
         );
         
         this.root.appendChild(this.plate_element_ref);
+        this._bind_krav_vy_focus_debug_listeners(this.plate_element_ref);
     }
 
     build_comment_fields() {
@@ -1377,11 +1651,22 @@ export class RequirementAuditComponent {
 
     destroy() {
         this._status_change_queue_tail = Promise.resolve();
+        this._cancel_plate_text_autosave_timer();
+        if (this._handle_plate_unload_save) {
+            window.removeEventListener('pagehide', this._handle_plate_unload_save);
+            window.removeEventListener('beforeunload', this._handle_plate_unload_save);
+            this._handle_plate_unload_save = null;
+        }
+        if (this._handle_plate_visibility_save) {
+            document.removeEventListener('visibilitychange', this._handle_plate_visibility_save);
+            this._handle_plate_visibility_save = null;
+        }
         if (typeof this.unsubscribe_from_store === 'function') {
             this.unsubscribe_from_store();
             this.unsubscribe_from_store = null;
         }
         document.removeEventListener('keydown', this.handle_audit_keydown);
+        this._unbind_all_krav_vy_focus_debug_listeners();
         this.checklist_handler_instance?.flush_observations_before_destroy?.();
         this._save_plate_to_redux({ should_trim: true, skip_last_status_bump: false });
 

@@ -132,4 +132,21 @@ describe('state (js/state)', () => {
         expect(bad).toHaveBeenCalled();
         expect(good).toHaveBeenCalled();
     });
+
+    test('dispatch_persist_sync skriver till sessionStorage utan att notifiera lyssnare', async () => {
+        const { initState, dispatch_persist_sync, getState, subscribe, StoreActionTypes, APP_STATE_KEY } =
+            await import('../../js/state/index.js');
+        initState();
+        const fn = jest.fn();
+        subscribe(fn);
+        const changed = dispatch_persist_sync({
+            type: StoreActionTypes.SET_UI_FILTER_SETTINGS,
+            payload: { searchText: 'synk-spar' },
+        });
+        expect(changed).toBe(true);
+        expect(getState().uiSettings.requirementListFilter.searchText).toBe('synk-spar');
+        const raw = sessionStorage.getItem(APP_STATE_KEY);
+        expect(raw).toContain('synk-spar');
+        expect(fn).not.toHaveBeenCalled();
+    });
 });

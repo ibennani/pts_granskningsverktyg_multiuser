@@ -41,7 +41,8 @@ export class AuditImagesViewComponent {
 
         this.unsubscribe = null;
         if (typeof deps.subscribe === 'function') {
-            this.unsubscribe = deps.subscribe(() => {
+            this.unsubscribe = deps.subscribe((_new_state, listener_meta) => {
+                if (listener_meta?.skip_render) return;
                 if (this.root && get_current_view_name() === 'audit_images' && typeof this.render === 'function') {
                     this.render();
                 }

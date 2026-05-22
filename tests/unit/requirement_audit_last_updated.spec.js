@@ -85,3 +85,50 @@ describe('RequirementAuditComponent dispatch_result_update skipLastStatusBump', 
         expect(payload.lastStatusUpdateBy).toBeDefined();
     });
 });
+
+describe('RequirementAuditComponent plate text autosave', () => {
+    beforeEach(() => {
+        jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+        jest.useRealTimers();
+    });
+
+    test('debouncar sparning till store 250 ms efter input', () => {
+        const comp = new RequirementAuditComponent();
+        comp.plate_element_ref = document.createElement('div');
+        comp.current_result = { checkResults: {}, commentToAuditor: '', commentToActor: '' };
+        comp.handle_comment_input = jest.fn();
+        comp.checklist_handler_instance = { flush_observations_before_destroy: jest.fn() };
+        comp.save_requirement_result_spar_bakgrund = jest.fn();
+
+        comp._request_plate_text_autosave();
+        expect(comp.save_requirement_result_spar_bakgrund).not.toHaveBeenCalled();
+
+        jest.advanceTimersByTime(250);
+        expect(comp.handle_comment_input).toHaveBeenCalledWith(false);
+        expect(comp.checklist_handler_instance.flush_observations_before_destroy).toHaveBeenCalledWith({ trim: false });
+        expect(comp.save_requirement_result_spar_bakgrund).toHaveBeenCalledWith({ skipLastStatusBump: true });
+    });
+
+    test('flush vid unload sparar direkt utan debounce (synkront)', () => {
+        const comp = new RequirementAuditComponent();
+        comp.plate_element_ref = document.createElement('div');
+        comp.current_result = { checkResults: {} };
+        comp._plate_text_autosave_timer = setTimeout(() => {}, 5000);
+        comp.handle_comment_input = jest.fn();
+        comp.checklist_handler_instance = { flush_observations_before_destroy: jest.fn() };
+        comp._persist_current_result_to_store = jest.fn().mockReturnValue(true);
+
+        comp._flush_plate_text_autosave_for_unload();
+
+        expect(comp._plate_text_autosave_timer).toBeNull();
+        expect(comp.handle_comment_input).toHaveBeenCalledWith(false);
+        expect(comp.checklist_handler_instance.flush_observations_before_destroy).toHaveBeenCalledWith({ trim: false });
+        expect(comp._persist_current_result_to_store).toHaveBeenCalledWith({
+            skip_last_status_bump: true,
+            sync_persist: true
+        });
+    });
+});
