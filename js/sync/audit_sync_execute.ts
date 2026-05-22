@@ -29,7 +29,12 @@ import { get_current_user_name } from '../utils/helpers.js';
 import { resolve_version_conflict_notice } from '../logic/version_conflict_notice.js';
 import { should_show_audit_collaboration_notice, update_baseline_from_server_full_state } from '../logic/audit_collaboration_notice.js';
 import { count_stuck_in_samples } from '../../shared/audit/audit_metrics.js';
-import { state_to_import, state_to_patch, type SyncPayloadState } from './sync_payload_mapper.js';
+import {
+    state_to_import,
+    state_to_metadata_patch,
+    state_to_patch,
+    type SyncPayloadState
+} from './sync_payload_mapper.js';
 import { broadcast_audit_updated } from './sync_broadcast.js';
 import { is_debug_stuck_sync } from '../app/runtime_flags.js';
 import {
@@ -241,6 +246,35 @@ async function sync_single_requirement_result(
     } catch (err: unknown) {
         if (is_debug_stuck_sync()) {
             consoleManager.warn('[ServerSync] Enstaka krav-PATCH misslyckades, fallback till hel PATCH:', err);
+        }
+        note_audit_full_sync_required();
+        return false;
+    }
+}
+
+async function sync_metadata_only_patch(
+    state: SyncPayloadState,
+    dispatch_fn: DispatchFn | undefined,
+    krav_vy_sync: KravVySyncTracker
+): Promise<boolean> {
+    if (!state.auditId) return false;
+    try {
+        const patch = state_to_metadata_patch(state);
+        patch.metadata = append_audit_edit_log_to_patch_metadata(
+            (patch.metadata || {}) as Record<string, unknown>,
+            state
+        );
+        const full_state = (await update_audit(state.auditId, patch)) as Record<string, unknown>;
+        apply_successful_sync_response(state, full_state, dispatch_fn);
+        krav_vy_sync_slut(krav_vy_sync, {
+            auditId: state.auditId,
+            version: full_state?.version ?? null,
+            metadata_only: true
+        });
+        return true;
+    } catch (err: unknown) {
+        if (is_debug_stuck_sync()) {
+            consoleManager.warn('[ServerSync] Metadata-PATCH misslyckades, fallback till hel PATCH:', err);
         }
         note_audit_full_sync_required();
         return false;
@@ -514,6 +548,10 @@ export async function execute_audit_server_sync(
             if (strategy.mode === 'single_requirement') {
                 const ok = await sync_single_requirement_result(state, strategy, dispatch_fn, krav_vy_sync);
                 if (ok) return;
+            }
+            if (strategy.mode === 'metadata_only') {
+                const ok_meta = await sync_metadata_only_patch(state, dispatch_fn, krav_vy_sync);
+                if (ok_meta) return;
             }
             await sync_full_audit_patch(state, dispatch_fn, krav_vy_sync);
         } else {

@@ -4,10 +4,12 @@
 
 export type AuditSyncStrategy =
     | { mode: 'full' }
-    | { mode: 'single_requirement'; sample_id: string; requirement_id: string };
+    | { mode: 'single_requirement'; sample_id: string; requirement_id: string }
+    | { mode: 'metadata_only' };
 
 let rule_file_fingerprint_at_last_sync: string | null = null;
 let force_full_sync = false;
+let metadata_only_pending = false;
 const pending_requirement_keys = new Set<string>();
 
 function requirement_sync_key(sample_id: string, requirement_id: string): string {
@@ -33,22 +35,31 @@ export function mark_rule_file_synced_from_state(rule_file_content: unknown): vo
 export function clear_rule_file_sync_baseline_for_testing(): void {
     rule_file_fingerprint_at_last_sync = null;
     force_full_sync = false;
+    metadata_only_pending = false;
     pending_requirement_keys.clear();
 }
 
 export function reset_audit_sync_planning_after_remote_load(rule_file_content: unknown): void {
     mark_rule_file_synced_from_state(rule_file_content);
     force_full_sync = false;
+    metadata_only_pending = false;
     pending_requirement_keys.clear();
 }
 
 export function note_audit_full_sync_required(): void {
     force_full_sync = true;
+    metadata_only_pending = false;
     pending_requirement_keys.clear();
+}
+
+export function note_metadata_only_changed(): void {
+    if (force_full_sync) return;
+    metadata_only_pending = true;
 }
 
 export function note_requirement_result_changed(sample_id: string, requirement_id: string): void {
     if (force_full_sync) return;
+    metadata_only_pending = false;
     pending_requirement_keys.add(requirement_sync_key(sample_id, requirement_id));
 }
 
@@ -61,19 +72,29 @@ export function should_include_rule_file_in_patch(rule_file_content: unknown): b
 }
 
 export function resolve_audit_sync_strategy(): AuditSyncStrategy {
-    if (force_full_sync || pending_requirement_keys.size !== 1) {
+    if (force_full_sync) {
         force_full_sync = false;
+        metadata_only_pending = false;
         pending_requirement_keys.clear();
         return { mode: 'full' };
     }
-    const only_key = [...pending_requirement_keys][0];
+    if (pending_requirement_keys.size === 1) {
+        const only_key = [...pending_requirement_keys][0];
+        pending_requirement_keys.clear();
+        metadata_only_pending = false;
+        const sep = only_key.indexOf('\u0001');
+        if (sep < 0) return { mode: 'full' };
+        return {
+            mode: 'single_requirement',
+            sample_id: only_key.slice(0, sep),
+            requirement_id: only_key.slice(sep + 1)
+        };
+    }
+    if (metadata_only_pending && pending_requirement_keys.size === 0) {
+        metadata_only_pending = false;
+        return { mode: 'metadata_only' };
+    }
+    metadata_only_pending = false;
     pending_requirement_keys.clear();
-    force_full_sync = false;
-    const sep = only_key.indexOf('\u0001');
-    if (sep < 0) return { mode: 'full' };
-    return {
-        mode: 'single_requirement',
-        sample_id: only_key.slice(0, sep),
-        requirement_id: only_key.slice(sep + 1)
-    };
+    return { mode: 'full' };
 }

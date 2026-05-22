@@ -147,6 +147,37 @@ describe('server_sync', () => {
         );
     });
 
+    test('endast metadata-ändring skickar PATCH utan stickprov och regelfil', async () => {
+        const {
+            clear_rule_file_sync_baseline_for_testing,
+            mark_rule_file_synced_from_state,
+            note_metadata_only_changed
+        } = await import('../../js/sync/audit_sync_planning.js');
+        clear_rule_file_sync_baseline_for_testing();
+        mark_rule_file_synced_from_state({ metadata: { version: '1' } });
+        const dispatch = jest.fn();
+        const state = base_audit_state({
+            auditId: 'a1',
+            version: 5,
+            auditMetadata: { caseNumber: '2026-42', actorName: 'Test AB' },
+            samples: [{ id: 's1', requirementResults: { req1: { status: 'passed' } } }]
+        });
+        note_metadata_only_changed();
+        await sync_to_server_now(() => state, dispatch);
+        expect(update_audit).toHaveBeenCalledWith(
+            'a1',
+            expect.objectContaining({
+                metadata: expect.objectContaining({ caseNumber: '2026-42' }),
+                status: 'in_progress',
+                expectedVersion: 5
+            })
+        );
+        const payload = update_audit.mock.calls[0][1];
+        expect(payload.samples).toBeUndefined();
+        expect(payload.ruleFileContent).toBeUndefined();
+        expect(patch_requirement_result).not.toHaveBeenCalled();
+    });
+
     test('enstaka kravändring använder patch_requirement_result', async () => {
         const {
             clear_rule_file_sync_baseline_for_testing,

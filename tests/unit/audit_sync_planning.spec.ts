@@ -7,6 +7,7 @@ import {
     fingerprint_rule_file_content,
     mark_rule_file_synced_from_state,
     note_audit_full_sync_required,
+    note_metadata_only_changed,
     note_requirement_result_changed,
     resolve_audit_sync_strategy,
     should_include_rule_file_in_patch
@@ -53,6 +54,24 @@ describe('audit_sync_planning', () => {
         note_requirement_result_changed('s1', 'r1');
         note_audit_full_sync_required();
         expect(resolve_audit_sync_strategy()).toEqual({ mode: 'full' });
+    });
+
+    test('resolve_audit_sync_strategy: endast metadata → metadata_only', () => {
+        note_metadata_only_changed();
+        expect(resolve_audit_sync_strategy()).toEqual({ mode: 'metadata_only' });
+    });
+
+    test('metadata + krav i samma debounce → single_requirement eller full, inte metadata_only', () => {
+        note_metadata_only_changed();
+        note_requirement_result_changed('s1', 'r1');
+        const strategy = resolve_audit_sync_strategy();
+        expect(strategy.mode).toBe('single_requirement');
+    });
+
+    test('krav efter metadata i kö → krav vinner', () => {
+        note_metadata_only_changed();
+        note_requirement_result_changed('s1', 'r1');
+        expect(resolve_audit_sync_strategy().mode).not.toBe('metadata_only');
     });
 
     test('fingerprint_rule_file_content är stabil', () => {

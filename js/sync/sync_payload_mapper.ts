@@ -67,6 +67,24 @@ export function state_to_patch(state: SyncPayloadState, options: StateToPatchOpt
     return patch;
 }
 
+/** PATCH med endast metadata och status (inga stickprov eller regelfil). */
+export type AuditMetadataPatchPayload = {
+    metadata: Record<string, unknown>;
+    status: ServerAuditStatus;
+    expectedVersion: number;
+};
+
+export function state_to_metadata_patch(state: SyncPayloadState): AuditMetadataPatchPayload {
+    return {
+        metadata: (state.auditMetadata || {}) as Record<string, unknown>,
+        status: normalize_status_for_server(state.auditStatus || 'not_started'),
+        expectedVersion:
+            state.version !== null && state.version !== undefined && state.version !== ''
+                ? Number(state.version)
+                : 0
+    };
+}
+
 export function state_to_import(state: SyncPayloadState): AuditImportPayload {
     return {
         ruleFileContent: state.ruleFileContent,

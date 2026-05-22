@@ -12,6 +12,7 @@ import * as AuditLogic from '../audit_logic.js';
 import { schedule_sync_to_server, schedule_sync_rulefile_to_server } from '../logic/server_sync.js';
 import {
     note_audit_full_sync_required,
+    note_metadata_only_changed,
     note_requirement_result_changed,
     reset_audit_sync_planning_after_remote_load
 } from '../sync/audit_sync_planning.js';
@@ -176,6 +177,8 @@ function execute_single_dispatch(
                             } else {
                                 note_audit_full_sync_required();
                             }
+                        } else if (action.type === ActionTypes.UPDATE_METADATA) {
+                            note_metadata_only_changed();
                         } else {
                             note_audit_full_sync_required();
                         }
