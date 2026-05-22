@@ -8,7 +8,9 @@ import {
     should_push_local_audit_to_server,
     has_unsynced_local_audit_changes,
     build_last_local_change_metadata_patch,
-    build_last_server_sync_metadata_patch
+    build_last_server_sync_metadata_patch,
+    should_touch_last_local_change_at,
+    with_last_local_change_at
 } from '../../js/logic/audit_sync_tracking.js';
 
 describe('audit_sync_tracking', () => {
@@ -74,8 +76,23 @@ describe('audit_sync_tracking', () => {
 
     test('metadata-patch builders', () => {
         expect(build_last_local_change_metadata_patch({ lastStatusUpdate: '2026-05-20T08:00:00.000Z' }, 'now'))
-            .toEqual({ last_local_change_at: '2026-05-20T08:00:00.000Z' });
+            .toEqual({ last_local_change_at: 'now' });
         expect(build_last_server_sync_metadata_patch('2026-05-20T09:00:00.000Z'))
             .toEqual({ last_server_sync_at: '2026-05-20T09:00:00.000Z' });
+    });
+
+    test('should_touch_last_local_change_at hoppar över intern synk och låst/arkiverad', () => {
+        expect(should_touch_last_local_change_at('in_progress')).toBe(true);
+        expect(should_touch_last_local_change_at('in_progress', { skip_internal_sync: true })).toBe(false);
+        expect(should_touch_last_local_change_at('locked')).toBe(false);
+        expect(should_touch_last_local_change_at('archived')).toBe(false);
+    });
+
+    test('with_last_local_change_at sätter metadata-tidsstämpel', () => {
+        const state = { auditMetadata: { caseNumber: '1' }, samples: [] };
+        expect(with_last_local_change_at(state, '2026-05-22T20:00:00.000Z')).toEqual({
+            auditMetadata: { caseNumber: '1', last_local_change_at: '2026-05-22T20:00:00.000Z' },
+            samples: []
+        });
     });
 });

@@ -41,7 +41,14 @@ export function normalize_status_for_server(status: string | undefined): ServerA
     return 'not_started';
 }
 
-export function state_to_patch(state: SyncPayloadState): AuditPatchPayload {
+export type StateToPatchOptions = {
+    /** Om false utelämnas ruleFileContent (server behåller befintlig regelfil). */
+    include_rule_file_content?: boolean;
+};
+
+export function state_to_patch(state: SyncPayloadState, options: StateToPatchOptions = {}): AuditPatchPayload {
+    const include_rule =
+        options.include_rule_file_content !== false && Boolean(state.ruleFileContent);
     const patch: AuditPatchPayload = {
         metadata: (state.auditMetadata || {}) as Record<string, unknown>,
         status: normalize_status_for_server(state.auditStatus || 'not_started'),
@@ -51,7 +58,7 @@ export function state_to_patch(state: SyncPayloadState): AuditPatchPayload {
                 ? Number(state.version)
                 : 0
     };
-    if (state.ruleFileContent) {
+    if (include_rule && state.ruleFileContent) {
         patch.ruleFileContent = state.ruleFileContent;
     }
     if (Array.isArray(state.archivedRequirementResults)) {

@@ -4,6 +4,10 @@
 
 import * as AuditLogic from '../audit_logic.js';
 import { get_current_iso_datetime_utc } from './audit_reducer_time.js';
+import {
+    should_touch_last_local_change_at,
+    with_last_local_change_at
+} from '../logic/audit_sync_tracking.js';
 
 export function reduce_set_audit_status(current_state: any, action: any) {
     const newStatus = action.payload.status;
@@ -30,9 +34,13 @@ export function reduce_set_audit_status(current_state: any, action: any) {
     } else if (newStatus === 'locked' && current_state.auditStatus === 'archived') {
         state_before_status_change = current_state;
     }
-    return {
+    const merged = {
         ...state_before_status_change,
         auditStatus: newStatus,
         auditLastUpdatedAtFrozen: frozen_last_updated
     };
+    if (newStatus !== current_state.auditStatus && should_touch_last_local_change_at(current_state.auditStatus)) {
+        return with_last_local_change_at(merged, get_current_iso_datetime_utc());
+    }
+    return merged;
 }

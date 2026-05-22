@@ -25,7 +25,10 @@ import {
 import { RequirementLookup } from '../logic/requirement_lookup.js';
 import { map_samples_bulk_pass_fully_unreviewed_only } from './audit_reducer_bulk_pass.js';
 import { definition_primary_id, same_storage_id } from '../logic/entity_id_match.js';
-import { build_last_local_change_metadata_patch } from '../logic/audit_sync_tracking.js';
+import {
+    should_touch_last_local_change_at,
+    with_last_local_change_at
+} from '../logic/audit_sync_tracking.js';
 
 export function auditReducer(current_state: any, action: any) {
     let new_state: any;
@@ -170,7 +173,7 @@ export function auditReducer(current_state: any, action: any) {
             const { sampleId, requirementId } = action.payload;
             const new_update_details = { ...(current_state.requirementUpdateDetails || {}) };
             delete new_update_details[requirementId];
-            return {
+            const confirmed_single = {
                 ...current_state,
                 requirementUpdateDetails: new_update_details,
                 samples: current_state.samples.map((sample: any) => {
@@ -203,10 +206,14 @@ export function auditReducer(current_state: any, action: any) {
                     return { ...sample, requirementResults: newResults };
                 })
             };
+            if (should_touch_last_local_change_at(current_state.auditStatus)) {
+                return with_last_local_change_at(confirmed_single, get_current_iso_datetime_utc());
+            }
+            return confirmed_single;
         }
         case ActionTypes.CONFIRM_ALL_REVIEWED_REQUIREMENTS:
             if (current_state.auditStatus === 'archived') return current_state;
-            return {
+            const confirmed_all = {
                 ...current_state,
                 requirementUpdateDetails: {},
                 samples: current_state.samples.map((sample: any) => {
@@ -245,6 +252,10 @@ export function auditReducer(current_state: any, action: any) {
                     return hasChanged ? { ...sample, requirementResults: newResults } : sample;
                 })
             };
+            if (should_touch_last_local_change_at(current_state.auditStatus)) {
+                return with_last_local_change_at(confirmed_all, get_current_iso_datetime_utc());
+            }
+            return confirmed_all;
         case ActionTypes.MARK_ALL_UNREVIEWED_AS_PASSED: {
             if (current_state.auditStatus === 'archived') return current_state;
             if (!current_state.ruleFileContent?.requirements || !current_state.samples?.length) {
@@ -259,7 +270,11 @@ export function auditReducer(current_state: any, action: any) {
             );
             new_state = { ...current_state, samples: new_samples };
             new_state = AuditLogic.recalculateAuditTimes(new_state);
-            return AuditLogic.updateIncrementalDeficiencyIds(new_state);
+            new_state = AuditLogic.updateIncrementalDeficiencyIds(new_state);
+            if (should_touch_last_local_change_at(current_state.auditStatus)) {
+                return with_last_local_change_at(new_state, timestamp);
+            }
+            return new_state;
         }
         case ActionTypes.MARK_ALL_UNREVIEWED_AS_PASSED_IN_SAMPLE: {
             if (current_state.auditStatus === 'archived') return current_state;
@@ -276,7 +291,11 @@ export function auditReducer(current_state: any, action: any) {
             );
             new_state = { ...current_state, samples: new_samples };
             new_state = AuditLogic.recalculateAuditTimes(new_state);
-            return AuditLogic.updateIncrementalDeficiencyIds(new_state);
+            new_state = AuditLogic.updateIncrementalDeficiencyIds(new_state);
+            if (should_touch_last_local_change_at(current_state.auditStatus)) {
+                return with_last_local_change_at(new_state, timestamp);
+            }
+            return new_state;
         }
         case ActionTypes.MARK_REQUIREMENT_AS_PASSED_IN_ALL_SAMPLES: {
             if (current_state.auditStatus === 'archived') return current_state;
@@ -293,7 +312,11 @@ export function auditReducer(current_state: any, action: any) {
             );
             new_state = { ...current_state, samples: new_samples };
             new_state = AuditLogic.recalculateAuditTimes(new_state);
-            return AuditLogic.updateIncrementalDeficiencyIds(new_state);
+            new_state = AuditLogic.updateIncrementalDeficiencyIds(new_state);
+            if (should_touch_last_local_change_at(current_state.auditStatus)) {
+                return with_last_local_change_at(new_state, timestamp);
+            }
+            return new_state;
         }
         case ActionTypes.STAGE_SAMPLE_CHANGES:
             return reduce_stage_sample_changes(current_state, action);
@@ -331,13 +354,11 @@ export function auditReducer(current_state: any, action: any) {
             };
             new_state = AuditLogic.recalculateAuditTimes(new_state);
             new_state = AuditLogic.updateIncrementalDeficiencyIds(new_state);
-            return {
-                ...new_state,
-                auditMetadata: {
-                    ...new_state.auditMetadata,
-                    ...build_last_local_change_metadata_patch(result_to_save, get_current_iso_datetime_utc())
-                }
-            };
+            const now_iso = get_current_iso_datetime_utc();
+            if (should_touch_last_local_change_at(current_state.auditStatus)) {
+                return with_last_local_change_at(new_state, now_iso);
+            }
+            return new_state;
         }
         case ActionTypes.SET_AUDIT_STATUS:
             return reduce_set_audit_status(current_state, action);

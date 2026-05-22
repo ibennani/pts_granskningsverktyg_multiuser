@@ -10,6 +10,11 @@
  */
 import * as AuditLogic from '../audit_logic.js';
 import { schedule_sync_to_server, schedule_sync_rulefile_to_server } from '../logic/server_sync.js';
+import {
+    note_audit_full_sync_required,
+    note_requirement_result_changed,
+    reset_audit_sync_planning_after_remote_load
+} from '../sync/audit_sync_planning.js';
 import { refresh_connectivity_banner } from '../logic/connectivity_service.js';
 import { ActionTypes } from './actionTypes.js';
 import { initial_state, APP_STATE_VERSION } from './initialState.js';
@@ -163,7 +168,24 @@ function execute_single_dispatch(
                         action.type !== ActionTypes.REPLACE_RULEFILE_FROM_REMOTE &&
                         action.type !== ActionTypes.SET_REMOTE_AUDIT_ID &&
                         internal_state.auditStatus !== 'not_started') {
+                        if (action.type === ActionTypes.UPDATE_REQUIREMENT_RESULT) {
+                            const sid = action_payload?.sampleId;
+                            const rid = action_payload?.requirementId;
+                            if (sid != null && sid !== '' && rid != null && rid !== '') {
+                                note_requirement_result_changed(String(sid), String(rid));
+                            } else {
+                                note_audit_full_sync_required();
+                            }
+                        } else {
+                            note_audit_full_sync_required();
+                        }
                         schedule_sync_to_server(() => getState(), dispatch_fn);
+                    }
+                    if (
+                        action.type === ActionTypes.REPLACE_STATE_FROM_REMOTE ||
+                        action.type === ActionTypes.LOAD_AUDIT_FROM_FILE
+                    ) {
+                        reset_audit_sync_planning_after_remote_load(internal_state.ruleFileContent);
                     }
                     if (action.type === ActionTypes.UPDATE_REQUIREMENT_RESULT) {
                         try {

@@ -77,16 +77,38 @@ export function has_unsynced_local_audit_changes(state: AuditStateLike | null | 
 }
 
 /**
- * Metadata-patch för last_local_change_at efter kravresultatändring.
+ * Om last_local_change_at ska uppdateras vid användarändring (inte intern metadata-synk).
+ */
+export function should_touch_last_local_change_at(
+    audit_status: string | undefined | null,
+    options?: { skip_internal_sync?: boolean }
+): boolean {
+    if (options?.skip_internal_sync) return false;
+    return audit_status !== 'archived' && audit_status !== 'locked';
+}
+
+/**
+ * Sätter last_local_change_at till angiven tid — vid faktisk ändring (text, knapp, metadata, stickprov).
+ */
+export function with_last_local_change_at<T extends AuditStateLike>(state: T, now_iso: string): T {
+    return {
+        ...state,
+        auditMetadata: {
+            ...(state.auditMetadata || {}),
+            last_local_change_at: now_iso
+        }
+    } as T;
+}
+
+/**
+ * Metadata-patch för last_local_change_at efter granskningsändring.
+ * Använder alltid now_iso så text-autospar (skipLastStatusBump) inte lämnar gammal tidsstämpel.
  */
 export function build_last_local_change_metadata_patch(
-    requirement_result: { lastStatusUpdate?: string | null } | null | undefined,
+    _requirement_result: { lastStatusUpdate?: string | null } | null | undefined,
     now_iso: string
 ): { last_local_change_at: string } {
-    const ts =
-        (typeof requirement_result?.lastStatusUpdate === 'string' && requirement_result.lastStatusUpdate) ||
-        now_iso;
-    return { last_local_change_at: ts };
+    return { last_local_change_at: now_iso };
 }
 
 /**

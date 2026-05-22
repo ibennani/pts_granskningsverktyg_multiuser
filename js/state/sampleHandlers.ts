@@ -4,6 +4,10 @@
 
 import * as AuditLogic from '../audit_logic.js';
 import { get_current_iso_datetime_utc } from './audit_reducer_time.js';
+import {
+    should_touch_last_local_change_at,
+    with_last_local_change_at
+} from '../logic/audit_sync_tracking.js';
 
 export function reduce_stage_sample_changes(current_state: any, action: any) {
     return { ...current_state, pendingSampleChanges: action.payload };
@@ -29,7 +33,11 @@ export function reduce_add_sample(current_state: any, action: any) {
         samples: [...current_state.samples, new_sample_with_defaults]
     };
     if (current_state.auditStatus !== 'locked') {
-        out.auditLastNonObservationActivityAt = get_current_iso_datetime_utc();
+        const now_iso = get_current_iso_datetime_utc();
+        out.auditLastNonObservationActivityAt = now_iso;
+        if (should_touch_last_local_change_at(current_state.auditStatus)) {
+            return with_last_local_change_at(out, now_iso);
+        }
     }
     return out;
 }
@@ -41,7 +49,11 @@ export function reduce_update_sample(current_state: any, action: any) {
         samples: current_state.samples.map((s: any) => s.id === action.payload.sampleId ? { ...s, ...action.payload.updatedSampleData } : s)
     };
     if (current_state.auditStatus !== 'locked') {
-        base.auditLastNonObservationActivityAt = get_current_iso_datetime_utc();
+        const now_iso = get_current_iso_datetime_utc();
+        base.auditLastNonObservationActivityAt = now_iso;
+        if (should_touch_last_local_change_at(current_state.auditStatus)) {
+            return with_last_local_change_at(base, now_iso);
+        }
     }
     return base;
 }
@@ -53,7 +65,13 @@ export function reduce_delete_sample(current_state: any, action: any) {
         samples: current_state.samples.filter((s: any) => s.id !== action.payload.sampleId)
     };
     if (current_state.auditStatus !== 'locked') {
-        new_state.auditLastNonObservationActivityAt = get_current_iso_datetime_utc();
+        const now_iso = get_current_iso_datetime_utc();
+        new_state.auditLastNonObservationActivityAt = now_iso;
+        const with_ids = AuditLogic.updateIncrementalDeficiencyIds(new_state);
+        if (should_touch_last_local_change_at(current_state.auditStatus)) {
+            return with_last_local_change_at(with_ids, now_iso);
+        }
+        return with_ids;
     }
     return AuditLogic.updateIncrementalDeficiencyIds(new_state);
 }

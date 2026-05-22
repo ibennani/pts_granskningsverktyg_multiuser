@@ -11,6 +11,7 @@ const client_path = path.join(__dirname, '../../js/api/client.js');
 const connectivity_path = path.join(__dirname, '../../js/logic/connectivity_service.js');
 
 const update_audit = jest.fn();
+const patch_requirement_result = jest.fn();
 const import_audit = jest.fn();
 const update_rule = jest.fn();
 const patch_rule_content_part = jest.fn();
@@ -28,6 +29,7 @@ const refresh_connectivity_banner = jest.fn();
 
 jest.unstable_mockModule(client_path, () => ({
     update_audit,
+    patch_requirement_result,
     import_audit,
     update_rule,
     patch_rule_content_part,
@@ -89,6 +91,7 @@ describe('server_sync', () => {
         });
         Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
         update_audit.mockResolvedValue({ version: 9, ruleSetId: 'rs1' });
+        patch_requirement_result.mockResolvedValue({ version: 10, ruleSetId: 'rs1' });
         get_audit_version.mockResolvedValue({ version: null });
         import_audit.mockResolvedValue({ auditId: 'new-a', version: 1, ruleSetId: null });
         update_rule.mockResolvedValue({ content: { ok: true }, version: 2 });
@@ -106,6 +109,8 @@ describe('server_sync', () => {
     });
 
     test('sync_to_server_now med auditId anropar update_audit', async () => {
+        const { clear_rule_file_sync_baseline_for_testing } = await import('../../js/sync/audit_sync_planning.js');
+        clear_rule_file_sync_baseline_for_testing();
         const dispatch = jest.fn();
         const state = base_audit_state({ auditId: 'a1', version: 3 });
         await sync_to_server_now(() => state, dispatch);
@@ -119,6 +124,46 @@ describe('server_sync', () => {
             })
         );
         expect(clear_audit_sync_pending).toHaveBeenCalled();
+    });
+
+    test('andra synken utelämnar regelfil om den inte ändrats', async () => {
+        const {
+            clear_rule_file_sync_baseline_for_testing,
+            mark_rule_file_synced_from_state
+        } = await import('../../js/sync/audit_sync_planning.js');
+        clear_rule_file_sync_baseline_for_testing();
+        const dispatch = jest.fn();
+        const state = base_audit_state({ auditId: 'a1', version: 3 });
+        await sync_to_server_now(() => state, dispatch);
+        expect(update_audit.mock.calls[0][1].ruleFileContent).toBeDefined();
+        mark_rule_file_synced_from_state(state.ruleFileContent);
+        update_audit.mockClear();
+        await sync_to_server_now(() => state, dispatch);
+        expect(update_audit).toHaveBeenCalledWith(
+            'a1',
+            expect.not.objectContaining({
+                ruleFileContent: expect.anything()
+            })
+        );
+    });
+
+    test('enstaka kravändring använder patch_requirement_result', async () => {
+        const {
+            clear_rule_file_sync_baseline_for_testing,
+            note_requirement_result_changed
+        } = await import('../../js/sync/audit_sync_planning.js');
+        clear_rule_file_sync_baseline_for_testing();
+        const dispatch = jest.fn();
+        const result = { status: 'failed', checkResults: {} };
+        const state = base_audit_state({
+            auditId: 'a1',
+            version: 4,
+            samples: [{ id: 's1', requirementResults: { req1: result } }]
+        });
+        note_requirement_result_changed('s1', 'req1');
+        await sync_to_server_now(() => state, dispatch);
+        expect(patch_requirement_result).toHaveBeenCalledWith('a1', 's1', 'req1', 4, result);
+        expect(update_audit).not.toHaveBeenCalled();
     });
 
     test('sync_to_server_now utan auditId anropar import_audit', async () => {
