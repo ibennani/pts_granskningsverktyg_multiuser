@@ -264,6 +264,19 @@ export class AuditActionsViewComponent {
         return { req_count, sample_count: samples_with_unreviewed };
     }
 
+    refresh_after_global_bulk_pass() {
+        const mark_btn = this.root?.querySelector('#audit-action-btn-mark-all-unreviewed');
+        const mark_item = mark_btn?.closest('.audit-actions__status-item');
+        const { req_count } = this.count_unreviewed_requirements();
+        if (req_count === 0 && mark_item) {
+            mark_item.remove();
+            return;
+        }
+        if (req_count > 0 && !mark_item) {
+            this.render();
+        }
+    }
+
     handle_mark_all_unreviewed_as_passed(event) {
         const t = this.Translation.t;
         const { req_count, sample_count } = this.count_unreviewed_requirements();
@@ -305,7 +318,7 @@ export class AuditActionsViewComponent {
                     modal.close(trigger_button);
                     this.dispatch({ type: this.StoreActionTypes.MARK_ALL_UNREVIEWED_AS_PASSED });
                     this.NotificationComponent.show_global_message(t('mark_all_unreviewed_passed_toast'), 'success');
-                    this.render();
+                    this.refresh_after_global_bulk_pass();
                 });
                 const no_btn = this.Helpers.create_element('button', {
                     class_name: ['button', 'button-default'],

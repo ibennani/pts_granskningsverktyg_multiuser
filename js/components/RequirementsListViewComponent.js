@@ -91,6 +91,15 @@ export class RequirementsListViewComponent {
             this.unsubscribe_from_store = this.subscribe((_new_state, listener_meta) => {
                 if (listener_meta?.skip_render) return;
                 if (this.root && typeof this.render === 'function') {
+                    const bulk_pass_actions = [
+                        this.StoreActionTypes?.MARK_ALL_UNREVIEWED_AS_PASSED,
+                        this.StoreActionTypes?.MARK_ALL_UNREVIEWED_AS_PASSED_IN_SAMPLE,
+                        this.StoreActionTypes?.MARK_REQUIREMENT_AS_PASSED_IN_ALL_SAMPLES
+                    ];
+                    if (bulk_pass_actions.includes(listener_meta?.action_type)) {
+                        void this.refresh_after_bulk_pass();
+                        return;
+                    }
                     void this.render();
                 }
             });

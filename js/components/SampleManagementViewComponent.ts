@@ -189,7 +189,7 @@ export class SampleManagementViewComponent {
                         payload: { sampleId: sample_id }
                     });
                     this.NotificationComponent?.show_global_message?.(t('sample_mark_bulk_pass_not_audited_toast'), 'success');
-                    this.render();
+                    this.refresh_after_sample_bulk_pass();
                 });
                 const no_btn = this.Helpers!.create_element('button', {
                     class_name: ['button', 'button-default'],
@@ -206,6 +206,14 @@ export class SampleManagementViewComponent {
         if (!this.dispatch || !this.StoreActionTypes) return;
         this.dispatch({ type: this.StoreActionTypes.SET_AUDIT_STATUS, payload: { status: 'in_progress' } });
         this.router?.('audit_overview');
+    }
+
+    refresh_after_sample_bulk_pass() {
+        if (this.sample_list_container_element?.isConnected && this.plate_element_ref?.contains(this.sample_list_container_element)) {
+            this.sample_list_component_instance.render();
+            return;
+        }
+        this.render();
     }
 
     render() {
