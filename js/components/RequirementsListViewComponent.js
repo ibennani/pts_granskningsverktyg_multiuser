@@ -68,6 +68,7 @@ export class RequirementsListViewComponent {
 
         this._last_rendered_fingerprint = null;
         this._last_list_audit_frozen = null;
+        this._bulk_pass_incremental_only = false;
         this._list_filters_hash_sync_timer = null;
 
         // Event handlers för både sample och all mode
@@ -164,7 +165,7 @@ export class RequirementsListViewComponent {
                     dispatch: this.dispatch,
                     StoreActionTypes: this.StoreActionTypes,
                     NotificationComponent: this.NotificationComponent,
-                    rerender: () => this.render()
+                    refresh_after_bulk_pass: () => this.refresh_after_bulk_pass()
                 });
             }
             return;
@@ -224,6 +225,15 @@ export class RequirementsListViewComponent {
         this.content_div_for_delegation = dom_refs.content_div_for_delegation;
         this.is_dom_initialized = true;
         return true;
+    }
+
+    async refresh_after_bulk_pass() {
+        this._bulk_pass_incremental_only = true;
+        try {
+            await this.render();
+        } finally {
+            this._bulk_pass_incremental_only = false;
+        }
     }
 
     async render() {
@@ -494,7 +504,8 @@ export class RequirementsListViewComponent {
             {
                 Helpers: this.Helpers,
                 Translation: this.Translation,
-                requirements: rule_file_content?.requirements
+                requirements: rule_file_content?.requirements,
+                getState: () => this.getState()
             }
         );
         this._last_rendered_fingerprint = list_fingerprint;

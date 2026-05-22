@@ -3,7 +3,7 @@
  * @module js/components/requirements_list/requirement_list_incremental_dom
  */
 
-import { get_stored_requirement_result_for_def, get_effective_requirement_audit_status } from '../../audit_logic.js';
+import { get_stored_requirement_result_for_def, get_effective_requirement_audit_status, effective_status_is_fully_unreviewed_for_bulk_pass } from '../../audit_logic.js';
 import { create_status_icons_wrapper } from './requirement_list_status_icons.js';
 import { sample_matches_status_filter } from './requirement_list_query.js';
 import { sample_has_deficiency_search_for_requirement } from '../../utils/requirement_deficiency_search.js';
@@ -77,6 +77,64 @@ export function build_item_keys(
 }
 
 /**
+ * Visar eller döljer knappen "Markera som godkänt i alla stickprov" efter bulk-åtgärd.
+ */
+export function sync_requirement_mark_all_passed_button(
+    req_li: HTMLElement,
+    req_id: string,
+    req: Record<string, unknown>,
+    samples: Record<string, unknown>[],
+    relevant_ids_by_sample: Map<string, Set<string>> | null | undefined,
+    requirements: unknown,
+    audit_status: string | undefined,
+    icons_ctx: { Helpers: { create_element: (...args: unknown[]) => HTMLElement }; Translation: { t: (key: string, params?: Record<string, unknown>) => string } }
+) {
+    const t = icons_ctx.Translation.t;
+    const Helpers = icons_ctx.Helpers;
+    const candidates = new Set([String(req_id)]);
+    if (req?.key) candidates.add(String(req.key));
+    if (req?.id) candidates.add(String(req.id));
+
+    const all_samples_for_req = samples.filter((sample) => {
+        const sample_set = sample?.id ? relevant_ids_by_sample?.get(String(sample.id)) : null;
+        if (!sample_set) return false;
+        return [...candidates].some((id) => sample_set.has(id));
+    });
+
+    const has_unreviewed = all_samples_for_req.some((sample) => {
+        const status = get_effective_requirement_audit_status(
+            requirements,
+            sample.requirementResults as Record<string, unknown> | undefined,
+            req,
+            req_id
+        );
+        return effective_status_is_fully_unreviewed_for_bulk_pass(status);
+    });
+
+    const existing_btn = req_li.querySelector('button[data-action="mark-requirement-passed-all"]');
+    const req_key = String(req?.key || req?.id || req_id);
+
+    if (audit_status === 'in_progress' && has_unreviewed) {
+        if (!existing_btn) {
+            const btn_text = t('mark_requirement_passed_in_all_samples_button');
+            const req_title = String(req?.title || t('unknown_value', { val: req_id }));
+            const mark_btn = Helpers.create_element('button', {
+                class_name: ['button', 'button-default', 'requirement-mark-all-passed-btn'],
+                text_content: btn_text,
+                attributes: {
+                    'data-action': 'mark-requirement-passed-all',
+                    'data-requirement-id': req_key,
+                    'aria-label': `${btn_text}: ${req_title}`
+                }
+            });
+            req_li.appendChild(mark_btn);
+        }
+    } else if (existing_btn) {
+        existing_btn.remove();
+    }
+}
+
+/**
  * @param {string} mode
  * @param {HTMLElement|null|undefined} content_div_for_delegation
  * @param {Map<string, Set<string>>|null|undefined} relevant_ids_by_sample
@@ -85,7 +143,7 @@ export function build_item_keys(
  * @param {object|null|undefined} current_sample_object
  * @param {object} filter_opts
  * @param {object} AuditLogic
- * @param {{ Helpers: object, Translation: object, requirements?: object|Array|null }} icons_ctx
+ * @param {{ Helpers: object, Translation: object, requirements?: object|Array|null, getState?: () => object }} icons_ctx
  */
 export function update_items_status_only(
     mode: any,
@@ -210,6 +268,16 @@ export function update_items_status_only(
                 if (link) link.setAttribute('aria-label', `${sample_name} – ${status_text}`);
                 if (old_icons && new_icons) old_icons.replaceWith(new_icons);
             });
+            sync_requirement_mark_all_passed_button(
+                req_li,
+                req_id,
+                req,
+                samples,
+                relevant_ids_by_sample,
+                requirements,
+                icons_ctx.getState?.()?.auditStatus,
+                icons_ctx
+            );
         });
     }
 }

@@ -21,7 +21,7 @@ import {
  * @param {function} ctx.dispatch
  * @param {object} ctx.StoreActionTypes
  * @param {object} [ctx.NotificationComponent]
- * @param {() => void} ctx.rerender
+ * @param {() => void|Promise<void>} ctx.refresh_after_bulk_pass
  */
 export function handle_mark_requirement_passed_in_all_samples(requirement_id: any, trigger_button: any, ctx: any) {
     const t = ctx.Translation.t;
@@ -105,7 +105,7 @@ export function handle_mark_requirement_passed_in_all_samples(requirement_id: an
                     payload: { requirementId: requirement_id, skip_render: true }
                 });
                 ctx.NotificationComponent?.show_global_message?.(t('mark_requirement_passed_in_all_samples_toast'), 'success');
-                ctx.rerender();
+                void ctx.refresh_after_bulk_pass?.();
             });
             const no_btn = ctx.Helpers.create_element('button', {
                 class_name: ['button', 'button-default'],
