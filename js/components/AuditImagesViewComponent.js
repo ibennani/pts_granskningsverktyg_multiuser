@@ -4,6 +4,10 @@ import './audit_images_view_component.css';
 import { build_compact_hash_fragment } from '../logic/router_url_codec.js';
 import { get_requirement_public_key, find_requirement_definition, definition_primary_id, resolve_map_entry } from '../audit_logic.ts';
 import { get_current_view_name } from '../app/browser_globals.js';
+import {
+    build_audit_images_view_fingerprint,
+    build_audit_images_structure_fingerprint
+} from '../logic/audit_images_view_incremental.js';
 
 export class AuditImagesViewComponent {
     constructor() {
@@ -18,6 +22,11 @@ export class AuditImagesViewComponent {
         this.Helpers = null;
         this.AuditLogic = null;
         this.unsubscribe = null;
+        this.plate_element_ref = null;
+        this.list_wrapper_ref = null;
+        this.is_dom_initialized = false;
+        this._last_images_fingerprint = null;
+        this._last_images_structure_fingerprint = null;
     }
 
     async init({ root, deps }) {
@@ -195,48 +204,127 @@ export class AuditImagesViewComponent {
     render() {
         if (!this.root) return;
         const t = this.Translation.t;
-        this.root.innerHTML = '';
-
         const state = this.getState();
+
         if (!state?.ruleFileContent) {
-            const plate = this.Helpers.create_element('div', { class_name: 'content-plate' });
-            plate.appendChild(this.Helpers.create_element('h1', { text_content: t('audit_images_title') }));
-            plate.appendChild(this.Helpers.create_element('p', { text_content: t('error_no_active_audit') }));
-            this.root.appendChild(plate);
+            this._render_images_error_plate(t('audit_images_title'), t('error_no_active_audit'));
             return;
         }
 
         const images = this.AuditLogic?.collect_attached_images ? this.AuditLogic.collect_attached_images(state) : [];
+        if (!this.is_dom_initialized || !this.plate_element_ref?.isConnected) {
+            this._build_images_dom_shell(t);
+            this.is_dom_initialized = true;
+        }
+        const is_audit_locked = state.auditStatus === 'locked' || state.auditStatus === 'archived';
+        this._sync_image_cards(this.group_images_by_requirement_sample(images), images, t, is_audit_locked);
+    }
 
-        const plate = this.Helpers.create_element('div', { class_name: 'content-plate audit-images-plate' });
+    _render_images_error_plate(title, message) {
+        this.is_dom_initialized = false;
+        this.plate_element_ref = null;
+        this.list_wrapper_ref = null;
+        this._last_images_fingerprint = null;
+        this._last_images_structure_fingerprint = null;
+        this.root.innerHTML = '';
+        const plate = this.Helpers.create_element('div', { class_name: 'content-plate' });
+        plate.appendChild(this.Helpers.create_element('h1', { text_content: title }));
+        plate.appendChild(this.Helpers.create_element('p', { text_content: message }));
         this.root.appendChild(plate);
+    }
 
-        const h1 = this.Helpers.create_element('h1', { text_content: t('audit_images_title') });
-        plate.appendChild(h1);
-
-        const intro = this.Helpers.create_element('p', {
+    _build_images_dom_shell(t) {
+        this.root.innerHTML = '';
+        this.plate_element_ref = this.Helpers.create_element('div', { class_name: 'content-plate audit-images-plate' });
+        this.root.appendChild(this.plate_element_ref);
+        this.plate_element_ref.appendChild(this.Helpers.create_element('h1', { text_content: t('audit_images_title') }));
+        this.plate_element_ref.appendChild(this.Helpers.create_element('p', {
             class_name: 'audit-images-intro',
             text_content: t('audit_images_intro')
-        });
-        plate.appendChild(intro);
+        }));
+        this.list_wrapper_ref = this.Helpers.create_element('div', { class_name: 'audit-images-list' });
+        this.plate_element_ref.appendChild(this.list_wrapper_ref);
+        this._last_images_fingerprint = null;
+        this._last_images_structure_fingerprint = null;
+    }
 
-        const list_wrapper = this.Helpers.create_element('div', { class_name: 'audit-images-list' });
-        plate.appendChild(list_wrapper);
+    _sync_image_cards(grouped, images, t, is_audit_locked) {
+        if (!this.list_wrapper_ref) return;
 
-        if (images.length === 0) {
-            const empty_msg = this.Helpers.create_element('p', {
+        const content_fingerprint = build_audit_images_view_fingerprint(images);
+        const structure_fingerprint = build_audit_images_structure_fingerprint(images);
+
+        if (content_fingerprint === this._last_images_fingerprint) {
+            return;
+        }
+
+        if (
+            this._last_images_structure_fingerprint
+            && structure_fingerprint === this._last_images_structure_fingerprint
+        ) {
+            grouped.forEach((group) => {
+                this._patch_image_card_filenames(group, t, is_audit_locked);
+            });
+            this._last_images_fingerprint = content_fingerprint;
+            return;
+        }
+
+        this.list_wrapper_ref.innerHTML = '';
+        if (grouped.length === 0) {
+            this.list_wrapper_ref.appendChild(this.Helpers.create_element('p', {
                 class_name: 'audit-images-empty',
                 text_content: t('audit_images_empty')
-            });
-            list_wrapper.appendChild(empty_msg);
+            }));
         } else {
-            const grouped = this.group_images_by_requirement_sample(images);
-            const is_audit_locked = state.auditStatus === 'locked' || state.auditStatus === 'archived';
             grouped.forEach((group) => {
-                const card = this.create_image_card(group, t, is_audit_locked);
-                list_wrapper.appendChild(card);
+                this.list_wrapper_ref.appendChild(this.create_image_card(group, t, is_audit_locked));
             });
         }
+
+        this._last_images_fingerprint = content_fingerprint;
+        this._last_images_structure_fingerprint = structure_fingerprint;
+    }
+
+    _patch_image_card_filenames(group, t, is_audit_locked) {
+        const card = this.list_wrapper_ref?.querySelector(
+            `.audit-image-card[data-req-map-id="${CSS.escape(String(group.reqId || ''))}"][data-sample-id="${CSS.escape(String(group.sample?.id || ''))}"]`
+        );
+        if (!card) return;
+
+        const pc_groups = this.group_items_by_check_pc(group.items);
+        pc_groups.forEach(({ check_def, pc_def, check_index, pc_index, filenames }) => {
+            const dom_check_id = definition_primary_id(check_def);
+            const dom_pc_id = definition_primary_id(pc_def);
+            if (!dom_check_id || !dom_pc_id) return;
+
+            const section = card.querySelector(
+                `.audit-image-card__pc-section[data-check-id="${CSS.escape(dom_check_id)}"][data-pc-id="${CSS.escape(dom_pc_id)}"]`
+            );
+            if (!section) return;
+
+            const ul = section.querySelector('ul.audit-image-card__filenames');
+            if (ul) {
+                ul.innerHTML = '';
+                filenames.forEach((fn) => {
+                    ul.appendChild(this.Helpers.create_element('li', { text_content: fn }));
+                });
+            }
+
+            const attach_btn = section.querySelector('button[data-action="attach-media"]');
+            if (attach_btn) {
+                const attach_btn_label = t('edit_attached_media_button', { count: filenames.length });
+                const span = attach_btn.querySelector('span');
+                if (span) {
+                    span.textContent = attach_btn_label;
+                }
+                attach_btn.setAttribute(
+                    'aria-label',
+                    `${attach_btn_label} ${t('attach_media_aria_label_for')} ${t('pass_criterion_label')} ${check_index >= 0 && pc_index >= 0 ? `${check_index + 1}.${pc_index + 1}` : ''}`
+                );
+            } else if (!is_audit_locked) {
+                /* Knappen saknas — strukturen stämmer men låsning kan ha ändrats; full omritning hanteras vid strukturbyte. */
+            }
+        });
     }
 
     group_images_by_requirement_sample(images) {
@@ -257,7 +345,13 @@ export class AuditImagesViewComponent {
     }
 
     create_image_card(group, t, is_audit_locked = false) {
-        const card = this.Helpers.create_element('article', { class_name: 'audit-image-card' });
+        const card = this.Helpers.create_element('article', {
+            class_name: 'audit-image-card',
+            attributes: {
+                'data-req-map-id': group.reqId || '',
+                'data-sample-id': group.sample?.id || ''
+            }
+        });
 
         const req_title = group.requirement?.title || group.reqId || '';
         const std_ref = group.requirement?.standardReference;
@@ -337,7 +431,15 @@ export class AuditImagesViewComponent {
 
         const pc_groups = this.group_items_by_check_pc(group.items);
         pc_groups.forEach(({ check_def, pc_def, check_index, pc_index, filenames }, idx) => {
-            const section = this.Helpers.create_element('div', { class_name: 'audit-image-card__pc-section' });
+            const dom_check_id = definition_primary_id(check_def);
+            const dom_pc_id = definition_primary_id(pc_def);
+            const section = this.Helpers.create_element('div', {
+                class_name: 'audit-image-card__pc-section',
+                attributes: {
+                    'data-check-id': dom_check_id || '',
+                    'data-pc-id': dom_pc_id || ''
+                }
+            });
             const check_num = check_index >= 0 ? check_index + 1 : '';
             const pc_num = check_index >= 0 && pc_index >= 0 ? `${check_index + 1}.${pc_index + 1}` : '';
             if (check_def?.condition) {
@@ -378,8 +480,6 @@ export class AuditImagesViewComponent {
             });
             section.appendChild(ul);
 
-            const dom_check_id = definition_primary_id(check_def);
-            const dom_pc_id = definition_primary_id(pc_def);
             if (!is_audit_locked && dom_check_id && dom_pc_id) {
                 const image_icon = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('image', ['currentColor'], 16) : '';
                 const video_icon = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('videocam', ['currentColor'], 16) : '';
@@ -437,6 +537,11 @@ export class AuditImagesViewComponent {
         if (this.root) {
             this.root.innerHTML = '';
         }
+        this.plate_element_ref = null;
+        this.list_wrapper_ref = null;
+        this.is_dom_initialized = false;
+        this._last_images_fingerprint = null;
+        this._last_images_structure_fingerprint = null;
         this.root = null;
         this.deps = null;
         this.router = null;

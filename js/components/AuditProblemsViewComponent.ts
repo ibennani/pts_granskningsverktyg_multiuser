@@ -29,6 +29,11 @@ export class AuditProblemsViewComponent {
         this._problems_signature = null;
         this._previous_problems_keys = null;
         this._focus_after_problem_solved = null;
+        this.plate_element_ref = null;
+        this.list_wrapper_ref = null;
+        this.header_row_ref = null;
+        this.problems_h1_ref = null;
+        this.is_dom_initialized = false;
     }
 
     _safe_parse_markdown(markdown_string) {
@@ -144,61 +149,198 @@ export class AuditProblemsViewComponent {
         if (typeof deps.subscribe === 'function') {
             this.unsubscribe = deps.subscribe((_new_state, listener_meta) => {
                 if (listener_meta?.skip_render) return;
-                if (!this.root || get_current_view_name() !== 'audit_problems' || typeof this.render !== 'function') return;
-                const state = this.getState();
-                const problems = this.AuditLogic?.collect_audit_problems ? this.AuditLogic.collect_audit_problems(state) : [];
-                const signature = JSON.stringify(problems.map((p) => ({ s: p.sample?.id, r: p.reqId, l: (p.stuck_text || '').length })));
-                if (this._problems_signature === signature) return;
-                const new_keys = new Set(problems.map((p) => `${p.sample?.id ?? ''}|${p.reqId ?? ''}`));
-                const prev_keys = this._previous_problems_keys || new Set();
-                const added_keys = new Set([...new_keys].filter((k) => !prev_keys.has(k)));
-                const removed_keys = new Set([...prev_keys].filter((k) => !new_keys.has(k)));
-                const content_only_change = added_keys.size === 0 && removed_keys.size === 0;
-                if (content_only_change) {
-                    this._problems_signature = signature;
-                    this._previous_problems_keys = new Set(new_keys);
-                    this.render();
-                    return;
-                }
-                const list_wrapper = this.root.querySelector('.audit-problems-list');
-                if (!list_wrapper) {
-                    this._problems_signature = signature;
-                    this._previous_problems_keys = new Set(new_keys);
-                    this.render();
-                    return;
-                }
-                const t = this.Translation.t;
-                if (added_keys.size > 0) {
-                    const empty_el = list_wrapper.querySelector('.audit-problems-empty');
-                    if (empty_el) empty_el.remove();
-                    problems.forEach((item) => {
-                        const key = `${item.sample?.id ?? ''}|${item.reqId ?? ''}`;
-                        if (added_keys.has(key)) {
-                            list_wrapper.appendChild(this.create_problem_card(item, t));
-                        }
-                    });
-                }
-                if (removed_keys.size > 0) {
-                    removed_keys.forEach((key) => {
-                        const [sample_id, req_id] = key.split('|');
-                        const card = list_wrapper.querySelector(
-                            `.audit-problem-card[data-sample-id="${CSS.escape(sample_id)}"][data-requirement-id="${CSS.escape(req_id)}"]`
-                        );
-                        if (card) card.remove();
-                    });
-                    const remaining = list_wrapper.querySelectorAll('.audit-problem-card');
-                    if (remaining.length === 0) {
-                        const empty_msg = this.Helpers.create_element('p', {
-                            class_name: 'audit-problems-empty',
-                            text_content: t('audit_problems_empty')
-                        });
-                        list_wrapper.appendChild(empty_msg);
-                    }
-                }
-                this._problems_signature = signature;
-                this._previous_problems_keys = new Set(new_keys);
+                if (!this.root || get_current_view_name() !== 'audit_problems') return;
+                this._sync_problems_from_state();
             });
         }
+    }
+
+    _build_problems_shell(t) {
+        this.root.innerHTML = '';
+        this.plate_element_ref = this.Helpers.create_element('div', { class_name: 'content-plate audit-problems-plate' });
+        this.root.appendChild(this.plate_element_ref);
+
+        this.header_row_ref = this.Helpers.create_element('div', { class_name: 'audit-problems-header-row' });
+        this.problems_h1_ref = this.Helpers.create_element('h1', {
+            text_content: t('audit_problems_title'),
+            attributes: { tabindex: '-1' }
+        });
+        this.header_row_ref.appendChild(this.problems_h1_ref);
+        this.plate_element_ref.appendChild(this.header_row_ref);
+
+        this.plate_element_ref.appendChild(this.Helpers.create_element('p', {
+            class_name: 'audit-problems-intro',
+            text_content: t('audit_problems_intro')
+        }));
+
+        this.list_wrapper_ref = this.Helpers.create_element('div', { class_name: 'audit-problems-list' });
+        this.plate_element_ref.appendChild(this.list_wrapper_ref);
+        this._problems_signature = null;
+        this._previous_problems_keys = null;
+    }
+
+    _update_problems_header(problems, t) {
+        if (!this.problems_h1_ref || !this.header_row_ref) return;
+        const problems_count = problems.length;
+        this.problems_h1_ref.textContent = problems_count > 1
+            ? t('audit_problems_title_with_count', { count: problems_count })
+            : t('audit_problems_title');
+
+        const existing_copy_all = this.header_row_ref.querySelector('.audit-problem-copy-all-btn');
+        const has_any_copyable = problems.some((p) => {
+            const stuck = (p.stuck_text || '').trim();
+            const title = (p.requirement?.title || p.reqId || '').trim();
+            const sample_desc = (p.sample?.description || p.sample?.id || '').trim();
+            return !!(stuck || title || sample_desc);
+        });
+
+        if (problems_count > 0 && has_any_copyable) {
+            if (!existing_copy_all) {
+                const copy_all_icon = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('content_copy', ['currentColor'], 16) : '';
+                const copy_all_btn = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-default', 'audit-problem-copy-btn', 'audit-problem-copy-all-btn'],
+                    attributes: { type: 'button' },
+                    html_content: `<span>${this.Helpers.escape_html(t('audit_problems_copy_all_button'))}</span>${copy_all_icon ? `<span aria-hidden="true">${copy_all_icon}</span>` : ''}`
+                });
+                copy_all_btn.addEventListener('click', this.handle_copy_all_click);
+                this.header_row_ref.appendChild(copy_all_btn);
+            }
+        } else if (existing_copy_all) {
+            existing_copy_all.remove();
+        }
+    }
+
+    _update_problem_card_content(card, item, t) {
+        const req_title = item.requirement?.title || item.reqId || '';
+        const stuck_div = card.querySelector('.audit-problem-card__stuck-text');
+        if (stuck_div) {
+            stuck_div.innerHTML = this._safe_parse_markdown(item.stuck_text || '');
+        }
+
+        const buttons_row = card.querySelector('.audit-problem-card__buttons-row');
+        if (!buttons_row) return;
+
+        const sample_id = item.sample?.id ?? '';
+        const req_id = item.reqId ?? '';
+        const has_stuck_text = (item.stuck_text || '').trim() !== '';
+        let solved_btn = buttons_row.querySelector('.audit-problem-solved-btn');
+
+        if (has_stuck_text && !solved_btn) {
+            const delete_icon = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('delete', ['currentColor'], 16) : '';
+            const solved_btn_aria_label = `${t('stuck_modal_problem_solved')}: ${req_title}`;
+            solved_btn = this.Helpers.create_element('button', {
+                class_name: ['button', 'button-danger', 'audit-problem-solved-btn'],
+                attributes: {
+                    type: 'button',
+                    'data-sample-id': sample_id,
+                    'data-requirement-id': req_id,
+                    'aria-label': solved_btn_aria_label
+                },
+                html_content: `<span>${this.Helpers.escape_html(t('stuck_modal_problem_solved'))}</span>${delete_icon ? `<span aria-hidden="true">${delete_icon}</span>` : ''}`
+            });
+            solved_btn.addEventListener('click', this.handle_problem_solved_click);
+            buttons_row.appendChild(solved_btn);
+        } else if (!has_stuck_text && solved_btn) {
+            solved_btn.remove();
+        }
+    }
+
+    _sync_problems_from_state() {
+        if (!this.root) return;
+        const t = this.Translation.t;
+        const state = this.getState();
+
+        if (!state?.ruleFileContent) {
+            this.is_dom_initialized = false;
+            this.plate_element_ref = null;
+            this.list_wrapper_ref = null;
+            this.root.innerHTML = '';
+            const plate = this.Helpers.create_element('div', { class_name: 'content-plate' });
+            plate.appendChild(this.Helpers.create_element('h1', { text_content: t('audit_problems_title') }));
+            plate.appendChild(this.Helpers.create_element('p', { text_content: t('error_no_active_audit') }));
+            this.root.appendChild(plate);
+            this._problems_signature = 'no-rulefile';
+            this._previous_problems_keys = new Set();
+            return;
+        }
+
+        if (!this.is_dom_initialized || !this.list_wrapper_ref?.isConnected) {
+            this._build_problems_shell(t);
+            this.is_dom_initialized = true;
+        }
+
+        const problems = this.AuditLogic?.collect_audit_problems ? this.AuditLogic.collect_audit_problems(state) : [];
+        const signature = JSON.stringify(problems.map((p) => ({ s: p.sample?.id, r: p.reqId, l: (p.stuck_text || '').length })));
+        if (this._problems_signature === signature) return;
+
+        const new_keys = new Set(problems.map((p) => `${p.sample?.id ?? ''}|${p.reqId ?? ''}`));
+        const prev_keys = this._previous_problems_keys || new Set();
+        const added_keys = new Set([...new_keys].filter((k) => !prev_keys.has(k)));
+        const removed_keys = new Set([...prev_keys].filter((k) => !new_keys.has(k)));
+        const content_only_change = added_keys.size === 0 && removed_keys.size === 0;
+
+        this._update_problems_header(problems, t);
+
+        if (content_only_change) {
+            problems.forEach((item) => {
+                const key = `${item.sample?.id ?? ''}|${item.reqId ?? ''}`;
+                const [sample_id, req_id] = key.split('|');
+                const card = this.list_wrapper_ref?.querySelector(
+                    `.audit-problem-card[data-sample-id="${CSS.escape(sample_id)}"][data-requirement-id="${CSS.escape(req_id)}"]`
+                );
+                if (card) {
+                    this._update_problem_card_content(card, item, t);
+                }
+            });
+            this._problems_signature = signature;
+            this._previous_problems_keys = new Set(new_keys);
+            return;
+        }
+
+        if (!this.list_wrapper_ref) return;
+
+        if (added_keys.size === 0 && removed_keys.size === 0 && problems.length === 0) {
+            this.list_wrapper_ref.innerHTML = '';
+            this.list_wrapper_ref.appendChild(this.Helpers.create_element('p', {
+                class_name: 'audit-problems-empty',
+                text_content: t('audit_problems_empty')
+            }));
+        } else if (added_keys.size === 0 && removed_keys.size === 0 && this.list_wrapper_ref.querySelectorAll('.audit-problem-card').length !== problems.length) {
+            this.list_wrapper_ref.innerHTML = '';
+            problems.forEach((item) => {
+                this.list_wrapper_ref.appendChild(this.create_problem_card(item, t));
+            });
+        } else {
+            if (added_keys.size > 0) {
+                const empty_el = this.list_wrapper_ref.querySelector('.audit-problems-empty');
+                if (empty_el) empty_el.remove();
+                problems.forEach((item) => {
+                    const key = `${item.sample?.id ?? ''}|${item.reqId ?? ''}`;
+                    if (added_keys.has(key)) {
+                        this.list_wrapper_ref.appendChild(this.create_problem_card(item, t));
+                    }
+                });
+            }
+            if (removed_keys.size > 0) {
+                removed_keys.forEach((key) => {
+                    const [sample_id, req_id] = key.split('|');
+                    const card = this.list_wrapper_ref.querySelector(
+                        `.audit-problem-card[data-sample-id="${CSS.escape(sample_id)}"][data-requirement-id="${CSS.escape(req_id)}"]`
+                    );
+                    if (card) card.remove();
+                });
+                const remaining = this.list_wrapper_ref.querySelectorAll('.audit-problem-card');
+                if (remaining.length === 0) {
+                    this.list_wrapper_ref.appendChild(this.Helpers.create_element('p', {
+                        class_name: 'audit-problems-empty',
+                        text_content: t('audit_problems_empty')
+                    }));
+                }
+            }
+        }
+
+        this._problems_signature = signature;
+        this._previous_problems_keys = new Set(new_keys);
     }
 
     build_hash(view_name, params = {}) {
@@ -431,7 +573,7 @@ export class AuditProblemsViewComponent {
                     skip_render: true
                 }
             });
-            this.render();
+            this._sync_problems_from_state();
             setTimeout(() => {
                 requestAnimationFrame(() => this._apply_focus_after_problem_solved());
             }, 50);
@@ -528,7 +670,7 @@ export class AuditProblemsViewComponent {
                             skip_render: true
                         }
                     });
-                    this.render();
+                    this._sync_problems_from_state();
                     modal.close(btn);
                 });
                 const discard_btn = this.Helpers.create_element('button', {
@@ -569,7 +711,7 @@ export class AuditProblemsViewComponent {
                                 skip_render: true
                             }
                         });
-                        this.render();
+                        this._sync_problems_from_state();
                         modal.close(btn);
                     });
                     actions_wrapper.appendChild(problem_solved_btn);
@@ -582,80 +724,27 @@ export class AuditProblemsViewComponent {
     render() {
         if (!this.root) return;
         const t = this.Translation.t;
-        this.root.innerHTML = '';
-
         const state = this.getState();
         if (!state?.ruleFileContent) {
-            this._problems_signature = 'no-rulefile';
-            this._previous_problems_keys = new Set();
+            this.is_dom_initialized = false;
+            this.plate_element_ref = null;
+            this.list_wrapper_ref = null;
+            this.root.innerHTML = '';
             const plate = this.Helpers.create_element('div', { class_name: 'content-plate' });
             plate.appendChild(this.Helpers.create_element('h1', { text_content: t('audit_problems_title') }));
             plate.appendChild(this.Helpers.create_element('p', { text_content: t('error_no_active_audit') }));
             this.root.appendChild(plate);
+            this._problems_signature = 'no-rulefile';
+            this._previous_problems_keys = new Set();
             return;
         }
 
-        const problems = this.AuditLogic?.collect_audit_problems ? this.AuditLogic.collect_audit_problems(state) : [];
-        if (is_debug_problems_update()) {
-            consoleManager.log('[GV-Debug problems] render: antal problem att rita:', problems.length, 'ruleFileContent.requirements:', state?.ruleFileContent?.requirements ? 'finns' : 'saknas');
-        }
-        this._problems_signature = JSON.stringify(problems.map((p) => ({ s: p.sample?.id, r: p.reqId, l: (p.stuck_text || '').length })));
-        this._previous_problems_keys = new Set(problems.map((p) => `${p.sample?.id ?? ''}|${p.reqId ?? ''}`));
-
-        const plate = this.Helpers.create_element('div', { class_name: 'content-plate audit-problems-plate' });
-        this.root.appendChild(plate);
-
-        const header_row = this.Helpers.create_element('div', { class_name: 'audit-problems-header-row' });
-        const problems_count = problems.length;
-        const heading_text = problems_count > 1
-            ? t('audit_problems_title_with_count', { count: problems_count })
-            : t('audit_problems_title');
-        const h1 = this.Helpers.create_element('h1', {
-            text_content: heading_text,
-            attributes: { tabindex: '-1' }
-        });
-        header_row.appendChild(h1);
-
-        const has_any_copyable = problems.some((p) => {
-            const stuck = (p.stuck_text || '').trim();
-            const title = (p.requirement?.title || p.reqId || '').trim();
-            const sample_desc = (p.sample?.description || p.sample?.id || '').trim();
-            return !!(stuck || title || sample_desc);
-        });
-        if (problems.length > 0 && has_any_copyable) {
-            const copy_all_icon = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('content_copy', ['currentColor'], 16) : '';
-            const copy_all_btn = this.Helpers.create_element('button', {
-                class_name: ['button', 'button-default', 'audit-problem-copy-btn', 'audit-problem-copy-all-btn'],
-                attributes: { type: 'button' },
-                html_content: `<span>${this.Helpers.escape_html(t('audit_problems_copy_all_button'))}</span>${copy_all_icon ? `<span aria-hidden="true">${copy_all_icon}</span>` : ''}`
-            });
-            copy_all_btn.addEventListener('click', this.handle_copy_all_click);
-            header_row.appendChild(copy_all_btn);
+        if (!this.is_dom_initialized || !this.list_wrapper_ref?.isConnected) {
+            this._build_problems_shell(t);
+            this.is_dom_initialized = true;
         }
 
-        plate.appendChild(header_row);
-
-        const intro = this.Helpers.create_element('p', {
-            class_name: 'audit-problems-intro',
-            text_content: t('audit_problems_intro')
-        });
-        plate.appendChild(intro);
-
-        const list_wrapper = this.Helpers.create_element('div', { class_name: 'audit-problems-list' });
-        plate.appendChild(list_wrapper);
-
-        if (problems.length === 0) {
-            const empty_msg = this.Helpers.create_element('p', {
-                class_name: 'audit-problems-empty',
-                text_content: t('audit_problems_empty')
-            });
-            list_wrapper.appendChild(empty_msg);
-        } else {
-            problems.forEach((item) => {
-                const card = this.create_problem_card(item, t);
-                list_wrapper.appendChild(card);
-            });
-        }
+        this._sync_problems_from_state();
     }
 
     create_problem_card(item, t) {
@@ -816,6 +905,11 @@ export class AuditProblemsViewComponent {
         }
         this._problems_signature = null;
         this._previous_problems_keys = null;
+        this.plate_element_ref = null;
+        this.list_wrapper_ref = null;
+        this.header_row_ref = null;
+        this.problems_h1_ref = null;
+        this.is_dom_initialized = false;
         if (this.root) {
             this.root.innerHTML = '';
         }
