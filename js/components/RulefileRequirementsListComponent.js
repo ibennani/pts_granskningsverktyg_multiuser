@@ -4,6 +4,10 @@ import { get_searchable_text_for_requirement } from '../utils/requirement_search
 import { prepareString } from '../utils/string_filter_normalize.js';
 import { show_confirm_delete_modal, build_delete_warning_text } from '../logic/confirm_delete_modal_logic.js';
 import { can_edit_rulefile } from '../utils/helpers.js';
+import {
+    fingerprint_rulefile_requirements_list_view,
+    should_repopulate_rulefile_requirements_list
+} from '../logic/rulefile_requirements_list_update_gate.js';
 import './rulefile_requirements_list_component.css';
 import { consoleManager } from '../utils/console_manager.js';
 
@@ -33,6 +37,7 @@ export class RulefileRequirementsListComponent {
         this.plate_element_ref = null;
         this.unsubscribe_from_store_function = null;
         this.results_summary_element = null;
+        this._last_list_view_fingerprint = null;
     }
 
     async init({ root, deps }) {
@@ -53,6 +58,7 @@ export class RulefileRequirementsListComponent {
         this.plate_element_ref = null;
         this.unsubscribe_from_store_function = null;
         this.results_summary_element = null;
+        this._last_list_view_fingerprint = null;
 
         // Bind methods
         this.handle_list_click = this.handle_list_click.bind(this);
@@ -157,16 +163,13 @@ export class RulefileRequirementsListComponent {
             payload
         });
         consoleManager.log('[RulefileRequirementsListComponent] dispatched payload:', JSON.stringify(payload));
-        // Note: render is triggered by subscription, but explicit render call in old code existed.
-        // The subscription handler calls _populate_dynamic_content, so we might not need full render.
-        // But original code called render(), so let's call it to be safe, though it might be redundant with subscription.
-        this.render();
     }
 
-    handle_state_update() {
-        if (this.is_dom_initialized) {
-            this._populate_dynamic_content();
-        }
+    handle_state_update(_new_state, listener_meta) {
+        if (listener_meta?.skip_render) return;
+        if (!this.is_dom_initialized) return;
+        if (!should_repopulate_rulefile_requirements_list(listener_meta?.action_type)) return;
+        this._populate_dynamic_content();
     }
 
     async _initialRender() {
@@ -321,6 +324,12 @@ export class RulefileRequirementsListComponent {
             'title_desc': (a, b) => (b.title || '').localeCompare(a.title || '')
         };
         sorted_requirements.sort(sort_function[filter_settings.sortBy] || sort_function['ref_asc']);
+
+        const list_fingerprint = fingerprint_rulefile_requirements_list_view(filter_settings, sorted_requirements);
+        if (this._last_list_view_fingerprint === list_fingerprint) {
+            return;
+        }
+        this._last_list_view_fingerprint = list_fingerprint;
 
         this.content_div_for_delegation.innerHTML = '';
         if (sorted_requirements.length === 0) {
@@ -539,6 +548,7 @@ export class RulefileRequirementsListComponent {
         }
         this.is_dom_initialized = false;
         this.plate_element_ref = null;
+        this._last_list_view_fingerprint = null;
         this.root = null;
         this.deps = null;
     }

@@ -67,6 +67,7 @@ export class RequirementsListViewComponent {
         this.content_div_for_delegation = null;
 
         this._last_rendered_fingerprint = null;
+        this._last_list_audit_frozen = null;
         this._list_filters_hash_sync_timer = null;
 
         // Event handlers för både sample och all mode
@@ -89,7 +90,7 @@ export class RequirementsListViewComponent {
             this.unsubscribe_from_store = this.subscribe((_new_state, listener_meta) => {
                 if (listener_meta?.skip_render) return;
                 if (this.root && typeof this.render === 'function') {
-                    this.render();
+                    void this.render();
                 }
             });
         }
@@ -294,15 +295,6 @@ export class RequirementsListViewComponent {
             this.current_sample_object = current_sample_object;
         }
 
-        // Render header based on mode
-        if (this.mode === 'all') {
-            const total_count = entries.length;
-            this.h1_element_ref.textContent = t('all_requirements_title_audit_with_count', { count: total_count });
-        } else {
-            render_sample_header(state, current_sample_object, all_relevant_requirements, this.header_element_ref, this.Helpers, this.Translation, this.AuditLogic);
-        }
-
-        // Get filter settings
         let current_ui_settings = ensure_default_status_filter(state.uiSettings?.[this.state_filter_key] || {});
 
         const auto_sort_by = compute_auto_sort_by_override(this.mode, entries, all_relevant_requirements, current_ui_settings);
@@ -312,6 +304,88 @@ export class RequirementsListViewComponent {
                 payload: { ...current_ui_settings, sortBy: auto_sort_by }
             });
             current_ui_settings = { ...current_ui_settings, sortBy: auto_sort_by };
+        }
+
+        const status_filters = current_ui_settings.status || {};
+        const has_status_filters = Object.keys(status_filters).length > 0;
+        const requirement_needs_help_fn = this.AuditLogic?.requirement_needs_help || (() => false);
+        const filter_items_input = this.mode === 'all' ? entries : all_relevant_requirements;
+        const audit_frozen = state.auditStatus === 'locked' || state.auditStatus === 'archived';
+        const { filtered_items, total_count } = filter_requirements(filter_items_input, current_ui_settings, {
+            mode: this.mode,
+            samples,
+            relevant_ids_by_sample: this.relevant_ids_by_sample,
+            current_sample_object,
+            AuditLogic: this.AuditLogic,
+            requirements: rule_file_content?.requirements,
+            audit_frozen
+        });
+        const filtered_count = filtered_items.length;
+        const sort_by = current_ui_settings.sortBy || 'ref_asc';
+        const sorted_items = sort_items(
+            this.mode,
+            filtered_items,
+            sort_by,
+            current_sample_object,
+            samples,
+            this.relevant_ids_by_sample,
+            rule_file_content?.requirements,
+            this.AuditLogic,
+            this.Helpers
+        );
+
+        const search_term = (current_ui_settings.searchText || '').toLowerCase().trim();
+        const status_keys_for_filter = ['needs_help', 'passed', 'failed', 'partially_audited', 'not_audited', 'updated'];
+        const has_search_filter = this.mode === 'all' && search_term.length > 0;
+        const has_status_filter_excluding = has_status_filters && status_keys_for_filter.some(key => status_filters[key] !== true);
+        const has_active_filter = has_search_filter || has_status_filter_excluding;
+        const deficiency_search_number =
+            this.mode === 'all' && audit_frozen
+                ? parse_deficiency_search_number(current_ui_settings.searchText)
+                : null;
+        const filter_opts = {
+            status_filters,
+            has_status_filters,
+            requirement_needs_help_fn,
+            has_active_filter,
+            deficiency_search_number
+        };
+        const item_keys = build_item_keys(
+            this.mode,
+            sorted_items,
+            samples,
+            this.relevant_ids_by_sample,
+            filter_opts,
+            this.AuditLogic,
+            rule_file_content?.requirements
+        );
+        const list_fingerprint = fingerprint_item_keys(item_keys);
+
+        if (
+            this._apply_incremental_list_refresh({
+                state,
+                t,
+                current_sample_object,
+                all_relevant_requirements,
+                sorted_items,
+                samples,
+                filter_opts,
+                rule_file_content,
+                total_count,
+                filtered_count,
+                list_fingerprint,
+                audit_frozen
+            })
+        ) {
+            return;
+        }
+
+        // Render header based on mode
+        if (this.mode === 'all') {
+            const total_count_all = entries.length;
+            this.h1_element_ref.textContent = t('all_requirements_title_audit_with_count', { count: total_count_all });
+        } else {
+            render_sample_header(state, current_sample_object, all_relevant_requirements, this.header_element_ref, this.Helpers, this.Translation, this.AuditLogic);
         }
 
         if (this.filter_component_instance?.init && this.filter_component_instance?.render) {
@@ -347,111 +421,85 @@ export class RequirementsListViewComponent {
             });
         }
 
-        // Filter and sort requirements — samma filterlogik som högerspalten
-        const status_filters = current_ui_settings.status || {};
-        const has_status_filters = Object.keys(status_filters).length > 0;
-
-        const requirement_needs_help_fn = this.AuditLogic?.requirement_needs_help || (() => false);
-
-        const filter_items_input = this.mode === 'all' ? entries : all_relevant_requirements;
-        const audit_frozen = state.auditStatus === 'locked' || state.auditStatus === 'archived';
-        const { filtered_items, total_count } = filter_requirements(filter_items_input, current_ui_settings, {
-            mode: this.mode,
-            samples,
-            relevant_ids_by_sample: this.relevant_ids_by_sample,
-            current_sample_object,
-            AuditLogic: this.AuditLogic,
-            requirements: rule_file_content?.requirements,
-            audit_frozen
-        });
-
-        const filtered_count = filtered_items.length;
-
-        // Update results summary
         this.results_summary_element_ref.textContent = t('results_summary_template', {
             filteredCount: filtered_count,
             totalCount: total_count
         });
 
-        // Sort items
-        const sort_by = current_ui_settings.sortBy || 'ref_asc';
-        const sorted_items = sort_items(
-            this.mode,
-            filtered_items,
-            sort_by,
-            current_sample_object,
-            samples,
-            this.relevant_ids_by_sample,
-            rule_file_content?.requirements,
-            this.AuditLogic,
-            this.Helpers
-        );
-
-        const search_term = (current_ui_settings.searchText || '').toLowerCase().trim();
-        const status_keys_for_filter = ['needs_help', 'passed', 'failed', 'partially_audited', 'not_audited', 'updated'];
-        const has_search_filter = this.mode === 'all' && search_term.length > 0;
-        const has_status_filter_excluding = has_status_filters && status_keys_for_filter.some(key => status_filters[key] !== true);
-        const has_active_filter = has_search_filter || has_status_filter_excluding;
-
-        const deficiency_search_number =
-            this.mode === 'all' && audit_frozen
-                ? parse_deficiency_search_number(current_ui_settings.searchText)
-                : null;
-
-        // Render items eller inkrementell uppdatering
-        const filter_opts = {
-            status_filters,
-            has_status_filters,
-            requirement_needs_help_fn,
-            has_active_filter,
-            deficiency_search_number
-        };
-        const item_keys = build_item_keys(
-            this.mode,
+        render_requirements_content(
+            {
+                mode: this.mode,
+                Helpers: this.Helpers,
+                Translation: this.Translation,
+                AuditLogic: this.AuditLogic,
+                content_div_for_delegation: this.content_div_for_delegation,
+                empty_message_element_ref: this.empty_message_element_ref,
+                relevant_ids_by_sample: this.relevant_ids_by_sample,
+                RETURN_FOCUS_SESSION_KEY: this.RETURN_FOCUS_SESSION_KEY,
+                sample_params_id: this.params?.sampleId || null,
+                getState: () => this.getState(),
+                requirements: rule_file_content?.requirements
+            },
             sorted_items,
-            samples,
-            this.relevant_ids_by_sample,
-            filter_opts,
-            this.AuditLogic,
-            rule_file_content?.requirements
+            { samples, current_sample_object, total_count, filtered_count, filter_opts }
         );
+        this._last_rendered_fingerprint = list_fingerprint;
+        this._last_list_audit_frozen = audit_frozen;
+    }
 
-        if (can_incremental_update(this._last_rendered_fingerprint, fingerprint_item_keys(item_keys))) {
-            update_items_status_only(
-                this.mode,
-                this.content_div_for_delegation,
-                this.relevant_ids_by_sample,
-                sorted_items,
-                samples,
+    _apply_incremental_list_refresh({
+        state,
+        t,
+        current_sample_object,
+        all_relevant_requirements,
+        sorted_items,
+        samples,
+        filter_opts,
+        rule_file_content,
+        total_count,
+        filtered_count,
+        list_fingerprint,
+        audit_frozen
+    }) {
+        if (!this.is_dom_initialized || !this.content_div_for_delegation) return false;
+        if (!can_incremental_update(this._last_rendered_fingerprint, list_fingerprint)) return false;
+        if (this._last_list_audit_frozen !== audit_frozen) return false;
+
+        if (this.mode === 'sample') {
+            render_sample_header(
+                state,
                 current_sample_object,
-                filter_opts,
-                this.AuditLogic,
-                {
-                    Helpers: this.Helpers,
-                    Translation: this.Translation,
-                    requirements: rule_file_content?.requirements
-                }
-            );
-        } else {
-            render_requirements_content(
-                {
-                    mode: this.mode,
-                    Helpers: this.Helpers,
-                    Translation: this.Translation,
-                    AuditLogic: this.AuditLogic,
-                    content_div_for_delegation: this.content_div_for_delegation,
-                    empty_message_element_ref: this.empty_message_element_ref,
-                    relevant_ids_by_sample: this.relevant_ids_by_sample,
-                    RETURN_FOCUS_SESSION_KEY: this.RETURN_FOCUS_SESSION_KEY,
-                    sample_params_id: this.params?.sampleId || null,
-                    getState: () => this.getState(),
-                    requirements: rule_file_content?.requirements
-                },
-                sorted_items,
-                { samples, current_sample_object, total_count, filtered_count, filter_opts }
+                all_relevant_requirements,
+                this.header_element_ref,
+                this.Helpers,
+                this.Translation,
+                this.AuditLogic
             );
         }
-        this._last_rendered_fingerprint = fingerprint_item_keys(item_keys);
+
+        this.results_summary_element_ref.textContent = t('results_summary_template', {
+            filteredCount: filtered_count,
+            totalCount: total_count
+        });
+
+        update_items_status_only(
+            this.mode,
+            this.content_div_for_delegation,
+            this.relevant_ids_by_sample,
+            sorted_items,
+            samples,
+            current_sample_object,
+            filter_opts,
+            this.AuditLogic,
+            {
+                Helpers: this.Helpers,
+                Translation: this.Translation,
+                requirements: rule_file_content?.requirements
+            }
+        );
+        this._last_rendered_fingerprint = list_fingerprint;
+        this._last_list_audit_frozen = audit_frozen;
+        return true;
     }
 
     destroy() {
@@ -486,5 +534,7 @@ export class RequirementsListViewComponent {
         this.results_summary_element_ref = null;
         this.empty_message_element_ref = null;
         this.list_element_ref = null;
+        this._last_rendered_fingerprint = null;
+        this._last_list_audit_frozen = null;
     }
 }
