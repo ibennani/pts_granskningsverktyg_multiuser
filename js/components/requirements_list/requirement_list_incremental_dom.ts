@@ -4,6 +4,7 @@
  */
 
 import { get_stored_requirement_result_for_def, get_effective_requirement_audit_status, effective_status_is_fully_unreviewed_for_bulk_pass } from '../../audit_logic.js';
+import type { RequirementResultStored } from '../../logic/audit_logic_types.js';
 import { create_status_icons_wrapper } from './requirement_list_status_icons.js';
 import { sample_matches_status_filter } from './requirement_list_query.js';
 import { sample_has_deficiency_search_for_requirement } from '../../utils/requirement_deficiency_search.js';
@@ -104,7 +105,7 @@ export function sync_requirement_mark_all_passed_button(
     const has_unreviewed = all_samples_for_req.some((sample) => {
         const status = get_effective_requirement_audit_status(
             requirements,
-            sample.requirementResults as Record<string, unknown> | undefined,
+            sample.requirementResults as Record<string, RequirementResultStored> | undefined,
             req,
             req_id
         );

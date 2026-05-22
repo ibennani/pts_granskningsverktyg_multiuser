@@ -2,7 +2,7 @@
  * @fileoverview Mappar databasrad från granskningslistan till API-objekt (progress, bristindex m.m.).
  */
 
-import { compute_audit_progress_percent } from '../../js/logic/audit_list_progress.ts';
+import { compute_audit_progress_percent } from '../../js/logic/audit_list_progress.js';
 import { calculateQualityScore } from '../../js/logic/ScoreCalculator.js';
 import { count_business_days, extract_min_max_timestamps } from './audit_route_support.js';
 

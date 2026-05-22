@@ -2,7 +2,7 @@
  * @fileoverview Framsteg enligt granskningsöversikten – samma räkning och avrundning överallt.
  */
 
-import type { AuditStateShape } from './audit_logic_types.js';
+import type { AuditStateShape, SampleStored } from './audit_logic_types.js';
 import { calculate_overall_audit_progress } from './audit_logic_progress.js';
 
 export type AuditProgressSource = {
@@ -37,8 +37,10 @@ function parse_json_field<T>(value: T | string | null | undefined): T | null | u
     }
 }
 
-function normalize_samples(samples: unknown): unknown[] | null {
-    const parsed = parse_json_field<unknown[]>(samples as string | unknown[] | null | undefined);
+function normalize_samples(samples: unknown): SampleStored[] | null {
+    const parsed = parse_json_field<SampleStored[]>(
+        samples as string | SampleStored[] | null | undefined
+    );
     if (!parsed) {
         return null;
     }

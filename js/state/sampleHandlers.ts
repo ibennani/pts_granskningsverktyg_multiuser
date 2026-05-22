@@ -67,7 +67,7 @@ export function reduce_delete_sample(current_state: any, action: any) {
     if (current_state.auditStatus !== 'locked') {
         const now_iso = get_current_iso_datetime_utc();
         new_state.auditLastNonObservationActivityAt = now_iso;
-        const with_ids = AuditLogic.updateIncrementalDeficiencyIds(new_state);
+        const with_ids = AuditLogic.updateIncrementalDeficiencyIds(new_state) ?? new_state;
         if (should_touch_last_local_change_at(current_state.auditStatus)) {
             return with_last_local_change_at(with_ids, now_iso);
         }
