@@ -67,6 +67,7 @@ log('SERVERDB', 'Startar instans mot serverns databas…');
 log('SERVERDB', `Frontend: http://localhost:${CLIENT_PORT}/v2/`);
 
 spawn_tunnel();
+spawn_child('BUILDINFO', 'node', ['scripts/dev-build-info-watcher.js']);
 
 const wait_tunnel = spawn('npx', [
     'wait-on',

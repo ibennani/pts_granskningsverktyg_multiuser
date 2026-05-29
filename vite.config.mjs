@@ -169,8 +169,38 @@ export default defineConfig({
   },
   preview: {
     host: '0.0.0.0',
-    port: 4173,
-    strictPort: true
+    port: dev_client_port,
+    strictPort: true,
+    proxy: {
+      '/v2/api': {
+        target: dev_api_target,
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/v2/, ''),
+        configure: (proxy) => {
+          proxy.on('error', (err, _req, res) => {
+            if (!is_ignorable_ws_error(err)) {
+              console.warn('[vite preview] api proxy:', err?.message || err)
+            }
+            if (res && !res.headersSent) {
+              res.writeHead(503, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ ok: false, error: 'Backend ej tillgänglig' }));
+            }
+          });
+        }
+      },
+      '/v2/ws': {
+        target: dev_api_target,
+        ws: true,
+        rewrite: (path) => path.replace(/^\/v2/, ''),
+        configure: (proxy) => {
+          proxy.on('error', (err, _req, _res) => {
+            if (!is_ignorable_ws_error(err)) {
+              console.warn('[vite preview] ws proxy:', err?.message || err)
+            }
+          });
+        }
+      }
+    }
   },
   resolve: {
     preserveSymlinks: true,
