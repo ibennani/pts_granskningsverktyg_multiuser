@@ -275,6 +275,17 @@ html {
     overflow-x: hidden;
 }
 
+/* Lokal dev mot serverns databas (npm run dev:serverdb) – 3px röd ram vid viewport-kanten */
+html.local-serverdb-viewport::before {
+    box-sizing: border-box;
+    content: '';
+    position: fixed;
+    inset: 0;
+    border: 3px solid #c00;
+    pointer-events: none;
+    z-index: 2147483647;
+}
+
 body {
     font-family: var(--font-family-base);
     font-size: var(--font-size-base);

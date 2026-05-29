@@ -14,8 +14,9 @@ När användaren skriver **`Pusha`** (exakt ordet) ska agenten **endast** skapa 
 1. Kör `git status`, `git diff` och `git log -5` för att förstå alla ändringar.
 2. Analysera alla staged och unstaged ändringar.
 3. Generera ett commit-meddelande på svenska:
-   - Om det bara är en tydlig åtgärd: skriv en kort sammanfattande rad.
-   - Om det finns fler än en tydlig åtgärd: använd en numrerad lista i brödtexten (`1. ...`, `2. ...`) där varje punkt beskriver en användarsynlig ändring.
+ - Om det bara är en tydlig åtgärd: skriv en kort sammanfattande rad.
+ - Om det finns fler än en tydlig åtgärd: använd en numrerad lista i brödtexten (`1. ...`, `2. ...`) där varje punkt beskriver en användarsynlig ändring.
+ - **Endast själva meddelandet** – ingen `Co-authored-by`, ingen "Made with Cursor" och ingen annan metadata om AI eller Cursor.
 4. Lägg till relevanta filer med `git add` (utelämna uppenbara hemligheter som `.env`, nycklar, lösenord).
 5. Kör `git commit` med det genererade meddelandet.
 6. Kontrollera med `git status` att arbetskatalogen är ren.

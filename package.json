@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently -k -n \"DOCKER,NGROK,APP,BUILDINFO\" -c \"blue,green,magenta,cyan\" \"node scripts/dev-with-docker.js\" \"npm run ngrok\" \"npx wait-on tcp:localhost:3000 --timeout 60000 && cross-env BROWSER=msedge vite\" \"node scripts/dev-build-info-watcher.js\"",
+    "dev:local": "npm run dev",
+    "dev:serverdb": "node scripts/dev-server-db.js",
     "ngrok": "node scripts/ngrok.js",
     "vibe": "npm run dev",
     "dev:client": "vite",

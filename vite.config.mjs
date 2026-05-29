@@ -84,6 +84,10 @@ function dev_serve_build_info_public_first () {
   }
 }
 
+const dev_api_port = Number(process.env.DEV_API_PORT || 3000)
+const dev_client_port = Number(process.env.DEV_CLIENT_PORT || 5173)
+const dev_api_target = `http://localhost:${dev_api_port}`
+
 export default defineConfig({
   base: '/v2/',
   plugins: [
@@ -122,12 +126,12 @@ export default defineConfig({
     })
   ],
   server: {
-    port: 5173,
+    port: dev_client_port,
     strictPort: false,
     open: false,
     proxy: {
       '/v2/api': {
-        target: 'http://localhost:3000',
+        target: dev_api_target,
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/v2/, ''),
         configure: (proxy) => {
@@ -143,7 +147,7 @@ export default defineConfig({
         }
       },
       '/v2/ws': {
-        target: 'http://localhost:3000',
+        target: dev_api_target,
         ws: true,
         rewrite: (path) => path.replace(/^\/v2/, ''),
         configure: (proxy) => {

@@ -126,7 +126,7 @@ export function is_dev_build_environment(): boolean {
     if (typeof window === 'undefined') return false;
     const h = window.location.hostname;
     const p = window.location.port;
-    return h === 'localhost' || h === '127.0.0.1' || p === '5173' || p === '4173';
+    return h === 'localhost' || h === '127.0.0.1' || p === '5173' || p === '5174' || p === '4173';
 }
 
 /**

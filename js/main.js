@@ -76,6 +76,7 @@ import {
 import { render_view as render_view_impl } from './logic/view_render.js';
 import { init_app as init_app_impl, run_when_dom_ready } from './logic/app_bootstrap.js';
 import { set_debug_nav, is_debug_nav, set_debug_krav_vy } from './app/runtime_flags.js';
+import { apply_local_serverdb_viewport_indicator } from './logic/local_serverdb_indicator.ts';
 
 const notificationComponent = new NotificationComponent();
 const modalComponent = new ModalComponent();
@@ -96,6 +97,8 @@ if (typeof window !== 'undefined') {
 
 (function () {
     'use strict';
+
+    apply_local_serverdb_viewport_indicator();
 
     if (typeof window !== 'undefined' && window.location.search.includes('debug=nav')) {
         set_debug_nav(true);
