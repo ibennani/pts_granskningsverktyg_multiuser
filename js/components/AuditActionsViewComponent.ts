@@ -45,6 +45,7 @@ export class AuditActionsViewComponent {
         this.ExportLogic = deps.ExportLogic;
         this.AuditLogic = deps.AuditLogic;
         this.SaveAuditLogic = deps.SaveAuditLogic || window.SaveAuditLogic;
+        this.flush_sync_to_server = deps.flush_sync_to_server || null;
 
         if (this.Helpers?.load_css && this.CSS_PATH) {
             await this.Helpers.load_css(this.CSS_PATH).catch(() => {});
@@ -142,60 +143,85 @@ export class AuditActionsViewComponent {
         }
     }
 
-    handle_lock_audit(event) {
+    _primary_status_button_id(audit_status) {
+        const id_by_status = {
+            in_progress: 'audit-action-btn-lock-audit',
+            locked: 'audit-action-btn-unlock-audit',
+            archived: 'audit-action-btn-activate-audit'
+        };
+        return id_by_status[audit_status] || null;
+    }
+
+    _focus_primary_status_button(audit_status) {
+        const button_id = this._primary_status_button_id(audit_status);
+        if (!button_id || !this.root) return;
+        const button = this.root.querySelector(`#${CSS.escape(button_id)}`);
+        if (!button || typeof button.focus !== 'function') return;
+        try {
+            button.focus({ preventScroll: true });
+        } catch {
+            button.focus();
+        }
+    }
+
+    _apply_audit_status_change(event, { status, success_message_key }) {
         const t = this.Translation.t;
         const btn = event?.currentTarget;
         if (btn) {
             btn.classList.add('audit-actions__btn--animating');
             btn.setAttribute('aria-busy', 'true');
         }
-        setTimeout(() => {
-            if (btn) btn.removeAttribute('aria-busy');
-            this.dispatch({ type: this.StoreActionTypes.SET_AUDIT_STATUS, payload: { status: 'locked' } });
-            this.NotificationComponent.show_global_message(t('audit_locked_successfully'), 'success');
+        setTimeout(async () => {
+            try {
+                if (btn) btn.removeAttribute('aria-busy');
+                if (!this.dispatch || !this.StoreActionTypes) return;
+                await this.dispatch({
+                    type: this.StoreActionTypes.SET_AUDIT_STATUS,
+                    payload: { status }
+                });
+                // Fokus ligger kvar på knappen efter klick; subscribe hoppar då över render().
+                this.render();
+                this._focus_primary_status_button(status);
+                try {
+                    if (this.flush_sync_to_server && this.getState) {
+                        await this.flush_sync_to_server(this.getState, this.dispatch);
+                    }
+                } catch {
+                    // Synkfel visas via connectivity-varning; lokal statusändring är klar.
+                }
+                this.NotificationComponent?.show_global_message?.(t(success_message_key), 'success');
+            } catch {
+                this.NotificationComponent?.show_global_message?.(t('error_internal'), 'error');
+            }
         }, 500);
+    }
+
+    handle_lock_audit(event) {
+        this._apply_audit_status_change(event, {
+            status: 'locked',
+            success_message_key: 'audit_locked_successfully'
+        });
     }
 
     handle_unlock_audit(event) {
-        const t = this.Translation.t;
-        const btn = event?.currentTarget;
-        if (btn) {
-            btn.classList.add('audit-actions__btn--animating');
-            btn.setAttribute('aria-busy', 'true');
-        }
-        setTimeout(() => {
-            if (btn) btn.removeAttribute('aria-busy');
-            this.dispatch({ type: this.StoreActionTypes.SET_AUDIT_STATUS, payload: { status: 'in_progress' } });
-            this.NotificationComponent.show_global_message(t('audit_unlocked_successfully'), 'success');
-        }, 500);
+        this._apply_audit_status_change(event, {
+            status: 'in_progress',
+            success_message_key: 'audit_unlocked_successfully'
+        });
     }
 
     handle_archive_audit(event) {
-        const t = this.Translation.t;
-        const btn = event?.currentTarget;
-        if (btn) {
-            btn.classList.add('audit-actions__btn--animating');
-            btn.setAttribute('aria-busy', 'true');
-        }
-        setTimeout(() => {
-            if (btn) btn.removeAttribute('aria-busy');
-            this.dispatch({ type: this.StoreActionTypes.SET_AUDIT_STATUS, payload: { status: 'archived' } });
-            this.NotificationComponent.show_global_message(t('audit_archived_successfully'), 'success');
-        }, 500);
+        this._apply_audit_status_change(event, {
+            status: 'archived',
+            success_message_key: 'audit_archived_successfully'
+        });
     }
 
     handle_activate_audit(event) {
-        const t = this.Translation.t;
-        const btn = event?.currentTarget;
-        if (btn) {
-            btn.classList.add('audit-actions__btn--animating');
-            btn.setAttribute('aria-busy', 'true');
-        }
-        setTimeout(() => {
-            if (btn) btn.removeAttribute('aria-busy');
-            this.dispatch({ type: this.StoreActionTypes.SET_AUDIT_STATUS, payload: { status: 'locked' } });
-            this.NotificationComponent.show_global_message(t('audit_reactivated_successfully'), 'success');
-        }, 500);
+        this._apply_audit_status_change(event, {
+            status: 'locked',
+            success_message_key: 'audit_reactivated_successfully'
+        });
     }
 
     handle_export_csv() {
