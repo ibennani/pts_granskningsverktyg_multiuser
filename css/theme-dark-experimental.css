@@ -136,6 +136,10 @@
 
     --de-focus-ring-inner: 0 0 0 calc(var(--focus-inner-width) + var(--focus-offset)) var(--focus-inner-color);
     --de-focus-ring-outline-offset: calc(var(--focus-offset) + var(--focus-inner-width));
+
+    --de-table-row-bg: var(--de-bg-panel);
+    --de-table-row-zebra-bg: color-mix(in srgb, var(--de-accent) 5%, var(--de-surface-card));
+    --de-table-row-hover-bg: color-mix(in srgb, var(--de-accent) 10%, var(--de-bg-hover-strong));
 }
 
 /* --- Sidbakgrund och layout --- */
@@ -796,19 +800,53 @@
 
 [data-theme="dark-experimental"] .generic-table th,
 [data-theme="dark-experimental"] .generic-table thead th {
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
     font-weight: 600;
     color: var(--de-text-secondary);
-    padding: 0.875rem 1rem;
+    padding: 0.4rem 0.65rem;
     border-color: var(--de-border-subtle);
     letter-spacing: 0.04em;
     text-transform: uppercase;
 }
 
-[data-theme="dark-experimental"] .generic-table td {
-    padding: 0.875rem 1rem;
+[data-theme="dark-experimental"] .generic-table tbody tr {
+    border-bottom: 1px solid color-mix(in srgb, var(--de-border-subtle) 45%, transparent);
+}
+
+[data-theme="dark-experimental"] .generic-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+[data-theme="dark-experimental"] .generic-table tbody tr td {
+    padding: 0.35rem 0.65rem;
     border-color: var(--de-border-subtle);
-    background-color: var(--de-bg-panel);
+    background-color: var(--de-table-row-bg);
+    font-size: 0.8125rem;
+    line-height: 1.35;
+    transition: background-color 0.15s ease;
+}
+
+[data-theme="dark-experimental"] .generic-table tbody tr:nth-child(even) td {
+    background-color: var(--de-table-row-zebra-bg);
+}
+
+[data-theme="dark-experimental"] .generic-table tbody tr:hover td {
+    background-color: var(--de-table-row-hover-bg);
+}
+
+[data-theme="dark-experimental"] .generic-table .button {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.8125rem;
+    border-radius: 8px;
+}
+
+[data-theme="dark-experimental"] .generic-table .generic-table-action-cell {
+    gap: 0.2rem;
+}
+
+[data-theme="dark-experimental"] .generic-table td.generic-table-col-actions {
+    padding-left: 0.35rem;
+    padding-right: 0.35rem;
 }
 
 [data-theme="dark-experimental"] .generic-table-header-sort-btn {
