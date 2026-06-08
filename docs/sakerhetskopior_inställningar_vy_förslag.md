@@ -1,5 +1,7 @@
 # Förslag: Egen vy för inställningar för säkerhetskopior (Leffe)
 
+> **Planeringsförslag.** Delar kan vara implementerade i `BackupSettingsViewComponent` / `BackupOverviewComponent`. Verifiera mot aktuellt gränssnitt innan du följer detta som sanning.
+
 Detta dokument beskriver ett förslag på att flytta inställningarna för säkerhetskopior i **Leffe** från en modal till en egen vy. Syftet är att ge plats åt fler inställningar (bland annat schema) och göra gränssnittet tydligare utan att modalen blir för full.
 
 ---

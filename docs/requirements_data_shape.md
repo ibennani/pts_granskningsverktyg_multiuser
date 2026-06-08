@@ -1,5 +1,7 @@
 # Kravdata i regelfilen (objekt eller array)
 
+**Senast granskad:** 2026-06-09
+
 ## Översikt
 
 Regelfilens `requirements` kan levereras som **nycklat objekt** (varje krav under en fast nyckel) eller som **lista**. Verktyget ska bete sig likvärdigt i granskning, filter och export. Gemensamt uppslag sker via granskningslogikens hjälpfunktioner och, där det behövs, via `RequirementLookup` / normalisering till en enhetlig karta för bearbetning.

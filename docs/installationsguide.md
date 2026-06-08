@@ -1,7 +1,7 @@
 # Installationsguide – Leffe
 
-**Version:** 1.2  
-**Datum:** 2026-05-20
+**Version:** 1.3  
+**Datum:** 2026-06-09
 
 ## Innehållsförteckning
 
@@ -73,7 +73,7 @@ npm install
 npm run check
 ```
 
-(`check` = lint, importkontroller, TypeScript, Jest.) Endast lint: `npm run lint`.
+(`check` = lint, export-facades, importkontroller, audit-logic-strict, TypeScript, Jest.) Full kontroll inför release: `npm run check:full`.
 
 ### Steg 5: Starta utvecklingsmiljö
 
@@ -81,7 +81,7 @@ npm run check
 npm run dev
 ```
 
-Detta startar (enligt `package.json`): Docker med `docker compose -p sessionversion`, backend (nodemon, port 3000), Vite (port 5173) med proxy `/v2/api` och `/v2/ws` mot backend, samt hjälpprocesser som kan vara konfigurerade i samma script.
+Detta startar (enligt `package.json`): Docker med `docker compose -p sessionversion`, backend via nodemon som kör `tsx server/index.js` (port 3000), Vite (port 5173) med proxy `/v2/api` och `/v2/ws` mot backend, samt valfria hjälpprocesser (ngrok, build-info-watcher).
 
 **Endast frontend (utan databas/backend):**
 ```bash

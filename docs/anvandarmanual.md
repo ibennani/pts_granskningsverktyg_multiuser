@@ -1,7 +1,7 @@
 # Användarmanual: Leffe
 
 **Version:** 2.1.0
-**Datum:** 2026-03-27
+**Datum:** 2026-06-09
 
 ## Välkommen!
 
@@ -17,8 +17,8 @@ Leffe är en modern webbapplikation som stöder hela processen från regelfilsup
 - **Stickprovshantering**: Definiera och hantera stickprov för granskning
 - **Strukturerad granskning**: Systematisk bedömning av krav enligt regelfilen
 - **Dokumentation**: Observera och kommentera brister och förbättringsområden
-- **Export**: Generera rapporter i CSV, Excel och Word-format
-- **Språkstöd**: Svenska och engelska
+- **Export**: Generera rapporter i CSV, Excel, Word och HTML
+- **Språkstöd**: Svenska, engelska och norsk bokmål
 - **Responsiv design**: Fungerar på desktop och mobil
 
 ## Innehållsförteckning
@@ -268,10 +268,10 @@ De exporterade filerna innehåller metadata, information om stickprov, och detal
 ### Språkväxling
 
 Längst upp till höger i applikationen finns en språkväljare:
-*   **Språkväljare:** En dropdown-lista där du kan välja mellan tillgängliga språk (Svenska, English)
+*   **Språkväljare:** En dropdown-lista där du kan välja mellan tillgängliga språk (Svenska, English, Norsk bokmål)
 *   **Automatisk uppdatering:** Gränssnittet uppdateras direkt när du byter språk
 *   **Sparat val:** Ditt språkval sparas för framtida sessioner
-*   **Standard:** Applikationen använder webbläsarens språkinställning som standard
+*   **Standard:** Applikationen använder webbläsarens språkinställning om den stöds; annars engelska (en-GB)
 
 ### Temaväxling
 

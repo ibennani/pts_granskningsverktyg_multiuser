@@ -1,7 +1,7 @@
 # Systemdokumentation: Leffe (webbapp för digital tillsyn)
 
-**Version:** 1.2  
-**Datum:** 2026-05-20
+**Version:** 1.3  
+**Datum:** 2026-06-09
 
 ## 1. Introduktion
 
@@ -46,9 +46,12 @@ Projektet följer en standardiserad struktur för webbapplikationer:
     *   `draft_manager.ts`: Fältutkast i `localStorage` (separat från central `dispatch`).
     *   `utils/helpers.js`: DOM-hjälpare, CSS-laddning, ikoner m.m.
     *   `components/`: UI-komponenter – **klasser** för vyer (`export class …`), **objektliteral** för vissa äldre sektioner.
-    *   `i18n/`: JSON-filer per språk (`sv-SE.json`, `en-GB.json`).
+    *   `i18n/`: JSON-filer per språk (`sv-SE.json`, `en-GB.json`, `nb-NO.json`).
+    *   `sync/`: Serversynk (granskning, regelfil).
+    *   `export/`: Exportmoduler (CSV, Excel, Word, HTML).
+    *   `view/`: Vy-livscykel och DOM-värd.
 *   **`server/`**: Express-API, PostgreSQL, JWT, WebSocket – se `docs/api-dokumentation.md`.
-*   **`shared/`**: Gemensam kod mellan klient och server (inga DOM-beroenden).
+*   **`shared/`**: Gemensam kod mellan klient och server (inga DOM-beroenden) – se `shared/README.md`.
 *   **`docs/`**: Innehåller all projektdokumentation.
     *   `teknisk_specifikation_vX.X.md`: Den formella tekniska specifikationen.
     *   `systemdokumentation.md`: Denna fil.
@@ -81,10 +84,10 @@ Projektet följer en standardiserad struktur för webbapplikationer:
 *   **Action Types:** Exporteras som `StoreActionTypes`.
 *   **Utförlig dokumentation:** `docs/state_and_persistence.md` (nycklar, serversynk, undantag, skillnad mot formulär-autospar).
 
-### 3.3 `translation_logic.js`
+### 3.3 `translation_logic.ts` (brygga `translation_logic.js`)
 *   **Ansvar:** Tillhandahåller funktionalitet för internationalisering (i18n).
-*   **Språkfiler:** Laddar JSON-filer från katalogen `js/i18n/`. Varje fil (t.ex. `sv-SE.json`) innehåller nyckel-värdepar för översättningar.
-*   **Språkval:** Hanterar initial detektering av webbläsarens språk och faller tillbaka till ett standardspråk (sv-SE) om detekterat språk inte stöds eller om språkfil saknas. Tillåter användaren att byta språk via UI.
+*   **Språkfiler:** Laddar JSON-filer från `js/i18n/` via Vite `import.meta.glob` (`sv-SE`, `en-GB`, `nb-NO`). Varje fil innehåller nyckel-värdepar för översättningar.
+*   **Språkval:** Detekterar webbläsarens språk och faller tillbaka till standardspråket **en-GB** om detekterat språk inte stöds eller om språkfil saknas. Användaren kan byta språk via UI; valet sparas lokalt.
 *   **Nyckelfunktioner:**
     *   `Translation.t(key, replacements = {})`: Huvudfunktion för översättning. Tar en `key` och ett valfritt `replacements`-objekt (för platshållare som `{count}`). Returnerar den översatta strängen eller `**key**` om nyckeln saknas.
     *   `Translation.set_language(lang_tag)`: Asynkron funktion som byter det aktiva språket. Laddar den nya språkfilen och skickar sedan ett globalt `CustomEvent` kallat `languageChanged` via `document.dispatchEvent()`.
@@ -165,7 +168,7 @@ Dessa utgör de huvudsakliga "sidorna" i applikationen (hash-routes i parentes):
 
 ### 4.2 Återanvändbara UI-delkomponenter
 
-*   **`SampleFormViewComponent.js`**
+*   **`SampleFormViewComponent.ts`**
     *   **Syfte:** Ett formulär för att mata in eller redigera detaljer för ett stickprov (sidtyp, beskrivning, url, innehållstyper).
     *   **Interaktioner:** Anropas av `SampleManagementViewComponent` (för initiala stickprov) och `AuditOverviewComponent` (för stickprov under pågående granskning). Populerar sina fält från `deps.getState().ruleFileContent.metadata` (för `pageTypes` och `contentTypes`). Vid submit anropas en `on_sample_saved_callback` som tillhandahålls av föräldrakomponenten.
     *   **CSS:** `css/components/sample_form_view_component.css`.
@@ -205,21 +208,22 @@ _(Se föregående svar för detaljerad beskrivning av flödena: Starta ny gransk
 *   **ARIA-attribut:** `aria-pressed` används på växlingsknappar (t.ex. för "Stämmer"/"Stämmer inte"). `aria-label` används på knappar i `SampleListComponent` för att ge unik kontext när flera likadana knappar finns. I `ChecklistHandler` har kontrollpunkter (h3) aria-label i formatet "Kontrollpunkt X. {status}" och godkännandekriterier (h4) aria-label i formatet "Godkännandekriterium X.Y. {status}". Nedladdningsknappar i granskningslistan har aria-label "Ladda ner {diarienummer} {aktörens namn}".
 
 ## 7. Utvecklingsmiljö och byggprocess
-Systemet använder **Vite** som byggsystem och utvecklingsserver. Vite hanterar:
-- ES6-modulbundling och transformation
-- Hot Module Replacement (HMR) för snabb utveckling
-- Produktionsbyggnad med optimering och minifiering
-- Automatisk konfiguration av HTTP-server för utveckling
+Systemet använder **Vite** (frontend) och **Express** med **tsx** (backend). Vite hanterar ES6-moduler, HMR och produktionsbyggnad; `extensionAlias` i `vite.config.mjs` låter import med `.js`-suffix peka på `.ts`-källor.
 
 **Utveckling:**
-- Kör `npm run dev` för att starta utvecklingsservern på port 5173
-- Vite serverar filer och hanterar ES6-moduler automatiskt
-- HMR uppdaterar ändringar automatiskt i webbläsaren
+- `npm run dev` – Docker (PostgreSQL), backend via nodemon/tsx (port 3000), Vite (port 5173), proxy `/v2/api` och `/v2/ws`
+- `npm run dev:client` – endast Vite
+- `npm run dev:server` – endast backend (`tsx server/index.js`)
+
+**Kvalitetskontroll:**
+- `npm run check` – lint, importkontroller, export-facades, TypeScript, Jest
+- `npm run check:full` – som `check` plus TS-lint och build
 
 **Produktion:**
-- Kör `npm run build` för att bygga optimerade filer till `dist/`-mappen
-- Byggprocessen inkluderar lintning, validering och optimering
-- Använd `npm run preview` för att förhandsgranska produktionsbyggnaden
+- `npm run build` → `dist/`; `npm run preview` för lokal förhandsgranskning
+- Deploy: `npm run deploy:v2` (se `docs/deploy-v2-workflow.md`)
+
+**TypeScript:** Pågående migrering – nya moduler under `js/` och `server/` skrivs som `.ts` där det är rimligt; befintliga `.js`-bryggor behålls för importvägar.
 
 ## 8. Kända begränsningar och potentiella förbättringsområden
 _(Se den separata sektionen som utvecklats tidigare för en detaljerad lista)._
@@ -228,7 +232,7 @@ _(Se den separata sektionen som utvecklats tidigare för en detaljerad lista)._
 *   **Webbläsarens utvecklarverktyg:** Använd flikarna Konsol (Console), Element (Elements), Nätverk (Network), och Applikation (Application -> Session Storage, Local Storage) intensivt.
 *   **Konsolloggar:** Många `console.log`-satser finns utplacerade (särskilt i `AuditOverviewComponent` efter nylig felsökning) för att spåra exekvering och variabelvärden. Dessa kan aktiveras/kommenteras bort vid behov.
 *   **`debugger;`:** Använd `debugger;`-satsen i JavaScript-koden för att sätta brytpunkter och stega igenom koden i webbläsarens felsökningsverktyg.
-*   **Tillståndskontroll:** Inspektera `sessionStorage` för att se det aktuella värdet av `current_audit`-objektet. Detta är ofta det snabbaste sättet att verifiera att data sparas korrekt.
+*   **Tillståndskontroll:** Inspektera `sessionStorage` under nyckeln `digitalTillsynAppCentralState` (konstanten `APP_STATE_KEY` i `state.js`) för att se det serialiserade appstate. Se `docs/state_and_persistence.md` för backup i `localStorage`.
 *   **Validera JSON:** Om problem uppstår vid laddning av regelfiler eller sparade granskningar, kopiera JSON-innehållet och validera det med ett online JSON-valideringsverktyg för att upptäcka syntaxfel.
 *   **CSS-problem:** Använd elementinspektören för att se vilka CSS-regler som appliceras och om det finns konflikter eller oavsiktligt dolda element (kontrollera `display`, `visibility`, `opacity`, `height`, `width`).
 *   **Hård omladdning:** Använd Ctrl+Shift+R (eller Cmd+Shift+R på Mac) för att tvinga webbläsaren att ladda om alla resurser från servern och ignorera cachen, vilket kan lösa problem relaterade till gamla filversioner.

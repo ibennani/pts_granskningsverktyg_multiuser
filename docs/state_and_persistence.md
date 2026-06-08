@@ -1,5 +1,7 @@
 # Tillstånd och persistens i klienten
 
+**Senast granskad:** 2026-06-09
+
 ## Översikt
 
 Granskningsdata (regelfil, metadata, stickprov, observationer med mera) lever i ett **centralt applikationstillstånd** som uppdateras via `dispatch()` och speglas till **webbläsarens lagring** så att arbetet överlever sidomladdning inom samma flik. Vid **inloggad drift** synkas ändringar mot **servern** (debouncad PATCH/import). Detta dokument beskriver *var* data sparas, *när* backup skapas och hur **cold start** med localStorage-backup samverkar med servern. Formulärs**autospar** i enskilda vyer är ett separat lager (se `docs/autosave_integration.md`).
@@ -13,7 +15,7 @@ Granskningsdata (regelfil, metadata, stickprov, observationer med mera) lever i 
 | Action-typer | `js/state/actionTypes.ts` (via brygga `actionTypes.js`; exporteras som `StoreActionTypes`) |
 | Reducers | `auditReducer.ts`, `rulefileReducer.js`, `uiReducer.js`, `userReducer.js` |
 | Appstart, sessionStorage-koll, backup-merge | `js/logic/app_bootstrap.js`, `js/logic/session_boot_merge.js` |
-| Synk mot server | `js/sync/audit_sync_service.ts`, `js/sync/rulefile_sync_service.ts` (körs från `js/state/index.ts` via `schedule_sync_*`) |
+| Synk mot server | `js/sync/audit_sync_service.ts`, `js/sync/rulefile_sync_service.js` (körs från `js/state/index.ts` via `schedule_sync_*`) |
 
 ## 2. Webbläsarens nycklar
 

@@ -1,5 +1,7 @@
 # Analys: Saknade fält och förbättringsmöjligheter för regelfilredigering
 
+> **Historisk analys** (ej officiell produktdokumentation). Använd `docs/rulefile_editing_flow.md` och `docs/regelfilsguide.md` för aktuellt beteende.
+
 ## Sammanfattning
 
 Denna analys identifierar fält i regelfilstrukturen som antingen saknas i redigeringsgränssnittet eller har inkonsekvent hantering.

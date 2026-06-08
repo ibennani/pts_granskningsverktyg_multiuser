@@ -1,5 +1,7 @@
 # Versionskontrakt för granskningar (audits) i Leffe
 
+**Senast granskad:** 2026-06-09
+
 ## Server
 
 - Kolumnen `audits.version` är ett heltal som **ökas med 1** vid varje lyckad uppdatering som ändrar granskningen (PATCH på `/api/audits/:id`, inklusive detalj-PATCH på resultat).

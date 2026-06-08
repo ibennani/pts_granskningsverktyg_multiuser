@@ -1,5 +1,7 @@
 # Metadataflöde – granskningsmetadata i Leffe
 
+**Senast granskad:** 2026-06-09
+
 Detta dokument beskriver hur granskningsmetadata (diarienummer, granskarens namn, aktör m.m.) lagras, uppdateras och visas i Leffe.
 
 ## Var metadata lagras

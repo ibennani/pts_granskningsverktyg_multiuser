@@ -13,7 +13,7 @@ Leffe stöder hela kedjan från regelfiler och stickprov till låst granskning o
 - **Strukturerad granskning**: Bedömning av krav enligt regelfilen
 - **Dokumentation**: Observationer och kommentarer
 - **Export**: CSV, Excel, Word (krav eller stickprov) och HTML
-- **Språk**: Svenska och engelska (fler språkfiler kan finnas)
+- **Språk**: Svenska, engelska och norsk bokmål (fler språkfiler kan läggas till i `js/i18n/`)
 - **Responsiv layout**: Desktop och mindre skärmar
 
 ## Snabbstart
@@ -45,7 +45,8 @@ npm run preview
 ```
 ├── css/                 # Stilar
 ├── docs/                # Dokumentation
-├── js/                  # Frontend (komponenter, logik, i18n)
+├── js/                  # Frontend (komponenter, logik, state, export, sync)
+├── shared/              # Gemensam klient/server-kod (inga DOM-beroenden)
 ├── server/              # Express-backend, API, migreringar
 ├── scripts/             # Deploy, dev-hjälp, healthcheck
 ├── tests/               # Playwright (E2E) och Jest (enhet)
@@ -62,7 +63,9 @@ npm run preview
 | `npm run dev` | Full lokal miljö: Docker, backend, Vite (port 5173) |
 | `npm run dev:client` | Endast Vite |
 | `npm run dev:db` | Startar Postgres via Docker (`-p sessionversion`) |
-| `npm run dev:server` | Endast backend (nodemon) |
+| `npm run dev:server` | Endast backend (`tsx server/index.js`) |
+| `npm run dev:serverdb` | Docker + backend (nodemon via `nodemon.json`) + Vite |
+| `npm run check:full` | Lint (JS+TS), typkontroll, tester och build |
 | `npm run dev:stop` | Stoppar Docker-containrar (behåller volymer) |
 | `npm run build` | Bygger frontend till `dist/` |
 | `npm run preview` | Förhandsgranskning av bygge |
@@ -94,7 +97,9 @@ Se mappen `docs/`, bland annat:
 - [Systemdokumentation](docs/systemdokumentation.md)
 - [Installationsguide](docs/installationsguide.md)
 - [Utvecklarguide](docs/utvecklarguide.md)
+- [State och persistens](docs/state_and_persistence.md)
 - [API-dokumentation](docs/api-dokumentation.md)
+- [Admin och inloggning](docs/admin_anvandare_och_inloggning.md)
 
 ## Internationalisering
 
@@ -110,4 +115,4 @@ Miljövariabler för backend och bygge beskrivs i `docs/installationsguide.md` o
 
 ---
 
-**Senast uppdaterad**: 2026-05-20
+**Senast uppdaterad**: 2026-06-09

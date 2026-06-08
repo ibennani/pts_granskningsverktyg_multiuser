@@ -1,7 +1,7 @@
 # API-dokumentation – Leffe
 
-**Version:** 1.1  
-**Datum:** 2026-05-20
+**Version:** 1.2  
+**Datum:** 2026-06-09
 
 ## Innehållsförteckning
 
@@ -424,7 +424,11 @@ const currentLang = window.Translation.get_current_language_code();
     "error_loading": "Error loading",
     "success_saved": "Successfully saved"
 }
+
+// js/i18n/nb-NO.json (samma nycklar som övriga språkfiler)
 ```
+
+Standardspråk vid saknad översättning: **en-GB**.
 
 ## 8. Event System
 

@@ -1,5 +1,7 @@
 # Förslag: Ny vy för regelfilredigering med vänstermeny
 
+> **Historiskt planeringsunderlag** (ej officiell produktdokumentation). Delar av förslaget är implementerat i `RulefileSectionsViewComponent` och relaterade sektioner. Aktuellt flöde: `docs/rulefile_editing_flow.md`.
+
 ## Översikt
 
 En ny komponent `RulefileSectionsViewComponent` som visar olika delar av regelfilen med en vänstermeny för navigation. Varje sektion visas separat med en redigera-knapp.

@@ -1,7 +1,7 @@
 # Teknisk specifikation: Leffe
 
 **Version:** 2.1.0
-**Datum:** 2026-03-27
+**Datum:** 2026-06-09
 
 ## 1. Mål och syfte
 
@@ -14,7 +14,7 @@ Verktyget ska underlätta strukturerad granskning enligt definierade regler geno
 - Stödja definiering och hantering av stickprov
 - Möjliggöra systematisk bedömning av krav
 - Dokumentera observationer och kommentarer
-- Generera rapporter i olika format (CSV, Excel, Word)
+- Generera rapporter i olika format (CSV, Excel, Word, HTML)
 - Säkerställa tillgänglighet enligt WCAG 2.2 AA
 
 ### Tekniska mål
@@ -107,26 +107,28 @@ Verktyget ska underlätta strukturerad granskning enligt definierade regler geno
 ### 3.4 Internationalisering
 
 **Språkstöd:**
-- All UI-text hanteras via översättningssystem
-- Stöd för svenska (sv-SE) och engelska (en-GB)
+- All UI-text hanteras via översättningssystem (`translation_logic.ts`)
+- Stöd för svenska (sv-SE), engelska (en-GB) och norsk bokmål (nb-NO)
 - Språkväxling via UI-kontroll
 - Språkval sparas i `localStorage`
-- Automatisk detektering av webbläsarens språk
+- Automatisk detektering av webbläsarens språk; fallback till en-GB om språk saknas
 
 ## 4. Kärnfunktionalitet och arbetsprocess
 
 ### 4.1 Start och initialisering
-1.  **Startvy:**
-    *   Alternativ att starta en ny granskning genom att ladda upp en json-baserad regelfil.
-    *   Alternativ att ladda en tidigare sparad json-granskningsfil.
+1.  **Inloggning och startvy:**
+    *   Användaren loggar in med JWT-baserad autentisering mot Express-backend.
+    *   Startvyn visar en tabell över serverlagrade granskningar (diarienummer, aktör, status, progress m.m.).
+    *   Ny granskning startas via **Admin** → **Starta ny granskning** med val av serverlagrad regelfil eller uppladdning av ny JSON-regelfil.
+    *   Sparad granskning kan importeras via **Admin** → **Ladda upp** (JSON-fil) eller laddas ner från startvyns tabell.
 2.  **Validering av regelfil:**
-    *   Uppladdad regelfil valideras mot ett definierat schema (se avsnitt 10).
+    *   Uppladdad regelfil valideras i klienten (`validation_logic.ts`) enligt schema i avsnitt 10.
     *   Tydliga felmeddelanden visas om filen är ogiltig.
 3.  **Initiering av granskning:**
-    *   Vid lyckad validering av en ny regelfil, initieras ett nytt granskningsobjekt.
-    *   Regelfilens innehåll sparas som en del av granskningsobjektet.
+    *   Vid lyckad validering skapas ett nytt granskningsobjekt (lokalt state och på server vid synk).
+    *   Regelfilens innehåll sparas som del av granskningsobjektet.
     *   Applikationen navigerar till vyn för metadata-inmatning.
-    *   Om en sparad granskningsfil laddas, återställs hela granskningstillståndet och användaren navigeras till granskningsöversikten.
+    *   Vid import av sparad granskningsfil återställs tillståndet och användaren kan öppna granskningen från listan eller navigeras till översikten beroende på status.
 
 ### 4.2 Metadata-inmatning (status: `not_started`)
 1.  **Formulär:** Användaren kan mata in metadata för granskningen. Fälten inkluderar (men är inte begränsade till):
@@ -135,7 +137,7 @@ Verktyget ska underlätta strukturerad granskning enligt definierade regler geno
     *   Länk till aktörens webbplats/tjänst (frivilligt, url-format).
     *   Ansvarig granskare (frivilligt).
     *   Intern kommentar (frivilligt, flerradig text).
-2.  **Redigerbarhet:** Metadata är endast redigerbar så länge granskningen har status `not_started`.
+2.  **Redigerbarhet:** Metadata kan redigeras i status `not_started` och `in_progress` via knappen **Redigera** i granskningsinfopanelens header (vy `edit_metadata`). I status `locked` är bedömningar låsta; metadata kan fortfarande visas men redigeras normalt inte under låst granskning.
 3.  **Navigering:** Knapp för att fortsätta till stickprovshantering.
 
 ### 4.3 Initial stickprovshantering (status: `not_started`)
@@ -154,9 +156,8 @@ Verktyget ska underlätta strukturerad granskning enligt definierade regler geno
 ### 4.4 Starta granskning
 1.  **Åtgärd:** När användaren klickar på "Starta granskning" (från stickprovshanteringsvyn):
     *   Granskningens status ändras från `not_started` till `in_progress`.
-    *   En starttid (tidsstämpel, iso 8601) registreras för granskningen.
-    *   Metadata (från 4.2) blir skrivskyddad.
-    *   Applikationen navigerar till granskningsöversikten.
+    *   En starttid (tidsstämpel, ISO 8601) registreras för granskningen.
+    *   Applikationen navigerar till granskningsöversikten. Metadata kan fortfarande redigeras via **Redigera** i granskningsinfopanelen.
 
 ### 4.5 Granskningsöversikt (status: `in_progress` eller `locked`)
 1.  **Visad information:**
@@ -184,6 +185,8 @@ Verktyget ska underlätta strukturerad granskning enligt definierade regler geno
         *   "Lås upp granskning".
         *   "Exportera till csv".
         *   "Exportera till excel (xlsx)".
+        *   "Exportera till Word (krav)" / "Exportera till Word (stickprov)".
+        *   "Exportera till HTML".
 
 ### 4.6 Kravlistvy (per stickprov)
 1.  **Visning:** När användaren väljer att se kraven för ett specifikt stickprov.
@@ -260,12 +263,13 @@ Verktyget ska underlätta strukturerad granskning enligt definierade regler geno
 
 ## 6. Datahantering och lagring
 
-### 6.1 Huvudsakligt granskningsobjekt (`current_audit`)
-Detta är det centrala objektet som lagras (t.ex. i `sessionStorage` och vid export till fil). Det innehåller:
+### 6.1 Centralt applikationstillstånd (appstate)
+Hela granskningen lever i centralt state (`getState()` via `js/state.js`). Vid persistens serialiseras hela state-objektet (äldre dokumentation kallade det ibland `current_audit`). Det innehåller bland annat:
 *   `saveFileVersion`: Applikationens interna versioneringsnummer för sparfilformatet.
 *   `ruleFileContent`: Hela innehållet från den uppladdade json-regelfilen.
 *   `auditMetadata`: Objekt med metadata (ärendenummer, aktör, etc.).
-*   `auditStatus`: Sträng som indikerar granskningens nuvarande tillstånd (`not_started`, `in_progress`, `locked`).
+*   `auditStatus`: Sträng som indikerar granskningens nuvarande tillstånd (`not_started`, `in_progress`, `locked`, `rulefile_editing`, m.fl.).
+*   `auditId`, `version`, `ruleSetId`: Fjärrfält vid serverlagrad granskning/regelfil.
 *   `startTime`: Iso 8601 tidsstämpel för när granskningen startades.
 *   `endTime`: Iso 8601 tidsstämpel för när granskningen låstes.
 *   `samples`: En array av stickprovsobjekt.
@@ -297,14 +301,17 @@ Varje objekt representerar resultatet för ett enskilt krav på ett enskilt stic
         *   `attachedMediaFilenames`: Array av strängar (filnamn för bifogade bilder eller videor, ett per rad i modalen).
 
 ### 6.4 Lagringsmekanismer
-*   **Session storage:** För att automatiskt spara `current_audit`-objektet och behålla tillståndet vid sidomladdning.
-*   **Local storage:** För användarpreferenser som valt tema och språk.
-*   **Filnedladdning/-uppladdning:** För manuell export och import av hela `current_audit`-objektet som json.
+*   **Session storage:** Nyckel `digitalTillsynAppCentralState` – hela appstate sparas vid varje `dispatch()` (ingen debounce i state-lagret).
+*   **Local storage:** Backup `digitalTillsynAppStateBackup` när state bedöms återställningsbart; användarpreferenser (tema, språk); fältutkast via `draft_manager.ts`.
+*   **Server (PostgreSQL):** Vid inloggning synkas granskningar och regelfiler via REST/WebSocket (debouncad PATCH).
+*   **Filnedladdning/-uppladdning:** Manuell export/import av granskning som JSON (kompletterar serverlagring).
+
+Se `docs/state_and_persistence.md` för detaljer.
 
 ## 7. Tillgänglighet (wcag 2.2 aa mål)
 
 *   Applikationen ska sträva efter att uppfylla Web Content Accessibility Guidelines (wcag) 2.2 på nivå aa.
-*   **Interaktiva element:** Knappar och andra kontroller ska inte använda html-attributet `disabled`. Icke-funktionella kontroller ska inte renderas alls. Om ett element måste visas men vara inaktivt av annan anledning, ska `aria-disabled="true"` och tydlig visuell styling användas.
+*   **Interaktiva element:** Knappar och andra kontroller ska varken använda `disabled` eller `aria-disabled`. Kontroller som inte ska kunna användas i aktuellt läge ska inte renderas; vy och state ska istället styra vad som visas.
 *   **Tangentbordsnavigering:** Fullständig navigering och interaktion med applikationens alla funktioner ska vara möjlig enbart med tangentbord. Fokusordning ska vara logisk och förutsägbar. Fokusindikatorer ska vara tydliga.
 *   **Färgkontrast:** Tillräcklig färgkontrast ska säkerställas för text och ui-komponenter enligt wcag aa-kraven, både i ljust och mörkt tema.
 *   **Semantisk html:** Använd korrekt html-semantik för struktur och komponenter.
@@ -327,6 +334,7 @@ Varje objekt representerar resultatet för ett enskilt krav på ett enskilt stic
 *   `js/i18n/`: JSON-filer per språk.
 *   `js/components/`: UI-komponenter – vykomponenter som **klasser** (`init`, `render`, `destroy`), vissa äldre som objektliteral. Inga IIFE.
 *   `server/`: Express-backend, PostgreSQL, JWT, WebSocket.
+*   `shared/`: Gemensam klient/server-logik utan DOM-beroenden.
 
 ## 9. Internationalisering (i18n) – Detaljer
 
@@ -334,7 +342,7 @@ Varje objekt representerar resultatet för ett enskilt krav på ett enskilt stic
 *   Platshållare i översättningssträngar (t.ex. `{count}`) ska stödjas.
 *   Applikationen ska dynamiskt kunna uppdatera all text vid språkbyte utan att sidan behöver laddas om helt.
 *   Språkval ska kunna sparas (t.ex. i `localStorage`) och återställas vid nästa besök.
-*   Webbläsarens förvalda språk bör användas som initialt språk om möjligt, med fallback till ett standardspråk (t.ex. svenska).
+*   Webbläsarens förvalda språk används som initialt språk om det stöds (`sv-SE`, `en-GB`, `nb-NO`); annars fallback till **en-GB**.
 
 ## 10. Json regelfil – Schema och validering
 
@@ -376,7 +384,7 @@ Regelfilen är grunden för granskningen och måste följa ett definierat schema
 ## 11. Potentiella framtida utökningar (ej del av nuvarande scope)
 *   Mer avancerad sortering och filtrering av listor.
 *   Drag-and-drop-funktionalitet.
-*   Realtidssamarbete (skulle kräva en backend-lösning).
+*   Utökat realtidssamarbete utöver befintlig WebSocket (t.ex. låsnotiser och synk) till flera samtidiga redigerare i samma vy.
 *   Mer avancerad och anpassningsbar rapportgenerering.
 *   Integration med externa system.
 *   Stöd för att bifoga filer till observationer.

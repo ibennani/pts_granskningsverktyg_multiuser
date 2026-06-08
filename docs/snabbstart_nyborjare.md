@@ -1,5 +1,7 @@
 # Snabbstart för nybörjare
 
+**Senast granskad:** 2026-06-09
+
 **Leffe** är ett webbaserat verktyg för att granska webbsidors och digitala tjänsters tillgänglighet mot en regelfil. Du bedömer krav systematiskt, dokumenterar observationer och kan exportera rapporter i CSV, Excel, Word eller HTML.
 
 Denna guide tar dig från start till att du har gått igenom dina första krav och exporterat en rapport.

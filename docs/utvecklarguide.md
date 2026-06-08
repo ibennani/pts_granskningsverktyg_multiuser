@@ -1,7 +1,7 @@
 # Utvecklarguide – Leffe
 
-**Version:** 1.1  
-**Datum:** 2026-05-20
+**Version:** 1.2  
+**Datum:** 2026-06-09
 
 ## Innehållsförteckning
 
@@ -71,11 +71,13 @@ Leffe (projektmapp)/
 
 ### Arkitekturprinciper
 
-1. **Modulär design**: Varje komponent är en ES6-modul
+1. **Modulär design**: Varje komponent är en ES6-modul (`.ts` eller `.js`)
 2. **Separation of concerns**: UI, logik och data är separerade
-3. **Komponentbaserat**: Återanvändbara UI-komponenter
-4. **State management**: Centraliserad state med Redux-liknande pattern
-5. **Internationalisering**: Språkstöd via JSON-filer
+3. **Komponentbaserat**: Vykomponenter som klasser; legacy sektioner som objektliteral
+4. **State management**: Centraliserad state i `js/state/` (publik yta via `js/state.js`)
+5. **Internationalisering**: `sv-SE`, `en-GB`, `nb-NO` under `js/i18n/`
+6. **TypeScript-migrering**: Nya moduler skrivs som `.ts`; import med `.js`-suffix och Vite `extensionAlias`
+7. **Delat lager**: `shared/` för kod som används av både klient och server
 
 ### Dataflöde
 
@@ -101,8 +103,8 @@ const is_logged_in = true;
 function calculate_score() { }
 const handle_click = () => { };
 
-// Komponenter: PascalCase
-export const UserComponent = { ... };
+// Komponenter: PascalCase (klass eller objektliteral)
+export class UserViewComponent { ... }
 
 // Konstanter: UPPER_SNAKE_CASE
 const API_BASE_URL = 'https://api.example.com';
@@ -205,13 +207,13 @@ function calculateQualityScore(auditData) {
    ```bash
    # Gör ändringar
    git add .
-   git commit -m "feat: lägg till ny funktion"
+   git commit -m "Lägg till: Kort beskrivning av vad användaren kan göra"
    ```
 
 3. **Testa ändringar**
    ```bash
-   npm run lint
-   npm run test:e2e
+   npm run check
+   npm run test:e2e:smoke
    ```
 
 4. **Pusha och skapa PR**

@@ -1,7 +1,7 @@
 # Regelfilsguide: Skapa och anpassa regelfiler för Leffe
 
 **Version:** 1.1  
-**Datum:** 2026-03-27
+**Datum:** 2026-06-09
 
 ## 1. Introduktion
 

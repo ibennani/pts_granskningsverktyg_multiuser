@@ -1,5 +1,7 @@
 # Komponentstandard för Leffe (frontend)
 
+**Senast granskad:** 2026-06-09
+
 Detta dokument beskriver den **officiella komponentmodellen** för projektet.  
 Alla nya komponenter ska följa denna standard, och befintliga komponenter ska migreras hit när de ändå ändras.
 

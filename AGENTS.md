@@ -41,7 +41,7 @@ Projektet är organiserat enligt följande struktur:
 ### TypeScript-filer och import med `.js`-suffix
 - Vid migrering **`.js` → `.ts`** ska importvägar ofta **behålla `.js`-ändelsen** (TypeScripts rekommendation mot utdatafiler). Källan ligger då som **`.ts`** på disk.
 - **Vite** är konfigurerad med `resolve.extensionAlias` så att en begäran om `*.js` i dev/bygge **först** matchar motsvarande **`.ts` / `.tsx`**, sedan en riktig **`.js`**-fil. Det undviker **404 i webbläsaren** och tom startsida när bara `.ts` finns.
-- **Node-backend** (utan Vite) tolkar inte detta automatiskt: importera där **`*.ts`** om filen bara finns som TypeScript, och kör servern med **`tsx`** (se `package.json` / `nodemon.json`).
+- **Node-backend** (utan Vite) tolkar inte detta automatiskt: importera där **`*.ts`** om filen bara finns som TypeScript, och kör servern med **`tsx`** (`npm run dev:server`) eller **nodemon** som anropar tsx (`npm run dev`, `dev:serverdb`; se `nodemon.json`).
 - Efter konvertering: kör **`npm run dev`** eller **`npm run build`** och öppna appen en gång; vid tvekan kör **`npm run check`**.
 
 ### Indentering och formatering
@@ -88,7 +88,7 @@ Projektet är organiserat enligt följande struktur:
 5. Lägg till route/hash i `js/logic/router.js` om vyn behöver ny URL
 
 ### Lägga till en ny översättning
-1. Lägg till nyckel i `js/i18n/sv-SE.json` och `js/i18n/en-GB.json`
+1. Lägg till nyckel i `js/i18n/sv-SE.json`, `js/i18n/en-GB.json` och vid behov `js/i18n/nb-NO.json`
 2. Använd `t('nyckel')` i koden
 
 ### Testa ändringar
