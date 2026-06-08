@@ -430,6 +430,22 @@ describe('server_sync', () => {
         app_runtime_refs.notification_component = null;
     });
 
+    test('run_sync: hoppar över omladdning från server när osparade lokala ändringar finns', async () => {
+        get_audit_version.mockResolvedValueOnce({ version: 8 });
+        const dispatch = jest.fn();
+        const state = base_audit_state({
+            auditId: 'a1',
+            version: 3,
+            auditMetadata: {
+                last_local_change_at: '2026-05-20T14:00:00.000Z',
+                last_server_sync_at: '2026-05-20T12:00:00.000Z'
+            }
+        });
+        await sync_to_server_now(() => state, dispatch);
+        expect(load_audit_with_rule_file).not.toHaveBeenCalled();
+        expect(update_audit).toHaveBeenCalled();
+    });
+
     test('run_sync: 404 granskning borttagen visar modalspår', async () => {
         const err = Object.assign(new Error('Granskning hittades inte'), { status: 404 });
         update_audit.mockRejectedValueOnce(err);

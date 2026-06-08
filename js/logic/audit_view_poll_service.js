@@ -17,6 +17,7 @@ import {
     update_baseline_from_server_full_state
 } from './audit_collaboration_notice.js';
 import { subscribe_audits } from './list_push_service.js';
+import { has_unsynced_local_audit_changes } from './audit_sync_tracking.js';
 
 const POLL_INTERVAL_MS = 2000;
 const AUDIT_PUSH_EVENT = 'gv-audits-changed';
@@ -77,6 +78,7 @@ export function init_audit_view_poll_service({ getState, dispatch, StoreActionTy
             const state_now = getState();
             if (!state_now?.auditId || String(state_now.auditId) !== String(audit_id)) return;
             if (state_now?.auditStatus === 'rulefile_editing' || state_now?.auditStatus === 'not_started') return;
+            if (has_unsynced_local_audit_changes(state_now)) return;
             const local_version = state_now?.version ?? 0;
             if (remote_version !== null && remote_version !== undefined && remote_version > local_version) {
                 const full_state = await load_audit_with_rule_file(audit_id);

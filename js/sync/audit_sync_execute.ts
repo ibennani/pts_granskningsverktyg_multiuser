@@ -19,6 +19,7 @@ import {
 } from '../logic/connectivity_service.js';
 import {
     build_last_server_sync_metadata_patch,
+    has_unsynced_local_audit_changes,
     should_push_local_audit_to_server,
     type AuditStateLike
 } from '../logic/audit_sync_tracking.js';
@@ -126,6 +127,9 @@ async function reload_local_from_remote_if_server_ahead(
     dispatch_fn: DispatchFn | undefined
 ): Promise<boolean> {
     if (!state.auditId) return false;
+    if (has_unsynced_local_audit_changes(state as AuditStateLike)) {
+        return false;
+    }
     try {
         const { version: remote_version } = (await get_audit_version(state.auditId)) as {
             version?: number | null;

@@ -98,6 +98,101 @@ export const ChecklistHandler = {
         return `${check_id}::${pc_id || ''}::${action}`;
     },
 
+    _status_change_flight_key(check_id, pc_id) {
+        return `${check_id}::${pc_id ?? ''}`;
+    },
+
+    _acquire_status_change_flight(check_id, pc_id) {
+        if (!this._status_change_flights) {
+            this._status_change_flights = new Set();
+        }
+        const key = this._status_change_flight_key(check_id, pc_id);
+        if (this._status_change_flights.has(key)) {
+            return false;
+        }
+        this._status_change_flights.add(key);
+        return true;
+    },
+
+    _release_status_change_flight(check_id, pc_id) {
+        this._status_change_flights?.delete(this._status_change_flight_key(check_id, pc_id));
+    },
+
+    /**
+     * Uppdaterar knappar och observationsfält direkt vid klick så användaren ser ändringen
+     * innan async sparning och serversynk (särskilt viktigt vid högre nätverkslatens på V2).
+     */
+    _apply_optimistic_status_button_ui(change_info) {
+        if (!change_info?.type || !this.requirement_result_ref?.checkResults || !this.container_ref) {
+            return;
+        }
+        const check_id = change_info.checkId;
+        const check_result_data = read_check_stored_data(this.requirement_result_ref.checkResults, check_id);
+        if (!check_result_data) return;
+
+        const check_wrapper = this.container_ref.querySelector(
+            `.check-item[data-check-id="${CSS.escape(String(check_id))}"]`
+        );
+        if (!check_wrapper) return;
+
+        if (change_info.type === 'check_overall_status_change') {
+            const current = check_result_data.overallStatus || 'not_audited';
+            const next = current === change_info.newStatus ? 'not_audited' : change_info.newStatus;
+            const complies_btn = check_wrapper.querySelector('button[data-action="set-check-complies"]');
+            const not_complies_btn = check_wrapper.querySelector('button[data-action="set-check-not-complies"]');
+            if (complies_btn && not_complies_btn) {
+                this._apply_status_button_active_state(complies_btn, next === 'passed', {
+                    check_id,
+                    pc_id: null,
+                    action: 'set-check-complies'
+                });
+                this._apply_status_button_active_state(not_complies_btn, next === 'not_applicable', {
+                    check_id,
+                    pc_id: null,
+                    action: 'set-check-not-complies'
+                });
+            }
+            const pc_list = check_wrapper.querySelector('.pass-criteria-list');
+            if (pc_list) {
+                const count = pc_list.querySelectorAll('.pass-criterion-item[data-pc-id]').length;
+                pc_list.style.display = should_show_pass_criteria_list(next, count) ? '' : 'none';
+            }
+            return;
+        }
+
+        if (change_info.type !== 'pc_status_change' || !change_info.pcId) return;
+        if ((check_result_data.overallStatus || 'not_audited') !== 'passed') return;
+
+        const pc_id = change_info.pcId;
+        const pc_item_li = check_wrapper.querySelector(
+            `.pass-criterion-item[data-pc-id="${CSS.escape(String(pc_id))}"]`
+        );
+        if (!pc_item_li) return;
+
+        const pc_data = read_pc_stored_data(check_result_data, pc_id);
+        const current = pc_data.status || 'not_audited';
+        const next = current === change_info.newStatus ? 'not_audited' : change_info.newStatus;
+        const effective = effective_pc_status('passed', next);
+
+        const passed_btn = pc_item_li.querySelector('button[data-action="set-pc-passed"]');
+        const failed_btn = pc_item_li.querySelector('button[data-action="set-pc-failed"]');
+        if (passed_btn && failed_btn) {
+            this._apply_status_button_active_state(passed_btn, effective === 'passed', {
+                check_id,
+                pc_id,
+                action: 'set-pc-passed'
+            });
+            this._apply_status_button_active_state(failed_btn, effective === 'failed', {
+                check_id,
+                pc_id,
+                action: 'set-pc-failed'
+            });
+        }
+
+        const observation_wrapper = pc_item_li.querySelector('.pc-observation-detail-wrapper');
+        this._sync_observation_wrapper_visibility(observation_wrapper, 'passed', next);
+    },
+
     _detect_user_event_source(event) {
         if (!event) return 'okänd';
         if (!event.isTrusted) return 'programmatisk_händelse';
@@ -544,6 +639,7 @@ export const ChecklistHandler = {
         this.on_stuck_description_saved_callback = _callbacks.onStuckDescriptionSaved || null;
         this._observation_focus_snapshots = new Map();
         this._status_button_triggers = new Map();
+        this._status_change_flights = new Set();
         this.is_dom_built = false;
 
         const deps = options.deps || {};
@@ -760,6 +856,20 @@ export const ChecklistHandler = {
         }
         
         if (change_info.type && this.on_status_change_callback) {
+            if (!this._acquire_status_change_flight(check_id, change_info.pcId || null)) {
+                debug_session_log('ChecklistHandler.js:handle_checklist_click', 'ignorerar upprepat klick under pågående ändring', {
+                    check_id,
+                    pc_id: change_info.pcId || null,
+                    action
+                }, 'H2');
+                return;
+            }
+            const release_status_change_flight = () => {
+                this._release_status_change_flight(check_id, change_info.pcId || null);
+            };
+
+            this._apply_optimistic_status_button_ui(change_info);
+
             const trigger = {
                 source: this._detect_user_event_source(event),
                 event_type: event.type,
@@ -820,7 +930,9 @@ export const ChecklistHandler = {
                     if (window.ConsoleManager?.warn) {
                         window.ConsoleManager.warn('[ChecklistHandler] onStatusChange:', e);
                     }
-                });
+                }).finally(release_status_change_flight);
+            } else {
+                release_status_change_flight();
             }
             if (should_keep_focus_on_status_button) {
                 this._restore_focus_to_button_with_retry(button_focus_target, {
@@ -2042,6 +2154,7 @@ export const ChecklistHandler = {
         }
         this._observation_focus_snapshots = new Map();
         this._status_button_triggers = new Map();
+        this._status_change_flights = new Set();
         this.is_dom_built = false;
         this.get_dom_focus_sync_root = null;
         this.get_is_audit_archived = null;

@@ -148,7 +148,17 @@ function _handle_tooltip_mouseover(e) {
 }
 
 function _handle_tooltip_mouseout(e) {
-    if (e.target.closest(TOOLTIP_WRAPPER_SEL)) _schedule_tooltip_sync();
+    const wrapper = e.target.closest(TOOLTIP_WRAPPER_SEL);
+    if (!wrapper) return;
+    const related = e.relatedTarget;
+    if (related instanceof Node && wrapper.contains(related)) return;
+    // Dölj när pekaren lämnar wrapper — även om :focus-within fortfarande är sant efter klick,
+    // annars kan overlay-tooltipen hänga kvar i krav-vyn efter statusändring eller navigering.
+    if (_current_tooltip_wrapper === wrapper) {
+        _hide_tooltip_from_overlay();
+        return;
+    }
+    _schedule_tooltip_sync();
 }
 
 function _handle_tooltip_focusin(e) {
