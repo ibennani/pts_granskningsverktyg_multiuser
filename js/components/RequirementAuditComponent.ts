@@ -14,7 +14,8 @@ import {
     definition_primary_id,
     find_check_def_by_storage_id,
     find_pass_criterion_def_by_storage_id,
-    resolve_map_entry
+    resolve_map_entry,
+    same_storage_id
 } from '../logic/entity_id_match.js';
 import {
     is_debug_autosave_focus,
@@ -101,6 +102,8 @@ export class RequirementAuditComponent {
         this._krav_vy_focus_debug_roots = [];
         /** Debounce-timer för autospar av observations- och kommentarsfält. */
         this._plate_text_autosave_timer = null;
+        /** Osparade observationstexter per kriterium (överlever load_and_prepare och statusväxling). */
+        this._pc_observation_drafts = new Map();
     }
 
     async init({ root, deps }) {
@@ -275,12 +278,216 @@ export class RequirementAuditComponent {
 
     /** Läser textarea-värden från DOM till current_result (även när fokus fortfarande ligger i fältet). */
     _sync_plate_text_from_dom({ should_trim = false } = {}) {
-        if (!this.plate_element_ref || !this.current_result) return;
-        this.handle_comment_input(should_trim);
+        if (!this.current_result) return;
+        if (this.plate_element_ref) {
+            this.handle_comment_input(should_trim);
+        }
         this.checklist_handler_instance?.flush_observations_before_destroy?.({ trim: should_trim });
+        this._refresh_pc_observation_drafts_from_dom();
+        this._apply_pc_observation_drafts_to_result(this.current_result);
+    }
+
+    _pc_observation_draft_key(check_id, pc_id) {
+        return `${String(check_id)}\0${String(pc_id)}`;
+    }
+
+    /** Uppdaterar utkast från alla synliga/dolda observations-textareas i plåten. */
+    _refresh_pc_observation_drafts_from_dom() {
+        for (const item of this._extract_observation_texts_from_dom()) {
+            this._pc_observation_drafts.set(
+                this._pc_observation_draft_key(item.check_id, item.pc_id),
+                item.observationDetail
+            );
+        }
+    }
+
+    _get_pc_observation_draft(check_id, pc_id) {
+        const target_key = this._pc_observation_draft_key(check_id, pc_id);
+        if (this._pc_observation_drafts.has(target_key)) {
+            return this._pc_observation_drafts.get(target_key);
+        }
+        for (const [key, text] of this._pc_observation_drafts.entries()) {
+            const [draft_check_id, draft_pc_id] = key.split('\0');
+            if (same_storage_id(draft_check_id, check_id) && same_storage_id(draft_pc_id, pc_id)) {
+                return text;
+            }
+        }
+        return undefined;
+    }
+
+    _apply_pc_observation_drafts_to_result(result) {
+        if (!result?.checkResults) return;
+        for (const [key, text] of this._pc_observation_drafts.entries()) {
+            const [check_id, pc_id] = key.split('\0');
+            const chk = resolve_map_entry(result.checkResults, check_id);
+            const check_result = chk?.value;
+            if (!check_result?.passCriteria) continue;
+            const pc = resolve_map_entry(check_result.passCriteria, pc_id);
+            if (pc?.value && typeof pc.value === 'object') {
+                pc.value.observationDetail = text;
+            } else {
+                const status = typeof pc?.value === 'string' ? pc.value : 'not_audited';
+                const storage_key = pc?.storageKey ?? String(pc_id);
+                check_result.passCriteria[storage_key] = {
+                    status,
+                    observationDetail: text,
+                    timestamp: null,
+                    attachedMediaFilenames: []
+                };
+            }
+        }
+    }
+
+    _clear_pc_observation_drafts() {
+        this._pc_observation_drafts.clear();
+    }
+
+    /** Läser observationstexter direkt från plåt/checklista DOM (källan vid osparad input). */
+    _extract_observation_texts_from_dom() {
+        const observations = [];
+        const seen = new Set();
+        const scopes = [];
+        if (this.plate_element_ref) scopes.push(this.plate_element_ref);
+        const checklist_root = this.checklist_handler_instance?.container_ref;
+        if (checklist_root && !scopes.includes(checklist_root)) {
+            scopes.push(checklist_root);
+        }
+        for (const container of scopes) {
+            container.querySelectorAll('textarea.pc-observation-detail-textarea').forEach((textarea) => {
+                const pc_item = textarea.closest('.pass-criterion-item[data-pc-id]');
+                const check_item = textarea.closest('.check-item[data-check-id]');
+                if (!pc_item || !check_item) return;
+                const check_id = check_item.getAttribute('data-check-id');
+                const pc_id = pc_item.getAttribute('data-pc-id');
+                if (!check_id || !pc_id) return;
+                const key = this._pc_observation_draft_key(check_id, pc_id);
+                if (seen.has(key)) return;
+                seen.add(key);
+                observations.push({
+                    check_id,
+                    pc_id,
+                    observationDetail: textarea.value ?? ''
+                });
+            });
+        }
+        return observations;
+    }
+
+    _extract_observations_from_result(result) {
+        const observations = [];
+        if (!result?.checkResults) return observations;
+        for (const check_id of Object.keys(result.checkResults)) {
+            const pass_criteria = result.checkResults[check_id]?.passCriteria;
+            if (!pass_criteria || typeof pass_criteria !== 'object') continue;
+            for (const pc_id of Object.keys(pass_criteria)) {
+                const pc_entry = pass_criteria[pc_id];
+                if (typeof pc_entry !== 'object' || pc_entry === null) continue;
+                observations.push({
+                    check_id,
+                    pc_id,
+                    observationDetail: typeof pc_entry.observationDetail === 'string' ? pc_entry.observationDetail : ''
+                });
+            }
+        }
+        return observations;
+    }
+
+    _get_observation_from_overlay(overlay, check_id, pc_id) {
+        if (!overlay?.observations) return '';
+        const item = overlay.observations.find(
+            (entry) => same_storage_id(entry.check_id, check_id) && same_storage_id(entry.pc_id, pc_id)
+        );
+        return typeof item?.observationDetail === 'string' ? item.observationDetail : '';
+    }
+
+    /** Väljer första icke-tomma strängen; annars första strängen om någon finns. */
+    _pick_nonempty_observation_text(...candidates) {
+        for (const candidate of candidates) {
+            if (typeof candidate === 'string' && candidate.trim()) {
+                return candidate;
+            }
+        }
+        for (const candidate of candidates) {
+            if (typeof candidate === 'string') {
+                return candidate;
+            }
+        }
+        return '';
+    }
+
+    /** Tar snapshot av kommentarer och observationer innan current_result laddas om från store. */
+    _extract_plate_text_overlay(result) {
+        this._refresh_pc_observation_drafts_from_dom();
+        const dom_observations = this._extract_observation_texts_from_dom();
+        const memory_observations = this._extract_observations_from_result(result);
+        const observations_by_key = new Map();
+        const merge_observation = (check_id, pc_id, text) => {
+            const key = this._pc_observation_draft_key(check_id, pc_id);
+            const next = typeof text === 'string' ? text : '';
+            const prev = observations_by_key.get(key);
+            if (!prev) {
+                observations_by_key.set(key, { check_id, pc_id, observationDetail: next });
+                return;
+            }
+            if (next.trim()) {
+                observations_by_key.set(key, { check_id, pc_id, observationDetail: next });
+            }
+        };
+        for (const item of memory_observations) {
+            merge_observation(item.check_id, item.pc_id, item.observationDetail);
+        }
+        for (const [key, text] of this._pc_observation_drafts.entries()) {
+            const [check_id, pc_id] = key.split('\0');
+            merge_observation(check_id, pc_id, text);
+        }
+        for (const item of dom_observations) {
+            merge_observation(item.check_id, item.pc_id, item.observationDetail);
+        }
+        const observations = [...observations_by_key.values()];
+        return {
+            commentToAuditor: this.comment_to_auditor_input
+                ? (this.comment_to_auditor_input.value ?? '')
+                : (typeof result?.commentToAuditor === 'string' ? result.commentToAuditor : ''),
+            commentToActor: this.comment_to_actor_input
+                ? (this.comment_to_actor_input.value ?? '')
+                : (typeof result?.commentToActor === 'string' ? result.commentToActor : ''),
+            observations
+        };
+    }
+
+    /** Återställer kommentarer och observationer efter load_and_prepare_view_data. */
+    _apply_plate_text_overlay(result, overlay) {
+        if (!result || !overlay) return;
+        result.commentToAuditor = overlay.commentToAuditor;
+        result.commentToActor = overlay.commentToActor;
+        for (const item of overlay.observations || []) {
+            const chk = resolve_map_entry(result.checkResults, item.check_id);
+            const check_result = chk?.value;
+            if (!check_result?.passCriteria) continue;
+            const pc = resolve_map_entry(check_result.passCriteria, item.pc_id);
+            if (pc?.value && typeof pc.value === 'object') {
+                pc.value.observationDetail = item.observationDetail;
+            }
+        }
     }
 
     /** Synkar kommentarer + observationer från DOM till Redux (utan trim om should_trim false). */
+    _commit_observation_text_to_store(reason) {
+        this._cancel_plate_text_autosave_timer();
+        log_krav_vy_textarea('Autospar till sessionStorage', {
+            sampleId: this.params?.sampleId,
+            requirementId: this.requirement_map_key,
+            fält: 'observation',
+            orsak: reason
+        });
+        this._save_plate_to_redux({
+            should_trim: false,
+            skip_last_status_bump: false,
+            sync_persist: true
+        });
+        void this._flush_audit_requirement_to_server();
+    }
+
     _save_plate_to_redux({ should_trim = false, skip_last_status_bump = false, sync_persist = false, force_persist = false } = {}) {
         if (!this.plate_element_ref) return false;
         this._sync_plate_text_from_dom({ should_trim });
@@ -758,10 +965,15 @@ export class RequirementAuditComponent {
     }
 
     async _run_checklist_status_change(change_info) {
+        this._sync_plate_text_from_dom({ should_trim: false });
+        const plate_text_overlay = this._extract_plate_text_overlay(this.current_result);
+
         if (!this.load_and_prepare_view_data()) {
             await this.render();
             return;
         }
+        this._apply_plate_text_overlay(this.current_result, plate_text_overlay);
+        this._apply_pc_observation_drafts_to_result(this.current_result);
 
         let modified_result;
         try {
@@ -836,6 +1048,21 @@ export class RequirementAuditComponent {
                 };
             }
 
+            const draft_observation = this._get_pc_observation_draft(change_info.checkId, change_info.pcId);
+            const overlay_observation = this._get_observation_from_overlay(
+                plate_text_overlay,
+                change_info.checkId,
+                change_info.pcId
+            );
+            const preserved_observation = this._pick_nonempty_observation_text(
+                overlay_observation,
+                draft_observation,
+                pc_result.observationDetail
+            );
+            if (preserved_observation) {
+                pc_result.observationDetail = preserved_observation;
+            }
+
             if (pc_result.status === 'failed' && (!pc_result.observationDetail || pc_result.observationDetail.trim() === '')) {
                 const pc_def = find_pass_criterion_def_by_storage_id(check_definition?.passCriteria, change_info.pcId);
                 if (pc_def?.failureStatementTemplate) {
@@ -851,6 +1078,8 @@ export class RequirementAuditComponent {
             });
         }
 
+        this._apply_pc_observation_drafts_to_result(modified_result);
+
         delete modified_result.needsReview;
         try {
             await this.dispatch_result_update(modified_result, { skipRender: true });
@@ -864,6 +1093,8 @@ export class RequirementAuditComponent {
             await this.render();
             return;
         }
+        this._apply_plate_text_overlay(this.current_result, plate_text_overlay);
+        this._apply_pc_observation_drafts_to_result(this.current_result);
         this._checklist_patch_scope = {
             check_id: change_info.checkId,
             pc_id: change_info.type === 'pc_status_change' ? change_info.pcId : null,
@@ -1386,22 +1617,24 @@ export class RequirementAuditComponent {
             checklist_container,
             {
                 onStatusChange: this.handle_checklist_status_change,
+                onBeforeStatusChangeSync: () => {
+                    this._sync_plate_text_from_dom({ should_trim: false });
+                },
                 onObservationChange: () => {
+                    this._refresh_pc_observation_drafts_from_dom();
                     this._request_plate_text_autosave();
                 },
+                onObservationDraftUpdate: (check_id, pc_id, text) => {
+                    this._pc_observation_drafts.set(
+                        this._pc_observation_draft_key(check_id, pc_id),
+                        text
+                    );
+                },
                 onObservationBlurCommit: () => {
-                    this._cancel_plate_text_autosave_timer();
-                    log_krav_vy_textarea('Autospar till sessionStorage (blur)', {
-                        sampleId: this.params?.sampleId,
-                        requirementId: this.requirement_map_key,
-                        fält: 'observation'
-                    });
-                    this._save_plate_to_redux({
-                        should_trim: false,
-                        skip_last_status_bump: false,
-                        sync_persist: true
-                    });
-                    void this._flush_audit_requirement_to_server();
+                    this._commit_observation_text_to_store('blur');
+                },
+                onObservationHideCommit: () => {
+                    this._commit_observation_text_to_store('dölj observationsfält');
                 },
                 onStuckDescriptionSaved: async () => {
                     if (is_debug_stuck_sync()) {
@@ -1444,7 +1677,8 @@ export class RequirementAuditComponent {
                 },
                 getAuditId: () => this.getState()?.auditId || this.params?.auditId || this.params?.id,
                 getSampleId: () => this.params?.sampleId,
-                getRequirementMapKey: () => this.requirement_map_key
+                getRequirementMapKey: () => this.requirement_map_key,
+                getPcObservationDraft: (check_id, pc_id) => this._get_pc_observation_draft(check_id, pc_id)
             }
         );
         
@@ -1720,6 +1954,7 @@ export class RequirementAuditComponent {
         const baseline_key = `${String(this.params?.sampleId ?? '')}|${String(this.requirement_map_key ?? this.params?.requirementId ?? '')}`;
         if (baseline_key !== this._baseline_key) {
             this._baseline_key = baseline_key;
+            this._clear_pc_observation_drafts();
             establish_baseline_for_current_audit_focus(this.getState());
         }
 
@@ -1752,6 +1987,7 @@ export class RequirementAuditComponent {
 
     async destroy() {
         await this.flush_before_leave_async();
+        this._clear_pc_observation_drafts();
         unregister_unload_persist_hook('requirement_audit_plate');
         this._handle_unload_persist = null;
         if (typeof this.unsubscribe_from_store === 'function') {

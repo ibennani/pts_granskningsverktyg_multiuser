@@ -131,6 +131,244 @@ describe('RequirementAuditComponent handle_checklist_status_change serialisering
         expect(second_payload.checkResults.check_b.overallStatus).toBe('passed');
     });
 
+    test('behåller observationstext från DOM vid växling underkänt och ingen anmärkning', async () => {
+        const store_result = {
+            status: 'not_audited',
+            commentToAuditor: '',
+            commentToActor: '',
+            lastStatusUpdate: null,
+            stuckProblemDescription: '',
+            checkResults: {
+                check_a: {
+                    status: 'not_audited',
+                    overallStatus: 'passed',
+                    passCriteria: {
+                        pc_1: {
+                            status: 'failed',
+                            observationDetail: 'Malltext från regelfilen',
+                            timestamp: null,
+                            attachedMediaFilenames: []
+                        }
+                    }
+                }
+            }
+        };
+        const { comp, get_store } = setup_component_for_status_queue();
+        get_store().samples[0].requirementResults.req1 = JSON.parse(JSON.stringify(store_result));
+        comp.current_requirement = {
+            key: 'req1',
+            title: 'Krav 1',
+            checks: [{
+                id: 'check_a',
+                key: 'check_a',
+                passCriteria: [{
+                    id: 'pc_1',
+                    key: 'pc_1',
+                    failureStatementTemplate: 'Malltext från regelfilen'
+                }]
+            }]
+        };
+        comp.current_result = JSON.parse(JSON.stringify(store_result));
+
+        const checklist_root = document.createElement('div');
+        const check_item = document.createElement('div');
+        check_item.className = 'check-item';
+        check_item.setAttribute('data-check-id', 'check_a');
+        const pc_item = document.createElement('li');
+        pc_item.className = 'pass-criterion-item';
+        pc_item.setAttribute('data-pc-id', 'pc_1');
+        const textarea = document.createElement('textarea');
+        textarea.className = 'pc-observation-detail-textarea';
+        textarea.value = 'Min egen text';
+        pc_item.appendChild(textarea);
+        check_item.appendChild(pc_item);
+        checklist_root.appendChild(check_item);
+        comp.checklist_handler_instance = {
+            container_ref: checklist_root,
+            flush_observations_before_destroy: jest.fn()
+        };
+        comp.plate_element_ref = document.createElement('div');
+
+        await comp.handle_checklist_status_change({
+            type: 'pc_status_change',
+            checkId: 'check_a',
+            pcId: 'pc_1',
+            newStatus: 'passed'
+        });
+
+        expect(get_store().samples[0].requirementResults.req1.checkResults.check_a.passCriteria.pc_1.observationDetail)
+            .toBe('Min egen text');
+
+        comp.current_result = JSON.parse(JSON.stringify(get_store().samples[0].requirementResults.req1));
+        textarea.value = 'Min egen text';
+
+        await comp.handle_checklist_status_change({
+            type: 'pc_status_change',
+            checkId: 'check_a',
+            pcId: 'pc_1',
+            newStatus: 'failed'
+        });
+
+        const after_failed = get_store().samples[0].requirementResults.req1;
+        expect(after_failed.checkResults.check_a.passCriteria.pc_1.observationDetail).toBe('Min egen text');
+        expect(after_failed.checkResults.check_a.passCriteria.pc_1.status).toBe('failed');
+    });
+
+    test('behåller observationstext vid ingen anmärkning och inte aktuellt på kontrollpunkten', async () => {
+        const store_result = {
+            status: 'not_audited',
+            commentToAuditor: '',
+            commentToActor: '',
+            lastStatusUpdate: null,
+            stuckProblemDescription: '',
+            checkResults: {
+                check_a: {
+                    status: 'not_audited',
+                    overallStatus: 'passed',
+                    passCriteria: {
+                        pc_1: {
+                            status: 'failed',
+                            observationDetail: 'Malltext från regelfilen',
+                            timestamp: null,
+                            attachedMediaFilenames: []
+                        }
+                    }
+                }
+            }
+        };
+        const { comp, get_store } = setup_component_for_status_queue();
+        get_store().samples[0].requirementResults.req1 = JSON.parse(JSON.stringify(store_result));
+        comp.current_requirement = {
+            key: 'req1',
+            title: 'Krav 1',
+            checks: [{
+                id: 'check_a',
+                key: 'check_a',
+                passCriteria: [{
+                    id: 'pc_1',
+                    key: 'pc_1',
+                    failureStatementTemplate: 'Malltext från regelfilen'
+                }]
+            }]
+        };
+        comp.current_result = JSON.parse(JSON.stringify(store_result));
+        comp.plate_element_ref = document.createElement('div');
+
+        const checklist_root = document.createElement('div');
+        const check_item = document.createElement('div');
+        check_item.className = 'check-item';
+        check_item.setAttribute('data-check-id', 'check_a');
+        const pc_item = document.createElement('li');
+        pc_item.className = 'pass-criterion-item';
+        pc_item.setAttribute('data-pc-id', 'pc_1');
+        const textarea = document.createElement('textarea');
+        textarea.className = 'pc-observation-detail-textarea';
+        textarea.value = 'Min egen text';
+        pc_item.appendChild(textarea);
+        check_item.appendChild(pc_item);
+        checklist_root.appendChild(check_item);
+        comp.plate_element_ref.appendChild(checklist_root);
+        comp.checklist_handler_instance = { container_ref: checklist_root, flush_observations_before_destroy: jest.fn() };
+
+        await comp.handle_checklist_status_change({
+            type: 'pc_status_change',
+            checkId: 'check_a',
+            pcId: 'pc_1',
+            newStatus: 'passed'
+        });
+
+        comp.current_result = JSON.parse(JSON.stringify(get_store().samples[0].requirementResults.req1));
+        textarea.value = 'Min egen text';
+
+        await comp.handle_checklist_status_change({
+            type: 'check_overall_status_change',
+            checkId: 'check_a',
+            newStatus: 'not_applicable'
+        });
+
+        comp.current_result = JSON.parse(JSON.stringify(get_store().samples[0].requirementResults.req1));
+        textarea.value = 'Min egen text';
+
+        await comp.handle_checklist_status_change({
+            type: 'check_overall_status_change',
+            checkId: 'check_a',
+            newStatus: 'passed'
+        });
+
+        comp.current_result = JSON.parse(JSON.stringify(get_store().samples[0].requirementResults.req1));
+        textarea.value = 'Min egen text';
+
+        await comp.handle_checklist_status_change({
+            type: 'pc_status_change',
+            checkId: 'check_a',
+            pcId: 'pc_1',
+            newStatus: 'failed'
+        });
+
+        const final_result = get_store().samples[0].requirementResults.req1;
+        expect(final_result.checkResults.check_a.passCriteria.pc_1.observationDetail).toBe('Min egen text');
+        expect(final_result.checkResults.check_a.passCriteria.pc_1.status).toBe('failed');
+    });
+
+    test('behåller osparad observationstext vid växling underkänt och ingen anmärkning', async () => {
+        const store_result = {
+            status: 'not_audited',
+            commentToAuditor: '',
+            commentToActor: '',
+            lastStatusUpdate: null,
+            stuckProblemDescription: '',
+            checkResults: {
+                check_a: {
+                    status: 'not_audited',
+                    overallStatus: 'passed',
+                    passCriteria: {
+                        pc_1: {
+                            status: 'failed',
+                            observationDetail: '',
+                            timestamp: null,
+                            attachedMediaFilenames: []
+                        }
+                    }
+                }
+            }
+        };
+        const { comp, get_store } = setup_component_for_status_queue();
+        get_store().samples[0].requirementResults.req1 = JSON.parse(JSON.stringify(store_result));
+        comp.current_requirement = {
+            key: 'req1',
+            title: 'Krav 1',
+            checks: [{
+                id: 'check_a',
+                key: 'check_a',
+                passCriteria: [{ id: 'pc_1', key: 'pc_1' }]
+            }]
+        };
+        comp.current_result = JSON.parse(JSON.stringify(store_result));
+        comp.current_result.checkResults.check_a.passCriteria.pc_1.observationDetail = 'Min observation';
+
+        await comp.handle_checklist_status_change({
+            type: 'pc_status_change',
+            checkId: 'check_a',
+            pcId: 'pc_1',
+            newStatus: 'passed'
+        });
+
+        const after_passed = get_store().samples[0].requirementResults.req1;
+        expect(after_passed.checkResults.check_a.passCriteria.pc_1.observationDetail).toBe('Min observation');
+
+        comp.current_result = JSON.parse(JSON.stringify(after_passed));
+        await comp.handle_checklist_status_change({
+            type: 'pc_status_change',
+            checkId: 'check_a',
+            pcId: 'pc_1',
+            newStatus: 'failed'
+        });
+
+        const after_failed = get_store().samples[0].requirementResults.req1;
+        expect(after_failed.checkResults.check_a.passCriteria.pc_1.observationDetail).toBe('Min observation');
+        expect(after_failed.checkResults.check_a.passCriteria.pc_1.status).toBe('failed');
+    });
+
     test('destroy väntar på pågående statusändring innan sparning', async () => {
         const { comp } = setup_component_for_status_queue();
         comp.plate_element_ref = document.createElement('div');

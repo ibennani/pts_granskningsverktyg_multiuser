@@ -10,6 +10,7 @@ import {
 } from '../../app/browser_globals.js';
 import { is_debug_stuck_sync, is_debug_krav_vy } from '../../app/runtime_flags.js';
 import { resolve_map_entry } from '../../audit_logic.js';
+import { find_pass_criterion_def_by_storage_id } from '../../logic/entity_id_match.js';
 import {
     format_deficiency_id_label,
     should_show_deficiency_id_in_title
@@ -28,6 +29,7 @@ import {
     read_check_stored_data,
     read_pc_stored_data,
     should_show_pass_criteria_list,
+    should_show_observation_wrapper,
     effective_pc_status
 } from './checklist_observation_visibility.js';
 
@@ -36,10 +38,21 @@ export const ChecklistHandler = {
     on_status_change_callback: null,
     on_observation_change_callback: null,
     on_observation_blur_commit_callback: null,
+    on_before_status_change_sync_callback: null,
+    on_observation_draft_update_callback: null,
+    on_observation_hide_commit_callback: null,
+    get_pc_observation_draft: null,
     on_stuck_description_saved_callback: null,
 
     /** @type {Map<string, string>} */
     _observation_focus_snapshots: null,
+
+    /** @type {Map<string, string>} */
+    _observation_dom_cache: null,
+
+    /** Kriterier vars observationsfält dolts med sparad användartext (återställs utan malltext). */
+    /** @type {Set<string>} */
+    _observation_hidden_with_text_keys: null,
 
     Translation: null,
     Helpers: null,
@@ -189,7 +202,7 @@ export const ChecklistHandler = {
         }
 
         const observation_wrapper = pc_item_li.querySelector('.pc-observation-detail-wrapper');
-        this._sync_observation_wrapper_visibility(observation_wrapper, 'passed', { status: next });
+        this._sync_observation_wrapper_visibility(observation_wrapper, 'passed', { status: next }, check_id, pc_id);
     },
 
     _detect_user_event_source(event) {
@@ -210,12 +223,85 @@ export const ChecklistHandler = {
         return labels[action] || action;
     },
 
-    _sync_observation_wrapper_visibility(observation_wrapper, overall_manual_status, pc_data) {
-        return apply_observation_wrapper_visibility(
+    _sync_observation_wrapper_visibility(
+        observation_wrapper,
+        overall_manual_status,
+        pc_data,
+        check_id = null,
+        pc_id = null
+    ) {
+        const pc_status = typeof pc_data === 'string' ? pc_data : pc_data?.status;
+        const textarea = observation_wrapper?.querySelector?.('textarea.pc-observation-detail-textarea') ?? null;
+        const was_hidden = observation_wrapper instanceof HTMLElement ? observation_wrapper.hidden : true;
+        const should_show = should_show_observation_wrapper(overall_manual_status, pc_status);
+
+        if (textarea && check_id != null && pc_id != null && !should_show) {
+            this._snapshot_observation_before_hide(check_id, pc_id, textarea);
+        }
+
+        const result = apply_observation_wrapper_visibility(
             observation_wrapper,
             overall_manual_status,
-            pc_data?.status
+            pc_status
         );
+
+        if (textarea && check_id != null && pc_id != null && should_show && was_hidden) {
+            this._restore_observation_textarea_after_show(check_id, pc_id, textarea);
+        }
+
+        return result;
+    },
+
+    _snapshot_observation_before_hide(check_id, pc_id, textarea) {
+        const text = textarea.value ?? '';
+        this._persist_observation_dom_value(check_id, pc_id, text);
+        if (!this._observation_hidden_with_text_keys) {
+            this._observation_hidden_with_text_keys = new Set();
+        }
+        if (String(text).trim()) {
+            this._observation_hidden_with_text_keys.add(this._observation_cache_key(check_id, pc_id));
+        }
+        if (this.on_observation_hide_commit_callback) {
+            this.on_observation_hide_commit_callback();
+        }
+    },
+
+    _pick_user_observation_text(check_id, pc_id, observation_textarea = null) {
+        const dom_value = observation_textarea?.value ?? '';
+        if (String(dom_value).trim()) {
+            return dom_value;
+        }
+        const cached = this._get_cached_observation_text(check_id, pc_id);
+        if (typeof cached === 'string') {
+            return cached;
+        }
+        const draft = typeof this.get_pc_observation_draft === 'function'
+            ? this.get_pc_observation_draft(check_id, pc_id)
+            : undefined;
+        if (typeof draft === 'string') {
+            return draft;
+        }
+        return '';
+    },
+
+    _restore_observation_textarea_after_show(check_id, pc_id, textarea) {
+        const key = this._observation_cache_key(check_id, pc_id);
+        if (!this._observation_hidden_with_text_keys?.has(key)) {
+            return false;
+        }
+        const text = this._pick_user_observation_text(check_id, pc_id, textarea);
+        if (textarea.value !== text) {
+            textarea.value = text;
+            this._persist_observation_dom_value(check_id, pc_id, text);
+        }
+        if (this.Helpers?.init_auto_resize_for_textarea) {
+            this.Helpers.init_auto_resize_for_textarea(textarea);
+        }
+        return true;
+    },
+
+    _observation_was_hidden_with_user_text(check_id, pc_id) {
+        return this._observation_hidden_with_text_keys?.has(this._observation_cache_key(check_id, pc_id)) === true;
     },
 
     _heal_pc_ui_from_data({
@@ -253,7 +339,9 @@ export const ChecklistHandler = {
         const visibility_result = this._sync_observation_wrapper_visibility(
             observation_wrapper,
             overall_manual_status,
-            pc_data
+            pc_data,
+            check_id,
+            pc_id
         );
 
         if (sync_textarea_value) {
@@ -272,13 +360,19 @@ export const ChecklistHandler = {
             const editing_elsewhere = has_pc_observation_textarea_focus && !is_this_focused;
             if (observation_textarea && current_pc_status === 'failed' && !is_this_focused
                 && !typing_other && !editing_elsewhere) {
-                const target_value = pc_data.observationDetail || '';
-                if (observation_textarea.value !== target_value) {
-                    observation_textarea.value = target_value;
-                }
-                if (this.Helpers?.init_auto_resize_for_textarea) {
-                    this.Helpers.init_auto_resize_for_textarea(observation_textarea);
-                }
+                const target_value = this._resolve_observation_target_for_textarea(
+                    check_id,
+                    pc_id,
+                    pc_data,
+                    overall_manual_status,
+                    observation_textarea
+                );
+                this._sync_observation_textarea_from_target(
+                    observation_textarea,
+                    target_value,
+                    check_id,
+                    pc_id
+                );
             }
         }
 
@@ -387,9 +481,8 @@ export const ChecklistHandler = {
             });
         });
 
-        if (mismatch_count > 0 && this.requirement_definition_ref) {
-            this.is_dom_built = false;
-        }
+        // Bygg inte om hela checklist-DOM vid synk-mismatch — det förstör observations-textareas
+        // som var dolda men fortfarande innehöll osparad text.
     },
 
     _register_hmr_dom_rebuild() {
@@ -635,8 +728,11 @@ export const ChecklistHandler = {
         this.on_observation_change_callback = _callbacks.onObservationChange;
         this.on_observation_change_immediate_callback = _callbacks.onObservationChangeImmediate || null;
         this.on_observation_blur_commit_callback = _callbacks.onObservationBlurCommit || null;
+        this.on_before_status_change_sync_callback = _callbacks.onBeforeStatusChangeSync || null;
         this.on_stuck_description_saved_callback = _callbacks.onStuckDescriptionSaved || null;
         this._observation_focus_snapshots = new Map();
+        this._observation_dom_cache = new Map();
+        this._observation_hidden_with_text_keys = new Set();
         this._status_button_triggers = new Map();
         this._status_change_flights = new Set();
         this.is_dom_built = false;
@@ -658,6 +754,11 @@ export const ChecklistHandler = {
         this.get_audit_id = typeof options.getAuditId === 'function' ? options.getAuditId : null;
         this.get_sample_id = typeof options.getSampleId === 'function' ? options.getSampleId : null;
         this.get_requirement_map_key = typeof options.getRequirementMapKey === 'function' ? options.getRequirementMapKey : null;
+        this.get_pc_observation_draft = typeof options.getPcObservationDraft === 'function'
+            ? options.getPcObservationDraft
+            : null;
+        this.on_observation_draft_update_callback = _callbacks.onObservationDraftUpdate || null;
+        this.on_observation_hide_commit_callback = _callbacks.onObservationHideCommit || null;
 
         // Bind handlers to this instance
         this.handle_checklist_click = this.handle_checklist_click.bind(this);
@@ -667,7 +768,11 @@ export const ChecklistHandler = {
         this.handle_copy_observation_click = this.handle_copy_observation_click.bind(this);
         this.handle_pc_observation_focusin = this.handle_pc_observation_focusin.bind(this);
         this.handle_pc_observation_focusout = this.handle_pc_observation_focusout.bind(this);
+        this.handle_status_button_pointerdown = this.handle_status_button_pointerdown.bind(this);
+        this.handle_observation_flush_pointerdown = this.handle_observation_flush_pointerdown.bind(this);
 
+        this.container_ref.addEventListener('pointerdown', this.handle_observation_flush_pointerdown, true);
+        this.container_ref.addEventListener('pointerdown', this.handle_status_button_pointerdown, true);
         this.container_ref.addEventListener('click', this.handle_checklist_click);
         this.container_ref.addEventListener('input', this.handle_textarea_input);
         this.container_ref.addEventListener('focusin', this.handle_pc_observation_focusin);
@@ -679,6 +784,154 @@ export const ChecklistHandler = {
      * True när fokus ligger i en observations-textarea för underkänt kriterium (används vid sparning till store).
      * @returns {boolean}
      */
+    _get_pc_failure_template(check_id, pc_id) {
+        const check_def = this.requirement_definition_ref?.checks?.find(
+            (c) => String(c?.id ?? c?.key) === String(check_id)
+        );
+        const pc_def = find_pass_criterion_def_by_storage_id(check_def?.passCriteria, pc_id);
+        return typeof pc_def?.failureStatementTemplate === 'string' ? pc_def.failureStatementTemplate : '';
+    },
+
+    _observation_cache_key(check_id, pc_id) {
+        return `${String(check_id)}\0${String(pc_id)}`;
+    },
+
+    _cache_observation_text(check_id, pc_id, text) {
+        if (!this._observation_dom_cache) {
+            this._observation_dom_cache = new Map();
+        }
+        this._observation_dom_cache.set(this._observation_cache_key(check_id, pc_id), text);
+    },
+
+    _get_cached_observation_text(check_id, pc_id) {
+        return this._observation_dom_cache?.get(this._observation_cache_key(check_id, pc_id));
+    },
+
+    _persist_observation_dom_value(check_id, pc_id, text) {
+        this._cache_observation_text(check_id, pc_id, text);
+        this._set_pc_observation_detail(
+            this.requirement_result_ref?.checkResults,
+            check_id,
+            pc_id,
+            text
+        );
+        if (typeof this.on_observation_draft_update_callback === 'function') {
+            this.on_observation_draft_update_callback(check_id, pc_id, text);
+        }
+    },
+
+    /** Läser alla observations-textareas (även dolda) till minne/utkast före klick eller statusändring. */
+    _flush_all_observation_textareas_to_memory() {
+        if (!this.container_ref || !this.requirement_result_ref?.checkResults) return;
+        this.container_ref.querySelectorAll('textarea.pc-observation-detail-textarea').forEach((textarea) => {
+            const pc_item = textarea.closest('.pass-criterion-item[data-pc-id]');
+            const check_item = textarea.closest('.check-item[data-check-id]');
+            if (!pc_item || !check_item) return;
+            const check_id = check_item.dataset.checkId;
+            const pc_id = pc_item.dataset.pcId;
+            this._persist_observation_dom_value(check_id, pc_id, textarea.value ?? '');
+        });
+    },
+
+    _resolve_observation_target_for_textarea(check_id, pc_id, pc_data, overall_manual_status, observation_textarea = null) {
+        if (this._observation_was_hidden_with_user_text(check_id, pc_id)) {
+            return this._pick_user_observation_text(check_id, pc_id, observation_textarea);
+        }
+        const dom_value = observation_textarea?.value ?? '';
+        if (String(dom_value).trim()) {
+            return dom_value;
+        }
+        const cached = this._get_cached_observation_text(check_id, pc_id);
+        if (typeof cached === 'string' && String(cached).trim()) {
+            return cached;
+        }
+        const draft = typeof this.get_pc_observation_draft === 'function'
+            ? this.get_pc_observation_draft(check_id, pc_id)
+            : undefined;
+        if (typeof draft === 'string' && String(draft).trim()) {
+            return draft;
+        }
+        const store_value = pc_data?.observationDetail ?? '';
+        if (String(store_value).trim()) {
+            return store_value;
+        }
+        if (effective_pc_status(overall_manual_status, pc_data?.status) === 'failed') {
+            const template = this._get_pc_failure_template(check_id, pc_id);
+            if (template) return template;
+        }
+        return '';
+    },
+
+    _should_apply_observation_textarea_sync(observation_textarea, target_value, should_sync_obs, overall_manual_status, pc_status, check_id, pc_id) {
+        if (!should_sync_obs || !observation_textarea) return false;
+        if (effective_pc_status(overall_manual_status, pc_status) !== 'failed') {
+            return false;
+        }
+        const current = observation_textarea.value ?? '';
+        const target = target_value ?? '';
+        if (String(current).trim() && current !== target) {
+            this._persist_observation_dom_value(check_id, pc_id, current);
+            return false;
+        }
+        if (String(target).trim() === '' && String(current).trim() !== '') {
+            return false;
+        }
+        return current !== target;
+    },
+
+    _sync_observation_textarea_from_target(observation_textarea, target_value, check_id, pc_id) {
+        if (!observation_textarea || observation_textarea.value === target_value) return;
+        observation_textarea.value = target_value;
+        this._persist_observation_dom_value(check_id, pc_id, target_value);
+        if (this.Helpers?.init_auto_resize_for_textarea) {
+            this.Helpers.init_auto_resize_for_textarea(observation_textarea);
+        }
+    },
+
+    _set_pc_observation_detail(check_results, check_id, pc_id, text) {
+        if (!check_results) return;
+        const chk = resolve_map_entry(check_results, check_id);
+        const check_result = chk?.value;
+        if (!check_result) return;
+        if (!check_result.passCriteria || typeof check_result.passCriteria !== 'object') {
+            check_result.passCriteria = {};
+        }
+        const pc = resolve_map_entry(check_result.passCriteria, pc_id);
+        if (pc?.value && typeof pc.value === 'object' && pc.value !== null) {
+            pc.value.observationDetail = text;
+            return;
+        }
+        const status = typeof pc?.value === 'string' ? pc.value : 'not_audited';
+        const storage_key = pc?.storageKey ?? String(pc_id);
+        check_result.passCriteria[storage_key] = {
+            status,
+            observationDetail: text,
+            timestamp: null,
+            attachedMediaFilenames: []
+        };
+    },
+
+    handle_observation_flush_pointerdown() {
+        this._flush_all_observation_textareas_to_memory();
+    },
+
+    handle_status_button_pointerdown(event) {
+        const button = event.target?.closest?.('button[data-action]');
+        if (!button) return;
+        const action = button.dataset.action;
+        if (
+            action !== 'set-check-complies' &&
+            action !== 'set-check-not-complies' &&
+            action !== 'set-pc-passed' &&
+            action !== 'set-pc-failed'
+        ) {
+            return;
+        }
+        if (typeof this.on_before_status_change_sync_callback === 'function') {
+            this.on_before_status_change_sync_callback();
+        }
+    },
+
     has_active_pc_observation_focus() {
         if (!this.container_ref) return false;
         const el = document.activeElement;
@@ -719,7 +972,10 @@ export const ChecklistHandler = {
         const check_id = check_item.dataset.checkId;
         const pc_id = pc_item.dataset.pcId;
         const key = `${check_id}::${pc_id}`;
-        
+        const current = textarea.value ?? '';
+
+        this._persist_observation_dom_value(check_id, pc_id, current);
+
         if (this.lock_helpers && this.get_audit_id && this.get_sample_id && this.get_requirement_map_key) {
             const audit_id = this.get_audit_id();
             const sample_id = this.get_sample_id();
@@ -730,64 +986,42 @@ export const ChecklistHandler = {
             }
         }
         if (!this._observation_focus_snapshots.has(key)) {
-            const current_without_snapshot = textarea.value ?? '';
             const check_result_data = read_check_stored_data(this.requirement_result_ref.checkResults, check_id);
             const stored_data = read_pc_stored_data(check_result_data, pc_id);
             const stored_observation = stored_data?.observationDetail ?? '';
-            if (current_without_snapshot !== stored_observation) {
-                queueMicrotask(() => {
-                    if (!this.requirement_result_ref?.checkResults) return;
-                    const chk_resolved = resolve_map_entry(this.requirement_result_ref.checkResults, check_id);
-                    const check_result = chk_resolved?.value;
-                    const pc_resolved = check_result?.passCriteria
-                        ? resolve_map_entry(check_result.passCriteria, pc_id)
-                        : null;
-                    const pc_entry = pc_resolved?.value;
-                    if (pc_entry && typeof pc_entry === 'object') {
-                        pc_entry.observationDetail = current_without_snapshot;
-                    }
-                    if (this.on_observation_blur_commit_callback) {
-                        this.on_observation_blur_commit_callback();
-                    }
-                });
+            if (current !== stored_observation && this.on_observation_blur_commit_callback) {
+                this.on_observation_blur_commit_callback();
             }
             this._schedule_heal_pc_after_focus_left(check_id, pc_id, pc_item);
             return;
         }
         const snapshot = this._observation_focus_snapshots.get(key);
         this._observation_focus_snapshots.delete(key);
-        const current = textarea.value ?? '';
         const schedule_heal = () => this._schedule_heal_pc_after_focus_left(check_id, pc_id, pc_item);
         if (snapshot === current) {
             schedule_heal();
             return;
         }
 
-        const run_observation_blur_commit = () => {
-            if (!this.requirement_result_ref?.checkResults) return;
+        if (this.requirement_result_ref?.checkResults) {
             const chk_resolved = resolve_map_entry(this.requirement_result_ref.checkResults, check_id);
             const check_result = chk_resolved?.value;
             const pc_resolved = check_result?.passCriteria
                 ? resolve_map_entry(check_result.passCriteria, pc_id)
                 : null;
             const pc_entry = pc_resolved?.value;
-            if (pc_entry) {
+            if (pc_entry && typeof pc_entry === 'object') {
                 const ts = this.Helpers?.get_current_iso_datetime_utc
                     ? this.Helpers.get_current_iso_datetime_utc()
                     : new Date().toISOString();
                 pc_entry.timestamp = ts;
                 pc_entry.updatedBy = get_current_user_name();
             }
-            if (this.on_observation_blur_commit_callback) {
-                this.on_observation_blur_commit_callback();
-            }
-        };
-        // Kör efter aktuell pekar-/fokuskedja (t.ex. klick på statusknapp) så blur-sparning
-        // inte lägger sig före click och gör att första klicket tappas i vissa webbläsare.
-        queueMicrotask(() => {
-            run_observation_blur_commit();
-            schedule_heal();
-        });
+        }
+        if (this.on_observation_blur_commit_callback) {
+            this.on_observation_blur_commit_callback();
+        }
+        queueMicrotask(schedule_heal);
     },
 
     _schedule_heal_pc_after_focus_left(check_id, pc_id, pc_item_li) {
@@ -1261,9 +1495,12 @@ export const ChecklistHandler = {
             const pc_in = check_result_in?.passCriteria
                 ? resolve_map_entry(check_result_in.passCriteria, pc_id)
                 : null;
-            if (pc_in?.value) {
-                pc_in.value.observationDetail = textarea.value;
-            }
+            this._set_pc_observation_detail(
+                this.requirement_result_ref.checkResults,
+                check_id,
+                pc_id,
+                textarea.value ?? ''
+            );
             if (event.type === 'input') {
                 log_krav_vy_textarea('Textarea input (lokal state)', {
                     fält: 'Observation',
@@ -1365,6 +1602,7 @@ export const ChecklistHandler = {
     build_initial_dom() {
         const t = this.Translation.t;
         const details = this.requirement_update_details;
+        this._flush_all_observation_textareas_to_memory();
         this.container_ref.innerHTML = '';
 
         if (!this.requirement_definition_ref?.checks?.length) {
@@ -1532,11 +1770,18 @@ export const ChecklistHandler = {
                 observation_hint.setAttribute('aria-live', 'polite');
                 observation_wrapper.appendChild(observation_hint);
 
+                const pc_data_init = read_pc_stored_data(check_result_data, pc_id);
                 const observation_textarea = this.Helpers.create_element('textarea', {
                     id: `pc-observation-${check_id}-${pc_id}`,
                     class_name: 'form-control pc-observation-detail-textarea',
                     attributes: { rows: '4' }
                 });
+                const cached_observation = this._pick_user_observation_text(check_id, pc_id);
+                if (cached_observation) {
+                    observation_textarea.value = cached_observation;
+                } else if (pc_data_init.observationDetail) {
+                    observation_textarea.value = pc_data_init.observationDetail;
+                }
                 observation_wrapper.appendChild(observation_textarea);
 
                 const attach_media_row = this.Helpers.create_element('div', { class_name: 'pc-attach-media-row' });
@@ -1584,11 +1829,12 @@ export const ChecklistHandler = {
 
                 observation_wrapper.appendChild(attach_media_row);
 
-                const pc_data_init = read_pc_stored_data(check_result_data, pc_id);
                 this._sync_observation_wrapper_visibility(
                     observation_wrapper,
                     overall_for_pc_list,
-                    pc_data_init
+                    pc_data_init,
+                    check_id,
+                    pc_id
                 );
 
                 const is_first_criterion = check_index === 0 && pc_index === 0;
@@ -1691,15 +1937,43 @@ export const ChecklistHandler = {
         }
 
         const observation_wrapper = pc_item_li.querySelector('.pc-observation-detail-wrapper');
-        this._sync_observation_wrapper_visibility(observation_wrapper, overall_manual_status, pc_data);
+        this._sync_observation_wrapper_visibility(
+            observation_wrapper,
+            overall_manual_status,
+            pc_data,
+            check_id,
+            pc_id
+        );
 
         const observation_textarea = pc_item_li.querySelector('textarea.pc-observation-detail-textarea');
-        if (observation_textarea && current_pc_status === 'failed') {
-            const target_value = pc_data.observationDetail || '';
-            if (observation_textarea.value !== target_value) {
-                observation_textarea.value = target_value;
-            }
-            if (this.Helpers?.init_auto_resize_for_textarea) {
+        const restored_after_show = observation_textarea
+            ? this._restore_observation_textarea_after_show(check_id, pc_id, observation_textarea)
+            : false;
+        if (observation_textarea && current_pc_status === 'failed' && !restored_after_show
+            && !this._observation_was_hidden_with_user_text(check_id, pc_id)) {
+            const target_value = this._resolve_observation_target_for_textarea(
+                check_id,
+                pc_id,
+                pc_data,
+                overall_manual_status,
+                observation_textarea
+            );
+            if (this._should_apply_observation_textarea_sync(
+                observation_textarea,
+                target_value,
+                true,
+                overall_manual_status,
+                pc_data.status,
+                check_id,
+                pc_id
+            )) {
+                this._sync_observation_textarea_from_target(
+                    observation_textarea,
+                    target_value,
+                    check_id,
+                    pc_id
+                );
+            } else if (this.Helpers?.init_auto_resize_for_textarea) {
                 this.Helpers.init_auto_resize_for_textarea(observation_textarea);
             }
         }
@@ -2018,24 +2292,52 @@ export const ChecklistHandler = {
 
                 const observation_textarea = observation_wrapper ? observation_wrapper.querySelector('textarea.pc-observation-detail-textarea') : null;
                 
-                this._sync_observation_wrapper_visibility(observation_wrapper, overall_manual_status, pc_data);
+                this._sync_observation_wrapper_visibility(
+                    observation_wrapper,
+                    overall_manual_status,
+                    pc_data,
+                    check_id,
+                    pc_id
+                );
 
                 if (observation_textarea) {
                     update_observation_lock_ui(observation_textarea);
                 }
 
-                const target_observation_value = pc_data.observationDetail || '';
-                if (observation_textarea) {
+                const restored_after_show = observation_textarea
+                    ? this._restore_observation_textarea_after_show(check_id, pc_id, observation_textarea)
+                    : false;
+
+                const target_observation_value = this._resolve_observation_target_for_textarea(
+                    check_id,
+                    pc_id,
+                    pc_data,
+                    overall_manual_status,
+                    observation_textarea
+                );
+                if (observation_textarea && !restored_after_show
+                    && !this._observation_was_hidden_with_user_text(check_id, pc_id)) {
                     const is_this_focused = document.activeElement === observation_textarea;
-                    // Synka från state när användaren inte skriver här; undvik att skriva över medan annat fält i plåten eller annan observationsruta har fokus.
                     const pc_observation_editing_elsewhere = has_pc_observation_textarea_focus && !is_this_focused;
                     const typing_other_field_in_plate = !is_this_focused && any_textarea_or_input_focused_in_sync_root
                         && !has_pc_observation_textarea_focus;
                     const should_sync_obs = !is_this_focused && !pc_observation_editing_elsewhere && !typing_other_field_in_plate;
-                    if (should_sync_obs && observation_textarea.value !== target_observation_value) {
-                        observation_textarea.value = target_observation_value;
-                    }
-                    if (this.Helpers?.init_auto_resize_for_textarea) {
+                    if (this._should_apply_observation_textarea_sync(
+                        observation_textarea,
+                        target_observation_value,
+                        should_sync_obs,
+                        overall_manual_status,
+                        pc_data.status,
+                        check_id,
+                        pc_id
+                    )) {
+                        this._sync_observation_textarea_from_target(
+                            observation_textarea,
+                            target_observation_value,
+                            check_id,
+                            pc_id
+                        );
+                    } else if (this.Helpers?.init_auto_resize_for_textarea) {
                         this.Helpers.init_auto_resize_for_textarea(observation_textarea);
                     }
                 }
@@ -2123,12 +2425,16 @@ export const ChecklistHandler = {
                 const pc_flush = check_result_flush?.passCriteria
                     ? resolve_map_entry(check_result_flush.passCriteria, pc_id)
                     : null;
-                if (pc_flush?.value) {
-                    const raw = textarea.value || '';
-                    pc_flush.value.observationDetail = should_trim && this.Helpers?.trim_textarea_preserve_lines
-                        ? this.Helpers.trim_textarea_preserve_lines(raw)
-                        : should_trim ? raw.trim() : raw;
-                }
+                const raw = textarea.value || '';
+                const text_value = should_trim && this.Helpers?.trim_textarea_preserve_lines
+                    ? this.Helpers.trim_textarea_preserve_lines(raw)
+                    : should_trim ? raw.trim() : raw;
+                this._set_pc_observation_detail(
+                    this.requirement_result_ref.checkResults,
+                    check_id,
+                    pc_id,
+                    text_value
+                );
             }
         });
     },
@@ -2136,6 +2442,8 @@ export const ChecklistHandler = {
     destroy() {
         if (this.container_ref) {
             this.flush_observations_before_destroy();
+            this.container_ref.removeEventListener('pointerdown', this.handle_observation_flush_pointerdown, true);
+            this.container_ref.removeEventListener('pointerdown', this.handle_status_button_pointerdown, true);
             this.container_ref.removeEventListener('click', this.handle_checklist_click);
             this.container_ref.removeEventListener('input', this.handle_textarea_input);
             this.container_ref.removeEventListener('focusin', this.handle_pc_observation_focusin);
@@ -2143,12 +2451,15 @@ export const ChecklistHandler = {
             this.container_ref.innerHTML = '';
         }
         this._observation_focus_snapshots = new Map();
+        this._observation_dom_cache = new Map();
+        this._observation_hidden_with_text_keys = new Set();
         this._status_button_triggers = new Map();
         this._status_change_flights = new Set();
         this.is_dom_built = false;
         this.get_dom_focus_sync_root = null;
         this.get_is_audit_archived = null;
         this.get_is_audit_frozen = null;
+        this.get_pc_observation_draft = null;
         this.container_ref = null;
     }
 };
