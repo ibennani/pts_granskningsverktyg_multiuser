@@ -1,10 +1,28 @@
 import { describe, test, expect } from '@jest/globals';
 import {
     build_audit_images_view_fingerprint,
-    build_audit_images_structure_fingerprint
+    build_audit_images_structure_fingerprint,
+    get_audit_images_card_count_label
 } from '../../js/logic/audit_images_view_incremental.js';
 
 describe('audit_images_view_incremental', () => {
+    test('get_audit_images_card_count_label använder singular för 1 (även som sträng)', () => {
+        const t = (key, opts = {}) => {
+            const map = {
+                audit_images_card_count_singular: 'Det finns 1 mediafil i det här kravet.',
+                audit_images_card_count_plural: 'Det finns {count} mediefiler i det här kravet.'
+            };
+            let s = map[key] ?? key;
+            Object.entries(opts).forEach(([k, v]) => {
+                s = s.replace(`{${k}}`, String(v));
+            });
+            return s;
+        };
+        expect(get_audit_images_card_count_label(t, 1)).toBe('Det finns 1 mediafil i det här kravet.');
+        expect(get_audit_images_card_count_label(t, '1')).toBe('Det finns 1 mediafil i det här kravet.');
+        expect(get_audit_images_card_count_label(t, 2)).toBe('Det finns 2 mediefiler i det här kravet.');
+    });
+
     test('innehållsfingerprint ändras när filnamn ändras', () => {
         const base = [{
             reqId: 'req-1',

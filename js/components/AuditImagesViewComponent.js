@@ -6,7 +6,8 @@ import { get_requirement_public_key, find_requirement_definition, definition_pri
 import { get_current_view_name } from '../app/browser_globals.js';
 import {
     build_audit_images_view_fingerprint,
-    build_audit_images_structure_fingerprint
+    build_audit_images_structure_fingerprint,
+    get_audit_images_card_count_label
 } from '../logic/audit_images_view_incremental.js';
 
 export class AuditImagesViewComponent {
@@ -180,6 +181,9 @@ export class AuditImagesViewComponent {
                                 skip_render: true
                             }
                         });
+                        if (typeof this.deps?.refreshSideMenuAndTitle === 'function') {
+                            this.deps.refreshSideMenuAndTitle();
+                        }
                         if (this.root && typeof this.render === 'function' && get_current_view_name() === 'audit_images') {
                             this.render();
                         }
@@ -290,6 +294,11 @@ export class AuditImagesViewComponent {
             `.audit-image-card[data-req-map-id="${CSS.escape(String(group.reqId || ''))}"][data-sample-id="${CSS.escape(String(group.sample?.id || ''))}"]`
         );
         if (!card) return;
+
+        const count_strong = card.querySelector('.audit-image-card__count strong');
+        if (count_strong) {
+            count_strong.textContent = get_audit_images_card_count_label(t, group.items.length);
+        }
 
         const pc_groups = this.group_items_by_check_pc(group.items);
         pc_groups.forEach(({ check_def, pc_def, check_index, pc_index, filenames }) => {
@@ -429,8 +438,14 @@ export class AuditImagesViewComponent {
         }
         card.appendChild(sample_row);
 
+        const count_row = this.Helpers.create_element('p', {
+            class_name: 'audit-image-card__count',
+            html_content: `<strong>${this.Helpers.escape_html(get_audit_images_card_count_label(t, total_count))}</strong>`
+        });
+        card.appendChild(count_row);
+
         const pc_groups = this.group_items_by_check_pc(group.items);
-        pc_groups.forEach(({ check_def, pc_def, check_index, pc_index, filenames }, idx) => {
+        pc_groups.forEach(({ check_def, pc_def, check_index, pc_index, filenames }) => {
             const dom_check_id = definition_primary_id(check_def);
             const dom_pc_id = definition_primary_id(pc_def);
             const section = this.Helpers.create_element('div', {
@@ -465,13 +480,6 @@ export class AuditImagesViewComponent {
                     text_content: pc_def.requirement
                 });
                 section.appendChild(pc_text_p);
-            }
-            if (idx === 0) {
-                const count_row = this.Helpers.create_element('p', {
-                    class_name: 'audit-image-card__count',
-                    html_content: `<strong>${this.Helpers.escape_html(t('audit_images_card_count', { count: total_count }))}</strong>`
-                });
-                section.appendChild(count_row);
             }
             const ul = this.Helpers.create_element('ul', { class_name: 'audit-image-card__filenames' });
             filenames.forEach((fn) => {

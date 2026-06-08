@@ -83,3 +83,16 @@ export function audit_images_card_structure_unchanged(fingerprint_a, fingerprint
         return false;
     }
 }
+
+/**
+ * @param {(key: string, replacements?: Record<string, string>) => string} t
+ * @param {number|string} count
+ * @returns {string}
+ */
+export function get_audit_images_card_count_label(t, count) {
+    const numeric_count = Number(count);
+    if (numeric_count === 1) {
+        return t('audit_images_card_count_singular');
+    }
+    return t('audit_images_card_count_plural', { count: String(numeric_count) });
+}

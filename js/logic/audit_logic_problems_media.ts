@@ -19,10 +19,13 @@ export function count_attached_images(state: AuditStateShape | null | undefined)
     if (!state?.samples) return 0;
     let count = 0;
     traverse_all_pass_criteria(state, ({ pc_result }) => {
-        const filenames = pc_result.attachedMediaFilenames;
-        if (Array.isArray(filenames)) {
-            count += filenames.length;
-        }
+        const filenames = pc_result?.attachedMediaFilenames;
+        if (!Array.isArray(filenames)) return;
+        filenames.forEach((filename) => {
+            if (filename && String(filename).trim()) {
+                count += 1;
+            }
+        });
     });
     return count;
 }

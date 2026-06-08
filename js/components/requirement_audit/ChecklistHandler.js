@@ -54,6 +54,7 @@ export const ChecklistHandler = {
     on_observation_hide_commit_callback: null,
     get_pc_observation_draft: null,
     on_stuck_description_saved_callback: null,
+    on_attached_media_saved_callback: null,
 
     /** @type {Map<string, string>} */
     _observation_focus_snapshots: null,
@@ -857,6 +858,7 @@ export const ChecklistHandler = {
         this.on_observation_blur_commit_callback = _callbacks.onObservationBlurCommit || null;
         this.on_before_status_change_sync_callback = _callbacks.onBeforeStatusChangeSync || null;
         this.on_stuck_description_saved_callback = _callbacks.onStuckDescriptionSaved || null;
+        this.on_attached_media_saved_callback = _callbacks.onAttachedMediaSaved || null;
         this._observation_focus_snapshots = new Map();
         this._observation_dom_cache = new Map();
         this._observation_hidden_with_text_keys = new Set();
@@ -1373,7 +1375,9 @@ export const ChecklistHandler = {
                         : null;
                     if (pc_save?.value) {
                         pc_save.value.attachedMediaFilenames = filenames;
-                        if (this.on_observation_change_callback) {
+                        if (this.on_attached_media_saved_callback) {
+                            this.on_attached_media_saved_callback();
+                        } else if (this.on_observation_change_callback) {
                             this.on_observation_change_callback();
                         }
                         // Uppdatera bifoga-media-knappens text/aria direkt (annars väntar UI tills annat fokus triggar update_dom).

@@ -1624,6 +1624,18 @@ export class RequirementAuditComponent {
                     this._refresh_pc_observation_drafts_from_dom();
                     this._request_plate_text_autosave();
                 },
+                onAttachedMediaSaved: () => {
+                    this._cancel_plate_text_autosave_timer();
+                    this._save_plate_to_redux({
+                        should_trim: false,
+                        skip_last_status_bump: true,
+                        sync_persist: true,
+                        force_persist: true
+                    });
+                    if (typeof this.refresh_side_menu_and_title === 'function') {
+                        this.refresh_side_menu_and_title();
+                    }
+                },
                 onObservationDraftUpdate: (check_id, pc_id, text) => {
                     this._pc_observation_drafts.set(
                         this._pc_observation_draft_key(check_id, pc_id),
