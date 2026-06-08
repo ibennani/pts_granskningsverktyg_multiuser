@@ -1,4 +1,5 @@
 import './error_boundary_component.css';
+import { hard_reload_page } from '../utils/hard_reload_page.js';
 
 export class ErrorBoundaryComponent {
     constructor() {
@@ -151,7 +152,7 @@ export class ErrorBoundaryComponent {
         reload_button.className = 'error-boundary-reload-button';
         reload_button.textContent = t('error_boundary_reload_page');
         reload_button.addEventListener('click', () => {
-            window.location.reload();
+            void hard_reload_page({ save_audit_backup: true });
         });
         actions_container.appendChild(reload_button);
 

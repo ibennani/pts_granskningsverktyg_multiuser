@@ -3,10 +3,11 @@
 // Kör endast periodisk kontroll när fliken är synlig – webbläsare throttlar timers i bakgrunden, då syns inte meddelandet förrän användaren växlar tillbaka.
 // Jämför alltid server-mot-server (senast hämtad build vs nu hämtad) så att cachad script-tagg inte ger falska notiser.
 
-import { getState } from '../state.js';
+import { build_reload_url } from '../utils/build_reload_url.js';
+import { hard_reload_page } from '../utils/hard_reload_page.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
-import { clear_same_origin_sw_and_caches } from '../utils/clear_same_origin_sw_and_caches.js';
-import { get_api_base_url } from '../app/browser_globals.js';
+
+export { build_reload_url };
 
 /**
  * Ny-versionsdialog ("En ny version är tillgänglig" / "Ladda om sidan").
@@ -36,40 +37,11 @@ export function is_remote_timestamp_newer(local_timestamp, remote_timestamp) {
 }
 
 /**
- * Bygger en omladdnings-URL som behåller path + query + hash, men uppdaterar/adderar
- * en cache-busting-parameter så att omladdningen inte fastnar på gamla resurser.
- *
- * @param {string} current_href
- * @param {number} now_ms
- * @returns {string}
- */
-export function build_reload_url(current_href, now_ms) {
-    try {
-        const url = new URL(current_href, window.location.origin);
-        url.searchParams.set('__reload', String(now_ms));
-        const pathname = url.pathname || '/';
-        return pathname + url.search + url.hash;
-    } catch (_) {
-        const pathname = (typeof window !== 'undefined' && window.location && window.location.pathname) ? window.location.pathname : '/';
-        const hash = (typeof window !== 'undefined' && window.location && window.location.hash) ? window.location.hash : '';
-        return String(pathname || '/') + `?__reload=${encodeURIComponent(String(now_ms))}` + String(hash || '');
-    }
-}
-
-/**
  * Fetch-options för att undvika att browserns HTTP-cache påverkar versionskontrollen.
  * @returns {{ cache: RequestCache }}
  */
 export function get_build_info_fetch_options() {
     return { cache: 'no-store' };
-}
-
-/**
- * @param {number} ms
- * @returns {Promise<void>}
- */
-function sleep_ms(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export function parse_build_info_from_text(text) {
@@ -158,43 +130,11 @@ export function init_version_check_service() {
         if (app_runtime_refs.notification_component?.show_global_critical_message_with_action) {
             app_runtime_refs.notification_component.show_global_critical_message_with_action(msg, 'warning', {
                 label,
-                callback: async () => {
-                    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-                        return;
-                    }
-                    try {
-                        const state = getState();
-                        const audit_id = state?.auditId;
-                        if (audit_id && state?.ruleFileContent) {
-                            const api_base = String(get_api_base_url()).replace(/\/$/, '');
-                            let headers = { 'Content-Type': 'application/json' };
-                            try {
-                                const token = typeof window !== 'undefined' && window.sessionStorage
-                                    ? window.sessionStorage.getItem('gv_auth_token')
-                                    : null;
-                                if (token) {
-                                    headers = {
-                                        ...headers,
-                                        Authorization: `Bearer ${token}`
-                                    };
-                                }
-                            } catch (_) {
-                                // Om sessionStorage inte är tillgängligt fortsätter vi utan auth-header.
-                            }
-                            await fetch(`${api_base}/backup/save-audit`, {
-                                method: 'POST',
-                                headers,
-                                body: JSON.stringify({ auditId: audit_id })
-                            });
-                        }
-                    } catch (_) {
-                        // Vid fel försöker vi ändå ladda om till ny version utan att störa användaren.
-                    }
-                    // Workbox/VitePWA kan annars servera gamla filer från precache utan hård omladdning.
-                    await clear_same_origin_sw_and_caches();
-                    await sleep_ms(50);
-                    const next_url = build_reload_url(window.location.href, Date.now());
-                    window.location.replace(next_url);
+                callback: () => {
+                    void hard_reload_page({
+                        save_audit_backup: true,
+                        abort_when_offline: true
+                    });
                 }
             });
         }
