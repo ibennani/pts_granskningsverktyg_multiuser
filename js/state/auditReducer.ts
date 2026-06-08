@@ -342,7 +342,13 @@ export function auditReducer(current_state: any, action: any) {
             return reduce_delete_sample(current_state, action);
         case ActionTypes.UPDATE_REQUIREMENT_RESULT: {
             if (current_state.auditStatus === 'archived') return current_state;
-            const { sampleId: updateSampleId, requirementId: updateRequirementId, newRequirementResult } = action.payload;
+            const {
+                sampleId: updateSampleId,
+                requirementId: updateRequirementId,
+                newRequirementResult,
+                from_remote_push,
+                remote_version
+            } = action.payload;
             const result_to_save = { ...newRequirementResult };
             new_state = {
                 ...current_state,
@@ -352,8 +358,14 @@ export function auditReducer(current_state: any, action: any) {
                         : sample
                 )
             };
+            if (from_remote_push === true && remote_version != null && !Number.isNaN(Number(remote_version))) {
+                new_state.version = Number(remote_version);
+            }
             new_state = AuditLogic.recalculateAuditTimes(new_state);
             new_state = AuditLogic.updateIncrementalDeficiencyIds(new_state);
+            if (from_remote_push === true) {
+                return new_state;
+            }
             const now_iso = get_current_iso_datetime_utc();
             if (should_touch_last_local_change_at(current_state.auditStatus)) {
                 return with_last_local_change_at(new_state, now_iso);

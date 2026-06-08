@@ -9,7 +9,7 @@ import { save_backup_for_audit } from '../backup/audit_backup.js';
 import { has_meaningful_audit_patch_change } from '../logic/audit_meaningful_change.js';
 import { is_incoming_audit_samples_older_than_existing } from '../logic/audit_incoming_stale_guard.js';
 import { build_full_state, type AuditRow } from './audit_build_state.js';
-import { broadcast_audits_changed } from './audit_route_support.js';
+import { broadcast_audit_requirement_updated, broadcast_audits_changed } from './audit_route_support.js';
 
 type AuthedRequest = Request & { user?: { name?: string | null } };
 
@@ -149,7 +149,7 @@ export function register_audit_patch_routes(router: IRouter): void {
                 ruleSet = (ruleResult.rows[0] || null) as RuleSetRow | null;
             }
             const fullState = build_full_state(audit, ruleSet);
-            broadcast_audits_changed(id);
+            broadcast_audits_changed(id, { version: Number(audit.version), changeKind: 'full' });
 
             if (status === 'locked') {
                 setImmediate(() => {
@@ -205,7 +205,14 @@ export function register_audit_patch_routes(router: IRouter): void {
                 ruleSet = (ruleResult.rows[0] || null) as RuleSetRow | null;
             }
             const fullState = build_full_state(updated, ruleSet);
-            broadcast_audits_changed(id);
+            broadcast_audit_requirement_updated({
+                auditId: id,
+                version: Number(updated.version),
+                sampleId,
+                requirementId,
+                result: newResult,
+                updatedBy: last_updated_by
+            });
             res.json(fullState);
         } catch (err) {
             console.error('[audits] PATCH result error:', err);

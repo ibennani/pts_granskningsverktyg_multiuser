@@ -170,12 +170,14 @@ function execute_single_dispatch(
                         action.type !== ActionTypes.SET_REMOTE_AUDIT_ID &&
                         internal_state.auditStatus !== 'not_started') {
                         if (action.type === ActionTypes.UPDATE_REQUIREMENT_RESULT) {
-                            const sid = action_payload?.sampleId;
-                            const rid = action_payload?.requirementId;
-                            if (sid != null && sid !== '' && rid != null && rid !== '') {
-                                note_requirement_result_changed(String(sid), String(rid));
-                            } else {
-                                note_audit_full_sync_required();
+                            if (action_payload?.skip_server_sync !== true) {
+                                const sid = action_payload?.sampleId;
+                                const rid = action_payload?.requirementId;
+                                if (sid != null && sid !== '' && rid != null && rid !== '') {
+                                    note_requirement_result_changed(String(sid), String(rid));
+                                } else {
+                                    note_audit_full_sync_required();
+                                }
                             }
                         } else if (action.type === ActionTypes.UPDATE_METADATA) {
                             note_metadata_only_changed();
@@ -468,12 +470,14 @@ function dispatch_persist_sync(action: { type: string; payload?: unknown }): boo
         try {
             const action_payload = action.payload as Record<string, unknown> | undefined;
             if (action.type === ActionTypes.UPDATE_REQUIREMENT_RESULT) {
-                const sid = action_payload?.sampleId;
-                const rid = action_payload?.requirementId;
-                if (sid != null && sid !== '' && rid != null && rid !== '') {
-                    note_requirement_result_changed(String(sid), String(rid));
-                } else {
-                    note_audit_full_sync_required();
+                if (action_payload?.skip_server_sync !== true) {
+                    const sid = action_payload?.sampleId;
+                    const rid = action_payload?.requirementId;
+                    if (sid != null && sid !== '' && rid != null && rid !== '') {
+                        note_requirement_result_changed(String(sid), String(rid));
+                    } else {
+                        note_audit_full_sync_required();
+                    }
                 }
             } else if (
                 action.type === ActionTypes.UPDATE_METADATA &&

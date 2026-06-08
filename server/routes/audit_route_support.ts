@@ -31,12 +31,57 @@ export function audit_import_t(key: string, replacements: Record<string, string 
     return s;
 }
 
-export function broadcast_audits_changed(audit_id: string | number | null | undefined): void {
-    const payload: { type: string; auditId?: string } = { type: 'audits:changed' };
+export type AuditChangedPushPayload = {
+    type: 'audits:changed';
+    auditId?: string;
+    version?: number;
+    changeKind?: 'full';
+};
+
+export type AuditRequirementUpdatedPushPayload = {
+    type: 'audit:requirement_updated';
+    auditId: string;
+    version: number;
+    sampleId: string;
+    requirementId: string;
+    result: unknown;
+    updatedBy?: string | null;
+};
+
+export function broadcast_audits_changed(
+    audit_id: string | number | null | undefined,
+    opts: { version?: number; changeKind?: 'full' } = {}
+): void {
+    const payload: AuditChangedPushPayload = {
+        type: 'audits:changed',
+        changeKind: opts.changeKind ?? 'full'
+    };
     if (audit_id != null && audit_id !== '') {
         payload.auditId = String(audit_id);
     }
+    if (opts.version != null && !Number.isNaN(Number(opts.version))) {
+        payload.version = Number(opts.version);
+    }
     broadcast(payload);
+}
+
+export function broadcast_audit_requirement_updated(params: {
+    auditId: string | number;
+    version: number;
+    sampleId: string;
+    requirementId: string;
+    result: unknown;
+    updatedBy?: string | null;
+}): void {
+    broadcast({
+        type: 'audit:requirement_updated',
+        auditId: String(params.auditId),
+        version: Number(params.version),
+        sampleId: String(params.sampleId),
+        requirementId: String(params.requirementId),
+        result: params.result,
+        updatedBy: params.updatedBy ?? null
+    } satisfies AuditRequirementUpdatedPushPayload);
 }
 
 export function broadcast_audit_locks_changed(audit_id: string | number): void {

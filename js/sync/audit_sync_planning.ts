@@ -63,6 +63,17 @@ export function note_requirement_result_changed(sample_id: string, requirement_i
     pending_requirement_keys.add(requirement_sync_key(sample_id, requirement_id));
 }
 
+/** Om ett visst kravresultat väntar på serversynk. */
+export function is_requirement_pending_sync(sample_id: string, requirement_id: string): boolean {
+    if (force_full_sync) return true;
+    return pending_requirement_keys.has(requirement_sync_key(sample_id, requirement_id));
+}
+
+/** Full synk eller enbart metadata väntar — partiell push ska då inte appliceras. */
+export function has_blocking_non_requirement_sync(): boolean {
+    return force_full_sync || metadata_only_pending;
+}
+
 /** Om schemalagd synk har markerade ändringar (ej samma som peek som defaultar till full). */
 export function has_pending_audit_sync_plan(): boolean {
     if (force_full_sync) return true;

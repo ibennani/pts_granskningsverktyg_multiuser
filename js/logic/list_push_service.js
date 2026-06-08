@@ -143,7 +143,21 @@ function _connect() {
             const msg = JSON.parse(e.data);
             const type = msg?.type;
             if (type === 'audits:changed') {
-                _fire_audits_changed({ auditId: msg?.auditId ?? null });
+                _fire_audits_changed({
+                    auditId: msg?.auditId ?? null,
+                    version: msg?.version ?? null,
+                    changeKind: msg?.changeKind ?? 'full'
+                });
+            } else if (type === 'audit:requirement_updated') {
+                _fire_audits_changed({
+                    auditId: msg?.auditId ?? null,
+                    changeKind: 'requirement_updated',
+                    version: msg?.version ?? null,
+                    sampleId: msg?.sampleId ?? null,
+                    requirementId: msg?.requirementId ?? null,
+                    result: msg?.result ?? null,
+                    updatedBy: msg?.updatedBy ?? null
+                });
             } else if (type === 'rules:changed') {
                 _fire_rules_changed();
             } else if (type === 'rules:locks_changed') {
@@ -196,6 +210,14 @@ function _ensure_ws() {
             _start_fallback_polling();
         }
     }
+}
+
+/**
+ * Om WebSocket för list-push är ansluten och öppen.
+ * @returns {boolean}
+ */
+export function is_audit_push_websocket_open() {
+    return _ws != null && _ws.readyState === WebSocket.OPEN;
 }
 
 /**
@@ -321,5 +343,6 @@ export const ListPushService = {
     subscribe_rule_locks,
     subscribe_audit_locks,
     notify_rules_list_changed,
+    is_audit_push_websocket_open,
     EVENT_NAMES
 };

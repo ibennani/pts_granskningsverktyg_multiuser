@@ -88,6 +88,7 @@ export default {
     '^.+[\\\\/]validation_rulefile_requirements\\.js$': '<rootDir>/js/logic/validation_rulefile_requirements.ts',
     '^.+[\\\\/]sanitize_persisted_app_state\\.js$': '<rootDir>/js/logic/sanitize_persisted_app_state.ts',
     '^.+[\\\\/]audit_sync_tracking\\.js$': '<rootDir>/js/logic/audit_sync_tracking.ts',
+    '^.+[\\\\/]audit_remote_push_apply\\.js$': '<rootDir>/js/logic/audit_remote_push_apply.ts',
     '^.+[\\\\/]audit_sync_planning\\.js$': '<rootDir>/js/sync/audit_sync_planning.ts',
     '^.+[\\\\/]audit_sync_execute\\.js$': '<rootDir>/js/sync/audit_sync_execute.ts',
     '^.+[\\\\/]audit_sync_prepare\\.js$': '<rootDir>/js/sync/audit_sync_prepare.ts',
