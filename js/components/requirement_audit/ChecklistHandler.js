@@ -30,7 +30,6 @@ import {
     should_show_pass_criteria_list,
     effective_pc_status
 } from './checklist_observation_visibility.js';
-import { debug_session_log } from './debug_session_log.js';
 
 export const ChecklistHandler = {
     container_ref: null,
@@ -389,10 +388,6 @@ export const ChecklistHandler = {
         });
 
         if (mismatch_count > 0 && this.requirement_definition_ref) {
-            debug_session_log('ChecklistHandler.js:_heal_all', 'kvarvarande avvikelse — tvingar ombyggnad', {
-                mismatch_count,
-                context
-            }, 'H2');
             this.is_dom_built = false;
         }
     },
@@ -768,11 +763,6 @@ export const ChecklistHandler = {
         };
         // Kör efter aktuell pekar-/fokuskedja (t.ex. klick på statusknapp) så blur-sparning
         // inte lägger sig före click och gör att första klicket tappas i vissa webbläsare.
-        debug_session_log('ChecklistHandler.js:handle_pc_observation_focusout', 'blur schemalagd (microtask)', {
-            check_id,
-            pc_id,
-            value_changed: snapshot !== current
-        }, 'H3');
         queueMicrotask(() => {
             run_observation_blur_commit();
             schedule_heal();
@@ -799,12 +789,6 @@ export const ChecklistHandler = {
     },
     
     handle_checklist_click(event) {
-        debug_session_log('ChecklistHandler.js:handle_checklist_click', 'click mottagen', {
-            target_tag: event.target?.tagName?.toLowerCase?.() || null,
-            target_action: event.target?.closest?.('button[data-action]')?.dataset?.action || null,
-            is_trusted: event.isTrusted,
-            detail: event.detail
-        }, 'H2');
         const attach_btn = event.target.closest('button[data-action="attach-media"]');
         if (attach_btn) {
             this.handle_attach_media_click(event, attach_btn);
@@ -825,9 +809,6 @@ export const ChecklistHandler = {
 
         const target_button = event.target.closest('button[data-action]');
         if (!target_button) {
-            debug_session_log('ChecklistHandler.js:handle_checklist_click', 'ingen statusknapp — avbryter', {
-                target_tag: event.target?.tagName?.toLowerCase?.() || null
-            }, 'H2');
             return;
         }
 
@@ -861,11 +842,6 @@ export const ChecklistHandler = {
         
         if (change_info.type && this.on_status_change_callback) {
             if (!this._acquire_status_change_flight(check_id, change_info.pcId || null)) {
-                debug_session_log('ChecklistHandler.js:handle_checklist_click', 'ignorerar upprepat klick under pågående ändring', {
-                    check_id,
-                    pc_id: change_info.pcId || null,
-                    action
-                }, 'H2');
                 return;
             }
             const release_status_change_flight = () => {
@@ -1635,12 +1611,6 @@ export const ChecklistHandler = {
 
     update_dom() {
         const patch_scope = this._patch_scope || null;
-        debug_session_log('ChecklistHandler.js:update_dom', 'update_dom start', {
-            patch_scope,
-            mode: patch_scope?.mode || 'full',
-            is_dom_built: this.is_dom_built,
-            custom_focus_applied: typeof window !== 'undefined' ? !!window.customFocusApplied : false
-        }, 'H2');
 
         if (patch_scope?.mode === 'pc_only' && patch_scope.check_id && patch_scope.pc_id) {
             this._update_dom_pc_only(patch_scope.check_id, patch_scope.pc_id);
@@ -1673,10 +1643,6 @@ export const ChecklistHandler = {
             `.pass-criterion-item[data-pc-id="${CSS.escape(String(pc_id))}"]`
         );
         if (!check_wrapper || !pc_item_li) {
-            debug_session_log('ChecklistHandler.js:_update_dom_pc_only', 'kunde inte hitta DOM-nod', {
-                check_id,
-                pc_id
-            }, 'H2');
             return;
         }
 
@@ -1724,12 +1690,6 @@ export const ChecklistHandler = {
             copy_observation_row.hidden = !(observations.length > 0 && current_pc_status === 'failed' && !audit_frozen);
         }
 
-        debug_session_log('ChecklistHandler.js:_update_dom_pc_only', 'klart', {
-            check_id,
-            pc_id,
-            status: current_pc_status,
-            textarea_visible: current_pc_status === 'failed'
-        }, 'H2');
     },
 
     /**
@@ -1741,13 +1701,9 @@ export const ChecklistHandler = {
             (wrapper) => wrapper.dataset.checkId === String(check_id)
         );
         if (!check_wrapper) {
-            debug_session_log('ChecklistHandler.js:_update_dom_check_and_pcs', 'kunde inte hitta check-item', {
-                check_id
-            }, 'H2');
             return;
         }
         this._update_dom_single_check_wrapper(check_wrapper, null);
-        debug_session_log('ChecklistHandler.js:_update_dom_check_and_pcs', 'klart', { check_id }, 'H2');
     },
 
     _update_dom_full() {

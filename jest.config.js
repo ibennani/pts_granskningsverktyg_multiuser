@@ -55,7 +55,6 @@ export default {
     '^.+/same_user_tab_field_sync\\.js$': '<rootDir>/js/logic/same_user_tab_field_sync.ts',
     '^.+/RequirementAuditComponent\\.js$': '<rootDir>/js/components/RequirementAuditComponent.ts',
     '^.+[\\\\/]krav_vy_knapp_debug_log\\.js$': '<rootDir>/js/components/requirement_audit/krav_vy_knapp_debug_log.ts',
-    '^.+[\\\\/]debug_session_log\\.js$': '<rootDir>/js/components/requirement_audit/debug_session_log.ts',
     '^.+/RequirementAuditSidebarComponent\\.js$': '<rootDir>/js/components/RequirementAuditSidebarComponent.ts',
     '^.+/AuditActionsViewComponent\\.js$': '<rootDir>/js/components/AuditActionsViewComponent.ts',
     '^.+/SampleManagementViewComponent\\.js$': '<rootDir>/js/components/SampleManagementViewComponent.ts',
