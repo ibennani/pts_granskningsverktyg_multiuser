@@ -99,17 +99,17 @@ describe('RequirementAuditComponent plate text autosave', () => {
         const comp = new RequirementAuditComponent();
         comp.plate_element_ref = document.createElement('div');
         comp.current_result = { checkResults: {}, commentToAuditor: '', commentToActor: '' };
-        comp.handle_comment_input = jest.fn();
-        comp.checklist_handler_instance = { flush_observations_before_destroy: jest.fn() };
-        comp.save_requirement_result_spar_bakgrund = jest.fn();
+        comp._save_plate_to_redux = jest.fn();
 
         comp._request_plate_text_autosave();
-        expect(comp.save_requirement_result_spar_bakgrund).not.toHaveBeenCalled();
+        expect(comp._save_plate_to_redux).not.toHaveBeenCalled();
 
         jest.advanceTimersByTime(250);
-        expect(comp.handle_comment_input).toHaveBeenCalledWith(false);
-        expect(comp.checklist_handler_instance.flush_observations_before_destroy).toHaveBeenCalledWith({ trim: false });
-        expect(comp.save_requirement_result_spar_bakgrund).toHaveBeenCalledWith({ skipLastStatusBump: true });
+        expect(comp._save_plate_to_redux).toHaveBeenCalledWith({
+            should_trim: false,
+            skip_last_status_bump: true,
+            sync_persist: true
+        });
     });
 
     test('flush vid unload sparar direkt utan debounce (synkront)', () => {
@@ -117,24 +117,23 @@ describe('RequirementAuditComponent plate text autosave', () => {
         comp.plate_element_ref = document.createElement('div');
         comp.current_result = { checkResults: {} };
         comp._plate_text_autosave_timer = setTimeout(() => {}, 5000);
-        comp.handle_comment_input = jest.fn();
-        comp.checklist_handler_instance = { flush_observations_before_destroy: jest.fn() };
-        comp._persist_current_result_to_store = jest.fn().mockReturnValue(true);
+        comp._save_plate_to_redux = jest.fn().mockReturnValue(true);
 
-        comp._flush_plate_text_autosave_for_unload();
+        comp._handle_unload_persist('pagehide');
 
         expect(comp._plate_text_autosave_timer).toBeNull();
-        expect(comp.handle_comment_input).toHaveBeenCalledWith(false);
-        expect(comp.checklist_handler_instance.flush_observations_before_destroy).toHaveBeenCalledWith({ trim: false });
-        expect(comp._persist_current_result_to_store).toHaveBeenCalledWith({
-            skip_last_status_bump: true,
-            sync_persist: true
+        expect(comp._save_plate_to_redux).toHaveBeenCalledWith({
+            should_trim: false,
+            skip_last_status_bump: false,
+            sync_persist: true,
+            force_persist: true
         });
     });
 
     test('navigering sparar synkront innan vybyte (väntande debounce avbryts)', () => {
         const comp = new RequirementAuditComponent();
         comp.plate_element_ref = document.createElement('div');
+        comp.current_result = { checkResults: {} };
         comp._plate_text_autosave_timer = setTimeout(() => {}, 5000);
         comp._save_plate_to_redux = jest.fn();
         comp.get_navigation_state = jest.fn(() => ({
@@ -151,15 +150,17 @@ describe('RequirementAuditComponent plate text autosave', () => {
 
         expect(comp._plate_text_autosave_timer).toBeNull();
         expect(comp._save_plate_to_redux).toHaveBeenCalledWith({
-            should_trim: true,
+            should_trim: false,
             skip_last_status_bump: false,
-            sync_persist: true
+            sync_persist: true,
+            force_persist: true
         });
     });
 
     test('destroy sparar synkront till store', async () => {
         const comp = new RequirementAuditComponent();
         comp.plate_element_ref = document.createElement('div');
+        comp.current_result = { checkResults: {} };
         comp._save_plate_to_redux = jest.fn();
         comp.checklist_handler_instance = { flush_observations_before_destroy: jest.fn(), destroy: jest.fn() };
         comp.root = document.createElement('div');
@@ -167,9 +168,11 @@ describe('RequirementAuditComponent plate text autosave', () => {
         await comp.destroy();
 
         expect(comp._save_plate_to_redux).toHaveBeenCalledWith({
-            should_trim: true,
+            should_trim: false,
             skip_last_status_bump: false,
-            sync_persist: true
+            sync_persist: true,
+            force_persist: true
         });
+        expect(comp._save_plate_to_redux).toHaveBeenCalledTimes(2);
     });
 });

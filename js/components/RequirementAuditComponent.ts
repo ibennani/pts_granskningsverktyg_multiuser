@@ -191,7 +191,8 @@ export class RequirementAuditComponent {
                     dispatch: this.dispatch,
                     StoreActionTypes: this.StoreActionTypes,
                     onSidebarFiltersChange: this.handle_sidebar_filters_change,
-                    onBeforeSidebarNavigate: () => this._flush_plate_text_before_navigate_async()
+                    onBeforeSidebarNavigateSync: () => this.flush_before_leave(),
+                    onBeforeSidebarNavigate: () => this.flush_before_leave_async()
                 }
             });
             this._bind_krav_vy_focus_debug_listeners(this.right_sidebar_root);
@@ -272,22 +273,30 @@ export class RequirementAuditComponent {
         }
     }
 
-    /** Synkar kommentarer + observationer från DOM till Redux (utan trim om should_trim false). */
-    _save_plate_to_redux({ should_trim = false, skip_last_status_bump = false, sync_persist = false } = {}) {
-        if (!this.plate_element_ref) return false;
+    /** Läser textarea-värden från DOM till current_result (även när fokus fortfarande ligger i fältet). */
+    _sync_plate_text_from_dom({ should_trim = false } = {}) {
+        if (!this.plate_element_ref || !this.current_result) return;
         this.handle_comment_input(should_trim);
         this.checklist_handler_instance?.flush_observations_before_destroy?.({ trim: should_trim });
+    }
+
+    /** Synkar kommentarer + observationer från DOM till Redux (utan trim om should_trim false). */
+    _save_plate_to_redux({ should_trim = false, skip_last_status_bump = false, sync_persist = false, force_persist = false } = {}) {
+        if (!this.plate_element_ref) return false;
+        this._sync_plate_text_from_dom({ should_trim });
         return this._persist_current_result_to_store({
             skip_last_status_bump,
-            sync_persist
+            sync_persist,
+            force_persist
         });
     }
 
-    _persist_current_result_to_store({ skip_last_status_bump = false, sync_persist = false } = {}) {
+    _persist_current_result_to_store({ skip_last_status_bump = false, sync_persist = false, force_persist = false } = {}) {
         if (!this.current_result) return false;
         if (sync_persist) {
             return this._dispatch_result_persist_sync(this.current_result, {
-                skipLastStatusBump: skip_last_status_bump === true
+                skipLastStatusBump: skip_last_status_bump === true,
+                forcePersist: force_persist === true
             });
         }
         void this.save_requirement_result_spar_bakgrund({
@@ -310,9 +319,12 @@ export class RequirementAuditComponent {
         const state_for_compare = this.getState();
         const sample_row = state_for_compare?.samples?.find(s => String(s.id) === String(this.params.sampleId));
         const previous_from_store = sample_row?.requirementResults?.[this.requirement_map_key];
-        if (previous_from_store
-            && typeof this.AuditLogic.requirement_results_equal_for_last_updated === 'function'
-            && this.AuditLogic.requirement_results_equal_for_last_updated(previous_from_store, modified_result_object)) {
+        if (
+            options.forcePersist !== true &&
+            previous_from_store &&
+            typeof this.AuditLogic.requirement_results_equal_for_last_updated === 'function' &&
+            this.AuditLogic.requirement_results_equal_for_last_updated(previous_from_store, modified_result_object)
+        ) {
             log_krav_vy_textarea('Autospar hoppades över (oförändrat)', {
                 sampleId: this.params?.sampleId,
                 requirementId: this.requirement_map_key
@@ -376,61 +388,48 @@ export class RequirementAuditComponent {
         }, 250);
     }
 
-    /** Synkront sparande av plåt-text till sessionStorage före navigering (sidebar, pilar). */
-    _flush_plate_text_before_navigate() {
+    /**
+     * Tvingad synkron sparning av all plåt-text till sessionStorage.
+     * Anropas innan kravvyn lämnas oavsett väg (meny, hash, sidebar, pilar, unload).
+     */
+    flush_before_leave() {
+        if (!this.plate_element_ref || !this.current_result) return false;
         this._cancel_plate_text_autosave_timer();
-        this._save_plate_to_redux({
-            should_trim: true,
-            skip_last_status_bump: false,
-            sync_persist: true
-        });
-    }
-
-    async _flush_plate_text_before_navigate_async() {
-        this._cancel_plate_text_autosave_timer();
-        await await_dispatch_idle();
-        this._flush_plate_text_before_navigate();
-    }
-
-    _handle_unload_persist(reason) {
-        if (reason === 'visibilitychange') {
-            this._flush_plate_text_autosave_on_visibility_hidden();
-            return;
-        }
-        this._flush_plate_text_autosave_for_unload();
-    }
-
-    /** Omedelbar synkron sparning vid pagehide/beforeunload så omladdning utan blur behåller text. */
-    _flush_plate_text_autosave_for_unload() {
-        this._cancel_plate_text_autosave_timer();
-        if (!this.plate_element_ref || !this.current_result) return;
-        log_krav_vy_textarea('Autospar till sessionStorage (unload)', {
+        log_krav_vy_textarea('Tvingad sparning innan kravvyn lämnas', {
             sampleId: this.params?.sampleId,
             requirementId: this.requirement_map_key
         });
-        this._save_plate_to_redux({ should_trim: false, skip_last_status_bump: true, sync_persist: true });
+        return this._save_plate_to_redux({
+            should_trim: false,
+            skip_last_status_bump: false,
+            sync_persist: true,
+            force_persist: true
+        });
     }
 
-    /** Sparar väntande textarea-text när fliken döljs (t.ex. innan omladdning i annan flik). */
-    _flush_plate_text_autosave_on_visibility_hidden() {
-        if (!document.hidden) return;
+    /** Tvingad sparning inkl. väntan på pågående state-dispatch (använd vid destroy/vybyte). */
+    async flush_before_leave_async() {
+        await this._status_change_queue_tail;
+        this.flush_before_leave();
+        await await_dispatch_idle();
+        this.flush_before_leave();
+    }
+
+    _handle_unload_persist(reason) {
+        if (reason === 'visibilitychange' && !document.hidden) return;
         if (!this.plate_element_ref || !this.current_result) return;
-        const active = document.activeElement;
-        const in_plate_text_field = active instanceof HTMLElement
-            && this.plate_element_ref.contains(active)
-            && (
-                active.classList.contains('pc-observation-detail-textarea')
-                || active.id === 'commentToAuditor'
-                || active.id === 'commentToActor'
-            );
-        if (!this._plate_text_autosave_timer && !in_plate_text_field) return;
-        log_krav_vy_textarea('Autospar till sessionStorage (flik dold)', {
-            sampleId: this.params?.sampleId,
-            requirementId: this.requirement_map_key,
-            hade_väntande_timer: Boolean(this._plate_text_autosave_timer),
-            fokus_i_textfält: in_plate_text_field
-        });
-        this._flush_plate_text_autosave_for_unload();
+        if (reason === 'visibilitychange') {
+            const active = document.activeElement;
+            const in_plate_text_field = active instanceof HTMLElement
+                && this.plate_element_ref.contains(active)
+                && (
+                    active.classList.contains('pc-observation-detail-textarea')
+                    || active.id === 'commentToAuditor'
+                    || active.id === 'commentToActor'
+                );
+            if (!this._plate_text_autosave_timer && !in_plate_text_field) return;
+        }
+        this.flush_before_leave();
     }
 
     handle_comment_input_only() {
@@ -1247,7 +1246,7 @@ export class RequirementAuditComponent {
     }
 
     handle_navigation(action) {
-        this._flush_plate_text_before_navigate();
+        this.flush_before_leave();
 
         const navigation_state = this.get_navigation_state();
         const mode = navigation_state.mode;
@@ -1752,9 +1751,7 @@ export class RequirementAuditComponent {
     }
 
     async destroy() {
-        await this._status_change_queue_tail;
-        this._cancel_plate_text_autosave_timer();
-        await await_dispatch_idle();
+        await this.flush_before_leave_async();
         unregister_unload_persist_hook('requirement_audit_plate');
         this._handle_unload_persist = null;
         if (typeof this.unsubscribe_from_store === 'function') {
@@ -1763,12 +1760,6 @@ export class RequirementAuditComponent {
         }
         document.removeEventListener('keydown', this.handle_audit_keydown);
         this._unbind_all_krav_vy_focus_debug_listeners();
-        this.checklist_handler_instance?.flush_observations_before_destroy?.();
-        this._save_plate_to_redux({
-            should_trim: true,
-            skip_last_status_bump: false,
-            sync_persist: true
-        });
 
         if (this.comment_to_auditor_input) {
             this.comment_to_auditor_input.removeEventListener('input', this.handle_comment_input_only);

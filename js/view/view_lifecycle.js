@@ -70,6 +70,7 @@ export async function destroy_previous_view_component({
     }
 
     try {
+        flush_component_before_leave_sync(current_view_component_instance);
         await resolve_destroy_promise(current_view_component_instance.destroy());
     } catch (err) {
         consoleManager.error('[Main.js] Error destroying component:', err);
@@ -88,6 +89,16 @@ function resolve_destroy_promise(destroy_result) {
         return destroy_result;
     }
     return Promise.resolve();
+}
+
+/**
+ * Synkron tvingad sparning innan vykomponent förstörs (t.ex. kravvyn vid meny/hash-byte).
+ * Asynkron uppföljning sker i komponentens destroy().
+ * @param {object|null|undefined} instance
+ */
+function flush_component_before_leave_sync(instance) {
+    if (!instance || typeof instance.flush_before_leave !== 'function') return;
+    instance.flush_before_leave();
 }
 
 export function clear_view_root_for_next_view({ view_root, ensure_main_view_content_host, clear_main_view_content_except_global_notifications }) {

@@ -76,6 +76,7 @@ export class RequirementAuditSidebarComponent {
 
         this.handle_mode_change = this.handle_mode_change.bind(this);
         this.handle_link_click = this.handle_link_click.bind(this);
+        this.handle_link_pointerdown = this.handle_link_pointerdown.bind(this);
 
         // Ladda sparade inställningar från state
         this.load_settings_from_state();
@@ -179,6 +180,7 @@ export class RequirementAuditSidebarComponent {
         container.appendChild(this.list_container_ref);
 
         this.root.appendChild(container);
+        this.root.addEventListener('pointerdown', this.handle_link_pointerdown, true);
         this.root.addEventListener('click', this.handle_link_click);
         this.is_dom_initialized = true;
     }
@@ -212,6 +214,17 @@ export class RequirementAuditSidebarComponent {
         const value = typeof search_text === 'string' ? search_text : '';
         this.filters_by_mode.sample_requirements.searchText = value;
         this.filters_by_mode.requirement_samples.searchText = value;
+    }
+
+    handle_link_pointerdown(event) {
+        const link = event.target?.closest?.('[data-requirement-sidebar-link="true"]');
+        if (!link) return;
+        const sample_id = link.getAttribute('data-sample-id');
+        const requirement_id = link.getAttribute('data-requirement-id');
+        if (!sample_id || !requirement_id) return;
+        if (typeof this.deps?.onBeforeSidebarNavigateSync === 'function') {
+            this.deps.onBeforeSidebarNavigateSync();
+        }
     }
 
     async handle_link_click(event) {
@@ -1052,6 +1065,7 @@ export class RequirementAuditSidebarComponent {
             this._sidebar_hash_sync_timer = null;
         }
         if (this.root) {
+            this.root.removeEventListener('pointerdown', this.handle_link_pointerdown, true);
             this.root.removeEventListener('click', this.handle_link_click);
             this.root.innerHTML = '';
         }

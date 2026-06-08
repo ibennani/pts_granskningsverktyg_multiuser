@@ -730,6 +730,27 @@ export const ChecklistHandler = {
             }
         }
         if (!this._observation_focus_snapshots.has(key)) {
+            const current_without_snapshot = textarea.value ?? '';
+            const check_result_data = read_check_stored_data(this.requirement_result_ref.checkResults, check_id);
+            const stored_data = read_pc_stored_data(check_result_data, pc_id);
+            const stored_observation = stored_data?.observationDetail ?? '';
+            if (current_without_snapshot !== stored_observation) {
+                queueMicrotask(() => {
+                    if (!this.requirement_result_ref?.checkResults) return;
+                    const chk_resolved = resolve_map_entry(this.requirement_result_ref.checkResults, check_id);
+                    const check_result = chk_resolved?.value;
+                    const pc_resolved = check_result?.passCriteria
+                        ? resolve_map_entry(check_result.passCriteria, pc_id)
+                        : null;
+                    const pc_entry = pc_resolved?.value;
+                    if (pc_entry && typeof pc_entry === 'object') {
+                        pc_entry.observationDetail = current_without_snapshot;
+                    }
+                    if (this.on_observation_blur_commit_callback) {
+                        this.on_observation_blur_commit_callback();
+                    }
+                });
+            }
             this._schedule_heal_pc_after_focus_left(check_id, pc_id, pc_item);
             return;
         }

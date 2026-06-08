@@ -133,6 +133,7 @@ describe('RequirementAuditComponent handle_checklist_status_change serialisering
 
     test('destroy väntar på pågående statusändring innan sparning', async () => {
         const { comp } = setup_component_for_status_queue();
+        comp.plate_element_ref = document.createElement('div');
         let resolve_dispatch;
         comp.dispatch = jest.fn(() => new Promise((resolve) => {
             resolve_dispatch = resolve;
