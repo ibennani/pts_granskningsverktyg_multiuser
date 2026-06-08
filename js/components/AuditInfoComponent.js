@@ -61,9 +61,11 @@ export class AuditInfoComponent {
             ? audit_logic.recalculateAuditTimes({ ...current_state })
             : null;
         const start_time_iso = current_state.startTime || state_for_times?.startTime || null;
-        const last_updated_iso = (audit_logic?.get_audit_last_updated_display_timestamp)
-            ? audit_logic.get_audit_last_updated_display_timestamp(current_state)
-            : null;
+        const last_updated_iso = (typeof current_state.updated_at === 'string' && current_state.updated_at)
+            ? current_state.updated_at
+            : ((audit_logic?.get_audit_last_updated_display_timestamp)
+                ? audit_logic.get_audit_last_updated_display_timestamp(current_state)
+                : null);
 
         const info_panel = this.Helpers.create_element('div', { class_name: 'audit-info-panel' });
 
@@ -126,7 +128,7 @@ export class AuditInfoComponent {
             info_panel.appendChild(this.create_info_item(
                 'audit_last_updated',
                 last_updated_iso
-                    ? this.Helpers.format_iso_to_local_datetime(last_updated_iso, lang_code, { showSeconds: false })
+                    ? this.Helpers.format_iso_to_local_datetime(last_updated_iso, lang_code)
                     : ''
             ));
         }

@@ -152,6 +152,10 @@ function apply_successful_sync_response(
                 auditId: state.auditId ?? full_state.auditId,
                 ruleSetId: state.ruleSetId ?? full_state.ruleSetId ?? null,
                 version: full_state.version,
+                updated_at:
+                    typeof full_state.updated_at === 'string' && full_state.updated_at
+                        ? full_state.updated_at
+                        : undefined,
                 skip_render: true
             }
         });
@@ -549,6 +553,10 @@ export async function execute_audit_server_sync(
                             auditId: full_state.auditId,
                             ruleSetId: full_state.ruleSetId ?? null,
                             version: full_state.version ?? null,
+                            updated_at:
+                                typeof full_state.updated_at === 'string' && full_state.updated_at
+                                    ? full_state.updated_at
+                                    : undefined,
                             skip_render: true
                         }
                     });

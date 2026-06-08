@@ -116,12 +116,16 @@ export function reduce_load_audit_from_file (current_state: any, action: any) {
 }
 
 export function reduce_set_remote_audit_id (current_state: any, action: any) {
-    return {
+    const next: Record<string, unknown> = {
         ...current_state,
         auditId: action.payload.auditId,
         ruleSetId: action.payload.ruleSetId ?? current_state.ruleSetId,
         version: action.payload.version ?? current_state.version
     };
+    if (typeof action.payload.updated_at === 'string' && action.payload.updated_at) {
+        next.updated_at = action.payload.updated_at;
+    }
+    return next;
 }
 
 export function reduce_replace_state_from_remote (current_state: any, action: any) {

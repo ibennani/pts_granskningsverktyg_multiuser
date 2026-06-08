@@ -91,8 +91,8 @@ describe('server_sync', () => {
             return inst;
         });
         Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
-        update_audit.mockResolvedValue({ version: 9, ruleSetId: 'rs1' });
-        patch_requirement_result.mockResolvedValue({ version: 10, ruleSetId: 'rs1' });
+        update_audit.mockResolvedValue({ version: 9, ruleSetId: 'rs1', updated_at: '2026-05-21T13:05:56.000Z' });
+        patch_requirement_result.mockResolvedValue({ version: 10, ruleSetId: 'rs1', updated_at: '2026-05-21T14:00:00.000Z' });
         get_audit_version.mockResolvedValue({ version: null });
         import_audit.mockResolvedValue({ auditId: 'new-a', version: 1, ruleSetId: null });
         update_rule.mockResolvedValue({ content: { ok: true }, version: 2 });
@@ -329,6 +329,7 @@ describe('server_sync', () => {
             payload: expect.objectContaining({
                 auditId: 'sync-1',
                 version: 9,
+                updated_at: '2026-05-21T13:05:56.000Z',
                 skip_render: true
             })
         });
