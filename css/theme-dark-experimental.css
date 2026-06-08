@@ -41,7 +41,7 @@
     --input-background-color: #1f1f23;
     --input-text-color: #fafafa;
 
-    --border-color: #76767e;
+    --border-color: #4a5078;
 
     --focus-offset: 2px;
     --focus-inner-width: 1px;
@@ -90,7 +90,7 @@
     --gradient-danger-color: var(--de-status-failed);
 
     --surface-emphasis-bg: #18181b;
-    --surface-emphasis-border: #707078;
+    --surface-emphasis-border: #5a6190;
     --surface-tag-bg: #18181b;
 
     --build-timestamp-color: #94949e;
@@ -101,9 +101,9 @@
     --de-surface-card: #141416;
     --de-bg-hover: #18181b;
     --de-bg-hover-strong: #27272a;
-    --de-border-subtle: #606068;
-    --de-border-default: #6a6a72;
-    --de-border-strong: #707078;
+    --de-border-subtle: #3a3f58;
+    --de-border-default: #4a5078;
+    --de-border-strong: #5a6190;
     --de-text-primary: #fafafa;
     --de-text-secondary: #b4b4bc;
     --de-text-muted: #94949e;
@@ -585,13 +585,27 @@
 
 [data-theme="dark-experimental"] .check-item {
     border: var(--de-interactive-border-width) solid var(--de-interactive-border);
-    border-radius: 10px;
+    border-left-width: 5px;
+    border-radius: 0 10px 10px 0;
     background-color: var(--de-surface-card);
     box-shadow: var(--de-interactive-shadow);
 }
 
 [data-theme="dark-experimental"] .check-item.status-not_audited {
     background-color: var(--de-surface-card);
+    border-left-color: var(--de-status-remaining);
+}
+
+[data-theme="dark-experimental"] .check-item.status-passed {
+    border-left-color: var(--de-status-passed);
+}
+
+[data-theme="dark-experimental"] .check-item.status-failed {
+    border-left-color: var(--de-status-failed);
+}
+
+[data-theme="dark-experimental"] .check-item.status-partially_audited {
+    border-left-color: var(--de-status-warning);
 }
 
 [data-theme="dark-experimental"] .pass-criterion-item {
@@ -1274,11 +1288,35 @@ html[data-theme="dark-experimental"] .requirements-list-content li.requirement-i
 html[data-theme="dark-experimental"] .requirements-list-content li.requirement-item.requirement-item-with-actions,
 html[data-theme="dark-experimental"] .requirement-audit-header p.overall-requirement-status-display,
 html[data-theme="dark-experimental"] .pass-criterion-item,
-html[data-theme="dark-experimental"] .check-item,
 html[data-theme="dark-experimental"] .item-list-item,
 html[data-theme="dark-experimental"] .requirement-card,
 html[data-theme="dark-experimental"] .backup-status-box {
     background-color: var(--de-surface-card);
     color: var(--de-text-primary);
     border-color: var(--de-interactive-border);
+}
+
+html[data-theme="dark-experimental"] .check-item {
+    background-color: var(--de-surface-card);
+    color: var(--de-text-primary);
+    border-top-color: var(--de-interactive-border);
+    border-right-color: var(--de-interactive-border);
+    border-bottom-color: var(--de-interactive-border);
+    border-left-width: 5px;
+}
+
+html[data-theme="dark-experimental"] .check-item.status-not_audited {
+    border-left-color: var(--de-status-remaining);
+}
+
+html[data-theme="dark-experimental"] .check-item.status-passed {
+    border-left-color: var(--de-status-passed);
+}
+
+html[data-theme="dark-experimental"] .check-item.status-failed {
+    border-left-color: var(--de-status-failed);
+}
+
+html[data-theme="dark-experimental"] .check-item.status-partially_audited {
+    border-left-color: var(--de-status-warning);
 }

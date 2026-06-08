@@ -228,6 +228,21 @@ export const ChecklistHandler = {
             });
         }
 
+        const pc_status_text_container = pc_item_li.querySelector('.pass-criterion-status');
+        if (pc_status_text_container && this.Helpers?.create_element && this.Translation?.t) {
+            const t = this.Translation.t;
+            const pc_status_text = t(`audit_status_${effective}`);
+            pc_status_text_container.innerHTML = '';
+            pc_status_text_container.setAttribute('aria-hidden', 'true');
+            const pc_strong_element = this.Helpers.create_element('strong', { text_content: t('status') });
+            pc_status_text_container.appendChild(pc_strong_element);
+            pc_status_text_container.appendChild(document.createTextNode(': '));
+            pc_status_text_container.appendChild(this.Helpers.create_element('span', {
+                class_name: `status-text status-${effective}`,
+                text_content: pc_status_text
+            }));
+        }
+
         const observation_wrapper = pc_item_li.querySelector('.pc-observation-detail-wrapper');
         this._sync_observation_wrapper_visibility(
             observation_wrapper,
@@ -590,7 +605,9 @@ export const ChecklistHandler = {
     _apply_status_button_active_state(button_el, should_be_active, { check_id, pc_id, action }, opts = {}) {
         if (!button_el) return;
         const was_active = button_el.classList.contains('active');
-        if (opts.skip_if_unchanged && was_active === should_be_active) {
+        const aria_pressed = button_el.getAttribute('aria-pressed') === 'true';
+        const already_synced = was_active === should_be_active && aria_pressed === should_be_active;
+        if (opts.skip_if_unchanged && already_synced) {
             return;
         }
         button_el.classList.toggle('active', should_be_active);
@@ -1992,7 +2009,14 @@ export const ChecklistHandler = {
         const patch_scope = this._patch_scope || null;
 
         if (patch_scope?.mode === 'pc_only' && patch_scope.check_id && patch_scope.pc_id) {
-            this._update_dom_pc_only(patch_scope.check_id, patch_scope.pc_id);
+            const check_wrapper = this.container_ref?.querySelector(
+                `.check-item[data-check-id="${CSS.escape(String(patch_scope.check_id))}"]`
+            );
+            if (check_wrapper) {
+                this._update_dom_single_check_wrapper(check_wrapper, patch_scope.pc_id, {
+                    force_status_button_sync: true
+                });
+            }
             this._heal_all_checklist_ui_from_data('after_update_dom_pc_only');
             this._reapply_pending_status_button_focus();
             return;
@@ -2208,7 +2232,7 @@ export const ChecklistHandler = {
             const not_complies_btn = check_wrapper.querySelector('button[data-action="set-check-not-complies"]');
             
             if (complies_btn && not_complies_btn) {
-                const heal_opts = { skip_if_unchanged: true };
+                const heal_opts = env?.force_status_button_sync ? {} : { skip_if_unchanged: true };
                 this._apply_status_button_active_state(complies_btn, overall_manual_status === 'passed', {
                     check_id,
                     pc_id: null,
@@ -2313,7 +2337,7 @@ export const ChecklistHandler = {
                 const failed_btn = pc_item_li.querySelector('button[data-action="set-pc-failed"]');
 
                 if (passed_btn && failed_btn) {
-                    const heal_opts = { skip_if_unchanged: true };
+                    const heal_opts = env?.force_status_button_sync ? {} : { skip_if_unchanged: true };
                     this._apply_status_button_active_state(passed_btn, current_pc_status === 'passed', {
                         check_id,
                         pc_id,
