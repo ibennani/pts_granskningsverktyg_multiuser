@@ -190,7 +190,7 @@ export const ChecklistHandler = {
         }
 
         const observation_wrapper = pc_item_li.querySelector('.pc-observation-detail-wrapper');
-        this._sync_observation_wrapper_visibility(observation_wrapper, 'passed', next);
+        this._sync_observation_wrapper_visibility(observation_wrapper, 'passed', { status: next });
     },
 
     _detect_user_event_source(event) {
