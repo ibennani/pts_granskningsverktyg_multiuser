@@ -214,7 +214,7 @@ export class RequirementAuditSidebarComponent {
         this.filters_by_mode.requirement_samples.searchText = value;
     }
 
-    handle_link_click(event) {
+    async handle_link_click(event) {
         const link = event.target?.closest?.('[data-requirement-sidebar-link="true"]');
         if (!link || !this.router) return;
 
@@ -223,6 +223,9 @@ export class RequirementAuditSidebarComponent {
         if (!sample_id || !requirement_id) return;
 
         event.preventDefault();
+        if (typeof this.deps?.onBeforeSidebarNavigate === 'function') {
+            await this.deps.onBeforeSidebarNavigate();
+        }
         try {
             window.sessionStorage?.setItem('gv_force_focus_h1_v1', 'true');
         } catch (_) {

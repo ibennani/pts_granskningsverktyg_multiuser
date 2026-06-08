@@ -96,6 +96,23 @@ type Queued = { action: { type: string; payload?: unknown }; resolve: () => void
 const dispatch_queue: Queued[] = [];
 let is_dispatching = false;
 
+/**
+ * Väntar tills pågående dispatch()-anrop och köade actions är klara.
+ * Använd före synkron persistens vid navigering så äldre async-dispatch inte skriver över nyare data.
+ */
+function await_dispatch_idle(): Promise<void> {
+    return new Promise((resolve) => {
+        const poll = () => {
+            if (!is_dispatching && dispatch_queue.length === 0) {
+                resolve();
+                return;
+            }
+            setTimeout(poll, 0);
+        };
+        poll();
+    });
+}
+
 function dispatch(action: { type: string; payload?: unknown } | null | undefined) {
     if (!action || typeof action.type !== 'string') {
         if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[State] Invalid action dispatched. Action must be an object with a "type" property.', action);
@@ -500,6 +517,7 @@ function dispatch_persist_sync(action: { type: string; payload?: unknown }): boo
 export {
     dispatch,
     dispatch_persist_sync,
+    await_dispatch_idle,
     getState,
     subscribe,
     initState,

@@ -36,7 +36,7 @@ import {
     is_remote_lock_held_by_other_user,
     is_lock_held_by_different_logged_in_user
 } from '../logic/collab_lock_compare.js';
-import { dispatch_persist_sync } from '../state/index.js';
+import { await_dispatch_idle, dispatch_persist_sync } from '../state/index.js';
 import {
     register_unload_persist_hook,
     unregister_unload_persist_hook
@@ -190,7 +190,8 @@ export class RequirementAuditComponent {
                     ...this.deps,
                     dispatch: this.dispatch,
                     StoreActionTypes: this.StoreActionTypes,
-                    onSidebarFiltersChange: this.handle_sidebar_filters_change
+                    onSidebarFiltersChange: this.handle_sidebar_filters_change,
+                    onBeforeSidebarNavigate: () => this._flush_plate_text_before_navigate_async()
                 }
             });
             this._bind_krav_vy_focus_debug_listeners(this.right_sidebar_root);
@@ -367,8 +368,28 @@ export class RequirementAuditComponent {
                 sampleId: this.params?.sampleId,
                 requirementId: this.requirement_map_key
             });
-            this._save_plate_to_redux({ should_trim: false, skip_last_status_bump: true });
+            this._save_plate_to_redux({
+                should_trim: false,
+                skip_last_status_bump: true,
+                sync_persist: true
+            });
         }, 250);
+    }
+
+    /** Synkront sparande av plåt-text till sessionStorage före navigering (sidebar, pilar). */
+    _flush_plate_text_before_navigate() {
+        this._cancel_plate_text_autosave_timer();
+        this._save_plate_to_redux({
+            should_trim: true,
+            skip_last_status_bump: false,
+            sync_persist: true
+        });
+    }
+
+    async _flush_plate_text_before_navigate_async() {
+        this._cancel_plate_text_autosave_timer();
+        await await_dispatch_idle();
+        this._flush_plate_text_before_navigate();
     }
 
     _handle_unload_persist(reason) {
@@ -1226,12 +1247,7 @@ export class RequirementAuditComponent {
     }
 
     handle_navigation(action) {
-        this._cancel_plate_text_autosave_timer();
-        this._save_plate_to_redux({
-            should_trim: true,
-            skip_last_status_bump: false,
-            sync_persist: true
-        });
+        this._flush_plate_text_before_navigate();
 
         const navigation_state = this.get_navigation_state();
         const mode = navigation_state.mode;
@@ -1738,6 +1754,7 @@ export class RequirementAuditComponent {
     async destroy() {
         await this._status_change_queue_tail;
         this._cancel_plate_text_autosave_timer();
+        await await_dispatch_idle();
         unregister_unload_persist_hook('requirement_audit_plate');
         this._handle_unload_persist = null;
         if (typeof this.unsubscribe_from_store === 'function') {
