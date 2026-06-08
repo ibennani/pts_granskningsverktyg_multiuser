@@ -316,6 +316,26 @@ export async function api_patch(path, body) {
     return res.json();
 }
 
+/**
+ * PATCH som kan slutföras efter att sidan stängts (fetch keepalive).
+ * @returns true om begäran skickades
+ */
+export function api_patch_keepalive(path, body) {
+    const url = `${get_base_url()}${path}`;
+    const body_json = JSON.stringify(body);
+    try {
+        fetch(url, {
+            method: 'PATCH',
+            headers: get_auth_headers(),
+            body: body_json,
+            keepalive: true
+        });
+        return true;
+    } catch {
+        return false;
+    }
+}
+
 export async function login(username, password) {
     const res = await fetch(`${get_base_url()}/auth/login`, {
         method: 'POST',

@@ -130,4 +130,34 @@ describe('RequirementAuditComponent handle_checklist_status_change serialisering
         expect(second_payload.checkResults.check_a.overallStatus).toBe('passed');
         expect(second_payload.checkResults.check_b.overallStatus).toBe('passed');
     });
+
+    test('destroy väntar på pågående statusändring innan sparning', async () => {
+        const { comp } = setup_component_for_status_queue();
+        let resolve_dispatch;
+        comp.dispatch = jest.fn(() => new Promise((resolve) => {
+            resolve_dispatch = resolve;
+        }));
+        comp._save_plate_to_redux = jest.fn();
+
+        const change = {
+            type: 'check_overall_status_change',
+            checkId: 'check_a',
+            newStatus: 'passed'
+        };
+
+        let destroy_completed = false;
+        const status_promise = comp.handle_checklist_status_change(change);
+        const destroy_promise = comp.destroy().then(() => {
+            destroy_completed = true;
+        });
+
+        await new Promise((r) => setTimeout(r, 5));
+        expect(destroy_completed).toBe(false);
+
+        resolve_dispatch();
+        await Promise.all([status_promise, destroy_promise]);
+
+        expect(destroy_completed).toBe(true);
+        expect(comp._save_plate_to_redux).toHaveBeenCalled();
+    });
 });

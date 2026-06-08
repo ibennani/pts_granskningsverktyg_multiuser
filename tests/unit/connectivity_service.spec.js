@@ -209,7 +209,103 @@ describe('connectivity_service', () => {
             expect(append).toHaveBeenCalledWith(main_el);
 
             document.getElementById = orig_get;
-            runtime.notification_component = null;
+        });
+
+        test('periodiskt omförsök var 30:e sekund när synk väntar', async () => {
+            jest.useFakeTimers();
+            jest.resetModules();
+            const flush_sync_to_server = jest.fn(async () => {});
+            const flush_sync_rulefile_to_server = jest.fn(async () => {});
+            jest.unstable_mockModule(server_sync_path, () => ({
+                flush_sync_to_server,
+                flush_sync_rulefile_to_server
+            }));
+            const mod = await import('../../js/logic/connectivity_service.js');
+            const {
+                init_connectivity_service,
+                mark_audit_sync_pending,
+                reset_connectivity_service_for_testing,
+                PENDING_SYNC_RETRY_INTERVAL_MS
+            } = mod;
+            reset_connectivity_service_for_testing();
+            mark_audit_sync_pending();
+
+            const listeners = [];
+            jest.spyOn(window, 'addEventListener').mockImplementation((ev, fn) => {
+                listeners.push([ev, fn]);
+            });
+            const orig_get = document.getElementById;
+            document.getElementById = jest.fn(() => null);
+            Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
+            Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
+
+            init_connectivity_service({
+                getState: () => ({ auditId: 'a1', auditMetadata: {} }),
+                dispatch: jest.fn()
+            });
+
+            expect(flush_sync_to_server).not.toHaveBeenCalled();
+
+            await jest.advanceTimersByTimeAsync(PENDING_SYNC_RETRY_INTERVAL_MS);
+            await Promise.resolve();
+            await Promise.resolve();
+            await Promise.resolve();
+
+            expect(flush_sync_to_server).toHaveBeenCalledTimes(1);
+            expect(flush_sync_rulefile_to_server).toHaveBeenCalledTimes(1);
+
+            await jest.advanceTimersByTimeAsync(PENDING_SYNC_RETRY_INTERVAL_MS);
+            await Promise.resolve();
+            await Promise.resolve();
+            await Promise.resolve();
+
+            expect(flush_sync_to_server).toHaveBeenCalledTimes(2);
+
+            reset_connectivity_service_for_testing();
+            window.addEventListener.mockRestore();
+            document.getElementById = orig_get;
+            jest.useRealTimers();
+        });
+
+        test('periodiskt omförsök körs inte när fliken är dold', async () => {
+            jest.useFakeTimers();
+            jest.resetModules();
+            const flush_sync_to_server = jest.fn(async () => {});
+            const flush_sync_rulefile_to_server = jest.fn(async () => {});
+            jest.unstable_mockModule(server_sync_path, () => ({
+                flush_sync_to_server,
+                flush_sync_rulefile_to_server
+            }));
+            const mod = await import('../../js/logic/connectivity_service.js');
+            const {
+                init_connectivity_service,
+                mark_audit_sync_pending,
+                reset_connectivity_service_for_testing,
+                PENDING_SYNC_RETRY_INTERVAL_MS
+            } = mod;
+            reset_connectivity_service_for_testing();
+            mark_audit_sync_pending();
+
+            jest.spyOn(window, 'addEventListener').mockImplementation(() => {});
+            const orig_get = document.getElementById;
+            document.getElementById = jest.fn(() => null);
+            Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
+            Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
+
+            init_connectivity_service({
+                getState: () => ({ auditId: 'a1' }),
+                dispatch: jest.fn()
+            });
+
+            jest.advanceTimersByTime(PENDING_SYNC_RETRY_INTERVAL_MS);
+            await Promise.resolve();
+
+            expect(flush_sync_to_server).not.toHaveBeenCalled();
+
+            reset_connectivity_service_for_testing();
+            window.addEventListener.mockRestore();
+            document.getElementById = orig_get;
+            jest.useRealTimers();
         });
     });
 });

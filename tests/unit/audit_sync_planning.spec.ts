@@ -9,6 +9,7 @@ import {
     note_audit_full_sync_required,
     note_metadata_only_changed,
     note_requirement_result_changed,
+    peek_audit_sync_strategy,
     resolve_audit_sync_strategy,
     should_include_rule_file_in_patch
 } from '../../js/sync/audit_sync_planning.js';
@@ -77,5 +78,28 @@ describe('audit_sync_planning', () => {
     test('fingerprint_rule_file_content är stabil', () => {
         const rule = { x: 1 };
         expect(fingerprint_rule_file_content(rule)).toBe(fingerprint_rule_file_content(rule));
+    });
+
+    test('has_pending_audit_sync_plan är false utan köer', async () => {
+        const {
+            clear_rule_file_sync_baseline_for_testing,
+            has_pending_audit_sync_plan
+        } = await import('../../js/sync/audit_sync_planning.js');
+        clear_rule_file_sync_baseline_for_testing();
+        expect(has_pending_audit_sync_plan()).toBe(false);
+    });
+
+    test('peek_audit_sync_strategy tömmer inte köer', () => {
+        note_requirement_result_changed('s1', 'r1');
+        expect(peek_audit_sync_strategy()).toEqual({
+            mode: 'single_requirement',
+            sample_id: 's1',
+            requirement_id: 'r1'
+        });
+        expect(resolve_audit_sync_strategy()).toEqual({
+            mode: 'single_requirement',
+            sample_id: 's1',
+            requirement_id: 'r1'
+        });
     });
 });

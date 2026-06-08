@@ -465,6 +465,25 @@ function dispatch_persist_sync(action: { type: string; payload?: unknown }): boo
         }
         internal_state = state_after_reducer;
         saveStateToSessionStorage(internal_state);
+        try {
+            const action_payload = action.payload as Record<string, unknown> | undefined;
+            if (action.type === ActionTypes.UPDATE_REQUIREMENT_RESULT) {
+                const sid = action_payload?.sampleId;
+                const rid = action_payload?.requirementId;
+                if (sid != null && sid !== '' && rid != null && rid !== '') {
+                    note_requirement_result_changed(String(sid), String(rid));
+                } else {
+                    note_audit_full_sync_required();
+                }
+            } else if (
+                action.type === ActionTypes.UPDATE_METADATA &&
+                action_payload?.skip_server_sync !== true
+            ) {
+                note_metadata_only_changed();
+            }
+        } catch {
+            // ignoreras medvetet
+        }
         return true;
     } catch (error: unknown) {
         if (window.ConsoleManager?.warn) {

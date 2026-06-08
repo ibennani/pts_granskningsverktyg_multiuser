@@ -7,7 +7,6 @@ import {
     import_audit,
     load_audit_with_rule_file,
     get_auth_token,
-    get_audit_version,
     patch_requirement_result
 } from '../api/client.js';
 import {
@@ -52,6 +51,7 @@ import {
     should_include_rule_file_in_patch,
     type AuditSyncStrategy
 } from './audit_sync_planning.js';
+import { prepare_audit_sync_state } from './audit_sync_prepare.js';
 
 type DispatchFn = (action: { type: string; payload?: Record<string, unknown> }) => void;
 
@@ -119,40 +119,6 @@ function notify_audit_reloaded_from_server(message_key = 'version_conflict_exter
     if (notif?.show_global_message && window.Translation?.t) {
         const t = window.Translation.t;
         notif.show_global_message(t(message_key) || message_key, 'info');
-    }
-}
-
-async function reload_local_from_remote_if_server_ahead(
-    state: SyncPayloadState,
-    dispatch_fn: DispatchFn | undefined
-): Promise<boolean> {
-    if (!state.auditId) return false;
-    if (has_unsynced_local_audit_changes(state as AuditStateLike)) {
-        return false;
-    }
-    try {
-        const { version: remote_version } = (await get_audit_version(state.auditId)) as {
-            version?: number | null;
-        };
-        const local_version = Number(state.version ?? 0);
-        if (
-            remote_version === null ||
-            remote_version === undefined ||
-            !Number.isFinite(Number(remote_version)) ||
-            Number(remote_version) <= local_version
-        ) {
-            return false;
-        }
-        const full_state = (await load_audit_with_rule_file(state.auditId)) as Record<string, unknown> | null;
-        if (!full_state) return false;
-        dispatch_replace_state_from_remote(dispatch_fn, full_state);
-        update_baseline_from_server_full_state(full_state);
-        mark_rule_file_synced_from_state(full_state.ruleFileContent);
-        clear_audit_sync_pending();
-        notify_audit_reloaded_from_server();
-        return true;
-    } catch {
-        return false;
     }
 }
 
@@ -544,20 +510,27 @@ export async function execute_audit_server_sync(
 
     try {
         if (state.auditId) {
-            if (await reload_local_from_remote_if_server_ahead(state, dispatch_fn)) {
-                krav_vy_sync_skipped(krav_vy_sync, 'Servern hade nyare version — lokal state laddades om');
+            let sync_state = state;
+            const prepared = await prepare_audit_sync_state(sync_state, dispatch_fn);
+            if (prepared.action === 'skip') {
+                krav_vy_sync_skipped(krav_vy_sync, prepared.reason);
                 return;
             }
+            if (prepared.action === 'reload') {
+                krav_vy_sync_skipped(krav_vy_sync, 'Lokal state justerades mot servern — ingen synk behövdes');
+                return;
+            }
+            sync_state = prepared.state;
             const strategy = resolve_audit_sync_strategy();
             if (strategy.mode === 'single_requirement') {
-                const ok = await sync_single_requirement_result(state, strategy, dispatch_fn, krav_vy_sync);
+                const ok = await sync_single_requirement_result(sync_state, strategy, dispatch_fn, krav_vy_sync);
                 if (ok) return;
             }
             if (strategy.mode === 'metadata_only') {
-                const ok_meta = await sync_metadata_only_patch(state, dispatch_fn, krav_vy_sync);
+                const ok_meta = await sync_metadata_only_patch(sync_state, dispatch_fn, krav_vy_sync);
                 if (ok_meta) return;
             }
-            await sync_full_audit_patch(state, dispatch_fn, krav_vy_sync);
+            await sync_full_audit_patch(sync_state, dispatch_fn, krav_vy_sync);
         } else {
             const import_payload = state_to_import(state);
             const prev_log_i = Array.isArray(state.auditMetadata?.audit_edit_log) ? state.auditMetadata.audit_edit_log : [];

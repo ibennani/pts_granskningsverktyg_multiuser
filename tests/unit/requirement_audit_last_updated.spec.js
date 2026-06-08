@@ -31,7 +31,7 @@ describe('RequirementAuditComponent dispatch_result_update skipLastStatusBump', 
         };
         comp.Helpers = { get_current_iso_datetime_utc: () => '2025-12-01T00:00:00.000Z' };
         comp.StoreActionTypes = { UPDATE_REQUIREMENT_RESULT: 'UPDATE_REQUIREMENT_RESULT' };
-        comp.dispatch = jest.fn();
+        comp.dispatch = jest.fn(() => Promise.resolve());
 
         const modified = {
             lastStatusUpdate: null,
@@ -71,7 +71,7 @@ describe('RequirementAuditComponent dispatch_result_update skipLastStatusBump', 
         const new_ts = '2025-12-01T00:00:00.000Z';
         comp.Helpers = { get_current_iso_datetime_utc: () => new_ts };
         comp.StoreActionTypes = { UPDATE_REQUIREMENT_RESULT: 'UPDATE_REQUIREMENT_RESULT' };
-        comp.dispatch = jest.fn();
+        comp.dispatch = jest.fn(() => Promise.resolve());
 
         const modified = {
             lastStatusUpdate: null,

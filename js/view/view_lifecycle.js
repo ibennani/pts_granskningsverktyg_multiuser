@@ -41,7 +41,7 @@ export async function flush_before_view_switch({ flush_sync_to_server, getState,
     }
 }
 
-export function destroy_previous_view_component({
+export async function destroy_previous_view_component({
     current_view_component_instance,
     notificationComponent,
     requirementListComponent,
@@ -55,7 +55,7 @@ export function destroy_previous_view_component({
     notificationComponent?.clear_global_message?.();
     if (current_view_component_instance === requirementListComponent && view_name_to_render === 'rulefile_requirements') {
         try {
-            current_view_component_instance.destroy();
+            await resolve_destroy_promise(current_view_component_instance.destroy());
         } catch (err) {
             consoleManager.warn('[Main.js] Warning destroying RequirementListComponent before switching to rulefile view:', err);
             if (error_boundary_holder.instance && error_boundary_holder.instance.show_error) {
@@ -70,7 +70,7 @@ export function destroy_previous_view_component({
     }
 
     try {
-        current_view_component_instance.destroy();
+        await resolve_destroy_promise(current_view_component_instance.destroy());
     } catch (err) {
         consoleManager.error('[Main.js] Error destroying component:', err);
         if (error_boundary_holder.instance && error_boundary_holder.instance.show_error) {
@@ -81,6 +81,13 @@ export function destroy_previous_view_component({
             });
         }
     }
+}
+
+function resolve_destroy_promise(destroy_result) {
+    if (destroy_result && typeof destroy_result.then === 'function') {
+        return destroy_result;
+    }
+    return Promise.resolve();
 }
 
 export function clear_view_root_for_next_view({ view_root, ensure_main_view_content_host, clear_main_view_content_except_global_notifications }) {

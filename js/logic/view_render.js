@@ -151,9 +151,7 @@ export async function render_view(view_name_to_render, params_to_render = {}, de
         return;
     }
 
-    await flush_before_view_switch({ flush_sync_to_server, getState, dispatch, consoleManager });
-
-    destroy_previous_view_component({
+    await destroy_previous_view_component({
         current_view_component_instance,
         notificationComponent,
         requirementListComponent,
@@ -162,6 +160,8 @@ export async function render_view(view_name_to_render, params_to_render = {}, de
         render_ctx,
         consoleManager
     });
+
+    await flush_before_view_switch({ flush_sync_to_server, getState, dispatch, consoleManager });
 
     const cleared_host = clear_view_root_for_next_view({
         view_root,

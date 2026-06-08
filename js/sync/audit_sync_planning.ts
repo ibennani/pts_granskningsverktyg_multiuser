@@ -63,6 +63,13 @@ export function note_requirement_result_changed(sample_id: string, requirement_i
     pending_requirement_keys.add(requirement_sync_key(sample_id, requirement_id));
 }
 
+/** Om schemalagd synk har markerade ändringar (ej samma som peek som defaultar till full). */
+export function has_pending_audit_sync_plan(): boolean {
+    if (force_full_sync) return true;
+    if (pending_requirement_keys.size > 0) return true;
+    return metadata_only_pending;
+}
+
 export function should_include_rule_file_in_patch(rule_file_content: unknown): boolean {
     if (force_full_sync) return true;
     const fp = fingerprint_rule_file_content(rule_file_content);
@@ -96,5 +103,24 @@ export function resolve_audit_sync_strategy(): AuditSyncStrategy {
     }
     metadata_only_pending = false;
     pending_requirement_keys.clear();
+    return { mode: 'full' };
+}
+
+/** Läser planerad synkstrategi utan att tömma köer (t.ex. keepalive vid pagehide). */
+export function peek_audit_sync_strategy(): AuditSyncStrategy {
+    if (force_full_sync) return { mode: 'full' };
+    if (pending_requirement_keys.size === 1) {
+        const only_key = [...pending_requirement_keys][0];
+        const sep = only_key.indexOf('\u0001');
+        if (sep < 0) return { mode: 'full' };
+        return {
+            mode: 'single_requirement',
+            sample_id: only_key.slice(0, sep),
+            requirement_id: only_key.slice(sep + 1)
+        };
+    }
+    if (metadata_only_pending && pending_requirement_keys.size === 0) {
+        return { mode: 'metadata_only' };
+    }
     return { mode: 'full' };
 }

@@ -19,6 +19,13 @@ let get_state_fn = null;
 let dispatch_fn = null;
 /** @type {ReturnType<typeof setTimeout>|null} */
 let success_clear_timer = null;
+/** @type {ReturnType<typeof setInterval>|null} */
+let pending_sync_retry_timer = null;
+/** @type {boolean} */
+let pending_sync_flush_in_flight = false;
+
+/** Intervall för omförsök när synk misslyckats eller lokalt är nyare än server. */
+export const PENDING_SYNC_RETRY_INTERVAL_MS = 30000;
 
 /**
  * @param {unknown} err
@@ -161,22 +168,49 @@ async function flush_pending_syncs_from_server_module() {
     await flush_sync_rulefile_to_server(getState, dispatch);
 }
 
+function should_attempt_pending_sync_retry() {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) return false;
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return false;
+    const state = typeof get_state_fn === 'function' ? get_state_fn() : null;
+    return has_pending_server_sync() || has_unsynced_local_audit_changes(state);
+}
+
+/**
+ * @param {{ show_success_on_cleared_pending?: boolean }} [options]
+ */
+async function attempt_pending_sync_flush(options = {}) {
+    const { show_success_on_cleared_pending = false } = options;
+    if (pending_sync_flush_in_flight || !should_attempt_pending_sync_retry()) return;
+    pending_sync_flush_in_flight = true;
+    const had_pending_before = has_pending_server_sync();
+    try {
+        await flush_pending_syncs_from_server_module();
+        refresh_connectivity_banner();
+        if (show_success_on_cleared_pending && had_pending_before && !has_pending_server_sync()) {
+            show_sync_complete_message();
+        }
+    } finally {
+        pending_sync_flush_in_flight = false;
+    }
+}
+
+function start_pending_sync_retry_interval() {
+    if (pending_sync_retry_timer) return;
+    pending_sync_retry_timer = setInterval(() => {
+        void attempt_pending_sync_flush();
+    }, PENDING_SYNC_RETRY_INTERVAL_MS);
+}
+
+function stop_pending_sync_retry_interval() {
+    if (!pending_sync_retry_timer) return;
+    clearInterval(pending_sync_retry_timer);
+    pending_sync_retry_timer = null;
+}
+
 async function handle_online_event() {
     if (typeof window === 'undefined') return;
-    const had_pending_before = has_pending_server_sync();
     clear_offline_banner();
-
-    await flush_pending_syncs_from_server_module();
-
-    refresh_connectivity_banner();
-
-    if (has_pending_server_sync()) {
-        return;
-    }
-
-    if (had_pending_before) {
-        show_sync_complete_message();
-    }
+    await attempt_pending_sync_flush({ show_success_on_cleared_pending: true });
 }
 
 function handle_offline_event() {
@@ -211,4 +245,26 @@ export function init_connectivity_service(options) {
     window.addEventListener('offline', () => {
         handle_offline_event();
     });
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState !== 'visible') return;
+        void attempt_pending_sync_flush({ show_success_on_cleared_pending: true });
+    });
+
+    start_pending_sync_retry_interval();
+}
+
+/** Endast för enhetstester. */
+export function reset_connectivity_service_for_testing() {
+    pending_audit_sync = false;
+    pending_rulefile_sync = false;
+    showing_offline_banner = false;
+    showing_unsynced_banner = false;
+    get_state_fn = null;
+    dispatch_fn = null;
+    if (success_clear_timer) {
+        clearTimeout(success_clear_timer);
+        success_clear_timer = null;
+    }
+    stop_pending_sync_retry_interval();
+    pending_sync_flush_in_flight = false;
 }

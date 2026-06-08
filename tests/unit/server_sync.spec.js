@@ -36,7 +36,8 @@ jest.unstable_mockModule(client_path, () => ({
     load_audit_with_rule_file,
     get_audit_version,
     get_auth_token,
-    get_websocket_url
+    get_websocket_url,
+    api_patch_keepalive: jest.fn(() => true)
 }));
 
 jest.unstable_mockModule(connectivity_path, () => ({
@@ -109,10 +110,18 @@ describe('server_sync', () => {
     });
 
     test('sync_to_server_now med auditId anropar update_audit', async () => {
-        const { clear_rule_file_sync_baseline_for_testing } = await import('../../js/sync/audit_sync_planning.js');
+        const {
+            clear_rule_file_sync_baseline_for_testing,
+            note_audit_full_sync_required
+        } = await import('../../js/sync/audit_sync_planning.js');
         clear_rule_file_sync_baseline_for_testing();
+        note_audit_full_sync_required();
         const dispatch = jest.fn();
-        const state = base_audit_state({ auditId: 'a1', version: 3 });
+        const state = base_audit_state({
+            auditId: 'a1',
+            version: 3,
+            auditMetadata: { last_local_change_at: '2026-06-08T12:00:00.000Z' }
+        });
         await sync_to_server_now(() => state, dispatch);
         expect(update_audit).toHaveBeenCalledWith(
             'a1',
@@ -129,15 +138,22 @@ describe('server_sync', () => {
     test('andra synken utelämnar regelfil om den inte ändrats', async () => {
         const {
             clear_rule_file_sync_baseline_for_testing,
-            mark_rule_file_synced_from_state
+            mark_rule_file_synced_from_state,
+            note_audit_full_sync_required
         } = await import('../../js/sync/audit_sync_planning.js');
         clear_rule_file_sync_baseline_for_testing();
         const dispatch = jest.fn();
-        const state = base_audit_state({ auditId: 'a1', version: 3 });
+        const state = base_audit_state({
+            auditId: 'a1',
+            version: 3,
+            auditMetadata: { last_local_change_at: '2026-06-08T12:00:00.000Z' }
+        });
+        note_audit_full_sync_required();
         await sync_to_server_now(() => state, dispatch);
         expect(update_audit.mock.calls[0][1].ruleFileContent).toBeDefined();
         mark_rule_file_synced_from_state(state.ruleFileContent);
         update_audit.mockClear();
+        note_audit_full_sync_required();
         await sync_to_server_now(() => state, dispatch);
         expect(update_audit).toHaveBeenCalledWith(
             'a1',
@@ -163,7 +179,13 @@ describe('server_sync', () => {
             samples: [{ id: 's1', requirementResults: { req1: { status: 'passed' } } }]
         });
         note_metadata_only_changed();
-        await sync_to_server_now(() => state, dispatch);
+        await sync_to_server_now(() => ({
+            ...state,
+            auditMetadata: {
+                ...state.auditMetadata,
+                last_local_change_at: '2026-06-08T12:00:00.000Z'
+            }
+        }), dispatch);
         expect(update_audit).toHaveBeenCalledWith(
             'a1',
             expect.objectContaining({
@@ -192,7 +214,10 @@ describe('server_sync', () => {
             samples: [{ id: 's1', requirementResults: { req1: result } }]
         });
         note_requirement_result_changed('s1', 'req1');
-        await sync_to_server_now(() => state, dispatch);
+        await sync_to_server_now(() => ({
+            ...state,
+            auditMetadata: { last_local_change_at: '2026-06-08T12:00:00.000Z' }
+        }), dispatch);
         expect(patch_requirement_result).toHaveBeenCalledWith('a1', 's1', 'req1', 4, result);
         expect(update_audit).not.toHaveBeenCalled();
     });
@@ -225,8 +250,14 @@ describe('server_sync', () => {
 
     test('schedule_sync_to_server debouncar och kör update_audit', async () => {
         jest.useFakeTimers();
+        const { note_audit_full_sync_required } = await import('../../js/sync/audit_sync_planning.js');
         const dispatch = jest.fn();
-        const state = base_audit_state({ auditId: 'z', version: 1 });
+        const state = base_audit_state({
+            auditId: 'z',
+            version: 1,
+            auditMetadata: { last_local_change_at: '2026-06-08T12:00:00.000Z' }
+        });
+        note_audit_full_sync_required();
         schedule_sync_to_server(() => state, dispatch);
         expect(update_audit).not.toHaveBeenCalled();
         await jest.advanceTimersByTimeAsync(500);
@@ -269,8 +300,14 @@ describe('server_sync', () => {
 
     test('flush_sync_to_server rensar debounce och synkar direkt', async () => {
         jest.useFakeTimers();
+        const { note_audit_full_sync_required } = await import('../../js/sync/audit_sync_planning.js');
         const dispatch = jest.fn();
-        const state = base_audit_state({ auditId: 'deb', version: 1 });
+        const state = base_audit_state({
+            auditId: 'deb',
+            version: 1,
+            auditMetadata: { last_local_change_at: '2026-06-08T12:00:00.000Z' }
+        });
+        note_audit_full_sync_required();
         schedule_sync_to_server(() => state, dispatch);
         expect(update_audit).not.toHaveBeenCalled();
         await flush_sync_to_server(() => state, dispatch);
@@ -278,8 +315,14 @@ describe('server_sync', () => {
     });
 
     test('lyckad PATCH sätter SET_REMOTE_AUDIT_ID med skip_render och last_server_sync_at', async () => {
+        const { note_audit_full_sync_required } = await import('../../js/sync/audit_sync_planning.js');
+        note_audit_full_sync_required();
         const dispatch = jest.fn();
-        const state = base_audit_state({ auditId: 'sync-1', version: 2 });
+        const state = base_audit_state({
+            auditId: 'sync-1',
+            version: 2,
+            auditMetadata: { last_local_change_at: '2026-06-08T12:00:00.000Z' }
+        });
         await sync_to_server_now(() => state, dispatch);
         expect(dispatch).toHaveBeenCalledWith({
             type: 'SET_REMOTE_AUDIT_ID',
@@ -303,13 +346,21 @@ describe('server_sync', () => {
     });
 
     test('run_sync: 409 med existingAuditId sätter dispatch SET_REMOTE_AUDIT_ID', async () => {
+        const { note_audit_full_sync_required } = await import('../../js/sync/audit_sync_planning.js');
+        note_audit_full_sync_required();
         const err = Object.assign(new Error('konflikt'), {
             status: 409,
             existingAuditId: 'existing-1'
         });
         update_audit.mockRejectedValueOnce(err);
         const dispatch = jest.fn();
-        const state = base_audit_state({ auditId: 'a1', version: 1 });
+        const state = base_audit_state({
+            auditId: 'a1',
+            version: 1,
+            auditMetadata: { last_local_change_at: '2026-05-20T14:00:00.000Z' }
+        });
+        window.Translation = { t: (k) => k };
+        app_runtime_refs.notification_component = { show_global_message: jest.fn() };
         await sync_to_server_now(() => state, dispatch);
         expect(dispatch).toHaveBeenCalledWith({
             type: 'SET_REMOTE_AUDIT_ID',
@@ -323,7 +374,50 @@ describe('server_sync', () => {
         expect(clear_audit_sync_pending).toHaveBeenCalled();
     });
 
+    test('run_sync: stale version justeras före PATCH när lokalt innehåll är nyare', async () => {
+        const { note_audit_full_sync_required } = await import('../../js/sync/audit_sync_planning.js');
+        note_audit_full_sync_required();
+        get_audit_version.mockResolvedValueOnce({ version: 7 });
+        load_audit_with_rule_file.mockResolvedValueOnce({
+            version: 7,
+            saveFileVersion: '2.1.0',
+            auditMetadata: { last_server_sync_at: '2026-05-19T08:00:00.000Z' },
+            samples: [],
+            ruleFileContent: {}
+        });
+        update_audit.mockResolvedValueOnce({
+            auditId: 'a1',
+            ruleSetId: 'rs1',
+            version: 9,
+            saveFileVersion: '2.1.0',
+            samples: [],
+            ruleFileContent: {}
+        });
+        const dispatch = jest.fn();
+        const state = base_audit_state({
+            auditId: 'a1',
+            version: 1,
+            auditMetadata: { last_local_change_at: '2026-05-20T14:00:00.000Z' },
+            samples: []
+        });
+        window.Translation = { t: (k) => k };
+        app_runtime_refs.notification_component = { show_global_message: jest.fn() };
+        await sync_to_server_now(() => state, dispatch);
+        expect(load_audit_with_rule_file).toHaveBeenCalledWith('a1');
+        expect(update_audit).toHaveBeenCalledTimes(1);
+        expect(update_audit.mock.calls[0][1].expectedVersion).toBe(7);
+        expect(dispatch).toHaveBeenCalledWith({
+            type: 'SET_REMOTE_AUDIT_ID',
+            payload: expect.objectContaining({ auditId: 'a1', version: 9, skip_render: true })
+        });
+        delete window.Translation;
+        app_runtime_refs.notification_component = null;
+    });
+
     test('run_sync: 409 utan existingAuditId och lokalt nyare innehåll retryar med serverns version', async () => {
+        const { note_audit_full_sync_required } = await import('../../js/sync/audit_sync_planning.js');
+        note_audit_full_sync_required();
+        get_audit_version.mockResolvedValueOnce({ version: 1 });
         const err = Object.assign(new Error('version'), { status: 409 });
         update_audit
             .mockRejectedValueOnce(err)
@@ -363,8 +457,7 @@ describe('server_sync', () => {
     });
 
     test('run_sync: 409 utan existingAuditId och äldre lokalt innehåll laddar om från server', async () => {
-        const err = Object.assign(new Error('version'), { status: 409 });
-        update_audit.mockRejectedValueOnce(err);
+        get_audit_version.mockResolvedValueOnce({ version: 7 });
         load_audit_with_rule_file.mockResolvedValueOnce({
             version: 7,
             saveFileVersion: '2.1.0',
@@ -394,7 +487,7 @@ describe('server_sync', () => {
         window.Translation = { t: (k) => k };
         app_runtime_refs.notification_component = { show_global_message: jest.fn() };
         await sync_to_server_now(() => state, dispatch);
-        expect(update_audit).toHaveBeenCalledTimes(1);
+        expect(update_audit).not.toHaveBeenCalled();
         expect(dispatch).toHaveBeenCalledWith(
             expect.objectContaining({
                 type: 'REPLACE_STATE_FROM_REMOTE',
@@ -430,8 +523,16 @@ describe('server_sync', () => {
         app_runtime_refs.notification_component = null;
     });
 
-    test('run_sync: hoppar över omladdning från server när osparade lokala ändringar finns', async () => {
+    test('run_sync: justerar expectedVersion före PATCH när server ligger före och lokalt innehåll är nyare', async () => {
+        const { note_audit_full_sync_required } = await import('../../js/sync/audit_sync_planning.js');
+        note_audit_full_sync_required();
         get_audit_version.mockResolvedValueOnce({ version: 8 });
+        load_audit_with_rule_file.mockResolvedValueOnce({
+            version: 8,
+            auditMetadata: { last_server_sync_at: '2026-05-20T12:00:00.000Z' },
+            samples: [],
+            ruleFileContent: {}
+        });
         const dispatch = jest.fn();
         const state = base_audit_state({
             auditId: 'a1',
@@ -442,11 +543,30 @@ describe('server_sync', () => {
             }
         });
         await sync_to_server_now(() => state, dispatch);
-        expect(load_audit_with_rule_file).not.toHaveBeenCalled();
-        expect(update_audit).toHaveBeenCalled();
+        expect(load_audit_with_rule_file).toHaveBeenCalledWith('a1');
+        expect(update_audit).toHaveBeenCalledWith(
+            'a1',
+            expect.objectContaining({ expectedVersion: 8 })
+        );
+    });
+
+    test('flush_sync_to_server hoppar över PATCH när allt redan är synkat', async () => {
+        const { clear_rule_file_sync_baseline_for_testing } = await import('../../js/sync/audit_sync_planning.js');
+        clear_rule_file_sync_baseline_for_testing();
+        get_audit_version.mockResolvedValueOnce({ version: 3 });
+        const dispatch = jest.fn();
+        const state = base_audit_state({
+            auditId: 'a1',
+            version: 3,
+            auditMetadata: { last_server_sync_at: '2026-06-08T12:00:00.000Z' }
+        });
+        await flush_sync_to_server(() => state, dispatch);
+        expect(update_audit).not.toHaveBeenCalled();
     });
 
     test('run_sync: 404 granskning borttagen visar modalspår', async () => {
+        const { note_audit_full_sync_required } = await import('../../js/sync/audit_sync_planning.js');
+        note_audit_full_sync_required();
         const err = Object.assign(new Error('Granskning hittades inte'), { status: 404 });
         update_audit.mockRejectedValueOnce(err);
         window.__gv_current_view_name = 'metadata';
@@ -455,7 +575,11 @@ describe('server_sync', () => {
         app_runtime_refs.notification_component = { show_global_message: show_global };
         window.Translation = { t: (k) => k };
         const dispatch = jest.fn();
-        const state = base_audit_state({ auditId: 'gone', version: 1 });
+        const state = base_audit_state({
+            auditId: 'gone',
+            version: 1,
+            auditMetadata: { last_local_change_at: '2026-06-08T12:00:00.000Z' }
+        });
         await sync_to_server_now(() => state, dispatch);
         expect(show_global).toHaveBeenCalled();
         delete window.__gv_current_view_name;
@@ -465,10 +589,16 @@ describe('server_sync', () => {
     });
 
     test('run_sync: nätverksfel (fetch kastar) markerar väntande synk', async () => {
+        const { note_audit_full_sync_required } = await import('../../js/sync/audit_sync_planning.js');
+        note_audit_full_sync_required();
         is_fetch_network_error.mockImplementation((e) => e instanceof TypeError);
         update_audit.mockRejectedValueOnce(new TypeError('Failed to fetch'));
         const dispatch = jest.fn();
-        const state = base_audit_state({ auditId: 'a1', version: 1 });
+        const state = base_audit_state({
+            auditId: 'a1',
+            version: 1,
+            auditMetadata: { last_local_change_at: '2026-06-08T12:00:00.000Z' }
+        });
         await sync_to_server_now(() => state, dispatch);
         expect(mark_audit_sync_pending).toHaveBeenCalled();
         expect(notify_network_unreachable_for_sync).toHaveBeenCalled();
@@ -513,8 +643,14 @@ describe('server_sync', () => {
     });
 
     test('BroadcastChannel skickar audit-updated efter lyckad PATCH-synk', async () => {
+        const { note_audit_full_sync_required } = await import('../../js/sync/audit_sync_planning.js');
+        note_audit_full_sync_required();
         const dispatch = jest.fn();
-        const state = base_audit_state({ auditId: 'patch-id', version: 2 });
+        const state = base_audit_state({
+            auditId: 'patch-id',
+            version: 2,
+            auditMetadata: { last_local_change_at: '2026-06-08T12:00:00.000Z' }
+        });
         await sync_to_server_now(() => state, dispatch);
         expect(global.BroadcastChannel).toHaveBeenCalledWith('granskningsverktyget-audit-updates');
         expect(broadcast_instances.length).toBeGreaterThan(0);
@@ -547,6 +683,8 @@ describe('server_sync', () => {
     });
 
     test('404 granskning: ModalComponent.show och navigering till audit_audits', async () => {
+        const { note_audit_full_sync_required } = await import('../../js/sync/audit_sync_planning.js');
+        note_audit_full_sync_required();
         const err = Object.assign(new Error('Granskning hittades inte'), { status: 404 });
         update_audit.mockRejectedValueOnce(err);
         window.__gv_current_view_name = 'metadata';
@@ -581,7 +719,11 @@ describe('server_sync', () => {
         window.Translation = { t: (k) => k };
 
         const dispatch = jest.fn();
-        const state = base_audit_state({ auditId: 'gone', version: 1 });
+        const state = base_audit_state({
+            auditId: 'gone',
+            version: 1,
+            auditMetadata: { last_local_change_at: '2026-06-08T12:00:00.000Z' }
+        });
         await sync_to_server_now(() => state, dispatch);
 
         expect(modal_show).toHaveBeenCalled();

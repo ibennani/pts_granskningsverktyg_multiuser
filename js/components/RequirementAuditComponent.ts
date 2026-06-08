@@ -38,6 +38,10 @@ import {
 } from '../logic/collab_lock_compare.js';
 import { dispatch_persist_sync } from '../state/index.js';
 import {
+    register_unload_persist_hook,
+    unregister_unload_persist_hook
+} from '../logic/unload_persist_registry.js';
+import {
     log_krav_vy_knapp,
     peek_krav_vy_sync_flow,
     register_krav_vy_knapp_sync,
@@ -98,8 +102,6 @@ export class RequirementAuditComponent {
         this._krav_vy_focus_debug_roots = [];
         /** Debounce-timer för autospar av observations- och kommentarsfält. */
         this._plate_text_autosave_timer = null;
-        this._handle_plate_unload_save = null;
-        this._handle_plate_visibility_save = null;
     }
 
     async init({ root, deps }) {
@@ -132,11 +134,8 @@ export class RequirementAuditComponent {
         this.handle_comment_focusout = this.handle_comment_focusout.bind(this);
         this.handle_krav_vy_focusin = this.handle_krav_vy_focusin.bind(this);
         this.handle_krav_vy_focusout = this.handle_krav_vy_focusout.bind(this);
-        this._handle_plate_unload_save = this._flush_plate_text_autosave_for_unload.bind(this);
-        this._handle_plate_visibility_save = this._flush_plate_text_autosave_on_visibility_hidden.bind(this);
-        window.addEventListener('pagehide', this._handle_plate_unload_save);
-        window.addEventListener('beforeunload', this._handle_plate_unload_save);
-        document.addEventListener('visibilitychange', this._handle_plate_visibility_save);
+        this._handle_unload_persist = this._handle_unload_persist.bind(this);
+        register_unload_persist_hook('requirement_audit_plate', this._handle_unload_persist);
         this.handle_sidebar_filters_change = this.handle_sidebar_filters_change.bind(this);
         this.handle_audit_keydown = this.handle_audit_keydown.bind(this);
         
@@ -392,6 +391,14 @@ export class RequirementAuditComponent {
             });
             this._save_plate_to_redux({ should_trim: false, skip_last_status_bump: true });
         }, 250);
+    }
+
+    _handle_unload_persist(reason) {
+        if (reason === 'visibilitychange') {
+            this._flush_plate_text_autosave_on_visibility_hidden();
+            return;
+        }
+        this._flush_plate_text_autosave_for_unload();
     }
 
     /** Omedelbar synkron sparning vid pagehide/beforeunload så omladdning utan blur behåller text. */
@@ -1744,18 +1751,11 @@ export class RequirementAuditComponent {
         }
     }
 
-    destroy() {
-        this._status_change_queue_tail = Promise.resolve();
+    async destroy() {
+        await this._status_change_queue_tail;
         this._cancel_plate_text_autosave_timer();
-        if (this._handle_plate_unload_save) {
-            window.removeEventListener('pagehide', this._handle_plate_unload_save);
-            window.removeEventListener('beforeunload', this._handle_plate_unload_save);
-            this._handle_plate_unload_save = null;
-        }
-        if (this._handle_plate_visibility_save) {
-            document.removeEventListener('visibilitychange', this._handle_plate_visibility_save);
-            this._handle_plate_visibility_save = null;
-        }
+        unregister_unload_persist_hook('requirement_audit_plate');
+        this._handle_unload_persist = null;
         if (typeof this.unsubscribe_from_store === 'function') {
             this.unsubscribe_from_store();
             this.unsubscribe_from_store = null;
