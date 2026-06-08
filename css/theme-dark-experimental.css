@@ -1,0 +1,1257 @@
+/**
+ * Tema "Midnattsmörker" (dark-experimental) – minimalistisk mörk design (Vercel/Linear/Stripe-inspirerad).
+ * Alla regler gäller endast när data-theme="dark-experimental" är satt på <html>.
+ * Skriver inte över befintlig CSS; använder befintliga klasser/ID:n i appen.
+ */
+
+/* --- Färgvariabler (scopade till temat) --- */
+[data-theme="dark-experimental"] {
+    --primary-color: #fafafa;
+    --primary-color-dark: #e4e4e7;
+
+    --link-color: #b4b4bc;
+    --link-hover-color: #fafafa;
+    --heading-color: #fafafa;
+
+    --button-primary-bg: #fafafa;
+    --button-primary-text: #09090b;
+    --button-primary-border: #707078;
+    --button-primary-hover-bg: #e4e4e7;
+
+    --border-radius: 12px;
+
+    --secondary-color: #94949e;
+    --accent-color: #a5b4fc;
+    --accent-color-light: #1a1f3a;
+
+    --danger-color: #fca5a5;
+    --danger-color-light: #2a1518;
+    --warning-color: #fcd34d;
+    --warning-color-light: #2a2210;
+    --info-color: #a5b4fc;
+    --info-color-light: #1a1f3a;
+    --success-color: #86efac;
+    --success-color-light: #122318;
+
+    --text-color: #fafafa;
+    --text-color-muted: #94949e;
+
+    --background-color: #09090b;
+    --plate-background-color: #111113;
+    --input-background-color: #1f1f23;
+    --input-text-color: #fafafa;
+
+    --border-color: #76767e;
+
+    --focus-offset: 2px;
+    --focus-inner-width: 1px;
+    --focus-outer-width: 1px;
+    --focus-inner-color: #09090b;
+    --focus-outer-color: #fafafa;
+
+    --button-default-bg: #18181b;
+    --button-default-text: #fafafa;
+    --button-default-hover-bg: #27272a;
+    --button-default-border: #707078;
+
+    --button-accent-bg: #18181b;
+    --button-accent-text: #fafafa;
+    --button-accent-border: #707078;
+    --button-accent-hover-bg: #27272a;
+
+    --button-success-bg: #122318;
+    --button-success-text: #86efac;
+    --button-success-border: #6f8f78;
+    --button-success-hover-bg: #183222;
+
+    --button-danger-bg: #2a1518;
+    --button-danger-text: #fca5a5;
+    --button-danger-border: #707078;
+    --button-danger-hover-bg: #351a1e;
+
+    --button-warning-bg: #2a2210;
+    --button-warning-text: #fcd34d;
+    --button-warning-border: #707078;
+    --button-warning-hover-bg: #352a14;
+
+    --button-info-bg: #1a1f3a;
+    --button-info-text: #a5b4fc;
+    --button-info-border: #707078;
+    --button-info-hover-bg: #222848;
+
+    --de-status-passed: #86efac;
+    --de-status-failed: #fca5a5;
+    --de-status-warning: #fcd34d;
+    --de-status-remaining: #94949e;
+
+    --gradient-success-color: var(--de-status-passed);
+    --gradient-warning-color: var(--de-status-warning);
+    --gradient-orange-color: #fb923c;
+    --gradient-danger-color: var(--de-status-failed);
+
+    --surface-emphasis-bg: #18181b;
+    --surface-emphasis-border: #707078;
+    --surface-tag-bg: #18181b;
+
+    --build-timestamp-color: #94949e;
+
+    --de-bg-page: #09090b;
+    --de-bg-panel: #111113;
+    --de-bg-elevated: #18181b;
+    --de-surface-card: #141416;
+    --de-bg-hover: #18181b;
+    --de-bg-hover-strong: #27272a;
+    --de-border-subtle: #606068;
+    --de-border-default: #6a6a72;
+    --de-border-strong: #707078;
+    --de-text-primary: #fafafa;
+    --de-text-secondary: #b4b4bc;
+    --de-text-muted: #94949e;
+    --de-accent: #a5b4fc;
+    --de-accent-hover: #818cf8;
+    --de-accent-ui: #818cf8;
+    --de-segment-track: #1f1f23;
+    --de-segment-passed: var(--de-status-passed);
+    --de-segment-partial: var(--de-status-warning);
+    --de-segment-failed: var(--de-status-failed);
+    --de-segment-not-audited: var(--de-status-remaining);
+
+    --de-score-bar-track: #1f1f23;
+    --de-score-bar-gradient: linear-gradient(
+        to right,
+        var(--de-status-passed) 0%,
+        var(--de-status-passed) 15%,
+        var(--de-status-warning) 16%,
+        var(--de-status-warning) 30%,
+        #fb923c 31%,
+        #fb923c 45%,
+        var(--de-status-failed) 46%,
+        var(--de-status-failed) 100%
+    );
+
+    --de-interactive-bg: #1f1f23;
+    --de-interactive-border: #76767e;
+    --de-interactive-border-width: 2px;
+    --de-interactive-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+
+    --de-focus-ring-inner: 0 0 0 calc(var(--focus-inner-width) + var(--focus-offset)) var(--focus-inner-color);
+    --de-focus-ring-outline-offset: calc(var(--focus-offset) + var(--focus-inner-width));
+}
+
+/* --- Sidbakgrund och layout --- */
+[data-theme="dark-experimental"] body {
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 0.9375rem;
+    color: var(--de-text-primary);
+    background-color: var(--de-bg-page);
+    background-image: none;
+    letter-spacing: -0.011em;
+}
+
+[data-theme="dark-experimental"] #app-wrapper,
+[data-theme="dark-experimental"] #app-container {
+    background-color: var(--de-bg-page);
+}
+
+[data-theme="dark-experimental"] #app-main-view-root {
+    background-color: var(--de-bg-page);
+}
+
+/* --- Typografi --- */
+[data-theme="dark-experimental"] h1,
+[data-theme="dark-experimental"] h2,
+[data-theme="dark-experimental"] h3,
+[data-theme="dark-experimental"] h4,
+[data-theme="dark-experimental"] h5,
+[data-theme="dark-experimental"] h6 {
+    color: var(--de-text-primary);
+    font-weight: 600;
+    letter-spacing: -0.025em;
+}
+
+[data-theme="dark-experimental"] h1 {
+    font-size: 1.375rem;
+}
+
+[data-theme="dark-experimental"] h2 {
+    font-size: 1.125rem;
+}
+
+[data-theme="dark-experimental"] h3,
+[data-theme="dark-experimental"] h4 {
+    font-size: 1rem;
+}
+
+[data-theme="dark-experimental"] .content-plate h1 {
+    font-size: 1.5rem;
+    margin-bottom: 0.75rem;
+}
+
+[data-theme="dark-experimental"] .content-plate .view-intro-text,
+[data-theme="dark-experimental"] .content-plate p.view-intro-text {
+    color: var(--de-text-muted) !important;
+    font-size: 0.9375rem !important;
+    font-weight: 400 !important;
+    line-height: 1.6;
+}
+
+[data-theme="dark-experimental"] .content-plate h1 + .view-intro-text,
+[data-theme="dark-experimental"] .content-plate h1 + p.view-intro-text {
+    color: var(--de-text-secondary) !important;
+}
+
+[data-theme="dark-experimental"] a {
+    color: var(--de-text-secondary);
+    transition: color 0.2s ease;
+}
+
+[data-theme="dark-experimental"] a:hover,
+[data-theme="dark-experimental"] a:focus-visible {
+    color: var(--de-text-primary);
+}
+
+/* --- Fokusmarkering (1 px svart inre, 1 px vit yttre, liten marginal) --- */
+[data-theme="dark-experimental"] :focus-visible {
+    outline: var(--focus-outer-width) solid var(--focus-outer-color);
+    outline-offset: var(--de-focus-ring-outline-offset);
+    box-shadow: var(--de-focus-ring-inner);
+    z-index: 10;
+}
+
+/* --- Topbar (global action bar) --- */
+[data-theme="dark-experimental"] #global-action-bar-top .global-action-bar,
+[data-theme="dark-experimental"] #global-action-bar-bottom .global-action-bar {
+    min-height: 52px;
+    padding: 0.75rem 1.25rem;
+    background-color: var(--de-bg-panel);
+    border: 1px solid var(--de-border-default);
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.24);
+}
+
+[data-theme="dark-experimental"] #global-action-bar-top .global-action-bar a,
+[data-theme="dark-experimental"] #global-action-bar-bottom .global-action-bar a {
+    color: var(--de-text-secondary);
+    transition: color 0.2s ease;
+}
+
+[data-theme="dark-experimental"] #global-action-bar-top .global-action-bar a:hover,
+[data-theme="dark-experimental"] #global-action-bar-bottom .global-action-bar a:hover {
+    color: var(--de-text-primary);
+}
+
+/* --- Sidomeny --- */
+[data-theme="dark-experimental"] .app-side-menu-root {
+    background-color: transparent;
+    border: none;
+}
+
+[data-theme="dark-experimental"] .side-menu__nav {
+    background-color: var(--de-bg-panel);
+    border: 1px solid var(--de-border-default);
+    border-radius: 12px;
+    padding: 0.375rem;
+}
+
+[data-theme="dark-experimental"] .side-menu__link {
+    color: var(--de-text-secondary);
+    padding: 0.625rem 0.875rem;
+    border-radius: 8px;
+    transition: color 0.2s ease;
+}
+
+[data-theme="dark-experimental"] .side-menu__link:hover {
+    color: var(--de-text-primary);
+}
+
+[data-theme="dark-experimental"] .side-menu__link.active,
+[data-theme="dark-experimental"] .side-menu__link[aria-current="page"] {
+    background-color: var(--de-bg-elevated);
+    color: var(--de-text-primary);
+    border: 1px solid var(--de-border-strong);
+}
+
+[data-theme="dark-experimental"] .side-menu__link:focus-visible {
+    outline: none;
+    box-shadow:
+        0 0 0 1px var(--focus-inner-color),
+        0 0 0 2px var(--focus-outer-color);
+    z-index: 10;
+}
+
+/* --- Innehållspaneler --- */
+[data-theme="dark-experimental"] .view-container,
+[data-theme="dark-experimental"] .content-plate {
+    background-color: var(--de-bg-panel);
+    border: 1px solid var(--de-border-default);
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark-experimental"] .app-layout.app-layout--narrow .app-main-shell-nav,
+[data-theme="dark-experimental"] .app-layout.app-layout--medium .app-main-shell-nav {
+    background-color: var(--de-bg-panel);
+    border: 1px solid var(--de-border-default);
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+}
+
+[data-theme="dark-experimental"] .app-right-sidebar-root {
+    background-color: var(--de-bg-panel);
+    border: 1px solid var(--de-border-default);
+    border-radius: 12px;
+    padding: 1.25rem;
+}
+
+[data-theme="dark-experimental"] .form-group {
+    margin-bottom: 1.25rem;
+}
+
+/* --- Formulär --- */
+[data-theme="dark-experimental"] .form-group label,
+[data-theme="dark-experimental"] .form-label {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--de-text-secondary);
+    margin-bottom: 0.375rem;
+    letter-spacing: 0.01em;
+}
+
+/* --- Interaktiva fält (enhetlig stil) --- */
+[data-theme="dark-experimental"] .form-control,
+[data-theme="dark-experimental"] input[type="text"],
+[data-theme="dark-experimental"] input[type="url"],
+[data-theme="dark-experimental"] input[type="email"],
+[data-theme="dark-experimental"] input[type="password"],
+[data-theme="dark-experimental"] input[type="number"],
+[data-theme="dark-experimental"] input[type="search"],
+[data-theme="dark-experimental"] input[type="tel"],
+[data-theme="dark-experimental"] input[type="date"],
+[data-theme="dark-experimental"] input[type="file"],
+[data-theme="dark-experimental"] textarea,
+[data-theme="dark-experimental"] select {
+    border: var(--de-interactive-border-width) solid var(--de-interactive-border);
+    border-radius: 10px;
+    padding: 0.625rem 0.875rem;
+    background-color: var(--de-interactive-bg);
+    color: var(--de-text-primary);
+    font-size: 0.9375rem;
+    box-shadow: var(--de-interactive-shadow);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+[data-theme="dark-experimental"] .form-control:focus,
+[data-theme="dark-experimental"] input[type="text"]:focus,
+[data-theme="dark-experimental"] input[type="url"]:focus,
+[data-theme="dark-experimental"] input[type="email"]:focus,
+[data-theme="dark-experimental"] input[type="password"]:focus,
+[data-theme="dark-experimental"] input[type="number"]:focus,
+[data-theme="dark-experimental"] input[type="search"]:focus,
+[data-theme="dark-experimental"] input[type="tel"]:focus,
+[data-theme="dark-experimental"] input[type="date"]:focus,
+[data-theme="dark-experimental"] input[type="file"]:focus,
+[data-theme="dark-experimental"] textarea:focus,
+[data-theme="dark-experimental"] select:focus {
+    border-color: var(--de-interactive-border);
+    box-shadow:
+        var(--de-interactive-shadow),
+        var(--de-focus-ring-inner);
+    outline: var(--focus-outer-width) solid var(--focus-outer-color);
+    outline-offset: var(--de-focus-ring-outline-offset);
+}
+
+[data-theme="dark-experimental"] .form-control-small,
+[data-theme="dark-experimental"] .global-action-bar .form-control,
+[data-theme="dark-experimental"] .global-action-bar select,
+[data-theme="dark-experimental"] .requirements-list-toolbar .form-control,
+[data-theme="dark-experimental"] .requirement-audit-sidebar__filters .form-control {
+    border: var(--de-interactive-border-width) solid var(--de-interactive-border);
+    background-color: var(--de-interactive-bg);
+    box-shadow: var(--de-interactive-shadow);
+}
+
+[data-theme="dark-experimental"] input[type="checkbox"],
+[data-theme="dark-experimental"] input[type="radio"],
+[data-theme="dark-experimental"] .form-check-input {
+    accent-color: var(--de-accent-ui);
+    width: 1.125rem;
+    height: 1.125rem;
+    min-width: 1.125rem;
+    min-height: 1.125rem;
+    cursor: pointer;
+}
+
+[data-theme="dark-experimental"] input[type="file"]::file-selector-button {
+    margin-right: 0.75rem;
+    padding: 0.375rem 0.75rem;
+    border: 1px solid var(--de-interactive-border);
+    border-radius: 8px;
+    background-color: var(--de-bg-elevated);
+    color: var(--de-text-primary);
+    font-weight: 500;
+    cursor: pointer;
+}
+
+[data-theme="dark-experimental"] .button {
+    font-weight: 500;
+    border-radius: 10px;
+    padding: 0.625rem 1.125rem;
+    border: var(--de-interactive-border-width) solid var(--de-interactive-border);
+    box-shadow: var(--de-interactive-shadow);
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+[data-theme="dark-experimental"] .button:focus-visible {
+    border-color: var(--de-interactive-border);
+    box-shadow:
+        var(--de-interactive-shadow),
+        var(--de-focus-ring-inner);
+    outline: var(--focus-outer-width) solid var(--focus-outer-color);
+    outline-offset: var(--de-focus-ring-outline-offset);
+}
+
+[data-theme="dark-experimental"] .button-primary {
+    background-color: var(--button-primary-bg);
+    color: var(--button-primary-text);
+    border: var(--de-interactive-border-width) solid var(--button-primary-border);
+}
+
+[data-theme="dark-experimental"] .button-primary:hover,
+[data-theme="dark-experimental"] .button-primary:focus {
+    background-color: var(--button-primary-hover-bg);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+[data-theme="dark-experimental"] .button-default,
+[data-theme="dark-experimental"] .button-secondary,
+[data-theme="dark-experimental"] .button-accent {
+    background-color: var(--button-default-bg);
+    color: var(--button-default-text);
+    border: var(--de-interactive-border-width) solid var(--de-interactive-border);
+}
+
+[data-theme="dark-experimental"] .button-success {
+    border: var(--de-interactive-border-width) solid var(--button-success-border);
+}
+
+[data-theme="dark-experimental"] .button-danger {
+    border: var(--de-interactive-border-width) solid var(--button-danger-border);
+}
+
+[data-theme="dark-experimental"] .button-warning {
+    border: var(--de-interactive-border-width) solid var(--button-warning-border);
+}
+
+[data-theme="dark-experimental"] .button-info {
+    border: var(--de-interactive-border-width) solid var(--button-info-border);
+}
+
+[data-theme="dark-experimental"] .button-default:hover,
+[data-theme="dark-experimental"] .button-default:focus,
+[data-theme="dark-experimental"] .button-secondary:hover,
+[data-theme="dark-experimental"] .button-secondary:focus,
+[data-theme="dark-experimental"] .button-accent:hover,
+[data-theme="dark-experimental"] .button-accent:focus {
+    background-color: var(--button-default-hover-bg);
+    border-color: #76767e;
+}
+
+[data-theme="dark-experimental"] .button-success:hover,
+[data-theme="dark-experimental"] .button-success:focus,
+[data-theme="dark-experimental"] .button-danger:hover,
+[data-theme="dark-experimental"] .button-danger:focus,
+[data-theme="dark-experimental"] .button-warning:hover,
+[data-theme="dark-experimental"] .button-warning:focus,
+[data-theme="dark-experimental"] .button-info:hover,
+[data-theme="dark-experimental"] .button-info:focus {
+    transform: translateY(-1px);
+}
+
+/* --- Kravsidebar --- */
+[data-theme="dark-experimental"] .requirement-audit-sidebar h1,
+[data-theme="dark-experimental"] .requirement-audit-sidebar h2 {
+    color: var(--de-text-primary);
+    font-weight: 600;
+}
+
+[data-theme="dark-experimental"] .requirement-audit-sidebar__item {
+    padding: 0.625rem 1rem;
+    border-bottom: 1px solid var(--de-border-subtle);
+}
+
+[data-theme="dark-experimental"] .requirement-audit-sidebar__item.is-active {
+    background-color: var(--de-bg-elevated);
+    border-left: 2px solid var(--de-accent-ui);
+}
+
+[data-theme="dark-experimental"] .requirement-audit-sidebar__item.is-active .requirement-audit-sidebar__link,
+[data-theme="dark-experimental"] .requirement-audit-sidebar__item.is-active .requirement-audit-sidebar__reference,
+[data-theme="dark-experimental"] .requirement-audit-sidebar__item.is-active .requirement-audit-sidebar__meta {
+    color: var(--de-text-primary);
+}
+
+[data-theme="dark-experimental"] .requirement-audit-sidebar__link {
+    color: var(--de-text-primary);
+}
+
+[data-theme="dark-experimental"] .requirement-audit-sidebar__meta {
+    color: var(--de-text-muted);
+    font-size: 0.75rem;
+}
+
+/* --- Kravlista --- */
+[data-theme="dark-experimental"] .requirement-list-header h1 {
+    color: var(--de-text-primary);
+}
+
+[data-theme="dark-experimental"] .requirement-list-header .sample-info-display {
+    color: var(--de-text-secondary);
+}
+
+[data-theme="dark-experimental"] .requirement-list-header .sample-info-display strong {
+    color: var(--de-text-primary);
+}
+
+[data-theme="dark-experimental"] .requirements-list-filter-section h2,
+[data-theme="dark-experimental"] .results-summary {
+    color: var(--de-text-primary);
+}
+
+[data-theme="dark-experimental"] .requirements-list-content .main-category-title {
+    color: var(--de-text-primary);
+    font-weight: 600;
+}
+
+[data-theme="dark-experimental"] .requirements-list-content .sub-category-title {
+    color: var(--de-text-secondary);
+    font-weight: 500;
+}
+
+[data-theme="dark-experimental"] .requirements-list-content .requirement-item.compact-twoline,
+[data-theme="dark-experimental"] .requirements-list-content .requirement-item.requirement-item-with-actions {
+    background-color: var(--de-surface-card);
+    border: var(--de-interactive-border-width) solid var(--de-interactive-border);
+    border-left: 3px solid var(--de-accent-ui);
+    border-radius: 10px;
+    color: var(--de-text-primary);
+    box-shadow: var(--de-interactive-shadow);
+}
+
+[data-theme="dark-experimental"] .requirements-list-content .requirement-header-nested {
+    color: var(--de-text-primary);
+}
+
+[data-theme="dark-experimental"] .requirements-list-content .requirement-header-sub,
+[data-theme="dark-experimental"] .requirements-list-content .requirement-details-row {
+    color: var(--de-text-secondary);
+}
+
+[data-theme="dark-experimental"] .requirements-list-content .requirement-sample-item {
+    color: var(--de-text-primary);
+}
+
+[data-theme="dark-experimental"] .requirements-list-content .requirement-sample-item .list-title-link {
+    color: var(--de-text-primary);
+}
+
+[data-theme="dark-experimental"] .requirements-list-content .list-title-link {
+    color: var(--de-text-primary);
+}
+
+[data-theme="dark-experimental"] .requirements-list-content .list-title-link:hover,
+[data-theme="dark-experimental"] .requirements-list-content .list-title-link:focus {
+    color: var(--de-accent);
+}
+
+[data-theme="dark-experimental"] .requirements-list-content .list-reference-link {
+    color: var(--de-text-muted);
+}
+
+[data-theme="dark-experimental"] .requirements-list-content .list-reference-text {
+    color: var(--de-text-muted);
+}
+
+/* --- Granskningsvy --- */
+[data-theme="dark-experimental"] .requirement-audit-header h1 {
+    color: var(--de-text-primary);
+}
+
+[data-theme="dark-experimental"] .audit-section h2 {
+    color: var(--de-text-primary);
+    font-weight: 600;
+}
+
+[data-theme="dark-experimental"] .check-item {
+    border: var(--de-interactive-border-width) solid var(--de-interactive-border);
+    border-radius: 10px;
+    background-color: var(--de-surface-card);
+    box-shadow: var(--de-interactive-shadow);
+}
+
+[data-theme="dark-experimental"] .check-item.status-not_audited {
+    background-color: var(--de-surface-card);
+}
+
+[data-theme="dark-experimental"] .pass-criterion-item {
+    border: var(--de-interactive-border-width) solid var(--de-interactive-border);
+    border-radius: 10px;
+    background-color: var(--de-surface-card);
+    box-shadow: var(--de-interactive-shadow);
+    color: var(--de-text-primary);
+}
+
+[data-theme="dark-experimental"] .pass-criterion-heading,
+[data-theme="dark-experimental"] .pass-criterion-item .pass-criterion-requirement,
+[data-theme="dark-experimental"] .pass-criterion-item h4 {
+    color: var(--de-text-primary);
+    font-weight: 500;
+}
+
+[data-theme="dark-experimental"] .pass-criterion-item .pass-criterion-status,
+[data-theme="dark-experimental"] .pass-criterion-number-label {
+    color: var(--de-text-secondary);
+}
+
+/* Godkänt/underkänt – tydlig skillnad mellan vald och ovald */
+[data-theme="dark-experimental"] .pass-criterion-actions .button,
+[data-theme="dark-experimental"] .condition-actions .button {
+    box-shadow: none;
+    transform: none;
+}
+
+[data-theme="dark-experimental"] .pass-criterion-actions .button:not(.active),
+[data-theme="dark-experimental"] .pass-criterion-actions .button[aria-pressed="false"],
+[data-theme="dark-experimental"] .condition-actions .button:not(.active),
+[data-theme="dark-experimental"] .condition-actions .button[aria-pressed="false"] {
+    background-color: transparent;
+    border-style: dashed;
+    border-width: var(--de-interactive-border-width);
+    border-color: var(--de-interactive-border);
+    color: var(--de-text-secondary);
+    font-weight: 500;
+}
+
+[data-theme="dark-experimental"] .pass-criterion-actions .button:not(.active) .audit-toggle-button__icon,
+[data-theme="dark-experimental"] .pass-criterion-actions .button[aria-pressed="false"] .audit-toggle-button__icon,
+[data-theme="dark-experimental"] .condition-actions .button:not(.active) .audit-toggle-button__icon,
+[data-theme="dark-experimental"] .condition-actions .button[aria-pressed="false"] .audit-toggle-button__icon,
+[data-theme="dark-experimental"] .pass-criterion-actions .button:not(.active):hover .audit-toggle-button__icon,
+[data-theme="dark-experimental"] .pass-criterion-actions .button[aria-pressed="false"]:hover .audit-toggle-button__icon,
+[data-theme="dark-experimental"] .condition-actions .button:not(.active):hover .audit-toggle-button__icon,
+[data-theme="dark-experimental"] .condition-actions .button[aria-pressed="false"]:hover .audit-toggle-button__icon {
+    color: transparent;
+    -webkit-text-stroke: 1px var(--de-text-secondary);
+    text-stroke: 1px var(--de-text-secondary);
+    font-size: 0.75rem;
+    min-width: 0.75rem;
+    font-weight: 300;
+}
+
+[data-theme="dark-experimental"] .pass-criterion-actions .button.active .audit-toggle-button__icon,
+[data-theme="dark-experimental"] .pass-criterion-actions .button[aria-pressed="true"] .audit-toggle-button__icon,
+[data-theme="dark-experimental"] .condition-actions .button.active .audit-toggle-button__icon,
+[data-theme="dark-experimental"] .condition-actions .button[aria-pressed="true"] .audit-toggle-button__icon {
+    -webkit-text-stroke: 0;
+    text-stroke: 0;
+    font-size: 1.125rem;
+    min-width: 1.125rem;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+}
+
+[data-theme="dark-experimental"] .pass-criterion-actions .button-success.active .audit-toggle-button__icon,
+[data-theme="dark-experimental"] .pass-criterion-actions .button-success[aria-pressed="true"] .audit-toggle-button__icon,
+[data-theme="dark-experimental"] .condition-actions .button-success.active .audit-toggle-button__icon,
+[data-theme="dark-experimental"] .condition-actions .button-success[aria-pressed="true"] .audit-toggle-button__icon {
+    color: var(--de-status-passed);
+}
+
+[data-theme="dark-experimental"] .pass-criterion-actions .button-danger.active .audit-toggle-button__icon,
+[data-theme="dark-experimental"] .pass-criterion-actions .button-danger[aria-pressed="true"] .audit-toggle-button__icon,
+[data-theme="dark-experimental"] .condition-actions .button-danger.active .audit-toggle-button__icon,
+[data-theme="dark-experimental"] .condition-actions .button-danger[aria-pressed="true"] .audit-toggle-button__icon {
+    color: var(--de-status-failed);
+}
+
+[data-theme="dark-experimental"] .pass-criterion-actions .button-success:not(.active):hover,
+[data-theme="dark-experimental"] .pass-criterion-actions .button-success[aria-pressed="false"]:hover,
+[data-theme="dark-experimental"] .condition-actions .button-success:not(.active):hover,
+[data-theme="dark-experimental"] .condition-actions .button-success[aria-pressed="false"]:hover {
+    background-color: rgba(134, 239, 172, 0.08);
+    border-style: dashed;
+    border-color: var(--de-interactive-border);
+    color: var(--de-text-secondary);
+    transform: none;
+}
+
+[data-theme="dark-experimental"] .pass-criterion-actions .button-danger:not(.active):hover,
+[data-theme="dark-experimental"] .pass-criterion-actions .button-danger[aria-pressed="false"]:hover,
+[data-theme="dark-experimental"] .condition-actions .button-danger:not(.active):hover,
+[data-theme="dark-experimental"] .condition-actions .button-danger[aria-pressed="false"]:hover {
+    background-color: rgba(252, 165, 165, 0.08);
+    border-style: dashed;
+    border-color: var(--de-interactive-border);
+    color: var(--de-text-secondary);
+    transform: none;
+}
+
+[data-theme="dark-experimental"] .pass-criterion-actions .button-success.active,
+[data-theme="dark-experimental"] .pass-criterion-actions .button-success[aria-pressed="true"],
+[data-theme="dark-experimental"] .condition-actions .button-success.active,
+[data-theme="dark-experimental"] .condition-actions .button-success[aria-pressed="true"] {
+    background-color: #1a3324;
+    border-style: solid;
+    border-width: var(--de-interactive-border-width);
+    border-color: var(--de-status-passed);
+    color: var(--de-status-passed);
+    font-weight: 600;
+    box-shadow:
+        inset 0 1px 0 rgba(134, 239, 172, 0.2),
+        0 0 0 1px rgba(134, 239, 172, 0.35);
+}
+
+[data-theme="dark-experimental"] .pass-criterion-actions .button-danger.active,
+[data-theme="dark-experimental"] .pass-criterion-actions .button-danger[aria-pressed="true"],
+[data-theme="dark-experimental"] .condition-actions .button-danger.active,
+[data-theme="dark-experimental"] .condition-actions .button-danger[aria-pressed="true"] {
+    background-color: #3a181c;
+    border-style: solid;
+    border-width: var(--de-interactive-border-width);
+    border-color: var(--de-status-failed);
+    color: var(--de-status-failed);
+    font-weight: 600;
+    box-shadow:
+        inset 0 1px 0 rgba(252, 165, 165, 0.2),
+        0 0 0 1px rgba(252, 165, 165, 0.35);
+}
+
+[data-theme="dark-experimental"] .pass-criterion-actions .button-success.active:hover,
+[data-theme="dark-experimental"] .pass-criterion-actions .button-success[aria-pressed="true"]:hover,
+[data-theme="dark-experimental"] .pass-criterion-actions .button-danger.active:hover,
+[data-theme="dark-experimental"] .pass-criterion-actions .button-danger[aria-pressed="true"]:hover,
+[data-theme="dark-experimental"] .condition-actions .button-success.active:hover,
+[data-theme="dark-experimental"] .condition-actions .button-success[aria-pressed="true"]:hover,
+[data-theme="dark-experimental"] .condition-actions .button-danger.active:hover,
+[data-theme="dark-experimental"] .condition-actions .button-danger[aria-pressed="true"]:hover {
+    transform: none;
+}
+
+[data-theme="dark-experimental"] .requirement-audit-header .overall-requirement-status-display {
+    background-color: var(--de-surface-card);
+    border: var(--de-interactive-border-width) solid var(--de-interactive-border);
+    border-radius: 10px;
+    color: var(--de-text-primary);
+    box-shadow: var(--de-interactive-shadow);
+}
+
+[data-theme="dark-experimental"] .check-condition-title {
+    color: var(--de-text-secondary);
+}
+
+[data-theme="dark-experimental"] .audit-section p,
+[data-theme="dark-experimental"] .audit-section ul,
+[data-theme="dark-experimental"] .audit-section ol,
+[data-theme="dark-experimental"] .audit-section li {
+    color: var(--de-text-primary);
+}
+
+[data-theme="dark-experimental"] .requirement-audit-header .standard-reference,
+[data-theme="dark-experimental"] .requirement-audit-header .audited-page-link {
+    color: var(--de-text-secondary);
+}
+
+[data-theme="dark-experimental"] .requirement-audit-header .standard-reference strong,
+[data-theme="dark-experimental"] .requirement-audit-header .audited-page-link strong {
+    color: var(--de-text-primary);
+}
+
+/* --- Tabell --- */
+[data-theme="dark-experimental"] .generic-table-wrapper {
+    border: 1px solid var(--de-border-default);
+    border-radius: 10px;
+    background-color: var(--de-bg-panel);
+    overflow: hidden;
+}
+
+[data-theme="dark-experimental"] .generic-table thead tr {
+    background-color: var(--de-bg-elevated);
+    border-bottom: 1px solid var(--de-border-default);
+}
+
+[data-theme="dark-experimental"] .generic-table th,
+[data-theme="dark-experimental"] .generic-table thead th {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--de-text-secondary);
+    padding: 0.875rem 1rem;
+    border-color: var(--de-border-subtle);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+[data-theme="dark-experimental"] .generic-table td {
+    padding: 0.875rem 1rem;
+    border-color: var(--de-border-subtle);
+    background-color: var(--de-bg-panel);
+}
+
+[data-theme="dark-experimental"] .generic-table-header-sort-btn {
+    color: var(--de-text-secondary);
+    border: var(--de-interactive-border-width) solid transparent;
+    border-radius: 8px;
+    padding: 0.25rem 0.5rem;
+    transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+
+[data-theme="dark-experimental"] .generic-table-header-sort-btn:hover {
+    color: var(--de-text-primary);
+    border-color: var(--de-interactive-border);
+    background-color: var(--de-interactive-bg);
+}
+
+[data-theme="dark-experimental"] .generic-table-header-sort-btn:focus-visible {
+    border-color: var(--de-interactive-border);
+    box-shadow: var(--de-focus-ring-inner);
+    outline: var(--focus-outer-width) solid var(--focus-outer-color);
+    outline-offset: var(--de-focus-ring-outline-offset);
+}
+
+/* --- Dashboard / översikt --- */
+[data-theme="dark-experimental"] .dashboard-panel__title {
+    color: var(--de-text-primary);
+}
+
+[data-theme="dark-experimental"] .dashboard-panel {
+    background-color: var(--de-bg-panel);
+    border: 1px solid var(--de-border-default);
+    color: var(--de-text-primary);
+}
+
+[data-theme="dark-experimental"] .audit-overview__newer-rule-banner {
+    background-color: var(--warning-color-light);
+    color: var(--de-text-primary);
+    border: 1px solid #707078;
+}
+
+[data-theme="dark-experimental"] .sample-list-header h2 {
+    color: var(--de-text-primary);
+}
+
+[data-theme="dark-experimental"] .item-list-item {
+    border: var(--de-interactive-border-width) solid var(--de-interactive-border);
+    border-radius: 10px;
+    background-color: var(--de-surface-card);
+    box-shadow: var(--de-interactive-shadow);
+    color: var(--de-text-primary);
+}
+
+[data-theme="dark-experimental"] .item-list-item .sample-info h2 {
+    color: var(--de-text-primary);
+}
+
+/* --- Progress --- */
+[data-theme="dark-experimental"] .progress-bar-element,
+[data-theme="dark-experimental"] .progress-bar {
+    height: 6px;
+    border-radius: 999px;
+    background-color: var(--de-bg-elevated);
+}
+
+[data-theme="dark-experimental"] .progress-bar-element::-webkit-progress-bar,
+[data-theme="dark-experimental"] .progress-bar-element::-moz-progress-bar {
+    background-color: var(--de-bg-elevated);
+    border-radius: 999px;
+}
+
+[data-theme="dark-experimental"] .progress-bar-element::-webkit-progress-value,
+[data-theme="dark-experimental"] .progress-bar-element::-ms-fill {
+    background-color: var(--de-accent-ui);
+    border-radius: 999px;
+}
+
+/* --- Statusindikatorer --- */
+[data-theme="dark-experimental"] .status-indicator.status-passed {
+    background-color: var(--success-color-light);
+    color: var(--de-status-passed);
+}
+
+[data-theme="dark-experimental"] .status-indicator.status-failed {
+    background-color: var(--danger-color-light);
+    color: var(--de-status-failed);
+}
+
+[data-theme="dark-experimental"] .status-indicator.status-partially_audited {
+    background-color: var(--warning-color-light);
+    color: var(--de-status-warning);
+}
+
+[data-theme="dark-experimental"] .status-indicator.status-not_audited {
+    background-color: var(--de-segment-not-audited);
+    color: var(--de-text-primary);
+    border: 1px solid var(--de-border-subtle);
+}
+
+/* --- Statusikoner (ljus text/symbol mot mörk botten) --- */
+html[data-theme="dark-experimental"] .status-icon.status-icon-not-audited,
+html[data-theme="dark-experimental"] .requirements-list-content .status-icon.status-icon-not-audited,
+html[data-theme="dark-experimental"] .requirements-list-content .status-icons-wrapper .status-icon.status-icon-not-audited,
+html[data-theme="dark-experimental"] .requirements-list-content .requirement-sample-item .status-icon.status-icon-not-audited,
+html[data-theme="dark-experimental"] .requirement-audit-sidebar .status-icon.status-icon-not-audited,
+html[data-theme="dark-experimental"] .audit-status-stack__distribution-icon .status-icon.status-icon-not-audited,
+html[data-theme="dark-experimental"] .FilterPanelComponent__status-icon.status-icon-not-audited {
+    color: #fafafa;
+    opacity: 1;
+    font-weight: bold;
+    text-stroke: 2px currentColor;
+    -webkit-text-stroke: 2px currentColor;
+}
+
+[data-theme="dark-experimental"] .status-icon-passed,
+[data-theme="dark-experimental"] .requirements-list-content .status-icon-passed,
+[data-theme="dark-experimental"] .requirement-audit-sidebar .status-icon-passed,
+[data-theme="dark-experimental"] .audit-status-stack__distribution-icon .status-icon-passed {
+    color: var(--de-status-passed);
+}
+
+[data-theme="dark-experimental"] .status-icon-failed,
+[data-theme="dark-experimental"] .requirements-list-content .status-icon-failed,
+[data-theme="dark-experimental"] .requirement-audit-sidebar .status-icon-failed,
+[data-theme="dark-experimental"] .audit-status-stack__distribution-icon .status-icon-failed {
+    color: var(--de-status-failed);
+}
+
+[data-theme="dark-experimental"] .status-icon-partially-audited,
+[data-theme="dark-experimental"] .requirements-list-content .status-icon-partially-audited,
+[data-theme="dark-experimental"] .requirement-audit-sidebar .status-icon-partially-audited,
+[data-theme="dark-experimental"] .audit-status-stack__distribution-icon .status-icon-partially-audited {
+    color: var(--de-status-warning);
+}
+
+/* --- Modal --- */
+[data-theme="dark-experimental"] dialog.modal-dialog::backdrop,
+[data-theme="dark-experimental"] dialog.modal-dialog.modal-dialog--visible::backdrop {
+    background-color: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(4px);
+}
+
+[data-theme="dark-experimental"] dialog.modal-dialog {
+    background-color: var(--de-bg-panel);
+    border: 1px solid var(--de-border-default);
+    border-radius: 14px;
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.45);
+}
+
+[data-theme="dark-experimental"] .modal-heading {
+    font-size: 1.125rem;
+    font-weight: 600;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--de-border-default);
+}
+
+[data-theme="dark-experimental"] .modal-content {
+    padding: 1.25rem 1.5rem;
+}
+
+/* --- Notifieringar --- */
+[data-theme="dark-experimental"] #global-message-area.message-info {
+    background-color: var(--info-color-light);
+    color: var(--de-text-primary);
+    border: 1px solid #707078;
+    border-radius: 10px;
+}
+
+[data-theme="dark-experimental"] #global-message-area.message-success {
+    background-color: var(--success-color-light);
+    color: var(--de-text-primary);
+    border: 1px solid #6f8f78;
+    border-radius: 10px;
+}
+
+[data-theme="dark-experimental"] #global-message-area.message-warning {
+    background-color: var(--warning-color-light);
+    color: var(--de-text-primary);
+    border: 1px solid #707078;
+    border-radius: 10px;
+}
+
+[data-theme="dark-experimental"] #global-message-area.message-error {
+    background-color: var(--danger-color-light);
+    color: var(--de-text-primary);
+    border: 1px solid #707078;
+    border-radius: 10px;
+}
+
+[data-theme="dark-experimental"] #global-message-area .global-message-close-btn,
+[data-theme="dark-experimental"] #global-message-area .global-message-action-btn {
+    color: var(--de-text-primary);
+    border: var(--de-interactive-border-width) solid var(--de-interactive-border);
+    border-radius: 8px;
+    background-color: var(--de-interactive-bg);
+    box-shadow: var(--de-interactive-shadow);
+}
+
+[data-theme="dark-experimental"] #global-critical-message-area.message-warning {
+    border-radius: 10px;
+}
+
+/* --- Inställningsvy --- */
+[data-theme="dark-experimental"] .settings-plate .settings-greeting {
+    color: var(--de-text-secondary);
+}
+
+[data-theme="dark-experimental"] .settings-plate .form-group label {
+    font-size: 0.8125rem;
+    color: var(--de-text-secondary);
+}
+
+[data-theme="dark-experimental"] .settings-password-error {
+    color: var(--de-status-failed);
+}
+
+[data-theme="dark-experimental"] #build-timestamp {
+    color: var(--build-timestamp-color);
+}
+
+/* --- Audit status stack --- */
+[data-theme="dark-experimental"] .audit-status-stack__total,
+[data-theme="dark-experimental"] .audit-status-stack__legend li,
+[data-theme="dark-experimental"] .audit-status-stack__distribution-list,
+[data-theme="dark-experimental"] .audit-status-stack__distribution-text,
+[data-theme="dark-experimental"] .audit-status-stack__distribution-label {
+    color: var(--de-text-primary);
+}
+
+[data-theme="dark-experimental"] .audit-status-stack__track {
+    background-color: var(--de-segment-track);
+    border: 1px solid var(--de-interactive-border);
+    border-radius: 999px;
+}
+
+[data-theme="dark-experimental"] .audit-status-stack__segment--passed {
+    background-color: var(--de-segment-passed);
+}
+
+[data-theme="dark-experimental"] .audit-status-stack__segment--partially_audited {
+    background-color: var(--de-segment-partial);
+}
+
+[data-theme="dark-experimental"] .audit-status-stack__segment--failed {
+    background-color: var(--de-segment-failed);
+}
+
+[data-theme="dark-experimental"] .audit-status-stack__segment--not_audited {
+    background-color: var(--de-segment-not-audited);
+}
+
+[data-theme="dark-experimental"] .audit-status-stack__distribution-title {
+    color: var(--de-text-primary);
+}
+
+/* --- Poänganalys --- */
+[data-theme="dark-experimental"] .score-analysis-section,
+[data-theme="dark-experimental"] .score-analysis-section__main-title,
+[data-theme="dark-experimental"] .score-analysis-total__title,
+[data-theme="dark-experimental"] .score-analysis-principles__title,
+[data-theme="dark-experimental"] .score-analysis-total__context p,
+[data-theme="dark-experimental"] .score-analysis-total__subtext,
+[data-theme="dark-experimental"] .score-analysis-total__info,
+[data-theme="dark-experimental"] .principle-row__name {
+    color: var(--de-text-primary);
+}
+
+[data-theme="dark-experimental"] .score-analysis-total__subtext,
+[data-theme="dark-experimental"] .score-analysis-total__info {
+    color: var(--de-text-secondary);
+}
+
+[data-theme="dark-experimental"] .principle-row__bar,
+[data-theme="dark-experimental"] .statistics-sampletype-chart .statistics-sampletype-chart__fill {
+    background: var(--de-score-bar-gradient);
+    background-size: calc(100% / (var(--score-percent, 0.01) / 100)) 100%;
+}
+
+[data-theme="dark-experimental"] .statistics-sampletype-chart__track {
+    background-color: var(--de-segment-track);
+    border: 1px solid var(--de-interactive-border);
+    border-radius: 999px;
+}
+
+[data-theme="dark-experimental"] .statistics-sampletype-chart__label,
+[data-theme="dark-experimental"] .statistics-sampletype-chart__h2,
+[data-theme="dark-experimental"] .statistics-sampletype-chart__h3,
+[data-theme="dark-experimental"] .statistics-sampletype-chart__intro {
+    color: var(--de-text-primary);
+}
+
+[data-theme="dark-experimental"] .score-gauge__track {
+    stroke: var(--de-score-bar-track);
+}
+
+[data-theme="dark-experimental"] .score-gauge__value,
+[data-theme="dark-experimental"] .score-gauge__marker {
+    fill: var(--de-text-primary);
+}
+
+[data-theme="dark-experimental"] .score-gauge__marker {
+    stroke: var(--de-bg-page);
+}
+
+[data-theme="dark-experimental"] .principle-row__bar-container {
+    background-color: var(--de-score-bar-track);
+    border: 1px solid var(--de-interactive-border);
+}
+
+[data-theme="dark-experimental"] .principle-row__value,
+[data-theme="dark-experimental"] .principle-row__bar + .principle-row__value {
+    color: var(--de-text-primary);
+}
+
+[data-theme="dark-experimental"] .score-analysis__help-button {
+    color: var(--de-text-secondary);
+}
+
+[data-theme="dark-experimental"] .score-analysis__help-button:hover,
+[data-theme="dark-experimental"] .score-analysis__help-button:focus-visible {
+    color: var(--de-text-primary);
+    background-color: var(--de-interactive-bg);
+}
+
+/* --- Toolbar --- */
+[data-theme="dark-experimental"] .requirements-list-toolbar {
+    border: var(--de-interactive-border-width) solid var(--de-interactive-border);
+    border-radius: 10px;
+    background-color: var(--de-interactive-bg);
+    box-shadow: var(--de-interactive-shadow);
+}
+
+[data-theme="dark-experimental"] .content-type-tag {
+    background-color: var(--de-bg-elevated);
+    border: 1px solid var(--de-border-default);
+    color: var(--de-text-secondary);
+    border-radius: 6px;
+}
+
+/* --- Markdown-verktygsrad --- */
+[data-theme="dark-experimental"] .md-toolbar {
+    background-color: var(--de-interactive-bg);
+    border: var(--de-interactive-border-width) solid var(--de-interactive-border);
+    box-shadow: var(--de-interactive-shadow);
+}
+
+[data-theme="dark-experimental"] .md-toolbar-btn {
+    color: var(--de-text-primary);
+    border: 1px solid transparent;
+}
+
+[data-theme="dark-experimental"] .md-toolbar-btn:hover {
+    background-color: var(--de-bg-elevated);
+    border-color: var(--de-interactive-border);
+    color: var(--de-text-primary);
+}
+
+[data-theme="dark-experimental"] .md-toolbar-btn:focus-visible {
+    border-color: var(--de-interactive-border);
+    box-shadow: var(--de-focus-ring-inner);
+    outline: var(--focus-outer-width) solid var(--focus-outer-color);
+    outline-offset: var(--de-focus-ring-outline-offset);
+}
+
+[data-theme="dark-experimental"] .md-toolbar-btn[aria-pressed="true"] {
+    background-color: var(--de-bg-elevated);
+    border-color: var(--de-border-strong);
+    color: var(--de-text-primary);
+}
+
+[data-theme="dark-experimental"] .markdown-editor-wrapper textarea.form-control {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+}
+
+/*
+ * Kortytor med ljus standardbakgrund (#FFF5E6) – mycket mörk yta så vit text syns.
+ * html-prefix och hög specificitet så reglerna vinner när komponent-CSS laddas senare.
+ */
+html[data-theme="dark-experimental"] .audit-status-stack__segment--passed {
+    background-color: var(--de-status-passed);
+}
+
+html[data-theme="dark-experimental"] .audit-status-stack__segment--partially_audited {
+    background-color: var(--de-status-warning);
+}
+
+html[data-theme="dark-experimental"] .audit-status-stack__segment--failed {
+    background-color: var(--de-status-failed);
+}
+
+html[data-theme="dark-experimental"] .audit-status-stack__segment--not_audited {
+    background-color: var(--de-status-remaining);
+}
+
+html[data-theme="dark-experimental"] .audit-status-stack__track {
+    background-color: var(--de-segment-track);
+    border-color: var(--de-interactive-border);
+}
+
+html[data-theme="dark-experimental"] .statistics-sampletype-chart__track {
+    background-color: var(--de-segment-track);
+    border-color: var(--de-interactive-border);
+}
+
+html[data-theme="dark-experimental"] .principle-row__bar,
+html[data-theme="dark-experimental"] .statistics-sampletype-chart .statistics-sampletype-chart__fill {
+    background: var(--de-score-bar-gradient);
+    background-size: calc(100% / (var(--score-percent, 0.01) / 100)) 100%;
+}
+
+html[data-theme="dark-experimental"] .side-menu__link:focus-visible {
+    outline: none;
+    box-shadow:
+        0 0 0 1px var(--focus-inner-color),
+        0 0 0 2px var(--focus-outer-color);
+}
+
+html[data-theme="dark-experimental"] .pass-criterion-actions .button:not(.active),
+html[data-theme="dark-experimental"] .pass-criterion-actions .button[aria-pressed="false"],
+html[data-theme="dark-experimental"] .condition-actions .button:not(.active),
+html[data-theme="dark-experimental"] .condition-actions .button[aria-pressed="false"] {
+    background-color: transparent;
+    border-style: dashed;
+    border-color: var(--de-interactive-border);
+    color: var(--de-text-secondary);
+    box-shadow: none;
+}
+
+html[data-theme="dark-experimental"] .pass-criterion-actions .button-success.active,
+html[data-theme="dark-experimental"] .pass-criterion-actions .button-success[aria-pressed="true"],
+html[data-theme="dark-experimental"] .condition-actions .button-success.active,
+html[data-theme="dark-experimental"] .condition-actions .button-success[aria-pressed="true"] {
+    background-color: #1a3324;
+    border-style: solid;
+    border-color: var(--de-status-passed);
+    color: var(--de-status-passed);
+}
+
+html[data-theme="dark-experimental"] .pass-criterion-actions .button-danger.active,
+html[data-theme="dark-experimental"] .pass-criterion-actions .button-danger[aria-pressed="true"],
+html[data-theme="dark-experimental"] .condition-actions .button-danger.active,
+html[data-theme="dark-experimental"] .condition-actions .button-danger[aria-pressed="true"] {
+    background-color: #3a181c;
+    border-style: solid;
+    border-color: var(--de-status-failed);
+    color: var(--de-status-failed);
+}
+
+html[data-theme="dark-experimental"] .requirements-list-content li.requirement-item.compact-twoline,
+html[data-theme="dark-experimental"] .requirements-list-content li.requirement-item.requirement-item-with-actions,
+html[data-theme="dark-experimental"] .requirement-audit-header p.overall-requirement-status-display,
+html[data-theme="dark-experimental"] .pass-criterion-item,
+html[data-theme="dark-experimental"] .check-item,
+html[data-theme="dark-experimental"] .item-list-item,
+html[data-theme="dark-experimental"] .requirement-card,
+html[data-theme="dark-experimental"] .backup-status-box {
+    background-color: var(--de-surface-card);
+    color: var(--de-text-primary);
+    border-color: var(--de-interactive-border);
+}

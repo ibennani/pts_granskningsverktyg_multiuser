@@ -72,7 +72,6 @@
 
 
     --button-default-bg: #FAF7F4;
-    /* Ljusare än plattor för bättre synlighet */
     --button-default-text: var(--text-color);
     --button-default-hover-bg: #F5F0EB;
     /* Lite mörkare vid hover */

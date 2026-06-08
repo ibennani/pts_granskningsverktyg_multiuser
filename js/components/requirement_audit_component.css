@@ -356,6 +356,17 @@
     display: none;
 }
 
+@media (prefers-reduced-motion: reduce) {
+    .pass-criteria-list.slide-down-in,
+    .pass-criteria-list.slide-down-out,
+    .compliance-info-text.slide-down-in,
+    .compliance-info-text.slide-down-out,
+    .pc-observation-detail-wrapper.slide-down-in,
+    .pc-observation-detail-wrapper.slide-down-out {
+        animation: none;
+    }
+}
+
 @keyframes fadeInSlideDown {
     from {
         opacity: 0;
@@ -463,29 +474,66 @@
 
 .condition-actions .button.button-small,
 .pass-criterion-actions .button.button-small {
-    transition: all 0.2s ease-in-out;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 }
 
-/* STATE 1: Inaktivt (ej valt) - "Ghost button" stil */
+.audit-toggle-button__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    font-family: Arial, sans-serif;
+    line-height: 1;
+    text-rendering: optimizeLegibility;
+    paint-order: stroke fill;
+}
+
+.audit-toggle-button__label {
+    flex: 1 1 auto;
+    text-align: start;
+}
+
+/* STATE 1: Inaktivt (ej valt) – streckad kant, neutral ofylld ikon (endast kantlinje) */
 .condition-actions .button:not(.active),
 .pass-criterion-actions .button:not(.active) {
     background-color: transparent;
+    border-style: dashed;
 }
 
-/* Specifika färger för ghost-knapparna */
 .condition-actions .button-success:not(.active),
 .pass-criterion-actions .button-success:not(.active) {
     border-color: var(--button-success-border);
-    color: var(--button-success-text);
+    color: var(--text-color-muted);
 }
 
 .condition-actions .button-danger:not(.active),
 .pass-criterion-actions .button-danger:not(.active) {
     border-color: var(--button-danger-border);
-    color: var(--button-danger-text);
+    color: var(--text-color-muted);
 }
 
-/* Hover-effekt för inaktiva knappar (blir solida) */
+.condition-actions .button:not(.active) .audit-toggle-button__icon,
+.pass-criterion-actions .button:not(.active) .audit-toggle-button__icon,
+.condition-actions .button:not(.active):hover .audit-toggle-button__icon,
+.pass-criterion-actions .button:not(.active):hover .audit-toggle-button__icon {
+    color: transparent;
+    -webkit-text-stroke: 1px var(--text-color-muted);
+    text-stroke: 1px var(--text-color-muted);
+    font-size: 0.75rem;
+    min-width: 0.75rem;
+    font-weight: 300;
+}
+
+.condition-actions .button-success:not(.active):hover,
+.pass-criterion-actions .button-success:not(.active):hover,
+.condition-actions .button-danger:not(.active):hover,
+.pass-criterion-actions .button-danger:not(.active):hover {
+    color: var(--text-color-muted);
+}
+
 .condition-actions .button-success:not(.active):hover,
 .pass-criterion-actions .button-success:not(.active):hover {
     background-color: var(--button-success-bg);
@@ -496,18 +544,43 @@
     background-color: var(--button-danger-bg);
 }
 
-/* STATE 2: Aktivt (valt) - Solid stil (ärver direkt från globala regler) */
+/* STATE 2: Aktivt (valt) – hel kant, fylld bakgrund och färgad ikon */
 .condition-actions .button-success.active,
 .pass-criterion-actions .button-success.active {
     background-color: var(--button-success-bg);
+    border-style: solid;
     border-color: var(--button-success-border);
     color: var(--button-success-text);
+    font-weight: 600;
 }
 
 .condition-actions .button-danger.active,
 .pass-criterion-actions .button-danger.active {
     background-color: var(--button-danger-bg);
+    border-style: solid;
     border-color: var(--button-danger-border);
+    color: var(--button-danger-text);
+    font-weight: 600;
+}
+
+.condition-actions .button.active .audit-toggle-button__icon,
+.pass-criterion-actions .button.active .audit-toggle-button__icon {
+    color: inherit;
+    -webkit-text-stroke: 0;
+    text-stroke: 0;
+    font-size: 1.125rem;
+    min-width: 1.125rem;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+}
+
+.condition-actions .button-success.active .audit-toggle-button__icon,
+.pass-criterion-actions .button-success.active .audit-toggle-button__icon {
+    color: var(--button-success-text);
+}
+
+.condition-actions .button-danger.active .audit-toggle-button__icon,
+.pass-criterion-actions .button-danger.active .audit-toggle-button__icon {
     color: var(--button-danger-text);
 }
 /* --- END OF CHANGE --- */

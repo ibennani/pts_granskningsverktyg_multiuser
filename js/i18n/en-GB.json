@@ -1012,6 +1012,7 @@
   "settings_theme_label": "Which mode do you prefer?",
   "settings_theme_system": "Follow system settings",
   "settings_theme_alternative": "Alternative design",
+  "settings_theme_dark_experimental": "Midnight darkness",
   "settings_change_password_heading": "Change your password",
   "settings_change_password_intro": "Choose a new password and repeat it to confirm. The password must be at least 8 characters.",
   "settings_current_password_label": "Current password",

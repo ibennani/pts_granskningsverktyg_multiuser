@@ -1012,6 +1012,7 @@
   "settings_theme_label": "Vilket läge föredrar du?",
   "settings_theme_system": "Följ systeminställningarna",
   "settings_theme_alternative": "Alternativ design",
+  "settings_theme_dark_experimental": "Midnattsmörker",
   "settings_change_password_heading": "Ändra ditt lösenord",
   "settings_change_password_intro": "Välj ett nytt lösenord och upprepa det för att bekräfta. Lösenordet måste vara minst 8 tecken.",
   "settings_current_password_label": "Nuvarande lösenord",

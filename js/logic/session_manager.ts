@@ -241,7 +241,8 @@ export async function apply_user_preferences_from_server({
         if (
             user?.theme_preference === 'light' ||
             user?.theme_preference === 'dark' ||
-            user?.theme_preference === 'alternative'
+            user?.theme_preference === 'alternative' ||
+            user?.theme_preference === 'dark-experimental'
         ) {
             localStorage.setItem('theme_preference', user.theme_preference);
             document.documentElement.setAttribute('data-theme', user.theme_preference);

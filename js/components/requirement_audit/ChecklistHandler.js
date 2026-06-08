@@ -23,6 +23,7 @@ import {
     log_krav_vy_textarea,
     log_krav_vy_observation_ui_mismatch
 } from './krav_vy_knapp_debug_log.js';
+import { get_status_icon } from '../requirements_list/requirement_list_status_icons.js';
 import {
     apply_observation_wrapper_visibility,
     audit_observation_ui,
@@ -32,6 +33,11 @@ import {
     should_show_observation_wrapper,
     effective_pc_status
 } from './checklist_observation_visibility.js';
+import {
+    is_slide_out_in_progress,
+    set_pass_criteria_list_visibility,
+    set_slide_element_visibility
+} from './slide_down_animation.js';
 
 export const ChecklistHandler = {
     container_ref: null,
@@ -167,7 +173,11 @@ export const ChecklistHandler = {
             const pc_list = check_wrapper.querySelector('.pass-criteria-list');
             if (pc_list) {
                 const count = pc_list.querySelectorAll('.pass-criterion-item[data-pc-id]').length;
-                pc_list.style.display = should_show_pass_criteria_list(next, count) ? '' : 'none';
+                this._set_pass_criteria_list_visibility(
+                    check_wrapper,
+                    pc_list,
+                    should_show_pass_criteria_list(next, count)
+                );
             }
             return;
         }
@@ -202,7 +212,14 @@ export const ChecklistHandler = {
         }
 
         const observation_wrapper = pc_item_li.querySelector('.pc-observation-detail-wrapper');
-        this._sync_observation_wrapper_visibility(observation_wrapper, 'passed', { status: next }, check_id, pc_id);
+        this._sync_observation_wrapper_visibility(
+            observation_wrapper,
+            'passed',
+            { status: next },
+            check_id,
+            pc_id,
+            { animate: true }
+        );
     },
 
     _detect_user_event_source(event) {
@@ -228,22 +245,47 @@ export const ChecklistHandler = {
         overall_manual_status,
         pc_data,
         check_id = null,
-        pc_id = null
+        pc_id = null,
+        { animate = false } = {}
     ) {
         const pc_status = typeof pc_data === 'string' ? pc_data : pc_data?.status;
         const textarea = observation_wrapper?.querySelector?.('textarea.pc-observation-detail-textarea') ?? null;
-        const was_hidden = observation_wrapper instanceof HTMLElement ? observation_wrapper.hidden : true;
+        const wrapper_el = observation_wrapper instanceof HTMLElement ? observation_wrapper : null;
+        const was_hidden = wrapper_el ? wrapper_el.hidden : true;
         const should_show = should_show_observation_wrapper(overall_manual_status, pc_status);
+
+        if (wrapper_el && is_slide_out_in_progress(wrapper_el)) {
+            return { applied: false, deferred_hide: false };
+        }
+        if (should_show === !was_hidden) {
+            return { applied: false, deferred_hide: false };
+        }
 
         if (textarea && check_id != null && pc_id != null && !should_show) {
             this._snapshot_observation_before_hide(check_id, pc_id, textarea);
         }
 
-        const result = apply_observation_wrapper_visibility(
-            observation_wrapper,
-            overall_manual_status,
-            pc_status
-        );
+        let result = { applied: false, deferred_hide: false };
+        if (!should_show && wrapper_el) {
+            const active = document.activeElement;
+            if (active instanceof Node && wrapper_el.contains(active)) {
+                return { applied: false, deferred_hide: true };
+            }
+        }
+
+        if (wrapper_el && animate) {
+            const changed = set_slide_element_visibility(wrapper_el, should_show, {
+                animate: true,
+                mode: 'hidden'
+            });
+            result = { applied: changed, deferred_hide: false };
+        } else {
+            result = apply_observation_wrapper_visibility(
+                observation_wrapper,
+                overall_manual_status,
+                pc_status
+            );
+        }
 
         if (textarea && check_id != null && pc_id != null && should_show && was_hidden) {
             this._restore_observation_textarea_after_show(check_id, pc_id, textarea);
@@ -302,6 +344,36 @@ export const ChecklistHandler = {
 
     _observation_was_hidden_with_user_text(check_id, pc_id) {
         return this._observation_hidden_with_text_keys?.has(this._observation_cache_key(check_id, pc_id)) === true;
+    },
+
+    _set_pass_criteria_list_visibility(check_wrapper, pc_list, should_show, { animate = true } = {}) {
+        if (!pc_list) {
+            return;
+        }
+        if (is_slide_out_in_progress(pc_list)) {
+            return;
+        }
+        const is_hidden = pc_list.style.display === 'none'
+            || (typeof window.getComputedStyle === 'function'
+                && window.getComputedStyle(pc_list).display === 'none');
+        if (should_show === !is_hidden) {
+            return;
+        }
+        if (!should_show && !is_hidden) {
+            const active_element = document.activeElement;
+            if (active_element && pc_list.contains(active_element)) {
+                const fallback = check_wrapper.querySelector('button[data-action="set-check-complies"]')
+                    || check_wrapper.querySelector('button[data-action="set-check-not-complies"]');
+                if (fallback && document.contains(fallback)) {
+                    try {
+                        fallback.focus({ preventScroll: true });
+                    } catch {
+                        fallback.focus();
+                    }
+                }
+            }
+        }
+        set_pass_criteria_list_visibility(pc_list, should_show, { animate });
     },
 
     _heal_pc_ui_from_data({
@@ -443,25 +515,12 @@ export const ChecklistHandler = {
 
             const pc_list = check_wrapper.querySelector('.pass-criteria-list');
             if (pc_list) {
-                const next_display = should_show_pass_criteria_list(
-                    overall_manual_status,
-                    pc_list.children.length
-                ) ? '' : 'none';
-                if (next_display === 'none' && pc_list.style.display !== 'none') {
-                    const ae = document.activeElement;
-                    if (ae && pc_list.contains(ae)) {
-                        const fallback = check_wrapper.querySelector('button[data-action="set-check-complies"]')
-                            || check_wrapper.querySelector('button[data-action="set-check-not-complies"]');
-                        if (fallback && document.contains(fallback)) {
-                            try {
-                                fallback.focus({ preventScroll: true });
-                            } catch {
-                                fallback.focus();
-                            }
-                        }
-                    }
-                }
-                pc_list.style.display = next_display;
+                this._set_pass_criteria_list_visibility(
+                    check_wrapper,
+                    pc_list,
+                    should_show_pass_criteria_list(overall_manual_status, pc_list.children.length),
+                    { animate: false }
+                );
             }
 
             check_wrapper.querySelectorAll('.pass-criterion-item[data-pc-id]').forEach((pc_item_li) => {
@@ -720,6 +779,29 @@ export const ChecklistHandler = {
         if (!ctx) return label || '';
         if (!label) return ctx;
         return `${label}: ${ctx}`;
+    },
+
+    _create_audit_toggle_button({ button_classes, action, aria_label, label_text, icon_status }) {
+        const icon_kind = icon_status === 'passed' ? 'passed' : 'failed';
+        const button = this.Helpers.create_element('button', {
+            class_name: button_classes,
+            attributes: {
+                type: 'button',
+                'data-action': action,
+                'aria-pressed': 'false',
+                'aria-label': aria_label
+            }
+        });
+        button.appendChild(this.Helpers.create_element('span', {
+            class_name: 'audit-toggle-button__icon',
+            text_content: get_status_icon(icon_kind),
+            attributes: { 'aria-hidden': 'true' }
+        }));
+        button.appendChild(this.Helpers.create_element('span', {
+            class_name: 'audit-toggle-button__label',
+            text_content: label_text
+        }));
+        return button;
     },
 
     init(_container, _callbacks, options = {}) {
@@ -1659,28 +1741,20 @@ export const ChecklistHandler = {
             const actions_div = this.Helpers.create_element('div', {
                 class_name: 'condition-actions'
             });
-            const check_icon = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('check_circle', [], 16) : '';
-            const cancel_icon = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('cancel', [], 16) : '';
             actions_div.append(
-                this.Helpers.create_element('button', {
-                    class_name: ['button', 'button-success', 'button-small'],
-                    attributes: {
-                        type: 'button',
-                        'data-action': 'set-check-complies',
-                        'aria-pressed': 'false',
-                        'aria-label': complies_aria
-                    },
-                    html_content: `<span>${t('check_complies')}</span>${check_icon}`
+                this._create_audit_toggle_button({
+                    button_classes: ['button', 'button-success', 'button-small'],
+                    action: 'set-check-complies',
+                    aria_label: complies_aria,
+                    label_text: t('check_complies'),
+                    icon_status: 'passed'
                 }),
-                this.Helpers.create_element('button', {
-                    class_name: ['button', 'button-danger', 'button-small'],
-                    attributes: {
-                        type: 'button',
-                        'data-action': 'set-check-not-complies',
-                        'aria-pressed': 'false',
-                        'aria-label': not_complies_aria
-                    },
-                    html_content: `<span>${t('check_does_not_comply')}</span>${cancel_icon}`
+                this._create_audit_toggle_button({
+                    button_classes: ['button', 'button-danger', 'button-small'],
+                    action: 'set-check-not-complies',
+                    aria_label: not_complies_aria,
+                    label_text: t('check_does_not_comply'),
+                    icon_status: 'failed'
                 })
             );
             check_wrapper.appendChild(actions_div);
@@ -1727,30 +1801,22 @@ export const ChecklistHandler = {
                 const pc_actions_div = this.Helpers.create_element('div', {
                     class_name: 'pass-criterion-actions'
                 });
-                const thumb_up_icon = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('thumb_up', [], 16) : '';
-                const thumb_down_icon = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('thumb_down', [], 16) : '';
                 const passed_aria = this._button_aria_label_with_context(t('pass_criterion_approved'), requirement_plain);
                 const failed_aria = this._button_aria_label_with_context(t('pass_criterion_failed'), requirement_plain);
                 pc_actions_div.append(
-                    this.Helpers.create_element('button', {
-                        class_name: ['button', 'button-success', 'button-small'],
-                        attributes: { 
-                            type: 'button',
-                            'data-action': 'set-pc-passed', 
-                            'aria-pressed': 'false',
-                            'aria-label': passed_aria
-                        },
-                        html_content: `<span>${t('pass_criterion_approved')}</span>${thumb_up_icon}`
+                    this._create_audit_toggle_button({
+                        button_classes: ['button', 'button-success', 'button-small'],
+                        action: 'set-pc-passed',
+                        aria_label: passed_aria,
+                        label_text: t('pass_criterion_approved'),
+                        icon_status: 'passed'
                     }),
-                    this.Helpers.create_element('button', {
-                        class_name: ['button', 'button-danger', 'button-small'],
-                        attributes: { 
-                            type: 'button',
-                            'data-action': 'set-pc-failed', 
-                            'aria-pressed': 'false',
-                            'aria-label': failed_aria
-                        },
-                        html_content: `<span>${t('pass_criterion_failed')}</span>${thumb_down_icon}`
+                    this._create_audit_toggle_button({
+                        button_classes: ['button', 'button-danger', 'button-small'],
+                        action: 'set-pc-failed',
+                        aria_label: failed_aria,
+                        label_text: t('pass_criterion_failed'),
+                        icon_status: 'failed'
                     })
                 );
                 pc_item_li.appendChild(pc_actions_div);
@@ -2138,25 +2204,11 @@ export const ChecklistHandler = {
             const pc_list = check_wrapper.querySelector('.pass-criteria-list');
             const compliance_info_text = check_wrapper.querySelector('.compliance-info-text');
 
-            const next_pc_list_display = should_show_pass_criteria_list(
-                overall_manual_status,
-                pc_list.children.length
-            ) ? '' : 'none';
-            if (next_pc_list_display === 'none' && pc_list.style.display !== 'none') {
-                const ae = document.activeElement;
-                if (ae && pc_list.contains(ae)) {
-                    const fallback = check_wrapper.querySelector('button[data-action="set-check-complies"]')
-                        || check_wrapper.querySelector('button[data-action="set-check-not-complies"]');
-                    if (fallback && document.contains(fallback)) {
-                        try {
-                            fallback.focus({ preventScroll: true });
-                        } catch (e) {
-                            fallback.focus();
-                        }
-                    }
-                }
-            }
-            pc_list.style.display = next_pc_list_display;
+            this._set_pass_criteria_list_visibility(
+                check_wrapper,
+                pc_list,
+                should_show_pass_criteria_list(overall_manual_status, pc_list.children.length)
+            );
             if (overall_manual_status === 'not_applicable') {
                 compliance_info_text.textContent = t('condition_not_met_criteria_auto_passed');
                 compliance_info_text.style.display = '';
