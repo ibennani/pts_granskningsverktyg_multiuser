@@ -47,23 +47,23 @@ describe('krav_vy_fokus_debug', () => {
             '../../js/components/requirement_audit/krav_vy_knapp_debug_log.js'
         );
         const { consoleManager } = await import('../../js/utils/console_manager.js');
-        const warn_spy = jest.spyOn(consoleManager.originalConsole, 'warn').mockImplementation(() => {});
+        const log_spy = jest.spyOn(consoleManager.originalConsole, 'log').mockImplementation(() => {});
         log_krav_vy_knapp('Klick', { flow_id: 'test' });
-        expect(warn_spy).not.toHaveBeenCalled();
-        warn_spy.mockRestore();
+        expect(log_spy).not.toHaveBeenCalled();
+        log_spy.mockRestore();
     });
 
-    test('log_krav_vy_knapp skriver inte till konsolen även med debug-flagga', async () => {
+    test('log_krav_vy_knapp skriver till konsolen med debug-flagga', async () => {
         const { set_debug_krav_vy } = await import('../../js/app/runtime_flags.js');
         set_debug_krav_vy(true);
         const { log_krav_vy_knapp } = await import(
             '../../js/components/requirement_audit/krav_vy_knapp_debug_log.js'
         );
         const { consoleManager } = await import('../../js/utils/console_manager.js');
-        const warn_spy = jest.spyOn(consoleManager.originalConsole, 'warn').mockImplementation(() => {});
+        const log_spy = jest.spyOn(consoleManager.originalConsole, 'log').mockImplementation(() => {});
         log_krav_vy_knapp('Klick', { flow_id: 'test-flow' });
-        expect(warn_spy).not.toHaveBeenCalled();
-        warn_spy.mockRestore();
+        expect(log_spy).toHaveBeenCalled();
+        log_spy.mockRestore();
         set_debug_krav_vy(false);
     });
 });

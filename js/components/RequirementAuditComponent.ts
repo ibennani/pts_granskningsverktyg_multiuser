@@ -44,8 +44,11 @@ import {
     warn_krav_vy_sync_not_available,
     log_krav_vy_sync_fel,
     log_krav_vy_fokus_from_event,
-    log_krav_vy_textarea
+    log_krav_vy_textarea,
+    log_krav_vy_state_andring,
+    log_krav_vy_render
 } from './requirement_audit/krav_vy_knapp_debug_log.js';
+import { debug_session_log } from './requirement_audit/debug_session_log.js';
 
 export class RequirementAuditComponent {
     constructor() {
@@ -143,7 +146,16 @@ export class RequirementAuditComponent {
             if (!aid || String(aid) !== String(current_audit_id)) return;
             if (this.plate_element_ref) {
                 this._sync_audit_part_lock_ui();
-                this.checklist_handler_instance?.update_dom?.();
+                const active = document.activeElement;
+                const checklist_root = this.plate_element_ref.querySelector('.checks-container');
+                const focus_on_checklist_button = Boolean(
+                    active &&
+                        checklist_root?.contains(active) &&
+                        active.tagName?.toLowerCase() === 'button'
+                );
+                if (!focus_on_checklist_button) {
+                    this.checklist_handler_instance?.update_dom?.();
+                }
             }
         };
         window.addEventListener('gv-audit-locks-refresh', this._on_audit_locks_visibility_refresh);
@@ -206,20 +218,45 @@ export class RequirementAuditComponent {
                                     (active.getAttribute?.('href') || '').trim() !== '' &&
                                     !(active.getAttribute?.('href') || '').trim().toLowerCase().startsWith('javascript:')))
                     );
+                    let branch = 'full_render';
                     if (
                         listener_meta?.action_type === this.StoreActionTypes.REPLACE_STATE_FROM_REMOTE &&
                         active_in_plate
                     ) {
+                        branch = 'patch_remote_in_plate';
+                        debug_session_log('RequirementAuditComponent.ts:store_subscribe', branch, {
+                            action_type: listener_meta?.action_type,
+                            interactive_in_plate,
+                            active_in_plate
+                        }, 'H1');
                         void this.patch_dom_after_current_requirement_result_change();
                         return;
                     }
                     if (this._should_patch_requirement_result_only(listener_meta)) {
+                        branch = 'patch_requirement_result';
+                        debug_session_log('RequirementAuditComponent.ts:store_subscribe', branch, {
+                            action_type: listener_meta?.action_type,
+                            skip_render: listener_meta?.skip_render,
+                            interactive_in_plate
+                        }, 'H1');
                         void this.patch_dom_after_current_requirement_result_change();
                         return;
                     }
                     if (interactive_in_plate) {
+                        branch = 'skip_interactive_in_plate';
+                        debug_session_log('RequirementAuditComponent.ts:store_subscribe', branch, {
+                            action_type: listener_meta?.action_type,
+                            tag
+                        }, 'H1');
+                        if (this._should_patch_requirement_result_only(listener_meta)) {
+                            void this.patch_dom_after_current_requirement_result_change();
+                        }
                         return;
                     }
+                    debug_session_log('RequirementAuditComponent.ts:store_subscribe', branch, {
+                        action_type: listener_meta?.action_type,
+                        skip_render: listener_meta?.skip_render
+                    }, 'H1');
                     if (is_debug_modal_scroll() && window.ConsoleManager) window.ConsoleManager.log('[GV-ModalDebug] RequirementAuditComponent: render');
                     this.render();
                 }
@@ -322,6 +359,14 @@ export class RequirementAuditComponent {
                 skip_render: true
             }
         });
+        if (saved) {
+            log_krav_vy_state_andring('UPDATE_REQUIREMENT_RESULT (sync persist)', {
+                sampleId: this.params.sampleId,
+                requirementId: this.requirement_map_key,
+                skip_render: true,
+                state: modified_result_object
+            });
+        }
         return saved;
     }
 
@@ -622,8 +667,20 @@ export class RequirementAuditComponent {
 
     /**
      * Checklista, rubrik, notifiering, högersidebar och nav utan full RequirementAudit.render().
+     * @param {{ defer_chrome?: boolean }} [options]
      */
-    async _refresh_plate_ui_after_result_sync_from_store() {
+    async _refresh_plate_ui_after_result_sync_from_store(options = {}) {
+        const defer_chrome = options.defer_chrome === true;
+        debug_session_log('RequirementAuditComponent.ts:_refresh_plate_ui', 'partiell UI-uppdatering', {
+            patch_scope: this._checklist_patch_scope || null,
+            defer_chrome
+        }, 'H5');
+        log_krav_vy_render('partiell', {
+            sampleId: this.params?.sampleId,
+            requirementId: this.requirement_map_key,
+            patch_scope: this._checklist_patch_scope || null,
+            defer_chrome
+        });
         const state = this.getState();
         const is_locked = state.auditStatus === 'locked' || state.auditStatus === 'archived';
         const t = this.Translation.t;
@@ -645,6 +702,17 @@ export class RequirementAuditComponent {
             this.NotificationComponent.clear_global_message();
         }
 
+        if (defer_chrome) {
+            queueMicrotask(() => {
+                void this._refresh_plate_sidebar_and_nav();
+            });
+            return;
+        }
+
+        await this._refresh_plate_sidebar_and_nav();
+    }
+
+    async _refresh_plate_sidebar_and_nav() {
         await this.render_right_sidebar();
         this.render_navigation_from_sidebar();
         this.checklist_handler_instance?._reapply_pending_status_button_focus?.();
@@ -793,10 +861,11 @@ export class RequirementAuditComponent {
         }
         this._checklist_patch_scope = {
             check_id: change_info.checkId,
-            pc_id: change_info.type === 'pc_status_change' ? change_info.pcId : null
+            pc_id: change_info.type === 'pc_status_change' ? change_info.pcId : null,
+            mode: change_info.type === 'pc_status_change' ? 'pc_only' : 'check_and_pcs'
         };
         try {
-            await this._refresh_plate_ui_after_result_sync_from_store();
+            await this._refresh_plate_ui_after_result_sync_from_store({ defer_chrome: true });
         } finally {
             this._checklist_patch_scope = null;
         }
@@ -815,10 +884,20 @@ export class RequirementAuditComponent {
         if (this.comment_to_auditor_input) {
             const val = this.comment_to_auditor_input.value || '';
             this.current_result.commentToAuditor = should_trim && trim_fn ? trim_fn(val) : val;
+            log_krav_vy_textarea('Textarea input (lokal state)', {
+                fält: 'commentToAuditor',
+                fält_id: 'commentToAuditor',
+                värde_längd: val.length
+            });
         }
         if (this.comment_to_actor_input) {
             const val = this.comment_to_actor_input.value || '';
             this.current_result.commentToActor = should_trim && trim_fn ? trim_fn(val) : val;
+            log_krav_vy_textarea('Textarea input (lokal state)', {
+                fält: 'commentToActor',
+                fält_id: 'commentToActor',
+                värde_längd: val.length
+            });
         }
     }
 
@@ -1101,6 +1180,14 @@ export class RequirementAuditComponent {
                 newRequirementResult: modified_result_object,
                 skip_render: options.skipRender === true
             }
+        }).then((result) => {
+            log_krav_vy_state_andring('UPDATE_REQUIREMENT_RESULT', {
+                sampleId: this.params.sampleId,
+                requirementId: this.requirement_map_key,
+                skip_render: options.skipRender === true,
+                state: modified_result_object
+            });
+            return result;
         });
     }
 
@@ -1599,6 +1686,13 @@ export class RequirementAuditComponent {
     }
 
     async render() {
+        debug_session_log('RequirementAuditComponent.ts:render', 'full render()', {
+            plate_exists: Boolean(this.plate_element_ref && this.root?.contains(this.plate_element_ref))
+        }, 'H1');
+        log_krav_vy_render('full', {
+            sampleId: this.params?.sampleId,
+            requirementId: this.requirement_map_key || this.params?.requirementId
+        });
         if (typeof window !== 'undefined' && is_debug_autosave_focus() && this.plate_element_ref) {
             const ae = document.activeElement;
             const tag = ae?.tagName?.toLowerCase();

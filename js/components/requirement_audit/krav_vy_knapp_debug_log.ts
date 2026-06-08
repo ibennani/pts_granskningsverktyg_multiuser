@@ -4,6 +4,7 @@
  */
 
 import { is_debug_krav_vy } from '../../app/runtime_flags.js';
+import { consoleManager } from '../../utils/console_manager.js';
 
 export type KravVyKnappHandelse =
     | 'Klick'
@@ -17,6 +18,7 @@ export type KravVyKnappHandelse =
     | 'Synk hoppades över';
 
 export type KravVyTextareaHandelse =
+    | 'Textarea input (lokal state)'
     | 'Autospar timer startad'
     | 'Autospar till sessionStorage (debounce)'
     | 'Autospar till sessionStorage (unload)'
@@ -52,14 +54,29 @@ function now_ms(): number {
     return Date.now();
 }
 
+function skriv_krav_vy_log(
+    kategori: string,
+    handelse: string,
+    payload: Record<string, unknown>,
+    options: LogOptions = {}
+): void {
+    if (!is_debug_krav_vy()) return;
+    const skriv = options.critical
+        ? consoleManager.originalConsole.warn
+        : consoleManager.originalConsole.log;
+    skriv.call(
+        consoleManager.originalConsole,
+        `[Krav-vy ${kategori}] ${handelse}`,
+        { tid: new Date().toISOString(), ...payload }
+    );
+}
+
 export function log_krav_vy_knapp(
     kind: KravVyKnappHandelse,
     payload: Record<string, unknown>,
-    _options: LogOptions = {}
+    options: LogOptions = {}
 ): void {
-    if (!is_debug_krav_vy()) return;
-    void kind;
-    void payload;
+    skriv_krav_vy_log('knapp', kind, payload, options);
 }
 
 export function start_krav_vy_knapp_flow(payload: Record<string, unknown>): string {
@@ -230,7 +247,29 @@ export function log_krav_vy_textarea(
     kind: KravVyTextareaHandelse,
     payload: Record<string, unknown> = {}
 ): void {
-    if (!is_debug_krav_vy()) return;
-    void kind;
-    void payload;
+    skriv_krav_vy_log('textarea', kind, payload);
+}
+
+/** Loggar när kravresultatobjektet sparas till store. */
+export function log_krav_vy_state_andring(
+    orsak: string,
+    payload: Record<string, unknown> = {}
+): void {
+    skriv_krav_vy_log('state', orsak, payload);
+}
+
+/** Loggar när observationsfältets synlighet eller knappar avviker från sparad status. */
+export function log_krav_vy_observation_ui_mismatch(payload: Record<string, unknown> = {}): void {
+    skriv_krav_vy_log('synk', 'Observations-UI avviker från data', payload, { critical: true });
+}
+
+/** Loggar full eller partiell omritning av krav-vyn. */
+export function log_krav_vy_render(
+    typ: 'full' | 'partiell',
+    payload: Record<string, unknown> = {}
+): void {
+    skriv_krav_vy_log('render', typ === 'full' ? 'Sidans render()' : 'Partiell UI-uppdatering', {
+        typ,
+        ...payload
+    });
 }

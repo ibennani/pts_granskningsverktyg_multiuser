@@ -8,7 +8,7 @@ import {
     get_pending_checklist_focus_target,
     set_pending_checklist_focus_target
 } from '../../app/browser_globals.js';
-import { is_debug_stuck_sync } from '../../app/runtime_flags.js';
+import { is_debug_stuck_sync, is_debug_krav_vy } from '../../app/runtime_flags.js';
 import { resolve_map_entry } from '../../audit_logic.js';
 import {
     format_deficiency_id_label,
@@ -18,8 +18,19 @@ import {
     consume_krav_vy_dom_flow,
     log_krav_vy_knapp,
     register_krav_vy_knapp_dom_watch,
-    start_krav_vy_knapp_flow
+    start_krav_vy_knapp_flow,
+    log_krav_vy_textarea,
+    log_krav_vy_observation_ui_mismatch
 } from './krav_vy_knapp_debug_log.js';
+import {
+    apply_observation_wrapper_visibility,
+    audit_observation_ui,
+    read_check_stored_data,
+    read_pc_stored_data,
+    should_show_pass_criteria_list,
+    effective_pc_status
+} from './checklist_observation_visibility.js';
+import { debug_session_log } from './debug_session_log.js';
 
 export const ChecklistHandler = {
     container_ref: null,
@@ -103,6 +114,198 @@ export const ChecklistHandler = {
             'set-pc-failed': 'Godkännandekriterium: Underkänt'
         };
         return labels[action] || action;
+    },
+
+    _sync_observation_wrapper_visibility(observation_wrapper, overall_manual_status, pc_data) {
+        return apply_observation_wrapper_visibility(
+            observation_wrapper,
+            overall_manual_status,
+            pc_data?.status
+        );
+    },
+
+    _heal_pc_ui_from_data({
+        check_id,
+        pc_id,
+        pc_item_li,
+        check_result_data,
+        context,
+        sync_textarea_value = true,
+        env = null
+    }) {
+        if (!pc_item_li || !check_result_data) {
+            return { healed: false, deferred_hide: false };
+        }
+        const overall_manual_status = check_result_data?.overallStatus || 'not_audited';
+        const pc_data = read_pc_stored_data(check_result_data, pc_id);
+        const current_pc_status = effective_pc_status(overall_manual_status, pc_data.status);
+
+        const passed_btn = pc_item_li.querySelector('button[data-action="set-pc-passed"]');
+        const failed_btn = pc_item_li.querySelector('button[data-action="set-pc-failed"]');
+        if (passed_btn && failed_btn) {
+            this._apply_status_button_active_state(passed_btn, current_pc_status === 'passed', {
+                check_id,
+                pc_id,
+                action: 'set-pc-passed'
+            });
+            this._apply_status_button_active_state(failed_btn, current_pc_status === 'failed', {
+                check_id,
+                pc_id,
+                action: 'set-pc-failed'
+            });
+        }
+
+        const observation_wrapper = pc_item_li.querySelector('.pc-observation-detail-wrapper');
+        const visibility_result = this._sync_observation_wrapper_visibility(
+            observation_wrapper,
+            overall_manual_status,
+            pc_data
+        );
+
+        if (sync_textarea_value) {
+            const observation_textarea = pc_item_li.querySelector('textarea.pc-observation-detail-textarea');
+            const active_el = env?.active_el_for_sync ?? document.activeElement;
+            const sync_focus_root = env?.sync_focus_root
+                ?? ((typeof this.get_dom_focus_sync_root === 'function' ? this.get_dom_focus_sync_root() : null)
+                    || this.container_ref);
+            const has_pc_observation_textarea_focus = env?.has_pc_observation_textarea_focus
+                ?? this.has_active_pc_observation_focus();
+            const is_this_focused = observation_textarea && active_el === observation_textarea;
+            const typing_other = !is_this_focused && active_el instanceof HTMLElement
+                && sync_focus_root?.contains(active_el)
+                && (active_el.tagName === 'TEXTAREA' || active_el.tagName === 'INPUT')
+                && !has_pc_observation_textarea_focus;
+            const editing_elsewhere = has_pc_observation_textarea_focus && !is_this_focused;
+            if (observation_textarea && current_pc_status === 'failed' && !is_this_focused
+                && !typing_other && !editing_elsewhere) {
+                const target_value = pc_data.observationDetail || '';
+                if (observation_textarea.value !== target_value) {
+                    observation_textarea.value = target_value;
+                }
+                if (this.Helpers?.init_auto_resize_for_textarea) {
+                    this.Helpers.init_auto_resize_for_textarea(observation_textarea);
+                }
+            }
+        }
+
+        const audit = audit_observation_ui({
+            overall_manual_status,
+            pc_status: pc_data.status,
+            wrapper_visible: Boolean(observation_wrapper && !observation_wrapper.hidden),
+            failed_button_active: failed_btn ? failed_btn.classList.contains('active') : null
+        });
+        if (audit.mismatch && is_debug_krav_vy()) {
+            log_krav_vy_observation_ui_mismatch({
+                context,
+                check_id,
+                pc_id,
+                overall_status: overall_manual_status,
+                pc_status_i_data: pc_data.status || 'not_audited',
+                skäl: audit.reasons,
+                effective_pc_status: audit.effective_pc_status,
+                deferred_hide: visibility_result.deferred_hide,
+                läkt: false
+            });
+        }
+
+        return {
+            healed: !audit.mismatch || visibility_result.deferred_hide,
+            deferred_hide: visibility_result.deferred_hide
+        };
+    },
+
+    _heal_all_checklist_ui_from_data(context = 'after_update_dom') {
+        if (!this.container_ref || !this.requirement_result_ref?.checkResults) return;
+
+        const sync_focus_root = (typeof this.get_dom_focus_sync_root === 'function'
+            ? this.get_dom_focus_sync_root()
+            : null) || this.container_ref;
+        const env = {
+            sync_focus_root,
+            active_el_for_sync: document.activeElement,
+            has_pc_observation_textarea_focus: this.has_active_pc_observation_focus()
+        };
+        const audit_frozen = this._audit_frozen_for_ui();
+        let mismatch_count = 0;
+
+        this.container_ref.querySelectorAll('.check-item[data-check-id]').forEach((check_wrapper) => {
+            const check_id = check_wrapper.dataset.checkId;
+            const check_result_data = read_check_stored_data(
+                this.requirement_result_ref.checkResults,
+                check_id
+            );
+            if (!check_result_data) return;
+
+            const overall_manual_status = check_result_data.overallStatus || 'not_audited';
+            const complies_btn = check_wrapper.querySelector('button[data-action="set-check-complies"]');
+            const not_complies_btn = check_wrapper.querySelector('button[data-action="set-check-not-complies"]');
+            if (complies_btn && not_complies_btn) {
+                this._apply_status_button_active_state(complies_btn, overall_manual_status === 'passed', {
+                    check_id,
+                    pc_id: null,
+                    action: 'set-check-complies'
+                });
+                this._apply_status_button_active_state(not_complies_btn, overall_manual_status === 'not_applicable', {
+                    check_id,
+                    pc_id: null,
+                    action: 'set-check-not-complies'
+                });
+            }
+
+            const pc_list = check_wrapper.querySelector('.pass-criteria-list');
+            if (pc_list) {
+                const next_display = should_show_pass_criteria_list(
+                    overall_manual_status,
+                    pc_list.children.length
+                ) ? '' : 'none';
+                if (next_display === 'none' && pc_list.style.display !== 'none') {
+                    const ae = document.activeElement;
+                    if (ae && pc_list.contains(ae)) {
+                        const fallback = check_wrapper.querySelector('button[data-action="set-check-complies"]')
+                            || check_wrapper.querySelector('button[data-action="set-check-not-complies"]');
+                        if (fallback && document.contains(fallback)) {
+                            try {
+                                fallback.focus({ preventScroll: true });
+                            } catch {
+                                fallback.focus();
+                            }
+                        }
+                    }
+                }
+                pc_list.style.display = next_display;
+            }
+
+            check_wrapper.querySelectorAll('.pass-criterion-item[data-pc-id]').forEach((pc_item_li) => {
+                const pc_id = pc_item_li.dataset.pcId;
+                const heal_result = this._heal_pc_ui_from_data({
+                    check_id,
+                    pc_id,
+                    pc_item_li,
+                    check_result_data,
+                    context,
+                    sync_textarea_value: true,
+                    env
+                });
+                if (!heal_result.healed) {
+                    mismatch_count += 1;
+                }
+            });
+        });
+
+        if (mismatch_count > 0 && this.requirement_definition_ref) {
+            debug_session_log('ChecklistHandler.js:_heal_all', 'kvarvarande avvikelse — tvingar ombyggnad', {
+                mismatch_count,
+                context
+            }, 'H2');
+            this.is_dom_built = false;
+        }
+    },
+
+    _register_hmr_dom_rebuild() {
+        if (typeof import.meta === 'undefined' || !import.meta.hot) return;
+        import.meta.hot.dispose(() => {
+            this.is_dom_built = false;
+        });
     },
 
     _remember_status_button_trigger(check_id, pc_id, action, trigger) {
@@ -217,6 +420,16 @@ export const ChecklistHandler = {
         return true;
     },
 
+    _should_skip_focus_restore_to_button(button_target) {
+        if (!button_target || !this.container_ref) return false;
+        const active = document.activeElement;
+        if (!active || !this.container_ref.contains(active)) return false;
+        const tag = active.tagName?.toLowerCase();
+        if (tag === 'textarea' || tag === 'input' || tag === 'select') return true;
+        if (tag === 'button' || tag === 'a') return true;
+        return false;
+    },
+
     _restore_focus_to_button_if_needed(button_target) {
         if (!button_target || !this.container_ref) return;
         requestAnimationFrame(() => {
@@ -267,6 +480,7 @@ export const ChecklistHandler = {
 
         const try_focus = () => {
             if (!this.container_ref) return;
+            if (this._should_skip_focus_restore_to_button(button_target)) return;
             this._try_focus_button_target(button_target);
         };
 
@@ -363,6 +577,7 @@ export const ChecklistHandler = {
         this.container_ref.addEventListener('input', this.handle_textarea_input);
         this.container_ref.addEventListener('focusin', this.handle_pc_observation_focusin);
         this.container_ref.addEventListener('focusout', this.handle_pc_observation_focusout);
+        this._register_hmr_dom_rebuild();
     },
 
     /**
@@ -420,12 +635,17 @@ export const ChecklistHandler = {
             }
         }
         if (!this._observation_focus_snapshots.has(key)) {
+            this._schedule_heal_pc_after_focus_left(check_id, pc_id, pc_item);
             return;
         }
         const snapshot = this._observation_focus_snapshots.get(key);
         this._observation_focus_snapshots.delete(key);
         const current = textarea.value ?? '';
-        if (snapshot === current) return;
+        const schedule_heal = () => this._schedule_heal_pc_after_focus_left(check_id, pc_id, pc_item);
+        if (snapshot === current) {
+            schedule_heal();
+            return;
+        }
 
         const run_observation_blur_commit = () => {
             if (!this.requirement_result_ref?.checkResults) return;
@@ -448,10 +668,43 @@ export const ChecklistHandler = {
         };
         // Kör efter aktuell pekar-/fokuskedja (t.ex. klick på statusknapp) så blur-sparning
         // inte lägger sig före click och gör att första klicket tappas i vissa webbläsare.
-        queueMicrotask(run_observation_blur_commit);
+        debug_session_log('ChecklistHandler.js:handle_pc_observation_focusout', 'blur schemalagd (microtask)', {
+            check_id,
+            pc_id,
+            value_changed: snapshot !== current
+        }, 'H3');
+        queueMicrotask(() => {
+            run_observation_blur_commit();
+            schedule_heal();
+        });
+    },
+
+    _schedule_heal_pc_after_focus_left(check_id, pc_id, pc_item_li) {
+        requestAnimationFrame(() => {
+            if (!pc_item_li?.isConnected || !this.requirement_result_ref?.checkResults) return;
+            const check_result_data = read_check_stored_data(
+                this.requirement_result_ref.checkResults,
+                check_id
+            );
+            if (!check_result_data) return;
+            this._heal_pc_ui_from_data({
+                check_id,
+                pc_id,
+                pc_item_li,
+                check_result_data,
+                context: 'observation_focusout',
+                sync_textarea_value: false
+            });
+        });
     },
     
     handle_checklist_click(event) {
+        debug_session_log('ChecklistHandler.js:handle_checklist_click', 'click mottagen', {
+            target_tag: event.target?.tagName?.toLowerCase?.() || null,
+            target_action: event.target?.closest?.('button[data-action]')?.dataset?.action || null,
+            is_trusted: event.isTrusted,
+            detail: event.detail
+        }, 'H2');
         const attach_btn = event.target.closest('button[data-action="attach-media"]');
         if (attach_btn) {
             this.handle_attach_media_click(event, attach_btn);
@@ -471,7 +724,12 @@ export const ChecklistHandler = {
         }
 
         const target_button = event.target.closest('button[data-action]');
-        if (!target_button) return;
+        if (!target_button) {
+            debug_session_log('ChecklistHandler.js:handle_checklist_click', 'ingen statusknapp — avbryter', {
+                target_tag: event.target?.tagName?.toLowerCase?.() || null
+            }, 'H2');
+            return;
+        }
 
         const action = target_button.dataset.action;
         const check_item_element = target_button.closest('.check-item[data-check-id]');
@@ -886,8 +1144,16 @@ export const ChecklistHandler = {
             if (pc_in?.value) {
                 pc_in.value.observationDetail = textarea.value;
             }
-            if (event.type === 'input' && this.on_observation_change_callback) {
-                this.on_observation_change_callback();
+            if (event.type === 'input') {
+                log_krav_vy_textarea('Textarea input (lokal state)', {
+                    fält: 'Observation',
+                    check_id,
+                    pc_id,
+                    värde_längd: (textarea.value || '').length
+                });
+                if (this.on_observation_change_callback) {
+                    this.on_observation_change_callback();
+                }
             }
         }
     },
@@ -1064,6 +1330,11 @@ export const ChecklistHandler = {
             check_wrapper.appendChild(this.Helpers.create_element('p', { class_name: 'check-status-display', attributes: { 'aria-hidden': 'true' } }));
             
             const pc_list = this.Helpers.create_element('ul', { class_name: 'pass-criteria-list' });
+            const overall_for_pc_list = check_result_data?.overallStatus || 'not_audited';
+            pc_list.style.display = should_show_pass_criteria_list(
+                overall_for_pc_list,
+                (check_definition.passCriteria || []).length
+            ) ? '' : 'none';
             (check_definition.passCriteria || []).forEach((pc_def, pc_index) => {
                 const pc_id = pc_def?.id ?? pc_def?.key;
                 const pc_item_li = this.Helpers.create_element('li', { 
@@ -1193,6 +1464,13 @@ export const ChecklistHandler = {
 
                 observation_wrapper.appendChild(attach_media_row);
 
+                const pc_data_init = read_pc_stored_data(check_result_data, pc_id);
+                this._sync_observation_wrapper_visibility(
+                    observation_wrapper,
+                    overall_for_pc_list,
+                    pc_data_init
+                );
+
                 const is_first_criterion = check_index === 0 && pc_index === 0;
                 if (is_first_criterion) {
                     const has_stuck_content = (this.requirement_result_ref?.stuckProblemDescription || '').trim() !== '';
@@ -1233,10 +1511,127 @@ export const ChecklistHandler = {
     },
 
     update_dom() {
+        const patch_scope = this._patch_scope || null;
+        debug_session_log('ChecklistHandler.js:update_dom', 'update_dom start', {
+            patch_scope,
+            mode: patch_scope?.mode || 'full',
+            is_dom_built: this.is_dom_built,
+            custom_focus_applied: typeof window !== 'undefined' ? !!window.customFocusApplied : false
+        }, 'H2');
+
+        if (patch_scope?.mode === 'pc_only' && patch_scope.check_id && patch_scope.pc_id) {
+            this._update_dom_pc_only(patch_scope.check_id, patch_scope.pc_id);
+            this._heal_all_checklist_ui_from_data('after_update_dom_pc_only');
+            this._reapply_pending_status_button_focus();
+            return;
+        }
+
+        if (patch_scope?.mode === 'check_and_pcs' && patch_scope.check_id) {
+            this._update_dom_check_and_pass_criteria(patch_scope.check_id);
+            this._heal_all_checklist_ui_from_data('after_update_dom_check_and_pcs');
+            this._reapply_pending_status_button_focus();
+            return;
+        }
+
+        this._update_dom_full();
+        this._heal_all_checklist_ui_from_data('after_update_dom_full');
+        this._reapply_pending_status_button_focus();
+    },
+
+    /**
+     * Minimalt: bara godkännandekriteriets knapppar + observationsfält vid kriterium-klick.
+     */
+    _update_dom_pc_only(check_id, pc_id) {
+        const t = this.Translation.t;
+        const check_wrapper = this.container_ref?.querySelector(
+            `.check-item[data-check-id="${CSS.escape(String(check_id))}"]`
+        );
+        const pc_item_li = check_wrapper?.querySelector(
+            `.pass-criterion-item[data-pc-id="${CSS.escape(String(pc_id))}"]`
+        );
+        if (!check_wrapper || !pc_item_li) {
+            debug_session_log('ChecklistHandler.js:_update_dom_pc_only', 'kunde inte hitta DOM-nod', {
+                check_id,
+                pc_id
+            }, 'H2');
+            return;
+        }
+
+        const check_result_data = read_check_stored_data(
+            this.requirement_result_ref.checkResults,
+            check_id
+        );
+        const overall_manual_status = check_result_data?.overallStatus || 'not_audited';
+        const pc_data = read_pc_stored_data(check_result_data, pc_id);
+        const current_pc_status = effective_pc_status(overall_manual_status, pc_data.status);
+
+        const passed_btn = pc_item_li.querySelector('button[data-action="set-pc-passed"]');
+        const failed_btn = pc_item_li.querySelector('button[data-action="set-pc-failed"]');
+        if (passed_btn && failed_btn) {
+            this._apply_status_button_active_state(passed_btn, current_pc_status === 'passed', {
+                check_id,
+                pc_id,
+                action: 'set-pc-passed'
+            });
+            this._apply_status_button_active_state(failed_btn, current_pc_status === 'failed', {
+                check_id,
+                pc_id,
+                action: 'set-pc-failed'
+            });
+        }
+
+        const observation_wrapper = pc_item_li.querySelector('.pc-observation-detail-wrapper');
+        this._sync_observation_wrapper_visibility(observation_wrapper, overall_manual_status, pc_data);
+
+        const observation_textarea = pc_item_li.querySelector('textarea.pc-observation-detail-textarea');
+        if (observation_textarea && current_pc_status === 'failed') {
+            const target_value = pc_data.observationDetail || '';
+            if (observation_textarea.value !== target_value) {
+                observation_textarea.value = target_value;
+            }
+            if (this.Helpers?.init_auto_resize_for_textarea) {
+                this.Helpers.init_auto_resize_for_textarea(observation_textarea);
+            }
+        }
+
+        const audit_frozen = this._audit_frozen_for_ui();
+        const copy_observation_row = pc_item_li.querySelector('.pc-copy-observation-row');
+        if (copy_observation_row) {
+            const observations = this.get_observations_from_other_samples(check_id, pc_id);
+            copy_observation_row.hidden = !(observations.length > 0 && current_pc_status === 'failed' && !audit_frozen);
+        }
+
+        debug_session_log('ChecklistHandler.js:_update_dom_pc_only', 'klart', {
+            check_id,
+            pc_id,
+            status: current_pc_status,
+            textarea_visible: current_pc_status === 'failed'
+        }, 'H2');
+    },
+
+    /**
+     * Kontrollpunkt-klick: uppdatera bara den kontrollpunktens kriterielista (inte andra kontrollpunkter).
+     */
+    _update_dom_check_and_pass_criteria(check_id) {
+        const all_check_wrappers = this.container_ref.querySelectorAll('.check-item[data-check-id]');
+        const check_wrapper = [...all_check_wrappers].find(
+            (wrapper) => wrapper.dataset.checkId === String(check_id)
+        );
+        if (!check_wrapper) {
+            debug_session_log('ChecklistHandler.js:_update_dom_check_and_pcs', 'kunde inte hitta check-item', {
+                check_id
+            }, 'H2');
+            return;
+        }
+        this._update_dom_single_check_wrapper(check_wrapper, null);
+        debug_session_log('ChecklistHandler.js:_update_dom_check_and_pcs', 'klart', { check_id }, 'H2');
+    },
+
+    _update_dom_full() {
         const t = this.Translation.t;
         const audit_frozen = this._audit_frozen_for_ui();
         const audit_archived = this._audit_archived_for_ui();
-        const patch_scope = this._patch_scope || null;
+        const patch_scope = null;
         const sync_focus_root = (typeof this.get_dom_focus_sync_root === 'function' ? this.get_dom_focus_sync_root() : null)
             || this.container_ref;
         const active_el_for_sync = document.activeElement;
@@ -1247,15 +1642,72 @@ export const ChecklistHandler = {
         const has_pc_observation_textarea_focus = this.has_active_pc_observation_focus();
 
         const all_check_wrappers = this.container_ref.querySelectorAll('.check-item[data-check-id]');
-        const check_wrappers = patch_scope?.check_id
-            ? [...all_check_wrappers].filter((wrapper) => wrapper.dataset.checkId === String(patch_scope.check_id))
-            : [...all_check_wrappers];
-        const wrappers_to_update = check_wrappers.length > 0 ? check_wrappers : [...all_check_wrappers];
+        all_check_wrappers.forEach((check_wrapper) => {
+            this._update_dom_single_check_wrapper(
+                check_wrapper,
+                null,
+                {
+                    audit_frozen,
+                    audit_archived,
+                    sync_focus_root,
+                    active_el_for_sync,
+                    any_textarea_or_input_focused_in_sync_root,
+                    has_pc_observation_textarea_focus
+                }
+            );
+        });
 
-        wrappers_to_update.forEach(check_wrapper => {
-            const check_id = check_wrapper.dataset.checkId;
-            const check_result_data = this.requirement_result_ref.checkResults?.[check_id]
-                ?? this.requirement_result_ref.checkResults?.[String(check_id)];
+        this._update_dom_stuck_button(t);
+    },
+
+    _update_dom_stuck_button(t) {
+        const stuck_btn = this.container_ref.querySelector('.stuck-button');
+        if (!stuck_btn) return;
+        const has_stuck_content = (this.requirement_result_ref?.stuckProblemDescription || '').trim() !== '';
+        const check_id = stuck_btn.getAttribute('data-check-id');
+        const pc_id = stuck_btn.getAttribute('data-pc-id');
+        const check_def = this.requirement_definition_ref?.checks?.find(c => (c?.id || c?.key) === check_id);
+        const pc_def = check_def?.passCriteria?.find(p => (p?.id || p?.key) === pc_id);
+        const numbering = check_def && pc_def
+            ? `${(this.requirement_definition_ref.checks?.indexOf(check_def) ?? 0) + 1}.${(check_def.passCriteria?.indexOf(pc_def) ?? 0) + 1}`
+            : '';
+        const criterion_title = `${t('pass_criterion_label')} ${numbering}`;
+        const requirement_plain = this._get_plain_text_from_html(
+            this._safe_parse_markdown_inline(this.requirement_definition_ref?.title || '')
+        );
+        const stuck_aria_label = has_stuck_content
+            ? `${t('stuck_button')} ${t('stuck_button_has_content')} ${t('attach_media_aria_label_for')} ${criterion_title}: ${requirement_plain}`
+            : `${t('stuck_button')} ${t('attach_media_aria_label_for')} ${criterion_title}: ${requirement_plain}`;
+        stuck_btn.setAttribute('aria-label', stuck_aria_label);
+        stuck_btn.classList.toggle('stuck-button--has-content', has_stuck_content);
+        const text_span = stuck_btn.querySelector('span:first-child');
+        if (text_span) {
+            const indicator_html = has_stuck_content
+                ? ` <span class="stuck-button-indicator">${this.Helpers.escape_html(t('stuck_button_has_content'))}</span>`
+                : '';
+            text_span.innerHTML = this.Helpers.escape_html(t('stuck_button')) + indicator_html;
+        }
+    },
+
+    _update_dom_single_check_wrapper(check_wrapper, pc_id_filter, env = null) {
+        const t = this.Translation.t;
+        const audit_frozen = env?.audit_frozen ?? this._audit_frozen_for_ui();
+        const audit_archived = env?.audit_archived ?? this._audit_archived_for_ui();
+        const sync_focus_root = env?.sync_focus_root
+            ?? ((typeof this.get_dom_focus_sync_root === 'function' ? this.get_dom_focus_sync_root() : null) || this.container_ref);
+        const active_el_for_sync = env?.active_el_for_sync ?? document.activeElement;
+        const any_textarea_or_input_focused_in_sync_root = env?.any_textarea_or_input_focused_in_sync_root ?? Boolean(
+            active_el_for_sync && sync_focus_root?.contains(active_el_for_sync) &&
+                (active_el_for_sync.tagName === 'TEXTAREA' || active_el_for_sync.tagName === 'INPUT')
+        );
+        const has_pc_observation_textarea_focus = env?.has_pc_observation_textarea_focus
+            ?? this.has_active_pc_observation_focus();
+
+        const check_id = check_wrapper.dataset.checkId;
+            const check_result_data = read_check_stored_data(
+                this.requirement_result_ref.checkResults,
+                check_id
+            );
             const calculated_check_status = check_result_data?.status || 'not_audited';
             const overall_manual_status = check_result_data?.overallStatus || 'not_audited';
 
@@ -1311,7 +1763,10 @@ export const ChecklistHandler = {
             const pc_list = check_wrapper.querySelector('.pass-criteria-list');
             const compliance_info_text = check_wrapper.querySelector('.compliance-info-text');
 
-            const next_pc_list_display = (overall_manual_status === 'passed' && pc_list.children.length > 0) ? '' : 'none';
+            const next_pc_list_display = should_show_pass_criteria_list(
+                overall_manual_status,
+                pc_list.children.length
+            ) ? '' : 'none';
             if (next_pc_list_display === 'none' && pc_list.style.display !== 'none') {
                 const ae = document.activeElement;
                 if (ae && pc_list.contains(ae)) {
@@ -1336,12 +1791,11 @@ export const ChecklistHandler = {
 
             check_wrapper.querySelectorAll('.pass-criterion-item[data-pc-id]').forEach(pc_item_li => {
                 const pc_id = pc_item_li.dataset.pcId;
-                if (patch_scope?.pc_id && pc_id !== String(patch_scope.pc_id)) {
+                if (pc_id_filter && pc_id !== String(pc_id_filter)) {
                     return;
                 }
-                const pc_data = check_result_data?.passCriteria?.[pc_id] ?? check_result_data?.passCriteria?.[String(pc_id)] ?? { status: 'not_audited', observationDetail: '' };
-                const current_pc_status =
-                    overall_manual_status === 'not_applicable' ? 'passed' : (pc_data.status || 'not_audited');
+                const pc_data = read_pc_stored_data(check_result_data, pc_id);
+                const current_pc_status = effective_pc_status(overall_manual_status, pc_data.status);
 
                 const pc_status_text_container = pc_item_li.querySelector('.pass-criterion-status');
                 pc_status_text_container.innerHTML = '';
@@ -1462,9 +1916,7 @@ export const ChecklistHandler = {
 
                 const observation_textarea = observation_wrapper ? observation_wrapper.querySelector('textarea.pc-observation-detail-textarea') : null;
                 
-                if (observation_wrapper) {
-                    observation_wrapper.hidden = (current_pc_status !== 'failed');
-                }
+                this._sync_observation_wrapper_visibility(observation_wrapper, overall_manual_status, pc_data);
 
                 if (observation_textarea) {
                     update_observation_lock_ui(observation_textarea);
@@ -1519,39 +1971,6 @@ export const ChecklistHandler = {
                     copy_observation_row.hidden = !should_show;
                 }
             });
-        });
-
-        if (!patch_scope) {
-            const stuck_btn = this.container_ref.querySelector('.stuck-button');
-            if (stuck_btn) {
-            const has_stuck_content = (this.requirement_result_ref?.stuckProblemDescription || '').trim() !== '';
-            const check_id = stuck_btn.getAttribute('data-check-id');
-            const pc_id = stuck_btn.getAttribute('data-pc-id');
-            const check_def = this.requirement_definition_ref?.checks?.find(c => (c?.id || c?.key) === check_id);
-            const pc_def = check_def?.passCriteria?.find(p => (p?.id || p?.key) === pc_id);
-            const numbering = check_def && pc_def ? `${(this.requirement_definition_ref.checks?.indexOf(check_def) ?? 0) + 1}.${(check_def.passCriteria?.indexOf(pc_def) ?? 0) + 1}` : '';
-            const criterion_title = `${t('pass_criterion_label')} ${numbering}`;
-            const requirement_plain = this._get_plain_text_from_html(
-                this._safe_parse_markdown_inline(this.requirement_definition_ref?.title || '')
-            );
-            const stuck_aria_label = has_stuck_content
-                ? `${t('stuck_button')} ${t('stuck_button_has_content')} ${t('attach_media_aria_label_for')} ${criterion_title}: ${requirement_plain}`
-                : `${t('stuck_button')} ${t('attach_media_aria_label_for')} ${criterion_title}: ${requirement_plain}`;
-            stuck_btn.setAttribute('aria-label', stuck_aria_label);
-            stuck_btn.classList.toggle('stuck-button--has-content', has_stuck_content);
-            const text_span = stuck_btn.querySelector('span:first-child');
-            if (text_span) {
-                const indicator_html = has_stuck_content
-                    ? ` <span class="stuck-button-indicator">${this.Helpers.escape_html(t('stuck_button_has_content'))}</span>`
-                    : '';
-                text_span.innerHTML = this.Helpers.escape_html(t('stuck_button')) + indicator_html;
-            }
-        }
-        }
-
-        // Direkt efter DOM-mutationer i samma macrotask som state-render — undviker att fokus
-        // tillfälligt hamnar på body/textarea innan senare setTimeout-refokusering körs.
-        this._reapply_pending_status_button_focus();
     },
 
     render(requirement_definition, requirement_result, locked_status, update_details, patch_scope) {

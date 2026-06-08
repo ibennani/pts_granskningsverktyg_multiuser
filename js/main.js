@@ -105,9 +105,14 @@ if (typeof window !== 'undefined') {
         consoleManager.log('[GV-NAV] Debug aktiverad via URL (?debug=nav). Klicka Granskningar från Start och titta i konsolen.');
     }
 
-    if (typeof window !== 'undefined' && window.location.search.includes('debug=krav-vy')) {
+    if (typeof window !== 'undefined' && (
+        window.location.search.includes('debug=krav-vy') ||
+        window.location.port === '5174'
+    )) {
         set_debug_krav_vy(true);
-        consoleManager.log('[Krav-vy] Debug-logg aktiverad via URL (?debug=krav-vy). Konsolen visar knapp-, fokus- och textarea-händelser.');
+        consoleManager.originalConsole.log(
+            '[Krav-vy] Debug-logg aktiverad (port 5174 eller ?debug=krav-vy). Konsolen visar state, knappar, textarea och render.'
+        );
     }
 
     const nav_debug = (msg, data) => {
