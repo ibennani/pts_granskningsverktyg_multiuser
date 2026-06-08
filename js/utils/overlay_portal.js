@@ -167,7 +167,16 @@ function _handle_tooltip_focusin(e) {
 }
 
 function _handle_tooltip_focusout(e) {
-    if (e.target.closest(TOOLTIP_WRAPPER_SEL)) _schedule_tooltip_sync();
+    const wrapper = e.target.closest(TOOLTIP_WRAPPER_SEL);
+    if (!wrapper) return;
+    // Vänta tills fokus flyttats (relatedTarget) — dölj direkt om wrapper inte längre har hover/fokus.
+    queueMicrotask(() => {
+        if (_current_tooltip_wrapper === wrapper && !_wrapper_has_active_trigger(wrapper)) {
+            _hide_tooltip_from_overlay();
+            return;
+        }
+        _sync_overlay_tooltip();
+    });
 }
 
 let _tooltip_overlay_setup_done = false;

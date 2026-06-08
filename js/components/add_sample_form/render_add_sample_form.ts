@@ -25,7 +25,12 @@ export function render_add_sample_form(component: any, sample_id_to_edit: string
         && String(current_state.sampleEditDraft.sampleId) === String(component.current_editing_sample_id)
         ? current_state.sampleEditDraft
         : null;
-    const effective_sample_data = draft?.updatedSampleData ? draft.updatedSampleData : sample_data;
+    const new_sample_draft = !component.current_editing_sample_id && typeof component.load_new_sample_draft_for_form === 'function'
+        ? component.load_new_sample_draft_for_form()
+        : null;
+    const effective_sample_data = draft?.updatedSampleData
+        ? draft.updatedSampleData
+        : (sample_data || new_sample_draft);
 
     // Spara ursprungsläget när vyn laddas (endast för redigering)
     if (sample_data) {
@@ -62,7 +67,6 @@ export function render_add_sample_form(component: any, sample_id_to_edit: string
         if (effective_sample_data && effective_sample_data.sampleCategory === cat.id) radio.checked = true;
         radio.addEventListener('change', () => {
             component.on_category_change(cat.id);
-            // Variant B: kategoriändring ska direkt uppdatera utkastet (utan att trimma).
             component.save_form_data_immediately(true, false, true);
         });
         radio_wrapper.append(radio, component.Helpers.create_element('label', { attributes: { for: radio_id }, text_content: cat.text }));
@@ -221,7 +225,7 @@ export function render_add_sample_form(component: any, sample_id_to_edit: string
 
     component.autosave_session?.destroy();
     component.autosave_session = null;
-    if (component.current_editing_sample_id && component.AutosaveService) {
+    if (component.AutosaveService) {
         component.autosave_session = component.AutosaveService.create_session({
             form_element: component.form_element,
             focus_root: component.form_element,

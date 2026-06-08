@@ -1,6 +1,13 @@
 import "./add_sample_form_component.css";
 import { compute_sample_edit_field_diff } from '../logic/sample_edit_diff.js';
 import { render_add_sample_form } from './add_sample_form/render_add_sample_form.js';
+import {
+    clear_new_sample_form_draft,
+    get_new_sample_draft_storage_key,
+    load_new_sample_form_draft,
+    save_new_sample_form_draft,
+    type NewSampleFormDraft
+} from './add_sample_form/new_sample_form_draft.js';
 
 export class AddSampleFormComponent {
     private root: HTMLElement | null;
@@ -307,8 +314,65 @@ export class AddSampleFormComponent {
     }
 
     handle_autosave_input() {
-        if (!this.current_editing_sample_id) return;
-        this.autosave_session?.request_autosave();
+        if (this.current_editing_sample_id) {
+            this.autosave_session?.request_autosave();
+            return;
+        }
+        this._persist_new_sample_draft(false);
+    }
+
+    _get_new_sample_draft_storage_key(): string {
+        return get_new_sample_draft_storage_key(this.getState?.() ?? null);
+    }
+
+    load_new_sample_draft_for_form(): NewSampleFormDraft | null {
+        if (this.current_editing_sample_id) return null;
+        return load_new_sample_form_draft(this._get_new_sample_draft_storage_key());
+    }
+
+    _read_new_sample_payload_from_dom(should_trim: boolean) {
+        const selected_category_radio = this.form_element?.querySelector('input[name="sampleCategory"]:checked');
+        const sample_category_id = selected_category_radio ? (selected_category_radio as HTMLInputElement).value : null;
+        const sample_type_id = this.sample_type_select?.value || null;
+        const description_raw = this.description_input?.value || '';
+        const url_raw = this.url_input?.value || '';
+        const selected_raw_values = Array.from(
+            this.content_types_container_element?.querySelectorAll('input[name="selectedContentTypes"]:checked') || []
+        ).map((cb) => (cb as HTMLInputElement).value);
+
+        const description = this.Helpers?.sanitize_plain_input
+            ? this.Helpers.sanitize_plain_input(description_raw, { trim: should_trim })
+            : (should_trim ? description_raw.trim() : description_raw.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ''));
+
+        let url_val = this.Helpers?.sanitize_plain_input
+            ? this.Helpers.sanitize_plain_input(url_raw, { trim: should_trim })
+            : (should_trim ? url_raw.trim() : url_raw.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ''));
+
+        const selected_content_types = this.Helpers?.sanitize_plain_array
+            ? this.Helpers.sanitize_plain_array(selected_raw_values, { trim: should_trim })
+            : selected_raw_values.map((v) => (should_trim ? v.trim() : v.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')));
+
+        if (url_val) url_val = this.Helpers.add_protocol_if_missing(url_val);
+
+        return {
+            sampleCategory: sample_category_id,
+            sampleType: sample_type_id,
+            description,
+            url: url_val,
+            selectedContentTypes: selected_content_types
+        };
+    }
+
+    _persist_new_sample_draft(should_trim: boolean) {
+        if (this.current_editing_sample_id || !this.form_element) return;
+        save_new_sample_form_draft(
+            this._get_new_sample_draft_storage_key(),
+            this._read_new_sample_payload_from_dom(should_trim)
+        );
+    }
+
+    _clear_new_sample_draft() {
+        clear_new_sample_form_draft(this._get_new_sample_draft_storage_key());
     }
 
     handle_content_type_change(e: any) {
@@ -317,7 +381,10 @@ export class AddSampleFormComponent {
     }
 
     save_form_data_immediately(is_autosave = false, should_trim = !is_autosave, skip_render = false) {
-        if (!this.current_editing_sample_id) return;
+        if (!this.current_editing_sample_id) {
+            this._persist_new_sample_draft(should_trim);
+            return;
+        }
 
         // Variant B: autospar och ändringar skriver alltid till ett "utkast" i state.
         // Själva stickprovet uppdateras först när användaren bekräftar.
@@ -455,6 +522,7 @@ export class AddSampleFormComponent {
                 type: this.StoreActionTypes.ADD_SAMPLE,
                 payload: { ...new_sample_object, skip_render: should_skip_render }
             });
+            this._clear_new_sample_draft();
             if (!is_autosave && (window as any).DraftManager?.commitCurrentDraft) {
                 (window as any).DraftManager.commitCurrentDraft();
             }
@@ -605,11 +673,19 @@ export class AddSampleFormComponent {
         } catch (_) {
             // ignoreras
         }
+
+        if (!this.current_editing_sample_id) {
+            this._clear_new_sample_draft();
+        }
     }
 
     destroy() {
-        if (!this.skip_autosave_on_destroy && this.current_editing_sample_id && this.form_element) {
-            this.autosave_session?.flush({ should_trim: true, skip_render: true });
+        if (!this.skip_autosave_on_destroy && this.form_element) {
+            if (this.current_editing_sample_id) {
+                this.autosave_session?.flush({ should_trim: true, skip_render: true });
+            } else {
+                this._persist_new_sample_draft(true);
+            }
         }
         this.autosave_session?.destroy();
         this.autosave_session = null;

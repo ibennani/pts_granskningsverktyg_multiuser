@@ -38,6 +38,70 @@ export function aggregate_child_audit_statuses(
 }
 
 /**
+ * AND-logik: kontrollpunkten är underkänd först när alla godkännandekriterier är underkända.
+ * Ett eller flera underkända (men inte alla) → delvis granskad tills bedömningen är klar.
+ */
+export function aggregate_and_criterion_statuses(
+    pc_statuses: string[],
+    opts: { treat_unstarted_as_partial?: boolean } = {}
+): string {
+    if (!pc_statuses.length) {
+        return 'not_audited';
+    }
+
+    const any_started = pc_statuses.some((s) => s !== 'not_audited');
+    const all_failed = pc_statuses.every((s) => s === 'failed');
+    const all_passed = pc_statuses.every((s) => s === 'passed');
+    const any_failed = pc_statuses.some((s) => s === 'failed');
+
+    if (!any_started) {
+        return opts.treat_unstarted_as_partial ? 'partially_audited' : 'not_audited';
+    }
+    if (all_failed) {
+        return 'failed';
+    }
+    if (any_failed) {
+        return 'partially_audited';
+    }
+    if (all_passed) {
+        return 'passed';
+    }
+    return 'partially_audited';
+}
+
+/**
+ * OR-logik: ett enda underkänt godkännandekriterium gör hela kontrollpunkten underkänd.
+ * Minst ett godkänt utan underkända → utan anmärkning även om övriga ännu inte bedömts.
+ */
+export function aggregate_or_criterion_statuses(
+    pc_statuses: string[],
+    opts: { treat_unstarted_as_partial?: boolean } = {}
+): string {
+    if (!pc_statuses.length) {
+        return 'not_audited';
+    }
+
+    const any_started = pc_statuses.some((s) => s !== 'not_audited');
+    const any_failed = pc_statuses.some((s) => s === 'failed');
+    const any_passed = pc_statuses.some((s) => s === 'passed');
+
+    if (!any_started) {
+        return opts.treat_unstarted_as_partial ? 'partially_audited' : 'not_audited';
+    }
+    if (any_failed) {
+        return 'failed';
+    }
+    if (any_passed) {
+        return 'passed';
+    }
+    return 'partially_audited';
+}
+
+function check_uses_or_logic(check_object: CheckDef | null | undefined): boolean {
+    return (check_object?.logic || 'AND').toUpperCase() === 'OR';
+}
+
+/**
  * Effektiv kriteriestatus: vid "Inte aktuellt" på kontrollpunkten räknas kriteriet som godkänt.
  */
 export function effective_pass_criterion_status(
@@ -95,9 +159,11 @@ export function calculate_check_status(
         pass_criteria_statuses_map,
         overall_manual_status
     );
-    return aggregate_child_audit_statuses(pc_statuses, {
-        treat_unstarted_as_partial: overall_manual_status === 'passed'
-    });
+    const aggregate_opts = { treat_unstarted_as_partial: overall_manual_status === 'passed' };
+    if (check_uses_or_logic(check_object)) {
+        return aggregate_or_criterion_statuses(pc_statuses, aggregate_opts);
+    }
+    return aggregate_and_criterion_statuses(pc_statuses, aggregate_opts);
 }
 
 export function calculate_requirement_status(

@@ -335,16 +335,17 @@ export const ChecklistHandler = {
             const complies_btn = check_wrapper.querySelector('button[data-action="set-check-complies"]');
             const not_complies_btn = check_wrapper.querySelector('button[data-action="set-check-not-complies"]');
             if (complies_btn && not_complies_btn) {
+                const heal_opts = { skip_if_unchanged: true };
                 this._apply_status_button_active_state(complies_btn, overall_manual_status === 'passed', {
                     check_id,
                     pc_id: null,
                     action: 'set-check-complies'
-                });
+                }, heal_opts);
                 this._apply_status_button_active_state(not_complies_btn, overall_manual_status === 'not_applicable', {
                     check_id,
                     pc_id: null,
                     action: 'set-check-not-complies'
-                });
+                }, heal_opts);
             }
 
             const pc_list = check_wrapper.querySelector('.pass-criteria-list');
@@ -411,9 +412,12 @@ export const ChecklistHandler = {
         this._status_button_triggers.set(key, trigger);
     },
 
-    _apply_status_button_active_state(button_el, should_be_active, { check_id, pc_id, action }) {
+    _apply_status_button_active_state(button_el, should_be_active, { check_id, pc_id, action }, opts = {}) {
         if (!button_el) return;
         const was_active = button_el.classList.contains('active');
+        if (opts.skip_if_unchanged && was_active === should_be_active) {
+            return;
+        }
         button_el.classList.toggle('active', should_be_active);
         button_el.setAttribute('aria-pressed', should_be_active ? 'true' : 'false');
         const is_active = button_el.classList.contains('active');
@@ -930,14 +934,21 @@ export const ChecklistHandler = {
                     if (window.ConsoleManager?.warn) {
                         window.ConsoleManager.warn('[ChecklistHandler] onStatusChange:', e);
                     }
-                }).finally(release_status_change_flight);
+                }).finally(() => {
+                    release_status_change_flight();
+                    if (should_keep_focus_on_status_button) {
+                        this._restore_focus_to_button_with_retry(button_focus_target, {
+                            restore_custom_flag_to: prev_custom_focus_flag
+                        });
+                    }
+                });
             } else {
                 release_status_change_flight();
-            }
-            if (should_keep_focus_on_status_button) {
-                this._restore_focus_to_button_with_retry(button_focus_target, {
-                    restore_custom_flag_to: prev_custom_focus_flag
-                });
+                if (should_keep_focus_on_status_button) {
+                    this._restore_focus_to_button_with_retry(button_focus_target, {
+                        restore_custom_flag_to: prev_custom_focus_flag
+                    });
+                }
             }
         }
     },
@@ -1834,16 +1845,17 @@ export const ChecklistHandler = {
             const not_complies_btn = check_wrapper.querySelector('button[data-action="set-check-not-complies"]');
             
             if (complies_btn && not_complies_btn) {
+                const heal_opts = { skip_if_unchanged: true };
                 this._apply_status_button_active_state(complies_btn, overall_manual_status === 'passed', {
                     check_id,
                     pc_id: null,
                     action: 'set-check-complies'
-                });
+                }, heal_opts);
                 this._apply_status_button_active_state(not_complies_btn, overall_manual_status === 'not_applicable', {
                     check_id,
                     pc_id: null,
                     action: 'set-check-not-complies'
-                });
+                }, heal_opts);
                 complies_btn.setAttribute(
                     'aria-label',
                     this._button_aria_label_with_context(t('check_complies'), condition_plain_for_aria)
@@ -1942,16 +1954,17 @@ export const ChecklistHandler = {
                 const failed_btn = pc_item_li.querySelector('button[data-action="set-pc-failed"]');
 
                 if (passed_btn && failed_btn) {
+                    const heal_opts = { skip_if_unchanged: true };
                     this._apply_status_button_active_state(passed_btn, current_pc_status === 'passed', {
                         check_id,
                         pc_id,
                         action: 'set-pc-passed'
-                    });
+                    }, heal_opts);
                     this._apply_status_button_active_state(failed_btn, current_pc_status === 'failed', {
                         check_id,
                         pc_id,
                         action: 'set-pc-failed'
-                    });
+                    }, heal_opts);
                     const pc_def_aria = this.requirement_definition_ref?.checks
                         ?.find(c => (c?.id || c?.key) === check_id)
                         ?.passCriteria?.find(p => (p?.id || p?.key) === pc_id);

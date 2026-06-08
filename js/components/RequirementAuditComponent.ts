@@ -134,7 +134,8 @@ export class RequirementAuditComponent {
         this.handle_comment_focusout = this.handle_comment_focusout.bind(this);
         this.handle_krav_vy_focusin = this.handle_krav_vy_focusin.bind(this);
         this.handle_krav_vy_focusout = this.handle_krav_vy_focusout.bind(this);
-        this._handle_unload_persist = this._handle_unload_persist.bind(this);
+        // Singleton: bind alltid från prototypen så destroy() kan nollställa instansfält utan att nästa init kraschar.
+        this._handle_unload_persist = RequirementAuditComponent.prototype._handle_unload_persist.bind(this);
         register_unload_persist_hook('requirement_audit_plate', this._handle_unload_persist);
         this.handle_sidebar_filters_change = this.handle_sidebar_filters_change.bind(this);
         this.handle_audit_keydown = this.handle_audit_keydown.bind(this);
