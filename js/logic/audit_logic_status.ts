@@ -12,9 +12,20 @@ import type {
 import { get_stored_requirement_result_for_def } from './audit_logic_lookup.js';
 import { definition_primary_id, resolve_map_entry } from './entity_id_match.js';
 
+function count_audit_status_coverage(statuses: string[]): { any_started: boolean; all_started: boolean } {
+    if (!statuses.length) {
+        return { any_started: false, all_started: false };
+    }
+    const started_count = statuses.filter((s) => s !== 'not_audited').length;
+    return {
+        any_started: started_count > 0,
+        all_started: started_count === statuses.length
+    };
+}
+
 /**
- * Aggregerar barnstatus enligt trestegsmodellen:
- * ogranskad → delvis granskad → (alla klara) underkänd om minst ett fail, annars godkänd.
+ * Aggregerar barnstatus: delvis granskad endast när minst ett men inte alla barn är besvarade.
+ * När alla barn är klara (godkända eller underkända) blir resultatet underkänt om minst ett fail, annars godkänt.
  */
 export function aggregate_child_audit_statuses(
     child_statuses: string[],
@@ -24,22 +35,22 @@ export function aggregate_child_audit_statuses(
         return 'not_audited';
     }
 
-    const any_started = child_statuses.some((s) => s !== 'not_audited');
+    const { any_started, all_started } = count_audit_status_coverage(child_statuses);
     const all_complete = child_statuses.every((s) => s === 'passed' || s === 'failed');
     const any_failed = child_statuses.some((s) => s === 'failed');
 
     if (!any_started) {
         return opts.treat_unstarted_as_partial ? 'partially_audited' : 'not_audited';
     }
-    if (!all_complete) {
+    if (!all_started || !all_complete) {
         return 'partially_audited';
     }
     return any_failed ? 'failed' : 'passed';
 }
 
 /**
- * AND-logik: kontrollpunkten är underkänd först när alla godkännandekriterier är underkända.
- * Ett eller flera underkända (men inte alla) → delvis granskad tills bedömningen är klar.
+ * AND-logik: delvis granskad när minst ett men inte alla kriterier är besvarade.
+ * När alla är besvarade: godkänd om samtliga godkända, annars underkänd.
  */
 export function aggregate_and_criterion_statuses(
     pc_statuses: string[],
@@ -49,29 +60,22 @@ export function aggregate_and_criterion_statuses(
         return 'not_audited';
     }
 
-    const any_started = pc_statuses.some((s) => s !== 'not_audited');
-    const all_failed = pc_statuses.every((s) => s === 'failed');
-    const all_passed = pc_statuses.every((s) => s === 'passed');
-    const any_failed = pc_statuses.some((s) => s === 'failed');
+    const { any_started, all_started } = count_audit_status_coverage(pc_statuses);
 
     if (!any_started) {
         return opts.treat_unstarted_as_partial ? 'partially_audited' : 'not_audited';
     }
-    if (all_failed) {
-        return 'failed';
-    }
-    if (any_failed) {
+    if (!all_started) {
         return 'partially_audited';
     }
-    if (all_passed) {
-        return 'passed';
-    }
-    return 'partially_audited';
+
+    const all_passed = pc_statuses.every((s) => s === 'passed');
+    return all_passed ? 'passed' : 'failed';
 }
 
 /**
- * OR-logik: ett enda underkänt godkännandekriterium gör hela kontrollpunkten underkänd.
- * Minst ett godkänt utan underkända → utan anmärkning även om övriga ännu inte bedömts.
+ * OR-logik: delvis granskad när minst ett men inte alla kriterier är besvarade.
+ * När alla är besvarade: underkänd om minst ett underkänt, annars godkänd.
  */
 export function aggregate_or_criterion_statuses(
     pc_statuses: string[],
@@ -81,20 +85,17 @@ export function aggregate_or_criterion_statuses(
         return 'not_audited';
     }
 
-    const any_started = pc_statuses.some((s) => s !== 'not_audited');
-    const any_failed = pc_statuses.some((s) => s === 'failed');
-    const any_passed = pc_statuses.some((s) => s === 'passed');
+    const { any_started, all_started } = count_audit_status_coverage(pc_statuses);
 
     if (!any_started) {
         return opts.treat_unstarted_as_partial ? 'partially_audited' : 'not_audited';
     }
-    if (any_failed) {
-        return 'failed';
+    if (!all_started) {
+        return 'partially_audited';
     }
-    if (any_passed) {
-        return 'passed';
-    }
-    return 'partially_audited';
+
+    const any_failed = pc_statuses.some((s) => s === 'failed');
+    return any_failed ? 'failed' : 'passed';
 }
 
 function check_uses_or_logic(check_object: CheckDef | null | undefined): boolean {
