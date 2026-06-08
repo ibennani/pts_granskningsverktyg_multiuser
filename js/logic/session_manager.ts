@@ -110,16 +110,34 @@ type ApplyUserPreferencesDeps = {
     StoreActionTypes: { SET_REQUIREMENT_AUDIT_SIDEBAR_SETTINGS: string };
 };
 
-export function set_initial_theme(): void {
-    const saved_theme = localStorage.getItem('theme_preference');
-    if (saved_theme && saved_theme !== 'system') {
-        document.documentElement.setAttribute('data-theme', saved_theme);
-    } else {
-        const prefers_dark =
-            window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const initial_theme = prefers_dark ? 'dark' : 'light';
-        document.documentElement.setAttribute('data-theme', initial_theme);
+export type SavedThemePreference = 'light' | 'dark' | 'dark-experimental';
+
+/** Sparade teman som användaren kan välja i inställningar. */
+export function is_saved_theme_preference(
+    theme: string | null | undefined
+): theme is SavedThemePreference {
+    return theme === 'light' || theme === 'dark' || theme === 'dark-experimental';
+}
+
+function apply_system_theme(): void {
+    const prefers_dark =
+        window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    document.documentElement.setAttribute('data-theme', prefers_dark ? 'dark' : 'light');
+}
+
+/** Tillämpar sparat tema eller systemläge (t.ex. vid borttaget "alternative"). */
+export function apply_theme_preference(theme: string | null | undefined): void {
+    if (is_saved_theme_preference(theme)) {
+        localStorage.setItem('theme_preference', theme);
+        document.documentElement.setAttribute('data-theme', theme);
+        return;
     }
+    localStorage.removeItem('theme_preference');
+    apply_system_theme();
+}
+
+export function set_initial_theme(): void {
+    apply_theme_preference(localStorage.getItem('theme_preference'));
 }
 
 export function is_dev_build_environment(): boolean {
@@ -239,21 +257,13 @@ export async function apply_user_preferences_from_server({
             await window.Translation.set_language(user.language_preference);
         }
         if (
-            user?.theme_preference === 'light' ||
-            user?.theme_preference === 'dark' ||
-            user?.theme_preference === 'alternative' ||
-            user?.theme_preference === 'dark-experimental'
-        ) {
-            localStorage.setItem('theme_preference', user.theme_preference);
-            document.documentElement.setAttribute('data-theme', user.theme_preference);
-        } else if (
             user?.theme_preference === 'system' ||
             user?.theme_preference === null ||
             user?.theme_preference === ''
         ) {
-            localStorage.removeItem('theme_preference');
-            const prefers_dark = window.matchMedia?.('(prefers-color-scheme: dark)')?.matches;
-            document.documentElement.setAttribute('data-theme', prefers_dark ? 'dark' : 'light');
+            apply_theme_preference(null);
+        } else {
+            apply_theme_preference(user?.theme_preference);
         }
         const pref = user?.review_sort_preference || 'by_criteria';
         if (pref === 'by_criteria' || pref === 'by_sample') {

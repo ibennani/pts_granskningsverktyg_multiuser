@@ -34,10 +34,15 @@ import {
     effective_pc_status
 } from './checklist_observation_visibility.js';
 import {
+    get_panel_sync_remaining_ms,
+    is_check_panel_animation_blocked,
+    is_panel_sync_blocked,
     is_slide_out_in_progress,
-    set_pass_criteria_list_visibility,
-    set_slide_element_visibility
-} from './slide_down_animation.js';
+    PANEL_ANIMATION_MS,
+    PANEL_OPEN_CLASS,
+    set_panel_open,
+    toggle_slide_hidden_element
+} from './criteria_panel.js';
 
 export const ChecklistHandler = {
     container_ref: null,
@@ -170,13 +175,25 @@ export const ChecklistHandler = {
                     action: 'set-check-not-complies'
                 });
             }
-            const pc_list = check_wrapper.querySelector('.pass-criteria-list');
-            if (pc_list) {
-                const count = pc_list.querySelectorAll('.pass-criterion-item[data-pc-id]').length;
-                this._set_pass_criteria_list_visibility(
+            const pc_panel = check_wrapper.querySelector('.pass-criteria-panel');
+            if (pc_panel) {
+                const count = pc_panel.querySelectorAll('.pass-criterion-item[data-pc-id]').length;
+                this._set_criteria_panel_visibility(
                     check_wrapper,
-                    pc_list,
+                    pc_panel,
                     should_show_pass_criteria_list(next, count)
+                );
+            }
+            const compliance_panel = check_wrapper.querySelector('.compliance-info-panel');
+            const compliance_info_text = compliance_panel?.querySelector('.compliance-info-text');
+            if (compliance_panel) {
+                if (next === 'not_applicable' && compliance_info_text) {
+                    compliance_info_text.textContent = this.Translation.t('condition_not_met_criteria_auto_passed');
+                }
+                this._set_criteria_panel_visibility(
+                    check_wrapper,
+                    compliance_panel,
+                    next === 'not_applicable'
                 );
             }
             return;
@@ -274,10 +291,7 @@ export const ChecklistHandler = {
         }
 
         if (wrapper_el && animate) {
-            const changed = set_slide_element_visibility(wrapper_el, should_show, {
-                animate: true,
-                mode: 'hidden'
-            });
+            const changed = toggle_slide_hidden_element(wrapper_el, should_show, { animate: true });
             result = { applied: changed, deferred_hide: false };
         } else {
             result = apply_observation_wrapper_visibility(
@@ -346,24 +360,37 @@ export const ChecklistHandler = {
         return this._observation_hidden_with_text_keys?.has(this._observation_cache_key(check_id, pc_id)) === true;
     },
 
-    _set_pass_criteria_list_visibility(check_wrapper, pc_list, should_show, { animate = true } = {}) {
-        if (!pc_list) {
+    _defer_criteria_panel_sync(check_wrapper, panel, should_show) {
+        const remaining_ms = get_panel_sync_remaining_ms(panel) || PANEL_ANIMATION_MS;
+        window.setTimeout(() => {
+            if (!panel || !document.contains(panel)) {
+                return;
+            }
+            this._set_criteria_panel_visibility(check_wrapper, panel, should_show, { animate: false });
+        }, remaining_ms + 30);
+    },
+
+    _set_criteria_panel_visibility(check_wrapper, panel, should_show, { animate = true } = {}) {
+        if (!panel) {
             return;
         }
-        if (is_slide_out_in_progress(pc_list)) {
+        const check_id = check_wrapper?.dataset?.checkId ?? null;
+        const is_open = panel.classList.contains(PANEL_OPEN_CLASS) && !panel.hidden;
+        const blocked = is_panel_sync_blocked(panel, check_id);
+        if (blocked) {
+            if (!animate) {
+                this._defer_criteria_panel_sync(check_wrapper, panel, should_show);
+            }
             return;
         }
-        const is_hidden = pc_list.style.display === 'none'
-            || (typeof window.getComputedStyle === 'function'
-                && window.getComputedStyle(pc_list).display === 'none');
-        if (should_show === !is_hidden) {
+        if (should_show === is_open) {
             return;
         }
-        if (!should_show && !is_hidden) {
+        if (!should_show && is_open) {
             const active_element = document.activeElement;
-            if (active_element && pc_list.contains(active_element)) {
-                const fallback = check_wrapper.querySelector('button[data-action="set-check-complies"]')
-                    || check_wrapper.querySelector('button[data-action="set-check-not-complies"]');
+            if (active_element && panel.contains(active_element)) {
+                const fallback = check_wrapper?.querySelector('button[data-action="set-check-complies"]')
+                    || check_wrapper?.querySelector('button[data-action="set-check-not-complies"]');
                 if (fallback && document.contains(fallback)) {
                     try {
                         fallback.focus({ preventScroll: true });
@@ -373,7 +400,7 @@ export const ChecklistHandler = {
                 }
             }
         }
-        set_pass_criteria_list_visibility(pc_list, should_show, { animate });
+        set_panel_open(panel, should_show, { animate, check_id });
     },
 
     _heal_pc_ui_from_data({
@@ -513,12 +540,13 @@ export const ChecklistHandler = {
                 }, heal_opts);
             }
 
-            const pc_list = check_wrapper.querySelector('.pass-criteria-list');
-            if (pc_list) {
-                this._set_pass_criteria_list_visibility(
+            const pc_panel = check_wrapper.querySelector('.pass-criteria-panel');
+            if (pc_panel && !is_check_panel_animation_blocked(check_id) && !is_panel_sync_blocked(pc_panel, check_id)) {
+                const pc_count = pc_panel.querySelectorAll('.pass-criterion-item[data-pc-id]').length;
+                this._set_criteria_panel_visibility(
                     check_wrapper,
-                    pc_list,
-                    should_show_pass_criteria_list(overall_manual_status, pc_list.children.length),
+                    pc_panel,
+                    should_show_pass_criteria_list(overall_manual_status, pc_count),
                     { animate: false }
                 );
             }
@@ -1761,12 +1789,20 @@ export const ChecklistHandler = {
             
             check_wrapper.appendChild(this.Helpers.create_element('p', { class_name: 'check-status-display', attributes: { 'aria-hidden': 'true' } }));
             
+            const pc_panel = this.Helpers.create_element('div', {
+                class_name: 'criteria-panel pass-criteria-panel'
+            });
+            const pc_inner = this.Helpers.create_element('div', { class_name: 'criteria-panel__inner' });
             const pc_list = this.Helpers.create_element('ul', { class_name: 'pass-criteria-list' });
             const overall_for_pc_list = check_result_data?.overallStatus || 'not_audited';
-            pc_list.style.display = should_show_pass_criteria_list(
+            const should_show_pc_list = should_show_pass_criteria_list(
                 overall_for_pc_list,
                 (check_definition.passCriteria || []).length
-            ) ? '' : 'none';
+            );
+            pc_panel.hidden = !should_show_pc_list;
+            pc_panel.classList.toggle(PANEL_OPEN_CLASS, should_show_pc_list);
+            pc_inner.appendChild(pc_list);
+            pc_panel.appendChild(pc_inner);
             (check_definition.passCriteria || []).forEach((pc_def, pc_index) => {
                 const pc_id = pc_def?.id ?? pc_def?.key;
                 const pc_item_li = this.Helpers.create_element('li', { 
@@ -1930,9 +1966,19 @@ export const ChecklistHandler = {
                 pc_item_li.appendChild(observation_wrapper);
                 pc_list.appendChild(pc_item_li);
             });
-            check_wrapper.appendChild(pc_list);
+            check_wrapper.appendChild(pc_panel);
 
-            check_wrapper.appendChild(this.Helpers.create_element('p', { class_name: 'text-muted compliance-info-text', style: 'font-style: italic;' }));
+            const compliance_panel = this.Helpers.create_element('div', {
+                class_name: 'criteria-panel compliance-info-panel'
+            });
+            const compliance_inner = this.Helpers.create_element('div', { class_name: 'criteria-panel__inner' });
+            compliance_inner.appendChild(this.Helpers.create_element('p', {
+                class_name: 'text-muted compliance-info-text',
+                style: 'font-style: italic;'
+            }));
+            compliance_panel.appendChild(compliance_inner);
+            compliance_panel.hidden = true;
+            check_wrapper.appendChild(compliance_panel);
             
             checks_region.appendChild(check_wrapper);
         });
@@ -2201,19 +2247,29 @@ export const ChecklistHandler = {
             });
             status_text_container.appendChild(status_span);
             
-            const pc_list = check_wrapper.querySelector('.pass-criteria-list');
-            const compliance_info_text = check_wrapper.querySelector('.compliance-info-text');
+            const pc_panel = check_wrapper.querySelector('.pass-criteria-panel');
+            const compliance_panel = check_wrapper.querySelector('.compliance-info-panel');
+            const compliance_info_text = compliance_panel?.querySelector('.compliance-info-text');
 
-            this._set_pass_criteria_list_visibility(
-                check_wrapper,
-                pc_list,
-                should_show_pass_criteria_list(overall_manual_status, pc_list.children.length)
-            );
-            if (overall_manual_status === 'not_applicable') {
+            if (pc_panel && !is_check_panel_animation_blocked(check_id) && !is_panel_sync_blocked(pc_panel, check_id)) {
+                const pc_count = pc_panel.querySelectorAll('.pass-criterion-item[data-pc-id]').length;
+                this._set_criteria_panel_visibility(
+                    check_wrapper,
+                    pc_panel,
+                    should_show_pass_criteria_list(overall_manual_status, pc_count),
+                    { animate: false }
+                );
+            }
+            if (overall_manual_status === 'not_applicable' && compliance_info_text) {
                 compliance_info_text.textContent = t('condition_not_met_criteria_auto_passed');
-                compliance_info_text.style.display = '';
-            } else {
-                compliance_info_text.style.display = 'none';
+            }
+            if (compliance_panel && !is_check_panel_animation_blocked(check_id) && !is_panel_sync_blocked(compliance_panel, check_id)) {
+                this._set_criteria_panel_visibility(
+                    check_wrapper,
+                    compliance_panel,
+                    overall_manual_status === 'not_applicable',
+                    { animate: false }
+                );
             }
 
             check_wrapper.querySelectorAll('.pass-criterion-item[data-pc-id]').forEach(pc_item_li => {
@@ -2429,8 +2485,48 @@ export const ChecklistHandler = {
             });
     },
 
+    _requirement_definition_identity(requirement_definition) {
+        if (!requirement_definition) {
+            return '';
+        }
+        return String(requirement_definition.key ?? requirement_definition.id ?? '');
+    },
+
+    _resume_blocked_panel_animation(check_wrapper) {
+        const check_id = check_wrapper?.dataset?.checkId;
+        if (!check_id || !is_check_panel_animation_blocked(check_id)) {
+            return;
+        }
+        const check_result_data = read_check_stored_data(
+            this.requirement_result_ref?.checkResults,
+            check_id
+        );
+        const overall_manual_status = check_result_data?.overallStatus || 'not_audited';
+        const pc_panel = check_wrapper.querySelector('.pass-criteria-panel');
+        if (pc_panel) {
+            const pc_count = pc_panel.querySelectorAll('.pass-criterion-item[data-pc-id]').length;
+            if (should_show_pass_criteria_list(overall_manual_status, pc_count) && !pc_panel.classList.contains('slide-down-in')) {
+                pc_panel.hidden = false;
+                pc_panel.classList.add(PANEL_OPEN_CLASS);
+                pc_panel.classList.remove('slide-down-out');
+                pc_panel.classList.add('slide-down-in');
+                void pc_panel.offsetHeight;
+            }
+        }
+        const compliance_panel = check_wrapper.querySelector('.compliance-info-panel');
+        if (compliance_panel && overall_manual_status === 'not_applicable' && !compliance_panel.classList.contains('slide-down-in')) {
+            compliance_panel.hidden = false;
+            compliance_panel.classList.add(PANEL_OPEN_CLASS);
+            compliance_panel.classList.remove('slide-down-out');
+            compliance_panel.classList.add('slide-down-in');
+            void compliance_panel.offsetHeight;
+        }
+    },
+
     render(requirement_definition, requirement_result, locked_status, update_details, patch_scope) {
-        if (this.requirement_definition_ref !== requirement_definition) {
+        const next_def_id = this._requirement_definition_identity(requirement_definition);
+        const prev_def_id = this._requirement_definition_identity(this.requirement_definition_ref);
+        if (next_def_id !== prev_def_id) {
             this.is_dom_built = false;
             this._status_button_triggers = new Map();
         }
@@ -2448,11 +2544,22 @@ export const ChecklistHandler = {
             this.is_dom_built = false;
         }
 
+        if (
+            this.is_dom_built
+            && this.container_ref?.querySelector('.check-item .pass-criteria-list')
+            && !this.container_ref.querySelector('.check-item .pass-criteria-panel')
+        ) {
+            this.is_dom_built = false;
+        }
+
         if (!this.is_dom_built) {
             this.build_initial_dom();
         }
 
         this.update_dom();
+        this.container_ref?.querySelectorAll('.check-item[data-check-id]').forEach((check_wrapper) => {
+            this._resume_blocked_panel_animation(check_wrapper);
+        });
         this._patch_scope = null;
     },
 

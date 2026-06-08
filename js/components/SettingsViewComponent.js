@@ -1,6 +1,7 @@
 // js/components/SettingsViewComponent.js
 
 import { get_current_user_preferences, update_current_user_preferences, change_my_password } from '../api/client.js';
+import { is_saved_theme_preference } from '../logic/session_manager.js';
 import { get_current_user_name } from '../utils/helpers.js';
 import './settings_view_component.css';
 
@@ -96,7 +97,7 @@ export class SettingsViewComponent {
             } catch {
                 /* ignorerar sparfel */
             }
-        } else if (theme === 'light' || theme === 'dark' || theme === 'alternative' || theme === 'dark-experimental') {
+        } else if (is_saved_theme_preference(theme)) {
             localStorage.setItem('theme_preference', theme);
             document.documentElement.setAttribute('data-theme', theme);
             try {
@@ -229,16 +230,13 @@ export class SettingsViewComponent {
             attributes: { 'aria-label': t('settings_theme_label') }
         });
         const theme_pref = this.user_preferences?.theme_preference;
-        const saved = theme_pref === 'light' || theme_pref === 'dark' || theme_pref === 'alternative' || theme_pref === 'dark-experimental'
+        const saved = is_saved_theme_preference(theme_pref)
             ? theme_pref
             : localStorage.getItem('theme_preference');
-        const current_pref = (saved === 'light' || saved === 'dark' || saved === 'alternative' || saved === 'dark-experimental')
-            ? saved
-            : 'system';
+        const current_pref = is_saved_theme_preference(saved) ? saved : 'system';
         const theme_options = [
             { value: 'light', label_key: 'light_mode' },
             { value: 'dark', label_key: 'dark_mode' },
-            { value: 'alternative', label_key: 'settings_theme_alternative' },
             { value: 'dark-experimental', label_key: 'settings_theme_dark_experimental' },
             { value: 'system', label_key: 'settings_theme_system' }
         ];
@@ -248,9 +246,7 @@ export class SettingsViewComponent {
                 text_content: t(label_key)
             }));
         });
-        this.theme_select_ref.value = current_pref === 'light' || current_pref === 'dark' || current_pref === 'alternative' || current_pref === 'dark-experimental'
-            ? current_pref
-            : 'system';
+        this.theme_select_ref.value = is_saved_theme_preference(current_pref) ? current_pref : 'system';
         this.theme_select_ref.addEventListener('change', this.handle_theme_change);
         theme_group.appendChild(this.theme_select_ref);
         plate.appendChild(theme_group);

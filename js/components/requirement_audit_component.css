@@ -313,31 +313,28 @@
     background-color: var(--input-background-color);
 }
 
+.criteria-panel[hidden] {
+    display: none;
+}
+
+.criteria-panel.slide-down-in {
+    animation: fadeInSlideDown 0.5s ease-out forwards;
+    overflow: hidden;
+}
+
+.criteria-panel.slide-down-out {
+    animation: fadeOutSlideUp 0.5s ease-out forwards;
+    overflow: hidden;
+}
+
 .pass-criteria-list {
     list-style: none;
     padding-left: 0;
     margin-top: 1rem;
-    overflow: hidden;
-}
-
-.pass-criteria-list.slide-down-in {
-    animation: fadeInSlideDown 0.5s ease-out forwards;
-}
-
-.pass-criteria-list.slide-down-out {
-    animation: fadeOutSlideUp 0.5s ease-out forwards;
 }
 
 .compliance-info-text {
-    overflow: hidden;
-}
-
-.compliance-info-text.slide-down-in {
-    animation: fadeInSlideDown 0.5s ease-out forwards;
-}
-
-.compliance-info-text.slide-down-out {
-    animation: fadeOutSlideUp 0.5s ease-out forwards;
+    margin-top: 1rem;
 }
 
 .pc-observation-detail-wrapper {
@@ -356,13 +353,24 @@
     display: none;
 }
 
+.pass-criterion-item.slide-down-in {
+    animation: fadeInSlideDown 0.5s ease-out forwards;
+    overflow: hidden;
+}
+
+.pass-criterion-item.slide-down-out {
+    animation: fadeOutSlideUp 0.5s ease-out forwards;
+    overflow: hidden;
+}
+
 @media (prefers-reduced-motion: reduce) {
-    .pass-criteria-list.slide-down-in,
-    .pass-criteria-list.slide-down-out,
-    .compliance-info-text.slide-down-in,
-    .compliance-info-text.slide-down-out,
+    .criteria-panel.slide-down-in,
+    .criteria-panel.slide-down-out,
+    .pass-criterion-item.slide-down-in,
+    .pass-criterion-item.slide-down-out,
     .pc-observation-detail-wrapper.slide-down-in,
     .pc-observation-detail-wrapper.slide-down-out {
+        transition: none;
         animation: none;
     }
 }

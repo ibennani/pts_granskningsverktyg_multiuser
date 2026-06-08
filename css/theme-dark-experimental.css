@@ -952,6 +952,33 @@ html[data-theme="dark-experimental"] .FilterPanelComponent__status-icon.status-i
 
 [data-theme="dark-experimental"] .modal-content {
     padding: 1.25rem 1.5rem;
+    color: var(--de-text-primary);
+}
+
+[data-theme="dark-experimental"] .modal-heading {
+    color: var(--de-text-primary);
+}
+
+[data-theme="dark-experimental"] .modal-message {
+    color: var(--de-text-primary);
+}
+
+[data-theme="dark-experimental"] .copy-observation-radio-group {
+    color: var(--de-text-primary);
+}
+
+[data-theme="dark-experimental"] .copy-observation-radio-option {
+    background-color: var(--input-background-color);
+    color: var(--input-text-color);
+    border: var(--de-interactive-border-width) solid var(--de-interactive-border);
+}
+
+[data-theme="dark-experimental"] .copy-observation-radio-option:hover,
+[data-theme="dark-experimental"] .copy-observation-radio-option:focus-within {
+    border-color: var(--de-interactive-border);
+    outline: var(--focus-outer-width) solid var(--focus-outer-color);
+    outline-offset: var(--de-focus-ring-outline-offset);
+    box-shadow: var(--de-interactive-shadow), var(--de-focus-ring-inner);
 }
 
 /* --- Notifieringar --- */
