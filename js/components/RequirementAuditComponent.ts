@@ -513,7 +513,11 @@ export class RequirementAuditComponent {
             requirementId: this.requirement_map_key,
             fält: event?.target?.id || null
         });
-        this._save_plate_to_redux({ should_trim: false, skip_last_status_bump: false });
+        this._save_plate_to_redux({
+            should_trim: false,
+            skip_last_status_bump: false,
+            sync_persist: true
+        });
         void this._flush_audit_requirement_to_server();
     }
 
@@ -1249,7 +1253,12 @@ export class RequirementAuditComponent {
     }
 
     handle_navigation(action) {
-        this._save_plate_to_redux({ should_trim: true, skip_last_status_bump: false });
+        this._cancel_plate_text_autosave_timer();
+        this._save_plate_to_redux({
+            should_trim: true,
+            skip_last_status_bump: false,
+            sync_persist: true
+        });
 
         const navigation_state = this.get_navigation_state();
         const mode = navigation_state.mode;
@@ -1399,7 +1408,11 @@ export class RequirementAuditComponent {
                         requirementId: this.requirement_map_key,
                         fält: 'observation'
                     });
-                    this._save_plate_to_redux({ should_trim: false, skip_last_status_bump: false });
+                    this._save_plate_to_redux({
+                        should_trim: false,
+                        skip_last_status_bump: false,
+                        sync_persist: true
+                    });
                     void this._flush_audit_requirement_to_server();
                 },
                 onStuckDescriptionSaved: async () => {
@@ -1764,7 +1777,11 @@ export class RequirementAuditComponent {
         document.removeEventListener('keydown', this.handle_audit_keydown);
         this._unbind_all_krav_vy_focus_debug_listeners();
         this.checklist_handler_instance?.flush_observations_before_destroy?.();
-        this._save_plate_to_redux({ should_trim: true, skip_last_status_bump: false });
+        this._save_plate_to_redux({
+            should_trim: true,
+            skip_last_status_bump: false,
+            sync_persist: true
+        });
 
         if (this.comment_to_auditor_input) {
             this.comment_to_auditor_input.removeEventListener('input', this.handle_comment_input_only);
