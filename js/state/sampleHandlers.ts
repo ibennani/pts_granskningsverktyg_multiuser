@@ -8,6 +8,7 @@ import {
     should_touch_last_local_change_at,
     with_last_local_change_at
 } from '../logic/audit_sync_tracking.js';
+import { with_last_in_progress_activity_in_metadata } from '../logic/audit_list_last_updated.js';
 
 function sample_ids_match(left: unknown, right: unknown): boolean {
     return String(left ?? '') === String(right ?? '');
@@ -47,6 +48,7 @@ export function reduce_add_sample(current_state: any, action: any) {
     if (current_state.auditStatus !== 'locked') {
         const now_iso = get_current_iso_datetime_utc();
         out.auditLastNonObservationActivityAt = now_iso;
+        out.auditMetadata = with_last_in_progress_activity_in_metadata(out.auditMetadata, now_iso);
         if (should_touch_last_local_change_at(current_state.auditStatus)) {
             return with_last_local_change_at(out, now_iso);
         }
@@ -66,6 +68,7 @@ export function reduce_update_sample(current_state: any, action: any) {
     if (current_state.auditStatus !== 'locked') {
         const now_iso = get_current_iso_datetime_utc();
         base.auditLastNonObservationActivityAt = now_iso;
+        base.auditMetadata = with_last_in_progress_activity_in_metadata(base.auditMetadata, now_iso);
         if (should_touch_last_local_change_at(current_state.auditStatus)) {
             return with_last_local_change_at(base, now_iso);
         }
@@ -90,6 +93,7 @@ export function reduce_delete_sample(current_state: any, action: any) {
     const now_iso = get_current_iso_datetime_utc();
     if (current_state.auditStatus !== 'locked') {
         new_state.auditLastNonObservationActivityAt = now_iso;
+        new_state.auditMetadata = with_last_in_progress_activity_in_metadata(new_state.auditMetadata, now_iso);
     }
     const with_ids = apply_deficiency_ids_safe(new_state);
     if (current_state.auditStatus !== 'locked' && should_touch_last_local_change_at(current_state.auditStatus)) {

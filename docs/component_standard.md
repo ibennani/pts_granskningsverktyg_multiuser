@@ -145,9 +145,12 @@ Komponenter kan få in beroenden på två sätt:
    MyComponent.init({
      root: rootElement,
      deps: {
-       store,
+       getState,
+       dispatch,
        router,
-       logger,
+       AuditLogic,
+       ValidationLogic,
+       AutosaveService,
      },
    });
    ```
@@ -156,10 +159,11 @@ Komponenter kan få in beroenden på två sätt:
 
 - Använd **imports** för generella helpers, utilities och rena funktioner.
 - Använd **`deps`** för:
-  - store/state
+  - state (`getState`, `dispatch`, `StoreActionTypes`, `subscribe`)
   - router
+  - `AuditLogic`, `ValidationLogic`, `AutosaveService`
   - loggers/spårning
-  - andra “tunga” objekt som gör komponenten lättare att testa om de injiceras.
+  - andra "tunga" objekt som gör komponenten lättare att testa om de injiceras.
 
 ---
 

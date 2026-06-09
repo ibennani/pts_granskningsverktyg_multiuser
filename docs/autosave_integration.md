@@ -94,7 +94,7 @@ const value = trim_text ? trim_text(rawValue) : rawValue;
 - `EditInfoBlocksSectionComponent` – informationsblock
 - `EditSampleTypesSectionComponent` – stickprovstyper
 - `MetadataFormComponent` – granskningsmetadata
-- `AddSampleFormComponent` / `SampleFormViewComponent` – stickprovsformulär
+- `SampleFormViewComponent` – stickprovsformulär
 
 **OBS:** `ChecklistHandler` (observationer i kravgranskning) använder **inte** `AutosaveService` utan egen `input`-hantering med callback. `EditRulefileRequirementComponent` sparar via manuella knappar, inte central autospar-session.
 

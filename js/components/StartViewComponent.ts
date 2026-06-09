@@ -17,6 +17,7 @@ type AuditIndexRow = {
     id?: string;
     status?: string;
     updated_at?: string | null;
+    last_updated_display_at?: string | null;
     metadata?: Record<string, unknown>;
     version?: number | null;
     progress?: number | null;
@@ -160,6 +161,7 @@ export class StartViewComponent {
             id: a?.id,
             status: a?.status,
             updated_at: a?.updated_at,
+            last_updated_display_at: a?.last_updated_display_at,
             version: a?.version ?? null,
             progress: a?.progress ?? null,
             deficiency_index: a?.deficiency_index ?? null,

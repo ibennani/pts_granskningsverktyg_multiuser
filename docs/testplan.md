@@ -20,7 +20,7 @@ Detta dokument riktar sig till utvecklare, testare och kvalitetssäkringsansvari
 Följande testnivåer kommer att tillämpas:
 *   **Enhetstester:** Jest (`npm test`) för logik under `js/logic/`, `js/state/`, `shared/` m.m., särskilt `audit_logic.ts` och `validation_logic.ts`.
 *   **Komponenttester:** Manuell eller (om möjligt) automatiserad testning av enskilda ui-komponenters rendering, grundläggande interaktioner och databindning.
-*   **Integrationstester:** Verifiering av att olika komponenter och moduler interagerar korrekt med varandra (t.ex. hur `AuditOverviewComponent` använder `SampleListComponent` och `AddSampleFormComponent`).
+*   **Integrationstester:** Verifiering av att olika komponenter och moduler interagerar korrekt med varandra (t.ex. hur `AuditOverviewComponent` använder `SampleListComponent` och `SampleFormViewComponent`).
 *   **Systemtester / End-to-End (E2E) tester:** Testning av kompletta användarflöden genom hela applikationen, från start till export. Detta är den primära testformen för denna applikation.
 *   **Användbarhetstester:** (Rekommenderas) Utförs med representativa slutanvändare för att identifiera problem med användarvänlighet, intuitivitet och effektivitet i arbetsflöden.
 *   **Tillgänglighetstester:** Systematisk testning mot wcag 2.2 aa-kraven med hjälp av en kombination av automatiska verktyg, manuell tangentbordsnavigering och testning med skärmläsare.

@@ -7,6 +7,7 @@ import {
     should_touch_last_local_change_at,
     with_last_local_change_at
 } from '../logic/audit_sync_tracking.js';
+import { with_last_in_progress_activity_in_metadata } from '../logic/audit_list_last_updated.js';
 
 export function reduce_update_metadata(current_state: any, action: any) {
     const payload = { ...(action.payload || {}) };
@@ -31,6 +32,7 @@ export function reduce_update_metadata(current_state: any, action: any) {
     if (may_bump_non_obs) {
         const now_iso = get_current_iso_datetime_utc();
         merged.auditLastNonObservationActivityAt = now_iso;
+        merged.auditMetadata = with_last_in_progress_activity_in_metadata(merged.auditMetadata, now_iso);
         if (should_touch_last_local_change_at(current_state.auditStatus, { skip_internal_sync })) {
             return with_last_local_change_at(merged, now_iso);
         }

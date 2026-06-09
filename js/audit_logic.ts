@@ -66,8 +66,18 @@ export {
     get_last_activity_timestamp,
     recalculateAuditTimes,
     recalculateStatusesOnLoad,
-    requirement_results_equal_for_last_updated
+    requirement_results_equal_for_last_updated,
+    AUDIT_METADATA_LAST_IN_PROGRESS_ACTIVITY_KEY
 } from './logic/audit_logic_recalc.js';
+
+export {
+    resolve_audit_list_last_updated_at,
+    get_last_activity_from_samples,
+    max_iso_timestamps,
+    with_last_in_progress_activity_in_metadata,
+    without_last_in_progress_activity_in_metadata,
+    get_frozen_last_in_progress_activity_at
+} from './logic/audit_list_last_updated.js';
 
 export {
     build_not_applicable_requirement_result,

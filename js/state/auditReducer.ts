@@ -30,6 +30,7 @@ import {
     should_touch_last_local_change_at,
     with_last_local_change_at
 } from '../logic/audit_sync_tracking.js';
+import { with_last_in_progress_activity_in_metadata } from '../logic/audit_list_last_updated.js';
 
 export function auditReducer(current_state: any, action: any) {
     let new_state: any;
@@ -370,6 +371,19 @@ export function auditReducer(current_state: any, action: any) {
                 return new_state;
             }
             const now_iso = get_current_iso_datetime_utc();
+            if (
+                current_state.auditStatus === 'in_progress'
+                || current_state.auditStatus === 'not_started'
+            ) {
+                const activity_ts =
+                    typeof result_to_save.lastStatusUpdate === 'string' && result_to_save.lastStatusUpdate
+                        ? result_to_save.lastStatusUpdate
+                        : now_iso;
+                new_state.auditMetadata = with_last_in_progress_activity_in_metadata(
+                    new_state.auditMetadata,
+                    activity_ts
+                );
+            }
             if (should_touch_last_local_change_at(current_state.auditStatus)) {
                 return with_last_local_change_at(new_state, now_iso);
             }

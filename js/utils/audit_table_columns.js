@@ -5,6 +5,7 @@ import {
     format_audit_row_progress_display,
     progress_percent_for_audit_row
 } from '../logic/audit_list_progress.js';
+import { resolve_audit_list_last_updated_at } from '../logic/audit_list_last_updated.js';
 
 const EMPTY_PLACEHOLDER = '—';
 
@@ -116,10 +117,26 @@ export function create_audit_table_columns(deps, handlers, opts = {}) {
         },
         {
             headerLabel: t('start_view_col_last_updated'),
-            getSortValue: (row) => (row.updated_at ? String(row.updated_at) : ''),
+            getSortValue: (row) => {
+                const iso = row.last_updated_display_at
+                    || resolve_audit_list_last_updated_at({
+                        status: row.status,
+                        metadata: row.metadata,
+                        samples: row.samples,
+                        updated_at: row.updated_at
+                    });
+                return iso ? String(iso) : '';
+            },
             getContent: (row) => {
-                if (!row.updated_at) return EMPTY_PLACEHOLDER;
-                return Helpers?.format_iso_to_local_datetime?.(row.updated_at, lang) || String(row.updated_at);
+                const iso = row.last_updated_display_at
+                    || resolve_audit_list_last_updated_at({
+                        status: row.status,
+                        metadata: row.metadata,
+                        samples: row.samples,
+                        updated_at: row.updated_at
+                    });
+                if (!iso) return EMPTY_PLACEHOLDER;
+                return Helpers?.format_iso_to_local_datetime?.(iso, lang) || String(iso);
             }
         },
         {

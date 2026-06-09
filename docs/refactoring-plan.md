@@ -60,7 +60,7 @@ Varje avslutat micro-steg ska ha:
 | TODO 0 | Denna plan + process |
 | TODO 1 | Dela `js/utils/helpers.js` i smala moduler + facade |
 | TODO 2 | Centralisera `count_stuck_in_samples` (t.ex. `shared/audit/`) |
-| TODO 3 | Dela `js/logic/server_sync.js` → `js/sync/*` |
+| TODO 3 | Dela `js/logic/server_sync.js` → `js/sync/*` (**delvis klart:** synkmoduler finns under `js/sync/`; tunn fasad kvar i `server_sync.js`) |
 | TODO 4 | Dela `js/logic/view_render.js` → `js/view/*` |
 | TODO 5 | Dela notiser → `js/notifications/*` |
 | TODO 6 | Dela `js/state/auditReducer.ts` → handlers under `js/state/audit/` |
@@ -112,6 +112,8 @@ Varje avslutat micro-steg ska ha:
 - Verifiera: lint, typecheck, test, build.
 
 ### TODO 3 – `server_sync.js` → `js/sync/`
+
+**Status (2026-06):** Huvuddelen av synklogiken ligger redan i `js/sync/` (`audit_sync_service.ts`, `audit_sync_execute.ts`, `rulefile_sync_service.js` m.fl.). `server_sync.js` är kvar som tunn fasad för bakåtkompatibla imports.
 
 **Slutmål:** `server_sync.js` exporterar bara tunn publik yta och delegerar:
 

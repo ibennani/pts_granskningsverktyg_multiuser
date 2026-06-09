@@ -28,7 +28,7 @@ Leffe stöder hela kedjan från regelfiler och stickprov till låst granskning o
 
 1. Klona eller kopiera projektmappen och gå in i den.
 2. `npm install`
-3. `npm run dev` – startar Docker (om tillgängligt), backend på port 3000, Vite på port 5173, samt valfria hjälpprocesser enligt `package.json`.
+3. `npm run dev` – startar Docker (om tillgängligt), backend på port 3000, Vite på port 5173, valfri ngrok-tunnel och byggstämpel-watcher enligt `package.json`.
 4. Öppna `http://localhost:5173` (Vite proxar API under `/v2/api` till backend).
 
 Utan Docker: starta bara frontend med `npm run dev:client` (backend/databas krävs för inloggning och serverlagrade granskningar).
@@ -60,7 +60,7 @@ npm run preview
 
 | Kommando | Beskrivning |
 |----------|-------------|
-| `npm run dev` | Full lokal miljö: Docker, backend, Vite (port 5173) |
+| `npm run dev` | Full lokal miljö: Docker, backend, Vite (port 5173), valfri ngrok |
 | `npm run dev:client` | Endast Vite |
 | `npm run dev:db` | Startar Postgres via Docker (`-p sessionversion`) |
 | `npm run dev:server` | Endast backend (`tsx server/index.js`) |
@@ -70,11 +70,15 @@ npm run preview
 | `npm run build` | Bygger frontend till `dist/` |
 | `npm run preview` | Förhandsgranskning av bygge |
 | `npm run lint` | ESLint (JavaScript) |
+| `npm run lint:ts` | ESLint (TypeScript) |
+| `npm run typecheck` | TypeScript utan emit (`tsc --noEmit`) |
 | `npm run check` | Lint, importkontroller, TypeScript, Jest |
 | `npm test` | Jest-enhetstester |
 | `npm run test:e2e:smoke` | Playwright (Chromium) |
+| `npm run test:e2e` | Playwright (alla konfigurerade webbläsare) |
 | `npm run db:migrate` | Kör databasmigreringar |
 | `npm run deploy:v2` | Deploy till konfigurerad server (se `docs/deploy-v2-workflow.md`) |
+| `npm run diagnose:v2` | Fjärrdiagnostik av v2-miljön |
 
 E2E-tester körs med Playwright, t.ex. `npx playwright test` (kräver att appen svarar på `E2E_BASE_URL` eller standard `http://localhost:5173`).
 
@@ -82,6 +86,7 @@ E2E-tester körs med Playwright, t.ex. `npx playwright test` (kräver att appen 
 
 - **Vite** (dev port 5173), **Express**-backend, **PostgreSQL**
 - **State**: central store i `js/state.js` (implementation i `js/state/index.ts`) med sparning i webbläsaren och synk mot server när backend används
+- **Affärslogik**: `audit_logic.ts` och `validation_logic.ts` injiceras via `deps` till vykomponenter (inte `window`)
 - **Formulärautospar**: `js/logic/autosave_service.js` (debounce 250 ms, endast `input`)
 - **Fältutkast (drafts)**: `js/draft_manager.ts` (localStorage, bl.a. `data-draft-path`) – separat från central state
 - **Export**: `js/export_logic.ts` (exponeras som `window.ExportLogic`) – använder npm-paket (t.ex. exceljs, docx), inte CDN
@@ -99,6 +104,9 @@ Se mappen `docs/`, bland annat:
 - [Utvecklarguide](docs/utvecklarguide.md)
 - [State och persistens](docs/state_and_persistence.md)
 - [API-dokumentation](docs/api-dokumentation.md)
+- [Komponentstandard](docs/component_standard.md)
+- [Refaktoreringsplan](docs/refactoring-plan.md)
+- [Deploy-workflow](docs/deploy-v2-workflow.md)
 - [Admin och inloggning](docs/admin_anvandare_och_inloggning.md)
 
 ## Internationalisering

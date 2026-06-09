@@ -1,6 +1,6 @@
 # Utvecklarguide – Leffe
 
-**Version:** 1.2  
+**Version:** 1.3  
 **Datum:** 2026-06-09
 
 ## Innehållsförteckning
@@ -34,17 +34,20 @@
 
 ### Miljövariabler
 
-Skapa `.env.local` för lokala inställningar:
+Skapa `.env` i projektroten (gitignorerad). Backend läser den via `dotenv` i `server/index.js`. Exempel för lokal utveckling:
 
 ```bash
-# Utveckling
+# Backend
 NODE_ENV=development
-VITE_APP_DEBUG=true
-VITE_APP_LOG_LEVEL=debug
+DATABASE_URL=postgresql://granskning:granskning@localhost:5432/granskningsverktyget
+API_PORT=3000
+JWT_SECRET=din-hemliga-nyckel
 
-# API-endpoints (om relevant)
-VITE_API_BASE_URL=http://localhost:3000/api
+# Klienten anropar API via Vite-proxy — ingen VITE_API_BASE_URL behövs i normal dev:
+# http://localhost:5173/v2/api/... → backend localhost:3000/api/...
 ```
+
+Deploy-relaterade variabler (`DEPLOY_SSH_PASSWORD`, `PUBLIC_APP_URL`, `ALLOWED_ORIGINS` m.m.) beskrivs i `docs/deploy-v2-workflow.md`.
 
 ## 2. Projektarkitektur
 
@@ -59,7 +62,8 @@ Leffe (projektmapp)/
 │   ├── components/            # UI-komponenter (klasser + legacy)
 │   ├── logic/                 # router, view_render, app_bootstrap, autospar
 │   ├── export/                # Exportmoduler
-│   ├── sync/                  # Serversynk
+│   ├── sync/                  # Serversynk (audit_sync_service, rulefile_sync)
+│   ├── features/              # Domänspecifika funktioner (t.ex. markdown_toolbar)
 │   ├── api/                   # REST-klient
 │   └── i18n/                  # Språkfiler
 ├── server/                    # Express, PostgreSQL, JWT
@@ -446,10 +450,13 @@ const initial_state = {
 
 ### Actions
 
+Fullständig lista finns i `js/state/actionTypes.ts` (exporteras som `StoreActionTypes`). Urval:
+
 ```javascript
-// Action types (exporteras som StoreActionTypes)
+// Action types (exporteras som StoreActionTypes) — urval
 export const ActionTypes = {
     INITIALIZE_NEW_AUDIT: 'INITIALIZE_NEW_AUDIT',
+    DISCARD_PREPARED_AUDIT: 'DISCARD_PREPARED_AUDIT',
     INITIALIZE_RULEFILE_EDITING: 'INITIALIZE_RULEFILE_EDITING',
     LOAD_AUDIT_FROM_FILE: 'LOAD_AUDIT_FROM_FILE',
     UPDATE_METADATA: 'UPDATE_METADATA',
@@ -472,7 +479,10 @@ export const ActionTypes = {
     DELETE_REQUIREMENT_DEFINITION: 'DELETE_REQUIREMENT_DEFINITION',
     DELETE_CHECK_FROM_REQUIREMENT: 'DELETE_CHECK_FROM_REQUIREMENT',
     DELETE_CRITERION_FROM_CHECK: 'DELETE_CRITERION_FROM_CHECK',
-    SET_RULEFILE_EDIT_BASELINE: 'SET_RULEFILE_EDIT_BASELINE'
+    SET_RULEFILE_EDIT_BASELINE: 'SET_RULEFILE_EDIT_BASELINE',
+    SET_REMOTE_AUDIT_ID: 'SET_REMOTE_AUDIT_ID',
+    REPLACE_STATE_FROM_REMOTE: 'REPLACE_STATE_FROM_REMOTE',
+    REPLACE_RULEFILE_FROM_REMOTE: 'REPLACE_RULEFILE_FROM_REMOTE'
 };
 
 // Användning i komponenter

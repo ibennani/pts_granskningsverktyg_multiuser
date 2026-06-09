@@ -1,6 +1,6 @@
 # API-dokumentation – Leffe
 
-**Version:** 1.2  
+**Version:** 1.3  
 **Datum:** 2026-06-09
 
 ## Innehållsförteckning
@@ -26,8 +26,8 @@ Leffe använder en modulär arkitektur med tydliga API:er för varje komponent. 
 - **`window.Helpers`** — hjälpfunktioner
 - **`window.Translation`** — internationalisering
 - **`window.ExportLogic`** — export
-- **`window.AuditLogic`** — granskningslogik
-- **`window.ValidationLogic`** — validering
+- **`window.ConsoleManager`** / **`window.MemoryManager`** — loggning respektive timer och event listener-hantering
+- **Granskningslogik och validering** — ES-moduler (`audit_logic.ts`, `validation_logic.ts`), injiceras via `deps` till vykomponenter (exponeras **inte** på `window`)
 
 State sätts **inte** på `window.Store` i nuvarande kodbas.
 
@@ -71,33 +71,30 @@ clearLocalStorageBackup();
 
 ### Action Types
 
+Fullständig lista finns i `js/state/actionTypes.ts` (exporteras som `StoreActionTypes`). Urval:
+
 ```javascript
-// Action types för state management
+// Action types för state management (urval)
 const ActionTypes = {
-    // Audit management
     INITIALIZE_NEW_AUDIT: 'INITIALIZE_NEW_AUDIT',
+    DISCARD_PREPARED_AUDIT: 'DISCARD_PREPARED_AUDIT',
     INITIALIZE_RULEFILE_EDITING: 'INITIALIZE_RULEFILE_EDITING',
     LOAD_AUDIT_FROM_FILE: 'LOAD_AUDIT_FROM_FILE',
     SET_AUDIT_STATUS: 'SET_AUDIT_STATUS',
-    
-    // Metadata
     UPDATE_METADATA: 'UPDATE_METADATA',
-    
-    // Samples
     ADD_SAMPLE: 'ADD_SAMPLE',
     UPDATE_SAMPLE: 'UPDATE_SAMPLE',
     DELETE_SAMPLE: 'DELETE_SAMPLE',
-    
-    // Requirements
     UPDATE_REQUIREMENT_RESULT: 'UPDATE_REQUIREMENT_RESULT',
-    UPDATE_REQUIREMENT_DEFINITION: 'UPDATE_REQUIREMENT_DEFINITION',
-    ADD_REQUIREMENT_DEFINITION: 'ADD_REQUIREMENT_DEFINITION',
-    DELETE_REQUIREMENT_DEFINITION: 'DELETE_REQUIREMENT_DEFINITION',
-    
-    // UI
+    SET_RULE_FILE_CONTENT: 'SET_RULE_FILE_CONTENT',
+    UPDATE_RULEFILE_CONTENT: 'UPDATE_RULEFILE_CONTENT',
+    REPLACE_RULEFILE_AND_RECONCILE: 'REPLACE_RULEFILE_AND_RECONCILE',
     SET_UI_FILTER_SETTINGS: 'SET_UI_FILTER_SETTINGS',
+    SET_ALL_REQUIREMENTS_FILTER_SETTINGS: 'SET_ALL_REQUIREMENTS_FILTER_SETTINGS',
     STAGE_SAMPLE_CHANGES: 'STAGE_SAMPLE_CHANGES',
-    CLEAR_STAGED_SAMPLE_CHANGES: 'CLEAR_STAGED_SAMPLE_CHANGES'
+    CLEAR_STAGED_SAMPLE_CHANGES: 'CLEAR_STAGED_SAMPLE_CHANGES',
+    SET_REMOTE_AUDIT_ID: 'SET_REMOTE_AUDIT_ID',
+    REPLACE_STATE_FROM_REMOTE: 'REPLACE_STATE_FROM_REMOTE'
 };
 ```
 
@@ -204,7 +201,9 @@ interface ComponentInitParams {
         Translation: Object;        // Översättningsfunktioner
         Helpers: Object;            // Hjälpfunktioner
         NotificationComponent: Object; // Notifikationskomponent
-        ValidationLogic?: Object;   // Valideringslogik (valfritt)
+        AuditLogic?: Object;        // Granskningslogik (via deps)
+        ValidationLogic?: Object;   // Valideringslogik (via deps)
+        AutosaveService?: Object;   // Formulärautospar
         // ... andra beroenden
     }
 }
@@ -240,8 +239,8 @@ interface Helpers {
 
 // Exempel på användning
 const element = window.Helpers.create_element('div', {
-    className: 'my-class',
-    textContent: 'Hello World',
+    class_name: 'my-class',
+    text_content: 'Hello World',
     attributes: { 'data-testid': 'my-element' }
 });
 
@@ -252,7 +251,7 @@ const formattedDate = window.Helpers.format_iso_to_local_datetime('2025-01-27T10
 ### Console Manager API
 
 ```javascript
-// window.consoleManager
+// window.ConsoleManager (sätts i js/utils/console_manager.js)
 interface ConsoleManager {
     log(message: string, ...args: any[]): void;
     warn(message: string, ...args: any[]): void;
@@ -261,14 +260,14 @@ interface ConsoleManager {
 }
 
 // Exempel
-window.consoleManager.log('Debug message', { data: 'value' });
-window.consoleManager.error('Error occurred', error);
+window.ConsoleManager.log('Debug message', { data: 'value' });
+window.ConsoleManager.warn('Varning', { data: 'value' });
 ```
 
 ### Memory Manager API
 
 ```javascript
-// window.memoryManager
+// window.MemoryManager (sätts i js/utils/memory_manager.js)
 interface MemoryManager {
     setTimeout(callback: Function, delay: number): number;
     setInterval(callback: Function, delay: number): number;
@@ -278,11 +277,11 @@ interface MemoryManager {
 }
 
 // Exempel
-const timerId = window.memoryManager.setTimeout(() => {
+const timerId = window.MemoryManager.setTimeout(() => {
     console.log('Timer executed');
 }, 1000);
 
-window.memoryManager.addEventListener(document, 'click', handleClick);
+window.MemoryManager.addEventListener(document, 'click', handleClick);
 ```
 
 ## 5. Export API
@@ -339,51 +338,49 @@ async function export_to_word_samples(current_audit) {
 }
 ```
 
-## 6. Validering API
+## 6. Validering och granskningslogik
+
+Granskningslogik och validering exponeras **inte** på `window`. Använd ES-import eller `deps` i vykomponenter.
 
 ### ValidationLogic API
 
 ```javascript
-// window.ValidationLogic
-interface ValidationLogic {
-    validate_rule_file_json(jsonObject: Object): ValidationResult;
-    validate_saved_audit_file(jsonObject: Object): ValidationResult;
-}
+import * as ValidationLogic from './validation_logic.ts';
 
 interface ValidationResult {
     isValid: boolean;
     message: string;
 }
 
-// Exempel
-const validationResult = window.ValidationLogic.validate_rule_file_json(ruleFileData);
+// Fristående regelfil
+const validationResult = ValidationLogic.validate_rule_file_json(ruleFileData);
 if (!validationResult.isValid) {
     console.error('Validation failed:', validationResult.message);
 }
+
+// Sparad granskning (toppfält + inbäddad regelfil)
+const auditResult = ValidationLogic.validate_saved_audit_file(auditData);
+
+// I vykomponenter (via deps):
+const result = this.ValidationLogic.validate_saved_audit_file(auditData);
 ```
 
-### Valideringsregler
+Validering sker i kod (`validation_logic.ts`, `validation_rulefile_requirements.ts`), inte via separata JSON Schema-filer. Felmeddelanden kommer från översättningsnycklar i `js/i18n/*.json`.
+
+### AuditLogic API (urval)
 
 ```javascript
-// Regelfil-validering
-const RULE_FILE_SCHEMA = {
-    metadata: {
-        title: { type: 'string', required: true },
-        version: { type: 'string', required: false },
-        pageTypes: { type: 'array', required: true },
-        contentTypes: { type: 'array', required: true }
-    },
-    requirements: { type: 'object', required: true }
-};
+import * as AuditLogic from './audit_logic.ts';
 
-// Sparfil-validering
-const SAVED_AUDIT_SCHEMA = {
-    saveFileVersion: { type: 'string', required: true },
-    ruleFileContent: { type: 'object', required: true },
-    auditMetadata: { type: 'object', required: true },
-    auditStatus: { type: 'string', required: true },
-    samples: { type: 'array', required: true }
-};
+// I vykomponenter:
+this.AuditLogic.calculate_requirement_status(requirement, result);
+this.AuditLogic.get_relevant_requirements_for_sample(ruleFileContent, sample);
+this.AuditLogic.calculate_overall_audit_progress(auditData);
+
+// Vanliga funktioner:
+// calculate_check_status, calculate_requirement_status,
+// get_relevant_requirements_for_sample, get_ordered_relevant_requirement_keys,
+// calculate_overall_audit_progress, find_first_incomplete_requirement_key_for_sample
 ```
 
 ## 7. Internationalisering API
@@ -467,23 +464,15 @@ document.dispatchEvent(event);
 
 ### Error Boundary API
 
+`ErrorBoundaryComponent` är en **klass** (`js/components/ErrorBoundaryComponent.js`) som instansieras i `main.js`. Den exponeras **inte** på `window`.
+
 ```javascript
-// window.ErrorBoundaryComponent
-interface ErrorBoundaryComponent {
-    init(container: HTMLElement): Promise<void>;
-    show_error(error: ErrorInfo): void;
-    clear_error(): void;
-    destroy(): void;
-}
+import { ErrorBoundaryComponent } from './components/ErrorBoundaryComponent.js';
 
-interface ErrorInfo {
-    message: string;
-    stack: string;
-    component: string;
-}
+const errorBoundary = new ErrorBoundaryComponent();
+await errorBoundary.init({ root, deps });
 
-// Exempel
-window.ErrorBoundaryComponent.show_error({
+errorBoundary.show_error({
     message: 'Component failed to render',
     stack: 'Error stack trace...',
     component: 'MyComponent'
@@ -701,7 +690,7 @@ try {
 
 - Max storlek för JSON-body (t.ex. `POST /api/audits/import`) är **10 MiB** (`JSON_MAX_UPLOAD_BYTES` i `js/constants/json_upload_limits.js`), samma värde som `express.json` använder i `server/index.js`.
 - Klienten avvisar uppladdade JSON-filer större än samma gräns innan parsning (gransknings-/regeluppladdning i granskningsvyn).
-- **Import av granskning** valideras på servern med samma logik som `validate_saved_audit_file` (toppfält, metadata/stickprov/typ av status, samt inbäddad regelfil enligt `validation_logic.ts`). Felmeddelanden byggs från `js/i18n/sv-SE.json` via `audit_import_t` i `server/routes/audits.js`.
+- **Import av granskning** valideras på servern med samma logik som `validate_saved_audit_file` (toppfält, metadata/stickprov/typ av status, samt inbäddad regelfil enligt `validation_logic.ts`). Felmeddelanden byggs från `js/i18n/sv-SE.json` via `audit_import_t` i `server/routes/audit_route_support.ts`; import-routes i `server/routes/audit_import_routes.ts`.
 - **JSON-struktur:** `js/utils/json_structure_guard.js` begränsar nästlingsdjup och antal noder på importerad data (klient och server).
 - **Rate limit:** `POST /api/audits/import` och `POST /api/rules/import` använder `import_payload_rate_limiter` i `server/middleware/rateLimiter.js` (svar **429** vid för många försök).
 - I **produktion** bakom t.ex. **nginx**: sätt `client_max_body_size` till minst **10m** så proxyn inte avvisar begäran innan den når Node (annars kan användaren få otydliga fel). `server/index.js` använder `trust proxy` för korrekt klient-IP bakom proxy.

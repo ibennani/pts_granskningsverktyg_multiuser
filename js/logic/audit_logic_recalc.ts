@@ -12,6 +12,10 @@ import { find_requirement_definition, get_stored_requirement_result_for_def } fr
 import { calculate_check_status, calculate_requirement_status } from './audit_logic_status.js';
 import { assignSortedDeficiencyIdsOnLock } from './audit_logic_deficiency.js';
 import { find_check_def_by_storage_id } from './entity_id_match.js';
+import {
+    AUDIT_METADATA_LAST_IN_PROGRESS_ACTIVITY_KEY,
+    get_frozen_last_in_progress_activity_at
+} from './audit_list_last_updated.js';
 
 export function recalculateStatusesOnLoad(auditState: AuditStateShape | null | undefined): AuditStateShape | null | undefined {
     if (!auditState || !auditState.ruleFileContent || !auditState.samples) {
@@ -162,11 +166,11 @@ export function compute_audit_last_updated_live_timestamp(audit_state: AuditStat
 
 export function get_audit_last_updated_display_timestamp(audit_state: AuditStateShape | null | undefined): string | null {
     if (!audit_state) return null;
-    if (
-        (audit_state.auditStatus === 'locked' || audit_state.auditStatus === 'archived') &&
-        audit_state.auditLastUpdatedAtFrozen
-    ) {
-        return audit_state.auditLastUpdatedAtFrozen;
+    if (audit_state.auditStatus === 'locked' || audit_state.auditStatus === 'archived') {
+        const frozen = get_frozen_last_in_progress_activity_at(audit_state);
+        if (frozen) return frozen;
     }
     return compute_audit_last_updated_live_timestamp(audit_state);
 }
+
+export { AUDIT_METADATA_LAST_IN_PROGRESS_ACTIVITY_KEY };

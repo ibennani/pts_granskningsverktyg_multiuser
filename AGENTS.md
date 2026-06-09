@@ -65,6 +65,7 @@ Projektet är organiserat enligt följande struktur:
 - Central state i `js/state.js` (implementation i `js/state/index.ts`, re-export via `js/state/index.js` och reducerfiler under `js/state/`)
 - Exporterar bland annat `getState`, `dispatch`, `subscribe`, `StoreActionTypes`, `loadStateFromLocalStorageBackup`, `clearLocalStorageBackup`, `APP_STATE_KEY`
 - **`window.Store` används inte** i nuvarande kodbas — importera från `state.js`
+- **`AuditLogic` och `ValidationLogic`** injiceras via `deps` till vykomponenter (importeras i `main.js`, exponeras inte på `window`)
 - I komponenter: använd `deps.getState()` och `deps.dispatch()` (från deps-objektet)
 - **Persistens, backup och serversynk:** `docs/state_and_persistence.md`
 

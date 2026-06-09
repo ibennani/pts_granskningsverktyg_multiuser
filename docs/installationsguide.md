@@ -81,7 +81,7 @@ npm run check
 npm run dev
 ```
 
-Detta startar (enligt `package.json`): Docker med `docker compose -p sessionversion`, backend via nodemon som kör `tsx server/index.js` (port 3000), Vite (port 5173) med proxy `/v2/api` och `/v2/ws` mot backend, samt valfria hjälpprocesser (ngrok, build-info-watcher).
+Detta startar (enligt `package.json`): Docker med `docker compose -p sessionversion`, backend via nodemon som kör `tsx server/index.js` (port 3000), Vite (port 5173) med proxy `/v2/api` och `/v2/ws` mot backend, valfri ngrok-tunnel och byggstämpel-watcher.
 
 **Endast frontend (utan databas/backend):**
 ```bash
@@ -162,8 +162,11 @@ Faktiska nycklar för backend (databas, JWT, CORS m.m.) dokumenteras i serverns 
 ### Debugging
 
 ```bash
+# Playwright med inspector
 PWDEBUG=1 npx playwright test
-npm run dev -- --debug
+
+# Vite debug (endast frontend)
+npx vite --debug
 ```
 
 ## 7. Uppdateringar

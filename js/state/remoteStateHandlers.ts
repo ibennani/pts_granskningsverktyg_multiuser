@@ -118,12 +118,17 @@ export function reduce_load_audit_from_file (current_state: any, action: any) {
         merged_state = AuditLogic.recalculateAuditTimes(merged_state);
         merged_state.manageUsersText = current_state.manageUsersText ?? '';
         let loaded_final: any = AuditLogic.recalculateStatusesOnLoad(merged_state);
-        if ((loaded_final.auditStatus === 'locked' || loaded_final.auditStatus === 'archived')
-            && (loaded_final.auditLastUpdatedAtFrozen === undefined || loaded_final.auditLastUpdatedAtFrozen === null)) {
-            loaded_final = {
-                ...loaded_final,
-                auditLastUpdatedAtFrozen: AuditLogic.compute_audit_last_updated_live_timestamp(loaded_final)
-            };
+        if (loaded_final.auditStatus === 'locked' || loaded_final.auditStatus === 'archived') {
+            const frozen_from_meta = loaded_final.auditMetadata?.lastInProgressActivityAt;
+            const frozen =
+                typeof frozen_from_meta === 'string' && frozen_from_meta
+                    ? frozen_from_meta
+                    : (loaded_final.auditLastUpdatedAtFrozen === undefined || loaded_final.auditLastUpdatedAtFrozen === null)
+                        ? AuditLogic.compute_audit_last_updated_live_timestamp(loaded_final)
+                        : loaded_final.auditLastUpdatedAtFrozen;
+            if (frozen) {
+                loaded_final = { ...loaded_final, auditLastUpdatedAtFrozen: frozen };
+            }
         }
         return loaded_final;
     }
@@ -154,12 +159,17 @@ export function reduce_replace_state_from_remote (current_state: any, action: an
         pendingSampleChanges: current_state.pendingSampleChanges ?? null,
         sampleEditDraft: current_state.sampleEditDraft ?? null
     };
-    if ((merged_remote.auditStatus === 'locked' || merged_remote.auditStatus === 'archived')
-        && (merged_remote.auditLastUpdatedAtFrozen === undefined || merged_remote.auditLastUpdatedAtFrozen === null)) {
-        merged_remote = {
-            ...merged_remote,
-            auditLastUpdatedAtFrozen: AuditLogic.compute_audit_last_updated_live_timestamp(merged_remote)
-        };
+    if (merged_remote.auditStatus === 'locked' || merged_remote.auditStatus === 'archived') {
+        const frozen_from_meta = merged_remote.auditMetadata?.lastInProgressActivityAt;
+        const frozen =
+            typeof frozen_from_meta === 'string' && frozen_from_meta
+                ? frozen_from_meta
+                : (merged_remote.auditLastUpdatedAtFrozen === undefined || merged_remote.auditLastUpdatedAtFrozen === null)
+                    ? AuditLogic.compute_audit_last_updated_live_timestamp(merged_remote)
+                    : merged_remote.auditLastUpdatedAtFrozen;
+        if (frozen) {
+            merged_remote = { ...merged_remote, auditLastUpdatedAtFrozen: frozen };
+        }
     }
     return merged_remote;
 }

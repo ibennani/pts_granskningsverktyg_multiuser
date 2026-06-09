@@ -23,7 +23,7 @@ För att bara behöva skriva `npm run deploy:v2` utan lösenordsfråga:
    DEPLOY_USER=användarnamn
    ```
 
-2. Därefter körs `npm run deploy:v2`, `deploy:debug` och `deploy:fix-env` utan lösenordsfråga. Fungerar på Windows, Linux och Mac (använder node-ssh).
+2. Därefter körs `npm run deploy:v2` (och relaterade skript som `diagnose:v2`, `deploy:v2:keep-build-info`, `start:v2:remote`) utan lösenordsfråga. Fungerar på Windows, Linux och Mac (använder node-ssh).
 
 **Alternativ: SSH-nycklar (ingen lösenordsfil):**
 ```bash
@@ -167,5 +167,5 @@ pm2 restart granskningsverktyget-v2
 
 **Vanliga orsaker till 500:**
 - **Databas ej startad** – `docker compose up -d` i projektmappen
-- **Saknad .env** – deploy kopierar inte .env (av säkerhetsskäl). Skapa den manuellt på servern
+- **Saknad .env på servern** – om du inte har en lokal `.env` i projektroten kopieras ingen fil vid deploy. Skapa `.env` lokalt (gitignorerad) och kör deploy igen, eller skapa `.env` manuellt på servern enligt steg 5 ovan. Deploy filtrerar bort rader som börjar med `DEPLOY_`.
 - **Migrationer ej körda** – kolumnen `rule_file_content` saknas i `audits` → `npm run db:migrate`
