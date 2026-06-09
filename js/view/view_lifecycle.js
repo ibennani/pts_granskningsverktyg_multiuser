@@ -33,8 +33,18 @@ export async function render_quick_view({
     ensure_skip_link_target(skip_target);
 }
 
-export async function flush_before_view_switch({ flush_sync_to_server, getState, dispatch, consoleManager }) {
+export async function flush_before_view_switch({
+    flush_sync_to_server,
+    sync_prepared_audit_before_list_navigation,
+    getState,
+    dispatch,
+    consoleManager,
+    target_view_name
+}) {
     try {
+        if (typeof sync_prepared_audit_before_list_navigation === 'function') {
+            await sync_prepared_audit_before_list_navigation(getState, dispatch, target_view_name);
+        }
         await flush_sync_to_server(getState, dispatch);
     } catch (flushErr) {
         consoleManager.warn('[Main.js] flush_sync_to_server:', flushErr?.message || flushErr);

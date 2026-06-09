@@ -97,6 +97,8 @@ export const MetadataFormComponent = {
     },
 
     handle_cancel_click() {
+        // Spara senaste fältvärden lokalt så att listvyn kan visa granskningen vid navigering.
+        this.autosave_session?.flush({ should_trim: true, skip_render: true });
         this.skip_autosave_on_destroy = true;
         this.autosave_session?.cancel_pending();
         if (typeof this.on_cancel_callback === 'function') {

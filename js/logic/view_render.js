@@ -2,6 +2,7 @@
  * Vyrendering: init/destroy/render av aktuell vykomponent.
  */
 import { flush_sync_to_server } from './server_sync.js';
+import { sync_prepared_audit_before_list_navigation } from './prepared_audit_sync.js';
 import { DraftManager } from '../draft_manager.ts';
 import * as Helpers from '../utils/helpers.js';
 import * as SaveAuditLogic from '../logic/save_audit_logic.ts';
@@ -175,7 +176,14 @@ export async function render_view(view_name_to_render, params_to_render = {}, de
         consoleManager
     });
 
-    await flush_before_view_switch({ flush_sync_to_server, getState, dispatch, consoleManager });
+    await flush_before_view_switch({
+        flush_sync_to_server,
+        sync_prepared_audit_before_list_navigation,
+        getState,
+        dispatch,
+        consoleManager,
+        target_view_name: view_name_mut
+    });
 
     const cleared_host = clear_view_root_for_next_view({
         view_root,
