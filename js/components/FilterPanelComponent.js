@@ -295,6 +295,9 @@ export const FilterPanelComponent = {
     _handleToggle(e) {
         e.stopPropagation();
         this.state.isOpen = !this.state.isOpen;
+        if (this.state.isOpen && typeof this.deps.onPanelToggle === 'function') {
+            this.deps.onPanelToggle();
+        }
         this.render();
         if (this.state.isOpen) {
             const firstCheckbox = this._elements.panel.querySelector('input');

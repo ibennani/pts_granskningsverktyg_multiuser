@@ -3,6 +3,9 @@ import { get_current_user_name } from '../utils/helpers.js';
 import { sync_to_server_now } from '../logic/server_sync.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import { get_show_empty_metadata_form, clear_show_empty_metadata_form } from '../app/browser_globals.js';
+import { DraftManager } from '../draft_manager.ts';
+
+const METADATA_DRAFT_SCOPE = { route_key: 'metadata', params: {} };
 
 export class EditMetadataViewComponent {
     constructor() {
@@ -89,7 +92,22 @@ export class EditMetadataViewComponent {
     }
 
     handle_cancel_new_audit() {
-        this.router('start', { allow_new_audit_exit: '1' });
+        void this._discard_and_go_to_list();
+    }
+
+    _clear_metadata_field_draft() {
+        if (typeof DraftManager?.clearDraftForScope === 'function') {
+            DraftManager.clearDraftForScope(METADATA_DRAFT_SCOPE.route_key, METADATA_DRAFT_SCOPE.params);
+        } else if (window.DraftManager?.clearDraftForScope) {
+            window.DraftManager.clearDraftForScope(METADATA_DRAFT_SCOPE.route_key, METADATA_DRAFT_SCOPE.params);
+        }
+    }
+
+    _skip_form_autosave_on_destroy() {
+        const form = this.metadata_form_component_instance;
+        if (!form) return;
+        form.skip_autosave_on_destroy = true;
+        form.autosave_session?.cancel_pending();
     }
 
     _is_metadata_empty_or_only_auditor(form_data) {
@@ -108,6 +126,57 @@ export class EditMetadataViewComponent {
         if (!form_data) return false;
         const has = (v) => (v !== null && v !== undefined && String(v).trim() !== '');
         return has(form_data.actorName) && has(form_data.auditorName);
+    }
+
+    _build_fresh_new_audit_metadata() {
+        return {
+            caseNumber: '',
+            actorName: '',
+            actorLink: '',
+            auditorName: get_current_user_name() || '',
+            caseHandler: '',
+            internalComment: ''
+        };
+    }
+
+    async _resolve_metadata_for_form(current_state, is_new_audit) {
+        const show_empty = is_new_audit && (
+            current_state.freshNewAuditMetadata === true ||
+            (typeof window !== 'undefined' && get_show_empty_metadata_form())
+        );
+        if (show_empty) {
+            clear_show_empty_metadata_form();
+            this._clear_metadata_field_draft();
+            const fresh_metadata = this._build_fresh_new_audit_metadata();
+            await this.dispatch({
+                type: this.StoreActionTypes.UPDATE_METADATA,
+                payload: {
+                    ...fresh_metadata,
+                    skip_render: true,
+                    clear_fresh_new_audit_metadata: true
+                }
+            });
+            return fresh_metadata;
+        }
+        const from = current_state.auditMetadata || {};
+        const str = (v) => (v !== null && v !== undefined && String(v).trim() !== '' ? String(v).trim() : '');
+        const cleaned = {
+            caseNumber: str(from.caseNumber),
+            actorName: str(from.actorName),
+            actorLink: str(from.actorLink),
+            auditorName: str(from.auditorName) || get_current_user_name() || '',
+            caseHandler: str(from.caseHandler),
+            internalComment: (from.internalComment !== null && from.internalComment !== undefined ? String(from.internalComment) : '').trim()
+        };
+        if (is_new_audit) {
+            const keys = ['caseNumber', 'actorName', 'actorLink', 'auditorName', 'caseHandler', 'internalComment'];
+            const state_matches = keys.every(k => (from[k] === cleaned[k] || (str(from[k]) === cleaned[k])));
+            const no_extra_keys = Object.keys(from).every(k => keys.includes(k));
+            if (!state_matches || !no_extra_keys) {
+                await this.dispatch({ type: this.StoreActionTypes.UPDATE_METADATA, payload: cleaned });
+            }
+        }
+        return cleaned;
     }
 
     _show_required_fields_modal(form_data, source, on_proceed) {
@@ -165,7 +234,10 @@ export class EditMetadataViewComponent {
         );
     }
 
-    _do_go_to_list() {
+    async _discard_and_go_to_list() {
+        this._skip_form_autosave_on_destroy();
+        this._clear_metadata_field_draft();
+        await this.dispatch({ type: this.StoreActionTypes.DISCARD_PREPARED_AUDIT });
         this.router('start', { allow_new_audit_exit: '1' });
     }
 
@@ -183,7 +255,7 @@ export class EditMetadataViewComponent {
         } catch (err) {
             // Fel visas redan av run_sync via NotificationComponent
         }
-        this._do_go_to_list();
+        this.router('start', { allow_new_audit_exit: '1' });
     }
 
     _show_empty_metadata_modal(form_data, action, on_proceed) {
@@ -229,18 +301,18 @@ export class EditMetadataViewComponent {
     async handle_go_to_list(form_data) {
         const is_new_audit = this.getState().auditStatus === 'not_started';
         if (is_new_audit && !this._has_required_metadata(form_data)) {
-            this._show_required_fields_modal(form_data, 'go_to_list', () => this._do_go_to_list());
+            this._show_required_fields_modal(form_data, 'go_to_list', () => { void this._discard_and_go_to_list(); });
             return;
         }
         if (is_new_audit && this._is_metadata_empty_or_only_auditor(form_data)) {
-            this._show_empty_metadata_modal(form_data, 'go_to_list', () => this._do_go_to_list());
+            this._show_empty_metadata_modal(form_data, 'go_to_list', () => { void this._discard_and_go_to_list(); });
             return;
         }
         if (is_new_audit && this._has_required_metadata(form_data)) {
             await this._save_and_go_to_list(form_data);
             return;
         }
-        this._do_go_to_list();
+        await this._discard_and_go_to_list();
     }
 
     async render() {
@@ -275,9 +347,10 @@ export class EditMetadataViewComponent {
             root: this.metadata_form_container_element,
             deps: this.deps,
             options: {
+                discardOnCancel: is_new_audit,
                 onSubmit(form_data) {
                     if (is_new_audit && !self._has_required_metadata(form_data)) {
-                        self._show_required_fields_modal(form_data, 'submit', () => self._do_go_to_list());
+                        self._show_required_fields_modal(form_data, 'submit', () => { void self._discard_and_go_to_list(); });
                         return;
                     }
                     if (is_new_audit && self._is_metadata_empty_or_only_auditor(form_data)) {
@@ -291,39 +364,7 @@ export class EditMetadataViewComponent {
             }
         });
 
-        const metadata = (() => {
-            const show_empty = is_new_audit && typeof window !== 'undefined' && get_show_empty_metadata_form();
-            if (show_empty) {
-                clear_show_empty_metadata_form();
-                return {
-                    caseNumber: '',
-                    actorName: '',
-                    actorLink: '',
-                    auditorName: get_current_user_name() || '',
-                    caseHandler: '',
-                    internalComment: ''
-                };
-            }
-            const from = current_state.auditMetadata || {};
-            const str = (v) => (v !== null && v !== undefined && String(v).trim() !== '' ? String(v).trim() : '');
-            const cleaned = {
-                caseNumber: str(from.caseNumber),
-                actorName: str(from.actorName),
-                actorLink: str(from.actorLink),
-                auditorName: str(from.auditorName) || get_current_user_name() || '',
-                caseHandler: str(from.caseHandler),
-                internalComment: (from.internalComment !== null && from.internalComment !== undefined ? String(from.internalComment) : '').trim()
-            };
-            if (is_new_audit) {
-                const keys = ['caseNumber', 'actorName', 'actorLink', 'auditorName', 'caseHandler', 'internalComment'];
-                const state_matches = keys.every(k => (from[k] === cleaned[k] || (str(from[k]) === cleaned[k])));
-                const no_extra_keys = Object.keys(from).every(k => keys.includes(k));
-                if (!state_matches || !no_extra_keys) {
-                    this.dispatch({ type: this.StoreActionTypes.UPDATE_METADATA, payload: cleaned });
-                }
-            }
-            return cleaned;
-        })();
+        const metadata = await this._resolve_metadata_for_form(current_state, is_new_audit);
         const form_options = {
             initialData: metadata,
             submitButtonText: is_new_audit ? t('continue_to_samples') : t('save_changes_button'),

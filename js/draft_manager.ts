@@ -372,6 +372,18 @@ export const DraftManager: DraftManagerSingleton = {
         }
     },
 
+    clearDraftForScope(route_key: string, params: Record<string, unknown> = {}) {
+        const safe_params = params && typeof params === 'object' ? params : {};
+        const draft_key = `${route_key || 'start'}:${JSON.stringify(safe_params)}`;
+        this._remove_from_storage(sessionStorage, draft_key);
+        this._remove_from_storage(localStorage, draft_key);
+        delete this.memory_store[draft_key];
+        if (this.current_draft?.draftKey === draft_key) {
+            this.current_draft = null;
+        }
+        this.has_conflict_flag = false;
+    },
+
     clearCurrentDraft() {
         const draft_key = this.get_current_draft_key();
         this._remove_from_storage(sessionStorage, draft_key);

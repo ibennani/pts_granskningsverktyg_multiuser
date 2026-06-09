@@ -21,14 +21,49 @@ export const RequirementListToolbarComponent = {
         };
 
         this.is_dom_built = false;
+        this._search_input_ref = null;
         
         // Bind methods
         this.handle_search_input = this.handle_search_input.bind(this);
         this.handle_sort_change = this.handle_sort_change.bind(this);
     },
 
+    get_pending_search_text() {
+        if (this._search_input_ref) {
+            return this._search_input_ref.value || '';
+        }
+        const search_input = this.root?.querySelector('#req-list-search');
+        if (search_input) {
+            return search_input.value || '';
+        }
+        return this.component_state?.searchText || '';
+    },
+
+    sync_search_from_dom() {
+        if (this._search_debounce_timer) {
+            clearTimeout(this._search_debounce_timer);
+            this._search_debounce_timer = null;
+        }
+        const search_text = this.get_pending_search_text();
+        if (search_text === (this.component_state?.searchText || '')) {
+            return;
+        }
+        this.update_and_notify({ searchText: search_text });
+    },
+
     update_and_notify(new_partial_state) {
-        this.component_state = { ...this.component_state, ...new_partial_state };
+        if (this._search_debounce_timer) {
+            clearTimeout(this._search_debounce_timer);
+            this._search_debounce_timer = null;
+        }
+        const search_text = new_partial_state.searchText !== undefined
+            ? new_partial_state.searchText
+            : this.get_pending_search_text();
+        this.component_state = {
+            ...this.component_state,
+            ...new_partial_state,
+            searchText: search_text
+        };
         if (this.on_change_callback) {
             this.on_change_callback(this.component_state);
         }
@@ -73,6 +108,7 @@ export const RequirementListToolbarComponent = {
             search_input.addEventListener('input', this.handle_search_input);
         }
         search_group.appendChild(search_input);
+        this._search_input_ref = search_input;
         toolbar.appendChild(search_group);
 
         // Filter Group
@@ -94,6 +130,9 @@ export const RequirementListToolbarComponent = {
                     Helpers: { create_element: this.Helpers_create_element },
                     onFilterChange: (newFilters) => {
                         this.update_and_notify({ status: newFilters });
+                    },
+                    onPanelToggle: () => {
+                        this.sync_search_from_dom();
                     }
                 }
             });
@@ -129,9 +168,19 @@ export const RequirementListToolbarComponent = {
     },
     
     update_values() {
-        const searchInput = this.root.querySelector('#req-list-search');
-        if (searchInput && !this._search_debounce_timer) {
-            searchInput.value = this.component_state.searchText;
+        const searchInput = this._search_input_ref || this.root?.querySelector('#req-list-search');
+        if (searchInput) {
+            if (this._search_debounce_timer) {
+                // Behåll det användaren skriver – skriv inte över från state under debounce.
+            } else {
+                const dom_value = searchInput.value || '';
+                const state_value = this.component_state.searchText || '';
+                if (dom_value === '' && state_value !== '') {
+                    this.component_state = { ...this.component_state, searchText: '' };
+                } else if (dom_value !== state_value) {
+                    searchInput.value = state_value;
+                }
+            }
         }
         
         const sortSelect = this.root.querySelector('#req-list-sort');
@@ -139,7 +188,7 @@ export const RequirementListToolbarComponent = {
             sortSelect.value = this.component_state.sortBy;
         }
 
-        if (this.component_config.showStatusFilter) {
+        if (this.component_config?.showStatusFilter) {
             FilterPanelComponent.render({
                 filters: this.component_state.status
             });
@@ -219,6 +268,7 @@ export const RequirementListToolbarComponent = {
         
         if (this.root) this.root.innerHTML = '';
         this.is_dom_built = false;
+        this._search_input_ref = null;
         this.root = null;
         this.on_change_callback = null;
         this.deps = null;

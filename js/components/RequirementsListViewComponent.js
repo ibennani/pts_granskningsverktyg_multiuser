@@ -316,6 +316,18 @@ export class RequirementsListViewComponent {
 
         let current_ui_settings = ensure_default_status_filter(state.uiSettings?.[this.state_filter_key] || {});
 
+        if (this._toolbar_inited && typeof this.filter_component_instance?.get_pending_search_text === 'function') {
+            const pending_search = this.filter_component_instance.get_pending_search_text();
+            const store_search = current_ui_settings.searchText || '';
+            if (pending_search !== store_search) {
+                current_ui_settings = { ...current_ui_settings, searchText: pending_search };
+                const debounce_active = Boolean(this.filter_component_instance._search_debounce_timer);
+                if (!debounce_active) {
+                    this.handle_filter_change({ searchText: pending_search });
+                }
+            }
+        }
+
         const auto_sort_by = compute_auto_sort_by_override(this.mode, entries, all_relevant_requirements, current_ui_settings);
         if (auto_sort_by !== null) {
             this.dispatch({

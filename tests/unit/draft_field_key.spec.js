@@ -73,3 +73,24 @@ describe('DraftManager.restoreIntoDom med flera selectedContentTypes', () => {
         expect(c2.checked).toBe(false);
     });
 });
+
+describe('DraftManager.clearDraftForScope', () => {
+    beforeEach(() => {
+        DraftManager.init({
+            getRouteKey: () => 'metadata',
+            getScopeKey: () => 'metadata:{}'
+        });
+        sessionStorage.clear();
+    });
+
+    test('tar bort utkast för angiven vy även när aktuell route är annan', () => {
+        sessionStorage.setItem('draft:metadata:{}', JSON.stringify({
+            schemaVersion: 1,
+            draftKey: 'metadata:{}',
+            updatedAt: Date.now(),
+            fields: { actorName: { type: 'text', value: 'Gammal aktör', extra: {} } }
+        }));
+        DraftManager.clearDraftForScope('metadata', {});
+        expect(sessionStorage.getItem('draft:metadata:{}')).toBeNull();
+    });
+});

@@ -68,6 +68,7 @@ const AUDIT_ACTIONS = new Set([
     ActionTypes.SET_SAMPLE_EDIT_DRAFT,
     ActionTypes.CLEAR_SAMPLE_EDIT_DRAFT,
     ActionTypes.INITIALIZE_NEW_AUDIT,
+    ActionTypes.DISCARD_PREPARED_AUDIT,
     ActionTypes.INITIALIZE_RULEFILE_EDITING,
     ActionTypes.LOAD_AUDIT_FROM_FILE,
     ActionTypes.UPDATE_METADATA,

@@ -17,6 +17,7 @@ import {
 } from './sampleHandlers.js';
 import {
     reduce_initialize_new_audit,
+    reduce_discard_prepared_audit,
     reduce_initialize_rulefile_editing,
     reduce_load_audit_from_file,
     reduce_set_remote_audit_id,
@@ -328,6 +329,8 @@ export function auditReducer(current_state: any, action: any) {
             return reduce_clear_sample_edit_draft(current_state);
         case ActionTypes.INITIALIZE_NEW_AUDIT:
             return reduce_initialize_new_audit(current_state, action);
+        case ActionTypes.DISCARD_PREPARED_AUDIT:
+            return reduce_discard_prepared_audit(current_state, action);
         case ActionTypes.INITIALIZE_RULEFILE_EDITING:
             return reduce_initialize_rulefile_editing(current_state, action);
         case ActionTypes.LOAD_AUDIT_FROM_FILE:

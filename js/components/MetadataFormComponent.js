@@ -9,6 +9,7 @@ export const MetadataFormComponent = {
         this.on_submit_callback = options.onSubmit;
         this.on_cancel_callback = options.onCancel;
         this.on_go_to_list_callback = options.onGoToList;
+        this.discard_on_cancel = options.discardOnCancel === true;
 
         // Dependencies
         this.Translation = deps.Translation;
@@ -97,10 +98,12 @@ export const MetadataFormComponent = {
     },
 
     handle_cancel_click() {
-        // Spara senaste fältvärden lokalt så att listvyn kan visa granskningen vid navigering.
-        this.autosave_session?.flush({ should_trim: true, skip_render: true });
         this.skip_autosave_on_destroy = true;
         this.autosave_session?.cancel_pending();
+        if (!this.discard_on_cancel) {
+            // Spara senaste fältvärden lokalt så att listvyn kan visa granskningen vid navigering.
+            this.autosave_session?.flush({ should_trim: true, skip_render: true });
+        }
         if (typeof this.on_cancel_callback === 'function') {
             this.on_cancel_callback();
         }
@@ -288,6 +291,7 @@ export const MetadataFormComponent = {
         this.on_submit_callback = null;
         this.on_cancel_callback = null;
         this.on_go_to_list_callback = null;
+        this.discard_on_cancel = false;
         this.root = null;
         this.deps = null;
     }

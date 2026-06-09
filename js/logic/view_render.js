@@ -27,7 +27,11 @@ import {
     render_quick_view
 } from '../view/view_lifecycle.js';
 import { render_view_not_found, handle_view_lifecycle_error } from '../view/view_error_handler.js';
-import { set_current_view_tracking, get_restore_position_via_hook } from '../app/browser_globals.js';
+import {
+    set_current_view_tracking,
+    get_restore_position_via_hook,
+    get_show_empty_metadata_form
+} from '../app/browser_globals.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 
 function dismiss_stale_modal_before_view_switch() {
@@ -211,6 +215,13 @@ export async function render_view(view_name_to_render, params_to_render = {}, de
             error_boundary_holder.instance.clear_error();
         }
 
+        const state_before_render = typeof getState === 'function' ? getState() : null;
+        const skip_metadata_draft_restore =
+            view_name_mut === 'metadata' && (
+                state_before_render?.freshNewAuditMetadata === true ||
+                get_show_empty_metadata_form()
+            );
+
         await init_and_render_view_component({
             ComponentClass,
             view_init_root,
@@ -230,7 +241,10 @@ export async function render_view(view_name_to_render, params_to_render = {}, de
             updatePageTitle(view_name_mut, params_mut);
         }
         ensure_skip_link_target(view_init_root);
-        if (DraftManager?.restoreIntoDom) {
+        if (skip_metadata_draft_restore && typeof DraftManager?.clearDraftForScope === 'function') {
+            DraftManager.clearDraftForScope('metadata', {});
+        }
+        if (!skip_metadata_draft_restore && DraftManager?.restoreIntoDom) {
             DraftManager.restoreIntoDom(view_init_root);
         }
         update_restore_position(view_name_mut, params_mut, null);

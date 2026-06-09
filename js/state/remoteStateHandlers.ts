@@ -3,6 +3,7 @@
  */
 
 import * as AuditLogic from '../audit_logic.js';
+import { get_current_user_name } from '../utils/helpers.js';
 import { initial_state, APP_STATE_VERSION } from './initialState.js';
 import {
     traverse_all_pass_criteria,
@@ -16,10 +17,25 @@ export function reduce_initialize_new_audit (_current_state: any, action: any) {
         saveFileVersion: APP_STATE_VERSION,
         ruleFileContent: action.payload.ruleFileContent,
         auditMetadata: {
-            caseNumber: '', actorName: '', actorLink: '', auditorName: '', caseHandler: '', internalComment: ''
+            caseNumber: '',
+            actorName: '',
+            actorLink: '',
+            auditorName: get_current_user_name() || '',
+            caseHandler: '',
+            internalComment: ''
         },
         uiSettings: JSON.parse(JSON.stringify(initial_state.uiSettings)),
-        auditStatus: 'not_started'
+        auditStatus: 'not_started',
+        freshNewAuditMetadata: true
+    };
+}
+
+export function reduce_discard_prepared_audit (current_state: any, _action: any) {
+    return {
+        ...initial_state,
+        saveFileVersion: APP_STATE_VERSION,
+        uiSettings: JSON.parse(JSON.stringify(initial_state.uiSettings)),
+        manageUsersText: current_state.manageUsersText ?? ''
     };
 }
 
