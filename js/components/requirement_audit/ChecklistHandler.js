@@ -1453,8 +1453,9 @@ export const ChecklistHandler = {
                     if (is_debug_stuck_sync()) {
                         consoleManager.log('[GV-Debug] Modal: Spara klickad, textlängd:', description.length);
                     }
+                    this._update_dom_stuck_button(t);
                     if (this.on_stuck_description_saved_callback) {
-                        this.on_stuck_description_saved_callback();
+                        void this.on_stuck_description_saved_callback();
                     } else if (this.on_observation_change_callback) {
                         this.on_observation_change_callback();
                     }
@@ -1483,8 +1484,9 @@ export const ChecklistHandler = {
                         if (is_debug_stuck_sync()) {
                             consoleManager.log('[GV-Debug] Modal: Problemet är löst klickad');
                         }
+                        this._update_dom_stuck_button(t);
                         if (this.on_stuck_description_saved_callback) {
-                            this.on_stuck_description_saved_callback();
+                            void this.on_stuck_description_saved_callback();
                         } else if (this.on_observation_change_callback) {
                             this.on_observation_change_callback();
                         }

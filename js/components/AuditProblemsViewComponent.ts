@@ -11,6 +11,7 @@ import { get_requirement_public_key, resolve_requirement_map_key, find_requireme
 import { RequirementLookup } from '../logic/requirement_lookup.js';
 import { get_current_view_name } from '../app/browser_globals.js';
 import { is_debug_problems_update } from '../app/runtime_flags.js';
+import { should_push_local_audit_to_server } from '../logic/audit_sync_tracking.js';
 
 export class AuditProblemsViewComponent {
     constructor() {
@@ -25,6 +26,8 @@ export class AuditProblemsViewComponent {
         this.Helpers = null;
         this.AuditLogic = null;
         this.NotificationComponent = null;
+        this.refresh_side_menu_and_title = null;
+        this.flush_sync_to_server = null;
         this.unsubscribe = null;
         this._problems_signature = null;
         this._previous_problems_keys = null;
@@ -34,6 +37,17 @@ export class AuditProblemsViewComponent {
         this.header_row_ref = null;
         this.problems_h1_ref = null;
         this.is_dom_initialized = false;
+        this._bind_event_handlers();
+    }
+
+    _bind_event_handlers() {
+        this.handle_requirement_link_click = this.handle_requirement_link_click.bind(this);
+        this.handle_copy_click = this.handle_copy_click.bind(this);
+        this.handle_copy_all_click = this.handle_copy_all_click.bind(this);
+        this.handle_edit_click = this.handle_edit_click.bind(this);
+        this.handle_problem_solved_click = this.handle_problem_solved_click.bind(this);
+        this.handle_problems_list_click = this.handle_problems_list_click.bind(this);
+        this.handle_plate_click = this.handle_plate_click.bind(this);
     }
 
     _safe_parse_markdown(markdown_string) {
@@ -62,23 +76,52 @@ export class AuditProblemsViewComponent {
      */
     _get_requirement_problem_edit_context(state, sample, req_id) {
         const requirements = state?.ruleFileContent?.requirements;
-        if (!sample || !requirements) return null;
-        const req_def = find_requirement_definition(requirements, req_id);
-        const req_result = req_def && this.AuditLogic?.get_stored_requirement_result_for_def
-            ? this.AuditLogic.get_stored_requirement_result_for_def(
+        if (!sample || !requirements || req_id === null || req_id === undefined) return null;
+        const req_id_str = String(req_id);
+        const req_def = find_requirement_definition(requirements, req_id_str);
+        let resolved_req_id = req_id_str;
+        let req_result = sample?.requirementResults?.[req_id_str];
+
+        if (!req_result && req_def && this.AuditLogic?.get_stored_requirement_result_for_def) {
+            req_result = this.AuditLogic.get_stored_requirement_result_for_def(
                 sample.requirementResults,
                 requirements,
                 req_def,
-                req_id
-            )
-            : sample?.requirementResults?.[req_id];
+                req_id_str
+            );
+        }
+
+        if (!req_result && sample?.requirementResults) {
+            for (const [key, val] of Object.entries(sample.requirementResults)) {
+                if (!val) continue;
+                const def = find_requirement_definition(requirements, key);
+                const pub = get_requirement_public_key(requirements, key);
+                const map_key = resolve_requirement_map_key(requirements, key);
+                const matches_id =
+                    String(key) === req_id_str ||
+                    String(pub || '') === req_id_str ||
+                    String(map_key || '') === req_id_str;
+                const matches_def = Boolean(
+                    def && req_def &&
+                    (def === req_def ||
+                        String(def.key || def.id || '') === String(req_def.key || req_def.id || ''))
+                );
+                if (matches_id || matches_def) {
+                    req_result = val;
+                    resolved_req_id = String(key);
+                    break;
+                }
+            }
+        }
+
         if (!req_result) return null;
+
         const look = RequirementLookup.from(requirements);
         const save_key =
             req_def && look && !look.isArrayFormat() && this.AuditLogic?.resolve_requirement_map_key
                 ? (this.AuditLogic.resolve_requirement_map_key(requirements, req_def.key || req_def.id)
-                    || String(req_def.key || req_id))
-                : req_id;
+                    || String(req_def.key || resolved_req_id))
+                : resolved_req_id;
         return { req_result, req_def, save_key };
     }
 
@@ -86,6 +129,7 @@ export class AuditProblemsViewComponent {
         if (is_debug_problems_update()) consoleManager.log('[GV-Debug problems] init: start');
         this.root = root;
         this.deps = deps;
+        this._bind_event_handlers();
 
         this.router = deps.router;
         this.getState = deps.getState;
@@ -95,6 +139,15 @@ export class AuditProblemsViewComponent {
         this.Helpers = deps.Helpers;
         this.AuditLogic = deps.AuditLogic;
         this.NotificationComponent = deps.NotificationComponent;
+        this.refresh_side_menu_and_title =
+            typeof deps.refreshSideMenuAndTitle === 'function' ? deps.refreshSideMenuAndTitle : null;
+        this.flush_sync_to_server =
+            typeof deps.flush_sync_to_server === 'function' ? deps.flush_sync_to_server : null;
+
+        if (typeof this.unsubscribe === 'function') {
+            this.unsubscribe();
+            this.unsubscribe = null;
+        }
 
         // Hämta senaste granskningen från servern så att antal och lista stämmer med DB (t.ex. vid återbesök eller flik med gammal session).
         const state = this.getState();
@@ -113,14 +166,31 @@ export class AuditProblemsViewComponent {
                     consoleManager.log('[GV-Debug problems] init: från servern, kört-fast i samples:', stuck_from_server, 'samples.length:', full_state.samples?.length);
                 }
                 if (full_state && full_state.samples) {
-                    await this.dispatch({
-                        type: this.StoreActionTypes.REPLACE_STATE_FROM_REMOTE,
-                        payload: { ...full_state, saveFileVersion: full_state.saveFileVersion || '2.1.0' }
-                    });
-                    if (is_debug_problems_update()) {
-                        const after_state = this.getState();
-                        const after_count = this.AuditLogic?.count_audit_problems ? this.AuditLogic.count_audit_problems(after_state) : -1;
-                        consoleManager.log('[GV-Debug problems] init: efter dispatch, kört-fast i state:', after_count);
+                    const local_before_fetch = this.getState();
+                    const keep_local = should_push_local_audit_to_server(local_before_fetch, full_state);
+                    if (keep_local) {
+                        if (is_debug_problems_update()) {
+                            consoleManager.log('[GV-Debug problems] init: behåller lokalt state (nyare än server), synkar upp');
+                        }
+                        if (this.flush_sync_to_server && this.getState && this.dispatch) {
+                            try {
+                                await this.flush_sync_to_server(this.getState, this.dispatch);
+                            } catch (sync_err) {
+                                if (window.ConsoleManager?.warn) {
+                                    window.ConsoleManager.warn('[AuditProblemsViewComponent] flush_sync_to_server vid lokalt nyare state:', sync_err);
+                                }
+                            }
+                        }
+                    } else {
+                        await this.dispatch({
+                            type: this.StoreActionTypes.REPLACE_STATE_FROM_REMOTE,
+                            payload: { ...full_state, saveFileVersion: full_state.saveFileVersion || '2.1.0' }
+                        });
+                        if (is_debug_problems_update()) {
+                            const after_state = this.getState();
+                            const after_count = this.AuditLogic?.count_audit_problems ? this.AuditLogic.count_audit_problems(after_state) : -1;
+                            consoleManager.log('[GV-Debug problems] init: efter dispatch, kört-fast i state:', after_count);
+                        }
                     }
                 } else if (is_debug_problems_update()) {
                     consoleManager.log('[GV-Debug problems] init: full_state saknas eller samples saknas', { has_full_state: !!full_state, has_samples: !!full_state?.samples });
@@ -137,15 +207,13 @@ export class AuditProblemsViewComponent {
             await this.Helpers.load_css(this.CSS_PATH).catch(() => {});
         }
 
-        this.handle_requirement_link_click = this.handle_requirement_link_click.bind(this);
-        this.handle_copy_click = this.handle_copy_click.bind(this);
-        this.handle_copy_all_click = this.handle_copy_all_click.bind(this);
-        this.handle_edit_click = this.handle_edit_click.bind(this);
-        this.handle_problem_solved_click = this.handle_problem_solved_click.bind(this);
+        const ModalComponent = app_runtime_refs.modal_component;
+        if (ModalComponent && typeof ModalComponent.dismiss_open_dialog === 'function') {
+            ModalComponent.dismiss_open_dialog();
+        }
 
         this._problems_signature = null;
         this._previous_problems_keys = null;
-        this.unsubscribe = null;
         if (typeof deps.subscribe === 'function') {
             this.unsubscribe = deps.subscribe((_new_state, listener_meta) => {
                 if (listener_meta?.skip_render) return;
@@ -174,6 +242,7 @@ export class AuditProblemsViewComponent {
         }));
 
         this.list_wrapper_ref = this.Helpers.create_element('div', { class_name: 'audit-problems-list' });
+        this.plate_element_ref.addEventListener('click', this.handle_plate_click);
         this.plate_element_ref.appendChild(this.list_wrapper_ref);
         this._problems_signature = null;
         this._previous_problems_keys = null;
@@ -182,7 +251,7 @@ export class AuditProblemsViewComponent {
     _update_problems_header(problems, t) {
         if (!this.problems_h1_ref || !this.header_row_ref) return;
         const problems_count = problems.length;
-        this.problems_h1_ref.textContent = problems_count > 1
+        this.problems_h1_ref.textContent = problems_count > 0
             ? t('audit_problems_title_with_count', { count: problems_count })
             : t('audit_problems_title');
 
@@ -202,7 +271,6 @@ export class AuditProblemsViewComponent {
                     attributes: { type: 'button' },
                     html_content: `<span>${this.Helpers.escape_html(t('audit_problems_copy_all_button'))}</span>${copy_all_icon ? `<span aria-hidden="true">${copy_all_icon}</span>` : ''}`
                 });
-                copy_all_btn.addEventListener('click', this.handle_copy_all_click);
                 this.header_row_ref.appendChild(copy_all_btn);
             }
         } else if (existing_copy_all) {
@@ -238,10 +306,45 @@ export class AuditProblemsViewComponent {
                 },
                 html_content: `<span>${this.Helpers.escape_html(t('stuck_modal_problem_solved'))}</span>${delete_icon ? `<span aria-hidden="true">${delete_icon}</span>` : ''}`
             });
-            solved_btn.addEventListener('click', this.handle_problem_solved_click);
             buttons_row.appendChild(solved_btn);
         } else if (!has_stuck_text && solved_btn) {
             solved_btn.remove();
+        }
+    }
+
+    _refresh_side_menu_after_problem_change() {
+        if (typeof this.refresh_side_menu_and_title === 'function') {
+            this.refresh_side_menu_and_title();
+        }
+    }
+
+    handle_plate_click(event) {
+        const copy_all_btn = event.target.closest('.audit-problem-copy-all-btn');
+        if (copy_all_btn) {
+            event.preventDefault();
+            void this.handle_copy_all_click({ currentTarget: copy_all_btn, preventDefault: () => {} });
+            return;
+        }
+        this.handle_problems_list_click(event);
+    }
+
+    handle_problems_list_click(event) {
+        const edit_btn = event.target.closest('.audit-problem-edit-btn');
+        if (edit_btn) {
+            event.preventDefault();
+            this.handle_edit_click({ currentTarget: edit_btn, preventDefault: () => {} });
+            return;
+        }
+        const copy_btn = event.target.closest('.audit-problem-copy-btn:not(.audit-problem-copy-all-btn)');
+        if (copy_btn) {
+            event.preventDefault();
+            void this.handle_copy_click({ currentTarget: copy_btn, preventDefault: () => {} });
+            return;
+        }
+        const solved_btn = event.target.closest('.audit-problem-solved-btn');
+        if (solved_btn) {
+            event.preventDefault();
+            this.handle_problem_solved_click({ currentTarget: solved_btn, preventDefault: () => {} });
         }
     }
 
@@ -527,8 +630,8 @@ export class AuditProblemsViewComponent {
 
     handle_problem_solved_click(event) {
         const btn = event.currentTarget;
-        const sample_id = btn.dataset.sampleId;
-        const req_id = btn.dataset.requirementId;
+        const sample_id = btn.getAttribute('data-sample-id') || btn.dataset.sampleId;
+        const req_id = btn.getAttribute('data-requirement-id') || btn.dataset.requirementId;
         if (!sample_id || !req_id || !this.dispatch || !this.StoreActionTypes) return;
 
         const plate = btn.closest('.audit-problems-plate');
@@ -574,6 +677,7 @@ export class AuditProblemsViewComponent {
                 }
             });
             this._sync_problems_from_state();
+            this._refresh_side_menu_after_problem_change();
             setTimeout(() => {
                 requestAnimationFrame(() => this._apply_focus_after_problem_solved());
             }, 50);
@@ -596,12 +700,15 @@ export class AuditProblemsViewComponent {
 
     handle_edit_click(event) {
         const btn = event.currentTarget;
-        const sample_id = btn.dataset.sampleId;
-        const req_id = btn.dataset.requirementId;
+        const sample_id = btn.getAttribute('data-sample-id') || btn.dataset.sampleId;
+        const req_id = btn.getAttribute('data-requirement-id') || btn.dataset.requirementId;
         if (!sample_id || !req_id || !this.dispatch || !this.StoreActionTypes) return;
 
         const ModalComponent = app_runtime_refs.modal_component;
         if (!ModalComponent?.show || !this.Helpers?.create_element) return;
+        if (typeof ModalComponent.dismiss_open_dialog === 'function') {
+            ModalComponent.dismiss_open_dialog();
+        }
 
         const state = this.getState();
         const sample = (state?.samples || []).find(s => String(s.id) === String(sample_id));
@@ -671,6 +778,7 @@ export class AuditProblemsViewComponent {
                         }
                     });
                     this._sync_problems_from_state();
+                    this._refresh_side_menu_after_problem_change();
                     modal.close(btn);
                 });
                 const discard_btn = this.Helpers.create_element('button', {
@@ -712,6 +820,7 @@ export class AuditProblemsViewComponent {
                             }
                         });
                         this._sync_problems_from_state();
+                        this._refresh_side_menu_after_problem_change();
                         modal.close(btn);
                     });
                     actions_wrapper.appendChild(problem_solved_btn);
@@ -864,7 +973,6 @@ export class AuditProblemsViewComponent {
             },
             html_content: `<span>${this.Helpers.escape_html(t('audit_problems_edit_button'))}</span>${edit_icon ? `<span aria-hidden="true">${edit_icon}</span>` : ''}`
         });
-        edit_btn.addEventListener('click', this.handle_edit_click);
         buttons_row.appendChild(edit_btn);
         const copy_btn_aria_label = `${t('audit_problems_copy_button')}: ${req_title}`;
         const copy_btn = this.Helpers.create_element('button', {
@@ -872,7 +980,6 @@ export class AuditProblemsViewComponent {
             attributes: { type: 'button', 'aria-label': copy_btn_aria_label },
             html_content: `<span>${this.Helpers.escape_html(t('audit_problems_copy_button'))}</span>${copy_icon ? `<span aria-hidden="true">${copy_icon}</span>` : ''}`
         });
-        copy_btn.addEventListener('click', this.handle_copy_click);
         buttons_row.appendChild(copy_btn);
 
         const has_stuck_text = (item.stuck_text || '').trim() !== '';
@@ -889,7 +996,6 @@ export class AuditProblemsViewComponent {
                 },
                 html_content: `<span>${this.Helpers.escape_html(t('stuck_modal_problem_solved'))}</span>${delete_icon ? `<span aria-hidden="true">${delete_icon}</span>` : ''}`
             });
-            solved_btn.addEventListener('click', this.handle_problem_solved_click);
             buttons_row.appendChild(solved_btn);
         }
 
@@ -899,6 +1005,9 @@ export class AuditProblemsViewComponent {
     }
 
     destroy() {
+        if (this.plate_element_ref) {
+            this.plate_element_ref.removeEventListener('click', this.handle_plate_click);
+        }
         if (typeof this.unsubscribe === 'function') {
             this.unsubscribe();
             this.unsubscribe = null;
@@ -923,5 +1032,7 @@ export class AuditProblemsViewComponent {
         this.Helpers = null;
         this.AuditLogic = null;
         this.NotificationComponent = null;
+        this.refresh_side_menu_and_title = null;
+        this.flush_sync_to_server = null;
     }
 }

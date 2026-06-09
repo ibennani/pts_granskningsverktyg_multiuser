@@ -27,6 +27,14 @@ import {
 } from '../view/view_lifecycle.js';
 import { render_view_not_found, handle_view_lifecycle_error } from '../view/view_error_handler.js';
 import { set_current_view_tracking, get_restore_position_via_hook } from '../app/browser_globals.js';
+import { app_runtime_refs } from '../utils/app_runtime_refs.js';
+
+function dismiss_stale_modal_before_view_switch() {
+    const modal = app_runtime_refs.modal_component;
+    if (modal && typeof modal.dismiss_open_dialog === 'function') {
+        modal.dismiss_open_dialog();
+    }
+}
 
 /**
  * Renderar en vy utifrån namn och parametrar.
@@ -150,6 +158,8 @@ export async function render_view(view_name_to_render, params_to_render = {}, de
         apply_post_render_focus_instruction({ view_name: view_name_mut, view_root: skip_target_rf });
         return;
     }
+
+    dismiss_stale_modal_before_view_switch();
 
     await destroy_previous_view_component({
         current_view_component_instance,

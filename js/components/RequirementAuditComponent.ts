@@ -1368,7 +1368,7 @@ export class RequirementAuditComponent {
      * Kravresultat → store (skip_render / sidomeny):
      * - `save_requirement_result_spar_bakgrund`: skip_render true (ingen global omritning); sidtitel/meny uppdateras via blur-flöde vid behov.
      * - `handle_checklist_status_change`: skip_render true; checklista, sidebar och vänstermeny uppdateras lokalt + `refreshSideMenuAndTitle`.
-     * - `onStuckDescriptionSaved`: skip_render false avsiktligt (full synk av UI) eller motsv.
+     * - `onStuckDescriptionSaved`: skip_render true; knapp och sidomeny uppdateras explicit efter sparning.
      * - Poll/WebSocket: REPLACE_STATE_FROM_REMOTE utan skip_render; särskild hantering vid fokus i plåt.
      * - `handle_navigation` confirm_reviewed: skip_render true + lokal uppdatering av plåt/sidebar/meny.
      */
@@ -1652,7 +1652,10 @@ export class RequirementAuditComponent {
                     if (is_debug_stuck_sync()) {
                         consoleManager.log('[GV-Debug] onStuckDescriptionSaved: sparar, anropar save_result_immediately + flush_sync_to_server');
                     }
-                    this.save_result_immediately({ skipRender: false });
+                    await this.save_result_immediately({ skipRender: true });
+                    if (typeof this.refresh_side_menu_and_title === 'function') {
+                        this.refresh_side_menu_and_title();
+                    }
                     if (typeof this.flush_sync_to_server === 'function' && this.getState && this.dispatch) {
                         try {
                             await this.flush_sync_to_server(this.getState, this.dispatch);

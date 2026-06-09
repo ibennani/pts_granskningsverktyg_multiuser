@@ -232,8 +232,66 @@ export class ModalComponent {
         }
     }
 
+    _reset_body_scroll_lock() {
+        document.documentElement.style.overflow = '';
+        document.body.style.overflow = '';
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.left = '';
+        document.body.style.right = '';
+    }
+
+    /**
+     * Stänger öppen dialog och återställer scroll-lås (t.ex. vid vybyte eller innan ny modal öppnas).
+     */
+    dismiss_open_dialog() {
+        const dialogs_to_remove = [];
+        if (this.root) {
+            this.root.querySelectorAll('dialog.modal-dialog').forEach((dialog_el) => {
+                dialogs_to_remove.push(dialog_el);
+            });
+        }
+        if (typeof document !== 'undefined') {
+            document.querySelectorAll('#modal-root dialog.modal-dialog').forEach((dialog_el) => {
+                if (!dialogs_to_remove.includes(dialog_el)) {
+                    dialogs_to_remove.push(dialog_el);
+                }
+            });
+        }
+        dialogs_to_remove.forEach((dialog_el) => {
+            try {
+                if (dialog_el.open) {
+                    dialog_el.close();
+                }
+            } catch (_) {
+                /* dialog redan stängd */
+            }
+            try {
+                dialog_el.remove();
+            } catch (_) {
+                /* element borttaget */
+            }
+        });
+
+        if (this.root) {
+            this.root.setAttribute('aria-hidden', 'true');
+        }
+        this.dialog_element_ref = null;
+        this.content_container_ref = null;
+        this.focus_before_open = null;
+        this.pending_focus_element = null;
+        this._bound_handle_close = null;
+        this._bound_handle_cancel = null;
+        this._scroll_state = null;
+        this._close_started = false;
+        this._pending_on_closed = null;
+        this._reset_body_scroll_lock();
+    }
+
     show({ h1_text, message_text }, content_callback) {
         if (!this.root || !this.Helpers?.create_element) return;
+
+        this.dismiss_open_dialog();
 
         this.focus_before_open = document.activeElement;
         this.pending_focus_element = null;
@@ -369,12 +427,7 @@ export class ModalComponent {
         }
 
         const do_cleanup = () => {
-            document.documentElement.style.overflow = '';
-            document.body.style.overflow = '';
-            document.body.style.position = '';
-            document.body.style.top = '';
-            document.body.style.left = '';
-            document.body.style.right = '';
+            this._reset_body_scroll_lock();
             if (this.root && dialog.parentNode === this.root) {
                 this.root.removeChild(dialog);
             }
