@@ -51,6 +51,7 @@ export class AuditViewComponent {
         this._auditFilterHadFocus = false;
         this._auditFilterSelection = null;
         this._auditFilterInputRef = null;
+        this._audits_section_root = null;
         this.router = deps.router;
         this.getState = deps.getState;
         this.subscribe = deps.subscribe;
@@ -117,24 +118,39 @@ export class AuditViewComponent {
         this.draft_rules = [];
     }
 
+    _sync_audit_filter_from_dom() {
+        if (this.audit_mode !== 'audits') return;
+        const active = document.activeElement;
+        if (!active || active.id !== 'audit-filter-input' || typeof active.value !== 'string') return;
+        this.audit_filter_query = active.value;
+        this._auditFilterHadFocus = true;
+        if (typeof active.selectionStart === 'number' && typeof active.selectionEnd === 'number') {
+            this._auditFilterSelection = {
+                selectionStart: active.selectionStart,
+                selectionEnd: active.selectionEnd
+            };
+        }
+    }
+
+    _refresh_audits_section() {
+        if (!this.root || this.audit_mode !== 'audits') return;
+        const current_root = this._audits_section_root;
+        if (!current_root || !current_root.parentNode || !document.contains(current_root)) {
+            this.render();
+            return;
+        }
+        const parent = current_root.parentNode;
+        const new_section = render_audit_samples_section(this);
+        parent.replaceChild(new_section, current_root);
+        this._audits_section_root = new_section;
+    }
+
     handle_filter_input(event) {
         const target = event && event.target ? event.target : null;
         const value = target ? target.value : '';
         if (this.audit_filter_query === value) return;
-        let selectionStart = null;
-        let selectionEnd = null;
-        if (target && typeof target.selectionStart === 'number' && typeof target.selectionEnd === 'number') {
-            selectionStart = target.selectionStart;
-            selectionEnd = target.selectionEnd;
-        }
         this.audit_filter_query = value;
-        this._auditFilterHadFocus = document.activeElement === target;
-        this._auditFilterSelection = selectionStart !== null && selectionStart !== undefined && selectionEnd !== null && selectionEnd !== undefined
-            ? { selectionStart, selectionEnd }
-            : null;
-        if (this.root) {
-            this.render();
-        }
+        this._refresh_audits_section();
     }
 
     _rule_fingerprint(r) {
@@ -1924,6 +1940,8 @@ export class AuditViewComponent {
     async render() {
         if (!this.root || !this.Helpers?.create_element) return;
 
+        this._sync_audit_filter_from_dom();
+
         if (!this._api_checked) {
             if (!this._api_load_started) {
                 this._api_load_started = true;
@@ -1948,6 +1966,7 @@ export class AuditViewComponent {
         const plate = this.Helpers.create_element('div', { class_name: 'content-plate audit-plate' });
 
         this._auditFilterInputRef = null;
+        this._audits_section_root = null;
 
         const header = render_audit_header(this);
         plate.appendChild(header);
@@ -1969,6 +1988,7 @@ export class AuditViewComponent {
         if (this.audit_mode === 'rules') {
             plate.appendChild(left_col);
         } else if (this.audit_mode === 'audits') {
+            this._audits_section_root = right_col;
             plate.appendChild(right_col);
         } else {
             two_col.appendChild(left_col);
@@ -2052,6 +2072,7 @@ export class AuditViewComponent {
         }
         this.upload_file_input = null;
         this.upload_audit_file_input = null;
+        this._audits_section_root = null;
         this._auditsTable?.destroy?.();
         this._publishedRulesTable?.destroy?.();
         this._draftRulesTable?.destroy?.();
