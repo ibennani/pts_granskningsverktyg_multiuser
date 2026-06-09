@@ -47,6 +47,21 @@ export class BackupAuditController {
         this._detail_table = new GenericTableComponent();
     }
 
+    _reset_audit_detail_sort_state() {
+        this.audit_detail_sort_state = { columnIndex: 0, direction: 'desc' };
+    }
+
+    _sort_audit_backups_newest_first(backups: any[]) {
+        return [...backups].sort((a, b) => {
+            const a_at = a?.createdAt || '';
+            const b_at = b?.createdAt || '';
+            if (!a_at && !b_at) return 0;
+            if (!a_at) return 1;
+            if (!b_at) return -1;
+            return b_at.localeCompare(a_at);
+        });
+    }
+
     async init({ root, deps }: { root: HTMLElement; deps: any }) {
         this.root = root;
         this.deps = deps;
@@ -58,6 +73,9 @@ export class BackupAuditController {
         this.params = deps.params || {};
         this.t = (this.Translation && typeof this.Translation.t === 'function') ? this.Translation.t : ((k: string) => `**${k}**`);
         this.selected_audit_id = this.view_name === 'backup_detail' ? (this.params.auditId || null) : null;
+        if (this.view_name === 'backup_detail') {
+            this._reset_audit_detail_sort_state();
+        }
         this._data_loaded = false;
         await this._overview_table.init({ deps });
         await this._detail_table.init({ deps });
@@ -164,7 +182,8 @@ export class BackupAuditController {
 
         if (this.view_name === 'backup_detail' && this.selected_audit_id) {
             const items = await get_backups_for_audit(this.selected_audit_id).catch(() => []);
-            this.selected_audit_backups = Array.isArray(items) ? items : [];
+            const list = Array.isArray(items) ? items : [];
+            this.selected_audit_backups = this._sort_audit_backups_newest_first(list);
         }
 
         this.apply_filters();
@@ -183,6 +202,7 @@ export class BackupAuditController {
 
     handle_show_backups(audit_id: string) {
         if (!audit_id) return;
+        this._reset_audit_detail_sort_state();
         if (typeof this.router === 'function') this.router('backup_detail', { auditId: audit_id });
     }
 
