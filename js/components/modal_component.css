@@ -189,8 +189,9 @@ dialog.modal-dialog.modal-dialog--closing {
 .copy-observation-radio-option:hover,
 .copy-observation-radio-option:focus-within {
     border-color: var(--primary-color);
-    outline: 2px solid var(--primary-color);
-    outline-offset: 2px;
+    outline: var(--focus-outer-width) var(--focus-outer-style) var(--focus-outer-color);
+    outline-offset: var(--focus-ring-outline-offset);
+    box-shadow: var(--focus-ring-box-shadow);
 }
 
 .copy-observation-radio-option input[type="radio"] {

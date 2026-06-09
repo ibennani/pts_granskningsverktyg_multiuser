@@ -152,8 +152,16 @@
 }
 
 .requirement-audit-sidebar__item:focus-within {
-    border-color: var(--primary-color);
-    background-color: color-mix(in srgb, var(--accent-color-light) 20%, var(--plate-background-color));
+    outline: var(--focus-outer-width) var(--focus-outer-style) var(--focus-outer-color);
+    outline-offset: var(--focus-ring-outline-offset);
+    box-shadow: var(--focus-ring-box-shadow);
+    z-index: var(--focus-z-index);
+}
+
+.requirement-audit-sidebar__item:focus-within .requirement-audit-sidebar__link:focus,
+.requirement-audit-sidebar__item:focus-within .requirement-audit-sidebar__link:focus-visible {
+    outline: none;
+    box-shadow: none;
 }
 
 .requirement-audit-sidebar__item.is-active {
@@ -202,17 +210,18 @@
 
 .requirement-audit-sidebar__item-status-row .status-icon-tooltip-wrapper {
     flex-shrink: 0;
-    position: relative;
 }
 
-/* Tooltip-texten ska inte påverka layouten i sidopanelen – bara visas i overlay */
+/* Tooltip i sidopanelen visas bara i overlay – inte inline */
 .requirement-audit-sidebar__item-status-row .status-icon-tooltip {
-    position: absolute;
-    left: 50%;
-    top: 0;
-    transform: translateX(-50%);
+    visibility: hidden;
     opacity: 0;
-    pointer-events: none;
+}
+
+.requirement-audit-sidebar__item-status-row .status-icon-tooltip-wrapper:hover .status-icon-tooltip,
+.requirement-audit-sidebar__item-status-row .status-icon-tooltip-wrapper:focus-within .status-icon-tooltip {
+    visibility: hidden;
+    opacity: 0;
 }
 
 .requirement-audit-sidebar__meta {

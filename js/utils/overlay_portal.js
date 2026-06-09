@@ -50,7 +50,12 @@ export function remove_from_overlay(node) {
 const TOOLTIP_WRAPPER_SEL = '.status-icon-tooltip-wrapper';
 const TOOLTIP_SEL = '.status-icon-tooltip';
 const TOOLTIP_VISIBLE_CLASS = 'status-icon-tooltip--in-overlay';
-const TOOLTIP_GAP_PX = 6;
+
+function _read_tooltip_gap_px() {
+    const raw = getComputedStyle(document.documentElement).getPropertyValue('--tooltip-gap').trim();
+    const parsed = parseFloat(raw);
+    return Number.isFinite(parsed) ? parsed : 3;
+}
 
 let _current_tooltip_wrapper = null;
 let _current_tooltip_el = null;
@@ -62,12 +67,12 @@ function _wrapper_has_active_trigger(wrapper) {
 }
 
 function _position_tooltip_in_overlay(wrapper, tooltip) {
+    const gap_px = _read_tooltip_gap_px();
     const wr = wrapper.getBoundingClientRect();
     tooltip.style.left = `${wr.left + wr.width / 2}px`;
+    /* top = knappens överkant minus gap; translate(-100%) placerar plattans underkant där */
+    tooltip.style.top = `${wr.top - gap_px}px`;
     tooltip.style.transform = 'translate(-50%, -100%)';
-    tooltip.style.top = `${wr.top - 8}px`;
-    const tr = tooltip.getBoundingClientRect();
-    tooltip.style.top = `${wr.top - tr.height - TOOLTIP_GAP_PX}px`;
 }
 
 function _stop_tooltip_sync_loop() {
@@ -129,6 +134,8 @@ function _hide_tooltip_from_overlay() {
         tooltip.style.top = '';
         tooltip.style.left = '';
         tooltip.style.transform = '';
+        tooltip.style.bottom = '';
+        tooltip.style.right = '';
         if (tooltip.parentNode && tooltip.parentNode.id === OVERLAY_ID) {
             tooltip.parentNode.removeChild(tooltip);
         }

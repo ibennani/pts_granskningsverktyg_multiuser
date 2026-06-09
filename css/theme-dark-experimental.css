@@ -43,11 +43,26 @@
 
     --border-color: #4a5078;
 
-    --focus-offset: 2px;
+    /*
+     * Fokusmarkering – dark-experimental (samma struktur, egna värden vid behov).
+     */
+    --focus-padding: 3px;
     --focus-inner-width: 1px;
+    --focus-inner-style: solid;
+    --focus-inner-color: #000000;
+    --focus-inner-outer-gap: 0px;
     --focus-outer-width: 1px;
-    --focus-inner-color: #09090b;
-    --focus-outer-color: #fafafa;
+    --focus-outer-style: solid;
+    --focus-outer-color: #ffffff;
+    --focus-gap-color: var(--de-bg-panel);
+    --focus-inner-edge: calc(var(--focus-padding) + var(--focus-inner-width));
+    --focus-ring-outline-offset: calc(var(--focus-inner-edge) + var(--focus-inner-outer-gap));
+    --focus-ring-shadow-inner: 0 0 0 var(--focus-inner-edge) var(--focus-inner-color);
+    --focus-ring-shadow-gap: 0 0 0 var(--focus-padding) var(--focus-gap-color);
+    /* gap först = överst i lagret, så bara 1 px svart syns efter padding */
+    --focus-ring-box-shadow: var(--focus-ring-shadow-gap), var(--focus-ring-shadow-inner);
+    --focus-ring-outset: calc(var(--focus-padding) + var(--focus-inner-width) + var(--focus-inner-outer-gap) + var(--focus-outer-width));
+    --focus-z-index: 10000;
 
     --button-default-bg: #18181b;
     --button-default-text: #fafafa;
@@ -134,8 +149,8 @@
     --de-interactive-border-width: 2px;
     --de-interactive-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 
-    --de-focus-ring-inner: 0 0 0 calc(var(--focus-inner-width) + var(--focus-offset)) var(--focus-inner-color);
-    --de-focus-ring-outline-offset: calc(var(--focus-offset) + var(--focus-inner-width));
+    --de-focus-ring-box-shadow: var(--focus-ring-box-shadow);
+    --de-focus-ring-outline-offset: var(--focus-ring-outline-offset);
 
     --de-table-row-bg: var(--de-bg-panel);
     --de-table-row-zebra-bg: color-mix(in srgb, var(--de-accent) 5%, var(--de-surface-card));
@@ -214,12 +229,13 @@
     color: var(--de-text-primary);
 }
 
-/* --- Fokusmarkering (1 px svart inre, 1 px vit yttre, liten marginal) --- */
+/* --- Fokusmarkering (variabler i [data-theme="dark-experimental"] ovan) --- */
 [data-theme="dark-experimental"] :focus-visible {
-    outline: var(--focus-outer-width) solid var(--focus-outer-color);
+    outline: var(--focus-outer-width) var(--focus-outer-style) var(--focus-outer-color);
     outline-offset: var(--de-focus-ring-outline-offset);
-    box-shadow: var(--de-focus-ring-inner);
-    z-index: 10;
+    box-shadow: var(--de-focus-ring-box-shadow);
+    position: relative;
+    z-index: var(--focus-z-index);
 }
 
 /* --- Topbar (global action bar) --- */
@@ -276,11 +292,11 @@
 }
 
 [data-theme="dark-experimental"] .side-menu__link:focus-visible {
-    outline: none;
-    box-shadow:
-        0 0 0 1px var(--focus-inner-color),
-        0 0 0 2px var(--focus-outer-color);
-    z-index: 10;
+    outline: var(--focus-outer-width) var(--focus-outer-style) var(--focus-outer-color);
+    outline-offset: var(--de-focus-ring-outline-offset);
+    box-shadow: var(--de-focus-ring-box-shadow);
+    position: relative;
+    z-index: var(--focus-z-index);
 }
 
 /* --- Innehållspaneler --- */
@@ -360,8 +376,8 @@
     border-color: var(--de-interactive-border);
     box-shadow:
         var(--de-interactive-shadow),
-        var(--de-focus-ring-inner);
-    outline: var(--focus-outer-width) solid var(--focus-outer-color);
+        var(--de-focus-ring-box-shadow);
+    outline: var(--focus-outer-width) var(--focus-outer-style) var(--focus-outer-color);
     outline-offset: var(--de-focus-ring-outline-offset);
 }
 
@@ -410,8 +426,8 @@
     border-color: var(--de-interactive-border);
     box-shadow:
         var(--de-interactive-shadow),
-        var(--de-focus-ring-inner);
-    outline: var(--focus-outer-width) solid var(--focus-outer-color);
+        var(--de-focus-ring-box-shadow);
+    outline: var(--focus-outer-width) var(--focus-outer-style) var(--focus-outer-color);
     outline-offset: var(--de-focus-ring-outline-offset);
 }
 
@@ -865,8 +881,8 @@
 
 [data-theme="dark-experimental"] .generic-table-header-sort-btn:focus-visible {
     border-color: var(--de-interactive-border);
-    box-shadow: var(--de-focus-ring-inner);
-    outline: var(--focus-outer-width) solid var(--focus-outer-color);
+    box-shadow: var(--de-focus-ring-box-shadow);
+    outline: var(--focus-outer-width) var(--focus-outer-style) var(--focus-outer-color);
     outline-offset: var(--de-focus-ring-outline-offset);
 }
 
@@ -1028,9 +1044,9 @@ html[data-theme="dark-experimental"] .FilterPanelComponent__status-icon.status-i
 [data-theme="dark-experimental"] .copy-observation-radio-option:hover,
 [data-theme="dark-experimental"] .copy-observation-radio-option:focus-within {
     border-color: var(--de-interactive-border);
-    outline: var(--focus-outer-width) solid var(--focus-outer-color);
+    outline: var(--focus-outer-width) var(--focus-outer-style) var(--focus-outer-color);
     outline-offset: var(--de-focus-ring-outline-offset);
-    box-shadow: var(--de-interactive-shadow), var(--de-focus-ring-inner);
+    box-shadow: var(--de-interactive-shadow), var(--de-focus-ring-box-shadow);
 }
 
 /* --- Notifieringar --- */
@@ -1232,8 +1248,8 @@ html[data-theme="dark-experimental"] .FilterPanelComponent__status-icon.status-i
 
 [data-theme="dark-experimental"] .md-toolbar-btn:focus-visible {
     border-color: var(--de-interactive-border);
-    box-shadow: var(--de-focus-ring-inner);
-    outline: var(--focus-outer-width) solid var(--focus-outer-color);
+    box-shadow: var(--de-focus-ring-box-shadow);
+    outline: var(--focus-outer-width) var(--focus-outer-style) var(--focus-outer-color);
     outline-offset: var(--de-focus-ring-outline-offset);
 }
 
@@ -1285,10 +1301,11 @@ html[data-theme="dark-experimental"] .statistics-sampletype-chart .statistics-sa
 }
 
 html[data-theme="dark-experimental"] .side-menu__link:focus-visible {
-    outline: none;
-    box-shadow:
-        0 0 0 1px var(--focus-inner-color),
-        0 0 0 2px var(--focus-outer-color);
+    outline: var(--focus-outer-width) var(--focus-outer-style) var(--focus-outer-color);
+    outline-offset: var(--de-focus-ring-outline-offset);
+    box-shadow: var(--de-focus-ring-box-shadow);
+    position: relative;
+    z-index: var(--focus-z-index);
 }
 
 html[data-theme="dark-experimental"] .pass-criterion-actions .button:not(.active),

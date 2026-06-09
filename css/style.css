@@ -63,13 +63,30 @@
     --border-color: #B07CBF;
     /* Lila 60% från PTS - mörkare rosa för bättre kontrast mot ljus bakgrund */
 
-    /* Focus ring variables - Updated for high contrast */
-    --focus-offset: 1px;
-    --focus-inner-width: 2px;
-    --focus-outer-width: 2px;
-    --focus-inner-color: #ffffff;
-    --focus-outer-color: #000000;
+    /*
+     * Fokusmarkering – variabler per tema (kan överstyras i [data-theme="…"]).
+     * Inre ram: svart 1 px solid, --focus-padding luft till objektet.
+     * Yttre ram: vit 1 px solid, --focus-inner-outer-gap från inre ram (0 px = kant i kant).
+     */
+    --focus-padding: 3px;
+    --focus-inner-width: 1px;
+    --focus-inner-style: solid;
+    --focus-inner-color: #000000;
+    --focus-inner-outer-gap: 0px;
+    --focus-outer-width: 1px;
+    --focus-outer-style: solid;
+    --focus-outer-color: #ffffff;
+    --focus-gap-color: var(--plate-background-color);
+    --focus-inner-edge: calc(var(--focus-padding) + var(--focus-inner-width));
+    --focus-ring-outline-offset: calc(var(--focus-inner-edge) + var(--focus-inner-outer-gap));
+    --focus-ring-shadow-inner: 0 0 0 var(--focus-inner-edge) var(--focus-inner-color);
+    --focus-ring-shadow-gap: 0 0 0 var(--focus-padding) var(--focus-gap-color);
+    /* gap först = överst i lagret, så bara 1 px svart syns efter padding */
+    --focus-ring-box-shadow: var(--focus-ring-shadow-gap), var(--focus-ring-shadow-inner);
+    --focus-ring-outset: calc(var(--focus-padding) + var(--focus-inner-width) + var(--focus-inner-outer-gap) + var(--focus-outer-width));
+    --focus-z-index: 10000;
 
+    --tooltip-gap: 3px;
 
     --button-default-bg: #FAF7F4;
     --button-default-text: var(--text-color);
@@ -202,9 +219,26 @@
     --border-color: #D5B9DD;
     /* Lila 40% från PTS - ljus rosa för alla kantlinjer */
 
-    /* Focus ring variables - Updated for high contrast */
-    --focus-inner-color: #ffffff;
-    --focus-outer-color: #000000;
+    /*
+     * Fokusmarkering – mörkt tema (samma struktur som :root, egna värden vid behov).
+     */
+    --focus-padding: 3px;
+    --focus-inner-width: 1px;
+    --focus-inner-style: solid;
+    --focus-inner-color: #000000;
+    --focus-inner-outer-gap: 0px;
+    --focus-outer-width: 1px;
+    --focus-outer-style: solid;
+    --focus-outer-color: #ffffff;
+    --focus-gap-color: var(--plate-background-color);
+    --focus-inner-edge: calc(var(--focus-padding) + var(--focus-inner-width));
+    --focus-ring-outline-offset: calc(var(--focus-inner-edge) + var(--focus-inner-outer-gap));
+    --focus-ring-shadow-inner: 0 0 0 var(--focus-inner-edge) var(--focus-inner-color);
+    --focus-ring-shadow-gap: 0 0 0 var(--focus-padding) var(--focus-gap-color);
+    /* gap först = överst i lagret, så bara 1 px svart syns efter padding */
+    --focus-ring-box-shadow: var(--focus-ring-shadow-gap), var(--focus-ring-shadow-inner);
+    --focus-ring-outset: calc(var(--focus-padding) + var(--focus-inner-width) + var(--focus-inner-outer-gap) + var(--focus-outer-width));
+    --focus-z-index: 10000;
 
 
     --button-default-bg: #423051;
@@ -638,12 +672,13 @@ input[type="email"]:focus,
 textarea:focus,
 select:focus {
     /* Enforce global focus ring also on click/active focus for inputs */
-    outline: var(--focus-outer-width) solid var(--focus-outer-color);
-    outline-offset: calc(var(--focus-offset) + var(--focus-inner-width));
-    box-shadow: 0 0 0 calc(var(--focus-inner-width) + var(--focus-offset)) var(--focus-inner-color);
+    outline: var(--focus-outer-width) var(--focus-outer-style) var(--focus-outer-color);
+    outline-offset: var(--focus-ring-outline-offset);
+    box-shadow: var(--focus-ring-box-shadow);
     border-color: var(--border-color);
     /* Maintain visual consistency, do not change border color */
-    z-index: 10;
+    position: relative;
+    z-index: var(--focus-z-index);
 }
 
 [data-theme="dark"] .form-control,
@@ -729,19 +764,30 @@ input[type="radio"] + label {
 }
 
 :focus-visible {
-    outline: var(--focus-outer-width) solid var(--focus-outer-color);
-    outline-offset: calc(var(--focus-offset) + var(--focus-inner-width));
-    box-shadow: 0 0 0 calc(var(--focus-inner-width) + var(--focus-offset)) var(--focus-inner-color);
-    /* 
-       Note: The box-shadow fills the gap + inner ring space.
-       To explicitly have a transparent gap (1px) + white ring (2px) + black ring (2px):
-       Outline offset = 1px (gap) + 2px (white) = 3px.
-       Shadow needs to be white at 1px-3px.
-       Box-shadow starts at 0. Simple box-shadow covers 0-3px.
-       Visual result: Object -> White(3px) -> Black(2px).
-       This satisfies "Inner White, Outer Black".
-    */
-    z-index: 10;
+    outline: var(--focus-outer-width) var(--focus-outer-style) var(--focus-outer-color);
+    outline-offset: var(--focus-ring-outline-offset);
+    box-shadow: var(--focus-ring-box-shadow);
+    /* Objekt -> padding -> svart inre ram -> vit yttre ram */
+    position: relative;
+    z-index: var(--focus-z-index);
+}
+
+/* Fokusmarkering ska inte klippas av overflow på närliggande wrappers */
+.pc-observation-detail-wrapper:has(:focus-visible),
+.pc-observation-detail-wrapper:has(:focus),
+.form-group:has(:focus-visible),
+.form-group:has(:focus),
+.markdown-editor-wrapper:has(:focus-visible),
+.markdown-editor-wrapper:has(:focus),
+.status-icon-tooltip-wrapper:focus-within,
+.audit-navigation-buttons .nav-group-left:focus-within,
+.audit-navigation-buttons .nav-group-right:focus-within {
+    overflow: visible;
+}
+
+.status-icon-tooltip-wrapper:focus-within {
+    position: relative;
+    z-index: var(--focus-z-index);
 }
 
 
@@ -809,8 +855,11 @@ select:-webkit-autofill:focus {
     width: auto;
     white-space: normal;
     padding: 0.75rem 1rem;
-    outline: 2px solid var(--primary-color);
-    outline-offset: 2px;
+    outline: var(--focus-outer-width) var(--focus-outer-style) var(--focus-outer-color);
+    outline-offset: var(--focus-ring-outline-offset);
+    box-shadow: var(--focus-ring-box-shadow);
+    position: relative;
+    z-index: var(--focus-z-index);
 }
 
 /* Overlay-portal: dropdowns och tooltips renderas här så att de inte klipps av overflow */
@@ -827,12 +876,65 @@ select:-webkit-autofill:focus {
     pointer-events: auto;
 }
 
-/* Tooltip i overlay: samma utseende som inline, position fixed så att den inte klipps */
-#app-overlay .status-icon-tooltip.status-icon-tooltip--in-overlay {
-    position: fixed;
+/* Tooltips – globalt utseende och 3 px ovanför trigger (hover och fokus) */
+.status-icon-tooltip-wrapper {
+    position: relative;
+    display: inline-flex;
+    cursor: default;
+}
+
+.status-icon-tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: var(--tooltip-gap);
+    display: inline-block;
+    box-sizing: border-box;
+    padding: 0.35rem 0.5rem;
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.2;
+    white-space: nowrap;
+    color: #1a1a1a;
+    background-color: #fff;
+    border: 1px solid #333;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.15s ease, visibility 0.15s ease;
+    z-index: 100;
+    pointer-events: none;
+}
+
+.status-icon-tooltip-wrapper:hover .status-icon-tooltip,
+.status-icon-tooltip-wrapper:focus-within .status-icon-tooltip {
     visibility: visible;
     opacity: 1;
-    margin-bottom: 0;
+}
+
+[data-theme="dark"] .status-icon-tooltip,
+[data-theme="dark-experimental"] .status-icon-tooltip {
+    color: #f5f5f5;
+    background-color: #2d2d2d;
+    border-color: #666;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* Tooltip i overlay: position fixed så att den inte klipps (avstånd styrs i JS via --tooltip-gap) */
+#app-overlay .status-icon-tooltip.status-icon-tooltip--in-overlay {
+    position: fixed;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    margin: 0;
+    transform: translate(-50%, -100%);
+    display: inline-block;
+    box-sizing: border-box;
+    visibility: visible;
+    opacity: 1;
     padding: 0.35rem 0.5rem;
     font-size: 1rem;
     font-weight: 500;
@@ -846,7 +948,8 @@ select:-webkit-autofill:focus {
     z-index: 100;
     pointer-events: none;
 }
-[data-theme="dark"] #app-overlay .status-icon-tooltip.status-icon-tooltip--in-overlay {
+[data-theme="dark"] #app-overlay .status-icon-tooltip.status-icon-tooltip--in-overlay,
+[data-theme="dark-experimental"] #app-overlay .status-icon-tooltip.status-icon-tooltip--in-overlay {
     color: #f5f5f5;
     background-color: #2d2d2d;
     border-color: #666;

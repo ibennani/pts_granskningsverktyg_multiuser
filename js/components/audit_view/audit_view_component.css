@@ -72,11 +72,6 @@
     width: 100%;
 }
 
-.audit-filter-input:focus-visible {
-    outline: 2px solid var(--focus-ring-color, #000);
-    outline-offset: 2px;
-}
-
 .audit-filter-no-results {
     margin-top: 0.75rem;
     font-size: 0.9rem;
