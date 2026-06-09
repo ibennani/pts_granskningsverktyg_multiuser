@@ -15,6 +15,7 @@ export default {
     '^.+/audit_logic_progress\\.js$': '<rootDir>/js/logic/audit_logic_progress.ts',
     '^.+/audit_logic_recalc\\.js$': '<rootDir>/js/logic/audit_logic_recalc.ts',
     '^.+/closed_audit_assessment_gap_fill\\.js$': '<rootDir>/js/logic/closed_audit_assessment_gap_fill.ts',
+    '^.+/requirement_assessment_gap_fill\\.js$': '<rootDir>/js/logic/requirement_assessment_gap_fill.ts',
     '^.+/audit_logic_problems_media\\.js$': '<rootDir>/js/logic/audit_logic_problems_media.ts',
     '^.+/ScoreCalculator\\.js$': '<rootDir>/js/logic/ScoreCalculator.ts',
     '^.+/score_calculator_passed_check_failures\\.js$': '<rootDir>/js/logic/score_calculator_passed_check_failures.ts',

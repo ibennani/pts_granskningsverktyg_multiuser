@@ -116,6 +116,10 @@ export async function render_view(view_name_to_render, params_to_render = {}, de
         current_view_component_instance
     });
 
+    if (view_name_mut === 'backup' && typeof current_view_component_instance?.reset_backup_list_filters === 'function') {
+        current_view_component_instance.reset_backup_list_filters();
+    }
+
     if (is_quick) {
         await render_quick_view({
             view_root,

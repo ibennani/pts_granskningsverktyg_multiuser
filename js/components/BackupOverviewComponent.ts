@@ -60,6 +60,19 @@ export class BackupOverviewComponent {
         return (this.Translation && typeof this.Translation.t === 'function') ? this.Translation.t : ((key: string) => `**${key}**`);
     }
 
+    /**
+     * Tömmer sök- och statusfilter när användaren navigerar till översiktsvyn (t.ex. via sidomenyn).
+     * Anropas från view_render innan render, inte vid intern omrendering (t.ex. efter "Kör säkerhetskopiering nu").
+     */
+    reset_backup_list_filters() {
+        this.audits.filter_text = '';
+        this.audits.status_filter = 'all';
+        this.audits.apply_filters();
+        this.rulefiles.filter_text = '';
+        this.rulefiles.rulefile_kind = 'all';
+        this.rulefiles.apply_filters();
+    }
+
     /** Samma mönster som startvyns tabellrubriker (`start_view_section_heading_with_count`). */
     _format_backup_overview_heading() {
         const t = this.get_t_func();

@@ -9,6 +9,9 @@ import {
     find_requirement_definition,
     effective_status_is_fully_unreviewed_for_bulk_pass
 } from '../../audit_logic.js';
+import { sync_to_server_now } from '../../logic/server_sync.js';
+import { has_pending_server_sync, refresh_connectivity_banner } from '../../logic/connectivity_service.js';
+import { has_unsynced_local_audit_changes } from '../../logic/audit_sync_tracking.js';
 
 /**
  * @param {string} requirement_id
@@ -99,13 +102,27 @@ export function handle_mark_requirement_passed_in_all_samples(requirement_id: an
                 text_content: t('mark_all_unreviewed_passed_confirm_yes')
             });
             yes_btn.addEventListener('click', () => {
-                modal.close(trigger_button);
-                ctx.dispatch({
-                    type: ctx.StoreActionTypes.MARK_REQUIREMENT_AS_PASSED_IN_ALL_SAMPLES,
-                    payload: { requirementId: requirement_id, skip_render: true }
-                });
-                ctx.NotificationComponent?.show_global_message?.(t('mark_requirement_passed_in_all_samples_toast'), 'success');
-                void ctx.refresh_after_bulk_pass?.();
+                void (async () => {
+                    modal.close(trigger_button);
+                    ctx.dispatch({
+                        type: ctx.StoreActionTypes.MARK_REQUIREMENT_AS_PASSED_IN_ALL_SAMPLES,
+                        payload: { requirementId: requirement_id, skip_render: true }
+                    });
+                    await sync_to_server_now(ctx.getState, ctx.dispatch);
+                    const state_after_sync = ctx.getState();
+                    if (
+                        !has_pending_server_sync() &&
+                        !has_unsynced_local_audit_changes(state_after_sync)
+                    ) {
+                        ctx.NotificationComponent?.show_global_message?.(
+                            t('mark_requirement_passed_in_all_samples_toast'),
+                            'success'
+                        );
+                    } else {
+                        refresh_connectivity_banner();
+                    }
+                    await ctx.refresh_after_bulk_pass?.();
+                })();
             });
             const no_btn = ctx.Helpers.create_element('button', {
                 class_name: ['button', 'button-default'],

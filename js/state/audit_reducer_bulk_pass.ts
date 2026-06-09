@@ -1,10 +1,11 @@
 /**
- * @fileoverview Gemensam state-uppdatering för bulk "ingen anmärkning" endast på helt ogranskade krav.
+ * @fileoverview Gemensam state-uppdatering för bulk "ingen anmärkning" på ogranskade och delvis granskade krav.
  */
 
 import type { RequirementDef } from '../logic/audit_logic_types.js';
 import * as AuditLogic from '../audit_logic.js';
 import { effective_status_is_fully_unreviewed_for_bulk_pass } from '../logic/bulk_pass_unreviewed_policy.js';
+import { build_requirement_result_with_assessment_gaps_filled } from '../logic/requirement_assessment_gap_fill.js';
 import { remove_stale_requirement_result_aliases } from './auditResultAliases.js';
 
 export type BulkPassFullyUnreviewedScope = {
@@ -14,8 +15,27 @@ export type BulkPassFullyUnreviewedScope = {
     requirement_id: string | null;
 };
 
+function apply_bulk_no_remarks_to_requirement(
+    req_def: RequirementDef,
+    existing: ReturnType<typeof AuditLogic.get_stored_requirement_result_for_def>,
+    status: string,
+    timestamp: string,
+    user_name: string
+) {
+    if (status === 'not_audited') {
+        return AuditLogic.build_not_applicable_requirement_result(req_def, existing, timestamp, user_name);
+    }
+    const { changed, result } = build_requirement_result_with_assessment_gaps_filled(
+        req_def,
+        existing,
+        timestamp,
+        user_name
+    );
+    return changed ? result : null;
+}
+
 /**
- * Returnerar ny `samples`-array där berörda krav satts via `build_not_applicable_requirement_result`.
+ * Returnerar ny `samples`-array där berörda krav satts till "ingen anmärkning".
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- reducer-state har ännu ingen strikt AppState-typ
 export function map_samples_bulk_pass_fully_unreviewed_only(
@@ -49,15 +69,20 @@ export function map_samples_bulk_pass_fully_unreviewed_only(
             if (!effective_status_is_fully_unreviewed_for_bulk_pass(status)) {
                 return;
             }
-            const map_key =
-                AuditLogic.resolve_requirement_map_key(requirements, req_def.key || req_def.id) ||
-                String(req_def.key || req_def.id);
-            new_results[map_key] = AuditLogic.build_not_applicable_requirement_result(
+            const next_result = apply_bulk_no_remarks_to_requirement(
                 req_def,
                 existing,
+                status,
                 timestamp,
                 user_name
             );
+            if (!next_result) {
+                return;
+            }
+            const map_key =
+                AuditLogic.resolve_requirement_map_key(requirements, req_def.key || req_def.id) ||
+                String(req_def.key || req_def.id);
+            new_results[map_key] = next_result;
             remove_stale_requirement_result_aliases(new_results, map_key, req_def);
             has_changed = true;
         });

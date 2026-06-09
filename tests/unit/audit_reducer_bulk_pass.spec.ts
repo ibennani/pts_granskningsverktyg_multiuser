@@ -3,7 +3,7 @@ import { map_samples_bulk_pass_fully_unreviewed_only } from '../../js/state/audi
 describe('audit_reducer_bulk_pass', () => {
     const timestamp = '2000-01-01T00:00:00.000Z';
 
-    test('uppdaterar endast not_audited; partially_audited lämnas orörd i samma stickprov', () => {
+    test('uppdaterar not_audited och fyller luckor i partially_audited', () => {
         const req_a = {
             key: 'A',
             id: 'A',
@@ -77,8 +77,9 @@ describe('audit_reducer_bulk_pass', () => {
         );
 
         expect(out[0].requirementResults.A.status).toBe('passed');
-        expect(out[0].requirementResults.B.status).toBe('partially_audited');
-        expect(out[0].requirementResults.B.stuckProblemDescription).toBe('x');
+        expect(out[0].requirementResults.B.status).toBe('passed');
+        expect(out[0].requirementResults.B.stuckProblemDescription).toBe('');
+        expect(out[0].requirementResults.B.checkResults.c2.passCriteria.pc2.status).toBe('passed');
     });
 
     test('requirement_id begränsar till ett krav över alla stickprov', () => {
@@ -114,5 +115,50 @@ describe('audit_reducer_bulk_pass', () => {
         );
         expect(out[0].requirementResults.R1.status).toBe('passed');
         expect(out[1].requirementResults.R1.status).toBe('passed');
+    });
+
+    test('sätter ohanterad kontrollpunkt till inte aktuellt i partially_audited krav', () => {
+        const req = {
+            key: 'R1',
+            id: 'R1',
+            title: 'Delvis',
+            checks: [
+                { id: 'c_done', logic: 'AND', passCriteria: [{ id: 'pc1' }] },
+                { id: 'c_open', logic: 'AND', passCriteria: [{ id: 'pc2' }] }
+            ]
+        };
+        const state = {
+            ruleFileContent: { requirements: { R1: req } },
+            samples: [
+                {
+                    id: 's1',
+                    requirementResults: {
+                        R1: {
+                            status: 'partially_audited',
+                            checkResults: {
+                                c_done: {
+                                    overallStatus: 'passed',
+                                    passCriteria: {
+                                        pc1: { status: 'passed', observationDetail: '', timestamp: null, attachedMediaFilenames: [] }
+                                    }
+                                }
+                            },
+                            commentToAuditor: '',
+                            commentToActor: '',
+                            lastStatusUpdate: null,
+                            stuckProblemDescription: ''
+                        }
+                    }
+                }
+            ]
+        };
+        const out = map_samples_bulk_pass_fully_unreviewed_only(
+            state,
+            { target_sample_id: 's1', requirement_id: null },
+            timestamp,
+            'testare'
+        );
+        expect(out[0].requirementResults.R1.checkResults.c_open.overallStatus).toBe('not_applicable');
+        expect(out[0].requirementResults.R1.status).toBe('passed');
     });
 });
