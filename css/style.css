@@ -87,6 +87,7 @@
     --focus-z-index: 10000;
 
     --tooltip-gap: 3px;
+    --tooltip-z-index: calc(var(--focus-z-index) + 1);
 
     --button-default-bg: #FAF7F4;
     --button-default-text: var(--text-color);
@@ -239,6 +240,7 @@
     --focus-ring-box-shadow: var(--focus-ring-shadow-gap), var(--focus-ring-shadow-inner);
     --focus-ring-outset: calc(var(--focus-padding) + var(--focus-inner-width) + var(--focus-inner-outer-gap) + var(--focus-outer-width));
     --focus-z-index: 10000;
+    --tooltip-z-index: calc(var(--focus-z-index) + 1);
 
 
     --button-default-bg: #423051;
@@ -869,7 +871,7 @@ select:-webkit-autofill:focus {
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 5000;
+    z-index: var(--tooltip-z-index);
     pointer-events: none;
 }
 #app-overlay > * {
@@ -904,7 +906,7 @@ select:-webkit-autofill:focus {
     visibility: hidden;
     opacity: 0;
     transition: opacity 0.15s ease, visibility 0.15s ease;
-    z-index: 100;
+    z-index: var(--tooltip-z-index);
     pointer-events: none;
 }
 
@@ -945,7 +947,7 @@ select:-webkit-autofill:focus {
     border: 1px solid #333;
     border-radius: 4px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    z-index: 100;
+    z-index: var(--tooltip-z-index);
     pointer-events: none;
 }
 [data-theme="dark"] #app-overlay .status-icon-tooltip.status-icon-tooltip--in-overlay,

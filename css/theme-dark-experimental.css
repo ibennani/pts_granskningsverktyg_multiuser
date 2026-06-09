@@ -63,6 +63,7 @@
     --focus-ring-box-shadow: var(--focus-ring-shadow-gap), var(--focus-ring-shadow-inner);
     --focus-ring-outset: calc(var(--focus-padding) + var(--focus-inner-width) + var(--focus-inner-outer-gap) + var(--focus-outer-width));
     --focus-z-index: 10000;
+    --tooltip-z-index: calc(var(--focus-z-index) + 1);
 
     --button-default-bg: #18181b;
     --button-default-text: #fafafa;
