@@ -75,7 +75,7 @@
   "rulefile_duplicate_modal_diff_updated": "Oppdaterte krav",
   "rulefile_duplicate_modal_diff_none": "Ingen forskjeller i kravlisten.",
   "rulefile_duplicate_modal_diff_error": "Kunne ikke sammenligne innhold.",
-  "audit_audit_deleted_success": "Tilsynet er slettet.",
+  "audit_audit_deleted_success": "Tilsynet \"{name}\" er slettet.",
   "audit_delete_error": "Kunne ikke slette.",
   "audit_delete_rule_aria": "Slett regelfil {name}",
   "audit_delete_audit_aria": "Slett tilsyn {name}",

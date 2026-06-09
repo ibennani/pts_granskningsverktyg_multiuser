@@ -75,8 +75,18 @@ function get_previous_focusable(delete_button) {
  * @param {HTMLElement} [opts.focusOnConfirm] - Element att fokusera vid bekräftelse (t.ex. när raderat innehåll tas bort)
  * @param {string} [opts.yes_label] - Anpassad text för bekräftelseknappen (t.ex. "Radera")
  * @param {string} [opts.no_label] - Anpassad text för avbryt-knappen (t.ex. "Behåll")
+ * @param {boolean} [opts.skip_history_pop_on_confirm] - Undvik history.back() vid bekräftelse (t.ex. innan programmatisk navigering)
  */
-export function show_confirm_delete_modal({ h1_text, warning_text, delete_button, on_confirm, focusOnConfirm, yes_label, no_label }) {
+export function show_confirm_delete_modal({
+    h1_text,
+    warning_text,
+    delete_button,
+    on_confirm,
+    focusOnConfirm,
+    yes_label,
+    no_label,
+    skip_history_pop_on_confirm
+}) {
     const ModalComponent = app_runtime_refs.modal_component;
     const t = get_translation_t();
 
@@ -103,6 +113,7 @@ export function show_confirm_delete_modal({ h1_text, warning_text, delete_button
             yes_btn.addEventListener('click', () => {
                 const focus_el = focusOnConfirm ? focus_on_confirm : previous_focusable;
                 modal.close(focus_el, {
+                    skipHistoryPop: skip_history_pop_on_confirm === true,
                     onClosed: () => {
                         if (typeof on_confirm === 'function') on_confirm();
                     }

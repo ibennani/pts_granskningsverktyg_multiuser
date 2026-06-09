@@ -75,7 +75,7 @@
   "rulefile_duplicate_modal_diff_updated": "Ändrade krav",
   "rulefile_duplicate_modal_diff_none": "Inga skillnader i kravlistan.",
   "rulefile_duplicate_modal_diff_error": "Kunde inte jämföra innehållet.",
-  "audit_audit_deleted_success": "Granskningen har raderats.",
+  "audit_audit_deleted_success": "Granskningen \"{name}\" har raderats.",
   "audit_delete_error": "Kunde inte radera.",
   "audit_delete_rule_aria": "Radera {name}",
   "audit_delete_audit_aria": "Radera {name}",

@@ -9,6 +9,26 @@ import {
 const EMPTY_PLACEHOLDER = '—';
 
 /**
+ * Visningsnamn för granskning i modaler och aria-etiketter (dnr före aktörsnamn när dnr finns).
+ * @param {object|null|undefined} metadata
+ * @param {string|number} [audit_id]
+ * @returns {string}
+ */
+export function format_audit_display_label(metadata, audit_id) {
+    const case_number = (metadata?.caseNumber ?? '').toString().trim();
+    const actor_name = (metadata?.actorName ?? '').toString().trim();
+    if (case_number && actor_name) {
+        return `${case_number} - ${actor_name}`;
+    }
+    if (case_number) return case_number;
+    if (actor_name) return actor_name;
+    if (audit_id !== null && audit_id !== undefined && audit_id !== '') {
+        return `Granskning ${audit_id}`;
+    }
+    return '';
+}
+
+/**
  * Skapar kolumndefinitioner för granskningstabellen.
  * @param {Object} deps - { t, Helpers, Translation, get_status_label, get_live_audit_state? }
  * @param {Object} handlers - { onOpenAudit(auditId), onDownloadAudit(auditId), onDeleteAudit?(auditId) }
@@ -128,9 +148,7 @@ export function create_audit_table_columns(deps, handlers, opts = {}) {
             headerLabel: t('delete'),
             isAction: true,
             getContent: (row) => {
-                const actor_name = (row.metadata?.actorName ?? '').toString().trim();
-                const case_number = (row.metadata?.caseNumber ?? '').toString().trim();
-                const audit_link_text = actor_name || case_number || `Granskning ${row.id}`;
+                const audit_link_text = format_audit_display_label(row.metadata, row.id);
                 const delete_btn = Helpers.create_element('button', {
                     class_name: ['button', 'button-danger', 'button-small'],
                     html_content: `<span>${t('delete')}</span>` + icon_svg('delete'),

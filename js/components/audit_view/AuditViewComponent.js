@@ -32,6 +32,7 @@ import { render_audit_requirement_section } from './AuditRequirementSection.js';
 import { render_audit_samples_section } from './AuditSamplesSection.js';
 import { JSON_MAX_UPLOAD_BYTES } from '../../../shared/constants/json_upload_limits.js';
 import { check_json_structure_depth_and_size } from '../../../shared/json/json_structure_guard.js';
+import { initial_state, APP_STATE_VERSION } from '../../state/initialState.js';
 import './audit_view_component.css';
 
 export class AuditViewComponent {
@@ -1653,10 +1654,11 @@ export class AuditViewComponent {
                 delete_button,
                 yes_label: t('audit_confirm_delete_radera'),
                 no_label: t('audit_confirm_delete_behall'),
-                on_confirm: () => this.handle_delete_audit(audit_id)
+                skip_history_pop_on_confirm: true,
+                on_confirm: () => this.handle_delete_audit(audit_id, audit_display_name)
             });
         } else {
-            this.handle_delete_audit(audit_id);
+            this.handle_delete_audit(audit_id, audit_display_name);
         }
     }
 
@@ -1740,16 +1742,45 @@ export class AuditViewComponent {
         );
     }
 
-    async handle_delete_audit(audit_id) {
+    _clear_loaded_audit_from_state() {
+        this.dispatch({
+            type: this.StoreActionTypes.REPLACE_STATE_FROM_REMOTE,
+            payload: {
+                ...JSON.parse(JSON.stringify(initial_state)),
+                saveFileVersion: APP_STATE_VERSION
+            }
+        });
+    }
+
+    _remove_audit_from_local_list(audit_id) {
+        this.audits = (this.audits || []).filter((a) => String(a?.id) !== String(audit_id));
+    }
+
+    _is_deleted_open_audit(audit_id) {
+        const current_state = typeof this.getState === 'function' ? this.getState() : null;
+        const open_audit_id = current_state?.auditId;
+        if (open_audit_id === null || open_audit_id === undefined || open_audit_id === '') {
+            return false;
+        }
+        return String(open_audit_id) === String(audit_id);
+    }
+
+    async handle_delete_audit(audit_id, audit_display_name) {
         const t = this.get_t_func();
+        const deleted_open_audit = this._is_deleted_open_audit(audit_id);
+        const display_name = (audit_display_name || '').trim() || String(audit_id);
         try {
             await delete_audit(audit_id);
+            await this.ensure_api_data();
+            this._remove_audit_from_local_list(audit_id);
+            if (deleted_open_audit) {
+                this._clear_loaded_audit_from_state();
+            }
+            await this.render();
             this.NotificationComponent?.show_global_message(
-                t('audit_audit_deleted_success'),
+                t('audit_audit_deleted_success', { name: display_name }),
                 'success'
             );
-            await this.ensure_api_data();
-            this.render();
         } catch (error) {
             this.NotificationComponent?.show_global_message(
                 error.message || t('audit_delete_error'),

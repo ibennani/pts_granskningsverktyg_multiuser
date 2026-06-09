@@ -3,6 +3,7 @@
 
 import { enrich_audits_with_live_progress } from '../../logic/audit_list_progress.js';
 import { filter_text_matches } from '../../utils/string_filter_normalize.js';
+import { format_audit_display_label } from '../../utils/audit_table_columns.js';
 
 export function render_audit_samples_section(ctx) {
     const t = ctx.get_t_func();
@@ -182,7 +183,7 @@ export function render_audit_samples_section(ctx) {
                     text_content: case_number ? `${case_number} ` : '',
                     class_name: 'audit-audit-case-number'
                 });
-                const audit_link_text = case_number ? `${case_number} ${display_name}` : display_name;
+                const audit_link_text = format_audit_display_label(a.metadata, a.id);
                 const link = ctx.Helpers.create_element('a', {
                     text_content: display_name,
                     class_name: 'audit-item-label audit-audit-link',

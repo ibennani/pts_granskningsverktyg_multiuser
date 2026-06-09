@@ -158,5 +158,36 @@ describe('confirm_delete_modal_logic', () => {
             expect(actions).toBeTruthy();
             expect(actions.querySelectorAll('button').length).toBe(2);
         });
+
+        test('bekräftelse kan stänga modalen utan history.back()', () => {
+            let modal_container = null;
+            const close_spy = jest.fn();
+            const on_confirm = jest.fn();
+            const show_spy = jest.fn((config, on_render) => {
+                modal_container = document.createElement('div');
+                on_render(modal_container, { close: close_spy });
+            });
+            app_runtime_refs.modal_component = { show: show_spy };
+            global.window.Helpers = { create_element: mock_create_element };
+            global.window.Translation = { t: (k) => k };
+
+            const del = document.createElement('button');
+            document.body.appendChild(del);
+
+            show_confirm_delete_modal({
+                warning_text: 'Radera?',
+                delete_button: del,
+                skip_history_pop_on_confirm: true,
+                on_confirm
+            });
+
+            const yes_btn = modal_container.querySelector('.modal-confirm-actions button.button-danger');
+            yes_btn.click();
+
+            expect(close_spy).toHaveBeenCalledWith(
+                null,
+                expect.objectContaining({ skipHistoryPop: true })
+            );
+        });
     });
 });
