@@ -52,6 +52,11 @@ export function note_audit_full_sync_required(): void {
     pending_requirement_keys.clear();
 }
 
+/** Om hel PATCH väntar (t.ex. borttaget stickprov) — används av synkförberedelse. */
+export function is_force_full_sync_pending(): boolean {
+    return force_full_sync;
+}
+
 export function note_metadata_only_changed(): void {
     if (force_full_sync) return;
     metadata_only_pending = true;

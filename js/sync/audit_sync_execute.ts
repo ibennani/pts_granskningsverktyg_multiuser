@@ -25,9 +25,7 @@ import {
 import { consoleManager } from '../utils/console_manager.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import { show_audit_deleted_modal_and_navigate } from '../logic/audit_deleted_modal_flow.js';
-import { get_current_user_name } from '../utils/helpers.js';
-import { resolve_version_conflict_notice } from '../logic/version_conflict_notice.js';
-import { should_show_audit_collaboration_notice, update_baseline_from_server_full_state } from '../logic/audit_collaboration_notice.js';
+import { update_baseline_from_server_full_state } from '../logic/audit_collaboration_notice.js';
 import { count_stuck_in_samples } from '../../shared/audit/audit_metrics.js';
 import {
     state_to_import,
@@ -430,26 +428,11 @@ async function handle_version_conflict_409(
             retry_error_message = is_api_error(retry_err) ? retry_err.message : String(retry_err);
         }
 
-        dispatch_replace_state_from_remote(dispatch_fn, full_state);
-        clear_audit_sync_pending();
-        const notice = resolve_version_conflict_notice(
-            e as { lastUpdatedBy?: string | null },
-            get_current_user_name()
-        );
-        const should_notice =
-            notice && should_show_audit_collaboration_notice({ local_state: state, remote_state: full_state });
-        const notif = get_notification_component();
-        if (should_notice && notif?.show_global_message && window.Translation?.t) {
-            const t = window.Translation.t;
-            const msg = notice.params ? t(notice.key, notice.params) : t(notice.key);
-            notif.show_global_message(msg, 'info');
-        }
-        update_baseline_from_server_full_state(full_state);
-        mark_rule_file_synced_from_state(full_state.ruleFileContent);
+        mark_audit_sync_pending();
         krav_vy_sync_fel(krav_vy_sync, {
             http_status: 409,
             meddelande: e.message,
-            anledning: 'Versionskonflikt kvar efter retry — lokal state skrevs om från servern',
+            anledning: 'Versionskonflikt kvar efter retry — lokala ändringar behålls tills synk lyckas',
             retry_err: retry_error_message
         });
     } catch (load_err: unknown) {

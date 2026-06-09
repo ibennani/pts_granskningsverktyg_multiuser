@@ -38,7 +38,7 @@ export const SampleListComponent = {
 
         const sample_id = sample_list_item_element.dataset.sampleId;
         const action = action_button.dataset.action;
-        const sample = current_global_state.samples.find(s => s.id === sample_id);
+        const sample = current_global_state.samples.find((s) => String(s.id) === String(sample_id));
         if (!sample) return;
         
         switch (action) {

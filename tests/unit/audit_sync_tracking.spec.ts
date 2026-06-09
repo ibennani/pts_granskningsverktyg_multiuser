@@ -63,6 +63,25 @@ describe('audit_sync_tracking', () => {
         expect(has_unsynced_local_audit_changes(state)).toBe(true);
     });
 
+    test('has_unsynced_local_audit_changes false före granskning utan auditId på servern', () => {
+        const state = {
+            auditStatus: 'not_started',
+            auditMetadata: { last_local_change_at: '2026-05-20T12:00:00.000Z' },
+            samples: []
+        };
+        expect(has_unsynced_local_audit_changes(state)).toBe(false);
+    });
+
+    test('has_unsynced_local_audit_changes true för not_started med auditId och nyare lokalt', () => {
+        const state = {
+            auditStatus: 'not_started',
+            auditId: 'audit-1',
+            auditMetadata: { last_local_change_at: '2026-05-20T12:00:00.000Z' },
+            samples: []
+        };
+        expect(has_unsynced_local_audit_changes(state)).toBe(true);
+    });
+
     test('has_unsynced_local_audit_changes false efter synk', () => {
         const state = {
             auditMetadata: {

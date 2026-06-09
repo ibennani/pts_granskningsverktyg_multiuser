@@ -44,6 +44,14 @@ declare global {
 
 export {};
 
+/** State-actions som ändrar listinnehåll — vy ska omritas även om fokus ligger på knapp efter modal. */
+const FORCE_VIEW_RENDER_ON_STATE_ACTIONS = new Set([
+    'DELETE_SAMPLE',
+    'ADD_SAMPLE',
+    'UPDATE_SAMPLE',
+    'MARK_ALL_UNREVIEWED_AS_PASSED_IN_SAMPLE',
+]);
+
 /** Fel-/retry-gränssnitt för felrad i sessionstart. */
 type ErrorBoundaryLike = {
     show_error?: (payload: { message?: string; stack?: string; component?: string }) => void;
@@ -96,7 +104,11 @@ export interface StartNormalSessionDeps {
     subscribe: (
         cb: (
             new_state: unknown,
-            listener_meta?: { skip_render?: boolean; force_same_user_tab_render?: boolean }
+            listener_meta?: {
+                skip_render?: boolean;
+                force_same_user_tab_render?: boolean;
+                action_type?: string;
+            }
         ) => void
     ) => void;
     getState: () => unknown;
@@ -518,7 +530,10 @@ export async function start_normal_session(deps: StartNormalSessionDeps): Promis
                     }
                 }
                 const view_root = get_main_view_root() || get_app_container();
-                if (is_focus_in_editable_field(view_root)) {
+                const force_view_render =
+                    typeof listener_meta?.action_type === 'string' &&
+                    FORCE_VIEW_RENDER_ON_STATE_ACTIONS.has(listener_meta.action_type);
+                if (!force_view_render && is_focus_in_editable_field(view_root)) {
                     return;
                 }
                 const scroll_before = {

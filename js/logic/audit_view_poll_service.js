@@ -18,6 +18,7 @@ import {
 } from './audit_collaboration_notice.js';
 import { is_audit_push_websocket_open, subscribe_audits } from './list_push_service.js';
 import { has_unsynced_local_audit_changes } from './audit_sync_tracking.js';
+import { has_pending_audit_sync_plan } from '../sync/audit_sync_planning.js';
 import {
     build_remote_requirement_dispatch_payload,
     should_apply_remote_requirement_push
@@ -114,6 +115,7 @@ export function init_audit_view_poll_service({ getState, dispatch, StoreActionTy
             const state_before_fetch = getState();
             if (!state_before_fetch?.auditId || String(state_before_fetch.auditId) !== String(audit_id)) return;
             if (has_unsynced_local_audit_changes(state_before_fetch)) return;
+            if (has_pending_audit_sync_plan()) return;
 
             let remote_version = push_version;
             if (remote_version === null || remote_version === undefined) {
@@ -125,6 +127,7 @@ export function init_audit_view_poll_service({ getState, dispatch, StoreActionTy
             if (!state_now?.auditId || String(state_now.auditId) !== String(audit_id)) return;
             if (state_now?.auditStatus === 'rulefile_editing' || state_now?.auditStatus === 'not_started') return;
             if (has_unsynced_local_audit_changes(state_now)) return;
+            if (has_pending_audit_sync_plan()) return;
 
             const local_version = state_now?.version ?? 0;
             if (remote_version !== null && remote_version !== undefined && remote_version > local_version) {

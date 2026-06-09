@@ -457,6 +457,42 @@ describe('server_sync', () => {
         app_runtime_refs.notification_component = null;
     });
 
+    test('run_sync: 409 retry misslyckas behåller lokalt state när lokalt innehåll är nyare', async () => {
+        const { note_audit_full_sync_required, clear_rule_file_sync_baseline_for_testing } =
+            await import('../../js/sync/audit_sync_planning.js');
+        clear_rule_file_sync_baseline_for_testing();
+        note_audit_full_sync_required();
+        get_audit_version.mockResolvedValueOnce({ version: 1 });
+        const err = Object.assign(new Error('version'), { status: 409 });
+        const retry_err = Object.assign(new Error('fortfarande konflikt'), { status: 409 });
+        update_audit.mockRejectedValueOnce(err).mockRejectedValueOnce(retry_err);
+        load_audit_with_rule_file.mockResolvedValueOnce({
+            version: 7,
+            saveFileVersion: '2.1.0',
+            auditMetadata: { last_server_sync_at: '2026-05-19T08:00:00.000Z' },
+            samples: [{ id: 'server-sample' }],
+            ruleFileContent: {}
+        });
+        const dispatch = jest.fn();
+        const state = base_audit_state({
+            auditId: 'a1',
+            version: 1,
+            auditMetadata: { last_local_change_at: '2026-05-20T14:00:00.000Z' },
+            samples: []
+        });
+        window.Translation = { t: (k) => k };
+        app_runtime_refs.notification_component = { show_global_message: jest.fn() };
+        await sync_to_server_now(() => state, dispatch);
+        expect(update_audit).toHaveBeenCalledTimes(2);
+        expect(dispatch).not.toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'REPLACE_STATE_FROM_REMOTE' })
+        );
+        expect(mark_audit_sync_pending).toHaveBeenCalled();
+        clear_rule_file_sync_baseline_for_testing();
+        delete window.Translation;
+        app_runtime_refs.notification_component = null;
+    });
+
     test('run_sync: 409 utan existingAuditId och äldre lokalt innehåll laddar om från server', async () => {
         get_audit_version.mockResolvedValueOnce({ version: 7 });
         load_audit_with_rule_file.mockResolvedValueOnce({

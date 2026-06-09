@@ -10,7 +10,11 @@ import {
     type AuditStateLike
 } from '../logic/audit_sync_tracking.js';
 import { update_baseline_from_server_full_state } from '../logic/audit_collaboration_notice.js';
-import { has_pending_audit_sync_plan, mark_rule_file_synced_from_state } from './audit_sync_planning.js';
+import {
+    has_pending_audit_sync_plan,
+    is_force_full_sync_pending,
+    mark_rule_file_synced_from_state
+} from './audit_sync_planning.js';
 import type { SyncPayloadState } from './sync_payload_mapper.js';
 
 type DispatchFn = (action: { type: string; payload?: Record<string, unknown> }) => void;
@@ -39,31 +43,35 @@ async function apply_remote_state_when_server_ahead(
     dispatch_fn: DispatchFn | undefined,
     audit_state: AuditStateLike,
     remote_version: number,
-    unsynced: boolean
+    unsynced: boolean,
+    prefer_local_full_push: boolean
 ): Promise<'reload' | 'proceed' | null> {
     const full_state = (await load_audit_with_rule_file(state.auditId!)) as Record<string, unknown> | null;
     if (!full_state) return null;
 
-    if (!unsynced || !should_push_local_audit_to_server(audit_state, full_state as AuditStateLike)) {
-        dispatch_replace_state_from_remote(dispatch_fn, full_state);
-        update_baseline_from_server_full_state(full_state);
-        mark_rule_file_synced_from_state(full_state.ruleFileContent);
-        clear_audit_sync_pending();
-        return 'reload';
+    const should_push = should_push_local_audit_to_server(audit_state, full_state as AuditStateLike);
+
+    // Lokalt innehåll är nyare eller hel-PATCH väntar — skriv aldrig över med serverkopia.
+    if (prefer_local_full_push || should_push) {
+        if (dispatch_fn) {
+            dispatch_fn({
+                type: 'SET_REMOTE_AUDIT_ID',
+                payload: {
+                    auditId: state.auditId,
+                    ruleSetId: state.ruleSetId ?? null,
+                    version: remote_version,
+                    skip_render: true
+                }
+            });
+        }
+        return 'proceed';
     }
 
-    if (dispatch_fn) {
-        dispatch_fn({
-            type: 'SET_REMOTE_AUDIT_ID',
-            payload: {
-                auditId: state.auditId,
-                ruleSetId: state.ruleSetId ?? null,
-                version: remote_version,
-                skip_render: true
-            }
-        });
-    }
-    return 'proceed';
+    dispatch_replace_state_from_remote(dispatch_fn, full_state);
+    update_baseline_from_server_full_state(full_state);
+    mark_rule_file_synced_from_state(full_state.ruleFileContent);
+    clear_audit_sync_pending();
+    return 'reload';
 }
 
 /** Justerar versionsnummer eller laddar om när inget ska synkas men servern ligger före. */
@@ -87,6 +95,7 @@ async function align_stale_version_without_sync(
             dispatch_fn,
             audit_state,
             remote_version,
+            false,
             false
         );
         if (outcome === 'reload') return 'reload';
@@ -130,12 +139,14 @@ export async function prepare_audit_sync_state(
             return { action: 'proceed', state };
         }
 
+        const prefer_local_full_push = is_force_full_sync_pending();
         const outcome = await apply_remote_state_when_server_ahead(
             state,
             dispatch_fn,
             audit_state,
             remote_version,
-            unsynced
+            unsynced,
+            prefer_local_full_push
         );
         if (outcome === 'reload') {
             return { action: 'reload' };

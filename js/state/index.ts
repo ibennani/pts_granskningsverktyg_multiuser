@@ -29,9 +29,28 @@ import { get_translation_t } from '../utils/translation_access.js';
 import { is_debug_autosave_focus, is_debug_modal_scroll } from '../app/runtime_flags.js';
 import { get_restore_position_via_hook } from '../app/browser_globals.js';
 import { sanitize_persisted_app_state_shape } from '../logic/sanitize_persisted_app_state.js';
-
 const APP_STATE_KEY = 'digitalTillsynAppCentralState';
 const APP_STATE_BACKUP_KEY = 'digitalTillsynAppStateBackup';
+
+const SAMPLE_SERVER_SYNC_ACTIONS = new Set([
+    ActionTypes.ADD_SAMPLE,
+    ActionTypes.UPDATE_SAMPLE,
+    ActionTypes.DELETE_SAMPLE,
+]);
+
+/**
+ * Om dispatch ska schemalägga serversynk (stickprov synkas även före "Starta granskning" om auditId finns).
+ */
+function should_schedule_audit_server_sync_after_dispatch(
+    action_type: string,
+    audit_status: string | undefined,
+    audit_id: string | null | undefined
+): boolean {
+    if (audit_status === 'not_started') {
+        return SAMPLE_SERVER_SYNC_ACTIONS.has(action_type) && Boolean(audit_id);
+    }
+    return audit_status !== 'not_started';
+}
 
 const AUDIT_ACTIONS = new Set([
     ActionTypes.DELETE_CHECK_FROM_REQUIREMENT,
@@ -185,7 +204,11 @@ function execute_single_dispatch(
                         action.type !== ActionTypes.REPLACE_STATE_FROM_REMOTE &&
                         action.type !== ActionTypes.REPLACE_RULEFILE_FROM_REMOTE &&
                         action.type !== ActionTypes.SET_REMOTE_AUDIT_ID &&
-                        internal_state.auditStatus !== 'not_started') {
+                        should_schedule_audit_server_sync_after_dispatch(
+                            action.type,
+                            internal_state.auditStatus,
+                            internal_state.auditId
+                        )) {
                         if (action.type === ActionTypes.UPDATE_REQUIREMENT_RESULT) {
                             if (action_payload?.skip_server_sync !== true) {
                                 const sid = action_payload?.sampleId;
@@ -209,7 +232,10 @@ function execute_single_dispatch(
                     ) {
                         reset_audit_sync_planning_after_remote_load(internal_state.ruleFileContent);
                     }
-                    if (action.type === ActionTypes.UPDATE_REQUIREMENT_RESULT) {
+                    if (
+                        action.type === ActionTypes.UPDATE_REQUIREMENT_RESULT ||
+                        SAMPLE_SERVER_SYNC_ACTIONS.has(action.type)
+                    ) {
                         try {
                             refresh_connectivity_banner();
                         } catch {

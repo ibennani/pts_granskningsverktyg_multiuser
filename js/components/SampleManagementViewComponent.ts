@@ -97,17 +97,33 @@ export class SampleManagementViewComponent {
             return;
         }
 
-        const sample_to_delete = current_state.samples.find((s) => s.id === sample_id);
+        const sample_to_delete = current_state.samples.find((s) => String(s.id) === String(sample_id));
         if (!sample_to_delete) return;
         const sample_name = this.Helpers.escape_html(sample_to_delete.description || '');
         const warning_text = t('confirm_delete_sample', { sampleName: sample_name });
         const button_el = delete_button?.tagName === 'BUTTON' ? delete_button : (document.activeElement as HTMLElement);
 
+        const focus_after_delete =
+            this.plate_element_ref?.querySelector('h1') instanceof HTMLElement
+                ? (this.plate_element_ref.querySelector('h1') as HTMLElement)
+                : null;
+
         show_confirm_delete_modal({
             warning_text,
             delete_button: button_el,
+            focusOnConfirm: focus_after_delete ?? undefined,
             on_confirm: () => {
-                this.dispatch?.({ type: this.StoreActionTypes!.DELETE_SAMPLE, payload: { sampleId: sample_id } });
+                const delete_promise = this.dispatch?.({
+                    type: this.StoreActionTypes!.DELETE_SAMPLE,
+                    payload: { sampleId: String(sample_id) }
+                });
+                if (delete_promise && typeof delete_promise.then === 'function') {
+                    void delete_promise.then(() => {
+                        this.refresh_sample_list_if_visible();
+                    });
+                } else {
+                    this.refresh_sample_list_if_visible();
+                }
             }
         });
     }
@@ -189,7 +205,7 @@ export class SampleManagementViewComponent {
                         payload: { sampleId: sample_id }
                     });
                     this.NotificationComponent?.show_global_message?.(t('sample_mark_bulk_pass_not_audited_toast'), 'success');
-                    this.refresh_after_sample_bulk_pass();
+                    this.refresh_sample_list_if_visible();
                 });
                 const no_btn = this.Helpers!.create_element('button', {
                     class_name: ['button', 'button-default'],
@@ -208,7 +224,7 @@ export class SampleManagementViewComponent {
         this.router?.('audit_overview');
     }
 
-    refresh_after_sample_bulk_pass() {
+    refresh_sample_list_if_visible() {
         if (this.sample_list_container_element?.isConnected && this.plate_element_ref?.contains(this.sample_list_container_element)) {
             this.sample_list_component_instance.render();
             return;

@@ -3,6 +3,8 @@
  */
 
 export type AuditStateLike = {
+    auditStatus?: string;
+    auditId?: string;
     auditMetadata?: Record<string, unknown>;
     samples?: Array<{
         requirementResults?: Record<string, { lastStatusUpdate?: string | null }>;
@@ -66,6 +68,9 @@ export function is_local_audit_content_newer_than(
  */
 export function has_unsynced_local_audit_changes(state: AuditStateLike | null | undefined): boolean {
     if (!state) return false;
+    if (state.auditStatus === 'not_started' && !state.auditId) {
+        return false;
+    }
     const meta = state.auditMetadata;
     const local_at =
         (typeof meta?.last_local_change_at === 'string' && meta.last_local_change_at) ||
