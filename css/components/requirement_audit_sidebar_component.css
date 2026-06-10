@@ -152,9 +152,10 @@
 }
 
 .requirement-audit-sidebar__item:focus-within {
-    outline: var(--focus-outer-width) var(--focus-outer-style) var(--focus-outer-color);
-    outline-offset: var(--focus-ring-outline-offset);
-    box-shadow: var(--focus-ring-box-shadow);
+    outline: var(--de-focus-ring-width, var(--focus-outer-width)) var(--de-focus-ring-style, var(--focus-outer-style, solid)) var(--de-focus-color, var(--focus-outer-color));
+    outline-offset: var(--de-focus-ring-outline-offset, var(--focus-ring-outline-offset));
+    box-shadow: none;
+    position: relative;
     z-index: var(--focus-z-index);
 }
 

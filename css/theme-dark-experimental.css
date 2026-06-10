@@ -56,6 +56,12 @@
     --focus-z-index: 10000;
     --tooltip-z-index: calc(var(--focus-z-index) + 1);
 
+    /* Bakåtkompatibilitet för komponenter som fortfarande refererar till gamla fokusvariabler */
+    --focus-outer-width: var(--de-focus-ring-width);
+    --focus-outer-style: var(--de-focus-ring-style);
+    --focus-outer-color: var(--de-focus-color);
+    --focus-ring-box-shadow: none;
+
     --button-default-bg: #18181b;
     --button-default-text: #fafafa;
     --button-default-hover-bg: #27272a;
@@ -491,6 +497,22 @@ html[data-theme="dark-experimental"] :focus-visible {
 [data-theme="dark-experimental"] .requirement-audit-sidebar__item.is-active {
     background-color: var(--de-bg-elevated);
     border-left: 2px solid var(--de-accent-ui);
+}
+
+html[data-theme="dark-experimental"] .requirement-audit-sidebar__item:focus-within {
+    outline: var(--de-focus-ring-width) var(--de-focus-ring-style) var(--de-focus-color);
+    outline-offset: var(--de-focus-ring-outline-offset);
+    box-shadow: none;
+    position: relative;
+    z-index: var(--focus-z-index);
+}
+
+html[data-theme="dark-experimental"] .requirement-audit-sidebar__list:has(.requirement-audit-sidebar__item:focus-within),
+html[data-theme="dark-experimental"] .requirement-audit-sidebar__items:has(.requirement-audit-sidebar__item:focus-within),
+html[data-theme="dark-experimental"] .requirement-audit-sidebar:has(.requirement-audit-sidebar__item:focus-within),
+html[data-theme="dark-experimental"] .app-right-sidebar-root:has(.requirement-audit-sidebar__item:focus-within),
+html[data-theme="dark-experimental"] .app-right-sidebar-inner:has(.requirement-audit-sidebar__item:focus-within) {
+    overflow: visible;
 }
 
 [data-theme="dark-experimental"] .requirement-audit-sidebar__link:hover,
