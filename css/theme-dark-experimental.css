@@ -11,7 +11,8 @@
 
     --link-color: #b4b4bc;
     --link-hover-color: #a5b4fc;
-    --heading-color: #fafafa;
+    /* Varm beige från ljust tema, något mer mättad än plattfärgen (#F0EAE3) */
+    --heading-color: #E6D6BE;
 
     --button-primary-bg: #fafafa;
     --button-primary-text: #09090b;
@@ -178,7 +179,7 @@
 [data-theme="dark-experimental"] h4,
 [data-theme="dark-experimental"] h5,
 [data-theme="dark-experimental"] h6 {
-    color: var(--de-text-primary);
+    color: var(--heading-color);
     font-weight: 600;
     letter-spacing: -0.025em;
 }
@@ -485,7 +486,7 @@ html[data-theme="dark-experimental"] :focus-visible {
 /* --- Kravsidebar --- */
 [data-theme="dark-experimental"] .requirement-audit-sidebar h1,
 [data-theme="dark-experimental"] .requirement-audit-sidebar h2 {
-    color: var(--de-text-primary);
+    color: var(--heading-color);
     font-weight: 600;
 }
 
@@ -537,7 +538,7 @@ html[data-theme="dark-experimental"] .app-right-sidebar-inner:has(.requirement-a
 
 /* --- Kravlista --- */
 [data-theme="dark-experimental"] .requirement-list-header h1 {
-    color: var(--de-text-primary);
+    color: var(--heading-color);
 }
 
 [data-theme="dark-experimental"] .requirement-list-header .sample-info-display {
@@ -550,16 +551,16 @@ html[data-theme="dark-experimental"] .app-right-sidebar-inner:has(.requirement-a
 
 [data-theme="dark-experimental"] .requirements-list-filter-section h2,
 [data-theme="dark-experimental"] .results-summary {
-    color: var(--de-text-primary);
+    color: var(--heading-color);
 }
 
 [data-theme="dark-experimental"] .requirements-list-content .main-category-title {
-    color: var(--de-text-primary);
+    color: var(--heading-color);
     font-weight: 600;
 }
 
 [data-theme="dark-experimental"] .requirements-list-content .sub-category-title {
-    color: var(--de-text-secondary);
+    color: var(--heading-color);
     font-weight: 500;
 }
 
@@ -610,11 +611,11 @@ html[data-theme="dark-experimental"] .app-right-sidebar-inner:has(.requirement-a
 
 /* --- Granskningsvy --- */
 [data-theme="dark-experimental"] .requirement-audit-header h1 {
-    color: var(--de-text-primary);
+    color: var(--heading-color);
 }
 
 [data-theme="dark-experimental"] .audit-section h2 {
-    color: var(--de-text-primary);
+    color: var(--heading-color);
     font-weight: 600;
 }
 
@@ -654,7 +655,7 @@ html[data-theme="dark-experimental"] .app-right-sidebar-inner:has(.requirement-a
 [data-theme="dark-experimental"] .pass-criterion-heading,
 [data-theme="dark-experimental"] .pass-criterion-item .pass-criterion-requirement,
 [data-theme="dark-experimental"] .pass-criterion-item h4 {
-    color: var(--de-text-primary);
+    color: var(--heading-color);
     font-weight: 500;
 }
 
@@ -796,7 +797,7 @@ html[data-theme="dark-experimental"] .app-right-sidebar-inner:has(.requirement-a
 }
 
 [data-theme="dark-experimental"] .check-condition-title {
-    color: var(--de-text-secondary);
+    color: var(--heading-color);
 }
 
 [data-theme="dark-experimental"] .audit-section p,
@@ -917,7 +918,7 @@ html[data-theme="dark-experimental"] .app-right-sidebar-inner:has(.requirement-a
 
 /* --- Dashboard / översikt --- */
 [data-theme="dark-experimental"] .dashboard-panel__title {
-    color: var(--de-text-primary);
+    color: var(--heading-color);
 }
 
 [data-theme="dark-experimental"] .dashboard-panel {
@@ -933,7 +934,7 @@ html[data-theme="dark-experimental"] .app-right-sidebar-inner:has(.requirement-a
 }
 
 [data-theme="dark-experimental"] .sample-list-header h2 {
-    color: var(--de-text-primary);
+    color: var(--heading-color);
 }
 
 [data-theme="dark-experimental"] .item-list-item {
@@ -945,7 +946,7 @@ html[data-theme="dark-experimental"] .app-right-sidebar-inner:has(.requirement-a
 }
 
 [data-theme="dark-experimental"] .item-list-item .sample-info h2 {
-    color: var(--de-text-primary);
+    color: var(--heading-color);
 }
 
 /* --- Progress --- */
@@ -1053,7 +1054,7 @@ html[data-theme="dark-experimental"] .FilterPanelComponent__status-icon.status-i
 }
 
 [data-theme="dark-experimental"] .modal-heading {
-    color: var(--de-text-primary);
+    color: var(--heading-color);
 }
 
 [data-theme="dark-experimental"] .modal-message {
@@ -1170,18 +1171,21 @@ html[data-theme="dark-experimental"] .FilterPanelComponent__status-icon.status-i
 }
 
 [data-theme="dark-experimental"] .audit-status-stack__distribution-title {
-    color: var(--de-text-primary);
+    color: var(--heading-color);
 }
 
 /* --- Poänganalys --- */
-[data-theme="dark-experimental"] .score-analysis-section,
+[data-theme="dark-experimental"] .score-analysis-section {
+    color: var(--de-text-primary);
+}
+
 [data-theme="dark-experimental"] .score-analysis-section__main-title,
 [data-theme="dark-experimental"] .score-analysis-total__title,
-[data-theme="dark-experimental"] .score-analysis-principles__title,
-[data-theme="dark-experimental"] .score-analysis-total__context p,
-[data-theme="dark-experimental"] .score-analysis-total__subtext,
-[data-theme="dark-experimental"] .score-analysis-total__info,
-[data-theme="dark-experimental"] .principle-row__name {
+[data-theme="dark-experimental"] .score-analysis-principles__title {
+    color: var(--heading-color);
+}
+
+[data-theme="dark-experimental"] .score-analysis-total__context p {
     color: var(--de-text-primary);
 }
 
@@ -1202,9 +1206,12 @@ html[data-theme="dark-experimental"] .FilterPanelComponent__status-icon.status-i
     border-radius: 999px;
 }
 
-[data-theme="dark-experimental"] .statistics-sampletype-chart__label,
 [data-theme="dark-experimental"] .statistics-sampletype-chart__h2,
-[data-theme="dark-experimental"] .statistics-sampletype-chart__h3,
+[data-theme="dark-experimental"] .statistics-sampletype-chart__h3 {
+    color: var(--heading-color);
+}
+
+[data-theme="dark-experimental"] .statistics-sampletype-chart__label,
 [data-theme="dark-experimental"] .statistics-sampletype-chart__intro {
     color: var(--de-text-primary);
 }
@@ -1395,4 +1402,30 @@ html[data-theme="dark-experimental"] .check-item.status-failed {
 
 html[data-theme="dark-experimental"] .check-item.status-partially_audited {
     border-left-color: var(--de-status-warning);
+}
+
+/*
+ * Rubriker – beige från ljust tema. html-prefix ger högre specificitet än komponent-CSS
+ * som sätter primary-color på h1–h6 (laddas dynamiskt efter temat).
+ */
+html[data-theme="dark-experimental"] h1,
+html[data-theme="dark-experimental"] h2,
+html[data-theme="dark-experimental"] h3,
+html[data-theme="dark-experimental"] h4,
+html[data-theme="dark-experimental"] h5,
+html[data-theme="dark-experimental"] h6,
+html[data-theme="dark-experimental"] .main-category-title,
+html[data-theme="dark-experimental"] .sub-category-title,
+html[data-theme="dark-experimental"] .pass-criterion-heading,
+html[data-theme="dark-experimental"] .dashboard-panel__title,
+html[data-theme="dark-experimental"] .modal-heading,
+html[data-theme="dark-experimental"] .score-analysis-section__main-title,
+html[data-theme="dark-experimental"] .score-analysis-total__title,
+html[data-theme="dark-experimental"] .score-analysis-principles__title,
+html[data-theme="dark-experimental"] .statistics-sampletype-chart__h2,
+html[data-theme="dark-experimental"] .statistics-sampletype-chart__h3,
+html[data-theme="dark-experimental"] .audit-status-stack__distribution-title,
+html[data-theme="dark-experimental"] .check-condition-title,
+html[data-theme="dark-experimental"] .results-summary {
+    color: var(--heading-color);
 }
