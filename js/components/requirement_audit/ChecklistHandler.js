@@ -829,10 +829,6 @@ export const ChecklistHandler = {
 
     _create_audit_toggle_button({ button_classes, action, aria_label, label_text, icon_status }) {
         const icon_kind = icon_status === 'passed' ? 'passed' : 'failed';
-        const outline_icon_name = icon_kind === 'passed' ? 'check_outline' : 'close_outline';
-        const outline_svg = this.Helpers?.get_icon_svg
-            ? this.Helpers.get_icon_svg(outline_icon_name, ['currentColor'], 18)
-            : '';
         const button = this.Helpers.create_element('button', {
             class_name: button_classes,
             attributes: {
@@ -842,21 +838,11 @@ export const ChecklistHandler = {
                 'aria-label': aria_label
             }
         });
-        const icon_wrapper = this.Helpers.create_element('span', {
+        button.appendChild(this.Helpers.create_element('span', {
             class_name: 'audit-toggle-button__icon',
-            attributes: { 'aria-hidden': 'true' }
-        });
-        icon_wrapper.appendChild(this.Helpers.create_element('span', {
-            class_name: 'audit-toggle-button__icon-outline',
-            html_content: outline_svg,
-            attributes: { 'aria-hidden': 'true' }
-        }));
-        icon_wrapper.appendChild(this.Helpers.create_element('span', {
-            class_name: 'audit-toggle-button__icon-filled',
             text_content: get_status_icon(icon_kind),
             attributes: { 'aria-hidden': 'true' }
         }));
-        button.appendChild(icon_wrapper);
         button.appendChild(this.Helpers.create_element('span', {
             class_name: 'audit-toggle-button__label',
             text_content: label_text
