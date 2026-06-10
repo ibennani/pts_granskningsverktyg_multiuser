@@ -122,13 +122,18 @@ type ApplyUserPreferencesDeps = {
     StoreActionTypes: { SET_REQUIREMENT_AUDIT_SIDEBAR_SETTINGS: string };
 };
 
-export type SavedThemePreference = 'light' | 'dark' | 'dark-experimental';
+export type SavedThemePreference = 'light' | 'dark' | 'dark-experimental' | 'winter-white';
 
 /** Sparade teman som användaren kan välja i inställningar. */
 export function is_saved_theme_preference(
     theme: string | null | undefined
 ): theme is SavedThemePreference {
-    return theme === 'light' || theme === 'dark' || theme === 'dark-experimental';
+    return (
+        theme === 'light' ||
+        theme === 'dark' ||
+        theme === 'dark-experimental' ||
+        theme === 'winter-white'
+    );
 }
 
 function apply_system_theme(): void {

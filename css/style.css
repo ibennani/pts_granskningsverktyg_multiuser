@@ -89,6 +89,9 @@
     --tooltip-gap: 3px;
     --tooltip-z-index: calc(var(--focus-z-index) + 1);
 
+    --pass-criterion-item-bg: #FFF5E6;
+    --audit-toggle-active-border-width: 3px;
+
     --button-default-bg: #FAF7F4;
     --button-default-text: var(--text-color);
     --button-default-hover-bg: #F5F0EB;
@@ -242,6 +245,7 @@
     --focus-z-index: 10000;
     --tooltip-z-index: calc(var(--focus-z-index) + 1);
 
+    --pass-criterion-item-bg: color-mix(in srgb, var(--background-color) 95%, black);
 
     --button-default-bg: #423051;
     /* Ljusare än plattor för bättre kontrast */

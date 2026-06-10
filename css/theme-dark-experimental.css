@@ -151,6 +151,8 @@
     --de-table-row-bg: var(--de-bg-panel);
     --de-table-row-zebra-bg: color-mix(in srgb, var(--de-accent) 5%, var(--de-surface-card));
     --de-table-row-hover-bg: color-mix(in srgb, var(--de-accent) 10%, var(--de-bg-hover-strong));
+
+    --pass-criterion-item-bg: var(--de-surface-card);
 }
 
 /* --- Sidbakgrund och layout --- */
@@ -753,7 +755,7 @@ html[data-theme="dark-experimental"] .app-right-sidebar-inner:has(.requirement-a
 [data-theme="dark-experimental"] .condition-actions .button-success[aria-pressed="true"] {
     background-color: #1a3324;
     border-style: solid;
-    border-width: var(--de-interactive-border-width);
+    border-width: var(--audit-toggle-active-border-width);
     border-color: var(--de-status-passed);
     color: var(--de-status-passed);
     font-weight: 600;
@@ -768,7 +770,7 @@ html[data-theme="dark-experimental"] .app-right-sidebar-inner:has(.requirement-a
 [data-theme="dark-experimental"] .condition-actions .button-danger[aria-pressed="true"] {
     background-color: #3a181c;
     border-style: solid;
-    border-width: var(--de-interactive-border-width);
+    border-width: var(--audit-toggle-active-border-width);
     border-color: var(--de-status-failed);
     color: var(--de-status-failed);
     font-weight: 600;
@@ -1353,6 +1355,7 @@ html[data-theme="dark-experimental"] .condition-actions .button-success.active,
 html[data-theme="dark-experimental"] .condition-actions .button-success[aria-pressed="true"] {
     background-color: #1a3324;
     border-style: solid;
+    border-width: var(--audit-toggle-active-border-width);
     border-color: var(--de-status-passed);
     color: var(--de-status-passed);
 }
@@ -1363,6 +1366,7 @@ html[data-theme="dark-experimental"] .condition-actions .button-danger.active,
 html[data-theme="dark-experimental"] .condition-actions .button-danger[aria-pressed="true"] {
     background-color: #3a181c;
     border-style: solid;
+    border-width: var(--audit-toggle-active-border-width);
     border-color: var(--de-status-failed);
     color: var(--de-status-failed);
 }

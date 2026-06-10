@@ -304,13 +304,9 @@
     color: var(--text-color-muted);
     margin-bottom: 1rem;
     padding: 0.3rem 0.6rem;
-    background-color: var(--background-color);
+    background-color: var(--pass-criterion-item-bg);
     border-radius: var(--border-radius);
     display: inline-block;
-}
-
-[data-theme="dark"] .check-status-display {
-    background-color: var(--input-background-color);
 }
 
 .criteria-panel[hidden] {
@@ -411,11 +407,10 @@
     margin-bottom: 1rem;
     border: 2px solid var(--border-color);
     border-radius: var(--border-radius);
-    background-color: #FFF5E6; /* Väldigt ljus orange nyans - samma som kravkort */
+    background-color: var(--pass-criterion-item-bg);
 }
 
 [data-theme="dark"] .pass-criterion-item {
-    background-color: color-mix(in srgb, var(--background-color) 95%, black);
     border-color: var(--border-color);
 }
 
@@ -543,18 +538,24 @@
 
 /* STATE 2: Aktivt (valt) – hel kant, fylld bakgrund och färgad ikon */
 .condition-actions .button-success.active,
-.pass-criterion-actions .button-success.active {
+.pass-criterion-actions .button-success.active,
+.condition-actions .button-success[aria-pressed="true"],
+.pass-criterion-actions .button-success[aria-pressed="true"] {
     background-color: var(--button-success-bg);
     border-style: solid;
+    border-width: var(--audit-toggle-active-border-width);
     border-color: var(--button-success-border);
     color: var(--button-success-text);
     font-weight: 600;
 }
 
 .condition-actions .button-danger.active,
-.pass-criterion-actions .button-danger.active {
+.pass-criterion-actions .button-danger.active,
+.condition-actions .button-danger[aria-pressed="true"],
+.pass-criterion-actions .button-danger[aria-pressed="true"] {
     background-color: var(--button-danger-bg);
     border-style: solid;
+    border-width: var(--audit-toggle-active-border-width);
     border-color: var(--button-danger-border);
     color: var(--button-danger-text);
     font-weight: 600;

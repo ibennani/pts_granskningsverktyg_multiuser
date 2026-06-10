@@ -238,6 +238,7 @@ export class SettingsViewComponent {
             { value: 'light', label_key: 'light_mode' },
             { value: 'dark', label_key: 'dark_mode' },
             { value: 'dark-experimental', label_key: 'settings_theme_dark_experimental' },
+            { value: 'winter-white', label_key: 'settings_theme_winter_white' },
             { value: 'system', label_key: 'settings_theme_system' }
         ];
         theme_options.forEach(({ value, label_key }) => {
