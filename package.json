@@ -30,6 +30,7 @@
     "deploy:v2:keep-build-info": "cross-env DEPLOY_KEEP_BUILD_INFO=1 node scripts/deploy-v2.js",
     "diagnose:v2": "node scripts/diagnose-v2-remote.js",
     "start:v2:remote": "node scripts/remote-start-v2-pm2.js",
+    "setup:v2:boot": "node scripts/remote-setup-v2-boot.js",
     "remote:fix-prod-deps": "node scripts/remote-fix-prod-deps.js",
     "uppdatera:byggstämpel": "node scripts/update_public_build_info.js",
     "build": "vite build && node scripts/postbuild-copy.js",

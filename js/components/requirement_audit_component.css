@@ -498,10 +498,27 @@
     align-items: center;
     justify-content: center;
     flex: 0 0 auto;
-    font-family: Arial, sans-serif;
+    min-width: 1.125rem;
     line-height: 1;
+}
+
+.audit-toggle-button__icon-outline,
+.audit-toggle-button__icon-filled {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.audit-toggle-button__icon-outline svg {
+    width: 1rem;
+    height: 1rem;
+    display: block;
+}
+
+.audit-toggle-button__icon-filled {
+    display: none;
+    font-family: Arial, sans-serif;
     text-rendering: optimizeLegibility;
-    paint-order: stroke fill;
 }
 
 .audit-toggle-button__label {
@@ -509,7 +526,7 @@
     text-align: start;
 }
 
-/* STATE 1: Inaktivt (ej valt) – streckad kant, neutral ofylld ikon (endast kantlinje) */
+/* STATE 1: Inaktivt (ej valt) – streckad kant, outline-ikon */
 .condition-actions .button:not(.active),
 .pass-criterion-actions .button:not(.active) {
     background-color: transparent;
@@ -528,16 +545,19 @@
     color: var(--text-color-muted);
 }
 
-.condition-actions .button:not(.active) .audit-toggle-button__icon,
-.pass-criterion-actions .button:not(.active) .audit-toggle-button__icon,
-.condition-actions .button:not(.active):hover .audit-toggle-button__icon,
-.pass-criterion-actions .button:not(.active):hover .audit-toggle-button__icon {
-    color: transparent;
-    -webkit-text-stroke: 1px var(--text-color-muted);
-    text-stroke: 1px var(--text-color-muted);
-    font-size: 0.75rem;
-    min-width: 0.75rem;
-    font-weight: 300;
+.condition-actions .button:not(.active) .audit-toggle-button__icon-outline,
+.pass-criterion-actions .button:not(.active) .audit-toggle-button__icon-outline,
+.condition-actions .button:not(.active):hover .audit-toggle-button__icon-outline,
+.pass-criterion-actions .button:not(.active):hover .audit-toggle-button__icon-outline {
+    display: inline-flex;
+    color: var(--text-color-muted);
+}
+
+.condition-actions .button:not(.active) .audit-toggle-button__icon-filled,
+.pass-criterion-actions .button:not(.active) .audit-toggle-button__icon-filled,
+.condition-actions .button:not(.active):hover .audit-toggle-button__icon-filled,
+.pass-criterion-actions .button:not(.active):hover .audit-toggle-button__icon-filled {
+    display: none;
 }
 
 .condition-actions .button-success:not(.active):hover,
@@ -576,24 +596,27 @@
     font-weight: 600;
 }
 
-.condition-actions .button.active .audit-toggle-button__icon,
-.pass-criterion-actions .button.active .audit-toggle-button__icon {
+.condition-actions .button.active .audit-toggle-button__icon-outline,
+.pass-criterion-actions .button.active .audit-toggle-button__icon-outline {
+    display: none;
+}
+
+.condition-actions .button.active .audit-toggle-button__icon-filled,
+.pass-criterion-actions .button.active .audit-toggle-button__icon-filled {
+    display: inline-flex;
     color: inherit;
-    -webkit-text-stroke: 0;
-    text-stroke: 0;
     font-size: 1.125rem;
-    min-width: 1.125rem;
     font-weight: 900;
     letter-spacing: -0.02em;
 }
 
-.condition-actions .button-success.active .audit-toggle-button__icon,
-.pass-criterion-actions .button-success.active .audit-toggle-button__icon {
+.condition-actions .button-success.active .audit-toggle-button__icon-filled,
+.pass-criterion-actions .button-success.active .audit-toggle-button__icon-filled {
     color: var(--button-success-text);
 }
 
-.condition-actions .button-danger.active .audit-toggle-button__icon,
-.pass-criterion-actions .button-danger.active .audit-toggle-button__icon {
+.condition-actions .button-danger.active .audit-toggle-button__icon-filled,
+.pass-criterion-actions .button-danger.active .audit-toggle-button__icon-filled {
     color: var(--button-danger-text);
 }
 /* --- END OF CHANGE --- */

@@ -157,8 +157,13 @@ async function main() {
         await scpDir(serverDir, `${remotePath}/server`);
         await scpFile(join(projectRoot, 'scripts', 'health-check-and-restart.sh'), `${remotePath}/scripts/health-check-and-restart.sh`);
         await scpFile(join(projectRoot, 'scripts', 'healthcheck-watchdog.js'), `${remotePath}/scripts/healthcheck-watchdog.js`);
+        await scpFile(join(projectRoot, 'scripts', 'server-boot-leffe.sh'), `${remotePath}/scripts/server-boot-leffe.sh`);
         await scpFile(join(projectRoot, 'scripts', 'cleanup-docker-remote.sh'), `${remotePath}/scripts/cleanup-docker-remote.sh`);
-        await sshOrRun(`chmod +x ${remotePath}/scripts/health-check-and-restart.sh ${remotePath}/scripts/cleanup-docker-remote.sh`, ['ssh', [host, `chmod +x ${remotePath}/scripts/health-check-and-restart.sh ${remotePath}/scripts/cleanup-docker-remote.sh`]], { cwd: false });
+        await sshOrRun(
+            `chmod +x ${remotePath}/scripts/health-check-and-restart.sh ${remotePath}/scripts/cleanup-docker-remote.sh ${remotePath}/scripts/server-boot-leffe.sh`,
+            ['ssh', [host, `chmod +x ${remotePath}/scripts/health-check-and-restart.sh ${remotePath}/scripts/cleanup-docker-remote.sh ${remotePath}/scripts/server-boot-leffe.sh`]],
+            { cwd: false }
+        );
         await scpFile(join(projectRoot, 'docker-compose.yml'), `${remotePath}/docker-compose.yml`);
         await scpFile(join(projectRoot, 'package.json'), `${remotePath}/package.json`);
         await scpFile(join(projectRoot, 'package-lock.json'), `${remotePath}/package-lock.json`);

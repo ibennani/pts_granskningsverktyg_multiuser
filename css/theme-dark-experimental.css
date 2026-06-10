@@ -682,45 +682,37 @@ html[data-theme="dark-experimental"] .app-right-sidebar-inner:has(.requirement-a
     font-weight: 500;
 }
 
-[data-theme="dark-experimental"] .pass-criterion-actions .button:not(.active) .audit-toggle-button__icon,
-[data-theme="dark-experimental"] .pass-criterion-actions .button[aria-pressed="false"] .audit-toggle-button__icon,
-[data-theme="dark-experimental"] .condition-actions .button:not(.active) .audit-toggle-button__icon,
-[data-theme="dark-experimental"] .condition-actions .button[aria-pressed="false"] .audit-toggle-button__icon,
-[data-theme="dark-experimental"] .pass-criterion-actions .button:not(.active):hover .audit-toggle-button__icon,
-[data-theme="dark-experimental"] .pass-criterion-actions .button[aria-pressed="false"]:hover .audit-toggle-button__icon,
-[data-theme="dark-experimental"] .condition-actions .button:not(.active):hover .audit-toggle-button__icon,
-[data-theme="dark-experimental"] .condition-actions .button[aria-pressed="false"]:hover .audit-toggle-button__icon {
-    color: transparent;
-    -webkit-text-stroke: 1px var(--de-text-secondary);
-    text-stroke: 1px var(--de-text-secondary);
-    font-size: 0.75rem;
-    min-width: 0.75rem;
-    font-weight: 300;
+[data-theme="dark-experimental"] .pass-criterion-actions .button:not(.active) .audit-toggle-button__icon-outline,
+[data-theme="dark-experimental"] .pass-criterion-actions .button[aria-pressed="false"] .audit-toggle-button__icon-outline,
+[data-theme="dark-experimental"] .condition-actions .button:not(.active) .audit-toggle-button__icon-outline,
+[data-theme="dark-experimental"] .condition-actions .button[aria-pressed="false"] .audit-toggle-button__icon-outline,
+[data-theme="dark-experimental"] .pass-criterion-actions .button:not(.active):hover .audit-toggle-button__icon-outline,
+[data-theme="dark-experimental"] .pass-criterion-actions .button[aria-pressed="false"]:hover .audit-toggle-button__icon-outline,
+[data-theme="dark-experimental"] .condition-actions .button:not(.active):hover .audit-toggle-button__icon-outline,
+[data-theme="dark-experimental"] .condition-actions .button[aria-pressed="false"]:hover .audit-toggle-button__icon-outline {
+    color: var(--de-text-secondary);
 }
 
-[data-theme="dark-experimental"] .pass-criterion-actions .button.active .audit-toggle-button__icon,
-[data-theme="dark-experimental"] .pass-criterion-actions .button[aria-pressed="true"] .audit-toggle-button__icon,
-[data-theme="dark-experimental"] .condition-actions .button.active .audit-toggle-button__icon,
-[data-theme="dark-experimental"] .condition-actions .button[aria-pressed="true"] .audit-toggle-button__icon {
-    -webkit-text-stroke: 0;
-    text-stroke: 0;
+[data-theme="dark-experimental"] .pass-criterion-actions .button.active .audit-toggle-button__icon-filled,
+[data-theme="dark-experimental"] .pass-criterion-actions .button[aria-pressed="true"] .audit-toggle-button__icon-filled,
+[data-theme="dark-experimental"] .condition-actions .button.active .audit-toggle-button__icon-filled,
+[data-theme="dark-experimental"] .condition-actions .button[aria-pressed="true"] .audit-toggle-button__icon-filled {
     font-size: 1.125rem;
-    min-width: 1.125rem;
     font-weight: 900;
     letter-spacing: -0.02em;
 }
 
-[data-theme="dark-experimental"] .pass-criterion-actions .button-success.active .audit-toggle-button__icon,
-[data-theme="dark-experimental"] .pass-criterion-actions .button-success[aria-pressed="true"] .audit-toggle-button__icon,
-[data-theme="dark-experimental"] .condition-actions .button-success.active .audit-toggle-button__icon,
-[data-theme="dark-experimental"] .condition-actions .button-success[aria-pressed="true"] .audit-toggle-button__icon {
+[data-theme="dark-experimental"] .pass-criterion-actions .button-success.active .audit-toggle-button__icon-filled,
+[data-theme="dark-experimental"] .pass-criterion-actions .button-success[aria-pressed="true"] .audit-toggle-button__icon-filled,
+[data-theme="dark-experimental"] .condition-actions .button-success.active .audit-toggle-button__icon-filled,
+[data-theme="dark-experimental"] .condition-actions .button-success[aria-pressed="true"] .audit-toggle-button__icon-filled {
     color: var(--de-status-passed);
 }
 
-[data-theme="dark-experimental"] .pass-criterion-actions .button-danger.active .audit-toggle-button__icon,
-[data-theme="dark-experimental"] .pass-criterion-actions .button-danger[aria-pressed="true"] .audit-toggle-button__icon,
-[data-theme="dark-experimental"] .condition-actions .button-danger.active .audit-toggle-button__icon,
-[data-theme="dark-experimental"] .condition-actions .button-danger[aria-pressed="true"] .audit-toggle-button__icon {
+[data-theme="dark-experimental"] .pass-criterion-actions .button-danger.active .audit-toggle-button__icon-filled,
+[data-theme="dark-experimental"] .pass-criterion-actions .button-danger[aria-pressed="true"] .audit-toggle-button__icon-filled,
+[data-theme="dark-experimental"] .condition-actions .button-danger.active .audit-toggle-button__icon-filled,
+[data-theme="dark-experimental"] .condition-actions .button-danger[aria-pressed="true"] .audit-toggle-button__icon-filled {
     color: var(--de-status-failed);
 }
 
