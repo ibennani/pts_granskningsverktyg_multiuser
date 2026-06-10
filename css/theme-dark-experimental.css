@@ -10,7 +10,7 @@
     --primary-color-dark: #e4e4e7;
 
     --link-color: #b4b4bc;
-    --link-hover-color: #fafafa;
+    --link-hover-color: #a5b4fc;
     --heading-color: #fafafa;
 
     --button-primary-bg: #fafafa;
@@ -44,24 +44,15 @@
     --border-color: #4a5078;
 
     /*
-     * Fokusmarkering – dark-experimental (samma struktur, egna värden vid behov).
+     * Fokusmarkering – dark-experimental: en ljusblå ram (1 px solid), samma padding som tidigare inre ram.
      */
     --focus-padding: 3px;
-    --focus-inner-width: 1px;
-    --focus-inner-style: solid;
-    --focus-inner-color: #000000;
-    --focus-inner-outer-gap: 0px;
-    --focus-outer-width: 1px;
-    --focus-outer-style: solid;
-    --focus-outer-color: #ffffff;
-    --focus-gap-color: var(--de-bg-panel);
-    --focus-inner-edge: calc(var(--focus-padding) + var(--focus-inner-width));
-    --focus-ring-outline-offset: calc(var(--focus-inner-edge) + var(--focus-inner-outer-gap));
-    --focus-ring-shadow-inner: 0 0 0 var(--focus-inner-edge) var(--focus-inner-color);
-    --focus-ring-shadow-gap: 0 0 0 var(--focus-padding) var(--focus-gap-color);
-    /* gap först = överst i lagret, så bara 1 px svart syns efter padding */
-    --focus-ring-box-shadow: var(--focus-ring-shadow-gap), var(--focus-ring-shadow-inner);
-    --focus-ring-outset: calc(var(--focus-padding) + var(--focus-inner-width) + var(--focus-inner-outer-gap) + var(--focus-outer-width));
+    --de-focus-color: #a5b4fc;
+    --de-focus-ring-width: 2px;
+    --de-focus-ring-style: solid;
+    --de-focus-ring-outline-offset: var(--focus-padding);
+    --focus-ring-outline-offset: var(--focus-padding);
+    --de-focus-ring-outline-offset: var(--focus-padding);
     --focus-z-index: 10000;
     --tooltip-z-index: calc(var(--focus-z-index) + 1);
 
@@ -150,9 +141,6 @@
     --de-interactive-border-width: 2px;
     --de-interactive-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 
-    --de-focus-ring-box-shadow: var(--focus-ring-box-shadow);
-    --de-focus-ring-outline-offset: var(--focus-ring-outline-offset);
-
     --de-table-row-bg: var(--de-bg-panel);
     --de-table-row-zebra-bg: color-mix(in srgb, var(--de-accent) 5%, var(--de-surface-card));
     --de-table-row-hover-bg: color-mix(in srgb, var(--de-accent) 10%, var(--de-bg-hover-strong));
@@ -225,16 +213,16 @@
     transition: color 0.2s ease;
 }
 
-[data-theme="dark-experimental"] a:hover,
-[data-theme="dark-experimental"] a:focus-visible {
-    color: var(--de-text-primary);
+html[data-theme="dark-experimental"] a:hover,
+html[data-theme="dark-experimental"] a:focus-visible {
+    color: var(--link-hover-color);
 }
 
-/* --- Fokusmarkering (variabler i [data-theme="dark-experimental"] ovan) --- */
-[data-theme="dark-experimental"] :focus-visible {
-    outline: var(--focus-outer-width) var(--focus-outer-style) var(--focus-outer-color);
+/* --- Fokusmarkering (global i dark-experimental) --- */
+html[data-theme="dark-experimental"] :focus-visible {
+    outline: var(--de-focus-ring-width) var(--de-focus-ring-style) var(--de-focus-color);
     outline-offset: var(--de-focus-ring-outline-offset);
-    box-shadow: var(--de-focus-ring-box-shadow);
+    box-shadow: none;
     position: relative;
     z-index: var(--focus-z-index);
 }
@@ -257,8 +245,10 @@
 }
 
 [data-theme="dark-experimental"] #global-action-bar-top .global-action-bar a:hover,
-[data-theme="dark-experimental"] #global-action-bar-bottom .global-action-bar a:hover {
-    color: var(--de-text-primary);
+[data-theme="dark-experimental"] #global-action-bar-top .global-action-bar a:focus-visible,
+[data-theme="dark-experimental"] #global-action-bar-bottom .global-action-bar a:hover,
+[data-theme="dark-experimental"] #global-action-bar-bottom .global-action-bar a:focus-visible {
+    color: var(--link-hover-color);
 }
 
 /* --- Sidomeny --- */
@@ -281,8 +271,9 @@
     transition: color 0.2s ease;
 }
 
-[data-theme="dark-experimental"] .side-menu__link:hover {
-    color: var(--de-text-primary);
+[data-theme="dark-experimental"] .side-menu__link:hover,
+[data-theme="dark-experimental"] .side-menu__link:focus-visible {
+    color: var(--link-hover-color);
 }
 
 [data-theme="dark-experimental"] .side-menu__link.active,
@@ -292,12 +283,11 @@
     border: 1px solid var(--de-border-strong);
 }
 
-[data-theme="dark-experimental"] .side-menu__link:focus-visible {
-    outline: var(--focus-outer-width) var(--focus-outer-style) var(--focus-outer-color);
-    outline-offset: var(--de-focus-ring-outline-offset);
-    box-shadow: var(--de-focus-ring-box-shadow);
-    position: relative;
-    z-index: var(--focus-z-index);
+[data-theme="dark-experimental"] .side-menu__link.active:hover,
+[data-theme="dark-experimental"] .side-menu__link.active:focus-visible,
+[data-theme="dark-experimental"] .side-menu__link[aria-current="page"]:hover,
+[data-theme="dark-experimental"] .side-menu__link[aria-current="page"]:focus-visible {
+    color: var(--link-hover-color);
 }
 
 /* --- Innehållspaneler --- */
@@ -375,10 +365,8 @@
 [data-theme="dark-experimental"] textarea:focus,
 [data-theme="dark-experimental"] select:focus {
     border-color: var(--de-interactive-border);
-    box-shadow:
-        var(--de-interactive-shadow),
-        var(--de-focus-ring-box-shadow);
-    outline: var(--focus-outer-width) var(--focus-outer-style) var(--focus-outer-color);
+    box-shadow: var(--de-interactive-shadow);
+    outline: var(--de-focus-ring-width) var(--de-focus-ring-style) var(--de-focus-color);
     outline-offset: var(--de-focus-ring-outline-offset);
 }
 
@@ -425,10 +413,8 @@
 
 [data-theme="dark-experimental"] .button:focus-visible {
     border-color: var(--de-interactive-border);
-    box-shadow:
-        var(--de-interactive-shadow),
-        var(--de-focus-ring-box-shadow);
-    outline: var(--focus-outer-width) var(--focus-outer-style) var(--focus-outer-color);
+    box-shadow: var(--de-interactive-shadow);
+    outline: var(--de-focus-ring-width) var(--de-focus-ring-style) var(--de-focus-color);
     outline-offset: var(--de-focus-ring-outline-offset);
 }
 
@@ -507,6 +493,11 @@
     border-left: 2px solid var(--de-accent-ui);
 }
 
+[data-theme="dark-experimental"] .requirement-audit-sidebar__link:hover,
+[data-theme="dark-experimental"] .requirement-audit-sidebar__link:focus-visible {
+    color: var(--link-hover-color);
+}
+
 [data-theme="dark-experimental"] .requirement-audit-sidebar__item.is-active .requirement-audit-sidebar__link,
 [data-theme="dark-experimental"] .requirement-audit-sidebar__item.is-active .requirement-audit-sidebar__reference,
 [data-theme="dark-experimental"] .requirement-audit-sidebar__item.is-active .requirement-audit-sidebar__meta {
@@ -582,8 +573,9 @@
 }
 
 [data-theme="dark-experimental"] .requirements-list-content .list-title-link:hover,
-[data-theme="dark-experimental"] .requirements-list-content .list-title-link:focus {
-    color: var(--de-accent);
+[data-theme="dark-experimental"] .requirements-list-content .list-title-link:focus,
+[data-theme="dark-experimental"] .requirements-list-content .list-title-link:focus-visible {
+    color: var(--link-hover-color);
 }
 
 [data-theme="dark-experimental"] .requirements-list-content .list-reference-link {
@@ -797,6 +789,20 @@
     color: var(--de-text-secondary);
 }
 
+[data-theme="dark-experimental"] .requirement-audit-header .standard-reference a,
+[data-theme="dark-experimental"] .requirement-audit-header .audited-page-link a {
+    color: var(--link-color);
+    text-decoration: underline;
+}
+
+[data-theme="dark-experimental"] .requirement-audit-header .standard-reference a:hover,
+[data-theme="dark-experimental"] .requirement-audit-header .audited-page-link a:hover,
+[data-theme="dark-experimental"] .requirement-audit-header .standard-reference a:focus-visible,
+[data-theme="dark-experimental"] .requirement-audit-header .audited-page-link a:focus-visible {
+    color: var(--link-hover-color);
+    text-decoration: underline;
+}
+
 [data-theme="dark-experimental"] .requirement-audit-header .standard-reference strong,
 [data-theme="dark-experimental"] .requirement-audit-header .audited-page-link strong {
     color: var(--de-text-primary);
@@ -882,8 +888,8 @@
 
 [data-theme="dark-experimental"] .generic-table-header-sort-btn:focus-visible {
     border-color: var(--de-interactive-border);
-    box-shadow: var(--de-focus-ring-box-shadow);
-    outline: var(--focus-outer-width) var(--focus-outer-style) var(--focus-outer-color);
+    box-shadow: var(--de-interactive-shadow);
+    outline: var(--de-focus-ring-width) var(--de-focus-ring-style) var(--de-focus-color);
     outline-offset: var(--de-focus-ring-outline-offset);
 }
 
@@ -1045,9 +1051,9 @@ html[data-theme="dark-experimental"] .FilterPanelComponent__status-icon.status-i
 [data-theme="dark-experimental"] .copy-observation-radio-option:hover,
 [data-theme="dark-experimental"] .copy-observation-radio-option:focus-within {
     border-color: var(--de-interactive-border);
-    outline: var(--focus-outer-width) var(--focus-outer-style) var(--focus-outer-color);
+    outline: var(--de-focus-ring-width) var(--de-focus-ring-style) var(--de-focus-color);
     outline-offset: var(--de-focus-ring-outline-offset);
-    box-shadow: var(--de-interactive-shadow), var(--de-focus-ring-box-shadow);
+    box-shadow: var(--de-interactive-shadow);
 }
 
 /* --- Notifieringar --- */
@@ -1249,8 +1255,8 @@ html[data-theme="dark-experimental"] .FilterPanelComponent__status-icon.status-i
 
 [data-theme="dark-experimental"] .md-toolbar-btn:focus-visible {
     border-color: var(--de-interactive-border);
-    box-shadow: var(--de-focus-ring-box-shadow);
-    outline: var(--focus-outer-width) var(--focus-outer-style) var(--focus-outer-color);
+    box-shadow: var(--de-interactive-shadow);
+    outline: var(--de-focus-ring-width) var(--de-focus-ring-style) var(--de-focus-color);
     outline-offset: var(--de-focus-ring-outline-offset);
 }
 
@@ -1299,14 +1305,6 @@ html[data-theme="dark-experimental"] .principle-row__bar,
 html[data-theme="dark-experimental"] .statistics-sampletype-chart .statistics-sampletype-chart__fill {
     background: var(--de-score-bar-gradient);
     background-size: calc(100% / (var(--score-percent, 0.01) / 100)) 100%;
-}
-
-html[data-theme="dark-experimental"] .side-menu__link:focus-visible {
-    outline: var(--focus-outer-width) var(--focus-outer-style) var(--focus-outer-color);
-    outline-offset: var(--de-focus-ring-outline-offset);
-    box-shadow: var(--de-focus-ring-box-shadow);
-    position: relative;
-    z-index: var(--focus-z-index);
 }
 
 html[data-theme="dark-experimental"] .pass-criterion-actions .button:not(.active),
