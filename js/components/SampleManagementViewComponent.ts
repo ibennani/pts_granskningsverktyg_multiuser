@@ -7,6 +7,7 @@ type SampleManagementDeps = any;
 
 import { SampleListComponent } from './SampleListComponent.js';
 import { show_confirm_delete_modal } from '../logic/confirm_delete_modal_logic.js';
+import { show_open_all_sample_urls_modal, sample_url_raw_string } from '../logic/open_all_sample_urls_modal.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import { effective_status_is_fully_unreviewed_for_bulk_pass } from '../audit_logic.js';
 import { user_may_use_sample_mark_bulk_pass_not_audited } from '../logic/sample_bulk_pass_not_audited_gate.js';
@@ -45,6 +46,7 @@ export class SampleManagementViewComponent {
         this.handle_edit_sample_request_from_list = this.handle_edit_sample_request_from_list.bind(this);
         this.handle_delete_sample_request_from_list = this.handle_delete_sample_request_from_list.bind(this);
         this.handle_start_audit = this.handle_start_audit.bind(this);
+        this.handle_open_all_sample_urls = this.handle_open_all_sample_urls.bind(this);
         this.handle_mark_bulk_pass_fully_unreviewed_in_sample =
             this.handle_mark_bulk_pass_fully_unreviewed_in_sample.bind(this);
     }
@@ -224,6 +226,16 @@ export class SampleManagementViewComponent {
         this.router?.('audit_overview');
     }
 
+    handle_open_all_sample_urls(trigger_button: HTMLElement) {
+        if (!this.getState || !this.Helpers || !this.Translation) return;
+        show_open_all_sample_urls_modal({
+            trigger_element: trigger_button,
+            getState: this.getState,
+            Helpers: this.Helpers,
+            Translation: this.Translation
+        });
+    }
+
     refresh_sample_list_if_visible() {
         if (this.sample_list_container_element?.isConnected && this.plate_element_ref?.contains(this.sample_list_container_element)) {
             this.sample_list_component_instance.render();
@@ -268,6 +280,21 @@ export class SampleManagementViewComponent {
             this.router?.('sample_form');
         });
         top_actions_div.appendChild(add_button);
+
+        const has_any_sample_url = (current_state.samples as Array<Record<string, unknown>> | undefined)?.some(
+            (s) => sample_url_raw_string(s) !== ''
+        );
+        if (has_any_sample_url) {
+            const open_all_tabs_btn = this.Helpers.create_element('button', {
+                class_name: ['button', 'button-secondary'],
+                text_content: t('open_all_sample_urls_in_tabs_button')
+            });
+            open_all_tabs_btn.addEventListener('click', () => {
+                this.handle_open_all_sample_urls(open_all_tabs_btn);
+            });
+            top_actions_div.appendChild(open_all_tabs_btn);
+        }
+
         plate.appendChild(top_actions_div);
 
         this.sample_list_component_instance.render();
