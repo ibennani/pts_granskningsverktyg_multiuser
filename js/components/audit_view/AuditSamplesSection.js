@@ -1,9 +1,76 @@
 // js/components/audit_view/AuditSamplesSection.js
 // Bygger högerkolumnen: granskningar (listor eller sektioner beroende på audit_mode).
 
-import { enrich_audits_with_live_progress } from '../../logic/audit_list_progress.js';
-import { filter_text_matches } from '../../utils/string_filter_normalize.js';
 import { format_audit_display_label } from '../../utils/audit_table_columns.js';
+import {
+    build_audit_list_section_configs,
+    build_section_heading_text,
+    render_audit_section_table,
+    sync_audit_section_following_classes
+} from './audit_samples_filter.js';
+
+export { update_audit_samples_filter } from './audit_samples_filter.js';
+
+function append_audit_section_heading_actions(ctx, config, heading_row, t) {
+    if (config.heading_key === 'start_view_audits_heading') {
+        const upload_audit_btn = ctx.Helpers.create_element('button', {
+            class_name: ['button', 'button-primary', 'audit-upload-audit-btn'],
+            text_content: t('audit_upload_saved_audit'),
+            attributes: { type: 'button', 'aria-label': t('audit_upload_saved_audit') }
+        });
+        upload_audit_btn.addEventListener('click', ctx.handle_audit_upload_click);
+        ctx.upload_audit_file_input = ctx.Helpers.create_element('input', {
+            class_name: 'audit-hidden-file-input',
+            attributes: {
+                type: 'file',
+                accept: '.json,application/json',
+                'aria-label': t('audit_upload_saved_audit'),
+                tabindex: '-1',
+                'aria-hidden': 'true'
+            }
+        });
+        ctx.upload_audit_file_input.addEventListener('change', ctx.handle_audit_file_select);
+        heading_row.appendChild(upload_audit_btn);
+        heading_row.appendChild(ctx.upload_audit_file_input);
+    }
+    if (config.heading_key === 'start_view_new_audits_heading') {
+        const start_new_btn = ctx.Helpers.create_element('button', {
+            class_name: ['button', 'button-primary', 'audit-start-new-audit-btn'],
+            text_content: t('start_new_audit'),
+            attributes: { type: 'button', 'aria-label': t('start_new_audit') }
+        });
+        start_new_btn.addEventListener('click', ctx.handle_start_new_audit);
+        heading_row.appendChild(start_new_btn);
+    }
+}
+
+function create_audit_list_section(ctx, config, t, has_filter) {
+    const section = ctx.Helpers.create_element('section', {
+        class_name: 'start-view-audits-section',
+        attributes: {
+            'aria-labelledby': `${config.heading_key}-heading`,
+            'data-audit-section-key': config.heading_key
+        }
+    });
+    if (has_filter && (config.audits || []).length === 0) {
+        section.hidden = true;
+    }
+
+    const heading_row = ctx.Helpers.create_element('div', { class_name: 'start-view-section-heading-row' });
+    const section_heading_text = build_section_heading_text(t, config);
+    const section_heading = ctx.Helpers.create_element('h2', {
+        id: `${config.heading_key}-heading`,
+        text_content: section_heading_text
+    });
+    heading_row.appendChild(section_heading);
+    append_audit_section_heading_actions(ctx, config, heading_row, t);
+    section.appendChild(heading_row);
+
+    const table_wrapper = ctx.Helpers.create_element('div', { class_name: 'audit-section-table-wrapper' });
+    render_audit_section_table(ctx, config, table_wrapper, section_heading_text, t);
+    section.appendChild(table_wrapper);
+    return section;
+}
 
 export function render_audit_samples_section(ctx) {
     const t = ctx.get_t_func();
@@ -15,135 +82,15 @@ export function render_audit_samples_section(ctx) {
     );
 
     if (ctx.audit_mode === 'audits') {
-        const sort_audits = (list) => [...list].sort((a, b) => {
-            const ca = (a.metadata?.caseNumber ?? '').toString().trim();
-            const cb = (b.metadata?.caseNumber ?? '').toString().trim();
-            if (!ca && !cb) return 0;
-            if (!ca) return 1;
-            if (!cb) return -1;
-            return ca.localeCompare(cb, undefined, { numeric: true });
-        });
-        const query_raw = ctx.audit_filter_query || '';
-        const filter_and_sort_audits = (list) => {
-            if (!query_raw.trim()) return sort_audits(list);
-            const filtered = list.filter((a) => {
-                const meta = a.metadata || {};
-                const case_number = (meta.caseNumber ?? '').toString().trim();
-                const actor_name = (meta.actorName ?? '').toString().trim();
-                const auditor_name = (meta.auditorName ?? '').toString().trim();
-                const combined = `${case_number} ${actor_name} ${auditor_name}`.trim();
-                if (!combined) return false;
-                return filter_text_matches(combined, query_raw);
-            });
-            return sort_audits(filtered);
-        };
-        const base_in_progress = ctx.audits.filter((a) => a.status === 'in_progress');
-        const base_not_started = ctx.audits.filter((a) => a.status === 'not_started');
-        const base_locked = ctx.audits.filter((a) => a.status === 'locked');
-        const base_archived = ctx.audits.filter((a) => a.status === 'archived');
-        const in_progress = filter_and_sort_audits(base_in_progress);
-        const not_started = filter_and_sort_audits(base_not_started);
-        const completed = filter_and_sort_audits(base_locked);
-        const archived_audits = filter_and_sort_audits(base_archived);
-        const section_configs = [
-            { heading_key: 'start_view_audits_heading', audits: in_progress },
-            { heading_key: 'start_view_new_audits_heading', audits: not_started },
-            { heading_key: 'start_view_completed_audits_heading', audits: completed },
-            { heading_key: 'start_view_archived_audits_heading', audits: archived_audits }
-        ];
-        const has_filter = !!query_raw.trim();
-        const visible_section_configs = has_filter
-            ? section_configs.filter((config) => (config.audits || []).length > 0)
-            : section_configs;
+        const { has_filter, section_configs } = build_audit_list_section_configs(ctx);
         right_col.classList.add('audit-audits-sections-container');
 
-        visible_section_configs.forEach((config, index) => {
-            const section = ctx.Helpers.create_element('section', {
-                class_name: index === 0 ? 'start-view-audits-section' : 'start-view-audits-section start-view-audits-section-following',
-                attributes: { 'aria-labelledby': `${config.heading_key}-heading` }
-            });
-            const heading_row = ctx.Helpers.create_element('div', { class_name: 'start-view-section-heading-row' });
-            const heading_title = t(config.heading_key);
-            const section_heading_text = t('start_view_section_heading_with_count', {
-                title: heading_title,
-                count: (config.audits || []).length
-            });
-            const section_heading = ctx.Helpers.create_element('h2', {
-                id: `${config.heading_key}-heading`,
-                text_content: section_heading_text
-            });
-            heading_row.appendChild(section_heading);
-            if (config.heading_key === 'start_view_audits_heading') {
-                const upload_audit_btn = ctx.Helpers.create_element('button', {
-                    class_name: ['button', 'button-primary', 'audit-upload-audit-btn'],
-                    text_content: t('audit_upload_saved_audit'),
-                    attributes: { type: 'button', 'aria-label': t('audit_upload_saved_audit') }
-                });
-                upload_audit_btn.addEventListener('click', ctx.handle_audit_upload_click);
-                ctx.upload_audit_file_input = ctx.Helpers.create_element('input', {
-                    class_name: 'audit-hidden-file-input',
-                    attributes: {
-                        type: 'file',
-                        accept: '.json,application/json',
-                        'aria-label': t('audit_upload_saved_audit'),
-                        tabindex: '-1',
-                        'aria-hidden': 'true'
-                    }
-                });
-                ctx.upload_audit_file_input.addEventListener('change', ctx.handle_audit_file_select);
-                heading_row.appendChild(upload_audit_btn);
-                heading_row.appendChild(ctx.upload_audit_file_input);
-            }
-            if (config.heading_key === 'start_view_new_audits_heading') {
-                const start_new_btn = ctx.Helpers.create_element('button', {
-                    class_name: ['button', 'button-primary', 'audit-start-new-audit-btn'],
-                    text_content: t('start_new_audit'),
-                    attributes: { type: 'button', 'aria-label': t('start_new_audit') }
-                });
-                start_new_btn.addEventListener('click', ctx.handle_start_new_audit);
-                heading_row.appendChild(start_new_btn);
-            }
-            section.appendChild(heading_row);
-            const table_wrapper = ctx.Helpers.create_element('div');
-            const empty_key =
-                config.heading_key === 'start_view_audits_heading'
-                    ? 'start_view_no_audits'
-                    : config.heading_key === 'start_view_new_audits_heading'
-                        ? 'start_view_no_new_audits'
-                        : config.heading_key === 'start_view_archived_audits_heading'
-                            ? 'start_view_no_archived_audits'
-                            : 'start_view_no_completed_audits';
-            const sort_state_key =
-                config.heading_key === 'start_view_audits_heading'
-                    ? '_inProgressTableSortState'
-                    : config.heading_key === 'start_view_new_audits_heading'
-                        ? '_newTableSortState'
-                        : config.heading_key === 'start_view_archived_audits_heading'
-                            ? '_archivedTableSortState'
-                            : '_completedTableSortState';
-            ctx[sort_state_key] = ctx[sort_state_key] ?? { columnIndex: 0, direction: 'asc' };
-            const live_state = typeof ctx.getState === 'function' ? ctx.getState() : null;
-            const audits_for_table = enrich_audits_with_live_progress(config.audits, live_state);
-            ctx._auditListComponent.render({
-                root: table_wrapper,
-                audits: audits_for_table,
-                emptyMessage: t(empty_key),
-                ariaLabel: section_heading_text,
-                includeDelete: true,
-                sortState: ctx[sort_state_key],
-                onSort: (columnIndex, direction) => {
-                    ctx[sort_state_key] = { columnIndex, direction };
-                    ctx.render();
-                },
-                onOpenAudit: (id) => ctx.handle_open_audit(id),
-                onDownloadAudit: (id) => ctx.handle_download_audit(id),
-                onDeleteAudit: (id, displayName, deleteButton) => ctx.handle_delete_audit_click(id, displayName, deleteButton),
-                get_status_label: ctx.get_status_label.bind(ctx)
-            });
-            section.appendChild(table_wrapper);
-            right_col.appendChild(section);
+        section_configs.forEach((config) => {
+            right_col.appendChild(create_audit_list_section(ctx, config, t, has_filter));
         });
-        if (has_filter && visible_section_configs.length === 0) {
+        sync_audit_section_following_classes(right_col);
+
+        if (has_filter && section_configs.every((config) => (config.audits || []).length === 0)) {
             const no_results = ctx.Helpers.create_element('p', {
                 class_name: 'audit-filter-no-results',
                 text_content: t('audit_filter_no_results')

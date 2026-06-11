@@ -91,6 +91,9 @@
 
     --pass-criterion-item-bg: #FFF5E6;
     --audit-toggle-active-border-width: 3px;
+    --audit-toggle-active-icon-size: 1.375rem;
+    --audit-toggle-inactive-icon-size: 0.75rem;
+    --audit-toggle-icon-transition-duration: 0.25s;
 
     --button-default-bg: #FAF7F4;
     --button-default-text: var(--text-color);

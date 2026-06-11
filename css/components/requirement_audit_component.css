@@ -481,6 +481,18 @@
     line-height: 1;
     text-rendering: optimizeLegibility;
     paint-order: stroke fill;
+    transition: font-size var(--audit-toggle-icon-transition-duration) ease-in-out,
+        width var(--audit-toggle-icon-transition-duration) ease-in-out,
+        min-width var(--audit-toggle-icon-transition-duration) ease-in-out,
+        height var(--audit-toggle-icon-transition-duration) ease-in-out,
+        color var(--audit-toggle-icon-transition-duration) ease-in-out,
+        -webkit-text-stroke var(--audit-toggle-icon-transition-duration) ease-in-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .audit-toggle-button__icon {
+        transition: none;
+    }
 }
 
 .audit-toggle-button__label {
@@ -492,7 +504,7 @@
 .condition-actions .button:not(.active),
 .pass-criterion-actions .button:not(.active) {
     background-color: transparent;
-    border-style: dashed;
+    border-style: solid;
 }
 
 .condition-actions .button-success:not(.active),
@@ -514,8 +526,10 @@
     color: transparent;
     -webkit-text-stroke: 1px var(--text-color-muted);
     text-stroke: 1px var(--text-color-muted);
-    font-size: 0.75rem;
-    min-width: 0.75rem;
+    font-size: var(--audit-toggle-inactive-icon-size);
+    width: var(--audit-toggle-inactive-icon-size);
+    min-width: var(--audit-toggle-inactive-icon-size);
+    height: var(--audit-toggle-inactive-icon-size);
     font-weight: 300;
 }
 
@@ -528,12 +542,12 @@
 
 .condition-actions .button-success:not(.active):hover,
 .pass-criterion-actions .button-success:not(.active):hover {
-    background-color: var(--button-success-bg);
+    background-color: color-mix(in srgb, var(--button-success-bg) 50%, transparent);
 }
 
 .condition-actions .button-danger:not(.active):hover,
 .pass-criterion-actions .button-danger:not(.active):hover {
-    background-color: var(--button-danger-bg);
+    background-color: color-mix(in srgb, var(--button-danger-bg) 50%, transparent);
 }
 
 /* STATE 2: Aktivt (valt) – hel kant, fylld bakgrund och färgad ikon */
@@ -566,8 +580,10 @@
     color: inherit;
     -webkit-text-stroke: 0;
     text-stroke: 0;
-    font-size: 1.125rem;
-    min-width: 1.125rem;
+    font-size: var(--audit-toggle-active-icon-size);
+    width: var(--audit-toggle-active-icon-size);
+    min-width: var(--audit-toggle-active-icon-size);
+    height: var(--audit-toggle-active-icon-size);
     font-weight: 900;
     letter-spacing: -0.02em;
 }

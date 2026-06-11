@@ -229,8 +229,15 @@ export class GenericTableComponent {    static CSS_PATH = './generic_table_comp
                 apply_restore_focus(target);
             }
         } else if (focus_restore) {
-            if (document.activeElement?.id === 'backup-filter-search-input') {
-                return;
+            const active = document.activeElement;
+            if (active && typeof active.tagName === 'string') {
+                const active_tag = active.tagName.toLowerCase();
+                const focus_in_editable_outside_table =
+                    (active_tag === 'input' || active_tag === 'textarea' || active_tag === 'select') &&
+                    !wrapper.contains(active);
+                if (focus_in_editable_outside_table) {
+                    return;
+                }
             }
             if (focus_restore.in_header) {
                 const header_row = wrapper.querySelector('thead tr');

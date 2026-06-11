@@ -678,7 +678,7 @@ html[data-theme="dark-experimental"] .app-right-sidebar-inner:has(.requirement-a
 [data-theme="dark-experimental"] .condition-actions .button:not(.active),
 [data-theme="dark-experimental"] .condition-actions .button[aria-pressed="false"] {
     background-color: transparent;
-    border-style: dashed;
+    border-style: solid;
     border-width: var(--de-interactive-border-width);
     border-color: var(--de-interactive-border);
     color: var(--de-text-secondary);
@@ -696,8 +696,10 @@ html[data-theme="dark-experimental"] .app-right-sidebar-inner:has(.requirement-a
     color: var(--de-text-secondary);
     -webkit-text-stroke: 0;
     text-stroke: 0;
-    font-size: 0.75rem;
-    min-width: 0.75rem;
+    font-size: var(--audit-toggle-inactive-icon-size);
+    width: var(--audit-toggle-inactive-icon-size);
+    min-width: var(--audit-toggle-inactive-icon-size);
+    height: var(--audit-toggle-inactive-icon-size);
     font-weight: 400;
 }
 
@@ -707,8 +709,10 @@ html[data-theme="dark-experimental"] .app-right-sidebar-inner:has(.requirement-a
 [data-theme="dark-experimental"] .condition-actions .button[aria-pressed="true"] .audit-toggle-button__icon {
     -webkit-text-stroke: 0;
     text-stroke: 0;
-    font-size: 1.125rem;
-    min-width: 1.125rem;
+    font-size: var(--audit-toggle-active-icon-size);
+    width: var(--audit-toggle-active-icon-size);
+    min-width: var(--audit-toggle-active-icon-size);
+    height: var(--audit-toggle-active-icon-size);
     font-weight: 900;
     letter-spacing: -0.02em;
 }
@@ -731,8 +735,8 @@ html[data-theme="dark-experimental"] .app-right-sidebar-inner:has(.requirement-a
 [data-theme="dark-experimental"] .pass-criterion-actions .button-success[aria-pressed="false"]:hover,
 [data-theme="dark-experimental"] .condition-actions .button-success:not(.active):hover,
 [data-theme="dark-experimental"] .condition-actions .button-success[aria-pressed="false"]:hover {
-    background-color: rgba(134, 239, 172, 0.08);
-    border-style: dashed;
+    background-color: color-mix(in srgb, #1a3324 50%, transparent);
+    border-style: solid;
     border-color: var(--de-interactive-border);
     color: var(--de-text-secondary);
     transform: none;
@@ -742,8 +746,8 @@ html[data-theme="dark-experimental"] .app-right-sidebar-inner:has(.requirement-a
 [data-theme="dark-experimental"] .pass-criterion-actions .button-danger[aria-pressed="false"]:hover,
 [data-theme="dark-experimental"] .condition-actions .button-danger:not(.active):hover,
 [data-theme="dark-experimental"] .condition-actions .button-danger[aria-pressed="false"]:hover {
-    background-color: rgba(252, 165, 165, 0.08);
-    border-style: dashed;
+    background-color: color-mix(in srgb, #3a181c 50%, transparent);
+    border-style: solid;
     border-color: var(--de-interactive-border);
     color: var(--de-text-secondary);
     transform: none;
@@ -1343,7 +1347,7 @@ html[data-theme="dark-experimental"] .pass-criterion-actions .button[aria-presse
 html[data-theme="dark-experimental"] .condition-actions .button:not(.active),
 html[data-theme="dark-experimental"] .condition-actions .button[aria-pressed="false"] {
     background-color: transparent;
-    border-style: dashed;
+    border-style: solid;
     border-color: var(--de-interactive-border);
     color: var(--de-text-secondary);
     box-shadow: none;

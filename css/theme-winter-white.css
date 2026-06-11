@@ -714,8 +714,10 @@ html[data-theme="winter-white"] .app-right-sidebar-inner:has(.requirement-audit-
     color: var(--ww-text-secondary);
     -webkit-text-stroke: 0;
     text-stroke: 0;
-    font-size: 0.75rem;
-    min-width: 0.75rem;
+    font-size: var(--audit-toggle-inactive-icon-size);
+    width: var(--audit-toggle-inactive-icon-size);
+    min-width: var(--audit-toggle-inactive-icon-size);
+    height: var(--audit-toggle-inactive-icon-size);
     font-weight: 400;
 }
 
@@ -725,8 +727,10 @@ html[data-theme="winter-white"] .app-right-sidebar-inner:has(.requirement-audit-
 [data-theme="winter-white"] .condition-actions .button[aria-pressed="true"] .audit-toggle-button__icon {
     -webkit-text-stroke: 0;
     text-stroke: 0;
-    font-size: 1.125rem;
-    min-width: 1.125rem;
+    font-size: var(--audit-toggle-active-icon-size);
+    width: var(--audit-toggle-active-icon-size);
+    min-width: var(--audit-toggle-active-icon-size);
+    height: var(--audit-toggle-active-icon-size);
     font-weight: 900;
     letter-spacing: -0.02em;
 }
@@ -749,7 +753,7 @@ html[data-theme="winter-white"] .app-right-sidebar-inner:has(.requirement-audit-
 [data-theme="winter-white"] .pass-criterion-actions .button-success[aria-pressed="false"]:hover,
 [data-theme="winter-white"] .condition-actions .button-success:not(.active):hover,
 [data-theme="winter-white"] .condition-actions .button-success[aria-pressed="false"]:hover {
-    background-color: rgba(21, 128, 61, 0.08);
+    background-color: color-mix(in srgb, #dcfce7 50%, transparent);
     border-style: solid;
     border-color: var(--ww-status-passed);
     color: var(--ww-text-secondary);
@@ -760,7 +764,7 @@ html[data-theme="winter-white"] .app-right-sidebar-inner:has(.requirement-audit-
 [data-theme="winter-white"] .pass-criterion-actions .button-danger[aria-pressed="false"]:hover,
 [data-theme="winter-white"] .condition-actions .button-danger:not(.active):hover,
 [data-theme="winter-white"] .condition-actions .button-danger[aria-pressed="false"]:hover {
-    background-color: rgba(220, 38, 38, 0.08);
+    background-color: color-mix(in srgb, #fee2e2 50%, transparent);
     border-style: solid;
     border-color: var(--ww-status-failed);
     color: var(--ww-text-secondary);

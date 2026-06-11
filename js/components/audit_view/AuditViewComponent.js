@@ -30,7 +30,7 @@ import { open_audit_by_id, download_audit_by_id } from '../../logic/audit_open_l
 import { get_server_filename_datetime, sanitize_filename_segment } from '../../utils/download_filename_utils.ts';
 import { render_audit_header } from './AuditHeaderSection.js';
 import { render_audit_requirement_section } from './AuditRequirementSection.js';
-import { render_audit_samples_section } from './AuditSamplesSection.js';
+import { render_audit_samples_section, update_audit_samples_filter } from './AuditSamplesSection.js';
 import { JSON_MAX_UPLOAD_BYTES } from '../../../shared/constants/json_upload_limits.js';
 import { check_json_structure_depth_and_size } from '../../../shared/json/json_structure_guard.js';
 import { initial_state, APP_STATE_VERSION } from '../../state/initialState.js';
@@ -139,6 +139,9 @@ export class AuditViewComponent {
         const current_root = this._audits_section_root;
         if (!current_root || !current_root.parentNode || !document.contains(current_root)) {
             this.render();
+            return;
+        }
+        if (update_audit_samples_filter(this, current_root)) {
             return;
         }
         const parent = current_root.parentNode;
@@ -2085,9 +2088,10 @@ export class AuditViewComponent {
         ) {
             this._unsubscribe_store = this.subscribe((_state, listener_meta) => {
                 if (listener_meta?.skip_render) return;
-                if (this.audit_mode === 'audits' && this.root) {
-                    this.render();
-                }
+                if (this.audit_mode !== 'audits' || !this.root) return;
+                const active = document.activeElement;
+                if (active?.id === 'audit-filter-input') return;
+                this.render();
             });
         }
     }
