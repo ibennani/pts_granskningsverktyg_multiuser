@@ -1,6 +1,6 @@
 /**
- * @fileoverview Modal som bekräftar innan unika stickprovs-URL:er (http/https) öppnas:
- * antal = unika adresser, lika många about:blank-flikar, sedan location med intervall.
+ * @fileoverview Modal som bekräftar innan stickprovs-URL:er (http/https) öppnas:
+ * en about:blank-flik per stickprov med länk, redirect efter en sekund.
  */
 
 import * as HelpersModule from '../utils/helpers.js';
@@ -89,9 +89,8 @@ export function collect_unique_sample_open_urls(samples, add_protocol_fn) {
  * @param {Function} create_el - Helpers.create_element
  * @param {Function} t - Translation.t
  * @param {number} tab_count
- * @param {boolean} has_duplicate_urls
  */
-export function fill_open_all_sample_urls_modal_message(msg_p, create_el, t, tab_count, has_duplicate_urls) {
+export function fill_open_all_sample_urls_modal_message(msg_p, create_el, t, tab_count) {
     msg_p.replaceChildren();
     const strong_text = tab_count === 1
         ? t('open_all_sample_urls_modal_intro_one_lead')
@@ -101,28 +100,17 @@ export function fill_open_all_sample_urls_modal_message(msg_p, create_el, t, tab
         : t('open_all_sample_urls_modal_intro_many_tail');
     msg_p.appendChild(create_el('strong', { text_content: strong_text }));
     msg_p.appendChild(document.createTextNode(tail_text));
-    msg_p.appendChild(create_el('br'));
-    msg_p.appendChild(create_el('br'));
-    msg_p.appendChild(document.createTextNode(t('open_all_sample_urls_modal_browser_note')));
-    if (has_duplicate_urls) {
-        msg_p.appendChild(create_el('br'));
-        msg_p.appendChild(create_el('br'));
-        msg_p.appendChild(document.createTextNode(t('open_all_sample_urls_modal_shared_urls_note')));
-    }
-    msg_p.appendChild(create_el('br'));
-    msg_p.appendChild(create_el('br'));
-    msg_p.appendChild(document.createTextNode(t('open_all_sample_urls_modal_trust_note')));
 }
 
-/** Sekund mellan varje fliks navigation till måladress (efter att tomma flikar öppnats). */
-const NAVIGATE_INTERVAL_MS = 1000;
+/** Sekund innan tomma flikar redirectar till respektive måladress. */
+const NAVIGATE_DELAY_MS = 1000;
 
 /**
- * Öppnar en tom flik per unik href, sätter sedan rätt URL i varje (samma ordning som listan).
- * @param {string[]} hrefs - kanoniska unika http(s)-URL:er
- * @param {number} [navigate_interval_ms]
+ * Öppnar en tom flik per href, redirectar alla efter angiven fördröjning.
+ * @param {string[]} hrefs - kanoniska http(s)-URL:er i stickprovsordning
+ * @param {number} [navigate_delay_ms]
  */
-export function open_http_hrefs_via_blank_then_assign(hrefs, navigate_interval_ms = NAVIGATE_INTERVAL_MS) {
+export function open_http_hrefs_via_blank_then_assign(hrefs, navigate_delay_ms = NAVIGATE_DELAY_MS) {
     if (!hrefs?.length) return;
     const windows = [];
     for (let i = 0; i < hrefs.length; i += 1) {
@@ -130,23 +118,23 @@ export function open_http_hrefs_via_blank_then_assign(hrefs, navigate_interval_m
         windows.push(w || null);
         if (w) try { w.opener = null; } catch (_) { /* noop */ }
     }
-    hrefs.forEach((href, index) => {
-        setTimeout(() => {
+    setTimeout(() => {
+        hrefs.forEach((href, index) => {
             const safe = canonical_http_open_href(href);
             const win = windows[index];
             if (!safe || !win || win.closed) return;
             try {
                 win.location.href = safe;
             } catch (_) { /* noop */ }
-        }, index * navigate_interval_ms);
-    });
+        });
+    }, navigate_delay_ms);
 }
 
 function attach_open_all_sample_urls_modal_body(container, modal, ctx) {
-    const { create_el, t, focus_target, tab_count, has_duplicate_urls, getState, add_protocol } = ctx;
+    const { create_el, t, focus_target, tab_count, getState, add_protocol } = ctx;
     const msg_p = container.querySelector('p.modal-message');
     if (msg_p) {
-        fill_open_all_sample_urls_modal_message(msg_p, create_el, t, tab_count, has_duplicate_urls);
+        fill_open_all_sample_urls_modal_message(msg_p, create_el, t, tab_count);
     }
     const buttons_wrapper = create_el('div', { class_name: 'modal-confirm-actions' });
     const open_btn = create_el('button', {
@@ -158,8 +146,8 @@ function attach_open_all_sample_urls_modal_body(container, modal, ctx) {
         if (confirm_already_handled) return;
         confirm_already_handled = true;
         const samples_now = typeof getState === 'function' ? getState().samples : [];
-        const { unique_urls } = collect_unique_sample_open_urls(samples_now, add_protocol);
-        open_http_hrefs_via_blank_then_assign(unique_urls);
+        const { ordered_hrefs } = collect_ordered_sample_open_hrefs(samples_now, add_protocol);
+        open_http_hrefs_via_blank_then_assign(ordered_hrefs);
         modal.close(focus_target);
     });
     const later_btn = create_el('button', {
@@ -193,16 +181,15 @@ export function show_open_all_sample_urls_modal({
     if (!ModalComponent?.show || !create_el || typeof getState !== 'function') return;
 
     const samples_initial = getState().samples;
-    const { unique_urls, has_duplicate_urls } = collect_unique_sample_open_urls(samples_initial, add_protocol);
-    if (unique_urls.length === 0) return;
+    const { ordered_hrefs } = collect_ordered_sample_open_hrefs(samples_initial, add_protocol);
+    if (ordered_hrefs.length === 0) return;
 
     const focus_target = trigger_element && document.contains(trigger_element) ? trigger_element : null;
     const ctx = {
         create_el,
         t,
         focus_target,
-        tab_count: unique_urls.length,
-        has_duplicate_urls,
+        tab_count: ordered_hrefs.length,
         getState,
         add_protocol
     };

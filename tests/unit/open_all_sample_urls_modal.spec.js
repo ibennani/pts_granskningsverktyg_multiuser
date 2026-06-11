@@ -122,7 +122,7 @@ describe('open_all_sample_urls_modal', () => {
             jest.useRealTimers();
         });
 
-        test('öppnar lika många about:blank som unika href och sätter location med intervall', () => {
+        test('öppnar about:blank per href och sätter location efter en sekund', () => {
             jest.useFakeTimers();
             const loc1 = { href: '' };
             const loc2 = { href: '' };
@@ -137,13 +137,12 @@ describe('open_all_sample_urls_modal', () => {
             expect(global.window.open).toHaveBeenNthCalledWith(1, 'about:blank', '_blank');
             expect(global.window.open).toHaveBeenNthCalledWith(2, 'about:blank', '_blank');
 
-            jest.advanceTimersByTime(0);
-            expect(loc1.href).toBe('https://a.test/');
-
             jest.advanceTimersByTime(999);
+            expect(loc1.href).toBe('');
             expect(loc2.href).toBe('');
 
             jest.advanceTimersByTime(1);
+            expect(loc1.href).toBe('https://a.test/');
             expect(loc2.href).toBe('https://b.test/');
         });
 
@@ -198,9 +197,7 @@ describe('open_all_sample_urls_modal', () => {
                     return `Detta öppnar ${rep.count} nya flikar`;
                 }
                 const map = {
-                    open_all_sample_urls_modal_intro_many_tail: ', resten.',
-                    open_all_sample_urls_modal_browser_note: 'B',
-                    open_all_sample_urls_modal_trust_note: 'TR'
+                    open_all_sample_urls_modal_intro_many_tail: ', resten.'
                 };
                 return map[key] || key;
             };
@@ -241,17 +238,13 @@ describe('open_all_sample_urls_modal', () => {
             const t = (key) => {
                 const m = {
                     open_all_sample_urls_modal_intro_one_lead: 'Ett',
-                    open_all_sample_urls_modal_intro_one_tail: ' två.',
-                    open_all_sample_urls_modal_browser_note: 'B',
-                    open_all_sample_urls_modal_trust_note: 'T'
+                    open_all_sample_urls_modal_intro_one_tail: ' två.'
                 };
                 return m[key] || key;
             };
-            fill_open_all_sample_urls_modal_message(msg_p, create_el, t, 1, false);
+            fill_open_all_sample_urls_modal_message(msg_p, create_el, t, 1);
             expect(msg_p.querySelector('strong')?.textContent).toBe('Ett');
-            expect(msg_p.textContent).toContain(' två.');
-            expect(msg_p.textContent).toContain('B');
-            expect(msg_p.textContent).toContain('T');
+            expect(msg_p.textContent).toBe('Ett två.');
         });
     });
 });
