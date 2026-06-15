@@ -153,9 +153,14 @@ export class SideMenuComponent {
         if (!is_llm_chat_available()) return;
         const t = this.Translation.t;
         const chat_item = { label: t('menu_link_ai_chat'), view_name: 'ai_chat' };
-        const settings_index = items.findIndex((item) => item.view_name === 'my_settings');
-        if (settings_index >= 0) {
-            items.splice(settings_index, 0, chat_item);
+        const ai_settings_index = items.findIndex((item) => item.view_name === 'ai_settings');
+        if (ai_settings_index >= 0) {
+            items.splice(ai_settings_index + 1, 0, chat_item);
+            return;
+        }
+        const my_settings_index = items.findIndex((item) => item.view_name === 'my_settings');
+        if (my_settings_index >= 0) {
+            items.splice(my_settings_index + 1, 0, chat_item);
             return;
         }
         items.push(chat_item);
@@ -382,10 +387,12 @@ export class SideMenuComponent {
                 { label: t('menu_link_statistics'), view_name: 'statistics' },
                 { label: t('menu_link_my_settings'), view_name: 'my_settings' }
             ];
-            this._insert_ai_chat_menu_item(items);
             if (is_admin) {
                 items.push({ label: t('menu_link_ai_settings'), view_name: 'ai_settings' });
+                this._insert_ai_chat_menu_item(items);
                 items.push({ label: t('menu_link_manage_users'), view_name: 'manage_users' });
+            } else {
+                this._insert_ai_chat_menu_item(items);
             }
             return {
                 should_show: true,

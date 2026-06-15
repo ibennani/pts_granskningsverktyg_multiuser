@@ -14,6 +14,12 @@ export function resolve_view_dom_host({ view_name, deps }) {
         document.body.classList.remove('view-login');
     }
 
+    if (view_name === 'ai_chat') {
+        document.body.classList.add('view-ai-chat');
+    } else {
+        document.body.classList.remove('view-ai-chat');
+    }
+
     // Efter ensure_app_layout uppdateras layout_refs i main — deps.main_view_root kan fortfarande vara
     // ögonblicksbilden från render_view_deps() före layout. Läs från DOM så vi inte sätter view_root till
     // #app-container och tömmer hela appen (tom sida).
@@ -32,6 +38,21 @@ export function resolve_view_dom_host({ view_name, deps }) {
             resolved_main_view_root.classList.add('start-view-active');
         } else {
             resolved_main_view_root.classList.remove('start-view-active');
+        }
+        if (view_name === 'ai_chat') {
+            resolved_main_view_root.classList.add('ai-chat-view-active');
+        } else {
+            resolved_main_view_root.classList.remove('ai-chat-view-active');
+        }
+    }
+
+    const app_layout_el =
+        typeof document !== 'undefined' ? document.querySelector('.app-layout') : null;
+    if (app_layout_el) {
+        if (view_name === 'ai_chat') {
+            app_layout_el.classList.add('app-layout--ai-chat');
+        } else {
+            app_layout_el.classList.remove('app-layout--ai-chat');
         }
     }
 

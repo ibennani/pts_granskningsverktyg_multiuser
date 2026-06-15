@@ -79,16 +79,10 @@ describe('llm_proxy_service', () => {
     });
 
     test('send_llm_chat returnerar svar från Ollama', async () => {
-        global.fetch = jest
-            .fn()
-            .mockResolvedValueOnce({
-                ok: true,
-                json: async () => ({ models: [{ name: 'qwen2.5:7b' }] })
-            })
-            .mockResolvedValueOnce({
-                ok: true,
-                json: async () => ({ message: { content: 'Hej från Leffe' } })
-            }) as unknown as typeof fetch;
+        global.fetch = jest.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({ message: { content: 'Hej från Leffe' } })
+        }) as unknown as typeof fetch;
 
         const result = await send_llm_chat(saved, [{ role: 'user', content: 'Hej' }]);
         expect(result.content).toBe('Hej från Leffe');

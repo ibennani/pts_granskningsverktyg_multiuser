@@ -1,4 +1,5 @@
 import { get_api_base_url, clear_current_user_name_window } from '../app/browser_globals.js';
+import { consume_llm_chat_stream } from '../logic/llm_chat_stream_reader.js';
 
 const AUTH_TOKEN_KEY = 'gv_auth_token';
 const AUTH_USER_IS_ADMIN_KEY = 'gv_current_user_is_admin';
@@ -599,7 +600,89 @@ export async function get_llm_availability() {
 }
 
 export async function send_llm_chat(messages) {
-    return api_post('/llm/chat', { messages });
+    const url = `${get_base_url()}/llm/chat`;
+    const body_json = JSON.stringify({ messages });
+    const client_timeout_ms = 610_000;
+    const run_fetch = async () => fetch(url, {
+        method: 'POST',
+        headers: get_auth_headers(),
+        body: body_json,
+        signal: AbortSignal.timeout(client_timeout_ms)
+    });
+    let res;
+    try {
+        res = await run_fetch();
+    } catch (fetch_err) {
+        if (fetch_err?.name === 'TimeoutError' || /timeout|aborted/i.test(String(fetch_err?.message || ''))) {
+            const e = new Error(
+                'Modellen hann inte svara inom tidsgränsen. Öka timeout under AI-inställningar eller välj en snabbare modell.'
+            );
+            e.status = 408;
+            throw e;
+        }
+        throw fetch_err;
+    }
+    if (res.status === 401 && get_auth_token()) {
+        const refreshed = await refresh_auth_token();
+        if (!refreshed) {
+            const e = new Error('Inloggning krävs');
+            e.status = 401;
+            throw e;
+        }
+        res = await run_fetch();
+    }
+    if (handle_unauthorized_response(res)) {
+        const e = new Error('Inloggning krävs');
+        e.status = 401;
+        throw e;
+    }
+    if (!res.ok) {
+        const err = await parse_error_payload(res);
+        const e = new Error(err.error || `HTTP ${res.status}`);
+        e.status = res.status;
+        throw e;
+    }
+    return res.json();
+}
+
+export async function send_llm_chat_stream(messages, { on_delta, signal, context } = {}) {
+    const url = `${get_base_url()}/llm/chat/stream`;
+    const body_json = JSON.stringify({ messages, context: context || {} });
+    const client_timeout_ms = 610_000;
+    const run_fetch = async () => fetch(url, {
+        method: 'POST',
+        headers: get_auth_headers(),
+        body: body_json,
+        signal: signal ?? AbortSignal.timeout(client_timeout_ms)
+    });
+    let res;
+    try {
+        res = await run_fetch();
+    } catch (fetch_err) {
+        if (fetch_err?.name === 'TimeoutError' || /timeout|aborted/i.test(String(fetch_err?.message || ''))) {
+            const e = new Error(
+                'Modellen hann inte svara inom tidsgränsen. Öka timeout under AI-inställningar eller välj en snabbare modell.'
+            );
+            e.status = 408;
+            throw e;
+        }
+        throw fetch_err;
+    }
+    if (res.status === 401 && get_auth_token()) {
+        const refreshed = await refresh_auth_token();
+        if (!refreshed) {
+            const e = new Error('Inloggning krävs');
+            e.status = 401;
+            throw e;
+        }
+        res = await run_fetch();
+    }
+    if (handle_unauthorized_response(res)) {
+        const e = new Error('Inloggning krävs');
+        e.status = 401;
+        throw e;
+    }
+    return consume_llm_chat_stream(res, on_delta || (() => {}));
 }
 
 export async function get_audits(status) {

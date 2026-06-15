@@ -30,3 +30,15 @@ I det här projektet körs **Qwen** (och andra modeller) via **Ollama** i Docker
 | Använder en ngrok-URL för att nå Open WebUI från utsidan | Chatt går fortfarande via samma Ollama i Docker; trafiken till/från modellen är lokal, ngrok exponerar bara webbgränssnittet. |
 
 Om du vill dubbelkolla: starta en chatt på http://localhost:3080, öppna **AI-inställningar** i Leffe och klicka **Testa anslutning** – om du får lyckat svar använder du en lokal version av Qwen (via Ollama).
+
+## Felsökning: Docker-konflikt vid `npm run dev`
+
+Om loggen visar att containern `/ollama-final` redan finns körs Ollama ofta redan – det är inte nödvändigtvis ett anslutningsfel. Kontrollera:
+
+```bat
+curl.exe -s http://127.0.0.1:11434/api/tags
+```
+
+Får du JSON med modeller svarar Ollama. Leffe-backend (körs på din dator, inte i Docker) ska ha bas-URL **`http://127.0.0.1:11434`** under AI-inställningar – inte `http://ollama-final:11434` (det namnet fungerar bara mellan containrar).
+
+Dev-skriptet (`scripts/dev-with-docker.js`) startar befintlig `ollama-final`, kopplar den till Docker-nätverket och startar övriga tjänster utan att försöka skapa om containern.

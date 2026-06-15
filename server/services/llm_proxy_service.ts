@@ -9,6 +9,7 @@ import {
     validate_provider,
     validate_timeout_ms
 } from './llm_settings_validation.js';
+import { format_llm_chat_error, resolve_chat_timeout_ms } from './llm_chat_timeout.js';
 
 export interface LlmTestInput {
     provider?: unknown;
@@ -145,12 +146,17 @@ export async function get_llm_availability(saved: LlmSettingsRow): Promise<LlmAv
 }
 
 export interface LlmChatMessage {
-    role: 'user' | 'assistant' | 'system';
+    role: 'user' | 'assistant' | 'system' | 'tool';
     content: string;
+    thinking?: string;
+    tool_calls?: Array<{ function?: { name?: string; arguments?: unknown } }>;
+    tool_name?: string;
 }
 
 const LEFFE_SYSTEM_PROMPT =
     'Du heter Leffe och är en hjälpsam assistent i ett verktyg för digital tillsyn och tillgänglighetsgranskning. Svara på svenska om användaren inte skriver på ett annat språk. Var tydlig och saklig.';
+
+export { LEFFE_SYSTEM_PROMPT };
 
 async function post_ollama_chat(
     base_url: string,
@@ -187,8 +193,7 @@ export async function send_llm_chat(
     saved: LlmSettingsRow,
     messages: Array<{ role: 'user' | 'assistant'; content: string }>
 ): Promise<{ content: string }> {
-    const availability = await get_llm_availability(saved);
-    if (!availability.available) {
+    if (!saved.enabled || !String(saved.model || '').trim()) {
         throw new Error('AI är inte tillgänglig just nu.');
     }
     if (saved.provider !== 'ollama') {
@@ -202,12 +207,16 @@ export async function send_llm_chat(
         { role: 'system', content: LEFFE_SYSTEM_PROMPT },
         ...messages
     ];
-    const content = await post_ollama_chat(
-        saved.base_url,
-        saved.model,
-        messages_for_api,
-        saved.timeout_ms,
-        saved.api_key
-    );
-    return { content };
+    try {
+        const content = await post_ollama_chat(
+            saved.base_url,
+            saved.model,
+            messages_for_api,
+            resolve_chat_timeout_ms(saved.timeout_ms),
+            saved.api_key
+        );
+        return { content };
+    } catch (err) {
+        throw new Error(format_llm_chat_error(err));
+    }
 }

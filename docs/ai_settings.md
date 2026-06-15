@@ -36,6 +36,27 @@ Sparad status kan även läsas via API: `GET /api/llm/status` (endast admin, inl
 - All LLM-trafik ska gå via Leffe-backend (`/api/llm/...`), inte direkt från webbläsaren.
 - Den tidigare publika endpointen `/api/ollama-status` är borttagen; använd admin-endpointen ovan.
 
+## Chatta med Leffe och systemdata
+
+I **Chatta med Leffe** har modellen **verktyg** mot databasen (samma data som API:erna exponerar för inloggade användare):
+
+| Verktyg | Vad det gör |
+|---------|-------------|
+| `list_audits` | Lista granskningar |
+| `get_audit` | Detaljer om en granskning |
+| `list_rule_sets` / `get_rule_set` | Regelfiler |
+| `get_statistics` | Statistik för avslutade granskningar |
+| `update_audit_metadata` | Uppdatera granskningsmetadata |
+| `update_requirement_result` | Uppdatera kravbedömning i stickprov |
+
+Modellen hämtar mer data vid behov (agentloop) i stället för att få hela databasen i varje meddelande.
+
+**Inte inkluderat:** filer på serverdisk (backup-mappar, källkod), hemligheter och data utanför Leffes API.
+
+**Modellkrav:** verktygsanrop fungerar bäst med modeller som stödjer tools (t.ex. `qwen3.6:27b`, `gemma4:12b`).
+
+Om du har en granskning eller regelfil öppen skickas det som ledtråd så Leffe vet vad du arbetar med.
+
 ## Nästa steg
 
 Steg 1 är endast inställningar och anslutningstest. AI-funktioner i själva granskningen kommer i senare steg på `feature/ai-audit`.

@@ -2,15 +2,21 @@
  * @file Chattvy där användaren skriver till Leffe via konfigurerad LLM.
  */
 
-import { send_llm_chat } from '../api/client.js';
+import { send_llm_chat_stream } from '../api/client.js';
 import {
     create_assistant_message,
     create_user_message,
     is_chat_input_valid,
-    render_chat_message_element,
+    render_chat_bubble_element,
     trim_chat_input,
     type ChatMessage
 } from './ai_chat_helpers.ts';
+import { create_streaming_assistant_bubble, type StreamingAssistantBubble } from './ai_chat_stream_ui.ts';
+import { resolve_tool_activity_label } from './ai_chat_tool_labels.ts';
+import {
+    play_ai_chat_reply_chime,
+    unlock_ai_chat_reply_audio
+} from '../utils/ai_chat_reply_chime.ts';
 import './ai_chat_view_component.css';
 
 export class AiChatViewComponent {
@@ -23,8 +29,10 @@ export class AiChatViewComponent {
     _send_in_progress = false;
     _error_message: string | null = null;
     message_input_ref: HTMLTextAreaElement | null = null;
-    log_ref: HTMLElement | null = null;
-    status_ref: HTMLElement | null = null;
+    thread_ref: HTMLElement | null = null;
+    _streaming_bubble: StreamingAssistantBubble | null = null;
+    _abort_controller: AbortController | null = null;
+    _compose_value = '';
 
     async init({ root, deps }: { root: HTMLElement; deps: any }) {
         this.root = root;
@@ -43,6 +51,13 @@ export class AiChatViewComponent {
         return this.Translation?.t?.(key) ?? key;
     }
 
+    _build_chat_context() {
+        const state = this.deps?.getState?.() || {};
+        const audit_id = typeof state.auditId === 'string' ? state.auditId : null;
+        const rule_set_id = typeof state.ruleSetId === 'string' ? state.ruleSetId : null;
+        return { audit_id, rule_set_id };
+    }
+
     _clear_error() {
         this._error_message = null;
     }
@@ -51,13 +66,18 @@ export class AiChatViewComponent {
         this._error_message = message;
     }
 
-    _render_messages(log: HTMLElement) {
-        log.innerHTML = '';
+    _scroll_thread_to_bottom() {
+        if (!this.thread_ref) return;
+        this.thread_ref.scrollTop = this.thread_ref.scrollHeight;
+    }
+
+    _render_thread(thread: HTMLElement) {
+        thread.innerHTML = '';
         const user_label = this._t('ai_chat_message_user_label');
         const assistant_label = this._t('ai_chat_message_assistant_label');
         this.messages.forEach((message) => {
-            log.appendChild(
-                render_chat_message_element({
+            thread.appendChild(
+                render_chat_bubble_element({
                     Helpers: this.Helpers,
                     message,
                     user_label,
@@ -65,9 +85,39 @@ export class AiChatViewComponent {
                 })
             );
         });
+        if (this._send_in_progress) {
+            const stream_ui = create_streaming_assistant_bubble(
+                this.Helpers,
+                assistant_label,
+                this._t('ai_chat_waiting_model')
+            );
+            this._streaming_bubble = stream_ui;
+            thread.appendChild(stream_ui.bubble);
+        } else {
+            this._streaming_bubble = null;
+        }
     }
 
-    _append_compose_form(plate: HTMLElement) {
+    _update_streaming_delta(delta: {
+        content: string;
+        thinking: string;
+        tool_activity: string | null;
+    }) {
+        const stream_ui = this._streaming_bubble;
+        if (!stream_ui) return;
+        if (delta.tool_activity !== undefined) {
+            stream_ui.set_tool_activity(resolve_tool_activity_label(delta.tool_activity, (k) => this._t(k)));
+        }
+        if (delta.thinking) {
+            stream_ui.set_thinking(this._t('ai_chat_thinking_label'), delta.thinking);
+        }
+        if (delta.content) {
+            stream_ui.set_content(delta.content);
+        }
+        this._scroll_thread_to_bottom();
+    }
+
+    _append_compose_form(panel: HTMLElement) {
         const form = this.Helpers.create_element('form', {
             class_name: 'ai-chat-compose',
             attributes: { id: 'ai-chat-compose-form' }
@@ -94,32 +144,28 @@ export class AiChatViewComponent {
             class_name: ['form-control', 'ai-chat-message-input']
         }) as HTMLTextAreaElement;
         this.message_input_ref.addEventListener('input', this._handle_input);
+        this.message_input_ref.addEventListener('focus', unlock_ai_chat_reply_audio);
+        if (this._compose_value) {
+            this.message_input_ref.value = this._compose_value;
+        }
 
         field_group.appendChild(label);
         field_group.appendChild(help);
         field_group.appendChild(this.message_input_ref);
         form.appendChild(field_group);
 
-        const actions = this.Helpers.create_element('div', { class_name: 'ai-chat-compose__actions' });
-        if (this._send_in_progress) {
-            this.status_ref = this.Helpers.create_element('p', {
-                class_name: 'ai-chat-status',
-                text_content: this._t('ai_chat_sending'),
-                attributes: { 'aria-live': 'polite', 'aria-atomic': 'true' }
-            });
-            actions.appendChild(this.status_ref);
-        } else {
-            const send_btn = this.Helpers.create_element('button', {
+        if (!this._send_in_progress) {
+            const actions = this.Helpers.create_element('div', { class_name: 'ai-chat-compose__actions' });
+            actions.appendChild(this.Helpers.create_element('button', {
                 class_name: ['button', 'button-primary'],
                 text_content: this._t('ai_chat_send'),
                 attributes: { type: 'submit' }
-            });
-            actions.appendChild(send_btn);
+            }));
+            form.appendChild(actions);
         }
-        form.appendChild(actions);
 
         if (this._error_message) {
-            const error_el = this.Helpers.create_element('p', {
+            form.appendChild(this.Helpers.create_element('p', {
                 class_name: 'ai-chat-error',
                 text_content: this._error_message,
                 attributes: {
@@ -127,14 +173,13 @@ export class AiChatViewComponent {
                     'aria-live': 'assertive',
                     'aria-atomic': 'true'
                 }
-            });
-            form.appendChild(error_el);
+            }));
             if (this.message_input_ref) {
                 this.message_input_ref.setAttribute('aria-describedby', 'ai-chat-message-help ai-chat-error');
             }
         }
 
-        plate.appendChild(form);
+        panel.appendChild(form);
     }
 
     async _handle_submit(event: Event) {
@@ -148,32 +193,44 @@ export class AiChatViewComponent {
             return;
         }
 
+        this.message_input_ref.value = '';
+        this._compose_value = '';
+
         this._clear_error();
         const next_messages = [...this.messages, create_user_message(text)];
         this.messages = next_messages;
         this._send_in_progress = true;
-        this.message_input_ref.value = '';
+        this._abort_controller = new AbortController();
+        unlock_ai_chat_reply_audio();
         this.render();
 
         try {
-            const result = await send_llm_chat(next_messages);
+            const result = await send_llm_chat_stream(next_messages, {
+                signal: this._abort_controller.signal,
+                context: this._build_chat_context(),
+                on_delta: (delta) => this._update_streaming_delta(delta)
+            });
             const reply = typeof result?.content === 'string' ? result.content.trim() : '';
             if (!reply) {
                 throw new Error(this._t('ai_chat_error'));
             }
             this.messages = [...next_messages, create_assistant_message(reply)];
             this._send_in_progress = false;
+            this._abort_controller = null;
             this.render();
+            play_ai_chat_reply_chime();
             requestAnimationFrame(() => {
                 this.message_input_ref?.focus({ preventScroll: true });
             });
         } catch (err) {
             this.messages = next_messages.slice(0, -1);
             this._send_in_progress = false;
+            this._abort_controller = null;
             this._set_error((err instanceof Error ? err.message : null) || this._t('ai_chat_error'));
             this.render();
             requestAnimationFrame(() => {
                 if (!this.message_input_ref) return;
+                this._compose_value = text;
                 this.message_input_ref.value = text;
                 this.message_input_ref.focus({ preventScroll: true });
             });
@@ -181,6 +238,9 @@ export class AiChatViewComponent {
     }
 
     _handle_input() {
+        if (this.message_input_ref) {
+            this._compose_value = this.message_input_ref.value;
+        }
         if (this._error_message) {
             this._clear_error();
             this._update_error_visibility();
@@ -215,29 +275,30 @@ export class AiChatViewComponent {
             })
         );
 
-        this.log_ref = this.Helpers.create_element('div', {
-            class_name: 'ai-chat-log',
-            attributes: { 'aria-live': 'polite', 'aria-relevant': 'additions' }
+        const panel = this.Helpers.create_element('div', { class_name: 'ai-chat-panel' });
+        this.thread_ref = this.Helpers.create_element('div', {
+            class_name: 'ai-chat-thread'
         });
-        this._render_messages(this.log_ref);
-        plate.appendChild(this.log_ref);
-
-        this._append_compose_form(plate);
+        this._render_thread(this.thread_ref);
+        panel.appendChild(this.thread_ref);
+        this._append_compose_form(panel);
+        plate.appendChild(panel);
         this.root.appendChild(plate);
 
-        if (this.log_ref && this.messages.length > 0) {
-            this.log_ref.scrollTop = this.log_ref.scrollHeight;
-        }
+        requestAnimationFrame(() => this._scroll_thread_to_bottom());
     }
 
     destroy() {
+        this._abort_controller?.abort();
+        this._abort_controller = null;
         this.root = null;
         this.deps = null;
         this.Helpers = null;
         this.Translation = null;
         this.messages = [];
         this.message_input_ref = null;
-        this.log_ref = null;
-        this.status_ref = null;
+        this.thread_ref = null;
+        this._streaming_bubble = null;
+        this._compose_value = '';
     }
 }

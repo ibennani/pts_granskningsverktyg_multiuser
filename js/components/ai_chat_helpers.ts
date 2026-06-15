@@ -23,7 +23,7 @@ export function is_chat_input_valid(value: string): boolean {
     return trim_chat_input(value).length > 0;
 }
 
-interface RenderChatMessageOptions {
+interface RenderChatBubbleOptions {
     Helpers: {
         create_element: (
             tag: string,
@@ -39,21 +39,25 @@ interface RenderChatMessageOptions {
     assistant_label: string;
 }
 
-export function render_chat_message_element(options: RenderChatMessageOptions): HTMLElement {
+export function render_chat_bubble_element(options: RenderChatBubbleOptions): HTMLElement {
     const { Helpers, message, user_label, assistant_label } = options;
     const is_user = message.role === 'user';
-    const article = Helpers.create_element('article', {
-        class_name: ['ai-chat-message', is_user ? 'ai-chat-message--user' : 'ai-chat-message--assistant']
+    const bubble = Helpers.create_element('article', {
+        class_name: ['ai-chat-bubble', is_user ? 'ai-chat-bubble--user' : 'ai-chat-bubble--assistant']
     });
-    const heading = Helpers.create_element('h2', {
-        class_name: 'ai-chat-message__heading',
+    bubble.appendChild(Helpers.create_element('p', {
+        class_name: 'ai-chat-bubble__sender',
         text_content: is_user ? user_label : assistant_label
-    });
-    const body = Helpers.create_element('p', {
-        class_name: 'ai-chat-message__body',
-        text_content: message.content
-    });
-    article.appendChild(heading);
-    article.appendChild(body);
-    return article;
+    }));
+    const body_attributes: Record<string, string> = {};
+    if (!is_user) {
+        body_attributes['aria-live'] = 'polite';
+        body_attributes.role = 'status';
+    }
+    bubble.appendChild(Helpers.create_element('p', {
+        class_name: 'ai-chat-bubble__body',
+        text_content: message.content,
+        attributes: body_attributes
+    }));
+    return bubble;
 }

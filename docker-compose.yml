@@ -18,6 +18,8 @@ services:
     restart: always
 
   # Ollama (Din befintliga motor)
+  # Om du redan har en fristående container "ollama-final" startar dev-skriptet den i stället
+  # och hoppar över att skapa den här tjänsten (undviker namnkonflikt).
   ollama:
     image: ollama/ollama
     container_name: ollama-final

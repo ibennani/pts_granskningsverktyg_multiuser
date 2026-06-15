@@ -11,10 +11,16 @@ import {
     send_llm_chat,
     test_llm_connection
 } from '../services/llm_proxy_service.js';
+import { pipe_ollama_agent_stream } from '../services/llm_ollama_agent.js';
+import { resolve_chat_timeout_ms, format_llm_chat_error } from '../services/llm_chat_timeout.js';
+import { merge_abort_signals } from '../services/abort_signal_merge.js';
 import { validate_chat_messages } from '../services/llm_chat_validation.js';
+import { normalize_client_context } from '../services/llm_tool_context.js';
 import type { Request, Response } from 'express';
 
-type AuthedRequest = Request & { user?: { id: string; is_admin?: boolean } };
+type AuthedRequest = Request & {
+    user?: { id: string; name?: string; is_admin?: boolean };
+};
 
 const router = express.Router();
 
@@ -38,6 +44,50 @@ router.post('/chat', async (req: Request, res: Response) => {
     } catch (err) {
         const message = err instanceof Error ? err.message : 'Kunde inte skicka chattmeddelande';
         console.warn('[llm] POST chat error:', message);
+        res.status(400).json({ error: message });
+    }
+});
+
+router.post('/chat/stream', async (req: Request, res: Response) => {
+    const client_abort = new AbortController();
+    res.on('close', () => {
+        if (!res.writableFinished) {
+            client_abort.abort();
+        }
+    });
+    try {
+        const authed = req as AuthedRequest;
+        if (!authed.user?.id || !authed.user?.name) {
+            return res.status(401).json({ error: 'Inloggning krävs' });
+        }
+        const saved = await get_settings_for_proxy();
+        const messages = validate_chat_messages(req.body?.messages);
+        const timeout_ms = resolve_chat_timeout_ms(saved.timeout_ms);
+        const abort_signal = merge_abort_signals([
+            client_abort.signal,
+            AbortSignal.timeout(timeout_ms)
+        ]);
+        await pipe_ollama_agent_stream(
+            saved,
+            messages,
+            {
+                user: {
+                    id: authed.user.id,
+                    name: authed.user.name,
+                    is_admin: authed.user.is_admin === true
+                },
+                client: normalize_client_context(req.body?.context)
+            },
+            res,
+            abort_signal
+        );
+    } catch (err) {
+        const message = format_llm_chat_error(err);
+        console.warn('[llm] POST chat/stream error:', message);
+        if (res.headersSent) {
+            res.end();
+            return;
+        }
         res.status(400).json({ error: message });
     }
 });
