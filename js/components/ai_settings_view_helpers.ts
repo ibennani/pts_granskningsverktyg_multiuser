@@ -32,6 +32,70 @@ export interface AiSettingsData {
 
 type CreateElementFn = (tag: string, options?: Record<string, unknown>) => HTMLElement;
 
+export function merge_model_names(discovered_models: string[], saved_model: string): string[] {
+    const names = new Set<string>();
+    discovered_models.forEach((name) => {
+        if (name) names.add(name);
+    });
+    if (saved_model) names.add(saved_model);
+    return [...names].sort((a, b) => a.localeCompare(b, 'sv'));
+}
+
+/** Sorterad unik modellista från anslutningstest. */
+export function normalize_discovered_models(models: string[]): string[] {
+    const names = new Set<string>();
+    models.forEach((name) => {
+        if (name) names.add(name);
+    });
+    return [...names].sort((a, b) => a.localeCompare(b, 'sv'));
+}
+
+/** Uppdaterar modellista och val efter lyckat anslutningstest. */
+export function resolve_model_selection_after_discovery(
+    discovered_models: string[],
+    current_selection: string
+): { discovered_models: string[]; selected_model: string } {
+    const models = normalize_discovered_models(discovered_models);
+    if (current_selection && models.includes(current_selection)) {
+        return { discovered_models: models, selected_model: current_selection };
+    }
+    if (models.length === 1) {
+        return { discovered_models: models, selected_model: models[0] };
+    }
+    return { discovered_models: models, selected_model: '' };
+}
+
+export function populate_model_select(
+    Helpers: { create_element: CreateElementFn },
+    select: HTMLSelectElement,
+    models: string[],
+    selected_model: string,
+    t: (key: string) => string
+) {
+    select.replaceChildren();
+    if (models.length === 0) {
+        select.appendChild(Helpers.create_element('option', {
+            attributes: { value: '' },
+            text_content: t('ai_settings_model_empty_option')
+        }));
+        return;
+    }
+    if (!selected_model || !models.includes(selected_model)) {
+        select.appendChild(Helpers.create_element('option', {
+            attributes: { value: '' },
+            text_content: t('ai_settings_model_choose_option')
+        }));
+    }
+    models.forEach((name) => {
+        const opt = Helpers.create_element('option', {
+            attributes: { value: name },
+            text_content: name
+        }) as HTMLOptionElement;
+        if (name === selected_model) opt.selected = true;
+        select.appendChild(opt);
+    });
+}
+
 export function append_labeled_field(
     Helpers: { create_element: CreateElementFn },
     group: HTMLElement,
@@ -64,69 +128,14 @@ export function append_labeled_field(
     group.appendChild(control);
 }
 
-export function render_ai_settings_test_result(
-    Helpers: { create_element: CreateElementFn },
-    plate: HTMLElement,
-    t: (key: string, params?: Record<string, unknown>) => string,
+/** Kort statustext bredvid testknappen (aria-live). */
+export function get_connection_test_status_text(
+    t: (key: string) => string,
     test_in_progress: boolean,
     result: LlmTestResult | null
-) {
-    if (!result && !test_in_progress) return;
-
-    const section = Helpers.create_element('section', {
-        class_name: 'ai-settings-test-section',
-        attributes: { 'aria-labelledby': 'ai-settings-test-result-heading' }
-    });
-    section.appendChild(Helpers.create_element('h2', {
-        attributes: { id: 'ai-settings-test-result-heading' },
-        text_content: t('ai_settings_test_result_heading')
-    }));
-    section.appendChild(Helpers.create_element('p', {
-        class_name: 'ai-settings-test-section-intro',
-        text_content: t('ai_settings_test_result_intro')
-    }));
-
-    const box = Helpers.create_element('div', {
-        class_name: [
-            'ai-settings-test-result',
-            test_in_progress ? 'ai-settings-test-result--pending' : (result?.ok ? 'ai-settings-test-result--ok' : 'ai-settings-test-result--error')
-        ],
-        attributes: {
-            'aria-live': 'polite',
-            'aria-atomic': 'true',
-            role: 'status'
-        }
-    });
-    if (test_in_progress) {
-        box.textContent = t('ai_settings_testing');
-        section.appendChild(box);
-        plate.appendChild(section);
-        return;
-    }
-    if (!result) return;
-    box.appendChild(Helpers.create_element('p', {
-        class_name: 'ai-settings-test-result-summary',
-        text_content: result.ok ? t('ai_settings_test_ok') : t('ai_settings_test_failed')
-    }));
-    if (result.message) {
-        box.appendChild(Helpers.create_element('p', {
-            class_name: 'ai-settings-test-result-message',
-            text_content: result.message
-        }));
-    }
-    if (result.model_available === false) {
-        box.appendChild(Helpers.create_element('p', {
-            class_name: 'ai-settings-test-result-message',
-            text_content: t('ai_settings_model_not_found')
-        }));
-    }
-    if (Array.isArray(result.models) && result.models.length > 0) {
-        const list = Helpers.create_element('ul', { class_name: 'ai-settings-model-list' });
-        result.models.slice(0, 15).forEach((name: string) => {
-            list.appendChild(Helpers.create_element('li', { text_content: name }));
-        });
-        box.appendChild(list);
-    }
-    section.appendChild(box);
-    plate.appendChild(section);
+): string {
+    if (test_in_progress) return t('ai_settings_testing');
+    if (!result) return '';
+    if (result.ok) return t('ai_settings_test_connection_ok');
+    return t('ai_settings_test_connection_failed');
 }

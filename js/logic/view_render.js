@@ -241,10 +241,16 @@ export async function render_view(view_name_to_render, params_to_render = {}, de
             updatePageTitle(view_name_mut, params_mut);
         }
         ensure_skip_link_target(view_init_root);
+        const skip_draft_restore =
+            skip_metadata_draft_restore ||
+            view_name_mut === 'ai_settings';
         if (skip_metadata_draft_restore && typeof DraftManager?.clearDraftForScope === 'function') {
             DraftManager.clearDraftForScope('metadata', {});
         }
-        if (!skip_metadata_draft_restore && DraftManager?.restoreIntoDom) {
+        if (view_name_mut === 'ai_settings' && typeof DraftManager?.clearDraftForScope === 'function') {
+            DraftManager.clearDraftForScope('ai_settings', {});
+        }
+        if (!skip_draft_restore && DraftManager?.restoreIntoDom) {
             DraftManager.restoreIntoDom(view_init_root);
         }
         update_restore_position(view_name_mut, params_mut, null);

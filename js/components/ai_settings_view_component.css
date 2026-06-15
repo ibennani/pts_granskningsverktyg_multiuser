@@ -2,14 +2,21 @@
 
 .ai-settings-plate {
     width: 100%;
+    overflow: visible;
 }
 
 .ai-settings-intro {
+    margin-bottom: 0.75rem;
+}
+
+.ai-settings-enabled-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
     margin-bottom: 1.25rem;
 }
 
-.ai-settings-form h2,
-.ai-settings-test-section h2 {
+.ai-settings-form h2 {
     font-size: 1rem;
     margin-top: 1.5rem;
     margin-bottom: 0.5rem;
@@ -18,16 +25,6 @@
 
 .ai-settings-form h2:first-child {
     margin-top: 0;
-}
-
-.ai-settings-test-section {
-    margin-top: 1.5rem;
-}
-
-.ai-settings-test-section-intro {
-    margin: 0 0 0.75rem;
-    font-size: 0.9rem;
-    color: var(--text-color);
 }
 
 .ai-settings-form .form-group {
@@ -68,58 +65,30 @@
     color: var(--text-color);
 }
 
-.ai-settings-enabled-row {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-}
-
 .ai-settings-enabled-row input[type="checkbox"] {
     margin-top: 0.2rem;
 }
 
-.ai-settings-test-result {
-    margin-top: 0;
-    padding: 0.75rem 1rem;
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    background-color: var(--input-background-color);
+.ai-settings-test-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    margin: 0.5rem 0 1rem;
+}
+
+.ai-settings-test-status {
+    margin: 0;
+    font-size: 0.9rem;
     color: var(--text-color);
 }
 
-.ai-settings-test-result p,
-.ai-settings-test-result li {
-    color: var(--text-color);
+.ai-settings-test-status--ok {
+    color: var(--success-color);
 }
 
-.ai-settings-test-result-summary {
-    font-weight: 600;
-    margin: 0 0 0.35rem;
-}
-
-.ai-settings-test-result-message {
-    margin: 0.35rem 0 0;
-}
-
-.ai-settings-test-result--pending {
-    border-color: var(--border-color);
-    background-color: var(--input-background-color);
-}
-
-.ai-settings-test-result--ok {
-    border-color: var(--success-color);
-    background-color: var(--success-color-light);
-}
-
-.ai-settings-test-result--error {
-    border-color: var(--danger-color);
-    background-color: var(--danger-color-light);
-}
-
-.ai-settings-model-list {
-    margin: 0.5rem 0 0;
-    padding-left: 1.25rem;
+.ai-settings-test-status--error {
+    color: var(--danger-color);
 }
 
 .ai-settings-buttons {

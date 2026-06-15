@@ -46,10 +46,10 @@
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
-    overflow-y: auto;
+    overflow-y: visible;
 }
 
-/* Startvyn: ingen scrollbar i main – höjden anpassas efter innehållet, scroll sker i app-container */
+/* Startvyn m.fl.: min-height följer innehåll (overflow hanteras globalt utan intern main-scroll) */
 .app-main-view-root.start-view-active {
     overflow: visible;
     min-height: auto;

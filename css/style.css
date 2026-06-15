@@ -352,7 +352,7 @@ body {
     width: 100%;
     padding: 0 var(--spacing-unit);
     margin-inline: auto;
-    overflow-x: hidden;
+    overflow-x: clip;
     flex: 0 0 auto;
     display: flex;
     flex-direction: column;
@@ -364,7 +364,7 @@ body {
 #global-action-bar-top,
 #global-action-bar-bottom {
     width: 100%;
-    overflow-x: hidden;
+    overflow-x: clip;
 }
 
 #app-container {
@@ -374,7 +374,7 @@ body {
     justify-content: flex-start;
     align-items: stretch;
     min-height: 0;
-    overflow-y: auto;
+    overflow-y: visible;
 }
 
 /* Topp- och bottennavigering som tydliga horisontella barer */
@@ -401,7 +401,8 @@ body {
     border-radius: var(--border-radius);
     margin-top: 0rem;
     max-width: 100%;
-    overflow-x: hidden;
+    overflow-x: clip;
+    overflow-y: visible;
 }
 
 .content-plate h1 {
