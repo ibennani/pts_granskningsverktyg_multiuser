@@ -2,6 +2,8 @@
  * @file Läser NDJSON-ström från LLM-chatt-endpoint och bygger ihop delsvaren.
  */
 
+import { append_stream_text } from '../../shared/llm/llm_stream_text_append.ts';
+
 export interface LlmChatStreamDelta {
     content: string;
     thinking: string;
@@ -15,9 +17,16 @@ export interface ParsedOllamaStreamLine {
     done?: boolean;
     error?: string;
     tool_activity?: string | null;
+    content_reset?: boolean;
 }
 
 function parse_envelope_line(data: Record<string, unknown>): ParsedOllamaStreamLine | null {
+    if (data._leffe === 'content_reset') {
+        return { content_reset: true };
+    }
+    if (data._leffe === 'error' && typeof data.message === 'string') {
+        return { error: data.message };
+    }
     if (data._leffe !== 'tool') return null;
     if (data.phase === 'start' && typeof data.name === 'string') {
         return { tool_activity: data.name };
@@ -58,14 +67,18 @@ function apply_parsed_line(
     if (parsed.error) {
         throw new Error(parsed.error);
     }
+    if (parsed.content_reset) {
+        state.content = '';
+        state.thinking = '';
+    }
     if (parsed.tool_activity !== undefined) {
         state.tool_activity = parsed.tool_activity;
     }
     if (parsed.thinking) {
-        state.thinking += parsed.thinking;
+        state.thinking = append_stream_text(state.thinking, parsed.thinking);
     }
     if (parsed.content) {
-        state.content += parsed.content;
+        state.content = append_stream_text(state.content, parsed.content);
     }
     return {
         content: state.content,

@@ -18,6 +18,7 @@ export function build_leffe_system_prompt(context: LlmToolContext): string {
         'Du heter Leffe och är en hjälpsam assistent i Leffe – ett verktyg för digital tillsyn och tillgänglighetsgranskning.',
         'Du har verktyg för att läsa och uppdatera data i systemets databas (granskningar, regelfiler, statistik, kravbedömningar).',
         'Använd verktyg när du behöver fakta från systemet. Uppdatera data endast när användaren uttryckligen ber om det.',
+        'Efter verktygsanrop: ge ett enda sammanhängande svar. Upprepa inte samma text eller tidigare utkast.',
         'Du har inte tillgång till serverfiler på disk (backup-mappar, källkod) – bara det som finns via verktygen.',
         `Inloggad användare: ${context.user.name}.${admin_note}${focus_note}`,
         'Svara på svenska om användaren inte skriver på ett annat språk. Var tydlig och saklig.'

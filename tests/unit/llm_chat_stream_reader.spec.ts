@@ -44,4 +44,27 @@ describe('llm_chat_stream_reader', () => {
         expect(result.content).toBe('Hej!');
         expect(deltas[deltas.length - 1]).toBe('Hej!');
     });
+
+    test('consume_llm_chat_stream nollställer text vid content_reset', async () => {
+        const chunks = [
+            `${JSON.stringify({ message: { content: 'Utkast' }, done: false })}\n`,
+            `${JSON.stringify({ _leffe: 'content_reset' })}\n`,
+            `${JSON.stringify({ message: { content: 'Svar' }, done: true })}\n`
+        ];
+        const encoder = new TextEncoder();
+        let index = 0;
+        const body = new ReadableStream({
+            pull(controller) {
+                if (index >= chunks.length) {
+                    controller.close();
+                    return;
+                }
+                controller.enqueue(encoder.encode(chunks[index]));
+                index += 1;
+            }
+        });
+        const response = new Response(body, { status: 200 });
+        const result = await consume_llm_chat_stream(response, () => {});
+        expect(result.content).toBe('Svar');
+    });
 });

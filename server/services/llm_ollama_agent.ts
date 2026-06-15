@@ -10,11 +10,12 @@ import { build_leffe_system_prompt } from './llm_chat_system_prompt.js';
 import type { LlmToolContext } from './llm_tool_context.js';
 import { execute_llm_tool } from './llm_tool_executor.js';
 import type { LlmChatMessage } from './llm_proxy_service.js';
+import { append_stream_text } from '../../shared/llm/llm_stream_text_append.ts';
 
 const MAX_AGENT_ROUNDS = 8;
 
 export interface LlmStreamEnvelope {
-    _leffe: 'tool' | 'error';
+    _leffe: 'tool' | 'error' | 'content_reset';
     phase?: 'start' | 'end';
     name?: string;
     ok?: boolean;
@@ -80,6 +81,12 @@ function accumulate_tool_calls(target: OllamaToolCall[], incoming: OllamaToolCal
     }
 }
 
+function filter_valid_tool_calls(calls: OllamaToolCall[]): OllamaToolCall[] {
+    return calls.filter(
+        (call) => typeof call?.function?.name === 'string' && call.function.name.trim().length > 0
+    );
+}
+
 async function read_ollama_stream_body(
     body: ReadableStream<Uint8Array>,
     res: Response
@@ -104,8 +111,8 @@ async function read_ollama_stream_body(
             if (parsed.done === true) done = true;
             const message = parsed.message as OllamaChatMessage | undefined;
             if (!message) continue;
-            if (message.thinking) thinking += message.thinking;
-            if (message.content) content += message.content;
+            if (message.thinking) thinking = append_stream_text(thinking, message.thinking);
+            if (message.content) content = append_stream_text(content, message.content);
             accumulate_tool_calls(tool_calls, message.tool_calls);
             write_ollama_chunk(res, parsed);
         }
@@ -185,16 +192,30 @@ export async function pipe_ollama_agent_stream(
     res.setHeader('Connection', 'keep-alive');
     res.flushHeaders?.();
 
+    let finished = false;
     for (let round = 0; round < MAX_AGENT_ROUNDS; round += 1) {
+        if (round > 0) {
+            write_envelope(res, { _leffe: 'content_reset' });
+        }
         const ollama_response = await post_ollama_chat_round(saved, api_messages, abort_signal);
         if (!ollama_response.ok || !ollama_response.body) {
             throw new Error(`Ollama svarade med status ${ollama_response.status}.`);
         }
         const { assistant_message } = await read_ollama_stream_body(ollama_response.body, res);
         api_messages.push(assistant_message as LlmChatMessage);
-        const tool_calls = assistant_message.tool_calls || [];
-        if (!tool_calls.length) break;
+        const tool_calls = filter_valid_tool_calls(assistant_message.tool_calls || []);
+        if (!tool_calls.length) {
+            finished = true;
+            break;
+        }
+        assistant_message.tool_calls = tool_calls;
         await run_tool_calls(tool_calls, context, res, api_messages);
+    }
+    if (!finished) {
+        write_envelope(res, {
+            _leffe: 'error',
+            message: 'Leffe hann inte slutföra svaret inom tillåtna verktygssteg.'
+        });
     }
     res.end();
 }

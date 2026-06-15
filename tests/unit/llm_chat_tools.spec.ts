@@ -38,4 +38,9 @@ describe('llm_chat_stream_reader envelopes', () => {
         );
         expect(parsed?.tool_activity).toBe('list_audits');
     });
+
+    test('parse_ollama_stream_line tolkar content_reset', () => {
+        const parsed = parse_ollama_stream_line(JSON.stringify({ _leffe: 'content_reset' }));
+        expect(parsed?.content_reset).toBe(true);
+    });
 });

@@ -69,12 +69,14 @@ export function compact_view_slug_from_canonical(canonical_view) {
  */
 export function normalize_params_from_hash_query(raw_params) {
     const out = { ...raw_params };
+    if (out.chatId === undefined && out.c !== undefined) out.chatId = out.c;
     if (out.auditId === undefined && out.a !== undefined) out.auditId = out.a;
     if (out.sampleId === undefined && out.s !== undefined) out.sampleId = out.s;
     if (out.requirementId === undefined && out.r !== undefined) out.requirementId = out.r;
     delete out.a;
     delete out.s;
     delete out.r;
+    delete out.c;
     return out;
 }
 
@@ -95,8 +97,11 @@ export function compact_param_keys_for_hash(canonical_params) {
     if (p.requirementId !== undefined && p.requirementId !== null && p.requirementId !== '') {
         out.r = String(p.requirementId);
     }
+    if (p.chatId !== undefined && p.chatId !== null && p.chatId !== '') {
+        out.c = String(p.chatId);
+    }
     for (const [k, v] of Object.entries(p)) {
-        if (k === 'auditId' || k === 'sampleId' || k === 'requirementId') continue;
+        if (k === 'auditId' || k === 'sampleId' || k === 'requirementId' || k === 'chatId') continue;
         out[k] = v;
     }
     return out;

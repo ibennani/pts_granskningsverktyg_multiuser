@@ -17,6 +17,17 @@ import {
     play_ai_chat_reply_chime,
     unlock_ai_chat_reply_audio
 } from '../utils/ai_chat_reply_chime.ts';
+import {
+    list_ai_chat_sessions,
+    resolve_current_user_id_for_storage
+} from '../logic/ai_chat_history.ts';
+import {
+    begin_chat_session,
+    clear_empty_chat_session,
+    load_chat_from_route_params,
+    persist_chat_session
+} from '../logic/ai_chat_view_history.ts';
+import { AiChatHistorySidebarComponent } from './AiChatHistorySidebarComponent.ts';
 import './ai_chat_view_component.css';
 
 export class AiChatViewComponent {
@@ -33,17 +44,73 @@ export class AiChatViewComponent {
     _streaming_bubble: StreamingAssistantBubble | null = null;
     _abort_controller: AbortController | null = null;
     _compose_value = '';
+    _active_chat_id: string | null = null;
+    _chat_title: string | null = null;
+    _user_storage_id: string | null = null;
+    _right_sidebar_root: HTMLElement | null = null;
+    _history_sidebar: AiChatHistorySidebarComponent | null = null;
+    _router: ((view: string, params?: Record<string, string>, opts?: { replace_state?: boolean }) => void) | null = null;
 
     async init({ root, deps }: { root: HTMLElement; deps: any }) {
         this.root = root;
         this.deps = deps;
         this.Helpers = deps.Helpers;
         this.Translation = deps.Translation;
+        this._router = deps.router || null;
+        this._right_sidebar_root = deps.rightSidebarRoot || null;
         this._handle_submit = this._handle_submit.bind(this);
         this._handle_input = this._handle_input.bind(this);
 
         if (this.Helpers?.load_css && this.CSS_PATH) {
             await this.Helpers.load_css(this.CSS_PATH).catch(() => {});
+        }
+
+        this._user_storage_id = await resolve_current_user_id_for_storage();
+        const loaded = load_chat_from_route_params(this._user_storage_id, deps.params || {});
+        this._active_chat_id = loaded.chat_id;
+        this._chat_title = loaded.title;
+        this.messages = loaded.messages;
+
+        if (this._right_sidebar_root) {
+            this._history_sidebar = new AiChatHistorySidebarComponent();
+            await this._history_sidebar.init({
+                root: this._right_sidebar_root,
+                deps: {
+                    router: this._router || (() => {}),
+                    Translation: this.Translation,
+                    Helpers: this.Helpers
+                }
+            });
+            this._render_history_sidebar();
+        }
+    }
+
+    _render_history_sidebar() {
+        if (!this._history_sidebar || !this._user_storage_id) return;
+        this._history_sidebar.render({
+            sessions: list_ai_chat_sessions(this._user_storage_id),
+            active_chat_id: this._active_chat_id
+        });
+    }
+
+    _persist_active_chat() {
+        persist_chat_session(
+            this._user_storage_id,
+            this._active_chat_id,
+            this._chat_title,
+            this.messages,
+            this._t('ai_chat_history_untitled')
+        );
+        this._render_history_sidebar();
+    }
+
+    _begin_chat_session(first_question: string) {
+        if (this._active_chat_id) return;
+        const started = begin_chat_session(first_question, this._t('ai_chat_history_untitled'));
+        this._active_chat_id = started.chat_id;
+        this._chat_title = started.title;
+        if (this._router) {
+            this._router('ai_chat', { chatId: this._active_chat_id }, { replace_state: true });
         }
     }
 
@@ -108,10 +175,10 @@ export class AiChatViewComponent {
         if (delta.tool_activity !== undefined) {
             stream_ui.set_tool_activity(resolve_tool_activity_label(delta.tool_activity, (k) => this._t(k)));
         }
-        if (delta.thinking) {
+        if (delta.thinking !== undefined) {
             stream_ui.set_thinking(this._t('ai_chat_thinking_label'), delta.thinking);
         }
-        if (delta.content) {
+        if (delta.content !== undefined) {
             stream_ui.set_content(delta.content);
         }
         this._scroll_thread_to_bottom();
@@ -197,8 +264,10 @@ export class AiChatViewComponent {
         this._compose_value = '';
 
         this._clear_error();
+        this._begin_chat_session(text);
         const next_messages = [...this.messages, create_user_message(text)];
         this.messages = next_messages;
+        this._persist_active_chat();
         this._send_in_progress = true;
         this._abort_controller = new AbortController();
         unlock_ai_chat_reply_audio();
@@ -217,6 +286,7 @@ export class AiChatViewComponent {
             this.messages = [...next_messages, create_assistant_message(reply)];
             this._send_in_progress = false;
             this._abort_controller = null;
+            this._persist_active_chat();
             this.render();
             play_ai_chat_reply_chime();
             requestAnimationFrame(() => {
@@ -224,6 +294,15 @@ export class AiChatViewComponent {
             });
         } catch (err) {
             this.messages = next_messages.slice(0, -1);
+            if (!this.messages.length && this._active_chat_id) {
+                clear_empty_chat_session(this._user_storage_id, this._active_chat_id);
+                this._active_chat_id = null;
+                this._chat_title = null;
+                if (this._router) {
+                    this._router('ai_chat', {}, { replace_state: true });
+                }
+                this._render_history_sidebar();
+            }
             this._send_in_progress = false;
             this._abort_controller = null;
             this._set_error((err instanceof Error ? err.message : null) || this._t('ai_chat_error'));
@@ -286,11 +365,18 @@ export class AiChatViewComponent {
         this.root.appendChild(plate);
 
         requestAnimationFrame(() => this._scroll_thread_to_bottom());
+        this._render_history_sidebar();
     }
 
     destroy() {
         this._abort_controller?.abort();
         this._abort_controller = null;
+        this._persist_active_chat();
+        this._history_sidebar?.destroy();
+        this._history_sidebar = null;
+        if (this._right_sidebar_root) {
+            this._right_sidebar_root.innerHTML = '';
+        }
         this.root = null;
         this.deps = null;
         this.Helpers = null;
@@ -300,5 +386,10 @@ export class AiChatViewComponent {
         this.thread_ref = null;
         this._streaming_bubble = null;
         this._compose_value = '';
+        this._active_chat_id = null;
+        this._chat_title = null;
+        this._user_storage_id = null;
+        this._right_sidebar_root = null;
+        this._router = null;
     }
 }
