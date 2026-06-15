@@ -4,7 +4,7 @@
  */
 /// <reference types="vite/client" />
 
-import { get_current_user_preferences_with_timeout } from '../api/client.js';
+import { get_current_user_preferences_with_timeout, get_auth_token } from '../api/client.js';
 import { parse_build_info_from_text } from './version_check_service.js';
 import { parse_view_and_params_from_hash } from './router.js';
 import { migrate_legacy_view_query_to_hash } from './migrate_legacy_query_to_hash.js';
@@ -20,6 +20,7 @@ import { get_current_user_name_window, get_restore_position_via_hook } from '../
 import { is_debug_modal_scroll } from '../app/runtime_flags.js';
 import { init_same_user_tab_field_sync_listener } from './same_user_tab_field_sync.js';
 import { init_audit_sync_lifecycle } from './audit_sync_lifecycle.js';
+import { refresh_llm_availability, apply_llm_chat_available_from_user } from './llm_availability.ts';
 
 /** Bygg-info som läses in dynamiskt i webbläsaren. */
 interface BuildInfoPayload {
@@ -290,6 +291,8 @@ export async function apply_user_preferences_from_server({
                 payload: { selectedMode: mode },
             });
         }
+        apply_llm_chat_available_from_user(user);
+        void refresh_llm_availability(true);
     } catch {
         /* ignorerar – användaren kanske inte finns i DB */
     }
@@ -345,6 +348,9 @@ export async function start_normal_session(deps: StartNormalSessionDeps): Promis
         LayoutManager.init();
     }
     await init_global_components();
+    if (get_auth_token()) {
+        void refresh_llm_availability(true);
+    }
     // Blockerar inte första vyrendering om /users/me hänger (fetch saknar timeout i klienten).
     void apply_user_preferences_from_server({ dispatch, StoreActionTypes });
     init_connectivity_service({ getState, dispatch });

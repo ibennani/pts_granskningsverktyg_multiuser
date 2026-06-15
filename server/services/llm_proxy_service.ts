@@ -127,3 +127,87 @@ export async function get_llm_status(saved: LlmSettingsRow): Promise<LlmConnecti
         api_key: saved.api_key
     });
 }
+
+export interface LlmAvailability {
+    available: boolean;
+    enabled: boolean;
+}
+
+export async function get_llm_availability(saved: LlmSettingsRow): Promise<LlmAvailability> {
+    if (!saved.enabled || !String(saved.model || '').trim()) {
+        return { available: false, enabled: saved.enabled };
+    }
+    const status = await get_llm_status(saved);
+    return {
+        available: status.ok === true,
+        enabled: saved.enabled
+    };
+}
+
+export interface LlmChatMessage {
+    role: 'user' | 'assistant' | 'system';
+    content: string;
+}
+
+const LEFFE_SYSTEM_PROMPT =
+    'Du heter Leffe och är en hjälpsam assistent i ett verktyg för digital tillsyn och tillgänglighetsgranskning. Svara på svenska om användaren inte skriver på ett annat språk. Var tydlig och saklig.';
+
+async function post_ollama_chat(
+    base_url: string,
+    model: string,
+    messages: LlmChatMessage[],
+    timeout_ms: number,
+    api_key: string | null
+): Promise<string> {
+    const response = await fetch(`${base_url}/api/chat`, {
+        method: 'POST',
+        signal: AbortSignal.timeout(timeout_ms),
+        headers: {
+            'Content-Type': 'application/json',
+            ...build_auth_headers(api_key)
+        },
+        body: JSON.stringify({
+            model,
+            messages,
+            stream: false
+        })
+    });
+    if (!response.ok) {
+        throw new Error(`Ollama svarade med status ${response.status}.`);
+    }
+    const data = (await response.json()) as { message?: { content?: string } };
+    const content = typeof data.message?.content === 'string' ? data.message.content.trim() : '';
+    if (!content) {
+        throw new Error('Ollama returnerade inget textsvar.');
+    }
+    return content;
+}
+
+export async function send_llm_chat(
+    saved: LlmSettingsRow,
+    messages: Array<{ role: 'user' | 'assistant'; content: string }>
+): Promise<{ content: string }> {
+    const availability = await get_llm_availability(saved);
+    if (!availability.available) {
+        throw new Error('AI är inte tillgänglig just nu.');
+    }
+    if (saved.provider !== 'ollama') {
+        throw new Error('Endast Ollama stöds för chatt ännu.');
+    }
+    const last = messages[messages.length - 1];
+    if (!last || last.role !== 'user') {
+        throw new Error('Senaste meddelandet måste komma från användaren.');
+    }
+    const messages_for_api: LlmChatMessage[] = [
+        { role: 'system', content: LEFFE_SYSTEM_PROMPT },
+        ...messages
+    ];
+    const content = await post_ollama_chat(
+        saved.base_url,
+        saved.model,
+        messages_for_api,
+        saved.timeout_ms,
+        saved.api_key
+    );
+    return { content };
+}

@@ -26,6 +26,7 @@ import {
 } from './requirements_list_filters_url_ui.js';
 import { default_view_for_loaded_audit_state } from './audit_default_entry_view.js';
 import { is_debug_nav } from '../app/runtime_flags.js';
+import { refresh_llm_availability, is_llm_chat_available } from './llm_availability.ts';
 import {
     set_current_user_name_window,
     set_restore_focus_info,
@@ -65,6 +66,7 @@ export const VIEW_NAMES_GLOBAL_NO_AUDIT_ID_IN_HASH = new Set([
     'login',
     'manage_users',
     'ai_settings',
+    'ai_chat',
     'my_settings',
     'statistics',
     'upload'
@@ -196,6 +198,10 @@ export function navigate_and_set_hash(target_view_name, target_params = {}, opti
         return;
     }
     if (target_view_name === 'ai_settings' && !is_current_user_admin()) {
+        window.location.hash = '#start';
+        return;
+    }
+    if (target_view_name === 'ai_chat' && !is_llm_chat_available()) {
         window.location.hash = '#start';
         return;
     }
@@ -360,6 +366,14 @@ export async function handle_hash_change(options) {
         target_view = 'start';
         target_params = {};
         history.replaceState(null, '', '#start');
+    }
+    if (target_view === 'ai_chat') {
+        const chat_available = await refresh_llm_availability(true);
+        if (!chat_available) {
+            target_view = 'start';
+            target_params = {};
+            history.replaceState(null, '', '#start');
+        }
     }
     nav_debug('handle_hash_change -> render_view', { target_view, target_params, effective_view_name });
     if (is_skip_link_anchor || !effective_view_name) {

@@ -454,7 +454,7 @@ export function resolve_app_dom() {
         consoleManager.error('[Main.js] CRITICAL: App container not found in DOM! Creating fallback container.');
         app_container = document.createElement('div');
         app_container.id = 'app-container';
-        app_container.style.cssText = 'min-height: 100vh; padding: 20px;';
+        app_container.style.cssText = 'padding: 20px;';
 
         if (app_wrapper) {
             app_wrapper.appendChild(app_container);

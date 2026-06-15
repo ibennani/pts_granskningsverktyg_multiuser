@@ -5,6 +5,11 @@ import { consoleManager } from '../utils/console_manager.js';
 import { build_compact_hash_fragment, expand_view_slug_from_hash, normalize_params_from_hash_query } from '../logic/router_url_codec.js';
 import { build_app_location_href_for_view } from '../logic/shareable_app_location.js';
 import { is_debug_modal_scroll, is_debug_nav, is_debug_problems_update } from '../app/runtime_flags.js';
+import {
+    AVAILABILITY_CHANGED_EVENT,
+    is_llm_chat_available,
+    refresh_llm_availability
+} from '../logic/llm_availability.ts';
 
 export class SideMenuComponent {
     async init({ root, deps }) {
@@ -35,6 +40,7 @@ export class SideMenuComponent {
         this.handle_layout_compact_changed = this.handle_layout_compact_changed.bind(this);
         this.handle_external_toggle_event = this.handle_external_toggle_event.bind(this);
         this.handle_close_side_menu_event = this.handle_close_side_menu_event.bind(this);
+        this.handle_llm_availability_changed = this.handle_llm_availability_changed.bind(this);
         this._compact_escape_listener_registered = false;
 
         // Stilar laddas via statisk import högst upp; load_css med relativ path mot /v2 ger fel URL (404).
@@ -69,6 +75,9 @@ export class SideMenuComponent {
         document.addEventListener('gv:layout_compact_changed', this.handle_layout_compact_changed);
         document.addEventListener('gv:toggle_side_menu', this.handle_external_toggle_event);
         document.addEventListener('gv:close_side_menu', this.handle_close_side_menu_event);
+        document.addEventListener(AVAILABILITY_CHANGED_EVENT, this.handle_llm_availability_changed);
+
+        void refresh_llm_availability();
 
         if (this.is_small_screen()) {
             this.add_compact_escape_listener();
@@ -133,6 +142,23 @@ export class SideMenuComponent {
         if (this.is_menu_open) {
             this.handle_close_menu({ restore_focus: false });
         }
+    }
+
+    handle_llm_availability_changed() {
+        if (!this.root || typeof this.render !== 'function') return;
+        this.render();
+    }
+
+    _insert_ai_chat_menu_item(items) {
+        if (!is_llm_chat_available()) return;
+        const t = this.Translation.t;
+        const chat_item = { label: t('menu_link_ai_chat'), view_name: 'ai_chat' };
+        const settings_index = items.findIndex((item) => item.view_name === 'my_settings');
+        if (settings_index >= 0) {
+            items.splice(settings_index, 0, chat_item);
+            return;
+        }
+        items.push(chat_item);
     }
 
     handle_toggle_menu() {
@@ -347,7 +373,7 @@ export class SideMenuComponent {
             ? [...requirement_ids_in_samples].filter(req_id => requirement_ids_in_rulefile.has(req_id)).length
             : requirement_ids_in_samples.size;
 
-        if (this.current_view_name === 'start' || this.current_view_name === 'audit' || this.current_view_name === 'audit_audits' || this.current_view_name === 'audit_rules' || this.current_view_name === 'manage_users' || this.current_view_name === 'ai_settings' || this.current_view_name === 'my_settings' || this.current_view_name === 'statistics' || this.current_view_name === 'backup' || this.current_view_name === 'backup_detail' || this.current_view_name === 'backup_rulefile_detail' || this.current_view_name === 'backup_settings') {
+        if (this.current_view_name === 'start' || this.current_view_name === 'audit' || this.current_view_name === 'audit_audits' || this.current_view_name === 'audit_rules' || this.current_view_name === 'manage_users' || this.current_view_name === 'ai_settings' || this.current_view_name === 'ai_chat' || this.current_view_name === 'my_settings' || this.current_view_name === 'statistics' || this.current_view_name === 'backup' || this.current_view_name === 'backup_detail' || this.current_view_name === 'backup_rulefile_detail' || this.current_view_name === 'backup_settings') {
             const is_admin = typeof sessionStorage !== 'undefined' && sessionStorage.getItem('gv_current_user_is_admin') === '1';
             const items = [
                 { label: t('menu_link_manage_audits'), view_name: 'start' },
@@ -356,6 +382,7 @@ export class SideMenuComponent {
                 { label: t('menu_link_statistics'), view_name: 'statistics' },
                 { label: t('menu_link_my_settings'), view_name: 'my_settings' }
             ];
+            this._insert_ai_chat_menu_item(items);
             if (is_admin) {
                 items.push({ label: t('menu_link_ai_settings'), view_name: 'ai_settings' });
                 items.push({ label: t('menu_link_manage_users'), view_name: 'manage_users' });
@@ -413,6 +440,9 @@ export class SideMenuComponent {
                     { label: t('left_menu_images_with_count', { count: attached_media_count }), view_name: 'audit_images', count_id: 'attached_media_count', count_value: attached_media_count },
                     { label: t('left_menu_problems_with_count', { count: problems_count }), view_name: 'audit_problems', count_id: 'problems_count', count_value: problems_count },
                     { label: t('left_menu_actions'), view_name: 'audit_actions' },
+                    ...(is_llm_chat_available()
+                        ? [{ label: t('menu_link_ai_chat'), view_name: 'ai_chat' }]
+                        : []),
                     { label: t('audit_back_to_start'), view_name: 'start', back_to_start: true }
                 ]
             };
@@ -600,6 +630,7 @@ export class SideMenuComponent {
         document.removeEventListener('gv:layout_compact_changed', this.handle_layout_compact_changed);
         document.removeEventListener('gv:toggle_side_menu', this.handle_external_toggle_event);
         document.removeEventListener('gv:close_side_menu', this.handle_close_side_menu_event);
+        document.removeEventListener(AVAILABILITY_CHANGED_EVENT, this.handle_llm_availability_changed);
 
         if (typeof this.unsubscribe === 'function') {
             this.unsubscribe();

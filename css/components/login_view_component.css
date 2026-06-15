@@ -2,6 +2,12 @@
 
 /* Login-container: centrerad i viewport */
 /* När vi använder app-layout structuren (standard) */
+body.view-login {
+    min-height: 100%;
+    min-height: 100dvh;
+    justify-content: center;
+}
+
 body.view-login #app-wrapper {
     justify-content: center;
     align-items: center;

@@ -1,5 +1,5 @@
 import { jest, describe, test, expect, afterEach } from '@jest/globals';
-import { test_llm_connection } from '../../server/services/llm_proxy_service.ts';
+import { test_llm_connection, get_llm_availability, send_llm_chat } from '../../server/services/llm_proxy_service.ts';
 
 describe('llm_proxy_service', () => {
     const saved = {
@@ -59,5 +59,38 @@ describe('llm_proxy_service', () => {
         expect(result.ok).toBe(false);
         expect(result.status).toBe('unreachable');
         expect(result.message).toMatch(/ECONNREFUSED/);
+    });
+
+    test('get_llm_availability returnerar false när AI är av', async () => {
+        const result = await get_llm_availability({ ...saved, enabled: false });
+        expect(result.available).toBe(false);
+        expect(result.enabled).toBe(false);
+    });
+
+    test('get_llm_availability returnerar true vid lyckad anslutning även om modellnamn skiljer', async () => {
+        global.fetch = jest.fn().mockResolvedValue({
+            ok: true,
+            json: async () => ({ models: [{ name: 'llama3' }] })
+        }) as unknown as typeof fetch;
+
+        const result = await get_llm_availability({ ...saved, model: 'qwen2.5:7b' });
+        expect(result.available).toBe(true);
+        expect(result.enabled).toBe(true);
+    });
+
+    test('send_llm_chat returnerar svar från Ollama', async () => {
+        global.fetch = jest
+            .fn()
+            .mockResolvedValueOnce({
+                ok: true,
+                json: async () => ({ models: [{ name: 'qwen2.5:7b' }] })
+            })
+            .mockResolvedValueOnce({
+                ok: true,
+                json: async () => ({ message: { content: 'Hej från Leffe' } })
+            }) as unknown as typeof fetch;
+
+        const result = await send_llm_chat(saved, [{ role: 'user', content: 'Hej' }]);
+        expect(result.content).toBe('Hej från Leffe');
     });
 });

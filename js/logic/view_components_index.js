@@ -31,6 +31,7 @@ import { AuditImagesViewComponent } from '../components/AuditImagesViewComponent
 import { BackupOverviewComponent } from '../components/BackupOverviewComponent.ts';
 import { BackupSettingsViewComponent } from '../components/BackupSettingsViewComponent.js';
 import { AiSettingsViewComponent } from '../components/AiSettingsViewComponent.ts';
+import { AiChatViewComponent } from '../components/AiChatViewComponent.ts';
 import { AuditViewComponent } from '../components/audit_view/AuditViewComponent.js';
 import { LoginViewComponent } from '../components/LoginViewComponent.js';
 import { ManageUsersViewComponent } from '../components/ManageUsersViewComponent.js';
@@ -57,6 +58,7 @@ const updateRulefileViewComponent = new UpdateRulefileViewComponent();
 const backupOverviewComponent = new BackupOverviewComponent();
 const backupSettingsViewComponent = new BackupSettingsViewComponent();
 const aiSettingsViewComponent = new AiSettingsViewComponent();
+const aiChatViewComponent = new AiChatViewComponent();
 const manageUsersViewComponent = new ManageUsersViewComponent();
 const settingsViewComponent = new SettingsViewComponent();
 const statisticsViewComponent = new StatisticsViewComponent();
@@ -85,6 +87,7 @@ export function get_component_class(view_name) {
         case 'audit_rules': return auditViewComponent;
         case 'manage_users': return manageUsersViewComponent;
         case 'ai_settings': return aiSettingsViewComponent;
+        case 'ai_chat': return aiChatViewComponent;
         case 'my_settings': return settingsViewComponent;
         case 'statistics': return statisticsViewComponent;
         case 'login': return loginViewComponent;

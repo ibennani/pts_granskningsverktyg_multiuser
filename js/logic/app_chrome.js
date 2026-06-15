@@ -6,6 +6,7 @@ import * as SaveAuditLogic from '../logic/save_audit_logic.ts';
 import { get_registered_translation_module, get_translation_t } from '../utils/translation_access.js';
 import { consoleManager } from '../utils/console_manager.js';
 import { dependencyManager } from '../utils/dependency_manager.js';
+import { refresh_llm_availability } from './llm_availability.ts';
 
 export function get_t_fallback() {
     return get_translation_t();
@@ -53,6 +54,11 @@ export function update_side_menu(view_name, params = {}, deps) {
     if (typeof side_menu_component_instance.set_current_view === 'function') {
         side_menu_component_instance.set_current_view(view_name, params);
     }
+    void refresh_llm_availability().then(() => {
+        if (side_menu_component_instance && typeof side_menu_component_instance.render === 'function') {
+            side_menu_component_instance.render();
+        }
+    });
     side_menu_component_instance.render();
 }
 

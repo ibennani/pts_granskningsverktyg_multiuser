@@ -3,6 +3,7 @@
  */
 
 import { get_llm_settings, test_llm_connection, update_llm_settings } from '../api/client.js';
+import { invalidate_llm_availability_cache, refresh_llm_availability } from '../logic/llm_availability.ts';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import {
     AI_SETTINGS_DEFAULTS,
@@ -326,6 +327,8 @@ export class AiSettingsViewComponent {
             if (this.settings.enabled === true) {
                 this._apply_saved_connection_state();
             }
+            invalidate_llm_availability_cache();
+            void refresh_llm_availability(true);
             this._show_message(t('ai_settings_saved_ok'), 'success');
         } catch (err: unknown) {
             this._show_message((err instanceof Error ? err.message : null) || t('ai_settings_save_error'), 'error');

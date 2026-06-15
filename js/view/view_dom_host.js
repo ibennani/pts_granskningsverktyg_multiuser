@@ -28,8 +28,7 @@ export function resolve_view_dom_host({ view_name, deps }) {
     const view_init_root = view_root;
 
     if (resolved_main_view_root) {
-        const natural_height_views = new Set(['start', 'ai_settings']);
-        if (natural_height_views.has(view_name)) {
+        if (view_name === 'start') {
             resolved_main_view_root.classList.add('start-view-active');
         } else {
             resolved_main_view_root.classList.remove('start-view-active');

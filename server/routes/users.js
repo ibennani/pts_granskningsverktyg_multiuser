@@ -83,7 +83,17 @@ router.get('/me', async (req, res) => {
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Användare hittades inte' });
         }
-        res.json(result.rows[0]);
+        let llm_chat_available = false;
+        try {
+            const { get_settings_for_proxy } = await import('../services/llm_settings_service.ts');
+            const { get_llm_availability } = await import('../services/llm_proxy_service.ts');
+            const saved = await get_settings_for_proxy();
+            const availability = await get_llm_availability(saved);
+            llm_chat_available = availability.available === true;
+        } catch (llm_err) {
+            console.warn('[users] GET /me llm_chat_available:', llm_err instanceof Error ? llm_err.message : llm_err);
+        }
+        res.json({ ...result.rows[0], llm_chat_available });
     } catch (err) {
         console.error('[users] GET /me error:', err);
         res.status(500).json({ error: 'Kunde inte hämta användare' });

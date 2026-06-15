@@ -1,6 +1,7 @@
 // js/components/LoginViewComponent.js
 
 import { login, set_auth_token, set_current_user_admin, get_current_user_preferences, reset_password_with_code, get_admin_contacts } from '../api/client.js';
+import { invalidate_llm_availability_cache, refresh_llm_availability, apply_llm_chat_available_from_user } from '../logic/llm_availability.ts';
 import { set_current_user_name_window } from '../app/browser_globals.js';
 import './login_view_component.css';
 
@@ -235,6 +236,9 @@ export class LoginViewComponent {
                     }
                     set_current_user_admin(!!user?.is_admin);
                     set_current_user_name_window(user_name);
+                    apply_llm_chat_available_from_user(user);
+                    invalidate_llm_availability_cache();
+                    void refresh_llm_availability(true);
                     if (typeof this.on_login_callback === 'function') {
                         this.on_login_callback();
                     }
@@ -307,6 +311,9 @@ export class LoginViewComponent {
                 if (user_name) {
                     set_current_user_name_window(user_name);
                 }
+                apply_llm_chat_available_from_user(user);
+                invalidate_llm_availability_cache();
+                void refresh_llm_availability(true);
                 this.NotificationComponent?.show_global_message?.(t('login_reset_success'), 'success');
                 if (typeof this.on_login_callback === 'function') {
                     this.on_login_callback();

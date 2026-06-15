@@ -156,22 +156,21 @@
 }
 
 /* --- Sidbakgrund och layout --- */
+[data-theme="dark-experimental"] body::before {
+    background-color: var(--de-bg-page);
+    background-image: none;
+}
+
 [data-theme="dark-experimental"] body {
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     font-size: 0.9375rem;
     color: var(--de-text-primary);
-    background-color: var(--de-bg-page);
-    background-image: none;
+    background: transparent;
     letter-spacing: -0.011em;
 }
 
-[data-theme="dark-experimental"] #app-wrapper,
-[data-theme="dark-experimental"] #app-container {
-    background-color: var(--de-bg-page);
-}
-
 [data-theme="dark-experimental"] #app-main-view-root {
-    background-color: var(--de-bg-page);
+    background-color: transparent;
 }
 
 /* --- Typografi --- */

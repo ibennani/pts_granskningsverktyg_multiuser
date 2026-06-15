@@ -594,6 +594,14 @@ export async function test_llm_connection(body) {
     return api_post('/llm/settings/test', body);
 }
 
+export async function get_llm_availability() {
+    return api_get('/llm/availability');
+}
+
+export async function send_llm_chat(messages) {
+    return api_post('/llm/chat', { messages });
+}
+
 export async function get_audits(status) {
     const q = status ? `?status=${encodeURIComponent(status)}` : '';
     return api_get(`/audits${q}`);
