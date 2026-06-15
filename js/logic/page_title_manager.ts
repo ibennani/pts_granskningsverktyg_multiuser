@@ -177,6 +177,9 @@ export function get_page_title_prefix(
                 case 'manage_users':
                     title_prefix = t('manage_users_title');
                     break;
+                case 'ai_settings':
+                    title_prefix = t('ai_settings_view_title');
+                    break;
                 case 'my_settings':
                     title_prefix = t('menu_link_my_settings');
                     break;
@@ -347,7 +350,7 @@ export function build_page_title(
     let final_title = `${title_prefix}${title_suffix}`;
     const is_inside_audit =
         audit_status !== 'rulefile_editing' &&
-        !['start', 'audit', 'audit_audits', 'audit_rules', 'login', 'manage_users', 'my_settings', 'statistics'].includes(
+        !['start', 'audit', 'audit_audits', 'audit_rules', 'login', 'manage_users', 'ai_settings', 'my_settings', 'statistics'].includes(
             String(view_name)
         );
     const actor_name =

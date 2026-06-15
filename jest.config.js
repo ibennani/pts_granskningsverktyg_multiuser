@@ -106,6 +106,9 @@ export default {
     '^.+/requirements_list_filters_url_ui\\.js$': '<rootDir>/js/logic/requirements_list_filters_url_ui.ts',
     '^.+/migrate_legacy_query_to_hash\\.js$': '<rootDir>/js/logic/migrate_legacy_query_to_hash.ts',
     '^.+/shareable_app_location\\.js$': '<rootDir>/js/logic/shareable_app_location.ts',
+    '^.+[\\\\/]llm_settings_validation\\.js$': '<rootDir>/server/services/llm_settings_validation.ts',
+    '^.+[\\\\/]llm_settings_service\\.js$': '<rootDir>/server/services/llm_settings_service.ts',
+    '^.+[\\\\/]llm_proxy_service\\.js$': '<rootDir>/server/services/llm_proxy_service.ts',
   },
   testMatch: [
     '<rootDir>/tests/unit/**/*.spec.js',

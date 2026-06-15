@@ -1,0 +1,130 @@
+/* AI-inställningar (admin) */
+
+.ai-settings-plate {
+    width: 100%;
+}
+
+.ai-settings-intro {
+    margin-bottom: 1.25rem;
+}
+
+.ai-settings-form h2,
+.ai-settings-test-section h2 {
+    font-size: 1rem;
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+}
+
+.ai-settings-form h2:first-child {
+    margin-top: 0;
+}
+
+.ai-settings-test-section {
+    margin-top: 1.5rem;
+}
+
+.ai-settings-test-section-intro {
+    margin: 0 0 0.75rem;
+    font-size: 0.9rem;
+    color: var(--text-color);
+}
+
+.ai-settings-form .form-group {
+    margin-bottom: 1rem;
+}
+
+.ai-settings-form .form-group label,
+.ai-settings-form .form-field-label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    color: var(--text-color);
+}
+
+.ai-settings-form .form-control {
+    display: block;
+    width: 100%;
+    max-width: 28rem;
+    padding: 0.35rem 0.5rem;
+    margin-top: 0;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+}
+
+.ai-settings-form .form-control--wide {
+    max-width: 36rem;
+}
+
+.ai-settings-form .form-help {
+    margin: 0 0 0.35rem;
+    font-size: 0.9rem;
+    color: var(--text-color);
+}
+
+.ai-settings-enabled-row label {
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.ai-settings-enabled-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.ai-settings-enabled-row input[type="checkbox"] {
+    margin-top: 0.2rem;
+}
+
+.ai-settings-test-result {
+    margin-top: 0;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background-color: var(--input-background-color);
+    color: var(--text-color);
+}
+
+.ai-settings-test-result p,
+.ai-settings-test-result li {
+    color: var(--text-color);
+}
+
+.ai-settings-test-result-summary {
+    font-weight: 600;
+    margin: 0 0 0.35rem;
+}
+
+.ai-settings-test-result-message {
+    margin: 0.35rem 0 0;
+}
+
+.ai-settings-test-result--pending {
+    border-color: var(--border-color);
+    background-color: var(--input-background-color);
+}
+
+.ai-settings-test-result--ok {
+    border-color: var(--success-color);
+    background-color: var(--success-color-light);
+}
+
+.ai-settings-test-result--error {
+    border-color: var(--danger-color);
+    background-color: var(--danger-color-light);
+}
+
+.ai-settings-model-list {
+    margin: 0.5rem 0 0;
+    padding-left: 1.25rem;
+}
+
+.ai-settings-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+}

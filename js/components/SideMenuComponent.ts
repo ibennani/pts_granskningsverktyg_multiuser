@@ -347,7 +347,7 @@ export class SideMenuComponent {
             ? [...requirement_ids_in_samples].filter(req_id => requirement_ids_in_rulefile.has(req_id)).length
             : requirement_ids_in_samples.size;
 
-        if (this.current_view_name === 'start' || this.current_view_name === 'audit' || this.current_view_name === 'audit_audits' || this.current_view_name === 'audit_rules' || this.current_view_name === 'manage_users' || this.current_view_name === 'my_settings' || this.current_view_name === 'statistics' || this.current_view_name === 'backup' || this.current_view_name === 'backup_detail' || this.current_view_name === 'backup_rulefile_detail' || this.current_view_name === 'backup_settings') {
+        if (this.current_view_name === 'start' || this.current_view_name === 'audit' || this.current_view_name === 'audit_audits' || this.current_view_name === 'audit_rules' || this.current_view_name === 'manage_users' || this.current_view_name === 'ai_settings' || this.current_view_name === 'my_settings' || this.current_view_name === 'statistics' || this.current_view_name === 'backup' || this.current_view_name === 'backup_detail' || this.current_view_name === 'backup_rulefile_detail' || this.current_view_name === 'backup_settings') {
             const is_admin = typeof sessionStorage !== 'undefined' && sessionStorage.getItem('gv_current_user_is_admin') === '1';
             const items = [
                 { label: t('menu_link_manage_audits'), view_name: 'start' },
@@ -357,6 +357,7 @@ export class SideMenuComponent {
                 { label: t('menu_link_my_settings'), view_name: 'my_settings' }
             ];
             if (is_admin) {
+                items.push({ label: t('menu_link_ai_settings'), view_name: 'ai_settings' });
                 items.push({ label: t('menu_link_manage_users'), view_name: 'manage_users' });
             }
             return {
@@ -526,11 +527,12 @@ export class SideMenuComponent {
         const list = this.Helpers.create_element('ul', { class_name: 'side-menu__list' });
         menu_model.items.forEach((item, idx) => {
             const is_manage_users = item.view_name === 'manage_users';
+            const is_ai_settings = item.view_name === 'ai_settings';
             const li = this.Helpers.create_element('li', {
                 class_name: [
                     'side-menu__item',
                     ...(item.back_to_start ? ['side-menu__item--back-to-start'] : []),
-                    ...(is_manage_users ? ['side-menu__item--separated'] : [])
+                    ...(is_manage_users || is_ai_settings ? ['side-menu__item--separated'] : [])
                 ]
             });
             const link = this.create_menu_link(item);

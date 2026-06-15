@@ -8,12 +8,11 @@ I det här projektet körs **Qwen** (och andra modeller) via **Ollama** i Docker
    - Öppna **http://localhost:3080** (inte en extern eller ngrok-URL om du vill vara säker på att allt är lokalt).
    - I vår Docker-setup är Open WebUI konfigurerad med `OLLAMA_BASE_URL=http://ollama-final:11434`, dvs den pratar bara med Ollama-containern i Docker – ingen moln-API.
 
-2. **Kolla status via Leffes backend**
-   - När du kör `npm run dev` kan du anropa:
-   - **http://localhost:3000/api/ollama-status**
-   - Svarar t.ex.:
-     - `"ollama": "local"` + lista på modeller (t.ex. Qwen) = lokal Ollama är igång och används.
-     - `"ollama": "unreachable"` = Ollama-containern svarar inte (starta om Docker/containrarna).
+2. **Kolla status via Leffe (admin)**
+   - När du kör `npm run dev` och är inloggad som administratör kan du anropa:
+   - **http://localhost:3000/api/llm/status** (med giltig JWT i `Authorization: Bearer …`)
+   - Eller använd **AI-inställningar** i Leffe och knappen **Testa anslutning**.
+   - Svar med `"status": "connected"` och lista på modeller = lokal Ollama är igång.
 
 3. **Kolla i Open WebUI**
    - Gå till **Connections → Ollama → Manage** (nyckelsymbol/inställningar).
@@ -27,7 +26,7 @@ I det här projektet körs **Qwen** (och andra modeller) via **Ollama** i Docker
 | Vad du gör | Lokal Qwen? |
 |------------|-------------|
 | Öppnar **http://localhost:3080** och chattar med en modell (t.ex. Qwen) | **Ja** – Open WebUI använder bara Ollama i Docker. |
-| Anropar **http://localhost:3000/api/ollama-status** och får `"ollama": "local"` | **Ja** – då är lokal Ollama igång och tillgänglig. |
+| Anropar **http://localhost:3000/api/llm/status** som admin och får `"status": "connected"` | **Ja** – då är lokal Ollama igång och tillgänglig. |
 | Använder en ngrok-URL för att nå Open WebUI från utsidan | Chatt går fortfarande via samma Ollama i Docker; trafiken till/från modellen är lokal, ngrok exponerar bara webbgränssnittet. |
 
-Om du vill dubbelkolla: starta en chatt på http://localhost:3080, anropa sedan http://localhost:3000/api/ollama-status – om du får `"ollama": "local"` använder du en lokal version av Qwen (via Ollama).
+Om du vill dubbelkolla: starta en chatt på http://localhost:3080, öppna **AI-inställningar** i Leffe och klicka **Testa anslutning** – om du får lyckat svar använder du en lokal version av Qwen (via Ollama).

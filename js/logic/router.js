@@ -64,6 +64,7 @@ export const VIEW_NAMES_GLOBAL_NO_AUDIT_ID_IN_HASH = new Set([
     'audit_rules',
     'login',
     'manage_users',
+    'ai_settings',
     'my_settings',
     'statistics',
     'upload'
@@ -191,6 +192,10 @@ export function navigate_and_set_hash(target_view_name, target_params = {}, opti
 
     nav_debug('navigate_and_set_hash anropad', { target_view_name, target_params, current_hash: window.location.hash });
     if (target_view_name === 'manage_users' && !is_current_user_admin()) {
+        window.location.hash = '#start';
+        return;
+    }
+    if (target_view_name === 'ai_settings' && !is_current_user_admin()) {
         window.location.hash = '#start';
         return;
     }
@@ -347,6 +352,11 @@ export async function handle_hash_change(options) {
     }
 
     if (target_view === 'manage_users' && !is_current_user_admin()) {
+        target_view = 'start';
+        target_params = {};
+        history.replaceState(null, '', '#start');
+    }
+    if (target_view === 'ai_settings' && !is_current_user_admin()) {
         target_view = 'start';
         target_params = {};
         history.replaceState(null, '', '#start');

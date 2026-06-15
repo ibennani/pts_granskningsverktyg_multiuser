@@ -211,6 +211,20 @@ describe('router', () => {
         expect(updatePageTitle).not.toHaveBeenCalled();
     });
 
+    test('navigate_and_set_hash: icke-admin kan inte öppna ai_settings', () => {
+        is_current_user_admin.mockReturnValue(false);
+        const updatePageTitle = jest.fn();
+        navigate_and_set_hash('ai_settings', {}, {
+            nav_debug: jest.fn(),
+            getState: () => ({}),
+            get_current_view_name: () => 'start',
+            get_current_view_component: () => null,
+            updatePageTitle
+        });
+        expect(window.location.hash).toBe('#start');
+        expect(updatePageTitle).not.toHaveBeenCalled();
+    });
+
     test('navigate_and_set_hash: oförändrad hash triggar render om komponent finns', async () => {
         window.location.hash = '#start';
         const nav_debug = jest.fn();

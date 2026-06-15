@@ -15,6 +15,7 @@ import rulesRouter from './routes/rules.js';
 import auditsRouter from './routes/audits.js';
 import backupRouter from './routes/backup.js';
 import timeRouter from './routes/time.js';
+import llmRouter from './routes/llm.js';
 import { get_last_backup_status, start_backup_scheduler } from './backup/audit_backup.js';
 import { JSON_MAX_UPLOAD_BYTES } from '../shared/constants/json_upload_limits.js';
 
@@ -91,6 +92,7 @@ app.use('/api/rules', requireAuth, rulesRouter);
 app.use('/api/audits', requireAuth, auditsRouter);
 app.use('/api/backup', requireAuth, backupRouter);
 app.use('/api/time', requireAuth, timeRouter);
+app.use('/api/llm', requireAuth, llmRouter);
 
 app.get('/api/health', async (_req, res) => {
     try {
@@ -107,36 +109,6 @@ app.get('/api/health', async (_req, res) => {
         });
     } catch (err) {
         res.status(503).json({ ok: false, error: 'Databas ej tillgänglig', detail: err.message });
-    }
-});
-
-// Status för lokal Ollama (används av Open WebUI för t.ex. Qwen) – så du kan verifiera att du kör lokalt
-app.get('/api/ollama-status', async (_req, res) => {
-    const ollama_url = 'http://127.0.0.1:11434';
-    try {
-        const r = await fetch(`${ollama_url}/api/tags`, { signal: AbortSignal.timeout(3000) });
-        if (!r.ok) {
-            return res.json({
-                ollama: 'unreachable',
-                message: 'Ollama svarar inte (port 11434). Starta Docker-containrarna med npm run dev.',
-                open_webui_url: 'http://localhost:3080'
-            });
-        }
-        const data = await r.json();
-        const models = (data.models || []).map((m) => m.name || m.model);
-        res.json({
-            ollama: 'local',
-            message: 'Lokal Ollama är aktiv. Open WebUI på localhost:3080 använder denna instans (t.ex. Qwen).',
-            open_webui_url: 'http://localhost:3080',
-            models: models.slice(0, 20)
-        });
-    } catch (err) {
-        res.json({
-            ollama: 'unreachable',
-            message: 'Ollama nås inte (kontrollera att Docker-containrarna körs).',
-            open_webui_url: 'http://localhost:3080',
-            error: err.message
-        });
     }
 });
 

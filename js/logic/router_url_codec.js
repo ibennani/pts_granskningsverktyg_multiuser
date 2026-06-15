@@ -34,6 +34,7 @@ const CANONICAL_VIEW_TO_COMPACT = Object.freeze({
     backup_detail: 'bd',
     backup_rulefile_detail: 'br',
     backup_settings: 'ws',
+    ai_settings: 'as',
     confirm_delete: 'dx'
 });
 

@@ -163,6 +163,10 @@ Utöver WCAG:s formella krav gäller följande projektspecifika regler:
 #### Formulär och etiketter
 
 - Alla inmatningsfält ska ha ett synligt `<label>`-element.
+- Varje `<label>` ska vara programatiskt kopplad till sitt fält via `for`/`id`, eller genom att labeln omsluter fältet.
+- Eventuell hjälptext ska ligga **mellan** label och inmatningsfält (inte under fältet).
+- Både label och hjälptext ska ha minst **4,5:1** kontrast mot bakgrunden (WCAG AA för normal text).
+- Label får vara visuellt fetare med CSS (t.ex. `font-weight: 600`), men **inte** med `<strong>` eller `<b>`.
 - Felmeddelanden ska förklaras i klartext och kopplas till fältet med `aria-describedby`.
 - Fokus ska flyttas till fel- eller bekräftelsemeddelande efter formulärinlämning.
 - Felmeddelanden ska beskriva hur användaren löser felet, inte bara att det finns.

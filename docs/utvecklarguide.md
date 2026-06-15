@@ -42,6 +42,7 @@ NODE_ENV=development
 DATABASE_URL=postgresql://granskning:granskning@localhost:5432/granskningsverktyget
 API_PORT=3000
 JWT_SECRET=din-hemliga-nyckel
+OLLAMA_BASE_URL=http://127.0.0.1:11434
 
 # Klienten anropar API via Vite-proxy — ingen VITE_API_BASE_URL behövs i normal dev:
 # http://localhost:5173/v2/api/... → backend localhost:3000/api/...

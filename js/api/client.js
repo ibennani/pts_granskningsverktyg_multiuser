@@ -582,6 +582,18 @@ export async function update_backup_settings(body) {
     return api_put('/backup/settings', body);
 }
 
+export async function get_llm_settings() {
+    return api_get('/llm/settings');
+}
+
+export async function update_llm_settings(body) {
+    return api_put('/llm/settings', body);
+}
+
+export async function test_llm_connection(body) {
+    return api_post('/llm/settings/test', body);
+}
+
 export async function get_audits(status) {
     const q = status ? `?status=${encodeURIComponent(status)}` : '';
     return api_get(`/audits${q}`);

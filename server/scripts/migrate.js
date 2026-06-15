@@ -68,6 +68,9 @@ async function migrate() {
         const sql18 = readFileSync(join(__dirname, '../migrations/018_add_audit_edit_locks.sql'), 'utf8');
         await client.query(sql18);
         console.info('[Migrate] Migration 018 kördes.');
+        const sql19 = readFileSync(join(__dirname, '../migrations/019_system_llm_settings.sql'), 'utf8');
+        await client.query(sql19);
+        console.info('[Migrate] Migration 019 kördes.');
     } catch (err) {
         console.error('[Migrate] Fel:', err.message);
         process.exit(1);
