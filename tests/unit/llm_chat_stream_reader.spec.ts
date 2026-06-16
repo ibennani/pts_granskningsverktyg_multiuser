@@ -67,4 +67,47 @@ describe('llm_chat_stream_reader', () => {
         const result = await consume_llm_chat_stream(response, () => {});
         expect(result.content).toBe('Svar');
     });
+
+    test('consume_llm_chat_stream använder thinking när content saknas', async () => {
+        const chunks = [
+            `${JSON.stringify({ message: { thinking: 'Det finns 3 granskningar.' }, done: true })}\n`
+        ];
+        const encoder = new TextEncoder();
+        let index = 0;
+        const body = new ReadableStream({
+            pull(controller) {
+                if (index >= chunks.length) {
+                    controller.close();
+                    return;
+                }
+                controller.enqueue(encoder.encode(chunks[index]));
+                index += 1;
+            }
+        });
+        const response = new Response(body, { status: 200 });
+        const result = await consume_llm_chat_stream(response, () => {});
+        expect(result.content).toBe('Det finns 3 granskningar.');
+    });
+
+    test('consume_llm_chat_stream ignorerar felkuvert om delvis svar finns', async () => {
+        const chunks = [
+            `${JSON.stringify({ message: { content: 'Del' }, done: false })}\n`,
+            `${JSON.stringify({ _leffe: 'error', message: 'Timeout' })}\n`
+        ];
+        const encoder = new TextEncoder();
+        let index = 0;
+        const body = new ReadableStream({
+            pull(controller) {
+                if (index >= chunks.length) {
+                    controller.close();
+                    return;
+                }
+                controller.enqueue(encoder.encode(chunks[index]));
+                index += 1;
+            }
+        });
+        const response = new Response(body, { status: 200 });
+        const result = await consume_llm_chat_stream(response, () => {});
+        expect(result.content).toBe('Del');
+    });
 });

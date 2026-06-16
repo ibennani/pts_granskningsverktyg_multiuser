@@ -3,6 +3,7 @@
  */
 
 import { append_stream_text } from '../../shared/llm/llm_stream_text_append.ts';
+import { resolve_chat_reply_text } from '../../shared/llm/resolve_chat_reply_text.ts';
 
 export interface LlmChatStreamDelta {
     content: string;
@@ -65,7 +66,10 @@ function apply_parsed_line(
     state: { content: string; thinking: string; tool_activity: string | null }
 ): LlmChatStreamDelta | null {
     if (parsed.error) {
-        throw new Error(parsed.error);
+        if (!resolve_chat_reply_text(state.content, state.thinking)) {
+            throw new Error(parsed.error);
+        }
+        return null;
     }
     if (parsed.content_reset) {
         state.content = '';
@@ -134,5 +138,10 @@ export async function consume_llm_chat_stream(
             if (delta) on_delta(delta);
         }
     }
-    return { content: state.content.trim(), thinking: state.thinking.trim() };
+    const content = state.content.trim();
+    const thinking = state.thinking.trim();
+    return {
+        content: resolve_chat_reply_text(content, thinking),
+        thinking
+    };
 }

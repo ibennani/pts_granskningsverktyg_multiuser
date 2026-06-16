@@ -1,12 +1,13 @@
 /* AI-chatt – färger härleds från aktivt tema via befintliga CSS-variabler. */
 
 .ai-chat-plate {
-    --ai-chat-user-bg: color-mix(in srgb, var(--primary-color) 10%, var(--button-default-bg) 90%);
-    --ai-chat-user-border: var(--button-default-border);
-    --ai-chat-user-text: var(--button-default-text);
-    --ai-chat-assistant-bg: var(--input-background-color);
-    --ai-chat-assistant-border: color-mix(in srgb, var(--secondary-color) 72%, var(--text-color) 28%);
+    --ai-chat-user-bg: color-mix(in srgb, var(--primary-color) 16%, var(--plate-background-color));
+    --ai-chat-user-border: color-mix(in srgb, var(--primary-color) 44%, var(--plate-background-color));
+    --ai-chat-user-text: var(--text-color);
+    --ai-chat-assistant-bg: color-mix(in srgb, var(--secondary-color) 14%, var(--plate-background-color));
+    --ai-chat-assistant-border: color-mix(in srgb, var(--secondary-color) 40%, var(--plate-background-color));
     --ai-chat-assistant-text: var(--input-text-color, var(--text-color));
+    --ai-chat-thinking-text: var(--text-color-muted, color-mix(in srgb, var(--text-color) 72%, transparent));
     flex: 1 1 auto;
     min-height: 0;
     width: 100%;
@@ -90,8 +91,8 @@ body.view-ai-chat #app-container {
     max-width: 88%;
     padding: 0.65rem 0.85rem;
     border-radius: 0.75rem;
-    border-width: 1px;
-    border-style: solid;
+    border: 2px solid transparent;
+    box-sizing: border-box;
 }
 
 .ai-chat-bubble--user {
@@ -113,16 +114,46 @@ body.view-ai-chat #app-container {
     border-style: dashed;
 }
 
-.ai-chat-bubble--streaming .ai-chat-bubble__body {
+.ai-chat-bubble--pending .ai-chat-bubble__body {
+    font-style: italic;
+    color: var(--ai-chat-thinking-text);
+}
+
+.ai-chat-bubble--streaming .ai-chat-bubble__body:not(:empty) {
     min-height: 1.25rem;
+}
+
+.ai-chat-bubble--streaming:has(.ai-chat-bubble__thinking:not([hidden])) .ai-chat-bubble__body:empty {
+    display: none;
 }
 
 .ai-chat-bubble__thinking {
     margin: 0 0 0.5rem;
     font-size: 0.9rem;
+    color: var(--ai-chat-thinking-text);
+}
+
+.ai-chat-bubble__thinking-label {
+    display: block;
+    margin: 0 0 0.25rem;
+    font-style: normal;
+    font-weight: 600;
+    color: var(--ai-chat-thinking-text);
+}
+
+.ai-chat-bubble__thinking-text {
+    margin: 0;
     font-style: italic;
-    white-space: pre-wrap;
-    color: var(--text-color-muted);
+    color: var(--ai-chat-thinking-text);
+}
+
+.ai-chat-bubble__thinking .markdown-content {
+    font-style: italic;
+    color: var(--ai-chat-thinking-text);
+}
+
+.ai-chat-bubble__thinking .markdown-content strong {
+    font-style: normal;
 }
 
 .ai-chat-bubble__tool-activity {
@@ -151,7 +182,19 @@ body.view-ai-chat #app-container {
 
 .ai-chat-bubble__body {
     margin: 0;
-    white-space: pre-wrap;
+    font-style: normal;
+}
+
+.ai-chat-bubble__body.markdown-content {
+    word-wrap: break-word;
+    overflow-wrap: anywhere;
+}
+
+.ai-chat-bubble--assistant .ai-chat-bubble__body,
+.ai-chat-bubble--assistant .ai-chat-bubble__body.markdown-content,
+.ai-chat-bubble--assistant .ai-chat-bubble__body.markdown-content *:not(code):not(pre) {
+    font-style: normal;
+    color: var(--ai-chat-assistant-text);
 }
 
 .ai-chat-compose {
@@ -204,4 +247,24 @@ body.view-ai-chat #app-container {
     margin: 0.75rem 0 0;
     color: var(--error-color, #b00020);
     font-size: 0.95rem;
+}
+
+[data-theme="dark-experimental"] .ai-chat-plate {
+    --ai-chat-user-bg: color-mix(in srgb, var(--de-accent) 28%, var(--de-bg-elevated));
+    --ai-chat-user-border: color-mix(in srgb, var(--de-accent) 72%, var(--de-bg-elevated));
+    --ai-chat-user-text: var(--de-text-primary);
+    --ai-chat-assistant-bg: color-mix(in srgb, var(--de-border-default) 32%, var(--de-bg-panel));
+    --ai-chat-assistant-border: color-mix(in srgb, var(--de-border-default) 78%, var(--de-bg-panel));
+    --ai-chat-assistant-text: var(--de-text-primary);
+    --ai-chat-thinking-text: var(--de-text-secondary);
+}
+
+[data-theme="winter-white"] .ai-chat-plate {
+    --ai-chat-user-bg: color-mix(in srgb, var(--ww-accent) 14%, var(--ww-surface-card));
+    --ai-chat-user-border: color-mix(in srgb, var(--ww-accent) 42%, var(--ww-surface-card));
+    --ai-chat-user-text: var(--ww-text-primary);
+    --ai-chat-assistant-bg: color-mix(in srgb, var(--primary-color) 10%, var(--ww-bg-elevated));
+    --ai-chat-assistant-border: color-mix(in srgb, var(--primary-color) 36%, var(--ww-bg-elevated));
+    --ai-chat-assistant-text: var(--ww-text-primary);
+    --ai-chat-thinking-text: var(--ww-text-secondary);
 }

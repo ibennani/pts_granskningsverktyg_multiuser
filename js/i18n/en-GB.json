@@ -976,6 +976,7 @@
   "ai_chat_thinking_label": "Leffe is thinking:",
   "ai_chat_tool_list_audits": "Fetching audits from the database...",
   "ai_chat_tool_get_audit": "Fetching audit...",
+  "ai_chat_tool_get_audit_content": "Fetching audit content...",
   "ai_chat_tool_list_rule_sets": "Fetching rule files...",
   "ai_chat_tool_get_rule_set": "Fetching rule file...",
   "ai_chat_tool_get_statistics": "Fetching statistics...",

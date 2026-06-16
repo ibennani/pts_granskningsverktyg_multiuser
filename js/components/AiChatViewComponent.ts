@@ -27,7 +27,9 @@ import {
     load_chat_from_route_params,
     persist_chat_session
 } from '../logic/ai_chat_view_history.ts';
+import { resolve_chat_reply_text } from '../../shared/llm/resolve_chat_reply_text.ts';
 import { AiChatHistorySidebarComponent } from './AiChatHistorySidebarComponent.ts';
+import { ai_chat_debug_log } from '../logic/ai_chat_debug_log.ts';
 import './ai_chat_view_component.css';
 
 export class AiChatViewComponent {
@@ -175,11 +177,27 @@ export class AiChatViewComponent {
         if (delta.tool_activity !== undefined) {
             stream_ui.set_tool_activity(resolve_tool_activity_label(delta.tool_activity, (k) => this._t(k)));
         }
+        const content = typeof delta.content === 'string' ? delta.content : '';
+        const thinking = typeof delta.thinking === 'string' ? delta.thinking : '';
+        const has_content = Boolean(content.trim());
+        const has_thinking = Boolean(thinking.trim());
+
         if (delta.thinking !== undefined) {
-            stream_ui.set_thinking(this._t('ai_chat_thinking_label'), delta.thinking);
+            if (has_thinking) {
+                const label = has_content ? this._t('ai_chat_thinking_label') : '';
+                stream_ui.set_thinking(label, thinking);
+            } else {
+                stream_ui.set_thinking('', '');
+            }
         }
-        if (delta.content !== undefined) {
-            stream_ui.set_content(delta.content);
+        if (delta.content !== undefined || delta.thinking !== undefined) {
+            if (has_content) {
+                stream_ui.set_content(content.trim());
+            } else if (!has_thinking) {
+                stream_ui.set_waiting(this._t('ai_chat_waiting_model'));
+            } else {
+                stream_ui.set_content('');
+            }
         }
         this._scroll_thread_to_bottom();
     }
@@ -271,6 +289,7 @@ export class AiChatViewComponent {
         this._send_in_progress = true;
         this._abort_controller = new AbortController();
         unlock_ai_chat_reply_audio();
+        ai_chat_debug_log('skickar fråga', { text_preview: text.slice(0, 120), message_count: next_messages.length });
         this.render();
 
         try {
@@ -279,7 +298,15 @@ export class AiChatViewComponent {
                 context: this._build_chat_context(),
                 on_delta: (delta) => this._update_streaming_delta(delta)
             });
-            const reply = typeof result?.content === 'string' ? result.content.trim() : '';
+            const reply = resolve_chat_reply_text(
+                typeof result?.content === 'string' ? result.content : '',
+                typeof result?.thinking === 'string' ? result.thinking : ''
+            );
+            ai_chat_debug_log('svar klart', {
+                reply_chars: reply.length,
+                content_chars: result?.content?.length ?? 0,
+                thinking_chars: result?.thinking?.length ?? 0
+            });
             if (!reply) {
                 throw new Error(this._t('ai_chat_error'));
             }
@@ -293,6 +320,8 @@ export class AiChatViewComponent {
                 this.message_input_ref?.focus({ preventScroll: true });
             });
         } catch (err) {
+            const err_message = (err instanceof Error ? err.message : null) || this._t('ai_chat_error');
+            ai_chat_debug_log('svar misslyckades', { error: err_message });
             this.messages = next_messages.slice(0, -1);
             if (!this.messages.length && this._active_chat_id) {
                 clear_empty_chat_session(this._user_storage_id, this._active_chat_id);
@@ -305,7 +334,7 @@ export class AiChatViewComponent {
             }
             this._send_in_progress = false;
             this._abort_controller = null;
-            this._set_error((err instanceof Error ? err.message : null) || this._t('ai_chat_error'));
+            this._set_error(err_message);
             this.render();
             requestAnimationFrame(() => {
                 if (!this.message_input_ref) return;

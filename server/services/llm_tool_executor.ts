@@ -5,6 +5,7 @@
 import type { LlmToolContext } from './llm_tool_context.js';
 import {
     tool_get_audit,
+    tool_get_audit_content,
     tool_get_rule_set,
     tool_get_statistics,
     tool_list_audits,
@@ -14,6 +15,7 @@ import {
     tool_update_audit_metadata,
     tool_update_requirement_result
 } from './llm_tool_write_handlers.js';
+import { log_llm_tool_execution, preview_tool_args } from './llm_chat_log.js';
 
 function parse_tool_arguments(raw: unknown): Record<string, unknown> {
     if (raw == null) return {};
@@ -38,22 +40,37 @@ export async function execute_llm_tool(
 ): Promise<string> {
     const args = parse_tool_arguments(raw_arguments);
     const user_name = context.user.name || null;
+    const args_preview = preview_tool_args(raw_arguments);
 
-    switch (tool_name) {
+    try {
+        let result = '';
+        switch (tool_name) {
         case 'list_audits':
-            return tool_list_audits({ status: typeof args.status === 'string' ? args.status : undefined });
+            result = await tool_list_audits({ status: typeof args.status === 'string' ? args.status : undefined });
+            break;
         case 'get_audit':
-            return tool_get_audit({ audit_id: typeof args.audit_id === 'string' ? args.audit_id : undefined });
+            result = await tool_get_audit({ audit_id: typeof args.audit_id === 'string' ? args.audit_id : undefined });
+            break;
+        case 'get_audit_content':
+            result = await tool_get_audit_content({
+                audit_id: typeof args.audit_id === 'string' ? args.audit_id : undefined,
+                sample_id: typeof args.sample_id === 'string' ? args.sample_id : undefined,
+                status_filter: typeof args.status_filter === 'string' ? args.status_filter : undefined
+            });
+            break;
         case 'list_rule_sets':
-            return tool_list_rule_sets();
+            result = await tool_list_rule_sets();
+            break;
         case 'get_rule_set':
-            return tool_get_rule_set({
+            result = await tool_get_rule_set({
                 rule_set_id: typeof args.rule_set_id === 'string' ? args.rule_set_id : undefined
             });
+            break;
         case 'get_statistics':
-            return tool_get_statistics();
+            result = await tool_get_statistics();
+            break;
         case 'update_audit_metadata':
-            return tool_update_audit_metadata(
+            result = await tool_update_audit_metadata(
                 {
                     audit_id: typeof args.audit_id === 'string' ? args.audit_id : undefined,
                     metadata:
@@ -63,8 +80,9 @@ export async function execute_llm_tool(
                 },
                 user_name
             );
+            break;
         case 'update_requirement_result':
-            return tool_update_requirement_result(
+            result = await tool_update_requirement_result(
                 {
                     audit_id: typeof args.audit_id === 'string' ? args.audit_id : undefined,
                     sample_id: typeof args.sample_id === 'string' ? args.sample_id : undefined,
@@ -74,7 +92,26 @@ export async function execute_llm_tool(
                 },
                 user_name
             );
+            break;
         default:
             throw new Error(`Okänt verktyg: ${tool_name}`);
+        }
+        log_llm_tool_execution({
+            name: tool_name,
+            args_preview,
+            ok: true,
+            result_chars: result.length
+        });
+        return result;
+    } catch (err) {
+        const message = err instanceof Error ? err.message : 'Verktyget misslyckades.';
+        log_llm_tool_execution({
+            name: tool_name,
+            args_preview,
+            ok: false,
+            result_chars: 0,
+            error: message
+        });
+        throw err;
     }
 }

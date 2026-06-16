@@ -16,6 +16,7 @@ import { resolve_chat_timeout_ms, format_llm_chat_error } from '../services/llm_
 import { merge_abort_signals } from '../services/abort_signal_merge.js';
 import { validate_chat_messages } from '../services/llm_chat_validation.js';
 import { normalize_client_context } from '../services/llm_tool_context.js';
+import { log_llm_chat_error } from '../services/llm_chat_log.js';
 import type { Request, Response } from 'express';
 
 type AuthedRequest = Request & {
@@ -83,6 +84,7 @@ router.post('/chat/stream', async (req: Request, res: Response) => {
         );
     } catch (err) {
         const message = format_llm_chat_error(err);
+        log_llm_chat_error('POST chat/stream', err);
         console.warn('[llm] POST chat/stream error:', message);
         if (res.headersSent) {
             res.end();

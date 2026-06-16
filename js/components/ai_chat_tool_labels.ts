@@ -5,6 +5,7 @@
 const TOOL_I18N_KEYS: Record<string, string> = {
     list_audits: 'ai_chat_tool_list_audits',
     get_audit: 'ai_chat_tool_get_audit',
+    get_audit_content: 'ai_chat_tool_get_audit_content',
     list_rule_sets: 'ai_chat_tool_list_rule_sets',
     get_rule_set: 'ai_chat_tool_get_rule_set',
     get_statistics: 'ai_chat_tool_get_statistics',

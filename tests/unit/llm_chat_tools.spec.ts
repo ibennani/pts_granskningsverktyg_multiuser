@@ -3,6 +3,7 @@
  */
 import { describe, test, expect } from '@jest/globals';
 import { build_leffe_system_prompt } from '../../server/services/llm_chat_system_prompt.ts';
+import { build_leffe_domain_context } from '../../server/services/llm_chat_domain_context.ts';
 import { summarize_requirement_results } from '../../server/services/llm_tool_summaries.ts';
 import { parse_ollama_stream_line } from '../../js/logic/llm_chat_stream_reader.ts';
 
@@ -15,6 +16,16 @@ describe('llm_chat_system_prompt', () => {
         expect(prompt).toMatch(/verktyg/i);
         expect(prompt).toMatch(/audit-1/);
         expect(prompt).toMatch(/Anna/);
+        expect(prompt).toMatch(/earliest_started/);
+        expect(prompt).toMatch(/get_audit_content/);
+        expect(prompt).toMatch(/not_started/);
+    });
+
+    test('build_leffe_domain_context skiljer granskning och regelfil', () => {
+        const context = build_leffe_domain_context();
+        expect(context).toMatch(/granskning/i);
+        expect(context).toMatch(/regelfil/i);
+        expect(context).toMatch(/get_audit_content/);
     });
 });
 

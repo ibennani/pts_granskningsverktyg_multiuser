@@ -977,6 +977,7 @@
   "ai_chat_thinking_label": "Leffe tänker:",
   "ai_chat_tool_list_audits": "Hämtar granskningar från databasen...",
   "ai_chat_tool_get_audit": "Hämtar granskning...",
+  "ai_chat_tool_get_audit_content": "Hämtar granskningsinnehåll...",
   "ai_chat_tool_list_rule_sets": "Hämtar regelfiler...",
   "ai_chat_tool_get_rule_set": "Hämtar regelfil...",
   "ai_chat_tool_get_statistics": "Hämtar statistik...",

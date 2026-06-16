@@ -23,6 +23,12 @@ describe('ai_chat_helpers', () => {
 
     test('render_chat_bubble_element sätter aria-live endast på Leffes svarstext', () => {
         const Helpers = {
+            escape_html: (value) =>
+                String(value)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;'),
             create_element: (tag, options = {}) => {
                 const el = document.createElement(tag);
                 const class_name = options.class_name;
@@ -31,6 +37,7 @@ describe('ai_chat_helpers', () => {
                     el.className = names.join(' ');
                 }
                 if (options.text_content) el.textContent = options.text_content;
+                if (options.html_content) el.innerHTML = options.html_content;
                 if (options.attributes) {
                     Object.entries(options.attributes).forEach(([key, value]) => {
                         el.setAttribute(key, value);
@@ -47,6 +54,8 @@ describe('ai_chat_helpers', () => {
             assistant_label: 'Leffe'
         });
         const assistant_body = assistant_bubble.querySelector('.ai-chat-bubble__body');
+        expect(assistant_body?.tagName).toBe('DIV');
+        expect(assistant_body?.classList.contains('markdown-content')).toBe(true);
         expect(assistant_body?.getAttribute('aria-live')).toBe('polite');
         expect(assistant_body?.getAttribute('role')).toBe('status');
         expect(assistant_bubble.querySelector('.ai-chat-bubble__thinking')).toBeNull();
