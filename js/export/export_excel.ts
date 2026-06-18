@@ -4,8 +4,6 @@
 
 import ExcelJS from 'exceljs/dist/exceljs.min.js';
 import * as Helpers from '../utils/helpers.js';
-import { format_local_date_for_filename } from '../utils/filename_utils.js';
-import { get_server_filename_datetime, sanitize_filename_segment } from '../utils/download_filename_utils.js';
 import { get_current_language_code_from_registry } from '../utils/translation_access.js';
 import {
     apply_excel_cell_alignment_top_left_wrap,
@@ -17,6 +15,14 @@ import {
 import { get_export_requirement_result, get_t_internal, show_global_message_internal } from './export_bootstrap.js';
 import { for_each_failed_in_requirement_result } from './export_deficiency_traversal.js';
 import { find_check_def_by_storage_id, find_pass_criterion_def_by_storage_id } from '../logic/entity_id_match.js';
+import { populate_deficiencies_excel_sheet } from './excel_deficiencies_sheet.js';
+import {
+    apply_aeonic_font_to_workbook,
+    build_excel_export_filename,
+    clear_workbook_metadata,
+    strip_xlsx_document_metadata,
+    to_wcag_yes_only_value
+} from './excel_export_helpers.js';
 
 export async function export_to_excel(current_audit: any) {
     const t = get_t_internal() as (key: string, opts?: Record<string, unknown>) => string;
@@ -33,12 +39,9 @@ export async function export_to_excel(current_audit: any) {
 
     try {
         const workbook = new ExcelJS.Workbook();
-        workbook.creator = 'PTS Granskningsverktyg';
-        workbook.created = new Date();
+        const lang_code = get_current_language_code_from_registry();
 
         const generalSheet = workbook.addWorksheet(t('excel_sheet_general_info'));
-
-        const lang_code = get_current_language_code_from_registry();
 
         const display_times = get_effective_display_times_for_audit(current_audit);
         const last_updated_ts = current_audit?.updated_at || null;
@@ -48,7 +51,10 @@ export async function export_to_excel(current_audit: any) {
             [t('excel_general_service_link'), strip_markdown_for_excel(String(current_audit.auditMetadata.actorLink || ''))],
             [t('auditor_name'), strip_markdown_for_excel(String(current_audit.auditMetadata.auditorName || ''))],
             [t('start_time'), display_times.startTime ? Helpers.format_iso_to_local_date(display_times.startTime, lang_code) : ''],
-            [t('audit_last_updated'), last_updated_ts ? Helpers.format_iso_to_local_datetime(last_updated_ts, lang_code, { showSeconds: false }) : '']
+            [
+                t('audit_last_updated'),
+                last_updated_ts ? Helpers.format_iso_to_local_date(last_updated_ts, lang_code) : ''
+            ]
         ];
 
         generalSheet.addRows(general_info_data);
@@ -57,147 +63,37 @@ export async function export_to_excel(current_audit: any) {
         apply_excel_cell_alignment_top_left_wrap(generalSheet);
 
         const deficienciesSheet = workbook.addWorksheet(t('excel_sheet_deficiencies'));
+        const deficiencies_data = build_deficiencies_data(current_audit, t);
+        const include_comment_column = deficiencies_data.some(
+            (d) => d.comment && String(d.comment).trim().length > 0
+        );
 
-        const deficiencies_data: any[] = [];
-        const requirements_for_export = current_audit.ruleFileContent?.requirements || {};
-        (current_audit.samples || []).forEach((sample: any) => {
-            const all_reqs = Object.values(requirements_for_export);
-            all_reqs.forEach((req_definition: any) => {
-                const result = get_export_requirement_result(requirements_for_export, sample, req_definition);
-                if (!result) return;
-                for_each_failed_in_requirement_result(result, ({ check_id, pc_id, pc_obj }) => {
-                    const check_def = find_check_def_by_storage_id(req_definition.checks as any[], check_id);
-                    const pc_def = find_pass_criterion_def_by_storage_id(check_def?.passCriteria, pc_id) as {
-                        failureStatementTemplate?: string;
-                        requirement?: string;
-                    } | undefined;
-                    const templateObservation = pc_def?.failureStatementTemplate || '';
-                    const userObservation = pc_obj.observationDetail || '';
-                    const passCriterionText = pc_def?.requirement || '';
-
-                    let finalObservation = userObservation;
-                    if (!userObservation.trim() || userObservation.trim() === templateObservation.trim()) {
-                        finalObservation = passCriterionText;
-                    }
-                    finalObservation = strip_markdown_for_excel(finalObservation);
-
-                    const ref_text_raw = req_definition.standardReference?.text || '';
-                    const reference_obj: { text: string; hyperlink?: string } = { text: strip_markdown_for_excel(ref_text_raw) };
-                    if (req_definition.standardReference?.url) {
-                        reference_obj.hyperlink = Helpers.add_protocol_if_missing(req_definition.standardReference.url);
-                    }
-
-                    const url_obj = sample.url
-                        ? {
-                            text: strip_markdown_for_excel(String(sample.url)),
-                            hyperlink: Helpers.add_protocol_if_missing(sample.url)
-                        }
-                        : null;
-
-                    const pour_vals = get_wcag_pour_export_values_for_requirement(req_definition, current_audit, t);
-                    const comment_text = strip_markdown_for_excel((result.commentToAuditor || '').trim());
-                    deficiencies_data.push({
-                        id: extractDeficiencyNumber(pc_obj.deficiencyId),
-                        reqTitle: strip_markdown_for_excel(String(req_definition.title || '')),
-                        reference: reference_obj,
-                        sampleName: strip_markdown_for_excel(String(sample.description || '')),
-                        sampleUrl: url_obj,
-                        deficiencyType: '',
-                        observation: finalObservation,
-                        comment: comment_text,
-                        wcagPerceivable: pour_vals.wcagPerceivable,
-                        wcagOperable: pour_vals.wcagOperable,
-                        wcagUnderstandable: pour_vals.wcagUnderstandable,
-                        wcagRobust: pour_vals.wcagRobust
-                    });
-                });
-            });
-        });
-
-        deficiencies_data.sort((a, b) => (a.id || '').localeCompare(b.id || '', undefined, { numeric: true }));
-
-        const include_comment_column = deficiencies_data.some((d) => d.comment && String(d.comment).trim().length > 0);
-        const wcag_column_defs = [
-            { header: t('excel_col_wcag_perceivable'), key: 'wcagPerceivable', width: 14 },
-            { header: t('excel_col_wcag_operable'), key: 'wcagOperable', width: 14 },
-            { header: t('excel_col_wcag_understandable'), key: 'wcagUnderstandable', width: 14 },
-            { header: t('excel_col_wcag_robust'), key: 'wcagRobust', width: 12 }
-        ];
-        const column_defs_before_comment = [
-            { header: t('excel_col_deficiency_id'), key: 'id', width: 12 },
-            { header: t('excel_col_req_title'), key: 'reqTitle', width: 45 },
-            { header: t('excel_col_reference'), key: 'reference', width: 40 },
-            { header: t('excel_col_sample_name'), key: 'sampleName', width: 30 },
-            { header: t('excel_col_sample_url'), key: 'sampleUrl', width: 40 },
-            { header: t('excel_col_deficiency_type'), key: 'deficiencyType', width: 24 },
-            { header: t('excel_col_observation'), key: 'observation', width: 70 }
-        ];
-        deficienciesSheet.columns = [
-            ...column_defs_before_comment,
-            ...(include_comment_column ? [{ header: t('excel_col_comment'), key: 'comment', width: 70 }] : []),
-            ...wcag_column_defs
-        ];
+        const column_defs = build_deficiency_column_defs(t, include_comment_column);
         if (!include_comment_column) {
             deficiencies_data.forEach((row) => {
                 delete row.comment;
             });
         }
 
-        deficienciesSheet.addRows(deficiencies_data);
+        populate_deficiencies_excel_sheet(
+            deficienciesSheet,
+            deficiencies_data,
+            column_defs,
+            t('excel_sheet_audit_report'),
+            t('excel_col_deficiency_id').length
+        );
 
-        const id_header_len = t('excel_col_deficiency_id').length;
-        const max_id_cell_len = deficiencies_data.reduce((max, row) => {
-            const len = String(row.id ?? '').length;
-            return len > max ? len : max;
-        }, id_header_len);
-        const id_column_width = Math.min(Math.max(max_id_cell_len + 2, 8), 45);
-        deficienciesSheet.getColumn('id').width = id_column_width;
+        apply_aeonic_font_to_workbook(workbook);
+        clear_workbook_metadata(workbook);
 
-        deficienciesSheet.eachRow({ includeEmpty: false }, function (row: any, rowNumber: number) {
-            if (rowNumber > 1) {
-                const isEvenRow = rowNumber % 2 === 0;
-                row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: isEvenRow ? 'FFF4F1EE' : 'FFFFFFFF' } };
-                row.font = { color: { argb: 'FF000000' } };
-
-                const referenceCell = row.getCell('reference');
-                if (referenceCell.hyperlink) {
-                    referenceCell.font = { color: { argb: 'FF0000FF' }, underline: true };
-                }
-                const sampleUrlCell = row.getCell('sampleUrl');
-                if (sampleUrlCell.hyperlink) {
-                    sampleUrlCell.font = { color: { argb: 'FF0000FF' }, underline: true };
-                }
-            }
+        const raw_buffer = await workbook.xlsx.writeBuffer();
+        const clean_buffer = await strip_xlsx_document_metadata(raw_buffer as ArrayBuffer);
+        const blob = new Blob([clean_buffer], {
+            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         });
-
-        apply_excel_cell_alignment_top_left_wrap(deficienciesSheet);
-        deficienciesSheet.getRow(1).eachCell({ includeEmpty: true }, (cell: any) => {
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6E3282' } };
-            cell.font = { color: { argb: 'FFFFFFFF' }, bold: true };
-        });
-
-        deficienciesSheet.autoFilter = { from: 'A1', to: { row: 1, column: deficienciesSheet.columns.length } };
-        deficienciesSheet.views = [{ state: 'frozen', ySplit: 1 }];
-
-        const buffer = await workbook.xlsx.writeBuffer();
-        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
-
-        const actor_name = sanitize_filename_segment(current_audit.auditMetadata.actorName || t('filename_fallback_actor'));
-        const case_number = (current_audit.auditMetadata.caseNumber || '').trim();
-        const sanitized_case_number = case_number ? case_number.replace(/[^a-z0-9åäöÅÄÖ-]/gi, '') : '';
-        const last_updated_iso = current_audit?.updated_at || null;
-        const server_dt = await get_server_filename_datetime(last_updated_iso);
-        const fallback_now = server_dt ? null : await get_server_filename_datetime(null);
-        const date_str = server_dt || fallback_now || format_local_date_for_filename(new Date(), '');
-
-        let filename;
-        if (sanitized_case_number) {
-            filename = `${sanitized_case_number}_${actor_name}_${date_str}_brister_lista.xlsx`;
-        } else {
-            filename = `${actor_name}_${date_str}_brister_lista.xlsx`;
-        }
+        const filename = build_excel_export_filename(current_audit, t, new Date());
 
         link.href = url;
         link.download = filename;
@@ -211,4 +107,91 @@ export async function export_to_excel(current_audit: any) {
         const msg = error instanceof Error ? error.message : String(error);
         show_global_message_internal(t('error_exporting_excel') + ` ${msg}`, 'error');
     }
+}
+
+function build_deficiency_column_defs(t: (key: string) => string, include_comment_column: boolean) {
+    const wcag_column_defs = [
+        { header: t('excel_col_wcag_perceivable'), key: 'wcagPerceivable', width: 14 },
+        { header: t('excel_col_wcag_operable'), key: 'wcagOperable', width: 14 },
+        { header: t('excel_col_wcag_understandable'), key: 'wcagUnderstandable', width: 14 },
+        { header: t('excel_col_wcag_robust'), key: 'wcagRobust', width: 12 }
+    ];
+    const column_defs_before_comment = [
+        { header: t('excel_col_deficiency_id'), key: 'id', width: 12 },
+        { header: t('excel_col_req_title'), key: 'reqTitle', width: 45 },
+        { header: t('excel_col_reference'), key: 'reference', width: 40 },
+        { header: t('excel_col_sample_name'), key: 'sampleName', width: 30 },
+        { header: t('excel_col_sample_url'), key: 'sampleUrl', width: 40 },
+        { header: t('excel_col_deficiency_type'), key: 'deficiencyType', width: 24 },
+        { header: t('excel_col_observation'), key: 'observation', width: 70 }
+    ];
+    return [
+        ...column_defs_before_comment,
+        ...(include_comment_column ? [{ header: t('excel_col_comment'), key: 'comment', width: 70 }] : []),
+        ...wcag_column_defs
+    ];
+}
+
+function build_deficiencies_data(current_audit: any, t: (key: string) => string) {
+    const deficiencies_data: any[] = [];
+    const yes_label = t('yes');
+    const requirements_for_export = current_audit.ruleFileContent?.requirements || {};
+    (current_audit.samples || []).forEach((sample: any) => {
+        const all_reqs = Object.values(requirements_for_export);
+        all_reqs.forEach((req_definition: any) => {
+            const result = get_export_requirement_result(requirements_for_export, sample, req_definition);
+            if (!result) return;
+            for_each_failed_in_requirement_result(result, ({ check_id, pc_id, pc_obj }) => {
+                const check_def = find_check_def_by_storage_id(req_definition.checks as any[], check_id);
+                const pc_def = find_pass_criterion_def_by_storage_id(check_def?.passCriteria, pc_id) as {
+                    failureStatementTemplate?: string;
+                    requirement?: string;
+                } | undefined;
+                const templateObservation = pc_def?.failureStatementTemplate || '';
+                const userObservation = pc_obj.observationDetail || '';
+                const passCriterionText = pc_def?.requirement || '';
+
+                let finalObservation = userObservation;
+                if (!userObservation.trim() || userObservation.trim() === templateObservation.trim()) {
+                    finalObservation = passCriterionText;
+                }
+                finalObservation = strip_markdown_for_excel(finalObservation);
+
+                const ref_text_raw = req_definition.standardReference?.text || '';
+                const reference_obj: { text: string; hyperlink?: string } = {
+                    text: strip_markdown_for_excel(ref_text_raw)
+                };
+                if (req_definition.standardReference?.url) {
+                    reference_obj.hyperlink = Helpers.add_protocol_if_missing(req_definition.standardReference.url);
+                }
+
+                const url_obj = sample.url
+                    ? {
+                          text: strip_markdown_for_excel(String(sample.url)),
+                          hyperlink: Helpers.add_protocol_if_missing(sample.url)
+                      }
+                    : null;
+
+                const pour_vals = get_wcag_pour_export_values_for_requirement(req_definition, current_audit, t);
+                const comment_text = strip_markdown_for_excel((result.commentToAuditor || '').trim());
+                deficiencies_data.push({
+                    id: extractDeficiencyNumber(pc_obj.deficiencyId),
+                    reqTitle: strip_markdown_for_excel(String(req_definition.title || '')),
+                    reference: reference_obj,
+                    sampleName: strip_markdown_for_excel(String(sample.description || '')),
+                    sampleUrl: url_obj,
+                    deficiencyType: '',
+                    observation: finalObservation,
+                    comment: comment_text,
+                    wcagPerceivable: to_wcag_yes_only_value(pour_vals.wcagPerceivable, yes_label),
+                    wcagOperable: to_wcag_yes_only_value(pour_vals.wcagOperable, yes_label),
+                    wcagUnderstandable: to_wcag_yes_only_value(pour_vals.wcagUnderstandable, yes_label),
+                    wcagRobust: to_wcag_yes_only_value(pour_vals.wcagRobust, yes_label)
+                });
+            });
+        });
+    });
+
+    deficiencies_data.sort((a, b) => (a.id || '').localeCompare(b.id || '', undefined, { numeric: true }));
+    return deficiencies_data;
 }

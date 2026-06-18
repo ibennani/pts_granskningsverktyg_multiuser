@@ -28,6 +28,8 @@ export default {
     '^.+[\\\\/]export_csv\\.js$': '<rootDir>/js/export/export_csv.ts',
     '^.+[\\\\/]export_deficiency_traversal\\.js$': '<rootDir>/js/export/export_deficiency_traversal.ts',
     '^.+[\\\\/]export_excel\\.js$': '<rootDir>/js/export/export_excel.ts',
+    '^.+[\\\\/]excel_export_helpers\\.js$': '<rootDir>/js/export/excel_export_helpers.ts',
+    '^.+[\\\\/]excel_deficiencies_sheet\\.js$': '<rootDir>/js/export/excel_deficiencies_sheet.ts',
     '^.+[\\\\/]export_word_markdown_docx\\.js$': '<rootDir>/js/export/export_word_markdown_docx.ts',
     '^.+[\\\\/]export_word_requirement_sections\\.js$': '<rootDir>/js/export/export_word_requirement_sections.ts',
     '^.+[\\\\/]export_word_deficiency_queries\\.js$': '<rootDir>/js/export/export_word_deficiency_queries.ts',
