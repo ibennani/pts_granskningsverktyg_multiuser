@@ -3,39 +3,12 @@
  */
 
 import { apply_excel_cell_alignment_top_left_wrap } from './export_format_helpers.js';
+import { deficiency_row_to_flat_values, type DeficiencyRow } from './export_deficiency_rows.js';
 import { sanitize_excel_table_name } from './excel_export_helpers.js';
 
 type ColumnDef = { header: string; key: string; width: number };
 
-type DeficiencyRow = {
-    id: string;
-    reqTitle: string;
-    reference: { text: string; hyperlink?: string };
-    sampleName: string;
-    sampleUrl: { text: string; hyperlink?: string } | null;
-    deficiencyType: string;
-    observation: string;
-    comment?: string;
-    wcagPerceivable: string;
-    wcagOperable: string;
-    wcagUnderstandable: string;
-    wcagRobust: string;
-};
-
 type RowHyperlinkMeta = { reference_url?: string; sample_url?: string };
-
-function deficiency_row_to_values(row: DeficiencyRow, column_keys: string[]): string[] {
-    return column_keys.map((key) => {
-        if (key === 'reference') {
-            return row.reference?.text ?? '';
-        }
-        if (key === 'sampleUrl') {
-            return row.sampleUrl?.text ?? '';
-        }
-        const value = row[key as keyof DeficiencyRow];
-        return value == null ? '' : String(value);
-    });
-}
 
 function collect_row_hyperlinks(row: DeficiencyRow): RowHyperlinkMeta {
     return {
@@ -142,7 +115,7 @@ export function populate_deficiencies_excel_sheet(
     const headers = column_defs.map((def) => def.header);
     assert_unique_headers(headers);
 
-    const table_rows = deficiencies_data.map((row) => deficiency_row_to_values(row, column_keys));
+    const table_rows = deficiencies_data.map((row) => deficiency_row_to_flat_values(row, column_keys));
     if (table_rows.length === 0) {
         table_rows.push(column_keys.map(() => ''));
     }

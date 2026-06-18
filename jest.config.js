@@ -26,6 +26,7 @@ export default {
     '^.+[\\\\/]deficiency_id_display\\.js$': '<rootDir>/js/utils/deficiency_id_display.ts',
     '^.+[\\\\/]export_bootstrap\\.js$': '<rootDir>/js/export/export_bootstrap.ts',
     '^.+[\\\\/]export_csv\\.js$': '<rootDir>/js/export/export_csv.ts',
+    '^.+[\\\\/]export_deficiency_rows\\.js$': '<rootDir>/js/export/export_deficiency_rows.ts',
     '^.+[\\\\/]export_deficiency_traversal\\.js$': '<rootDir>/js/export/export_deficiency_traversal.ts',
     '^.+[\\\\/]export_excel\\.js$': '<rootDir>/js/export/export_excel.ts',
     '^.+[\\\\/]excel_export_helpers\\.js$': '<rootDir>/js/export/excel_export_helpers.ts',

@@ -32,12 +32,13 @@ export function sanitize_excel_download_filename_segment(segment: string): strin
 }
 
 /**
- * Bygger nedladdningsfilnamn: [diarienummer] [Aktör] [label] [YYYY-MM-DD].xlsx
+ * Bygger nedladdningsfilnamn: [diarienummer] [Aktör] [label] [YYYY-MM-DD].[extension]
  */
-export function build_excel_export_filename(
+export function build_deficiency_export_filename(
     audit: { auditMetadata?: { caseNumber?: string; actorName?: string } },
     t: TExport,
-    export_date: Date = new Date()
+    export_date: Date = new Date(),
+    extension = 'xlsx'
 ): string {
     const case_number = sanitize_excel_download_filename_segment(audit?.auditMetadata?.caseNumber || '');
     const actor = sanitize_excel_download_filename_segment(
@@ -50,7 +51,17 @@ export function build_excel_export_filename(
         parts.push(case_number);
     }
     parts.push(actor, label, date_str);
-    return `${parts.join(' ')}.xlsx`;
+    const safe_extension = String(extension || 'xlsx').replace(/^\./, '');
+    return `${parts.join(' ')}.${safe_extension}`;
+}
+
+/** Bygger nedladdningsfilnamn för Excel (.xlsx). */
+export function build_excel_export_filename(
+    audit: { auditMetadata?: { caseNumber?: string; actorName?: string } },
+    t: TExport,
+    export_date: Date = new Date()
+): string {
+    return build_deficiency_export_filename(audit, t, export_date, 'xlsx');
 }
 
 /**

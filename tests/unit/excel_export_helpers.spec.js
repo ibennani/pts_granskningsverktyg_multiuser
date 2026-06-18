@@ -1,6 +1,7 @@
 import { jest } from '@jest/globals';
 import JSZip from 'jszip';
 import {
+    build_deficiency_export_filename,
     build_excel_export_filename,
     sanitize_excel_download_filename_segment,
     sanitize_excel_table_name,
@@ -34,6 +35,13 @@ describe('excel_export_helpers', () => {
         const export_date = new Date(2026, 5, 18);
         const filename = build_excel_export_filename(audit, t_sv, export_date);
         expect(filename).toBe('PTS AB Granskningsprotokoll Bilaga 2 2026-06-18.xlsx');
+    });
+
+    test('build_deficiency_export_filename för CSV', () => {
+        const audit = { auditMetadata: { caseNumber: '2024-123', actorName: 'PTS AB' } };
+        const export_date = new Date(2026, 5, 18);
+        const filename = build_deficiency_export_filename(audit, t_sv, export_date, 'csv');
+        expect(filename).toBe('2024-123 PTS AB Granskningsprotokoll Bilaga 2 2026-06-18.csv');
     });
 
     test('sanitize_excel_table_name tar bort siffror och mellanslag', () => {
