@@ -28,5 +28,13 @@ När AI-agenten beskriver hur funktioner, flöden eller förändringar fungerar 
     - Sedan kort förklara **vilka befintliga flöden/strukturer** i systemet som ska återanvändas (utan att gå ner i koddetaljer).
     - Avsluta med att lyfta fram **tydliga beslutspunkter** där användaren behöver välja inriktning (t.ex. hur något ska exporteras, hur något ska redovisas i rapporter).
 
+- **Planeringsläge (Plan Mode)**
+  - När Cursor kör i planeringsläget ska varje plan, utöver innehållet ovan, avslutas med en **egen avsnittsrubrik** (t.ex. "Granskning av planen") som uttryckligen besvarar:
+    1. **Finns det invändningar?** – risker, nackdelar eller alternativ som talar emot förslaget.
+    2. **Har jag missat något?** – luckor i krav, beroenden, tester eller användarfall som planen inte täcker.
+    3. **Kan något göras bättre?** – förbättringar i inriktning, ordning, återanvändning eller enkelhet.
+    4. **Är det något jag bör undvika?** – fallgropar, projektregler, tekniska eller tillgänglighetsmässiga misstag att inte göra.
+  - Besvara alla fyra punkter även när svaret är "inga" eller "inget särskilt" – då ska det sägas kort och tydligt.
+
 Den här regeln gäller för all planering och beskrivning som AI-agenten gör i projektet, oavsett funktionellt område.
 
