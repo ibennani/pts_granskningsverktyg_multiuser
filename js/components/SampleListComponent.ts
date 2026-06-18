@@ -223,10 +223,11 @@ export const SampleListComponent = {
             }
 
             if (total_relevant_reqs > 0) {
+                const view_requirements_label = t('view_all_requirements_button', { count: total_relevant_reqs });
                 main_actions_div.appendChild(create_element('button', {
                     class_name: ['button', 'button-secondary', 'button-small'],
-                    attributes: { 'data-action': 'view-requirements', 'aria-label': `${t('view_all_requirements_button')}: ${sample.description}` },
-                    html_content: `<span>${t('view_all_requirements_button')}</span>` + (get_icon_svg ? get_icon_svg('list', ['currentColor'], 16) : '')
+                    attributes: { 'data-action': 'view-requirements', 'aria-label': `${view_requirements_label}: ${sample.description}` },
+                    html_content: `<span>${view_requirements_label}</span>` + (get_icon_svg ? get_icon_svg('list', ['currentColor'], 16) : '')
                 }));
             }
 

@@ -32,6 +32,8 @@ export class AddSampleFormComponent {
     private url_form_group_ref: any;
     private content_types_container_element: any;
     private sample_type_container: any;
+    private sample_attach_media_btn: HTMLButtonElement | null;
+    private sample_attached_media_filenames: string[];
 
     private current_editing_sample_id: string | null;
     private original_content_types_on_load: string[];
@@ -63,6 +65,8 @@ export class AddSampleFormComponent {
         this.url_form_group_ref = null;
         this.content_types_container_element = null;
         this.sample_type_container = null;
+        this.sample_attach_media_btn = null;
+        this.sample_attached_media_filenames = [];
 
         this.current_editing_sample_id = null;
         this.original_content_types_on_load = [];
@@ -95,6 +99,8 @@ export class AddSampleFormComponent {
         this.url_form_group_ref = null;
         this.content_types_container_element = null;
         this.sample_type_container = null;
+        this.sample_attach_media_btn = null;
+        this.sample_attached_media_filenames = [];
 
         this.current_editing_sample_id = null;
         this.original_content_types_on_load = [];
@@ -138,7 +144,10 @@ export class AddSampleFormComponent {
                     sampleType: current_sample.sampleType ?? null,
                     description: current_sample.description ?? '',
                     url: current_sample.url ?? '',
-                    selectedContentTypes: Array.isArray(current_sample.selectedContentTypes) ? [...current_sample.selectedContentTypes] : []
+                    selectedContentTypes: Array.isArray(current_sample.selectedContentTypes) ? [...current_sample.selectedContentTypes] : [],
+                    attachedMediaFilenames: Array.isArray(current_sample.attachedMediaFilenames)
+                        ? [...current_sample.attachedMediaFilenames]
+                        : []
                 },
                 originalSampleData: this.initial_sample_snapshot ? JSON.parse(JSON.stringify(this.initial_sample_snapshot)) : JSON.parse(JSON.stringify(current_sample))
             }
@@ -170,6 +179,8 @@ export class AddSampleFormComponent {
 
         if (url_val) url_val = this.Helpers.add_protocol_if_missing(url_val);
 
+        const attached_media_filenames = [...(this.sample_attached_media_filenames || [])];
+
         const draft = this._get_sample_edit_draft();
         const original = draft?.originalSampleData || (this.initial_sample_snapshot ? JSON.parse(JSON.stringify(this.initial_sample_snapshot)) : null);
 
@@ -182,7 +193,8 @@ export class AddSampleFormComponent {
                     sampleType: sample_type_id,
                     description,
                     url: url_val,
-                    selectedContentTypes: selected_content_types
+                    selectedContentTypes: selected_content_types,
+                    attachedMediaFilenames: attached_media_filenames
                 },
                 originalSampleData: original,
                 skip_render
@@ -359,7 +371,8 @@ export class AddSampleFormComponent {
             sampleType: sample_type_id,
             description,
             url: url_val,
-            selectedContentTypes: selected_content_types
+            selectedContentTypes: selected_content_types,
+            attachedMediaFilenames: [...(this.sample_attached_media_filenames || [])]
         };
     }
 
@@ -579,7 +592,8 @@ export class AddSampleFormComponent {
             sampleType: sample_type_id,
             description: description,
             url: url_val,
-            selectedContentTypes: selected_content_types
+            selectedContentTypes: selected_content_types,
+            attachedMediaFilenames: [...(this.sample_attached_media_filenames || [])]
         };
 
         if (!this.current_editing_sample_id) {
@@ -607,14 +621,16 @@ export class AddSampleFormComponent {
             sampleType: current_sample?.sampleType ?? null,
             description: current_sample?.description ?? null,
             url: current_sample?.url ?? null,
-            selectedContentTypes: Array.isArray(current_sample?.selectedContentTypes) ? current_sample.selectedContentTypes : []
+            selectedContentTypes: Array.isArray(current_sample?.selectedContentTypes) ? current_sample.selectedContentTypes : [],
+            attachedMediaFilenames: Array.isArray(current_sample?.attachedMediaFilenames) ? current_sample.attachedMediaFilenames : []
         };
         const normalized_new = {
             sampleCategory: sample_payload_data.sampleCategory ?? null,
             sampleType: sample_payload_data.sampleType ?? null,
             description: sample_payload_data.description ?? null,
             url: sample_payload_data.url ?? null,
-            selectedContentTypes: Array.isArray(sample_payload_data.selectedContentTypes) ? sample_payload_data.selectedContentTypes : []
+            selectedContentTypes: Array.isArray(sample_payload_data.selectedContentTypes) ? sample_payload_data.selectedContentTypes : [],
+            attachedMediaFilenames: Array.isArray(sample_payload_data.attachedMediaFilenames) ? sample_payload_data.attachedMediaFilenames : []
         };
         const same_text_fields =
             normalized_current.sampleCategory === normalized_new.sampleCategory &&
@@ -624,7 +640,12 @@ export class AddSampleFormComponent {
         const a = new Set(normalized_current.selectedContentTypes);
         const b = new Set(normalized_new.selectedContentTypes);
         const same_ct = a.size === b.size && [...a].every(v => b.has(v));
-        if (same_text_fields && same_ct) {
+        const current_media = normalized_current.attachedMediaFilenames.map((v: unknown) => String(v));
+        const new_media = normalized_new.attachedMediaFilenames.map((v: unknown) => String(v));
+        const same_media =
+            current_media.length === new_media.length &&
+            current_media.every((value: string, index: number) => value === new_media[index]);
+        if (same_text_fields && same_ct && same_media) {
             this.dispatch({ type: this.StoreActionTypes.CLEAR_SAMPLE_EDIT_DRAFT, payload: { skip_render: true } });
             this.router('sample_management');
             return;

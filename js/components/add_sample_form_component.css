@@ -156,6 +156,24 @@
     overflow-x: hidden;
 }
 
+.sample-screenshot-section {
+    margin-bottom: 1rem;
+}
+
+.sample-attach-media-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.sample-attach-media-row .attach-media-button-icons {
+    display: inline-flex;
+    gap: 0.25rem;
+    margin-left: 0.35rem;
+    vertical-align: middle;
+}
+
 .content-types-group {
     max-width: 100%;
     overflow-x: hidden;
