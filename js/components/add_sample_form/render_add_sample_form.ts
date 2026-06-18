@@ -225,6 +225,22 @@ export function render_add_sample_form(component: any, sample_id_to_edit: string
         }
     }
     actions_div.appendChild(save_button);
+
+    if (component.show_back_to_samples_button && typeof component.discard_callback === 'function') {
+        const return_button = component.Helpers.create_element('button', {
+            class_name: ['button', 'button-default'],
+            attributes: { type: 'button' },
+            html_content:
+                `<span>${t('back_to_sample_management')}</span>` +
+                (component.Helpers.get_icon_svg ? component.Helpers.get_icon_svg('arrow_back') : '')
+        });
+        return_button.addEventListener('click', (event: Event) => {
+            event.preventDefault();
+            component.discard_callback();
+        });
+        actions_div.appendChild(return_button);
+    }
+
     component.form_element.appendChild(actions_div);
 
     component.root.appendChild(component.form_element);

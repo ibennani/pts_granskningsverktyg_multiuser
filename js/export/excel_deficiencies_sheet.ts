@@ -127,7 +127,7 @@ export function populate_deficiencies_excel_sheet(
 
     sheet.addTable({
         name: table_name,
-        displayName: table_display_name,
+        displayName: table_name,
         ref: 'A1',
         headerRow: true,
         totalsRow: false,

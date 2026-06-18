@@ -41,6 +41,7 @@ export class AddSampleFormComponent {
     private autosave_session: any;
     private skip_autosave_on_destroy: boolean;
     private initial_sample_snapshot: any;
+    private show_back_to_samples_button: boolean;
 
     constructor() {
         this.root = null;
@@ -74,6 +75,7 @@ export class AddSampleFormComponent {
         this.autosave_session = null;
         this.skip_autosave_on_destroy = false;
         this.initial_sample_snapshot = null;
+        this.show_back_to_samples_button = false;
     }
 
     init({ root, deps }: { root: HTMLElement; deps: any }) {
@@ -108,6 +110,7 @@ export class AddSampleFormComponent {
         this.autosave_session = null;
         this.skip_autosave_on_destroy = false;
         this.initial_sample_snapshot = null;
+        this.show_back_to_samples_button = false;
 
         this.handle_form_submit = this.handle_form_submit.bind(this);
         this.update_description_from_sample_type = this.update_description_from_sample_type.bind(this);
