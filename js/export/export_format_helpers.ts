@@ -42,8 +42,7 @@ export function escape_for_csv(str: unknown): string {
     }
     let result = String(str);
     result = result.replace(/"/g, '""');
-    result = result.replace(/(\r\n|\n|\r)/gm, ' ');
-    if (/[",;]/.test(result)) {
+    if (/[",;\r\n]/.test(result)) {
         result = `"${result}"`;
     }
     return result;

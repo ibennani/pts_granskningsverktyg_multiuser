@@ -23,6 +23,7 @@ export type DeficiencyRow = {
     sampleUrl: { text: string; hyperlink?: string } | null;
     deficiencyType: string;
     observation: string;
+    screenshotReference: string;
     comment?: string;
     wcagPerceivable: string;
     wcagOperable: string;
@@ -35,6 +36,17 @@ export type PreparedDeficiencyExport = {
     column_defs: DeficiencyColumnDef[];
     include_comment_column: boolean;
 };
+
+/** Formaterar bifogade filnamn till en cell med ett filnamn per rad. */
+export function format_screenshot_reference_for_export(filenames: unknown): string {
+    if (!Array.isArray(filenames)) {
+        return '';
+    }
+    return filenames
+        .map((name) => String(name || '').trim())
+        .filter(Boolean)
+        .join('\n');
+}
 
 export function build_deficiency_column_defs(
     t: (key: string) => string,
@@ -53,7 +65,8 @@ export function build_deficiency_column_defs(
         { header: t('excel_col_sample_name'), key: 'sampleName', width: 30 },
         { header: t('excel_col_sample_url'), key: 'sampleUrl', width: 40 },
         { header: t('excel_col_deficiency_type'), key: 'deficiencyType', width: 24 },
-        { header: t('excel_col_observation'), key: 'observation', width: 70 }
+        { header: t('excel_col_observation'), key: 'observation', width: 70 },
+        { header: t('excel_col_screenshot_reference'), key: 'screenshotReference', width: 40 }
     ];
     return [
         ...column_defs_before_comment,
@@ -103,7 +116,7 @@ function build_single_deficiency_row(
     result: { commentToAuditor?: string },
     check_id: string,
     pc_id: string,
-    pc_obj: { deficiencyId?: string; observationDetail?: string },
+    pc_obj: { deficiencyId?: string; observationDetail?: string; attachedMediaFilenames?: unknown },
     t: (key: string) => string,
     yes_label: string
 ): DeficiencyRow {
@@ -148,6 +161,7 @@ function build_single_deficiency_row(
         sampleUrl: url_obj,
         deficiencyType: '',
         observation: final_observation,
+        screenshotReference: format_screenshot_reference_for_export(pc_obj.attachedMediaFilenames),
         comment: comment_text,
         wcagPerceivable: to_wcag_yes_only_value(pour_vals.wcagPerceivable, yes_label),
         wcagOperable: to_wcag_yes_only_value(pour_vals.wcagOperable, yes_label),

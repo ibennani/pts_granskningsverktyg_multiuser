@@ -449,6 +449,7 @@
   "excel_col_comment": "Kommentar",
   "excel_col_expected_obs": "Forventet observasjon",
   "excel_col_observation": "Observasjon",
+  "excel_col_screenshot_reference": "Skjermbilde-referanse",
   "excel_col_pts_qc_comments": "PTS QC-kommentarer",
   "excel_col_reference": "Referanse",
   "excel_col_req_title": "Kravtittel",
