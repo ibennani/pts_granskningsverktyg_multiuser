@@ -7,6 +7,7 @@ import * as Helpers from '../utils/helpers.js';
 import { get_current_language_code_from_registry } from '../utils/translation_access.js';
 import {
     apply_excel_cell_alignment_top_left_wrap,
+    get_audit_last_updated_iso_for_export,
     get_effective_display_times_for_audit,
     strip_markdown_for_excel
 } from './export_format_helpers.js';
@@ -43,13 +44,12 @@ export async function export_to_excel(current_audit: unknown) {
                 actorLink?: string;
                 auditorName?: string;
             };
-            updated_at?: string | null;
         };
 
         const generalSheet = workbook.addWorksheet(t('excel_sheet_general_info'));
 
         const display_times = get_effective_display_times_for_audit(current_audit);
-        const last_updated_ts = audit?.updated_at || null;
+        const last_updated_ts = get_audit_last_updated_iso_for_export(current_audit);
         const general_info_data = [
             [t('case_number'), strip_markdown_for_excel(String(audit.auditMetadata.caseNumber || ''))],
             [t('actor_name'), strip_markdown_for_excel(String(audit.auditMetadata.actorName || ''))],
