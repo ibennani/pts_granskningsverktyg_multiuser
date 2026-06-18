@@ -9,6 +9,14 @@ import {
     build_audit_images_structure_fingerprint,
     get_audit_images_card_count_label
 } from '../logic/audit_images_view_incremental.js';
+import { sort_audit_image_card_groups } from '../logic/sample_attached_media_normalize.js';
+import {
+    create_sample_screenshot_card,
+    group_key_for_image_item,
+    is_sample_screenshot_media_item,
+    open_sample_screenshot_attach_modal,
+    patch_sample_screenshot_card
+} from './audit_images_sample_screenshot.js';
 
 export class AuditImagesViewComponent {
     constructor() {
@@ -25,6 +33,7 @@ export class AuditImagesViewComponent {
         this.unsubscribe = null;
         this.plate_element_ref = null;
         this.list_wrapper_ref = null;
+        this.images_h1_ref = null;
         this.is_dom_initialized = false;
         this._last_images_fingerprint = null;
         this._last_images_structure_fingerprint = null;
@@ -48,6 +57,7 @@ export class AuditImagesViewComponent {
 
         this.handle_requirement_link_click = this.handle_requirement_link_click.bind(this);
         this.handle_attach_media_click = this.handle_attach_media_click.bind(this);
+        this.handle_sample_attach_media_click = this.handle_sample_attach_media_click.bind(this);
 
         this.unsubscribe = null;
         if (typeof deps.subscribe === 'function') {
@@ -72,6 +82,15 @@ export class AuditImagesViewComponent {
         if (sample_id && requirement_id && typeof this.router === 'function') {
             this.router('requirement_audit', { sampleId: sample_id, requirementId: requirement_id });
         }
+    }
+
+    handle_sample_attach_media_click(event) {
+        const btn = event.target.closest('button[data-action="attach-sample-media"]');
+        if (!btn) return;
+        event.preventDefault();
+        const sample_id = btn.getAttribute('data-sample-id');
+        if (!sample_id) return;
+        open_sample_screenshot_attach_modal(this, sample_id, btn);
     }
 
     handle_attach_media_click(event) {
@@ -221,13 +240,23 @@ export class AuditImagesViewComponent {
             this.is_dom_initialized = true;
         }
         const is_audit_locked = state.auditStatus === 'locked' || state.auditStatus === 'archived';
+        this._update_images_header(images, t);
         this._sync_image_cards(this.group_images_by_requirement_sample(images), images, t, is_audit_locked);
+    }
+
+    _update_images_header(images, t) {
+        if (!this.images_h1_ref) return;
+        const media_count = Array.isArray(images) ? images.length : 0;
+        this.images_h1_ref.textContent = media_count > 0
+            ? t('audit_images_title_with_count', { count: String(media_count) })
+            : t('audit_images_title');
     }
 
     _render_images_error_plate(title, message) {
         this.is_dom_initialized = false;
         this.plate_element_ref = null;
         this.list_wrapper_ref = null;
+        this.images_h1_ref = null;
         this._last_images_fingerprint = null;
         this._last_images_structure_fingerprint = null;
         this.root.innerHTML = '';
@@ -241,7 +270,11 @@ export class AuditImagesViewComponent {
         this.root.innerHTML = '';
         this.plate_element_ref = this.Helpers.create_element('div', { class_name: 'content-plate audit-images-plate' });
         this.root.appendChild(this.plate_element_ref);
-        this.plate_element_ref.appendChild(this.Helpers.create_element('h1', { text_content: t('audit_images_title') }));
+        this.images_h1_ref = this.Helpers.create_element('h1', {
+            id: 'main-content-heading',
+            attributes: { tabindex: '-1' }
+        });
+        this.plate_element_ref.appendChild(this.images_h1_ref);
         this.plate_element_ref.appendChild(this.Helpers.create_element('p', {
             class_name: 'audit-images-intro',
             text_content: t('audit_images_intro')
@@ -290,6 +323,11 @@ export class AuditImagesViewComponent {
     }
 
     _patch_image_card_filenames(group, t, is_audit_locked) {
+        if (group.is_sample_screenshot) {
+            patch_sample_screenshot_card(this.list_wrapper_ref, group, t);
+            return;
+        }
+
         const card = this.list_wrapper_ref?.querySelector(
             `.audit-image-card[data-req-map-id="${CSS.escape(String(group.reqId || ''))}"][data-sample-id="${CSS.escape(String(group.sample?.id || ''))}"]`
         );
@@ -339,9 +377,10 @@ export class AuditImagesViewComponent {
     group_images_by_requirement_sample(images) {
         const map = new Map();
         images.forEach((item) => {
-            const key = `${item.reqId}::${item.sample?.id || ''}`;
+            const key = group_key_for_image_item(item);
             if (!map.has(key)) {
                 map.set(key, {
+                    is_sample_screenshot: is_sample_screenshot_media_item(item),
                     requirement: item.requirement,
                     sample: item.sample,
                     reqId: item.reqId,
@@ -350,10 +389,14 @@ export class AuditImagesViewComponent {
             }
             map.get(key).items.push(item);
         });
-        return Array.from(map.values());
+        return sort_audit_image_card_groups(Array.from(map.values()));
     }
 
     create_image_card(group, t, is_audit_locked = false) {
+        if (group.is_sample_screenshot) {
+            return create_sample_screenshot_card(this, group, t, is_audit_locked, this.handle_sample_attach_media_click);
+        }
+
         const card = this.Helpers.create_element('article', {
             class_name: 'audit-image-card',
             attributes: {
@@ -547,6 +590,7 @@ export class AuditImagesViewComponent {
         }
         this.plate_element_ref = null;
         this.list_wrapper_ref = null;
+        this.images_h1_ref = null;
         this.is_dom_initialized = false;
         this._last_images_fingerprint = null;
         this._last_images_structure_fingerprint = null;

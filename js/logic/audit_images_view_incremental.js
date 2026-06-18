@@ -20,7 +20,10 @@ export function group_images_for_fingerprint(images) {
     (images || []).forEach((item) => {
         const req_id = item?.reqId || '';
         const sample_id = item?.sample?.id || '';
-        const card_key = `${req_id}::${sample_id}`;
+        const card_key =
+            item?.mediaScope === 'sample'
+                ? `__sample__::${sample_id}`
+                : `${req_id}::${sample_id}`;
         const section_key = `${item?.checkId || ''}::${item?.pcId || ''}`;
         if (!card_map.has(card_key)) {
             card_map.set(card_key, { cardKey: card_key, reqId: req_id, sampleId: sample_id, sections: new Map() });

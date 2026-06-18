@@ -39,6 +39,7 @@ describe('audit_logic attached media counts', () => {
             samples: [
                 {
                     id: 's1',
+                    attachedMediaFilenames: ['sample.png', '  '],
                     requirementResults: {
                         req1: {
                             checkResults: {
@@ -56,7 +57,34 @@ describe('audit_logic attached media counts', () => {
             ]
         };
 
+        expect(count_attached_images(state)).toBe(3);
+        expect(count_attached_media_places(state)).toBe(2);
+    });
+
+    test('count_attached_images inkluderar stickprovets skärmavbildningar', () => {
+        const state = {
+            samples: [
+                {
+                    id: 's1',
+                    attachedMediaFilenames: ['hela-stickprovet.png'],
+                    requirementResults: {
+                        req1: {
+                            checkResults: {
+                                c1: {
+                                    passCriteria: {
+                                        pc1: {
+                                            attachedMediaFilenames: ['brist.png']
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        };
+
         expect(count_attached_images(state)).toBe(2);
-        expect(count_attached_media_places(state)).toBe(1);
+        expect(count_attached_media_places(state)).toBe(2);
     });
 });

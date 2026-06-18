@@ -14,18 +14,18 @@ import type {
     SampleStored
 } from './audit_logic_types.js';
 import { find_requirement_by_id } from './audit_logic_lookup.js';
+import { normalize_attached_media_filenames_list, resolve_effective_sample_attached_filenames } from './sample_attached_media_normalize.js';
 
 export function count_attached_images(state: AuditStateShape | null | undefined): number {
     if (!state?.samples) return 0;
     let count = 0;
+    state.samples.forEach((sample) => {
+        count += resolve_effective_sample_attached_filenames(state, sample).length;
+    });
     traverse_all_pass_criteria(state, ({ pc_result }) => {
         const filenames = pc_result?.attachedMediaFilenames;
         if (!Array.isArray(filenames)) return;
-        filenames.forEach((filename) => {
-            if (filename && String(filename).trim()) {
-                count += 1;
-            }
-        });
+        count += filenames.filter((filename) => filename && String(filename).trim()).length;
     });
     return count;
 }
@@ -33,9 +33,14 @@ export function count_attached_images(state: AuditStateShape | null | undefined)
 export function count_attached_media_places(state: AuditStateShape | null | undefined): number {
     if (!state?.samples) return 0;
     let count = 0;
+    state.samples.forEach((sample) => {
+        if (resolve_effective_sample_attached_filenames(state, sample).length > 0) {
+            count += 1;
+        }
+    });
     traverse_all_pass_criteria(state, ({ pc_result }) => {
         const filenames = pc_result?.attachedMediaFilenames;
-        if (Array.isArray(filenames) && filenames.some((f) => f && String(f).trim())) {
+        if (Array.isArray(filenames) && filenames.some((filename) => filename && String(filename).trim())) {
             count += 1;
         }
     });
@@ -178,8 +183,28 @@ export function build_not_applicable_requirement_result(
 }
 
 export function collect_attached_images(state: AuditStateShape): Array<Record<string, unknown>> {
-    if (!state?.samples || !state?.ruleFileContent?.requirements) return [];
+    if (!state?.samples) return [];
     const images: Array<Record<string, unknown>> = [];
+
+    state.samples.forEach((sample) => {
+        resolve_effective_sample_attached_filenames(state, sample).forEach((filename) => {
+            images.push({
+                mediaScope: 'sample',
+                sample,
+                reqId: null,
+                requirement: null,
+                checkId: '__sample__',
+                pcId: '__sample__',
+                check_def: null,
+                pc_def: null,
+                check_index: -1,
+                pc_index: -1,
+                filename
+            });
+        });
+    });
+
+    if (!state.ruleFileContent?.requirements) return images;
     const requirements = state.ruleFileContent.requirements;
 
     traverse_all_pass_criteria(state, ({ sample, req_key, check_key, pc_key, pc_result }) => {

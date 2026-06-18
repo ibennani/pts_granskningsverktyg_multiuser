@@ -62,6 +62,7 @@ export type SampleStored = Record<string, unknown> & {
     description?: string;
     url?: string;
     selectedContentTypes?: string[];
+    attachedMediaFilenames?: string[];
     requirementResults?: Record<string, RequirementResultStored>;
 };
 

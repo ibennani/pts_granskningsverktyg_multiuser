@@ -5,6 +5,7 @@
  */
 
 import { initial_state } from '../state/initialState.js';
+import { ensure_samples_attached_media_shape } from './sample_attached_media_normalize.js';
 
 /** Returnerar en array; annars tom lista. */
 export function coerce_to_array(value: unknown): unknown[] {
@@ -89,7 +90,7 @@ export function coerce_nullable_plain_object(value: unknown): unknown {
  */
 export function sanitize_persisted_app_state_shape(state: Record<string, unknown>): Record<string, unknown> {
     const out: Record<string, unknown> = { ...state };
-    out.samples = coerce_to_array(out.samples);
+    out.samples = ensure_samples_attached_media_shape(out.samples);
     out.archivedRequirementResults = coerce_to_array(out.archivedRequirementResults);
     out.auditMetadata = coerce_audit_metadata(
         out.auditMetadata,

@@ -281,6 +281,7 @@ Varje objekt representerar ett stickprov och innehåller:
 *   `description`: Sträng (användarens namn på stickprovet).
 *   `url`: Sträng (url till stickprovet).
 *   `selectedContentTypes`: Array av strängar (id:n från regelfilens `contentTypes`).
+*   `attachedMediaFilenames`: Valfri array av strängar (filnamn för skärmavbildningar och ev. video som avser hela stickprovet, ett filnamn per rad i modalen). Saknas fältet behandlas det som en tom lista.
 *   `requirementResults`: Ett objekt där nycklarna är krav-id:n (från regelfilen) och värdena är resultatobjekt (se nedan) för det specifika kravet och detta stickprov.
 
 ### 6.3 Resultatobjekt (inom `requirementResults`)
