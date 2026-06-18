@@ -1,5 +1,5 @@
 /**
- * @fileoverview Skärmdumps-/media-bifogning i stickprovsformuläret (samma modal som vid bristbeskrivning).
+ * @fileoverview Skärmavbildnings-/media-bifogning i stickprovsformuläret (samma modal som vid bristbeskrivning).
  */
 
 import { app_runtime_refs } from '../../utils/app_runtime_refs.js';
