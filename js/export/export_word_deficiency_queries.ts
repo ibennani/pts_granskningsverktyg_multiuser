@@ -125,7 +125,8 @@ export function get_deficiencies_for_sample(requirement: any, sample: any, curre
         deficiencies.push({
             observationDetail: finalObservation,
             deficiencyId: pc_obj.deficiencyId,
-            isStandardText: isStandardText
+            isStandardText: isStandardText,
+            attachedMediaFilenames: (pc_obj as { attachedMediaFilenames?: unknown }).attachedMediaFilenames
         });
     });
 

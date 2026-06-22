@@ -14,6 +14,8 @@ import {
 import { calculate_audit_hash } from './export_html_audit_hash.js';
 import { HTML_EXPORT_CSS } from './export_html_styles_generated.js';
 import { HTML_EXPORT_EMBEDDED_SCRIPT } from './export_html_script_generated.js';
+import { build_export_media_filename_context } from './export_media_filename_context.js';
+import { collect_html_export_zip_entries, build_html_export_zip } from './export_html_media.js';
 
 // HTML-exportfunktion (sorterar på krav)
 export async function export_to_html(current_audit: Record<string, unknown> | null | undefined): Promise<void> {
@@ -36,14 +38,17 @@ export async function export_to_html(current_audit: Record<string, unknown> | nu
         const export_timestamp = new Date().toISOString();
         const audit_hash = await calculate_audit_hash(audit);
         consoleManager.log('[ExportLogic] Audit hash calculated:', audit_hash ? audit_hash.substring(0, 16) + '...' : 'null');
+
+        const media_context = await build_export_media_filename_context(audit);
         
         // Bygg innehåll sorterat på krav (default)
         consoleManager.log('[ExportLogic] Building content...');
         const { sidebar_html: sidebar_html_requirement, content_html: content_html_requirement } =
-            build_content_sorted_by_requirement(audit, t as (key: string, opts?: Record<string, unknown>) => string);
+            build_content_sorted_by_requirement(audit, t as (key: string, opts?: Record<string, unknown>) => string, media_context);
         const { sidebar_html: sidebar_html_sample, content_html: content_html_sample } = build_content_sorted_by_sample(
             audit,
-            t as (key: string, opts?: Record<string, unknown>) => string
+            t as (key: string, opts?: Record<string, unknown>) => string,
+            media_context
         );
         consoleManager.log('[ExportLogic] Content built successfully');
 
@@ -146,11 +151,7 @@ ${HTML_EXPORT_EMBEDDED_SCRIPT}
 </html>`;
 
 
-        // Skapa blob och ladda ner
-        const blob = new Blob([html_document], { type: 'text/html;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-
+        // Skapa zip med HTML och bilder
         const actor_name = sanitize_filename_segment(actor_label);
         const case_number = case_num.trim();
         const sanitized_case_number = case_number ? case_number.replace(/[^a-z0-9åäöÅÄÖ-]/gi, '') : '';
@@ -160,22 +161,46 @@ ${HTML_EXPORT_EMBEDDED_SCRIPT}
         const fallback_now = server_dt ? null : await get_server_filename_datetime(null);
         const date_str = server_dt || fallback_now || format_local_date_for_filename(new Date(), '');
         
-        let filename;
+        let html_filename;
         if (sanitized_case_number) {
-            filename = `${sanitized_case_number}_${actor_name}_${date_str}.html`;
+            html_filename = `${sanitized_case_number}_${actor_name}_${date_str}.html`;
         } else {
-            filename = `${actor_name}_${date_str}.html`;
+            html_filename = `${actor_name}_${date_str}.html`;
         }
+        const zip_filename = html_filename.replace(/\.html$/i, '.zip');
+
+        const zip_entries = collect_html_export_zip_entries(audit, media_context);
+        const audit_id = (audit as { auditId?: string }).auditId;
+        const { blob, missing_filenames } = await build_html_export_zip({
+            html_document,
+            html_filename,
+            entries: zip_entries,
+            audit_id
+        });
+
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
 
         link.href = url;
-        link.download = filename;
+        link.download = zip_filename;
         document.body.appendChild(link);
-        consoleManager.log('[ExportLogic] Triggering download:', filename);
+        consoleManager.log('[ExportLogic] Triggering download:', zip_filename);
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
         consoleManager.log('[ExportLogic] HTML export completed successfully');
-        show_global_message_internal(t('audit_saved_as_file', { filename: filename }), 'success');
+
+        if (missing_filenames.length > 0) {
+            show_global_message_internal(
+                t('html_export_missing_media_warning', {
+                    filename: zip_filename,
+                    count: String(missing_filenames.length)
+                }),
+                'success'
+            );
+        } else {
+            show_global_message_internal(t('audit_saved_as_file', { filename: zip_filename }), 'success');
+        }
 
     } catch (error: unknown) {
         if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[ExportLogic] Error exporting to HTML:', error);

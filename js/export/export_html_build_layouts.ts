@@ -9,8 +9,10 @@ import {
     generate_anchor_id,
     create_html_metadata,
     create_html_observations,
-    create_html_comments
+    create_html_comments,
+    create_html_sample_media
 } from './export_html_build_primitives.js';
+import type { ExportMediaFilenameContext } from './export_media_filename_context.js';
 import {
     natural_sort,
     get_requirements_with_deficiencies,
@@ -40,7 +42,8 @@ export function get_requirements_with_deficiencies_for_sample(
 
 export function build_content_sorted_by_requirement(
     current_audit: Record<string, unknown>,
-    t: (key: string, opts?: Record<string, unknown>) => string
+    t: (key: string, opts?: Record<string, unknown>) => string,
+    media_context: ExportMediaFilenameContext | null = null
 ): { sidebar_html: string; content_html: string } {
     const requirements_with_deficiencies = get_requirements_with_deficiencies(current_audit);
     const sorted_requirements = requirements_with_deficiencies.sort((a: unknown, b: unknown) => {
@@ -116,7 +119,7 @@ export function build_content_sorted_by_requirement(
             sidebar_html += `<ul role="list"><li role="listitem" class="sidebar-h3"><a href="#${h3_sample_anchor_id}" aria-label="Stickprov: ${escape_html_internal(sampleName)} för krav: ${escape_html_internal(h2_text)}">${escape_html_internal(sampleName)}</a></li></ul>`;
 
             for (const deficiency of deficiencies) {
-                content_html += create_html_observations(deficiency as Record<string, unknown>, t);
+                content_html += create_html_observations(deficiency as Record<string, unknown>, t, media_context);
             }
 
             content_html += create_html_comments(r, s, rule_reqs, t);
@@ -130,8 +133,10 @@ export function build_content_sorted_by_requirement(
 
 export function build_content_sorted_by_sample(
     current_audit: Record<string, unknown>,
-    t: (key: string, opts?: Record<string, unknown>) => string
+    t: (key: string, opts?: Record<string, unknown>) => string,
+    media_context: ExportMediaFilenameContext | null = null
 ): { sidebar_html: string; content_html: string } {
+    const samples_list = (current_audit.samples as unknown[]) || [];
     const samples_with_deficiencies = get_samples_with_deficiencies(current_audit);
     const sorted_samples = samples_with_deficiencies.sort((a: unknown, b: unknown) => {
         const sa = a as Record<string, unknown>;
@@ -178,6 +183,8 @@ export function build_content_sorted_by_sample(
             content_html += `<h2 id="${h2_anchor_id}">Stickprov: ${escape_html_internal(sampleName)}</h2>`;
         }
 
+        content_html += create_html_sample_media(s, samples_list, current_audit, media_context, t);
+
         const requirements_with_deficiencies = get_requirements_with_deficiencies_for_sample(s, current_audit);
         const sorted_requirements = requirements_with_deficiencies.sort((a: unknown, b: unknown) => {
             const ra = a as Record<string, unknown>;
@@ -210,7 +217,7 @@ export function build_content_sorted_by_sample(
             content_html += create_html_metadata(r, current_audit, sorted_deficiency_ids, t);
 
             for (const deficiency of deficiencies) {
-                content_html += create_html_observations(deficiency as Record<string, unknown>, t);
+                content_html += create_html_observations(deficiency as Record<string, unknown>, t, media_context);
             }
 
             content_html += create_html_comments(r, s, rule_reqs, t);

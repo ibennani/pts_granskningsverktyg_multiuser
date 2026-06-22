@@ -79,6 +79,16 @@ export async function fetch_audit_media_blob_url(audit_id: string, filename: str
     return URL.createObjectURL(blob);
 }
 
+/**
+ * Hämtar en mediefil som råa bytes (för zip-export).
+ */
+export async function fetch_audit_media_bytes(audit_id: string, filename: string): Promise<ArrayBuffer | null> {
+    const url = get_audit_media_url(audit_id, filename);
+    const res = await fetch_with_auth_retry(url, { method: 'GET', cache: 'no-store' });
+    if (!res.ok) return null;
+    return res.arrayBuffer();
+}
+
 export function get_audit_media_list_url(audit_id: string): string {
     return `${get_base_url()}/audits/${encodeURIComponent(String(audit_id))}/media`;
 }

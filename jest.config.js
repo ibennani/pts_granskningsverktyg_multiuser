@@ -49,6 +49,7 @@ export default {
     '^.+[\\\\/]export_html_styles_generated\\.js$': '<rootDir>/js/export/export_html_styles_generated.ts',
     '^.+[\\\\/]export_html_script_generated\\.js$': '<rootDir>/js/export/export_html_script_generated.ts',
     '^.+[\\\\/]export_html_export\\.js$': '<rootDir>/js/export/export_html_export.ts',
+    '^.+[\\\\/]export_html_media\\.js$': '<rootDir>/js/export/export_html_media.ts',
     '^.+/state/index\\.js$': '<rootDir>/js/state/index.ts',
     '^.+/actionTypes\\.js$': '<rootDir>/js/state/actionTypes.ts',
     '^.+/audit_reducer_bulk_pass\\.js$': '<rootDir>/js/state/audit_reducer_bulk_pass.ts',

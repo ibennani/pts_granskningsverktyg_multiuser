@@ -4,8 +4,16 @@
 
 import { marked } from '../utils/markdown.js';
 import * as Helpers from '../utils/helpers.js';
+import { get_media_display_kind } from '../../shared/media/sanitize_media_filename.js';
 import { extractDeficiencyNumber } from './export_format_helpers.js';
 import { get_export_requirement_result } from './export_bootstrap.js';
+import type { ExportMediaFilenameContext } from './export_media_filename_context.js';
+import {
+    get_deficiency_media_export_names,
+    get_sample_media_export_names,
+    HTML_EXPORT_MEDIA_DIR
+} from './export_html_media.js';
+import { resolve_effective_sample_attached_filenames } from '../logic/sample_attached_media_normalize.js';
 
 export function escape_html_internal(str: unknown): string {
     if (typeof Helpers !== 'undefined' && typeof Helpers.escape_html === 'function') {
@@ -136,7 +144,82 @@ export function render_markdown_to_html(markdown_text: unknown): string {
     }
 }
 
-export function create_html_observations(deficiency: Record<string, unknown>, _t: (k: string, opts?: Record<string, unknown>) => string): string {
+function build_media_src_path(export_filename: string): string {
+    return `${HTML_EXPORT_MEDIA_DIR}/${export_filename}`;
+}
+
+function render_single_export_media_item(export_filename: string, figure_class: string): string {
+    const src_path = build_media_src_path(export_filename);
+    const safe_src = escape_html_internal(src_path);
+    const safe_name = escape_html_internal(export_filename);
+    const kind = get_media_display_kind(export_filename);
+
+    if (kind === 'previewable_image' || kind === 'image') {
+        return (
+            `<figure class="${figure_class}">` +
+            `<img src="${safe_src}" alt="${safe_name}">` +
+            `<figcaption>${safe_name}</figcaption>` +
+            `</figure>`
+        );
+    }
+
+    return (
+        `<figure class="${figure_class}">` +
+        `<p><a href="${safe_src}">${safe_name}</a></p>` +
+        `</figure>`
+    );
+}
+
+export function create_html_media_figures(export_filenames: string[], figure_class: string): string {
+    if (!export_filenames.length) {
+        return '';
+    }
+    return export_filenames.map((name) => render_single_export_media_item(name, figure_class)).join('');
+}
+
+export function create_html_observation_media(
+    attached_filenames: unknown,
+    deficiency_id: string | null | undefined,
+    media_context: ExportMediaFilenameContext | null
+): string {
+    const export_names = get_deficiency_media_export_names(attached_filenames, media_context, deficiency_id);
+    return create_html_media_figures(export_names, 'observation-media');
+}
+
+export function create_html_sample_media(
+    sample: Record<string, unknown>,
+    samples: unknown[] | null | undefined,
+    audit: Record<string, unknown>,
+    media_context: ExportMediaFilenameContext | null,
+    t: (key: string, opts?: Record<string, unknown>) => string
+): string {
+    const filenames = resolve_effective_sample_attached_filenames(
+        audit as Parameters<typeof resolve_effective_sample_attached_filenames>[0],
+        sample
+    );
+    const export_names = get_sample_media_export_names(
+        filenames,
+        media_context,
+        sample.id as string | undefined,
+        samples
+    );
+    if (export_names.length === 0) {
+        return '';
+    }
+    const title = escape_html_internal(t('sample_screenshot_title'));
+    return (
+        `<section class="sample-media-section">` +
+        `<h3 class="sample-media-heading">${title}</h3>` +
+        create_html_media_figures(export_names, 'sample-media') +
+        `</section>`
+    );
+}
+
+export function create_html_observations(
+    deficiency: Record<string, unknown>,
+    _t: (k: string, opts?: Record<string, unknown>) => string,
+    media_context: ExportMediaFilenameContext | null = null
+): string {
     let html = '';
     let observationText = String(deficiency.observationDetail || '').trim();
     observationText = observationText.replace(/^[\s]*[-*]\s/gm, '• ');
@@ -159,6 +242,12 @@ export function create_html_observations(deficiency: Record<string, unknown>, _t
     } else {
         html += `<div class="observation-content">${renderedMarkdown}</div>`;
     }
+
+    html += create_html_observation_media(
+        deficiency.attachedMediaFilenames,
+        deficiency.deficiencyId as string | undefined,
+        media_context
+    );
 
     return html;
 }
