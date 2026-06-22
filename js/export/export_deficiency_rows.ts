@@ -12,8 +12,10 @@ import { get_export_requirement_result } from './export_bootstrap.js';
 import { for_each_failed_in_requirement_result } from './export_deficiency_traversal.js';
 import { find_check_def_by_storage_id, find_pass_criterion_def_by_storage_id } from '../logic/entity_id_match.js';
 import { to_wcag_yes_only_value } from './excel_export_helpers.js';
-import { build_requirement_media_export_filename } from './export_media_filename.js';
-import type { ExportMediaFilenameContext } from './export_media_filename_context.js';
+import {
+    format_media_filenames_for_export,
+    type ExportMediaFilenameContext
+} from './export_media_naming.js';
 
 export type DeficiencyColumnDef = { header: string; key: string; width: number };
 
@@ -38,51 +40,6 @@ export type PreparedDeficiencyExport = {
     column_defs: DeficiencyColumnDef[];
     include_comment_column: boolean;
 };
-
-/** Formaterar bifogade filnamn till en cell med ett filnamn per rad. */
-export function format_screenshot_reference_for_export(filenames: unknown): string {
-    if (!Array.isArray(filenames)) {
-        return '';
-    }
-    return filenames
-        .map((name) => String(name || '').trim())
-        .filter(Boolean)
-        .join('\n');
-}
-
-/** Formaterar exportfilnamn enligt PTS-regler, ett per rad i samma cell. */
-export function format_screenshot_reference_for_export_with_context(
-    filenames: unknown,
-    context: ExportMediaFilenameContext,
-    row_meta: { deficiency_id?: string | null }
-): string {
-    if (!Array.isArray(filenames)) {
-        return '';
-    }
-    const trimmed = filenames
-        .map((name) => String(name || '').trim())
-        .filter(Boolean);
-    if (trimmed.length === 0) {
-        return '';
-    }
-
-    const export_fallback_date =
-        trimmed.map((name) => context.capture_dates.get(name)).find(Boolean) || '0000-00-00';
-
-    return trimmed
-        .map((original_filename, index) =>
-            build_requirement_media_export_filename({
-                deficiency_id: row_meta.deficiency_id,
-                image_index: index + 1,
-                audit_type_label: context.audit_type_label,
-                granskning_sequence: context.granskning_sequence,
-                capture_date: context.capture_dates.get(original_filename) || export_fallback_date,
-                case_number: context.case_number,
-                original_filename
-            })
-        )
-        .join('\n');
-}
 
 export function build_deficiency_column_defs(
     t: (key: string) => string,
@@ -199,11 +156,11 @@ function build_single_deficiency_row(
         sampleUrl: url_obj,
         deficiencyType: '',
         observation: final_observation,
-        screenshotReference: media_context
-            ? format_screenshot_reference_for_export_with_context(pc_obj.attachedMediaFilenames, media_context, {
-                  deficiency_id: pc_obj.deficiencyId
-              })
-            : format_screenshot_reference_for_export(pc_obj.attachedMediaFilenames),
+        screenshotReference: format_media_filenames_for_export(
+            pc_obj.attachedMediaFilenames,
+            media_context,
+            { deficiency_id: pc_obj.deficiencyId }
+        ),
         comment: comment_text,
         wcagPerceivable: to_wcag_yes_only_value(pour_vals.wcagPerceivable, yes_label),
         wcagOperable: to_wcag_yes_only_value(pour_vals.wcagOperable, yes_label),

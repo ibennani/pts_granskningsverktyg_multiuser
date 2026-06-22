@@ -20,7 +20,7 @@ import {
     clear_workbook_metadata,
     strip_xlsx_document_metadata
 } from './excel_export_helpers.js';
-import { build_export_media_filename_context } from './export_media_filename_context.js';
+import { build_export_media_filename_context } from './export_media_naming.js';
 
 export async function export_to_excel(current_audit: unknown) {
     const t = get_t_internal() as (key: string, opts?: Record<string, unknown>) => string;

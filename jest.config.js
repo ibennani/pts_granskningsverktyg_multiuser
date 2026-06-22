@@ -29,6 +29,7 @@ export default {
     '^.+[\\\\/]export_deficiency_rows\\.js$': '<rootDir>/js/export/export_deficiency_rows.ts',
     '^.+[\\\\/]export_media_filename\\.js$': '<rootDir>/js/export/export_media_filename.ts',
     '^.+[\\\\/]export_media_filename_context\\.js$': '<rootDir>/js/export/export_media_filename_context.ts',
+    '^.+[\\\\/]export_media_naming\\.js$': '<rootDir>/js/export/export_media_naming.ts',
     '^.+[\\\\/]export_deficiency_traversal\\.js$': '<rootDir>/js/export/export_deficiency_traversal.ts',
     '^.+[\\\\/]export_excel\\.js$': '<rootDir>/js/export/export_excel.ts',
     '^.+[\\\\/]excel_export_helpers\\.js$': '<rootDir>/js/export/excel_export_helpers.ts',

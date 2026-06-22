@@ -1,8 +1,6 @@
 import {
     build_deficiencies_data,
-    build_deficiency_column_defs,
-    format_screenshot_reference_for_export,
-    format_screenshot_reference_for_export_with_context
+    build_deficiency_column_defs
 } from '../../js/export/export_deficiency_rows.ts';
 import { escape_for_csv } from '../../js/export/export_format_helpers.ts';
 
@@ -27,16 +25,6 @@ describe('export_deficiency_rows', () => {
         };
         return map[key] || key;
     };
-
-    test('format_screenshot_reference_for_export med flera filnamn', () => {
-        expect(format_screenshot_reference_for_export(['a.png', 'b.jpg'])).toBe('a.png\nb.jpg');
-    });
-
-    test('format_screenshot_reference_for_export tom eller ogiltig', () => {
-        expect(format_screenshot_reference_for_export([])).toBe('');
-        expect(format_screenshot_reference_for_export(null)).toBe('');
-        expect(format_screenshot_reference_for_export(['  ', 'c.png'])).toBe('c.png');
-    });
 
     test('build_deficiency_column_defs placerar screenshotReference efter observation', () => {
         const defs = build_deficiency_column_defs(t, false);
@@ -160,19 +148,6 @@ describe('export_deficiency_rows', () => {
             '047_1_WEBB_1_2026-04-11_26-11111.png\n047_2_WEBB_1_2026-04-12_26-11111.png'
         );
         expect(rows[0].screenshotReference.split('\n')).toHaveLength(2);
-    });
-
-    test('format_screenshot_reference_for_export_with_context en rad per filnamn', () => {
-        const context = {
-            audit_type_label: 'WEBB',
-            granskning_sequence: 1,
-            case_number: '26-11111',
-            capture_dates: new Map([['a.png', '2026-04-11']])
-        };
-        const result = format_screenshot_reference_for_export_with_context(['a.png'], context, {
-            deficiency_id: 'B047'
-        });
-        expect(result).toBe('047_1_WEBB_1_2026-04-11_26-11111.png');
     });
 });
 
