@@ -86,7 +86,15 @@ Importera från `./state.js` (eller alias enligt projektets Vite-inställningar)
 3. **Synk sker inte** — kontrollera `auditStatus`, token, `navigator.onLine`, och att action-typen inte finns på exklusionslistan ovan.
 4. **Korrupt JSON i session** — nyckeln rensas vid parse-fel; användaren får blank start om backup saknas eller är ogiltig.
 
-## 9. Närliggande dokument
+## 9. Stickprovets skärmavbildningar (`attachedMediaFilenames`)
+
+Varje stickprov i `samples` kan bära en valfri lista **`attachedMediaFilenames`** (filnamn som text, samma modell som bifogad media vid kontrollpunkter).
+
+- **Var sparas det:** i granskningens json (sessionStorage, localStorage-backup, serverns `audits.samples`, exporterad fil) — **inte** i regelfilen.
+- **Vid inläsning:** `sanitize_persisted_app_state_shape`, import från fil och state från server normaliserar saknat eller ogiltigt fält till en **tom lista** per stickprov, så äldre granskningar fungerar utan migrering.
+- **Vid spar:** listan uppdateras när användaren bifogar media i stickprovsformuläret eller i vyn **Bifogad media** (Bilder). Sidomenyns räknare och Bilder-vyn inkluderar både stickprovets skärmavbildningar och media vid kontrollpunkter.
+
+## 10. Närliggande dokument
 
 - `docs/systemdokumentation.md` — arkitekturöversikt.
 - `docs/requirements_data_shape.md` — form av `requirements` i regelfil och validering av sparad fil.

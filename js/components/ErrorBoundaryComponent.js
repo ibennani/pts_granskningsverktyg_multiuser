@@ -1,4 +1,5 @@
 import './error_boundary_component.css';
+import { hard_reload_page } from '../utils/hard_reload_page.js';
 
 export class ErrorBoundaryComponent {
     constructor() {
