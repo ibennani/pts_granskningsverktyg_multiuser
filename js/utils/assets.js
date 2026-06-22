@@ -24,7 +24,13 @@ export function resolve_asset_href(href) {
     if (href.startsWith('http:') || href.startsWith('https:') || href.startsWith('//')) return href;
     const base = get_app_base();
     if (href.startsWith('/')) return base === '/' ? href : base.replace(/\/$/, '') + href;
-    const relative = href.startsWith('./') ? href.slice(2) : href;
+    const relative = href.replace(/^(\.\/)+/, '');
+    if (relative.includes('..')) {
+        const origin = window.location.origin;
+        const base_url = new URL(base, origin);
+        const resolved = new URL(relative, base_url);
+        return resolved.pathname + resolved.search + resolved.hash;
+    }
     return base + relative;
 }
 

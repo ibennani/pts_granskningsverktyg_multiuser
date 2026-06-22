@@ -5,6 +5,10 @@
 import { upload_audit_media } from '../../api/audit_media_api.js';
 import { is_browser_online } from '../../utils/browser_online.js';
 import {
+    revoke_audit_media_blob_url,
+    set_audit_media_local_preview_blob_url
+} from './render_audit_media_list_item.js';
+import {
     partition_files_by_existing_filenames,
     build_attach_media_upload_success_message,
     build_attach_media_upload_renamed_conflict_message,
@@ -83,19 +87,28 @@ export function create_attach_media_upload_queue(deps: AttachMediaUploadQueueDep
 
         const optimistic_filenames = [...working_filenames, local_name];
         deps.set_working_filenames(optimistic_filenames);
+        const local_preview_url = URL.createObjectURL(file);
+        set_audit_media_local_preview_blob_url(deps.audit_id, local_name, local_preview_url);
         deps.refresh_list();
         deps.show_status(deps.t('attach_media_uploading'), 'info');
 
         try {
             const result = await upload_audit_media(deps.audit_id, file);
             if (!is_browser_online() || abort_due_to_offline) {
+                revoke_audit_media_blob_url(deps.audit_id, local_name);
                 rollback_optimistic_filename(local_name);
                 return { filename: null, renamed_due_to_conflict: false };
             }
 
             const server_name = String(result?.filename || '').trim();
             if (!server_name) {
+                revoke_audit_media_blob_url(deps.audit_id, local_name);
                 throw new Error(deps.t('attach_media_upload_failed'));
+            }
+
+            if (server_name !== local_name) {
+                revoke_audit_media_blob_url(deps.audit_id, local_name);
+                set_audit_media_local_preview_blob_url(deps.audit_id, server_name, local_preview_url);
             }
 
             const current = deps.get_working_filenames().filter(
@@ -122,6 +135,7 @@ export function create_attach_media_upload_queue(deps: AttachMediaUploadQueueDep
 
             return { filename: server_name, renamed_due_to_conflict };
         } catch (err) {
+            revoke_audit_media_blob_url(deps.audit_id, local_name);
             if (abort_due_to_offline) {
                 rollback_optimistic_filename(local_name);
                 return { filename: null, renamed_due_to_conflict: false };

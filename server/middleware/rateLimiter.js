@@ -41,3 +41,27 @@ export const import_payload_rate_limiter = rateLimit({
     }
 });
 
+/** Begränsar upprepade mediauppladdningar per användare eller IP. */
+const MEDIA_UPLOAD_WINDOW_MS = 60 * 1000;
+const MEDIA_UPLOAD_MAX_PER_WINDOW = 60;
+
+export const media_upload_rate_limiter = rateLimit({
+    windowMs: MEDIA_UPLOAD_WINDOW_MS,
+    limit: MEDIA_UPLOAD_MAX_PER_WINDOW,
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req) => {
+        const uid = req.user && req.user.id != null ? String(req.user.id) : '';
+        if (uid) {
+            return `media:user:${uid}`;
+        }
+        const ip = req.ip || 'unknown';
+        return `media:ip:${ipKeyGenerator(ip)}`;
+    },
+    handler: (_req, res) => {
+        res.status(429).json({
+            error: 'För många uppladdningar. Vänta en stund och försök igen.'
+        });
+    }
+});
+

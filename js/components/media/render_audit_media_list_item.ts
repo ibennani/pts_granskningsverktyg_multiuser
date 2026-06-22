@@ -38,6 +38,22 @@ export function get_audit_media_cached_blob_url(
 }
 
 /**
+ * Cachar en lokal blob-URL (t.ex. under pågående uppladdning) så miniatyr kan visas utan serveranrop.
+ */
+export function set_audit_media_local_preview_blob_url(
+    audit_id: string,
+    filename: string,
+    blob_url: string
+): void {
+    const key = cache_key(audit_id, filename);
+    const existing = blob_url_cache.get(key);
+    if (existing && existing !== blob_url) {
+        URL.revokeObjectURL(existing);
+    }
+    blob_url_cache.set(key, blob_url);
+}
+
+/**
  * Frigör blob-URL för en enskild mediefil (t.ex. efter borttagning).
  */
 export function revoke_audit_media_blob_url(audit_id: string, filename: string): void {

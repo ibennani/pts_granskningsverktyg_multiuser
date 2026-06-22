@@ -4,6 +4,11 @@ jest.unstable_mockModule('../../js/api/audit_media_api.js', () => ({
     upload_audit_media: jest.fn()
 }));
 
+jest.unstable_mockModule('../../js/components/media/render_audit_media_list_item.js', () => ({
+    revoke_audit_media_blob_url: jest.fn(),
+    set_audit_media_local_preview_blob_url: jest.fn()
+}));
+
 const mock_is_browser_online = jest.fn(() => true);
 jest.unstable_mockModule('../../js/utils/browser_online.js', () => ({
     is_browser_online: () => mock_is_browser_online()

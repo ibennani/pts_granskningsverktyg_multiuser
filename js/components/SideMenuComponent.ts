@@ -6,8 +6,6 @@ import { build_compact_hash_fragment, expand_view_slug_from_hash, normalize_para
 import { is_debug_modal_scroll, is_debug_nav, is_debug_problems_update } from '../app/runtime_flags.js';
 
 export class SideMenuComponent {
-    static CSS_PATH = '../../css/components/side_menu_component.css';
-
     async init({ root, deps }) {
         this.root = root;
         this.deps = deps;
@@ -37,10 +35,6 @@ export class SideMenuComponent {
         this.handle_external_toggle_event = this.handle_external_toggle_event.bind(this);
         this.handle_close_side_menu_event = this.handle_close_side_menu_event.bind(this);
         this._compact_escape_listener_registered = false;
-
-        if (this.Helpers?.load_css && SideMenuComponent.CSS_PATH) {
-            await this.Helpers.load_css(SideMenuComponent.CSS_PATH).catch(() => {});
-        }
 
         this.unsubscribe = null;
         if (typeof deps.subscribe === 'function') {

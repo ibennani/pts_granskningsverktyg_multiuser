@@ -10,7 +10,8 @@ import { validate_saved_audit_file } from '../../js/validation_logic.ts';
 import { check_json_structure_depth_and_size } from '../../shared/json/json_structure_guard.js';
 import { save_backup_for_audit } from '../backup/audit_backup.js';
 import { requireAdmin } from '../auth/middleware.js';
-import { import_payload_rate_limiter } from '../middleware/rateLimiter.js';
+import { import_payload_rate_limiter, media_upload_rate_limiter } from '../middleware/rateLimiter.js';
+import { register_audit_media_routes } from './audit_media_routes.js';
 import { attach_export_integrity_server_payload } from '../utils/export_integrity_node.js';
 import { build_statistics_from_audit_rows } from '../audit_aggregated_statistics.js';
 import { parse_audit_part_key } from '../../shared/audit/audit_part_keys.js';
@@ -648,6 +649,8 @@ router.post('/import', import_payload_rate_limiter, async (req, res) => {
         res.status(500).json({ error: 'Kunde inte importera' });
     }
 });
+
+register_audit_media_routes(router, media_upload_rate_limiter);
 
 router.delete('/:id', requireAdmin, async (req, res) => {
     try {
