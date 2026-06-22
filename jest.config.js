@@ -50,6 +50,8 @@ export default {
     '^.+[\\\\/]export_html_script_generated\\.js$': '<rootDir>/js/export/export_html_script_generated.ts',
     '^.+[\\\\/]export_html_export\\.js$': '<rootDir>/js/export/export_html_export.ts',
     '^.+[\\\\/]export_html_media\\.js$': '<rootDir>/js/export/export_html_media.ts',
+    '^.+[\\\\/]export_html_themes\\.js$': '<rootDir>/js/export/export_html_themes.ts',
+    '^.+[\\\\/]export_html_sidebar_script\\.js$': '<rootDir>/js/export/export_html_sidebar_script.ts',
     '^.+/state/index\\.js$': '<rootDir>/js/state/index.ts',
     '^.+/actionTypes\\.js$': '<rootDir>/js/state/actionTypes.ts',
     '^.+/audit_reducer_bulk_pass\\.js$': '<rootDir>/js/state/audit_reducer_bulk_pass.ts',

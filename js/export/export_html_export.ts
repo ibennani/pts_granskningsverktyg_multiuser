@@ -16,6 +16,13 @@ import { HTML_EXPORT_CSS } from './export_html_styles_generated.js';
 import { HTML_EXPORT_EMBEDDED_SCRIPT } from './export_html_script_generated.js';
 import { build_export_media_filename_context } from './export_media_filename_context.js';
 import { collect_html_export_zip_entries, build_html_export_zip } from './export_html_media.js';
+import {
+    build_html_export_sidebar_controls,
+    HTML_EXPORT_THEME_CSS,
+    resolve_html_export_initial_theme,
+    resolve_html_export_document_theme
+} from './export_html_themes.js';
+import { HTML_EXPORT_SIDEBAR_SCRIPT } from './export_html_sidebar_script.js';
 
 // HTML-exportfunktion (sorterar på krav)
 export async function export_to_html(current_audit: Record<string, unknown> | null | undefined): Promise<void> {
@@ -40,6 +47,7 @@ export async function export_to_html(current_audit: Record<string, unknown> | nu
         consoleManager.log('[ExportLogic] Audit hash calculated:', audit_hash ? audit_hash.substring(0, 16) + '...' : 'null');
 
         const media_context = await build_export_media_filename_context(audit);
+        const initial_theme = resolve_html_export_initial_theme();
         
         // Bygg innehåll sorterat på krav (default)
         consoleManager.log('[ExportLogic] Building content...');
@@ -54,13 +62,7 @@ export async function export_to_html(current_audit: Record<string, unknown> | nu
 
         // Bygg sidebar med länkar (nested structure) inklusive sorteringsalternativ
         let sidebar_html = '<nav class="html-export-sidebar" aria-label="Innehållsförteckning" role="navigation"><h2>Innehållsförteckning</h2>';
-        sidebar_html += '<div class="sort-controls">';
-        sidebar_html += '<div class="sort-label">Sortera på</div>';
-        sidebar_html += '<div class="sort-options">';
-        sidebar_html += '<label class="sort-option"><input type="radio" name="sort-by" value="requirement" checked> Krav</label>';
-        sidebar_html += '<label class="sort-option"><input type="radio" name="sort-by" value="sample"> Stickprov</label>';
-        sidebar_html += '</div>';
-        sidebar_html += '</div>';
+        sidebar_html += build_html_export_sidebar_controls(t, initial_theme);
         sidebar_html += '<div class="sidebar-content" data-sort-type="requirement">';
         sidebar_html += sidebar_html_requirement;
         sidebar_html += '</div>';
@@ -121,7 +123,7 @@ export async function export_to_html(current_audit: Record<string, unknown> | nu
 
         // Bygg komplett HTML-dokument
         const html_document = `<!DOCTYPE html>
-<html lang="sv">
+<html lang="sv" data-theme="${escape_html_internal(resolve_html_export_document_theme(initial_theme))}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -130,7 +132,7 @@ export async function export_to_html(current_audit: Record<string, unknown> | nu
     ${content_hash ? `<meta name="content-hash" content="${escape_html_internal(content_hash)}">` : ''}
     ${normalizedContentBase64 ? `<meta name="normalized-content" content="${escape_html_internal(normalizedContentBase64)}">` : ''}
     <title>${title_text}</title>
-    <style>${HTML_EXPORT_CSS}</style>
+    <style>${HTML_EXPORT_CSS}${HTML_EXPORT_THEME_CSS}</style>
 </head>
 <body>
     <div class="html-export-container">
@@ -145,6 +147,7 @@ export async function export_to_html(current_audit: Record<string, unknown> | nu
         ${content_html}
     </div>
     <script>
+${HTML_EXPORT_SIDEBAR_SCRIPT}
 ${HTML_EXPORT_EMBEDDED_SCRIPT}
     </script>
 </body>
