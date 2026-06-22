@@ -180,6 +180,8 @@ export async function run_attach_media_modal_view_switch(
     container.style.opacity = '0';
 
     apply_change();
+    apply_dialog_size(dialog_el, start_size);
+
     await wait_for_layout(container);
 
     const opening_preview = is_media_preview_container(container);
@@ -190,7 +192,9 @@ export async function run_attach_media_modal_view_switch(
 
     if (opening_preview) {
         sync_audit_media_preview_heading_layout(container, dialog_el);
-        open_target = capture_audit_media_preview_open_target(container, dialog_el);
+        open_target = capture_audit_media_preview_open_target(container, dialog_el, {
+            lock_size_during_measure: start_size
+        });
         target_size = open_target
             ? open_target_to_dialog_size(open_target)
             : measure_dialog(dialog_el);

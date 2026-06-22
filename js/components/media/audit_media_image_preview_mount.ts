@@ -610,6 +610,31 @@ export type AuditMediaPreviewOpenTarget = AuditMediaPreviewImageDimensions & {
     dialog_height: number;
 };
 
+type PreviewOpenMeasureOptions = {
+    /** Behåll liststorlek synlig medan mått tas (mätning sker dolt). */
+    lock_size_during_measure?: { width: number; height: number };
+};
+
+function apply_dialog_px_size(
+    dialog_el: HTMLDialogElement,
+    width: number,
+    height: number
+): void {
+    dialog_el.style.width = `${width}px`;
+    dialog_el.style.minWidth = `${width}px`;
+    dialog_el.style.maxWidth = `${width}px`;
+    dialog_el.style.height = `${height}px`;
+    dialog_el.style.minHeight = `${height}px`;
+}
+
+function clear_dialog_px_size(dialog_el: HTMLDialogElement): void {
+    dialog_el.style.width = '';
+    dialog_el.style.minWidth = '';
+    dialog_el.style.maxWidth = '';
+    dialog_el.style.height = '';
+    dialog_el.style.minHeight = '';
+}
+
 /**
  * Styr rubrikens radbrytning när filnamnet är bredare än viewport-taket (90 vw).
  */
@@ -625,7 +650,8 @@ export function sync_audit_media_preview_heading_layout(
  */
 export function capture_audit_media_preview_open_target(
     container: HTMLElement,
-    dialog_el: HTMLDialogElement
+    dialog_el: HTMLDialogElement,
+    options: PreviewOpenMeasureOptions = {}
 ): AuditMediaPreviewOpenTarget | null {
     const preview_img = container.querySelector('.audit-media-preview-image');
     const preview_wrap = preview_img?.closest('.audit-media-preview-wrap');
@@ -633,11 +659,14 @@ export function capture_audit_media_preview_open_target(
         return null;
     }
 
-    dialog_el.style.width = '';
-    dialog_el.style.minWidth = '';
-    dialog_el.style.maxWidth = '';
-    dialog_el.style.height = '';
-    dialog_el.style.minHeight = '';
+    const lock_size = options.lock_size_during_measure ?? null;
+    const previous_visibility = dialog_el.style.visibility;
+
+    if (lock_size) {
+        dialog_el.style.visibility = 'hidden';
+    }
+
+    clear_dialog_px_size(dialog_el);
 
     sync_preview_heading_layout_mode(container, dialog_el);
 
@@ -650,10 +679,26 @@ export function capture_audit_media_preview_open_target(
     fit_audit_media_preview_layout(container, dialog_el);
 
     const img_rect = preview_img.getBoundingClientRect();
-    if (img_rect.width < 1 || img_rect.height < 1) return null;
+    if (img_rect.width < 1 || img_rect.height < 1) {
+        if (lock_size) {
+            apply_dialog_px_size(dialog_el, lock_size.width, lock_size.height);
+            dialog_el.style.visibility = previous_visibility;
+        } else {
+            clear_dialog_px_size(dialog_el);
+        }
+        return null;
+    }
 
     const dialog_rect = dialog_el.getBoundingClientRect();
-    if (dialog_rect.width < 1 || dialog_rect.height < 1) return null;
+    if (dialog_rect.width < 1 || dialog_rect.height < 1) {
+        if (lock_size) {
+            apply_dialog_px_size(dialog_el, lock_size.width, lock_size.height);
+            dialog_el.style.visibility = previous_visibility;
+        } else {
+            clear_dialog_px_size(dialog_el);
+        }
+        return null;
+    }
 
     const dialog_height = Math.round(dialog_rect.height);
     dialog_el.style.height = `${dialog_height}px`;
@@ -671,11 +716,12 @@ export function capture_audit_media_preview_open_target(
         wrap_max_height: Math.max(1, wrap_max_height)
     };
 
-    dialog_el.style.width = '';
-    dialog_el.style.minWidth = '';
-    dialog_el.style.maxWidth = '';
-    dialog_el.style.height = '';
-    dialog_el.style.minHeight = '';
+    if (lock_size) {
+        apply_dialog_px_size(dialog_el, lock_size.width, lock_size.height);
+        dialog_el.style.visibility = previous_visibility;
+    } else {
+        clear_dialog_px_size(dialog_el);
+    }
 
     return open_target;
 }
