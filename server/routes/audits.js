@@ -25,6 +25,7 @@ import {
     fetch_audit_summary_for_import_conflict
 } from '../repositories/audit_repository.js';
 import { fetch_rule_set_by_id } from '../repositories/rule_repository.js';
+import { generate_pdf_from_html } from '../services/pdf_generation_service.ts';
 
 const router = express.Router();
 
@@ -431,6 +432,31 @@ router.get('/:id', async (req, res) => {
     } catch (err) {
         console.error('[audits] GET one error:', err);
         res.status(500).json({ error: 'Kunde inte hämta granskning' });
+    }
+});
+
+const PDF_EXPORT_HTML_MAX_BYTES = 8 * 1024 * 1024;
+
+router.post('/:id/export/pdf-requirements', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const audit_exists = await select_audit_id_exists(id);
+        if (!audit_exists.rows.length) {
+            return res.status(404).json({ error: 'Granskning hittades inte' });
+        }
+        const { htmlContent } = req.body || {};
+        if (!htmlContent || typeof htmlContent !== 'string') {
+            return res.status(400).json({ error: 'htmlContent krävs' });
+        }
+        if (Buffer.byteLength(htmlContent, 'utf8') > PDF_EXPORT_HTML_MAX_BYTES) {
+            return res.status(400).json({ error: 'htmlContent är för stor' });
+        }
+        const pdf_buffer = await generate_pdf_from_html({ htmlContent });
+        res.setHeader('Content-Type', 'application/pdf');
+        res.send(pdf_buffer);
+    } catch (err) {
+        console.error('[audits] PDF export error:', err);
+        res.status(500).json({ error: 'Kunde inte exportera PDF' });
     }
 });
 

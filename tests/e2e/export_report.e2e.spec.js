@@ -45,6 +45,13 @@ async function setupExportApiMocks (page) {
                 body: JSON.stringify({ token: 'e2e-exp-jwt' })
             });
         }
+        if (url.includes('/export/pdf-requirements') && method === 'POST') {
+            return route.fulfill({
+                status: 200,
+                contentType: 'application/pdf',
+                body: Buffer.from('%PDF-1.4 e2e-mock-pdf')
+            });
+        }
         if (method === 'GET') {
             return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
         }
@@ -55,12 +62,13 @@ async function setupExportApiMocks (page) {
 test.describe('Export rapport (mockat API)', () => {
     test.use({ viewport: { width: 1280, height: 900 } });
 
-    test('exportknappar för Word, Excel och CSV triggar nedladdning', async ({ page }) => {
+    test('exportknappar för Word, PDF, Excel och CSV triggar nedladdning', async ({ page }) => {
         const rule = JSON.parse(
             readFileSync(path.join(__dirname, '../fixtures/minimal-rulefile.json'), 'utf8')
         );
         const session_state = {
             ...JSON.parse(JSON.stringify(initial_state)),
+            auditId: 'e2e-audit-export-pdf',
             auditStatus: 'locked',
             ruleFileContent: rule,
             auditMetadata: {
@@ -106,11 +114,13 @@ test.describe('Export rapport (mockat API)', () => {
         await expect(page.locator('#audit-action-btn-export-csv')).toBeVisible();
         await expect(page.locator('#audit-action-btn-export-excel')).toBeVisible();
         await expect(page.locator('#audit-action-btn-export-word-reqs')).toBeVisible();
+        await expect(page.locator('#audit-action-btn-export-pdf-reqs')).toBeVisible();
 
         for (const sel of [
             '#audit-action-btn-export-csv',
             '#audit-action-btn-export-excel',
-            '#audit-action-btn-export-word-reqs'
+            '#audit-action-btn-export-word-reqs',
+            '#audit-action-btn-export-pdf-reqs'
         ]) {
             const dl = page.waitForEvent('download');
             await page.locator(sel).click();

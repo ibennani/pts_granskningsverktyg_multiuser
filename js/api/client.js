@@ -226,6 +226,50 @@ export async function api_post(path, body) {
     return res.json();
 }
 
+/**
+ * POST som returnerar binärdata (t.ex. PDF) istället för JSON.
+ * @param {string} path
+ * @param {object} body
+ * @returns {Promise<Blob>}
+ */
+export async function api_post_pdf(path, body) {
+    const url = `${get_base_url()}${path}`;
+    const body_json = JSON.stringify(body);
+    const run_fetch = async () => fetch(url, {
+        method: 'POST',
+        headers: get_auth_headers(),
+        body: body_json
+    });
+    let res = await run_fetch();
+    if (res.status === 401) {
+        if (get_auth_token()) {
+            const refreshed = await refresh_auth_token();
+            if (!refreshed) {
+                const e = new Error('Inloggning krävs');
+                e.status = 401;
+                throw e;
+            }
+            res = await run_fetch();
+        } else if (handle_unauthorized_response(res)) {
+            const e = new Error('Inloggning krävs');
+            e.status = 401;
+            throw e;
+        }
+    }
+    if (handle_unauthorized_response(res)) {
+        const e = new Error('Inloggning krävs');
+        e.status = 401;
+        throw e;
+    }
+    if (!res.ok) {
+        const err = await parse_error_payload(res);
+        const e = new Error(err.error || `HTTP ${res.status}`);
+        e.status = res.status;
+        throw e;
+    }
+    return res.blob();
+}
+
 export async function api_put(path, body) {
     const res = await fetch(`${get_base_url()}${path}`, {
         method: 'PUT',

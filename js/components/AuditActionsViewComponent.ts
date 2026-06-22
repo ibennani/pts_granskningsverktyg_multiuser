@@ -57,6 +57,7 @@ export class AuditActionsViewComponent {
         this.handle_export_csv = this.handle_export_csv.bind(this);
         this.handle_export_excel = this.handle_export_excel.bind(this);
         this.handle_export_word = this.handle_export_word.bind(this);
+        this.handle_export_pdf = this.handle_export_pdf.bind(this);
         this.handle_export_word_samples = this.handle_export_word_samples.bind(this);
         this.handle_export_html = this.handle_export_html.bind(this);
         this.handle_download_audit = this.handle_download_audit.bind(this);
@@ -241,6 +242,20 @@ export class AuditActionsViewComponent {
         }
     }
 
+    async handle_export_pdf() {
+        const t = this.Translation.t;
+        const current_state = this.getState();
+        if (!this.ExportLogic?.export_to_pdf_criterias) return;
+        try {
+            await this.ExportLogic.export_to_pdf_criterias(current_state);
+        } catch (error) {
+            this.NotificationComponent.show_global_message(
+                `${t('error_exporting_pdf')} ${error?.message || ''}`.trim(),
+                'error'
+            );
+        }
+    }
+
     handle_export_word_samples() {
         const current_state = this.getState();
         if (this.ExportLogic?.export_to_word_samples) {
@@ -386,6 +401,36 @@ export class AuditActionsViewComponent {
             id: btn_id,
             aria_describedby: desc_id || undefined
         }));
+        const desc_el = this.Helpers.create_element('p', {
+            class_name: 'audit-actions__export-description',
+            text_content: description,
+            attributes: desc_id ? { id: desc_id } : {}
+        });
+        wrapper.appendChild(desc_el);
+        return wrapper;
+    }
+
+    create_export_item_with_buttons({ buttons, description, desc_id_suffix }) {
+        const desc_id = desc_id_suffix ? `audit-action-desc-${desc_id_suffix}` : null;
+
+        const wrapper = this.Helpers.create_element('div', {
+            class_name: 'audit-actions__export-item',
+            attributes: desc_id ? { role: 'group', 'aria-describedby': desc_id } : {}
+        });
+        const buttons_row = this.Helpers.create_element('div', {
+            class_name: 'audit-actions__export-buttons'
+        });
+        for (const btn of buttons) {
+            buttons_row.appendChild(this.create_action_button({
+                label: btn.label,
+                on_click: btn.on_click,
+                variant: 'button-default',
+                icon_name: 'export',
+                id: btn.id_suffix ? `audit-action-btn-${btn.id_suffix}` : null,
+                aria_describedby: desc_id || undefined
+            }));
+        }
+        wrapper.appendChild(buttons_row);
         const desc_el = this.Helpers.create_element('p', {
             class_name: 'audit-actions__export-description',
             text_content: description,
@@ -605,12 +650,26 @@ export class AuditActionsViewComponent {
                     id_suffix: 'export-excel'
                 }));
             }
-            if (this.ExportLogic?.export_to_word_criterias) {
-                export_actions.appendChild(this.create_export_item({
-                    label: t('export_to_word'),
+            if (this.ExportLogic?.export_to_word_criterias || this.ExportLogic?.export_to_pdf_criterias) {
+                export_actions.appendChild(this.create_export_item_with_buttons({
+                    buttons: [
+                        ...(this.ExportLogic?.export_to_word_criterias
+                            ? [{
+                                label: t('export_to_word'),
+                                on_click: this.handle_export_word,
+                                id_suffix: 'export-word-reqs'
+                            }]
+                            : []),
+                        ...(this.ExportLogic?.export_to_pdf_criterias
+                            ? [{
+                                label: t('export_to_pdf'),
+                                on_click: this.handle_export_pdf,
+                                id_suffix: 'export-pdf-reqs'
+                            }]
+                            : [])
+                    ],
                     description: t('audit_actions_export_word_requirements_description'),
-                    on_click: this.handle_export_word,
-                    id_suffix: 'export-word-reqs'
+                    desc_id_suffix: 'export-reqs-report'
                 }));
             }
             if (this.ExportLogic?.export_to_word_samples) {

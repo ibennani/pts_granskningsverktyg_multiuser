@@ -8,9 +8,8 @@ import {
     SectionType,
     PageOrientation
 } from 'docx';
-import { format_local_date_for_filename } from '../utils/filename_utils.js';
-import { get_server_filename_datetime, sanitize_filename_segment } from '../utils/download_filename_utils.js';
 import { show_global_message_internal } from './export_bootstrap.js';
+import { build_report_export_filename } from './export_report_filename.js';
 import type { ExportWordMainFlowT } from './export_word_main_flow_children.js';
 
 export async function finalize_word_export_download (options: {
@@ -120,25 +119,12 @@ export async function finalize_word_export_download (options: {
     const url = URL.createObjectURL(buffer);
     const link = document.createElement('a');
 
-    const actor_name = sanitize_filename_segment(
-        current_audit.auditMetadata.actorName || t('filename_fallback_actor')
+    const filename = await build_report_export_filename(
+        current_audit,
+        isSortByRequirements,
+        'docx',
+        t
     );
-    const case_number = (current_audit.auditMetadata.caseNumber || '').trim();
-
-    const sanitized_case_number = case_number ? case_number.replace(/[^a-z0-9åäöÅÄÖ-]/gi, '') : '';
-
-    const sort_suffix = isSortByRequirements ? '_sorterat_på_krav' : '_sorterat_på_stickprov';
-    const last_updated_iso = current_audit?.updated_at || null;
-    const server_dt = await get_server_filename_datetime(last_updated_iso);
-    const fallback_now = server_dt ? null : await get_server_filename_datetime(null);
-    const date_str = server_dt || fallback_now || format_local_date_for_filename(new Date(), '');
-
-    let filename: string;
-    if (sanitized_case_number) {
-        filename = `${sanitized_case_number}_${actor_name}_${date_str}${sort_suffix}.docx`;
-    } else {
-        filename = `${actor_name}_${date_str}${sort_suffix}.docx`;
-    }
 
     link.href = url;
     link.download = filename;

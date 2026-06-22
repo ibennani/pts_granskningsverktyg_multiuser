@@ -1,0 +1,67 @@
+/**
+ * @fileoverview PDF-export (krav): bygger HTML och anropar server-Puppeteer.
+ */
+import { consoleManager } from '../utils/console_manager.js';
+import { get_t_internal, show_global_message_internal } from './export_bootstrap.js';
+import { build_report_export_filename } from './export_report_filename.js';
+import {
+    build_report_body_sorted_by_requirements,
+    build_report_pdf_intro_html,
+    build_report_pdf_html_document,
+    type ExportReportHtmlT,
+} from './export_report_html_criterias.js';
+import { api_post_pdf } from '../api/client.js';
+
+export async function export_to_pdf_criterias(current_audit: Record<string, unknown> | null | undefined): Promise<void> {
+    const t = get_t_internal() as ExportReportHtmlT;
+    if (!current_audit) {
+        show_global_message_internal(t('no_audit_data_to_save'), 'error');
+        return;
+    }
+
+    const audit_id = current_audit.auditId;
+    if (!audit_id || typeof audit_id !== 'string') {
+        show_global_message_internal(t('error_exporting_pdf_no_server_id'), 'error');
+        return;
+    }
+
+    consoleManager.log('[PDF Export] Starting export_to_pdf_criterias');
+
+    try {
+        const intro_html = build_report_pdf_intro_html();
+        const body_html = intro_html + build_report_body_sorted_by_requirements(current_audit, t);
+        const actor = String((current_audit.auditMetadata as { actorName?: string } | undefined)?.actorName || t('filename_fallback_actor'));
+        const case_num = String((current_audit.auditMetadata as { caseNumber?: string } | undefined)?.caseNumber || '').trim();
+        const doc_title = case_num ? `${case_num} ${actor}` : actor;
+        const html_content = build_report_pdf_html_document({
+            title: doc_title,
+            lang: 'sv',
+            body_html,
+        });
+
+        const pdf_blob = await api_post_pdf(`/audits/${encodeURIComponent(audit_id)}/export/pdf-requirements`, {
+            htmlContent: html_content,
+        });
+
+        const filename = await build_report_export_filename(
+            current_audit as { auditMetadata?: { caseNumber?: string; actorName?: string }; updated_at?: string | null },
+            true,
+            'pdf',
+            t
+        );
+
+        const url = URL.createObjectURL(pdf_blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        show_global_message_internal(t('audit_saved_as_file', { filename }), 'success');
+    } catch (error: unknown) {
+        if (window.ConsoleManager?.warn) window.ConsoleManager.warn('Error exporting to PDF:', error);
+        const msg = error instanceof Error ? error.message : String(error);
+        show_global_message_internal(`${t('error_exporting_pdf')} ${msg}`.trim(), 'error');
+    }
+}

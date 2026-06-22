@@ -53,6 +53,12 @@
     margin-right: 0;
 }
 
+.audit-actions__export-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
 .audit-actions__export-description {
     margin: 0;
     font-size: 0.85rem;
