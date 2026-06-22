@@ -184,4 +184,12 @@ describe('escape_for_csv med radbrytningar', () => {
     test('citerar fält med semikolon utan att ta bort radbrytning', () => {
         expect(escape_for_csv('a;b\nc')).toBe('"a;b\nc"');
     });
+
+    test('citerar flera PTS-filnamn i samma CSV-fält', () => {
+        const screenshot_reference =
+            '047_1_WEBB_1_2026-04-11_26-11111.png\n047_2_WEBB_1_2026-04-12_26-11111.png';
+        expect(escape_for_csv(screenshot_reference)).toBe(
+            '"047_1_WEBB_1_2026-04-11_26-11111.png\n047_2_WEBB_1_2026-04-12_26-11111.png"'
+        );
+    });
 });

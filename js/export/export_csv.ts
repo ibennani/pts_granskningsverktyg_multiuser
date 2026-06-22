@@ -9,6 +9,7 @@ import {
     prepare_deficiencies_for_export
 } from './export_deficiency_rows.js';
 import { build_deficiency_export_filename } from './excel_export_helpers.js';
+import { build_export_media_filename_context } from './export_media_filename_context.js';
 
 export async function export_to_csv(current_audit: unknown) {
     const t = get_t_internal() as (key: string, opts?: Record<string, unknown>) => string;
@@ -17,7 +18,14 @@ export async function export_to_csv(current_audit: unknown) {
         return;
     }
 
-    const { deficiencies_data, column_defs } = await prepare_deficiencies_for_export(current_audit, t);
+    show_global_message_internal(t('excel_export_preparing_media_references'), 'info');
+    const export_date = new Date();
+    const media_context = await build_export_media_filename_context(current_audit, export_date);
+    const { deficiencies_data, column_defs } = await prepare_deficiencies_for_export(
+        current_audit,
+        t,
+        media_context
+    );
     const column_keys = column_defs.map((def) => def.key);
     const csv_lines = [column_defs.map((def) => escape_for_csv(def.header)).join(';')];
 
@@ -30,7 +38,7 @@ export async function export_to_csv(current_audit: unknown) {
     const blob = new Blob([new Uint8Array([0xef, 0xbb, 0xbf]), csv_string], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    const filename = build_deficiency_export_filename(current_audit as never, t, new Date(), 'csv');
+    const filename = build_deficiency_export_filename(current_audit as never, t, export_date, 'csv');
 
     link.setAttribute('href', url);
     link.setAttribute('download', filename);
