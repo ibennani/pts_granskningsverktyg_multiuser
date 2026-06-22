@@ -1,5 +1,6 @@
 import "./confirm_sample_edit_view_component.css";
 import { find_requirement_definition } from '../audit_logic.js';
+import { sample_edit_analysis_has_content_type_changes } from '../logic/sample_edit_diff.js';
 
 export class ConfirmSampleEditViewComponent {
     private root: HTMLElement | null;
@@ -62,21 +63,23 @@ export class ConfirmSampleEditViewComponent {
                     }
                 });
 
-                // Verifiera att innehållstyper faktiskt landade i state.
                 const after = this.getState();
                 const sample_after = after?.samples?.find((s: any) => String(s?.id) === String(pending_changes.sampleId));
-                const expected = pending_changes.updatedSampleData?.selectedContentTypes;
-                const actual = sample_after?.selectedContentTypes;
-                const expected_set = new Set(Array.isArray(expected) ? expected : []);
-                const actual_set = new Set(Array.isArray(actual) ? actual : []);
-                const ok = expected_set.size === actual_set.size && [...expected_set].every(v => actual_set.has(v));
-                if (!ok) {
-                    this.NotificationComponent.show_global_message(
-                        t('server_sync_error', { message: 'Innehållstyper kunde inte sparas i stickprovet. Försök igen – om felet kvarstår kan granskningen ha skrivits över av synk från servern.' })
-                            || 'Innehållstyper kunde inte sparas i stickprovet. Försök igen – om felet kvarstår kan granskningen ha skrivits över av synk från servern.',
-                        'error'
-                    );
-                    return;
+                const should_verify_content_types = sample_edit_analysis_has_content_type_changes(pending_changes.analysis);
+                if (should_verify_content_types) {
+                    const expected = pending_changes.updatedSampleData?.selectedContentTypes;
+                    const actual = sample_after?.selectedContentTypes;
+                    const expected_set = new Set(Array.isArray(expected) ? expected : []);
+                    const actual_set = new Set(Array.isArray(actual) ? actual : []);
+                    const ok = expected_set.size === actual_set.size && [...expected_set].every(v => actual_set.has(v));
+                    if (!ok) {
+                        this.NotificationComponent.show_global_message(
+                            t('server_sync_error', { message: 'Innehållstyper kunde inte sparas i stickprovet. Försök igen – om felet kvarstår kan granskningen ha skrivits över av synk från servern.' })
+                                || 'Innehållstyper kunde inte sparas i stickprovet. Försök igen – om felet kvarstår kan granskningen ha skrivits över av synk från servern.',
+                            'error'
+                        );
+                        return;
+                    }
                 }
 
                 await this.dispatch({ type: this.StoreActionTypes.CLEAR_STAGED_SAMPLE_CHANGES });
@@ -105,25 +108,27 @@ export class ConfirmSampleEditViewComponent {
 
                 // Om synk/poll ersätter state strax efteråt kan ändringen "försvinna" utan att användaren ser fel.
                 // Vi gör en fördröjd kontroll och visar ett tydligt meddelande om det sker.
-                setTimeout(() => {
-                    try {
-                        const after_delay = this.getState();
-                        const sample_after_delay = after_delay?.samples?.find((s: any) => String(s?.id) === String(pending_changes.sampleId));
-                        const expected2 = pending_changes.updatedSampleData?.selectedContentTypes;
-                        const actual2 = sample_after_delay?.selectedContentTypes;
-                        const expected_set2 = new Set(Array.isArray(expected2) ? expected2 : []);
-                        const actual_set2 = new Set(Array.isArray(actual2) ? actual2 : []);
-                        const ok2 = expected_set2.size === actual_set2.size && [...expected_set2].every(v => actual_set2.has(v));
-                        if (!ok2) {
-                            this.NotificationComponent.show_global_message(
-                                'Ändringen sparades först, men skrevs sedan över av en synk från servern. Prova att uppdatera sidan och gör ändringen igen. Om det fortsätter: kontrollera att du är online och att inga andra flikar/enheter har granskningen öppen samtidigt.',
-                                'warning'
-                            );
+                if (should_verify_content_types) {
+                    setTimeout(() => {
+                        try {
+                            const after_delay = this.getState();
+                            const sample_after_delay = after_delay?.samples?.find((s: any) => String(s?.id) === String(pending_changes.sampleId));
+                            const expected2 = pending_changes.updatedSampleData?.selectedContentTypes;
+                            const actual2 = sample_after_delay?.selectedContentTypes;
+                            const expected_set2 = new Set(Array.isArray(expected2) ? expected2 : []);
+                            const actual_set2 = new Set(Array.isArray(actual2) ? actual2 : []);
+                            const ok2 = expected_set2.size === actual_set2.size && [...expected_set2].every(v => actual_set2.has(v));
+                            if (!ok2) {
+                                this.NotificationComponent.show_global_message(
+                                    'Ändringen sparades först, men skrevs sedan över av en synk från servern. Prova att uppdatera sidan och gör ändringen igen. Om det fortsätter: kontrollera att du är online och att inga andra flikar/enheter har granskningen öppen samtidigt.',
+                                    'warning'
+                                );
+                            }
+                        } catch (_) {
+                            // ignoreras
                         }
-                    } catch (_) {
-                        // ignoreras
-                    }
-                }, 1500);
+                    }, 1500);
+                }
             } catch (err: any) {
                 this.NotificationComponent.show_global_message(
                     t('server_sync_error', { message: err?.message || 'Kunde inte spara ändringarna.' }) || (err?.message || 'Kunde inte spara ändringarna.'),

@@ -6,6 +6,12 @@ export type SampleLike = {
     selectedContentTypes?: string[] | null;
 };
 
+export type SampleEditComparable = SampleLike & {
+    attachedMediaFilenames?: unknown;
+};
+
+export type SampleEditChangeKind = 'none' | 'media_only' | 'other';
+
 export type ChangedField = {
     key: 'sampleCategory' | 'sampleType' | 'description' | 'url';
     oldValue: string;
@@ -30,6 +36,54 @@ function normalize_text(v: unknown): string {
 function normalize_list(v: unknown): string[] {
     if (!Array.isArray(v)) return [];
     return v.map((x) => String(x)).filter(Boolean);
+}
+
+function normalize_media_list(v: unknown): string[] {
+    if (!Array.isArray(v)) return [];
+    return v.map((filename) => String(filename).trim()).filter(Boolean);
+}
+
+function sets_equal(left: string[], right: string[]): boolean {
+    const a = new Set(left);
+    const b = new Set(right);
+    return a.size === b.size && [...a].every((value) => b.has(value));
+}
+
+/** Avgör om stickprovsändringen är tom, enbart media eller något annat. */
+export function classify_sample_edit_change(
+    baseline: SampleEditComparable | null | undefined,
+    updated: SampleEditComparable | null | undefined
+): SampleEditChangeKind {
+    if (!baseline || !updated) return 'other';
+
+    const same_text =
+        normalize_text(baseline.sampleCategory) === normalize_text(updated.sampleCategory) &&
+        normalize_text(baseline.sampleType) === normalize_text(updated.sampleType) &&
+        normalize_text(baseline.description) === normalize_text(updated.description) &&
+        normalize_text(baseline.url) === normalize_text(updated.url);
+    const same_ct = sets_equal(
+        normalize_list(baseline.selectedContentTypes),
+        normalize_list(updated.selectedContentTypes)
+    );
+    const baseline_media = normalize_media_list(baseline.attachedMediaFilenames);
+    const updated_media = normalize_media_list(updated.attachedMediaFilenames);
+    const same_media =
+        baseline_media.length === updated_media.length &&
+        baseline_media.every((value, index) => value === updated_media[index]);
+
+    if (same_text && same_ct && same_media) return 'none';
+    if (same_text && same_ct && !same_media) return 'media_only';
+    return 'other';
+}
+
+/** Sant om analysen visar tillagda eller borttagna innehållstyper. */
+export function sample_edit_analysis_has_content_type_changes(analysis: {
+    content_types_diff?: ContentTypesDiff | null;
+} | null | undefined): boolean {
+    const diff = analysis?.content_types_diff;
+    const added = Array.isArray(diff?.added) ? diff.added : [];
+    const removed = Array.isArray(diff?.removed) ? diff.removed : [];
+    return added.length > 0 || removed.length > 0;
 }
 
 export function compute_sample_edit_field_diff({

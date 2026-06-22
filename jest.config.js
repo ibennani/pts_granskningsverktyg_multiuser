@@ -57,6 +57,7 @@ export default {
     '^.+/metadataHandlers\\.js$': '<rootDir>/js/state/metadataHandlers.ts',
     '^.+/auditStatusHandlers\\.js$': '<rootDir>/js/state/auditStatusHandlers.ts',
     '^.+/sampleHandlers\\.js$': '<rootDir>/js/state/sampleHandlers.ts',
+    '^.+/sample_edit_diff\\.js$': '<rootDir>/js/logic/sample_edit_diff.ts',
     '^.+/remoteStateHandlers\\.js$': '<rootDir>/js/state/remoteStateHandlers.ts',
     '^.+/same_user_tab_field_sync\\.js$': '<rootDir>/js/logic/same_user_tab_field_sync.ts',
     '^.+/RequirementAuditComponent\\.js$': '<rootDir>/js/components/RequirementAuditComponent.ts',

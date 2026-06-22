@@ -101,26 +101,16 @@ export class SampleFormViewComponent {
             text_content: t(intro_text_key)
         }));
 
-        this.add_sample_form_component_instance.render(sample_id_to_edit);
-        plate.appendChild(this.add_sample_form_container_element as any);
-
         const should_hide_back_to_samples_for_first_sample =
             audit_status === 'not_started' &&
             !sample_id_to_edit &&
             sample_count === 0;
 
-        if (!should_hide_back_to_samples_for_first_sample) {
-            const bottom_actions_div = this.Helpers.create_element('div', { class_name: 'form-actions', style: 'margin-top: 2rem; justify-content: flex-start;' });
-            const return_button_text_key = 'back_to_sample_management';
-
-            const return_button = this.Helpers.create_element('button', {
-                class_name: ['button', 'button-default'],
-                html_content: `<span>${t(return_button_text_key)}</span>` + (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('arrow_back') : '')
-            });
-            return_button.addEventListener('click', this.discard_and_return.bind(this));
-            bottom_actions_div.appendChild(return_button);
-            plate.appendChild(bottom_actions_div);
-        }
+        this.add_sample_form_component_instance.set_show_back_to_samples_button(
+            !should_hide_back_to_samples_for_first_sample
+        );
+        this.add_sample_form_component_instance.render(sample_id_to_edit);
+        plate.appendChild(this.add_sample_form_container_element as any);
     }
 
     destroy() {

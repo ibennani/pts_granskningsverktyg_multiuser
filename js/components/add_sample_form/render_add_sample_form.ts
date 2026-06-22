@@ -1,4 +1,4 @@
-import { marked } from '../../utils/markdown.js';
+import { render_content_types_section_accordion } from './content_type_accordion.js';
 import { handle_sample_attach_media_click, render_sample_screenshot_section } from './sample_attach_media.js';
 
 export function render_add_sample_form(component: any, sample_id_to_edit: string | null = null) {
@@ -122,94 +122,8 @@ export function render_add_sample_form(component: any, sample_id_to_edit: string
         handle_sample_attach_media_click(component, event);
     });
     component.content_types_container_element.appendChild(sample_screenshot_section);
-    component.content_types_container_element.appendChild(component.Helpers.create_element('h2', { text_content: t('content_types') }));
-    component.content_types_container_element.appendChild(component.Helpers.create_element('p', { text_content: t('content_types_instruction'), style: { 'margin-top': '0', 'color': 'var(--text-color-muted)' } }));
-    grouped_content_types.forEach((group: any) => {
-        const fieldset = component.Helpers.create_element('fieldset', { class_name: 'content-type-parent-group' });
-        const group_children_id = `ct-children-${group.id}`;
-
-        const legend = component.Helpers.create_element('legend', { class_name: 'visually-hidden', text_content: group.text });
-        fieldset.appendChild(legend);
-
-        const parent_header = component.Helpers.create_element('div', { class_name: 'content-type-parent-header' });
-        const parent_id = `ct-parent-${group.id}`;
-        const parent_checkbox = component.Helpers.create_element('input', {
-            id: parent_id,
-            class_name: 'form-check-input',
-            attributes: {
-                type: 'checkbox',
-                'data-parent-id': group.id,
-                'aria-controls': group_children_id,
-                'aria-label': `${group.text}, välj alla`
-            }
-        });
-        const parent_h3 = component.Helpers.create_element('h3');
-        const parent_label = component.Helpers.create_element('label', { attributes: { for: parent_id }, text_content: group.text, class_name: 'content-type-parent-label' });
-        parent_h3.appendChild(parent_label);
-        parent_header.append(parent_checkbox, parent_h3);
-        fieldset.appendChild(parent_header);
-
-        const children_container = component.Helpers.create_element('div', { class_name: 'content-type-children-container', attributes: { id: group_children_id } });
-
-        (group.types || []).forEach((child: any) => {
-            const child_id = `ct-child-${child.id}`;
-            const child_wrapper = component.Helpers.create_element('div', { class_name: 'form-check content-type-child-item' });
-            const desc_id = child.description ? `ct-desc-${child.id}` : null;
-            const child_checkbox = component.Helpers.create_element('input', {
-                id: child_id,
-                class_name: 'form-check-input',
-                attributes: {
-                    type: 'checkbox',
-                    name: 'selectedContentTypes',
-                    value: child.id,
-                    'data-child-for': group.id,
-                    'aria-describedby': desc_id ? desc_id : null,
-                    'aria-labelledby': `${child_id}-label`
-                }
-            });
-            const child_label = component.Helpers.create_element('label', {
-                attributes: { for: child_id, id: `${child_id}-label` },
-                text_content: child.text
-            });
-            child_wrapper.append(child_checkbox, child_label);
-            children_container.appendChild(child_wrapper);
-
-            if (child.description) {
-                const desc_div = component.Helpers.create_element('div', {
-                    class_name: 'content-type-description markdown-content',
-                    attributes: { id: desc_id }
-                });
-                if (typeof marked !== 'undefined') {
-                    const raw_html = marked.parse(child.description);
-                    desc_div.innerHTML = component.Helpers.sanitize_html
-                        ? component.Helpers.sanitize_html(raw_html)
-                        : raw_html;
-                } else {
-                    desc_div.textContent = child.description;
-                }
-                children_container.appendChild(desc_div);
-            }
-        });
-        fieldset.appendChild(children_container);
-        component.content_types_container_element.appendChild(fieldset);
-    });
+    render_content_types_section_accordion(component, grouped_content_types, effective_sample_data);
     component.content_types_container_element.addEventListener('change', component.handle_content_type_change);
-    const all_child_checkboxes = component.content_types_container_element.querySelectorAll('input[data-child-for]');
-    all_child_checkboxes.forEach((cb: any) => {
-        cb.checked = effective_sample_data
-            ? (effective_sample_data.selectedContentTypes?.includes(cb.value) || false)
-            : false;
-    });
-    const all_parent_checkboxes = component.content_types_container_element.querySelectorAll('input[data-parent-id]');
-    if (effective_sample_data) {
-        all_parent_checkboxes.forEach((pc: any) => component._updateParentCheckboxState(pc));
-    } else {
-        all_parent_checkboxes.forEach((pc: any) => {
-            pc.checked = false;
-            pc.indeterminate = false;
-            pc.setAttribute('aria-checked', 'false');
-        });
-    }
     component.form_element.appendChild(component.content_types_container_element);
 
     // --- Actions ---

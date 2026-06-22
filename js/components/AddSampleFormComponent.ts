@@ -1,6 +1,10 @@
 import "./add_sample_form_component.css";
-import { compute_sample_edit_field_diff } from '../logic/sample_edit_diff.js';
+import {
+    classify_sample_edit_change,
+    compute_sample_edit_field_diff
+} from '../logic/sample_edit_diff.js';
 import { render_add_sample_form } from './add_sample_form/render_add_sample_form.js';
+import { get_selected_content_type_ids } from './add_sample_form/content_type_accordion.js';
 import {
     clear_new_sample_form_draft,
     get_new_sample_draft_storage_key,
@@ -42,6 +46,8 @@ export class AddSampleFormComponent {
     private skip_autosave_on_destroy: boolean;
     private initial_sample_snapshot: any;
     private show_back_to_samples_button: boolean;
+    private content_type_selected_ids: Set<string>;
+    private content_types_section_panel_inner: HTMLElement | null;
 
     constructor() {
         this.root = null;
@@ -76,6 +82,8 @@ export class AddSampleFormComponent {
         this.skip_autosave_on_destroy = false;
         this.initial_sample_snapshot = null;
         this.show_back_to_samples_button = false;
+        this.content_type_selected_ids = new Set();
+        this.content_types_section_panel_inner = null;
     }
 
     init({ root, deps }: { root: HTMLElement; deps: any }) {
@@ -111,6 +119,8 @@ export class AddSampleFormComponent {
         this.skip_autosave_on_destroy = false;
         this.initial_sample_snapshot = null;
         this.show_back_to_samples_button = false;
+        this.content_type_selected_ids = new Set();
+        this.content_types_section_panel_inner = null;
 
         this.handle_form_submit = this.handle_form_submit.bind(this);
         this.update_description_from_sample_type = this.update_description_from_sample_type.bind(this);
@@ -164,9 +174,7 @@ export class AddSampleFormComponent {
         const sample_type_id = this.sample_type_select?.value;
         const description_raw = this.description_input?.value || '';
         const url_raw = this.url_input?.value || '';
-        const selected_raw_values = Array.from(
-            this.content_types_container_element?.querySelectorAll('input[name="selectedContentTypes"]:checked') || []
-        ).map((cb: any) => cb.value);
+        const selected_raw_values = get_selected_content_type_ids(this);
 
         const description = this.Helpers?.sanitize_plain_input
             ? this.Helpers.sanitize_plain_input(description_raw, { trim: should_trim })
@@ -309,9 +317,6 @@ export class AddSampleFormComponent {
             const children = this.content_types_container_element.querySelectorAll(`input[data-child-for="${parentId}"]`);
             children.forEach((child: any) => {
                 child.checked = isChecked;
-                // Viktigt: när vi kryssar i/ur barnrutor programmatiskt triggas inga change/input-events på dem.
-                // DraftManager (utkast) och andra lyssnare ser annars inte att barnen ändrats, vilket kan göra att
-                // återställning efter render skriver över barnens state vid nästa vybyte.
                 const dm = (window as any).DraftManager;
                 if (dm?.captureFieldChange) {
                     try {
@@ -351,9 +356,7 @@ export class AddSampleFormComponent {
         const sample_type_id = this.sample_type_select?.value || null;
         const description_raw = this.description_input?.value || '';
         const url_raw = this.url_input?.value || '';
-        const selected_raw_values = Array.from(
-            this.content_types_container_element?.querySelectorAll('input[name="selectedContentTypes"]:checked') || []
-        ).map((cb) => (cb as HTMLInputElement).value);
+        const selected_raw_values = get_selected_content_type_ids(this);
 
         const description = this.Helpers?.sanitize_plain_input
             ? this.Helpers.sanitize_plain_input(description_raw, { trim: should_trim })
@@ -440,10 +443,14 @@ export class AddSampleFormComponent {
         const state = this.getState();
         const rule_file = state.ruleFileContent;
         const sample_being_edited = state.samples.find((s: any) => s.id === this.current_editing_sample_id);
+        const baseline_sample = this.initial_sample_snapshot || sample_being_edited;
+        const baseline_content_types = Array.isArray(baseline_sample?.selectedContentTypes)
+            ? baseline_sample.selectedContentTypes
+            : [];
 
         const old_relevant_reqs = new Set(
             this.AuditLogic
-                .get_relevant_requirements_for_sample(rule_file, { ...sample_being_edited, selectedContentTypes: this.original_content_types_on_load })
+                .get_relevant_requirements_for_sample(rule_file, { ...sample_being_edited, selectedContentTypes: baseline_content_types })
                 .map((r: any) => r.key || r.id)
                 .filter(Boolean)
         );
@@ -472,11 +479,11 @@ export class AddSampleFormComponent {
 
         const field_diff = compute_sample_edit_field_diff({
             old_sample: {
-                sampleCategory: sample_being_edited.sampleCategory,
-                sampleType: sample_being_edited.sampleType,
-                description: sample_being_edited.description,
-                url: sample_being_edited.url,
-                selectedContentTypes: this.original_content_types_on_load
+                sampleCategory: baseline_sample?.sampleCategory ?? null,
+                sampleType: baseline_sample?.sampleType ?? null,
+                description: baseline_sample?.description ?? null,
+                url: baseline_sample?.url ?? null,
+                selectedContentTypes: baseline_content_types
             },
             new_sample: sample_payload_data,
             resolve_sample_category_label: (id: string) => this._resolve_sample_category_label(rule_file, id),
@@ -569,9 +576,7 @@ export class AddSampleFormComponent {
 
         const description_raw = this.description_input.value;
         const url_raw = this.url_input.value;
-        const selected_raw_values = Array.from(
-            this.content_types_container_element.querySelectorAll('input[name="selectedContentTypes"]:checked')
-        ).map((cb: any) => cb.value);
+        const selected_raw_values = get_selected_content_type_ids(this);
 
         const description = this.Helpers?.sanitize_plain_input
             ? this.Helpers.sanitize_plain_input(description_raw, { trim: true })
@@ -615,46 +620,29 @@ export class AddSampleFormComponent {
             }
         });
 
-        // Alltid bekräftelsevy för redigering av befintligt stickprov.
-        // Om inget faktiskt ändrats, återgå bara till stickprovslistan.
         const current_state = this.getState();
         const current_sample = current_state.samples.find((s: any) => s.id === this.current_editing_sample_id);
-        const normalized_current = {
-            sampleCategory: current_sample?.sampleCategory ?? null,
-            sampleType: current_sample?.sampleType ?? null,
-            description: current_sample?.description ?? null,
-            url: current_sample?.url ?? null,
-            selectedContentTypes: Array.isArray(current_sample?.selectedContentTypes) ? current_sample.selectedContentTypes : [],
-            attachedMediaFilenames: Array.isArray(current_sample?.attachedMediaFilenames) ? current_sample.attachedMediaFilenames : []
-        };
-        const normalized_new = {
-            sampleCategory: sample_payload_data.sampleCategory ?? null,
-            sampleType: sample_payload_data.sampleType ?? null,
-            description: sample_payload_data.description ?? null,
-            url: sample_payload_data.url ?? null,
-            selectedContentTypes: Array.isArray(sample_payload_data.selectedContentTypes) ? sample_payload_data.selectedContentTypes : [],
-            attachedMediaFilenames: Array.isArray(sample_payload_data.attachedMediaFilenames) ? sample_payload_data.attachedMediaFilenames : []
-        };
-        const same_text_fields =
-            normalized_current.sampleCategory === normalized_new.sampleCategory &&
-            normalized_current.sampleType === normalized_new.sampleType &&
-            String(normalized_current.description ?? '') === String(normalized_new.description ?? '') &&
-            String(normalized_current.url ?? '') === String(normalized_new.url ?? '');
-        const a = new Set(normalized_current.selectedContentTypes);
-        const b = new Set(normalized_new.selectedContentTypes);
-        const same_ct = a.size === b.size && [...a].every(v => b.has(v));
-        const current_media = normalized_current.attachedMediaFilenames.map((v: unknown) => String(v));
-        const new_media = normalized_new.attachedMediaFilenames.map((v: unknown) => String(v));
-        const same_media =
-            current_media.length === new_media.length &&
-            current_media.every((value: string, index: number) => value === new_media[index]);
-        if (same_text_fields && same_ct && same_media) {
+        const baseline_sample = this.initial_sample_snapshot || current_sample;
+        const change_kind = classify_sample_edit_change(baseline_sample, sample_payload_data);
+        if (change_kind === 'none') {
             this.dispatch({ type: this.StoreActionTypes.CLEAR_SAMPLE_EDIT_DRAFT, payload: { skip_render: true } });
             this.router('sample_management');
             return;
         }
 
+        if (change_kind === 'media_only') {
+            this.skip_autosave_on_destroy = true;
+            this.autosave_session?.cancel_pending?.();
+            this._perform_save(sample_payload_data, false, false);
+            this.dispatch({ type: this.StoreActionTypes.CLEAR_SAMPLE_EDIT_DRAFT, payload: { skip_render: true } });
+            return;
+        }
+
         this._stage_changes_and_navigate(sample_payload_data, false, true);
+    }
+
+    set_show_back_to_samples_button(show: boolean) {
+        this.show_back_to_samples_button = show === true;
     }
 
     render(sample_id_to_edit: string | null = null) {
