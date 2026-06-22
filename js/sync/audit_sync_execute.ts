@@ -50,6 +50,7 @@ import {
     type AuditSyncStrategy
 } from './audit_sync_planning.js';
 import { prepare_audit_sync_state } from './audit_sync_prepare.js';
+import { server_status_should_win_over_local } from '../logic/audit_status_sync.js';
 
 type DispatchFn = (action: { type: string; payload?: Record<string, unknown> }) => void;
 
@@ -390,6 +391,20 @@ async function handle_version_conflict_409(
                 http_status: 409,
                 meddelande: e.message,
                 anledning: 'Versionskonflikt — lokal state skrevs om från servern'
+            });
+            return;
+        }
+        const remote_status = typeof full_state.auditStatus === 'string' ? full_state.auditStatus : undefined;
+        if (server_status_should_win_over_local(state.auditStatus, remote_status)) {
+            dispatch_replace_state_from_remote(dispatch_fn, full_state);
+            mark_rule_file_synced_from_state(full_state.ruleFileContent);
+            clear_audit_sync_pending();
+            notify_audit_reloaded_from_server('version_conflict_external_update');
+            update_baseline_from_server_full_state(full_state);
+            krav_vy_sync_fel(krav_vy_sync, {
+                http_status: 409,
+                meddelande: e.message,
+                anledning: 'Serverns status vann — lokal state skrevs om från servern'
             });
             return;
         }

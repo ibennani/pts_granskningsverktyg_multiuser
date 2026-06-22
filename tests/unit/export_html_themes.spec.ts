@@ -5,7 +5,9 @@
 import {
     build_html_export_sidebar_controls,
     resolve_html_export_document_theme,
-    HTML_EXPORT_THEME_OPTIONS
+    resolve_html_export_initial_theme,
+    HTML_EXPORT_THEME_OPTIONS,
+    HTML_EXPORT_THEME_CSS
 } from '../../js/export/export_html_themes.ts';
 
 describe('export_html_themes', () => {
@@ -34,5 +36,20 @@ describe('export_html_themes', () => {
         expect(resolve_html_export_document_theme('dark-experimental')).toBe('dark-experimental');
         expect(resolve_html_export_document_theme('winter-white')).toBe('winter-white');
         expect(['light', 'dark']).toContain(resolve_html_export_document_theme('system'));
+    });
+
+    test('resolve_html_export_initial_theme använder alltid ljust tema som standard', () => {
+        expect(resolve_html_export_initial_theme()).toBe('light');
+    });
+
+    test('build_html_export_sidebar_controls markerar ljust tema som valt vid export', () => {
+        const html = build_html_export_sidebar_controls(t, resolve_html_export_initial_theme());
+        expect(html).toContain('value="light" selected');
+    });
+
+    test('HTML_EXPORT_THEME_CSS styr bannerfärger per tema', () => {
+        expect(HTML_EXPORT_THEME_CSS).toContain('--html-export-banner-bg');
+        expect(HTML_EXPORT_THEME_CSS).toContain('--html-export-banner-text');
+        expect(HTML_EXPORT_THEME_CSS).toContain('transition: background-color 0.25s ease');
     });
 });

@@ -113,25 +113,23 @@ describe('AuditActionsViewComponent statusknappar', () => {
         root.remove();
     });
 
-    test('klick på avsluta dispatchar locked och uppdaterar vyn', async () => {
+    test('klick på avsluta dispatchar locked direkt och uppdaterar vyn', async () => {
         const root = document.createElement('div');
         document.body.appendChild(root);
         const deps = make_deps('in_progress');
         const component = new AuditActionsViewComponent();
         await component.init({ root, deps });
         component.render();
-        jest.useFakeTimers();
         root.querySelector('#audit-action-btn-lock-audit').click();
-        await jest.advanceTimersByTimeAsync(500);
+        await Promise.resolve();
         expect(deps.dispatch).toHaveBeenCalledWith({
             type: 'SET_AUDIT_STATUS',
             payload: { status: 'locked' }
         });
-        expect(deps.flush_sync_to_server).toHaveBeenCalled();
+        expect(deps.flush_sync_to_server).not.toHaveBeenCalled();
         expect(root.querySelector('#audit-action-btn-unlock-audit')).toBeTruthy();
         expect(root.querySelector('#audit-action-btn-lock-audit')).toBeFalsy();
         expect(document.activeElement?.id).toBe('audit-action-btn-unlock-audit');
-        jest.useRealTimers();
         component.destroy();
         root.remove();
     });

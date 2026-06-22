@@ -125,13 +125,14 @@ describe('reduce_set_audit_status', () => {
         expect(next.auditMetadata.last_local_change_at).toMatch(ISO_RE);
     });
 
-    test('locked → in_progress sätter inte last_local_change_at (gammal status var låst)', () => {
+    test('locked → in_progress sätter last_local_change_at', () => {
         const state = base_state({
             auditStatus: 'locked',
             auditMetadata: { last_local_change_at: '2026-06-01T08:00:00.000Z' }
         });
         const next = reduce_set_audit_status(state, { payload: { status: 'in_progress' } });
-        expect(next.auditMetadata.last_local_change_at).toBe('2026-06-01T08:00:00.000Z');
+        expect(next.auditMetadata.last_local_change_at).toMatch(ISO_RE);
+        expect(next.auditMetadata.last_local_change_at).not.toBe('2026-06-01T08:00:00.000Z');
     });
 
     test('samma status lämnar last_local_change_at oförändrat', () => {

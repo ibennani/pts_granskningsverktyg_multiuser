@@ -8,6 +8,7 @@ const EVENT_AUDITS_CHANGED = 'gv-audits-changed';
 const EVENT_RULES_CHANGED = 'gv-rules-changed';
 const EVENT_RULE_LOCKS_CHANGED = 'gv-rule-locks-changed';
 const EVENT_AUDIT_LOCKS_CHANGED = 'gv-audit-locks-changed';
+const EVENT_AUDIT_UPDATED = 'gv-audit-updated';
 
 const RECONNECT_INITIAL_MS = 1000;
 const RECONNECT_MAX_MS = 30000;
@@ -24,9 +25,14 @@ const _audits_callbacks = new Set();
 const _rules_callbacks = new Set();
 const _rule_locks_callbacks = new Set();
 const _audit_locks_callbacks = new Set();
+const _audit_update_callbacks = new Set();
 
 function _has_subscribers() {
-    return _audits_callbacks.size > 0 || _rules_callbacks.size > 0 || _rule_locks_callbacks.size > 0 || _audit_locks_callbacks.size > 0;
+    return _audits_callbacks.size > 0
+        || _rules_callbacks.size > 0
+        || _rule_locks_callbacks.size > 0
+        || _audit_locks_callbacks.size > 0
+        || _audit_update_callbacks.size > 0;
 }
 
 function _fire_audits_changed() {
@@ -78,6 +84,19 @@ function _fire_audit_locks_changed(payload) {
     });
     if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent(EVENT_AUDIT_LOCKS_CHANGED, { detail: payload || null }));
+    }
+}
+
+function _fire_audit_updated(payload) {
+    _audit_update_callbacks.forEach((cb) => {
+        try {
+            cb(payload);
+        } catch {
+            // tyst vid fel i callback
+        }
+    });
+    if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent(EVENT_AUDIT_UPDATED, { detail: payload || null }));
     }
 }
 
@@ -141,6 +160,15 @@ function _connect() {
             const type = msg?.type;
             if (type === 'audits:changed') {
                 _fire_audits_changed();
+                if (msg?.auditId) {
+                    _fire_audit_updated({
+                        auditId: String(msg.auditId),
+                        version: msg?.version != null && !Number.isNaN(Number(msg.version))
+                            ? Number(msg.version)
+                            : null,
+                        changeKind: msg?.changeKind || 'full'
+                    });
+                }
             } else if (type === 'rules:changed') {
                 _fire_rules_changed();
             } else if (type === 'rules:locks_changed') {
@@ -302,6 +330,36 @@ export function subscribe_audit_locks(callback) {
 }
 
 /**
+ * Prenumerera på push när en specifik granskning har ändrats (t.ex. status).
+ * @param {function({auditId: string, version: number|null, changeKind?: string}): void} callback
+ * @returns {function(): void}
+ */
+export function subscribe_audit_updates(callback) {
+    if (typeof callback !== 'function') return () => {};
+    _audit_update_callbacks.add(callback);
+    _ensure_ws();
+    return () => {
+        _audit_update_callbacks.delete(callback);
+        if (!_has_subscribers()) {
+            _clear_reconnect_timer();
+            _stop_fallback_polling();
+            if (_ws) {
+                try {
+                    _ws.close();
+                } catch {
+                    /* ignore */
+                }
+                _ws = null;
+            }
+        }
+    };
+}
+
+/**
+ * Event-namn för att lyssna via window.addEventListener.
+ * Använd t.ex. window.addEventListener(ListPushService.EVENT_AUDITS_CHANGED, handler).
+ */
+/**
  * Event-namn för att lyssna via window.addEventListener.
  * Använd t.ex. window.addEventListener(ListPushService.EVENT_AUDITS_CHANGED, handler).
  */
@@ -309,7 +367,8 @@ export const EVENT_NAMES = {
     AUDITS_CHANGED: EVENT_AUDITS_CHANGED,
     RULES_CHANGED: EVENT_RULES_CHANGED,
     RULE_LOCKS_CHANGED: EVENT_RULE_LOCKS_CHANGED,
-    AUDIT_LOCKS_CHANGED: EVENT_AUDIT_LOCKS_CHANGED
+    AUDIT_LOCKS_CHANGED: EVENT_AUDIT_LOCKS_CHANGED,
+    AUDIT_UPDATED: EVENT_AUDIT_UPDATED
 };
 
 export const ListPushService = {
@@ -317,6 +376,7 @@ export const ListPushService = {
     subscribe_rules,
     subscribe_rule_locks,
     subscribe_audit_locks,
+    subscribe_audit_updates,
     notify_rules_list_changed,
     EVENT_NAMES
 };

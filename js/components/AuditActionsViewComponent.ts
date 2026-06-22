@@ -171,29 +171,25 @@ export class AuditActionsViewComponent {
             btn.classList.add('audit-actions__btn--animating');
             btn.setAttribute('aria-busy', 'true');
         }
-        setTimeout(async () => {
+        void (async () => {
             try {
-                if (btn) btn.removeAttribute('aria-busy');
                 if (!this.dispatch || !this.StoreActionTypes) return;
                 await this.dispatch({
                     type: this.StoreActionTypes.SET_AUDIT_STATUS,
                     payload: { status }
                 });
-                // Fokus ligger kvar på knappen efter klick; subscribe hoppar då över render().
+                if (btn) btn.removeAttribute('aria-busy');
                 this.render();
                 this._focus_primary_status_button(status);
-                try {
-                    if (this.flush_sync_to_server && this.getState) {
-                        await this.flush_sync_to_server(this.getState, this.dispatch);
-                    }
-                } catch {
-                    // Synkfel visas via connectivity-varning; lokal statusändring är klar.
-                }
                 this.NotificationComponent?.show_global_message?.(t(success_message_key), 'success');
             } catch {
                 this.NotificationComponent?.show_global_message?.(t('error_internal'), 'error');
+            } finally {
+                if (btn) {
+                    setTimeout(() => btn.classList.remove('audit-actions__btn--animating'), 500);
+                }
             }
-        }, 500);
+        })();
     }
 
     handle_lock_audit(event) {

@@ -9,6 +9,8 @@ import { memoryManager } from '../utils/memory_manager.js';
 import { consoleManager } from '../utils/console_manager.js';
 import { install_vite_dev_client_timestamp_listeners } from '../utils/vite_dev_client_timestamp_hmr.js';
 import { inject_deficiency_score_bar_gradient_styles } from './deficiency_color_scale.ts';
+import { get_tab_origin_id } from '../utils/tab_origin_id.js';
+import { reload_open_audit_if_server_ahead } from './audit_remote_reload.js';
 
 /**
  * Kör initiering efter att övriga beroenden satts upp i main.
@@ -193,24 +195,16 @@ export async function init_app(deps) {
         audit_updates_channel.onmessage = (event) => {
             const msg = event?.data;
             if (msg?.type !== 'audit-updated' || !msg.auditId) return;
+            if (msg.originId && msg.originId === get_tab_origin_id()) return;
             const state = deps.getState();
             if (!state?.auditId || state.auditId !== msg.auditId || state.auditStatus === 'rulefile_editing') return;
             if (!get_auth_token()) return;
-            (async () => {
-                try {
-                    const { load_audit_with_rule_file } = await import('../api/client.js');
-                    const full_state = await load_audit_with_rule_file(msg.auditId);
-                    if (full_state?.samples) {
-                        deps.dispatch({
-                            type: StoreActionTypes.REPLACE_STATE_FROM_REMOTE,
-                            payload: { ...full_state, saveFileVersion: full_state.saveFileVersion || '2.1.0' }
-                        });
-                    }
-                } catch (e) {
-                    if (e?.status === 401) return;
-                    if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[Main.js] Synk från annan flik:', e);
-                }
-            })();
+            void reload_open_audit_if_server_ahead({
+                getState: deps.getState,
+                dispatch: deps.dispatch,
+                StoreActionTypes,
+                show_collaboration_notice: false
+            });
         };
     }
 

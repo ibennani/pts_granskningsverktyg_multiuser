@@ -3,7 +3,7 @@
 // Vid regelfilsredigering synkas innehållet till rule_sets så att updated_at = senast ändrad.
 
 import { enqueue_rulefile_part_patch as enqueue_rulefile_part_patch_to_queue } from '../sync/rulefile_patch_queue.js';
-export { schedule_sync_to_server, sync_to_server_now, flush_sync_to_server } from '../sync/audit_sync_service.js';
+export { schedule_sync_to_server, sync_to_server_now, flush_sync_to_server, cancel_scheduled_audit_sync } from '../sync/audit_sync_service.js';
 export { schedule_sync_rulefile_to_server, flush_sync_rulefile_to_server } from '../sync/rulefile_sync_service.js';
 export { send_audit_sync_keepalive } from '../sync/audit_sync_unload.js';
 

@@ -89,6 +89,46 @@ describe('audit_sync_prepare', () => {
         expect(clear_audit_sync_pending).toHaveBeenCalled();
     });
 
+    test('laddar om från server när status är låst men lokalt pågår trots nyare innehåll', async () => {
+        const { note_requirement_result_changed, clear_rule_file_sync_baseline_for_testing } =
+            await import('../../js/sync/audit_sync_planning.js');
+        const { prepare_audit_sync_state } = await import('../../js/sync/audit_sync_prepare.js');
+        clear_rule_file_sync_baseline_for_testing();
+        note_requirement_result_changed('s1', 'r1');
+        get_audit_version.mockResolvedValueOnce({ version: 8 });
+        load_audit_with_rule_file.mockResolvedValueOnce({
+            auditId: 'a1',
+            auditStatus: 'locked',
+            version: 8,
+            auditMetadata: { last_server_sync_at: '2026-06-02T12:00:00.000Z' },
+            samples: [{ id: 's1', requirementResults: {} }],
+            ruleFileContent: { ok: true }
+        });
+        const dispatch = jest.fn();
+        const result = await prepare_audit_sync_state(
+            {
+                auditId: 'a1',
+                auditStatus: 'in_progress',
+                version: 5,
+                auditMetadata: { last_local_change_at: '2026-06-09T14:00:00.000Z' },
+                samples: [
+                    {
+                        id: 's1',
+                        requirementResults: {
+                            r1: { lastStatusUpdate: '2026-06-09T14:00:00.000Z' }
+                        }
+                    }
+                ],
+                ruleFileContent: { ok: true }
+            },
+            dispatch
+        );
+        expect(result.action).toBe('reload');
+        expect(dispatch).toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'REPLACE_STATE_FROM_REMOTE' })
+        );
+    });
+
     test('justerar lokalt versionsnummer när server ligger före och lokalt innehåll är nyare', async () => {
         const { note_requirement_result_changed, clear_rule_file_sync_baseline_for_testing } =
             await import('../../js/sync/audit_sync_planning.js');
@@ -98,6 +138,7 @@ describe('audit_sync_prepare', () => {
         get_audit_version.mockResolvedValueOnce({ version: 7 });
         load_audit_with_rule_file.mockResolvedValueOnce({
             version: 7,
+            auditStatus: 'in_progress',
             auditMetadata: { last_server_sync_at: '2026-06-01T08:00:00.000Z' },
             samples: [
                 {
@@ -111,6 +152,7 @@ describe('audit_sync_prepare', () => {
         const result = await prepare_audit_sync_state(
             {
                 auditId: 'a1',
+                auditStatus: 'in_progress',
                 version: 5,
                 auditMetadata: { last_local_change_at: '2026-06-02T14:00:00.000Z' },
                 samples: [
@@ -148,6 +190,7 @@ describe('audit_sync_prepare', () => {
         get_audit_version.mockResolvedValueOnce({ version: 9 });
         load_audit_with_rule_file.mockResolvedValueOnce({
             version: 9,
+            auditStatus: 'in_progress',
             auditMetadata: { last_server_sync_at: '2026-06-09T12:00:00.000Z', last_local_change_at: '2026-06-09T12:00:00.000Z' },
             samples: [{ id: 'old-sample', description: 'Finns kvar på servern' }],
             ruleFileContent: { ok: true }

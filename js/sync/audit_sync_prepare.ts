@@ -9,6 +9,10 @@ import {
     should_push_local_audit_to_server,
     type AuditStateLike
 } from '../logic/audit_sync_tracking.js';
+import {
+    audit_status_rank,
+    server_status_should_win_over_local
+} from '../logic/audit_status_sync.js';
 import { update_baseline_from_server_full_state } from '../logic/audit_collaboration_notice.js';
 import {
     has_pending_audit_sync_plan,
@@ -48,6 +52,34 @@ async function apply_remote_state_when_server_ahead(
 ): Promise<'reload' | 'proceed' | null> {
     const full_state = (await load_audit_with_rule_file(state.auditId!)) as Record<string, unknown> | null;
     if (!full_state) return null;
+
+    const remote_status = typeof full_state.auditStatus === 'string' ? full_state.auditStatus : undefined;
+    const local_status = audit_state.auditStatus;
+
+    const local_intends_status_push =
+        prefer_local_full_push && audit_status_rank(local_status) > audit_status_rank(remote_status);
+
+    if (!local_intends_status_push && server_status_should_win_over_local(local_status, remote_status)) {
+        dispatch_replace_state_from_remote(dispatch_fn, full_state);
+        update_baseline_from_server_full_state(full_state);
+        mark_rule_file_synced_from_state(full_state.ruleFileContent);
+        clear_audit_sync_pending();
+        return 'reload';
+    }
+
+    if (
+        !local_intends_status_push
+        && remote_status
+        && local_status
+        && remote_status !== local_status
+        && remote_version > Number(audit_state.version ?? 0)
+    ) {
+        dispatch_replace_state_from_remote(dispatch_fn, full_state);
+        update_baseline_from_server_full_state(full_state);
+        mark_rule_file_synced_from_state(full_state.ruleFileContent);
+        clear_audit_sync_pending();
+        return 'reload';
+    }
 
     const should_push = should_push_local_audit_to_server(audit_state, full_state as AuditStateLike);
 

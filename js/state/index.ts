@@ -9,7 +9,12 @@
  * Autospar för övriga formulär sker separat (autosave_service).
  */
 import * as AuditLogic from '../audit_logic.js';
-import { schedule_sync_to_server, schedule_sync_rulefile_to_server } from '../logic/server_sync.js';
+import {
+    schedule_sync_to_server,
+    schedule_sync_rulefile_to_server,
+    sync_to_server_now,
+    cancel_scheduled_audit_sync
+} from '../logic/server_sync.js';
 import {
     note_audit_full_sync_required,
     note_metadata_only_changed,
@@ -225,12 +230,17 @@ function execute_single_dispatch(
                         } else {
                             note_audit_full_sync_required();
                         }
-                        schedule_sync_to_server(() => getState(), dispatch_fn);
+                        if (action.type === ActionTypes.SET_AUDIT_STATUS) {
+                            void sync_to_server_now(() => getState(), dispatch_fn);
+                        } else {
+                            schedule_sync_to_server(() => getState(), dispatch_fn);
+                        }
                     }
                     if (
                         action.type === ActionTypes.REPLACE_STATE_FROM_REMOTE ||
                         action.type === ActionTypes.LOAD_AUDIT_FROM_FILE
                     ) {
+                        cancel_scheduled_audit_sync();
                         reset_audit_sync_planning_after_remote_load(internal_state.ruleFileContent);
                     }
                     if (

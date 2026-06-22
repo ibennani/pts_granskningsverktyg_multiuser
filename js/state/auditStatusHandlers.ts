@@ -4,10 +4,7 @@
 
 import * as AuditLogic from '../audit_logic.js';
 import { get_current_iso_datetime_utc } from './audit_reducer_time.js';
-import {
-    should_touch_last_local_change_at,
-    with_last_local_change_at
-} from '../logic/audit_sync_tracking.js';
+import { with_last_local_change_at } from '../logic/audit_sync_tracking.js';
 import {
     AUDIT_METADATA_LAST_IN_PROGRESS_ACTIVITY_KEY,
     without_last_in_progress_activity_in_metadata
@@ -65,7 +62,7 @@ export function reduce_set_audit_status(current_state: any, action: any) {
         auditMetadata: audit_metadata,
         auditLastUpdatedAtFrozen: frozen_last_updated
     };
-    if (newStatus !== current_state.auditStatus && should_touch_last_local_change_at(current_state.auditStatus)) {
+    if (newStatus !== current_state.auditStatus) {
         return with_last_local_change_at(merged, get_current_iso_datetime_utc());
     }
     return merged;

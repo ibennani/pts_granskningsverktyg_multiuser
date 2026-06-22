@@ -9,16 +9,7 @@ export type SavedThemePreference = 'light' | 'dark' | 'dark-experimental' | 'win
 
 export type HtmlExportThemeId = SavedThemePreference | 'system';
 
-function is_saved_theme_preference(
-    theme: string | null | undefined
-): theme is SavedThemePreference {
-    return (
-        theme === 'light' ||
-        theme === 'dark' ||
-        theme === 'dark-experimental' ||
-        theme === 'winter-white'
-    );
-}
+export const HTML_EXPORT_DEFAULT_THEME: HtmlExportThemeId = 'light';
 
 export const HTML_EXPORT_THEME_OPTIONS: Array<{ value: HtmlExportThemeId; label_key: string }> = [
     { value: 'light', label_key: 'light_mode' },
@@ -30,12 +21,26 @@ export const HTML_EXPORT_THEME_OPTIONS: Array<{ value: HtmlExportThemeId; label_
 
 /** CSS-variabler per tema – använder samma data-theme-värden som Leffe. */
 export const HTML_EXPORT_THEME_CSS = `
+            html[data-theme] {
+                --html-export-code-bg: var(--html-export-sort-bg);
+            }
             html[data-theme="light"],
             html:not([data-theme]) {
+                --primary-color: #6E3282;
+                --primary-color-dark: #4A2159;
+                --link-color: #6E3282;
+                --link-hover-color: #8A3F9E;
+                --heading-color: #6E3282;
+                --text-color: #1e2a2b;
+                --text-color-muted: #4a5a5c;
+                --background-color: #F0EAE3;
+                --border-color: #B07CBF;
                 --html-export-panel-bg: #ffffff;
                 --html-export-sort-bg: rgba(110, 50, 130, 0.05);
                 --html-export-sort-border: rgba(110, 50, 130, 0.15);
                 --html-export-sort-active-bg: rgba(110, 50, 130, 0.12);
+                --html-export-banner-bg: #6E3282;
+                --html-export-banner-text: #ffffff;
             }
             html[data-theme="dark"] {
                 --primary-color: #9650AA;
@@ -51,6 +56,8 @@ export const HTML_EXPORT_THEME_CSS = `
                 --html-export-sort-bg: rgba(213, 185, 221, 0.08);
                 --html-export-sort-border: rgba(213, 185, 221, 0.2);
                 --html-export-sort-active-bg: rgba(213, 185, 221, 0.14);
+                --html-export-banner-bg: #9650AA;
+                --html-export-banner-text: #ffffff;
             }
             html[data-theme="dark-experimental"] {
                 --primary-color: #fafafa;
@@ -66,6 +73,8 @@ export const HTML_EXPORT_THEME_CSS = `
                 --html-export-sort-bg: rgba(165, 180, 252, 0.08);
                 --html-export-sort-border: rgba(165, 180, 252, 0.2);
                 --html-export-sort-active-bg: rgba(165, 180, 252, 0.14);
+                --html-export-banner-bg: #111113;
+                --html-export-banner-text: #E6D6BE;
             }
             html[data-theme="winter-white"] {
                 --primary-color: #6E3282;
@@ -81,28 +90,68 @@ export const HTML_EXPORT_THEME_CSS = `
                 --html-export-sort-bg: rgba(110, 50, 130, 0.05);
                 --html-export-sort-border: rgba(110, 50, 130, 0.15);
                 --html-export-sort-active-bg: rgba(110, 50, 130, 0.12);
+                --html-export-banner-bg: #09090b;
+                --html-export-banner-text: #fafafa;
+            }
+            @media (prefers-reduced-motion: no-preference) {
+                body,
+                .html-export-banner,
+                .html-export-sidebar,
+                .html-export-content,
+                .html-export-sidebar h2,
+                .html-export-sidebar a,
+                .html-export-theme-select,
+                .sort-controls,
+                .html-export-theme-controls,
+                .sort-option,
+                .sort-label,
+                .content-section,
+                .content-section h1,
+                .content-section h2,
+                .content-section h3,
+                .content-section h4,
+                .content-section p,
+                .content-section a,
+                .observation-content code,
+                .comment-content code,
+                .observation-content pre,
+                .comment-content pre {
+                    transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+                }
+            }
+            @media (prefers-reduced-motion: reduce) {
+                body,
+                .html-export-banner,
+                .html-export-sidebar,
+                .html-export-content,
+                .html-export-sidebar h2,
+                .html-export-sidebar a,
+                .html-export-theme-select,
+                .sort-controls,
+                .html-export-theme-controls,
+                .sort-option,
+                .sort-label,
+                .content-section,
+                .content-section h1,
+                .content-section h2,
+                .content-section h3,
+                .content-section h4,
+                .content-section p,
+                .content-section a,
+                .observation-content code,
+                .comment-content code,
+                .observation-content pre,
+                .comment-content pre {
+                    transition: none;
+                }
             }
 `;
 
 /**
- * Läser användarens aktuella temaval i Leffe vid exporttillfället.
+ * Standardtema i exporterad HTML – alltid ljust, oberoende av användarens val i Leffe.
  */
 export function resolve_html_export_initial_theme(): HtmlExportThemeId {
-    if (typeof window === 'undefined' || typeof document === 'undefined') {
-        return 'light';
-    }
-
-    const saved = localStorage.getItem('theme_preference');
-    if (is_saved_theme_preference(saved)) {
-        return saved;
-    }
-
-    const current = document.documentElement.getAttribute('data-theme');
-    if (is_saved_theme_preference(current)) {
-        return current;
-    }
-
-    return 'system';
+    return HTML_EXPORT_DEFAULT_THEME;
 }
 
 /** data-theme-värde som ska stå på html-elementet vid export. */

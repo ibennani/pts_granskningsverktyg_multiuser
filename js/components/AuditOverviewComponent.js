@@ -35,6 +35,7 @@ export class AuditOverviewComponent {
         this._last_rulefile_version_snapshot = null;
         this._last_audit_id_snapshot = null;
         this._last_rule_set_id_snapshot = null;
+        this._last_audit_status_snapshot = null;
         this.newerRuleAvailable = null;
         this._newerRuleCheckRequested = false;
         this._auditInfoComponent = null;
@@ -70,6 +71,7 @@ export class AuditOverviewComponent {
         this._last_rulefile_version_snapshot = null;
         this._last_audit_id_snapshot = null;
         this._last_rule_set_id_snapshot = null;
+        this._last_audit_status_snapshot = null;
     }
 
     async init_sub_components() {
@@ -129,6 +131,9 @@ export class AuditOverviewComponent {
         const prev_rule_set_id = (this._last_rule_set_id_snapshot || '').toString();
         const audit_identity_changed = next_audit_id !== prev_audit_id || next_rule_set_id !== prev_rule_set_id;
 
+        const next_status = new_state?.auditStatus;
+        const status_changed = next_status !== this._last_audit_status_snapshot;
+
         if (rulefile_version_changed) {
             // Efter t.ex. "Uppdatera regelfil" måste vi köra en ny kontroll, annars kan den gamla
             // newerRuleAvailable ligga kvar och fortsätta visa bannern.
@@ -142,7 +147,7 @@ export class AuditOverviewComponent {
             this.newerRuleAvailable = null;
         }
 
-        if (metadata_changed || rulefile_version_changed || audit_identity_changed) {
+        if (metadata_changed || rulefile_version_changed || audit_identity_changed || status_changed) {
             this.render();
         }
     }
@@ -164,11 +169,13 @@ export class AuditOverviewComponent {
             this._last_rulefile_version_snapshot = null;
             this._last_audit_id_snapshot = null;
             this._last_rule_set_id_snapshot = null;
+            this._last_audit_status_snapshot = null;
             return;
         }
         this._last_rulefile_version_snapshot = (current_global_state?.ruleFileContent?.metadata?.version || '').toString().trim();
         this._last_audit_id_snapshot = (current_global_state?.auditId || '').toString();
         this._last_rule_set_id_snapshot = (current_global_state?.ruleSetId || '').toString();
+        this._last_audit_status_snapshot = current_global_state?.auditStatus ?? null;
 
         const plate_element = this.Helpers.create_element('div', { class_name: 'content-plate audit-overview-plate' });
         this.root.appendChild(plate_element);

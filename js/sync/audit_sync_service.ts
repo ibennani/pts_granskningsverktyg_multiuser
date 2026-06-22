@@ -85,3 +85,11 @@ export async function flush_sync_to_server(
         return execute_audit_server_sync(st, dispatch_fn);
     });
 }
+
+/** Avbryter väntande debounced-synk (t.ex. efter omladdning från servern). */
+export function cancel_scheduled_audit_sync(): void {
+    if (debounce_timer) {
+        clearTimeout(debounce_timer);
+        debounce_timer = null;
+    }
+}

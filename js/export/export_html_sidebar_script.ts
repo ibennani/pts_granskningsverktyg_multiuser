@@ -10,8 +10,23 @@ export const HTML_EXPORT_SIDEBAR_SCRIPT = `
                 return 'light';
             }
 
+            function resolve_html_export_document_theme(theme) {
+                if (theme === 'system') {
+                    return resolve_html_export_theme_from_system();
+                }
+                if (
+                    theme === 'light' ||
+                    theme === 'dark' ||
+                    theme === 'dark-experimental' ||
+                    theme === 'winter-white'
+                ) {
+                    return theme;
+                }
+                return 'light';
+            }
+
             function apply_html_export_theme(theme) {
-                const resolved = theme === 'system' ? resolve_html_export_theme_from_system() : theme;
+                const resolved = resolve_html_export_document_theme(theme);
                 document.documentElement.setAttribute('data-theme', resolved);
             }
 
