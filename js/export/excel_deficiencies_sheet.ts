@@ -145,6 +145,21 @@ export function populate_deficiencies_excel_sheet(
         column_defs[id_col_index].width = Math.min(Math.max(max_id_len + 2, 8), 45);
     }
 
+    const screenshot_col_index = column_keys.indexOf('screenshotReference');
+    if (screenshot_col_index >= 0) {
+        const header_len = column_defs[screenshot_col_index].header.length;
+        let max_filename_len = header_len;
+        deficiencies_data.forEach((row) => {
+            String(row.screenshotReference || '')
+                .split('\n')
+                .forEach((line) => {
+                    const len = line.length;
+                    if (len > max_filename_len) max_filename_len = len;
+                });
+        });
+        column_defs[screenshot_col_index].width = Math.min(Math.max(max_filename_len + 2, 50), 90);
+    }
+
     set_column_widths(sheet, column_defs);
     apply_deficiency_hyperlinks(sheet, row_hyperlinks, reference_col, sample_url_col);
     apply_deficiency_row_styling(sheet, reference_col, sample_url_col);

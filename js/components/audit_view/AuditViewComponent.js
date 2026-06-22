@@ -31,6 +31,7 @@ import { get_server_filename_datetime, sanitize_filename_segment } from '../../u
 import { measure_backup_select_min_width_px } from '../../utils/backup_filter_select_width.ts';
 import { render_audit_header } from './AuditHeaderSection.js';
 import { create_audit_filter_skip_link } from './audit_filter_skip_link.js';
+import { announce_audit_filter_reset } from './audit_filter_live_status.js';
 import { render_audit_requirement_section } from './AuditRequirementSection.js';
 import { render_audit_audits_sections, render_audit_samples_section } from './AuditSamplesSection.js';
 import { JSON_MAX_UPLOAD_BYTES } from '../../../shared/constants/json_upload_limits.js';
@@ -94,6 +95,7 @@ export class AuditViewComponent {
         this._auditGroupByCaseSelectRef = null;
         this._auditFilterToggleRef = null;
         this._auditFilterResetRef = null;
+        this._auditFilterLiveRegionRef = null;
         this._audit_list_toggle_animating = false;
         this.router = deps.router;
         this.getState = deps.getState;
@@ -280,6 +282,11 @@ export class AuditViewComponent {
                 this._auditFilterResetRef.focus();
             }
         }
+
+        announce_audit_filter_reset(
+            this._auditFilterLiveRegionRef,
+            this.get_t_func()('audit_filter_reset_announced')
+        );
     }
 
     _ensure_audit_filter_panel_open() {
@@ -2158,6 +2165,7 @@ export class AuditViewComponent {
         this._auditGroupByCaseSelectRef = null;
         this._auditFilterToggleRef = null;
         this._auditFilterResetRef = null;
+        this._auditFilterLiveRegionRef = null;
 
         if (this.audit_mode === 'audits') {
             plate.appendChild(create_audit_filter_skip_link(this));

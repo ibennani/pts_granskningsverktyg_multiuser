@@ -181,6 +181,7 @@
   "audit_filter_landmark_label": "Filter for tilsynslisten",
   "audit_filter_no_results": "Ingen tilsyn samsvarer med gjeldende filter.",
   "audit_filter_reset_aria": "Tilbakestill filter, tøm søketekst og gjenopprett alle filtervalg til standard",
+  "audit_filter_reset_announced": "Filteret er tilbakestilt. Alle tilsyn vises.",
   "audit_filter_reset_label": "Tilbakestill filter",
   "audit_filter_toggle_aria": "Vis eller skjul filter for tilsynslisten",
   "audit_filter_toggle_label": "Filter",

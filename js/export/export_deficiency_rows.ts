@@ -102,7 +102,7 @@ export function build_deficiency_column_defs(
         { header: t('excel_col_sample_url'), key: 'sampleUrl', width: 40 },
         { header: t('excel_col_deficiency_type'), key: 'deficiencyType', width: 24 },
         { header: t('excel_col_observation'), key: 'observation', width: 70 },
-        { header: t('excel_col_screenshot_reference'), key: 'screenshotReference', width: 40 }
+        { header: t('excel_col_screenshot_reference'), key: 'screenshotReference', width: 50 }
     ];
     return [
         ...column_defs_before_comment,

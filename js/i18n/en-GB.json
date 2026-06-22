@@ -181,6 +181,7 @@
   "audit_filter_landmark_label": "Filters for the audit list",
   "audit_filter_no_results": "No audits match the current filter.",
   "audit_filter_reset_aria": "Reset filters, clear search text and restore all filter choices to default",
+  "audit_filter_reset_announced": "Filters have been reset. All audits are shown.",
   "audit_filter_reset_label": "Reset filters",
   "audit_filter_toggle_aria": "Show or hide filters for the audit list",
   "audit_filter_toggle_label": "Filter",

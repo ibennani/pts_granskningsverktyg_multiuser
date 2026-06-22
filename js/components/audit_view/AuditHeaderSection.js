@@ -164,6 +164,14 @@ export function render_audit_header(ctx) {
         row.appendChild(reset_field);
 
         filter_wrapper.appendChild(row);
+
+        const live_region = ctx.Helpers.create_element('div', {
+            class_name: 'visually-hidden',
+            attributes: { 'aria-live': 'polite', 'aria-atomic': 'true' }
+        });
+        ctx._auditFilterLiveRegionRef = live_region;
+        filter_wrapper.appendChild(live_region);
+
         header.appendChild(filter_wrapper);
     }
     if (ctx.audit_mode !== 'audits') {

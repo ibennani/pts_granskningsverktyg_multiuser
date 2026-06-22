@@ -181,6 +181,7 @@
   "audit_filter_landmark_label": "Filter för granskningslistan",
   "audit_filter_no_results": "Inga granskningar matchar filtret.",
   "audit_filter_reset_aria": "Återställ filter, rensa söktext och återställ alla filterval till standard",
+  "audit_filter_reset_announced": "Filtret är återställt. Alla granskningar visas.",
   "audit_filter_reset_label": "Återställ filter",
   "audit_filter_toggle_aria": "Visa eller dölj filter för granskningslistan",
   "audit_filter_toggle_label": "Filter",
