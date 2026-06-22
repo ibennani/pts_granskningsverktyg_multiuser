@@ -142,3 +142,27 @@ export function resolve_granskning_sequence_number(
 
     return sequence;
 }
+
+export type SampleListRowForSequence = {
+    id?: string;
+};
+
+/**
+ * Returnerar 1-baserad ordning för stickprov enligt samples-arrayens ordning.
+ */
+export function resolve_sample_sequence_number(
+    samples: SampleListRowForSequence[] | null | undefined,
+    sample_id: string | null | undefined
+): number {
+    const id = String(sample_id ?? '').trim();
+    if (!id) {
+        return 1;
+    }
+
+    const index = (samples || []).findIndex((row) => String(row.id ?? '') === id);
+    if (index < 0) {
+        return 1;
+    }
+
+    return index + 1;
+}

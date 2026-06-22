@@ -136,6 +136,7 @@ describe('export_deficiency_rows', () => {
             audit_type_label: 'WEBB',
             granskning_sequence: 1,
             case_number: '26-11111',
+            deficiency_id_part_width: 3,
             capture_dates: new Map([
                 ['skarm1.png', '2026-04-11'],
                 ['skarm2.png', '2026-04-12']

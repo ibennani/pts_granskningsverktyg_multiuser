@@ -10,12 +10,16 @@ import {
     type AuditListRowForSequence
 } from '../logic/audit_granskning_sequence.js';
 import { resolve_media_capture_dates } from '../logic/media_capture_date.js';
-import { for_each_failed_export_pass_criterion } from './export_deficiency_traversal.js';
+import {
+    for_each_failed_export_pass_criterion,
+    resolve_deficiency_id_part_width
+} from './export_deficiency_traversal.js';
 
 export type ExportMediaFilenameContext = {
     audit_type_label: string;
     granskning_sequence: number;
     case_number: string;
+    deficiency_id_part_width: number;
     capture_dates: Map<string, string>;
 };
 
@@ -29,6 +33,27 @@ function collect_deficiency_media_filenames(current_audit: unknown): string[] {
             if (trimmed) names.add(trimmed);
         });
     });
+    return [...names];
+}
+
+function collect_sample_media_filenames(current_audit: unknown): string[] {
+    const names = new Set<string>();
+    const samples = (current_audit as { samples?: unknown[] })?.samples || [];
+    samples.forEach((sample) => {
+        const filenames = (sample as { attachedMediaFilenames?: unknown }).attachedMediaFilenames;
+        if (!Array.isArray(filenames)) return;
+        filenames.forEach((name) => {
+            const trimmed = String(name || '').trim();
+            if (trimmed) names.add(trimmed);
+        });
+    });
+    return [...names];
+}
+
+function collect_all_export_media_filenames(current_audit: unknown): string[] {
+    const names = new Set<string>();
+    collect_deficiency_media_filenames(current_audit).forEach((name) => names.add(name));
+    collect_sample_media_filenames(current_audit).forEach((name) => names.add(name));
     return [...names];
 }
 
@@ -72,13 +97,15 @@ export async function build_export_media_filename_context(
         audit_type
     });
 
-    const filenames = collect_deficiency_media_filenames(current_audit);
+    const deficiency_id_part_width = resolve_deficiency_id_part_width(current_audit);
+    const filenames = collect_all_export_media_filenames(current_audit);
     const capture_dates = await resolve_media_capture_dates(audit.auditId, filenames, export_date);
 
     return {
         audit_type_label,
         granskning_sequence,
         case_number,
+        deficiency_id_part_width,
         capture_dates
     };
 }

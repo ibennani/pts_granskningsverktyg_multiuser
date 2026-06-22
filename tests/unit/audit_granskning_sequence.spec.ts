@@ -6,6 +6,7 @@ import {
     resolve_audit_export_type_abbrev,
     resolve_audit_type_for_export,
     resolve_granskning_sequence_number,
+    resolve_sample_sequence_number,
     sanitize_export_type_abbrev
 } from '../../js/logic/audit_granskning_sequence.ts';
 
@@ -47,6 +48,15 @@ describe('audit_granskning_sequence', () => {
         expect(sanitize_export_type_abbrev('webb')).toBe('WEBB');
         expect(sanitize_export_type_abbrev('  pdf-1  ')).toBe('PDF1');
         expect(sanitize_export_type_abbrev('')).toBe('');
+    });
+
+    test('resolve_sample_sequence_number följer samples-arrayens ordning', () => {
+        const samples = [{ id: 's1' }, { id: 's2' }, { id: 's3' }];
+        expect(resolve_sample_sequence_number(samples, 's1')).toBe(1);
+        expect(resolve_sample_sequence_number(samples, 's2')).toBe(2);
+        expect(resolve_sample_sequence_number(samples, 's3')).toBe(3);
+        expect(resolve_sample_sequence_number(samples, 'missing')).toBe(1);
+        expect(resolve_sample_sequence_number(samples, null)).toBe(1);
     });
 
     test('WEBB numreras separat från PDF med samma ärendenummer', () => {

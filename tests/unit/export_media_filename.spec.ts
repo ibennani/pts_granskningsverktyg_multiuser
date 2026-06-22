@@ -2,7 +2,10 @@
  * @fileoverview Enhetstester för exportfilnamn för medier.
  */
 
-import { build_requirement_media_export_filename } from '../../js/export/export_media_filename.ts';
+import {
+    build_requirement_media_export_filename,
+    build_sample_media_export_filename
+} from '../../js/export/export_media_filename.ts';
 
 describe('export_media_filename', () => {
     test('bygger filnamn enligt PTS-format', () => {
@@ -62,5 +65,33 @@ describe('export_media_filename', () => {
                 original_filename: 'skarm.png'
             })
         ).toBe('047_1_WEB_1_2026-04-11_26-11111.png');
+    });
+
+    test('stickprovsfilnamn med tre siffrors id-bredd', () => {
+        expect(
+            build_sample_media_export_filename({
+                sample_sequence: 1,
+                deficiency_id_part_width: 3,
+                audit_type_label: 'WEBB',
+                granskning_sequence: 1,
+                capture_date: '2026-04-11',
+                case_number: '26-11111',
+                original_filename: 'stickprov.png'
+            })
+        ).toBe('000_1_WEBB_1_2026-04-11_26-11111.png');
+    });
+
+    test('stickprovsfilnamn följer bredare bristnummer', () => {
+        expect(
+            build_sample_media_export_filename({
+                sample_sequence: 2,
+                deficiency_id_part_width: 4,
+                audit_type_label: 'WEBB',
+                granskning_sequence: 1,
+                capture_date: '2026-04-11',
+                case_number: '26-11111',
+                original_filename: 'stickprov.png'
+            })
+        ).toBe('0000_2_WEBB_1_2026-04-11_26-11111.png');
     });
 });

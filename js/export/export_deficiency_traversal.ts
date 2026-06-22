@@ -5,6 +5,9 @@
 
 import { find_requirement_definition } from '../logic/audit_logic_lookup.js';
 import { traverse_all_pass_criteria } from '../utils/traverse_audit_data.js';
+import { extractDeficiencyNumber } from './export_format_helpers.js';
+
+const MIN_DEFICIENCY_ID_PART_WIDTH = 3;
 
 /**
  * Varje lagrat underkänt kriterium med brist-id som har motsvarande krav i regelfilen.
@@ -66,4 +69,24 @@ export function for_each_failed_in_requirement_result(
             }
         }
     }
+}
+
+/**
+ * Maximal teckenlängd för bristnummer i exportfilnamn (minst 3).
+ */
+export function resolve_deficiency_id_part_width(current_audit: unknown): number {
+    let max_width = MIN_DEFICIENCY_ID_PART_WIDTH;
+    for_each_failed_export_pass_criterion(current_audit, ({ pc_obj }) => {
+        const part = extractDeficiencyNumber(pc_obj.deficiencyId);
+        if (part.length > max_width) {
+            max_width = part.length;
+        }
+    });
+    return max_width;
+}
+
+/** Nollor för stickprovs-id-del, samma bredd som bristnummer i granskningen. */
+export function format_zero_id_part_for_sample(deficiency_id_part_width: number): string {
+    const width = Math.max(MIN_DEFICIENCY_ID_PART_WIDTH, Math.floor(deficiency_id_part_width));
+    return '0'.repeat(width);
 }
