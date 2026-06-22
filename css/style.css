@@ -69,7 +69,9 @@
     --focus-outer-width: 2px;
     --focus-inner-color: #ffffff;
     --focus-outer-color: #000000;
-
+    --focus-outer-style: solid;
+    --focus-ring-outline-offset: calc(var(--focus-offset) + var(--focus-inner-width));
+    --focus-ring-box-shadow: 0 0 0 calc(var(--focus-inner-width) + var(--focus-offset)) var(--focus-inner-color);
 
     --button-default-bg: #FAF7F4;
     /* Ljusare än plattor för bättre synlighet */
@@ -206,7 +208,9 @@
     /* Focus ring variables - Updated for high contrast */
     --focus-inner-color: #ffffff;
     --focus-outer-color: #000000;
-
+    --focus-outer-style: solid;
+    --focus-ring-outline-offset: calc(var(--focus-offset) + var(--focus-inner-width));
+    --focus-ring-box-shadow: 0 0 0 calc(var(--focus-inner-width) + var(--focus-offset)) var(--focus-inner-color);
 
     --button-default-bg: #423051;
     /* Ljusare än plattor för bättre kontrast */

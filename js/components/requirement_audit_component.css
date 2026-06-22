@@ -315,6 +315,20 @@
     background-color: var(--input-background-color);
 }
 
+.criteria-panel[hidden] {
+    display: none;
+}
+
+.criteria-panel.slide-down-in {
+    animation: fadeInSlideDown 0.5s ease-out forwards;
+    overflow: hidden;
+}
+
+.criteria-panel.slide-down-out {
+    animation: fadeOutSlideUp 0.5s ease-out forwards;
+    overflow: hidden;
+}
+
 .pass-criteria-list {
     list-style: none;
     padding-left: 0;
@@ -322,24 +336,8 @@
     overflow: hidden;
 }
 
-.pass-criteria-list.slide-down-in {
-    animation: fadeInSlideDown 0.5s ease-out forwards;
-}
-
-.pass-criteria-list.slide-down-out {
-    animation: fadeOutSlideUp 0.5s ease-out forwards;
-}
-
 .compliance-info-text {
     overflow: hidden;
-}
-
-.compliance-info-text.slide-down-in {
-    animation: fadeInSlideDown 0.5s ease-out forwards;
-}
-
-.compliance-info-text.slide-down-out {
-    animation: fadeOutSlideUp 0.5s ease-out forwards;
 }
 
 .pc-observation-detail-wrapper {
@@ -356,6 +354,16 @@
 
 .pc-observation-detail-wrapper[hidden] {
     display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .criteria-panel.slide-down-in,
+    .criteria-panel.slide-down-out,
+    .pc-observation-detail-wrapper.slide-down-in,
+    .pc-observation-detail-wrapper.slide-down-out {
+        transition: none;
+        animation: none;
+    }
 }
 
 @keyframes fadeInSlideDown {
