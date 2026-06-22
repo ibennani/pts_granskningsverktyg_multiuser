@@ -4,9 +4,14 @@
 
 import {
     mount_audit_media_image_preview,
-    reset_audit_media_preview_layout
+    reset_audit_media_preview_layout,
+    teardown_audit_media_preview_for_view_switch
 } from './audit_media_image_preview_mount.js';
-import { run_attach_media_modal_view_switch } from './attach_media_modal_view_switch.js';
+import {
+    measure_attach_media_modal_dialog,
+    run_attach_media_modal_view_switch,
+    type AttachMediaModalDialogSize
+} from './attach_media_modal_view_switch.js';
 import type { AuditMediaObservationEditOptions } from './audit_media_preview_observation.js';
 
 type TranslateFn = (key: string, params?: Record<string, unknown>) => string;
@@ -42,6 +47,7 @@ export type AttachMediaInModalPreviewController = {
         trigger_element: HTMLElement | null
     ) => void;
     is_preview_open: () => boolean;
+    remember_list_dialog_size: () => void;
     destroy: () => void;
 };
 
@@ -79,13 +85,21 @@ export function create_attach_media_in_modal_preview(
     } = options;
 
     let preview_mount_destroy = () => {};
+    let preview_finalize_layout = () => {};
     let preview_open = false;
     let view_switch_in_flight = false;
     let preview_trigger: HTMLElement | null = null;
+    let cached_list_dialog_size: AttachMediaModalDialogSize | null = null;
+
+    const remember_list_dialog_size = () => {
+        if (!dialog_el || preview_open) return;
+        cached_list_dialog_size = measure_attach_media_modal_dialog(dialog_el);
+    };
 
     const apply_list_view = () => {
-        preview_mount_destroy();
+        teardown_audit_media_preview_for_view_switch(dialog_el, modal_container);
         preview_mount_destroy = () => {};
+        preview_finalize_layout = () => {};
         preview_open = false;
         on_preview_open_change?.(false);
 
@@ -106,8 +120,11 @@ export function create_attach_media_in_modal_preview(
         const focus_el = focus_target ?? preview_trigger;
         view_switch_in_flight = true;
 
-        void run_attach_media_modal_view_switch(modal_container, apply_list_view).finally(() => {
+        void run_attach_media_modal_view_switch(modal_container, apply_list_view, {
+            close_target_size: cached_list_dialog_size
+        }).finally(() => {
             view_switch_in_flight = false;
+            remember_list_dialog_size();
             focus_element_safe(focus_el);
             preview_trigger = null;
         });
@@ -154,7 +171,7 @@ export function create_attach_media_in_modal_preview(
         message_el.textContent = '';
         message_el.hidden = true;
 
-        preview_mount_destroy = mount_audit_media_image_preview(
+        const mount_result = mount_audit_media_image_preview(
             modal_container,
             dialog_el ?? null,
             {
@@ -169,9 +186,12 @@ export function create_attach_media_in_modal_preview(
                 on_close: () => {
                     back_from_preview_history();
                 },
-                trigger_element
+                trigger_element,
+                defer_baseline_lock: true
             }
-        ).destroy;
+        );
+        preview_mount_destroy = mount_result.destroy;
+        preview_finalize_layout = mount_result.finalize_layout;
 
         preview_open = true;
         on_preview_open_change?.(true);
@@ -184,12 +204,21 @@ export function create_attach_media_in_modal_preview(
     ) => {
         if (!audit_id || preview_open || view_switch_in_flight) return;
 
+        remember_list_dialog_size();
         preview_trigger = trigger_element;
         view_switch_in_flight = true;
 
-        void run_attach_media_modal_view_switch(modal_container, () => {
-            apply_preview_view(filename, blob_url, trigger_element);
-        }).finally(() => {
+        void run_attach_media_modal_view_switch(
+            modal_container,
+            () => {
+                apply_preview_view(filename, blob_url, trigger_element);
+            },
+            {
+                on_transition_complete: () => {
+                    preview_finalize_layout();
+                }
+            }
+        ).finally(() => {
             view_switch_in_flight = false;
             push_preview_history();
         });
@@ -201,6 +230,7 @@ export function create_attach_media_in_modal_preview(
 
         preview_mount_destroy();
         preview_mount_destroy = () => {};
+        preview_finalize_layout = () => {};
         preview_open = false;
         reset_audit_media_preview_layout(dialog_el, modal_container);
         modal_container.classList.add('modal-content--attach-media');
@@ -235,6 +265,7 @@ export function create_attach_media_in_modal_preview(
     return {
         open_preview,
         is_preview_open: () => preview_open,
+        remember_list_dialog_size,
         destroy
     };
 }

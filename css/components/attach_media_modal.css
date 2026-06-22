@@ -167,7 +167,8 @@
     min-width: 0;
 }
 
-dialog.modal-dialog.modal-dialog--attach-media-view-switch {
+dialog.modal-dialog.modal-dialog--attach-media-view-switch,
+dialog.modal-dialog.modal-dialog--attach-media-view-switch.modal-dialog--media-preview {
     transition:
         width var(--modal-transition-duration, 0.5s) ease,
         height var(--modal-transition-duration, 0.5s) ease,
@@ -273,7 +274,6 @@ dialog.modal-dialog.modal-dialog--attach-media-view-switch {
     justify-content: center;
     margin: 0;
     overflow: hidden;
-    transition: max-height 0.5s ease, max-width 0.5s ease;
 }
 
 .audit-media-preview-image {
@@ -286,7 +286,18 @@ dialog.modal-dialog.modal-dialog--attach-media-view-switch {
     flex-shrink: 1;
     border: 1px solid var(--border-color);
     border-radius: 4px;
-    transition: width 0.5s ease, height 0.5s ease;
+}
+
+.modal-content--media-preview-opening .audit-media-preview-wrap {
+    transition:
+        max-width var(--modal-transition-duration, 0.5s) ease,
+        max-height var(--modal-transition-duration, 0.5s) ease;
+}
+
+.modal-content--media-preview-opening .audit-media-preview-image {
+    transition:
+        width var(--modal-transition-duration, 0.5s) ease,
+        height var(--modal-transition-duration, 0.5s) ease;
 }
 
 .audit-media-preview-close-btn {
@@ -436,7 +447,10 @@ dialog.modal-dialog.modal-dialog--attach-media-view-switch {
 
 @media (prefers-reduced-motion: reduce) {
     dialog.modal-dialog.modal-dialog--attach-media-view-switch,
-    .modal-content--attach-media-view-switch {
+    dialog.modal-dialog.modal-dialog--attach-media-view-switch.modal-dialog--media-preview,
+    .modal-content--attach-media-view-switch,
+    .modal-content--media-preview-opening .audit-media-preview-wrap,
+    .modal-content--media-preview-opening .audit-media-preview-image {
         transition: none;
     }
 
@@ -463,7 +477,6 @@ dialog.modal-dialog.modal-dialog--media-preview {
     padding: 1rem;
     box-sizing: border-box;
     overflow: hidden;
-    transition: height var(--modal-transition-duration, 0.5s) ease, width var(--modal-transition-duration, 0.5s) ease;
 }
 
 dialog.modal-dialog.modal-dialog--media-preview > .modal-content {
@@ -500,6 +513,15 @@ dialog.modal-dialog.modal-dialog--media-preview > .modal-content {
     margin-bottom: 0;
     max-width: 100%;
     width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.modal-content--media-preview .modal-heading--wrap-at-cap {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
     overflow-wrap: anywhere;
     word-break: break-word;
 }

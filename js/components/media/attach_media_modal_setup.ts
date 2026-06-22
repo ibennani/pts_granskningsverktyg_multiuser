@@ -394,4 +394,10 @@ export function setup_attach_media_modal_content(
     actions_wrapper.appendChild(save_btn);
     actions_wrapper.appendChild(discard_btn);
     list_mode_root.appendChild(actions_wrapper);
+
+    if (in_modal_preview) {
+        requestAnimationFrame(() => {
+            in_modal_preview?.remember_list_dialog_size();
+        });
+    }
 }
