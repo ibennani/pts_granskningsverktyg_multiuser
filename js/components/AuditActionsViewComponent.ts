@@ -634,20 +634,26 @@ export class AuditActionsViewComponent {
             }));
         } else {
             const export_actions = this.Helpers.create_element('div', { class_name: 'audit-actions__export-list' });
-            if (this.ExportLogic?.export_to_csv) {
-                export_actions.appendChild(this.create_export_item({
-                    label: t('export_to_csv'),
-                    description: t('audit_actions_export_csv_description'),
-                    on_click: this.handle_export_csv,
-                    id_suffix: 'export-csv'
-                }));
-            }
-            if (this.ExportLogic?.export_to_excel) {
-                export_actions.appendChild(this.create_export_item({
-                    label: t('export_to_excel'),
-                    description: t('audit_actions_export_excel_description'),
-                    on_click: this.handle_export_excel,
-                    id_suffix: 'export-excel'
+            if (this.ExportLogic?.export_to_csv || this.ExportLogic?.export_to_excel) {
+                export_actions.appendChild(this.create_export_item_with_buttons({
+                    buttons: [
+                        ...(this.ExportLogic?.export_to_excel
+                            ? [{
+                                label: t('export_to_excel'),
+                                on_click: this.handle_export_excel,
+                                id_suffix: 'export-excel'
+                            }]
+                            : []),
+                        ...(this.ExportLogic?.export_to_csv
+                            ? [{
+                                label: t('export_to_csv'),
+                                on_click: this.handle_export_csv,
+                                id_suffix: 'export-csv'
+                            }]
+                            : [])
+                    ],
+                    description: t('audit_actions_export_spreadsheet_description'),
+                    desc_id_suffix: 'export-spreadsheet'
                 }));
             }
             if (this.ExportLogic?.export_to_word_criterias || this.ExportLogic?.export_to_pdf_criterias) {
