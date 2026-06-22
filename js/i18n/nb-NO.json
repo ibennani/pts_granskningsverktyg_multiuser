@@ -683,6 +683,8 @@
   "excel_status_wont_fix": "Vil ikke utbedre",
   "expected_observation": "Forventet observasjon",
   "export_last_updated_label": "Sist oppdatert",
+  "export_media_audit_type_abbrev_pdf": "PDF",
+  "export_media_audit_type_abbrev_webb": "WEB",
   "export_to_csv": "Eksporter til CSV",
   "export_to_excel": "Eksporter til Excel",
   "export_to_html": "Eksporter til HTML",

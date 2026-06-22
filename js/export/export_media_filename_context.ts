@@ -4,7 +4,7 @@
 
 import { get_audits } from '../api/client.js';
 import {
-    audit_export_type_to_label,
+    resolve_audit_export_type_abbrev,
     resolve_audit_type_for_export,
     resolve_granskning_sequence_number,
     type AuditListRowForSequence
@@ -13,7 +13,7 @@ import { resolve_media_capture_dates } from '../logic/media_capture_date.js';
 import { for_each_failed_export_pass_criterion } from './export_deficiency_traversal.js';
 
 export type ExportMediaFilenameContext = {
-    audit_type_label: 'WEBB' | 'PDF';
+    audit_type_label: string;
     granskning_sequence: number;
     case_number: string;
     capture_dates: Map<string, string>;
@@ -59,7 +59,7 @@ export async function build_export_media_filename_context(
     };
 
     const audit_type = resolve_audit_type_for_export(audit.ruleFileContent);
-    const audit_type_label = audit_export_type_to_label(audit_type);
+    const audit_type_label = resolve_audit_export_type_abbrev(audit_type, audit.ruleFileContent);
     if (!audit_type_label) {
         return null;
     }

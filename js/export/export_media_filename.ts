@@ -8,7 +8,7 @@ import { extractDeficiencyNumber } from './export_format_helpers.js';
 export type RequirementMediaExportFilenameInput = {
     deficiency_id?: string | null;
     image_index: number;
-    audit_type_label: 'WEBB' | 'PDF';
+    audit_type_label: string;
     granskning_sequence: number;
     capture_date: string;
     case_number: string;

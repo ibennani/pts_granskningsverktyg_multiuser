@@ -3,9 +3,10 @@
  */
 
 import {
-    audit_export_type_to_label,
+    resolve_audit_export_type_abbrev,
     resolve_audit_type_for_export,
-    resolve_granskning_sequence_number
+    resolve_granskning_sequence_number,
+    sanitize_export_type_abbrev
 } from '../../js/logic/audit_granskning_sequence.ts';
 
 describe('audit_granskning_sequence', () => {
@@ -22,10 +23,30 @@ describe('audit_granskning_sequence', () => {
         ).toBe('pdf');
     });
 
-    test('audit_export_type_to_label', () => {
-        expect(audit_export_type_to_label('webb')).toBe('WEBB');
-        expect(audit_export_type_to_label('pdf')).toBe('PDF');
-        expect(audit_export_type_to_label(null)).toBeNull();
+    test('resolve_audit_export_type_abbrev per regelfilsspråk', () => {
+        const sv_rule = { metadata: { language: 'sv-SE', monitoringType: { type: 'webb' } } };
+        const en_rule = { metadata: { language: 'en-GB', monitoringType: { type: 'webb' } } };
+        const nb_rule = { metadata: { language: 'nb-NO', monitoringType: { type: 'webb' } } };
+
+        expect(resolve_audit_export_type_abbrev('webb', sv_rule)).toBe('WEBB');
+        expect(resolve_audit_export_type_abbrev('webb', en_rule)).toBe('WEB');
+        expect(resolve_audit_export_type_abbrev('webb', nb_rule)).toBe('WEB');
+        expect(resolve_audit_export_type_abbrev('pdf', en_rule)).toBe('PDF');
+        expect(resolve_audit_export_type_abbrev(null, sv_rule)).toBeNull();
+    });
+
+    test('resolve_audit_export_type_abbrev fallback sv-SE när språk saknas', () => {
+        expect(
+            resolve_audit_export_type_abbrev('webb', {
+                metadata: { monitoringType: { type: 'webb' } }
+            })
+        ).toBe('WEBB');
+    });
+
+    test('sanitize_export_type_abbrev', () => {
+        expect(sanitize_export_type_abbrev('webb')).toBe('WEBB');
+        expect(sanitize_export_type_abbrev('  pdf-1  ')).toBe('PDF1');
+        expect(sanitize_export_type_abbrev('')).toBe('');
     });
 
     test('WEBB numreras separat från PDF med samma ärendenummer', () => {

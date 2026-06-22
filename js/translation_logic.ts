@@ -5,13 +5,30 @@
 
 import { escape_html } from './utils/helpers.js';
 import { consoleManager } from './utils/console_manager.js';
+import sv_se_translations from './i18n/sv-SE.json';
+import en_gb_translations from './i18n/en-GB.json';
+import nb_no_translations from './i18n/nb-NO.json';
 
 type TranslationJson = Record<string, string>;
 
-const translationModules = import.meta.glob('./i18n/*.json', { eager: true }) as Record<
-    string,
-    { default?: TranslationJson } | TranslationJson
->;
+const bundled_translation_modules: Record<string, TranslationJson> = {
+    './i18n/sv-SE.json': sv_se_translations,
+    './i18n/en-GB.json': en_gb_translations,
+    './i18n/nb-NO.json': nb_no_translations
+};
+
+function load_translation_modules_from_glob(): Record<string, { default?: TranslationJson } | TranslationJson> {
+    const meta = import.meta as { glob?: (pattern: string, options: { eager: boolean }) => Record<string, unknown> };
+    if (typeof meta.glob !== 'function') {
+        return {};
+    }
+    return meta.glob('./i18n/*.json', { eager: true }) as Record<
+        string,
+        { default?: TranslationJson } | TranslationJson
+    >;
+}
+
+const translationModules = load_translation_modules_from_glob();
 
 const supported_languages: Record<string, string> = {
     'sv-SE': 'Svenska (Sverige)',
@@ -73,7 +90,14 @@ function get_translation_module_data(lang_tag: string) {
     }
     const lower = key.toLowerCase();
     const found_key = Object.keys(translationModules).find((k) => k.toLowerCase() === lower);
-    return found_key ? translationModules[found_key] : null;
+    if (found_key) {
+        return translationModules[found_key];
+    }
+    if (bundled_translation_modules[key]) {
+        return bundled_translation_modules[key];
+    }
+    const bundled_key = Object.keys(bundled_translation_modules).find((k) => k.toLowerCase() === lower);
+    return bundled_key ? bundled_translation_modules[bundled_key] : null;
 }
 
 function unwrap_translation_object(moduleData: unknown): TranslationJson | null {
@@ -120,6 +144,28 @@ function resolve_effective_language_tag(requested_tag: string | null | undefined
         `Language tag "${String(requested_tag)}" (normaliserad: "${normalized}") stöds inte. Använder standard "${DEFAULT_LANGUAGE_TAG}".`
     );
     return DEFAULT_LANGUAGE_TAG;
+}
+
+function get_merged_translations_for_language(lang_tag: string | null | undefined): TranslationJson {
+    const effective_lang_tag = resolve_effective_language_tag(lang_tag || DEFAULT_LANGUAGE_TAG);
+    const moduleData = get_translation_module_data(effective_lang_tag);
+    const primary_obj = unwrap_translation_object(moduleData);
+
+    if (!primary_obj) {
+        if (effective_lang_tag !== DEFAULT_LANGUAGE_TAG) {
+            return get_merged_translations_for_language(DEFAULT_LANGUAGE_TAG);
+        }
+        return {};
+    }
+
+    let merged: TranslationJson = { ...primary_obj };
+    if (effective_lang_tag !== DEFAULT_LANGUAGE_TAG) {
+        const fallback_obj = unwrap_translation_object(get_translation_module_data(DEFAULT_LANGUAGE_TAG));
+        if (fallback_obj) {
+            merged = { ...fallback_obj, ...merged };
+        }
+    }
+    return merged;
 }
 
 async function load_language_file(lang_tag_to_load: string | null | undefined): Promise<TranslationJson> {
@@ -202,6 +248,28 @@ export function t(key: string, replacements: Record<string, string> = {}): strin
             ? String(sanitized_replacements[placeholder_key])
             : match
     );
+}
+
+/**
+ * Översättning för ett visst språk utan att byta globalt UI-språk (t.ex. exportfilnamn från regelfilens språk).
+ */
+export function t_for_language(key: string, language_tag: string | null | undefined): string {
+    const effective_lang_tag = resolve_effective_language_tag(language_tag || DEFAULT_LANGUAGE_TAG);
+    const translations = get_merged_translations_for_language(effective_lang_tag);
+    const translation_value = translations[key];
+    if (translation_value !== undefined) {
+        return translation_value;
+    }
+
+    if (effective_lang_tag !== DEFAULT_LANGUAGE_TAG) {
+        const fallback_value = get_merged_translations_for_language(DEFAULT_LANGUAGE_TAG)[key];
+        if (fallback_value !== undefined) {
+            return fallback_value;
+        }
+    }
+
+    warn(`t_for_language(): Missing key "${key}" for lang "${effective_lang_tag}". Returning key.`);
+    return `**${key}**`;
 }
 
 export function get_current_language_code(): string {

@@ -683,6 +683,8 @@
   "excel_status_wont_fix": "Kommer inte åtgärda",
   "expected_observation": "Förväntad observation",
   "export_last_updated_label": "Senast ändrad",
+  "export_media_audit_type_abbrev_pdf": "PDF",
+  "export_media_audit_type_abbrev_webb": "WEBB",
   "export_to_csv": "Exportera till CSV",
   "export_to_excel": "Exportera till Excel",
   "export_to_html": "Exportera till HTML",

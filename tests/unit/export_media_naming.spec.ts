@@ -69,4 +69,11 @@ describe('export_media_naming', () => {
             format_media_filenames_for_export(['a.png'], sample_context, { deficiency_id: 'B047' })
         ).toBe('047_1_WEBB_1_2026-04-11_26-11111.png');
     });
+
+    test('format_media_filenames_for_export med engelsk förkortning i kontext', () => {
+        const en_context = { ...sample_context, audit_type_label: 'WEB' };
+        expect(
+            format_media_filenames_for_export(['a.png'], en_context, { deficiency_id: 'B047' })
+        ).toBe('047_1_WEB_1_2026-04-11_26-11111.png');
+    });
 });

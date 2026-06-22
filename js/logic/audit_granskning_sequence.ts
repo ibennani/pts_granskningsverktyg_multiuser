@@ -2,6 +2,8 @@
  * @fileoverview Granskningsnummer (WEBB_1 / PDF_2) för exportfilnamn baserat på ärendenummer och skapandedatum.
  */
 
+import { t_for_language } from '../translation_logic.js';
+
 export type AuditExportType = 'webb' | 'pdf';
 
 export type AuditListRowForSequence = {
@@ -12,6 +14,17 @@ export type AuditListRowForSequence = {
 };
 
 const MAX_GRANSKNING_SEQUENCE = 9;
+const DEFAULT_RULEFILE_LANGUAGE_FOR_EXPORT = 'sv-SE';
+
+const EXPORT_TYPE_ABBREV_I18N_KEY: Record<AuditExportType, string> = {
+    webb: 'export_media_audit_type_abbrev_webb',
+    pdf: 'export_media_audit_type_abbrev_pdf'
+};
+
+const EXPORT_TYPE_ABBREV_FALLBACK: Record<AuditExportType, string> = {
+    webb: 'WEB',
+    pdf: 'PDF'
+};
 
 /**
  * Härleder webb/pdf från regelfilens monitoringType (samma heuristik som servern).
@@ -28,10 +41,44 @@ export function resolve_audit_type_for_export(rule_file_content: unknown): Audit
     return null;
 }
 
-export function audit_export_type_to_label(audit_type: AuditExportType | null): 'WEBB' | 'PDF' | null {
-    if (audit_type === 'webb') return 'WEBB';
-    if (audit_type === 'pdf') return 'PDF';
-    return null;
+function resolve_rulefile_language_for_export(rule_file_content: unknown): string {
+    const content = rule_file_content as { metadata?: { language?: string } } | null;
+    const lang = typeof content?.metadata?.language === 'string' ? content.metadata.language.trim() : '';
+    return lang || DEFAULT_RULEFILE_LANGUAGE_FOR_EXPORT;
+}
+
+/** Sanerar typförkortning för filnamn: versaler, alfanumeriskt, max 8 tecken. */
+export function sanitize_export_type_abbrev(value: unknown): string {
+    const raw = String(value ?? '')
+        .trim()
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, '');
+    if (!raw) return '';
+    return raw.slice(0, 8);
+}
+
+function is_missing_translation_value(value: string, key: string): boolean {
+    return value === `**${key}**`;
+}
+
+/**
+ * Filnamnsförkortning (WEBB/WEB/PDF) baserat på regelfilens språk och översättningsnycklar.
+ */
+export function resolve_audit_export_type_abbrev(
+    audit_type: AuditExportType | null,
+    rule_file_content: unknown
+): string | null {
+    if (!audit_type) return null;
+
+    const language_tag = resolve_rulefile_language_for_export(rule_file_content);
+    const key = EXPORT_TYPE_ABBREV_I18N_KEY[audit_type];
+    const translated = t_for_language(key, language_tag);
+    if (!is_missing_translation_value(translated, key)) {
+        const sanitized = sanitize_export_type_abbrev(translated);
+        if (sanitized) return sanitized;
+    }
+
+    return EXPORT_TYPE_ABBREV_FALLBACK[audit_type];
 }
 
 function normalize_case_number(value: unknown): string {

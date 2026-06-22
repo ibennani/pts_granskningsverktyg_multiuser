@@ -683,6 +683,8 @@
   "excel_status_wont_fix": "Will not fix",
   "expected_observation": "Expected Observation",
   "export_last_updated_label": "Last updated",
+  "export_media_audit_type_abbrev_pdf": "PDF",
+  "export_media_audit_type_abbrev_webb": "WEB",
   "export_to_csv": "Export to CSV",
   "export_to_excel": "Export to Excel",
   "export_to_html": "Export to HTML",
