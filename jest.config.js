@@ -124,6 +124,8 @@ export default {
       '<rootDir>/js/components/media/attach_media_duplicate_filename_status.ts',
     '^.+[\\\\/]audit_media_api\\.js$': '<rootDir>/js/api/audit_media_api.ts',
     '^.+[\\\\/]audit_attached_media_references\\.js$': '<rootDir>/js/logic/audit_attached_media_references.ts',
+    '^.+[\\\\/]audit_media_server_index\\.js$': '<rootDir>/js/logic/audit_media_server_index.ts',
+    '^.+[\\\\/]audit_media_preview_viewport\\.js$': '<rootDir>/js/logic/audit_media_preview_viewport.ts',
     '^.+[\\\\/]attach_media_file_drop_zone\\.js$': '<rootDir>/js/components/media/attach_media_file_drop_zone.ts',
     '^.+[\\\\/]render_audit_media_list_item\\.js$': '<rootDir>/js/components/media/render_audit_media_list_item.ts',
     '^.+[\\\\/]audit_media_storage\\.js$': '<rootDir>/server/media/audit_media_storage.ts',

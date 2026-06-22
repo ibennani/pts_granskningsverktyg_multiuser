@@ -4,6 +4,8 @@
 
 import { delete_audit_media } from '../../api/audit_media_api.js';
 import { filenames_safe_to_delete_from_server } from '../../logic/audit_attached_media_references.js';
+import { filenames_existing_on_server } from '../../logic/audit_media_server_index.js';
+import type { AuditMediaServerIndex } from '../../logic/audit_media_server_index.js';
 import { revoke_audit_media_blob_url } from './render_audit_media_list_item.js';
 import { is_browser_online } from '../../utils/browser_online.js';
 import { enqueue_pending_media_deletes } from '../../sync/pending_audit_media_deletes.js';
@@ -34,6 +36,7 @@ type AttachMediaModalPersistOptions = {
     set_persisted_filenames: (filenames: Set<string>) => void;
     get_persist_in_flight: () => boolean;
     set_persist_in_flight: (value: boolean) => void;
+    server_index?: AuditMediaServerIndex | null;
 };
 
 function parse_filenames_from_textarea(
@@ -63,9 +66,15 @@ export function parse_attach_media_filenames_from_textarea(
 
 async function delete_media_files_from_server(
     audit_id: string,
-    filenames_to_delete: string[]
+    filenames_to_delete: string[],
+    server_filenames: Set<string> | null | undefined
 ): Promise<void> {
+    const on_server = filenames_existing_on_server(filenames_to_delete, server_filenames);
     for (const filename of filenames_to_delete) {
+        if (!on_server.includes(filename)) {
+            // Äldre filnamnsreferens utan serverfil — inget att radera, behåll ev. lokal miniatyr.
+            continue;
+        }
         await delete_audit_media(audit_id, filename);
         revoke_audit_media_blob_url(audit_id, filename);
     }
@@ -96,7 +105,8 @@ export function create_attach_media_modal_persist(
         get_persisted_filenames,
         set_persisted_filenames,
         get_persist_in_flight,
-        set_persist_in_flight
+        set_persist_in_flight,
+        server_index
     } = options;
 
     const filenames_are_synced = (): boolean => {
@@ -136,8 +146,16 @@ export function create_attach_media_modal_persist(
                         still_referenced
                     );
                     if (filenames_to_delete.length > 0) {
+                        const server_filenames = server_index?.get_server_filenames();
                         if (is_browser_online()) {
-                            await delete_media_files_from_server(audit_id, filenames_to_delete);
+                            await delete_media_files_from_server(
+                                audit_id,
+                                filenames_to_delete,
+                                server_filenames
+                            );
+                            filenames_to_delete.forEach((name) => {
+                                server_index?.mark_removed_from_server(name);
+                            });
                         } else {
                             enqueue_pending_media_deletes(audit_id, filenames_to_delete);
                         }
@@ -147,6 +165,7 @@ export function create_attach_media_modal_persist(
 
             await Promise.resolve(on_save(working_filenames));
             set_persisted_filenames(new Set(working_filenames));
+            refresh_list();
             if (close_after) {
                 modal.close(trigger_element || close_focus_el);
             }

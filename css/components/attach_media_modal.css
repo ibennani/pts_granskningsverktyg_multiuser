@@ -266,7 +266,7 @@ dialog.modal-dialog.modal-dialog--attach-media-view-switch.modal-dialog--media-p
 }
 
 .audit-media-preview-wrap {
-    flex: 0 0 auto;
+    flex: 0 1 auto;
     min-height: 0;
     min-width: 0;
     display: flex;

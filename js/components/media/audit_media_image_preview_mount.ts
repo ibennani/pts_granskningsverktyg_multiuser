@@ -3,7 +3,11 @@
  */
 
 import { fetch_audit_media_blob_url } from '../../api/audit_media_api.js';
-import { MODAL_MAX_VIEWPORT_RATIO } from '../../../shared/constants/modal_layout.js';
+import {
+    clamp_dialog_size_to_viewport,
+    ensure_preview_fits_viewport_limits,
+    get_media_preview_viewport_limits
+} from '../../logic/audit_media_preview_viewport.js';
 import { append_audit_media_preview_observation_block } from './audit_media_preview_observation.js';
 import type {
     AuditMediaObservationEditOptions,
@@ -16,8 +20,6 @@ type TranslateFn = (key: string, params?: Record<string, unknown>) => string;
 type HelpersLike = {
     create_element: (tag: string, opts?: Record<string, unknown>) => HTMLElement;
 };
-
-const MEDIA_PREVIEW_VIEWPORT_RATIO = MODAL_MAX_VIEWPORT_RATIO;
 
 type PreviewModalBaseline = {
     dialog_width: number;
@@ -43,13 +45,6 @@ export type MountAuditMediaImagePreviewResult = {
     destroy: () => void;
     finalize_layout: () => void;
 };
-
-function get_media_preview_viewport_limits(): { max_width: number; max_height: number } {
-    return {
-        max_width: window.innerWidth * MEDIA_PREVIEW_VIEWPORT_RATIO,
-        max_height: window.innerHeight * MEDIA_PREVIEW_VIEWPORT_RATIO
-    };
-}
 
 function parse_css_px(value: string): number {
     const parsed = Number.parseFloat(value);
@@ -110,7 +105,7 @@ function compute_max_image_box(
     modal_baseline: PreviewModalBaseline | null = null,
     observation_body_height?: number
 ): { max_width: number; max_height: number } {
-    const { max_width, max_height } = get_media_preview_viewport_limits();
+    const { width: max_width, height: max_height } = get_media_preview_viewport_limits();
     const dialog_style = getComputedStyle(dialog_el);
     const padding_x = parse_css_px(dialog_style.paddingLeft) + parse_css_px(dialog_style.paddingRight);
     const padding_y = parse_css_px(dialog_style.paddingTop) + parse_css_px(dialog_style.paddingBottom);
@@ -150,14 +145,22 @@ function apply_modal_baseline_lock(
     container: HTMLElement,
     baseline: PreviewModalBaseline
 ): void {
-    dialog_el.style.width = `${baseline.dialog_width}px`;
-    dialog_el.style.minWidth = `${baseline.dialog_width}px`;
-    dialog_el.style.maxWidth = `${baseline.dialog_width}px`;
-    dialog_el.style.minHeight = `${baseline.dialog_height}px`;
+    const capped = clamp_dialog_size_to_viewport({
+        width: baseline.dialog_width,
+        height: baseline.dialog_height
+    });
+    const { width: max_width, height: max_height } = get_media_preview_viewport_limits();
+
+    dialog_el.style.width = `${capped.width}px`;
+    dialog_el.style.minWidth = `${capped.width}px`;
+    dialog_el.style.maxWidth = `${max_width}px`;
+    dialog_el.style.height = `${capped.height}px`;
+    dialog_el.style.minHeight = `${capped.height}px`;
+    dialog_el.style.maxHeight = `${max_height}px`;
 
     const dialog_style = getComputedStyle(dialog_el);
     const padding_x = parse_css_px(dialog_style.paddingLeft) + parse_css_px(dialog_style.paddingRight);
-    const content_width = Math.max(1, baseline.dialog_width - padding_x);
+    const content_width = Math.max(1, capped.width - padding_x);
     container.style.width = `${content_width}px`;
     container.style.maxWidth = `${content_width}px`;
     container.style.boxSizing = 'border-box';
@@ -195,7 +198,7 @@ function get_preview_dialog_padding_x(dialog_el: HTMLDialogElement): number {
 }
 
 function get_preview_content_max_width(dialog_el: HTMLDialogElement): number {
-    const { max_width } = get_media_preview_viewport_limits();
+    const { width: max_width } = get_media_preview_viewport_limits();
     return Math.max(1, max_width - get_preview_dialog_padding_x(dialog_el));
 }
 
@@ -216,7 +219,7 @@ function resolve_preview_dialog_width(
     container: HTMLElement,
     preview_img: HTMLImageElement
 ): number {
-    const { max_width } = get_media_preview_viewport_limits();
+    const { width: max_width } = get_media_preview_viewport_limits();
     const dialog_style = getComputedStyle(dialog_el);
     const padding_x =
         parse_css_px(dialog_style.paddingLeft) + parse_css_px(dialog_style.paddingRight);
@@ -252,9 +255,13 @@ function capture_preview_modal_baseline(
     const measured_height = Math.round(dialog_el.getBoundingClientRect().height);
     if (measured_height < 1) return;
 
+    const capped = clamp_dialog_size_to_viewport({
+        width: dialog_width,
+        height: measured_height
+    });
     baseline_ref.current = {
-        dialog_width,
-        dialog_height: measured_height
+        dialog_width: capped.width,
+        dialog_height: capped.height
     };
     apply_modal_baseline_lock(dialog_el, container, baseline_ref.current);
 }
@@ -264,21 +271,43 @@ function shrink_preview_if_dialog_overflows(
     preview_wrap: HTMLElement,
     dialog_el: HTMLDialogElement
 ): void {
-    const { max_height } = get_media_preview_viewport_limits();
-    const dialog_height = dialog_el.getBoundingClientRect().height;
-    if (dialog_height <= max_height + 1) return;
+    ensure_preview_fits_viewport_limits(preview_img, preview_wrap, dialog_el);
+}
 
-    const overflow = dialog_height - max_height;
-    const img_rect = preview_img.getBoundingClientRect();
-    if (img_rect.height <= 1) return;
+function sync_dialog_size_to_content(
+    dialog_el: HTMLDialogElement,
+    container: HTMLElement,
+    preview_img: HTMLImageElement
+): void {
+    fit_audit_media_preview_layout(container, dialog_el);
 
-    const ratio = Math.max(0.01, (img_rect.height - overflow) / img_rect.height);
-    set_preview_image_size(preview_img, img_rect.width * ratio, img_rect.height * ratio);
-
-    const wrap_max = parse_css_px(preview_wrap.style.maxHeight);
-    if (wrap_max > 0) {
-        preview_wrap.style.maxHeight = `${Math.max(1, wrap_max - overflow)}px`;
+    const preview_wrap = preview_img.closest('.audit-media-preview-wrap');
+    if (!(preview_wrap instanceof HTMLElement)) {
+        return;
     }
+
+    const { width: max_width, height: max_height } = get_media_preview_viewport_limits();
+    sync_preview_heading_layout_mode(container, dialog_el);
+
+    const dialog_width = clamp_dialog_size_to_viewport({
+        width: resolve_preview_dialog_width(dialog_el, container, preview_img),
+        height: 1
+    }).width;
+
+    dialog_el.style.width = `${dialog_width}px`;
+    dialog_el.style.minWidth = `${dialog_width}px`;
+    dialog_el.style.maxWidth = `${max_width}px`;
+
+    ensure_preview_fits_viewport_limits(preview_img, preview_wrap, dialog_el);
+
+    const measured_height = clamp_dialog_size_to_viewport({
+        width: dialog_width,
+        height: Math.round(dialog_el.getBoundingClientRect().height)
+    }).height;
+
+    dialog_el.style.height = `${measured_height}px`;
+    dialog_el.style.minHeight = `${measured_height}px`;
+    dialog_el.style.maxHeight = `${max_height}px`;
 }
 
 function fit_preview_image_in_viewport(
@@ -393,20 +422,39 @@ function bind_preview_image_layout(
     };
 
     const apply_finalize = () => {
-        if (defer_baseline_lock && !baseline_ref.current) {
-            if (dialog_el) {
-                sync_preview_heading_layout_mode(container, dialog_el);
-                const dialog_width = Math.round(dialog_el.getBoundingClientRect().width);
-                const dialog_height = Math.round(dialog_el.getBoundingClientRect().height);
-                if (dialog_width >= 1 && dialog_height >= 1) {
-                    baseline_ref.current = { dialog_width, dialog_height };
-                    apply_modal_baseline_lock(dialog_el, container, baseline_ref.current);
-                    return;
-                }
+        fit_preview_image_in_viewport(
+            preview_img,
+            container,
+            dialog_el,
+            fit_options({ sync_shrink: true }, !defer_baseline_lock)
+        );
+
+        if (defer_baseline_lock && !baseline_ref.current && dialog_el) {
+            sync_dialog_size_to_content(dialog_el, container, preview_img);
+            const dialog_width = Math.round(dialog_el.getBoundingClientRect().width);
+            const dialog_height = Math.round(dialog_el.getBoundingClientRect().height);
+            if (dialog_width >= 1 && dialog_height >= 1) {
+                const capped = clamp_dialog_size_to_viewport({
+                    width: dialog_width,
+                    height: dialog_height
+                });
+                baseline_ref.current = {
+                    dialog_width: capped.width,
+                    dialog_height: capped.height
+                };
+                apply_modal_baseline_lock(dialog_el, container, baseline_ref.current);
+            } else {
+                remember_modal_baseline();
             }
-            remember_modal_baseline();
+            fit_preview_image_in_viewport(
+                preview_img,
+                container,
+                dialog_el,
+                fit_options({ sync_shrink: true }, true)
+            );
             return;
         }
+
         fit_preview_image_in_viewport(preview_img, container, dialog_el, fit_options({}, true));
     };
 
@@ -670,13 +718,7 @@ export function capture_audit_media_preview_open_target(
 
     sync_preview_heading_layout_mode(container, dialog_el);
 
-    fit_audit_media_preview_layout(container, dialog_el);
-
-    const dialog_width = resolve_preview_dialog_width(dialog_el, container, preview_img);
-    dialog_el.style.width = `${dialog_width}px`;
-    dialog_el.style.minWidth = `${dialog_width}px`;
-    dialog_el.style.maxWidth = `${dialog_width}px`;
-    fit_audit_media_preview_layout(container, dialog_el);
+    sync_dialog_size_to_content(dialog_el, container, preview_img);
 
     const img_rect = preview_img.getBoundingClientRect();
     if (img_rect.width < 1 || img_rect.height < 1) {
@@ -689,18 +731,15 @@ export function capture_audit_media_preview_open_target(
         return null;
     }
 
-    const dialog_rect = dialog_el.getBoundingClientRect();
-    if (dialog_rect.width < 1 || dialog_rect.height < 1) {
-        if (lock_size) {
-            apply_dialog_px_size(dialog_el, lock_size.width, lock_size.height);
-            dialog_el.style.visibility = previous_visibility;
-        } else {
-            clear_dialog_px_size(dialog_el);
-        }
-        return null;
-    }
+    const capped_dialog = clamp_dialog_size_to_viewport({
+        width: Math.round(dialog_el.getBoundingClientRect().width),
+        height: Math.round(dialog_el.getBoundingClientRect().height)
+    });
+    const dialog_width = capped_dialog.width;
+    const dialog_height = capped_dialog.height;
 
-    const dialog_height = Math.round(dialog_rect.height);
+    dialog_el.style.width = `${dialog_width}px`;
+    dialog_el.style.minWidth = `${dialog_width}px`;
     dialog_el.style.height = `${dialog_height}px`;
     dialog_el.style.minHeight = `${dialog_height}px`;
 

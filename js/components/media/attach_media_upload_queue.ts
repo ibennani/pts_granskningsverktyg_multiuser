@@ -9,11 +9,16 @@ import {
     set_audit_media_local_preview_blob_url
 } from './render_audit_media_list_item.js';
 import {
+    is_upload_duplicate_filename,
+    merge_uploaded_media_filenames
+} from '../../logic/audit_media_server_index.js';
+import {
     partition_files_by_existing_filenames,
     build_attach_media_upload_success_message,
     build_attach_media_upload_renamed_conflict_message,
     type AttachMediaDuplicateScope
 } from './attach_media_duplicate_filename_status.js';
+import type { AuditMediaServerIndex } from '../../logic/audit_media_server_index.js';
 
 type TranslateFn = (key: string, params?: Record<string, unknown>) => string;
 
@@ -37,6 +42,7 @@ export type AttachMediaUploadQueueDeps = {
     show_duplicate_filenames_error: (filenames: string[]) => void;
     persist_changes: () => Promise<boolean>;
     clear_pending_filenames: () => void;
+    server_index?: AuditMediaServerIndex | null;
 };
 
 /**
@@ -62,10 +68,16 @@ export function create_attach_media_upload_queue(deps: AttachMediaUploadQueueDep
         deps.show_status(deps.t('attach_media_upload_lost_connection'), 'error');
     };
 
-    const rollback_optimistic_filename = (local_name: string) => {
+    const rollback_optimistic_filename = (local_name: string, was_already_in_list: boolean) => {
+        if (was_already_in_list) return;
         deps.set_working_filenames(
             deps.get_working_filenames().filter((name) => name !== local_name)
         );
+        deps.refresh_list();
+    };
+
+    const apply_upload_preview = (filename: string, local_preview_url: string): void => {
+        set_audit_media_local_preview_blob_url(deps.audit_id, filename, local_preview_url);
         deps.refresh_list();
     };
 
@@ -80,12 +92,16 @@ export function create_attach_media_upload_queue(deps: AttachMediaUploadQueueDep
         if (!local_name) return { filename: null, renamed_due_to_conflict: false };
 
         const working_filenames = deps.get_working_filenames();
-        if (working_filenames.includes(local_name)) {
+        const server_filenames = deps.server_index?.get_server_filenames();
+        if (is_upload_duplicate_filename(local_name, working_filenames, server_filenames)) {
             deps.show_duplicate_filenames_error([local_name]);
             return { filename: null, renamed_due_to_conflict: false };
         }
 
-        const optimistic_filenames = [...working_filenames, local_name];
+        const already_in_list = working_filenames.includes(local_name);
+        const optimistic_filenames = already_in_list
+            ? [...working_filenames]
+            : [...working_filenames, local_name];
         deps.set_working_filenames(optimistic_filenames);
         const local_preview_url = URL.createObjectURL(file);
         set_audit_media_local_preview_blob_url(deps.audit_id, local_name, local_preview_url);
@@ -96,7 +112,7 @@ export function create_attach_media_upload_queue(deps: AttachMediaUploadQueueDep
             const result = await upload_audit_media(deps.audit_id, file);
             if (!is_browser_online() || abort_due_to_offline) {
                 revoke_audit_media_blob_url(deps.audit_id, local_name);
-                rollback_optimistic_filename(local_name);
+                rollback_optimistic_filename(local_name, already_in_list);
                 return { filename: null, renamed_due_to_conflict: false };
             }
 
@@ -111,15 +127,16 @@ export function create_attach_media_upload_queue(deps: AttachMediaUploadQueueDep
                 set_audit_media_local_preview_blob_url(deps.audit_id, server_name, local_preview_url);
             }
 
-            const current = deps.get_working_filenames().filter(
-                (name) => name !== local_name && name !== server_name
+            const current = merge_uploaded_media_filenames(
+                deps.get_working_filenames(),
+                local_name,
+                server_name
             );
-            if (!current.includes(server_name)) {
-                current.push(server_name);
-            }
             deps.set_working_filenames(current);
             deps.refresh_list();
+            deps.server_index?.mark_on_server(server_name);
             await deps.persist_changes();
+            apply_upload_preview(server_name, local_preview_url);
 
             const renamed_due_to_conflict = Boolean(result.renamedDueToConflict);
             if (renamed_due_to_conflict) {
@@ -137,11 +154,11 @@ export function create_attach_media_upload_queue(deps: AttachMediaUploadQueueDep
         } catch (err) {
             revoke_audit_media_blob_url(deps.audit_id, local_name);
             if (abort_due_to_offline) {
-                rollback_optimistic_filename(local_name);
+                rollback_optimistic_filename(local_name, already_in_list);
                 return { filename: null, renamed_due_to_conflict: false };
             }
             const msg = err instanceof Error ? err.message : deps.t('attach_media_upload_failed');
-            rollback_optimistic_filename(local_name);
+            rollback_optimistic_filename(local_name, already_in_list);
             deps.show_status(msg, 'error');
             return { filename: null, renamed_due_to_conflict: false };
         }
@@ -222,7 +239,8 @@ export function create_attach_media_upload_queue(deps: AttachMediaUploadQueueDep
         }
         const { new_files, duplicate_names } = partition_files_by_existing_filenames(
             files,
-            deps.get_working_filenames()
+            deps.get_working_filenames(),
+            deps.server_index?.get_server_filenames()
         );
         if (duplicate_names.length > 0) {
             deps.show_duplicate_filenames_error(duplicate_names);

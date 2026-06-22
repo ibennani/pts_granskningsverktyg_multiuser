@@ -113,16 +113,27 @@ export class AuditImagesViewComponent {
         const state = this.getState();
         const sample = state?.samples?.find((s) => String(s.id) === String(sample_id));
         const requirement_result_ref = sample?.requirementResults?.[req_id_map];
-        if (!requirement_result_ref) return;
 
         const t = this.Translation.t;
-        const chk_resolved = resolve_map_entry(requirement_result_ref.checkResults, check_id);
+        const chk_resolved = requirement_result_ref
+            ? resolve_map_entry(requirement_result_ref.checkResults, check_id)
+            : null;
         const check_result_for_read = chk_resolved?.value;
         const pc_resolved = check_result_for_read?.passCriteria
             ? resolve_map_entry(check_result_for_read.passCriteria, pc_id)
             : null;
         const existing_filenames = pc_resolved?.value?.attachedMediaFilenames;
-        const initial_filenames = Array.isArray(existing_filenames) ? existing_filenames : [];
+        let initial_filenames = Array.isArray(existing_filenames) ? existing_filenames : [];
+        if (initial_filenames.length === 0) {
+            const section = btn.closest('.audit-image-card__pc-section');
+            if (section) {
+                initial_filenames = Array.from(
+                    section.querySelectorAll('.audit-image-card__media-name')
+                )
+                    .map((el) => String(el.textContent || '').trim())
+                    .filter(Boolean);
+            }
+        }
 
         open_attach_media_modal({
             t,
@@ -135,13 +146,30 @@ export class AuditImagesViewComponent {
             get_still_referenced_filenames_after_save: (final_filenames) =>
                 collect_attached_media_filenames(state, {
                     type: 'pc',
-                    sampleId: sample.id,
+                    sampleId: sample_id,
                     requirementId: req_id_map,
                     checkId: check_id,
                     pcId: pc_id,
                     filenames: final_filenames
                 }),
+            get_observation_detail: () => {
+                const chk_live = requirement_result_ref
+                    ? resolve_map_entry(requirement_result_ref.checkResults, check_id)
+                    : null;
+                const pc_live = chk_live?.value?.passCriteria
+                    ? resolve_map_entry(chk_live.value.passCriteria, pc_id)
+                    : null;
+                return String(pc_live?.value?.observationDetail || '');
+            },
+            get_observation_edit: () => this._build_observation_edit_options(
+                { sample, reqId: req_id_map },
+                req_id_public,
+                check_id,
+                pc_id,
+                state.auditStatus === 'locked' || state.auditStatus === 'archived'
+            ),
             on_save: (filenames) => {
+                if (!requirement_result_ref) return;
                 const chk_save = resolve_map_entry(requirement_result_ref.checkResults, check_id);
                 const check_result = chk_save?.value;
                 const pc_save = check_result?.passCriteria

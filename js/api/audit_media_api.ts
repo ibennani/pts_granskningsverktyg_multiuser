@@ -112,7 +112,11 @@ export async function upload_audit_media(audit_id: string, file: File): Promise<
 export async function delete_audit_media(audit_id: string, filename: string): Promise<void> {
     const url = get_audit_media_url(audit_id, filename);
     const res = await fetch_with_auth_retry(url, { method: 'DELETE' });
-    if (!res.ok && res.status !== 204) {
+    // 404 = fil fanns aldrig på servern (t.ex. äldre granskningar med enbart filnamn i text).
+    if (res.status === 204 || res.status === 404) {
+        return;
+    }
+    if (!res.ok) {
         const err = await parse_error_payload(res);
         throw new Error(err.error || `HTTP ${res.status}`);
     }

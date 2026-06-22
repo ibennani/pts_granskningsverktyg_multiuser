@@ -82,17 +82,33 @@ function load_audit_media_thumb_image(
     audit_id: string,
     filename: string,
     img: HTMLImageElement,
-    host: HTMLElement
+    host: HTMLElement,
+    resolve_fetch_filename?: (filename: string) => string
 ): void {
-    const key = cache_key(audit_id, filename);
-    const cached = blob_url_cache.get(key);
-    if (cached) {
-        img.src = cached;
+    const ref_key = cache_key(audit_id, filename);
+    const ref_cached = blob_url_cache.get(ref_key);
+    if (ref_cached) {
+        img.src = ref_cached;
         return;
     }
-    void fetch_audit_media_blob_url(audit_id, filename).then((blob_url) => {
+
+    const fetch_name = resolve_fetch_filename?.(filename) ?? filename;
+    const fetch_key = cache_key(audit_id, fetch_name);
+    const fetch_cached = blob_url_cache.get(fetch_key);
+    if (fetch_cached) {
+        img.src = fetch_cached;
+        if (fetch_name !== filename) {
+            blob_url_cache.set(ref_key, fetch_cached);
+        }
+        return;
+    }
+
+    void fetch_audit_media_blob_url(audit_id, fetch_name).then((blob_url) => {
         if (!blob_url || !host.isConnected) return;
-        blob_url_cache.set(key, blob_url);
+        blob_url_cache.set(fetch_key, blob_url);
+        if (fetch_name !== filename) {
+            blob_url_cache.set(ref_key, blob_url);
+        }
         img.src = blob_url;
     });
 }
@@ -101,13 +117,14 @@ function create_static_image_thumb(
     helpers: HelpersLike,
     audit_id: string,
     filename: string,
-    host: HTMLElement
+    host: HTMLElement,
+    resolve_fetch_filename?: (filename: string) => string
 ): HTMLImageElement {
     const img = helpers.create_element('img', {
         class_name: ['audit-image-card__media-thumb', 'attach-media-filename-list__thumb'],
-        attributes: { alt: '', loading: 'lazy' }
+        attributes: { alt: '', loading: 'eager' }
     }) as HTMLImageElement;
-    load_audit_media_thumb_image(audit_id, filename, img, host);
+    load_audit_media_thumb_image(audit_id, filename, img, host, resolve_fetch_filename);
     return img;
 }
 
@@ -121,6 +138,7 @@ function create_image_thumb_button(
         observation_detail?: string | null;
         observation_edit?: AuditMediaObservationEditOptions | null;
         on_thumb_click?: (thumb_btn: HTMLButtonElement) => void;
+        resolve_fetch_filename?: (filename: string) => string;
     }
 ): HTMLButtonElement {
     const img = helpers.create_element('img', {
@@ -154,7 +172,13 @@ function create_image_thumb_button(
         });
     });
 
-    load_audit_media_thumb_image(audit_id, filename, img, host);
+    load_audit_media_thumb_image(
+        audit_id,
+        filename,
+        img,
+        host,
+        preview_options?.resolve_fetch_filename
+    );
     return thumb_btn;
 }
 
@@ -182,7 +206,8 @@ export function create_attach_media_filename_list_item(
     audit_id: string | null | undefined,
     filename: string,
     on_remove: (trigger: HTMLButtonElement) => void,
-    on_image_click?: (filename: string, trigger: HTMLButtonElement) => void
+    on_image_click?: (filename: string, trigger: HTMLButtonElement) => void,
+    resolve_fetch_filename?: (filename: string) => string
 ): HTMLLIElement {
     const li = helpers.create_element('li', {
         class_name: 'attach-media-filename-list__item'
@@ -196,11 +221,14 @@ export function create_attach_media_filename_list_item(
         if (on_image_click) {
             preview.appendChild(
                 create_image_thumb_button(helpers, t, audit_id, filename, li, {
-                    on_thumb_click: (thumb_btn) => on_image_click(filename, thumb_btn)
+                    on_thumb_click: (thumb_btn) => on_image_click(filename, thumb_btn),
+                    resolve_fetch_filename
                 })
             );
         } else {
-            preview.appendChild(create_static_image_thumb(helpers, audit_id, filename, li));
+            preview.appendChild(
+                create_static_image_thumb(helpers, audit_id, filename, li, resolve_fetch_filename)
+            );
         }
     } else if (audit_id) {
         const kind = get_media_display_kind(filename);

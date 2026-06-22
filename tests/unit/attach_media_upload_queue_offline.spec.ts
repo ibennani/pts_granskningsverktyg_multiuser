@@ -1,7 +1,8 @@
 import { jest, describe, test, expect, beforeEach } from '@jest/globals';
 
 jest.unstable_mockModule('../../js/api/audit_media_api.js', () => ({
-    upload_audit_media: jest.fn()
+    upload_audit_media: jest.fn(),
+    list_audit_media: jest.fn().mockResolvedValue([])
 }));
 
 jest.unstable_mockModule('../../js/components/media/render_audit_media_list_item.js', () => ({

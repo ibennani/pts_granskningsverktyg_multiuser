@@ -34,6 +34,7 @@ export type CreateOnlineUploadSectionOptions = {
     persist_changes: () => Promise<boolean>;
     get_drop_enabled: () => boolean;
     get_still_referenced_filenames_after_save?: (final_filenames_here: string[]) => Set<string>;
+    server_index?: import('../../logic/audit_media_server_index.js').AuditMediaServerIndex | null;
 };
 
 export type OnlineUploadSection = {
@@ -64,7 +65,8 @@ export function create_online_upload_section(
         show_duplicate_filenames_error,
         persist_changes,
         get_drop_enabled,
-        get_still_referenced_filenames_after_save
+        get_still_referenced_filenames_after_save,
+        server_index
     } = options;
 
     const mount_element = Helpers.create_element('div', {
@@ -121,7 +123,8 @@ export function create_online_upload_section(
             show_status,
             show_duplicate_filenames_error,
             persist_changes,
-            clear_pending_filenames
+            clear_pending_filenames,
+            server_index
         });
         enqueue_upload_files = upload_queue.enqueue_files;
         mount_element.appendChild(group);

@@ -9,6 +9,7 @@ import { create_attach_media_remove_flow } from './attach_media_modal_remove_flo
 import { create_attach_media_modal_persist, parse_attach_media_filenames_from_textarea } from './attach_media_modal_persist.js';
 import type { AuditMediaObservationEditOptions } from './audit_media_preview_observation.js';
 import { refresh_filename_list_container } from './attach_media_modal_list.js';
+import { create_audit_media_server_index, find_server_media_filename_match } from '../../logic/audit_media_server_index.js';
 import {
     partition_files_by_existing_filenames,
     build_attach_media_local_files_added_message
@@ -89,6 +90,7 @@ export function setup_attach_media_modal_content(
     let working_filenames = ctx.working_filenames;
     let persisted_filenames = ctx.persisted_filenames;
     let persist_in_flight = ctx.persist_in_flight;
+    const server_index = audit_id && can_upload ? create_audit_media_server_index(audit_id) : null;
 
     container.classList.add('modal-content--attach-media');
     const dialog_el = modal.dialog_element_ref;
@@ -164,11 +166,19 @@ export function setup_attach_media_modal_content(
 
     let close_focus_el: HTMLElement | null = null;
 
+    const resolve_fetch_filename = (filename: string): string => {
+        if (!server_index) return filename;
+        return find_server_media_filename_match(filename, server_index.get_server_filenames()) ?? filename;
+    };
+
     const handle_image_click = (filename: string, trigger: HTMLButtonElement) => {
         if (!in_modal_preview || !audit_id || remove_confirm_open) return;
+        const fetch_name = resolve_fetch_filename(filename);
         in_modal_preview.open_preview(
             filename,
-            get_audit_media_cached_blob_url(audit_id, filename) || null,
+            get_audit_media_cached_blob_url(audit_id, filename)
+                || get_audit_media_cached_blob_url(audit_id, fetch_name)
+                || null,
             trigger
         );
     };
@@ -181,7 +191,9 @@ export function setup_attach_media_modal_content(
             audit_id,
             working_filenames,
             request_remove_filename,
-            in_modal_preview ? handle_image_click : undefined
+            in_modal_preview ? handle_image_click : undefined,
+            undefined,
+            resolve_fetch_filename
         );
     };
 
@@ -210,7 +222,8 @@ export function setup_attach_media_modal_content(
         get_persist_in_flight: () => persist_in_flight,
         set_persist_in_flight: (value) => {
             persist_in_flight = value;
-        }
+        },
+        server_index
     });
 
     if (heading_el && message_el) {
@@ -231,6 +244,7 @@ export function setup_attach_media_modal_content(
             },
             get_preview_open: () => preview_open,
             handle_image_click: in_modal_preview ? handle_image_click : undefined,
+            resolve_fetch_filename,
             persist_media_changes,
             show_status,
             on_remove_confirm_open_change: (is_open) => {
@@ -292,7 +306,8 @@ export function setup_attach_media_modal_content(
             show_duplicate_filenames_error,
             persist_changes: () => persist_media_changes(false),
             get_drop_enabled,
-            get_still_referenced_filenames_after_save
+            get_still_referenced_filenames_after_save,
+            server_index
         });
         destroy_online_upload = () => online_upload.destroy();
         list_mode_root.appendChild(online_upload.mount_element);
@@ -370,6 +385,12 @@ export function setup_attach_media_modal_content(
     }
 
     append_file_list_section();
+
+    if (server_index) {
+        void server_index.load().then(() => {
+            refresh_list();
+        });
+    }
 
     const actions_wrapper = Helpers.create_element('div', { class_name: 'modal-attach-media-actions' });
     const save_btn = Helpers.create_element('button', {

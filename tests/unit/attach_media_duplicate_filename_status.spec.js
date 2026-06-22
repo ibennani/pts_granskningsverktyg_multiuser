@@ -114,14 +114,21 @@ describe('build_attach_media_upload_renamed_conflict_message', () => {
 });
 
 describe('partition_files_by_existing_filenames', () => {
-    it('delar upp nya och dubbletter', () => {
+    it('delar upp nya och dubbletter mot serverfiler', () => {
         const files = [
             new File(['a'], 'a.jpg', { type: 'image/jpeg' }),
             new File(['b'], 'b.jpg', { type: 'image/jpeg' }),
             new File(['c'], 'c.jpg', { type: 'image/jpeg' })
         ];
-        const result = partition_files_by_existing_filenames(files, ['b.jpg']);
+        const result = partition_files_by_existing_filenames(files, ['b.jpg'], new Set(['b.jpg']));
         expect(result.duplicate_names).toEqual(['b.jpg']);
         expect(result.new_files.map((file) => file.name)).toEqual(['a.jpg', 'c.jpg']);
+    });
+
+    it('tillåter samma filnamn som äldre referens utan serverfil', () => {
+        const files = [new File(['x'], 'legacy.png', { type: 'image/png' })];
+        const result = partition_files_by_existing_filenames(files, ['legacy.png'], new Set());
+        expect(result.duplicate_names).toEqual([]);
+        expect(result.new_files.map((file) => file.name)).toEqual(['legacy.png']);
     });
 });

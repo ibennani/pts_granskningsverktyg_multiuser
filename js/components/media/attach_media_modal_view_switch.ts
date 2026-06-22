@@ -10,6 +10,7 @@ import {
     sync_audit_media_preview_heading_layout,
     type AuditMediaPreviewOpenTarget
 } from './audit_media_image_preview_mount.js';
+import { clamp_dialog_size_to_viewport } from '../../logic/audit_media_preview_viewport.js';
 
 const DIALOG_SWITCH_CLASS = 'modal-dialog--attach-media-view-switch';
 const CONTENT_SWITCH_CLASS = 'modal-content--attach-media-view-switch';
@@ -196,8 +197,8 @@ export async function run_attach_media_modal_view_switch(
             lock_size_during_measure: start_size
         });
         target_size = open_target
-            ? open_target_to_dialog_size(open_target)
-            : measure_dialog(dialog_el);
+            ? clamp_dialog_size_to_viewport(open_target_to_dialog_size(open_target))
+            : clamp_dialog_size_to_viewport(measure_dialog(dialog_el));
     } else if (closing_preview) {
         clear_preview_container_layout_locks(container);
         if (options.close_target_size) {

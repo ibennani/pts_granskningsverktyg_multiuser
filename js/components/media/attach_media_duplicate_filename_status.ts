@@ -2,6 +2,8 @@
  * @fileoverview Statusmeddelanden när bifogade filnamn redan finns i aktuellt krav eller stickprov.
  */
 
+import { partition_files_for_upload } from '../../logic/audit_media_server_index.js';
+
 export type AttachMediaDuplicateScope = 'requirement' | 'sample';
 
 type TranslateFn = (key: string, params?: Record<string, unknown>) => string;
@@ -67,27 +69,15 @@ export function build_attach_media_duplicate_filenames_message(
 }
 
 /**
- * Filtrerar bort filer vars namn redan finns i aktuell lista.
+ * Filtrerar bort filer vars namn redan finns i aktuell lista och på servern.
+ * Äldre filnamnsreferenser utan serverfil blockeras inte.
  */
 export function partition_files_by_existing_filenames(
     files: File[],
-    existing_filenames: string[]
+    existing_filenames: string[],
+    server_filenames?: Set<string> | null
 ): { new_files: File[]; duplicate_names: string[] } {
-    const existing_set = new Set(existing_filenames);
-    const new_files: File[] = [];
-    const duplicate_names: string[] = [];
-
-    files.forEach((file) => {
-        const name = String(file.name || '').trim();
-        if (!name) return;
-        if (existing_set.has(name)) {
-            duplicate_names.push(name);
-            return;
-        }
-        new_files.push(file);
-    });
-
-    return { new_files, duplicate_names };
+    return partition_files_for_upload(files, existing_filenames, server_filenames);
 }
 
 /**

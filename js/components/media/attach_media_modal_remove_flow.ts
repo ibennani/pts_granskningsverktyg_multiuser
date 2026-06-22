@@ -27,6 +27,7 @@ type AttachMediaRemoveFlowOptions = {
     set_working_filenames: (filenames: string[]) => void;
     get_preview_open: () => boolean;
     handle_image_click?: (filename: string, trigger: HTMLButtonElement) => void;
+    resolve_fetch_filename?: (filename: string) => string;
     persist_media_changes: (close_after: boolean) => Promise<boolean>;
     show_status: (message: string, type: 'info' | 'error' | 'success') => void;
     on_remove_confirm_open_change: (is_open: boolean) => void;
@@ -62,6 +63,7 @@ export function create_attach_media_remove_flow(
         set_working_filenames,
         get_preview_open,
         handle_image_click,
+        resolve_fetch_filename,
         persist_media_changes,
         show_status,
         on_remove_confirm_open_change
@@ -86,7 +88,9 @@ export function create_attach_media_remove_flow(
                 audit_id,
                 get_working_filenames(),
                 request_remove_filename,
-                handle_image_click
+                handle_image_click,
+                undefined,
+                resolve_fetch_filename
             );
             return resolve_focus_after_removed_item(
                 list_container,
