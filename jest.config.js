@@ -108,6 +108,7 @@ export default {
     '^.+[\\\\/]table_pagination_logic\\.js$': '<rootDir>/js/logic/table_pagination_logic.ts',
     '^.+[\\\\/]audit_list_case_grouping\\.js$': '<rootDir>/js/logic/audit_list_case_grouping.ts',
     '^.+[\\\\/]audit_list_view_transition\\.js$': '<rootDir>/js/logic/audit_list_view_transition.ts',
+    '^.+[\\\\/]expandable_panel_transition\\.js$': '<rootDir>/js/utils/expandable_panel_transition.ts',
     '^.+/translation_logic\\.js$': '<rootDir>/js/translation_logic.ts',
     '^.+/requirement_audit_url_ui\\.js$': '<rootDir>/js/logic/requirement_audit_url_ui.ts',
     '^.+/requirements_list_filters_url_ui\\.js$': '<rootDir>/js/logic/requirements_list_filters_url_ui.ts',

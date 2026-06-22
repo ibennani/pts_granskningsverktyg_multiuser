@@ -1,0 +1,30 @@
+.expandable-panel {
+    --expandable-panel-transition-duration: 0.5s;
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    overflow: hidden;
+    transition:
+        grid-template-rows var(--expandable-panel-transition-duration) ease,
+        opacity var(--expandable-panel-transition-duration) ease;
+}
+
+.expandable-panel--expanded {
+    grid-template-rows: 1fr;
+    opacity: 1;
+}
+
+.expandable-panel--instant {
+    transition: none;
+}
+
+.expandable-panel__inner {
+    min-height: 0;
+    overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .expandable-panel {
+        transition: none;
+    }
+}

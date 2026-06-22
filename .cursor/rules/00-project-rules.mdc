@@ -101,6 +101,16 @@ Adhere to the following rules at all times.
 - Inga mus-beroenden – allt ska fungera med tangentbord.
 - Språk i koden: engelska för filer, funktioner och variabler.
 
+#### Accordion (utfällbara sektioner)
+
+Gäller alla komponenter där användaren kan expandera eller kollapsa ett avsnitt (rubrik + dolt innehåll).
+
+- **Lazy rendering:** Innehållet i en accordion ska bara renderas när sektionen är expanderad. Efter stängning ska innehållet tas bort ur DOM — först när stängningsanimationen är klar.
+- **Animation:** Öppning och stängning ska var och en ta **0,5 sekunder** totalt.
+- **`prefers-reduced-motion`:** Vid reducerad rörelse — omedelbar växling utan animation, men lazy mount/unmount ska fortfarande gälla.
+- **Tillgänglighet:** Växling ska ske via `<button type="button">` med `aria-expanded`, `aria-controls`, tangentbordsstöd (Enter och mellanslag) och synlig fokusring.
+- **Referens:** Grupperad granskningslista (`audit_group_row_ui.ts`, `audit_list_view_transition.ts`) och gemensam hjälpmodul `js/utils/expandable_panel_transition.ts` med CSS i `css/components/expandable_panel.css`.
+
 ### Tillgänglighetskrav (WCAG 2.2 A & AA)
 
 All kod ska uppfylla kraven i WCAG 2.2 nivå A och AA.  

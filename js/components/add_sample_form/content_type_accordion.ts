@@ -4,6 +4,11 @@
  */
 
 import { marked } from '../../utils/markdown.js';
+import {
+    EXPANDABLE_PANEL_EXPANDED_CLASS,
+    animate_expandable_panel,
+    apply_instant_expanded_panel_state
+} from '../../utils/expandable_panel_transition.js';
 
 type ContentTypeChild = {
     id: string;
@@ -130,8 +135,9 @@ function render_content_type_groups(
         panel_inner.appendChild(fieldset);
     });
 
-    panel_inner.querySelectorAll('input[data-child-for]').forEach((cb: HTMLInputElement) => {
-        cb.checked = component.content_type_selected_ids?.has(cb.value) || false;
+    panel_inner.querySelectorAll('input[data-child-for]').forEach((cb) => {
+        const input = cb as HTMLInputElement;
+        input.checked = component.content_type_selected_ids?.has(input.value) || false;
     });
     panel_inner.querySelectorAll('input[data-parent-id]').forEach((pc) => {
         component._updateParentCheckboxState(pc);
@@ -145,102 +151,41 @@ function mount_section_panel(component: any, groups: ContentTypeGroup[]): void {
     render_content_type_groups(component, groups, panel_inner);
 }
 
-function set_panel_max_height(panel: HTMLElement, height_px: number): void {
-    panel.style.maxHeight = `${height_px}px`;
+function unmount_section_panel(component: any): void {
+    sync_content_type_selection_from_dom(component);
+    component.content_types_section_panel_inner?.replaceChildren();
 }
 
-function expand_section_panel(panel: HTMLElement): void {
-    set_panel_max_height(panel, panel.scrollHeight);
-}
-
-function open_content_types_section(
+async function toggle_content_types_section(
     component: any,
     section: HTMLElement,
     groups: ContentTypeGroup[],
-    panel: HTMLElement,
-    header_button: HTMLButtonElement
-): void {
-    mount_section_panel(component, groups);
-    section.classList.add('content-types-section-accordion--open');
-    header_button.setAttribute('aria-expanded', 'true');
-    set_panel_max_height(panel, 0);
-    requestAnimationFrame(() => expand_section_panel(panel));
-}
-
-const ACCORDION_TRANSITION_MS = 500;
-
-function ease_in_out(progress: number): number {
-    return progress < 0.5
-        ? 2 * progress * progress
-        : 1 - Math.pow(-2 * progress + 2, 2) / 2;
-}
-
-function get_scroll_target_for_heading(title_element: HTMLElement): number {
-    const style = window.getComputedStyle(title_element);
-    const scroll_margin_top = Number.parseFloat(style.scrollMarginTop) || 0;
-    const rect = title_element.getBoundingClientRect();
-    return Math.max(0, window.scrollY + rect.top - scroll_margin_top);
-}
-
-function animate_window_scroll_to(target_y: number, duration_ms: number): void {
-    const start_y = window.scrollY;
-    const distance = target_y - start_y;
-    if (Math.abs(distance) < 1) return;
-
-    const start_time = performance.now();
-    const step = (now: number) => {
-        const progress = Math.min((now - start_time) / duration_ms, 1);
-        window.scrollTo(0, start_y + distance * ease_in_out(progress));
-        if (progress < 1) {
-            requestAnimationFrame(step);
-        }
-    };
-    requestAnimationFrame(step);
-}
-
-function scroll_to_accordion_heading(title_element: HTMLElement): void {
-    const target_y = get_scroll_target_for_heading(title_element);
-    const reduced_motion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduced_motion) {
-        window.scrollTo(0, target_y);
-        return;
-    }
-    animate_window_scroll_to(target_y, ACCORDION_TRANSITION_MS);
-}
-
-function close_content_types_section(
-    component: any,
-    section: HTMLElement,
-    panel: HTMLElement,
+    panel_host: HTMLElement,
+    expandable_panel: HTMLElement,
     header_button: HTMLButtonElement,
     title_element: HTMLElement
-): void {
-    sync_content_type_selection_from_dom(component);
-    const current_height = panel.scrollHeight;
-    section.classList.remove('content-types-section-accordion--open');
-    header_button.setAttribute('aria-expanded', 'false');
-    set_panel_max_height(panel, current_height);
+): Promise<void> {
+    if (section.getAttribute('data-animating') === 'true') return;
 
-    const reduced_motion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    const finish_close = () => {
-        component.content_types_section_panel_inner?.replaceChildren();
-        set_panel_max_height(panel, 0);
-    };
-
-    requestAnimationFrame(() => {
-        set_panel_max_height(panel, 0);
-        scroll_to_accordion_heading(title_element);
-        if (reduced_motion) {
-            finish_close();
+    const will_open = !section.classList.contains('content-types-section-accordion--open');
+    section.setAttribute('data-animating', 'true');
+    try {
+        if (will_open) {
+            mount_section_panel(component, groups);
+            section.classList.add('content-types-section-accordion--open');
+            header_button.setAttribute('aria-expanded', 'true');
+            await animate_expandable_panel(expandable_panel, panel_host, true);
             return;
         }
-        panel.addEventListener('transitionend', function on_transition_end(event: TransitionEvent) {
-            if (event.target !== panel || event.propertyName !== 'max-height') return;
-            panel.removeEventListener('transitionend', on_transition_end);
-            finish_close();
-        });
-    });
+
+        section.classList.remove('content-types-section-accordion--open');
+        header_button.setAttribute('aria-expanded', 'false');
+        await animate_expandable_panel(expandable_panel, panel_host, false);
+        unmount_section_panel(component);
+        title_element.scrollIntoView({ block: 'start', behavior: 'auto' });
+    } finally {
+        section.removeAttribute('data-animating');
+    }
 }
 
 export function render_content_types_section_accordion(
@@ -286,34 +231,44 @@ export function render_content_types_section_accordion(
     header_button.appendChild(header_inner);
     section.appendChild(header_button);
 
-    const panel = component.Helpers.create_element('div', {
-        class_name: 'content-types-section-accordion__panel',
+    const panel_host = component.Helpers.create_element('div', {
+        class_name: 'content-types-section-accordion__panel-host',
         attributes: {
             id: panel_id,
             role: 'region',
             'aria-labelledby': heading_id
         }
     });
-    const panel_inner = component.Helpers.create_element('div', {
-        class_name: 'content-types-section-accordion__panel-inner'
+    panel_host.hidden = !initially_open;
+
+    const expandable_panel = component.Helpers.create_element('div', {
+        class_name: ['expandable-panel', 'content-types-section-accordion__panel']
     });
-    panel.appendChild(panel_inner);
-    section.appendChild(panel);
+    const panel_inner = component.Helpers.create_element('div', {
+        class_name: ['expandable-panel__inner', 'content-types-section-accordion__panel-inner']
+    });
+    expandable_panel.appendChild(panel_inner);
+    panel_host.appendChild(expandable_panel);
+    section.appendChild(panel_host);
 
     component.content_types_section_panel_inner = panel_inner;
-    set_panel_max_height(panel, 0);
 
     header_button.addEventListener('click', () => {
-        const will_open = !section.classList.contains('content-types-section-accordion--open');
-        if (will_open) {
-            open_content_types_section(component, section, groups, panel, header_button);
-            return;
-        }
-        close_content_types_section(component, section, panel, header_button, title_h2);
+        void toggle_content_types_section(
+            component,
+            section,
+            groups,
+            panel_host,
+            expandable_panel,
+            header_button,
+            title_h2
+        );
     });
 
     if (initially_open) {
-        open_content_types_section(component, section, groups, panel, header_button);
+        section.classList.add('content-types-section-accordion--open');
+        mount_section_panel(component, groups);
+        apply_instant_expanded_panel_state(expandable_panel, panel_host, true, EXPANDABLE_PANEL_EXPANDED_CLASS);
     }
 
     component.content_types_container_element.appendChild(section);

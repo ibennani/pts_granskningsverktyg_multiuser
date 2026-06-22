@@ -162,6 +162,8 @@
     box-sizing: border-box;
 }
 
+@import '../../css/components/expandable_panel.css';
+
 .content-types-group > .content-types-section-accordion {
     margin-top: 2.5rem;
 }
@@ -243,16 +245,12 @@
     transform: rotate(180deg);
 }
 
-.content-types-section-accordion__panel {
-    padding: 0;
+.content-types-section-accordion__panel-host {
     overflow: hidden;
-    max-height: 0;
-    opacity: 0;
-    transition: max-height 0.5s ease, opacity 0.5s ease;
 }
 
-.content-types-section-accordion--open .content-types-section-accordion__panel {
-    opacity: 1;
+.content-types-section-accordion__panel.expandable-panel {
+    --expandable-panel-transition-duration: 0.5s;
 }
 
 .content-types-section-accordion__panel-inner {
@@ -261,10 +259,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .content-types-section-accordion__panel {
-        transition: none;
-    }
-
     .content-types-section-accordion__chevron {
         transition: none;
     }

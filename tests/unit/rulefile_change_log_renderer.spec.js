@@ -20,12 +20,26 @@ function mock_create_element(tag, opts = {}) {
     return el;
 }
 
+function with_reduced_motion(test_fn) {
+    const original = window.matchMedia;
+    window.matchMedia = (query) => ({
+        matches: query.includes('prefers-reduced-motion'),
+        media: query,
+        addEventListener: () => {},
+        removeEventListener: () => {}
+    });
+    return test_fn().finally(() => {
+        window.matchMedia = original;
+    });
+}
+
 describe('render_rulefile_change_log', () => {
     beforeEach(() => {
         document.body.innerHTML = '';
     });
 
-    test('skapar tre accordeoner med aria-kopplingar och togglar aria-expanded', () => {
+    test('skapar tre accordeoner med aria-kopplingar och togglar aria-expanded', async () => {
+        await with_reduced_motion(async () => {
         const container = document.createElement('div');
         document.body.appendChild(container);
 
@@ -61,14 +75,23 @@ describe('render_rulefile_change_log', () => {
         expect(region.getAttribute('role')).toBe('region');
         expect(region.getAttribute('aria-labelledby')).toBe(first_header.getAttribute('id'));
 
-        // Toggle -> aria-expanded ändras
+        const content_inner = sections[0].querySelector('.rulefile-change-log__accordion-content-inner');
+        expect(content_inner.childElementCount).toBe(0);
+
         first_header.click();
+        await Promise.resolve();
         expect(first_header.getAttribute('aria-expanded')).toBe('true');
+        expect(content_inner.childElementCount).toBeGreaterThan(0);
+
         first_header.click();
+        await Promise.resolve();
         expect(first_header.getAttribute('aria-expanded')).toBe('false');
+        expect(content_inner.childElementCount).toBe(0);
+        });
     });
 
-    test('visar inte tekniska check-id:n i listan för nya kontrollpunkter', () => {
+    test('visar inte tekniska check-id:n i listan för nya kontrollpunkter', async () => {
+        await with_reduced_motion(async () => {
         const container = document.createElement('div');
         document.body.appendChild(container);
 
@@ -125,12 +148,15 @@ describe('render_rulefile_change_log', () => {
             .find((b) => (b.textContent || '').includes('Uppdaterade krav'));
         expect(updated_header).toBeTruthy();
         updated_header.click();
+        await Promise.resolve();
 
         expect(container.textContent).toContain('Kontrollpunktens villkor');
         expect(container.textContent).not.toContain('new-check-123');
+        });
     });
 
-    test('visar en mänsklig sammanfattning även när passCriteriaChanges är tomt', () => {
+    test('visar en mänsklig sammanfattning även när passCriteriaChanges är tomt', async () => {
+        await with_reduced_motion(async () => {
         const container = document.createElement('div');
         document.body.appendChild(container);
 
@@ -163,9 +189,11 @@ describe('render_rulefile_change_log', () => {
         const updated_header = [...container.querySelectorAll('button.rulefile-change-log__accordion-header')]
             .find((b) => (b.textContent || '').includes('Uppdaterade krav'));
         updated_header.click();
+        await Promise.resolve();
 
         expect(container.textContent).toContain('Ändrat i');
         expect(container.textContent).toContain('titel');
+        });
     });
 });
 

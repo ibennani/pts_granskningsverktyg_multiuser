@@ -1,4 +1,6 @@
 /* Styles for RequirementAuditComponent */
+@import '../../css/components/expandable_panel.css';
+
 .requirement-audit-plate {
     /* Använder .content-plate globalt, inga specifika ändringar här just nu */
 }
@@ -700,4 +702,73 @@
 
 [data-theme="dark"] .pass-criterion-item .failure-template-display {
     background-color: color-mix(in srgb, var(--background-color) 95%, black);
+}
+
+.info-block-section {
+    margin-bottom: 1rem;
+}
+
+.info-block-header {
+    width: 100%;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    text-align: left;
+    padding: 0.75rem 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    font-weight: inherit;
+    line-height: 1.3;
+    color: inherit;
+    cursor: pointer;
+}
+
+.info-block-header:focus-visible {
+    outline: 3px solid var(--focus-ring-color, #1a73e8);
+    outline-offset: 2px;
+}
+
+.info-block-header__inner {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+.info-block-header__title {
+    margin: 0;
+    flex: 1;
+    min-width: 0;
+}
+
+.info-block-header__chevron {
+    flex-shrink: 0;
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 8px solid currentColor;
+    opacity: 0.75;
+    transform-origin: center;
+    transform: rotate(0deg);
+    transition: transform 120ms ease-in-out;
+}
+
+.info-block-section--open .info-block-header__chevron {
+    transform: rotate(180deg);
+}
+
+.info-block-panel-host {
+    overflow: hidden;
+}
+
+.info-block-panel.expandable-panel {
+    --expandable-panel-transition-duration: 0.5s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .info-block-header__chevron {
+        transition: none;
+    }
 }

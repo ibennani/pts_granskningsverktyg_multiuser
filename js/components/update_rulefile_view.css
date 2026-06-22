@@ -1,5 +1,7 @@
 /* css/components/update_rulefile_view.css */
 
+@import '../../css/components/expandable_panel.css';
+
 .update-rulefile-view-plate .view-intro-text {
     margin-bottom: 1.5rem;
     font-size: 1rem;
@@ -157,16 +159,12 @@
     transform: rotate(180deg);
 }
 
-.update-rulefile-view-plate .rulefile-change-log__accordion-content {
-    padding: 0;
+.update-rulefile-view-plate .rulefile-change-log__accordion-panel-host {
     overflow: hidden;
-    max-height: 0;
-    opacity: 0;
-    transition: max-height 0.5s ease, opacity 0.5s ease;
 }
 
-.update-rulefile-view-plate .rulefile-change-log__accordion--open .rulefile-change-log__accordion-content {
-    opacity: 1;
+.update-rulefile-view-plate .rulefile-change-log__accordion-content.expandable-panel {
+    --expandable-panel-transition-duration: 0.5s;
 }
 
 .update-rulefile-view-plate .rulefile-change-log__accordion-content-inner {
@@ -219,9 +217,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .update-rulefile-view-plate .rulefile-change-log__accordion-content {
-        transition: none;
-    }
     .update-rulefile-view-plate .rulefile-change-log__accordion-chevron {
         transition: none;
     }

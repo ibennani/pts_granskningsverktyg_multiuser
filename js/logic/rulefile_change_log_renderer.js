@@ -1,5 +1,10 @@
 'use-strict';
 
+import {
+    EXPANDABLE_PANEL_EXPANDED_CLASS,
+    animate_expandable_panel
+} from '../utils/expandable_panel_transition.js';
+
 /**
  * Renderar en ändringslogg för regelfilsuppdatering med tre accordeoner:
  * - Nya krav
@@ -121,16 +126,19 @@ export function render_rulefile_change_log(params) {
             }
         });
 
-        const content = Helpers.create_element('div', {
-            class_name: 'rulefile-change-log__accordion-content',
+        const panel_host = Helpers.create_element('div', {
+            class_name: 'rulefile-change-log__accordion-panel-host',
             attributes: {
                 id: content_id,
                 role: 'region',
                 'aria-labelledby': header_id
             }
         });
-        // Rullgardinsanimation: vi styr max-height i JS (se click handler).
-        content.style.maxHeight = '0px';
+        panel_host.hidden = true;
+
+        const expandable_panel = Helpers.create_element('div', {
+            class_name: ['expandable-panel', 'rulefile-change-log__accordion-content']
+        });
 
         const header_inner = Helpers.create_element('span', { class_name: 'rulefile-change-log__accordion-header-inner' });
         const header_title = Helpers.create_element('span', {
@@ -148,26 +156,50 @@ export function render_rulefile_change_log(params) {
         header_inner.append(header_title, header_count, chevron);
         header_button.appendChild(header_inner);
 
-        const content_inner = Helpers.create_element('div', { class_name: 'rulefile-change-log__accordion-content-inner' });
-        content.appendChild(content_inner);
+        const content_inner = Helpers.create_element('div', {
+            class_name: ['expandable-panel__inner', 'rulefile-change-log__accordion-content-inner']
+        });
+        expandable_panel.appendChild(content_inner);
+        panel_host.appendChild(expandable_panel);
+
+        const mount_content = () => {
+            if (content_inner.childElementCount > 0) return;
+            build_content_fn(content_inner);
+        };
+
+        const unmount_content = () => {
+            content_inner.replaceChildren();
+        };
+
+        const run_toggle = async () => {
+            if (section.getAttribute('data-animating') === 'true') return;
+
+            const will_open = !section.classList.contains('rulefile-change-log__accordion--open');
+            section.setAttribute('data-animating', 'true');
+            try {
+                if (will_open) {
+                    mount_content();
+                    section.classList.add('rulefile-change-log__accordion--open');
+                    header_button.setAttribute('aria-expanded', 'true');
+                    await animate_expandable_panel(expandable_panel, panel_host, true, EXPANDABLE_PANEL_EXPANDED_CLASS);
+                    return;
+                }
+
+                section.classList.remove('rulefile-change-log__accordion--open');
+                header_button.setAttribute('aria-expanded', 'false');
+                await animate_expandable_panel(expandable_panel, panel_host, false, EXPANDABLE_PANEL_EXPANDED_CLASS);
+                unmount_content();
+            } finally {
+                section.removeAttribute('data-animating');
+            }
+        };
 
         header_button.addEventListener('click', () => {
-            const is_open = section.classList.contains('rulefile-change-log__accordion--open');
-            header_button.setAttribute('aria-expanded', is_open ? 'false' : 'true');
-            if (!is_open) {
-                section.classList.add('rulefile-change-log__accordion--open');
-                // Expandera mjukt till content_inner höjd.
-                const h = content_inner.scrollHeight;
-                content.style.maxHeight = `${h}px`;
-            } else {
-                section.classList.remove('rulefile-change-log__accordion--open');
-                content.style.maxHeight = '0px';
-            }
+            void run_toggle();
         });
 
         section.appendChild(header_button);
-        build_content_fn(content_inner);
-        section.appendChild(content);
+        section.appendChild(panel_host);
 
         container.appendChild(section);
     };
