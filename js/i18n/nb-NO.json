@@ -104,7 +104,7 @@
   "audit_actions_download_label": "Last ned tilsyn",
   "audit_actions_export_csv_description": "Eksporterer tilsynet som CSV (tabellformat).",
   "audit_actions_export_excel_description": "Eksporterer tilsynet som en Excel-fil.",
-  "audit_actions_export_html_description": "Eksporterer tilsynet som zip med HTML-rapport og bilder i mappen media.",
+  "audit_actions_export_html_description": "Eksporterer tilsynet som HTML med tilhørende bilder, alt i en zip-fil.",
   "audit_actions_export_word_requirements_description": "Eksporterer en Word-rapport sortert etter krav.",
   "audit_actions_export_word_samples_description": "Eksporterer en Word-rapport sortert etter utvalg.",
   "audit_actions_exports_title": "Eksport",

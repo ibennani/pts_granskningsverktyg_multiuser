@@ -104,7 +104,7 @@
   "audit_actions_download_label": "Download audit",
   "audit_actions_export_csv_description": "Exports the audit as CSV (tabular format).",
   "audit_actions_export_excel_description": "Exports the audit as an Excel file.",
-  "audit_actions_export_html_description": "Exports the audit as a zip file with an HTML report and images in the media folder.",
+  "audit_actions_export_html_description": "Exports the audit as HTML with associated images, all in a zip file.",
   "audit_actions_export_word_requirements_description": "Exports a Word report sorted by requirements.",
   "audit_actions_export_word_samples_description": "Exports a Word report sorted by samples.",
   "audit_actions_exports_title": "Export",
