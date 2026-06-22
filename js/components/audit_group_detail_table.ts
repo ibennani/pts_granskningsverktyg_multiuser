@@ -45,7 +45,8 @@ function append_detail_cell(
 export function build_group_detail_table(
     ctx: DetailTableContext,
     group: AuditListGroup,
-    detail_columns: DetailColumnDef[]
+    detail_columns: DetailColumnDef[],
+    row_number_header: string
 ): HTMLElement {
     const { Helpers } = ctx;
     const table = Helpers.create_element('table', {
@@ -53,6 +54,12 @@ export function build_group_detail_table(
     });
     const thead = Helpers.create_element('thead', {});
     const header_row = Helpers.create_element('tr', {});
+    const row_number_th = Helpers.create_element('th', {
+        attributes: { scope: 'col' },
+        class_name: 'audit-group-detail-col-row-number',
+        text_content: row_number_header
+    });
+    header_row.appendChild(row_number_th);
     for (const col of detail_columns) {
         const th = Helpers.create_element('th', {
             attributes: { scope: 'col' },
@@ -64,16 +71,22 @@ export function build_group_detail_table(
     table.appendChild(thead);
 
     const tbody = Helpers.create_element('tbody', {});
-    for (const audit of sort_audits_within_group(group.audits)) {
+    const sorted_audits = sort_audits_within_group(group.audits);
+    sorted_audits.forEach((audit, index) => {
         const tr = Helpers.create_element('tr', {});
         if (audit.id !== undefined && audit.id !== null) {
             tr.setAttribute('data-row-id', String(audit.id));
         }
+        const row_number_td = Helpers.create_element('td', {
+            class_name: 'audit-group-detail-col-row-number',
+            text_content: String(index + 1)
+        });
+        tr.appendChild(row_number_td);
         for (const col of detail_columns) {
             append_detail_cell(Helpers, tr, col, audit);
         }
         tbody.appendChild(tr);
-    }
+    });
     table.appendChild(tbody);
     return table;
 }

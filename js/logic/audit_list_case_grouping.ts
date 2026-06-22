@@ -150,25 +150,29 @@ export function get_group_actor_sort_value(audits: AuditRowForGrouping[]): strin
 
 
 
-/** Sorterar granskningar inom en grupp (aktör, sedan senast ändrad). */
+/** Sorteringsnyckel för äldst till nyast (senast ändrad, sedan skapad). */
+
+export function audit_recency_sort_key(audit: AuditRowForGrouping): string {
+
+    const ts = audit.updated_at ?? audit.created_at ?? audit.metadata?.startTime ?? '';
+
+    return ts ? String(ts) : '\uffff';
+
+}
+
+
+
+/** Sorterar granskningar inom en grupp (äldst först, nyast sist). */
 
 export function sort_audits_within_group(audits: AuditRowForGrouping[]): AuditRowForGrouping[] {
 
     return [...audits].sort((a, b) => {
 
-        const actor_a = (a.metadata?.actorName ?? '').toString().trim();
+        const recency_cmp = audit_recency_sort_key(a).localeCompare(audit_recency_sort_key(b));
 
-        const actor_b = (b.metadata?.actorName ?? '').toString().trim();
+        if (recency_cmp !== 0) return recency_cmp;
 
-        const cmp = actor_a.localeCompare(actor_b, undefined, { numeric: true });
-
-        if (cmp !== 0) return cmp;
-
-        const upd_a = a.updated_at ? String(a.updated_at) : '';
-
-        const upd_b = b.updated_at ? String(b.updated_at) : '';
-
-        return upd_b.localeCompare(upd_a);
+        return String(a.id ?? '').localeCompare(String(b.id ?? ''), undefined, { numeric: true });
 
     });
 

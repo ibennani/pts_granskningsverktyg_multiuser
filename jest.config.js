@@ -27,6 +27,8 @@ export default {
     '^.+[\\\\/]export_bootstrap\\.js$': '<rootDir>/js/export/export_bootstrap.ts',
     '^.+[\\\\/]export_csv\\.js$': '<rootDir>/js/export/export_csv.ts',
     '^.+[\\\\/]export_deficiency_rows\\.js$': '<rootDir>/js/export/export_deficiency_rows.ts',
+    '^.+[\\\\/]export_media_filename\\.js$': '<rootDir>/js/export/export_media_filename.ts',
+    '^.+[\\\\/]export_media_filename_context\\.js$': '<rootDir>/js/export/export_media_filename_context.ts',
     '^.+[\\\\/]export_deficiency_traversal\\.js$': '<rootDir>/js/export/export_deficiency_traversal.ts',
     '^.+[\\\\/]export_excel\\.js$': '<rootDir>/js/export/export_excel.ts',
     '^.+[\\\\/]excel_export_helpers\\.js$': '<rootDir>/js/export/excel_export_helpers.ts',
@@ -123,6 +125,8 @@ export default {
     '^.+[\\\\/]attach_media_duplicate_filename_status\\.js$':
       '<rootDir>/js/components/media/attach_media_duplicate_filename_status.ts',
     '^.+[\\\\/]audit_media_api\\.js$': '<rootDir>/js/api/audit_media_api.ts',
+    '^.+[\\\\/]audit_granskning_sequence\\.js$': '<rootDir>/js/logic/audit_granskning_sequence.ts',
+    '^.+[\\\\/]media_capture_date\\.js$': '<rootDir>/js/logic/media_capture_date.ts',
     '^.+[\\\\/]audit_attached_media_references\\.js$': '<rootDir>/js/logic/audit_attached_media_references.ts',
     '^.+[\\\\/]audit_media_server_index\\.js$': '<rootDir>/js/logic/audit_media_server_index.ts',
     '^.+[\\\\/]audit_media_preview_viewport\\.js$': '<rootDir>/js/logic/audit_media_preview_viewport.ts',

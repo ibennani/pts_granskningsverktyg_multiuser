@@ -17,7 +17,7 @@ export async function export_to_csv(current_audit: unknown) {
         return;
     }
 
-    const { deficiencies_data, column_defs } = prepare_deficiencies_for_export(current_audit, t);
+    const { deficiencies_data, column_defs } = await prepare_deficiencies_for_export(current_audit, t);
     const column_keys = column_defs.map((def) => def.key);
     const csv_lines = [column_defs.map((def) => escape_for_csv(def.header)).join(';')];
 

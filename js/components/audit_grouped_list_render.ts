@@ -320,7 +320,9 @@ export function render_audit_grouped_list(
         const detail_panel = Helpers.create_element('div', { class_name: 'audit-group-detail-panel' });
         const detail_inner = Helpers.create_element('div', { class_name: 'audit-group-detail-panel__inner' });
         if (is_expanded) {
-            detail_inner.appendChild(build_group_detail_table(ctx, group, detail_columns));
+            detail_inner.appendChild(
+                build_group_detail_table(ctx, group, detail_columns, t('audit_group_detail_row_number_col'))
+            );
         }
         detail_panel.appendChild(detail_inner);
         detail_cell.appendChild(detail_panel);
@@ -337,7 +339,7 @@ export function render_audit_grouped_list(
             group,
             group_mode,
             t,
-            () => build_group_detail_table(ctx, group, detail_columns)
+            () => build_group_detail_table(ctx, group, detail_columns, t('audit_group_detail_row_number_col'))
         );
 
         tbody.appendChild(summary_row);

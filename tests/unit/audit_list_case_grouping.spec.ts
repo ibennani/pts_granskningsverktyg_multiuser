@@ -51,13 +51,14 @@ describe('audit_list_case_grouping', () => {
         expect(groups[0].audits).toHaveLength(2);
     });
 
-    test('sort_audits_within_group sorterar på aktör', () => {
+    test('sort_audits_within_group sorterar äldst först så att nyast hamnar sist', () => {
         const audits = [
-            { id: 'b', metadata: { actorName: 'Beta' } },
-            { id: 'a', metadata: { actorName: 'Alfa' } }
+            { id: 'new', updated_at: '2026-06-22T11:14:26', metadata: { actorName: 'Beta' } },
+            { id: 'old', updated_at: '2026-06-22T09:20:07', metadata: { actorName: 'Alfa' } },
+            { id: 'mid', updated_at: '2026-06-22T11:13:26', metadata: { actorName: 'Gamma' } }
         ];
         const sorted = sort_audits_within_group(audits);
-        expect(sorted.map((a) => a.id)).toEqual(['a', 'b']);
+        expect(sorted.map((a) => a.id)).toEqual(['old', 'mid', 'new']);
     });
 
     test('format_group_actor_names använder aktör från äldsta granskningen', () => {

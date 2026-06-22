@@ -12,6 +12,8 @@ import { get_export_requirement_result } from './export_bootstrap.js';
 import { for_each_failed_in_requirement_result } from './export_deficiency_traversal.js';
 import { find_check_def_by_storage_id, find_pass_criterion_def_by_storage_id } from '../logic/entity_id_match.js';
 import { to_wcag_yes_only_value } from './excel_export_helpers.js';
+import { build_requirement_media_export_filename } from './export_media_filename.js';
+import type { ExportMediaFilenameContext } from './export_media_filename_context.js';
 
 export type DeficiencyColumnDef = { header: string; key: string; width: number };
 
@@ -45,6 +47,40 @@ export function format_screenshot_reference_for_export(filenames: unknown): stri
     return filenames
         .map((name) => String(name || '').trim())
         .filter(Boolean)
+        .join('\n');
+}
+
+/** Formaterar exportfilnamn enligt PTS-regler, ett per rad i samma cell. */
+export function format_screenshot_reference_for_export_with_context(
+    filenames: unknown,
+    context: ExportMediaFilenameContext,
+    row_meta: { deficiency_id?: string | null }
+): string {
+    if (!Array.isArray(filenames)) {
+        return '';
+    }
+    const trimmed = filenames
+        .map((name) => String(name || '').trim())
+        .filter(Boolean);
+    if (trimmed.length === 0) {
+        return '';
+    }
+
+    const export_fallback_date =
+        trimmed.map((name) => context.capture_dates.get(name)).find(Boolean) || '0000-00-00';
+
+    return trimmed
+        .map((original_filename, index) =>
+            build_requirement_media_export_filename({
+                deficiency_id: row_meta.deficiency_id,
+                image_index: index + 1,
+                audit_type_label: context.audit_type_label,
+                granskning_sequence: context.granskning_sequence,
+                capture_date: context.capture_dates.get(original_filename) || export_fallback_date,
+                case_number: context.case_number,
+                original_filename
+            })
+        )
         .join('\n');
 }
 
@@ -88,11 +124,12 @@ export function deficiency_row_to_flat_values(row: DeficiencyRow, column_keys: s
     });
 }
 
-export function prepare_deficiencies_for_export(
+export async function prepare_deficiencies_for_export(
     current_audit: unknown,
-    t: (key: string) => string
-): PreparedDeficiencyExport {
-    const deficiencies_data = build_deficiencies_data(current_audit, t);
+    t: (key: string) => string,
+    media_context?: ExportMediaFilenameContext | null
+): Promise<PreparedDeficiencyExport> {
+    const deficiencies_data = build_deficiencies_data(current_audit, t, media_context ?? null);
     const include_comment_column = deficiencies_data.some(
         (d) => d.comment && String(d.comment).trim().length > 0
     );
@@ -118,7 +155,8 @@ function build_single_deficiency_row(
     pc_id: string,
     pc_obj: { deficiencyId?: string; observationDetail?: string; attachedMediaFilenames?: unknown },
     t: (key: string) => string,
-    yes_label: string
+    yes_label: string,
+    media_context: ExportMediaFilenameContext | null
 ): DeficiencyRow {
     const check_def = find_check_def_by_storage_id(req_definition.checks as never[], check_id);
     const pc_def = find_pass_criterion_def_by_storage_id(check_def?.passCriteria, pc_id) as {
@@ -161,7 +199,11 @@ function build_single_deficiency_row(
         sampleUrl: url_obj,
         deficiencyType: '',
         observation: final_observation,
-        screenshotReference: format_screenshot_reference_for_export(pc_obj.attachedMediaFilenames),
+        screenshotReference: media_context
+            ? format_screenshot_reference_for_export_with_context(pc_obj.attachedMediaFilenames, media_context, {
+                  deficiency_id: pc_obj.deficiencyId
+              })
+            : format_screenshot_reference_for_export(pc_obj.attachedMediaFilenames),
         comment: comment_text,
         wcagPerceivable: to_wcag_yes_only_value(pour_vals.wcagPerceivable, yes_label),
         wcagOperable: to_wcag_yes_only_value(pour_vals.wcagOperable, yes_label),
@@ -170,7 +212,11 @@ function build_single_deficiency_row(
     };
 }
 
-export function build_deficiencies_data(current_audit: unknown, t: (key: string) => string): DeficiencyRow[] {
+export function build_deficiencies_data(
+    current_audit: unknown,
+    t: (key: string) => string,
+    media_context: ExportMediaFilenameContext | null = null
+): DeficiencyRow[] {
     const deficiencies_data: DeficiencyRow[] = [];
     const yes_label = t('yes');
     const audit = current_audit as { ruleFileContent?: { requirements?: Record<string, unknown> }; samples?: unknown[] };
@@ -194,7 +240,8 @@ export function build_deficiencies_data(current_audit: unknown, t: (key: string)
                         pc_id,
                         pc_obj,
                         t,
-                        yes_label
+                        yes_label,
+                        media_context
                     )
                 );
             });

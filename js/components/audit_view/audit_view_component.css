@@ -328,6 +328,27 @@ select.form-control.audit-filter-select {
     border-top: 1px solid var(--border-color);
 }
 
+.audit-group-detail-col-row-number {
+    width: 2.5rem;
+    min-width: 2.5rem;
+    max-width: 2.5rem;
+    text-align: center;
+    white-space: nowrap;
+    padding-right: 0.15rem;
+}
+
+.audit-group-detail-table.generic-table--audit-list th:nth-child(1),
+.audit-group-detail-table.generic-table--audit-list td:nth-child(1) {
+    min-width: 2.5rem;
+    width: 2.5rem;
+}
+
+.audit-group-detail-table.generic-table--audit-list th:nth-child(2),
+.audit-group-detail-table.generic-table--audit-list td:nth-child(2) {
+    min-width: 9rem;
+    padding-left: 0.15rem;
+}
+
 .audit-grouped-list-empty {
     margin: 0.5rem 0;
     opacity: 0.85;

@@ -20,6 +20,7 @@ import {
     clear_workbook_metadata,
     strip_xlsx_document_metadata
 } from './excel_export_helpers.js';
+import { build_export_media_filename_context } from './export_media_filename_context.js';
 
 export async function export_to_excel(current_audit: unknown) {
     const t = get_t_internal() as (key: string, opts?: Record<string, unknown>) => string;
@@ -68,7 +69,14 @@ export async function export_to_excel(current_audit: unknown) {
         apply_excel_cell_alignment_top_left_wrap(generalSheet);
 
         const deficienciesSheet = workbook.addWorksheet(t('excel_sheet_deficiencies'));
-        const { deficiencies_data, column_defs } = prepare_deficiencies_for_export(current_audit, t);
+        show_global_message_internal(t('excel_export_preparing_media_references'), 'info');
+        const export_date = new Date();
+        const media_context = await build_export_media_filename_context(current_audit, export_date);
+        const { deficiencies_data, column_defs } = await prepare_deficiencies_for_export(
+            current_audit,
+            t,
+            media_context
+        );
 
         populate_deficiencies_excel_sheet(
             deficienciesSheet,
@@ -88,7 +96,7 @@ export async function export_to_excel(current_audit: unknown) {
         });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
-        const filename = build_excel_export_filename(audit, t, new Date());
+        const filename = build_excel_export_filename(audit, t, export_date);
 
         link.href = url;
         link.download = filename;
