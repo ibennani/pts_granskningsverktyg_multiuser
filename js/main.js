@@ -75,8 +75,7 @@ import {
 } from './logic/a11y_shell.js';
 import { render_view as render_view_impl } from './logic/view_render.js';
 import { init_app as init_app_impl, run_when_dom_ready } from './logic/app_bootstrap.js';
-import { set_debug_nav, is_debug_nav, set_debug_krav_vy } from './app/runtime_flags.js';
-import { apply_local_serverdb_viewport_indicator } from './logic/local_serverdb_indicator.ts';
+import { set_debug_nav, is_debug_nav } from './app/runtime_flags.js';
 
 const notificationComponent = new NotificationComponent();
 const modalComponent = new ModalComponent();
@@ -98,21 +97,9 @@ if (typeof window !== 'undefined') {
 (function () {
     'use strict';
 
-    apply_local_serverdb_viewport_indicator();
-
     if (typeof window !== 'undefined' && window.location.search.includes('debug=nav')) {
         set_debug_nav(true);
         consoleManager.log('[GV-NAV] Debug aktiverad via URL (?debug=nav). Klicka Granskningar från Start och titta i konsolen.');
-    }
-
-    if (typeof window !== 'undefined' && (
-        window.location.search.includes('debug=krav-vy') ||
-        window.location.port === '5174'
-    )) {
-        set_debug_krav_vy(true);
-        consoleManager.originalConsole.log(
-            '[Krav-vy] Debug-logg aktiverad (port 5174 eller ?debug=krav-vy). Konsolen visar state, knappar, textarea och render.'
-        );
     }
 
     const nav_debug = (msg, data) => {
@@ -197,19 +184,6 @@ if (typeof window !== 'undefined') {
         });
     }
 
-    /**
-     * Uppdaterar sidtitel och vänstermeny när kravresultat sparats med skip_render (ingen global chrome-körning).
-     */
-    function refresh_side_menu_and_title_after_skip_render() {
-        updatePageTitleFromCurrentView();
-        try {
-            const parsed_params = JSON.parse(render_ctx.current_view_params_rendered_json || '{}');
-            update_side_menu(render_ctx.current_view_name_rendered, parsed_params);
-        } catch {
-            update_side_menu(render_ctx.current_view_name_rendered, {});
-        }
-    }
-
     async function init_global_components() {
         await init_global_components_impl({
             getState,
@@ -238,36 +212,22 @@ if (typeof window !== 'undefined') {
         error_boundary_instance = error_boundary_holder.instance;
     }
 
-    function navigate_and_set_hash(target_view_name, target_params = {}, nav_opts = {}) {
-        const nav = nav_opts && typeof nav_opts === 'object' ? nav_opts : {};
-        const { sync_route_from_location: sync_override, ...nav_rest } = nav;
+    function navigate_and_set_hash(target_view_name, target_params = {}) {
         return navigate_and_set_hash_impl(target_view_name, target_params, {
             nav_debug,
             getState,
             get_current_view_name: () => render_ctx.current_view_name_rendered,
             get_current_view_component: () => render_ctx.current_view_component_instance,
-            updatePageTitle,
-            ...nav_rest,
-            sync_route_from_location: sync_override ?? handle_hash_change
+            updatePageTitle
         });
     }
 
-    /**
-     * Sant om fokus i huvudvyn är på något där en hel omritning av aktuell vy stör:
-     * formulärfält eller tangentnavigerade kontroller (knapp/länk utan id kan annars inte återställas efter render).
-     */
     function is_focus_in_editable_field(view_root) {
         if (!view_root) return false;
         const active = document.activeElement;
         if (!active || !view_root.contains(active)) return false;
         const tag = active.tagName ? active.tagName.toLowerCase() : '';
-        if (tag === 'input' || tag === 'textarea' || tag === 'select') return true;
-        if (tag === 'button') return true;
-        if (tag === 'a') {
-            const href = active.getAttribute && active.getAttribute('href');
-            return Boolean(href && href.trim() !== '' && !href.trim().toLowerCase().startsWith('javascript:'));
-        }
-        return false;
+        return tag === 'input' || tag === 'textarea' || tag === 'select';
     }
 
     const render_view_deps = () => ({
@@ -297,8 +257,7 @@ if (typeof window !== 'undefined') {
         ValidationLogic,
         updatePageTitle,
         start_normal_session,
-        updateBackupRestorePosition,
-        refreshSideMenuAndTitle: refresh_side_menu_and_title_after_skip_render
+        updateBackupRestorePosition
     });
 
     async function render_view(view_name_to_render, params_to_render = {}) {

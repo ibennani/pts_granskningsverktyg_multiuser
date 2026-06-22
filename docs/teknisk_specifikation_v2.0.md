@@ -1,7 +1,7 @@
 # Teknisk specifikation: Leffe
 
 **Version:** 2.1.0
-**Datum:** 2026-06-09
+**Datum:** 2026-03-27
 
 ## 1. Mål och syfte
 
@@ -14,7 +14,7 @@ Verktyget ska underlätta strukturerad granskning enligt definierade regler geno
 - Stödja definiering och hantering av stickprov
 - Möjliggöra systematisk bedömning av krav
 - Dokumentera observationer och kommentarer
-- Generera rapporter i olika format (CSV, Excel, Word, HTML)
+- Generera rapporter i olika format (CSV, Excel, Word)
 - Säkerställa tillgänglighet enligt WCAG 2.2 AA
 
 ### Tekniska mål
@@ -107,11 +107,11 @@ Verktyget ska underlätta strukturerad granskning enligt definierade regler geno
 ### 3.4 Internationalisering
 
 **Språkstöd:**
-- All UI-text hanteras via översättningssystem (`translation_logic.ts`)
-- Stöd för svenska (sv-SE), engelska (en-GB) och norsk bokmål (nb-NO)
+- All UI-text hanteras via översättningssystem
+- Stöd för svenska (sv-SE) och engelska (en-GB)
 - Språkväxling via UI-kontroll
 - Språkval sparas i `localStorage`
-- Automatisk detektering av webbläsarens språk; fallback till en-GB om språk saknas
+- Automatisk detektering av webbläsarens språk
 
 ## 4. Kärnfunktionalitet och arbetsprocess
 
@@ -281,6 +281,7 @@ Varje objekt representerar ett stickprov och innehåller:
 *   `description`: Sträng (användarens namn på stickprovet).
 *   `url`: Sträng (url till stickprovet).
 *   `selectedContentTypes`: Array av strängar (id:n från regelfilens `contentTypes`).
+*   `attachedMediaFilenames`: Valfri array av strängar (filnamn för skärmavbildningar och ev. video som avser hela stickprovet, ett filnamn per rad i modalen). Saknas fältet behandlas det som en tom lista.
 *   `requirementResults`: Ett objekt där nycklarna är krav-id:n (från regelfilen) och värdena är resultatobjekt (se nedan) för det specifika kravet och detta stickprov.
 
 ### 6.3 Resultatobjekt (inom `requirementResults`)
@@ -331,10 +332,8 @@ Se `docs/state_and_persistence.md` för detaljer.
 *   `js/validation_logic.ts`: Validering av regelfiler och sparade granskningar.
 *   `js/translation_logic.ts`: Internationalisering.
 *   `js/utils/helpers.js`: Allmänna hjälpfunktioner.
-*   `js/i18n/`: JSON-filer per språk.
-*   `js/components/`: UI-komponenter – vykomponenter som **klasser** (`init`, `render`, `destroy`), vissa äldre som objektliteral. Inga IIFE.
-*   `server/`: Express-backend, PostgreSQL, JWT, WebSocket.
-*   `shared/`: Gemensam klient/server-logik utan DOM-beroenden.
+*   `js/i18n/`: Json-filer för språköversättningar (t.ex. `sv-SE.json`, `en-GB.json`).
+*   `js/components/`: Återanvändbara ui-komponenter (t.ex. för vyer, formulär, listor). Varje komponent är en ES6-modul som exporterar ett objekt med `init({ root, deps })`, `render()`, och `destroy()` metoder. Komponenter använder INTE IIFE.
 
 ## 9. Internationalisering (i18n) – Detaljer
 

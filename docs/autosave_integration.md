@@ -1,7 +1,5 @@
 # Autospar – integration för nya vyer
 
-**Senast granskad:** 2026-06-09
-
 ## Översikt
 
 Leffe använder en central autospar-service (`AutosaveService` i `js/logic/autosave_service.js`) för formulär. Autospar triggas endast vid `input`-events, debouncar 250 ms, sparar utan visuell omrendering och bevarar fokus, markering och scroll-position.
@@ -90,13 +88,9 @@ const value = trim_text ? trim_text(rawValue) : rawValue;
 
 - `EditGeneralSectionComponent` – regelfilsmetadata (allmän sektion)
 - `EditPageTypesSectionComponent` – sidtyper
-- `EditContentTypesSectionComponent` – innehållstyper
-- `EditInfoBlocksSectionComponent` – informationsblock
-- `EditSampleTypesSectionComponent` – stickprovstyper
 - `MetadataFormComponent` – granskningsmetadata
-- `SampleFormViewComponent` – stickprovsformulär
-
-**OBS:** `ChecklistHandler` (observationer i kravgranskning) använder **inte** `AutosaveService` utan egen `input`-hantering med callback. `EditRulefileRequirementComponent` sparar via manuella knappar, inte central autospar-session.
+- `AddSampleFormComponent` – stickprovsformulär (vid redigering)
+- `EditRulefileRequirementComponent` – kravredigering
 
 ## Se även
 

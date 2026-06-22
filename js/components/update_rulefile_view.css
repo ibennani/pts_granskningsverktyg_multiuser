@@ -120,9 +120,8 @@
 }
 
 .update-rulefile-view-plate .rulefile-change-log__accordion-header:focus-visible {
-    outline: var(--focus-outer-width) var(--focus-outer-style) var(--focus-outer-color);
-    outline-offset: var(--focus-ring-outline-offset);
-    box-shadow: var(--focus-ring-box-shadow);
+    outline: 3px solid var(--focus-ring-color, #1a73e8);
+    outline-offset: 2px;
 }
 
 .update-rulefile-view-plate .rulefile-change-log__accordion-header-inner {

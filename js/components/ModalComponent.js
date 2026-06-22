@@ -1,6 +1,7 @@
 // js/components/ModalComponent.js
 
 import './modal_component.css';
+import { MODAL_TRANSITION_MS } from '../../shared/constants/modal_layout.js';
 import { consoleManager } from '../utils/console_manager.js';
 import { is_debug_modal_scroll } from '../app/runtime_flags.js';
 
@@ -23,8 +24,10 @@ export class ModalComponent {
         this._history_state_pushed = false;
         this._close_triggered_by_popstate = false;
         this._modal_history_id = null;
+        this._pre_modal_history_state = null;
         this._close_started = false;
         this._pending_on_closed = null;
+        this._scroll_lock_refs = null;
 
         if (this.Helpers?.load_css_safely && ModalComponent.CSS_PATH) {
             this.Helpers.load_css_safely(ModalComponent.CSS_PATH, 'ModalComponent', {
@@ -41,6 +44,7 @@ export class ModalComponent {
         if (this._history_state_pushed) return;
 
         this._modal_history_id = `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+        this._pre_modal_history_state = window.history.state;
         try {
             window.history.pushState(
                 { __gv_modal: true, modal_id: this._modal_history_id },
@@ -58,6 +62,7 @@ export class ModalComponent {
             if (!this.dialog_element_ref) return;
             if (!this._history_state_pushed) return;
             if (this._close_started) return;
+            if (window.history.state?.__gv_modal) return;
 
             this._close_triggered_by_popstate = true;
             this.close();
@@ -233,12 +238,108 @@ export class ModalComponent {
     }
 
     _reset_body_scroll_lock() {
-        document.documentElement.style.overflow = '';
-        document.body.style.overflow = '';
+        if (this._scroll_lock_refs) {
+            document.documentElement.style.overflow = this._scroll_lock_refs.html;
+            document.body.style.overflow = this._scroll_lock_refs.body;
+            const app_container = document.getElementById('app-container');
+            const main_view_root = document.getElementById('app-main-view-root');
+            if (app_container) app_container.style.overflow = this._scroll_lock_refs.app;
+            if (main_view_root) main_view_root.style.overflow = this._scroll_lock_refs.main;
+            this._scroll_lock_refs = null;
+        } else {
+            document.documentElement.style.overflow = '';
+            document.body.style.overflow = '';
+            const app_container = document.getElementById('app-container');
+            const main_view_root = document.getElementById('app-main-view-root');
+            if (app_container) app_container.style.overflow = '';
+            if (main_view_root) main_view_root.style.overflow = '';
+        }
+
         document.body.style.position = '';
         document.body.style.top = '';
         document.body.style.left = '';
         document.body.style.right = '';
+    }
+
+    _apply_scroll_lock() {
+        const app_container = document.getElementById('app-container');
+        const main_view_root = document.getElementById('app-main-view-root');
+        this._scroll_lock_refs = {
+            html: document.documentElement.style.overflow,
+            body: document.body.style.overflow,
+            app: app_container?.style.overflow ?? '',
+            main: main_view_root?.style.overflow ?? '',
+        };
+        document.documentElement.style.overflow = 'hidden';
+        document.body.style.overflow = 'hidden';
+        if (app_container) app_container.style.overflow = 'hidden';
+        if (main_view_root) main_view_root.style.overflow = 'hidden';
+    }
+
+    _capture_scroll_state() {
+        const app_container = document.getElementById('app-container');
+        const main_view_root = document.getElementById('app-main-view-root');
+        return {
+            windowY: window.scrollY
+                || document.documentElement.scrollTop
+                || document.body.scrollTop
+                || 0,
+            appContainer: app_container?.scrollTop ?? 0,
+            mainViewRoot: main_view_root?.scrollTop ?? 0,
+        };
+    }
+
+    _restore_scroll_position(scroll_state) {
+        if (!scroll_state) return;
+
+        const app_container = document.getElementById('app-container');
+        const main_view_root = document.getElementById('app-main-view-root');
+        if (app_container) {
+            app_container.scrollTop = scroll_state.appContainer ?? 0;
+        }
+        if (main_view_root) {
+            main_view_root.scrollTop = scroll_state.mainViewRoot ?? 0;
+        }
+
+        const window_y = scroll_state.windowY ?? 0;
+        window.scrollTo(0, window_y);
+        document.documentElement.scrollTop = window_y;
+        document.body.scrollTop = window_y;
+    }
+
+    _restore_focus_element(focus_element) {
+        if (!focus_element || !document.contains(focus_element)) return;
+        try {
+            focus_element.focus({ preventScroll: true });
+        } catch (e) {
+            focus_element.focus();
+        }
+    }
+
+    _schedule_post_close_ui_restore(scroll_state, focus_element) {
+        const restore = () => {
+            this._restore_scroll_position(scroll_state);
+            this._restore_focus_element(focus_element);
+        };
+        restore();
+        requestAnimationFrame(restore);
+        setTimeout(restore, 0);
+        setTimeout(restore, 50);
+        setTimeout(restore, 150);
+    }
+
+    _finalize_modal_history_on_button_close(scroll_state, focus_element) {
+        try {
+            window.history.replaceState(
+                this._pre_modal_history_state ?? null,
+                '',
+                window.location.href
+            );
+        } catch (e) {
+            /* ignore */
+        }
+        this._pre_modal_history_state = null;
+        this._schedule_post_close_ui_restore(scroll_state, focus_element);
     }
 
     /**
@@ -285,6 +386,8 @@ export class ModalComponent {
         this._scroll_state = null;
         this._close_started = false;
         this._pending_on_closed = null;
+        this._scroll_lock_refs = null;
+        this._pre_modal_history_state = null;
         this._reset_body_scroll_lock();
     }
 
@@ -344,19 +447,9 @@ export class ModalComponent {
         this.root.appendChild(this.dialog_element_ref);
         this.root.setAttribute('aria-hidden', 'false');
 
-        this._scroll_state = {
-            windowY: window.scrollY,
-            appContainer: null,
-            mainViewRoot: null
-        };
+        this._scroll_state = this._capture_scroll_state();
         const app_container = document.getElementById('app-container');
         const main_view_root = document.getElementById('app-main-view-root');
-        if (app_container && app_container.scrollTop !== undefined) {
-            this._scroll_state.appContainer = app_container.scrollTop;
-        }
-        if (main_view_root && main_view_root.scrollTop !== undefined) {
-            this._scroll_state.mainViewRoot = main_view_root.scrollTop;
-        }
 
         if (is_debug_modal_scroll()) {
             const debug_count = { n: 0 };
@@ -378,12 +471,7 @@ export class ModalComponent {
             consoleManager.log('[GV-ModalDebug] Modal ÖPPNAS – scroll:', this._scroll_state);
         }
 
-        document.documentElement.style.overflow = 'hidden';
-        document.body.style.overflow = 'hidden';
-        document.body.style.position = 'fixed';
-        document.body.style.top = `-${this._scroll_state.windowY}px`;
-        document.body.style.left = '0';
-        document.body.style.right = '0';
+        this._apply_scroll_lock();
 
         this.dialog_element_ref.showModal();
         heading.focus({ preventScroll: true });
@@ -411,7 +499,7 @@ export class ModalComponent {
 
         const focus_element = this.pending_focus_element ?? this.focus_before_open;
 
-        const scroll_state = this._scroll_state || { windowY: 0, appContainer: null, mainViewRoot: null };
+        const scroll_state = this._scroll_state || this._capture_scroll_state();
         this._scroll_state = null;
 
         const debug_observer = this._debug_observer;
@@ -439,6 +527,7 @@ export class ModalComponent {
             this.pending_focus_element = null;
             this._debug_observer = null;
             this._modal_history_id = null;
+            this._pre_modal_history_state = null;
             this._history_state_pushed = false;
             this._close_triggered_by_popstate = false;
             this._close_started = false;
@@ -454,87 +543,39 @@ export class ModalComponent {
                 }
             }
 
-            const app_container = document.getElementById('app-container');
-            const main_view_root = document.getElementById('app-main-view-root');
-            if (app_container && scroll_state.appContainer !== null) {
-                app_container.scrollTop = scroll_state.appContainer;
-            }
-            if (main_view_root && scroll_state.mainViewRoot !== null) {
-                main_view_root.scrollTop = scroll_state.mainViewRoot;
-            }
-
-            window.scrollTo(0, scroll_state.windowY);
-            document.documentElement.scrollTop = scroll_state.windowY;
-            document.body.scrollTop = scroll_state.windowY;
+            this._restore_scroll_position(scroll_state);
 
             if (is_debug_modal_scroll()) {
+                const app_container = document.getElementById('app-container');
+                const main_view_root = document.getElementById('app-main-view-root');
                 consoleManager.log('[GV-ModalDebug] Efter sync restore:', {
                     w: window.scrollY,
                     ac: app_container?.scrollTop,
                     mvr: main_view_root?.scrollTop
                 });
             }
-
-            requestAnimationFrame(() => {
-                window.scrollTo(0, scroll_state.windowY);
-                document.documentElement.scrollTop = scroll_state.windowY;
-                document.body.scrollTop = scroll_state.windowY;
-                if (app_container && scroll_state.appContainer !== null) {
-                    app_container.scrollTop = scroll_state.appContainer;
-                }
-                if (main_view_root && scroll_state.mainViewRoot !== null) {
-                    main_view_root.scrollTop = scroll_state.mainViewRoot;
-                }
-            });
-
-            setTimeout(() => {
-                window.scrollTo(0, scroll_state.windowY);
-                document.documentElement.scrollTop = scroll_state.windowY;
-                document.body.scrollTop = scroll_state.windowY;
-                if (app_container && scroll_state.appContainer !== null) {
-                    app_container.scrollTop = scroll_state.appContainer;
-                }
-                if (main_view_root && scroll_state.mainViewRoot !== null) {
-                    main_view_root.scrollTop = scroll_state.mainViewRoot;
-                }
-                if (is_debug_modal_scroll()) {
-                    consoleManager.log('[GV-ModalDebug] Efter setTimeout(0) restore:', {
-                        w: window.scrollY,
-                        ac: app_container?.scrollTop,
-                        mvr: main_view_root?.scrollTop
-                    });
-                }
-                requestAnimationFrame(() => {
-                    if (focus_element && document.contains(focus_element)) {
-                        try {
-                            focus_element.focus({ preventScroll: true });
-                        } catch (e) {
-                            focus_element.focus();
-                        }
-                    }
-                    if (is_debug_modal_scroll()) {
-                        consoleManager.log('[GV-ModalDebug] Efter fokus:', {
-                            w: window.scrollY,
-                            ac: document.getElementById('app-container')?.scrollTop,
-                            mvr: document.getElementById('app-main-view-root')?.scrollTop
-                        });
-                        if (debug_observer) {
-                            debug_observer.disconnect();
-                            consoleManager.log('[GV-ModalDebug] MutationObserver stoppad. Totalt mutationer:', debug_mutation_count);
-                        }
-                    }
-                });
-            });
         };
 
         do_cleanup();
 
-        if (should_pop_history_entry && typeof window !== 'undefined' && window.history) {
-            try {
-                window.history.back();
-            } catch (e) {
-                /* ignore */
-            }
+        if (should_pop_history_entry) {
+            this._finalize_modal_history_on_button_close(scroll_state, focus_element);
+        } else {
+            this._schedule_post_close_ui_restore(scroll_state, focus_element);
+        }
+
+        if (is_debug_modal_scroll()) {
+            setTimeout(() => {
+                if (debug_observer) {
+                    debug_observer.disconnect();
+                    consoleManager.log('[GV-ModalDebug] MutationObserver stoppad. Totalt mutationer:', debug_mutation_count);
+                }
+                consoleManager.log('[GV-ModalDebug] Efter fokus:', {
+                    w: window.scrollY,
+                    ac: document.getElementById('app-container')?.scrollTop,
+                    mvr: document.getElementById('app-main-view-root')?.scrollTop
+                });
+            }, 0);
         }
     }
 
@@ -543,7 +584,7 @@ export class ModalComponent {
         if (!dialog) return;
 
         const prefers_reduced_motion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        const transition_duration = prefers_reduced_motion ? 0 : 200;
+        const transition_duration = prefers_reduced_motion ? 0 : MODAL_TRANSITION_MS;
 
         if (transition_duration > 0) {
             dialog.classList.remove('modal-dialog--visible');

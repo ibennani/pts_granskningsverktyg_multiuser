@@ -15,16 +15,13 @@ import path from 'path';
 /** Tunna bryggor som måste finnas kvar (bygg ut listan när nya tillkommer). */
 const REQUIRED_JS_REEXPORT_BRIDGES = [
     'js/state/index.js',
-    'js/state/actionTypes.js',
     'js/audit_logic.js',
     'js/logic/ScoreCalculator.js',
-    'js/logic/audit_list_progress.js',
-    'js/logic/audit_sync_tracking.js',
     'js/logic/sanitize_persisted_app_state.js',
+    'js/logic/table_pagination_logic.js',
     'js/logic/requirement_lookup.js',
     'js/logic/rulefile_updater_logic.js',
     'js/components/SideMenuComponent.js',
-    'js/components/requirement_audit/krav_vy_knapp_debug_log.js',
     'js/utils/string_filter_normalize.js',
     'js/utils/requirement_search_utils.js',
     'js/utils/vite_dev_client_timestamp.js',
@@ -127,7 +124,7 @@ function write_missing_bridges (cwd) {
         fs.mkdirSync(path.dirname(abs), { recursive: true });
         fs.writeFileSync(abs, bridge_body_for(rel), 'utf8');
         written += 1;
-        console.info(`Skrev brygga: ${rel}`);
+        console.log(`Skrev brygga: ${rel}`);
     }
     return written;
 }
@@ -140,7 +137,7 @@ const js_only = all_files.filter((p) => p.endsWith('.js'));
 const do_fix = process.argv.includes('--fix');
 if (do_fix) {
     const n = write_missing_bridges(cwd);
-    if (n === 0) console.info('Inga saknade bryggor att skriva.');
+    if (n === 0) console.log('Inga saknade bryggor att skriva.');
 }
 
 const issues_bridge = verify_required_bridges(cwd);
@@ -153,6 +150,6 @@ if (all_issues.length) {
     process.exit(1);
 }
 
-console.info(
+console.log(
     'OK: obligatoriska bryggor finns, inga .js-filer importerar endast-.ts-mål, alla relativa .js-importmål löser sig.'
 );

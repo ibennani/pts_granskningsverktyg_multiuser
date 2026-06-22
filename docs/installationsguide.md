@@ -1,7 +1,7 @@
 # Installationsguide – Leffe
 
-**Version:** 1.3  
-**Datum:** 2026-06-09
+**Version:** 1.1  
+**Datum:** 2026-03-27
 
 ## Innehållsförteckning
 
@@ -70,10 +70,10 @@ npm install
 ### Steg 4: Verifiera installation (minimalt)
 
 ```bash
-npm run check
+npm run lint
 ```
 
-(`check` = lint, export-facades, importkontroller, audit-logic-strict, TypeScript, Jest.) Full kontroll inför release: `npm run check:full`.
+(Valfritt) Kör enhetstester: `npm test`.
 
 ### Steg 5: Starta utvecklingsmiljö
 
@@ -81,7 +81,7 @@ npm run check
 npm run dev
 ```
 
-Detta startar (enligt `package.json`): Docker med `docker compose -p sessionversion`, backend via nodemon som kör `tsx server/index.js` (port 3000), Vite (port 5173) med proxy `/v2/api` och `/v2/ws` mot backend, valfri ngrok-tunnel och byggstämpel-watcher.
+Detta startar (enligt `package.json`): Docker med `docker compose -p sessionversion`, backend (nodemon, port 3000), Vite (port 5173) med proxy `/v2/api` och `/v2/ws` mot backend, samt hjälpprocesser som kan vara konfigurerade i samma script.
 
 **Endast frontend (utan databas/backend):**
 ```bash
@@ -132,12 +132,11 @@ Faktiska nycklar för backend (databas, JWT, CORS m.m.) dokumenteras i serverns 
 
 1. `npm run dev` – inga uppenbara fel i terminalen.
 2. Öppna `http://localhost:5173` – startvy laddas (efter inloggning om server krävs).
-3. `npm run check` ska gå igenom.
+3. `npm run lint` ska gå igenom.
 4. E2E (kräver att appen svarar på baseURL):
    ```bash
-   npm run test:e2e:smoke
+   npx playwright test
    ```
-   Full svit: `npm run test:e2e`.
 
 ### Produktionsmiljö
 
@@ -162,11 +161,8 @@ Faktiska nycklar för backend (databas, JWT, CORS m.m.) dokumenteras i serverns 
 ### Debugging
 
 ```bash
-# Playwright med inspector
 PWDEBUG=1 npx playwright test
-
-# Vite debug (endast frontend)
-npx vite --debug
+npm run dev -- --debug
 ```
 
 ## 7. Uppdateringar

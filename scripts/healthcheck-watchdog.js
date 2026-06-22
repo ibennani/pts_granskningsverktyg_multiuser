@@ -3,9 +3,6 @@
  * Watchdog som kontrollerar backend var minut.
  * Om /api/health inte svarar 200 – startar om PM2.
  * Körs med PM2: npx pm2 start scripts/healthcheck-watchdog.js --name granskningsverktyget-watchdog
- *
- * Docker Compose-projektnamn ska matcha name: i docker-compose.yml (standard sessionversion).
- * Överstyr med GV_DOCKER_PROJECT vid behov (t.ex. äldre server med annat projektnamn).
  */
 import { execSync } from 'child_process';
 
@@ -13,7 +10,7 @@ const INTERVAL_MS = 60 * 1000;
 const HEALTH_URL = 'http://localhost:3000/api/health';
 const APP_NAME = 'granskningsverktyget-v2';
 const PROJECT_DIR = process.env.GV_SERVER_DIR || '/var/www/granskningsverktyget-v2';
-const DOCKER_PROJECT = process.env.GV_DOCKER_PROJECT || 'sessionversion';
+const DOCKER_PROJECT = process.env.GV_DOCKER_PROJECT || 'granskningsverktyget-v2';
 const DB_CONTAINER = process.env.GV_DB_CONTAINER || 'granskningsverktyget-db';
 
 function safe_exec(cmd) {
@@ -53,9 +50,9 @@ async function check() {
     const ts = new Date().toISOString();
     const db = ensure_postgres_running();
     if (!db.ok) {
-        console.info(`[watchdog] ${ts} Postgres verkar nere (${db.reason}) – försökte starta. docker ps:\n${db.ps || '(ingen output)'}`);
+        console.log(`[watchdog] ${ts} Postgres verkar nere (${db.reason}) – försökte starta. docker ps:\n${db.ps || '(ingen output)'}`);
     }
-    console.info(`[watchdog] ${ts} Backend svarar inte – startar om ${APP_NAME}`);
+    console.log(`[watchdog] ${ts} Backend svarar inte – startar om ${APP_NAME}`);
     try {
         execSync(`npx pm2 restart ${APP_NAME}`, { stdio: 'inherit' });
     } catch (e) {

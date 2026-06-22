@@ -1,7 +1,6 @@
 import { existsSync, mkdirSync, cpSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { inject_dist_build_metadata } from './inject_dist_build_metadata.js';
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const projectRoot = join(__dirname, '..');
 const distDir = join(projectRoot, 'dist');
@@ -19,7 +18,7 @@ if (!existsSync(distDir)) {
 }
 
 for (const relativePath of foldersToCopy) {
-  console.info(`[postbuild-copy] Processing: ${relativePath}`);
+  console.log(`[postbuild-copy] Processing: ${relativePath}`);
   const sourcePath = join(projectRoot, relativePath);
   const targetPath = join(distDir, relativePath);
 
@@ -33,7 +32,7 @@ for (const relativePath of foldersToCopy) {
   try {
     mkdirSync(targetPath, { recursive: true });
     cpSync(sourcePath, targetPath, { recursive: true });
-    console.info(`[postbuild-copy] Successfully copied ${relativePath}`);
+    console.log(`[postbuild-copy] Successfully copied ${relativePath}`);
   } catch (error) {
     console.error(
       `[postbuild-copy] Failed to copy ${relativePath}:`,
@@ -43,8 +42,7 @@ for (const relativePath of foldersToCopy) {
   }
 }
 
-// Produktion: skriv aktuell byggtid till dist (build-info.js + index.html) efter varje build.
-inject_dist_build_metadata(distDir, { at: new Date() });
-console.info('[postbuild-copy] Uppdaterade dist/build-info.js med byggtid.');
+// build-info.js och byggstämpel i index.html skrivs redan i Vite closeBundle
+// (inject_dist_build_metadata) före service worker / precache.
 
 console.info('[postbuild-copy] Completed successfully');

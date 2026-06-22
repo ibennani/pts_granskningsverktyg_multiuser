@@ -30,17 +30,17 @@ async function main() {
     }
 
     try {
-        console.info('[set-user-admin-remote] Kopierar set_user_admin.js till servern...');
+        console.log('[set-user-admin-remote] Kopierar set_user_admin.js till servern...');
         const scriptPath = join(projectRoot, 'server', 'scripts', 'set_user_admin.js');
         await putFile(scriptPath, `${remotePath}/server/scripts/set_user_admin.js`);
 
         const flag = admin_flag === 'false' ? 'false' : 'true';
-        console.info('[set-user-admin-remote] Sätter admin för', username, 'till', flag, 'på servern...');
+        console.log('[set-user-admin-remote] Sätter admin för', username, 'till', flag, 'på servern...');
         const esc = (s) => String(s).replace(/'/g, "'\\''");
         await exec(
             `node server/scripts/set_user_admin.js '${esc(username)}' ${flag}`
         );
-        console.info('[set-user-admin-remote] Klart.');
+        console.log('[set-user-admin-remote] Klart.');
     } catch (err) {
         console.error('[set-user-admin-remote] Fel:', err.message);
         process.exit(1);

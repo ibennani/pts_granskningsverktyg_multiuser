@@ -44,43 +44,13 @@ describe('audit_open_logic', () => {
         expect(router).toHaveBeenCalledWith('sample_management', {});
     });
 
-    test('navigate_to_default_audit_view: not_started med stickprov utan sparad metadata → metadata', () => {
+    test('navigate_to_default_audit_view: not_started med stickprov → metadata', () => {
         const router = jest.fn();
         navigate_to_default_audit_view(
-            {
-                auditStatus: 'not_started',
-                samples: [{}],
-                auditMetadata: { actorName: '', auditorName: '' }
-            },
+            { auditStatus: 'not_started', samples: [{}] },
             router
         );
         expect(router).toHaveBeenCalledWith('metadata', {});
-    });
-
-    test('navigate_to_default_audit_view: not_started med stickprov och sparad metadata → sample_management', () => {
-        const router = jest.fn();
-        navigate_to_default_audit_view(
-            {
-                auditStatus: 'not_started',
-                samples: [{}],
-                auditMetadata: { actorName: 'Aktör AB', auditorName: 'Anna' }
-            },
-            router
-        );
-        expect(router).toHaveBeenCalledWith('sample_management', {});
-    });
-
-    test('navigate_to_default_audit_view: not_started utan stickprov men sparad metadata → sample_management', () => {
-        const router = jest.fn();
-        navigate_to_default_audit_view(
-            {
-                auditStatus: 'not_started',
-                samples: [],
-                auditMetadata: { actorName: 'X', auditorName: 'Y' }
-            },
-            router
-        );
-        expect(router).toHaveBeenCalledWith('sample_management', {});
     });
 
     test('navigate_to_default_audit_view: annan status → audit_overview', () => {

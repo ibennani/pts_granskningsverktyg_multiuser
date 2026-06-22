@@ -1,7 +1,7 @@
 # Testplan och testfall: Leffe
 
-**Version:** 1.2  
-**Datum:** 2026-06-09
+**Version:** 1.1  
+**Datum:** 2026-03-27
 
 ## 1. Introduktion
 

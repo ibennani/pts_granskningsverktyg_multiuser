@@ -6,7 +6,8 @@
 import express from 'express';
 import { query } from '../db.js';
 import { requireAdmin } from '../auth/middleware.js';
-import { import_payload_rate_limiter } from '../middleware/rateLimiter.js';
+import { import_payload_rate_limiter, media_upload_rate_limiter } from '../middleware/rateLimiter.js';
+import { register_audit_media_routes } from './audit_media_routes.js';
 import { attach_export_integrity_server_payload } from '../utils/export_integrity_node.js';
 import { build_statistics_from_audit_rows } from '../audit_aggregated_statistics.js';
 import { parse_audit_part_key } from '../../shared/audit/audit_part_keys.js';
@@ -279,6 +280,8 @@ router.post('/', async (req: Request, res: Response) => {
         res.status(500).json({ error: 'Kunde inte skapa granskning' });
     }
 });
+
+register_audit_media_routes(router, media_upload_rate_limiter);
 
 register_audit_import_route(router, import_payload_rate_limiter);
 

@@ -107,6 +107,6 @@
     font-weight: 400;
 }
 
-[data-theme="dark"] .content-type-tag {
+[data-theme="dark"] .content-type-tag , [data-theme="dark-experimental"] .content-type-tag {
     /* Inga specifika ändringar behövs */
 }

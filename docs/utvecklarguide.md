@@ -1,7 +1,7 @@
 # Utvecklarguide – Leffe
 
-**Version:** 1.3  
-**Datum:** 2026-06-09
+**Version:** 1.0  
+**Datum:** 2025-01-27
 
 ## Innehållsförteckning
 
@@ -34,20 +34,17 @@
 
 ### Miljövariabler
 
-Skapa `.env` i projektroten (gitignorerad). Backend läser den via `dotenv` i `server/index.js`. Exempel för lokal utveckling:
+Skapa `.env.local` för lokala inställningar:
 
 ```bash
-# Backend
+# Utveckling
 NODE_ENV=development
-DATABASE_URL=postgresql://granskning:granskning@localhost:5432/granskningsverktyget
-API_PORT=3000
-JWT_SECRET=din-hemliga-nyckel
+VITE_APP_DEBUG=true
+VITE_APP_LOG_LEVEL=debug
 
-# Klienten anropar API via Vite-proxy — ingen VITE_API_BASE_URL behövs i normal dev:
-# http://localhost:5173/v2/api/... → backend localhost:3000/api/...
+# API-endpoints (om relevant)
+VITE_API_BASE_URL=http://localhost:3000/api
 ```
-
-Deploy-relaterade variabler (`DEPLOY_SSH_PASSWORD`, `PUBLIC_APP_URL`, `ALLOWED_ORIGINS` m.m.) beskrivs i `docs/deploy-v2-workflow.md`.
 
 ## 2. Projektarkitektur
 
@@ -56,32 +53,27 @@ Deploy-relaterade variabler (`DEPLOY_SSH_PASSWORD`, `PUBLIC_APP_URL`, `ALLOWED_O
 ```
 Leffe (projektmapp)/
 ├── js/
-│   ├── main.js                 # Bootstrap, deps, global chrome
-│   ├── state.js               # Re-export av state-API
-│   ├── state/                 # index.ts, reducers
-│   ├── components/            # UI-komponenter (klasser + legacy)
-│   ├── logic/                 # router, view_render, app_bootstrap, autospar
-│   ├── export/                # Exportmoduler
-│   ├── sync/                  # Serversynk (audit_sync_service, rulefile_sync)
-│   ├── features/              # Domänspecifika funktioner (t.ex. markdown_toolbar)
-│   ├── api/                   # REST-klient
+│   ├── main.js                 # Applikationsstartpunkt
+│   ├── state.js               # State management
+│   ├── components/             # UI-komponenter
+│   ├── logic/                 # Affärslogik
+│   ├── utils/                 # Hjälpfunktioner
 │   └── i18n/                  # Språkfiler
-├── server/                    # Express, PostgreSQL, JWT
-├── shared/                    # Gemensam klient/server-kod
 ├── css/
-├── tests/
-└── docs/
+│   ├── style.css              # Globala stilar
+│   ├── components/            # Komponentspecifika stilar
+│   └── features/              # Funktionsspecifika stilar
+├── tests/                     # Tester
+└── docs/                      # Dokumentation
 ```
 
 ### Arkitekturprinciper
 
-1. **Modulär design**: Varje komponent är en ES6-modul (`.ts` eller `.js`)
+1. **Modulär design**: Varje komponent är en ES6-modul
 2. **Separation of concerns**: UI, logik och data är separerade
-3. **Komponentbaserat**: Vykomponenter som klasser; legacy sektioner som objektliteral
-4. **State management**: Centraliserad state i `js/state/` (publik yta via `js/state.js`)
-5. **Internationalisering**: `sv-SE`, `en-GB`, `nb-NO` under `js/i18n/`
-6. **TypeScript-migrering**: Nya moduler skrivs som `.ts`; import med `.js`-suffix och Vite `extensionAlias`
-7. **Delat lager**: `shared/` för kod som används av både klient och server
+3. **Komponentbaserat**: Återanvändbara UI-komponenter
+4. **State management**: Centraliserad state med Redux-liknande pattern
+5. **Internationalisering**: Språkstöd via JSON-filer
 
 ### Dataflöde
 
@@ -107,8 +99,8 @@ const is_logged_in = true;
 function calculate_score() { }
 const handle_click = () => { };
 
-// Komponenter: PascalCase (klass eller objektliteral)
-export class UserViewComponent { ... }
+// Komponenter: PascalCase
+export const UserComponent = { ... };
 
 // Konstanter: UPPER_SNAKE_CASE
 const API_BASE_URL = 'https://api.example.com';
@@ -211,13 +203,13 @@ function calculateQualityScore(auditData) {
    ```bash
    # Gör ändringar
    git add .
-   git commit -m "Lägg till: Kort beskrivning av vad användaren kan göra"
+   git commit -m "feat: lägg till ny funktion"
    ```
 
 3. **Testa ändringar**
    ```bash
-   npm run check
-   npm run test:e2e:smoke
+   npm run lint
+   npm run test:e2e
    ```
 
 4. **Pusha och skapa PR**
@@ -228,16 +220,22 @@ function calculateQualityScore(auditData) {
 
 ### Commit-meddelanden
 
-**Alltid på svenska** (se `.cursor/rules/00-project-rules.mdc`). Beskriv vad användaren upplever, inte filnamn eller kodstrukturer.
+Följ [Conventional Commits](https://www.conventionalcommits.org/):
 
 ```bash
-# Exempel (en ändring)
-Fixa: Bristindex visas nu korrekt när sidan laddas
+# Typer
+feat: ny funktion
+fix: buggfix
+docs: dokumentation
+style: formatering
+refactor: omstrukturering
+test: tester
+chore: underhåll
 
-# Exempel (flera ändringar)
-Uppdatera: Flera funktioner för bättre användarupplevelsen
-- Ändrat sortering av kravlistan så att krav sorteras efter prioritet
-- Lagt till export till Word sorterat på stickprov
+# Exempel
+feat: lägg till export till Word-format
+fix: korrigera validering av regelfiler
+docs: uppdatera användarmanual
 ```
 
 ### Code Review
@@ -252,24 +250,7 @@ Uppdatera: Flera funktioner för bättre användarupplevelsen
 
 ## 5. Komponentutveckling
 
-Ny kod ska följa **klassmönstret** och registreras i `js/logic/view_components_index.js`. Se `docs/component_standard.md`.
-
-### Komponentstruktur (klass, rekommenderat)
-
-```javascript
-// js/components/ExampleViewComponent.ts
-export class ExampleViewComponent {
-    async init({ root, deps }) {
-        this.root = root;
-        this.deps = deps;
-        // ...
-    }
-    render() { /* ... */ }
-    destroy() { /* ... */ }
-}
-```
-
-### Legacy-exempel (objektliteral)
+### Komponentstruktur
 
 ```javascript
 // js/components/ExampleComponent.js
@@ -402,7 +383,7 @@ export const ExampleComponent = {
 
 ## 6. State Management
 
-För **var data sparas**, **cold start med backup** och **när server synkas**, se `docs/state_and_persistence.md`. Reducerlogiken ligger i `js/state/index.ts` och tillhörande filer under `js/state/` (publik yta via `js/state.js`).
+För **var data sparas**, **cold start med backup** och **när server synkas**, se `docs/state_and_persistence.md`. Reducerlogiken ligger i `js/state/index.js` och tillhörande filer (inte längre en enda stor `state.js`-fil).
 
 ### State-struktur
 
@@ -450,13 +431,10 @@ const initial_state = {
 
 ### Actions
 
-Fullständig lista finns i `js/state/actionTypes.ts` (exporteras som `StoreActionTypes`). Urval:
-
 ```javascript
-// Action types (exporteras som StoreActionTypes) — urval
+// Action types (exporteras som StoreActionTypes)
 export const ActionTypes = {
     INITIALIZE_NEW_AUDIT: 'INITIALIZE_NEW_AUDIT',
-    DISCARD_PREPARED_AUDIT: 'DISCARD_PREPARED_AUDIT',
     INITIALIZE_RULEFILE_EDITING: 'INITIALIZE_RULEFILE_EDITING',
     LOAD_AUDIT_FROM_FILE: 'LOAD_AUDIT_FROM_FILE',
     UPDATE_METADATA: 'UPDATE_METADATA',
@@ -479,10 +457,7 @@ export const ActionTypes = {
     DELETE_REQUIREMENT_DEFINITION: 'DELETE_REQUIREMENT_DEFINITION',
     DELETE_CHECK_FROM_REQUIREMENT: 'DELETE_CHECK_FROM_REQUIREMENT',
     DELETE_CRITERION_FROM_CHECK: 'DELETE_CRITERION_FROM_CHECK',
-    SET_RULEFILE_EDIT_BASELINE: 'SET_RULEFILE_EDIT_BASELINE',
-    SET_REMOTE_AUDIT_ID: 'SET_REMOTE_AUDIT_ID',
-    REPLACE_STATE_FROM_REMOTE: 'REPLACE_STATE_FROM_REMOTE',
-    REPLACE_RULEFILE_FROM_REMOTE: 'REPLACE_RULEFILE_FROM_REMOTE'
+    SET_RULEFILE_EDIT_BASELINE: 'SET_RULEFILE_EDIT_BASELINE'
 };
 
 // Användning i komponenter
@@ -500,7 +475,7 @@ await dispatch({
 
 ### Reducers
 
-Reducer-funktionen (`root_reducer`) finns i `js/state/index.ts` och hanterar alla action types. Den är privat och anropas internt av `dispatch()`-funktionen.
+Reducer-funktionen (`root_reducer`) finns i `js/state/index.js` och hanterar alla action types. Den är privat och anropas internt av `dispatch()`-funktionen.
 
 **Viktigt:** Reducer-funktionen är inte direkt tillgänglig utanför `state.js`. Använd `dispatch()` för att uppdatera state.
 

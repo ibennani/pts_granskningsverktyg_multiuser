@@ -1693,6 +1693,7 @@ export class RequirementAuditComponent {
                 getAuditId: () => this.getState()?.auditId || this.params?.auditId || this.params?.id,
                 getSampleId: () => this.params?.sampleId,
                 getRequirementMapKey: () => this.requirement_map_key,
+                getState: () => this.getState(),
                 getPcObservationDraft: (check_id, pc_id) => this._get_pc_observation_draft(check_id, pc_id)
             }
         );

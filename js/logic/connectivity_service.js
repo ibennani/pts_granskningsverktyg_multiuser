@@ -211,6 +211,21 @@ async function handle_online_event() {
     if (typeof window === 'undefined') return;
     clear_offline_banner();
     await attempt_pending_sync_flush({ show_success_on_cleared_pending: true });
+    await flush_pending_media_deletes_on_online();
+}
+
+async function flush_pending_media_deletes_on_online() {
+    const getState = get_state_fn;
+    if (typeof getState !== 'function') return;
+    const state = getState();
+    if (!state?.auditId) return;
+    try {
+        const { flush_pending_media_deletes_for_state } = await import('../sync/pending_audit_media_deletes.js');
+        const { collect_attached_media_filenames } = await import('./audit_attached_media_references.js');
+        await flush_pending_media_deletes_for_state(state, (s) => collect_attached_media_filenames(s));
+    } catch (err) {
+        console.error('[connectivity] flush pending media deletes failed:', err);
+    }
 }
 
 function handle_offline_event() {

@@ -1,6 +1,7 @@
 // js/components/audit_view/AuditRequirementSection.js
 // Bygger vänsterkolumnen: regelfiler (publicerade + arbetskopior).
 import { create_rule_table_columns } from '../../utils/rule_table_columns.js';
+import { clamp_page_index } from '../../logic/table_pagination_logic.js';
 
 export function render_audit_requirement_section(ctx) {
     const t = ctx.get_t_func();
@@ -37,6 +38,20 @@ export function render_audit_requirement_section(ctx) {
     const rule_columns = create_rule_table_columns(rules_table_deps, rules_table_handlers);
     const draft_rules_table_deps = { ...rules_table_deps, is_draft_table: true };
     const draft_rule_columns = create_rule_table_columns(draft_rules_table_deps, rules_table_handlers);
+    const page_size_num = ctx.get_audit_table_page_size_number();
+    const pub_total = (ctx.published_rules || []).length;
+    ctx._rulesPublishedPage = clamp_page_index(ctx._rulesPublishedPage ?? 0, pub_total, page_size_num);
+    const pub_pagination =
+        page_size_num !== null && pub_total > 0
+            ? {
+                current_page: ctx._rulesPublishedPage,
+                page_size: page_size_num,
+                on_page_change: (p) => {
+                    ctx._rulesPublishedPage = p;
+                    ctx.render();
+                }
+            }
+            : undefined;
     ctx._publishedRulesTable?.render({
         root: rules_table_wrapper,
         columns: rule_columns,
@@ -51,7 +66,8 @@ export function render_audit_requirement_section(ctx) {
             ctx.render();
         },
         t: ctx.Translation.t.bind(ctx.Translation),
-        getRowId: (row) => row?.id
+        getRowId: (row) => row?.id,
+        pagination: pub_pagination
     });
     left_col.appendChild(rules_table_wrapper);
 
@@ -90,6 +106,19 @@ export function render_audit_requirement_section(ctx) {
         attributes: { id: 'audit-draft-rules-wrapper' }
     });
     ctx._draftRulesTableSortState = ctx._draftRulesTableSortState ?? { columnIndex: 0, direction: 'asc' };
+    const draft_total = (ctx.production_rules || []).length;
+    ctx._rulesDraftPage = clamp_page_index(ctx._rulesDraftPage ?? 0, draft_total, page_size_num);
+    const draft_pagination =
+        page_size_num !== null && draft_total > 0
+            ? {
+                current_page: ctx._rulesDraftPage,
+                page_size: page_size_num,
+                on_page_change: (p) => {
+                    ctx._rulesDraftPage = p;
+                    ctx.render();
+                }
+            }
+            : undefined;
     ctx._draftRulesTable?.render({
         root: draft_rules_table_wrapper,
         columns: draft_rule_columns,
@@ -104,7 +133,8 @@ export function render_audit_requirement_section(ctx) {
             ctx.render();
         },
         t: ctx.Translation.t.bind(ctx.Translation),
-        getRowId: (row) => row?.id
+        getRowId: (row) => row?.id,
+        pagination: draft_pagination
     });
     draft_section.appendChild(draft_rules_table_wrapper);
     left_col.appendChild(draft_section);

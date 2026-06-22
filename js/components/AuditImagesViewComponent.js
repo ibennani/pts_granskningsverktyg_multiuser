@@ -1,5 +1,4 @@
 import { get_current_user_name } from '../utils/helpers.js';
-import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import './audit_images_view_component.css';
 import { build_compact_hash_fragment } from '../logic/router_url_codec.js';
 import { get_requirement_public_key, find_requirement_definition, definition_primary_id, resolve_map_entry } from '../audit_logic.ts';
@@ -9,6 +8,17 @@ import {
     build_audit_images_structure_fingerprint,
     get_audit_images_card_count_label
 } from '../logic/audit_images_view_incremental.js';
+import { sort_audit_image_card_groups } from '../logic/sample_attached_media_normalize.js';
+import {
+    create_sample_screenshot_card,
+    group_key_for_image_item,
+    is_sample_screenshot_media_item,
+    open_sample_screenshot_attach_modal,
+    patch_sample_screenshot_card
+} from './audit_images_sample_screenshot.js';
+import { open_attach_media_modal } from './media/AttachMediaModal.js';
+import { fill_audit_media_filenames_list, revoke_audit_media_blob_urls } from './media/render_audit_media_list_item.js';
+import { collect_attached_media_filenames } from '../logic/audit_attached_media_references.js';
 
 export class AuditImagesViewComponent {
     constructor() {
@@ -25,6 +35,7 @@ export class AuditImagesViewComponent {
         this.unsubscribe = null;
         this.plate_element_ref = null;
         this.list_wrapper_ref = null;
+        this.images_h1_ref = null;
         this.is_dom_initialized = false;
         this._last_images_fingerprint = null;
         this._last_images_structure_fingerprint = null;
@@ -45,9 +56,13 @@ export class AuditImagesViewComponent {
         if (this.Helpers?.load_css && this.CSS_PATH) {
             await this.Helpers.load_css(this.CSS_PATH).catch(() => {});
         }
+        if (this.Helpers?.load_css) {
+            await this.Helpers.load_css('../css/components/attach_media_modal.css').catch(() => {});
+        }
 
         this.handle_requirement_link_click = this.handle_requirement_link_click.bind(this);
         this.handle_attach_media_click = this.handle_attach_media_click.bind(this);
+        this.handle_sample_attach_media_click = this.handle_sample_attach_media_click.bind(this);
 
         this.unsubscribe = null;
         if (typeof deps.subscribe === 'function') {
@@ -74,9 +89,18 @@ export class AuditImagesViewComponent {
         }
     }
 
+    handle_sample_attach_media_click(event) {
+        const btn = event.target.closest('button[data-action="attach-sample-media"]');
+        if (!btn) return;
+        event.preventDefault();
+        const sample_id = btn.getAttribute('data-sample-id');
+        if (!sample_id) return;
+        open_sample_screenshot_attach_modal(this, sample_id, btn);
+    }
+
     handle_attach_media_click(event) {
         const btn = event.target.closest('button[data-action="attach-media"]');
-        if (!btn) return;
+        if (!btn || !this.Helpers?.create_element) return;
         event.preventDefault();
 
         const sample_id = btn.getAttribute('data-sample-id');
@@ -86,123 +110,157 @@ export class AuditImagesViewComponent {
         const pc_id = btn.getAttribute('data-pc-id');
         if (!sample_id || !req_id_public || !req_id_map || !check_id || !pc_id) return;
 
-        const ModalComponent = app_runtime_refs.modal_component;
-        if (!ModalComponent?.show || !this.Helpers?.create_element) return;
-
         const state = this.getState();
         const sample = state?.samples?.find((s) => String(s.id) === String(sample_id));
         const requirement_result_ref = sample?.requirementResults?.[req_id_map];
         if (!requirement_result_ref) return;
 
         const t = this.Translation.t;
-        ModalComponent.show(
-            {
-                h1_text: t('attach_media_modal_h1'),
-                message_text: t('attach_media_modal_intro')
-            },
-            (container, modal) => {
-                const form_group = this.Helpers.create_element('div', { class_name: 'form-group' });
-                const label = this.Helpers.create_element('label', {
-                    attributes: { for: 'attach-media-filenames' },
-                    text_content: t('attach_media_modal_filename_label')
-                });
-                form_group.appendChild(label);
+        const chk_resolved = resolve_map_entry(requirement_result_ref.checkResults, check_id);
+        const check_result_for_read = chk_resolved?.value;
+        const pc_resolved = check_result_for_read?.passCriteria
+            ? resolve_map_entry(check_result_for_read.passCriteria, pc_id)
+            : null;
+        const existing_filenames = pc_resolved?.value?.attachedMediaFilenames;
+        const initial_filenames = Array.isArray(existing_filenames) ? existing_filenames : [];
 
-                const chk_resolved = resolve_map_entry(requirement_result_ref.checkResults, check_id);
-                const check_result_for_read = chk_resolved?.value;
-                const pc_resolved = check_result_for_read?.passCriteria
-                    ? resolve_map_entry(check_result_for_read.passCriteria, pc_id)
+        open_attach_media_modal({
+            t,
+            Helpers: this.Helpers,
+            audit_id: state?.auditId ?? null,
+            initial_filenames,
+            textarea_id: 'attach-media-filenames-images-view',
+            media_scope: 'requirement',
+            trigger_element: btn,
+            get_still_referenced_filenames_after_save: (final_filenames) =>
+                collect_attached_media_filenames(state, {
+                    type: 'pc',
+                    sampleId: sample.id,
+                    requirementId: req_id_map,
+                    checkId: check_id,
+                    pcId: pc_id,
+                    filenames: final_filenames
+                }),
+            on_save: (filenames) => {
+                const chk_save = resolve_map_entry(requirement_result_ref.checkResults, check_id);
+                const check_result = chk_save?.value;
+                const pc_save = check_result?.passCriteria
+                    ? resolve_map_entry(check_result.passCriteria, pc_id)
                     : null;
-                const existing_filenames = pc_resolved?.value?.attachedMediaFilenames;
-                const initial_text = Array.isArray(existing_filenames) ? existing_filenames.join('\n') : '';
-                const textarea = this.Helpers.create_element('textarea', {
-                    id: 'attach-media-filenames',
-                    class_name: 'form-control',
-                    attributes: { rows: '3' }
-                });
-                textarea.value = initial_text;
-                if (this.Helpers?.init_auto_resize_for_textarea) {
-                    this.Helpers.init_auto_resize_for_textarea(textarea);
+                if (!pc_save?.value) return;
+
+                pc_save.value.attachedMediaFilenames = filenames;
+
+                const requirements = state?.ruleFileContent?.requirements;
+                const requirement = find_requirement_definition(requirements, req_id_public) || null;
+                if (requirement && this.AuditLogic) {
+                    (requirement.checks || []).forEach((check_def) => {
+                        const resolved = resolve_map_entry(
+                            requirement_result_ref.checkResults,
+                            definition_primary_id(check_def)
+                        );
+                        const check_res = resolved?.value;
+                        if (check_res) {
+                            check_res.status = this.AuditLogic.calculate_check_status(
+                                check_def,
+                                check_res.passCriteria,
+                                check_res.overallStatus
+                            );
+                        }
+                    });
+                    requirement_result_ref.status = this.AuditLogic.calculate_requirement_status(requirement, requirement_result_ref);
+                    requirement_result_ref.lastStatusUpdate = this.Helpers.get_current_iso_datetime_utc?.() || new Date().toISOString();
+                    requirement_result_ref.lastStatusUpdateBy = get_current_user_name();
                 }
-                form_group.appendChild(textarea);
-                container.appendChild(form_group);
 
-                const actions_wrapper = this.Helpers.create_element('div', { class_name: 'modal-attach-media-actions' });
-                const save_btn = this.Helpers.create_element('button', {
-                    class_name: ['button', 'button-primary'],
-                    text_content: t('attach_media_modal_save')
-                });
-                save_btn.addEventListener('click', () => {
-                    const raw = textarea.value || '';
-                    const trimmed_raw = this.Helpers?.trim_textarea_preserve_lines
-                        ? this.Helpers.trim_textarea_preserve_lines(raw)
-                        : raw;
-                    const filenames = trimmed_raw
-                        .split('\n')
-                        .map(s => s.trim())
-                        .filter(Boolean);
-                    const chk_save = resolve_map_entry(requirement_result_ref.checkResults, check_id);
-                    const check_result = chk_save?.value;
-                    const pc_save = check_result?.passCriteria
-                        ? resolve_map_entry(check_result.passCriteria, pc_id)
-                        : null;
-                    if (pc_save?.value) {
-                        pc_save.value.attachedMediaFilenames = filenames;
-
-                        const requirements = state?.ruleFileContent?.requirements;
-                        const requirement =
-                            find_requirement_definition(requirements, req_id_public) || null;
-                        if (requirement && this.AuditLogic) {
-                            (requirement.checks || []).forEach((check_def) => {
-                                const resolved = resolve_map_entry(
-                                    requirement_result_ref.checkResults,
-                                    definition_primary_id(check_def)
-                                );
-                                const check_res = resolved?.value;
-                                if (check_res) {
-                                    check_res.status = this.AuditLogic.calculate_check_status(
-                                        check_def,
-                                        check_res.passCriteria,
-                                        check_res.overallStatus
-                                    );
-                                }
-                            });
-                            requirement_result_ref.status = this.AuditLogic.calculate_requirement_status(requirement, requirement_result_ref);
-                            requirement_result_ref.lastStatusUpdate = this.Helpers.get_current_iso_datetime_utc?.() || new Date().toISOString();
-                            requirement_result_ref.lastStatusUpdateBy = get_current_user_name();
-                        }
-
-                        this.dispatch({
-                            type: this.StoreActionTypes.UPDATE_REQUIREMENT_RESULT,
-                            payload: {
-                                sampleId: sample.id,
-                                requirementId: req_id_map,
-                                newRequirementResult: requirement_result_ref,
-                                skip_render: true
-                            }
-                        });
-                        if (typeof this.deps?.refreshSideMenuAndTitle === 'function') {
-                            this.deps.refreshSideMenuAndTitle();
-                        }
-                        if (this.root && typeof this.render === 'function' && get_current_view_name() === 'audit_images') {
-                            this.render();
-                        }
+                this.dispatch({
+                    type: this.StoreActionTypes.UPDATE_REQUIREMENT_RESULT,
+                    payload: {
+                        sampleId: sample.id,
+                        requirementId: req_id_map,
+                        newRequirementResult: requirement_result_ref,
+                        skip_render: true
                     }
-                    modal.close(save_btn);
                 });
-                const discard_btn = this.Helpers.create_element('button', {
-                    class_name: ['button', 'button-default'],
-                    attributes: { type: 'button' },
-                    text_content: t('attach_media_modal_discard')
-                });
-                discard_btn.addEventListener('click', () => {
-                    modal.close(discard_btn);
-                });
-                actions_wrapper.appendChild(save_btn);
-                actions_wrapper.appendChild(discard_btn);
-                container.appendChild(actions_wrapper);
+                if (typeof this.deps?.refreshSideMenuAndTitle === 'function') {
+                    this.deps.refreshSideMenuAndTitle();
+                }
+                if (this.root && typeof this.render === 'function' && get_current_view_name() === 'audit_images') {
+                    this.render();
+                }
             }
-        );
+        });
+    }
+
+    _save_pc_observation_detail(sample_id, req_id_map, req_id_public, check_id, pc_id, text) {
+        const state = this.getState();
+        const sample = state?.samples?.find((s) => String(s.id) === String(sample_id));
+        const requirement_result_ref = sample?.requirementResults?.[req_id_map];
+        if (!requirement_result_ref) return;
+
+        const chk_save = resolve_map_entry(requirement_result_ref.checkResults, check_id);
+        const check_result = chk_save?.value;
+        const pc_save = check_result?.passCriteria
+            ? resolve_map_entry(check_result.passCriteria, pc_id)
+            : null;
+        if (!pc_save?.value) return;
+
+        pc_save.value.observationDetail = text;
+
+        const requirements = state?.ruleFileContent?.requirements;
+        const requirement = find_requirement_definition(requirements, req_id_public) || null;
+        if (requirement && this.AuditLogic) {
+            (requirement.checks || []).forEach((check_def) => {
+                const resolved = resolve_map_entry(
+                    requirement_result_ref.checkResults,
+                    definition_primary_id(check_def)
+                );
+                const check_res = resolved?.value;
+                if (check_res) {
+                    check_res.status = this.AuditLogic.calculate_check_status(
+                        check_def,
+                        check_res.passCriteria,
+                        check_res.overallStatus
+                    );
+                }
+            });
+            requirement_result_ref.status = this.AuditLogic.calculate_requirement_status(requirement, requirement_result_ref);
+            requirement_result_ref.lastStatusUpdate = this.Helpers.get_current_iso_datetime_utc?.() || new Date().toISOString();
+            requirement_result_ref.lastStatusUpdateBy = get_current_user_name();
+        }
+
+        this.dispatch({
+            type: this.StoreActionTypes.UPDATE_REQUIREMENT_RESULT,
+            payload: {
+                sampleId: sample.id,
+                requirementId: req_id_map,
+                newRequirementResult: requirement_result_ref,
+                skip_render: true
+            }
+        });
+        if (typeof this.deps?.refreshSideMenuAndTitle === 'function') {
+            this.deps.refreshSideMenuAndTitle();
+        }
+        if (this.root && typeof this.render === 'function' && get_current_view_name() === 'audit_images') {
+            this.render();
+        }
+    }
+
+    _build_observation_edit_options(group, public_req_id, check_id, pc_id, is_audit_locked) {
+        if (is_audit_locked || !check_id || !pc_id || !group?.sample?.id || !group?.reqId) {
+            return null;
+        }
+        return {
+            can_edit: true,
+            on_save: (text) => this._save_pc_observation_detail(
+                group.sample.id,
+                group.reqId,
+                public_req_id,
+                check_id,
+                pc_id,
+                text
+            )
+        };
     }
 
     render() {
@@ -221,13 +279,23 @@ export class AuditImagesViewComponent {
             this.is_dom_initialized = true;
         }
         const is_audit_locked = state.auditStatus === 'locked' || state.auditStatus === 'archived';
+        this._update_images_header(images, t);
         this._sync_image_cards(this.group_images_by_requirement_sample(images), images, t, is_audit_locked);
+    }
+
+    _update_images_header(images, t) {
+        if (!this.images_h1_ref) return;
+        const media_count = Array.isArray(images) ? images.length : 0;
+        this.images_h1_ref.textContent = media_count > 0
+            ? t('audit_images_title_with_count', { count: String(media_count) })
+            : t('audit_images_title');
     }
 
     _render_images_error_plate(title, message) {
         this.is_dom_initialized = false;
         this.plate_element_ref = null;
         this.list_wrapper_ref = null;
+        this.images_h1_ref = null;
         this._last_images_fingerprint = null;
         this._last_images_structure_fingerprint = null;
         this.root.innerHTML = '';
@@ -241,7 +309,11 @@ export class AuditImagesViewComponent {
         this.root.innerHTML = '';
         this.plate_element_ref = this.Helpers.create_element('div', { class_name: 'content-plate audit-images-plate' });
         this.root.appendChild(this.plate_element_ref);
-        this.plate_element_ref.appendChild(this.Helpers.create_element('h1', { text_content: t('audit_images_title') }));
+        this.images_h1_ref = this.Helpers.create_element('h1', {
+            id: 'main-content-heading',
+            attributes: { tabindex: '-1' }
+        });
+        this.plate_element_ref.appendChild(this.images_h1_ref);
         this.plate_element_ref.appendChild(this.Helpers.create_element('p', {
             class_name: 'audit-images-intro',
             text_content: t('audit_images_intro')
@@ -290,6 +362,12 @@ export class AuditImagesViewComponent {
     }
 
     _patch_image_card_filenames(group, t, is_audit_locked) {
+        const audit_id = this.getState()?.auditId ?? null;
+        if (group.is_sample_screenshot) {
+            patch_sample_screenshot_card(this.list_wrapper_ref, group, t, audit_id);
+            return;
+        }
+
         const card = this.list_wrapper_ref?.querySelector(
             `.audit-image-card[data-req-map-id="${CSS.escape(String(group.reqId || ''))}"][data-sample-id="${CSS.escape(String(group.sample?.id || ''))}"]`
         );
@@ -301,7 +379,7 @@ export class AuditImagesViewComponent {
         }
 
         const pc_groups = this.group_items_by_check_pc(group.items);
-        pc_groups.forEach(({ check_def, pc_def, check_index, pc_index, filenames }) => {
+        pc_groups.forEach(({ check_def, pc_def, check_index, pc_index, filenames, observation_detail }) => {
             const dom_check_id = definition_primary_id(check_def);
             const dom_pc_id = definition_primary_id(pc_def);
             if (!dom_check_id || !dom_pc_id) return;
@@ -313,10 +391,24 @@ export class AuditImagesViewComponent {
 
             const ul = section.querySelector('ul.audit-image-card__filenames');
             if (ul) {
-                ul.innerHTML = '';
-                filenames.forEach((fn) => {
-                    ul.appendChild(this.Helpers.create_element('li', { text_content: fn }));
-                });
+                const requirements = this.getState()?.ruleFileContent?.requirements;
+                const public_req_id = get_requirement_public_key(requirements, group.reqId) || String(group.reqId || '');
+                const observation_edit = this._build_observation_edit_options(
+                    group,
+                    public_req_id,
+                    dom_check_id,
+                    dom_pc_id,
+                    is_audit_locked
+                );
+                fill_audit_media_filenames_list(
+                    ul,
+                    this.Helpers,
+                    t,
+                    audit_id,
+                    filenames,
+                    observation_detail,
+                    observation_edit
+                );
             }
 
             const attach_btn = section.querySelector('button[data-action="attach-media"]');
@@ -339,9 +431,10 @@ export class AuditImagesViewComponent {
     group_images_by_requirement_sample(images) {
         const map = new Map();
         images.forEach((item) => {
-            const key = `${item.reqId}::${item.sample?.id || ''}`;
+            const key = group_key_for_image_item(item);
             if (!map.has(key)) {
                 map.set(key, {
+                    is_sample_screenshot: is_sample_screenshot_media_item(item),
                     requirement: item.requirement,
                     sample: item.sample,
                     reqId: item.reqId,
@@ -350,10 +443,14 @@ export class AuditImagesViewComponent {
             }
             map.get(key).items.push(item);
         });
-        return Array.from(map.values());
+        return sort_audit_image_card_groups(Array.from(map.values()));
     }
 
     create_image_card(group, t, is_audit_locked = false) {
+        if (group.is_sample_screenshot) {
+            return create_sample_screenshot_card(this, group, t, is_audit_locked, this.handle_sample_attach_media_click);
+        }
+
         const card = this.Helpers.create_element('article', {
             class_name: 'audit-image-card',
             attributes: {
@@ -444,8 +541,9 @@ export class AuditImagesViewComponent {
         });
         card.appendChild(count_row);
 
+        const audit_id = this.getState()?.auditId ?? null;
         const pc_groups = this.group_items_by_check_pc(group.items);
-        pc_groups.forEach(({ check_def, pc_def, check_index, pc_index, filenames }) => {
+        pc_groups.forEach(({ check_def, pc_def, check_index, pc_index, filenames, observation_detail }) => {
             const dom_check_id = definition_primary_id(check_def);
             const dom_pc_id = definition_primary_id(pc_def);
             const section = this.Helpers.create_element('div', {
@@ -482,10 +580,22 @@ export class AuditImagesViewComponent {
                 section.appendChild(pc_text_p);
             }
             const ul = this.Helpers.create_element('ul', { class_name: 'audit-image-card__filenames' });
-            filenames.forEach((fn) => {
-                const li = this.Helpers.create_element('li', { text_content: fn });
-                ul.appendChild(li);
-            });
+            const observation_edit = this._build_observation_edit_options(
+                group,
+                public_req_id,
+                dom_check_id,
+                dom_pc_id,
+                is_audit_locked
+            );
+            fill_audit_media_filenames_list(
+                ul,
+                this.Helpers,
+                t,
+                audit_id,
+                filenames,
+                observation_detail,
+                observation_edit
+            );
             section.appendChild(ul);
 
             if (!is_audit_locked && dom_check_id && dom_pc_id) {
@@ -529,6 +639,7 @@ export class AuditImagesViewComponent {
                     pc_def: item.pc_def,
                     check_index: item.check_index,
                     pc_index: item.pc_index,
+                    observation_detail: String(item.observationDetail || '').trim(),
                     filenames: []
                 });
             }
@@ -538,6 +649,8 @@ export class AuditImagesViewComponent {
     }
 
     destroy() {
+        const audit_id = this.getState?.()?.auditId ?? null;
+        revoke_audit_media_blob_urls(audit_id);
         if (typeof this.unsubscribe === 'function') {
             this.unsubscribe();
             this.unsubscribe = null;
@@ -547,6 +660,7 @@ export class AuditImagesViewComponent {
         }
         this.plate_element_ref = null;
         this.list_wrapper_ref = null;
+        this.images_h1_ref = null;
         this.is_dom_initialized = false;
         this._last_images_fingerprint = null;
         this._last_images_structure_fingerprint = null;

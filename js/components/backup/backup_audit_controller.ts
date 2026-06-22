@@ -4,17 +4,16 @@ import {
     get_backup_overview,
     get_backups_for_audit,
     run_backup_now,
-    get_backup_settings
+    get_backup_settings,
+    get_audit_version,
+    update_audit,
+    import_audit,
+    get_base_url,
+    get_auth_headers
 } from '../../api/client.js';
 import { app_runtime_refs } from '../../utils/app_runtime_refs.js';
 import { filter_text_matches } from '../../utils/string_filter_normalize.js';
 import { build_audit_detail_columns, build_audit_overview_columns, download_audit_backup_json } from './backup_audit_tables';
-import {
-    fetch_backup_json_for_restore,
-    import_deleted_audit_from_backup,
-    import_replace_audit_from_backup,
-    should_recreate_deleted_audit_on_restore
-} from './backup_audit_restore';
 
 export class BackupAuditController {
     root: HTMLElement | null = null;
@@ -48,21 +47,6 @@ export class BackupAuditController {
         this._detail_table = new GenericTableComponent();
     }
 
-    _reset_audit_detail_sort_state() {
-        this.audit_detail_sort_state = { columnIndex: 0, direction: 'desc' };
-    }
-
-    _sort_audit_backups_newest_first(backups: any[]) {
-        return [...backups].sort((a, b) => {
-            const a_at = a?.createdAt || '';
-            const b_at = b?.createdAt || '';
-            if (!a_at && !b_at) return 0;
-            if (!a_at) return 1;
-            if (!b_at) return -1;
-            return b_at.localeCompare(a_at);
-        });
-    }
-
     async init({ root, deps }: { root: HTMLElement; deps: any }) {
         this.root = root;
         this.deps = deps;
@@ -74,9 +58,6 @@ export class BackupAuditController {
         this.params = deps.params || {};
         this.t = (this.Translation && typeof this.Translation.t === 'function') ? this.Translation.t : ((k: string) => `**${k}**`);
         this.selected_audit_id = this.view_name === 'backup_detail' ? (this.params.auditId || null) : null;
-        if (this.view_name === 'backup_detail') {
-            this._reset_audit_detail_sort_state();
-        }
         this._data_loaded = false;
         await this._overview_table.init({ deps });
         await this._detail_table.init({ deps });
@@ -183,8 +164,7 @@ export class BackupAuditController {
 
         if (this.view_name === 'backup_detail' && this.selected_audit_id) {
             const items = await get_backups_for_audit(this.selected_audit_id).catch(() => []);
-            const list = Array.isArray(items) ? items : [];
-            this.selected_audit_backups = this._sort_audit_backups_newest_first(list);
+            this.selected_audit_backups = Array.isArray(items) ? items : [];
         }
 
         this.apply_filters();
@@ -203,7 +183,6 @@ export class BackupAuditController {
 
     handle_show_backups(audit_id: string) {
         if (!audit_id) return;
-        this._reset_audit_detail_sort_state();
         if (typeof this.router === 'function') this.router('backup_detail', { auditId: audit_id });
     }
 
@@ -238,21 +217,6 @@ export class BackupAuditController {
         }
     }
 
-    _show_restore_error(err: unknown) {
-        const message = (err as { message?: string })?.message || this.t('backup_restore_error');
-        this.NotificationComponent?.show_global_message?.(message, 'error');
-    }
-
-    async _finish_restore_success() {
-        this.NotificationComponent?.show_global_message?.(this.t('backup_restore_success'), 'success');
-        this._data_loaded = false;
-        await this.load_data(true);
-        const detail_refresh = this.deps?.backup_detail_table_refresh;
-        if (typeof detail_refresh === 'function') detail_refresh();
-        const full_render = this.deps?.backup_overview_request_full_render;
-        if (typeof full_render === 'function') full_render();
-    }
-
     async handle_restore(audit_id: string, row: any) {
         if (!audit_id || !row?.filename) return;
         const ModalComponent: any = (app_runtime_refs as any).modal_component;
@@ -285,36 +249,65 @@ export class BackupAuditController {
     }
 
     async _do_restore(audit_id: string, filename: string) {
-        let backup_data: any;
+        const base = get_base_url();
+        const backup_url = `${base}/backup/files/${encodeURIComponent(audit_id)}/${encodeURIComponent(filename)}`;
+        let backup_data: any = null;
         try {
-            backup_data = await fetch_backup_json_for_restore(audit_id, filename);
-        } catch (err) {
-            this._show_restore_error(err);
+            const res = await fetch(backup_url, { cache: 'no-store', headers: get_auth_headers() });
+            if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.statusText);
+            backup_data = await res.json();
+        } catch (err: any) {
+            this.NotificationComponent?.show_global_message?.(this.t('backup_restore_error') || err?.message, 'error');
             return;
         }
 
+        // Om granskningen är raderad på servern: importera som ny.
         const overview_row = this.backup_overview.find((r) => r.auditId === audit_id) || null;
         const is_deleted = overview_row?.status === 'deleted';
+        if (is_deleted) {
+            try {
+                await import_audit({
+                    ruleFileContent: backup_data.ruleFileContent,
+                    auditMetadata: backup_data.auditMetadata,
+                    samples: backup_data.samples || [],
+                    auditStatus: backup_data.auditStatus || 'not_started',
+                    archivedRequirementResults: backup_data.archivedRequirementResults || [],
+                    lastRulefileUpdateLog: backup_data.lastRulefileUpdateLog || null
+                });
+                this.NotificationComponent?.show_global_message?.(this.t('backup_restore_success'), 'success');
+                this._data_loaded = false;
+                await this.load_data(true);
+            } catch (err: any) {
+                this.NotificationComponent?.show_global_message?.(this.t('backup_restore_error') || err?.message, 'error');
+            }
+            return;
+        }
 
+        // Annars: skriv över befintlig.
+        let current_audit_version: number | null = null;
         try {
-            if (is_deleted) {
-                await import_deleted_audit_from_backup(backup_data);
-            } else {
-                await import_replace_audit_from_backup(audit_id, backup_data);
-            }
-            await this._finish_restore_success();
-        } catch (err) {
-            if (!is_deleted && should_recreate_deleted_audit_on_restore(err)) {
-                try {
-                    await import_deleted_audit_from_backup(backup_data);
-                    await this._finish_restore_success();
-                    return;
-                } catch (retry_err) {
-                    this._show_restore_error(retry_err);
-                    return;
-                }
-            }
-            this._show_restore_error(err);
+            const ver = await get_audit_version(audit_id);
+            if (ver?.version !== null && ver?.version !== undefined) current_audit_version = Number(ver.version);
+        } catch (_) {}
+        if (current_audit_version === null || !Number.isFinite(current_audit_version)) {
+            this.NotificationComponent?.show_global_message?.(this.t('backup_restore_error'), 'error');
+            return;
+        }
+        try {
+            await update_audit(audit_id, {
+                metadata: backup_data.auditMetadata || {},
+                status: backup_data.auditStatus || 'not_started',
+                samples: backup_data.samples || [],
+                ruleFileContent: backup_data.ruleFileContent,
+                archivedRequirementResults: backup_data.archivedRequirementResults || [],
+                lastRulefileUpdateLog: backup_data.lastRulefileUpdateLog ?? null,
+                expectedVersion: current_audit_version
+            });
+            this.NotificationComponent?.show_global_message?.(this.t('backup_restore_success'), 'success');
+            this._data_loaded = false;
+            await this.load_data(true);
+        } catch (err: any) {
+            this.NotificationComponent?.show_global_message?.(this.t('backup_restore_error') || err?.message, 'error');
         }
     }
 

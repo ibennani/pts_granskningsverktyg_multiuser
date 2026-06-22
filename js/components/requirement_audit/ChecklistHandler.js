@@ -1,8 +1,11 @@
 // js/components/requirement_audit/ChecklistHandler.js
 
+// js/components/requirement_audit/ChecklistHandler.js
+
 import { get_current_user_name } from '../../utils/helpers.js';
 import { marked } from '../../utils/markdown.js';
 import { consoleManager } from '../../utils/console_manager.js';
+import { vite_register_hmr_dispose } from '../../utils/vite_import_meta_hot.js';
 import { app_runtime_refs } from '../../utils/app_runtime_refs.js';
 import {
     get_pending_checklist_focus_target,
@@ -15,6 +18,8 @@ import {
     format_deficiency_id_label,
     should_show_deficiency_id_in_title
 } from '../../utils/deficiency_id_display.js';
+import { open_attach_media_modal } from '../media/AttachMediaModal.js';
+import { collect_attached_media_filenames } from '../../logic/audit_attached_media_references.js';
 import {
     consume_krav_vy_dom_flow,
     log_krav_vy_knapp,
@@ -589,8 +594,7 @@ export const ChecklistHandler = {
     },
 
     _register_hmr_dom_rebuild() {
-        if (typeof import.meta === 'undefined' || !import.meta.hot) return;
-        import.meta.hot.dispose(() => {
+        vite_register_hmr_dispose(() => {
             this.is_dom_built = false;
         });
     },
@@ -883,6 +887,7 @@ export const ChecklistHandler = {
         this.get_audit_id = typeof options.getAuditId === 'function' ? options.getAuditId : null;
         this.get_sample_id = typeof options.getSampleId === 'function' ? options.getSampleId : null;
         this.get_requirement_map_key = typeof options.getRequirementMapKey === 'function' ? options.getRequirementMapKey : null;
+        this.get_state = typeof options.getState === 'function' ? options.getState : null;
         this.get_pc_observation_draft = typeof options.getPcObservationDraft === 'function'
             ? options.getPcObservationDraft
             : null;
@@ -1317,87 +1322,88 @@ export const ChecklistHandler = {
         event.preventDefault();
         const pc_item = attach_btn.closest('.pass-criterion-item[data-pc-id]');
         const check_item = attach_btn.closest('.check-item[data-check-id]');
-        if (!pc_item || !check_item) return;
+        if (!pc_item || !check_item || !this.Helpers?.create_element) return;
 
         const pc_id = pc_item.dataset.pcId;
         const check_id = check_item.dataset.checkId;
-
-        const ModalComponent = app_runtime_refs.modal_component;
-        if (!ModalComponent?.show || !this.Helpers?.create_element) return;
-
         const t = this.Translation.t;
-        ModalComponent.show(
-            {
-                h1_text: t('attach_media_modal_h1'),
-                message_text: t('attach_media_modal_intro')
-            },
-            (container, modal) => {
-                const form_group = this.Helpers.create_element('div', { class_name: 'form-group' });
-                const label = this.Helpers.create_element('label', {
-                    attributes: { for: 'attach-media-filenames' },
-                    text_content: t('attach_media_modal_filename_label')
-                });
-                form_group.appendChild(label);
 
-                const chk_open = resolve_map_entry(this.requirement_result_ref?.checkResults, check_id);
-                const check_open = chk_open?.value;
-                const pc_open = check_open?.passCriteria
-                    ? resolve_map_entry(check_open.passCriteria, pc_id)
-                    : null;
-                const existing_filenames = pc_open?.value?.attachedMediaFilenames;
-                const initial_text = Array.isArray(existing_filenames) ? existing_filenames.join('\n') : '';
-                const textarea = this.Helpers.create_element('textarea', {
-                    id: 'attach-media-filenames',
-                    class_name: 'form-control',
-                    attributes: { rows: '3' }
-                });
-                textarea.value = initial_text;
-                if (this.Helpers?.init_auto_resize_for_textarea) {
-                    this.Helpers.init_auto_resize_for_textarea(textarea);
+        const chk_open = resolve_map_entry(this.requirement_result_ref?.checkResults, check_id);
+        const check_open = chk_open?.value;
+        const pc_open = check_open?.passCriteria
+            ? resolve_map_entry(check_open.passCriteria, pc_id)
+            : null;
+        const existing_filenames = pc_open?.value?.attachedMediaFilenames;
+        const initial_filenames = Array.isArray(existing_filenames) ? existing_filenames : [];
+
+        open_attach_media_modal({
+            t,
+            Helpers: this.Helpers,
+            audit_id: this.get_audit_id ? this.get_audit_id() : null,
+            initial_filenames,
+            textarea_id: 'attach-media-filenames',
+            media_scope: 'requirement',
+            trigger_element: attach_btn,
+            get_still_referenced_filenames_after_save: (final_filenames) => {
+                const state = typeof this.get_state === 'function' ? this.get_state() : null;
+                const sample_id = this.get_sample_id ? this.get_sample_id() : null;
+                const requirement_id = this.get_requirement_map_key ? this.get_requirement_map_key() : null;
+                if (!sample_id || !requirement_id) {
+                    return collect_attached_media_filenames(state);
                 }
-                form_group.appendChild(textarea);
-                container.appendChild(form_group);
-
-                const actions_wrapper = this.Helpers.create_element('div', { class_name: 'modal-attach-media-actions' });
-                const save_btn = this.Helpers.create_element('button', {
-                    class_name: ['button', 'button-primary'],
-                    text_content: t('attach_media_modal_save')
+                return collect_attached_media_filenames(state, {
+                    type: 'pc',
+                    sampleId: sample_id,
+                    requirementId: requirement_id,
+                    checkId: check_id,
+                    pcId: pc_id,
+                    filenames: final_filenames
                 });
-                save_btn.addEventListener('click', () => {
-                    const filenames = textarea.value
-                        .split('\n')
-                        .map(s => s.trim())
-                        .filter(Boolean);
-                    const chk_save = resolve_map_entry(this.requirement_result_ref?.checkResults, check_id);
-                    const check_result = chk_save?.value;
-                    const pc_save = check_result?.passCriteria
-                        ? resolve_map_entry(check_result.passCriteria, pc_id)
-                        : null;
-                    if (pc_save?.value) {
-                        pc_save.value.attachedMediaFilenames = filenames;
-                        if (this.on_attached_media_saved_callback) {
-                            this.on_attached_media_saved_callback();
-                        } else if (this.on_observation_change_callback) {
+            },
+            get_observation_detail: () => {
+                const chk_live = resolve_map_entry(this.requirement_result_ref?.checkResults, check_id);
+                const pc_live = chk_live?.value?.passCriteria
+                    ? resolve_map_entry(chk_live.value.passCriteria, pc_id)
+                    : null;
+                return String(pc_live?.value?.observationDetail || '');
+            },
+            get_observation_edit: () => {
+                const state = typeof this.get_state === 'function' ? this.get_state() : null;
+                const is_audit_locked = state?.auditStatus === 'locked' || state?.auditStatus === 'archived';
+                if (is_audit_locked) return null;
+                return {
+                    can_edit: true,
+                    on_save: (text) => {
+                        this._set_pc_observation_detail(
+                            this.requirement_result_ref?.checkResults,
+                            check_id,
+                            pc_id,
+                            text
+                        );
+                        if (this.on_observation_change_callback) {
                             this.on_observation_change_callback();
                         }
-                        // Uppdatera bifoga-media-knappens text/aria direkt (annars väntar UI tills annat fokus triggar update_dom).
                         this.update_dom();
                     }
-                    modal.close(attach_btn);
-                });
-                const discard_btn = this.Helpers.create_element('button', {
-                    class_name: ['button', 'button-default'],
-                    attributes: { type: 'button' },
-                    text_content: t('attach_media_modal_discard')
-                });
-                discard_btn.addEventListener('click', () => {
-                    modal.close(attach_btn);
-                });
-                actions_wrapper.appendChild(save_btn);
-                actions_wrapper.appendChild(discard_btn);
-                container.appendChild(actions_wrapper);
+                };
+            },
+            on_save: (filenames) => {
+                const chk_save = resolve_map_entry(this.requirement_result_ref?.checkResults, check_id);
+                const check_result = chk_save?.value;
+                const pc_save = check_result?.passCriteria
+                    ? resolve_map_entry(check_result.passCriteria, pc_id)
+                    : null;
+                if (pc_save?.value) {
+                    pc_save.value.attachedMediaFilenames = filenames;
+                    if (this.on_attached_media_saved_callback) {
+                        this.on_attached_media_saved_callback();
+                    } else if (this.on_observation_change_callback) {
+                        this.on_observation_change_callback();
+                    }
+                    this.update_dom();
+                }
             }
-        );
+        });
     },
 
     handle_stuck_click(event, stuck_btn) {

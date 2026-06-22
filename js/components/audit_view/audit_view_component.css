@@ -61,21 +61,328 @@
 }
 
 .audit-filter-wrapper {
+    container-type: inline-size;
+    container-name: audit-filter;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+    min-width: 0;
+}
+
+.audit-filter-toggle {
+    display: none;
+    align-self: flex-start;
+    align-items: center;
+    gap: 0.5rem;
+    width: auto;
+}
+
+.audit-filter-toggle__icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    fill: currentColor;
+    flex-shrink: 0;
+}
+
+.audit-filter-toggle__text {
+    white-space: nowrap;
+}
+
+.audit-filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.5rem 0.75rem;
+}
+
+.audit-filter-row__field {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
-    min-width: 30ch;
-    max-width: 420px;
+    min-width: 0;
+    flex: 0 1 auto;
+}
+
+.audit-filter-row__field--text {
+    flex: 1 1 22ch;
+    min-width: 22ch;
+    max-width: none;
+}
+
+.audit-filter-row__field--type {
+    flex: 0 0 auto;
+}
+
+.audit-filter-row__field--page-size {
+    flex: 0 0 auto;
+}
+
+.audit-filter-row__field--list-view {
+    flex: 0 0 auto;
+}
+
+.audit-filter-row__field--reset {
+    flex: 0 0 auto;
+}
+
+.audit-filter-reset {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: auto;
+    min-height: 24px;
+    align-self: flex-end;
+}
+
+.audit-filter-reset__icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    fill: currentColor;
+    flex-shrink: 0;
+}
+
+.audit-filter-reset__text {
+    white-space: nowrap;
+}
+
+.audit-filter-row select.audit-filter-select,
+select.form-control.audit-filter-select {
+    appearance: auto;
+    -webkit-appearance: menulist;
+    width: auto;
+    min-width: 0;
+    cursor: pointer;
+}
+
+.audit-type-filter-select {
+    width: auto;
+}
+
+@container audit-filter (min-width: 1024px) {
+    .audit-filter-toggle {
+        display: none !important;
+    }
+
+    .audit-filter-row {
+        display: flex !important;
+        flex-wrap: nowrap;
+    }
+
+    .audit-filter-row__field--text {
+        flex: 1 1 22ch;
+        min-width: 22ch;
+        max-width: none;
+    }
+}
+
+@container audit-filter (max-width: 1023px) {
+    .audit-filter-toggle {
+        display: inline-flex;
+    }
+
+    .audit-filter-row {
+        display: none;
+    }
+
+    .audit-filter-wrapper--open .audit-filter-row {
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .audit-filter-row__field--text {
+        flex: 1 1 100%;
+        max-width: 100%;
+    }
+}
+
+.generic-table-wrapper.audit-grouped-list {
+    overflow-x: auto;
+}
+
+.generic-table.generic-table--audit-group-list.audit-grouped-list__table {
+    width: 100%;
+    table-layout: auto;
+}
+
+.generic-table--audit-group-list th,
+.generic-table--audit-group-list td {
+    text-align: left;
+    vertical-align: middle;
+    white-space: nowrap;
+    padding: 0.25rem 0.5rem;
+}
+
+.generic-table--audit-group-list .audit-group-col-case,
+.generic-table--audit-group-list .audit-group-col-actor {
+    width: 1%;
+    padding-right: 0.35rem;
+}
+
+.generic-table--audit-group-list .audit-group-col-count {
+    width: 100%;
+    padding-left: 0.35rem;
+    white-space: nowrap;
+}
+
+.audit-group-summary-cell {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.25rem;
+    max-width: 100%;
+}
+
+.audit-group-summary-cell__main {
+    min-width: 0;
+    text-align: left;
+}
+
+.audit-group-actor-edit-btn {
+    font-size: inherit;
+    line-height: inherit;
+    padding: 0.125rem 0.35rem;
+    min-height: 24px;
+    min-width: 24px;
+    flex-shrink: 0;
+}
+
+.audit-group-actor-edit-modal-help {
+    margin: 0.25rem 0 0.5rem;
+    font-size: 0.9375rem;
+    font-weight: normal;
+    line-height: var(--line-height-base, 1.5);
+    color: var(--text-muted-color, var(--text-color));
+}
+
+.generic-table--audit-group-list .audit-group-actor-edit-btn {
+    font-size: 0.875rem;
+    padding: 0.125rem 0.35rem;
+}
+
+.generic-table--audit-group-list .generic-table-header-sort-btn {
+    width: auto;
+    display: inline-flex;
+    justify-content: flex-start;
+}
+
+.audit-group-summary-row__chevron {
+    display: inline-block;
+    width: 1rem;
+    flex-shrink: 0;
+    text-align: center;
+}
+
+.audit-group-summary-row__chevron--header-spacer {
+    visibility: hidden;
+}
+
+.audit-grouped-list__table {
+    margin-top: 0;
+}
+
+.audit-group-summary-row {
+    cursor: pointer;
+}
+
+.audit-group-summary-row:focus-visible {
+    outline: 2px solid var(--focus-ring-color, #000);
+    outline-offset: -2px;
+}
+
+.audit-group-detail-row__cell {
+    padding: 0;
+}
+
+.audit-group-detail-panel {
+    --audit-group-transition-duration: 0.5s;
+    display: grid;
+    grid-template-rows: 0fr;
+    opacity: 0;
+    overflow: hidden;
+    transition:
+        grid-template-rows var(--audit-group-transition-duration) ease,
+        opacity var(--audit-group-transition-duration) ease;
+}
+
+.audit-group-detail-panel--expanded {
+    grid-template-rows: 1fr;
+    opacity: 1;
+}
+
+.audit-group-detail-panel--instant {
+    transition: none;
+}
+
+.audit-group-detail-panel__inner {
+    min-height: 0;
+    overflow: hidden;
+}
+
+.audit-group-detail-row:hover {
+    background-color: transparent;
+}
+
+.audit-group-detail-table {
+    margin: 0;
+    border-top: 1px solid var(--border-color);
+}
+
+.audit-grouped-list-empty {
+    margin: 0.5rem 0;
+    opacity: 0.85;
+}
+
+.audit-page-size-select {
+    width: auto;
+    min-width: max(5rem, 5.5ch);
+}
+
+.audit-header-page-size-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    width: 100%;
+    margin-top: 0.35rem;
 }
 
 .audit-filter-input {
     width: 100%;
 }
 
+.audit-filter-input:focus-visible {
+    outline: 2px solid var(--focus-ring-color, #000);
+    outline-offset: 2px;
+}
+
 .audit-filter-no-results {
     margin-top: 0.75rem;
     font-size: 0.9rem;
     opacity: 0.85;
+}
+
+.audit-audits-sections-container {
+    --audit-list-transition-duration: 0.25s; /* två faser = 0,5 s totalt vid filter-/listväxling */
+    opacity: 1;
+    transition: opacity var(--audit-list-transition-duration) ease;
+}
+
+.audit-lists--transition-exit {
+    opacity: 0;
+}
+
+.audit-lists--transition-enter-start {
+    opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .audit-audits-sections-container {
+        transition: none;
+    }
+
+    .audit-group-detail-panel {
+        transition: none;
+    }
 }
 
 .audit-header .audit-upload-btn {

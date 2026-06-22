@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const projectRoot = join(__dirname, '..');
 
-console.info('[validate-components] Checking for missing components...');
+console.log('[validate-components] Checking for missing components...');
 
 let hasErrors = false;
 
@@ -37,7 +37,7 @@ if (existsSync(mainJsPath)) {
 // Check for components that are imported but don't exist
 const expectedComponents = [
     'EditMetadataViewComponent.js',
-    'SampleManagementViewComponent.ts',
+    'SampleManagementViewComponent.js',
     'SampleFormViewComponent.ts',
     'ConfirmSampleEditViewComponent.ts',
     'AuditOverviewComponent.js',
@@ -93,5 +93,5 @@ if (hasErrors) {
     console.error('\n❌ Component validation failed!');
     process.exit(1);
 } else {
-    console.info('✅ Component validation passed!');
+    console.log('✅ Component validation passed!');
 }

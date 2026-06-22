@@ -61,15 +61,15 @@
     /* border-color: var(--border-color); Removed */
 }
 
-[data-theme="dark"] .progress-bar-element::-webkit-progress-value {
+[data-theme="dark"] .progress-bar-element::-webkit-progress-value , [data-theme="dark-experimental"] .progress-bar-element::-webkit-progress-value {
     background-color: var(--primary-color);
 }
 
-[data-theme="dark"] .progress-bar-element::-moz-progress-bar {
+[data-theme="dark"] .progress-bar-element::-moz-progress-bar , [data-theme="dark-experimental"] .progress-bar-element::-moz-progress-bar {
     background-color: var(--primary-color);
 }
 
-[data-theme="dark"] .progress-bar-element::-ms-fill {
+[data-theme="dark"] .progress-bar-element::-ms-fill , [data-theme="dark-experimental"] .progress-bar-element::-ms-fill {
     background-color: var(--primary-color);
 }
 

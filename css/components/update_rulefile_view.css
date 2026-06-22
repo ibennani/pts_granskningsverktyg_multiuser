@@ -53,7 +53,7 @@
     font-weight: 500;
 }
 
-[data-theme="dark"] .update-rulefile-view-plate .backup-confirmation {
+[data-theme="dark"] .update-rulefile-view-plate .backup-confirmation , [data-theme="dark-experimental"] .update-rulefile-view-plate .backup-confirmation {
     color: var(--text-color);
     background-color: color-mix(in srgb, var(--success-color) 20%, transparent);
 }

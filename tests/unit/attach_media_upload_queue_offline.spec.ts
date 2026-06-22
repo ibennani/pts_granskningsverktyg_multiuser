@@ -1,0 +1,56 @@
+import { jest, describe, test, expect, beforeEach } from '@jest/globals';
+
+jest.unstable_mockModule('../../js/api/audit_media_api.js', () => ({
+    upload_audit_media: jest.fn()
+}));
+
+const mock_is_browser_online = jest.fn(() => true);
+jest.unstable_mockModule('../../js/utils/browser_online.js', () => ({
+    is_browser_online: () => mock_is_browser_online()
+}));
+
+const { upload_audit_media } = await import('../../js/api/audit_media_api.js');
+const { create_attach_media_upload_queue } = await import(
+    '../../js/components/media/attach_media_upload_queue.js'
+);
+
+function create_queue_deps(overrides = {}) {
+    const working_filenames: string[] = [];
+    const t = (key: string) => key;
+    return {
+        t,
+        audit_id: 'audit-1',
+        media_scope: 'requirement' as const,
+        escape_html: (v: string) => v,
+        get_working_filenames: () => working_filenames,
+        set_working_filenames: (names: string[]) => {
+            working_filenames.length = 0;
+            working_filenames.push(...names);
+        },
+        refresh_list: jest.fn(),
+        show_status: jest.fn(),
+        show_duplicate_filenames_error: jest.fn(),
+        persist_changes: jest.fn().mockResolvedValue(true),
+        clear_pending_filenames: jest.fn(),
+        ...overrides
+    };
+}
+
+describe('attach_media_upload_queue offline', () => {
+    beforeEach(() => {
+        mock_is_browser_online.mockReturnValue(true);
+        jest.mocked(upload_audit_media).mockReset();
+    });
+
+    test('visar offline-meddelande när kö startar utan uppkoppling', () => {
+        mock_is_browser_online.mockReturnValue(false);
+        const deps = create_queue_deps();
+        const queue = create_attach_media_upload_queue(deps);
+        const file = new File(['x'], 'a.png', { type: 'image/png' });
+
+        queue.enqueue_files([file]);
+
+        expect(deps.show_status).toHaveBeenCalledWith('attach_media_upload_requires_online', 'error');
+        expect(upload_audit_media).not.toHaveBeenCalled();
+    });
+});

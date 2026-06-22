@@ -7,8 +7,7 @@
  * - audit:{auditId}:sample:{sampleId}:req:{requirementId}:stuckProblemDescription
  * - audit:{auditId}:sample:{sampleId}:req:{requirementId}:check:{checkId}:pc:{pcId}:observationDetail
  *
- * Obs: `requirementId` ska matcha nyckeln i `sample.requirementResults` (intern map-nyckel),
- * samma som `requirement_map_key` i kravvyn — inte alltid identisk med visningsetiketten i URL.
+ * Obs: `requirementId` är samma som i route-parametern (req_key) i UI.
  */
 
 /**

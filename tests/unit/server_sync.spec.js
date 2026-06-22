@@ -6,9 +6,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { app_runtime_refs } from '../../js/utils/app_runtime_refs.js';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const client_path = path.join(__dirname, '../../js/api/client.js');
-const connectivity_path = path.join(__dirname, '../../js/logic/connectivity_service.js');
+const spec_dir = path.dirname(fileURLToPath(import.meta.url));
+const client_path = path.join(spec_dir, '../../js/api/client.js');
+const connectivity_path = path.join(spec_dir, '../../js/logic/connectivity_service.js');
 
 const update_audit = jest.fn();
 const patch_requirement_result = jest.fn();

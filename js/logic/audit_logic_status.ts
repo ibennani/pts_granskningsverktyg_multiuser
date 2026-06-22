@@ -4,167 +4,47 @@
 
 import type {
     CheckDef,
-    CheckResultStored,
     PassCriterionStatusMapVal,
     RequirementDef,
     RequirementResultStored
 } from './audit_logic_types.js';
 import { get_stored_requirement_result_for_def } from './audit_logic_lookup.js';
-import { definition_primary_id, resolve_map_entry } from './entity_id_match.js';
-
-function count_audit_status_coverage(statuses: string[]): { any_started: boolean; all_started: boolean } {
-    if (!statuses.length) {
-        return { any_started: false, all_started: false };
-    }
-    const started_count = statuses.filter((s) => s !== 'not_audited').length;
-    return {
-        any_started: started_count > 0,
-        all_started: started_count === statuses.length
-    };
-}
-
-/**
- * Aggregerar barnstatus: delvis granskad endast när minst ett men inte alla barn är besvarade.
- * När alla barn är klara (godkända eller underkända) blir resultatet underkänt om minst ett fail, annars godkänt.
- */
-export function aggregate_child_audit_statuses(
-    child_statuses: string[],
-    opts: { treat_unstarted_as_partial?: boolean } = {}
-): string {
-    if (!child_statuses.length) {
-        return 'not_audited';
-    }
-
-    const { any_started, all_started } = count_audit_status_coverage(child_statuses);
-    const all_complete = child_statuses.every((s) => s === 'passed' || s === 'failed');
-    const any_failed = child_statuses.some((s) => s === 'failed');
-
-    if (!any_started) {
-        return opts.treat_unstarted_as_partial ? 'partially_audited' : 'not_audited';
-    }
-    if (!all_started || !all_complete) {
-        return 'partially_audited';
-    }
-    return any_failed ? 'failed' : 'passed';
-}
-
-/**
- * AND-logik: delvis granskad när minst ett men inte alla kriterier är besvarade.
- * När alla är besvarade: godkänd om samtliga godkända, annars underkänd.
- */
-export function aggregate_and_criterion_statuses(
-    pc_statuses: string[],
-    opts: { treat_unstarted_as_partial?: boolean } = {}
-): string {
-    if (!pc_statuses.length) {
-        return 'not_audited';
-    }
-
-    const { any_started, all_started } = count_audit_status_coverage(pc_statuses);
-
-    if (!any_started) {
-        return opts.treat_unstarted_as_partial ? 'partially_audited' : 'not_audited';
-    }
-    if (!all_started) {
-        return 'partially_audited';
-    }
-
-    const all_passed = pc_statuses.every((s) => s === 'passed');
-    return all_passed ? 'passed' : 'failed';
-}
-
-/**
- * OR-logik: delvis granskad när minst ett men inte alla kriterier är besvarade.
- * När alla är besvarade: underkänd om minst ett underkänt, annars godkänd.
- */
-export function aggregate_or_criterion_statuses(
-    pc_statuses: string[],
-    opts: { treat_unstarted_as_partial?: boolean } = {}
-): string {
-    if (!pc_statuses.length) {
-        return 'not_audited';
-    }
-
-    const { any_started, all_started } = count_audit_status_coverage(pc_statuses);
-
-    if (!any_started) {
-        return opts.treat_unstarted_as_partial ? 'partially_audited' : 'not_audited';
-    }
-    if (!all_started) {
-        return 'partially_audited';
-    }
-
-    const any_failed = pc_statuses.some((s) => s === 'failed');
-    return any_failed ? 'failed' : 'passed';
-}
-
-function check_uses_or_logic(check_object: CheckDef | null | undefined): boolean {
-    return (check_object?.logic || 'AND').toUpperCase() === 'OR';
-}
-
-/**
- * Effektiv kriteriestatus: vid "Inte aktuellt" på kontrollpunkten räknas kriteriet som godkänt.
- */
-export function effective_pass_criterion_status(
-    stored_status: string | null | undefined,
-    check_overall_status: string | null | undefined
-): string {
-    if (check_overall_status === 'not_applicable') {
-        return 'passed';
-    }
-    const raw = stored_status || 'not_audited';
-    return typeof raw === 'string' ? raw : 'not_audited';
-}
-
-function map_pass_criterion_statuses(
-    check_object: CheckDef,
-    pass_criteria_statuses_map: Record<string, PassCriterionStatusMapVal> | null | undefined,
-    check_overall_status: string
-): string[] {
-    if (check_overall_status === 'not_applicable') {
-        return (check_object.passCriteria ?? []).map(() => 'passed');
-    }
-    return (check_object.passCriteria ?? []).map((pc) => {
-        const pc_key = definition_primary_id(pc);
-        const resolved = pc_key ? resolve_map_entry(pass_criteria_statuses_map ?? {}, pc_key) : null;
-        const pc_data = resolved?.value;
-        const raw =
-            typeof pc_data === 'object' && pc_data !== null
-                ? (pc_data as { status?: string }).status
-                : pc_data || 'not_audited';
-        return effective_pass_criterion_status(
-            typeof raw === 'string' ? raw : 'not_audited',
-            check_overall_status
-        );
-    });
-}
 
 export function calculate_check_status(
     check_object: CheckDef | null | undefined,
     pass_criteria_statuses_map: Record<string, PassCriterionStatusMapVal> | null | undefined,
     overall_manual_status = 'not_audited'
 ): string {
-    if (!check_object?.passCriteria || check_object.passCriteria.length === 0) {
-        return 'passed';
-    }
+    if (!check_object?.passCriteria || check_object.passCriteria.length === 0) return 'passed';
 
-    if (overall_manual_status === 'failed') {
+    if (overall_manual_status === 'failed') return 'failed';
+    if (overall_manual_status === 'not_applicable') return 'passed';
+    if (overall_manual_status === 'not_audited') return 'not_audited';
+
+    const pc_statuses = (check_object.passCriteria ?? []).map((pc) => {
+        const pc_data = (pass_criteria_statuses_map ?? {})[pc.id ?? ''];
+        return typeof pc_data === 'object' && pc_data !== null
+            ? (pc_data as { status?: string }).status
+            : (pc_data || 'not_audited');
+    });
+
+    const logic = (check_object.logic || 'AND').toUpperCase();
+
+    if (logic === 'OR') {
+        const has_passed = pc_statuses.some((s) => s === 'passed');
+        const has_not_audited = pc_statuses.some((s) => s === 'not_audited');
+        const all_not_audited = pc_statuses.every((s) => s === 'not_audited');
+        const all_audited_and_failed = !pc_statuses.some((s) => s === 'not_audited') && !has_passed;
+
+        if (has_passed) return 'passed';
+        if (all_not_audited) return 'partially_audited';
+        if (all_audited_and_failed) return 'failed';
+        if (has_not_audited && !has_passed) return 'partially_audited';
         return 'failed';
     }
-    if (overall_manual_status === 'not_audited') {
-        return 'not_audited';
-    }
-
-    const pc_statuses = map_pass_criterion_statuses(
-        check_object,
-        pass_criteria_statuses_map,
-        overall_manual_status
-    );
-    const aggregate_opts = { treat_unstarted_as_partial: overall_manual_status === 'passed' };
-    if (check_uses_or_logic(check_object)) {
-        return aggregate_or_criterion_statuses(pc_statuses, aggregate_opts);
-    }
-    return aggregate_and_criterion_statuses(pc_statuses, aggregate_opts);
+    if (pc_statuses.some((s) => s === 'failed')) return 'failed';
+    if (pc_statuses.some((s) => s === 'not_audited')) return 'partially_audited';
+    return 'passed';
 }
 
 export function calculate_requirement_status(
@@ -189,22 +69,19 @@ export function calculate_requirement_status(
     }
 
     try {
-        const check_statuses: string[] = [];
+        let has_failed_check = false;
+        let has_partially_audited_check = false;
+        let has_not_audited_check = false;
         let has_any_button_pressed = false;
 
         for (const check_definition of requirement_object.checks) {
-            const check_storage_key = definition_primary_id(check_definition);
-            if (!check_definition || typeof check_definition !== 'object' || !check_storage_key) {
+            if (!check_definition || typeof check_definition !== 'object' || !check_definition.id) {
                 console.warn('[AuditLogic] calculate_requirement_status: Invalid check_definition:', check_definition);
-                check_statuses.push('not_audited');
+                has_not_audited_check = true;
                 continue;
             }
 
-            const resolved_check = resolve_map_entry(
-                requirement_result_object.checkResults as Record<string, CheckResultStored>,
-                check_storage_key
-            );
-            const checkResultForDef = resolved_check?.value;
+            const checkResultForDef = requirement_result_object.checkResults?.[check_definition.id ?? ''];
             let status = 'not_audited';
 
             const overall = checkResultForDef?.overallStatus;
@@ -225,14 +102,18 @@ export function calculate_requirement_status(
                 }
             }
 
-            check_statuses.push(status);
+            if (status === 'failed') {
+                has_failed_check = true;
+                break;
+            }
+            if (status === 'partially_audited') has_partially_audited_check = true;
+            if (status === 'not_audited') has_not_audited_check = true;
         }
 
-        if (check_statuses.every((s) => s === 'not_audited') && !has_any_button_pressed) {
-            return 'not_audited';
-        }
-
-        return aggregate_child_audit_statuses(check_statuses);
+        if (has_failed_check) return 'failed';
+        if (!has_not_audited_check && !has_partially_audited_check) return 'passed';
+        if (has_any_button_pressed) return 'partially_audited';
+        return 'not_audited';
     } catch (error) {
         if (window.ConsoleManager?.warn) {
             window.ConsoleManager.warn('[AuditLogic] calculate_requirement_status: Error processing requirement:', error);

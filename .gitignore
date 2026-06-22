@@ -8,8 +8,7 @@ yarn-error.log*
 dist/
 build/
 .vite/
-# Endast rot: dev-watchern; public/build-info.js ska versioneras (fryst produktionstext).
-/build-info.js
+build-info.js
 
 # Environment variables
 .env
@@ -116,8 +115,12 @@ temp*.modelfile
 *.modelfile
 Modelfile
 
-# Backupfiler (endast katalogen i projektroten, inte server/backup eller js/components/backup)
+# Granskningsdata (säkerhetskopior, media, databasdumpar – ska aldrig committas)
+# GV_BACKUP_DIR pekar standard på ./backup (server/backup är applikationskod)
 /backup/
+/audit-media/
+/backups/
+*.dump
 
 # Testresultat
 test-results/

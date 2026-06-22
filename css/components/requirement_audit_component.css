@@ -304,41 +304,43 @@
     color: var(--text-color-muted);
     margin-bottom: 1rem;
     padding: 0.3rem 0.6rem;
-    background-color: var(--pass-criterion-item-bg);
+    background-color: var(--background-color);
     border-radius: var(--border-radius);
     display: inline-block;
 }
 
-.criteria-panel[hidden] {
-    display: none;
-}
-
-.criteria-panel.slide-down-in {
-    animation: fadeInSlideDown 0.5s ease-out forwards;
-    overflow: hidden;
-}
-
-.criteria-panel.slide-down-out {
-    animation: fadeOutSlideUp 0.5s ease-out forwards;
-    overflow: hidden;
+[data-theme="dark"] .check-status-display {
+    background-color: var(--input-background-color);
 }
 
 .pass-criteria-list {
     list-style: none;
     padding-left: 0;
     margin-top: 1rem;
+    overflow: hidden;
+}
+
+.pass-criteria-list.slide-down-in {
+    animation: fadeInSlideDown 0.5s ease-out forwards;
+}
+
+.pass-criteria-list.slide-down-out {
+    animation: fadeOutSlideUp 0.5s ease-out forwards;
 }
 
 .compliance-info-text {
-    margin-top: 1rem;
+    overflow: hidden;
+}
+
+.compliance-info-text.slide-down-in {
+    animation: fadeInSlideDown 0.5s ease-out forwards;
+}
+
+.compliance-info-text.slide-down-out {
+    animation: fadeOutSlideUp 0.5s ease-out forwards;
 }
 
 .pc-observation-detail-wrapper {
-    overflow: visible;
-}
-
-.pc-observation-detail-wrapper.slide-down-in,
-.pc-observation-detail-wrapper.slide-down-out {
     overflow: hidden;
 }
 
@@ -352,28 +354,6 @@
 
 .pc-observation-detail-wrapper[hidden] {
     display: none;
-}
-
-.pass-criterion-item.slide-down-in {
-    animation: fadeInSlideDown 0.5s ease-out forwards;
-    overflow: hidden;
-}
-
-.pass-criterion-item.slide-down-out {
-    animation: fadeOutSlideUp 0.5s ease-out forwards;
-    overflow: hidden;
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .criteria-panel.slide-down-in,
-    .criteria-panel.slide-down-out,
-    .pass-criterion-item.slide-down-in,
-    .pass-criterion-item.slide-down-out,
-    .pc-observation-detail-wrapper.slide-down-in,
-    .pc-observation-detail-wrapper.slide-down-out {
-        transition: none;
-        animation: none;
-    }
 }
 
 @keyframes fadeInSlideDown {
@@ -407,10 +387,11 @@
     margin-bottom: 1rem;
     border: 2px solid var(--border-color);
     border-radius: var(--border-radius);
-    background-color: var(--pass-criterion-item-bg);
+    background-color: #FFF5E6; /* Väldigt ljus orange nyans - samma som kravkort */
 }
 
 [data-theme="dark"] .pass-criterion-item {
+    background-color: color-mix(in srgb, var(--background-color) 95%, black);
     border-color: var(--border-color);
 }
 
@@ -466,135 +447,51 @@
 
 .condition-actions .button.button-small,
 .pass-criterion-actions .button.button-small {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    transition: all 0.2s ease-in-out;
 }
 
-.audit-toggle-button__icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex: 0 0 auto;
-    font-family: Arial, sans-serif;
-    line-height: 1;
-    text-rendering: optimizeLegibility;
-    paint-order: stroke fill;
-    transition: font-size var(--audit-toggle-icon-transition-duration) ease-in-out,
-        width var(--audit-toggle-icon-transition-duration) ease-in-out,
-        min-width var(--audit-toggle-icon-transition-duration) ease-in-out,
-        height var(--audit-toggle-icon-transition-duration) ease-in-out,
-        color var(--audit-toggle-icon-transition-duration) ease-in-out,
-        -webkit-text-stroke var(--audit-toggle-icon-transition-duration) ease-in-out;
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .audit-toggle-button__icon {
-        transition: none;
-    }
-}
-
-.audit-toggle-button__label {
-    flex: 1 1 auto;
-    text-align: start;
-}
-
-/* STATE 1: Inaktivt (ej valt) – streckad kant, neutral ofylld ikon (endast kantlinje) */
+/* STATE 1: Inaktivt (ej valt) - "Ghost button" stil */
 .condition-actions .button:not(.active),
 .pass-criterion-actions .button:not(.active) {
     background-color: transparent;
-    border-style: solid;
 }
 
+/* Specifika färger för ghost-knapparna */
 .condition-actions .button-success:not(.active),
 .pass-criterion-actions .button-success:not(.active) {
     border-color: var(--button-success-border);
-    color: var(--text-color-muted);
+    color: var(--button-success-text);
 }
 
 .condition-actions .button-danger:not(.active),
 .pass-criterion-actions .button-danger:not(.active) {
     border-color: var(--button-danger-border);
-    color: var(--text-color-muted);
+    color: var(--button-danger-text);
 }
 
-.condition-actions .button:not(.active) .audit-toggle-button__icon,
-.pass-criterion-actions .button:not(.active) .audit-toggle-button__icon,
-.condition-actions .button:not(.active):hover .audit-toggle-button__icon,
-.pass-criterion-actions .button:not(.active):hover .audit-toggle-button__icon {
-    color: transparent;
-    -webkit-text-stroke: 1px var(--text-color-muted);
-    text-stroke: 1px var(--text-color-muted);
-    font-size: var(--audit-toggle-inactive-icon-size);
-    width: var(--audit-toggle-inactive-icon-size);
-    min-width: var(--audit-toggle-inactive-icon-size);
-    height: var(--audit-toggle-inactive-icon-size);
-    font-weight: 300;
-}
-
-.condition-actions .button-success:not(.active):hover,
-.pass-criterion-actions .button-success:not(.active):hover,
-.condition-actions .button-danger:not(.active):hover,
-.pass-criterion-actions .button-danger:not(.active):hover {
-    color: var(--text-color-muted);
-}
-
+/* Hover-effekt för inaktiva knappar (blir solida) */
 .condition-actions .button-success:not(.active):hover,
 .pass-criterion-actions .button-success:not(.active):hover {
-    background-color: color-mix(in srgb, var(--button-success-bg) 50%, transparent);
+    background-color: var(--button-success-bg);
 }
 
 .condition-actions .button-danger:not(.active):hover,
 .pass-criterion-actions .button-danger:not(.active):hover {
-    background-color: color-mix(in srgb, var(--button-danger-bg) 50%, transparent);
+    background-color: var(--button-danger-bg);
 }
 
-/* STATE 2: Aktivt (valt) – hel kant, fylld bakgrund och färgad ikon */
+/* STATE 2: Aktivt (valt) - Solid stil (ärver direkt från globala regler) */
 .condition-actions .button-success.active,
-.pass-criterion-actions .button-success.active,
-.condition-actions .button-success[aria-pressed="true"],
-.pass-criterion-actions .button-success[aria-pressed="true"] {
+.pass-criterion-actions .button-success.active {
     background-color: var(--button-success-bg);
-    border-style: solid;
-    border-width: var(--audit-toggle-active-border-width);
     border-color: var(--button-success-border);
     color: var(--button-success-text);
-    font-weight: 600;
 }
 
 .condition-actions .button-danger.active,
-.pass-criterion-actions .button-danger.active,
-.condition-actions .button-danger[aria-pressed="true"],
-.pass-criterion-actions .button-danger[aria-pressed="true"] {
+.pass-criterion-actions .button-danger.active {
     background-color: var(--button-danger-bg);
-    border-style: solid;
-    border-width: var(--audit-toggle-active-border-width);
     border-color: var(--button-danger-border);
-    color: var(--button-danger-text);
-    font-weight: 600;
-}
-
-.condition-actions .button.active .audit-toggle-button__icon,
-.pass-criterion-actions .button.active .audit-toggle-button__icon {
-    color: inherit;
-    -webkit-text-stroke: 0;
-    text-stroke: 0;
-    font-size: var(--audit-toggle-active-icon-size);
-    width: var(--audit-toggle-active-icon-size);
-    min-width: var(--audit-toggle-active-icon-size);
-    height: var(--audit-toggle-active-icon-size);
-    font-weight: 900;
-    letter-spacing: -0.02em;
-}
-
-.condition-actions .button-success.active .audit-toggle-button__icon,
-.pass-criterion-actions .button-success.active .audit-toggle-button__icon {
-    color: var(--button-success-text);
-}
-
-.condition-actions .button-danger.active .audit-toggle-button__icon,
-.pass-criterion-actions .button-danger.active .audit-toggle-button__icon {
     color: var(--button-danger-text);
 }
 /* --- END OF CHANGE --- */
@@ -619,15 +516,14 @@
     font-size: 0.95rem;
 }
 
-/* Alla skrivskyddade textfält i kravplåten (kommentarer + checklistobservationer). */
-.requirement-audit-plate textarea.form-control.readonly-textarea {
+.input-fields-container textarea.form-control.readonly-textarea {
     background-color: color-mix(in srgb, var(--input-background-color) 90%, var(--border-color));
     color: var(--text-color-muted);
     cursor: default;
     border-color: var(--border-color);
 }
 
-[data-theme="dark"] .requirement-audit-plate textarea.form-control.readonly-textarea {
+[data-theme="dark"] .input-fields-container textarea.form-control.readonly-textarea {
     background-color: color-mix(in srgb, var(--input-background-color) 85%, black);
     border-color: var(--border-color);
 }
@@ -662,6 +558,49 @@
 .confirm-btn-fade-out {
     transition: opacity 0.25s;
     opacity: 0;
+}
+
+/* Tooltip för navigeringsknappar – samma mönster som kravlistan */
+.audit-navigation-buttons .status-icon-tooltip-wrapper {
+    position: relative;
+    display: inline-flex;
+    cursor: default;
+}
+
+.audit-navigation-buttons .status-icon-tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 0.35rem;
+    padding: 0.35rem 0.5rem;
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.2;
+    white-space: nowrap;
+    color: #1a1a1a;
+    background-color: #fff;
+    border: 1px solid #333;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.15s ease, visibility 0.15s ease;
+    z-index: 100;
+    pointer-events: none;
+}
+
+.audit-navigation-buttons .status-icon-tooltip-wrapper:hover .status-icon-tooltip,
+.audit-navigation-buttons .status-icon-tooltip-wrapper:focus-within .status-icon-tooltip {
+    visibility: visible;
+    opacity: 1;
+}
+
+[data-theme="dark"] .audit-navigation-buttons .status-icon-tooltip {
+    color: #f5f5f5;
+    background-color: #2d2d2d;
+    border-color: #666;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 .pc-observation-detail-wrapper label[for^="pc-observation-"] {

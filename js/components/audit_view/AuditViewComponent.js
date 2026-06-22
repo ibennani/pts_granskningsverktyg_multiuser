@@ -22,19 +22,48 @@ import {
     is_current_user_admin
 } from '../../api/client.js';
 import { set_show_empty_metadata_form } from '../../app/browser_globals.js';
-import { DraftManager } from '../../draft_manager.ts';
 import { subscribe_audits, subscribe_rules } from '../../logic/list_push_service.js';
 import { GenericTableComponent } from '../GenericTableComponent.js';
 import { AuditListComponent } from '../AuditListComponent.js';
+import { AuditGroupedListComponent } from '../AuditGroupedListComponent.ts';
 import { open_audit_by_id, download_audit_by_id } from '../../logic/audit_open_logic.js';
 import { get_server_filename_datetime, sanitize_filename_segment } from '../../utils/download_filename_utils.ts';
+import { measure_backup_select_min_width_px } from '../../utils/backup_filter_select_width.ts';
 import { render_audit_header } from './AuditHeaderSection.js';
+import { create_audit_filter_skip_link } from './audit_filter_skip_link.js';
 import { render_audit_requirement_section } from './AuditRequirementSection.js';
-import { render_audit_samples_section, update_audit_samples_filter } from './AuditSamplesSection.js';
+import { render_audit_audits_sections, render_audit_samples_section } from './AuditSamplesSection.js';
 import { JSON_MAX_UPLOAD_BYTES } from '../../../shared/constants/json_upload_limits.js';
 import { check_json_structure_depth_and_size } from '../../../shared/json/json_structure_guard.js';
-import { initial_state, APP_STATE_VERSION } from '../../state/initialState.js';
+import { audit_page_size_string_to_number } from '../../logic/table_pagination_logic.js';
+import { run_audit_lists_toggle_animation } from '../../logic/audit_list_view_transition.js';
 import './audit_view_component.css';
+
+const AUDIT_LIST_GROUP_MODE_STORAGE_KEY = 'gv_audit_list_group_mode';
+const LEGACY_AUDIT_GROUP_BY_CASE_STORAGE_KEY = 'gv_audit_group_by_case';
+const AUDIT_LIST_GROUP_MODES = ['all', 'case', 'auditor'];
+
+function read_audit_list_group_mode_pref() {
+    try {
+        if (typeof sessionStorage === 'undefined') return 'all';
+        const stored = sessionStorage.getItem(AUDIT_LIST_GROUP_MODE_STORAGE_KEY);
+        if (AUDIT_LIST_GROUP_MODES.includes(stored)) return stored;
+        if (sessionStorage.getItem(LEGACY_AUDIT_GROUP_BY_CASE_STORAGE_KEY) === '1') return 'case';
+    } catch {
+        /* ignorera */
+    }
+    return 'all';
+}
+
+function write_audit_list_group_mode_pref(mode) {
+    try {
+        if (typeof sessionStorage !== 'undefined' && AUDIT_LIST_GROUP_MODES.includes(mode)) {
+            sessionStorage.setItem(AUDIT_LIST_GROUP_MODE_STORAGE_KEY, mode);
+        }
+    } catch {
+        /* ignorera */
+    }
+}
 
 export class AuditViewComponent {
     static CSS_PATH = './audit_view_component.css';
@@ -50,13 +79,24 @@ export class AuditViewComponent {
         this.production_rules = [];
         this.audits = [];
         this.audit_filter_query = '';
+        this.audit_type_filter = '';
+        this.audit_list_group_mode = read_audit_list_group_mode_pref();
+        this.audit_filter_panel_open = false;
+        this.audit_table_page_size = 'all';
         this._auditFilterHadFocus = false;
+        this._auditTypeSelectHadFocus = false;
+        this._auditPageSizeSelectHadFocus = false;
+        this._auditGroupByCaseHadFocus = false;
         this._auditFilterSelection = null;
         this._auditFilterInputRef = null;
-        this._audits_section_root = null;
+        this._auditTypeSelectRef = null;
+        this._auditPageSizeSelectRef = null;
+        this._auditGroupByCaseSelectRef = null;
+        this._auditFilterToggleRef = null;
+        this._auditFilterResetRef = null;
+        this._audit_list_toggle_animating = false;
         this.router = deps.router;
         this.getState = deps.getState;
-        this.subscribe = deps.subscribe;
         this.NotificationComponent?.clear_global_message?.();
         this.dispatch = deps.dispatch;
         this.StoreActionTypes = deps.StoreActionTypes;
@@ -96,6 +136,12 @@ export class AuditViewComponent {
         this.handle_open_audit = this.handle_open_audit.bind(this);
         this.handle_start_new_audit = this.handle_start_new_audit.bind(this);
         this.handle_filter_input = this.handle_filter_input.bind(this);
+        this.handle_type_filter_change = this.handle_type_filter_change.bind(this);
+        this.handle_audit_table_page_size_change = this.handle_audit_table_page_size_change.bind(this);
+        this.handle_audit_list_group_mode_change = this.handle_audit_list_group_mode_change.bind(this);
+        this.handle_audit_filter_toggle = this.handle_audit_filter_toggle.bind(this);
+        this.handle_audit_filter_reset = this.handle_audit_filter_reset.bind(this);
+        this.handle_skip_to_audit_filter = this.handle_skip_to_audit_filter.bind(this);
 
         if (this.Helpers?.load_css_safely) {
             await this.Helpers.load_css_safely(AuditViewComponent.CSS_PATH, 'AuditViewComponent', {
@@ -107,7 +153,6 @@ export class AuditViewComponent {
         }
         this._unsubscribe_audits = null;
         this._unsubscribe_rules = null;
-        this._unsubscribe_store = null;
 
         this._auditsTable = new GenericTableComponent();
         await this._auditsTable.init({ deps });
@@ -117,37 +162,166 @@ export class AuditViewComponent {
         await this._draftRulesTable.init({ deps });
         this._auditListComponent = new AuditListComponent();
         await this._auditListComponent.init({ deps });
+        this._auditGroupedListComponent = new AuditGroupedListComponent();
+        await this._auditGroupedListComponent.init({ deps });
         this.draft_rules = [];
     }
 
-    _sync_audit_filter_from_dom() {
-        if (this.audit_mode !== 'audits') return;
-        const active = document.activeElement;
-        if (!active || active.id !== 'audit-filter-input' || typeof active.value !== 'string') return;
-        this.audit_filter_query = active.value;
-        this._auditFilterHadFocus = true;
-        if (typeof active.selectionStart === 'number' && typeof active.selectionEnd === 'number') {
-            this._auditFilterSelection = {
-                selectionStart: active.selectionStart,
-                selectionEnd: active.selectionEnd
-            };
-        }
+    get_audit_table_page_size_number() {
+        return audit_page_size_string_to_number(this.audit_table_page_size);
     }
 
-    _refresh_audits_section() {
-        if (!this.root || this.audit_mode !== 'audits') return;
-        const current_root = this._audits_section_root;
-        if (!current_root || !current_root.parentNode || !document.contains(current_root)) {
+    _reset_all_audit_table_pages() {
+        const keys = [
+            '_auditListPage_start_view_audits_heading',
+            '_auditListPage_start_view_new_audits_heading',
+            '_auditListPage_start_view_completed_audits_heading',
+            '_auditListPage_start_view_archived_audits_heading'
+        ];
+        keys.forEach((k) => {
+            this[k] = 0;
+        });
+        this._rulesPublishedPage = 0;
+        this._rulesDraftPage = 0;
+    }
+
+    _render_audit_lists_section() {
+        if (!this.root || this.audit_mode !== 'audits' || !this.api_available) return;
+        const container = this.root.querySelector('.audit-audits-sections-container');
+        if (!container) {
             this.render();
             return;
         }
-        if (update_audit_samples_filter(this, current_root)) {
+        render_audit_audits_sections(this, container);
+    }
+
+    async _run_audit_lists_change_with_animation(apply_change) {
+        if (this.audit_mode !== 'audits' || !this.root) {
+            apply_change();
             return;
         }
-        const parent = current_root.parentNode;
-        const new_section = render_audit_samples_section(this);
-        parent.replaceChild(new_section, current_root);
-        this._audits_section_root = new_section;
+        if (this._audit_list_toggle_animating) return;
+
+        this._audit_list_toggle_animating = true;
+        try {
+            await run_audit_lists_toggle_animation(
+                () => this.root?.querySelector('.audit-audits-sections-container') ?? null,
+                apply_change
+            );
+        } finally {
+            this._audit_list_toggle_animating = false;
+        }
+    }
+
+    async handle_audit_table_page_size_change(event) {
+        const target = event && event.target ? event.target : null;
+        const raw = target ? String(target.value || 'all') : 'all';
+        const allowed_sizes = ['5', '10', '25', '50', 'all'];
+        const value = allowed_sizes.includes(raw) ? raw : 'all';
+        if (this.audit_table_page_size === value || this._audit_list_toggle_animating) return;
+        this.audit_table_page_size = value;
+        this._reset_all_audit_table_pages();
+        await this._run_audit_lists_change_with_animation(() => {
+            this._render_audit_lists_section();
+        });
+    }
+
+    handle_audit_filter_toggle() {
+        this.audit_filter_panel_open = !this.audit_filter_panel_open;
+        const wrapper = this.root?.querySelector('.audit-filter-wrapper') ?? null;
+        if (wrapper) {
+            wrapper.classList.toggle('audit-filter-wrapper--open', this.audit_filter_panel_open);
+        }
+        if (this._auditFilterToggleRef) {
+            this._auditFilterToggleRef.setAttribute(
+                'aria-expanded',
+                this.audit_filter_panel_open ? 'true' : 'false'
+            );
+        }
+    }
+
+    async handle_audit_filter_reset() {
+        const default_page_size = 'all';
+        const already_default =
+            !this.audit_filter_query &&
+            !this.audit_type_filter &&
+            this.audit_table_page_size === default_page_size &&
+            this.audit_list_group_mode === 'all';
+        if (already_default || this._audit_list_toggle_animating) return;
+
+        if (this._auditFilterInputRef) {
+            this._auditFilterInputRef.value = '';
+        }
+        if (this._auditTypeSelectRef) {
+            this._auditTypeSelectRef.value = '';
+        }
+        if (this._auditPageSizeSelectRef) {
+            this._auditPageSizeSelectRef.value = default_page_size;
+        }
+        if (this._auditGroupByCaseSelectRef) {
+            this._auditGroupByCaseSelectRef.value = 'all';
+        }
+
+        this.audit_filter_query = '';
+        this.audit_type_filter = '';
+        this.audit_table_page_size = default_page_size;
+        this.audit_list_group_mode = 'all';
+        write_audit_list_group_mode_pref('all');
+        this._reset_all_audit_table_pages();
+
+        await this._run_audit_lists_change_with_animation(() => {
+            this._render_audit_lists_section();
+        });
+
+        if (this._auditFilterResetRef && document.contains(this._auditFilterResetRef)) {
+            try {
+                this._auditFilterResetRef.focus({ preventScroll: true });
+            } catch {
+                this._auditFilterResetRef.focus();
+            }
+        }
+    }
+
+    _ensure_audit_filter_panel_open() {
+        const toggle = this._auditFilterToggleRef;
+        if (!toggle || !document.contains(toggle)) return;
+        if (window.getComputedStyle(toggle).display === 'none') return;
+        if (this.audit_filter_panel_open) return;
+        this.audit_filter_panel_open = true;
+        const wrapper = this.root?.querySelector('.audit-filter-wrapper') ?? null;
+        if (wrapper) {
+            wrapper.classList.add('audit-filter-wrapper--open');
+        }
+        toggle.setAttribute('aria-expanded', 'true');
+    }
+
+    handle_skip_to_audit_filter(event) {
+        if (event) event.preventDefault();
+        this._ensure_audit_filter_panel_open();
+        const input = document.getElementById('audit-filter-input');
+        const region = document.getElementById('audit-filter-region');
+        const target = input || region;
+        if (!target) return;
+        try {
+            target.focus({ preventScroll: false });
+        } catch {
+            target.focus();
+        }
+        target.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    }
+
+    async handle_audit_list_group_mode_change(event) {
+        const target = event && event.target ? event.target : null;
+        const value = target ? String(target.value || 'all') : 'all';
+        if (!AUDIT_LIST_GROUP_MODES.includes(value)) return;
+        if (this.audit_list_group_mode === value || this._audit_list_toggle_animating) return;
+
+        await this._run_audit_lists_change_with_animation(() => {
+            this.audit_list_group_mode = value;
+            write_audit_list_group_mode_pref(value);
+            this._reset_all_audit_table_pages();
+            this._render_audit_lists_section();
+        });
     }
 
     handle_filter_input(event) {
@@ -155,7 +329,19 @@ export class AuditViewComponent {
         const value = target ? target.value : '';
         if (this.audit_filter_query === value) return;
         this.audit_filter_query = value;
-        this._refresh_audits_section();
+        this._reset_all_audit_table_pages();
+        this._render_audit_lists_section();
+    }
+
+    async handle_type_filter_change(event) {
+        const target = event && event.target ? event.target : null;
+        const value = target ? String(target.value || '') : '';
+        if (this.audit_type_filter === value || this._audit_list_toggle_animating) return;
+        this.audit_type_filter = value;
+        this._reset_all_audit_table_pages();
+        await this._run_audit_lists_change_with_animation(() => {
+            this._render_audit_lists_section();
+        });
     }
 
     _rule_fingerprint(r) {
@@ -175,7 +361,11 @@ export class AuditViewComponent {
         try {
             const fresh = await get_audits();
             this.audits = fresh;
-            if (this.root) this.render();
+            if (this.audit_mode === 'audits') {
+                this._render_audit_lists_section();
+            } else if (this.root) {
+                this.render();
+            }
         } catch {
             /* tyst vid fel */
         }
@@ -713,9 +903,6 @@ export class AuditViewComponent {
             if (typeof window !== 'undefined') {
                 set_show_empty_metadata_form(true);
             }
-            if (typeof DraftManager?.clearDraftForScope === 'function') {
-                DraftManager.clearDraftForScope('metadata', {});
-            }
             this.router('metadata');
         } catch (error) {
             this.NotificationComponent?.show_global_message(
@@ -748,13 +935,7 @@ export class AuditViewComponent {
         const t = this.get_t_func();
         const base = (r.name || `Regelfil ${r.id}`).trim();
         const is_production = !!r.production_base_id;
-        if (is_production) {
-            const ver_raw = r.content_metadata_version ?? r.version_display;
-            const ver = ver_raw != null ? String(ver_raw).trim() : '';
-            return ver
-                ? `${base} ${ver} (${t('rulefile_status_production_label')})`
-                : `${base} (${t('rulefile_status_production_label')})`;
-        }
+        if (is_production) return `${base} (${t('rulefile_status_production_label')})`;
         if (r.version_display) return `${base} ${r.version_display} (${t('rulefile_status_published_label')})`;
         return base;
     }
@@ -1661,11 +1842,10 @@ export class AuditViewComponent {
                 delete_button,
                 yes_label: t('audit_confirm_delete_radera'),
                 no_label: t('audit_confirm_delete_behall'),
-                skip_history_pop_on_confirm: true,
-                on_confirm: () => this.handle_delete_audit(audit_id, audit_display_name)
+                on_confirm: () => this.handle_delete_audit(audit_id)
             });
         } else {
-            this.handle_delete_audit(audit_id, audit_display_name);
+            this.handle_delete_audit(audit_id);
         }
     }
 
@@ -1749,45 +1929,16 @@ export class AuditViewComponent {
         );
     }
 
-    _clear_loaded_audit_from_state() {
-        this.dispatch({
-            type: this.StoreActionTypes.REPLACE_STATE_FROM_REMOTE,
-            payload: {
-                ...JSON.parse(JSON.stringify(initial_state)),
-                saveFileVersion: APP_STATE_VERSION
-            }
-        });
-    }
-
-    _remove_audit_from_local_list(audit_id) {
-        this.audits = (this.audits || []).filter((a) => String(a?.id) !== String(audit_id));
-    }
-
-    _is_deleted_open_audit(audit_id) {
-        const current_state = typeof this.getState === 'function' ? this.getState() : null;
-        const open_audit_id = current_state?.auditId;
-        if (open_audit_id === null || open_audit_id === undefined || open_audit_id === '') {
-            return false;
-        }
-        return String(open_audit_id) === String(audit_id);
-    }
-
-    async handle_delete_audit(audit_id, audit_display_name) {
+    async handle_delete_audit(audit_id) {
         const t = this.get_t_func();
-        const deleted_open_audit = this._is_deleted_open_audit(audit_id);
-        const display_name = (audit_display_name || '').trim() || String(audit_id);
         try {
             await delete_audit(audit_id);
-            await this.ensure_api_data();
-            this._remove_audit_from_local_list(audit_id);
-            if (deleted_open_audit) {
-                this._clear_loaded_audit_from_state();
-            }
-            await this.render();
             this.NotificationComponent?.show_global_message(
-                t('audit_audit_deleted_success', { name: display_name }),
+                t('audit_audit_deleted_success'),
                 'success'
             );
+            await this.ensure_api_data();
+            this.render();
         } catch (error) {
             this.NotificationComponent?.show_global_message(
                 error.message || t('audit_delete_error'),
@@ -1978,8 +2129,6 @@ export class AuditViewComponent {
     async render() {
         if (!this.root || !this.Helpers?.create_element) return;
 
-        this._sync_audit_filter_from_dom();
-
         if (!this._api_checked) {
             if (!this._api_load_started) {
                 this._api_load_started = true;
@@ -2004,7 +2153,15 @@ export class AuditViewComponent {
         const plate = this.Helpers.create_element('div', { class_name: 'content-plate audit-plate' });
 
         this._auditFilterInputRef = null;
-        this._audits_section_root = null;
+        this._auditTypeSelectRef = null;
+        this._auditPageSizeSelectRef = null;
+        this._auditGroupByCaseSelectRef = null;
+        this._auditFilterToggleRef = null;
+        this._auditFilterResetRef = null;
+
+        if (this.audit_mode === 'audits') {
+            plate.appendChild(create_audit_filter_skip_link(this));
+        }
 
         const header = render_audit_header(this);
         plate.appendChild(header);
@@ -2026,7 +2183,6 @@ export class AuditViewComponent {
         if (this.audit_mode === 'rules') {
             plate.appendChild(left_col);
         } else if (this.audit_mode === 'audits') {
-            this._audits_section_root = right_col;
             plate.appendChild(right_col);
         } else {
             two_col.appendChild(left_col);
@@ -2035,6 +2191,30 @@ export class AuditViewComponent {
         }
 
         this.root.appendChild(plate);
+
+        if (this.audit_mode === 'audits' && (this._auditTypeSelectRef || this._auditPageSizeSelectRef || this._auditGroupByCaseSelectRef)) {
+            const measure = (sel) => {
+                if (!sel || !document.contains(sel)) return;
+                const px = measure_backup_select_min_width_px(sel);
+                if (px > 0) {
+                    sel.style.minWidth = `${px}px`;
+                }
+            };
+            setTimeout(() => {
+                measure(this._auditTypeSelectRef);
+                measure(this._auditPageSizeSelectRef);
+                measure(this._auditGroupByCaseSelectRef);
+            }, 0);
+        } else if ((this.audit_mode === 'rules' || this.audit_mode === 'both') && this._auditPageSizeSelectRef) {
+            const sel = this._auditPageSizeSelectRef;
+            setTimeout(() => {
+                if (!sel || !document.contains(sel)) return;
+                const px = measure_backup_select_min_width_px(sel);
+                if (px > 0) {
+                    sel.style.minWidth = `${px}px`;
+                }
+            }, 0);
+        }
 
         if (this.audit_mode === 'audits' && this._auditFilterHadFocus && this._auditFilterInputRef) {
             const input = this._auditFilterInputRef;
@@ -2058,6 +2238,34 @@ export class AuditViewComponent {
         this._auditFilterHadFocus = false;
         this._auditFilterSelection = null;
 
+        const focus_select_restore = (el) => {
+            if (!el || !document.contains(el)) return;
+            try {
+                el.focus({ preventScroll: true });
+            } catch {
+                el.focus();
+            }
+        };
+        if (this.audit_mode === 'audits' && this._auditTypeSelectHadFocus && this._auditTypeSelectRef) {
+            const type_sel = this._auditTypeSelectRef;
+            setTimeout(() => focus_select_restore(type_sel), 0);
+        }
+        if (this.audit_mode === 'audits' && this._auditPageSizeSelectHadFocus && this._auditPageSizeSelectRef) {
+            const page_sel = this._auditPageSizeSelectRef;
+            setTimeout(() => focus_select_restore(page_sel), 0);
+        }
+        if ((this.audit_mode === 'rules' || this.audit_mode === 'both') && this._auditPageSizeSelectHadFocus && this._auditPageSizeSelectRef) {
+            const page_sel_rules = this._auditPageSizeSelectRef;
+            setTimeout(() => focus_select_restore(page_sel_rules), 0);
+        }
+        if (this.audit_mode === 'audits' && this._auditGroupByCaseHadFocus && this._auditGroupByCaseSelectRef) {
+            const group_sel = this._auditGroupByCaseSelectRef;
+            setTimeout(() => focus_select_restore(group_sel), 0);
+        }
+        this._auditTypeSelectHadFocus = false;
+        this._auditPageSizeSelectHadFocus = false;
+        this._auditGroupByCaseHadFocus = false;
+
         if (this.audit_mode === 'audits' && this.deps.params?.startNew === '1') {
             setTimeout(() => {
                 if (typeof this.handle_start_new_audit === 'function') {
@@ -2080,20 +2288,6 @@ export class AuditViewComponent {
                 this._unsubscribe_rules = subscribe_rules(() => this._on_rules_changed());
             }
         }
-
-        if (
-            this.audit_mode === 'audits' &&
-            !this._unsubscribe_store &&
-            typeof this.subscribe === 'function'
-        ) {
-            this._unsubscribe_store = this.subscribe((_state, listener_meta) => {
-                if (listener_meta?.skip_render) return;
-                if (this.audit_mode !== 'audits' || !this.root) return;
-                const active = document.activeElement;
-                if (active?.id === 'audit-filter-input') return;
-                this.render();
-            });
-        }
     }
 
     destroy() {
@@ -2105,17 +2299,13 @@ export class AuditViewComponent {
             this._unsubscribe_rules();
             this._unsubscribe_rules = null;
         }
-        if (typeof this._unsubscribe_store === 'function') {
-            this._unsubscribe_store();
-            this._unsubscribe_store = null;
-        }
         this.upload_file_input = null;
         this.upload_audit_file_input = null;
-        this._audits_section_root = null;
         this._auditsTable?.destroy?.();
         this._publishedRulesTable?.destroy?.();
         this._draftRulesTable?.destroy?.();
         this._auditListComponent?.destroy?.();
+        this._auditGroupedListComponent?.destroy?.();
         this.root = null;
         this.deps = null;
     }

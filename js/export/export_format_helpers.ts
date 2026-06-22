@@ -3,7 +3,7 @@
  */
 
 import { Paragraph, TextRun } from 'docx';
-import { recalculateAuditTimes } from '../audit_logic.js';
+import { recalculateAuditTimes, get_audit_last_updated_display_timestamp } from '../audit_logic.js';
 
 export function create_paragraphs_with_line_breaks(text: unknown, options: Record<string, unknown> = {}): Paragraph[] {
     if (!text) {
@@ -42,8 +42,7 @@ export function escape_for_csv(str: unknown): string {
     }
     let result = String(str);
     result = result.replace(/"/g, '""');
-    result = result.replace(/(\r\n|\n|\r)/gm, ' ');
-    if (/[",;]/.test(result)) {
+    if (/[",;\r\n]/.test(result)) {
         result = `"${result}"`;
     }
     return result;
@@ -102,6 +101,17 @@ export function get_effective_display_times_for_audit(audit: unknown): {
         startTime: a.startTime || (merged as Record<string, unknown> | null)?.startTime || null,
         endTime: a.endTime || (merged as Record<string, unknown> | null)?.endTime || null
     };
+}
+
+/** Samma tidsstämpel som granskningsöversikten (AuditInfo), inte bara updated_at. */
+export function get_audit_last_updated_iso_for_export(audit: unknown): string | null {
+    if (!audit) return null;
+    const from_display = get_audit_last_updated_display_timestamp(
+        audit as import('../logic/audit_logic_types.js').AuditStateShape
+    );
+    if (from_display) return from_display;
+    const updated_at = (audit as { updated_at?: unknown }).updated_at;
+    return typeof updated_at === 'string' && updated_at.trim() ? updated_at : null;
 }
 
 export function extractDeficiencyNumber(deficiencyId: unknown): string {

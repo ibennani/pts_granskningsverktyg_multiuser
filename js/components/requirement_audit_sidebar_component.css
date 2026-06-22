@@ -152,17 +152,8 @@
 }
 
 .requirement-audit-sidebar__item:focus-within {
-    outline: var(--de-focus-ring-width, var(--focus-outer-width)) var(--de-focus-ring-style, var(--focus-outer-style, solid)) var(--de-focus-color, var(--focus-outer-color));
-    outline-offset: var(--de-focus-ring-outline-offset, var(--focus-ring-outline-offset));
-    box-shadow: none;
-    position: relative;
-    z-index: var(--focus-z-index);
-}
-
-.requirement-audit-sidebar__item:focus-within .requirement-audit-sidebar__link:focus,
-.requirement-audit-sidebar__item:focus-within .requirement-audit-sidebar__link:focus-visible {
-    outline: none;
-    box-shadow: none;
+    border-color: var(--primary-color);
+    background-color: color-mix(in srgb, var(--accent-color-light) 20%, var(--plate-background-color));
 }
 
 .requirement-audit-sidebar__item.is-active {
@@ -211,18 +202,17 @@
 
 .requirement-audit-sidebar__item-status-row .status-icon-tooltip-wrapper {
     flex-shrink: 0;
+    position: relative;
 }
 
-/* Tooltip i sidopanelen visas bara i overlay – inte inline */
+/* Tooltip-texten ska inte påverka layouten i sidopanelen – bara visas i overlay */
 .requirement-audit-sidebar__item-status-row .status-icon-tooltip {
-    visibility: hidden;
+    position: absolute;
+    left: 50%;
+    top: 0;
+    transform: translateX(-50%);
     opacity: 0;
-}
-
-.requirement-audit-sidebar__item-status-row .status-icon-tooltip-wrapper:hover .status-icon-tooltip,
-.requirement-audit-sidebar__item-status-row .status-icon-tooltip-wrapper:focus-within .status-icon-tooltip {
-    visibility: hidden;
-    opacity: 0;
+    pointer-events: none;
 }
 
 .requirement-audit-sidebar__meta {

@@ -3,7 +3,7 @@
 import * as Helpers from '../utils/helpers.js';
 import { get_translation_t } from '../utils/translation_access.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
-import { find_requirement_definition, find_check_def_by_storage_id, find_pass_criterion_def_by_storage_id } from '../audit_logic.js';
+import { find_requirement_definition } from '../audit_logic.js';
 
 /**
  * Bygger varningstext för radering baserat på typ (requirement, check, criterion).
@@ -30,15 +30,15 @@ export function build_delete_warning_text(type, params, getState, Translation, _
             return `${intro} ${item}\n\n${warning}`;
         }
         case 'check': {
-            const check = find_check_def_by_storage_id(requirement.checks, checkId);
+            const check = requirement.checks?.find(c => c.id === checkId);
             if (!check) return null;
             const intro = t('confirm_delete_check_intro');
             const item = check.condition || '';
             return `${intro} ${item}`;
         }
         case 'criterion': {
-            const parentCheck = find_check_def_by_storage_id(requirement.checks, checkId);
-            const criterion = find_pass_criterion_def_by_storage_id(parentCheck?.passCriteria, pcId);
+            const parentCheck = requirement.checks?.find(c => c.id === checkId);
+            const criterion = parentCheck?.passCriteria?.find(pc => pc.id === pcId);
             if (!criterion) return null;
             const intro = t('confirm_delete_criterion_intro');
             const item = criterion.requirement || '';
@@ -75,18 +75,8 @@ function get_previous_focusable(delete_button) {
  * @param {HTMLElement} [opts.focusOnConfirm] - Element att fokusera vid bekräftelse (t.ex. när raderat innehåll tas bort)
  * @param {string} [opts.yes_label] - Anpassad text för bekräftelseknappen (t.ex. "Radera")
  * @param {string} [opts.no_label] - Anpassad text för avbryt-knappen (t.ex. "Behåll")
- * @param {boolean} [opts.skip_history_pop_on_confirm] - Undvik history.back() vid bekräftelse (t.ex. innan programmatisk navigering)
  */
-export function show_confirm_delete_modal({
-    h1_text,
-    warning_text,
-    delete_button,
-    on_confirm,
-    focusOnConfirm,
-    yes_label,
-    no_label,
-    skip_history_pop_on_confirm
-}) {
+export function show_confirm_delete_modal({ h1_text, warning_text, delete_button, on_confirm, focusOnConfirm, yes_label, no_label }) {
     const ModalComponent = app_runtime_refs.modal_component;
     const t = get_translation_t();
 
@@ -113,7 +103,6 @@ export function show_confirm_delete_modal({
             yes_btn.addEventListener('click', () => {
                 const focus_el = focusOnConfirm ? focus_on_confirm : previous_focusable;
                 modal.close(focus_el, {
-                    skipHistoryPop: skip_history_pop_on_confirm === true,
                     onClosed: () => {
                         if (typeof on_confirm === 'function') on_confirm();
                     }

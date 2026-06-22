@@ -1,11 +1,10 @@
 // js/logic/session_boot_merge.js
-// Vid cold start (ingen sessionStorage) men localStorage-backup: jämför innehållstidsstämplar med servern.
+// Vid cold start (ingen sessionStorage) men localStorage-backup: jämför med servern, högst version vinner.
 
 import { load_audit_with_rule_file } from '../api/client.js';
 import { set_restore_focus_info } from '../app/browser_globals.js';
 import { sync_to_server_now } from './server_sync.js';
 import { navigate_to_default_audit_view } from './audit_open_logic.js';
-import { should_push_local_audit_to_server } from './audit_sync_tracking.js';
 
 /**
  * Applicerar backup mot servern utan dialog. Kräver inloggning för serverhämtning när auditId finns.
@@ -95,19 +94,20 @@ export async function apply_session_boot_merge_from_backup(options) {
             return { applied: true };
         }
 
-        const use_local = should_push_local_audit_to_server(local_state, remote);
+        const rv = Number(remote.version ?? 0);
+        const lv = Number(local_state.version ?? 0);
 
-        if (use_local) {
+        if (rv >= lv) {
+            await dispatch({
+                type: StoreActionTypes.REPLACE_STATE_FROM_REMOTE,
+                payload: { ...remote, saveFileVersion: remote.saveFileVersion || '2.1.0' }
+            });
+        } else {
             await dispatch({
                 type: StoreActionTypes.LOAD_AUDIT_FROM_FILE,
                 payload: local_state
             });
             await sync_to_server_now(getState, dispatch);
-        } else {
-            await dispatch({
-                type: StoreActionTypes.REPLACE_STATE_FROM_REMOTE,
-                payload: { ...remote, saveFileVersion: remote.saveFileVersion || '2.1.0' }
-            });
         }
         navigate_after_merge();
         return { applied: true };

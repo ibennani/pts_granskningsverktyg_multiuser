@@ -6,7 +6,7 @@
     --swap-border-end: rgba(0, 92, 191, 0);
 }
 
-[data-theme="dark"] {
+[data-theme="dark"]{
     --swap-border-start: rgba(255, 198, 84, 1);
     --swap-border-mid: rgba(255, 198, 84, 0.65);
     --swap-border-end: rgba(255, 198, 84, 0);
@@ -39,7 +39,7 @@
     position: relative;
 }
 
-[data-theme="dark"] .check-item-edit {
+[data-theme="dark"] .check-item-edit , [data-theme="dark-experimental"] .check-item-edit {
     background-color: color-mix(in srgb, var(--background-color) 95%, black);
 }
 

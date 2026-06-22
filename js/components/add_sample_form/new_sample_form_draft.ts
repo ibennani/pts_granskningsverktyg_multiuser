@@ -9,6 +9,7 @@ export type NewSampleFormDraft = {
     description?: string;
     url?: string;
     selectedContentTypes?: string[];
+    attachedMediaFilenames?: string[];
 };
 
 const KEY_PREFIX = 'gv_new_sample_form_draft';

@@ -50,80 +50,30 @@ export function remove_from_overlay(node) {
 const TOOLTIP_WRAPPER_SEL = '.status-icon-tooltip-wrapper';
 const TOOLTIP_SEL = '.status-icon-tooltip';
 const TOOLTIP_VISIBLE_CLASS = 'status-icon-tooltip--in-overlay';
-
-function _read_tooltip_gap_px() {
-    const raw = getComputedStyle(document.documentElement).getPropertyValue('--tooltip-gap').trim();
-    const parsed = parseFloat(raw);
-    return Number.isFinite(parsed) ? parsed : 3;
-}
+const TOOLTIP_GAP_PX = 6;
 
 let _current_tooltip_wrapper = null;
 let _current_tooltip_el = null;
-let _sync_raf_id = null;
-
-function _wrapper_has_active_trigger(wrapper) {
-    if (!wrapper || !document.body.contains(wrapper)) return false;
-    return wrapper.matches(':hover') || wrapper.matches(':focus-within');
-}
-
-function _position_tooltip_in_overlay(wrapper, tooltip) {
-    const gap_px = _read_tooltip_gap_px();
-    const wr = wrapper.getBoundingClientRect();
-    tooltip.style.left = `${wr.left + wr.width / 2}px`;
-    /* top = knappens överkant minus gap; translate(-100%) placerar plattans underkant där */
-    tooltip.style.top = `${wr.top - gap_px}px`;
-    tooltip.style.transform = 'translate(-50%, -100%)';
-}
-
-function _stop_tooltip_sync_loop() {
-    if (_sync_raf_id === null) return;
-    cancelAnimationFrame(_sync_raf_id);
-    _sync_raf_id = null;
-}
-
-function _sync_overlay_tooltip() {
-    if (!_current_tooltip_wrapper || !_current_tooltip_el) {
-        _stop_tooltip_sync_loop();
-        return;
-    }
-    if (!_wrapper_has_active_trigger(_current_tooltip_wrapper)) {
-        _hide_tooltip_from_overlay();
-        return;
-    }
-    _position_tooltip_in_overlay(_current_tooltip_wrapper, _current_tooltip_el);
-}
-
-function _tooltip_sync_loop_frame() {
-    _sync_overlay_tooltip();
-    if (_current_tooltip_el) {
-        _sync_raf_id = requestAnimationFrame(_tooltip_sync_loop_frame);
-    } else {
-        _sync_raf_id = null;
-    }
-}
-
-function _start_tooltip_sync_loop() {
-    if (_sync_raf_id !== null) return;
-    _sync_raf_id = requestAnimationFrame(_tooltip_sync_loop_frame);
-}
 
 function _show_tooltip_in_overlay(wrapper) {
     if (!wrapper || !document.body.contains(wrapper)) return;
-    if (!_wrapper_has_active_trigger(wrapper)) return;
     const tooltip = wrapper.querySelector(TOOLTIP_SEL);
     if (!tooltip) return;
     _hide_tooltip_from_overlay();
     const container = get_overlay_container();
     container.appendChild(tooltip);
     tooltip.classList.add(TOOLTIP_VISIBLE_CLASS);
-    _position_tooltip_in_overlay(wrapper, tooltip);
+    const wr = wrapper.getBoundingClientRect();
+    tooltip.style.top = `${wr.top - 8}px`;
+    tooltip.style.left = `${wr.left + wr.width / 2}px`;
+    tooltip.style.transform = 'translate(-50%, -100%)';
+    const tr = tooltip.getBoundingClientRect();
+    tooltip.style.top = `${wr.top - tr.height - TOOLTIP_GAP_PX}px`;
     _current_tooltip_wrapper = wrapper;
     _current_tooltip_el = tooltip;
-    _start_tooltip_sync_loop();
 }
 
 function _hide_tooltip_from_overlay() {
-    _stop_tooltip_sync_loop();
     if (!_current_tooltip_el || !_current_tooltip_wrapper) return;
     const tooltip = _current_tooltip_el;
     const wrapper = _current_tooltip_wrapper;
@@ -134,8 +84,6 @@ function _hide_tooltip_from_overlay() {
         tooltip.style.top = '';
         tooltip.style.left = '';
         tooltip.style.transform = '';
-        tooltip.style.bottom = '';
-        tooltip.style.right = '';
         if (tooltip.parentNode && tooltip.parentNode.id === OVERLAY_ID) {
             tooltip.parentNode.removeChild(tooltip);
         }
@@ -145,10 +93,6 @@ function _hide_tooltip_from_overlay() {
     }
 }
 
-function _schedule_tooltip_sync() {
-    queueMicrotask(_sync_overlay_tooltip);
-}
-
 function _handle_tooltip_mouseover(e) {
     const wrapper = e.target.closest(TOOLTIP_WRAPPER_SEL);
     if (wrapper) _show_tooltip_in_overlay(wrapper);
@@ -156,16 +100,9 @@ function _handle_tooltip_mouseover(e) {
 
 function _handle_tooltip_mouseout(e) {
     const wrapper = e.target.closest(TOOLTIP_WRAPPER_SEL);
-    if (!wrapper) return;
-    const related = e.relatedTarget;
-    if (related instanceof Node && wrapper.contains(related)) return;
-    // Dölj när pekaren lämnar wrapper — även om :focus-within fortfarande är sant efter klick,
-    // annars kan overlay-tooltipen hänga kvar i krav-vyn efter statusändring eller navigering.
-    if (_current_tooltip_wrapper === wrapper) {
+    if (wrapper && (!e.relatedTarget || !wrapper.contains(e.relatedTarget))) {
         _hide_tooltip_from_overlay();
-        return;
     }
-    _schedule_tooltip_sync();
 }
 
 function _handle_tooltip_focusin(e) {
@@ -175,15 +112,9 @@ function _handle_tooltip_focusin(e) {
 
 function _handle_tooltip_focusout(e) {
     const wrapper = e.target.closest(TOOLTIP_WRAPPER_SEL);
-    if (!wrapper) return;
-    // Vänta tills fokus flyttats (relatedTarget) — dölj direkt om wrapper inte längre har hover/fokus.
-    queueMicrotask(() => {
-        if (_current_tooltip_wrapper === wrapper && !_wrapper_has_active_trigger(wrapper)) {
-            _hide_tooltip_from_overlay();
-            return;
-        }
-        _sync_overlay_tooltip();
-    });
+    if (wrapper && (!e.relatedTarget || !wrapper.contains(e.relatedTarget))) {
+        _hide_tooltip_from_overlay();
+    }
 }
 
 let _tooltip_overlay_setup_done = false;
@@ -200,7 +131,4 @@ export function setup_tooltip_overlay() {
     document.addEventListener('mouseout', _handle_tooltip_mouseout, true);
     document.addEventListener('focusin', _handle_tooltip_focusin, true);
     document.addEventListener('focusout', _handle_tooltip_focusout, true);
-    document.addEventListener('scroll', _schedule_tooltip_sync, true);
-    window.addEventListener('resize', _schedule_tooltip_sync);
-    document.addEventListener('pointerdown', _schedule_tooltip_sync, true);
 }

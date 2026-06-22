@@ -13,7 +13,7 @@
     line-height: 1.7;
 }
 
-[data-theme="dark"] .warning-box p {
+[data-theme="dark"] .warning-box p , [data-theme="dark-experimental"] .warning-box p {
     color: var(--text-color);
 }
 

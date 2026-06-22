@@ -41,6 +41,7 @@ export class AuditListComponent {
      * @param {function(string|number)} opts.onDownloadAudit - Callback när en granskning laddas ner.
      * @param {function(string|number)} [opts.onDeleteAudit] - Callback när en granskning raderas.
      * @param {function(string): string} [opts.get_status_label] - Funktion för att mappa status till text.
+     * @param {{ current_page?: number, page_size: number|null, on_page_change: function(number): void }} [opts.pagination] - Valfri sidindelning.
      */
     render(opts) {
         const root_el = opts.root ?? this.root;
@@ -57,9 +58,7 @@ export class AuditListComponent {
             t,
             Helpers: this.Helpers,
             Translation: this.Translation,
-            get_status_label,
-            get_live_audit_state:
-                typeof this.deps?.getState === 'function' ? () => this.deps.getState() : undefined
+            get_status_label
         };
 
         const handlers = {
@@ -84,7 +83,8 @@ export class AuditListComponent {
             tableClassName: 'generic-table generic-table--audit-list',
             sortState: opts.sortState,
             onSort: opts.onSort,
-            t
+            t,
+            pagination: opts.pagination
         });
     }
 

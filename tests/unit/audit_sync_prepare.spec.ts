@@ -6,9 +6,9 @@ import { jest, describe, test, expect, beforeEach } from '@jest/globals';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const client_path = path.join(__dirname, '../../js/api/client.js');
-const connectivity_path = path.join(__dirname, '../../js/logic/connectivity_service.js');
+const spec_dir = path.dirname(fileURLToPath(import.meta.url));
+const client_path = path.join(spec_dir, '../../js/api/client.js');
+const connectivity_path = path.join(spec_dir, '../../js/logic/connectivity_service.js');
 
 const get_audit_version = jest.fn();
 const load_audit_with_rule_file = jest.fn();

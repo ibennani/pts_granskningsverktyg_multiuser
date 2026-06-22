@@ -3,10 +3,11 @@ import '../../css/components/side_menu_component.css';
 import { RequirementLookup } from '../logic/requirement_lookup.js';
 import { consoleManager } from '../utils/console_manager.js';
 import { build_compact_hash_fragment, expand_view_slug_from_hash, normalize_params_from_hash_query } from '../logic/router_url_codec.js';
-import { build_app_location_href_for_view } from '../logic/shareable_app_location.js';
 import { is_debug_modal_scroll, is_debug_nav, is_debug_problems_update } from '../app/runtime_flags.js';
 
 export class SideMenuComponent {
+    static CSS_PATH = '../../css/components/side_menu_component.css';
+
     async init({ root, deps }) {
         this.root = root;
         this.deps = deps;
@@ -37,7 +38,9 @@ export class SideMenuComponent {
         this.handle_close_side_menu_event = this.handle_close_side_menu_event.bind(this);
         this._compact_escape_listener_registered = false;
 
-        // Stilar laddas via statisk import högst upp; load_css med relativ path mot /v2 ger fel URL (404).
+        if (this.Helpers?.load_css && SideMenuComponent.CSS_PATH) {
+            await this.Helpers.load_css(SideMenuComponent.CSS_PATH).catch(() => {});
+        }
 
         this.unsubscribe = null;
         if (typeof deps.subscribe === 'function') {
@@ -249,12 +252,11 @@ export class SideMenuComponent {
             is_active = current_params.section === params.section;
         }
 
-        const flat_params = {};
-        for (const [k, v] of Object.entries(params && typeof params === 'object' ? params : {})) {
-            if (v === undefined || v === null) continue;
-            flat_params[k] = String(v);
-        }
-        const href = build_app_location_href_for_view(view_name, flat_params, this.getState);
+        const base_path = (window.location && window.location.pathname)
+            ? window.location.pathname.split('?')[0].split('#')[0]
+            : '/';
+        const search_params = new URLSearchParams({ view: view_name, ...params });
+        const href = `${base_path}?${search_params.toString()}`;
 
         const link = this.Helpers.create_element('a', {
             attributes: {
@@ -398,8 +400,8 @@ export class SideMenuComponent {
             const problems_count = (this.AuditLogic && typeof this.AuditLogic.count_audit_problems === 'function')
                 ? this.AuditLogic.count_audit_problems(state)
                 : 0;
-            const attached_media_count = (this.AuditLogic && typeof this.AuditLogic.count_attached_images === 'function')
-                ? this.AuditLogic.count_attached_images(state)
+            const media_places_count = (this.AuditLogic && typeof this.AuditLogic.count_attached_media_places === 'function')
+                ? this.AuditLogic.count_attached_media_places(state)
                 : 0;
 
             return {
@@ -409,7 +411,7 @@ export class SideMenuComponent {
                     { label: t('left_menu_audit_overview'), view_name: 'audit_overview' },
                     { label: t('left_menu_all_requirements_with_count', { count: requirement_count }), view_name: 'all_requirements', count_id: 'requirement_count', count_value: requirement_count },
                     { label: t('left_menu_sample_list_with_count', { count: sample_count }), view_name: 'sample_management', count_id: 'sample_count', count_value: sample_count },
-                    { label: t('left_menu_images_with_count', { count: attached_media_count }), view_name: 'audit_images', count_id: 'attached_media_count', count_value: attached_media_count },
+                    { label: t('left_menu_images_with_count', { count: media_places_count }), view_name: 'audit_images', count_id: 'media_places_count', count_value: media_places_count },
                     { label: t('left_menu_problems_with_count', { count: problems_count }), view_name: 'audit_problems', count_id: 'problems_count', count_value: problems_count },
                     { label: t('left_menu_actions'), view_name: 'audit_actions' },
                     { label: t('audit_back_to_start'), view_name: 'start', back_to_start: true }

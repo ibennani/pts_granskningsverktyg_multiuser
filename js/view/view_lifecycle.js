@@ -33,25 +33,15 @@ export async function render_quick_view({
     ensure_skip_link_target(skip_target);
 }
 
-export async function flush_before_view_switch({
-    flush_sync_to_server,
-    sync_prepared_audit_before_list_navigation,
-    getState,
-    dispatch,
-    consoleManager,
-    target_view_name
-}) {
+export async function flush_before_view_switch({ flush_sync_to_server, getState, dispatch, consoleManager }) {
     try {
-        if (typeof sync_prepared_audit_before_list_navigation === 'function') {
-            await sync_prepared_audit_before_list_navigation(getState, dispatch, target_view_name);
-        }
         await flush_sync_to_server(getState, dispatch);
     } catch (flushErr) {
         consoleManager.warn('[Main.js] flush_sync_to_server:', flushErr?.message || flushErr);
     }
 }
 
-export async function destroy_previous_view_component({
+export function destroy_previous_view_component({
     current_view_component_instance,
     notificationComponent,
     requirementListComponent,
@@ -65,7 +55,7 @@ export async function destroy_previous_view_component({
     notificationComponent?.clear_global_message?.();
     if (current_view_component_instance === requirementListComponent && view_name_to_render === 'rulefile_requirements') {
         try {
-            await resolve_destroy_promise(current_view_component_instance.destroy());
+            current_view_component_instance.destroy();
         } catch (err) {
             consoleManager.warn('[Main.js] Warning destroying RequirementListComponent before switching to rulefile view:', err);
             if (error_boundary_holder.instance && error_boundary_holder.instance.show_error) {
@@ -80,8 +70,7 @@ export async function destroy_previous_view_component({
     }
 
     try {
-        flush_component_before_leave_sync(current_view_component_instance);
-        await resolve_destroy_promise(current_view_component_instance.destroy());
+        current_view_component_instance.destroy();
     } catch (err) {
         consoleManager.error('[Main.js] Error destroying component:', err);
         if (error_boundary_holder.instance && error_boundary_holder.instance.show_error) {
@@ -92,23 +81,6 @@ export async function destroy_previous_view_component({
             });
         }
     }
-}
-
-function resolve_destroy_promise(destroy_result) {
-    if (destroy_result && typeof destroy_result.then === 'function') {
-        return destroy_result;
-    }
-    return Promise.resolve();
-}
-
-/**
- * Synkron tvingad sparning innan vykomponent förstörs (t.ex. kravvyn vid meny/hash-byte).
- * Asynkron uppföljning sker i komponentens destroy().
- * @param {object|null|undefined} instance
- */
-function flush_component_before_leave_sync(instance) {
-    if (!instance || typeof instance.flush_before_leave !== 'function') return;
-    instance.flush_before_leave();
 }
 
 export function clear_view_root_for_next_view({ view_root, ensure_main_view_content_host, clear_main_view_content_except_global_notifications }) {
@@ -160,8 +132,7 @@ export async function init_and_render_view_component({
         notificationComponent,
         AuditLogic,
         ValidationLogic,
-        AutosaveService,
-        refreshSideMenuAndTitle
+        AutosaveService
     } = deps;
 
     await render_ctx.current_view_component_instance.init({
@@ -183,8 +154,7 @@ export async function init_and_render_view_component({
             ExportLogic: ExportLogicApi,
             ValidationLogic,
             AutosaveService,
-            rightSidebarRoot: right_sidebar_root,
-            refreshSideMenuAndTitle
+            rightSidebarRoot: right_sidebar_root
         }
     });
 

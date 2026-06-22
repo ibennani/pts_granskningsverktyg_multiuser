@@ -11,11 +11,11 @@ import { exec, disconnect, host, remotePath } from './deploy-utils.js';
 
 async function main() {
     try {
-        console.info(`[diagnose] Ansluter till ${host} (${remotePath})...\n`);
+        console.log(`[diagnose] Ansluter till ${host} (${remotePath})...\n`);
         const rp = remotePath.replace(/'/g, "'\\''");
         const script = [
             'set +e',
-            `cd '${rp}' && echo "========== PM2 ==========" && npx pm2 list 2>/dev/null && (npx pm2 pid granskningsverktyget-v2 >/dev/null 2>&1 || (echo "" && echo "!!! PM2: granskningsverktyget-v2 saknas – inget lyssnar på port 3000 (502 i webbläsaren)." && echo "Starta backend: cd '${rp}' && npx pm2 start npm --name granskningsverktyget-v2 -- run dev:server && npx pm2 save"))`,
+            `cd '${rp}' && echo "========== PM2 ==========" && npx pm2 list 2>/dev/null`,
             'echo ""',
             'echo "========== Backend direkt (localhost:3000/api/health) =========="',
             'curl -sS --connect-timeout 10 -w " [HTTP %{http_code}]" http://127.0.0.1:3000/api/health 2>/dev/null | head -c 800',
@@ -34,8 +34,8 @@ async function main() {
             'echo "========== Klart =========="'
         ].join('; ');
         await exec(script, { cwd: false });
-        console.info('\n[diagnose] Om HTTP-kod mot localhost:3000 inte är 200: kontrollera att PM2-processen granskningsverktyget-v2 finns och kör, .env (DATABASE_URL), att Postgres körs och PM2-loggar ovan.');
-        console.info('[diagnose] Om localhost är 200 men HTTPS /v2/api/health inte: kontrollera nginx-config och SELinux.');
+        console.log('\n[diagnose] Om HTTP-kod mot localhost:3000 inte är 200: kontrollera .env (DATABASE_URL), att Postgres körs och PM2-loggar ovan.');
+        console.log('[diagnose] Om localhost är 200 men HTTPS /v2/api/health inte: kontrollera nginx-config och SELinux.');
     } finally {
         await disconnect();
     }

@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const projectRoot = join(__dirname, '..');
 
-console.info('[validate-imports] Checking for import issues...');
+console.log('[validate-imports] Checking for import issues...');
 
 let hasErrors = false;
 
@@ -55,5 +55,5 @@ if (hasErrors) {
     console.error('\n❌ Import validation failed!');
     process.exit(1);
 } else {
-    console.info('✅ Import validation passed!');
+    console.log('✅ Import validation passed!');
 }

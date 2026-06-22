@@ -1,5 +1,5 @@
 import "./confirm_delete_requirement_view_component.css";
-import { find_requirement_definition, find_check_def_by_storage_id, find_pass_criterion_def_by_storage_id, definition_primary_id } from '../audit_logic.js';
+import { find_requirement_definition } from '../audit_logic.js';
 
 export class ConfirmDeleteViewComponent {
     constructor() {
@@ -51,8 +51,7 @@ export class ConfirmDeleteViewComponent {
                     focusOnCancelSelector: `button[data-action="delete-req"][data-requirement-id="${reqId}"]`
                 };
             case 'check': {
-                const check = find_check_def_by_storage_id(requirement?.checks, checkId);
-                const dom_check_id = check ? definition_primary_id(check) : String(checkId ?? '');
+                const check = requirement?.checks.find(c => c.id === checkId);
                 return {
                     isValid: !!check,
                     titleKey: 'confirm_delete_check_title',
@@ -69,9 +68,8 @@ export class ConfirmDeleteViewComponent {
                 };
             }
             case 'criterion': {
-                const parentCheck = find_check_def_by_storage_id(requirement?.checks, checkId);
-                const criterion = find_pass_criterion_def_by_storage_id(parentCheck?.passCriteria, pcId);
-                const dom_pc_id = criterion ? definition_primary_id(criterion) : String(pcId ?? '');
+                const parentCheck = requirement?.checks.find(c => c.id === checkId);
+                const criterion = parentCheck?.passCriteria.find(pc => pc.id === pcId);
                 return {
                     isValid: !!criterion,
                     titleKey: 'confirm_delete_criterion_title',

@@ -1,0 +1,175 @@
+/**
+ * @fileoverview API för uppladdning och hantering av mediefiler per granskning.
+ */
+
+import express from 'express';
+import multer from 'multer';
+import fs from 'fs/promises';
+import path from 'path';
+import type { Request, Response, RequestHandler } from 'express';
+import { query } from '../db.js';
+import { MEDIA_MAX_UPLOAD_BYTES } from '../../shared/constants/media_upload_limits.js';
+import {
+    is_allowed_media_mime,
+    sanitize_media_filename
+} from '../../shared/media/sanitize_media_filename.js';
+import {
+    delete_audit_media_file,
+    ensure_audit_media_dir,
+    list_audit_media_files,
+    pick_upload_media_filename,
+    resolve_audit_media_file_path
+} from '../media/audit_media_storage.js';
+
+type AuthedRequest = express.Request & {
+    user?: { id: string; name: string };
+    media_upload_pick?: {
+        filename: string;
+        renamed_due_to_conflict: boolean;
+        requested_filename: string;
+    };
+};
+
+async function audit_exists(audit_id: string): Promise<boolean> {
+    const result = await query('SELECT id FROM audits WHERE id = $1', [audit_id]);
+    return result.rows.length > 0;
+}
+
+const upload = multer({
+    storage: multer.diskStorage({
+        destination: (req, _file, cb) => {
+            const audit_id = String((req as Request).params.id || '');
+            ensure_audit_media_dir(audit_id)
+                .then((dir) => cb(null, dir))
+                .catch((err) => cb(err as Error, ''));
+        },
+        filename: (req, file, cb) => {
+            const audit_id = String((req as Request).params.id || '');
+            pick_upload_media_filename(audit_id, file.originalname || 'fil')
+                .then((pick) => {
+                    (req as AuthedRequest).media_upload_pick = pick;
+                    cb(null, pick.filename);
+                })
+                .catch((err) => cb(err as Error, 'fil'));
+        }
+    }),
+    limits: { fileSize: MEDIA_MAX_UPLOAD_BYTES, files: 1 }
+});
+
+function multer_single(field: string): RequestHandler {
+    return (req, res, next) => {
+        upload.single(field)(req, res, (err: unknown) => {
+            if (err) {
+                const code = err && typeof err === 'object' && 'code' in err ? String((err as { code?: string }).code) : '';
+                if (code === 'LIMIT_FILE_SIZE') {
+                    return res.status(413).json({ error: 'Filen är för stor' });
+                }
+                console.error('[audit_media] multer error:', err);
+                return res.status(400).json({ error: 'Uppladdning misslyckades' });
+            }
+            next();
+        });
+    };
+}
+
+/**
+ * Registrerar media-routes på audits-router.
+ */
+export function register_audit_media_routes(router: express.Router, upload_limiter: RequestHandler): void {
+    router.get('/:id/media', async (req: Request, res: Response) => {
+        try {
+            const { id } = req.params;
+            if (!(await audit_exists(id))) {
+                return res.status(404).json({ error: 'Granskning hittades inte' });
+            }
+            const files = await list_audit_media_files(id);
+            res.json({ files });
+        } catch (err) {
+            console.error('[audit_media] GET list error:', err);
+            res.status(500).json({ error: 'Kunde inte lista mediefiler' });
+        }
+    });
+
+    router.post('/:id/media', upload_limiter, multer_single('file'), async (req: Request, res: Response) => {
+        try {
+            const { id } = req.params;
+            if (!(await audit_exists(id))) {
+                return res.status(404).json({ error: 'Granskning hittades inte' });
+            }
+            const file = (req as AuthedRequest & { file?: Express.Multer.File }).file;
+            if (!file) {
+                return res.status(400).json({ error: 'Ingen fil mottagen' });
+            }
+            const mime = (file.mimetype || '').toLowerCase();
+            if (!is_allowed_media_mime(mime)) {
+                await fs.unlink(file.path).catch(() => {});
+                return res.status(400).json({ error: 'Filtypen stöds inte' });
+            }
+            const pick = (req as AuthedRequest).media_upload_pick;
+            const response: Record<string, unknown> = {
+                filename: file.filename,
+                size: file.size,
+                mime
+            };
+            if (pick?.renamed_due_to_conflict) {
+                response.renamedDueToConflict = true;
+                response.requestedFilename = pick.requested_filename;
+            }
+            res.status(201).json(response);
+        } catch (err) {
+            console.error('[audit_media] POST error:', err);
+            res.status(500).json({ error: 'Kunde inte ladda upp fil' });
+        }
+    });
+
+    router.get('/:id/media/:filename', async (req: Request, res: Response) => {
+        try {
+            const { id, filename: raw_filename } = req.params;
+            if (!(await audit_exists(id))) {
+                return res.status(404).json({ error: 'Granskning hittades inte' });
+            }
+            const decoded = decodeURIComponent(raw_filename);
+            const sanitized = sanitize_media_filename(decoded);
+            if (!sanitized) {
+                return res.status(400).json({ error: 'Ogiltigt filnamn' });
+            }
+            const full = resolve_audit_media_file_path(id, sanitized);
+            let stat;
+            try {
+                stat = await fs.stat(full);
+            } catch {
+                return res.status(404).json({ error: 'Filen hittades inte' });
+            }
+            if (!stat.isFile()) {
+                return res.status(404).json({ error: 'Filen hittades inte' });
+            }
+            res.setHeader('Cache-Control', 'private, max-age=3600');
+            res.sendFile(path.resolve(full));
+        } catch (err) {
+            console.error('[audit_media] GET file error:', err);
+            res.status(500).json({ error: 'Kunde inte hämta fil' });
+        }
+    });
+
+    router.delete('/:id/media/:filename', async (req: Request, res: Response) => {
+        try {
+            const { id, filename: raw_filename } = req.params;
+            if (!(await audit_exists(id))) {
+                return res.status(404).json({ error: 'Granskning hittades inte' });
+            }
+            const decoded = decodeURIComponent(raw_filename);
+            const sanitized = sanitize_media_filename(decoded);
+            if (!sanitized) {
+                return res.status(400).json({ error: 'Ogiltigt filnamn' });
+            }
+            await delete_audit_media_file(id, sanitized);
+            res.status(204).send();
+        } catch (err) {
+            if (err && typeof err === 'object' && 'code' in err && (err as { code?: string }).code === 'ENOENT') {
+                return res.status(404).json({ error: 'Filen hittades inte' });
+            }
+            console.error('[audit_media] DELETE error:', err);
+            res.status(500).json({ error: 'Kunde inte ta bort fil' });
+        }
+    });
+}

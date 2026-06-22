@@ -29,19 +29,16 @@ function _has_subscribers() {
     return _audits_callbacks.size > 0 || _rules_callbacks.size > 0 || _rule_locks_callbacks.size > 0 || _audit_locks_callbacks.size > 0;
 }
 
-/**
- * @param {{ auditId?: string|null }} [payload]
- */
-function _fire_audits_changed(payload = {}) {
+function _fire_audits_changed() {
     _audits_callbacks.forEach((cb) => {
         try {
-            cb(payload);
+            cb();
         } catch {
             // tyst vid fel i callback
         }
     });
     if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent(EVENT_AUDITS_CHANGED, { detail: payload }));
+        window.dispatchEvent(new CustomEvent(EVENT_AUDITS_CHANGED));
     }
 }
 
@@ -103,7 +100,7 @@ function _start_fallback_polling() {
             _stop_fallback_polling();
             return;
         }
-        _fire_audits_changed({});
+        _fire_audits_changed();
         _fire_rules_changed();
         /** Tom payload = alla prenumeranter hämtar om lås (samma som vid WS-avbrott utan locks-event). */
         _fire_audit_locks_changed({});
@@ -143,21 +140,7 @@ function _connect() {
             const msg = JSON.parse(e.data);
             const type = msg?.type;
             if (type === 'audits:changed') {
-                _fire_audits_changed({
-                    auditId: msg?.auditId ?? null,
-                    version: msg?.version ?? null,
-                    changeKind: msg?.changeKind ?? 'full'
-                });
-            } else if (type === 'audit:requirement_updated') {
-                _fire_audits_changed({
-                    auditId: msg?.auditId ?? null,
-                    changeKind: 'requirement_updated',
-                    version: msg?.version ?? null,
-                    sampleId: msg?.sampleId ?? null,
-                    requirementId: msg?.requirementId ?? null,
-                    result: msg?.result ?? null,
-                    updatedBy: msg?.updatedBy ?? null
-                });
+                _fire_audits_changed();
             } else if (type === 'rules:changed') {
                 _fire_rules_changed();
             } else if (type === 'rules:locks_changed') {
@@ -213,17 +196,9 @@ function _ensure_ws() {
 }
 
 /**
- * Om WebSocket för list-push är ansluten och öppen.
- * @returns {boolean}
- */
-export function is_audit_push_websocket_open() {
-    return _ws != null && _ws.readyState === WebSocket.OPEN;
-}
-
-/**
  * Prenumerera på push när granskningslistan har ändrats.
  * Vid WebSocket-avbrott återansluts automatiskt (med backoff). Vid upprepade fel används fallback-polling (30 s).
- * @param {function({ auditId?: string|null }): void} callback - Anropas vid audits:changed (eller vid fallback-polling).
+ * @param {function(): void} callback - Anropas vid audits:changed (eller vid fallback-polling).
  * @returns {function(): void} Avprenumerera-funktion.
  */
 export function subscribe_audits(callback) {
@@ -343,6 +318,5 @@ export const ListPushService = {
     subscribe_rule_locks,
     subscribe_audit_locks,
     notify_rules_list_changed,
-    is_audit_push_websocket_open,
     EVENT_NAMES
 };

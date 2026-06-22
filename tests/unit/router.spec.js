@@ -54,12 +54,7 @@ function make_hash_options(overrides = {}) {
     return {
         nav_debug: jest.fn(),
         dispatch: jest.fn(),
-        StoreActionTypes: {
-            LOAD_AUDIT_FROM_FILE: 'LOAD_AUDIT_FROM_FILE',
-            SET_REQUIREMENT_AUDIT_SIDEBAR_SETTINGS: 'SET_REQUIREMENT_AUDIT_SIDEBAR_SETTINGS',
-            SET_UI_FILTER_SETTINGS: 'SET_UI_FILTER_SETTINGS',
-            SET_ALL_REQUIREMENTS_FILTER_SETTINGS: 'SET_ALL_REQUIREMENTS_FILTER_SETTINGS'
-        },
+        StoreActionTypes: { LOAD_AUDIT_FROM_FILE: 'LOAD_AUDIT_FROM_FILE' },
         navigate_and_set_hash: jest.fn(),
         updatePageTitle: jest.fn(),
         render_view: jest.fn(),
@@ -348,33 +343,6 @@ describe('router', () => {
             });
         });
 
-        test('requirement_audit: rasM i hash hydrerar sidomeny och renderar utan UI-nycklar', async () => {
-            window.location.hash =
-                '#ra?a=7&s=sam&r=rk&rasM=sr&rasSQ=test&rasSS=title_asc';
-            load_audit_with_rule_file.mockResolvedValue({
-                auditId: '7',
-                auditStatus: 'in_progress',
-                samples: [{ id: 'sam' }],
-                ruleFileContent: { metadata: { version: '1' }, requirements: { rk: { key: 'rk' } } }
-            });
-            const opts = make_hash_options({
-                getState: () => ({ uiSettings: {} })
-            });
-            await handle_hash_change(opts);
-            const sidebar_dispatch = opts.dispatch.mock.calls.find(
-                (c) => c[0]?.type === 'SET_REQUIREMENT_AUDIT_SIDEBAR_SETTINGS'
-            );
-            expect(sidebar_dispatch).toBeTruthy();
-            expect(sidebar_dispatch[0].payload.selectedMode).toBe('sample_requirements');
-            expect(sidebar_dispatch[0].payload.filtersByMode.sample_requirements.sortBy).toBe('title_asc');
-            expect(sidebar_dispatch[0].payload.filtersByMode.sample_requirements.searchText).toBe('test');
-            expect(opts.render_view).toHaveBeenCalledWith('requirement_audit', {
-                auditId: '7',
-                sampleId: 'sam',
-                requirementId: 'rk'
-            });
-        });
-
         test('upload utan lyckad laddning: går till start', async () => {
             window.location.hash = '#upload?auditId=bad';
             load_audit_with_rule_file.mockResolvedValue(null);
@@ -482,39 +450,6 @@ describe('router', () => {
                 load_focus_storage: jest.fn(() => ({
                     'metadata:{"caseNumber":"9"}': focus_payload
                 }))
-            });
-            await handle_hash_change(opts);
-            expect(window.__gv_restore_focus_info).toEqual(focus_payload);
-        });
-
-        test('handle_hash_change sätter inte sparad fokus för nytt stickprov (sample_form utan editSampleId)', async () => {
-            window.location.hash = '#sample_form?auditId=aud1';
-            const focus_payload = { elementId: 'sampleDescriptionInput' };
-            const opts = make_hash_options({
-                load_focus_storage: jest.fn(() => ({
-                    'sample_form:{"auditId":"aud1"}': focus_payload
-                })),
-                getState: () => ({
-                    auditId: 'aud1',
-                    ruleFileContent: { metadata: { version: '1' }, requirements: {} }
-                })
-            });
-            await handle_hash_change(opts);
-            expect(window.__gv_restore_focus_info).toBeUndefined();
-            expect(opts.render_view).toHaveBeenCalledWith('sample_form', { auditId: 'aud1' });
-        });
-
-        test('handle_hash_change sätter sparad fokus vid redigering av stickprov (editSampleId)', async () => {
-            window.location.hash = '#sample_form?auditId=aud1&editSampleId=s1';
-            const focus_payload = { elementId: 'sampleUrlInput' };
-            const opts = make_hash_options({
-                load_focus_storage: jest.fn(() => ({
-                    'sample_form:{"auditId":"aud1","editSampleId":"s1"}': focus_payload
-                })),
-                getState: () => ({
-                    auditId: 'aud1',
-                    ruleFileContent: { metadata: { version: '1' }, requirements: {} }
-                })
             });
             await handle_hash_change(opts);
             expect(window.__gv_restore_focus_info).toEqual(focus_payload);

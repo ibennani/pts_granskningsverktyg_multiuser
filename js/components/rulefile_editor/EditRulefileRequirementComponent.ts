@@ -17,21 +17,8 @@ import {
 } from '../../logic/rulefile_lock_service.js';
 import { make_infoblock_text_part_key } from '../../logic/rulefile_part_keys.js';
 import { post_same_user_field_commit } from '../../logic/same_user_tab_field_sync.js';
-import {
-    is_remote_lock_held_by_other_user,
-    is_lock_held_by_different_logged_in_user
-} from '../../logic/collab_lock_compare.js';
+import { is_remote_lock_held_by_other_user } from '../../logic/collab_lock_compare.js';
 import { find_requirement_definition } from '../../audit_logic.js';
-import {
-    definition_primary_id,
-    find_check_def_by_storage_id,
-    find_pass_criterion_def_by_storage_id,
-    index_of_check_def_by_storage_id,
-    index_of_pass_criterion_def_by_storage_id,
-    same_storage_id
-} from '../../logic/entity_id_match.js';
-import { RequirementLookup } from '../../logic/requirement_lookup.js';
-import { load_focus_storage, save_focus_storage } from '../../logic/focus_manager.js';
 import './requirement_audit_component.css';
 import './edit_rulefile_requirement_component.css';
 
@@ -94,7 +81,7 @@ export class EditRulefileRequirementComponent {
             const rsid = String(this.getState()?.ruleSetId || '');
             if (!rsid || String(ev?.detail?.ruleSetId) !== rsid) return;
             void init_rulefile_lock_service(rsid).then(() => {
-                if (this.form_element_ref) this._sync_rulefile_part_lock_ui();
+                if (this.form_element_ref) this._rerender_all_sections();
             });
         };
         window.addEventListener('gv-refresh-rulefile-locks', this._on_rulefile_locks_visibility_refresh);
@@ -149,40 +136,6 @@ export class EditRulefileRequirementComponent {
         } catch (_) {
             // Vid versionskonflikt/pollingfel får poll-servicen hämta in senaste.
         }
-    }
-
-    /**
-     * Uppdaterar readOnly och lås-hint för infoblock-textfält utan att tömma formuläret,
-     * så fokus bevaras när låslista kommer via WebSocket/poll (full omritning stal tidigare fokus).
-     */
-    _sync_rulefile_part_lock_ui() {
-        if (!this.form_element_ref) return;
-        const user = get_current_user_name();
-        const textareas = this.form_element_ref.querySelectorAll('textarea[data-gv-rule-part-key]');
-        textareas.forEach((textarea) => {
-            const part_key = textarea.dataset.gvRulePartKey;
-            if (!part_key) return;
-            const remote_lock = get_current_rulefile_remote_lock(part_key);
-            const my_client_lock_id = ensure_client_lock_id_for_part(part_key);
-            const locked_by_other = is_remote_lock_held_by_other_user(
-                remote_lock,
-                user,
-                my_client_lock_id
-            );
-            textarea.disabled = false;
-            textarea.readOnly = locked_by_other;
-            textarea.classList.toggle('readonly-textarea', locked_by_other);
-            const hint_id = textarea.getAttribute('aria-describedby');
-            const hint_el = hint_id ? document.getElementById(hint_id) : null;
-            if (!hint_el) return;
-            if (locked_by_other && remote_lock?.user_name) {
-                hint_el.textContent = `${remote_lock.user_name} redigerar detta fält just nu.`;
-                hint_el.hidden = false;
-            } else {
-                hint_el.textContent = '';
-                hint_el.hidden = true;
-            }
-        });
     }
 
     _create_move_check_button(direction, check) {
@@ -429,41 +382,6 @@ export class EditRulefileRequirementComponent {
         });
     }
 
-    /**
-     * Tar bort sparad fokus för denna kravredigerings-vy så att återkomst från visningsläge
-     * inte flyttar fokus till t.ex. spara-knappen (gv_focus_by_scope_v1 / apply_restore_focus_instruction).
-     */
-    _clear_stored_focus_for_requirement_editor() {
-        try {
-            const focus_storage = load_focus_storage();
-            let changed = false;
-            const req_id = String(this.params?.id || '');
-            for (const key of Object.keys(focus_storage)) {
-                if (key.startsWith('rulefile_add_requirement:')) {
-                    if (req_id === 'new') {
-                        delete focus_storage[key];
-                        changed = true;
-                    }
-                    continue;
-                }
-                if (!key.startsWith('rulefile_edit_requirement:')) continue;
-                try {
-                    const json_part = key.slice('rulefile_edit_requirement:'.length);
-                    const p = JSON.parse(json_part);
-                    if (String(p.id || '') === req_id) {
-                        delete focus_storage[key];
-                        changed = true;
-                    }
-                } catch (_) {
-                    /* ignoreras */
-                }
-            }
-            if (changed) save_focus_storage(focus_storage);
-        } catch (_) {
-            /* ignoreras */
-        }
-    }
-
     handle_form_submit(event) {
         event.preventDefault();
         this._update_local_data_from_form(true);
@@ -498,7 +416,6 @@ export class EditRulefileRequirementComponent {
             }
             
             this.NotificationComponent.show_global_message(t('requirement_added_successfully', { reqTitle: this.local_requirement_data.title }), 'success');
-            this._clear_stored_focus_for_requirement_editor();
             this.router('rulefile_view_requirement', { id: new_key });
         } else {
             this.dispatch({
@@ -514,7 +431,6 @@ export class EditRulefileRequirementComponent {
             }
             
             this.NotificationComponent.show_global_message(t('rulefile_requirement_saved'), 'success');
-            this._clear_stored_focus_for_requirement_editor();
             this.router('rulefile_view_requirement', { id: this.params.id });
         }
     }
@@ -561,9 +477,7 @@ export class EditRulefileRequirementComponent {
                 if (check_id) {
                     const is_new_req_del = this.params.id === 'new';
                     if (is_new_req_del) {
-                        this.local_requirement_data.checks = this.local_requirement_data.checks.filter(
-                            (c) => !same_storage_id(definition_primary_id(c), check_id)
-                        );
+                        this.local_requirement_data.checks = this.local_requirement_data.checks.filter(c => c.id !== check_id);
                         this._rerender_checks_section();
                     } else {
                         const warning_text = build_delete_warning_text(
@@ -595,7 +509,7 @@ export class EditRulefileRequirementComponent {
                 check_id = button.closest('.check-item-edit')?.dataset.checkId;
                 if (check_id) {
                     const checks = this.local_requirement_data.checks || [];
-                    const current_index = index_of_check_def_by_storage_id(checks, check_id);
+                    const current_index = checks.findIndex(c => c.id === check_id);
                     if (current_index !== -1) {
                         const direction = action === 'move-check-up' ? -1 : 1;
                         const target_index = current_index + direction;
@@ -621,7 +535,7 @@ export class EditRulefileRequirementComponent {
                             action_order.push('delete-check');
                             const focus_target = {
                                 type: 'check',
-                                checkId: definition_primary_id(moved_check),
+                                checkId: moved_check.id,
                                 actionOrder: action_order,
                                 forceScroll: true
                             };
@@ -629,7 +543,7 @@ export class EditRulefileRequirementComponent {
                                 focusTarget: focus_target,
                                 animateInfo: {
                                     type: 'check',
-                                    checkId: definition_primary_id(moved_check),
+                                    checkId: moved_check.id,
                                     animationClass: 'item-swap-animation',
                                     animationDuration: 1000
                                 },
@@ -642,7 +556,7 @@ export class EditRulefileRequirementComponent {
 
             case 'add-pass-criterion':
                 check_id = button.closest('.check-item-edit')?.dataset.checkId;
-                const check = find_check_def_by_storage_id(this.local_requirement_data.checks, check_id);
+                const check = this.local_requirement_data.checks.find(c => c.id === check_id);
                 if (check) {
                     const new_pc_id = `new-pc-${this.Helpers.generate_uuid_v4()}`;
                     check.passCriteria.push({
@@ -672,11 +586,9 @@ export class EditRulefileRequirementComponent {
                 if (check_id && pc_id) {
                     const is_new_req_del_pc = this.params.id === 'new';
                     if (is_new_req_del_pc) {
-                        const check = find_check_def_by_storage_id(this.local_requirement_data.checks, check_id);
+                        const check = this.local_requirement_data.checks.find(c => c.id === check_id);
                         if (check) {
-                            check.passCriteria = check.passCriteria.filter(
-                                (pc) => !same_storage_id(definition_primary_id(pc), pc_id)
-                            );
+                            check.passCriteria = check.passCriteria.filter(pc => pc.id !== pc_id);
                             this._rerender_checks_section();
                         }
                     } else {
@@ -710,9 +622,9 @@ export class EditRulefileRequirementComponent {
                 check_id = button.closest('.check-item-edit')?.dataset.checkId;
                 pc_id = button.closest('.pc-item-edit')?.dataset.pcId;
                 if (check_id && pc_id) {
-                    const check_for_move = find_check_def_by_storage_id(this.local_requirement_data.checks, check_id);
+                    const check_for_move = this.local_requirement_data.checks.find(c => c.id === check_id);
                     if (check_for_move && Array.isArray(check_for_move.passCriteria)) {
-                        const current_pc_index = index_of_pass_criterion_def_by_storage_id(check_for_move.passCriteria, pc_id);
+                        const current_pc_index = check_for_move.passCriteria.findIndex(pc => pc.id === pc_id);
                         if (current_pc_index !== -1) {
                             const direction = action === 'move-pass-criterion-up' ? -1 : 1;
                             const target_pc_index = current_pc_index + direction;
@@ -739,7 +651,7 @@ export class EditRulefileRequirementComponent {
                                 const focus_target_pc = {
                                     type: 'passCriterion',
                                     checkId: check_id,
-                                    passCriterionId: definition_primary_id(moved_pc),
+                                    passCriterionId: moved_pc.id,
                                     actionOrder: pc_action_order,
                                     forceScroll: true
                                 };
@@ -748,7 +660,7 @@ export class EditRulefileRequirementComponent {
                                     animateInfo: {
                                         type: 'passCriterion',
                                         checkId: check_id,
-                                        passCriterionId: definition_primary_id(moved_pc),
+                                        passCriterionId: moved_pc.id,
                                         animationClass: 'item-swap-animation',
                                         animationDuration: 1000
                                     },
@@ -1047,15 +959,14 @@ export class EditRulefileRequirementComponent {
             ordered_block_ids.push(...extra_block_ids);
             
             ordered_block_ids.forEach(block_id => {
-                let block = info_blocks[block_id];
+                const block = info_blocks[block_id];
                 if (!block) {
-                    // Skapa tomt block om det saknas (samma referens måste användas nedan)
-                    block = {
+                    // Create empty block if it doesn't exist
+                    info_blocks[block_id] = {
                         name: this._get_default_block_name(block_id),
                         expanded: true,
                         text: ''
                     };
-                    info_blocks[block_id] = block;
                 }
                 
                 const block_container = this.Helpers.create_element('div', { class_name: 'info-block-edit-container', attributes: { 'data-block-id': block_id } });
@@ -1084,12 +995,8 @@ export class EditRulefileRequirementComponent {
                 expanded_group.appendChild(expanded_label);
                 
                 // Text field (textarea)
-                const req_key_for_part =
-                    this.params?.id && this.params.id !== 'new'
-                        ? (this._requirement_key_for_server_patch || String(this.params.id))
-                        : null;
-                const part_key = req_key_for_part
-                    ? make_infoblock_text_part_key(req_key_for_part, block_id)
+                const part_key = this.params?.id && this.params.id !== 'new'
+                    ? make_infoblock_text_part_key(String(this.params.id), block_id)
                     : null;
 
                 const text_group = this._create_form_group(
@@ -1119,9 +1026,7 @@ export class EditRulefileRequirementComponent {
                     const remote_lock = part_key ? get_current_rulefile_remote_lock(part_key) : null;
                     const my_client_lock_id = part_key ? ensure_client_lock_id_for_part(part_key) : null;
                     const locked_by_other = is_remote_lock_held_by_other_user(remote_lock, get_current_user_name(), my_client_lock_id);
-                    textarea.disabled = false;
-                    textarea.readOnly = locked_by_other;
-                    textarea.classList.toggle('readonly-textarea', locked_by_other);
+                    textarea.disabled = locked_by_other;
                     if (locked_by_other && remote_lock?.user_name) {
                         lock_hint_el.textContent = `${remote_lock.user_name} redigerar detta fält just nu.`;
                         lock_hint_el.hidden = false;
@@ -1131,40 +1036,33 @@ export class EditRulefileRequirementComponent {
                             const state = this.getState();
                             const rsid = state?.ruleSetId;
                             if (!rsid) return;
+                            textarea.readOnly = true;
+                            textarea.dataset.gvLockPending = '1';
                             try {
-                                await init_rulefile_lock_service(String(rsid));
-                                this._sync_rulefile_part_lock_ui();
-                                const lock_row_refresh = part_key ? get_current_rulefile_remote_lock(part_key) : null;
-                                const my_cid_rf = part_key ? ensure_client_lock_id_for_part(part_key) : null;
-                                if (
-                                    part_key &&
-                                    is_remote_lock_held_by_other_user(lock_row_refresh, get_current_user_name(), my_cid_rf) &&
-                                    is_lock_held_by_different_logged_in_user(lock_row_refresh, get_current_user_name())
-                                ) {
-                                    return;
-                                }
                                 const r = await try_acquire_rulefile_part_lock({ rule_set_id: rsid, part_key });
                                 await init_rulefile_lock_service(String(rsid));
                                 if (r?.ok) {
                                     if (document.activeElement !== textarea) {
                                         await release_rulefile_part_lock({ rule_set_id: rsid, part_key });
                                         await init_rulefile_lock_service(String(rsid));
-                                        this._sync_rulefile_part_lock_ui();
+                                        delete textarea.dataset.gvLockPending;
+                                        this._rerender_all_sections();
                                         return;
                                     }
+                                    delete textarea.dataset.gvLockPending;
                                     textarea.dataset.gvLockAcquired = '1';
+                                    textarea.disabled = false;
                                     textarea.readOnly = false;
-                                    textarea.classList.remove('readonly-textarea');
                                     if (lock_hint_el) {
                                         lock_hint_el.textContent = '';
                                         lock_hint_el.hidden = true;
                                     }
-                                    this._sync_rulefile_part_lock_ui();
                                 } else {
-                                    this._sync_rulefile_part_lock_ui();
+                                    delete textarea.dataset.gvLockPending;
+                                    this._rerender_all_sections();
                                 }
-                            } catch (_) {
-                                this._sync_rulefile_part_lock_ui();
+                            } finally {
+                                delete textarea.dataset.gvLockPending;
                             }
                         });
                         textarea.addEventListener('blur', () => {
@@ -1185,7 +1083,7 @@ export class EditRulefileRequirementComponent {
                                     });
                                 }
                                 await init_rulefile_lock_service(String(rsid));
-                                this._sync_rulefile_part_lock_ui();
+                                this._rerender_all_sections();
                             })();
                         });
                     }
@@ -1452,10 +1350,10 @@ export class EditRulefileRequirementComponent {
         if (!checks_section) return;
         
         const checks = this.local_requirement_data.checks || [];
-        const check = find_check_def_by_storage_id(checks, check_id);
+        const check = checks.find(c => c.id === check_id);
         if (!check) return;
         
-        const index = index_of_check_def_by_storage_id(checks, check_id);
+        const index = checks.findIndex(c => c.id === check_id);
         const check_el = this._create_check_fieldset(check, index, checks.length);
         
         // Lägg till elementet före "Lägg till kontrollpunkt"-knappen
@@ -1501,14 +1399,14 @@ export class EditRulefileRequirementComponent {
         const pc_container = check_element.querySelector('.pc-container-edit');
         if (!pc_container) return;
         
-        const check = find_check_def_by_storage_id(this.local_requirement_data.checks, check_id);
+        const check = this.local_requirement_data.checks.find(c => c.id === check_id);
         if (!check) return;
         
-        const pc = find_pass_criterion_def_by_storage_id(check.passCriteria, pc_id);
+        const pc = check.passCriteria.find(pc => pc.id === pc_id);
         if (!pc) return;
         
-        const pc_index = index_of_pass_criterion_def_by_storage_id(check.passCriteria, pc_id);
-        const check_index = index_of_check_def_by_storage_id(this.local_requirement_data.checks, check_id);
+        const pc_index = check.passCriteria.findIndex(pc => pc.id === pc_id);
+        const check_index = this.local_requirement_data.checks.findIndex(c => c.id === check_id);
         const pc_el = this._create_pc_item(check, pc, this.Helpers.sanitize_id_for_css_selector(check_id), pc_index, check.passCriteria.length, check_index);
         
         // Lägg till elementet före "Lägg till kriterium"-knappen
@@ -1592,9 +1490,8 @@ export class EditRulefileRequirementComponent {
 
     _create_check_fieldset(check, index, total_checks) {
         const t = this.Translation.t;
-        const dom_check_id = definition_primary_id(check);
-        const sane_check_id = this.Helpers.sanitize_id_for_css_selector(dom_check_id);
-        const check_el = this.Helpers.create_element('div', { class_name: 'check-item-edit', attributes: { 'data-check-id': dom_check_id }});
+        const sane_check_id = this.Helpers.sanitize_id_for_css_selector(check.id);
+        const check_el = this.Helpers.create_element('div', { class_name: 'check-item-edit', attributes: { 'data-check-id': check.id }});
 
         const header_wrapper = this.Helpers.create_element('div', { class_name: 'form-group-header' });
         const check_label_text = `${t('check_item_title')} ${index + 1}`;
@@ -1664,9 +1561,8 @@ export class EditRulefileRequirementComponent {
 
     _create_pc_item(check, pc, sane_check_id, pc_index, total_pass_criteria, check_index) {
         const t = this.Translation.t;
-        const dom_pc_id = definition_primary_id(pc);
-        const sane_pc_id = this.Helpers.sanitize_id_for_css_selector(dom_pc_id);
-        const pc_el = this.Helpers.create_element('div', { class_name: 'pc-item-edit', attributes: { 'data-pc-id': dom_pc_id } });
+        const sane_pc_id = this.Helpers.sanitize_id_for_css_selector(pc.id);
+        const pc_el = this.Helpers.create_element('div', { class_name: 'pc-item-edit', attributes: { 'data-pc-id': pc.id } });
 
         const numbering = `${check_index + 1}.${pc_index + 1}`;
         const numbered_label_text = `${t('pass_criterion_label')} ${numbering}`;
@@ -1735,7 +1631,7 @@ export class EditRulefileRequirementComponent {
                             // eslint-disable-next-line eqeqeq -- avsiktligt != null (täcker både null och undefined)
                             if (payload?.ruleSetId != null && String(payload.ruleSetId) !== rid) return;
                             await init_rulefile_lock_service(rid);
-                            this._sync_rulefile_part_lock_ui();
+                            this._rerender_all_sections();
                         } catch (_) {
                             /* ignoreras */
                         }
@@ -1839,15 +1735,7 @@ export class EditRulefileRequirementComponent {
         this.form_element_ref = this.Helpers.create_element('form');
         this.form_element_ref.addEventListener('submit', this.handle_form_submit);
         this.form_element_ref.addEventListener('click', this.handle_form_click);
-        let patch_req_key = requirement_key;
-        if (!is_new_requirement) {
-            const rl = RequirementLookup.from(current_state?.ruleFileContent?.requirements);
-            if (rl && !rl.isArrayFormat()) {
-                const mk = rl.resolveMapKey(requirement_id);
-                if (mk) patch_req_key = mk;
-            }
-        }
-        this._requirement_key_for_server_patch = patch_req_key;
+        this._requirement_key_for_server_patch = requirement_key;
         this.form_element_ref.addEventListener('focusout', this._handle_edit_requirement_focusout_save);
 
         this._rerender_all_sections();
@@ -1906,7 +1794,7 @@ export class EditRulefileRequirementComponent {
             void (async () => {
                 try {
                     await init_rulefile_lock_service(rsid);
-                    if (this.form_element_ref) this._sync_rulefile_part_lock_ui();
+                    if (this.form_element_ref) this._rerender_all_sections();
                 } catch (_) {
                     /* ignoreras */
                 }

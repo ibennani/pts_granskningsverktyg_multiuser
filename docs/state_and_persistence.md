@@ -1,7 +1,5 @@
 # Tillstånd och persistens i klienten
 
-**Senast granskad:** 2026-06-09
-
 ## Översikt
 
 Granskningsdata (regelfil, metadata, stickprov, observationer med mera) lever i ett **centralt applikationstillstånd** som uppdateras via `dispatch()` och speglas till **webbläsarens lagring** så att arbetet överlever sidomladdning inom samma flik. Vid **inloggad drift** synkas ändringar mot **servern** (debouncad PATCH/import). Detta dokument beskriver *var* data sparas, *när* backup skapas och hur **cold start** med localStorage-backup samverkar med servern. Formulärs**autospar** i enskilda vyer är ett separat lager (se `docs/autosave_integration.md`).
@@ -10,12 +8,12 @@ Granskningsdata (regelfil, metadata, stickprov, observationer med mera) lever i 
 
 | Del | Plats |
 |-----|--------|
-| Publik API (re-export) | `js/state.js` → `js/state/index.ts` (via brygga `js/state/index.js`) |
+| Publik API (re-export) | `js/state.js` → `js/state/index.js` |
 | Startvärden och versionskonstant | `js/state/initialState.js` (`APP_STATE_VERSION`) |
-| Action-typer | `js/state/actionTypes.ts` (via brygga `actionTypes.js`; exporteras som `StoreActionTypes`) |
+| Action-typer | `js/state/actionTypes.js` (exporteras som `StoreActionTypes`) |
 | Reducers | `auditReducer.ts`, `rulefileReducer.js`, `uiReducer.js`, `userReducer.js` |
 | Appstart, sessionStorage-koll, backup-merge | `js/logic/app_bootstrap.js`, `js/logic/session_boot_merge.js` |
-| Synk mot server | `js/sync/audit_sync_service.ts`, `js/sync/rulefile_sync_service.js` (körs från `js/state/index.ts` via `schedule_sync_*`) |
+| Synk mot server | `js/sync/audit_sync_service.js`, `js/sync/rulefile_sync_service.js` (körs från `index.js` via `schedule_sync_*`) |
 
 ## 2. Webbläsarens nycklar
 
@@ -24,7 +22,7 @@ Granskningsdata (regelfil, metadata, stickprov, observationer med mera) lever i 
 | `digitalTillsynAppCentralState` | `sessionStorage` | Hela serialiserade appstate efter varje lyckad `dispatch` som ändrar state. Försvinner när fliken stängs. |
 | `digitalTillsynAppStateBackup` | `localStorage` | Objekt `{ state, restorePosition }` när sparat state bedöms **återställningsbart** (`has_restorable_state`). Används vid cold start om sessionStorage var tom. |
 | `gv_current_user_name` | `sessionStorage` | Visningsnamn för inloggad användare (parallellt till token-hantering). |
-| Utkast till fält | `localStorage` | Hanteras av **draft manager**, inte av centrala `dispatch` (se `js/draft_manager.ts`). |
+| Utkast till fält | `localStorage` | Hanteras av **draft manager**, inte av centrala `dispatch` (se `js/draft_manager.js`). |
 
 Konstanten **`APP_STATE_KEY`** exporteras från `state.js` och används t.ex. i bootstrap för att avgöra om det fanns data i session innan `initState()`.
 
@@ -45,17 +43,9 @@ När du ändrar sparformat: uppdatera `APP_STATE_VERSION` medvetet och dokumente
 5. **Varje `dispatch`** som ger nytt state-objekt: serialisera till `sessionStorage`; om `has_restorable_state` — uppdatera **localStorage-backup** inklusive valfri `restorePosition` (hash-vy + fokusinfo) från app-hook.
 6. **Fel vid sparning** (t.ex. kvot): varning till användare via notifiering; inget kraschande kast från lagret.
 
-## 5. Serversynk – säkerställande och indikator
+## 5. När synkas till servern?
 
-- Efter varje `dispatch` som synkas schemaläggs PATCH med **500 ms** debounce (`audit_sync_service.ts`).
-- **Flush** (omedelbar PATCH, utan extra vy-render): vid byte av vy, `pagehide`, dold flik (`visibilitychange`), efter checklist-status, vid observation blur, och när nätverket återkommer (`connectivity_service`).
-- Lyckad PATCH uppdaterar endast `version` via `SET_REMOTE_AUDIT_ID` med `skip_render: true` — ingen full omritning av granskingsvyn.
-- Metadata: `auditMetadata.last_local_change_at` sätts vid `UPDATE_REQUIREMENT_RESULT`; `auditMetadata.last_server_sync_at` vid lyckad PATCH. Om lokalt är nyare visas varningen `connectivity_unsynced_local_message` (persisteras i backup).
-- **Cold start:** om `remote.version === local.version` men lokalt innehåll är nyare (tidsstämplar i kravresultat/metadata) laddas backup och pushas till server (`session_boot_merge.js`).
-
-## 6. När synkas till servern?
-
-Efter lyckad sparning till session anropas **`schedule_sync_to_server`** så när dess debounce löpt ut körs PATCH eller import (se `audit_sync_service.ts`). Följande **utesluter** synk i `js/state/index.ts` (för att undvika loopar, tappad staging-data eller irrelevant trafik):
+Efter lyckad sparning till session anropas **`schedule_sync_to_server`** så när dess debounce löpt ut körs PATCH eller import (se `audit_sync_service.js`). Följande **utesluter** synk i `index.js` (för att undvika loopar, tappad staging-data eller irrelevant trafik):
 
 - Intern metadata med `skip_server_sync: true`
 - `same_user_tab_broadcast` (fält synk mellan egna flikar)
@@ -65,7 +55,7 @@ Efter lyckad sparning till session anropas **`schedule_sync_to_server`** så nä
 
 Regelfilsredigering: vid `UPDATE_RULEFILE_CONTENT` i status `rulefile_editing` med `ruleSetId` körs **`schedule_sync_rulefile_to_server`**.
 
-## 7. Publik API från `js/state.js`
+## 6. Publik API från `js/state.js`
 
 Importera från `./state.js` (eller alias enligt projektets Vite-inställningar):
 
@@ -84,19 +74,19 @@ Importera från `./state.js` (eller alias enligt projektets Vite-inställningar)
 
 **OBS:** `window.Store` sätts **inte** i nuvarande kodbas; använd ES-modulimport i ny kod. Äldre dokumentation som nämner `window.Store.clearAutosavedState` eller `forceSaveStateToLocalStorage` är föråldrad.
 
-## 8. Relation till formulär-autospar
+## 7. Relation till formulär-autospar
 
 - **Centralt state:** sparas direkt vid `dispatch` (ingen debounce i state-lagret).
 - **Formulär:** använder `AutosaveService` med **250 ms** debounce på `input`, trimmar först vid manuell sparning eller när vyn lämnas; anrop till `dispatch` kan använda `skip_render` i payload för att undvika visuella hopp. Se `docs/autosave_integration.md`.
 
-## 9. Felsökning för utvecklare
+## 8. Felsökning för utvecklare
 
 1. **Data försvinner när fliken stängs** — förväntat för ren `sessionStorage`; användaren ska exportera eller arbeta mot server där granskning har `auditId`.
 2. **Gammal data efter omstart** — kontrollera `digitalTillsynAppStateBackup` i **Application → Local Storage** och boot-merge-loggen i konsolen.
 3. **Synk sker inte** — kontrollera `auditStatus`, token, `navigator.onLine`, och att action-typen inte finns på exklusionslistan ovan.
 4. **Korrupt JSON i session** — nyckeln rensas vid parse-fel; användaren får blank start om backup saknas eller är ogiltig.
 
-## 10. Närliggande dokument
+## 9. Närliggande dokument
 
 - `docs/systemdokumentation.md` — arkitekturöversikt.
 - `docs/requirements_data_shape.md` — form av `requirements` i regelfil och validering av sparad fil.

@@ -1,9 +1,16 @@
 /* ModalComponent: dialog-element med ::backdrop och klass-baserad animation */
 
+:root {
+    --modal-transition-duration: 0.5s;
+    --modal-max-viewport-width: 90vw;
+    --modal-max-viewport-height: 90vh;
+    --modal-default-max-width: min(600px, var(--modal-max-viewport-width));
+}
+
 /* Backdrop – mörk overlay bakom dialogen */
 dialog.modal-dialog::backdrop {
     background-color: transparent;
-    transition: background-color 0.2s ease;
+    transition: background-color var(--modal-transition-duration) ease;
 }
 
 dialog.modal-dialog.modal-dialog--visible::backdrop {
@@ -12,15 +19,15 @@ dialog.modal-dialog.modal-dialog--visible::backdrop {
 
 dialog.modal-dialog.modal-dialog--closing::backdrop {
     background-color: transparent;
-    transition: background-color 0.2s ease;
+    transition: background-color var(--modal-transition-duration) ease;
 }
 
 /* Dialog-rutan */
 dialog.modal-dialog {
     width: max-content;
-    max-width: 600px;
-    max-height: calc(100vh - 4rem);
-    margin: 2rem auto;
+    max-width: var(--modal-default-max-width);
+    max-height: var(--modal-max-viewport-height);
+    margin: auto;
     padding: 1.5rem;
     border: none;
     border-radius: var(--border-radius, 12px);
@@ -28,10 +35,11 @@ dialog.modal-dialog {
     background-color: var(--plate-background-color, #fff);
     outline: none;
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--modal-transition-duration) ease;
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    box-sizing: border-box;
 }
 
 dialog.modal-dialog.modal-dialog--visible {
@@ -40,7 +48,7 @@ dialog.modal-dialog.modal-dialog--visible {
 
 dialog.modal-dialog.modal-dialog--closing {
     opacity: 0;
-    transition: opacity 0.2s ease;
+    transition: opacity var(--modal-transition-duration) ease;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -64,11 +72,20 @@ dialog.modal-dialog.modal-dialog--closing {
 
 @media (max-width: 799px) {
     dialog.modal-dialog {
-        margin: 1rem auto;
-        width: 95vw;
-        max-width: none;
-        max-height: calc(100vh - 2rem);
+        margin: auto;
+        width: max-content;
+        max-width: var(--modal-max-viewport-width);
+        max-height: var(--modal-max-viewport-height);
     }
+}
+
+dialog.modal-dialog > .modal-content {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-width: 100%;
+    max-height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
 }
 
 .modal-content {

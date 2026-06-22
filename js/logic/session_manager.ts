@@ -7,7 +7,6 @@
 import { get_current_user_preferences_with_timeout } from '../api/client.js';
 import { parse_build_info_from_text } from './version_check_service.js';
 import { parse_view_and_params_from_hash } from './router.js';
-import { migrate_legacy_view_query_to_hash } from './migrate_legacy_query_to_hash.js';
 import { format_build_info_object } from '../utils/build_time_format.js';
 import {
     read_vite_dev_client_timestamp_date,
@@ -19,7 +18,6 @@ import { get_current_user_name } from '../utils/helpers.js';
 import { get_current_user_name_window, get_restore_position_via_hook } from '../app/browser_globals.js';
 import { is_debug_modal_scroll } from '../app/runtime_flags.js';
 import { init_same_user_tab_field_sync_listener } from './same_user_tab_field_sync.js';
-import { init_audit_sync_lifecycle } from './audit_sync_lifecycle.js';
 
 /** Bygg-info som läses in dynamiskt i webbläsaren. */
 interface BuildInfoPayload {
@@ -43,14 +41,6 @@ declare global {
 }
 
 export {};
-
-/** State-actions som ändrar listinnehåll — vy ska omritas även om fokus ligger på knapp efter modal. */
-const FORCE_VIEW_RENDER_ON_STATE_ACTIONS = new Set([
-    'DELETE_SAMPLE',
-    'ADD_SAMPLE',
-    'UPDATE_SAMPLE',
-    'MARK_ALL_UNREVIEWED_AS_PASSED_IN_SAMPLE',
-]);
 
 /** Fel-/retry-gränssnitt för felrad i sessionstart. */
 type ErrorBoundaryLike = {
@@ -104,11 +94,7 @@ export interface StartNormalSessionDeps {
     subscribe: (
         cb: (
             new_state: unknown,
-            listener_meta?: {
-                skip_render?: boolean;
-                force_same_user_tab_render?: boolean;
-                action_type?: string;
-            }
+            listener_meta?: { skip_render?: boolean; force_same_user_tab_render?: boolean }
         ) => void
     ) => void;
     getState: () => unknown;
@@ -122,46 +108,23 @@ type ApplyUserPreferencesDeps = {
     StoreActionTypes: { SET_REQUIREMENT_AUDIT_SIDEBAR_SETTINGS: string };
 };
 
-export type SavedThemePreference = 'light' | 'dark' | 'dark-experimental' | 'winter-white';
-
-/** Sparade teman som användaren kan välja i inställningar. */
-export function is_saved_theme_preference(
-    theme: string | null | undefined
-): theme is SavedThemePreference {
-    return (
-        theme === 'light' ||
-        theme === 'dark' ||
-        theme === 'dark-experimental' ||
-        theme === 'winter-white'
-    );
-}
-
-function apply_system_theme(): void {
-    const prefers_dark =
-        window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    document.documentElement.setAttribute('data-theme', prefers_dark ? 'dark' : 'light');
-}
-
-/** Tillämpar sparat tema eller systemläge (t.ex. vid borttaget "alternative"). */
-export function apply_theme_preference(theme: string | null | undefined): void {
-    if (is_saved_theme_preference(theme)) {
-        localStorage.setItem('theme_preference', theme);
-        document.documentElement.setAttribute('data-theme', theme);
-        return;
-    }
-    localStorage.removeItem('theme_preference');
-    apply_system_theme();
-}
-
 export function set_initial_theme(): void {
-    apply_theme_preference(localStorage.getItem('theme_preference'));
+    const saved_theme = localStorage.getItem('theme_preference');
+    if (saved_theme && saved_theme !== 'system') {
+        document.documentElement.setAttribute('data-theme', saved_theme);
+    } else {
+        const prefers_dark =
+            window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const initial_theme = prefers_dark ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', initial_theme);
+    }
 }
 
 export function is_dev_build_environment(): boolean {
     if (typeof window === 'undefined') return false;
     const h = window.location.hostname;
     const p = window.location.port;
-    return h === 'localhost' || h === '127.0.0.1' || p === '5173' || p === '5174' || p === '4173';
+    return h === 'localhost' || h === '127.0.0.1' || p === '5173' || p === '4173';
 }
 
 /**
@@ -274,13 +237,20 @@ export async function apply_user_preferences_from_server({
             await window.Translation.set_language(user.language_preference);
         }
         if (
+            user?.theme_preference === 'light' ||
+            user?.theme_preference === 'dark' ||
+            user?.theme_preference === 'alternative'
+        ) {
+            localStorage.setItem('theme_preference', user.theme_preference);
+            document.documentElement.setAttribute('data-theme', user.theme_preference);
+        } else if (
             user?.theme_preference === 'system' ||
             user?.theme_preference === null ||
             user?.theme_preference === ''
         ) {
-            apply_theme_preference(null);
-        } else {
-            apply_theme_preference(user?.theme_preference);
+            localStorage.removeItem('theme_preference');
+            const prefers_dark = window.matchMedia?.('(prefers-color-scheme: dark)')?.matches;
+            document.documentElement.setAttribute('data-theme', prefers_dark ? 'dark' : 'light');
         }
         const pref = user?.review_sort_preference || 'by_criteria';
         if (pref === 'by_criteria' || pref === 'by_sample') {
@@ -348,10 +318,6 @@ export async function start_normal_session(deps: StartNormalSessionDeps): Promis
     // Blockerar inte första vyrendering om /users/me hänger (fetch saknar timeout i klienten).
     void apply_user_preferences_from_server({ dispatch, StoreActionTypes });
     init_connectivity_service({ getState, dispatch });
-    init_audit_sync_lifecycle({
-        getState: getState as () => object,
-        dispatch: dispatch as (action: object) => void
-    });
     if (window.ScoreManager?.init) {
         window.ScoreManager.init(subscribe, getState, dispatch, StoreActionTypes);
     }
@@ -439,60 +405,59 @@ export async function start_normal_session(deps: StartNormalSessionDeps): Promis
     };
 
     subscribe((_new_state, listener_meta) => {
-        const skip_global_chrome = listener_meta?.skip_render === true;
-
-        if (!skip_global_chrome) {
+        if (listener_meta?.skip_render) {
             if (is_debug_modal_scroll()) {
-                consoleManager.log(
-                    '[GV-ModalDebug] subscribe: RENDERAR top_action_bar, bottom_action_bar, sidtitel, meny'
-                );
+                consoleManager.log('[GV-ModalDebug] subscribe: skip_render – ingen render');
             }
-            try {
-                top_action_bar_instance.render();
-            } catch (error) {
-                const err = error instanceof Error ? error : new Error(String(error));
-                consoleManager.error('[Main.js] Error in subscription top action bar render:', err);
-                if (error_boundary_instance && error_boundary_instance.show_error) {
-                    error_boundary_instance.show_error({
-                        message: `Top action bar subscription render failed: ${err.message}`,
-                        stack: err.stack,
-                        component: 'TopActionBar',
-                    });
-                }
+            return;
+        }
+        if (is_debug_modal_scroll()) {
+            consoleManager.log(
+                '[GV-ModalDebug] subscribe: RENDERAR top_action_bar, bottom_action_bar, current_view'
+            );
+        }
+        try {
+            top_action_bar_instance.render();
+        } catch (error) {
+            const err = error instanceof Error ? error : new Error(String(error));
+            consoleManager.error('[Main.js] Error in subscription top action bar render:', err);
+            if (error_boundary_instance && error_boundary_instance.show_error) {
+                error_boundary_instance.show_error({
+                    message: `Top action bar subscription render failed: ${err.message}`,
+                    stack: err.stack,
+                    component: 'TopActionBar',
+                });
             }
-
-            try {
-                bottom_action_bar_instance.render();
-            } catch (error) {
-                const err = error instanceof Error ? error : new Error(String(error));
-                consoleManager.error('[Main.js] Error in subscription bottom action bar render:', err);
-                if (error_boundary_instance && error_boundary_instance.show_error) {
-                    error_boundary_instance.show_error({
-                        message: `Bottom action bar subscription render failed: ${err.message}`,
-                        stack: err.stack,
-                        component: 'BottomActionBar',
-                    });
-                }
-            }
-            {
-                // Sidtitel och meny följer faktiskt renderad vy: hash kan skilja sig (t.ex. publicerad
-                // regelfil mappar rulefile_edit_requirement → rulefile_view_requirement i view_render).
-                updatePageTitleFromCurrentView();
-                try {
-                    const parsed_params = JSON.parse(get_current_view_params_rendered_json() || '{}');
-                    update_side_menu(get_current_view_name_rendered(), parsed_params);
-                } catch (error) {
-                    consoleManager.warn(
-                        '[Main.js] Failed to parse current view params for side menu update:',
-                        error
-                    );
-                    update_side_menu(get_current_view_name_rendered(), {});
-                }
-            }
-        } else if (is_debug_modal_scroll()) {
-            consoleManager.log('[GV-ModalDebug] subscribe: skip_render – hoppar över chrome (bars/meny)');
         }
 
+        try {
+            bottom_action_bar_instance.render();
+        } catch (error) {
+            const err = error instanceof Error ? error : new Error(String(error));
+            consoleManager.error('[Main.js] Error in subscription bottom action bar render:', err);
+            if (error_boundary_instance && error_boundary_instance.show_error) {
+                error_boundary_instance.show_error({
+                    message: `Bottom action bar subscription render failed: ${err.message}`,
+                    stack: err.stack,
+                    component: 'BottomActionBar',
+                });
+            }
+        }
+        {
+            // Sidtitel och meny följer faktiskt renderad vy: hash kan skilja sig (t.ex. publicerad
+            // regelfil mappar rulefile_edit_requirement → rulefile_view_requirement i view_render).
+            updatePageTitleFromCurrentView();
+            try {
+                const parsed_params = JSON.parse(get_current_view_params_rendered_json() || '{}');
+                update_side_menu(get_current_view_name_rendered(), parsed_params);
+            } catch (error) {
+                consoleManager.warn(
+                    '[Main.js] Failed to parse current view params for side menu update:',
+                    error
+                );
+                update_side_menu(get_current_view_name_rendered(), {});
+            }
+        }
         const { viewName: canonical_view_from_hash } = parse_view_and_params_from_hash();
         const current_view_component_instance = get_current_view_component();
         if (
@@ -509,9 +474,6 @@ export async function start_normal_session(deps: StartNormalSessionDeps): Promis
                         error
                     );
                 }
-                return;
-            }
-            if (skip_global_chrome) {
                 return;
             }
             if (get_current_view_name_rendered() !== 'confirm_sample_edit') {
@@ -535,10 +497,7 @@ export async function start_normal_session(deps: StartNormalSessionDeps): Promis
                     }
                 }
                 const view_root = get_main_view_root() || get_app_container();
-                const force_view_render =
-                    typeof listener_meta?.action_type === 'string' &&
-                    FORCE_VIEW_RENDER_ON_STATE_ACTIONS.has(listener_meta.action_type);
-                if (!force_view_render && is_focus_in_editable_field(view_root)) {
+                if (is_focus_in_editable_field(view_root)) {
                     return;
                 }
                 const scroll_before = {
@@ -595,7 +554,6 @@ export async function start_normal_session(deps: StartNormalSessionDeps): Promis
     }
 
     {
-        migrate_legacy_view_query_to_hash(window);
         const hash = (window.location.hash || '').replace(/^#/, '');
         const view_from_hash = hash.split('?')[0];
         if (view_from_hash === 'login') {

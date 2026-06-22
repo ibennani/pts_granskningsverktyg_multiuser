@@ -150,7 +150,7 @@
 }
 
 /* Dark theme support */
-[data-theme="dark"] .error-boundary-container {
+[data-theme="dark"] .error-boundary-container , [data-theme="dark-experimental"] .error-boundary-container {
     --error-background: #2d1b1b;
     --error-border: #5c2626;
     --error-text: #fca5a5;

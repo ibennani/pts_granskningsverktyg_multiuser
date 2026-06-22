@@ -111,77 +111,15 @@ describe('session_boot_merge', () => {
         expect(sync_to_server_now).not.toHaveBeenCalled();
     });
 
-    test('samma version men lokalt nyare innehåll: LOAD_AUDIT_FROM_FILE och sync', async () => {
+    test('lokal nyare än remote: LOAD_AUDIT_FROM_FILE och sync_to_server_now', async () => {
         load_audit_with_rule_file.mockResolvedValue({
-            version: 4,
-            ruleFileContent: {},
-            samples: [
-                {
-                    requirementResults: {
-                        req1: { lastStatusUpdate: '2026-05-19T08:00:00.000Z' }
-                    }
-                }
-            ]
-        });
-        const ValidationLogic = {
-            validate_saved_audit_file: jest.fn(() => ({ isValid: true }))
-        };
-        const local = {
-            auditId: 'a1',
-            version: 4,
-            samples: [
-                {
-                    requirementResults: {
-                        req1: { lastStatusUpdate: '2026-05-20T14:00:00.000Z' }
-                    }
-                }
-            ]
-        };
-        const out = await apply_session_boot_merge_from_backup({
-            backup_entry: { state: local },
-            dispatch,
-            getState,
-            StoreActionTypes,
-            ValidationLogic,
-            router
-        });
-        expect(out.applied).toBe(true);
-        expect(dispatch).toHaveBeenCalledWith({
-            type: StoreActionTypes.LOAD_AUDIT_FROM_FILE,
-            payload: local
-        });
-        expect(sync_to_server_now).toHaveBeenCalledWith(getState, dispatch);
-        expect(dispatch).not.toHaveBeenCalledWith(
-            expect.objectContaining({ type: StoreActionTypes.REPLACE_STATE_FROM_REMOTE })
-        );
-    });
-
-    test('lokalt nyare innehåll trots lägre versionsnummer: LOAD_AUDIT_FROM_FILE och sync', async () => {
-        load_audit_with_rule_file.mockResolvedValue({
-            version: 10,
-            ruleFileContent: {},
-            samples: [
-                {
-                    requirementResults: {
-                        req1: { lastStatusUpdate: '2026-05-19T08:00:00.000Z' }
-                    }
-                }
-            ]
-        });
-        const ValidationLogic = {
-            validate_saved_audit_file: jest.fn(() => ({ isValid: true }))
-        };
-        const local = {
-            auditId: 'a1',
             version: 1,
-            samples: [
-                {
-                    requirementResults: {
-                        req1: { lastStatusUpdate: '2026-05-20T14:00:00.000Z' }
-                    }
-                }
-            ]
+            ruleFileContent: {}
+        });
+        const ValidationLogic = {
+            validate_saved_audit_file: jest.fn(() => ({ isValid: true }))
         };
+        const local = { auditId: 'a1', version: 10 };
         const out = await apply_session_boot_merge_from_backup({
             backup_entry: { state: local },
             dispatch,
@@ -196,50 +134,6 @@ describe('session_boot_merge', () => {
             payload: local
         });
         expect(sync_to_server_now).toHaveBeenCalledWith(getState, dispatch);
-    });
-
-    test('högre lokal version men äldre innehåll: server vinner', async () => {
-        load_audit_with_rule_file.mockResolvedValue({
-            version: 5,
-            saveFileVersion: '2.1.0',
-            ruleFileContent: {},
-            samples: [
-                {
-                    requirementResults: {
-                        req1: { lastStatusUpdate: '2026-05-20T14:00:00.000Z' }
-                    }
-                }
-            ]
-        });
-        const ValidationLogic = {
-            validate_saved_audit_file: jest.fn(() => ({ isValid: true }))
-        };
-        const local = {
-            auditId: 'a1',
-            version: 99,
-            samples: [
-                {
-                    requirementResults: {
-                        req1: { lastStatusUpdate: '2026-05-19T08:00:00.000Z' }
-                    }
-                }
-            ]
-        };
-        await apply_session_boot_merge_from_backup({
-            backup_entry: { state: local },
-            dispatch,
-            getState,
-            StoreActionTypes,
-            ValidationLogic,
-            router
-        });
-        expect(dispatch).toHaveBeenCalledWith(
-            expect.objectContaining({
-                type: StoreActionTypes.REPLACE_STATE_FROM_REMOTE,
-                payload: expect.objectContaining({ version: 5 })
-            })
-        );
-        expect(sync_to_server_now).not.toHaveBeenCalled();
     });
 
     test('ogiltig remote: varning och lokal state', async () => {

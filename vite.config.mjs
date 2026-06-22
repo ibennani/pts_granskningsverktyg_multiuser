@@ -1,9 +1,9 @@
 // vite.config.mjs
-import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
+import { inject_dist_build_metadata } from './scripts/inject_dist_build_metadata.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -56,50 +56,32 @@ function redirect_base_without_trailing_slash() {
   }
 }
 
-/**
- * I dev: servera fryst `public/build-info.js` när den finns (samma som produktion), annars rotens
- * `build-info.js` från build-info-watchern. Tidigare prioriterades roten → ändringar i public syntes inte.
- */
-function dev_serve_build_info_public_first () {
+/** Måste köras i `closeBundle` före vite-plugin-pwa så att precache av `index.html` matchar filen på disk. */
+function inject_dist_metadata_before_pwa () {
   return {
-    name: 'dev-serve-build-info-public-first',
-    apply: 'serve',
-    enforce: 'pre',
-    configureServer (server) {
-      server.middlewares.use((req, res, next) => {
-        if (req.method !== 'GET') return next()
-        const path_only = (req.url || '').split('?')[0]
-        if (path_only !== '/v2/build-info.js' && path_only !== '/build-info.js') return next()
-        const public_file = join(__dirname, 'public', 'build-info.js')
-        const root_file = join(__dirname, 'build-info.js')
-        const pick = existsSync(public_file) ? public_file : existsSync(root_file) ? root_file : null
-        if (pick) {
-          res.setHeader('Content-Type', 'application/javascript; charset=utf-8')
-          res.end(readFileSync(pick, 'utf8'))
-          return
-        }
-        next()
-      })
+    name: 'inject-dist-build-metadata-before-pwa',
+    apply: 'build',
+    closeBundle: {
+      order: 'pre',
+      handler () {
+        inject_dist_build_metadata(join(__dirname, 'dist'))
+      }
     }
   }
 }
-
-const dev_api_port = Number(process.env.DEV_API_PORT || 3000)
-const dev_client_port = Number(process.env.DEV_CLIENT_PORT || 5173)
-const dev_api_target = `http://localhost:${dev_api_port}`
 
 export default defineConfig({
   base: '/v2/',
   plugins: [
     redirect_base_without_trailing_slash(),
-    dev_serve_build_info_public_first(),
+    inject_dist_metadata_before_pwa(),
     VitePWA({
       registerType: 'autoUpdate',
       injectRegister: 'script',
       manifest: false,
       workbox: {
         // `index.html` måste precachas: navigateFallback använder createHandlerBoundToURL (annars non-precached-url).
-        // Byggstämpel i produktion: fryst `public/build-info.js` (uppdateras med `npm run uppdatera:byggstämpel`).
+        // Övrig HTML undviks; byggstämpel injiceras i closeBundle före PWA så revision stämmer.
         globPatterns: ['**/*.{js,css,ico,png,svg,woff2,woff}', 'index.html'],
         // build-info används för versionskontroll och ska alltid komma från nätverket (no-store i Nginx).
         globIgnores: ['**/build-info.js'],
@@ -126,12 +108,12 @@ export default defineConfig({
     })
   ],
   server: {
-    port: dev_client_port,
+    port: 5173,
     strictPort: false,
     open: false,
     proxy: {
       '/v2/api': {
-        target: dev_api_target,
+        target: 'http://localhost:3000',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/v2/, ''),
         configure: (proxy) => {
@@ -147,7 +129,7 @@ export default defineConfig({
         }
       },
       '/v2/ws': {
-        target: dev_api_target,
+        target: 'http://localhost:3000',
         ws: true,
         rewrite: (path) => path.replace(/^\/v2/, ''),
         configure: (proxy) => {
@@ -169,38 +151,8 @@ export default defineConfig({
   },
   preview: {
     host: '0.0.0.0',
-    port: dev_client_port,
-    strictPort: true,
-    proxy: {
-      '/v2/api': {
-        target: dev_api_target,
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/v2/, ''),
-        configure: (proxy) => {
-          proxy.on('error', (err, _req, res) => {
-            if (!is_ignorable_ws_error(err)) {
-              console.warn('[vite preview] api proxy:', err?.message || err)
-            }
-            if (res && !res.headersSent) {
-              res.writeHead(503, { 'Content-Type': 'application/json' });
-              res.end(JSON.stringify({ ok: false, error: 'Backend ej tillgänglig' }));
-            }
-          });
-        }
-      },
-      '/v2/ws': {
-        target: dev_api_target,
-        ws: true,
-        rewrite: (path) => path.replace(/^\/v2/, ''),
-        configure: (proxy) => {
-          proxy.on('error', (err, _req, _res) => {
-            if (!is_ignorable_ws_error(err)) {
-              console.warn('[vite preview] ws proxy:', err?.message || err)
-            }
-          });
-        }
-      }
-    }
+    port: 4173,
+    strictPort: true
   },
   resolve: {
     preserveSymlinks: true,

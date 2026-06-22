@@ -10,12 +10,6 @@ import { build_all_mode_data } from './requirements_list/requirement_list_all_mo
 import { filter_requirements } from './requirements_list/requirement_list_filter_requirements.ts';
 import { build_toolbar_initial_filter_state, compute_auto_sort_by_override, ensure_default_status_filter, normalize_status_for_toolbar } from './requirements_list/requirement_list_ui_settings.js';
 import { fingerprint_item_keys, can_incremental_update } from '../utils/incremental_list_update.js';
-import { parse_deficiency_search_number } from '../utils/requirement_deficiency_search.js';
-import { parse_view_and_params_from_hash } from '../logic/router.js';
-import {
-    list_filter_settings_to_url_params_for_all_requirements,
-    list_filter_settings_to_url_params_for_requirement_list
-} from '../logic/requirements_list_filters_url_ui.js';
 import './all_requirements_view_component.css';
 import './requirement_list_component.css';
 
@@ -67,9 +61,6 @@ export class RequirementsListViewComponent {
         this.content_div_for_delegation = null;
 
         this._last_rendered_fingerprint = null;
-        this._last_list_audit_frozen = null;
-        this._bulk_pass_incremental_only = false;
-        this._list_filters_hash_sync_timer = null;
 
         // Event handlers för både sample och all mode
         this.handle_requirement_list_click = this.handle_requirement_list_click.bind(this);
@@ -91,16 +82,7 @@ export class RequirementsListViewComponent {
             this.unsubscribe_from_store = this.subscribe((_new_state, listener_meta) => {
                 if (listener_meta?.skip_render) return;
                 if (this.root && typeof this.render === 'function') {
-                    const bulk_pass_actions = [
-                        this.StoreActionTypes?.MARK_ALL_UNREVIEWED_AS_PASSED,
-                        this.StoreActionTypes?.MARK_ALL_UNREVIEWED_AS_PASSED_IN_SAMPLE,
-                        this.StoreActionTypes?.MARK_REQUIREMENT_AS_PASSED_IN_ALL_SAMPLES
-                    ];
-                    if (bulk_pass_actions.includes(listener_meta?.action_type)) {
-                        void this.refresh_after_bulk_pass();
-                        return;
-                    }
-                    void this.render();
+                    this.render();
                 }
             });
         }
@@ -127,36 +109,6 @@ export class RequirementsListViewComponent {
                 status: new_state.status
             }
         });
-        this._schedule_list_filters_hash_sync();
-    }
-
-    _schedule_list_filters_hash_sync() {
-        if (!this.router || typeof parse_view_and_params_from_hash !== 'function') return;
-        if (this._list_filters_hash_sync_timer) {
-            clearTimeout(this._list_filters_hash_sync_timer);
-        }
-        this._list_filters_hash_sync_timer = setTimeout(() => {
-            this._list_filters_hash_sync_timer = null;
-            try {
-                const parsed = parse_view_and_params_from_hash();
-                const want_view = this.mode === 'all' ? 'all_requirements' : 'requirement_list';
-                if (parsed.viewName !== want_view) return;
-                const ui = this.getState()?.uiSettings?.[this.state_filter_key];
-                const extra =
-                    this.mode === 'all'
-                        ? list_filter_settings_to_url_params_for_all_requirements(ui)
-                        : list_filter_settings_to_url_params_for_requirement_list(ui);
-                const merged = { ...parsed.params, ...extra };
-                const flat = {};
-                for (const [k, v] of Object.entries(merged)) {
-                    if (v === undefined || v === null) continue;
-                    flat[k] = String(v);
-                }
-                this.router(want_view, flat, { replace_state: true });
-            } catch {
-                /* ignoreras medvetet */
-            }
-        }, 400);
     }
 
     handle_requirement_list_click(event) {
@@ -174,7 +126,7 @@ export class RequirementsListViewComponent {
                     dispatch: this.dispatch,
                     StoreActionTypes: this.StoreActionTypes,
                     NotificationComponent: this.NotificationComponent,
-                    refresh_after_bulk_pass: () => this.refresh_after_bulk_pass()
+                    rerender: () => this.render()
                 });
             }
             return;
@@ -234,15 +186,6 @@ export class RequirementsListViewComponent {
         this.content_div_for_delegation = dom_refs.content_div_for_delegation;
         this.is_dom_initialized = true;
         return true;
-    }
-
-    async refresh_after_bulk_pass() {
-        this._bulk_pass_incremental_only = true;
-        try {
-            await this.render();
-        } finally {
-            this._bulk_pass_incremental_only = false;
-        }
     }
 
     async render() {
@@ -314,19 +257,16 @@ export class RequirementsListViewComponent {
             this.current_sample_object = current_sample_object;
         }
 
-        let current_ui_settings = ensure_default_status_filter(state.uiSettings?.[this.state_filter_key] || {});
-
-        if (this._toolbar_inited && typeof this.filter_component_instance?.get_pending_search_text === 'function') {
-            const pending_search = this.filter_component_instance.get_pending_search_text();
-            const store_search = current_ui_settings.searchText || '';
-            if (pending_search !== store_search) {
-                current_ui_settings = { ...current_ui_settings, searchText: pending_search };
-                const debounce_active = Boolean(this.filter_component_instance._search_debounce_timer);
-                if (!debounce_active) {
-                    this.handle_filter_change({ searchText: pending_search });
-                }
-            }
+        // Render header based on mode
+        if (this.mode === 'all') {
+            const total_count = entries.length;
+            this.h1_element_ref.textContent = t('all_requirements_title_audit_with_count', { count: total_count });
+        } else {
+            render_sample_header(state, current_sample_object, all_relevant_requirements, this.header_element_ref, this.Helpers, this.Translation, this.AuditLogic);
         }
+
+        // Get filter settings
+        let current_ui_settings = ensure_default_status_filter(state.uiSettings?.[this.state_filter_key] || {});
 
         const auto_sort_by = compute_auto_sort_by_override(this.mode, entries, all_relevant_requirements, current_ui_settings);
         if (auto_sort_by !== null) {
@@ -337,21 +277,59 @@ export class RequirementsListViewComponent {
             current_ui_settings = { ...current_ui_settings, sortBy: auto_sort_by };
         }
 
+        if (this.filter_component_instance?.init && this.filter_component_instance?.render) {
+            if (!this._toolbar_inited) {
+                const initial_state = build_toolbar_initial_filter_state(current_ui_settings);
+                await this.filter_component_instance.init({
+                    root: this.filter_container_element,
+                    deps: {
+                        on_change: this.handle_toolbar_change,
+                        initial_state,
+                        Translation: this.Translation,
+                        Helpers: this.Helpers,
+                        config: {
+                            showStatusFilter: true,
+                            sortOptions: get_sort_options(this.mode),
+                            idPrefix: this.state_filter_key === 'allRequirementsFilter' ? 'all-requirements-filter' : 'requirement-list-filter',
+                            searchDebounceMs: 400
+                        }
+                    }
+                });
+                this._toolbar_inited = true;
+            }
+            const normalized_status = normalize_status_for_toolbar(current_ui_settings);
+            this.filter_component_instance.render({
+                searchText: current_ui_settings.searchText || '',
+                sortBy: current_ui_settings.sortBy || 'ref_asc',
+                status: normalized_status
+            });
+        }
+
+        // Filter and sort requirements — samma filterlogik som högerspalten
         const status_filters = current_ui_settings.status || {};
         const has_status_filters = Object.keys(status_filters).length > 0;
+
         const requirement_needs_help_fn = this.AuditLogic?.requirement_needs_help || (() => false);
+
         const filter_items_input = this.mode === 'all' ? entries : all_relevant_requirements;
-        const audit_frozen = state.auditStatus === 'locked' || state.auditStatus === 'archived';
         const { filtered_items, total_count } = filter_requirements(filter_items_input, current_ui_settings, {
             mode: this.mode,
             samples,
             relevant_ids_by_sample: this.relevant_ids_by_sample,
             current_sample_object,
             AuditLogic: this.AuditLogic,
-            requirements: rule_file_content?.requirements,
-            audit_frozen
+            requirements: rule_file_content?.requirements
         });
+
         const filtered_count = filtered_items.length;
+
+        // Update results summary
+        this.results_summary_element_ref.textContent = t('results_summary_template', {
+            filteredCount: filtered_count,
+            totalCount: total_count
+        });
+
+        // Sort items
         const sort_by = current_ui_settings.sortBy || 'ref_asc';
         const sorted_items = sort_items(
             this.mode,
@@ -370,17 +348,9 @@ export class RequirementsListViewComponent {
         const has_search_filter = this.mode === 'all' && search_term.length > 0;
         const has_status_filter_excluding = has_status_filters && status_keys_for_filter.some(key => status_filters[key] !== true);
         const has_active_filter = has_search_filter || has_status_filter_excluding;
-        const deficiency_search_number =
-            this.mode === 'all' && audit_frozen
-                ? parse_deficiency_search_number(current_ui_settings.searchText)
-                : null;
-        const filter_opts = {
-            status_filters,
-            has_status_filters,
-            requirement_needs_help_fn,
-            has_active_filter,
-            deficiency_search_number
-        };
+
+        // Render items eller inkrementell uppdatering
+        const filter_opts = { status_filters, has_status_filters, requirement_needs_help_fn, has_active_filter };
         const item_keys = build_item_keys(
             this.mode,
             sorted_items,
@@ -390,155 +360,46 @@ export class RequirementsListViewComponent {
             this.AuditLogic,
             rule_file_content?.requirements
         );
-        const list_fingerprint = fingerprint_item_keys(item_keys);
 
-        if (
-            this._apply_incremental_list_refresh({
-                state,
-                t,
-                current_sample_object,
-                all_relevant_requirements,
+        if (can_incremental_update(this._last_rendered_fingerprint, fingerprint_item_keys(item_keys))) {
+            update_items_status_only(
+                this.mode,
+                this.content_div_for_delegation,
+                this.relevant_ids_by_sample,
                 sorted_items,
                 samples,
-                filter_opts,
-                rule_file_content,
-                total_count,
-                filtered_count,
-                list_fingerprint,
-                audit_frozen
-            })
-        ) {
-            return;
-        }
-
-        // Render header based on mode
-        if (this.mode === 'all') {
-            const total_count_all = entries.length;
-            this.h1_element_ref.textContent = t('all_requirements_title_audit_with_count', { count: total_count_all });
-        } else {
-            render_sample_header(state, current_sample_object, all_relevant_requirements, this.header_element_ref, this.Helpers, this.Translation, this.AuditLogic);
-        }
-
-        if (this.filter_component_instance?.init && this.filter_component_instance?.render) {
-            if (!this._toolbar_inited) {
-                const initial_state = build_toolbar_initial_filter_state(current_ui_settings);
-                await this.filter_component_instance.init({
-                    root: this.filter_container_element,
-                    deps: {
-                        on_change: this.handle_toolbar_change,
-                        initial_state,
-                        Translation: this.Translation,
-                        Helpers: this.Helpers,
-                        config: {
-                            showStatusFilter: true,
-                            sortOptions: get_sort_options(this.mode),
-                            idPrefix: this.state_filter_key === 'allRequirementsFilter' ? 'all-requirements-filter' : 'requirement-list-filter',
-                            searchDebounceMs: 400,
-                            auditFrozen: state.auditStatus === 'locked' || state.auditStatus === 'archived'
-                        }
-                    }
-                });
-                this._toolbar_inited = true;
-            }
-            if (this.filter_component_instance.component_config) {
-                this.filter_component_instance.component_config.auditFrozen =
-                    state.auditStatus === 'locked' || state.auditStatus === 'archived';
-            }
-            const normalized_status = normalize_status_for_toolbar(current_ui_settings);
-            this.filter_component_instance.render({
-                searchText: current_ui_settings.searchText || '',
-                sortBy: current_ui_settings.sortBy || 'ref_asc',
-                status: normalized_status
-            });
-        }
-
-        this.results_summary_element_ref.textContent = t('results_summary_template', {
-            filteredCount: filtered_count,
-            totalCount: total_count
-        });
-
-        render_requirements_content(
-            {
-                mode: this.mode,
-                Helpers: this.Helpers,
-                Translation: this.Translation,
-                AuditLogic: this.AuditLogic,
-                content_div_for_delegation: this.content_div_for_delegation,
-                empty_message_element_ref: this.empty_message_element_ref,
-                relevant_ids_by_sample: this.relevant_ids_by_sample,
-                RETURN_FOCUS_SESSION_KEY: this.RETURN_FOCUS_SESSION_KEY,
-                sample_params_id: this.params?.sampleId || null,
-                getState: () => this.getState(),
-                requirements: rule_file_content?.requirements
-            },
-            sorted_items,
-            { samples, current_sample_object, total_count, filtered_count, filter_opts }
-        );
-        this._last_rendered_fingerprint = list_fingerprint;
-        this._last_list_audit_frozen = audit_frozen;
-    }
-
-    _apply_incremental_list_refresh({
-        state,
-        t,
-        current_sample_object,
-        all_relevant_requirements,
-        sorted_items,
-        samples,
-        filter_opts,
-        rule_file_content,
-        total_count,
-        filtered_count,
-        list_fingerprint,
-        audit_frozen
-    }) {
-        if (!this.is_dom_initialized || !this.content_div_for_delegation) return false;
-        if (!can_incremental_update(this._last_rendered_fingerprint, list_fingerprint)) return false;
-        if (this._last_list_audit_frozen !== audit_frozen) return false;
-
-        if (this.mode === 'sample') {
-            render_sample_header(
-                state,
                 current_sample_object,
-                all_relevant_requirements,
-                this.header_element_ref,
-                this.Helpers,
-                this.Translation,
-                this.AuditLogic
+                filter_opts,
+                this.AuditLogic,
+                {
+                    Helpers: this.Helpers,
+                    Translation: this.Translation,
+                    requirements: rule_file_content?.requirements
+                }
+            );
+        } else {
+            render_requirements_content(
+                {
+                    mode: this.mode,
+                    Helpers: this.Helpers,
+                    Translation: this.Translation,
+                    AuditLogic: this.AuditLogic,
+                    content_div_for_delegation: this.content_div_for_delegation,
+                    empty_message_element_ref: this.empty_message_element_ref,
+                    relevant_ids_by_sample: this.relevant_ids_by_sample,
+                    RETURN_FOCUS_SESSION_KEY: this.RETURN_FOCUS_SESSION_KEY,
+                    sample_params_id: this.params?.sampleId || null,
+                    getState: () => this.getState(),
+                    requirements: rule_file_content?.requirements
+                },
+                sorted_items,
+                { samples, current_sample_object, total_count, filtered_count, filter_opts }
             );
         }
-
-        this.results_summary_element_ref.textContent = t('results_summary_template', {
-            filteredCount: filtered_count,
-            totalCount: total_count
-        });
-
-        update_items_status_only(
-            this.mode,
-            this.content_div_for_delegation,
-            this.relevant_ids_by_sample,
-            sorted_items,
-            samples,
-            current_sample_object,
-            filter_opts,
-            this.AuditLogic,
-            {
-                Helpers: this.Helpers,
-                Translation: this.Translation,
-                requirements: rule_file_content?.requirements,
-                getState: () => this.getState()
-            }
-        );
-        this._last_rendered_fingerprint = list_fingerprint;
-        this._last_list_audit_frozen = audit_frozen;
-        return true;
+        this._last_rendered_fingerprint = fingerprint_item_keys(item_keys);
     }
 
     destroy() {
-        if (this._list_filters_hash_sync_timer) {
-            clearTimeout(this._list_filters_hash_sync_timer);
-            this._list_filters_hash_sync_timer = null;
-        }
         if (typeof this.unsubscribe_from_store === 'function') {
             this.unsubscribe_from_store();
             this.unsubscribe_from_store = null;
@@ -566,7 +427,5 @@ export class RequirementsListViewComponent {
         this.results_summary_element_ref = null;
         this.empty_message_element_ref = null;
         this.list_element_ref = null;
-        this._last_rendered_fingerprint = null;
-        this._last_list_audit_frozen = null;
     }
-}
+};

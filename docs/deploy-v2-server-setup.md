@@ -56,19 +56,10 @@ npm install -g pm2
 
 Vid `npm run deploy:v2` startas om: `granskningsverktyget-v2` (backend) och `granskningsverktyget-watchdog` (health-check).
 
-**Så att Leffe startar efter serveromstart (rekommenderat):**
+**Så att appen startar efter serveromstart:**
 
-Från utvecklingsmaskinen (kräver `DEPLOY_SSH_PASSWORD` och `DEPLOY_SUDO_PASSWORD` i `.env`):
-
-```bash
-npm run setup:v2:boot
-```
-
-Det startar Postgres, backend och watchdog, sparar PM2-listan och registrerar `pm2-<användare>.service` i systemd. nginx och Docker enable:as om sudo finns.
-
-Manuellt på servern: `sudo bash /var/www/granskningsverktyget-v2/scripts/server-boot-leffe.sh`
-
-Alternativ (endast PM2): `pm2 save` och `pm2 startup` (kör sudo-kommandot som visas).
+1. `pm2 save`
+2. `pm2 startup` och kör det kommando som visas (ofta med `sudo`).
 
 ## 6. Loggrotation (PM2)
 

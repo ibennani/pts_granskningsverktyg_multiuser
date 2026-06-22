@@ -10,16 +10,12 @@ Detta dokument beskriver hur AI-agenter (som Cursor Composer) kan användas för
 
 Projektet är organiserat enligt följande struktur:
 
-- `js/` - Huvudkatalog för frontend (JavaScript och TypeScript)
+- `js/` - Huvudkatalog för JavaScript-kod
   - `components/` - UI-komponenter
-  - `export/` - Exportmoduler (CSV, Excel, Word, HTML)
   - `features/` - Domänspecifika funktioner
-  - `logic/` - Affärslogik, routing, vyrendering
-  - `state/` - Reducers och state-index
-  - `sync/` - Serversynk (granskning, regelfil)
+  - `logic/` - Affärslogik och utilities
   - `utils/` - Hjälpfunktioner
   - `i18n/` - Översättningar
-- `shared/` - Kod som delas mellan klient och server (inga DOM-beroenden)
 - `server/` - Express-backend, API, autentisering, databas
 - `css/` - Stylesheets
 - `tests/` - Testfiler
@@ -28,20 +24,19 @@ Projektet är organiserat enligt följande struktur:
 ## Kodningskonventioner
 
 ### Namngivning
-- Komponenter: PascalCase (`AuditViewComponent.ts`)
+- Komponenter: PascalCase (`StartViewComponent.js`)
 - Funktioner och variabler: snake_case (`handle_export_word`, `export_to_word_criterias`)
-- Filer: matchar komponent/funktionsnamn; källan kan vara `.ts` med `.js`-brygga för import
+- Filer: matchar komponent/funktionsnamn
 
 ### Modulstruktur
-- Använd ES6-moduler, importera relativt (`../utils/foo.js` eller `.ts` på server)
-- **Nya vykomponenter:** föredra `export class XxxComponent { async init({ root, deps }), render(), destroy() }` (se `.cursor/rules/00-project-rules.mdc`)
-- **Legacy:** vissa sektioner och hjälpkomponenter använder fortfarande `export const XxxComponent = { init, render, destroy }` (objektliteral, ingen IIFE)
-- Vykomponenter registreras i `js/logic/view_components_index.js` (en instans per vy), inte direkt i `main.js`
+- Använd ES6-moduler
+- Exportera med `export const ComponentName = { init({ root, deps }), render(), destroy() }` (INGEN IIFE)
+- Importera relativt (`../utils/foo.js`)
 
 ### TypeScript-filer och import med `.js`-suffix
 - Vid migrering **`.js` → `.ts`** ska importvägar ofta **behålla `.js`-ändelsen** (TypeScripts rekommendation mot utdatafiler). Källan ligger då som **`.ts`** på disk.
 - **Vite** är konfigurerad med `resolve.extensionAlias` så att en begäran om `*.js` i dev/bygge **först** matchar motsvarande **`.ts` / `.tsx`**, sedan en riktig **`.js`**-fil. Det undviker **404 i webbläsaren** och tom startsida när bara `.ts` finns.
-- **Node-backend** (utan Vite) tolkar inte detta automatiskt: importera där **`*.ts`** om filen bara finns som TypeScript, och kör servern med **`tsx`** (`npm run dev:server`) eller **nodemon** som anropar tsx (`npm run dev`, `dev:serverdb`; se `nodemon.json`).
+- **Node-backend** (utan Vite) tolkar inte detta automatiskt: importera där **`*.ts`** om filen bara finns som TypeScript, och kör servern med **`tsx`** (se `package.json` / `nodemon.json`).
 - Efter konvertering: kör **`npm run dev`** eller **`npm run build`** och öppna appen en gång; vid tvekan kör **`npm run check`**.
 
 ### Indentering och formatering
@@ -62,10 +57,9 @@ Projektet är organiserat enligt följande struktur:
 - **Regression:** `npm run check:export-facades` (ingår i `npm run check`) varnar om `export_logic.ts` eller `audit_logic.ts` växer över satta radgränser.
 
 ### State-hantering
-- Central state i `js/state.js` (implementation i `js/state/index.ts`, re-export via `js/state/index.js` och reducerfiler under `js/state/`)
+- Central state i `js/state.js` (implementation i `js/state/index.js` och reducerfiler under `js/state/`)
 - Exporterar bland annat `getState`, `dispatch`, `subscribe`, `StoreActionTypes`, `loadStateFromLocalStorageBackup`, `clearLocalStorageBackup`, `APP_STATE_KEY`
 - **`window.Store` används inte** i nuvarande kodbas — importera från `state.js`
-- **`AuditLogic` och `ValidationLogic`** injiceras via `deps` till vykomponenter (importeras i `main.js`, exponeras inte på `window`)
 - I komponenter: använd `deps.getState()` och `deps.dispatch()` (från deps-objektet)
 - **Persistens, backup och serversynk:** `docs/state_and_persistence.md`
 
@@ -77,19 +71,18 @@ Projektet är organiserat enligt följande struktur:
 - Central autospar-service i `js/logic/autosave_service.js`
 - Debounce 250 ms, sparar utan visuell omrendering, bevarar fokus/markering/scroll
 - Se `docs/autosave_integration.md` för instruktion om hur nya vyer ansluts
-- Fältutkast (drafts) hanteras separat i `js/draft_manager.ts` (inte samma som formulär-autospar)
+- Fältutkast (drafts) hanteras separat i `js/draft_manager.js`
 
 ## Vanliga uppgifter
 
-### Lägga till en ny vykomponent
-1. Skapa fil i `js/components/` (föredra `.ts` för ny kod)
-2. Följ klassmönstret: `export class ComponentName { async init({ root, deps }), render(), destroy() }`
-3. CSS laddas via `Helpers.load_css_safely()` i `init()`
-4. Registrera instans i `js/logic/view_components_index.js` (`get_component_class`-switch)
-5. Lägg till route/hash i `js/logic/router.js` om vyn behöver ny URL
+### Lägga till en ny komponent
+1. Skapa fil i `js/components/`
+2. Följ modulmönstret: `export const ComponentName = { init({ root, deps }), render(), destroy() }` (INGEN IIFE)
+3. CSS importeras via `Helpers.load_css_safely()` i `init()`
+4. Importera och registrera i `js/main.js`
 
 ### Lägga till en ny översättning
-1. Lägg till nyckel i `js/i18n/sv-SE.json`, `js/i18n/en-GB.json` och vid behov `js/i18n/nb-NO.json`
+1. Lägg till nyckel i `js/i18n/sv-SE.json` och `js/i18n/en-GB.json`
 2. Använd `t('nyckel')` i koden
 
 ### Testa ändringar

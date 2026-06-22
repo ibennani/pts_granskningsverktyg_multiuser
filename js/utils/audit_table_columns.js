@@ -2,44 +2,25 @@
 // Returnerar kolumndefinitioner för granskningstabellen, används med GenericTableComponent.
 
 import {
-    format_audit_row_progress_display,
-    progress_percent_for_audit_row
-} from '../logic/audit_list_progress.js';
-import { resolve_audit_list_last_updated_at } from '../logic/audit_list_last_updated.js';
+    format_group_actor_names,
+    get_group_actor_sort_value
+} from '../logic/audit_list_case_grouping.js';
 
 const EMPTY_PLACEHOLDER = '—';
 
 /**
- * Visningsnamn för granskning i modaler och aria-etiketter (dnr före aktörsnamn när dnr finns).
- * @param {object|null|undefined} metadata
- * @param {string|number} [audit_id]
- * @returns {string}
- */
-export function format_audit_display_label(metadata, audit_id) {
-    const case_number = (metadata?.caseNumber ?? '').toString().trim();
-    const actor_name = (metadata?.actorName ?? '').toString().trim();
-    if (case_number && actor_name) {
-        return `${case_number} - ${actor_name}`;
-    }
-    if (case_number) return case_number;
-    if (actor_name) return actor_name;
-    if (audit_id !== null && audit_id !== undefined && audit_id !== '') {
-        return `Granskning ${audit_id}`;
-    }
-    return '';
-}
-
-/**
  * Skapar kolumndefinitioner för granskningstabellen.
- * @param {Object} deps - { t, Helpers, Translation, get_status_label, get_live_audit_state? }
+ * @param {Object} deps - { t, Helpers, Translation, get_status_label }
  * @param {Object} handlers - { onOpenAudit(auditId), onDownloadAudit(auditId), onDeleteAudit?(auditId) }
- * @param {{ includeDelete: boolean }} [opts] - includeDelete true för audit-vyn (kolumn Radera).
+ * @param {{ includeDelete?: boolean, omitCaseNumberColumn?: boolean, omitAuditorColumn?: boolean }} [opts]
  * @returns {Array<{ headerLabel: string, getContent: (row: any) => string | HTMLElement }>}
  */
 export function create_audit_table_columns(deps, handlers, opts = {}) {
     const { t, Helpers, Translation, get_status_label } = deps;
     const { onOpenAudit, onDownloadAudit, onDeleteAudit } = handlers;
     const include_delete = opts.includeDelete === true;
+    const omit_case_number = opts.omitCaseNumberColumn === true;
+    const omit_auditor = opts.omitAuditorColumn === true;
 
     const icon_svg = (name, size = 16) =>
         Helpers?.get_icon_svg ? Helpers.get_icon_svg(name, ['currentColor'], size) : '';
@@ -78,31 +59,19 @@ export function create_audit_table_columns(deps, handlers, opts = {}) {
             }
         },
         {
+            headerLabel: t('start_view_col_type'),
+            getSortValue: (row) => (row.audit_type ?? '').toString().trim(),
+            getContent: (row) => (row.audit_type ?? '').toString().trim() || EMPTY_PLACEHOLDER
+        },
+        {
             headerLabel: t('start_view_col_status'),
             getSortValue: (row) => (row.status ?? '').toString(),
             getContent: (row) => (row.status ? get_status_label(row.status) : EMPTY_PLACEHOLDER)
         },
         {
             headerLabel: t('start_view_col_progress'),
-            getSortValue: (row) => {
-                const pct = progress_percent_for_audit_row(
-                    row,
-                    typeof deps.get_live_audit_state === 'function' ? deps.get_live_audit_state() : null
-                );
-                return pct !== null && pct !== undefined ? Number(pct) : -1;
-            },
-            getContent: (row) => {
-                const live =
-                    typeof deps.get_live_audit_state === 'function' ? deps.get_live_audit_state() : null;
-                const lang = Translation?.get_current_language_code?.() || 'sv-SE';
-                const formatted = format_audit_row_progress_display(
-                    row,
-                    live,
-                    lang,
-                    Helpers?.format_number_locally
-                );
-                return formatted ?? EMPTY_PLACEHOLDER;
-            }
+            getSortValue: (row) => (row.progress !== null && row.progress !== undefined) ? Number(row.progress) : -1,
+            getContent: (row) => (row.progress !== null && row.progress !== undefined ? `${row.progress}%` : EMPTY_PLACEHOLDER)
         },
         {
             headerLabel: t('start_view_col_deficiency'),
@@ -117,26 +86,10 @@ export function create_audit_table_columns(deps, handlers, opts = {}) {
         },
         {
             headerLabel: t('start_view_col_last_updated'),
-            getSortValue: (row) => {
-                const iso = row.last_updated_display_at
-                    || resolve_audit_list_last_updated_at({
-                        status: row.status,
-                        metadata: row.metadata,
-                        samples: row.samples,
-                        updated_at: row.updated_at
-                    });
-                return iso ? String(iso) : '';
-            },
+            getSortValue: (row) => (row.updated_at ? String(row.updated_at) : ''),
             getContent: (row) => {
-                const iso = row.last_updated_display_at
-                    || resolve_audit_list_last_updated_at({
-                        status: row.status,
-                        metadata: row.metadata,
-                        samples: row.samples,
-                        updated_at: row.updated_at
-                    });
-                if (!iso) return EMPTY_PLACEHOLDER;
-                return Helpers?.format_iso_to_local_datetime?.(iso, lang) || String(iso);
+                if (!row.updated_at) return EMPTY_PLACEHOLDER;
+                return Helpers?.format_iso_to_local_datetime?.(row.updated_at, lang) || String(row.updated_at);
             }
         },
         {
@@ -160,12 +113,24 @@ export function create_audit_table_columns(deps, handlers, opts = {}) {
         }
     ];
 
+    let result = columns;
+    if (omit_case_number) {
+        result = result.slice(1);
+    }
+    if (omit_auditor) {
+        result = result.filter(
+            (col) => col.headerLabel !== t('start_view_col_auditor')
+        );
+    }
+
     if (include_delete && typeof onDeleteAudit === 'function') {
-        columns.push({
+        result.push({
             headerLabel: t('delete'),
             isAction: true,
             getContent: (row) => {
-                const audit_link_text = format_audit_display_label(row.metadata, row.id);
+                const actor_name = (row.metadata?.actorName ?? '').toString().trim();
+                const case_number = (row.metadata?.caseNumber ?? '').toString().trim();
+                const audit_link_text = actor_name || case_number || `Granskning ${row.id}`;
                 const delete_btn = Helpers.create_element('button', {
                     class_name: ['button', 'button-danger', 'button-small'],
                     html_content: `<span>${t('delete')}</span>` + icon_svg('delete'),
@@ -181,5 +146,47 @@ export function create_audit_table_columns(deps, handlers, opts = {}) {
         });
     }
 
-    return columns;
+    return result;
+}
+
+/**
+ * Kolumner för grupperad granskningslista.
+ * @param {{ t: function(string, Object=): string }} deps
+ * @param {{ groupMode?: 'case' | 'auditor' }} [opts]
+ * @returns {Array<{ headerLabel: string, getContent: (row: any) => string, getSortValue?: (row: any) => string }>}
+ */
+export function create_audit_group_table_columns(deps, opts = {}) {
+    const { t } = deps;
+    const group_mode = opts.groupMode === 'auditor' ? 'auditor' : 'case';
+    if (group_mode === 'auditor') {
+        return [
+            {
+                headerLabel: t('start_view_col_auditor'),
+                getSortValue: (row) => (row.group_key ?? '').toString().trim(),
+                getContent: (row) => (row.group_key ?? '').toString().trim() || EMPTY_PLACEHOLDER
+            },
+            {
+                headerLabel: t('audit_group_col_count'),
+                getSortValue: (row) => (row.audits || []).length,
+                getContent: (row) => t('audit_group_count', { count: (row.audits || []).length })
+            }
+        ];
+    }
+    return [
+        {
+            headerLabel: t('start_view_col_case_number'),
+            getSortValue: (row) => (row.group_key ?? row.case_number ?? '').toString().trim(),
+            getContent: (row) => (row.group_key ?? row.case_number ?? '').toString().trim() || EMPTY_PLACEHOLDER
+        },
+        {
+            headerLabel: t('start_view_col_actor'),
+            getSortValue: (row) => get_group_actor_sort_value(row.audits || []),
+            getContent: (row) => format_group_actor_names(row.audits || []) || EMPTY_PLACEHOLDER
+        },
+        {
+            headerLabel: t('audit_group_col_count'),
+            getSortValue: (row) => (row.audits || []).length,
+            getContent: (row) => t('audit_group_count', { count: (row.audits || []).length })
+        }
+    ];
 }

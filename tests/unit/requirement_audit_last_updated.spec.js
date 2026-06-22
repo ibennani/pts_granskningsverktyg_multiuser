@@ -1,6 +1,6 @@
 /**
- * Tester för att debouncad lagring till Redux från observationsfält inte höjer lastStatusUpdate
- * (skipLastStatusBump) medan omedelbar commit använder full bump.
+ * Tester för att debouncad autospar i observationsfält inte höjer lastStatusUpdate
+ * (skipLastStatusBump) medan blur-commit använder full bump.
  */
 import { jest } from '@jest/globals';
 import { RequirementAuditComponent } from '../../js/components/RequirementAuditComponent.js';
@@ -83,96 +83,5 @@ describe('RequirementAuditComponent dispatch_result_update skipLastStatusBump', 
         const payload = comp.dispatch.mock.calls[0][0].payload.newRequirementResult;
         expect(payload.lastStatusUpdate).toBe(new_ts);
         expect(payload.lastStatusUpdateBy).toBeDefined();
-    });
-});
-
-describe('RequirementAuditComponent plate text autosave', () => {
-    beforeEach(() => {
-        jest.useFakeTimers();
-    });
-
-    afterEach(() => {
-        jest.useRealTimers();
-    });
-
-    test('debouncar sparning till store 250 ms efter input', () => {
-        const comp = new RequirementAuditComponent();
-        comp.plate_element_ref = document.createElement('div');
-        comp.current_result = { checkResults: {}, commentToAuditor: '', commentToActor: '' };
-        comp._save_plate_to_redux = jest.fn();
-
-        comp._request_plate_text_autosave();
-        expect(comp._save_plate_to_redux).not.toHaveBeenCalled();
-
-        jest.advanceTimersByTime(250);
-        expect(comp._save_plate_to_redux).toHaveBeenCalledWith({
-            should_trim: false,
-            skip_last_status_bump: true,
-            sync_persist: true
-        });
-    });
-
-    test('flush vid unload sparar direkt utan debounce (synkront)', () => {
-        const comp = new RequirementAuditComponent();
-        comp.plate_element_ref = document.createElement('div');
-        comp.current_result = { checkResults: {} };
-        comp._plate_text_autosave_timer = setTimeout(() => {}, 5000);
-        comp._save_plate_to_redux = jest.fn().mockReturnValue(true);
-
-        comp._handle_unload_persist('pagehide');
-
-        expect(comp._plate_text_autosave_timer).toBeNull();
-        expect(comp._save_plate_to_redux).toHaveBeenCalledWith({
-            should_trim: false,
-            skip_last_status_bump: false,
-            sync_persist: true,
-            force_persist: true
-        });
-    });
-
-    test('navigering sparar synkront innan vybyte (väntande debounce avbryts)', () => {
-        const comp = new RequirementAuditComponent();
-        comp.plate_element_ref = document.createElement('div');
-        comp.current_result = { checkResults: {} };
-        comp._plate_text_autosave_timer = setTimeout(() => {}, 5000);
-        comp._save_plate_to_redux = jest.fn();
-        comp.get_navigation_state = jest.fn(() => ({
-            mode: 'sample_requirements',
-            is_first: true,
-            is_last: true,
-            prev_item: null,
-            next_item: null,
-            next_unhandled_item: null
-        }));
-        comp.router = jest.fn();
-
-        comp.handle_navigation('back_to_list');
-
-        expect(comp._plate_text_autosave_timer).toBeNull();
-        expect(comp._save_plate_to_redux).toHaveBeenCalledWith({
-            should_trim: false,
-            skip_last_status_bump: false,
-            sync_persist: true,
-            force_persist: true
-        });
-    });
-
-    test('destroy sparar synkront till store', async () => {
-        const comp = new RequirementAuditComponent();
-        comp.plate_element_ref = document.createElement('div');
-        comp.current_result = { checkResults: {} };
-        comp._save_plate_to_redux = jest.fn();
-        comp.checklist_handler_instance = { flush_observations_before_destroy: jest.fn(), destroy: jest.fn() };
-        comp.root = document.createElement('div');
-
-        await comp.destroy();
-
-        expect(comp._save_plate_to_redux).toHaveBeenCalledWith({
-            should_trim: false,
-            skip_last_status_bump: false,
-            sync_persist: true,
-            force_persist: true
-        });
-        expect(comp._save_plate_to_redux).toHaveBeenCalledTimes(2);
     });
 });

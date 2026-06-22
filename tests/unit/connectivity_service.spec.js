@@ -6,8 +6,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { app_runtime_refs } from '../../js/utils/app_runtime_refs.js';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const server_sync_path = path.join(__dirname, '../../js/logic/server_sync.js');
+const spec_dir = path.dirname(fileURLToPath(import.meta.url));
+const server_sync_path = path.join(spec_dir, '../../js/logic/server_sync.js');
 
 describe('connectivity_service', () => {
     let is_fetch_network_error;

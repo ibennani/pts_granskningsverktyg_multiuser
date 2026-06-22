@@ -30,11 +30,11 @@ async function run() {
     ].join(' ') + " || true";
 
     try {
-        console.info('--- backend /ws (upgrade) ---');
+        console.log('--- backend /ws (upgrade) ---');
         await exec(backend_cmd, { cwd: false });
-        console.info('\n--- nginx /v2/ws (upgrade) ---');
+        console.log('\n--- nginx /v2/ws (upgrade) ---');
         await exec(nginx_cmd, { cwd: false });
-        console.info('\n--- domän /v2/ws (upgrade) ---');
+        console.log('\n--- domän /v2/ws (upgrade) ---');
         await exec(domain_cmd, { cwd: false });
     } finally {
         await disconnect();

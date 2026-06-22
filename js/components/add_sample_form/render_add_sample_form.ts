@@ -1,4 +1,5 @@
 import { marked } from '../../utils/markdown.js';
+import { handle_sample_attach_media_click, render_sample_screenshot_section } from './sample_attach_media.js';
 
 export function render_add_sample_form(component: any, sample_id_to_edit: string | null = null) {
     // Prevent re-rendering (and resetting form state) only when editing the same existing sample and the form is mounted.
@@ -116,6 +117,11 @@ export function render_add_sample_form(component: any, sample_id_to_edit: string
         content_types_group_options.attributes = { 'data-draft-ignore': 'true' };
     }
     component.content_types_container_element = component.Helpers.create_element('div', content_types_group_options);
+    const sample_screenshot_section = render_sample_screenshot_section(component, effective_sample_data);
+    component.sample_attach_media_btn.addEventListener('click', (event: Event) => {
+        handle_sample_attach_media_click(component, event);
+    });
+    component.content_types_container_element.appendChild(sample_screenshot_section);
     component.content_types_container_element.appendChild(component.Helpers.create_element('h2', { text_content: t('content_types') }));
     component.content_types_container_element.appendChild(component.Helpers.create_element('p', { text_content: t('content_types_instruction'), style: { 'margin-top': '0', 'color': 'var(--text-color-muted)' } }));
     grouped_content_types.forEach((group: any) => {
@@ -219,6 +225,22 @@ export function render_add_sample_form(component: any, sample_id_to_edit: string
         }
     }
     actions_div.appendChild(save_button);
+
+    if (component.show_back_to_samples_button && typeof component.discard_callback === 'function') {
+        const return_button = component.Helpers.create_element('button', {
+            class_name: ['button', 'button-default'],
+            attributes: { type: 'button' },
+            html_content:
+                `<span>${t('back_to_sample_management')}</span>` +
+                (component.Helpers.get_icon_svg ? component.Helpers.get_icon_svg('arrow_back') : '')
+        });
+        return_button.addEventListener('click', (event: Event) => {
+            event.preventDefault();
+            component.discard_callback();
+        });
+        actions_div.appendChild(return_button);
+    }
+
     component.form_element.appendChild(actions_div);
 
     component.root.appendChild(component.form_element);

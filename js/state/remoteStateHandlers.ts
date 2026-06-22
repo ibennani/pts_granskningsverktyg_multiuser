@@ -9,6 +9,7 @@ import {
     traverse_all_pass_criteria,
     traverse_all_requirement_results
 } from '../utils/traverse_audit_data.js';
+import { ensure_samples_attached_media_shape } from '../logic/sample_attached_media_normalize.js';
 import type { RequirementResultNode } from '../utils/traverse_audit_data.js';
 
 export function reduce_initialize_new_audit (_current_state: any, action: any) {
@@ -87,6 +88,8 @@ export function reduce_load_audit_from_file (current_state: any, action: any) {
             }
         });
 
+        merged_state.samples = ensure_samples_attached_media_shape(merged_state.samples);
+
         const stuck_accum = new WeakMap<RequirementResultNode, string[]>();
         traverse_all_pass_criteria(merged_state, ({ req_result, pc_result }) => {
             const s = (String((pc_result as { stuckProblemDescription?: string })?.stuckProblemDescription || '')).trim();
@@ -159,6 +162,7 @@ export function reduce_replace_state_from_remote (current_state: any, action: an
         pendingSampleChanges: current_state.pendingSampleChanges ?? null,
         sampleEditDraft: current_state.sampleEditDraft ?? null
     };
+    merged_remote.samples = ensure_samples_attached_media_shape(merged_remote.samples);
     if (merged_remote.auditStatus === 'locked' || merged_remote.auditStatus === 'archived') {
         const frozen_from_meta = merged_remote.auditMetadata?.lastInProgressActivityAt;
         const frozen =

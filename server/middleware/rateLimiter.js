@@ -13,12 +13,7 @@ export const auth_rate_limiter = rateLimit({
     },
     skipSuccessfulRequests: true,
     keyGenerator: (req) => {
-        const forwarded = req.headers['x-forwarded-for'];
-        const raw =
-            req.ip ||
-            (typeof forwarded === 'string' ? forwarded.split(',')[0].trim() : '') ||
-            'unknown';
-        return ipKeyGenerator(raw);
+        return req.ip || req.headers['x-forwarded-for'] || 'unknown';
     }
 });
 

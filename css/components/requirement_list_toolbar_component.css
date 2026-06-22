@@ -12,7 +12,7 @@
     gap: 1.5rem;
 }
 
-[data-theme="dark"] .requirements-list-toolbar {
+[data-theme="dark"] .requirements-list-toolbar , [data-theme="dark-experimental"] .requirements-list-toolbar {
     background-color: color-mix(in srgb, var(--plate-background-color) 90%, black);
 }
 

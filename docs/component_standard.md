@@ -1,7 +1,5 @@
 # Komponentstandard för Leffe (frontend)
 
-**Senast granskad:** 2026-06-09
-
 Detta dokument beskriver den **officiella komponentmodellen** för projektet.  
 Alla nya komponenter ska följa denna standard, och befintliga komponenter ska migreras hit när de ändå ändras.
 
@@ -16,34 +14,7 @@ Målet är:
 
 ## 1. Grundstruktur för komponenter
 
-Varje komponent ligger i en egen fil (`.ts` eller `.js`). **Nya vykomponenter** ska vara **klasser**; äldre sektioner kan fortfarande använda objektliteral tills de migreras.
-
-### 1.1 Föredraget mönster (klass, nya vyer)
-
-```js
-// MyViewComponent.ts
-export class MyViewComponent {
-  async init({ root, deps }) {
-    this.root = root;
-    this.deps = deps;
-    await deps.Helpers?.load_css_safely('./MyViewComponent.css', 'MyViewComponent');
-  }
-
-  render() {
-    if (!this.root) return;
-    // Uppdatera DOM
-  }
-
-  destroy() {
-    this.root = null;
-    this.deps = null;
-  }
-}
-```
-
-Registrera vykomponenter som **en instans per vy** i `js/logic/view_components_index.js`.
-
-### 1.2 Legacy-mönster (objektliteral, befintliga sektioner)
+Varje komponent ligger i en egen JS-fil, t.ex. `MyComponent.js`, och exporterar ett objekt med metoderna `init`, `render` och `destroy`.
 
 ```js
 // MyComponent.js
@@ -145,12 +116,9 @@ Komponenter kan få in beroenden på två sätt:
    MyComponent.init({
      root: rootElement,
      deps: {
-       getState,
-       dispatch,
+       store,
        router,
-       AuditLogic,
-       ValidationLogic,
-       AutosaveService,
+       logger,
      },
    });
    ```
@@ -159,11 +127,10 @@ Komponenter kan få in beroenden på två sätt:
 
 - Använd **imports** för generella helpers, utilities och rena funktioner.
 - Använd **`deps`** för:
-  - state (`getState`, `dispatch`, `StoreActionTypes`, `subscribe`)
+  - store/state
   - router
-  - `AuditLogic`, `ValidationLogic`, `AutosaveService`
   - loggers/spårning
-  - andra "tunga" objekt som gör komponenten lättare att testa om de injiceras.
+  - andra “tunga” objekt som gör komponenten lättare att testa om de injiceras.
 
 ---
 
@@ -274,8 +241,7 @@ Målet är att alla komponenter till slut följer mallen i detta dokument.
 
 När du skapar eller uppdaterar en komponent, kontrollera följande:
 
-- [ ] Ny vy: `export class MyComponent { init, render, destroy }` och registrering i `view_components_index.js`.
-- [ ] Legacy: objektliteral `export const MyComponent = { init, render, destroy }` får finnas kvar tills migrering.
+- [ ] Filen exporterar ett objekt: `export const MyComponent = { init, render, destroy }`.
 - [ ] Ingen IIFE runt komponenten.
 - [ ] Komponenten läggs inte på `window`.
 - [ ] CSS importeras överst i filen: `import "./MyComponent.css";`.

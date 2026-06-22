@@ -1,7 +1,7 @@
 # Systemdokumentation: Leffe (webbapp för digital tillsyn)
 
-**Version:** 1.4  
-**Datum:** 2026-06-09
+**Version:** 1.1  
+**Datum:** 2026-03-27
 
 ## 1. Introduktion
 
@@ -36,23 +36,17 @@ Projektet följer en standardiserad struktur för webbapplikationer:
     *   `style.css`: Globala stilar, CSS-variabler för teman (ljust/mörkt), grundläggande elementstyling och hjälpklasser.
     *   `components/`: En underkatalog för CSS-filer som är specifika för varje JavaScript-komponent (t.ex. `add_sample_form_component.css`). Dessa filer laddas dynamiskt av respektive komponent.
 *   **`js/`**: Innehåller all JavaScript-kod.
-    *   `main.js`: Applikationens startpunkt (IIFE): globala chrome-komponenter, `deps`-objekt, anropar `app_bootstrap.js`.
-    *   `state.js`: Re-export av publikt state-API från `js/state/index.ts`.
-    *   `logic/`: Routing (`router.js`), vyrendering (`view_render.js`), vyregister (`view_components_index.js`), autospar, session m.m.
-    *   `translation_logic.ts` (brygga `.js`): Internationalisering, språkfiler i `js/i18n/`.
-    *   `validation_logic.ts`: Validering av regelfiler och sparade granskningar.
-    *   `audit_logic.ts`: Statusberäkningar, relevanta krav per stickprov m.m.
-    *   `export_logic.ts`: Fasad för export (CSV, Excel, Word, HTML) under `js/export/`; exponeras som `window.ExportLogic`.
-    *   `draft_manager.ts`: Fältutkast i `localStorage` (separat från central `dispatch`).
-    *   `utils/helpers.js`: DOM-hjälpare, CSS-laddning, ikoner m.m.
-    *   `components/`: UI-komponenter – **klasser** för vyer (`export class …`), **objektliteral** för vissa äldre sektioner.
-    *   `i18n/`: JSON-filer per språk (`sv-SE.json`, `en-GB.json`, `nb-NO.json`).
-    *   `sync/`: Serversynk (granskning via `audit_sync_service.ts`, regelfil via `rulefile_sync_service.js`; tunn fasad kvar i `js/logic/server_sync.js`).
-    *   `features/`: Domänspecifika funktioner (t.ex. `markdown_toolbar.js`).
-    *   `export/`: Exportmoduler (CSV, Excel, Word, HTML).
-    *   `view/`: Vy-livscykel och DOM-värd.
-*   **`server/`**: Express-API, PostgreSQL, JWT, WebSocket – se `docs/api-dokumentation.md`.
-*   **`shared/`**: Gemensam kod mellan klient och server (inga DOM-beroenden) – se `shared/README.md`.
+    *   `main.js`: Applikationens startpunkt, hanterar routing, initiering av vyer och globala UI-kontroller.
+    *   `state.js`: Ansvarar för global tillståndshantering (det `current_audit`-objekt som innehåller all granskningsdata).
+    *   `translation_logic.js`: Hanterar internationalisering (i18n), laddning av språkfiler från `js/i18n/` och tillhandahåller översättningsfunktioner.
+    *   `validation_logic.js`: Innehåller logik för att validera JSON-strukturen hos uppladdade regelfiler och sparade granskningsfiler.
+    *   `audit_logic.js`: Innehåller affärslogik relaterad till granskningsprocessen, såsom beräkning av status för krav och kontrollpunkter, samt identifiering av relevanta krav för specifika stickprov.
+    *   `export_logic.js`: Genererar export till CSV, Excel (ExcelJS), Word (docx) och HTML; inga CDN-lösningar – npm-moduler.
+    *   `utils/`: Innehåller allmänna hjälpfunktioner.
+        *   `helpers.js`: En samling av återanvändbara funktioner för DOM-manipulering (t.ex. `create_element`), generering av UUID, dynamisk laddning av CSS, datumformatering, HTML-sanering och generering av SVG-ikoner.
+    *   `components/`: UI-komponenter som ES6-moduler med objektliteral (`export const X = { init, render, destroy }`), utan IIFE.
+*   **`server/`**: Express-API, databas, autentisering, migreringar – se källkoden och `docs/api-dokumentation.md`.
+    *   `i18n/`: Innehåller JSON-filer för språkstöd, en fil per språk (t.ex. `sv-SE.json`, `en-GB.json`).
 *   **`docs/`**: Innehåller all projektdokumentation.
     *   `teknisk_specifikation_vX.X.md`: Den formella tekniska specifikationen.
     *   `systemdokumentation.md`: Denna fil.
@@ -66,12 +60,16 @@ Projektet följer en standardiserad struktur för webbapplikationer:
 *   **Ansvar:** Startpunkt: sätter `window.Translation` och `window.Helpers`, bygger `deps`, startar `init_app()` i `js/logic/app_bootstrap.js` och token-förnyelse.
 *   **Routing:** Hash-baserad routing i `js/logic/router.js`; vybyte via `render_view()` i `js/logic/view_render.js`.
 *   **Vyhantering:**
-    *   Vykomponenter registreras som **instanser** i `js/logic/view_components_index.js` (`get_component_class(view_name)`).
-    *   `view_render.js` anropar `init({ root, deps })`, `render()` och `destroy()` på aktiv vy.
-*   **Globala UI-kontroller:** Sidomeny, action bars, språk/tema; vid `languageChanged` uppdateras chrome och aktiv vy renderas om.
-*   **Inloggning:** Utan JWT-token visas login-vyn; efter inloggning startar `session_manager.ts` normal session.
+    *   Baserat på den aktiva routen, importerar och initierar den korrekta vykomponenten från `js/components/`.
+    *   Anropar `init(app_container, navigate_and_set_hash_callback, params)` på komponenten.
+    *   Anropar `render()` på komponenten för att visa innehållet i `div#app-container`.
+    *   Vid byte av vy anropas `destroy()` på den föregående vykomponenten för att rensa eventlyssnare och andra resurser.
+*   **Globala UI-kontroller:**
+    *   Initierar globala kontroller för språk och tema enligt aktuell implementation i `main.js`.
+    *   Lyssnar på `languageChanged`-eventet (utsänt av `translation_logic.js`) och anropar `update_app_chrome_texts()` samt renderar om den aktiva vyn för att applicera det nya språket.
+*   **Felhantering:** Grundläggande felhantering om en specificerad vykomponent inte kan laddas eller om renderingen misslyckas.
 
-### 3.2 `state.js` (re-export från `js/state/index.ts`)
+### 3.2 `state.js` (re-export från `js/state/index.js`)
 *   **Ansvar:** Hanterar det globala applikationstillståndet med Redux-liknande pattern. Själva reducerlogiken är uppdelad i `js/state/*.ts` och `*.js`; den publika ytan är `js/state.js`.
 *   **State-struktur:** State-objektet innehåller bland annat `ruleFileContent`, `auditMetadata`, `auditStatus`, `samples`, `uiSettings`, `auditCalculations`, fjärrfält som `auditId` / `version` / `ruleSetId` i pågående session, m.m. Strukturen beskrivs i `js/state/initialState.js` och i den tekniska specifikationen (avsnitt 6.1–6.3).
 *   **Lagringsmekanism:** 
@@ -126,14 +124,40 @@ Projektet följer en standardiserad struktur för webbapplikationer:
 
 ## 4. Komponentbibliotek (`js/components/`)
 
-Vykomponenter registreras i `view_components_index.js` och renderas via `view_render.js`. **Nya** vyer är **klasser** (`export class …`); vissa äldre sektioner använder fortfarande objektliteral. Alla tar `init({ root, deps })`, `render()`, `destroy()`.
+Varje fil representerar en UI-komponent som exporterar ett objekt med `init({ root, deps })`, `render()`, `destroy()` (dependency injection via `deps`).
 
-Fullständigt vyregister (hash-routes → komponent) finns i `get_component_class()` i `view_components_index.js`, t.ex. `start`, `audit_overview`, `requirement_list`, `requirement_audit`, `rulefile_edit_requirement`, `backup`, `login`.
+### 4.1 Vykomponenter
+Dessa renderas direkt av `main.js` och utgör de huvudsakliga "sidorna" i applikationen. Alla komponenter följer samma mönster:
 
-Se även `docs/component_standard.md`.
+**Komponentstruktur:**
+```javascript
+export const ComponentName = {
+    init({ root, deps }) {
+        // root: DOM-element där komponenten renderas
+        // deps: objekt med beroenden (router, getState, dispatch, Translation, Helpers, etc.)
+        this.root = root;
+        this.deps = deps;
+        // Ladda CSS via Helpers.load_css_safely()
+    },
+    render() {
+        // Rendera komponentens UI
+    },
+    destroy() {
+        // Rensa event listeners och referenser
+    }
+};
+```
 
-### 4.1 Vykomponenter (urval)
-Dessa utgör de huvudsakliga "sidorna" i applikationen (hash-routes i parentes):
+*   **`StartViewComponent.js`**
+    *   **Syfte:** Applikationens startvy. När servern är tillgänglig visar den en tabell över alla granskningar. Tabellen visar Diarienummer, Aktörens namn, Status, Progress, Bristindex, Granskare och Ladda ner. Kolumnerna hämtar data från granskningsmetadata; saknad data visas som "—".
+    *   **Internt tillstånd:** `audits`, `api_available`, poll-timer för att uppdatera listan.
+    *   **Interaktioner:** Använder `get_audits()` API för att hämta listan. Klick på aktörens namn navigerar till granskningen. "Ladda ner"-knappen använder `load_audit_with_rule_file()` och `SaveAuditLogic.save_audit_to_json_file()` för nedladdning.
+    *   **CSS:** `css/components/start_view_component.css`.
+
+*   **`EditMetadataViewComponent.js`**
+    *   **Syfte:** Tillåter användaren att mata in eller redigera metadata för den aktuella granskningen (t.ex. ärendenummer, aktör, granskare).
+    *   **Interaktioner:** Läser metadata från `deps.getState().auditMetadata`. Om granskningens status är `not_started`, är fälten redigerbara. Vid submit sparas datan via `deps.dispatch()` och `sync_to_server_now()` anropas för befintliga granskningar så att servern uppdateras innan navigering. Metadata kan redigeras även under pågående granskning via knappen "Redigera" i granskningsinfopanelens header.
+    *   **CSS:** `css/components/edit_metadata_view_component.css`.
 
 *   **`AuditViewComponent.js`** (`#start`)
     *   **Syfte:** Startvy och granskningsarbetsyta. När servern är tillgänglig visar den en tabell över alla granskningar (via `AuditListComponent`). Tabellen visar Diarienummer, Aktörens namn, Status, Progress, Bristindex, Granskare och Ladda ner. Saknad metadata visas som "—".
@@ -171,14 +195,14 @@ Dessa utgör de huvudsakliga "sidorna" i applikationen (hash-routes i parentes):
 
 ### 4.2 Återanvändbara UI-delkomponenter
 
-*   **`SampleFormViewComponent.ts`**
+*   **`SampleFormViewComponent.js`**
     *   **Syfte:** Ett formulär för att mata in eller redigera detaljer för ett stickprov (sidtyp, beskrivning, url, innehållstyper).
     *   **Interaktioner:** Anropas av `SampleManagementViewComponent` (för initiala stickprov) och `AuditOverviewComponent` (för stickprov under pågående granskning). Populerar sina fält från `deps.getState().ruleFileContent.metadata` (för `pageTypes` och `contentTypes`). Vid submit anropas en `on_sample_saved_callback` som tillhandahålls av föräldrakomponenten.
     *   **CSS:** `css/components/sample_form_view_component.css`.
 
 *   **`SampleListComponent.ts`**
     *   **Syfte:** Renderar en lista (`<ul>`) av stickprov (`<li>`). Varje listobjekt visar information om stickprovet och åtgärdsknappar.
-    *   **Interaktioner:** Används av `SampleManagementViewComponent` och `AuditOverviewComponent`. Läser `deps.getState().samples`. Renderar knappar ("Redigera", "Radera", "Visa krav", "Ogranskade utan anmärkning" endast för utvald inloggning under pågående granskning när det finns helt ogranskade krav, "Granska nästa", "Besök url") villkorligt baserat på `auditStatus` och antal stickprov. Använder eventdelegering för klick och anropar `deps.router()`, `on_edit_callback`, `on_delete_callback` eller `on_mark_sample_bulk_pass_fully_unreviewed` från föräldern.
+    *   **Interaktioner:** Används av `SampleManagementViewComponent` och `AuditOverviewComponent`. Läser `deps.getState().samples`. Renderar knappar ("Redigera", "Radera", "Visa krav", "Granska", "Besök url") villkorligt baserat på `auditStatus` och antal stickprov. Använder eventdelegering för att hantera klick på dessa knappar, och anropar sedan antingen `deps.router()` för navigering eller `on_edit_callback`/`on_delete_callback` som tillhandahålls av föräldern.
     *   **CSS:** `css/components/sample_list_component.css`.
 
 *   **`RequirementCardComponent.js`**
@@ -197,29 +221,7 @@ Dessa utgör de huvudsakliga "sidorna" i applikationen (hash-routes i parentes):
     *   **CSS:** `css/components/progress_bar_component.css`.
 
 ## 5. Arbetsflöden och datacykler
-
-### 5.1 Starta ny granskning
-
-1. Användaren går till Admin och väljer **Starta ny granskning**.
-2. En regelfil väljs eller laddas upp; validering sker via `ValidationLogic.validate_rule_file_json`.
-3. Metadata fylls i (`EditMetadataViewComponent`) och sparas via `dispatch(UPDATE_METADATA)`.
-4. Stickprov läggs till i `SampleManagementViewComponent` via `SampleFormViewComponent`.
-5. Vid **Starta granskning** sätts `auditStatus` till `in_progress` och användaren navigeras till `AuditOverviewComponent`.
-
-### 5.2 Genomföra granskning
-
-1. Från granskningsöversikten öppnas kravlistan (`RequirementListComponent`) per stickprov.
-2. Enskilda krav granskas i `RequirementAuditComponent`; bedömningar sparas via `dispatch(UPDATE_REQUIREMENT_RESULT)`.
-3. Varje lyckad `dispatch` skriver till `sessionStorage` och schemalägger serversynk (debounce 500 ms) när granskningen har `auditId`.
-4. Formulärfält (metadata, stickprov, regelfilssektioner) använder `AutosaveService` (250 ms debounce på `input`) — separat från central state-sparning.
-
-### 5.3 Låsa och exportera
-
-1. I granskningsöversikten låses granskningen; `auditStatus` blir `locked` och `endTime` sätts.
-2. Export sker via `window.ExportLogic` (CSV, Excel, Word, HTML).
-3. Upplåsning återställer `in_progress` och gör redigering möjlig igen.
-
-Vid omrendering (via `router` eller explicit `render()`) hämtar komponenter alltid senaste data från `getState()`.
+_(Se föregående svar för detaljerad beskrivning av flödena: Starta ny granskning, Genomföra granskning, Låsa och exportera). Viktigt är att dataändringar (t.ex. i `RequirementAuditComponent` eller `AddSampleFormComponent`) uppdaterar state via `dispatch()`, vilket sparar direkt till `sessionStorage`. När en vy renderas om (antingen via `router` eller ett explicit anrop till `render()`), hämtar den den senaste versionen från `getState()`._
 
 ## 6. Tillgänglighetsaspekter (intern implementation)
 *   **Ikoner:** Alla SVG-ikoner som genereras via `Helpers.get_icon_svg` inkluderar `aria-hidden="true"`, eftersom de alltid används i kontexten av en textbeskrivande knapp eller länk. I de flesta fall placeras ikoner till höger om knapptexten.
@@ -230,25 +232,24 @@ Vid omrendering (via `router` eller explicit `render()`) hämtar komponenter all
     *   **Förbättringsområde:** Den nuvarande `confirm()`-dialogen för radering har begränsad fokuskontroll. En anpassad modal skulle ge bättre möjligheter för fokusfångst (trapping) och mer precis återställning.
 *   **Semantik:** Applikationen strävar efter att använda semantiskt korrekt HTML (rubriker `<h1>`-`<h4>`, listor `<ul>`/`<li>`, knappar `<button>`, formulärelement `<form>`, `<label>`, `<input>`, `<select>`, `<textarea>`, `<fieldset>`, `<legend>`).
 *   **Dynamiska meddelanden:** `NotificationComponent` använder en `div` med `aria-live="polite"` för att meddela statusuppdateringar och felmeddelanden på ett tillgängligt sätt.
-*   **ARIA-attribut:** `aria-pressed` används på växlingsknappar (t.ex. för "Stämmer"/"Stämmer inte"). `aria-label` används på knappar i `SampleListComponent` för att ge unik kontext när flera likadana knappar finns. I `ChecklistHandler` har kontrollpunkter (h3) aria-label i formatet "Kontrollpunkt X. {status}" och godkännandekriterier (h4) aria-label i formatet "Godkännandekriterium X.Y. {status}". Nedladdningsknappar i granskningslistan har aria-label "Ladda ner {diarienummer} {aktörens namn}".
+*   **ARIA-attribut:** `aria-pressed` används på växlingsknappar (t.ex. för "Stämmer"/"Stämmer inte"). `aria-label` används på knappar i `SampleListComponent` för att ge unik kontext när flera likadana knappar finns. I `ChecklistHandler` har kontrollpunkter (h3) aria-label i formatet "Kontrollpunkt X. {status}" och godkännandekriterier (h4) aria-label i formatet "Godkännandekriterium X.Y. {status}". Nedladdningsknappar i `StartViewComponent` har aria-label "Ladda ner {diarienummer} {aktörens namn}".
 
 ## 7. Utvecklingsmiljö och byggprocess
-Systemet använder **Vite** (frontend) och **Express** med **tsx** (backend). Vite hanterar ES6-moduler, HMR och produktionsbyggnad; `extensionAlias` i `vite.config.mjs` låter import med `.js`-suffix peka på `.ts`-källor.
+Systemet använder **Vite** som byggsystem och utvecklingsserver. Vite hanterar:
+- ES6-modulbundling och transformation
+- Hot Module Replacement (HMR) för snabb utveckling
+- Produktionsbyggnad med optimering och minifiering
+- Automatisk konfiguration av HTTP-server för utveckling
 
 **Utveckling:**
-- `npm run dev` – Docker (PostgreSQL), ngrok (valfritt), backend (port 3000), Vite (port 5173), proxy `/v2/api` och `/v2/ws`
-- `npm run dev:client` – endast Vite
-- `npm run dev:server` – endast backend (`tsx server/index.js`)
-
-**Kvalitetskontroll:**
-- `npm run check` – lint, importkontroller, export-facades, TypeScript, Jest
-- `npm run check:full` – som `check` plus TS-lint och build
+- Kör `npm run dev` för att starta utvecklingsservern på port 5173
+- Vite serverar filer och hanterar ES6-moduler automatiskt
+- HMR uppdaterar ändringar automatiskt i webbläsaren
 
 **Produktion:**
-- `npm run build` → `dist/`; `npm run preview` för lokal förhandsgranskning
-- Deploy: `npm run deploy:v2` (se `docs/deploy-v2-workflow.md`)
-
-**TypeScript:** Pågående migrering – nya moduler under `js/` och `server/` skrivs som `.ts` där det är rimligt; befintliga `.js`-bryggor behålls för importvägar.
+- Kör `npm run build` för att bygga optimerade filer till `dist/`-mappen
+- Byggprocessen inkluderar lintning, validering och optimering
+- Använd `npm run preview` för att förhandsgranska produktionsbyggnaden
 
 ## 8. Kända begränsningar och potentiella förbättringsområden
 _(Se den separata sektionen som utvecklats tidigare för en detaljerad lista)._

@@ -1,8 +1,7 @@
 # Teknisk specifikation: Serverarkitektur för Leffe
 
-**Version:** 1.2  
-**Datum:** 2026-06-09  
-**Status:** Beskriver nuvarande implementation
+**Version:** 1.1  
+**Status:** Beskriver nuvarande implementation (2026)
 
 ## 1. Systemöversikt
 

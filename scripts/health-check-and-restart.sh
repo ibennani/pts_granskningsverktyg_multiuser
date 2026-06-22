@@ -19,8 +19,7 @@ fi
 # Försök först säkerställa att Postgres är igång (vanligaste orsaken till att backend inte svarar).
 # Använd fast docker compose-projektnamn så att rätt volym används.
 PROJECT_DIR="/var/www/granskningsverktyget-v2"
-# Måste matcha name: i docker-compose.yml (samma som npm run dev:db / databas-persistence.md).
-DOCKER_PROJECT="sessionversion"
+DOCKER_PROJECT="granskningsverktyget-v2"
 DB_CONTAINER="granskningsverktyget-db"
 
 if ! docker exec "$DB_CONTAINER" pg_isready -U granskning >/dev/null 2>&1; then
