@@ -14,24 +14,28 @@ Denna regel gäller **varje** AI-assistent som arbetar i detta repo — **Compos
 ### Om du inte får notiser med vissa agenter
 
 1. Kontrollera att **`.cursor/rules/nabu-webhook.local.mdc`** finns lokalt (med webhook-rad) — den committas inte men krävs för att `nabu_notify.ps1` ska hitta URL utan `setx`.
-2. Lägg till följande under **Cursor Settings → Rules for AI** (eller motsvarande **User Rules**), så gäller det **alla** projekt och agenter tills du tar bort det:
+2. Lägg till följande under **Cursor Settings → Rules for AI** (eller motsvarande **User Rules**), så gäller det **alla** projekt och agenter tills du tar bort det. Alternativt (filbaserat, alla projekt på maskinen): skapa eller uppdatera **`%USERPROFILE%\.cursor\rules\leffe-nabu-klar-notis.mdc`** med samma innehåll — kör **`scripts\kopiera_nabu_user_rule.cmd`** för att kopiera User Rules-texten till urklipp.
 
 ```
-I Leffe-projektet (denna arbetskatalog): när en uppgift är klar eller en lång terminalkörning har avslutats, kör som sista steg från projektroten: notify_done.cmd (eller cmd.exe /c scripts\nabu_notify.cmd)
-Webhook kan läsas från .cursor/rules/nabu-webhook.local.mdc. Mer detaljer: .cursor/rules/nabu-klar-notis.mdc och 01-nabu-sista-steget.mdc
+I Leffe-projektet (denna arbetskatalog): skicka klar-notis först när hela uppgiften är klar och det avslutande användarsvaret är skrivet. Kör notify_done.cmd som sista och enda verktygsanrop i sista svaret (inte parallellt med annat). Webhook kan läsas från .cursor/rules/nabu-webhook.local.mdc. Mer detaljer: .cursor/rules/nabu-klar-notis.mdc och 01-nabu-sista-steget.mdc
 ```
 
 3. **Molnlägen / fjärragent** kan sakna tillgång till lokala filer — sätt då **`NABU_WEBHOOK_URL`** i agentens miljöinställningar eller använd en maskin där filen finns.
 
 ## När
 
-När en uppgift som användaren bett om är **slutförd**, eller när en **lång terminalkörning** är **klar**, ska agenten skicka en klar-notis enligt rutinen nedan.
+När en uppgift som användaren bett om är **helt slutförd**, eller när en **lång terminalkörning** är **klar**, ska agenten skicka en klar-notis enligt rutinen nedan.
+
+**Skicka inte notisen för tidigt.** Kör **inte** `notify_done.cmd` efter en delfix, ett mellansteg, parallellt med andra verktyg, eller när mer arbete återstår i samma användaruppgift.
 
 ## Obligatorisk avslutning (agent)
 
-1. **Sista steget** innan svaret till användaren avslutas: kör klar-notisen (nedan). Det räcker **inte** att bara skriva i chatten — notisen måste skickas via skriptet.
-2. Om **`NABU_WEBHOOK_URL`** inte finns i miljön gör **`scripts\nabu_notify.ps1`** detta automatiskt: den läser första raden som börjar med `https://hooks.nabu.casa/` från **`.cursor/rules/nabu-webhook.local.mdc`**. Det räcker då att köra `cmd.exe /c scripts\nabu_notify.cmd` utan att sätta miljövariabeln manuellt (så länge den lokala filen finns).
-3. Vid **Pusha** / **Deploy** enligt andra regler: skicka klar-notis **efter** att push/deploy lyckats (om uppgiften då är slutförd).
+1. **Allt arbete klart först** — implementation, verifiering, tester och eventuell push/deploy enligt andra regler ska vara färdiga innan notisen skickas.
+2. **Infotext till användaren ska vara skriven** — i sista svaret ska du först ha skrivit det avslutande meddelandet till användaren (sammanfattning och förklaring av vad som gjorts efter fixen). Skriv **inte** bara «jag kör notisen nu» utan det faktiska slutsvaret.
+3. **Notisen allra sist** — kör `notify_done.cmd` (eller `scripts\nabu_notify.cmd`) som **enda och sista** verktygsanrop i sista svaret, **efter** infotexten ovan. Blanda **aldrig** klar-notis med andra verktyg (sökning, redigering, tester m.m.) i samma batch.
+4. Det räcker **inte** att bara skriva i chatten — notisen måste skickas via skriptet.
+5. Om **`NABU_WEBHOOK_URL`** inte finns i miljön gör **`scripts\nabu_notify.ps1`** detta automatiskt: den läser första raden som börjar med `https://hooks.nabu.casa/` från **`.cursor/rules/nabu-webhook.local.mdc`**. Det räcker då att köra `cmd.exe /c scripts\nabu_notify.cmd` utan att sätta miljövariabeln manuellt (så länge den lokala filen finns).
+6. Vid **Pusha** / **Deploy** enligt andra regler: skicka klar-notis **efter** att push/deploy lyckats **och** det avslutande användarsvaret är skrivet.
 
 ## I början av en ny uppgift (agent)
 

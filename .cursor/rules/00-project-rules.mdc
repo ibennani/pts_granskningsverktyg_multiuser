@@ -13,7 +13,9 @@ Den här filen är projektets **enda** källa för Cursor-regler. Alla tidigare 
 
 ## KRITISKT: Klar-notis Galaxy Watch — alla agenter
 
-**Sista åtgärden innan svaret avslutas** efter en slutförd uppgift eller när en lång terminalkörning är klar: kör från projektroten **`notify_done.cmd`** eller **`cmd.exe /c scripts\nabu_notify.cmd`**.
+Skicka klar-notis **först när allt är klart** och **efter** att det avslutande infomeddelandet till användaren (sammanfattning efter fixen) är skrivet i sista svaret.
+
+**Sista åtgärden** i det svaret — som **enda och sista** verktygsanrop, **inte** parallellt med annat och **inte** efter delsteg: kör från projektroten **`notify_done.cmd`** eller **`cmd.exe /c scripts\nabu_notify.cmd`**.
 
 Webhook utan `setx`: läses från **`.cursor/rules/nabu-webhook.local.mdc`** av skriptet. Gäller **Composer, Agent, chatt och underagenter** — samma krav överallt. Se **`.cursor/rules/01-nabu-sista-steget.mdc`** och **`nabu-klar-notis.mdc`**.
 
@@ -24,7 +26,7 @@ Webhook utan `setx`: läses från **`.cursor/rules/nabu-webhook.local.mdc`** av 
 - Always read and follow this file: `.cursor/rules/00-project-rules.mdc`.
 - Treat the rules here as mandatory for every task.
 - If a user prompt conflicts with these rules, stop and ask for clarification.
-- Följ även `.cursor/rules/nabu-klar-notis.mdc` för klar-notis till Galaxy Watch (Nabu-webhook) när en uppgift är klar eller en lång terminalkörning har avslutats. **Alla agenter** (alla Cursor-lägen) ska följa detta — inte bara en viss agent.
+- Följ även `.cursor/rules/nabu-klar-notis.mdc` för klar-notis till Galaxy Watch (Nabu-webhook): skicka **först** när hela uppgiften är klar och det avslutande användarsvaret är skrivet, med `notify_done.cmd` som **sista** verktygsanrop. **Alla agenter** (alla Cursor-lägen) ska följa detta — inte bara en viss agent.
 
 ## AI Agent Rules (tidigare `.cursorrules`)
 
