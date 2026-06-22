@@ -44,6 +44,10 @@ Projektet är organiserat enligt följande struktur:
 - Använd semikolon
 - Följ ESLint-regler
 
+### CSS och komponentstyling
+- Vid delade tillståndsklasser i samma vy: följ avsnittet **CSS-scope och delade tillståndsklasser** i `.cursor/rules/00-project-rules.mdc` (gemensam förälder, grep + DOM-kontroll, en importerad CSS-källa per komponent).
+- Klasser som sätts i JS ska ha **basstyling i komponent-CSS** (eller `:root`), inte bara i temafiler — se **Basstyling i komponent-CSS** i samma regelfil.
+
 ## Viktiga funktioner att känna till
 
 ### Export-funktionalitet

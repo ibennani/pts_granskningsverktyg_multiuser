@@ -43,6 +43,10 @@
     --info-color-light: rgba(110, 50, 130, 0.15);
     --success-color: #58a47a;
     --success-color-light: rgba(88, 164, 122, 0.15);
+    --audit-toggle-active-border-width: 3px;
+    --audit-toggle-active-icon-size: 1.375rem;
+    --audit-toggle-inactive-icon-size: 0.75rem;
+    --audit-toggle-icon-transition-duration: 0.25s;
     /* --- END OF CHANGE --- */
 
     --text-color: #1e2a2b;

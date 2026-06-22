@@ -455,51 +455,136 @@
 
 .condition-actions .button.button-small,
 .pass-criterion-actions .button.button-small {
-    transition: all 0.2s ease-in-out;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out, border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 }
 
-/* STATE 1: Inaktivt (ej valt) - "Ghost button" stil */
+/* Bedömningsknappar (Stämmer / Stämmer inte) – bas för alla teman; temafiler finjusterar. */
+.audit-toggle-button__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    font-family: Arial, sans-serif;
+    line-height: 1;
+    text-rendering: optimizeLegibility;
+    paint-order: stroke fill;
+    transition: font-size var(--audit-toggle-icon-transition-duration) ease-in-out,
+        width var(--audit-toggle-icon-transition-duration) ease-in-out,
+        min-width var(--audit-toggle-icon-transition-duration) ease-in-out,
+        height var(--audit-toggle-icon-transition-duration) ease-in-out,
+        color var(--audit-toggle-icon-transition-duration) ease-in-out,
+        -webkit-text-stroke var(--audit-toggle-icon-transition-duration) ease-in-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .audit-toggle-button__icon {
+        transition: none;
+    }
+}
+
+.audit-toggle-button__label {
+    flex: 1 1 auto;
+    text-align: start;
+}
+
+/* STATE 1: Inaktivt (ej valt) – streckad kant, neutral ofylld ikon (endast kantlinje) */
 .condition-actions .button:not(.active),
 .pass-criterion-actions .button:not(.active) {
     background-color: transparent;
+    border-style: solid;
 }
 
-/* Specifika färger för ghost-knapparna */
 .condition-actions .button-success:not(.active),
 .pass-criterion-actions .button-success:not(.active) {
     border-color: var(--button-success-border);
-    color: var(--button-success-text);
+    color: var(--text-color-muted);
 }
 
 .condition-actions .button-danger:not(.active),
 .pass-criterion-actions .button-danger:not(.active) {
     border-color: var(--button-danger-border);
-    color: var(--button-danger-text);
+    color: var(--text-color-muted);
 }
 
-/* Hover-effekt för inaktiva knappar (blir solida) */
+.condition-actions .button:not(.active) .audit-toggle-button__icon,
+.pass-criterion-actions .button:not(.active) .audit-toggle-button__icon,
+.condition-actions .button:not(.active):hover .audit-toggle-button__icon,
+.pass-criterion-actions .button:not(.active):hover .audit-toggle-button__icon {
+    color: transparent;
+    -webkit-text-stroke: 1px var(--text-color-muted);
+    text-stroke: 1px var(--text-color-muted);
+    font-size: var(--audit-toggle-inactive-icon-size);
+    width: var(--audit-toggle-inactive-icon-size);
+    min-width: var(--audit-toggle-inactive-icon-size);
+    height: var(--audit-toggle-inactive-icon-size);
+    font-weight: 300;
+}
+
+.condition-actions .button-success:not(.active):hover,
+.pass-criterion-actions .button-success:not(.active):hover,
+.condition-actions .button-danger:not(.active):hover,
+.pass-criterion-actions .button-danger:not(.active):hover {
+    color: var(--text-color-muted);
+}
+
 .condition-actions .button-success:not(.active):hover,
 .pass-criterion-actions .button-success:not(.active):hover {
-    background-color: var(--button-success-bg);
+    background-color: color-mix(in srgb, var(--button-success-bg) 50%, transparent);
 }
 
 .condition-actions .button-danger:not(.active):hover,
 .pass-criterion-actions .button-danger:not(.active):hover {
-    background-color: var(--button-danger-bg);
+    background-color: color-mix(in srgb, var(--button-danger-bg) 50%, transparent);
 }
 
-/* STATE 2: Aktivt (valt) - Solid stil (ärver direkt från globala regler) */
+/* STATE 2: Aktivt (valt) – hel kant, fylld bakgrund och färgad ikon */
 .condition-actions .button-success.active,
-.pass-criterion-actions .button-success.active {
+.pass-criterion-actions .button-success.active,
+.condition-actions .button-success[aria-pressed="true"],
+.pass-criterion-actions .button-success[aria-pressed="true"] {
     background-color: var(--button-success-bg);
+    border-style: solid;
+    border-width: var(--audit-toggle-active-border-width);
     border-color: var(--button-success-border);
     color: var(--button-success-text);
+    font-weight: 600;
 }
 
 .condition-actions .button-danger.active,
-.pass-criterion-actions .button-danger.active {
+.pass-criterion-actions .button-danger.active,
+.condition-actions .button-danger[aria-pressed="true"],
+.pass-criterion-actions .button-danger[aria-pressed="true"] {
     background-color: var(--button-danger-bg);
+    border-style: solid;
+    border-width: var(--audit-toggle-active-border-width);
     border-color: var(--button-danger-border);
+    color: var(--button-danger-text);
+    font-weight: 600;
+}
+
+.condition-actions .button.active .audit-toggle-button__icon,
+.pass-criterion-actions .button.active .audit-toggle-button__icon {
+    color: inherit;
+    -webkit-text-stroke: 0;
+    text-stroke: 0;
+    font-size: var(--audit-toggle-active-icon-size);
+    width: var(--audit-toggle-active-icon-size);
+    min-width: var(--audit-toggle-active-icon-size);
+    height: var(--audit-toggle-active-icon-size);
+    font-weight: 900;
+    letter-spacing: -0.02em;
+}
+
+.condition-actions .button-success.active .audit-toggle-button__icon,
+.pass-criterion-actions .button-success.active .audit-toggle-button__icon {
+    color: var(--button-success-text);
+}
+
+.condition-actions .button-danger.active .audit-toggle-button__icon,
+.pass-criterion-actions .button-danger.active .audit-toggle-button__icon {
     color: var(--button-danger-text);
 }
 /* --- END OF CHANGE --- */
@@ -524,14 +609,15 @@
     font-size: 0.95rem;
 }
 
-.input-fields-container textarea.form-control.readonly-textarea {
+/* Alla skrivskyddade textfält i kravplåten (kommentarer + checklistobservationer). */
+.requirement-audit-plate textarea.form-control.readonly-textarea {
     background-color: color-mix(in srgb, var(--input-background-color) 90%, var(--border-color));
     color: var(--text-color-muted);
     cursor: default;
     border-color: var(--border-color);
 }
 
-[data-theme="dark"] .input-fields-container textarea.form-control.readonly-textarea {
+[data-theme="dark"] .requirement-audit-plate textarea.form-control.readonly-textarea {
     background-color: color-mix(in srgb, var(--input-background-color) 85%, black);
     border-color: var(--border-color);
 }

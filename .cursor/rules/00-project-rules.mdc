@@ -112,6 +112,42 @@ Gäller alla komponenter där användaren kan expandera eller kollapsa ett avsni
 - **Tillgänglighet:** Växling ska ske via `<button type="button">` med `aria-expanded`, `aria-controls`, tangentbordsstöd (Enter och mellanslag) och synlig fokusring.
 - **Referens:** Grupperad granskningslista (`audit_group_row_ui.ts`, `audit_list_view_transition.ts`) och gemensam hjälpmodul `js/utils/expandable_panel_transition.ts` med CSS i `css/components/expandable_panel.css`.
 
+#### CSS-scope och delade tillståndsklasser
+
+Gäller när samma CSS-klass sätts från **flera ställen i samma vy** (t.ex. `readonly-textarea`, låsmarkering, statusklasser) — särskilt när undersektioner renderas i **syskon-containers** (inte bara barn till en gemensam wrapper).
+
+- **Välj selektor på gemensam förälder** som faktiskt omsluter *alla* konsumenter (t.ex. `.requirement-audit-plate`), inte bara en undersektion (t.ex. `.input-fields-container`) om syskon också ska täckas.
+- **Smalna aldrig av en selektor** utan att först söka efter klassen i hela komponentträdet (`grep` på klassnamnet i JS/TS) och kontrollera DOM-strukturen (render/`build_initial_dom`, syskon vs barn).
+- **Behåll eller skriv om CSS-kommentarer** som förklarar *vilka UI-delar* regeln avser — ta inte bort sådana kommentarer vid städning.
+- **En CSS-källa per komponent:** redigera den fil som Vite faktiskt importerar (ofta `js/components/*.css`). Duplicerade kopior under `css/components/` ska hållas synkade eller ersättas med `@import` från en canonical fil.
+- **Sektionsspecifik styling** (t.ex. `min-height` bara för kommentarfält) får ligga kvar på undercontainer — men **delade tillståndsklasser** ska stylas på gemensam nivå.
+
+**Checklista vid ändring av CSS-selektor i befintlig komponent:**
+
+1. Sök efter klassnamnet i JS/TS — hur många ställen sätter klassen?
+2. Matchar den nya selektorn *alla* träffar (inklusive syskon-containers)?
+3. Rör du rätt CSS-fil (den som importeras)?
+4. Finns det en kommentar som förklarar avsedd scope — behåll eller uppdatera den.
+
+**Referensexempel (regression att undvika):** I kravgranskningsvyn sitter `.checks-container` och `.input-fields-container` som syskon under `.requirement-audit-plate`. Båda sätter `readonly-textarea`. Selektor `.requirement-audit-plate textarea.form-control.readonly-textarea` täcker kommentarer och checklistobservationer; `.input-fields-container …` täcker bara kommentarer.
+
+#### Basstyling i komponent-CSS (inte bara temafiler)
+
+Gäller när JS/TS **sätter CSS-klasser** som ska synas i **alla teman** (standard, mörkt, Vintervitt, Midnattsmörker osv.).
+
+- **Basregler** för sådana klasser ska ligga i den CSS-fil komponenten importerar (t.ex. `js/components/requirement_audit_component.css`) eller i global `:root` / `css/style.css` för delade variabler — **inte enbart** i `css/theme-*.css`.
+- **Temafiler** får överskriva och finjustera, men ska inte vara enda källan till layout, ikoner eller tillstånd som komponenten förlitar sig på.
+- **Ta inte bort** komponent-CSS vid städning om klassen fortfarande sätts i JS/TS — kör `grep` på klassnamnet i `js/` först.
+- **CSS-variabler** som komponent-CSS refererar (t.ex. `--audit-toggle-active-icon-size`) ska finnas i `:root` eller komponentfilen, inte bara i temafiler.
+
+**Checklista vid borttagning eller förenkling av komponent-CSS:**
+
+1. Sök klassnamnet i JS/TS — används det fortfarande?
+2. Finns motsvarande regler kvar utanför temafiler (komponent-CSS eller `style.css`)?
+3. Testas beteendet på **standardtema** — inte bara experimenttema?
+
+**Referensexempel:** `audit-toggle-button__icon` togs bort ur `requirement_audit_component.css` medan `ChecklistHandler.js` fortfarande skapade element med klassen; då försvann ikonstil på standardtema och vanligt mörkt tema, medan Vintervitt/Midnattsmörker såg korrekta ut.
+
 ### Tillgänglighetskrav (WCAG 2.2 A & AA)
 
 All kod ska uppfylla kraven i WCAG 2.2 nivå A och AA.  
