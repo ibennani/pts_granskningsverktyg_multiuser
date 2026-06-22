@@ -352,6 +352,18 @@
     animation: fadeOutSlideUp 0.5s ease-out forwards;
 }
 
+@media (prefers-reduced-motion: reduce) {
+    .pass-criteria-list.slide-down-in,
+    .pass-criteria-list.slide-down-out,
+    .compliance-info-text.slide-down-in,
+    .compliance-info-text.slide-down-out,
+    .pc-observation-detail-wrapper.slide-down-in,
+    .pc-observation-detail-wrapper.slide-down-out {
+        transition: none;
+        animation: none;
+    }
+}
+
 .pc-observation-detail-wrapper[hidden] {
     display: none;
 }
