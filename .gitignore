@@ -141,6 +141,10 @@ test-results.xml
 
 # Playwright
 playwright/.cache/
+.playwright-mcp/
+
+# TypeScript tillfälliga filer
+tsconfig.json.tmp
 
 # Local development
 .local/
