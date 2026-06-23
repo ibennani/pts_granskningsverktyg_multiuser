@@ -77,18 +77,28 @@ export async function fetch_rule_set_by_id(id) {
 
 /**
  * @param {string} id
+ * @param {'working'|'published'} [variant]
  * @returns {Promise<import('pg').QueryResult>}
  */
-export async function fetch_rule_set_for_export(id) {
+export async function fetch_rule_set_for_export(id, variant = 'working') {
+    const use_published = variant === 'published';
     const hasPublished = await has_rule_sets_published_content_column();
+    const content_expr = use_published && hasPublished
+        ? 'COALESCE(published_content, content)'
+        : 'content';
+    const published_version_expr = hasPublished
+        ? `NULLIF(TRIM(published_content->'metadata'->>'version'), '')`
+        : 'NULL';
     const sql = hasPublished
         ? `SELECT id,
                   name,
-                  COALESCE(published_content, content) AS content,
+                  ${content_expr} AS content,
                   version,
                   updated_at::text AS updated_at,
                   content_updated_at::text AS content_updated_at,
-                  (published_content IS NOT NULL) AS is_published
+                  (published_content IS NOT NULL) AS is_published,
+                  (published_content IS NOT NULL AND content::text <> published_content::text) AS has_draft,
+                  ${published_version_expr} AS published_metadata_version
              FROM rule_sets
             WHERE id = $1`
         : `SELECT id,
@@ -97,7 +107,9 @@ export async function fetch_rule_set_for_export(id) {
                   version,
                   updated_at::text AS updated_at,
                   content_updated_at::text AS content_updated_at,
-                  false AS is_published
+                  false AS is_published,
+                  false AS has_draft,
+                  NULL AS published_metadata_version
              FROM rule_sets
             WHERE id = $1`;
     return query(sql, [id]);

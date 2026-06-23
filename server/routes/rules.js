@@ -7,6 +7,11 @@ import { import_payload_rate_limiter } from '../middleware/rateLimiter.js';
 import { check_json_structure_depth_and_size } from '../../shared/json/json_structure_guard.js';
 import { parse_part_key } from '../../shared/rulefile/rulefile_part_keys.js';
 import { compute_next_rulefile_metadata_version } from '../../shared/rulefile/rulefile_metadata_version.js';
+import {
+    touch_rulefile_metadata,
+    resolve_publish_production_version,
+    format_rulefile_date_modified
+} from '../utils/rulefile_metadata_touch.js';
 import { normalize_rulefile_content_object } from '../utils/rulefile_content_utils.js';
 import {
     fetch_rule_sets_list,
@@ -222,7 +227,8 @@ router.get('/:id', async (req, res) => {
 router.get('/:id/export', async (req, res) => {
     try {
         const { id } = req.params;
-        const result = await fetch_rule_set_for_export(id);
+        const variant = req.query.variant === 'published' ? 'published' : 'working';
+        const result = await fetch_rule_set_for_export(id, variant);
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Regelfil hittades inte' });
         }
@@ -360,17 +366,11 @@ router.put('/:id', async (req, res) => {
             values.push(name);
         }
         if (content !== undefined) {
-            const content_with_date = typeof content === 'object' && content !== null
-                ? {
-                    ...content,
-                    metadata: {
-                        ...(content.metadata || {}),
-                        dateModified: new Date().toISOString()
-                    }
-                }
+            const content_with_metadata = typeof content === 'object' && content !== null
+                ? touch_rulefile_metadata(content, { bump_version: false })
                 : content;
             updates.push(`content = $${i++}`);
-            values.push(JSON.stringify(content_with_date));
+            values.push(JSON.stringify(content_with_metadata));
             updates.push(`content_updated_at = CURRENT_TIMESTAMP`);
         }
         if (updates.length === 0) {
@@ -424,20 +424,29 @@ router.patch('/:id/content-part', async (req, res) => {
         }
 
         const content_obj = normalize_rulefile_content_object(select_result.rows[0].content);
-        const current_version_string = content_obj?.metadata?.version;
-        const next_metadata_version = compute_next_rulefile_metadata_version(current_version_string, new Date());
+        const now = new Date();
+        const next_metadata_version = compute_next_rulefile_metadata_version(
+            content_obj?.metadata?.version,
+            now
+        );
+        const date_modified = format_rulefile_date_modified(now);
 
         const patch_result = await query(
             `UPDATE rule_sets
              SET content = jsonb_set(
                  jsonb_set(
-                     content,
-                     $2::text[],
-                     to_jsonb($3::text),
+                     jsonb_set(
+                         content,
+                         $2::text[],
+                         to_jsonb($3::text),
+                         true
+                     ),
+                     '{metadata,version}'::text[],
+                     to_jsonb($5::text),
                      true
                  ),
-                 '{metadata,version}'::text[],
-                 to_jsonb($5::text),
+                 '{metadata,dateModified}'::text[],
+                 to_jsonb($6::text),
                  true
              ),
                  content_updated_at = CURRENT_TIMESTAMP,
@@ -446,7 +455,7 @@ router.patch('/:id/content-part', async (req, res) => {
              WHERE id = $1
                AND version = $4
              RETURNING *`,
-            [id, json_path, value, base_version, next_metadata_version]
+            [id, json_path, value, base_version, next_metadata_version, date_modified]
         );
 
         if (patch_result.rows.length === 0) {
@@ -585,44 +594,25 @@ router.post('/:id/publish_production', async (req, res) => {
             : null;
 
         const now = new Date();
-        const current_year = now.getFullYear();
-        const current_month = now.getMonth() + 1;
         const draft_metadata_version = content_obj?.metadata?.version
             ? String(content_obj.metadata.version).trim()
             : '';
-        const version_match =
-            typeof current_published_version === 'string' && current_published_version
-                ? current_published_version.match(/^(\d{4})\.(\d{1,2})\.r(\d+)$/)
-                : null;
+        const version_str = resolve_publish_production_version(
+            draft_metadata_version,
+            current_published_version,
+            now
+        );
 
-        let version_str;
-        if (draft_metadata_version) {
-            // Om arbetskopian redan har ett versionsnummer (t.ex. från uppladdad regelfil),
-            // ska publiceringen behålla exakt samma version.
-            version_str = draft_metadata_version;
-        } else if (version_match) {
-            const [, version_year, version_month, release] = version_match;
-            const version_year_number = parseInt(version_year, 10);
-            const version_month_number = parseInt(version_month, 10);
-            if (
-                version_year_number === current_year &&
-                version_month_number === current_month
-            ) {
-                version_str = `${current_year}.${current_month}.r${parseInt(release, 10) + 1}`;
-            } else {
-                version_str = `${current_year}.${current_month}.r1`;
-            }
-        } else {
-            version_str = `${current_year}.${current_month}.r1`;
-        }
-
-        const content_with_version = {
-            ...content_obj,
-            metadata: {
-                ...(content_obj.metadata || {}),
-                version: version_str
-            }
-        };
+        const content_with_version = touch_rulefile_metadata(
+            {
+                ...content_obj,
+                metadata: {
+                    ...(content_obj.metadata || {}),
+                    version: version_str
+                }
+            },
+            { bump_version: false, reference_date: now }
+        );
 
         const updateBaseResult = await query(
             `UPDATE rule_sets
