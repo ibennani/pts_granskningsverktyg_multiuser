@@ -567,10 +567,12 @@ export async function publish_production_rule(id) {
 
 /**
  * Hämtar regelfil för nedladdning (samma data som export-endpointen returnerar).
- * Returnerar { id, name, content, version } för att skapa blob och filnamn i UI.
+ * @param {string} id
+ * @param {{ variant?: 'working'|'published' }} [options] – default working (arbetskopia)
  */
-export async function export_rule(id) {
-    return api_get(`/rules/${id}/export`);
+export async function export_rule(id, options = {}) {
+    const variant = options.variant === 'published' ? 'published' : 'working';
+    return api_get(`/rules/${encodeURIComponent(id)}/export?variant=${variant}`);
 }
 
 // Backup-API

@@ -102,6 +102,13 @@ const UI_ACTIONS = new Set([
 
 const USER_ACTIONS = new Set([ActionTypes.SET_MANAGE_USERS_TEXT]);
 
+const RULEFILE_SERVER_SYNC_ACTIONS = new Set([
+    ActionTypes.UPDATE_RULEFILE_CONTENT,
+    ActionTypes.UPDATE_REQUIREMENT_DEFINITION,
+    ActionTypes.ADD_REQUIREMENT_DEFINITION,
+    ActionTypes.DELETE_REQUIREMENT_DEFINITION
+]);
+
 /** Internt state-objekt tills strikt AppState-typ finns. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- reducer-lager returnerar ännu any
 type InternalState = any;
@@ -257,9 +264,11 @@ function execute_single_dispatch(
                     // ignoreras medvetet
                 }
                 try {
-                    if (action.type === ActionTypes.UPDATE_RULEFILE_CONTENT &&
+                    if (
+                        RULEFILE_SERVER_SYNC_ACTIONS.has(action.type) &&
                         internal_state.auditStatus === 'rulefile_editing' &&
-                        internal_state.ruleSetId) {
+                        internal_state.ruleSetId
+                    ) {
                         schedule_sync_rulefile_to_server(getState, dispatch);
                     }
                 } catch {

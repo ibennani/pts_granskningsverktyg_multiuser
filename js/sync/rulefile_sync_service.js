@@ -9,7 +9,7 @@ import {
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import { update_rulefile_baseline_from_remote } from '../logic/rulefile_collaboration_notice.js';
 import { drain_rulefile_patch_queue } from './rulefile_patch_queue.js';
-import { compute_next_rulefile_metadata_version } from '../../shared/rulefile/rulefile_metadata_version.js';
+import { prepare_rulefile_content_for_persist } from '../logic/prepare_rulefile_content_for_persist.ts';
 
 let rulefile_debounce_timer = null;
 const RULEFILE_DEBOUNCE_MS = 500;
@@ -42,18 +42,11 @@ async function run_sync_rulefile(state, dispatch_fn) {
         }
 
         const today = new Date();
-        const current_content = state.ruleFileContent;
-        const current_metadata = current_content?.metadata && typeof current_content.metadata === 'object'
-            ? current_content.metadata
-            : {};
-        const next_version = compute_next_rulefile_metadata_version(current_metadata.version, today);
-        const content_to_send = {
-            ...current_content,
-            metadata: {
-                ...current_metadata,
-                version: next_version
-            }
-        };
+        const content_to_send = prepare_rulefile_content_for_persist(state.ruleFileContent, {
+            bump_version: true,
+            reference_date: today
+        });
+        if (!content_to_send) return;
 
         const updated = await update_rule(state.ruleSetId, { content: content_to_send });
         if (updated?.content && typeof dispatch_fn === 'function') {
@@ -103,8 +96,6 @@ export function schedule_sync_rulefile_to_server(get_state_fn, dispatch_fn) {
     rulefile_debounce_timer = setTimeout(async () => {
         rulefile_debounce_timer = null;
         const state = get_state_fn();
-        // Synka aldrig publicerad regelfil – endast arbetskopior ska uppdateras automatiskt.
-        if (state?.ruleFileIsPublished) return;
         if (state?.auditStatus === 'rulefile_editing' && state.ruleSetId && state.ruleFileContent) {
             await run_sync_rulefile(state, dispatch_fn);
         }
@@ -122,8 +113,6 @@ export async function flush_sync_rulefile_to_server(get_state_fn, dispatch_fn) {
         rulefile_debounce_timer = null;
     }
     const state = typeof get_state_fn === 'function' ? get_state_fn() : null;
-    // Synka aldrig publicerad regelfil – endast arbetskopior ska uppdateras.
-    if (state?.ruleFileIsPublished) return;
     if (state?.auditStatus === 'rulefile_editing' && state.ruleSetId && state.ruleFileContent) {
         await run_sync_rulefile(state, dispatch_fn);
     }

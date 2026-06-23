@@ -903,7 +903,7 @@ describe('api/client – regler och granskningar', () => {
 
         fetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({ id: 'rid', content: {} }) });
         await export_rule('rid');
-        expect(fetch.mock.calls[3][0]).toMatch(/\/export$/);
+        expect(fetch.mock.calls[3][0]).toMatch(/\/export\?variant=working$/);
     });
 
     test('get_backups_for_audit och save_audit_backup_on_server', async () => {

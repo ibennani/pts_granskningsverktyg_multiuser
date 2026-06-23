@@ -277,12 +277,25 @@ describe('server_sync', () => {
             expect.objectContaining({
                 content: expect.objectContaining({
                     metadata: expect.objectContaining({
-                        version: expect.stringMatching(/^\d{4}\.\d{1,2}\.r\d+$/)
+                        version: expect.stringMatching(/^\d{4}\.\d{1,2}\.r\d+$/),
+                        dateModified: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/)
                     })
                 })
             })
         );
         expect(clear_rulefile_sync_pending).toHaveBeenCalled();
+    });
+
+    test('flush_sync_rulefile_to_server synkar även när ruleFileIsPublished är true', async () => {
+        update_rule.mockClear();
+        const dispatch = jest.fn();
+        const state = base_audit_state({
+            auditStatus: 'rulefile_editing',
+            ruleSetId: 'rs-pub',
+            ruleFileIsPublished: true
+        });
+        await flush_sync_rulefile_to_server(() => state, dispatch);
+        expect(update_rule).toHaveBeenCalledWith('rs-pub', expect.any(Object));
     });
 
     test('schedule_sync_rulefile_to_server debouncar regelfilsync', async () => {

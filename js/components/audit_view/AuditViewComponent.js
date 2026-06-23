@@ -29,6 +29,8 @@ import { AuditGroupedListComponent } from '../AuditGroupedListComponent.ts';
 import { open_audit_by_id, download_audit_by_id } from '../../logic/audit_open_logic.js';
 import { get_server_filename_datetime, sanitize_filename_segment } from '../../utils/download_filename_utils.ts';
 import { measure_backup_select_min_width_px } from '../../utils/backup_filter_select_width.ts';
+import { flush_sync_rulefile_to_server } from '../../logic/server_sync.js';
+import { build_rulefile_download_filename } from '../../logic/prepare_rulefile_content_for_persist.ts';
 import { render_audit_header } from './AuditHeaderSection.js';
 import { create_audit_filter_skip_link } from './audit_filter_skip_link.js';
 import { announce_audit_filter_reset } from './audit_filter_live_status.js';
@@ -2052,8 +2054,6 @@ export class AuditViewComponent {
         const t = this.get_t_func();
         const show_msg = this.NotificationComponent?.show_global_message?.bind(this.NotificationComponent);
         try {
-            // Om vi just nu redigerar denna regelfil som arbetskopia:
-            // synka innehållet till servern först så att updated_at speglar "senast ändrad".
             const current_state = typeof this.getState === 'function' ? this.getState() : null;
             const is_editing_current_rule =
                 current_state?.auditStatus === 'rulefile_editing' &&
@@ -2062,7 +2062,10 @@ export class AuditViewComponent {
 
             if (is_editing_current_rule) {
                 try {
-                    await update_rule(rule_id, { content: current_state.ruleFileContent });
+                    await flush_sync_rulefile_to_server(
+                        () => (typeof this.getState === 'function' ? this.getState() : null),
+                        this.dispatch
+                    );
                 } catch (sync_err) {
                     if (show_msg) {
                         const msg =
@@ -2070,7 +2073,6 @@ export class AuditViewComponent {
                             `Kunde inte spara regelfilen: ${sync_err.message}`;
                         show_msg(msg, 'error');
                     }
-                    // Fortsätt ändå och försök exportera nuvarande serverversion.
                 }
             }
 
@@ -2081,9 +2083,7 @@ export class AuditViewComponent {
             }
             const json_string = JSON.stringify(rule, null, 2);
             const blob = new Blob([json_string], { type: 'application/json' });
-            const safe_name = sanitize_filename_segment(rule.name || 'regelfil') || 'regelfil';
 
-            let version_suffix = '';
             let content_obj = rule.content;
             if (typeof content_obj === 'string') {
                 try {
@@ -2096,27 +2096,25 @@ export class AuditViewComponent {
             const meta_version = content_obj?.metadata?.version
                 ? String(content_obj.metadata.version).trim()
                 : '';
+            const title = content_obj?.metadata?.title || rule.name || 'regelfil';
+            const safe_name = sanitize_filename_segment(title) || sanitize_filename_segment(rule.name || 'regelfil') || 'regelfil';
 
-            if (rule.is_published && meta_version) {
-                // Publicerad: använd befintligt år.månad.rX-system i suffix, med understreck.
-                const safe_version = meta_version.replace(/[^0-9A-Za-z]+/g, '_');
-                version_suffix = `_${safe_version}`;
-            } else if (!rule.is_published) {
-                // Arbetskopia: använd content_updated_at eller updated_at för att matcha tabellens "Senast uppdaterad"
+            let filename = build_rulefile_download_filename(safe_name, meta_version);
+            const is_arbetskopia_export = rule.is_published !== true || rule.has_draft === true;
+
+            if (is_arbetskopia_export) {
                 const ts = rule.content_updated_at || rule.updated_at;
                 const server_dt = await get_server_filename_datetime(ts || null);
                 if (server_dt) {
                     const label = t('rulefile_status_production_label') || 'Arbetskopia';
                     const safe_label = sanitize_filename_segment(label) || 'Arbetskopia';
-                    // Inkludera versionsnummer även för arbetskopia om det finns, så att namn blir stabilt och tydligt.
-                    const safe_version = meta_version ? meta_version.replace(/[^0-9A-Za-z]+/g, '_') : '';
-                version_suffix = safe_version 
-                    ? `_${safe_version}_${safe_label}_${server_dt}`
-                    : `_${safe_label}_${server_dt}`;
+                    const base = filename.slice(0, -'.json'.length);
+                    filename = meta_version
+                        ? `${base}_${safe_label}_${server_dt}.json`
+                        : `${safe_name}_${safe_label}_${server_dt}.json`;
                 }
             }
 
-            const filename = `${safe_name}${version_suffix}.json`;
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;

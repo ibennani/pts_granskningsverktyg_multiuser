@@ -1,6 +1,10 @@
 import { SaveAuditButtonComponent } from './SaveAuditButtonComponent.js';
 import { can_edit_rulefile } from '../utils/helpers.js';
 import { get_server_filename_datetime } from '../utils/download_filename_utils.ts';
+import {
+    prepare_rulefile_content_for_persist,
+    build_rulefile_download_filename
+} from '../logic/prepare_rulefile_content_for_persist.ts';
 import './global_action_bar_component.css';
 
 export class GlobalActionBarComponent {
@@ -74,55 +78,6 @@ export class GlobalActionBarComponent {
     return JSON.parse(JSON.stringify(ruleFileContent));
   }
 
-  compute_next_version(current_version_string, today) {
-    const current_year = today.getFullYear();
-    const current_month = today.getMonth() + 1;
-    const version_match =
-      typeof current_version_string === 'string'
-        ? current_version_string.match(/^(\d{4})\.(\d{1,2})\.r(\d+)$/)
-        : null;
-
-    if (version_match) {
-      const [, version_year, version_month, release] = version_match;
-      const version_year_number = parseInt(version_year, 10);
-      const version_month_number = parseInt(version_month, 10);
-      if (
-        version_year_number === current_year &&
-        version_month_number === current_month
-      ) {
-        return `${current_year}.${current_month}.r${parseInt(release, 10) + 1}`;
-      }
-    }
-
-    return `${current_year}.${current_month}.r1`;
-  }
-
-  to_filename_version_suffix(version_string) {
-    const match =
-      typeof version_string === 'string'
-        ? version_string.match(/^(\d{4})\.(\d{1,2})\.r(\d+)$/)
-        : null;
-    if (!match) return null;
-    const year = match[1];
-    const month = parseInt(match[2], 10);
-    const release = match[3];
-    return `${year}_${month}_r${release}`;
-  }
-
-  generate_rulefile_filename(title, version_string) {
-    const default_extension = '.json';
-    const version_suffix = this.to_filename_version_suffix(version_string);
-    const safe_suffix = version_suffix ? `_${version_suffix}` : '';
-
-    let base_name = (title || 'rulefile').trim();
-    // Ersätt alla whitespace med understreck
-    base_name = base_name.replace(/\s+/g, '_');
-    // Ta bort ogiltiga filnamnstecken: \ / : * ? " < > |
-    base_name = base_name.replace(/[\\/:*?"<>|]/g, '');
-
-    return `${base_name}${safe_suffix}${default_extension}`;
-  }
-
   async handle_save_rulefile() {
     const t = this.Translation.t;
     const current_state = this.getState();
@@ -141,28 +96,26 @@ export class GlobalActionBarComponent {
     );
     const has_changes = !original_string || current_string !== original_string;
 
-    const today = new Date();
-    const today_iso_date = today.toISOString().split('T')[0];
     let data_string_for_download = current_string;
     let filename_for_download = 'rulefile.json';
 
     if (is_edit_mode && has_changes) {
-      const updated_rulefile_content = this.clone_rulefile_content(
-        current_state.ruleFileContent
+      const today = new Date();
+      const updated_rulefile_content = prepare_rulefile_content_for_persist(
+        this.clone_rulefile_content(current_state.ruleFileContent),
+        { bump_version: true, reference_date: today }
       );
+      if (!updated_rulefile_content) {
+        this.NotificationComponent.show_global_message(t('error_internal'), 'error');
+        return;
+      }
       const current_metadata = updated_rulefile_content.metadata || {};
-      const next_version = this.compute_next_version(
-        current_metadata.version,
-        today
-      );
       const rule_set_id = current_state.ruleSetId ?? current_metadata.ruleSetId ??
         (this.Helpers?.generate_uuid_v4 ? this.Helpers.generate_uuid_v4() : null) ??
         (typeof crypto !== 'undefined' && crypto?.randomUUID ? crypto.randomUUID() : null) ??
         `gen-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
       updated_rulefile_content.metadata = {
         ...current_metadata,
-        dateModified: today_iso_date,
-        version: next_version,
         ruleSetId: rule_set_id,
       };
 
@@ -172,10 +125,8 @@ export class GlobalActionBarComponent {
         2
       );
       const title = updated_rulefile_content.metadata?.title || 'rulefile';
-      filename_for_download = this.generate_rulefile_filename(
-        title,
-        next_version
-      );
+      const current_version = updated_rulefile_content.metadata?.version || null;
+      filename_for_download = build_rulefile_download_filename(title, current_version);
 
       if (typeof this.dispatch === 'function' && this.StoreActionTypes) {
         this.dispatch({
@@ -210,10 +161,7 @@ export class GlobalActionBarComponent {
       const current_metadata = current_state.ruleFileContent?.metadata || {};
       const current_version = current_metadata.version || null;
       const title = current_metadata.title || 'rulefile';
-      filename_for_download = this.generate_rulefile_filename(
-        title,
-        current_version
-      );
+      filename_for_download = build_rulefile_download_filename(title, current_version);
     }
 
     const server_ts = await get_server_filename_datetime(null);
