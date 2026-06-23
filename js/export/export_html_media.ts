@@ -158,23 +158,21 @@ async function fetch_unique_media_bytes(
     return bytes;
 }
 
-/**
- * Bygger zip med HTML-fil och media-mapp.
- */
-export async function build_html_export_zip(input: BuildHtmlExportZipInput): Promise<BuildHtmlExportZipResult> {
-    const zip = new JSZip();
-    zip.file(input.html_filename, input.html_document);
-
+async function add_media_entries_to_zip(
+    zip: JSZip,
+    entries: HtmlExportZipEntry[],
+    audit_id: string | null | undefined
+): Promise<string[]> {
     const missing_filenames: string[] = [];
-    const audit_id = String(input.audit_id || '').trim();
+    const trimmed_audit_id = String(audit_id || '').trim();
     const bytes_cache = new Map<string, ArrayBuffer | null>();
 
-    if (!audit_id) {
-        return { blob: await zip.generateAsync({ type: 'blob' }), missing_filenames };
+    if (!trimmed_audit_id) {
+        return missing_filenames;
     }
 
-    for (const entry of input.entries) {
-        const bytes = await fetch_unique_media_bytes(audit_id, entry.original_filename, bytes_cache);
+    for (const entry of entries) {
+        const bytes = await fetch_unique_media_bytes(trimmed_audit_id, entry.original_filename, bytes_cache);
         if (!bytes) {
             if (!missing_filenames.includes(entry.original_filename)) {
                 missing_filenames.push(entry.original_filename);
@@ -184,6 +182,42 @@ export async function build_html_export_zip(input: BuildHtmlExportZipInput): Pro
         zip.file(entry.zip_path, bytes);
     }
 
+    return missing_filenames;
+}
+
+/** Tar bort media/-prefix så filer hamnar direkt i zip-roten. */
+export function flatten_html_export_zip_entries(entries: HtmlExportZipEntry[]): HtmlExportZipEntry[] {
+    const prefix = `${HTML_EXPORT_MEDIA_DIR}/`;
+    return entries.map((entry) => ({
+        original_filename: entry.original_filename,
+        zip_path: entry.zip_path.startsWith(prefix) ? entry.zip_path.slice(prefix.length) : entry.zip_path
+    }));
+}
+
+export type BuildMediaOnlyExportZipInput = {
+    entries: HtmlExportZipEntry[];
+    audit_id: string | null | undefined;
+};
+
+/**
+ * Bygger zip med enbart mediefiler (platta sökvägar i zip-roten).
+ */
+export async function build_media_only_export_zip(
+    input: BuildMediaOnlyExportZipInput
+): Promise<BuildHtmlExportZipResult> {
+    const zip = new JSZip();
+    const missing_filenames = await add_media_entries_to_zip(zip, input.entries, input.audit_id);
+    const blob = await zip.generateAsync({ type: 'blob' });
+    return { blob, missing_filenames };
+}
+
+/**
+ * Bygger zip med HTML-fil och media-mapp.
+ */
+export async function build_html_export_zip(input: BuildHtmlExportZipInput): Promise<BuildHtmlExportZipResult> {
+    const zip = new JSZip();
+    zip.file(input.html_filename, input.html_document);
+    const missing_filenames = await add_media_entries_to_zip(zip, input.entries, input.audit_id);
     const blob = await zip.generateAsync({ type: 'blob' });
     return { blob, missing_filenames };
 }

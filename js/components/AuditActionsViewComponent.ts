@@ -5,6 +5,7 @@ import { subscribe_rules } from '../logic/list_push_service.js';
 import { version_greater_than } from '../utils/version_utils.js';
 import { find_newer_rule_for_audit } from '../logic/newer_rule_check.js';
 import { audit_status_is_exportable, audit_status_blocks_rulefile_update_offer } from '../utils/audit_status_helpers.js';
+import { collect_html_export_zip_entries } from '../export/export_html_media.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import './audit_actions_view_component.css';
 
@@ -60,6 +61,7 @@ export class AuditActionsViewComponent {
         this.handle_export_pdf = this.handle_export_pdf.bind(this);
         this.handle_export_word_samples = this.handle_export_word_samples.bind(this);
         this.handle_export_html = this.handle_export_html.bind(this);
+        this.handle_export_images_zip = this.handle_export_images_zip.bind(this);
         this.handle_download_audit = this.handle_download_audit.bind(this);
         this.handle_archive_audit = this.handle_archive_audit.bind(this);
         this.handle_activate_audit = this.handle_activate_audit.bind(this);
@@ -271,6 +273,20 @@ export class AuditActionsViewComponent {
             await this.ExportLogic.export_to_html(current_state);
         } catch (error) {
             this.NotificationComponent.show_global_message(`${t('error_exporting_html')} ${error?.message || ''}`.trim(), 'error');
+        }
+    }
+
+    async handle_export_images_zip() {
+        const t = this.Translation.t;
+        const current_state = this.getState();
+        if (!this.ExportLogic?.export_to_images_zip) return;
+        try {
+            await this.ExportLogic.export_to_images_zip(current_state);
+        } catch (error) {
+            this.NotificationComponent.show_global_message(
+                `${t('error_exporting_images_zip')} ${error?.message || ''}`.trim(),
+                'error'
+            );
         }
     }
 
@@ -692,6 +708,15 @@ export class AuditActionsViewComponent {
                     description: t('audit_actions_export_html_description'),
                     on_click: this.handle_export_html,
                     id_suffix: 'export-html'
+                }));
+            }
+            const has_exportable_images = collect_html_export_zip_entries(state, null).length > 0;
+            if (this.ExportLogic?.export_to_images_zip && has_exportable_images) {
+                export_actions.appendChild(this.create_export_item({
+                    label: t('export_to_images_zip'),
+                    description: t('audit_actions_export_images_zip_description'),
+                    on_click: this.handle_export_images_zip,
+                    id_suffix: 'export-images-zip'
                 }));
             }
             export_section.appendChild(export_actions);

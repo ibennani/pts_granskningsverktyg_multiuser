@@ -4,6 +4,7 @@
 
 import {
     collect_html_export_zip_entries,
+    flatten_html_export_zip_entries,
     get_deficiency_media_export_names,
     get_sample_media_export_names,
     HTML_EXPORT_MEDIA_DIR
@@ -96,6 +97,35 @@ describe('export_html_media', () => {
             {
                 original_filename: 'stickprov.png',
                 zip_path: `${HTML_EXPORT_MEDIA_DIR}/000_1_WEBB_1_2026-04-11_26-11111.png`
+            }
+        ]);
+    });
+
+    test('collect_html_export_zip_entries returnerar tom lista utan exportbilder', () => {
+        const empty_audit = {
+            ...sample_audit,
+            samples: [
+                {
+                    id: 's1',
+                    description: 'Startsida',
+                    attachedMediaFilenames: [],
+                    requirementResults: {}
+                }
+            ]
+        };
+        expect(collect_html_export_zip_entries(empty_audit, null)).toEqual([]);
+    });
+
+    test('flatten_html_export_zip_entries tar bort media/-prefix', () => {
+        const entries = collect_html_export_zip_entries(sample_audit, media_context);
+        expect(flatten_html_export_zip_entries(entries)).toEqual([
+            {
+                original_filename: 'skarm1.png',
+                zip_path: '047_1_WEBB_1_2026-04-11_26-11111.png'
+            },
+            {
+                original_filename: 'stickprov.png',
+                zip_path: '000_1_WEBB_1_2026-04-11_26-11111.png'
             }
         ]);
     });

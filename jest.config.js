@@ -52,6 +52,7 @@ export default {
     '^.+[\\\\/]export_html_styles_generated\\.js$': '<rootDir>/js/export/export_html_styles_generated.ts',
     '^.+[\\\\/]export_html_script_generated\\.js$': '<rootDir>/js/export/export_html_script_generated.ts',
     '^.+[\\\\/]export_html_export\\.js$': '<rootDir>/js/export/export_html_export.ts',
+    '^.+[\\\\/]export_images_zip_export\\.js$': '<rootDir>/js/export/export_images_zip_export.ts',
     '^.+[\\\\/]export_html_media\\.js$': '<rootDir>/js/export/export_html_media.ts',
     '^.+[\\\\/]export_html_themes\\.js$': '<rootDir>/js/export/export_html_themes.ts',
     '^.+[\\\\/]export_html_sidebar_script\\.js$': '<rootDir>/js/export/export_html_sidebar_script.ts',
