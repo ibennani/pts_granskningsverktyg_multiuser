@@ -57,7 +57,7 @@ export function build_deficiency_column_defs(
         { header: t('excel_col_reference'), key: 'reference', width: 40 },
         { header: t('excel_col_sample_name'), key: 'sampleName', width: 30 },
         { header: t('excel_col_sample_url'), key: 'sampleUrl', width: 40 },
-        { header: t('excel_col_deficiency_type'), key: 'deficiencyType', width: 24 },
+        { header: t('excel_col_deficiency_type'), key: 'deficiencyType', width: 48 },
         { header: t('excel_col_observation'), key: 'observation', width: 70 },
         { header: t('excel_col_screenshot_reference'), key: 'screenshotReference', width: 50 }
     ];
@@ -99,6 +99,15 @@ export async function prepare_deficiencies_for_export(
     return { deficiencies_data, column_defs, include_comment_column };
 }
 
+/**
+ * Läser PrimaryText från passCriteria.DeficiencyType på ett sparat godkännandekriterium.
+ */
+function get_deficiency_type_primary_text(pc_obj: unknown): string {
+    const node = (pc_obj as { DeficiencyType?: { PrimaryText?: unknown } })?.DeficiencyType;
+    const text = node?.PrimaryText;
+    return typeof text === 'string' ? text.trim() : '';
+}
+
 function build_single_deficiency_row(
     current_audit: unknown,
     sample: { description?: string; url?: string },
@@ -110,7 +119,12 @@ function build_single_deficiency_row(
     result: { commentToAuditor?: string },
     check_id: string,
     pc_id: string,
-    pc_obj: { deficiencyId?: string; observationDetail?: string; attachedMediaFilenames?: unknown },
+    pc_obj: {
+        deficiencyId?: string;
+        observationDetail?: string;
+        attachedMediaFilenames?: unknown;
+        DeficiencyType?: { PrimaryText?: unknown };
+    },
     t: (key: string) => string,
     yes_label: string,
     media_context: ExportMediaFilenameContext | null
@@ -161,7 +175,7 @@ function build_single_deficiency_row(
         reference: reference_obj,
         sampleName: strip_markdown_for_excel(String(sample.description || '')),
         sampleUrl: url_obj,
-        deficiencyType: '',
+        deficiencyType: strip_markdown_for_excel(get_deficiency_type_primary_text(pc_obj)),
         observation: final_observation,
         screenshotReference: format_media_filenames_for_export(
             pc_obj.attachedMediaFilenames,

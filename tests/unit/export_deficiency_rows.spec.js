@@ -1,6 +1,7 @@
 import {
     build_deficiencies_data,
-    build_deficiency_column_defs
+    build_deficiency_column_defs,
+    deficiency_row_to_flat_values
 } from '../../js/export/export_deficiency_rows.ts';
 import { escape_for_csv } from '../../js/export/export_format_helpers.ts';
 
@@ -33,6 +34,66 @@ describe('export_deficiency_rows', () => {
         const shot_index = keys.indexOf('screenshotReference');
         expect(obs_index).toBeGreaterThanOrEqual(0);
         expect(shot_index).toBe(obs_index + 1);
+    });
+
+    test('build_deficiency_column_defs sätter deficiencyType-bredd till 48', () => {
+        const defs = build_deficiency_column_defs(t, false);
+        const def_type_col = defs.find((def) => def.key === 'deficiencyType');
+        expect(def_type_col?.width).toBe(48);
+    });
+
+    test('deficiency_row_to_flat_values inkluderar deficiencyType för CSV-export', () => {
+        const primary_text = 'Fokusordningen är inkonsekvent och oförutsägbar.';
+        const audit = {
+            ruleFileContent: {
+                requirements: {
+                    req1: {
+                        key: 'req1',
+                        title: 'Krav 1',
+                        checks: [
+                            {
+                                id: 'chk1',
+                                passCriteria: [
+                                    { id: 'pc1', requirement: 'Kravtext', failureStatementTemplate: '' }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            },
+            samples: [
+                {
+                    id: 's1',
+                    requirementResults: {
+                        req1: {
+                            checkResults: {
+                                chk1: {
+                                    passCriteria: {
+                                        pc1: {
+                                            status: 'failed',
+                                            deficiencyId: 'B003',
+                                            DeficiencyType: { PrimaryText: primary_text }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        };
+
+        const column_defs = build_deficiency_column_defs(t, false);
+        const column_keys = column_defs.map((def) => def.key);
+        const type_index = column_keys.indexOf('deficiencyType');
+        const rows = build_deficiencies_data(audit, t);
+        const csv_values = deficiency_row_to_flat_values(rows[0], column_keys);
+
+        expect(type_index).toBeGreaterThanOrEqual(0);
+        expect(csv_values[type_index]).toBe(primary_text);
+
+        const csv_line = csv_values.map((value) => escape_for_csv(value)).join(';');
+        expect(csv_line).toContain(primary_text);
     });
 
     test('build_deficiencies_data sätter screenshotReference från attachedMediaFilenames', () => {
@@ -149,6 +210,140 @@ describe('export_deficiency_rows', () => {
             '047_1_WEBB_1_2026-04-11_26-11111.png\n047_2_WEBB_1_2026-04-12_26-11111.png'
         );
         expect(rows[0].screenshotReference.split('\n')).toHaveLength(2);
+    });
+
+    test('build_deficiencies_data sätter deficiencyType från DeficiencyType.PrimaryText', () => {
+        const primary_text = 'Semantiska element används inte där det behövs.';
+        const audit = {
+            ruleFileContent: {
+                requirements: {
+                    req1: {
+                        key: 'req1',
+                        title: 'Krav 1',
+                        checks: [
+                            {
+                                id: 'chk1',
+                                passCriteria: [
+                                    {
+                                        id: 'pc1',
+                                        requirement: 'Kravtext',
+                                        failureStatementTemplate: ''
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                }
+            },
+            samples: [
+                {
+                    id: 's1',
+                    description: 'Startsida',
+                    requirementResults: {
+                        req1: {
+                            checkResults: {
+                                chk1: {
+                                    passCriteria: {
+                                        pc1: {
+                                            status: 'failed',
+                                            deficiencyId: 'B001',
+                                            DeficiencyType: {
+                                                PrimaryText: primary_text,
+                                                SecondaryText: 'Ska inte exporteras'
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        };
+
+        const rows = build_deficiencies_data(audit, t);
+        expect(rows).toHaveLength(1);
+        expect(rows[0].deficiencyType).toBe(primary_text);
+    });
+
+    test('build_deficiencies_data lämnar deficiencyType tom utan DeficiencyType-nod', () => {
+        const audit = {
+            ruleFileContent: {
+                requirements: {
+                    req1: {
+                        key: 'req1',
+                        title: 'Krav 1',
+                        checks: [
+                            {
+                                id: 'chk1',
+                                passCriteria: [{ id: 'pc1', requirement: 'Kravtext', failureStatementTemplate: '' }]
+                            }
+                        ]
+                    }
+                }
+            },
+            samples: [
+                {
+                    id: 's1',
+                    requirementResults: {
+                        req1: {
+                            checkResults: {
+                                chk1: {
+                                    passCriteria: {
+                                        pc1: { status: 'failed', deficiencyId: 'B001' }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        };
+
+        const rows = build_deficiencies_data(audit, t);
+        expect(rows[0].deficiencyType).toBe('');
+    });
+
+    test('build_deficiencies_data lämnar deficiencyType tom när PrimaryText saknas', () => {
+        const audit = {
+            ruleFileContent: {
+                requirements: {
+                    req1: {
+                        key: 'req1',
+                        title: 'Krav 1',
+                        checks: [
+                            {
+                                id: 'chk1',
+                                passCriteria: [{ id: 'pc1', requirement: 'Kravtext', failureStatementTemplate: '' }]
+                            }
+                        ]
+                    }
+                }
+            },
+            samples: [
+                {
+                    id: 's1',
+                    requirementResults: {
+                        req1: {
+                            checkResults: {
+                                chk1: {
+                                    passCriteria: {
+                                        pc1: {
+                                            status: 'failed',
+                                            deficiencyId: 'B001',
+                                            DeficiencyType: {}
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            ]
+        };
+
+        const rows = build_deficiencies_data(audit, t);
+        expect(rows[0].deficiencyType).toBe('');
     });
 });
 
