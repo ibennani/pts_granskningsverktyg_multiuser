@@ -50,7 +50,7 @@ export function ensure_preview_fits_viewport_limits(
     dialog_el: HTMLDialogElement,
     max_iterations = 8
 ): void {
-    const { max_width, max_height } = get_media_preview_viewport_limits();
+    const { width: max_width, height: max_height } = get_media_preview_viewport_limits();
 
     for (let iteration = 0; iteration < max_iterations; iteration += 1) {
         const dialog_rect = dialog_el.getBoundingClientRect();

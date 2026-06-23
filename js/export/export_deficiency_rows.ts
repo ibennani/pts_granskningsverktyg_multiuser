@@ -115,7 +115,14 @@ function build_single_deficiency_row(
     yes_label: string,
     media_context: ExportMediaFilenameContext | null
 ): DeficiencyRow {
-    const check_def = find_check_def_by_storage_id(req_definition.checks as never[], check_id);
+    const check_def = find_check_def_by_storage_id(
+        (req_definition.checks ?? []) as Array<{
+            id?: unknown;
+            key?: unknown;
+            passCriteria?: Array<{ id?: unknown; key?: unknown }>;
+        }>,
+        check_id
+    );
     const pc_def = find_pass_criterion_def_by_storage_id(check_def?.passCriteria, pc_id) as {
         failureStatementTemplate?: string;
         requirement?: string;

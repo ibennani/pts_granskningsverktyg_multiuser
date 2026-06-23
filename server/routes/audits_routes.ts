@@ -17,7 +17,17 @@ import {
 } from '../repositories/audit_repository.js';
 import { fetch_rule_set_by_id } from '../repositories/rule_repository.js';
 import type { Request, Response } from 'express';
-import { build_full_state, type AuditRow } from './audit_build_state.js';
+import { CreateAuditBodySchema } from '../schemas/audit_create.js';
+import {
+    AuditLockBodySchema,
+    AuditLockHeartbeatBodySchema,
+    AuditLockReleaseInputSchema,
+    AuditListStatusQuerySchema
+} from '../schemas/audit_lock.js';
+import { AuditRowSchema, AuditVersionRowSchema, RuleSetRowSchema } from '../schemas/audit_db_rows.js';
+import { parse_body, parse_db_row, parse_query, safe_parse_db_row } from '../utils/zod_boundary.js';
+import { single_route_param } from '../utils/route_params.js';
+import { build_full_state } from './audit_build_state.js';
 import { broadcast_audit_locks_changed } from './audit_route_support.js';
 import { map_audit_index_row_to_list_item } from './audit_index_row_mapper.js';
 import { register_audit_import_route } from './audit_import_routes.js';
@@ -29,11 +39,12 @@ const router = express.Router();
 
 router.get('/', async (req: Request, res: Response) => {
     try {
-        const status_q = req.query.status;
-        const status =
-            typeof status_q === 'string' ? status_q : Array.isArray(status_q) ? String(status_q[0]) : undefined;
-        const result = await fetch_audits_index_rows(status);
-        const rows = result.rows.map((row: unknown) => map_audit_index_row_to_list_item(row as never));
+        const query_params = parse_query(AuditListStatusQuerySchema, req.query, res);
+        if (!query_params) {
+            return;
+        }
+        const result = await fetch_audits_index_rows(query_params.status);
+        const rows = result.rows.map((row: unknown) => map_audit_index_row_to_list_item(row));
         res.json(rows);
     } catch (err) {
         console.error('[audits] GET list error:', err);
@@ -54,12 +65,12 @@ router.get('/statistics/summary', async (_req: Request, res: Response) => {
 
 router.get('/:id/version', async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
+        const id = single_route_param(req.params.id);
         const result = await query('SELECT version, updated_at FROM audits WHERE id = $1', [id]);
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Granskning hittades inte' });
         }
-        const row = result.rows[0] as { version: number; updated_at: string };
+        const row = parse_db_row(AuditVersionRowSchema, result.rows[0]);
         res.json({ version: row.version, updated_at: row.updated_at });
     } catch (err) {
         console.error('[audits] GET version error:', err);
@@ -69,7 +80,7 @@ router.get('/:id/version', async (req: Request, res: Response) => {
 
 router.get('/:id/locks', async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
+        const id = single_route_param(req.params.id);
         const now = new Date();
         await query('DELETE FROM audit_edit_locks WHERE lease_until < CURRENT_TIMESTAMP');
         const result = await query(
@@ -88,14 +99,13 @@ router.get('/:id/locks', async (req: Request, res: Response) => {
 
 router.post('/:id/locks', async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
+        const id = single_route_param(req.params.id);
         const user = (req as AuthedRequest).user!;
-        const part_key = String(req.body?.part_key || '');
-        const client_lock_id = String(req.body?.client_lock_id || '');
-        const requested_ttl_seconds = Number(req.body?.ttl_seconds || 30);
-
-        if (!part_key) return res.status(400).json({ error: 'part_key krävs' });
-        if (!client_lock_id) return res.status(400).json({ error: 'client_lock_id krävs' });
+        const body = parse_body(AuditLockBodySchema, req.body, res);
+        if (!body) {
+            return;
+        }
+        const { part_key, client_lock_id, ttl_seconds: requested_ttl_seconds } = body;
         const parsed = parse_audit_part_key(part_key);
         if (!parsed || String(parsed.audit_id) !== String(id)) return res.status(400).json({ error: 'Ogiltig part_key' });
 
@@ -135,13 +145,15 @@ router.post('/:id/locks', async (req: Request, res: Response) => {
 
 router.post('/:id/locks/:partKey/heartbeat', async (req: Request, res: Response) => {
     try {
-        const { id, partKey } = req.params;
+        const id = single_route_param(req.params.id);
+        const partKey = single_route_param(req.params.partKey);
         const user = (req as AuthedRequest).user!;
-        const part_key = decodeURIComponent(String(partKey || ''));
-        const client_lock_id = String(req.body?.client_lock_id || '');
-        const requested_ttl_seconds = Number(req.body?.ttl_seconds || 30);
-
-        if (!client_lock_id) return res.status(400).json({ error: 'client_lock_id krävs' });
+        const part_key = decodeURIComponent(partKey);
+        const body = parse_body(AuditLockHeartbeatBodySchema, req.body, res);
+        if (!body) {
+            return;
+        }
+        const { client_lock_id, ttl_seconds: requested_ttl_seconds } = body;
         const parsed = parse_audit_part_key(part_key);
         if (!parsed || String(parsed.audit_id) !== String(id)) return res.status(400).json({ error: 'Ogiltig part_key' });
 
@@ -171,12 +183,17 @@ router.post('/:id/locks/:partKey/heartbeat', async (req: Request, res: Response)
 
 router.delete('/:id/locks/:partKey', async (req: Request, res: Response) => {
     try {
-        const { id, partKey } = req.params;
+        const id = single_route_param(req.params.id);
+        const partKey = single_route_param(req.params.partKey);
         const user = (req as AuthedRequest).user!;
-        const part_key = decodeURIComponent(String(partKey || ''));
-        const client_lock_id = String(req.query?.client_lock_id || req.body?.client_lock_id || '');
-
-        if (!client_lock_id) return res.status(400).json({ error: 'client_lock_id krävs' });
+        const part_key = decodeURIComponent(partKey);
+        const release_input = parse_body(AuditLockReleaseInputSchema, {
+            client_lock_id: req.query?.client_lock_id || req.body?.client_lock_id
+        }, res);
+        if (!release_input) {
+            return;
+        }
+        const { client_lock_id } = release_input;
         const parsed = parse_audit_part_key(part_key);
         if (!parsed || String(parsed.audit_id) !== String(id)) return res.status(400).json({ error: 'Ogiltig part_key' });
 
@@ -202,7 +219,7 @@ router.delete('/:id/locks/:partKey', async (req: Request, res: Response) => {
 
 router.get('/:id', async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
+        const id = single_route_param(req.params.id);
         const auditResult = await query(
             `SELECT id, rule_set_id, rule_file_content, status, metadata, samples, version, last_updated_by, created_at, updated_at::text AS updated_at
              FROM audits WHERE id = $1`,
@@ -211,13 +228,13 @@ router.get('/:id', async (req: Request, res: Response) => {
         if (auditResult.rows.length === 0) {
             return res.status(404).json({ error: 'Granskning hittades inte' });
         }
-        const audit = auditResult.rows[0] as AuditRow;
+        const audit = parse_db_row(AuditRowSchema, auditResult.rows[0]);
         res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
         res.setHeader('Pragma', 'no-cache');
-        let ruleSet: { published_content?: unknown; content?: unknown } | null = null;
+        let ruleSet = null;
         if (audit.rule_set_id) {
             const ruleResult = await fetch_rule_set_by_id(audit.rule_set_id);
-            ruleSet = (ruleResult.rows[0] || null) as { published_content?: unknown; content?: unknown } | null;
+            ruleSet = safe_parse_db_row(RuleSetRowSchema, ruleResult.rows[0] || null);
         }
         const fullState = build_full_state(audit, ruleSet);
         res.json(fullState);
@@ -229,7 +246,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 
 router.get('/:id/export', async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
+        const id = single_route_param(req.params.id);
         const auditResult = await query(
             `SELECT id, rule_set_id, rule_file_content, status, metadata, samples, version, last_updated_by, created_at, updated_at::text AS updated_at
              FROM audits WHERE id = $1`,
@@ -238,13 +255,13 @@ router.get('/:id/export', async (req: Request, res: Response) => {
         if (auditResult.rows.length === 0) {
             return res.status(404).json({ error: 'Granskning hittades inte' });
         }
-        const audit = auditResult.rows[0] as AuditRow;
+        const audit = parse_db_row(AuditRowSchema, auditResult.rows[0]);
         let ruleSet = null;
         if (audit.rule_set_id) {
             const ruleResult = await fetch_rule_set_by_id(audit.rule_set_id);
-            ruleSet = ruleResult.rows[0] || null;
+            ruleSet = safe_parse_db_row(RuleSetRowSchema, ruleResult.rows[0] || null);
         }
-        const fullState = build_full_state(audit, ruleSet as never);
+        const fullState = build_full_state(audit, ruleSet);
         const with_integrity = attach_export_integrity_server_payload(fullState);
         res.setHeader('Content-Disposition', `attachment; filename="granskning_${id}.json"`);
         res.json(with_integrity);
@@ -256,24 +273,28 @@ router.get('/:id/export', async (req: Request, res: Response) => {
 
 router.post('/', async (req: Request, res: Response) => {
     try {
-        const { rule_set_id } = req.body as { rule_set_id?: string };
+        const body = parse_body(CreateAuditBodySchema, req.body, res);
+        if (!body) {
+            return;
+        }
+        const { rule_set_id } = body;
         const r = req as AuthedRequest;
         const last_updated_by = r.user ? r.user.name : null;
-        if (!rule_set_id) {
-            return res.status(400).json({ error: 'rule_set_id krävs' });
-        }
         const ruleResult = await fetch_rule_set_by_id(rule_set_id);
         if (ruleResult.rows.length === 0) {
             return res.status(404).json({ error: 'Regelfil hittades inte' });
         }
-        const ruleSet = ruleResult.rows[0] as { published_content?: unknown; content?: unknown };
+        const ruleSet = safe_parse_db_row(RuleSetRowSchema, ruleResult.rows[0]);
+        if (!ruleSet) {
+            return res.status(500).json({ error: 'Regelfil hittades inte' });
+        }
         const rule_content_for_audit = ruleSet.published_content ?? ruleSet.content;
         const result = await query(
             'INSERT INTO audits (rule_set_id, rule_file_content, status, metadata, samples, last_updated_by) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
             [rule_set_id, rule_content_for_audit, 'not_started', '{}', '[]', last_updated_by]
         );
-        const audit = result.rows[0] as AuditRow;
-        const fullState = build_full_state(audit, ruleSet as never);
+        const audit = parse_db_row(AuditRowSchema, result.rows[0]);
+        const fullState = build_full_state(audit, ruleSet);
         res.status(201).json(fullState);
     } catch (err) {
         console.error('[audits] POST error:', err);
@@ -287,7 +308,7 @@ register_audit_import_route(router, import_payload_rate_limiter);
 
 router.delete('/:id', requireAdmin, async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
+        const id = single_route_param(req.params.id);
         const result = await query('DELETE FROM audits WHERE id = $1 RETURNING id', [id]);
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Granskning hittades inte' });

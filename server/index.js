@@ -37,7 +37,7 @@ app.use((req, res, next) => {
     res.setHeader('Content-Security-Policy',
         `default-src 'self'; ` +
         `script-src 'self' 'nonce-${nonce}'; ` +
-        `style-src 'self' 'unsafe-inline'; ` +
+        `style-src 'self'; ` +
         `img-src 'self' data:; ` +
         `connect-src 'self' ws: wss:; ` +
         `font-src 'self' data:; ` +

@@ -2,24 +2,9 @@
  * @fileoverview Bygger fullständigt API-state för en granskningsrad (+ ev. regelfilsrad).
  */
 
-type RuleSetRow = {
-    published_content?: unknown;
-    content?: unknown;
-};
+import { type AuditRow, type RuleSetRow } from '../schemas/audit_db_rows.js';
 
-export type AuditRow = {
-    id: string;
-    rule_set_id?: string | null;
-    rule_file_content?: unknown;
-    status?: string;
-    metadata?: Record<string, unknown> & { startTime?: string; endTime?: string };
-    samples?: unknown[];
-    version?: number;
-    created_at?: string | null;
-    updated_at?: string | null;
-    archived_requirement_results?: unknown;
-    last_rulefile_update_log?: unknown;
-};
+export type { AuditRow, RuleSetRow };
 
 export function build_full_state(audit_row: AuditRow, rule_set_row: RuleSetRow | null): Record<string, unknown> {
     let ruleFileContent: unknown =
@@ -33,7 +18,10 @@ export function build_full_state(audit_row: AuditRow, rule_set_row: RuleSetRow |
         }
     }
     const samples = audit_row.samples || [];
-    const meta = audit_row.metadata || {};
+    const meta =
+        audit_row.metadata && typeof audit_row.metadata === 'object' && !Array.isArray(audit_row.metadata)
+            ? (audit_row.metadata as Record<string, unknown>)
+            : {};
     return {
         saveFileVersion: '2.1.0',
         ruleFileContent,
@@ -60,7 +48,10 @@ export function build_full_state(audit_row: AuditRow, rule_set_row: RuleSetRow |
 /** Audit-data utan ruleFileContent – regelfilen hämtas separat via rule_set_id. */
 export function build_audit_state_without_rule_file(audit_row: AuditRow): Record<string, unknown> {
     const samples = audit_row.samples || [];
-    const meta = audit_row.metadata || {};
+    const meta =
+        audit_row.metadata && typeof audit_row.metadata === 'object' && !Array.isArray(audit_row.metadata)
+            ? (audit_row.metadata as Record<string, unknown>)
+            : {};
     return {
         saveFileVersion: '2.1.0',
         auditMetadata: audit_row.metadata || {},

@@ -76,10 +76,12 @@ export class ErrorBoundaryComponent {
 
         const user_message = document.createElement('div');
         user_message.className = 'error-boundary-user-message';
-        user_message.innerHTML = `
-            <p>${t('error_boundary_user_message')}</p>
-            <p>${t('error_boundary_suggestions')}</p>
-        `;
+        const user_para = document.createElement('p');
+        user_para.textContent = t('error_boundary_user_message');
+        user_message.appendChild(user_para);
+        const suggestions_para = document.createElement('p');
+        suggestions_para.textContent = t('error_boundary_suggestions');
+        user_message.appendChild(suggestions_para);
         error_container.appendChild(user_message);
 
         const technical_section = document.createElement('details');
@@ -96,7 +98,10 @@ export class ErrorBoundaryComponent {
         const escape_html = (Helpers && typeof Helpers.escape_html === 'function')
             ? Helpers.escape_html
             : (str) => str;
-        error_message.innerHTML = `<strong>${t('error_boundary_error_message')}:</strong> ${escape_html(error_data.message || t('error_boundary_unknown_error'))}`;
+        const error_label = document.createElement('strong');
+        error_label.textContent = `${t('error_boundary_error_message')}:`;
+        error_message.appendChild(error_label);
+        error_message.appendChild(document.createTextNode(` ${escape_html(error_data.message || t('error_boundary_unknown_error'))}`));
         technical_content.appendChild(error_message);
 
         if (error_data.stack) {
@@ -115,12 +120,18 @@ export class ErrorBoundaryComponent {
 
         if (error_data.component) {
             const component_info = document.createElement('p');
-            component_info.innerHTML = `<strong>${t('error_boundary_component')}:</strong> ${escape_html(error_data.component)}`;
+            const component_label = document.createElement('strong');
+            component_label.textContent = `${t('error_boundary_component')}:`;
+            component_info.appendChild(component_label);
+            component_info.appendChild(document.createTextNode(` ${escape_html(error_data.component)}`));
             technical_content.appendChild(component_info);
         }
 
         const timestamp = document.createElement('p');
-        timestamp.innerHTML = `<strong>${t('error_boundary_timestamp')}:</strong> ${new Date().toLocaleString()}`;
+        const timestamp_label = document.createElement('strong');
+        timestamp_label.textContent = `${t('error_boundary_timestamp')}:`;
+        timestamp.appendChild(timestamp_label);
+        timestamp.appendChild(document.createTextNode(` ${new Date().toLocaleString()}`));
         technical_content.appendChild(timestamp);
 
         technical_section.appendChild(technical_content);

@@ -20,6 +20,7 @@ import {
     pick_upload_media_filename,
     resolve_audit_media_file_path
 } from '../media/audit_media_storage.js';
+import { single_route_param } from '../utils/route_params.js';
 
 type AuthedRequest = express.Request & {
     user?: { id: string; name: string };
@@ -38,13 +39,13 @@ async function audit_exists(audit_id: string): Promise<boolean> {
 const upload = multer({
     storage: multer.diskStorage({
         destination: (req, _file, cb) => {
-            const audit_id = String((req as Request).params.id || '');
+            const audit_id = single_route_param((req as Request).params.id);
             ensure_audit_media_dir(audit_id)
                 .then((dir) => cb(null, dir))
                 .catch((err) => cb(err as Error, ''));
         },
         filename: (req, file, cb) => {
-            const audit_id = String((req as Request).params.id || '');
+            const audit_id = single_route_param((req as Request).params.id);
             pick_upload_media_filename(audit_id, file.originalname || 'fil')
                 .then((pick) => {
                     (req as AuthedRequest).media_upload_pick = pick;
@@ -78,7 +79,7 @@ function multer_single(field: string): RequestHandler {
 export function register_audit_media_routes(router: express.Router, upload_limiter: RequestHandler): void {
     router.get('/:id/media', async (req: Request, res: Response) => {
         try {
-            const { id } = req.params;
+            const id = single_route_param(req.params.id);
             if (!(await audit_exists(id))) {
                 return res.status(404).json({ error: 'Granskning hittades inte' });
             }
@@ -92,7 +93,7 @@ export function register_audit_media_routes(router: express.Router, upload_limit
 
     router.post('/:id/media', upload_limiter, multer_single('file'), async (req: Request, res: Response) => {
         try {
-            const { id } = req.params;
+            const id = single_route_param(req.params.id);
             if (!(await audit_exists(id))) {
                 return res.status(404).json({ error: 'Granskning hittades inte' });
             }
@@ -124,7 +125,8 @@ export function register_audit_media_routes(router: express.Router, upload_limit
 
     router.get('/:id/media/:filename', async (req: Request, res: Response) => {
         try {
-            const { id, filename: raw_filename } = req.params;
+            const id = single_route_param(req.params.id);
+            const raw_filename = single_route_param(req.params.filename);
             if (!(await audit_exists(id))) {
                 return res.status(404).json({ error: 'Granskning hittades inte' });
             }
@@ -153,7 +155,8 @@ export function register_audit_media_routes(router: express.Router, upload_limit
 
     router.delete('/:id/media/:filename', async (req: Request, res: Response) => {
         try {
-            const { id, filename: raw_filename } = req.params;
+            const id = single_route_param(req.params.id);
+            const raw_filename = single_route_param(req.params.filename);
             if (!(await audit_exists(id))) {
                 return res.status(404).json({ error: 'Granskning hittades inte' });
             }

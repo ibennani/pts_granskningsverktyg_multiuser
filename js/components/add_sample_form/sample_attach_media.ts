@@ -5,6 +5,10 @@
 import { open_attach_media_modal } from '../media/AttachMediaModal.js';
 import { collect_attached_media_filenames } from '../../logic/audit_attached_media_references.js';
 
+type AttachedMediaState = Parameters<typeof collect_attached_media_filenames>[0] & {
+    auditId?: string | null;
+};
+
 type AddSampleFormLike = {
     get_t_internally: () => (key: string, params?: Record<string, unknown>) => string;
     Helpers: {
@@ -17,7 +21,7 @@ type AddSampleFormLike = {
     sample_attached_media_filenames: string[];
     sample_attach_media_btn: HTMLButtonElement | null;
     current_editing_sample_id: string | null;
-    getState?: () => { auditId?: string | null } | null;
+    getState?: () => AttachedMediaState | null;
     save_form_data_immediately: (is_autosave?: boolean, should_trim?: boolean, skip_render?: boolean) => void;
     _persist_new_sample_draft: (should_trim: boolean) => void;
 };

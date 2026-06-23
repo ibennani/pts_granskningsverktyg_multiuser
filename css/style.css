@@ -1253,6 +1253,16 @@ select,
 }
 
 /* Build timestamp */
+#app-site-footer {
+    margin: 0;
+    padding: 0;
+}
+
+#app-site-header {
+    margin: 0;
+    padding: 0;
+}
+
 #build-timestamp {
     text-align: center;
     margin: 20px auto;

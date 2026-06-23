@@ -115,17 +115,11 @@ export class SampleManagementViewComponent {
             delete_button: button_el,
             focusOnConfirm: focus_after_delete ?? undefined,
             on_confirm: () => {
-                const delete_promise = this.dispatch?.({
+                this.dispatch?.({
                     type: this.StoreActionTypes!.DELETE_SAMPLE,
                     payload: { sampleId: String(sample_id) }
                 });
-                if (delete_promise && typeof delete_promise.then === 'function') {
-                    void delete_promise.then(() => {
-                        this.refresh_sample_list_if_visible();
-                    });
-                } else {
-                    this.refresh_sample_list_if_visible();
-                }
+                this.refresh_sample_list_if_visible();
             }
         });
     }

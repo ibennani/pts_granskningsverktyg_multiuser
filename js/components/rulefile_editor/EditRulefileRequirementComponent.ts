@@ -1026,7 +1026,9 @@ export class EditRulefileRequirementComponent {
                     const remote_lock = part_key ? get_current_rulefile_remote_lock(part_key) : null;
                     const my_client_lock_id = part_key ? ensure_client_lock_id_for_part(part_key) : null;
                     const locked_by_other = is_remote_lock_held_by_other_user(remote_lock, get_current_user_name(), my_client_lock_id);
-                    textarea.disabled = locked_by_other;
+                    const want_readonly = locked_by_other;
+                    textarea.readOnly = want_readonly;
+                    textarea.classList.toggle('readonly-textarea', want_readonly);
                     if (locked_by_other && remote_lock?.user_name) {
                         lock_hint_el.textContent = `${remote_lock.user_name} redigerar detta fält just nu.`;
                         lock_hint_el.hidden = false;
@@ -1051,8 +1053,8 @@ export class EditRulefileRequirementComponent {
                                     }
                                     delete textarea.dataset.gvLockPending;
                                     textarea.dataset.gvLockAcquired = '1';
-                                    textarea.disabled = false;
                                     textarea.readOnly = false;
+                                    textarea.classList.remove('readonly-textarea');
                                     if (lock_hint_el) {
                                         lock_hint_el.textContent = '';
                                         lock_hint_el.hidden = true;

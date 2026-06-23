@@ -5,28 +5,49 @@
 import { compute_audit_progress_percent } from '../../js/logic/audit_list_progress.js';
 import { resolve_audit_list_last_updated_at } from '../../js/logic/audit_list_last_updated.js';
 import { calculateQualityScore } from '../../js/logic/ScoreCalculator.js';
+import { AuditIndexRowSchema, type AuditIndexRow } from '../schemas/audit_db_rows.js';
+import { safe_parse_db_row } from '../utils/zod_boundary.js';
 import { count_business_days, extract_min_max_timestamps } from './audit_route_support.js';
 
-type IndexRow = {
-    id: string;
-    rule_set_id?: string | null;
-    status?: string;
-    metadata?: Record<string, unknown> & { startTime?: string; endTime?: string };
-    version?: number;
-    rule_set_name?: string;
-    last_updated_by?: string | null;
-    created_at?: string | null;
-    updated_at?: string | null;
-    samples?: unknown;
-    rule_content?: unknown;
-};
+function build_minimal_list_item(row: unknown): Record<string, unknown> {
+    const fallback_id =
+        row && typeof row === 'object' && row !== null && 'id' in row ? String((row as { id: unknown }).id) : null;
+    return {
+        id: fallback_id,
+        rule_set_id: null,
+        status: null,
+        metadata: {},
+        version: null,
+        rule_set_name: null,
+        last_updated_by: null,
+        created_at: null,
+        updated_at: null,
+        last_updated_display_at: null,
+        business_days: null,
+        progress: null,
+        deficiency_index: null
+    };
+}
 
-export function map_audit_index_row_to_list_item(row: IndexRow): Record<string, unknown> {
+export function map_audit_index_row_to_list_item(row: unknown): Record<string, unknown> {
+    const parsed = safe_parse_db_row(AuditIndexRowSchema, row);
+    if (!parsed) {
+        console.warn('[audits] Ogiltig indexrad, returnerar minimal listpost');
+        return build_minimal_list_item(row);
+    }
+    return map_valid_audit_index_row(parsed);
+}
+
+function map_valid_audit_index_row(row: AuditIndexRow): Record<string, unknown> {
+    const metadata =
+        row.metadata && typeof row.metadata === 'object' && !Array.isArray(row.metadata)
+            ? (row.metadata as Record<string, unknown>)
+            : {};
     const out: Record<string, unknown> = {
         id: row.id,
         rule_set_id: row.rule_set_id,
         status: row.status,
-        metadata: row.metadata || {},
+        metadata,
         version: row.version,
         rule_set_name: row.rule_set_name,
         last_updated_by: row.last_updated_by || null,
@@ -34,12 +55,11 @@ export function map_audit_index_row_to_list_item(row: IndexRow): Record<string, 
         updated_at: row.updated_at,
         last_updated_display_at: resolve_audit_list_last_updated_at({
             status: row.status,
-            metadata: row.metadata || {},
+            metadata,
             samples: row.samples,
             updated_at: row.updated_at ?? null
         })
     };
-    const metadata = row.metadata || {};
     const samples = row.samples;
     const { minTime, maxTime } = extract_min_max_timestamps(samples);
     const firstTs = minTime || (metadata.startTime as string) || row.created_at;

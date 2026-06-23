@@ -24,7 +24,9 @@ export async function generate_pdf_from_html(input: GeneratePdfInput): Promise<B
         const page = await browser.newPage();
 
         // networkidle0 stöds av Chromium; typings i puppeteer kan vara snävare
-        await page.setContent(htmlContent, { waitUntil: 'networkidle0' } as { waitUntil: 'load' });
+        await page.setContent(htmlContent, { waitUntil: 'networkidle0' } as unknown as Parameters<
+            typeof page.setContent
+        >[1]);
 
         const pdf_bytes = await page.pdf({
             format: 'A4',

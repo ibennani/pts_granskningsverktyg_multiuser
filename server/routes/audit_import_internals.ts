@@ -2,30 +2,34 @@
  * @fileoverview Importhjälp: konflikt-id och sammanfattning för 409-svar.
  */
 
-import { query } from '../db.js';
 import {
     select_audit_id_by_sample_id,
     select_audit_id_exists,
     fetch_audit_summary_for_import_conflict
 } from '../repositories/audit_repository.js';
+import {
+    AuditConflictSummaryRowSchema,
+    ImportConflictBodySchema,
+    type ImportConflictBody
+} from '../schemas/audit_db_rows.js';
+import { is_valid_uuid } from '../schemas/common.js';
+import { safe_parse_db_row } from '../utils/zod_boundary.js';
 
-export const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export { is_valid_uuid };
 
-type ImportBody = {
-    auditId?: string;
-    samples?: Array<{ id?: string }>;
-};
+export async function find_import_conflict_audit_id(data: ImportConflictBody): Promise<string | null> {
+    const parsed_body = ImportConflictBodySchema.safeParse(data);
+    const body = parsed_body.success ? parsed_body.data : data;
 
-export async function find_import_conflict_audit_id(data: ImportBody): Promise<string | null> {
-    if (data.auditId && UUID_REGEX.test(data.auditId)) {
-        const existingById = await select_audit_id_exists(data.auditId);
+    if (body.auditId && is_valid_uuid(body.auditId)) {
+        const existingById = await select_audit_id_exists(body.auditId);
         if (existingById.rows.length > 0) {
-            return data.auditId;
+            return body.auditId;
         }
     }
-    const sample_ids = (data.samples || [])
+    const sample_ids = (body.samples || [])
         .map((s) => s?.id)
-        .filter((id): id is string => Boolean(id) && UUID_REGEX.test(id as string));
+        .filter((id): id is string => Boolean(id) && is_valid_uuid(id));
     if (sample_ids.length > 0) {
         const first_sample_id = sample_ids[0];
         const existingBySample = await select_audit_id_by_sample_id(first_sample_id);
@@ -41,14 +45,10 @@ export async function build_existing_audit_summary_for_response(audit_id: string
     if (result.rows.length === 0) {
         return null;
     }
-    const row = result.rows[0] as {
-        samples: unknown;
-        metadata?: Record<string, unknown>;
-        version: number;
-        updated_at: string;
-        status: string;
-        last_updated_by?: string | null;
-    };
+    const row = safe_parse_db_row(AuditConflictSummaryRowSchema, result.rows[0]);
+    if (!row) {
+        return null;
+    }
     const samples = row.samples;
     const sampleCount = Array.isArray(samples) ? samples.length : 0;
     const meta = row.metadata || {};

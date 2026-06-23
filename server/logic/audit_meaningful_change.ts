@@ -4,28 +4,14 @@
  */
 
 import { isDeepStrictEqual } from 'node:util';
+import {
+    type AuditRowMeaningfulSource
+} from '../schemas/audit_db_rows.js';
+import { type AuditPatchBodySlice } from '../schemas/audit_patch.js';
+
+export type { AuditPatchBodySlice, AuditRowMeaningfulSource };
 
 const AUDIT_EDIT_LOG_KEY = 'audit_edit_log';
-
-/** Rå rad från databasen (jsonb kan redan vara objekt). */
-export type AuditRowMeaningfulSource = {
-    metadata: unknown;
-    status: unknown;
-    samples: unknown;
-    rule_file_content: unknown;
-    archived_requirement_results: unknown;
-    last_rulefile_update_log: unknown;
-};
-
-/** Inkommande PATCH-kropp (snake_case i DB, camelCase från klient). */
-export type AuditPatchBodySlice = {
-    metadata?: unknown;
-    status?: unknown;
-    samples?: unknown;
-    ruleFileContent?: unknown;
-    archivedRequirementResults?: unknown;
-    lastRulefileUpdateLog?: unknown;
-};
 
 function parse_json_if_string<T>(value: unknown): T | null {
     if (value === null || value === undefined) {

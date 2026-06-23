@@ -2,7 +2,7 @@
  * @fileoverview Media-räkning, "kört fast"-problem, byggande av resultatobjekt, bifogade bilder.
  */
 
-import { traverse_all_pass_criteria, traverse_all_requirement_results } from '../utils/traverse_audit_data.js';
+import { traverse_all_pass_criteria, traverse_all_requirement_results, type AuditStateLike as TraverseAuditStateLike } from '../utils/traverse_audit_data.js';
 import type {
     AuditStateShape,
     CheckDef,
@@ -16,13 +16,15 @@ import type {
 import { find_requirement_by_id } from './audit_logic_lookup.js';
 import { normalize_attached_media_filenames_list, resolve_effective_sample_attached_filenames } from './sample_attached_media_normalize.js';
 
+type Media_count_state = Parameters<typeof resolve_effective_sample_attached_filenames>[0];
+
 export function count_attached_images(state: AuditStateShape | null | undefined): number {
     if (!state?.samples) return 0;
     let count = 0;
     state.samples.forEach((sample) => {
-        count += resolve_effective_sample_attached_filenames(state, sample).length;
+        count += resolve_effective_sample_attached_filenames(state as Media_count_state, sample).length;
     });
-    traverse_all_pass_criteria(state, ({ pc_result }) => {
+    traverse_all_pass_criteria(state as TraverseAuditStateLike, ({ pc_result }) => {
         const filenames = pc_result?.attachedMediaFilenames;
         if (!Array.isArray(filenames)) return;
         count += filenames.filter((filename) => filename && String(filename).trim()).length;
@@ -34,11 +36,11 @@ export function count_attached_media_places(state: AuditStateShape | null | unde
     if (!state?.samples) return 0;
     let count = 0;
     state.samples.forEach((sample) => {
-        if (resolve_effective_sample_attached_filenames(state, sample).length > 0) {
+        if (resolve_effective_sample_attached_filenames(state as Media_count_state, sample).length > 0) {
             count += 1;
         }
     });
-    traverse_all_pass_criteria(state, ({ pc_result }) => {
+    traverse_all_pass_criteria(state as TraverseAuditStateLike, ({ pc_result }) => {
         const filenames = pc_result?.attachedMediaFilenames;
         if (Array.isArray(filenames) && filenames.some((filename) => filename && String(filename).trim())) {
             count += 1;
@@ -187,7 +189,7 @@ export function collect_attached_images(state: AuditStateShape): Array<Record<st
     const images: Array<Record<string, unknown>> = [];
 
     state.samples.forEach((sample) => {
-        resolve_effective_sample_attached_filenames(state, sample).forEach((filename) => {
+        resolve_effective_sample_attached_filenames(state as Media_count_state, sample).forEach((filename) => {
             images.push({
                 mediaScope: 'sample',
                 sample,
@@ -207,7 +209,7 @@ export function collect_attached_images(state: AuditStateShape): Array<Record<st
     if (!state.ruleFileContent?.requirements) return images;
     const requirements = state.ruleFileContent.requirements;
 
-    traverse_all_pass_criteria(state, ({ sample, req_key, check_key, pc_key, pc_result }) => {
+    traverse_all_pass_criteria(state as TraverseAuditStateLike, ({ sample, req_key, check_key, pc_key, pc_result }) => {
         const requirement = find_requirement_by_id(requirements, req_key) || null;
         if (!requirement) return;
 

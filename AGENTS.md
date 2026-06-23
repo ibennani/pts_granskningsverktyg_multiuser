@@ -77,6 +77,14 @@ Projektet är organiserat enligt följande struktur:
 - Se `docs/autosave_integration.md` för instruktion om hur nya vyer ansluts
 - Fältutkast (drafts) hanteras separat i `js/draft_manager.js`
 
+### Zod (server TypeScript)
+- **Runtime-validering** av inkommande JSON, query-parametrar och databasrader i `server/**/*.ts` sker med **Zod**.
+- **Schema först:** definiera `const MyDataSchema = z.object({...})` i `server/schemas/`.
+- **Typ från schema:** `type MyData = z.infer<typeof MyDataSchema>` — skapa inte manuella interfaces för data utifrån (API-kroppar, DB-rader).
+- **Gräns:** validera med `.safeParse()` direkt vid route-ingång via `server/utils/zod_boundary.ts` (`parse_body`, `parse_query`).
+- **Undantag:** domänvalidering med i18n-meddelanden sker fortfarande i `js/validation_logic.ts` (delad klient+server). Internt konstruerade WebSocket-payloads behöver inte Zod-scheman.
+- **DoS-skydd:** `shared/json/json_structure_guard.js` behålls vid stora import-payloads.
+
 ## Vanliga uppgifter
 
 ### Lägga till en ny komponent

@@ -34,7 +34,9 @@ function show_remote_update_notice(local_state: AuditReloadState, remote_state: 
         remote_state
     });
     if (!should_notice) return;
-    const notifier = app_runtime_refs.notification_component;
+    const notifier = app_runtime_refs.notification_component as {
+        show_global_message?: (message: string, type: string) => void;
+    } | null;
     const t = typeof window !== 'undefined' && window.Translation?.t;
     if (!notifier?.show_global_message || typeof t !== 'function') return;
     const msg = t('realtime_sync_updated') || 'Granskningen har uppdaterats av en annan enhet';

@@ -1890,14 +1890,12 @@ export class RequirementAuditComponent {
                 this.comment_to_auditor_input.value !== target_auditor_value) {
                 this.comment_to_auditor_input.value = target_auditor_value;
             }
-            this.comment_to_auditor_input.disabled = false;
         }
         if (this.comment_to_actor_input) {
             if (document.activeElement !== this.comment_to_actor_input &&
                 this.comment_to_actor_input.value !== target_actor_value) {
                 this.comment_to_actor_input.value = target_actor_value;
             }
-            this.comment_to_actor_input.disabled = false;
         }
         
         this._sync_audit_part_lock_ui();

@@ -5,6 +5,7 @@
 export type AuditStateLike = {
     auditStatus?: string;
     auditId?: string;
+    version?: number | null;
     auditMetadata?: Record<string, unknown>;
     samples?: Array<{
         requirementResults?: Record<string, { lastStatusUpdate?: string | null }>;

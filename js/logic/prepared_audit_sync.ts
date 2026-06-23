@@ -56,5 +56,8 @@ export async function sync_prepared_audit_before_list_navigation(
 ): Promise<void> {
     const state = typeof get_state_fn === 'function' ? get_state_fn() : null;
     if (!should_sync_prepared_audit_to_list(state, target_view_name)) return;
-    await sync_to_server_now(get_state_fn, dispatch_fn);
+    await sync_to_server_now(
+        get_state_fn as () => import('../sync/sync_payload_mapper.js').SyncPayloadState | null | undefined,
+        dispatch_fn
+    );
 }

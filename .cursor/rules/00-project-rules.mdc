@@ -522,3 +522,13 @@ Projektet migreras gradvis från JavaScript till TypeScript enligt "boy scout-re
 - `checkJs` är avstängt i `tsconfig.json`; befintlig `.js`-kod behöver inte vara typad förrän den konverteras. **Strict** gäller för `.ts`-filer du lägger till eller migrerar.
 - Vite transpilerar `.ts` utan extra plugin; Jest använder `@swc/jest` för både `.js` och `.ts` enligt `jest.config.js`.
 
+## Zod (server TypeScript)
+
+Gäller all runtime-validering i `server/**/*.ts`:
+
+1. Skapa **aldrig** manuella TypeScript-interfaces för data utifrån (JSON-kroppar, API-svar, DB-rader).
+2. Definiera **Zod-schema först** (t.ex. `const MyDataSchema = z.object({...})`) i `server/schemas/`.
+3. Härled typen med `z.infer<typeof MyDataSchema>`.
+4. Validera inkommande data **direkt vid gränsen** med `.safeParse()` via `server/utils/zod_boundary.ts`.
+5. **Undantag:** internt konstruerade payloads (t.ex. WebSocket-meddelanden som byggs i servern) och domänvalidering med i18n i `js/validation_logic.ts` (behålls tillsammans med Zod, ersätts inte i samma steg).
+

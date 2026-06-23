@@ -288,7 +288,9 @@ export class BackupAuditController {
         try {
             const ver = await get_audit_version(audit_id);
             if (ver?.version !== null && ver?.version !== undefined) current_audit_version = Number(ver.version);
-        } catch (_) {}
+        } catch {
+            // Versionshämtning misslyckades — återställning avbryts nedan
+        }
         if (current_audit_version === null || !Number.isFinite(current_audit_version)) {
             this.NotificationComponent?.show_global_message?.(this.t('backup_restore_error'), 'error');
             return;
