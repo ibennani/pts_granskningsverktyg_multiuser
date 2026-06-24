@@ -328,15 +328,15 @@ export function append_audit_media_preview_observation_block(
     }) as HTMLHeadingElement;
     header.appendChild(heading_el);
 
-    const edit_btn = Helpers.create_element('button', {
-        class_name: ['button', 'button-default', 'button-small', 'audit-media-preview-observation__edit-btn'],
-        attributes: {
-            type: 'button',
-            hidden: edit_options?.can_edit ? undefined : 'hidden'
-        },
-        text_content: t('audit_media_preview_observation_edit')
-    }) as HTMLButtonElement;
-    header.appendChild(edit_btn);
+    let edit_btn: HTMLButtonElement | null = null;
+    if (edit_options?.can_edit) {
+        edit_btn = Helpers.create_element('button', {
+            class_name: ['button', 'button-default', 'button-small', 'audit-media-preview-observation__edit-btn'],
+            attributes: { type: 'button' },
+            text_content: t('audit_media_preview_observation_edit')
+        }) as HTMLButtonElement;
+        header.appendChild(edit_btn);
+    }
     block.appendChild(header);
 
     const body_el = Helpers.create_element('div', {
@@ -349,7 +349,7 @@ export function append_audit_media_preview_observation_block(
     body_el.appendChild(text_el);
     block.appendChild(body_el);
 
-    if (edit_options?.can_edit) {
+    if (edit_options?.can_edit && edit_btn) {
         const refs: ObservationViewRefs = {
             block,
             body_el,

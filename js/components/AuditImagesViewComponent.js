@@ -17,6 +17,7 @@ import {
     patch_sample_screenshot_card
 } from './audit_images_sample_screenshot.js';
 import { open_attach_media_modal } from './media/AttachMediaModal.js';
+import { can_edit_observation_detail } from '../logic/audit_observation_edit_policy.js';
 import { fill_audit_media_filenames_list, revoke_audit_media_blob_urls } from './media/render_audit_media_list_item.js';
 import { collect_attached_media_filenames } from '../logic/audit_attached_media_references.js';
 
@@ -166,7 +167,7 @@ export class AuditImagesViewComponent {
                 req_id_public,
                 check_id,
                 pc_id,
-                state.auditStatus === 'locked' || state.auditStatus === 'archived'
+                can_edit_observation_detail(state.auditStatus)
             ),
             on_save: (filenames) => {
                 if (!requirement_result_ref) return;
@@ -274,8 +275,8 @@ export class AuditImagesViewComponent {
         }
     }
 
-    _build_observation_edit_options(group, public_req_id, check_id, pc_id, is_audit_locked) {
-        if (is_audit_locked || !check_id || !pc_id || !group?.sample?.id || !group?.reqId) {
+    _build_observation_edit_options(group, public_req_id, check_id, pc_id, can_edit_observation) {
+        if (!can_edit_observation || !check_id || !pc_id || !group?.sample?.id || !group?.reqId) {
             return null;
         }
         return {
@@ -426,7 +427,7 @@ export class AuditImagesViewComponent {
                     public_req_id,
                     dom_check_id,
                     dom_pc_id,
-                    is_audit_locked
+                    can_edit_observation_detail(this.getState()?.auditStatus)
                 );
                 fill_audit_media_filenames_list(
                     ul,
@@ -613,7 +614,7 @@ export class AuditImagesViewComponent {
                 public_req_id,
                 dom_check_id,
                 dom_pc_id,
-                is_audit_locked
+                can_edit_observation_detail(this.getState()?.auditStatus)
             );
             fill_audit_media_filenames_list(
                 ul,
