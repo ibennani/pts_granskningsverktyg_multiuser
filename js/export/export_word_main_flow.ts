@@ -47,3 +47,4 @@ export async function export_to_word_samples (current_audit: any) {
 }
 
 export { export_to_word_deficiency_types } from './export_word_deficiency_types.js';
+export { export_to_word_screenshots_appendix } from './export_word_screenshots_appendix.js';

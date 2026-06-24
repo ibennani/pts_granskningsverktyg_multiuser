@@ -6,6 +6,7 @@ import { version_greater_than } from '../utils/version_utils.js';
 import { find_newer_rule_for_audit } from '../logic/newer_rule_check.js';
 import { audit_status_is_exportable, audit_status_blocks_rulefile_update_offer } from '../utils/audit_status_helpers.js';
 import { collect_html_export_zip_entries } from '../export/export_html_media.js';
+import { has_screenshots_appendix_images } from '../export/export_screenshots_appendix_collect.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import './audit_actions_view_component.css';
 
@@ -62,6 +63,8 @@ export class AuditActionsViewComponent {
         this.handle_export_pdf_samples = this.handle_export_pdf_samples.bind(this);
         this.handle_export_pdf_deficiency_types = this.handle_export_pdf_deficiency_types.bind(this);
         this.handle_export_word_deficiency_types = this.handle_export_word_deficiency_types.bind(this);
+        this.handle_export_word_screenshots_appendix = this.handle_export_word_screenshots_appendix.bind(this);
+        this.handle_export_pdf_screenshots_appendix = this.handle_export_pdf_screenshots_appendix.bind(this);
         this.handle_export_word_samples = this.handle_export_word_samples.bind(this);
         this.handle_export_html = this.handle_export_html.bind(this);
         this.handle_export_images_zip = this.handle_export_images_zip.bind(this);
@@ -299,6 +302,32 @@ export class AuditActionsViewComponent {
                 'error'
             );
         });
+    }
+
+    handle_export_word_screenshots_appendix() {
+        const t = this.Translation.t;
+        const current_state = this.getState();
+        if (!this.ExportLogic?.export_to_word_screenshots_appendix) return;
+        void this.ExportLogic.export_to_word_screenshots_appendix(current_state).catch((error) => {
+            this.NotificationComponent.show_global_message(
+                `${t('error_exporting_screenshots_appendix')} ${error?.message || ''}`.trim(),
+                'error'
+            );
+        });
+    }
+
+    async handle_export_pdf_screenshots_appendix() {
+        const t = this.Translation.t;
+        const current_state = this.getState();
+        if (!this.ExportLogic?.export_to_pdf_screenshots_appendix) return;
+        try {
+            await this.ExportLogic.export_to_pdf_screenshots_appendix(current_state);
+        } catch (error) {
+            this.NotificationComponent.show_global_message(
+                `${t('error_exporting_screenshots_appendix')} ${error?.message || ''}`.trim(),
+                'error'
+            );
+        }
     }
 
     handle_export_word_samples() {
@@ -768,6 +797,7 @@ export class AuditActionsViewComponent {
                 }));
             }
             const has_exportable_images = collect_html_export_zip_entries(state, null).length > 0;
+            const has_screenshots_appendix = has_screenshots_appendix_images(state);
             if (this.ExportLogic?.export_to_images_zip && has_exportable_images) {
                 export_actions.appendChild(this.create_export_item({
                     label: t('export_to_images_zip'),
@@ -796,6 +826,31 @@ export class AuditActionsViewComponent {
                     ],
                     description: t('audit_actions_export_deficiency_types_description'),
                     desc_id_suffix: 'export-deficiency-types'
+                }));
+            }
+            if (
+                has_screenshots_appendix &&
+                (this.ExportLogic?.export_to_word_screenshots_appendix || this.ExportLogic?.export_to_pdf_screenshots_appendix)
+            ) {
+                export_actions.appendChild(this.create_export_item_with_buttons({
+                    buttons: [
+                        ...(this.ExportLogic?.export_to_word_screenshots_appendix
+                            ? [{
+                                label: t('export_word_screenshots_appendix_button'),
+                                on_click: this.handle_export_word_screenshots_appendix,
+                                id_suffix: 'export-word-screenshots-appendix'
+                            }]
+                            : []),
+                        ...(this.ExportLogic?.export_to_pdf_screenshots_appendix
+                            ? [{
+                                label: t('export_pdf_screenshots_appendix_button'),
+                                on_click: this.handle_export_pdf_screenshots_appendix,
+                                id_suffix: 'export-pdf-screenshots-appendix'
+                            }]
+                            : [])
+                    ],
+                    description: t('audit_actions_export_screenshots_appendix_description'),
+                    desc_id_suffix: 'export-screenshots-appendix'
                 }));
             }
             export_section.appendChild(export_actions);

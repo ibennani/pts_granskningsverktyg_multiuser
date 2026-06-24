@@ -3,6 +3,8 @@
  * Word använder half-points i docx; PDF använder pt i print-CSS.
  */
 
+import { get_screenshots_appendix_max_image_height_cm } from './export_screenshots_appendix_media.js';
+
 export const REPORT_EXPORT_FONT_FAMILY = 'Calibri';
 
 /** Punktstorlekar som matchar Word-stilarna Heading1–4 och brödtext. */
@@ -40,6 +42,7 @@ export function build_report_pdf_print_css(): string {
     const { body, heading1, heading2, heading3 } = REPORT_EXPORT_FONT_SIZES_PT;
     const { heading_before, heading_after, paragraph_after, comment_before } = REPORT_EXPORT_SPACING_PT;
     const { hyperlink, comment_label } = REPORT_EXPORT_COLORS;
+    const screenshots_max_height_cm = get_screenshots_appendix_max_image_height_cm();
 
     return `
 body, main { font-family: ${font_stack}; font-size: ${body}pt; line-height: 1.15; color: #${REPORT_EXPORT_COLORS.text}; margin: 0; }
@@ -57,5 +60,8 @@ strong { font-weight: 700; }
 ul { margin: 0 0 ${paragraph_after}pt; padding-left: 1.2em; }
 li { margin: 0 0 ${paragraph_after}pt; }
 .deficiency-types-appendix h2:first-of-type { page-break-before: auto; }
+.screenshots-appendix h2 { page-break-before: auto; page-break-after: avoid; break-after: avoid; }
+.screenshots-appendix__item { page-break-inside: avoid; break-inside: avoid; margin: 0 0 ${paragraph_after}pt; }
+.screenshots-appendix__item img { display: block; max-width: 100%; max-height: ${screenshots_max_height_cm}cm; width: auto; height: auto; object-fit: contain; page-break-before: avoid; break-before: avoid; }
 `.trim();
 }
