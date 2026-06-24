@@ -1,7 +1,7 @@
 // js/components/RulefileChangeLogViewComponent.js
 
 import { render_rulefile_change_log } from '../logic/rulefile_change_log_renderer.js';
-import { get_server_filename_datetime } from '../utils/download_filename_utils.ts';
+import { get_download_filename_datetime, trigger_browser_blob_download } from '../utils/download_filename_utils.ts';
 
 export class RulefileChangeLogViewComponent {
     constructor() {
@@ -95,10 +95,9 @@ export class RulefileChangeLogViewComponent {
             class_name: ['button', 'button-default'],
             text_content: t('update_rulefile_download_change_log_button')
         });
-        download_log_button.addEventListener('click', async () => {
-            const ts = await get_server_filename_datetime(log.createdAt || null) ||
-                await get_server_filename_datetime(null);
-            const filename = `rulefile_change_log_${ts || 'saknad-tidpunkt'}.json`;
+        download_log_button.addEventListener('click', () => {
+            const ts = get_download_filename_datetime(log.createdAt || null);
+            const filename = `rulefile_change_log_${ts}.json`;
             const payload = {
                 previousRuleVersion: prev_version,
                 newRuleVersion: new_version,
@@ -106,14 +105,7 @@ export class RulefileChangeLogViewComponent {
                 report: log.report
             };
             const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            trigger_browser_blob_download(blob, filename);
         });
 
         actions.append(back_button, download_log_button);

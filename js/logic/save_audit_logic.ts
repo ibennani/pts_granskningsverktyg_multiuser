@@ -3,7 +3,10 @@
 import { generate_audit_filename, type GenerateAuditFilenameOptions } from '../utils/filename_utils';
 import { attach_export_integrity_to_audit_payload } from '../utils/export_integrity.js';
 import { consoleManager } from '../utils/console_manager.js';
-import { get_server_filename_datetime } from '../utils/download_filename_utils';
+import {
+    get_download_filename_datetime,
+    trigger_browser_blob_download,
+} from '../utils/download_filename_utils';
 
 /** Endast för enhetstest — produktion anropar utan detta femte argument. */
 export type SaveAuditToJsonFileDepsOverride = {
@@ -15,14 +18,7 @@ export type SaveAuditToJsonFileDepsOverride = {
 function perform_client_json_download(filename: string, payload_for_file: unknown): void {
     const data_str = JSON.stringify(payload_for_file, null, 2);
     const blob = new Blob([data_str], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    trigger_browser_blob_download(blob, filename);
 }
 
 export async function save_audit_to_json_file(
@@ -40,11 +36,10 @@ export async function save_audit_to_json_file(
     }
 
     const updated_iso = current_audit_data?.updated_at ?? current_audit_data?.updatedAt ?? null;
-    const server_dt = (await get_server_filename_datetime(updated_iso)) || (await get_server_filename_datetime(null));
-    const filename_options: GenerateAuditFilenameOptions = { ...(options || {}) };
-    if (server_dt) {
-        filename_options.datetime_str_override = server_dt;
-    }
+    const filename_options: GenerateAuditFilenameOptions = {
+        ...(options || {}),
+        datetime_str_override: get_download_filename_datetime(updated_iso),
+    };
     const gen_fn = deps_override?.generate_audit_filename ?? generate_audit_filename;
     const attach_fn = deps_override?.attach_export_integrity_to_audit_payload ?? attach_export_integrity_to_audit_payload;
 

@@ -10,6 +10,7 @@ import {
 } from 'docx';
 import { show_global_message_internal } from './export_bootstrap.js';
 import { build_report_export_filename } from './export_report_filename.js';
+import { trigger_browser_blob_download } from '../utils/download_filename_utils.js';
 import {
     REPORT_EXPORT_FONT_FAMILY,
     REPORT_EXPORT_FONT_SIZES_PT,
@@ -121,21 +122,14 @@ export async function finalize_word_export_download (options: {
     });
 
     const buffer = await Packer.toBlob(doc);
-    const url = URL.createObjectURL(buffer);
-    const link = document.createElement('a');
 
-    const filename = await build_report_export_filename(
+    const filename = build_report_export_filename(
         current_audit,
         isSortByRequirements,
         'docx',
         t
     );
 
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    trigger_browser_blob_download(buffer, filename);
     show_global_message_internal(t('audit_saved_as_file', { filename: filename }), 'success');
 }

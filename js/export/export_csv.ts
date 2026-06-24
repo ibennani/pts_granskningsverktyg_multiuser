@@ -10,6 +10,7 @@ import {
 } from './export_deficiency_rows.js';
 import { build_deficiency_export_filename } from './excel_export_helpers.js';
 import { build_export_media_filename_context } from './export_media_naming.js';
+import { trigger_browser_blob_download } from '../utils/download_filename_utils.js';
 
 export async function export_to_csv(current_audit: unknown) {
     const t = get_t_internal() as (key: string, opts?: Record<string, unknown>) => string;
@@ -36,15 +37,8 @@ export async function export_to_csv(current_audit: unknown) {
 
     const csv_string = csv_lines.join('\n');
     const blob = new Blob([new Uint8Array([0xef, 0xbb, 0xbf]), csv_string], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
     const filename = build_deficiency_export_filename(current_audit as never, t, export_date, 'csv');
 
-    link.setAttribute('href', url);
-    link.setAttribute('download', filename);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    trigger_browser_blob_download(blob, filename);
     show_global_message_internal(t('audit_saved_as_file', { filename: filename }), 'success');
 }

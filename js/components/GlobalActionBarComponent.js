@@ -1,6 +1,6 @@
 import { SaveAuditButtonComponent } from './SaveAuditButtonComponent.js';
 import { can_edit_rulefile } from '../utils/helpers.js';
-import { get_server_filename_datetime } from '../utils/download_filename_utils.ts';
+import { get_download_filename_datetime, trigger_browser_blob_download } from '../utils/download_filename_utils.ts';
 import {
     prepare_rulefile_content_for_persist,
     build_rulefile_download_filename
@@ -164,7 +164,7 @@ export class GlobalActionBarComponent {
       filename_for_download = build_rulefile_download_filename(title, current_version);
     }
 
-    const server_ts = await get_server_filename_datetime(null);
+    const server_ts = get_download_filename_datetime(null);
     if (server_ts && typeof filename_for_download === 'string' && filename_for_download.endsWith('.json')) {
       const base = filename_for_download.slice(0, -'.json'.length);
       const safe_label = 'Arbetskopia'; // Hårdkoda eller hämta översättning vid behov
@@ -174,14 +174,7 @@ export class GlobalActionBarComponent {
     const blob = new Blob([data_string_for_download], {
       type: 'application/json',
     });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename_for_download;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    trigger_browser_blob_download(blob, filename_for_download);
 
     this.NotificationComponent.show_global_message(
       t('rulefile_saved_as_file', { filename: filename_for_download }),

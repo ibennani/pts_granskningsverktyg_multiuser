@@ -1,8 +1,8 @@
 /**
  * @fileoverview HTML-export: bygger nedladdningsbar rapportfil.
  */
-import { format_local_date_for_filename } from '../utils/filename_utils.js';
-import { get_server_filename_datetime, sanitize_filename_segment } from '../utils/download_filename_utils.js';
+import { get_audit_export_filename_datetime_segment } from './export_report_filename.js';
+import { sanitize_filename_segment, trigger_browser_blob_download } from '../utils/download_filename_utils.js';
 import { consoleManager } from '../utils/console_manager.js';
 import { get_t_internal, show_global_message_internal } from './export_bootstrap.js';
 import {
@@ -158,11 +158,7 @@ ${HTML_EXPORT_EMBEDDED_SCRIPT}
         const actor_name = sanitize_filename_segment(actor_label);
         const case_number = case_num.trim();
         const sanitized_case_number = case_number ? case_number.replace(/[^a-z0-9åäöÅÄÖ-]/gi, '') : '';
-        const last_updated_iso =
-            typeof audit.updated_at === 'string' || audit.updated_at === null ? (audit.updated_at as string | null) : null;
-        const server_dt = await get_server_filename_datetime(last_updated_iso);
-        const fallback_now = server_dt ? null : await get_server_filename_datetime(null);
-        const date_str = server_dt || fallback_now || format_local_date_for_filename(new Date(), '');
+        const date_str = get_audit_export_filename_datetime_segment();
         
         let html_filename;
         if (sanitized_case_number) {
@@ -181,16 +177,8 @@ ${HTML_EXPORT_EMBEDDED_SCRIPT}
             audit_id
         });
 
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-
-        link.href = url;
-        link.download = zip_filename;
-        document.body.appendChild(link);
         consoleManager.log('[ExportLogic] Triggering download:', zip_filename);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        trigger_browser_blob_download(blob, zip_filename);
         consoleManager.log('[ExportLogic] HTML export completed successfully');
 
         if (missing_filenames.length > 0) {

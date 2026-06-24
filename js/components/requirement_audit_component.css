@@ -67,7 +67,7 @@
     padding: 0.75rem 1rem; /* Mer padding */
     border: 2px solid var(--border-color); /* Samma ram-tjocklek som kravkort */
     border-radius: var(--border-radius);
-    background-color: #FFF5E6; /* Väldigt ljus orange nyans - samma som kravkort */
+    background-color: var(--surface-card-bg); /* Väldigt ljus orange nyans - samma som kravkort */
 }
 
 [data-theme="dark"] .requirement-audit-header .overall-requirement-status-display {
@@ -306,13 +306,13 @@
     color: var(--text-color-muted);
     margin-bottom: 1rem;
     padding: 0.3rem 0.6rem;
-    background-color: var(--background-color);
+    background-color: var(--surface-card-bg);
     border-radius: var(--border-radius);
     display: inline-block;
 }
 
 [data-theme="dark"] .check-status-display {
-    background-color: var(--input-background-color);
+    background-color: var(--surface-card-bg);
 }
 
 .criteria-panel[hidden] {
@@ -397,7 +397,7 @@
     margin-bottom: 1rem;
     border: 2px solid var(--border-color);
     border-radius: var(--border-radius);
-    background-color: #FFF5E6; /* Väldigt ljus orange nyans - samma som kravkort */
+    background-color: var(--surface-card-bg); /* Väldigt ljus orange nyans - samma som kravkort */
 }
 
 [data-theme="dark"] .pass-criterion-item {
@@ -674,11 +674,11 @@
     font-weight: 500;
     line-height: 1.2;
     white-space: nowrap;
-    color: #1a1a1a;
-    background-color: #fff;
-    border: 1px solid #333;
+    color: var(--status-icon-tooltip-color);
+    background-color: var(--status-icon-tooltip-bg);
+    border: 1px solid var(--status-icon-tooltip-border);
     border-radius: 4px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--status-icon-tooltip-shadow);
     visibility: hidden;
     opacity: 0;
     transition: opacity 0.15s ease, visibility 0.15s ease;
@@ -690,13 +690,6 @@
 .audit-navigation-buttons .status-icon-tooltip-wrapper:focus-within .status-icon-tooltip {
     visibility: visible;
     opacity: 1;
-}
-
-[data-theme="dark"] .audit-navigation-buttons .status-icon-tooltip {
-    color: #f5f5f5;
-    background-color: #2d2d2d;
-    border-color: #666;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 .pc-observation-detail-wrapper label[for^="pc-observation-"] {
@@ -780,7 +773,7 @@
 .pass-criterion-item .failure-template-display {
     margin-top: 1rem;
     padding: 0.75rem;
-    background-color: var(--background-color);
+    background-color: var(--surface-card-bg);
     border: 1px dashed var(--secondary-color);
     border-radius: var(--border-radius);
     font-size: 0.9em;

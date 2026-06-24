@@ -35,7 +35,9 @@
     --text-color-muted: var(--text-muted);
     --heading-color: var(--text-core);
     --plate-background-color: var(--bg-panel);
+    --page-background: var(--bg-page);
     --background-color: var(--bg-page);
+    --surface-card-bg: var(--badge-orange-bg);
     --border-color: var(--border-alt);
     --input-background-color: var(--bg-panel);
     --input-text-color: var(--text-core);

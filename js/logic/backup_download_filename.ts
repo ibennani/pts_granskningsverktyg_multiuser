@@ -2,6 +2,11 @@
  * Bygger nedladdningsfilnamn för regelfils-säkerhetskopior: originalbas, versionsnummer och lokal tidpunkt.
  */
 
+import {
+    get_download_filename_datetime,
+    get_download_filename_datetime_or_fallback,
+} from '../utils/download_filename_utils.js';
+
 const UNSAFE_FILENAME_CHARS = /[<>:"/\\|?*\u0000-\u001f]/g;
 
 /**
@@ -12,14 +17,10 @@ export function sanitize_filename_segment(segment: string): string {
 }
 
 /**
- * Lokal datum- och tidstämpel för filnamn: YYYYMMDD_HHMMSS
+ * Datum- och tidstämpel för filnamn: YYYYMMDD_HHMMSS i Europe/Stockholm.
  */
 export function format_local_datetime_for_backup_filename(iso: string | null | undefined): string {
-    if (!iso) return 'saknad-tidpunkt';
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return 'saknad-tidpunkt';
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+    return get_download_filename_datetime_or_fallback(iso, 'saknad-tidpunkt');
 }
 
 function normalize_server_filename_datetime_for_backup_filename(raw: string | null | undefined): string | null {

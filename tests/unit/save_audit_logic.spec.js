@@ -94,7 +94,14 @@ describe('save_audit_logic', () => {
 
         await save_audit_to_json_file(audit, t, show_notification, { prefix: 'p' }, test_deps());
 
-        expect(generate_audit_filename).toHaveBeenCalledWith(audit, t, { prefix: 'p' });
+        expect(generate_audit_filename).toHaveBeenCalledWith(
+            audit,
+            t,
+            expect.objectContaining({
+                prefix: 'p',
+                datetime_str_override: expect.stringMatching(/^\d{8}_\d{6}$/)
+            })
+        );
         expect(attach_export_integrity_to_audit_payload).toHaveBeenCalledWith(audit);
         expect(mock_anchor.download).toBe('min-granskning.json');
         expect(mock_anchor.href).toBe('blob:test-url');
@@ -107,15 +114,7 @@ describe('save_audit_logic', () => {
         );
     });
 
-    test('använder granskningens updated_at för filnamnstid (server-lokal) när det finns', async () => {
-        global.fetch = jest.fn(async (url) => {
-            const u = String(url);
-            expect(u).toContain('/api/time/filename-datetime?iso=');
-            return {
-                ok: true,
-                json: async () => ({ filename_datetime: '20260421_101112' })
-            };
-        });
+    test('använder granskningens updated_at för filnamnstid i svensk tidszon när det finns', async () => {
         const audit = { id: 'a1', updated_at: '2026-04-21T08:11:12.000Z' };
         await save_audit_to_json_file(audit, t, show_notification, { prefix: 'p' }, test_deps());
         expect(generate_audit_filename).toHaveBeenCalledWith(audit, t, {
@@ -164,7 +163,13 @@ describe('save_audit_logic', () => {
         };
         generate_audit_filename.mockReturnValueOnce('fil.json');
         await save_audit_to_json_file(audit, t, show_notification, undefined, test_deps());
-        expect(generate_audit_filename).toHaveBeenCalledWith(audit, t, {});
+        expect(generate_audit_filename).toHaveBeenCalledWith(
+            audit,
+            t,
+            expect.objectContaining({
+                datetime_str_override: expect.stringMatching(/^\d{8}_\d{6}$/)
+            })
+        );
         expect(mock_anchor.click).toHaveBeenCalled();
     });
 });

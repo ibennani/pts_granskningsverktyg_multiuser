@@ -64,7 +64,7 @@
     gap: 0.25rem;
     padding: 0.5rem;
     border: 1px solid var(--border-color);
-    background-color: var(--background-color);
+    background-color: var(--plate-background-color);
     border-bottom: none;
     border-top-left-radius: var(--border-radius);
     border-top-right-radius: var(--border-radius);
@@ -173,7 +173,7 @@
     padding: 1rem;
     border: 1px dashed var(--secondary-color);
     border-radius: var(--border-radius);
-    background-color: var(--background-color);
+    background-color: var(--plate-background-color);
     min-height: 100px;
     word-wrap: break-word;
     max-height: 2000px;
@@ -291,5 +291,5 @@
 }
 
 .markdown-content th {
-    background-color: var(--background-color);
+    background-color: var(--plate-background-color);
 }

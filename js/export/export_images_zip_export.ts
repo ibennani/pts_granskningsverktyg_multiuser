@@ -2,8 +2,8 @@
  * @fileoverview Export av alla granskningsbilder som platt zip-fil med PTS-filnamn.
  */
 
-import { format_local_date_for_filename } from '../utils/filename_utils.js';
-import { get_server_filename_datetime, sanitize_filename_segment } from '../utils/download_filename_utils.js';
+import { get_audit_export_filename_datetime_segment } from './export_report_filename.js';
+import { sanitize_filename_segment, trigger_browser_blob_download } from '../utils/download_filename_utils.js';
 import { consoleManager } from '../utils/console_manager.js';
 import { get_t_internal, show_global_message_internal } from './export_bootstrap.js';
 import { build_export_media_filename_context } from './export_media_filename_context.js';
@@ -28,28 +28,13 @@ async function build_images_zip_download_filename(
     const actor_name = sanitize_filename_segment(actor_label);
     const case_number = am.caseNumber != null ? String(am.caseNumber).trim() : '';
     const sanitized_case_number = case_number ? case_number.replace(/[^a-z0-9åäöÅÄÖ-]/gi, '') : '';
-    const last_updated_iso =
-        typeof audit.updated_at === 'string' || audit.updated_at === null ? audit.updated_at : null;
-    const server_dt = await get_server_filename_datetime(last_updated_iso);
-    const fallback_now = server_dt ? null : await get_server_filename_datetime(null);
-    const date_str = server_dt || fallback_now || format_local_date_for_filename(new Date(), '');
+    const date_str = get_audit_export_filename_datetime_segment();
     const images_suffix = sanitize_filename_segment(t('images_export_zip_filename_suffix')) || 'bilder';
 
     if (sanitized_case_number) {
         return `${sanitized_case_number}_${actor_name}_${date_str}_${images_suffix}.zip`;
     }
     return `${actor_name}_${date_str}_${images_suffix}.zip`;
-}
-
-function trigger_blob_download(blob: Blob, filename: string): void {
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
 }
 
 export async function export_to_images_zip(
@@ -82,7 +67,7 @@ export async function export_to_images_zip(
         });
         const zip_filename = await build_images_zip_download_filename(audit, t);
 
-        trigger_blob_download(blob, zip_filename);
+        trigger_browser_blob_download(blob, zip_filename);
         consoleManager.log('[ExportLogic] Images zip export completed:', zip_filename);
 
         if (missing_filenames.length > 0) {

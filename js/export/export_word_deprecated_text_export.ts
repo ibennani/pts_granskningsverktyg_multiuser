@@ -1,8 +1,8 @@
 // Deprekerad stickprovsbaserad Word-textexport (behålls tills vidare).
 import { Document, Packer, Paragraph, TextRun, ExternalHyperlink, TabStopType } from 'docx';
 import * as Helpers from '../utils/helpers.js';
-import { format_local_date_for_filename } from '../utils/filename_utils.js';
-import { get_server_filename_datetime, sanitize_filename_segment } from '../utils/download_filename_utils.js';
+import { get_audit_export_filename_datetime_segment } from './export_report_filename.js';
+import { sanitize_filename_segment, trigger_browser_blob_download } from '../utils/download_filename_utils.js';
 import { consoleManager } from '../utils/console_manager.js';
 import { get_t_internal, show_global_message_internal, get_export_requirement_result } from './export_bootstrap.js';
 import { extractDeficiencyNumber } from './export_format_helpers.js';
@@ -376,24 +376,14 @@ export async function _export_to_text_export_deprecated(current_audit: any) {
         });
 
         const blob = await Packer.toBlob(doc);
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
 
         const report_prefix = t('filename_audit_report_prefix');
         const deficiencies_suffix = "textexport";
         const actor_name = sanitize_filename_segment(current_audit.auditMetadata.actorName || t('filename_fallback_actor'));
-        const last_updated_iso = current_audit?.updated_at || null;
-        const server_dt = await get_server_filename_datetime(last_updated_iso);
-        const fallback_now = server_dt ? null : await get_server_filename_datetime(null);
-        const ts = server_dt || fallback_now || format_local_date_for_filename(new Date(), '');
+        const ts = get_audit_export_filename_datetime_segment();
         const filename = `${report_prefix}_${deficiencies_suffix}_${actor_name}_${ts}.docx`;
 
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        trigger_browser_blob_download(blob, filename);
 
         show_global_message_internal(t('audit_saved_as_file', { filename: filename }), 'success');
 

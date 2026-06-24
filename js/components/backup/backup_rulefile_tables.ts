@@ -1,6 +1,7 @@
 import { create_rule_table_columns } from '../../utils/rule_table_columns.js';
 import { get_base_url, get_auth_headers } from '../../api/client.js';
 import { build_rulefile_backup_download_filename } from '../../logic/backup_download_filename';
+import { trigger_browser_blob_download } from '../../utils/download_filename_utils.js';
 
 export type RulefileBackupOverviewRow = {
     ruleSetId: string;
@@ -215,14 +216,6 @@ export async function download_rulefile_snapshot_json(row: RulefileBackupHistory
         throw err;
     }
     const blob = await res.blob();
-    const object_url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = object_url;
-    a.download = build_rulefile_backup_download_filename(row);
-    a.setAttribute('aria-hidden', 'true');
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(object_url);
+    trigger_browser_blob_download(blob, build_rulefile_backup_download_filename(row), { aria_hidden: true });
 }
 

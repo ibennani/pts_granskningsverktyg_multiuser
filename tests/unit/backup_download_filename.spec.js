@@ -13,9 +13,8 @@ describe('backup_download_filename', () => {
         expect(sanitize_filename_segment('  ok  ')).toBe('ok');
     });
 
-    test('format_local_datetime_for_backup_filename ger YYYYMMDD_HHMMSS', () => {
-        const s = format_local_datetime_for_backup_filename('2025-06-01T15:04:05.000Z');
-        expect(s).toMatch(/^\d{8}_\d{6}$/);
+    test('format_local_datetime_for_backup_filename ger YYYYMMDD_HHMMSS i svensk tid', () => {
+        expect(format_local_datetime_for_backup_filename('2025-06-01T15:04:05.000Z')).toBe('20250601_170405');
     });
 
     test('format_local_datetime_for_backup_filename hanterar saknat värde', () => {

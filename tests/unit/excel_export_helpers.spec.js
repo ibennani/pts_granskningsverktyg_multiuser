@@ -24,24 +24,30 @@ describe('excel_export_helpers', () => {
     });
 
     test('build_excel_export_filename med diarienummer', () => {
+        jest.useFakeTimers();
+        jest.setSystemTime(new Date('2026-06-18T10:00:00.000Z'));
         const audit = { auditMetadata: { caseNumber: '2024-123', actorName: 'PTS AB' } };
-        const export_date = new Date(2026, 5, 18);
-        const filename = build_excel_export_filename(audit, t_sv, export_date);
+        const filename = build_excel_export_filename(audit, t_sv);
         expect(filename).toBe('2024-123 PTS AB Granskningsprotokoll Bilaga 2 2026-06-18.xlsx');
+        jest.useRealTimers();
     });
 
     test('build_excel_export_filename utan diarienummer', () => {
+        jest.useFakeTimers();
+        jest.setSystemTime(new Date('2026-06-18T10:00:00.000Z'));
         const audit = { auditMetadata: { actorName: 'PTS AB' } };
-        const export_date = new Date(2026, 5, 18);
-        const filename = build_excel_export_filename(audit, t_sv, export_date);
+        const filename = build_excel_export_filename(audit, t_sv);
         expect(filename).toBe('PTS AB Granskningsprotokoll Bilaga 2 2026-06-18.xlsx');
+        jest.useRealTimers();
     });
 
     test('build_deficiency_export_filename för CSV', () => {
+        jest.useFakeTimers();
+        jest.setSystemTime(new Date('2026-06-18T10:00:00.000Z'));
         const audit = { auditMetadata: { caseNumber: '2024-123', actorName: 'PTS AB' } };
-        const export_date = new Date(2026, 5, 18);
-        const filename = build_deficiency_export_filename(audit, t_sv, export_date, 'csv');
+        const filename = build_deficiency_export_filename(audit, t_sv, new Date(), 'csv');
         expect(filename).toBe('2024-123 PTS AB Granskningsprotokoll Bilaga 2 2026-06-18.csv');
+        jest.useRealTimers();
     });
 
     test('sanitize_excel_table_name tar bort siffror och mellanslag', () => {

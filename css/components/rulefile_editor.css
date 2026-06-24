@@ -40,7 +40,7 @@
 
 .check-fieldset,
 .hierarchy-editor-fieldset {
-    background-color: var(--background-color);
+    background-color: var(--plate-background-color);
     border: 1px solid var(--border-color);
 }
 
@@ -77,7 +77,7 @@
     padding: 1rem;
     border: 2px solid var(--border-color);
     border-radius: var(--border-radius);
-    background-color: #FFF5E6; /* Väldigt ljus orange nyans - samma som kravkort */
+    background-color: var(--surface-card-bg); /* Väldigt ljus orange nyans - samma som kravkort */
 }
 
 .criterion-item-header {

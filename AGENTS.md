@@ -47,6 +47,7 @@ Projektet är organiserat enligt följande struktur:
 ### CSS och komponentstyling
 - Vid delade tillståndsklasser i samma vy: följ avsnittet **CSS-scope och delade tillståndsklasser** i `.cursor/rules/00-project-rules.mdc` (gemensam förälder, grep + DOM-kontroll, en importerad CSS-källa per komponent).
 - Klasser som sätts i JS ska ha **basstyling i komponent-CSS** (eller `:root`), inte bara i temafiler — se **Basstyling i komponent-CSS** i samma regelfil.
+- **Sidbakgrund vs solid färg:** använd `--page-background` för sidgradient (`body { background: … }`); `--background-color` ska alltid vara solid `<color>` (säker för `background-color` och `color-mix`). Kort och statusytor: `--surface-card-bg`; paneler: `--plate-background-color`. Kontroll: `npm run check:css-background-color`.
 
 ## Viktiga funktioner att känna till
 
@@ -110,6 +111,12 @@ Projektet är organiserat enligt följande struktur:
 - **MCP efter UI-ändringar:** Se `.cursor/rules/11-mcp-testning-efter-kod.mdc`. Navigera med hash-URL:er från `docs/e2e-fixture-urls.md`. Efter `npm run check`: **user-mdn** (standardskontroll), **user-accessibility-scanner** (axe + tangentbord på `http://localhost:5173/v2/`), valfritt **user-playwright** om inget E2E-test täcker flödet. MCP kompletterar Jest/Playwright — ersätter dem inte. I molnläge utan MCP: `npm run test:e2e:smoke`.
 
 ## Kända begränsningar
+
+### Nedladdningsfilnamn (tid i filnamn)
+
+- **Klient:** `get_download_filename_datetime()` / `get_download_filename_date()` och **`trigger_browser_blob_download()`** från `js/utils/download_filename_utils.ts`
+- **Tidszon:** `Europe/Stockholm` via `shared/datetime/filename_datetime.js`
+- **Regel för agenter:** `.cursor/rules/12-nedladdningsfilnamn-tid.mdc`
 
 ### Word-export
 - Använder Words inbyggda TOC-funktion vilket kan ge en varning vid öppning

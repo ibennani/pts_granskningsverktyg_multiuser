@@ -54,9 +54,14 @@
     --text-color-muted: #4a5a5c;
     /* Mörkare nedtonad text */
 
-    /* Bakgrund ljus med radial gradient - mörkare för bättre kontrast */
-    --background-color: radial-gradient(ellipse at top right, #D4C8BA, #C8BAA8);
-    /* Mörkare ljusgrå gradient */
+    /*
+     * Sidbakgrund vs solid färg:
+     * --page-background = gradient/bild, endast för body { background: … }
+     * --background-color = solid <color>, säker för background-color och color-mix
+     */
+    --page-background: radial-gradient(ellipse at top right, #D4C8BA, #C8BAA8);
+    --background-color: #C8BAA8;
+    --surface-card-bg: #FFF5E6;
     --plate-background-color: #F0EAE3;
     /* Mörkare än vit men ljusare än bakgrund för att syna inmatningsfält */
     --input-background-color: #ffffff;
@@ -76,6 +81,11 @@
     --focus-outer-style: solid;
     --focus-ring-outline-offset: calc(var(--focus-offset) + var(--focus-inner-width));
     --focus-ring-box-shadow: 0 0 0 calc(var(--focus-inner-width) + var(--focus-offset)) var(--focus-inner-color);
+
+    --status-icon-tooltip-color: #1a1a1a;
+    --status-icon-tooltip-bg: #fff;
+    --status-icon-tooltip-border: #333;
+    --status-icon-tooltip-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 
     --button-default-bg: #FAF7F4;
     /* Ljusare än plattor för bättre synlighet */
@@ -198,7 +208,9 @@
     /* Lila 40% för nedtonad text */
 
     /* Bakgrund mörk men ljusare än inmatningsfält - mörkblå från PTS */
-    --background-color: radial-gradient(ellipse at top right, #253A4F, #1A2330);
+    --page-background: radial-gradient(ellipse at top right, #253A4F, #1A2330);
+    --background-color: #1A2330;
+    --surface-card-bg: color-mix(in srgb, var(--plate-background-color) 95%, black);
     --plate-background-color: #2E1F2E;
     /* Mörkare lila än tidigare */
     --input-background-color: #141414;
@@ -215,6 +227,11 @@
     --focus-outer-style: solid;
     --focus-ring-outline-offset: calc(var(--focus-offset) + var(--focus-inner-width));
     --focus-ring-box-shadow: 0 0 0 calc(var(--focus-inner-width) + var(--focus-offset)) var(--focus-inner-color);
+
+    --status-icon-tooltip-color: #f5f5f5;
+    --status-icon-tooltip-bg: #2d2d2d;
+    --status-icon-tooltip-border: #666;
+    --status-icon-tooltip-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 
     --button-default-bg: #423051;
     /* Ljusare än plattor för bättre kontrast */
@@ -288,7 +305,7 @@ body {
     font-size: var(--font-size-base);
     line-height: var(--line-height-base);
     color: var(--text-color);
-    background: var(--background-color);
+    background: var(--page-background);
     background-attachment: fixed;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -836,19 +853,13 @@ select:-webkit-autofill:focus {
     font-weight: 500;
     line-height: 1.2;
     white-space: nowrap;
-    color: #1a1a1a;
-    background-color: #fff;
-    border: 1px solid #333;
+    color: var(--status-icon-tooltip-color);
+    background-color: var(--status-icon-tooltip-bg);
+    border: 1px solid var(--status-icon-tooltip-border);
     border-radius: 4px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--status-icon-tooltip-shadow);
     z-index: 100;
     pointer-events: none;
-}
-[data-theme="dark"] #app-overlay .status-icon-tooltip.status-icon-tooltip--in-overlay {
-    color: #f5f5f5;
-    background-color: #2d2d2d;
-    border-color: #666;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 .text-danger {
@@ -896,7 +907,7 @@ select:-webkit-autofill:focus {
     border-left: 3px solid color-mix(in srgb, var(--primary-color) 60%, transparent);
     border-radius: var(--border-radius);
     margin-bottom: 0.6rem;
-    background-color: #FFF5E6;
+    background-color: var(--surface-card-bg);
     /* Väldigt ljus orange nyans */
     display: flex;
     flex-direction: column;

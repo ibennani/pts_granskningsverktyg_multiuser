@@ -3,7 +3,7 @@
  */
 
 import JSZip from 'jszip';
-import { format_local_date_for_filename } from '../utils/filename_utils.js';
+import { get_download_filename_date } from '../utils/download_filename_utils.js';
 
 const UNSAFE_FILENAME_CHARS = /[<>:"/\\|?*\u0000-\u001f]/g;
 const AEONIC_FONT = 'Aeonic';
@@ -37,7 +37,7 @@ export function sanitize_excel_download_filename_segment(segment: string): strin
 export function build_deficiency_export_filename(
     audit: { auditMetadata?: { caseNumber?: string; actorName?: string } },
     t: TExport,
-    export_date: Date = new Date(),
+    _export_date: Date = new Date(),
     extension = 'xlsx'
 ): string {
     const case_number = sanitize_excel_download_filename_segment(audit?.auditMetadata?.caseNumber || '');
@@ -45,7 +45,7 @@ export function build_deficiency_export_filename(
         audit?.auditMetadata?.actorName || t('filename_fallback_actor')
     );
     const label = t('excel_export_filename_label');
-    const date_str = format_local_date_for_filename(export_date, '-');
+    const date_str = get_download_filename_date(null, '-');
     const parts: string[] = [];
     if (case_number) {
         parts.push(case_number);

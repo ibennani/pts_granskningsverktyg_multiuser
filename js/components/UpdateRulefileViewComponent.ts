@@ -2,7 +2,7 @@
 import { migrate_rulefile_to_new_structure } from '../logic/rulefile_migration_logic.js';
 import { get_rule } from '../api/client.js';
 import { render_rulefile_change_log } from '../logic/rulefile_change_log_renderer.js';
-import { get_server_filename_datetime } from '../utils/download_filename_utils.js';
+import { get_download_filename_datetime, trigger_browser_blob_download } from '../utils/download_filename_utils.js';
 import { analyze_rule_file_changes, apply_rule_file_update } from '../logic/rulefile_updater_logic.js';
 import { find_requirement_definition } from '../audit_logic.js';
 import './update_rulefile_view.css';
@@ -242,15 +242,8 @@ export class UpdateRulefileViewComponent {
 
         const text_content = lines.join('\n');
         const blob = new Blob([text_content], { type: 'text/plain;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        const ts = await get_server_filename_datetime(null);
-        a.download = `rulefile_change_log_${ts || 'saknad-tidpunkt'}.txt`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        const ts = get_download_filename_datetime(null);
+        trigger_browser_blob_download(blob, `rulefile_change_log_${ts}.txt`);
     }
 
     handle_confirm_update_click() {

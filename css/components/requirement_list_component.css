@@ -161,7 +161,7 @@
     margin-bottom: 0.6rem;
     border: 2px solid var(--border-color);
     border-left: 3px solid color-mix(in srgb, var(--primary-color) 60%, transparent);
-    background-color: #FFF5E6;
+    background-color: var(--surface-card-bg);
     /* Väldigt ljus orange nyans */
     border-radius: var(--border-radius);
     /* Rundade hörn överallt */
@@ -429,11 +429,11 @@
     font-weight: 500;
     line-height: 1.2;
     white-space: nowrap;
-    color: #1a1a1a;
-    background-color: #fff;
-    border: 1px solid #333;
+    color: var(--status-icon-tooltip-color);
+    background-color: var(--status-icon-tooltip-bg);
+    border: 1px solid var(--status-icon-tooltip-border);
     border-radius: 4px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--status-icon-tooltip-shadow);
     visibility: hidden;
     opacity: 0;
     transition: opacity 0.15s ease, visibility 0.15s ease;
@@ -445,13 +445,6 @@
 .requirements-list-content .status-icon-tooltip-wrapper:focus-within .status-icon-tooltip {
     visibility: visible;
     opacity: 1;
-}
-
-[data-theme="dark"] .requirements-list-content .status-icon-tooltip {
-    color: #f5f5f5;
-    background-color: #2d2d2d;
-    border-color: #666;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 .requirements-list-content .status-icon-needs-help-indicator {

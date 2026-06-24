@@ -1,4 +1,5 @@
 import { get_base_url, get_auth_headers } from '../../api/client.js';
+import { trigger_browser_blob_download } from '../../utils/download_filename_utils.js';
 
 export function build_audit_overview_columns({
     Helpers,
@@ -216,14 +217,6 @@ export async function download_audit_backup_json({ audit_id, filename }: { audit
         throw err;
     }
     const blob = await res.blob();
-    const object_url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = object_url;
-    a.download = filename;
-    a.setAttribute('aria-hidden', 'true');
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(object_url);
+    trigger_browser_blob_download(blob, filename, { aria_hidden: true });
 }
 

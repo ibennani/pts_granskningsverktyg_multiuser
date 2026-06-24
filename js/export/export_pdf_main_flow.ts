@@ -11,6 +11,7 @@ import {
     type ExportReportHtmlT,
 } from './export_report_html_criterias.js';
 import { api_post_pdf } from '../api/client.js';
+import { trigger_browser_blob_download } from '../utils/download_filename_utils.js';
 
 export async function export_to_pdf_criterias(current_audit: Record<string, unknown> | null | undefined): Promise<void> {
     const t = get_t_internal() as ExportReportHtmlT;
@@ -43,21 +44,14 @@ export async function export_to_pdf_criterias(current_audit: Record<string, unkn
             htmlContent: html_content,
         });
 
-        const filename = await build_report_export_filename(
+        const filename = build_report_export_filename(
             current_audit as { auditMetadata?: { caseNumber?: string; actorName?: string }; updated_at?: string | null },
             true,
             'pdf',
             t
         );
 
-        const url = URL.createObjectURL(pdf_blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        trigger_browser_blob_download(pdf_blob, filename);
         show_global_message_internal(t('audit_saved_as_file', { filename }), 'success');
     } catch (error: unknown) {
         if (window.ConsoleManager?.warn) window.ConsoleManager.warn('Error exporting to PDF:', error);

@@ -38,6 +38,7 @@
     --text-color-muted: #6b6b61;
 
     --background-color: #fafafa;
+    --page-background: var(--background-color);
     --plate-background-color: #eeefed;
     --input-background-color: #FFFFFF;
     --ww-input-bg: #FFFFFF;
@@ -165,6 +166,7 @@
     --ww-table-row-hover-bg: color-mix(in srgb, var(--ww-accent) 10%, var(--ww-bg-hover-strong));
 
     --pass-criterion-item-bg: var(--ww-surface-card);
+    --surface-card-bg: var(--pass-criterion-item-bg);
 }
 
 /* --- Sidbakgrund och layout --- */

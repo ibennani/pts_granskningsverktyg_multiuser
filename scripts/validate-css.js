@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { readFileSync, existsSync, readdirSync } from 'fs';
+import { readFileSync, existsSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
 import { fileURLToPath } from 'node:url';
 
@@ -10,6 +10,66 @@ const projectRoot = join(__dirname, '..');
 console.log('[validate-css] Checking for CSS issues...');
 
 let hasErrors = false;
+
+const TOOLTIP_DARK_ONLY_OVERRIDE = /\[data-theme="dark"\][^{]*\.status-icon-tooltip(?!-)/;
+const TOOLTIP_ELEMENT_SELECTOR = /\.status-icon-tooltip(?!-)/;
+
+/**
+ * @param {string} css_content
+ * @param {string} relative_path
+ */
+function validate_status_icon_tooltip_rules(css_content, relative_path) {
+    if (!css_content.includes('.status-icon-tooltip')) {
+        return;
+    }
+
+    const rule_matches = css_content.matchAll(/([^{}]+)\{([^}]*)\}/g);
+    for (const match of rule_matches) {
+        const selector = match[1];
+        const body = match[2];
+        if (!TOOLTIP_ELEMENT_SELECTOR.test(selector)) {
+            continue;
+        }
+
+        const color_props = body.match(/\b(?:color|background-color|border-color|box-shadow)\s*:\s*([^;]+)/g) || [];
+        for (const declaration of color_props) {
+            if (declaration.includes('var(--status-icon-tooltip')) {
+                continue;
+            }
+            if (/#(?:[0-9a-fA-F]{3,8})\b|rgba?\(/.test(declaration)) {
+                console.error(`❌ Hårdkodad tooltip-färg utan var(--status-icon-tooltip-*): ${relative_path}`);
+                console.error(`   ${selector.trim()} → ${declaration.trim()}`);
+                hasErrors = true;
+            }
+        }
+    }
+
+    if (TOOLTIP_DARK_ONLY_OVERRIDE.test(css_content)) {
+        console.error(`❌ Enbart [data-theme="dark"]-override för status-icon-tooltip (använd CSS-variabler): ${relative_path}`);
+        hasErrors = true;
+    }
+}
+
+/**
+ * @param {string} dir
+ * @returns {string[]}
+ */
+function collect_css_files(dir) {
+    if (!existsSync(dir)) {
+        return [];
+    }
+    const files = [];
+    for (const entry of readdirSync(dir)) {
+        const full_path = join(dir, entry);
+        const stat = statSync(full_path);
+        if (stat.isDirectory()) {
+            files.push(...collect_css_files(full_path));
+        } else if (entry.endsWith('.css')) {
+            files.push(full_path);
+        }
+    }
+    return files;
+}
 
 // Check for referenced CSS files
 const cssReferences = [
@@ -83,6 +143,18 @@ if (existsSync(cssDir)) {
 const buildInfoPath = join(projectRoot, 'build-info.js');
 if (!existsSync(buildInfoPath)) {
     console.warn('⚠️  build-info.js not found (will be generated during build)');
+}
+
+const tooltip_css_dirs = [
+    join(projectRoot, 'css'),
+    join(projectRoot, 'js', 'components'),
+];
+for (const dir of tooltip_css_dirs) {
+    for (const css_path of collect_css_files(dir)) {
+        const css_content = readFileSync(css_path, 'utf8');
+        const relative_path = css_path.replace(`${projectRoot}\\`, '').replace(`${projectRoot}/`, '');
+        validate_status_icon_tooltip_rules(css_content, relative_path);
+    }
 }
 
 if (hasErrors) {

@@ -1,0 +1,54 @@
+---
+description: Gemensam tidsstämpel i nedladdningsfilnamn (Europe/Stockholm)
+alwaysApply: true
+---
+
+# Nedladdningsfilnamn – tid och tidszon
+
+Gäller **alla** ställen där användaren får en fil (Blob-nedladdning, `<a download>`, export, spara JSON, backup från UI).
+
+## Enda klient-API
+
+Importera från **`js/utils/download_filename_utils.ts`** (i importvägar ofta `.js`-suffix enligt projektets TS-konvention):
+
+| Funktion | Format | När |
+|----------|--------|-----|
+| **`get_download_filename_datetime(iso?)`** | `YYYYMMDD_HHMMSS` | Standard för datum+tid i filnamn |
+| **`get_download_filename_date(iso?, separator?)`** | `YYYY-MM-DD` eller `YYYYMMDD` | Excel/CSV och liknande (bara datum) |
+| **`sanitize_filename_segment()`** | — | Säkra filnamnssegment (Windows) |
+| **`trigger_browser_blob_download(blob, filename, options?)`** | — | **Obligatorisk** för alla Blob-nedladdningar i webbläsaren |
+
+**Implementation och tidszon** ligger i **`shared/datetime/filename_datetime.js`**. Blob-nedladdning ska **inte** duplicera `URL.createObjectURL` + `<a download>` — använd **`trigger_browser_blob_download`**.
+
+## Förbjudet i nedladdningsfilnamn
+
+- `new Date().getHours()`, `getUTC*`, `toISOString()` för filnamnsdelar
+- Server-API `/api/time/filename-datetime` från klient (onödig nätverksrunda; tidszon hanteras lokalt)
+- System-TZ på servern (UTC) som “svensk tid”
+- Egen tidszonslogik utanför `shared/datetime/filename_datetime.js`
+- **Manuell Blob-nedladdning** (`createObjectURL`, temporär `<a>`, `revokeObjectURL`) utanför `trigger_browser_blob_download` — gäller inte förhandsvisning av media (`attach_media_upload_queue`, `audit_media_api`)
+
+Legacy-alias **`get_server_filename_datetime`** finns kvar men ska **inte** användas i ny kod.
+
+## Vilken tidpunkt ska användas?
+
+| Flöde | Anrop |
+|-------|--------|
+| Export (Word, PDF, HTML, ZIP, Excel, CSV, m.m.) | `get_download_filename_datetime(null)` — **nedladdningsögonblicket** |
+| Spara/ladda ner granskning som JSON | `get_download_filename_datetime(updated_at)` — senast uppdaterad granskning |
+| Regelfil arbetskopia | `get_download_filename_datetime(content_updated_at \|\| updated_at)` |
+| Ändringslogg regelfil | `get_download_filename_datetime(createdAt \|\| null)` |
+| Säkerhetskopia regelfil (UI) | `createdAtFilename` från API om finns, annars `get_download_filename_datetime(createdAt)` |
+
+Excel/CSV: **`get_download_filename_date(null, '-')`** (datum vid nedladdning).
+
+## Server (backup på disk, API)
+
+Använd **`format_filename_datetime_for_download()`** / **`parse_iso_to_date()`** från **`shared/datetime/filename_datetime.js`** — samma tidszon som klienten.
+
+## Nya nedladdningsfunktioner
+
+1. Bygg filnamn med funktionerna ovan — **aldrig** hårdkodad tid.
+2. Starta nedladdning med **`trigger_browser_blob_download(blob, filename)`**.
+3. Lägg enhetstest om du introducerar ny filnamnslogik.
+4. Uppdatera tabellen i denna regel om ett nytt flöde har annan semantik (sällan).

@@ -86,12 +86,13 @@ Adhere to the following rules at all times.
 - Använd modern ES-modulsyntax (`import/export`) i all kod.
 - Följ Vite-konventioner och håll fast porten 5173.
 - Använd aldrig CDN, använd endast npm-moduler.
+- **Nedladdningsfilnamn:** tidsstämplar ska alltid sättas via `get_download_filename_datetime()` / `get_download_filename_date()` i `js/utils/download_filename_utils.ts` (Europe/Stockholm). Se **`12-nedladdningsfilnamn-tid.mdc`**.
 
 ### AI-arbetsflöde
 
 - Analysera & Föreslå: När du får en uppgift, generera ingen kod. Analysera istället instruktionerna och återkom med en tydlig plan.
 - Invänta Godkännande: Implementera först efter tydligt godkännande.
-- **Planeringsläge:** I planeringsläget ska planen även besvara: Finns det invändningar? Har jag missat något? Kan något göras bättre? Är det något jag bör undvika? Se `10-beskrivningar-och-planering.mdc` för fullständig struktur.
+- **Planeringsläge:** I planeringsläget ska planen avslutas med granskning enligt fem punkter: Arkitektur & Logik, Edge Cases, Tillgänglighet & Säkerhet, Testbarhet, Vad ska undvikas. Se `10-beskrivningar-och-planering.mdc` för fullständig struktur.
 
 ### Hårda Regler
 
@@ -141,6 +142,7 @@ Gäller när JS/TS **sätter CSS-klasser** som ska synas i **alla teman** (stand
 - **Temafiler** får överskriva och finjustera, men ska inte vara enda källan till layout, ikoner eller tillstånd som komponenten förlitar sig på.
 - **Ta inte bort** komponent-CSS vid städning om klassen fortfarande sätts i JS/TS — kör `grep` på klassnamnet i `js/` först.
 - **CSS-variabler** som komponent-CSS refererar (t.ex. `--audit-toggle-active-icon-size`) ska finnas i `:root` eller komponentfilen, inte bara i temafiler.
+- **Delade UI-färger** (tooltips, fokus, plattor) ska använda CSS-variabler per tema — inte hårdkodade hex + enbart `[data-theme="dark"]`-overrides. `dark-experimental` är ett eget attributvärde och matchar inte selektorn `dark`.
 
 **Checklista vid borttagning eller förenkling av komponent-CSS:**
 

@@ -4,7 +4,7 @@
     border: 2px solid var(--border-color);
     border-radius: var(--border-radius);
     margin-bottom: 1rem;
-    background-color: #FFF5E6;
+    background-color: var(--surface-card-bg);
     /* Väldigt ljus orange nyans */
     padding: 1rem;
     /* Padding direkt på li-elementet för att ge utrymme runt innehållet */

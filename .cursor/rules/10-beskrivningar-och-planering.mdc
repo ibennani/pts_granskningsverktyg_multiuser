@@ -29,12 +29,16 @@ När AI-agenten beskriver hur funktioner, flöden eller förändringar fungerar 
     - Avsluta med att lyfta fram **tydliga beslutspunkter** där användaren behöver välja inriktning (t.ex. hur något ska exporteras, hur något ska redovisas i rapporter).
 
 - **Planeringsläge (Plan Mode)**
-  - När Cursor kör i planeringsläget ska varje plan, utöver innehållet ovan, avslutas med en **egen avsnittsrubrik** (t.ex. "Granskning av planen") som uttryckligen besvarar:
-    1. **Finns det invändningar?** – risker, nackdelar eller alternativ som talar emot förslaget.
-    2. **Har jag missat något?** – luckor i krav, beroenden, tester eller användarfall som planen inte täcker.
-    3. **Kan något göras bättre?** – förbättringar i inriktning, ordning, återanvändning eller enkelhet.
-    4. **Är det något jag bör undvika?** – fallgropar, projektregler, tekniska eller tillgänglighetsmässiga misstag att inte göra.
-  - Besvara alla fyra punkter även när svaret är "inga" eller "inget särskilt" – då ska det sägas kort och tydligt.
+  - När Cursor kör i planeringsläget ska varje plan, utöver innehållet ovan, avslutas med en **egen avsnittsrubrik** (t.ex. "Granskning av planen").
+  - **Roll:** Agenten agerar som senior mjukvaruarkitekt och expert på kodkvalitet.
+  - **Uppgift:** Granska planen för nästa funktion/refaktorering och analysera den utifrån följande punkter innan implementation:
+    1. **Arkitektur & Logik** – Finns det dolda designfel, brott mot principer (SOLID/DRY) eller bättre tekniska tillvägagångssätt?
+    2. **Edge Cases** – Vilka oväntade användarbeteenden eller felscenarier (klient/server) måste koden hantera?
+    3. **Tillgänglighet & Säkerhet** – Vilka specifika WCAG-aspekter och indatavalideringar/säkerhetsrisker bör beaktas?
+    4. **Testbarhet** – Hur strukturerar vi koden bäst för att underlätta automatiserade tester?
+    5. **Vad ska undvikas** – Vilka specifika fallgropar eller anti-mönster ska hållas borta från i just denna implementation?
+  - Svaren ska vara **konkreta, korta och handlingskraftiga**.
+  - Besvara alla fem punkter även när svaret är "inga" eller "inget särskilt" – då ska det sägas kort och tydligt.
 
 Den här regeln gäller för all planering och beskrivning som AI-agenten gör i projektet, oavsett funktionellt område.
 

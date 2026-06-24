@@ -11,6 +11,7 @@ import {
     get_effective_display_times_for_audit,
     strip_markdown_for_excel
 } from './export_format_helpers.js';
+import { trigger_browser_blob_download } from '../utils/download_filename_utils.js';
 import { get_t_internal, show_global_message_internal } from './export_bootstrap.js';
 import { prepare_deficiencies_for_export } from './export_deficiency_rows.js';
 import { populate_deficiencies_excel_sheet } from './excel_deficiencies_sheet.js';
@@ -94,16 +95,8 @@ export async function export_to_excel(current_audit: unknown) {
         const blob = new Blob([clean_buffer], {
             type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
         const filename = build_excel_export_filename(audit, t, export_date);
-
-        link.href = url;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+        trigger_browser_blob_download(blob, filename);
         show_global_message_internal(t('audit_saved_as_file', { filename: filename }), 'success');
     } catch (error: unknown) {
         if (window.ConsoleManager?.warn) window.ConsoleManager.warn('Error exporting to Excel with ExcelJS:', error);

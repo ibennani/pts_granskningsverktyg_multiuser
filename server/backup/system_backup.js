@@ -8,23 +8,13 @@ import crypto from 'crypto';
 import fs from 'fs/promises';
 import path from 'path';
 import { query } from '../db.js';
+import { format_filename_datetime_for_download } from '../../shared/datetime/filename_datetime.js';
 
 const SYSTEM_DIRNAME = '_system';
 const MANIFEST_FILENAME = 'manifest.json';
 
-function pad2(n) {
-    return String(n).padStart(2, '0');
-}
-
 function format_snapshot_dirname(date) {
-    const d = date instanceof Date ? date : new Date();
-    const y = d.getFullYear();
-    const m = pad2(d.getMonth() + 1);
-    const day = pad2(d.getDate());
-    const hh = pad2(d.getHours());
-    const mm = pad2(d.getMinutes());
-    const ss = pad2(d.getSeconds());
-    return `${y}${m}${day}_${hh}${mm}${ss}`;
+    return format_filename_datetime_for_download(date instanceof Date ? date : new Date(date));
 }
 
 async function ensure_dir(dir_path) {
@@ -294,17 +284,7 @@ export async function save_system_snapshot({ backup_dir, now = new Date(), reten
     await safe_write_json_atomic(path.join(users_dir, 'users.json'), user_rows);
     await safe_write_json_atomic(path.join(users_dir, 'password_reset_tokens.json'), token_rows);
 
-    const pad2 = (n) => String(n).padStart(2, '0');
-    const created_at_filename = (() => {
-        const d = new Date(now);
-        const y = d.getFullYear();
-        const m = pad2(d.getMonth() + 1);
-        const day = pad2(d.getDate());
-        const hh = pad2(d.getHours());
-        const mm = pad2(d.getMinutes());
-        const ss = pad2(d.getSeconds());
-        return `${y}${m}${day}_${hh}${mm}${ss}`;
-    })();
+    const created_at_filename = format_filename_datetime_for_download(new Date(now));
 
     const manifest = {
         type: 'system_snapshot',

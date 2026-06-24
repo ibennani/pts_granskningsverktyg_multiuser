@@ -134,7 +134,7 @@ export function resolve_dom_update_env(host: ChecklistDomUpdateHost, env: DomUpd
     return {
         audit_frozen: env?.audit_frozen ?? host._audit_frozen_for_ui(),
         audit_archived: env?.audit_archived ?? host._audit_archived_for_ui(),
-        audit_status,
+        audit_status: audit_status ?? '',
         sync_focus_root,
         active_el_for_sync,
         any_textarea_or_input_focused_in_sync_root: env?.any_textarea_or_input_focused_in_sync_root ?? Boolean(

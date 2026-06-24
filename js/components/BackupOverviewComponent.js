@@ -1,6 +1,7 @@
 // js/components/BackupOverviewComponent.js
 
 import { get_backup_overview, get_backups_for_audit, run_backup_now, get_backup_settings, api_get, get_base_url, get_auth_headers, get_audit_version, update_audit, import_audit } from '../api/client.js';
+import { trigger_browser_blob_download } from '../utils/download_filename_utils.ts';
 import { GenericTableComponent } from './GenericTableComponent.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import './backup_overview_component.css';
@@ -357,15 +358,7 @@ export class BackupOverviewComponent {
                 return;
             }
             const blob = await res.blob();
-            const object_url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = object_url;
-            a.download = filename;
-            a.setAttribute('aria-hidden', 'true');
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(object_url);
+            trigger_browser_blob_download(blob, filename, { aria_hidden: true });
         } catch (err) {
             if (this.NotificationComponent?.show_global_message) {
                 const t = this.get_t_func();

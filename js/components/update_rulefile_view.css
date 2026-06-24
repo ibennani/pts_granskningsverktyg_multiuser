@@ -97,7 +97,7 @@
     border: 2px solid var(--border-color);
     border-left: 3px solid color-mix(in srgb, var(--primary-color) 60%, transparent);
     border-radius: var(--border-radius);
-    background: var(--background-color, transparent);
+    background: var(--plate-background-color, transparent);
     margin: 0 0 0.9rem;
     overflow: hidden;
 }
@@ -189,7 +189,7 @@
     border: 2px solid var(--border-color);
     border-radius: var(--border-radius);
     padding: 0.85rem 0.95rem;
-    background-color: #FFF5E6;
+    background-color: var(--surface-card-bg);
 }
 
 .update-rulefile-view-plate .rulefile-change-log__req-title {

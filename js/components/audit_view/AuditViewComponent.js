@@ -27,7 +27,7 @@ import { GenericTableComponent } from '../GenericTableComponent.js';
 import { AuditListComponent } from '../AuditListComponent.js';
 import { AuditGroupedListComponent } from '../AuditGroupedListComponent.ts';
 import { open_audit_by_id, download_audit_by_id } from '../../logic/audit_open_logic.js';
-import { get_server_filename_datetime, sanitize_filename_segment } from '../../utils/download_filename_utils.ts';
+import { get_download_filename_datetime, sanitize_filename_segment, trigger_browser_blob_download } from '../../utils/download_filename_utils.ts';
 import { measure_backup_select_min_width_px } from '../../utils/backup_filter_select_width.ts';
 import { flush_sync_rulefile_to_server } from '../../logic/server_sync.js';
 import { build_rulefile_download_filename } from '../../logic/prepare_rulefile_content_for_persist.ts';
@@ -2104,7 +2104,7 @@ export class AuditViewComponent {
 
             if (is_arbetskopia_export) {
                 const ts = rule.content_updated_at || rule.updated_at;
-                const server_dt = await get_server_filename_datetime(ts || null);
+                const server_dt = get_download_filename_datetime(ts || null);
                 if (server_dt) {
                     const label = t('rulefile_status_production_label') || 'Arbetskopia';
                     const safe_label = sanitize_filename_segment(label) || 'Arbetskopia';
@@ -2115,15 +2115,7 @@ export class AuditViewComponent {
                 }
             }
 
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename;
-            a.setAttribute('aria-hidden', 'true');
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            trigger_browser_blob_download(blob, filename, { aria_hidden: true });
         } catch (err) {
             if (show_msg) {
                 show_msg(t('audit_load_rule_error') + ' ' + (err.message || ''), 'error');

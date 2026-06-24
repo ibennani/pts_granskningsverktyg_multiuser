@@ -38,11 +38,17 @@
     --text-color-muted: #94949e;
 
     --background-color: #09090b;
+    --page-background: var(--background-color);
     --plate-background-color: #111113;
     --input-background-color: #1f1f23;
     --input-text-color: #fafafa;
 
     --border-color: #4a5078;
+
+    --status-icon-tooltip-color: #f5f5f5;
+    --status-icon-tooltip-bg: #2d2d2d;
+    --status-icon-tooltip-border: #666;
+    --status-icon-tooltip-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 
     /*
      * Fokusmarkering – dark-experimental: en ljusblå ram (1 px solid), samma padding som tidigare inre ram.
@@ -157,6 +163,7 @@
     --de-table-row-hover-bg: color-mix(in srgb, var(--de-accent) 10%, var(--de-bg-hover-strong));
 
     --pass-criterion-item-bg: var(--de-surface-card);
+    --surface-card-bg: var(--pass-criterion-item-bg);
 }
 
 /* --- Sidbakgrund och layout --- */

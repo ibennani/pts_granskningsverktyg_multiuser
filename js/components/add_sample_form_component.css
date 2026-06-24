@@ -190,7 +190,7 @@
     border: 2px solid var(--border-color);
     border-left: 3px solid color-mix(in srgb, var(--primary-color) 60%, transparent);
     border-radius: var(--border-radius);
-    background: var(--background-color, transparent);
+    background: var(--plate-background-color, transparent);
     margin: 0;
     overflow: hidden;
 }
