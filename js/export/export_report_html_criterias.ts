@@ -15,20 +15,10 @@ import {
     escape_html_internal,
     render_markdown_to_html,
 } from './export_html_build_primitives.js';
+import { build_report_pdf_print_css } from './export_report_typography.js';
 import * as Helpers from '../utils/helpers.js';
 
 export type ExportReportHtmlT = (key: string, opts?: Record<string, unknown>) => string;
-
-const PDF_REPORT_PRINT_CSS = `
-body { font-family: Arial, Helvetica, sans-serif; font-size: 11pt; line-height: 1.45; color: #000; margin: 0; }
-main { max-width: 100%; }
-h1 { font-size: 18pt; margin: 0 0 12pt; }
-h2 { font-size: 14pt; margin: 18pt 0 8pt; page-break-before: always; }
-h3 { font-size: 12pt; margin: 14pt 0 6pt; }
-p { margin: 0 0 6pt; }
-a { color: #0563c1; text-decoration: underline; }
-strong { font-weight: 700; }
-`;
 
 function build_principle_texts(requirement: Record<string, unknown>, current_audit: Record<string, unknown>): string[] {
     const classifications = Array.isArray(requirement.classifications) ? requirement.classifications : [];
@@ -97,6 +87,18 @@ function build_observation_html(deficiency: Record<string, unknown>): string {
         .join('');
 }
 
+function build_sample_heading_html(sample: Record<string, unknown>, t: ExportReportHtmlT): string {
+    const raw_name = String(sample.description || sample.url || '').trim();
+    const sample_name = escape_html_internal(raw_name || t('export_unspecified_sample'));
+    if (sample.url) {
+        const safe_url = escape_html_internal(
+            Helpers?.add_protocol_if_missing ? Helpers.add_protocol_if_missing(String(sample.url)) : String(sample.url)
+        );
+        return `<h3>Stickprov: <a href="${safe_url}">${sample_name}</a></h3>`;
+    }
+    return `<h3>Stickprov: ${sample_name}</h3>`;
+}
+
 function build_comment_html(
     requirement: Record<string, unknown>,
     sample: Record<string, unknown>,
@@ -106,12 +108,12 @@ function build_comment_html(
     const sample_result = get_export_requirement_result(requirements_map, sample, requirement);
     const comment = sample_result?.commentToActor?.trim();
     if (!comment) return '';
-    return `<p><strong>Kommentar: </strong>${render_markdown_to_html(comment)}</p>`;
+    return `<p class="comment-block"><span class="comment-label">Kommentar: </span>${render_markdown_to_html(comment)}</p>`;
 }
 
 export function build_report_body_sorted_by_requirements(
     current_audit: Record<string, unknown>,
-    _t: ExportReportHtmlT
+    t: ExportReportHtmlT
 ): string {
     const requirements_map = (current_audit.ruleFileContent as Record<string, unknown>)?.requirements as
         | Record<string, unknown>
@@ -134,7 +136,7 @@ export function build_report_body_sorted_by_requirements(
         const all_deficiency_ids = new Set<string>();
         const samples_for_ids = get_samples_with_deficiencies_for_requirement(req, current_audit);
         for (const sample of samples_for_ids) {
-            const defs = get_deficiencies_for_sample(req, sample, current_audit, _t);
+            const defs = get_deficiencies_for_sample(req, sample, current_audit, t);
             for (const def of defs) {
                 if (def.deficiencyId) {
                     const id = extractDeficiencyNumber(def.deficiencyId);
@@ -149,23 +151,13 @@ export function build_report_body_sorted_by_requirements(
 
         const samples_with_deficiencies = get_samples_with_deficiencies_for_requirement(req, current_audit);
         for (const sample of samples_with_deficiencies) {
-            const deficiencies = get_deficiencies_for_sample(req, sample, current_audit, _t);
-            const sample_name = escape_html_internal(sample.description || sample.url || '');
-            let h3_inner = '<strong>Stickprov: </strong>';
-            if (sample.url) {
-                const safe_url = escape_html_internal(
-                    Helpers?.add_protocol_if_missing ? Helpers.add_protocol_if_missing(sample.url) : sample.url
-                );
-                h3_inner += `<a href="${safe_url}">${sample_name}</a>`;
-            } else {
-                h3_inner += sample_name;
-            }
-            html += `<h3>${h3_inner}</h3>`;
+            const deficiencies = get_deficiencies_for_sample(req, sample, current_audit, t);
+            html += build_sample_heading_html(sample, t);
 
             for (const deficiency of deficiencies) {
                 html += build_observation_html(deficiency);
             }
-            html += build_comment_html(req, sample, requirements_map, _t);
+            html += build_comment_html(req, sample, requirements_map, t);
         }
     }
     return html;
@@ -189,7 +181,7 @@ export function build_report_pdf_html_document(options: {
     const title = escape_html_internal(options.title);
     return (
         `<!DOCTYPE html><html lang="${lang}"><head><meta charset="utf-8">` +
-        `<title>${title}</title><style>${PDF_REPORT_PRINT_CSS}</style></head>` +
+        `<title>${title}</title><style>${build_report_pdf_print_css()}</style></head>` +
         `<body><main>${options.body_html}</main></body></html>`
     );
 }

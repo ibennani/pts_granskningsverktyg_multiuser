@@ -4,6 +4,7 @@
 import { Paragraph, TextRun, ExternalHyperlink, TabStopType } from 'docx';
 import { extractDeficiencyNumber } from './export_format_helpers.js';
 import { get_export_requirement_result } from './export_bootstrap.js';
+import { REPORT_EXPORT_COLORS } from './export_report_typography.js';
 import { parse_markdown_to_text_runs } from './export_word_markdown_docx.js';
 
 // Gemensam hjälpfunktion för att extrahera referensnummer från en krav-referens
@@ -216,7 +217,7 @@ export function create_comment_paragraphs(requirement: any, sample: any, require
                     new TextRun({
                         text: "Kommentar: ",
                         bold: true,
-                        color: "6E3282"
+                        color: REPORT_EXPORT_COLORS.comment_label
                     }),
                     ...markdownRuns
                 ],

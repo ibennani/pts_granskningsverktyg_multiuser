@@ -10,6 +10,11 @@ import {
 } from 'docx';
 import { show_global_message_internal } from './export_bootstrap.js';
 import { build_report_export_filename } from './export_report_filename.js';
+import {
+    REPORT_EXPORT_FONT_FAMILY,
+    REPORT_EXPORT_FONT_SIZES_PT,
+    report_export_font_size_half_points,
+} from './export_report_typography.js';
 import type { ExportWordMainFlowT } from './export_word_main_flow_children.js';
 
 export async function finalize_word_export_download (options: {
@@ -43,8 +48,8 @@ export async function finalize_word_export_download (options: {
             default: {
                 document: {
                     run: {
-                        font: 'Calibri',
-                        size: 22
+                        font: REPORT_EXPORT_FONT_FAMILY,
+                        size: report_export_font_size_half_points(REPORT_EXPORT_FONT_SIZES_PT.body)
                     },
                     paragraph: {
                         alignment: isSortByRequirements ? undefined : AlignmentType.LEFT,
@@ -57,8 +62,8 @@ export async function finalize_word_export_download (options: {
                 },
                 heading1: {
                     run: {
-                        font: 'Calibri',
-                        size: 36,
+                        font: REPORT_EXPORT_FONT_FAMILY,
+                        size: report_export_font_size_half_points(REPORT_EXPORT_FONT_SIZES_PT.heading1),
                         bold: true
                     },
                     paragraph: {
@@ -71,8 +76,8 @@ export async function finalize_word_export_download (options: {
                 },
                 heading2: {
                     run: {
-                        font: 'Calibri',
-                        size: 32,
+                        font: REPORT_EXPORT_FONT_FAMILY,
+                        size: report_export_font_size_half_points(REPORT_EXPORT_FONT_SIZES_PT.heading2),
                         bold: true
                     },
                     paragraph: {
@@ -85,8 +90,8 @@ export async function finalize_word_export_download (options: {
                 },
                 heading3: {
                     run: {
-                        font: 'Calibri',
-                        size: 28,
+                        font: REPORT_EXPORT_FONT_FAMILY,
+                        size: report_export_font_size_half_points(REPORT_EXPORT_FONT_SIZES_PT.heading3),
                         bold: true
                     },
                     paragraph: {
@@ -99,8 +104,8 @@ export async function finalize_word_export_download (options: {
                 },
                 heading4: {
                     run: {
-                        font: 'Calibri',
-                        size: 24,
+                        font: REPORT_EXPORT_FONT_FAMILY,
+                        size: report_export_font_size_half_points(REPORT_EXPORT_FONT_SIZES_PT.heading4),
                         bold: true
                     },
                     paragraph: {

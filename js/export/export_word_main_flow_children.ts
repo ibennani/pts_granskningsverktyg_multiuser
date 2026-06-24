@@ -156,13 +156,24 @@ export function append_word_export_body_sorted_by_samples (
     consoleManager.log('[Word Export] Found samples with deficiencies:', samples_with_deficiencies.length);
 
     for (const sample of samples_with_deficiencies) {
+        const sampleName = sample.description || sample.url || t('export_unspecified_sample');
+        const h2_children: Array<TextRun | InstanceType<typeof ExternalHyperlink>> = [
+            new TextRun({ text: 'Stickprov: ', color: '000000' })
+        ];
+        if (sample.url) {
+            h2_children.push(
+                new ExternalHyperlink({
+                    children: [new TextRun({ text: sampleName, style: 'Hyperlink' })],
+                    link: sample.url
+                })
+            );
+        } else {
+            h2_children.push(new TextRun({ text: sampleName, color: '000000' }));
+        }
+
         c.push(
             new Paragraph({
-                children: [
-                    new TextRun({
-                        text: sample.description || sample.url || t('export_unspecified_sample')
-                    })
-                ],
+                children: h2_children,
                 heading: 'Heading2',
                 pageBreakBefore: true
             })

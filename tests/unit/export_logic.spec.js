@@ -284,6 +284,8 @@ describe('ExportLogic - Word Export', () => {
                 .join(' ');
 
             // Verify observation section is present
+            expect(allText).toContain('Stickprov:');
+            expect(allText).toContain('Test Sample');
             expect(allText).toContain('Aktuella observationer');
             expect(allText).toContain('Test observation');
         });

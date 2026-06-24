@@ -72,6 +72,8 @@ describe('export_report_html_criterias', () => {
         });
         expect(html).toContain('<html lang="sv">');
         expect(html).toContain('<title>TEST Aktör</title>');
+        expect(html).toContain("'Calibri'");
+        expect(html).toContain('font-size: 16pt');
         expect(html).toContain('<main>');
     });
 
@@ -82,8 +84,8 @@ describe('export_report_html_criterias', () => {
         expect(body).toContain('<strong>Referens: </strong>');
         expect(body).toContain('<strong>Principer: </strong>');
         expect(body).toContain('<strong>Identifierade brister: </strong>');
-        expect(body).toContain('<h3>');
-        expect(body).toContain('Stickprov:');
+        expect(body).toContain('<h3>Stickprov: <a href="https://example.com/page">Stickprov ett</a></h3>');
+        expect(body).not.toContain('<strong>Stickprov: </strong>');
         expect(body).toContain('<strong>Brist-id: 1 </strong>');
         expect(body).toContain('<strong>fet</strong>');
     });
