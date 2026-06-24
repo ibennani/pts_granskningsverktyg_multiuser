@@ -54,6 +54,22 @@ export function set_audit_media_local_preview_blob_url(
 }
 
 /**
+ * Flyttar cachad blob-URL till nytt filnamn utan att ogiltigförklara URL:en (t.ex. efter server-omdöpning).
+ */
+export function move_audit_media_local_preview_blob_url(
+    audit_id: string,
+    from_filename: string,
+    to_filename: string
+): void {
+    const from_key = cache_key(audit_id, from_filename);
+    const to_key = cache_key(audit_id, to_filename);
+    const blob_url = blob_url_cache.get(from_key);
+    if (!blob_url) return;
+    blob_url_cache.delete(from_key);
+    set_audit_media_local_preview_blob_url(audit_id, to_filename, blob_url);
+}
+
+/**
  * Frigör blob-URL för en enskild mediefil (t.ex. efter borttagning).
  */
 export function revoke_audit_media_blob_url(audit_id: string, filename: string): void {

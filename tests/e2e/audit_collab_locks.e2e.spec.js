@@ -155,11 +155,16 @@ test.describe('Granskning: fältlås och del-sparning (mockat API)', () => {
         await page1.goto('/v2/#requirement_audit?sampleId=s1&requirementId=req1', { waitUntil: 'domcontentloaded' });
         const obs1 = page1.locator('textarea.pc-observation-detail-textarea').first();
         await expect(obs1).toBeVisible({ timeout: 25000 });
+        const lock_post_promise = page1.waitForResponse(
+            (resp) => resp.url().includes('/locks') && resp.request().method() === 'POST' && resp.status() === 201,
+            { timeout: 15000 }
+        );
         await obs1.click();
+        await lock_post_promise;
         await obs1.type('Test');
 
         await page2.goto('/v2/#requirement_audit?sampleId=s1&requirementId=req1', { waitUntil: 'domcontentloaded' });
-        await expect(page2.locator('.info-block-locked-message')).toContainText('Användare 1');
+        await expect(page2.locator('.lock-hint').filter({ hasText: 'Användare 1' })).toBeVisible({ timeout: 25000 });
 
         await context1.close();
         await context2.close();

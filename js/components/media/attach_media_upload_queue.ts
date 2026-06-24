@@ -5,6 +5,7 @@
 import { upload_audit_media } from '../../api/audit_media_api.js';
 import { is_browser_online } from '../../utils/browser_online.js';
 import {
+    move_audit_media_local_preview_blob_url,
     revoke_audit_media_blob_url,
     set_audit_media_local_preview_blob_url
 } from './render_audit_media_list_item.js';
@@ -123,8 +124,7 @@ export function create_attach_media_upload_queue(deps: AttachMediaUploadQueueDep
             }
 
             if (server_name !== local_name) {
-                revoke_audit_media_blob_url(deps.audit_id, local_name);
-                set_audit_media_local_preview_blob_url(deps.audit_id, server_name, local_preview_url);
+                move_audit_media_local_preview_blob_url(deps.audit_id, local_name, server_name);
             }
 
             const current = merge_uploaded_media_filenames(

@@ -196,14 +196,19 @@ test.describe('Regelfil: fältlås och del-sparning (mockat API)', () => {
 
         const textarea1 = page1.locator('textarea[id^="infoBlock_"][id$="_text"]').first();
         await expect(textarea1).toBeVisible({ timeout: 25000 });
-        await textarea1.click(); // tar lås
-        await textarea1.type('Test'); // triggar autospar/patch
+        const lock_post_promise = page1.waitForResponse(
+            (resp) => resp.url().includes('/locks') && resp.request().method() === 'POST' && resp.status() === 201,
+            { timeout: 15000 }
+        );
+        await textarea1.click();
+        await lock_post_promise;
+        await textarea1.type('Test');
 
         // Öppna andra sessionen efter att låset är taget, så att första rendern ser låslistan.
         await page2.goto(`/v2/#rulefile_edit_requirement?id=${encodeURIComponent(first_req_key)}`, { waitUntil: 'domcontentloaded' });
         await ensureSwedishAndDismissRestore(page2);
 
-        await expect(page2.locator('.info-block-locked-message')).toContainText('Användare 1');
+        await expect(page2.locator('.gv-rule-part-lock-hint')).toContainText('Användare 1');
 
         // Verifiera att patch-anrop skedde på page1 (genom att version ökade i mocken).
         await page1.waitForTimeout(500);

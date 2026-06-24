@@ -68,19 +68,40 @@ export class ChecklistHandlerClass {
     is_dom_built = false;
     last_language_code: string | null = null;
 
-    handle_checklist_click!: (event: Event) => void;
-    handle_textarea_input!: (event: Event) => void;
-    handle_attach_media_click!: (event: Event, attach_btn: HTMLButtonElement) => void;
-    handle_stuck_click!: (event: Event, stuck_btn: HTMLButtonElement) => void;
-    handle_copy_observation_click!: (event: Event, copy_btn: HTMLButtonElement) => void;
-    handle_pc_observation_focusin!: (event: FocusEvent) => void;
-    handle_pc_observation_focusout!: (event: FocusEvent) => void;
-    handle_status_button_pointerdown!: (event: Event) => void;
-    handle_observation_flush_pointerdown!: () => void;
+    /** Arrow wrappers så addEventListener anropar ChecklistHandler-instansen, inte DOM-containern. */
+    readonly _on_container_pointerdown_flush = (): void => {
+        this.handle_observation_flush_pointerdown();
+    };
+    readonly _on_container_pointerdown_status = (event: Event): void => {
+        this.handle_status_button_pointerdown(event);
+    };
+    readonly _on_container_click = (event: Event): void => {
+        this.handle_checklist_click(event);
+    };
+    readonly _on_container_input = (event: Event): void => {
+        this.handle_textarea_input(event);
+    };
+    readonly _on_container_focusin = (event: FocusEvent): void => {
+        this.handle_pc_observation_focusin(event);
+    };
+    readonly _on_container_focusout = (event: FocusEvent): void => {
+        this.handle_pc_observation_focusout(event);
+    };
 
-    build_initial_dom!: () => void;
-    update_dom!: () => void;
-    _set_pc_observation_detail!: (
+    /** Sätts på prototyp via attach_checklist_handler_delegates — declare, inte !, så egenskaper inte skuggar prototypen. */
+    declare handle_checklist_click: (event: Event) => void;
+    declare handle_textarea_input: (event: Event) => void;
+    declare handle_attach_media_click: (event: Event, attach_btn: HTMLButtonElement) => void;
+    declare handle_stuck_click: (event: Event, stuck_btn: HTMLButtonElement) => void;
+    declare handle_copy_observation_click: (event: Event, copy_btn: HTMLButtonElement) => void;
+    declare handle_pc_observation_focusin: (event: FocusEvent) => void;
+    declare handle_pc_observation_focusout: (event: FocusEvent) => void;
+    declare handle_status_button_pointerdown: (event: Event) => void;
+    declare handle_observation_flush_pointerdown: () => void;
+
+    declare build_initial_dom: () => void;
+    declare update_dom: () => void;
+    declare _set_pc_observation_detail: (
         check_results: Record<string, unknown> | null | undefined,
         check_id: string,
         pc_id: string,
@@ -143,12 +164,12 @@ export class ChecklistHandlerClass {
         this.on_observation_draft_update_callback = callbacks.onObservationDraftUpdate || null;
         this.on_observation_hide_commit_callback = callbacks.onObservationHideCommit || null;
 
-        container.addEventListener('pointerdown', this.handle_observation_flush_pointerdown, true);
-        container.addEventListener('pointerdown', this.handle_status_button_pointerdown, true);
-        container.addEventListener('click', this.handle_checklist_click);
-        container.addEventListener('input', this.handle_textarea_input);
-        container.addEventListener('focusin', this.handle_pc_observation_focusin);
-        container.addEventListener('focusout', this.handle_pc_observation_focusout);
+        container.addEventListener('pointerdown', this._on_container_pointerdown_flush, true);
+        container.addEventListener('pointerdown', this._on_container_pointerdown_status, true);
+        container.addEventListener('click', this._on_container_click);
+        container.addEventListener('input', this._on_container_input);
+        container.addEventListener('focusin', this._on_container_focusin);
+        container.addEventListener('focusout', this._on_container_focusout);
         this._register_hmr_dom_rebuild();
     }
 
@@ -253,12 +274,12 @@ export class ChecklistHandlerClass {
     destroy(): void {
         if (this.container_ref) {
             this.flush_observations_before_destroy();
-            this.container_ref.removeEventListener('pointerdown', this.handle_observation_flush_pointerdown, true);
-            this.container_ref.removeEventListener('pointerdown', this.handle_status_button_pointerdown, true);
-            this.container_ref.removeEventListener('click', this.handle_checklist_click);
-            this.container_ref.removeEventListener('input', this.handle_textarea_input);
-            this.container_ref.removeEventListener('focusin', this.handle_pc_observation_focusin);
-            this.container_ref.removeEventListener('focusout', this.handle_pc_observation_focusout);
+            this.container_ref.removeEventListener('pointerdown', this._on_container_pointerdown_flush, true);
+            this.container_ref.removeEventListener('pointerdown', this._on_container_pointerdown_status, true);
+            this.container_ref.removeEventListener('click', this._on_container_click);
+            this.container_ref.removeEventListener('input', this._on_container_input);
+            this.container_ref.removeEventListener('focusin', this._on_container_focusin);
+            this.container_ref.removeEventListener('focusout', this._on_container_focusout);
             this.container_ref.innerHTML = '';
         }
         this._observation_focus_snapshots = new Map();
