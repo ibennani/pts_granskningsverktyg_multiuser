@@ -132,6 +132,33 @@ export async function delete_audit_media(audit_id: string, filename: string): Pr
     }
 }
 
+export type CaptureUrlScreenshotResponse = {
+    filename: string;
+    pageTitle: string;
+    size: number;
+    mime: string;
+    renamedDueToConflict?: boolean;
+    requestedFilename?: string;
+};
+
+export async function capture_audit_url_screenshot(
+    audit_id: string,
+    url: string,
+    filename_suffix: string
+): Promise<CaptureUrlScreenshotResponse> {
+    const api_url = `${get_base_url()}/audits/${encodeURIComponent(String(audit_id))}/media/capture-screenshot`;
+    const res = await fetch_with_auth_retry(api_url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
+        body: JSON.stringify({ url, filenameSuffix: filename_suffix })
+    });
+    if (!res.ok) {
+        const err = await parse_error_payload(res);
+        throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    return (await res.json()) as CaptureUrlScreenshotResponse;
+}
+
 export function can_upload_audit_media(audit_id: string | null | undefined): boolean {
     return Boolean(audit_id && get_auth_token());
 }

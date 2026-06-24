@@ -4,6 +4,7 @@
 
 import { open_attach_media_modal } from '../media/AttachMediaModal.js';
 import { collect_attached_media_filenames } from '../../logic/audit_attached_media_references.js';
+import { on_sample_attach_media_saved } from './sample_url_auto_screenshot.js';
 
 type AttachedMediaState = Parameters<typeof collect_attached_media_filenames>[0] & {
     auditId?: string | null;
@@ -19,9 +20,12 @@ type AddSampleFormLike = {
         load_css?: (path: string) => Promise<void>;
     };
     sample_attached_media_filenames: string[];
+    url_auto_screenshot_filename: string | null;
     sample_attach_media_btn: HTMLButtonElement | null;
     current_editing_sample_id: string | null;
     getState?: () => AttachedMediaState | null;
+    dispatch?: (action: { type: string; payload?: Record<string, unknown> }) => void;
+    StoreActionTypes?: { UPDATE_SAMPLE: string };
     save_form_data_immediately: (is_autosave?: boolean, should_trim?: boolean, skip_render?: boolean) => void;
     _persist_new_sample_draft: (should_trim: boolean) => void;
 };
@@ -143,9 +147,20 @@ export function handle_sample_attach_media_click(component: AddSampleFormLike, e
             return still_referenced;
         },
         on_save: (filenames) => {
+            on_sample_attach_media_saved(component, filenames);
             component.sample_attached_media_filenames = filenames;
             update_sample_attach_media_button(component);
             if (component.current_editing_sample_id) {
+                if (component.dispatch && component.StoreActionTypes?.UPDATE_SAMPLE) {
+                    component.dispatch({
+                        type: component.StoreActionTypes.UPDATE_SAMPLE,
+                        payload: {
+                            sampleId: component.current_editing_sample_id,
+                            updatedSampleData: { attachedMediaFilenames: filenames },
+                            skip_render: true
+                        }
+                    });
+                }
                 component.save_form_data_immediately(true, false, true);
             } else {
                 component._persist_new_sample_draft(false);

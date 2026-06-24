@@ -18,9 +18,15 @@ export function ensure_sample_attached_media_shape(sample: unknown): unknown {
         return sample;
     }
     const record = sample as Record<string, unknown>;
+    const url_auto = record.urlAutoScreenshotFilename;
+    const normalized_auto =
+        typeof url_auto === 'string' && url_auto.trim() ? url_auto.trim() : null;
     return {
         ...record,
-        attachedMediaFilenames: normalize_attached_media_filenames_list(record.attachedMediaFilenames)
+        attachedMediaFilenames: normalize_attached_media_filenames_list(record.attachedMediaFilenames),
+        ...(Object.prototype.hasOwnProperty.call(record, 'urlAutoScreenshotFilename')
+            ? { urlAutoScreenshotFilename: normalized_auto }
+            : {})
     };
 }
 
@@ -55,9 +61,26 @@ function read_attached_filenames_from_staged_source(
 }
 
 /**
- * Returnerar aktuell lista med bifogade filnamn för ett stickprov,
- * inklusive osparade ändringar i utkast eller väntande bekräftelse.
+ * Stickprov för serversynk/import: attachedMediaFilenames från utkast eller väntande ändringar
+ * slås in så att bifogad media inte försvinner vid statusbyte eller PATCH.
  */
+export function resolve_samples_for_server_sync(
+    state: Sample_media_source_state | null | undefined,
+    samples: unknown
+): unknown[] {
+    return coerce_to_array(samples).map((sample) => {
+        if (!sample || typeof sample !== 'object' || Array.isArray(sample)) {
+            return sample;
+        }
+        const record = sample as Record<string, unknown> & { id?: string; attachedMediaFilenames?: unknown };
+        return {
+            ...record,
+            attachedMediaFilenames: resolve_effective_sample_attached_filenames(state, record)
+        };
+    });
+}
+
+/** Returnerar aktuell lista med bifogade filnamn för ett stickprov, inklusive utkast och väntande ändringar. */
 export function resolve_effective_sample_attached_filenames(
     state: Sample_media_source_state | null | undefined,
     sample: { id?: string; attachedMediaFilenames?: unknown } | null | undefined

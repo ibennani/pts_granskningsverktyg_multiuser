@@ -21,6 +21,11 @@ import {
     resolve_audit_media_file_path
 } from '../media/audit_media_storage.js';
 import { single_route_param } from '../utils/route_params.js';
+import { parse_body } from '../utils/zod_boundary.js';
+import { AuditUrlScreenshotBodySchema } from '../schemas/audit_url_screenshot.js';
+import { assert_public_http_url, SsrfUrlRejectedError } from '../utils/ssrf_url_guard.js';
+import { capture_page_screenshot } from '../services/page_screenshot_service.js';
+import { build_sample_screenshot_filename } from '../utils/sample_screenshot_filename.js';
 
 type AuthedRequest = express.Request & {
     user?: { id: string; name: string };
@@ -88,6 +93,60 @@ export function register_audit_media_routes(router: express.Router, upload_limit
         } catch (err) {
             console.error('[audit_media] GET list error:', err);
             res.status(500).json({ error: 'Kunde inte lista mediefiler' });
+        }
+    });
+
+    router.post('/:id/media/capture-screenshot', upload_limiter, async (req: Request, res: Response) => {
+        try {
+            const id = single_route_param(req.params.id);
+            if (!(await audit_exists(id))) {
+                return res.status(404).json({ error: 'Granskning hittades inte' });
+            }
+
+            const body = parse_body(AuditUrlScreenshotBodySchema, req.body, res);
+            if (!body) {
+                return;
+            }
+
+            let safe_url: URL;
+            try {
+                safe_url = assert_public_http_url(body.url);
+            } catch (err) {
+                const message = err instanceof SsrfUrlRejectedError ? err.message : 'Ogiltig URL';
+                return res.status(422).json({ error: message });
+            }
+
+            let capture_result;
+            try {
+                capture_result = await capture_page_screenshot({ url: safe_url.href });
+            } catch (err) {
+                console.error('[audit_media] capture-screenshot error:', err);
+                return res.status(422).json({ error: 'Kunde inte ta skärmdump av sidan' });
+            }
+
+            const requested_filename = build_sample_screenshot_filename(
+                capture_result.page_title,
+                body.filenameSuffix
+            );
+            const pick = await pick_upload_media_filename(id, requested_filename);
+            const dir = await ensure_audit_media_dir(id);
+            const full_path = path.join(dir, pick.filename);
+            await fs.writeFile(full_path, capture_result.png_buffer);
+
+            const response: Record<string, unknown> = {
+                filename: pick.filename,
+                pageTitle: capture_result.page_title,
+                size: capture_result.png_buffer.length,
+                mime: 'image/png',
+            };
+            if (pick.renamed_due_to_conflict) {
+                response.renamedDueToConflict = true;
+                response.requestedFilename = pick.requested_filename;
+            }
+            res.status(201).json(response);
+        } catch (err) {
+            console.error('[audit_media] capture-screenshot route error:', err);
+            res.status(500).json({ error: 'Kunde inte spara skärmdump' });
         }
     });
 

@@ -8,6 +8,7 @@ import {
     ensure_samples_attached_media_shape,
     normalize_attached_media_filenames_list,
     resolve_effective_sample_attached_filenames,
+    resolve_samples_for_server_sync,
     sort_audit_image_card_groups
 } from '../../js/logic/sample_attached_media_normalize.ts';
 
@@ -64,6 +65,23 @@ describe('sample_attached_media_normalize', () => {
                 sample
             )
         ).toEqual(['pending.png']);
+    });
+
+    test('resolve_samples_for_server_sync slår in utkast per stickprov', () => {
+        const samples = resolve_samples_for_server_sync(
+            {
+                sampleEditDraft: {
+                    sampleId: 's1',
+                    updatedSampleData: { attachedMediaFilenames: ['draft.png'] }
+                }
+            },
+            [
+                { id: 's1', attachedMediaFilenames: [] },
+                { id: 's2', attachedMediaFilenames: ['saved.png'] }
+            ]
+        ) as Array<{ id?: string; attachedMediaFilenames?: string[] }>;
+        expect(samples[0].attachedMediaFilenames).toEqual(['draft.png']);
+        expect(samples[1].attachedMediaFilenames).toEqual(['saved.png']);
     });
 
     test('sort_audit_image_card_groups sorterar stickprov före krav', () => {

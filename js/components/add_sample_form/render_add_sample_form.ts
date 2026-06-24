@@ -1,5 +1,6 @@
 import { render_content_types_section_accordion } from './content_type_accordion.js';
 import { handle_sample_attach_media_click, render_sample_screenshot_section } from './sample_attach_media.js';
+import { handle_sample_url_blur, sync_sample_auto_screenshot_state_from_data } from './sample_url_auto_screenshot.js';
 
 export function render_add_sample_form(component: any, sample_id_to_edit: string | null = null) {
     // Prevent re-rendering (and resetting form state) only when editing the same existing sample and the form is mounted.
@@ -90,6 +91,7 @@ export function render_add_sample_form(component: any, sample_id_to_edit: string
                 component.url_input.value = fixed;
             }
         }
+        void handle_sample_url_blur(component);
     });
     component.url_form_group_ref = component.Helpers.create_element('div', {
         class_name: 'form-group',
@@ -117,6 +119,7 @@ export function render_add_sample_form(component: any, sample_id_to_edit: string
         content_types_group_options.attributes = { 'data-draft-ignore': 'true' };
     }
     component.content_types_container_element = component.Helpers.create_element('div', content_types_group_options);
+    sync_sample_auto_screenshot_state_from_data(component, effective_sample_data);
     const sample_screenshot_section = render_sample_screenshot_section(component, effective_sample_data);
     component.sample_attach_media_btn.addEventListener('click', (event: Event) => {
         handle_sample_attach_media_click(component, event);

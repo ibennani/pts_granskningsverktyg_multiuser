@@ -143,4 +143,17 @@ describe('reduce_set_audit_status', () => {
         const next = reduce_set_audit_status(state, { payload: { status: 'in_progress' } });
         expect(next.auditMetadata.last_local_change_at).toBe('2026-06-01T08:00:00.000Z');
     });
+
+    test('not_started → in_progress committar bifogad media från utkast till stickprov', () => {
+        const state = base_state({
+            auditStatus: 'not_started',
+            samples: [{ id: 's1', attachedMediaFilenames: [] }],
+            sampleEditDraft: {
+                sampleId: 's1',
+                updatedSampleData: { attachedMediaFilenames: ['utkast.png'] }
+            }
+        });
+        const next = reduce_set_audit_status(state, { payload: { status: 'in_progress' } });
+        expect(next.samples[0].attachedMediaFilenames).toEqual(['utkast.png']);
+    });
 });

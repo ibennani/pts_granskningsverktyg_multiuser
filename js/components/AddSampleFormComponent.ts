@@ -12,6 +12,7 @@ import {
     save_new_sample_form_draft,
     type NewSampleFormDraft
 } from './add_sample_form/new_sample_form_draft.js';
+import { clear_sample_auto_screenshot_if_needed } from './add_sample_form/sample_url_auto_screenshot.js';
 
 export class AddSampleFormComponent {
     private root: HTMLElement | null;
@@ -38,6 +39,9 @@ export class AddSampleFormComponent {
     private sample_type_container: any;
     private sample_attach_media_btn: HTMLButtonElement | null;
     private sample_attached_media_filenames: string[];
+    private url_auto_screenshot_filename: string | null;
+    private url_auto_screenshot_source_url: string | null;
+    private url_auto_screenshot_generation: number;
 
     private current_editing_sample_id: string | null;
     private original_content_types_on_load: string[];
@@ -74,6 +78,9 @@ export class AddSampleFormComponent {
         this.sample_type_container = null;
         this.sample_attach_media_btn = null;
         this.sample_attached_media_filenames = [];
+        this.url_auto_screenshot_filename = null;
+        this.url_auto_screenshot_source_url = null;
+        this.url_auto_screenshot_generation = 0;
 
         this.current_editing_sample_id = null;
         this.original_content_types_on_load = [];
@@ -111,6 +118,9 @@ export class AddSampleFormComponent {
         this.sample_type_container = null;
         this.sample_attach_media_btn = null;
         this.sample_attached_media_filenames = [];
+        this.url_auto_screenshot_filename = null;
+        this.url_auto_screenshot_source_url = null;
+        this.url_auto_screenshot_generation = 0;
 
         this.current_editing_sample_id = null;
         this.original_content_types_on_load = [];
@@ -160,7 +170,8 @@ export class AddSampleFormComponent {
                     selectedContentTypes: Array.isArray(current_sample.selectedContentTypes) ? [...current_sample.selectedContentTypes] : [],
                     attachedMediaFilenames: Array.isArray(current_sample.attachedMediaFilenames)
                         ? [...current_sample.attachedMediaFilenames]
-                        : []
+                        : [],
+                    urlAutoScreenshotFilename: current_sample.urlAutoScreenshotFilename ?? null
                 },
                 originalSampleData: this.initial_sample_snapshot ? JSON.parse(JSON.stringify(this.initial_sample_snapshot)) : JSON.parse(JSON.stringify(current_sample))
             }
@@ -205,7 +216,8 @@ export class AddSampleFormComponent {
                     description,
                     url: url_val,
                     selectedContentTypes: selected_content_types,
-                    attachedMediaFilenames: attached_media_filenames
+                    attachedMediaFilenames: attached_media_filenames,
+                    urlAutoScreenshotFilename: this.url_auto_screenshot_filename
                 },
                 originalSampleData: original,
                 skip_render
@@ -279,7 +291,10 @@ export class AddSampleFormComponent {
 
         if (this.url_form_group_ref) {
             this.url_form_group_ref.style.display = selected_category.hasUrl ? '' : 'none';
-            if (!selected_category.hasUrl) this.url_input.value = '';
+            if (!selected_category.hasUrl) {
+                this.url_input.value = '';
+                void clear_sample_auto_screenshot_if_needed(this);
+            }
         }
 
         this.previous_sample_type_value = this.sample_type_select.value
@@ -378,7 +393,8 @@ export class AddSampleFormComponent {
             description,
             url: url_val,
             selectedContentTypes: selected_content_types,
-            attachedMediaFilenames: [...(this.sample_attached_media_filenames || [])]
+            attachedMediaFilenames: [...(this.sample_attached_media_filenames || [])],
+            urlAutoScreenshotFilename: this.url_auto_screenshot_filename
         };
     }
 
@@ -601,7 +617,8 @@ export class AddSampleFormComponent {
             description: description,
             url: url_val,
             selectedContentTypes: selected_content_types,
-            attachedMediaFilenames: [...(this.sample_attached_media_filenames || [])]
+            attachedMediaFilenames: [...(this.sample_attached_media_filenames || [])],
+            urlAutoScreenshotFilename: this.url_auto_screenshot_filename
         };
 
         if (!this.current_editing_sample_id) {

@@ -9,6 +9,7 @@ import {
     AUDIT_METADATA_LAST_IN_PROGRESS_ACTIVITY_KEY,
     without_last_in_progress_activity_in_metadata
 } from '../logic/audit_list_last_updated.js';
+import { resolve_samples_for_server_sync } from '../logic/sample_attached_media_normalize.js';
 
 export function reduce_set_audit_status(current_state: any, action: any) {
     const newStatus = action.payload.status;
@@ -56,12 +57,18 @@ export function reduce_set_audit_status(current_state: any, action: any) {
     ) {
         audit_metadata = without_last_in_progress_activity_in_metadata(audit_metadata);
     }
-    const merged = {
+    let merged = {
         ...state_before_status_change,
         auditStatus: newStatus,
         auditMetadata: audit_metadata,
         auditLastUpdatedAtFrozen: frozen_last_updated
     };
+    if (newStatus === 'in_progress') {
+        merged = {
+            ...merged,
+            samples: resolve_samples_for_server_sync(current_state, merged.samples)
+        };
+    }
     if (newStatus !== current_state.auditStatus) {
         return with_last_local_change_at(merged, get_current_iso_datetime_utc());
     }

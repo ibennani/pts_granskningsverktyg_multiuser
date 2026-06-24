@@ -2,6 +2,8 @@
  * @fileoverview Mappar app-state till API-payload för granskningssynk (PATCH / import).
  */
 
+import { resolve_samples_for_server_sync } from '../logic/sample_attached_media_normalize.js';
+
 const SERVER_STATUS_VALUES = ['not_started', 'in_progress', 'locked', 'archived'] as const;
 
 export type ServerAuditStatus = (typeof SERVER_STATUS_VALUES)[number];
@@ -16,6 +18,14 @@ export type SyncPayloadState = {
     version?: number | string | null;
     ruleFileContent?: unknown;
     archivedRequirementResults?: unknown[];
+    sampleEditDraft?: {
+        sampleId?: string;
+        updatedSampleData?: { attachedMediaFilenames?: unknown };
+    } | null;
+    pendingSampleChanges?: {
+        sampleId?: string;
+        updatedSampleData?: { attachedMediaFilenames?: unknown };
+    } | null;
 };
 
 export type AuditPatchPayload = {
@@ -52,7 +62,7 @@ export function state_to_patch(state: SyncPayloadState, options: StateToPatchOpt
     const patch: AuditPatchPayload = {
         metadata: (state.auditMetadata || {}) as Record<string, unknown>,
         status: normalize_status_for_server(state.auditStatus || 'not_started'),
-        samples: state.samples || [],
+        samples: resolve_samples_for_server_sync(state, state.samples || []),
         expectedVersion:
             state.version !== null && state.version !== undefined && state.version !== ''
                 ? Number(state.version)
@@ -90,6 +100,6 @@ export function state_to_import(state: SyncPayloadState): AuditImportPayload {
         ruleFileContent: state.ruleFileContent,
         auditMetadata: (state.auditMetadata || {}) as Record<string, unknown>,
         auditStatus: normalize_status_for_server(state.auditStatus || 'not_started'),
-        samples: state.samples || []
+        samples: resolve_samples_for_server_sync(state, state.samples || []),
     };
 }
