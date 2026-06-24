@@ -1,4 +1,11 @@
 import './metadata_form_component.css';
+import {
+    metadata_form_create_start_date_field,
+    metadata_form_normalize_start_date_display,
+    metadata_form_parse_start_date,
+    metadata_form_set_start_date_error_visible,
+    metadata_form_start_date_error_text
+} from './metadata_form_start_date.js';
 
 export const MetadataFormComponent = {
     init({ root, deps, options = {} }) {
@@ -28,6 +35,9 @@ export const MetadataFormComponent = {
         this.auditor_name_input = null;
         this.case_handler_input = null;
         this.internal_comment_input = null;
+        this.start_time_input = null;
+        this.start_time_error_element = null;
+        this.show_start_date_field = false;
         this.form_element_ref = null;
 
         // Load CSS if possible
@@ -37,6 +47,45 @@ export const MetadataFormComponent = {
         }
 
         this.handle_autosave_input = this.handle_autosave_input.bind(this);
+        this.handle_start_date_blur = this.handle_start_date_blur.bind(this);
+    },
+
+    _parse_start_date_input_value(raw_value) {
+        return metadata_form_parse_start_date(this.Helpers, this.Translation, raw_value);
+    },
+
+    _set_start_date_error_visible(show_error) {
+        metadata_form_set_start_date_error_visible(
+            this.start_time_input,
+            this.start_time_error_element,
+            show_error
+        );
+    },
+
+    handle_start_date_blur() {
+        if (!this.start_time_input) return;
+        const raw = this.start_time_input.value;
+        if (!(raw || '').trim()) {
+            this._set_start_date_error_visible(false);
+            return;
+        }
+        const parsed = this._parse_start_date_input_value(raw);
+        if (parsed.ok && parsed.iso_date) {
+            this.start_time_input.value = metadata_form_normalize_start_date_display(
+                this.Helpers,
+                this.Translation,
+                raw
+            );
+            this._set_start_date_error_visible(false);
+            return;
+        }
+        if (this.start_time_error_element) {
+            this.start_time_error_element.textContent = metadata_form_start_date_error_text(
+                this.Helpers,
+                this.Translation
+            );
+        }
+        this._set_start_date_error_visible(true);
     },
 
     _get_form_data(should_trim, trim_text) {
@@ -74,7 +123,7 @@ export const MetadataFormComponent = {
         const raw_comment = this.internal_comment_input?.value ?? '';
         const internal_comment = sanitize_comment(raw_comment);
 
-        return {
+        const form_data = {
             caseNumber: sanitize_input(this.case_number_input?.value ?? ''),
             actorName: sanitize_input(this.actor_name_input?.value ?? ''),
             actorLink: actor_link_sanitized,
@@ -82,6 +131,15 @@ export const MetadataFormComponent = {
             caseHandler: sanitize_input(this.case_handler_input?.value ?? ''),
             internalComment: internal_comment
         };
+
+        if (this.show_start_date_field && this.start_time_input) {
+            const parsed = this._parse_start_date_input_value(this.start_time_input.value);
+            if (parsed.ok) {
+                form_data.startTime = parsed.iso_date;
+            }
+        }
+
+        return form_data;
     },
 
     handle_autosave_input() {
@@ -110,6 +168,24 @@ export const MetadataFormComponent = {
 
         const trim_text_fn = this.AutosaveService?.trim_text_preserve_lines;
         const form_data = this._get_form_data(true, trim_text_fn);
+
+        if (this.show_start_date_field && this.start_time_input) {
+            const raw = (this.start_time_input.value || '').trim();
+            if (raw) {
+                const parsed = this._parse_start_date_input_value(raw);
+                if (!parsed.ok) {
+                    if (this.start_time_error_element) {
+                        this.start_time_error_element.textContent = metadata_form_start_date_error_text(
+                            this.Helpers,
+                            this.Translation
+                        );
+                    }
+                    this._set_start_date_error_visible(true);
+                    this.start_time_input.focus();
+                    return;
+                }
+            }
+        }
 
         if (typeof this.on_submit_callback === 'function') {
             this.on_submit_callback(form_data);
@@ -148,15 +224,30 @@ export const MetadataFormComponent = {
         return { form_group, input_element };
     },
 
+    _create_start_date_field(initial_value = '') {
+        return metadata_form_create_start_date_field(
+            this.Helpers,
+            this.Translation,
+            {
+                on_blur: this.handle_start_date_blur,
+                on_input: () => this._set_start_date_error_visible(false)
+            },
+            initial_value
+        );
+    },
+
     render(options = {}) {
         const t = this.Translation?.t || (k => k);
         const {
             initialData = {},
             submitButtonText = t('metadata_form_submit'),
             cancelButtonText = null,
-            goToListButtonText = null
+            goToListButtonText = null,
+            showStartDate = false
         } = options;
 
+        this.show_start_date_field = showStartDate === true;
+        this.start_time_input = null;
         this.root.innerHTML = '';
         const form_wrapper = this.Helpers.create_element('div', { class_name: 'metadata-form-container' });
 
@@ -196,6 +287,13 @@ export const MetadataFormComponent = {
         this.case_handler_input = case_handler_field.input_element;
         this.form_element_ref.appendChild(case_handler_field.form_group);
 
+        if (this.show_start_date_field) {
+            const start_field = this._create_start_date_field(initialData.startDateInputValue || '');
+            this.start_time_input = start_field.input_element;
+            this.start_time_error_element = start_field.error_element;
+            this.form_element_ref.appendChild(start_field.form_group);
+        }
+
         const comment_field = this.create_form_field('internalComment', 'internal_comment', 'textarea', initialData.internalComment);
         this.internal_comment_input = comment_field.input_element;
         this.form_element_ref.appendChild(comment_field.form_group);
@@ -230,8 +328,9 @@ export const MetadataFormComponent = {
             this.actor_link_input,
             this.auditor_name_input,
             this.case_handler_input,
-            this.internal_comment_input
-        ];
+            this.internal_comment_input,
+            this.start_time_input
+        ].filter(Boolean);
         inputs_for_autosave.forEach((el) => {
             if (el) el.addEventListener('input', this.handle_autosave_input);
         });
@@ -286,6 +385,9 @@ export const MetadataFormComponent = {
         this.on_submit_callback = null;
         this.on_cancel_callback = null;
         this.on_go_to_list_callback = null;
+        this.start_time_input = null;
+        this.start_time_error_element = null;
+        this.show_start_date_field = false;
         this.root = null;
         this.deps = null;
     }

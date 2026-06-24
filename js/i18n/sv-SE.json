@@ -921,6 +921,8 @@
   "metadata_empty_warning_modal_title": "Du har inte fyllt i någon metadata",
   "metadata_empty_warning_stay_button": "Fortsätt ange metadata",
   "metadata_form_instruction": "Alla fält är frivilliga Informationen kommer att inkluderas i exporterade rapporter",
+  "locale_date_input_format_hint": "Exempel: {example}. Punkt, bindestreck och snedstreck fungerar som avskiljare.",
+  "metadata_start_date_invalid": "Ogiltigt datum. Ange datum som {example}.",
   "metadata_form_intro": "Ange metadata för granskningen här",
   "metadata_form_submit": "Spara",
   "metadata_required_fields_modal_message": "Du måste fylla i Aktör och Ansvarig granskare för att kunna fortsätta till stickprov. Vill du fortsätta redigera eller gå till listan över alla granskningar?",

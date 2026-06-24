@@ -1,4 +1,5 @@
 import { marked } from '../utils/markdown.js';
+import { audit_status_allows_metadata_edit } from '../utils/audit_status_helpers.js';
 import "./audit_info_component.css";
 
 export class AuditInfoComponent {
@@ -74,7 +75,7 @@ export class AuditInfoComponent {
             text_content: t('audit_info_title')
         }));
 
-        if (current_state.auditStatus === 'in_progress') {
+        if (audit_status_allows_metadata_edit(current_state.auditStatus)) {
             const edit_button = this.Helpers.create_element('button', {
                 class_name: ['button', 'button-default', 'button-small', 'edit-info-button'],
                 attributes: { 'aria-label': t('edit_audit_information') },

@@ -97,7 +97,16 @@ export function recalculateAuditTimes(auditState: AuditStateShape | null | undef
 
     if (minTime || maxTime) {
         const newState = { ...auditState };
-        if (minTime) newState.startTime = minTime;
+        const meta = auditState.auditMetadata as { startTime?: string | null } | undefined;
+        const manual_start =
+            typeof meta?.startTime === 'string' && meta.startTime.trim()
+                ? meta.startTime.trim()
+                : null;
+        if (manual_start) {
+            newState.startTime = manual_start;
+        } else if (minTime) {
+            newState.startTime = minTime;
+        }
         if (maxTime) newState.endTime = maxTime;
         return newState;
     }

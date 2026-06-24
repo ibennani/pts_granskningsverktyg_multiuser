@@ -10,6 +10,11 @@ export function audit_status_is_fully_readonly(status) {
     return status === 'archived';
 }
 
+/** Sant om granskningsmetadata får redigeras (pågående eller avslutad, ej arkiverad). */
+export function audit_status_allows_metadata_edit(status) {
+    return status === 'in_progress' || status === 'locked';
+}
+
 export function audit_status_blocks_sample_and_requirement_edits(status) {
     return status === 'locked' || status === 'archived';
 }

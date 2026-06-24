@@ -921,6 +921,8 @@
   "metadata_empty_warning_modal_title": "Du har ikke angitt noen metadata",
   "metadata_empty_warning_stay_button": "Fortsett å angi metadata",
   "metadata_form_instruction": "Alle felt er valgfrie. Denne informasjonen vil bli inkludert i eksporterte rapporter.",
+  "locale_date_input_format_hint": "Eksempel: {example}. Punktum, bindestrek og skråstrek fungerer som skilletegn.",
+  "metadata_start_date_invalid": "Ugyldig dato. Angi dato som {example}.",
   "metadata_form_intro": "Angi tilsynsmetadata her",
   "metadata_form_submit": "Lagre",
   "metadata_required_fields_modal_message": "Du må fylle ut Virksomhet og Ansvarlig revisor for å fortsette til utvalg. Vil du fortsette å redigere eller gå til listen?",

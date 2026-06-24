@@ -14,6 +14,12 @@ export {
     format_iso_to_local_date,
     format_iso_to_relative_time
 } from './date_format.js';
+export {
+    get_locale_date_format_example,
+    format_iso_for_locale_date_input,
+    parse_locale_date_text_to_iso_date,
+    normalize_locale_date_text_display
+} from './locale_date_input.js';
 
 
 export function get_current_iso_datetime_utc() {

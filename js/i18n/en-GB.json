@@ -921,6 +921,8 @@
   "metadata_empty_warning_modal_title": "You have not entered any metadata",
   "metadata_empty_warning_stay_button": "Continue entering metadata",
   "metadata_form_instruction": "All fields are optional. This information will be included in exported reports.",
+  "locale_date_input_format_hint": "Example: {example}. Full stop, hyphen and slash work as separators.",
+  "metadata_start_date_invalid": "Invalid date. Enter a date like {example}.",
   "metadata_form_intro": "Enter the audit metadata here",
   "metadata_form_submit": "Save",
   "metadata_required_fields_modal_message": "You must fill in Subject and Lead auditor to continue to samples. Do you want to continue editing or go to the list?",

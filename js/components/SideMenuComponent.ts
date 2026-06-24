@@ -379,7 +379,10 @@ export class SideMenuComponent {
             };
         }
 
-        if (this.current_view_name === 'metadata' || this.current_view_name === 'edit_metadata') {
+        if (
+            (this.current_view_name === 'metadata' || this.current_view_name === 'edit_metadata')
+            && audit_status === 'not_started'
+        ) {
             return {
                 should_show: true,
                 aria_label: t('side_menu_aria_label'),

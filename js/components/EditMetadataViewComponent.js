@@ -31,6 +31,7 @@ export class EditMetadataViewComponent {
         this.Translation = deps.Translation;
         this.Helpers = deps.Helpers;
         this.NotificationComponent = deps.NotificationComponent;
+        this.AuditLogic = deps.AuditLogic;
         
         this.metadata_form_container_element = null;
 
@@ -324,8 +325,26 @@ export class EditMetadataViewComponent {
             }
             return cleaned;
         })();
+        const start_time_iso = (() => {
+            if (is_new_audit) return null;
+            const state_for_times = this.AuditLogic?.recalculateAuditTimes
+                ? this.AuditLogic.recalculateAuditTimes({ ...current_state })
+                : null;
+            return current_state.startTime
+                || current_state.auditMetadata?.startTime
+                || state_for_times?.startTime
+                || null;
+        })();
+        const lang_code = this.Translation.get_current_language_code();
+        const start_date_input_value = start_time_iso && this.Helpers?.format_iso_for_locale_date_input
+            ? this.Helpers.format_iso_for_locale_date_input(start_time_iso, lang_code)
+            : '';
         const form_options = {
-            initialData: metadata,
+            initialData: {
+                ...metadata,
+                startDateInputValue: start_date_input_value
+            },
+            showStartDate: !is_new_audit,
             submitButtonText: is_new_audit ? t('continue_to_samples') : t('save_changes_button'),
             cancelButtonText: t('return_without_saving_button_text'),
             goToListButtonText: is_new_audit ? t('go_to_audit_list_button') : null
@@ -346,5 +365,6 @@ export class EditMetadataViewComponent {
         }
         this.root = null;
         this.deps = null;
+        this.AuditLogic = null;
     }
 }

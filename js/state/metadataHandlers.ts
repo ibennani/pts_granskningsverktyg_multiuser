@@ -17,13 +17,38 @@ export function reduce_update_metadata(current_state: any, action: any) {
     delete payload.skip_render;
     delete payload.same_user_tab_broadcast;
     delete payload.clear_fresh_new_audit_metadata;
+
+    let start_time_update: string | null | undefined;
+    if (Object.prototype.hasOwnProperty.call(payload, 'startTime')) {
+        const raw_start = payload.startTime;
+        delete payload.startTime;
+        if (raw_start === null || raw_start === undefined || raw_start === '') {
+            start_time_update = null;
+        } else {
+            start_time_update = String(raw_start);
+        }
+    }
+
     if (current_state.auditStatus === 'archived') {
         const keys = Object.keys(payload);
+        if (start_time_update !== undefined) return current_state;
         if (keys.length !== 1 || keys[0] !== 'audit_edit_log') return current_state;
     }
+
+    let audit_metadata = { ...current_state.auditMetadata, ...payload };
+    if (start_time_update !== undefined) {
+        if (start_time_update === null) {
+            const { startTime: _removed, ...rest } = audit_metadata;
+            audit_metadata = rest;
+        } else {
+            audit_metadata = { ...audit_metadata, startTime: start_time_update };
+        }
+    }
+
     const merged = {
         ...current_state,
-        auditMetadata: { ...current_state.auditMetadata, ...payload },
+        auditMetadata: audit_metadata,
+        ...(start_time_update !== undefined ? { startTime: start_time_update } : {}),
         ...(clear_fresh_new_audit_metadata ? { freshNewAuditMetadata: false } : {})
     };
     const may_bump_non_obs = !skip_internal_sync
