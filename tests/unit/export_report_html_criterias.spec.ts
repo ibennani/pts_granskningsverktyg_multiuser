@@ -6,6 +6,7 @@ import {
     build_report_pdf_html_document,
     build_report_pdf_intro_html,
     build_report_body_sorted_by_requirements,
+    build_report_body_sorted_by_samples,
 } from '../../js/export/export_report_html_criterias.ts';
 
 function create_mock_audit_with_deficiency() {
@@ -88,5 +89,13 @@ describe('export_report_html_criterias', () => {
         expect(body).not.toContain('<strong>Stickprov: </strong>');
         expect(body).toContain('<strong>Brist-id: 1 </strong>');
         expect(body).toContain('<strong>fet</strong>');
+    });
+
+    test('stickprov med brist renderas med h2 stickprov och h3 krav', () => {
+        const audit = create_mock_audit_with_deficiency();
+        const body = build_report_body_sorted_by_samples(audit, t);
+        expect(body).toContain('<h2>Stickprov: <a href="https://example.com/page">Stickprov ett</a></h2>');
+        expect(body).toContain('<h3>1.1.1 Testkrav</h3>');
+        expect(body).toContain('<strong>Brist-id: 1 </strong>');
     });
 });

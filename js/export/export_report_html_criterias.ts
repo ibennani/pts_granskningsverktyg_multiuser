@@ -8,6 +8,8 @@ import {
     natural_sort,
     get_samples_with_deficiencies_for_requirement,
     get_deficiencies_for_sample,
+    get_all_deficiencies_for_sample_generic,
+    get_failing_requirement_ids_for_sample,
 } from './export_word_deficiency_queries.js';
 import { extract_reference_number } from './export_word_requirement_sections.js';
 import { get_export_requirement_result } from './export_bootstrap.js';
@@ -87,16 +89,21 @@ function build_observation_html(deficiency: Record<string, unknown>): string {
         .join('');
 }
 
-function build_sample_heading_html(sample: Record<string, unknown>, t: ExportReportHtmlT): string {
+function build_sample_heading_html(
+    sample: Record<string, unknown>,
+    t: ExportReportHtmlT,
+    heading_level: 2 | 3 = 3
+): string {
+    const tag = heading_level === 2 ? 'h2' : 'h3';
     const raw_name = String(sample.description || sample.url || '').trim();
     const sample_name = escape_html_internal(raw_name || t('export_unspecified_sample'));
     if (sample.url) {
         const safe_url = escape_html_internal(
             Helpers?.add_protocol_if_missing ? Helpers.add_protocol_if_missing(String(sample.url)) : String(sample.url)
         );
-        return `<h3>Stickprov: <a href="${safe_url}">${sample_name}</a></h3>`;
+        return `<${tag}>Stickprov: <a href="${safe_url}">${sample_name}</a></${tag}>`;
     }
-    return `<h3>Stickprov: ${sample_name}</h3>`;
+    return `<${tag}>Stickprov: ${sample_name}</${tag}>`;
 }
 
 function build_comment_html(
@@ -158,6 +165,70 @@ export function build_report_body_sorted_by_requirements(
                 html += build_observation_html(deficiency);
             }
             html += build_comment_html(req, sample, requirements_map, t);
+        }
+    }
+    return html;
+}
+
+export function build_report_body_sorted_by_samples(
+    current_audit: Record<string, unknown>,
+    t: ExportReportHtmlT
+): string {
+    const requirements_map = (current_audit.ruleFileContent as Record<string, unknown>)?.requirements as
+        | Record<string, unknown>
+        | undefined ?? {};
+    const all_samples = (current_audit.samples as unknown[]) || [];
+    const samples_with_deficiencies = all_samples.filter((sample) => {
+        const defs = get_all_deficiencies_for_sample_generic(sample, current_audit);
+        return defs.length > 0;
+    });
+
+    consoleManager.log('[PDF Export] Found samples with deficiencies:', samples_with_deficiencies.length);
+
+    let html = '';
+    for (const sample of samples_with_deficiencies) {
+        const s = sample as Record<string, unknown>;
+        html += build_sample_heading_html(s, t, 2);
+
+        const failing_req_ids = get_failing_requirement_ids_for_sample(s);
+        const failing_reqs: Record<string, unknown>[] = [];
+        failing_req_ids.forEach((req_id) => {
+            let req: Record<string, unknown> | null = null;
+            if (requirements_map[req_id]) {
+                req = requirements_map[req_id] as Record<string, unknown>;
+            } else {
+                req = (Object.values(requirements_map).find(
+                    (r) => (r as Record<string, unknown>).id === req_id || (r as Record<string, unknown>).key === req_id
+                ) as Record<string, unknown> | undefined) ?? null;
+            }
+            if (req) failing_reqs.push(req);
+        });
+
+        const sorted_reqs = failing_reqs.sort((a, b) => {
+            const ref_a = (a.standardReference as { text?: string } | undefined)?.text || '';
+            const ref_b = (b.standardReference as { text?: string } | undefined)?.text || '';
+            return natural_sort(ref_a, ref_b);
+        });
+
+        for (const req of sorted_reqs) {
+            const reference_number = extract_reference_number(req);
+            const h3_text = escape_html_internal((reference_number ? `${reference_number} ` : '') + req.title);
+            html += `<h3>${h3_text}</h3>`;
+
+            const deficiencies = get_deficiencies_for_sample(req, s, current_audit, t);
+            const deficiency_ids = [
+                ...new Set(
+                    deficiencies
+                        .map((def) => extractDeficiencyNumber(def.deficiencyId as string))
+                        .filter(Boolean)
+                ),
+            ].sort((a, b) => parseInt(String(a), 10) - parseInt(String(b), 10));
+            html += build_metadata_html(req, current_audit, deficiency_ids);
+
+            for (const deficiency of deficiencies) {
+                html += build_observation_html(deficiency);
+            }
+            html += build_comment_html(req, s, requirements_map, t);
         }
     }
     return html;

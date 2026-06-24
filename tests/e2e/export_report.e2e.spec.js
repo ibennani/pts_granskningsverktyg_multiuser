@@ -115,6 +115,8 @@ test.describe('Export rapport (mockat API)', () => {
         await expect(page.locator('#audit-action-btn-export-excel')).toBeVisible();
         await expect(page.locator('#audit-action-btn-export-word-reqs')).toBeVisible();
         await expect(page.locator('#audit-action-btn-export-pdf-reqs')).toBeVisible();
+        await expect(page.locator('#audit-action-btn-export-word-samples')).toBeVisible();
+        await expect(page.locator('#audit-action-btn-export-pdf-samples')).toBeVisible();
         await expect(page.locator('#audit-action-btn-export-word-deficiency-types')).toBeVisible();
         await expect(page.locator('#audit-action-btn-export-pdf-deficiency-types')).toBeVisible();
 
@@ -123,6 +125,8 @@ test.describe('Export rapport (mockat API)', () => {
             '#audit-action-btn-export-excel',
             '#audit-action-btn-export-word-reqs',
             '#audit-action-btn-export-pdf-reqs',
+            '#audit-action-btn-export-word-samples',
+            '#audit-action-btn-export-pdf-samples',
             '#audit-action-btn-export-word-deficiency-types',
             '#audit-action-btn-export-pdf-deficiency-types'
         ]) {
