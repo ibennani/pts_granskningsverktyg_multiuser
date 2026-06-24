@@ -25,7 +25,9 @@ const REQUIRED_JS_REEXPORT_BRIDGES = [
     'js/utils/string_filter_normalize.js',
     'js/utils/requirement_search_utils.js',
     'js/utils/vite_dev_client_timestamp.js',
-    'js/utils/vite_dev_client_timestamp_hmr.js'
+    'js/utils/vite_dev_client_timestamp_hmr.js',
+    'js/utils/download_filename_utils.js',
+    'js/logic/audit_observation_edit_policy.js'
 ];
 
 const importReStatic = /(?:from|import)\s+['"](\.\.?\/[^'"]+\.js)['"]/g;
