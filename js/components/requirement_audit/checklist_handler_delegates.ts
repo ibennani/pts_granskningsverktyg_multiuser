@@ -249,20 +249,17 @@ export function attach_checklist_handler_delegates(proto: HandlerProto): void {
     ) => get_pc_result_data(check_result_data, pc_id);
     proto._sync_pass_criterion_deficiency_id_on_title = function (
         this: ChecklistHandlerCore,
-        pc_title_h4: HTMLElement, audit_frozen: boolean, pc_status: string, deficiency_id: string | undefined
+        title_row: HTMLElement, audit_frozen: boolean, pc_status: string, deficiency_id: string | undefined
     ) {
         return sync_pass_criterion_deficiency_id_on_title(
-            module_host.call(this), pc_title_h4, audit_frozen, pc_status, deficiency_id
+            module_host.call(this), title_row, audit_frozen, pc_status, deficiency_id
         );
     };
     proto._set_pass_criterion_title_aria_label = function (
         this: ChecklistHandlerCore,
-        pc_title_h4: HTMLElement, criterion_title: string, pc_status_text: string,
-        audit_frozen: boolean, pc_status: string, deficiency_id: string | undefined
+        pc_title_h4: HTMLElement, criterion_title: string, pc_status_text: string
     ) {
-        return set_pass_criterion_title_aria_label(
-            module_host.call(this), pc_title_h4, criterion_title, pc_status_text, audit_frozen, pc_status, deficiency_id
-        );
+        return set_pass_criterion_title_aria_label(pc_title_h4, criterion_title, pc_status_text);
     };
     proto._create_pass_criterion_title_h4 = function (
         this: ChecklistHandlerCore, opts: Parameters<typeof create_pass_criterion_title_h4>[1]

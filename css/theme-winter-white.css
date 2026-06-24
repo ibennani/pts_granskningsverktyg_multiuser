@@ -672,7 +672,7 @@ html[data-theme="winter-white"] .app-right-sidebar-inner:has(.requirement-audit-
 }
 
 [data-theme="winter-white"] .pass-criterion-heading,
-[data-theme="winter-white"] .pass-criterion-item h4 {
+[data-theme="winter-white"] .pass-criterion-item .pass-criterion-title-row {
     color: var(--heading-color);
     font-weight: 500;
 }

@@ -667,7 +667,7 @@ html[data-theme="dark-experimental"] .app-right-sidebar-inner:has(.requirement-a
 
 [data-theme="dark-experimental"] .pass-criterion-heading,
 [data-theme="dark-experimental"] .pass-criterion-item .pass-criterion-requirement,
-[data-theme="dark-experimental"] .pass-criterion-item h4 {
+[data-theme="dark-experimental"] .pass-criterion-item .pass-criterion-title-row {
     color: var(--heading-color);
     font-weight: 500;
 }

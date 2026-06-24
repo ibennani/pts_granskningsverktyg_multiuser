@@ -186,16 +186,16 @@ function update_pass_criterion_title_block(
     current_pc_status: string,
     pc_data: ReturnType<typeof read_pc_stored_data>
 ): void {
-    const pc_title_h4 = pc_item_li.querySelector('.pass-criterion-title') as HTMLElement | null;
+    const title_row = pc_item_li.querySelector('.pass-criterion-title-row') as HTMLElement | null;
+    const pc_title_h4 = title_row?.querySelector('.pass-criterion-title') as HTMLElement | null
+        ?? pc_item_li.querySelector('.pass-criterion-title') as HTMLElement | null;
     if (!pc_title_h4) return;
+    const sync_row = title_row ?? pc_title_h4.parentElement as HTMLElement;
     const { criterion_title } = get_criterion_numbering(host, check_id, pc_id);
     sync_pass_criterion_deficiency_id_on_title(
-        as_build_host(host), pc_title_h4, audit_frozen, current_pc_status, pc_data.deficiencyId as string | undefined
+        as_build_host(host), sync_row, audit_frozen, current_pc_status, pc_data.deficiencyId as string | undefined
     );
-    set_pass_criterion_title_aria_label(
-        as_build_host(host), pc_title_h4, criterion_title, pc_status_text, audit_frozen, current_pc_status,
-        pc_data.deficiencyId as string | undefined
-    );
+    set_pass_criterion_title_aria_label(pc_title_h4, criterion_title, pc_status_text);
 }
 
 function update_pass_criterion_action_buttons(

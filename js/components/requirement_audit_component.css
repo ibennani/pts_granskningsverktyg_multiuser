@@ -405,10 +405,34 @@
     border-color: var(--border-color);
 }
 
-.pass-criterion-item h4 {
+.pass-criterion-title-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.5rem 1rem;
     margin: 0 0 0.35rem;
+    color: var(--heading-color);
+}
+
+.pass-criterion-item h4.pass-criterion-title,
+.pass-criterion-item .pass-criterion-deficiency-id {
     font-size: 0.95rem;
     font-weight: 600;
+    color: inherit;
+}
+
+.pass-criterion-item h4.pass-criterion-title {
+    margin: 0;
+}
+
+.pass-criterion-title-main {
+    min-width: 0;
+}
+
+.pass-criterion-deficiency-id {
+    margin-left: auto;
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .pass-criterion-number-label {
