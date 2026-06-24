@@ -7,7 +7,26 @@ import {
     capture_audit_url_screenshot,
     delete_audit_media
 } from '../../api/audit_media_api.js';
-import { update_sample_attach_media_button } from './sample_attach_media.js';
+import { update_sample_attach_media_button, update_sample_url_screenshot_live_status } from './sample_attach_media.js';
+import {
+    normalize_url_for_screenshot,
+    on_sample_attach_media_saved,
+    remove_filename_from_list,
+    replace_auto_screenshot_filename,
+    should_skip_url_screenshot_capture,
+    should_skip_url_screenshot_when_attached_media_exists,
+    sync_sample_auto_screenshot_state_from_data
+} from './sample_url_auto_screenshot_logic.js';
+
+export {
+    normalize_url_for_screenshot,
+    on_sample_attach_media_saved,
+    remove_filename_from_list,
+    replace_auto_screenshot_filename,
+    should_skip_url_screenshot_capture,
+    should_skip_url_screenshot_when_attached_media_exists,
+    sync_sample_auto_screenshot_state_from_data
+} from './sample_url_auto_screenshot_logic.js';
 
 export type SampleUrlAutoScreenshotComponentLike = {
     url_input: HTMLInputElement | null;
@@ -16,66 +35,37 @@ export type SampleUrlAutoScreenshotComponentLike = {
     url_auto_screenshot_filename: string | null;
     url_auto_screenshot_source_url: string | null;
     url_auto_screenshot_generation: number;
+    sample_attach_media_btn: HTMLButtonElement | null;
+    sample_url_screenshot_in_progress?: boolean;
     current_editing_sample_id: string | null;
     getState?: () => { auditId?: string | null } | null;
     get_t_internally: () => (key: string, params?: Record<string, unknown>) => string;
     Helpers?: { add_protocol_if_missing?: (url: string) => string };
     save_form_data_immediately: (is_autosave?: boolean, should_trim?: boolean, skip_render?: boolean) => void;
     _persist_new_sample_draft: (should_trim: boolean) => void;
+    ensure_audit_id_for_media?: () => Promise<string | null>;
 };
 
-type SampleDataWithAutoScreenshot = {
-    url?: string | null;
-    urlAutoScreenshotFilename?: string | null;
-    attachedMediaFilenames?: unknown;
-};
+function announce_url_screenshot_status(
+    component: SampleUrlAutoScreenshotComponentLike,
+    status: 'capturing' | 'success' | 'failed' | 'idle'
+): void {
+    update_sample_url_screenshot_live_status(component, status);
+}
 
-export function normalize_url_for_screenshot(raw: string, add_protocol?: (url: string) => string): string {
-    const trimmed = String(raw || '').trim();
-    if (!trimmed) return '';
-    return add_protocol ? add_protocol(trimmed) : trimmed;
+function set_url_screenshot_in_progress(
+    component: SampleUrlAutoScreenshotComponentLike,
+    in_progress: boolean
+): void {
+    component.sample_url_screenshot_in_progress = in_progress;
+    update_sample_attach_media_button(component);
 }
 
 export function is_url_field_visible_for_screenshot(component: SampleUrlAutoScreenshotComponentLike): boolean {
     if (!component.url_form_group_ref || !component.url_input) return false;
-    return component.url_form_group_ref.style.display !== 'none';
-}
-
-export function remove_filename_from_list(filenames: string[], filename: string | null | undefined): string[] {
-    if (!filename) return [...filenames];
-    return filenames.filter((name) => name !== filename);
-}
-
-export function replace_auto_screenshot_filename(
-    filenames: string[],
-    old_filename: string | null | undefined,
-    new_filename: string
-): string[] {
-    const without_old = remove_filename_from_list(filenames, old_filename);
-    if (without_old.includes(new_filename)) {
-        return without_old;
-    }
-    return [...without_old, new_filename];
-}
-
-export function should_skip_url_screenshot_capture(
-    normalized_url: string,
-    last_captured_url: string | null,
-    auto_filename: string | null
-): boolean {
-    return Boolean(normalized_url && normalized_url === last_captured_url && auto_filename);
-}
-
-export function sync_sample_auto_screenshot_state_from_data(
-    component: SampleUrlAutoScreenshotComponentLike,
-    effective_sample_data: SampleDataWithAutoScreenshot | null | undefined
-): void {
-    const auto_filename = effective_sample_data?.urlAutoScreenshotFilename;
-    component.url_auto_screenshot_filename =
-        typeof auto_filename === 'string' && auto_filename.trim() ? auto_filename.trim() : null;
-    const sample_url = normalize_url_for_screenshot(String(effective_sample_data?.url || ''));
-    component.url_auto_screenshot_source_url =
-        component.url_auto_screenshot_filename && sample_url ? sample_url : null;
+    const group = component.url_form_group_ref;
+    if (group.style.display === 'none' || group.hidden) return false;
+    return group.getClientRects().length > 0;
 }
 
 async function remove_auto_screenshot_quietly(
@@ -149,7 +139,11 @@ export async function handle_sample_url_blur(component: SampleUrlAutoScreenshotC
         return;
     }
 
-    const audit_id = component.getState?.()?.auditId ?? null;
+    const audit_id_from_state = component.getState?.()?.auditId ?? null;
+    let audit_id = audit_id_from_state ? String(audit_id_from_state) : null;
+    if (!audit_id && component.ensure_audit_id_for_media) {
+        audit_id = await component.ensure_audit_id_for_media();
+    }
     if (!audit_id || !can_upload_audit_media(audit_id)) {
         return;
     }
@@ -160,6 +154,10 @@ export async function handle_sample_url_blur(component: SampleUrlAutoScreenshotC
 
     if (!normalized_url) {
         await remove_auto_screenshot_quietly(component, audit_id);
+        return;
+    }
+
+    if (should_skip_url_screenshot_when_attached_media_exists(component.sample_attached_media_filenames)) {
         return;
     }
 
@@ -174,6 +172,9 @@ export async function handle_sample_url_blur(component: SampleUrlAutoScreenshotC
     }
 
     const previous_auto_filename = component.url_auto_screenshot_filename;
+
+    announce_url_screenshot_status(component, 'capturing');
+    set_url_screenshot_in_progress(component, true);
 
     try {
         const t = component.get_t_internally();
@@ -202,23 +203,16 @@ export async function handle_sample_url_blur(component: SampleUrlAutoScreenshotC
         );
         component.url_auto_screenshot_filename = result.filename;
         component.url_auto_screenshot_source_url = normalized_url;
+        set_url_screenshot_in_progress(component, false);
         update_sample_attach_media_button(component);
+        announce_url_screenshot_status(component, 'success');
         persist_sample_form_after_auto_screenshot(component);
     } catch {
         if (component.url_auto_screenshot_generation !== generation) {
             return;
         }
-        // Ogiltig eller oåtkomlig URL — ingen skärmdump, tyst avbryt
-    }
-}
-
-export function on_sample_attach_media_saved(
-    component: SampleUrlAutoScreenshotComponentLike,
-    filenames: string[]
-): void {
-    const auto_filename = component.url_auto_screenshot_filename;
-    if (auto_filename && !filenames.includes(auto_filename)) {
-        component.url_auto_screenshot_filename = null;
-        component.url_auto_screenshot_source_url = null;
+        set_url_screenshot_in_progress(component, false);
+        update_sample_attach_media_button(component);
+        announce_url_screenshot_status(component, 'failed');
     }
 }

@@ -1,6 +1,6 @@
 import { render_content_types_section_accordion } from './content_type_accordion.js';
 import { handle_sample_attach_media_click, render_sample_screenshot_section } from './sample_attach_media.js';
-import { handle_sample_url_blur, sync_sample_auto_screenshot_state_from_data } from './sample_url_auto_screenshot.js';
+import { sync_sample_auto_screenshot_state_from_data } from './sample_url_auto_screenshot.js';
 
 export function render_add_sample_form(component: any, sample_id_to_edit: string | null = null) {
     // Prevent re-rendering (and resetting form state) only when editing the same existing sample and the form is mounted.
@@ -84,14 +84,9 @@ export function render_add_sample_form(component: any, sample_id_to_edit: string
     component.url_input = component.Helpers.create_element('input', { id: 'sampleUrlInput', class_name: 'form-control', attributes: { type: 'url' } });
     component.url_input.addEventListener('input', component.handle_autosave_input);
     component.url_input.addEventListener('blur', () => {
-        const val = (component.url_input?.value || '').trim();
-        if (val && component.Helpers?.add_protocol_if_missing) {
-            const fixed = component.Helpers.add_protocol_if_missing(val);
-            if (fixed !== val) {
-                component.url_input.value = fixed;
-            }
+        if (typeof component.handle_url_input_blur === 'function') {
+            component.handle_url_input_blur();
         }
-        void handle_sample_url_blur(component);
     });
     component.url_form_group_ref = component.Helpers.create_element('div', {
         class_name: 'form-group',

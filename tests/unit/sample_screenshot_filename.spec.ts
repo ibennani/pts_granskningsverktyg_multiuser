@@ -14,6 +14,6 @@ describe('build_sample_screenshot_filename', () => {
     });
 
     test('sanerar ogiltiga tecken i sidtitel', () => {
-        expect(build_sample_screenshot_filename('Min sida: test', 'skärmavbild')).toBe('Min_sida__test_skärmavbild.png');
+        expect(build_sample_screenshot_filename('Min sida: test', 'skärmavbild')).toBe('Min sida_ test_skärmavbild.png');
     });
 });

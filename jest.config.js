@@ -182,6 +182,8 @@ export default {
     '^.+[\\\\/]server/schemas/audit_import\\.js$': '<rootDir>/server/schemas/audit_import.ts',
     '^.+[\\\\/]server/schemas/audit_db_rows\\.js$': '<rootDir>/server/schemas/audit_db_rows.ts',
     '^.+[\\\\/]server/utils/zod_boundary\\.js$': '<rootDir>/server/utils/zod_boundary.ts',
+    '^.+[\\\\/]page_screenshot_stealth\\.js$': '<rootDir>/server/services/page_screenshot_stealth.ts',
+    '^.+[\\\\/]page_screenshot_lazy_load\\.js$': '<rootDir>/server/services/page_screenshot_lazy_load.ts',
   },
   testMatch: [
     '<rootDir>/tests/unit/**/*.spec.js',

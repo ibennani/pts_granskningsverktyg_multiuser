@@ -12,7 +12,9 @@ import {
     save_new_sample_form_draft,
     type NewSampleFormDraft
 } from './add_sample_form/new_sample_form_draft.js';
-import { clear_sample_auto_screenshot_if_needed } from './add_sample_form/sample_url_auto_screenshot.js';
+import { clear_sample_auto_screenshot_if_needed, handle_sample_url_blur, type SampleUrlAutoScreenshotComponentLike } from './add_sample_form/sample_url_auto_screenshot.js';
+import { sync_to_server_now } from '../logic/server_sync.js';
+import { get_auth_token } from '../api/client.js';
 
 export class AddSampleFormComponent {
     private root: HTMLElement | null;
@@ -42,6 +44,7 @@ export class AddSampleFormComponent {
     private url_auto_screenshot_filename: string | null;
     private url_auto_screenshot_source_url: string | null;
     private url_auto_screenshot_generation: number;
+    private sample_url_screenshot_in_progress: boolean;
 
     private current_editing_sample_id: string | null;
     private original_content_types_on_load: string[];
@@ -81,6 +84,7 @@ export class AddSampleFormComponent {
         this.url_auto_screenshot_filename = null;
         this.url_auto_screenshot_source_url = null;
         this.url_auto_screenshot_generation = 0;
+        this.sample_url_screenshot_in_progress = false;
 
         this.current_editing_sample_id = null;
         this.original_content_types_on_load = [];
@@ -121,6 +125,7 @@ export class AddSampleFormComponent {
         this.url_auto_screenshot_filename = null;
         this.url_auto_screenshot_source_url = null;
         this.url_auto_screenshot_generation = 0;
+        this.sample_url_screenshot_in_progress = false;
 
         this.current_editing_sample_id = null;
         this.original_content_types_on_load = [];
@@ -137,6 +142,7 @@ export class AddSampleFormComponent {
         this._handleCheckboxChange = this._handleCheckboxChange.bind(this);
         this.handle_autosave_input = this.handle_autosave_input.bind(this);
         this.handle_content_type_change = this.handle_content_type_change.bind(this);
+        this.handle_url_input_blur = this.handle_url_input_blur.bind(this);
     }
 
     _get_sample_edit_draft() {
@@ -246,6 +252,34 @@ export class AddSampleFormComponent {
         return this.Translation?.t || ((key: string) => `**${key}**`);
     }
 
+    async ensure_audit_id_for_media(): Promise<string | null> {
+        const state = this.getState?.();
+        if (state?.auditId) {
+            return String(state.auditId);
+        }
+        if (!get_auth_token() || !this.dispatch) {
+            return null;
+        }
+        try {
+            await sync_to_server_now(() => this.getState?.(), this.dispatch);
+        } catch {
+            return null;
+        }
+        const after_sync = this.getState?.();
+        return after_sync?.auditId ? String(after_sync.auditId) : null;
+    }
+
+    handle_url_input_blur(): void {
+        const val = (this.url_input?.value || '').trim();
+        if (val && this.Helpers?.add_protocol_if_missing) {
+            const fixed = this.Helpers.add_protocol_if_missing(val);
+            if (fixed !== val && this.url_input) {
+                this.url_input.value = fixed;
+            }
+        }
+        void handle_sample_url_blur(this as unknown as SampleUrlAutoScreenshotComponentLike);
+    }
+
     update_description_from_sample_type() {
         if (!this.sample_type_select || !this.description_input) return;
         if (!this.sample_type_select.value) {
@@ -293,7 +327,7 @@ export class AddSampleFormComponent {
             this.url_form_group_ref.style.display = selected_category.hasUrl ? '' : 'none';
             if (!selected_category.hasUrl) {
                 this.url_input.value = '';
-                void clear_sample_auto_screenshot_if_needed(this);
+                void clear_sample_auto_screenshot_if_needed(this as unknown as SampleUrlAutoScreenshotComponentLike);
             }
         }
 

@@ -4,7 +4,11 @@
 
 import { open_attach_media_modal } from '../media/AttachMediaModal.js';
 import { collect_attached_media_filenames } from '../../logic/audit_attached_media_references.js';
-import { on_sample_attach_media_saved } from './sample_url_auto_screenshot.js';
+import { on_sample_attach_media_saved, type SampleUrlAutoScreenshotComponentLike } from './sample_url_auto_screenshot.js';
+import {
+    create_url_screenshot_live_region,
+    set_sample_url_screenshot_live_status,
+} from './sample_url_screenshot_aria_status.js';
 
 type AttachedMediaState = Parameters<typeof collect_attached_media_filenames>[0] & {
     auditId?: string | null;
@@ -20,6 +24,7 @@ type AddSampleFormLike = {
         load_css?: (path: string) => Promise<void>;
     };
     sample_attached_media_filenames: string[];
+    sample_url_screenshot_in_progress?: boolean;
     url_auto_screenshot_filename: string | null;
     sample_attach_media_btn: HTMLButtonElement | null;
     current_editing_sample_id: string | null;
@@ -42,17 +47,30 @@ export function sync_sample_attached_filenames_from_data(
     component.sample_attached_media_filenames = normalize_filenames(effective_sample_data?.attachedMediaFilenames);
 }
 
-function get_attach_button_label(t: (key: string, params?: Record<string, unknown>) => string, count: number): string {
+function get_attach_button_label(
+    t: (key: string, params?: Record<string, unknown>) => string,
+    count: number,
+    in_progress: boolean
+): string {
+    if (in_progress) {
+        return t('sample_screenshot_capturing_button');
+    }
     return count > 0 ? t('edit_attached_media_button', { count }) : t('attach_media_button');
 }
 
 function build_attach_media_button(
-    component: AddSampleFormLike,
+    component: Pick<AddSampleFormLike, 'Helpers' | 'sample_attach_media_btn' | 'sample_url_screenshot_in_progress'> & {
+        sample_attached_media_filenames: string[];
+    },
     filenames: string[],
     t: (key: string, params?: Record<string, unknown>) => string
 ): HTMLButtonElement {
     const attached_count = filenames.length;
-    const attach_btn_label = get_attach_button_label(t, attached_count);
+    const attach_btn_label = get_attach_button_label(
+        t,
+        attached_count,
+        Boolean(component.sample_url_screenshot_in_progress)
+    );
     const attach_aria_label = `${attach_btn_label} ${t('attach_media_aria_label_for')} ${t('sample_screenshot_section_label')}`;
     const image_icon = component.Helpers.get_icon_svg ? component.Helpers.get_icon_svg('image', ['currentColor'], 16) : '';
     const video_icon = component.Helpers.get_icon_svg ? component.Helpers.get_icon_svg('videocam', ['currentColor'], 16) : '';
@@ -64,15 +82,17 @@ function build_attach_media_button(
         ? component.Helpers.escape_html(attach_btn_label)
         : attach_btn_label;
 
-    return component.Helpers.create_element('button', {
+    const attach_btn = component.Helpers.create_element('button', {
         class_name: ['button', 'button-default', 'button-small'],
         attributes: {
             'data-action': 'attach-sample-media',
             type: 'button',
-            'aria-label': attach_aria_label
+            'aria-label': attach_aria_label,
         },
-        html_content: `<span>${escaped_label}</span>${attach_icons_html}`
+        html_content: `<span class="attach-media-button-label">${escaped_label}</span>${attach_icons_html}`,
     }) as HTMLButtonElement;
+    attach_btn.appendChild(create_url_screenshot_live_region(component.Helpers));
+    return attach_btn;
 }
 
 export function render_sample_screenshot_section(
@@ -101,18 +121,41 @@ export function render_sample_screenshot_section(
     return section;
 }
 
-export function update_sample_attach_media_button(component: AddSampleFormLike): void {
+export function update_sample_attach_media_button(
+    component: Pick<
+        AddSampleFormLike,
+        | 'sample_attach_media_btn'
+        | 'sample_attached_media_filenames'
+        | 'get_t_internally'
+        | 'sample_url_screenshot_in_progress'
+    >
+): void {
     const btn = component.sample_attach_media_btn;
     if (!btn) return;
     const t = component.get_t_internally();
     const filenames = component.sample_attached_media_filenames;
-    const attach_btn_label = get_attach_button_label(t, filenames.length);
+    const attach_btn_label = get_attach_button_label(
+        t,
+        filenames.length,
+        Boolean(component.sample_url_screenshot_in_progress)
+    );
     const attach_aria_label = `${attach_btn_label} ${t('attach_media_aria_label_for')} ${t('sample_screenshot_section_label')}`;
     btn.setAttribute('aria-label', attach_aria_label);
-    const text_span = btn.querySelector('span:first-child');
+    const text_span = btn.querySelector('.attach-media-button-label');
     if (text_span) {
         text_span.textContent = attach_btn_label;
     }
+}
+
+export function update_sample_url_screenshot_live_status(
+    component: Pick<AddSampleFormLike, 'sample_attach_media_btn' | 'get_t_internally'>,
+    status: Parameters<typeof set_sample_url_screenshot_live_status>[1]
+): void {
+    set_sample_url_screenshot_live_status(
+        component.sample_attach_media_btn,
+        status,
+        component.get_t_internally()
+    );
 }
 
 export function handle_sample_attach_media_click(component: AddSampleFormLike, event: Event): void {
@@ -147,7 +190,7 @@ export function handle_sample_attach_media_click(component: AddSampleFormLike, e
             return still_referenced;
         },
         on_save: (filenames) => {
-            on_sample_attach_media_saved(component, filenames);
+            on_sample_attach_media_saved(component as unknown as SampleUrlAutoScreenshotComponentLike, filenames);
             component.sample_attached_media_filenames = filenames;
             update_sample_attach_media_button(component);
             if (component.current_editing_sample_id) {

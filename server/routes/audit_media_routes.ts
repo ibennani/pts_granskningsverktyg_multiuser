@@ -120,7 +120,8 @@ export function register_audit_media_routes(router: express.Router, upload_limit
             try {
                 capture_result = await capture_page_screenshot({ url: safe_url.href });
             } catch (err) {
-                console.error('[audit_media] capture-screenshot error:', err);
+                const detail = err instanceof Error ? err.message : String(err);
+                console.error('[audit_media] capture-screenshot error:', safe_url.href, detail);
                 return res.status(422).json({ error: 'Kunde inte ta skärmdump av sidan' });
             }
 

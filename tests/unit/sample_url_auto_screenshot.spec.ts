@@ -7,8 +7,9 @@ import {
     remove_filename_from_list,
     replace_auto_screenshot_filename,
     should_skip_url_screenshot_capture,
+    should_skip_url_screenshot_when_attached_media_exists,
     sync_sample_auto_screenshot_state_from_data
-} from '../../js/components/add_sample_form/sample_url_auto_screenshot.ts';
+} from '../../js/components/add_sample_form/sample_url_auto_screenshot_logic.ts';
 
 describe('sample_url_auto_screenshot', () => {
     test('normalize_url_for_screenshot lägger till protokoll', () => {
@@ -36,6 +37,12 @@ describe('sample_url_auto_screenshot', () => {
         expect(
             should_skip_url_screenshot_capture('https://example.com/ny', 'https://example.com', 'bild.png')
         ).toBe(false);
+    });
+
+    test('should_skip_url_screenshot_when_attached_media_exists är true när bilder finns', () => {
+        expect(should_skip_url_screenshot_when_attached_media_exists([])).toBe(false);
+        expect(should_skip_url_screenshot_when_attached_media_exists(['manuell.png'])).toBe(true);
+        expect(should_skip_url_screenshot_when_attached_media_exists(['auto.png', 'manuell.png'])).toBe(true);
     });
 
     test('sync_sample_auto_screenshot_state_from_data läser auto-filnamn', () => {
