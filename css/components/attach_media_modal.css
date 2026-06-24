@@ -480,10 +480,10 @@ dialog.modal-dialog.modal-dialog--attach-media-view-switch.modal-dialog--media-p
 }
 
 dialog.modal-dialog.modal-dialog--media-preview {
-    width: min(var(--modal-max-viewport-width, 90vw), 100%);
+    width: auto;
     max-width: var(--modal-max-viewport-width, 90vw);
+    min-width: min(var(--modal-min-viewport-width, 50vw), var(--modal-max-viewport-width, 90vw));
     max-height: var(--modal-max-viewport-height, 90vh);
-    min-width: 0;
     margin: auto;
     padding: 1rem;
     box-sizing: border-box;
@@ -501,8 +501,9 @@ dialog.modal-dialog.modal-dialog--media-preview > .modal-content {
 
 @media (max-width: 799px) {
     dialog.modal-dialog.modal-dialog--media-preview {
-        width: min(100%, var(--modal-max-viewport-width, 90vw));
+        width: auto;
         max-width: var(--modal-max-viewport-width, 90vw);
+        min-width: min(var(--modal-min-viewport-width, 50vw), var(--modal-max-viewport-width, 90vw));
         max-height: var(--modal-max-viewport-height, 90vh);
         margin: auto;
     }

@@ -4,6 +4,7 @@
     --modal-transition-duration: 0.5s;
     --modal-max-viewport-width: 90vw;
     --modal-max-viewport-height: 90vh;
+    --modal-min-viewport-width: 50vw;
     --modal-default-max-width: min(600px, var(--modal-max-viewport-width));
     --modal-inner-gap: 0.75rem;
     --modal-backdrop-color: rgba(0, 0, 0, 0.5);

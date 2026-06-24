@@ -2,7 +2,10 @@
  * @fileoverview Viewport-tak och storleksbegränsning för bildförhandsvisning i modal.
  */
 
-import { MODAL_MAX_VIEWPORT_RATIO } from '../../shared/constants/modal_layout.js';
+import {
+    MODAL_MAX_VIEWPORT_RATIO,
+    MODAL_MIN_VIEWPORT_RATIO
+} from '../../shared/constants/modal_layout.js';
 
 export type ViewportSize = {
     width: number;
@@ -20,11 +23,23 @@ export function get_media_preview_viewport_limits(): ViewportSize {
     };
 }
 
-/** Begränsar dialogmått till viewport-tak. */
+/** Returnerar minimal modalbredd i px (50 % av viewport). */
+export function get_media_preview_viewport_min_width(): number {
+    if (typeof window === 'undefined') {
+        return 1;
+    }
+    return Math.max(1, Math.round(window.innerWidth * MODAL_MIN_VIEWPORT_RATIO));
+}
+
+/** Begränsar dialogmått till viewport-tak och minimibredd. */
 export function clamp_dialog_size_to_viewport(size: ViewportSize): ViewportSize {
     const limits = get_media_preview_viewport_limits();
+    const min_width = get_media_preview_viewport_min_width();
     return {
-        width: Math.max(1, Math.min(Math.round(size.width), Math.round(limits.width))),
+        width: Math.max(
+            min_width,
+            Math.min(Math.round(size.width), Math.round(limits.width))
+        ),
         height: Math.max(1, Math.min(Math.round(size.height), Math.round(limits.height)))
     };
 }

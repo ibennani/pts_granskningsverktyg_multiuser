@@ -4,7 +4,8 @@
 
 import {
     clamp_dialog_size_to_viewport,
-    get_media_preview_viewport_limits
+    get_media_preview_viewport_limits,
+    get_media_preview_viewport_min_width
 } from '../../js/logic/audit_media_preview_viewport.js';
 
 describe('audit_media_preview_viewport', () => {
@@ -25,6 +26,10 @@ describe('audit_media_preview_viewport', () => {
         expect(get_media_preview_viewport_limits()).toEqual({ width: 900, height: 720 });
     });
 
+    test('get_media_preview_viewport_min_width returnerar 50 % av viewport', () => {
+        expect(get_media_preview_viewport_min_width()).toBe(500);
+    });
+
     test('clamp_dialog_size_to_viewport begränsar till viewport-tak', () => {
         expect(clamp_dialog_size_to_viewport({ width: 2000, height: 1500 })).toEqual({
             width: 900,
@@ -32,9 +37,16 @@ describe('audit_media_preview_viewport', () => {
         });
     });
 
-    test('clamp_dialog_size_to_viewport behåller mindre mått', () => {
+    test('clamp_dialog_size_to_viewport höjer bredd till minimigräns', () => {
         expect(clamp_dialog_size_to_viewport({ width: 400, height: 300 })).toEqual({
-            width: 400,
+            width: 500,
+            height: 300
+        });
+    });
+
+    test('clamp_dialog_size_to_viewport behåller mått inom gränser', () => {
+        expect(clamp_dialog_size_to_viewport({ width: 600, height: 300 })).toEqual({
+            width: 600,
             height: 300
         });
     });

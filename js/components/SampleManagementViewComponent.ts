@@ -1,5 +1,5 @@
 /**
- * @fileoverview Vy för hantering av stickprov: lista, tillägg, start av granskning och bulk "ingen anmärkning" för helt ogranskade krav per stickprov (endast viss inloggning och när samma person är angiven granskare i metadata).
+ * @fileoverview Vy för hantering av stickprov: lista, tillägg, start av granskning och bulk "ingen anmärkning" för helt ogranskade krav per stickprov.
  */
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- vydeps matchar befintlig init-konvention

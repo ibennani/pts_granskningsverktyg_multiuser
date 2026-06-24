@@ -6,7 +6,8 @@ import { fetch_audit_media_blob_url } from '../../api/audit_media_api.js';
 import {
     clamp_dialog_size_to_viewport,
     ensure_preview_fits_viewport_limits,
-    get_media_preview_viewport_limits
+    get_media_preview_viewport_limits,
+    get_media_preview_viewport_min_width
 } from '../../logic/audit_media_preview_viewport.js';
 import { append_audit_media_preview_observation_block } from './audit_media_preview_observation.js';
 import type {
@@ -219,14 +220,16 @@ function resolve_preview_dialog_width(
     preview_img: HTMLImageElement
 ): number {
     const { width: max_width } = get_media_preview_viewport_limits();
+    const min_width = get_media_preview_viewport_min_width();
     const dialog_style = getComputedStyle(dialog_el);
     const padding_x =
         parse_css_px(dialog_style.paddingLeft) + parse_css_px(dialog_style.paddingRight);
     const img_width = Math.max(1, Math.round(preview_img.getBoundingClientRect().width));
-    const heading_width = measure_heading_single_line_width(container);
-    const content_width = Math.max(img_width, heading_width);
+    const image_dialog_width = img_width + padding_x;
 
-    return Math.min(max_width, Math.max(1, content_width + padding_x));
+    sync_preview_heading_layout_mode(container, dialog_el);
+
+    return Math.min(max_width, Math.max(min_width, image_dialog_width));
 }
 
 function capture_preview_modal_baseline(

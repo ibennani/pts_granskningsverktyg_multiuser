@@ -1,46 +1,24 @@
 /**
- * Tester för pilotstyrning av bulk-knappen per stickprov.
+ * Tester för tillgång till bulk-knappen per stickprov.
  */
 import { describe, expect, it } from '@jest/globals';
 import { user_may_use_sample_mark_bulk_pass_not_audited } from '../../js/logic/sample_bulk_pass_not_audited_gate.js';
 
 describe('user_may_use_sample_mark_bulk_pass_not_audited', () => {
-    it('returnerar true för exakt Ilias Bennani med trim av mellanslag', () => {
-        expect(user_may_use_sample_mark_bulk_pass_not_audited(() => '  Ilias Bennani  ')).toBe(true);
+    it('returnerar true oavsett inloggat namn', () => {
+        expect(user_may_use_sample_mark_bulk_pass_not_audited(() => 'annan')).toBe(true);
     });
 
-    it('returnerar false vid fel skiftläge eller stavning', () => {
-        expect(user_may_use_sample_mark_bulk_pass_not_audited(() => 'ilias bennani')).toBe(false);
-    });
-
-    it('returnerar false för annat användarnamn', () => {
-        expect(user_may_use_sample_mark_bulk_pass_not_audited(() => 'annan')).toBe(false);
-    });
-
-    it('med granskarkontroll: true när inloggad och metadata-granskare matchar', () => {
+    it('returnerar true oavsett granskare i metadata', () => {
         expect(
             user_may_use_sample_mark_bulk_pass_not_audited(
-                () => 'Ilias Bennani',
-                () => '  Ilias Bennani  '
+                () => 'annan',
+                () => 'Anna Andersson'
             )
         ).toBe(true);
     });
 
-    it('med granskarkontroll: false när inloggad Ilias men annan granskare i metadata', () => {
-        expect(
-            user_may_use_sample_mark_bulk_pass_not_audited(
-                () => 'Ilias Bennani',
-                () => 'Anna Andersson'
-            )
-        ).toBe(false);
-    });
-
-    it('med granskarkontroll: false när inloggad Ilias men granskare saknas i metadata', () => {
-        expect(
-            user_may_use_sample_mark_bulk_pass_not_audited(
-                () => 'Ilias Bennani',
-                () => ''
-            )
-        ).toBe(false);
+    it('returnerar true utan argument', () => {
+        expect(user_may_use_sample_mark_bulk_pass_not_audited()).toBe(true);
     });
 });
