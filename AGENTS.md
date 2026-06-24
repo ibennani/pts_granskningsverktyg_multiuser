@@ -106,7 +106,7 @@ Projektet är organiserat enligt följande struktur:
 - Kör E2E (smoke, Chromium): `npm run test:e2e:smoke`
 - Kör E2E (full svit): `npm run test:e2e`
 - Kör “allt” inför release/PR: `npm run check:full`
-- **MCP efter UI-ändringar:** Se `.cursor/rules/11-mcp-testning-efter-kod.mdc`. Efter `npm run check`: standardskontroll via MCP **user-mdn** (`search`, `get-doc`, `get-compat`) och runtime-tillgänglighet via **user-accessibility-scanner** (`browser_navigate`, `scan_page`, `audit_keyboard` m.m.) på `http://localhost:5173`. MCP kompletterar Jest/Playwright — ersätter dem inte.
+- **MCP efter UI-ändringar:** Se `.cursor/rules/11-mcp-testning-efter-kod.mdc`. Navigera med hash-URL:er från `docs/e2e-fixture-urls.md`. Efter `npm run check`: **user-mdn** (standardskontroll), **user-accessibility-scanner** (axe + tangentbord på `http://localhost:5173/v2/`), valfritt **user-playwright** om inget E2E-test täcker flödet. MCP kompletterar Jest/Playwright — ersätter dem inte. I molnläge utan MCP: `npm run test:e2e:smoke`.
 
 ## Kända begränsningar
 
