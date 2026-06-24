@@ -70,4 +70,37 @@ describe('RequirementListToolbarComponent', () => {
         expect(on_change).toHaveBeenCalledWith(expect.objectContaining({ searchText: '' }));
         expect(RequirementListToolbarComponent._search_debounce_timer).toBeNull();
     });
+
+    test('låst granskning visar etikett för sök i hjälptexter eller brist-id', () => {
+        const container = document.createElement('div');
+        const t = (key) => ({
+            search_in_help_texts_and_deficiency_id_label: 'Sök i hjälptexter eller på brist-id:',
+            search_in_help_texts_label: 'Sök i hjälptexter:'
+        }[key] || key);
+
+        RequirementListToolbarComponent.root = container;
+        RequirementListToolbarComponent.Translation_t = t;
+        RequirementListToolbarComponent.Helpers_create_element = (tag, opts = {}) => {
+            const el = document.createElement(tag);
+            if (opts.class_name) el.className = opts.class_name;
+            if (opts.text_content) el.textContent = opts.text_content;
+            if (opts.attributes) {
+                Object.entries(opts.attributes).forEach(([name, value]) => el.setAttribute(name, value));
+            }
+            if (opts.id) el.id = opts.id;
+            return el;
+        };
+        RequirementListToolbarComponent.component_config = {
+            showStatusFilter: false,
+            sortOptions: [],
+            auditFrozen: true
+        };
+        RequirementListToolbarComponent.component_state = { searchText: '', sortBy: 'ref_asc', status: {} };
+        RequirementListToolbarComponent.is_dom_built = false;
+
+        RequirementListToolbarComponent.initial_build();
+
+        const label = container.querySelector('label[for="req-list-search"]');
+        expect(label?.textContent).toBe('Sök i hjälptexter eller på brist-id:');
+    });
 });

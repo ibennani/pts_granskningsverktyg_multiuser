@@ -8,6 +8,8 @@ import { render_sample_header } from './requirements_list/requirement_list_sampl
 import { build_requirements_list_dom } from './requirements_list/requirement_list_build_dom.js';
 import { build_all_mode_data } from './requirements_list/requirement_list_all_mode_data.js';
 import { filter_requirements } from './requirements_list/requirement_list_filter_requirements.js';
+import { parse_deficiency_search_number } from '../utils/requirement_deficiency_search.js';
+import { prepare_deficiency_observation_focus_before_audit_navigation } from './requirements_list/requirement_list_audit_navigation.js';
 import { build_toolbar_initial_filter_state, compute_auto_sort_by_override, ensure_default_status_filter, normalize_status_for_toolbar } from './requirements_list/requirement_list_ui_settings.js';
 import { fingerprint_item_keys, can_incremental_update } from '../utils/incremental_list_update.js';
 import './all_requirements_view_component.css';
@@ -111,6 +113,18 @@ export class RequirementsListViewComponent {
         });
     }
 
+    navigate_to_requirement_audit(requirement_id, sample_id) {
+        if (sample_id && requirement_id && this.router) {
+            prepare_deficiency_observation_focus_before_audit_navigation({
+                getState: () => this.getState(),
+                state_filter_key: this.state_filter_key,
+                sample_id,
+                requirement_id
+            });
+            this.router('requirement_audit', { sampleId: sample_id, requirementId: requirement_id });
+        }
+    }
+
     handle_requirement_list_click(event) {
         const mark_btn = event.target.closest('button[data-action="mark-requirement-passed-all"]');
         if (mark_btn) {
@@ -133,24 +147,24 @@ export class RequirementsListViewComponent {
         }
 
         const target_link = event.target.closest('a.list-title-link[data-requirement-id]');
-        if (!target_link || !this.router) return;
+        if (!target_link) return;
         const requirement_id = target_link.dataset.requirementId;
         const sample_id = this.mode === 'sample' ? this.params?.sampleId : target_link.dataset.sampleId;
         if (sample_id && requirement_id) {
             event.preventDefault();
-            this.router('requirement_audit', { sampleId: sample_id, requirementId: requirement_id });
+            this.navigate_to_requirement_audit(requirement_id, sample_id);
         }
     }
 
     handle_requirement_list_keydown(event) {
         if (event.key === 'Enter' || event.key === ' ') {
             const target_link = event.target.closest('a.list-title-link[data-requirement-id]');
-            if (!target_link || !this.router) return;
+            if (!target_link) return;
             const requirement_id = target_link.dataset.requirementId;
             const sample_id = this.mode === 'sample' ? this.params?.sampleId : target_link.dataset.sampleId;
             if (sample_id && requirement_id) {
                 event.preventDefault();
-                this.router('requirement_audit', { sampleId: sample_id, requirementId: requirement_id });
+                this.navigate_to_requirement_audit(requirement_id, sample_id);
             }
         }
     }
@@ -265,6 +279,8 @@ export class RequirementsListViewComponent {
             render_sample_header(state, current_sample_object, all_relevant_requirements, this.header_element_ref, this.Helpers, this.Translation, this.AuditLogic);
         }
 
+        const audit_frozen = state.auditStatus === 'locked' || state.auditStatus === 'archived';
+
         // Get filter settings
         let current_ui_settings = ensure_default_status_filter(state.uiSettings?.[this.state_filter_key] || {});
 
@@ -278,6 +294,9 @@ export class RequirementsListViewComponent {
         }
 
         if (this.filter_component_instance?.init && this.filter_component_instance?.render) {
+            if (this.filter_component_instance.component_config) {
+                this.filter_component_instance.component_config.auditFrozen = audit_frozen;
+            }
             if (!this._toolbar_inited) {
                 const initial_state = build_toolbar_initial_filter_state(current_ui_settings);
                 await this.filter_component_instance.init({
@@ -291,7 +310,8 @@ export class RequirementsListViewComponent {
                             showStatusFilter: true,
                             sortOptions: get_sort_options(this.mode),
                             idPrefix: this.state_filter_key === 'allRequirementsFilter' ? 'all-requirements-filter' : 'requirement-list-filter',
-                            searchDebounceMs: 400
+                            searchDebounceMs: 400,
+                            auditFrozen: audit_frozen
                         }
                     }
                 });
@@ -318,7 +338,8 @@ export class RequirementsListViewComponent {
             relevant_ids_by_sample: this.relevant_ids_by_sample,
             current_sample_object,
             AuditLogic: this.AuditLogic,
-            requirements: rule_file_content?.requirements
+            requirements: rule_file_content?.requirements,
+            audit_frozen
         });
 
         const filtered_count = filtered_items.length;
@@ -348,9 +369,18 @@ export class RequirementsListViewComponent {
         const has_search_filter = this.mode === 'all' && search_term.length > 0;
         const has_status_filter_excluding = has_status_filters && status_keys_for_filter.some(key => status_filters[key] !== true);
         const has_active_filter = has_search_filter || has_status_filter_excluding;
+        const deficiency_search_number = audit_frozen
+            ? parse_deficiency_search_number(current_ui_settings.searchText)
+            : null;
 
         // Render items eller inkrementell uppdatering
-        const filter_opts = { status_filters, has_status_filters, requirement_needs_help_fn, has_active_filter };
+        const filter_opts = {
+            status_filters,
+            has_status_filters,
+            requirement_needs_help_fn,
+            has_active_filter,
+            deficiency_search_number
+        };
         const item_keys = build_item_keys(
             this.mode,
             sorted_items,

@@ -44,6 +44,22 @@ export function requirement_result_has_deficiency_search(result: unknown, search
 }
 
 /**
+ * Returnerar check_id och pc_id för första underkända kriterium med matchande brist-id.
+ */
+export function find_pass_criterion_by_deficiency_search(
+    result: unknown,
+    search_number: number
+): { check_id: string; pc_id: string } | null {
+    let match: { check_id: string; pc_id: string } | null = null;
+    for_each_failed_in_requirement_result(result, ({ check_id, pc_id, pc_obj }) => {
+        if (deficiency_id_matches_search(pc_obj.deficiencyId, search_number)) {
+            match = { check_id, pc_id };
+        }
+    });
+    return match;
+}
+
+/**
  * Alla-läge: minst ett relevant stickprov har matchande brist-id.
  */
 export function requirement_has_deficiency_search_all_mode(

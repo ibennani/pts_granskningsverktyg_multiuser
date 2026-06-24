@@ -1374,7 +1374,7 @@
   "score_by_principle": "Uppdelning per princip",
   "score_by_principle_deficiency": "Uppdelning per princip",
   "score_progress_bar_could_not_be_loaded": "Poängstapeln kunde inte laddas",
-  "search_in_help_texts_and_deficiency_id_label": "Sök i hjälptexter och brist-id:",
+  "search_in_help_texts_and_deficiency_id_label": "Sök i hjälptexter eller på brist-id:",
   "search_in_help_texts_label": "Sök i hjälptexter:",
   "search_placeholder_default": "Sök i kravtexter...",
   "secondary_score": "Sekundär poäng",

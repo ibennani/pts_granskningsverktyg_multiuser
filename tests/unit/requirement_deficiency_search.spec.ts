@@ -2,7 +2,8 @@ import { describe, test, expect } from '@jest/globals';
 import {
     parse_deficiency_search_number,
     deficiency_id_matches_search,
-    requirement_result_has_deficiency_search
+    requirement_result_has_deficiency_search,
+    find_pass_criterion_by_deficiency_search
 } from '../../js/utils/requirement_deficiency_search.js';
 
 describe('requirement_deficiency_search', () => {
@@ -78,6 +79,30 @@ describe('requirement_deficiency_search', () => {
                     27
                 )
             ).toBe(false);
+        });
+    });
+
+    describe('find_pass_criterion_by_deficiency_search', () => {
+        const result_with_b27 = {
+            checkResults: {
+                c1: {
+                    passCriteria: {
+                        p1: { status: 'failed', deficiencyId: 'B27' },
+                        p2: { status: 'passed' }
+                    }
+                }
+            }
+        };
+
+        test('returnerar check_id och pc_id för matchande brist', () => {
+            expect(find_pass_criterion_by_deficiency_search(result_with_b27, 27)).toEqual({
+                check_id: 'c1',
+                pc_id: 'p1'
+            });
+        });
+
+        test('returnerar null utan match', () => {
+            expect(find_pass_criterion_by_deficiency_search(result_with_b27, 2)).toBeNull();
         });
     });
 });

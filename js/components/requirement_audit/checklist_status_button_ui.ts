@@ -2,7 +2,7 @@
  * @fileoverview Statusknappar, fokusåterställning och flight-hantering för ChecklistHandler.
  */
 
-import { get_pending_checklist_focus_target } from '../../app/browser_globals.js';
+import { get_pending_checklist_focus_target, set_pending_checklist_focus_target } from '../../app/browser_globals.js';
 import { consume_krav_vy_dom_flow, log_krav_vy_knapp } from './krav_vy_knapp_debug_log.js';
 
 export type StatusButtonTarget = {
@@ -164,6 +164,51 @@ export function resolve_status_button_element(
     return button_el;
 }
 
+function resolve_observation_textarea(
+    host: ChecklistStatusButtonHost,
+    check_id: string,
+    pc_id: string
+): HTMLTextAreaElement | null {
+    if (!host.container_ref) return null;
+    const textarea = host.container_ref.querySelector(
+        `#pc-observation-${CSS.escape(check_id)}-${CSS.escape(pc_id)}`
+    ) as HTMLTextAreaElement | null;
+    if (!textarea || !document.contains(textarea)) return null;
+    return textarea;
+}
+
+function reapply_pending_observation_focus(
+    host: ChecklistStatusButtonHost,
+    pending: { check_id?: string | null; pc_id?: string | null }
+): void {
+    const check_id = pending.check_id ?? null;
+    const pc_id = pending.pc_id ?? null;
+    if (!check_id || !pc_id) return;
+
+    const textarea = resolve_observation_textarea(host, check_id, pc_id);
+    if (!textarea) return;
+
+    set_pending_checklist_focus_target(undefined);
+    (window as Window & { customFocusApplied?: boolean }).customFocusApplied = true;
+
+    const top_action_bar = document.getElementById('global-action-bar-top');
+    const top_bar_height = top_action_bar ? top_action_bar.offsetHeight : 0;
+    const rect = textarea.getBoundingClientRect();
+    const scroll_position = Math.max(0, rect.top + window.pageYOffset - top_bar_height - 16);
+    window.scrollTo({ top: scroll_position, behavior: 'smooth' });
+
+    requestAnimationFrame(() => {
+        setTimeout(() => {
+            if (!document.contains(textarea)) return;
+            try {
+                textarea.focus({ preventScroll: true });
+            } catch {
+                textarea.focus();
+            }
+        }, 300);
+    });
+}
+
 export function reapply_pending_status_button_focus(host: ChecklistStatusButtonHost): void {
     const pending = get_pending_checklist_focus_target() as {
         action?: string;
@@ -173,6 +218,11 @@ export function reapply_pending_status_button_focus(host: ChecklistStatusButtonH
     } | null | undefined;
     if (!pending?.action || !host.container_ref) return;
     if (typeof pending.set_at !== 'number' || Date.now() - pending.set_at > 5000) return;
+
+    if (pending.action === 'focus_observation') {
+        reapply_pending_observation_focus(host, pending);
+        return;
+    }
 
     const target: StatusButtonTarget = {
         action: pending.action,
