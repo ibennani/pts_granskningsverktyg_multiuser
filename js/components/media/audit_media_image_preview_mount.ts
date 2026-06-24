@@ -26,6 +26,16 @@ type PreviewModalBaseline = {
     dialog_height: number;
 };
 
+function get_modal_shell(container: HTMLElement): HTMLElement {
+    return (container.closest('.modal-content') as HTMLElement | null) ?? container;
+}
+
+function measure_modal_header_height(shell_el: HTMLElement): number {
+    const header = shell_el.querySelector('.modal-header');
+    if (!(header instanceof HTMLElement)) return 0;
+    return Math.round(header.getBoundingClientRect().height);
+}
+
 export type MountAuditMediaImagePreviewOptions = {
     t: TranslateFn;
     Helpers: HelpersLike;
@@ -63,11 +73,13 @@ function measure_non_image_chrome_height(
     container: HTMLElement,
     observation_body_height?: number
 ): number {
+    const shell_el = get_modal_shell(container);
     const dialog_style = getComputedStyle(dialog_el);
     const padding_y = parse_css_px(dialog_style.paddingTop) + parse_css_px(dialog_style.paddingBottom);
-    const gap = parse_css_px(getComputedStyle(container).rowGap)
-        || parse_css_px(getComputedStyle(container).gap)
+    const gap = parse_css_px(getComputedStyle(shell_el).rowGap)
+        || parse_css_px(getComputedStyle(shell_el).gap)
         || 12;
+    const header_height = measure_modal_header_height(shell_el);
     const preview_wrap = container.querySelector('.audit-media-preview-wrap');
     const observation_block = container.querySelector('.audit-media-preview-observation');
     const observation_body = observation_block?.querySelector('.audit-media-preview-observation__body');
@@ -96,7 +108,10 @@ function measure_non_image_chrome_height(
         visible_siblings += 1;
     }
 
-    return padding_y + siblings_height + gap * visible_siblings;
+    const header_gap = header_height > 0 ? gap : 0;
+    const body_gap = visible_siblings > 0 ? gap * Math.max(0, visible_siblings - 1) : 0;
+
+    return padding_y + header_height + header_gap + siblings_height + body_gap;
 }
 
 function compute_max_image_box(
@@ -158,31 +173,14 @@ function apply_modal_baseline_lock(
     dialog_el.style.minHeight = `${capped.height}px`;
     dialog_el.style.maxHeight = `${max_height}px`;
 
-    const dialog_style = getComputedStyle(dialog_el);
-    const padding_x = parse_css_px(dialog_style.paddingLeft) + parse_css_px(dialog_style.paddingRight);
-    const content_width = Math.max(1, capped.width - padding_x);
-    container.style.width = `${content_width}px`;
-    container.style.maxWidth = `${content_width}px`;
-    container.style.boxSizing = 'border-box';
+    const shell_el = get_modal_shell(container);
+    shell_el.dataset.previewLayoutLocked = 'true';
     container.dataset.previewLayoutLocked = 'true';
-
-    const observation_block = container.querySelector('.audit-media-preview-observation');
-    if (observation_block instanceof HTMLElement) {
-        observation_block.style.width = `${content_width}px`;
-        observation_block.style.maxWidth = `${content_width}px`;
-        observation_block.style.boxSizing = 'border-box';
-    }
-
-    const preview_wrap = container.querySelector('.audit-media-preview-wrap');
-    if (preview_wrap instanceof HTMLElement) {
-        preview_wrap.style.width = `${content_width}px`;
-        preview_wrap.style.maxWidth = `${content_width}px`;
-        preview_wrap.style.boxSizing = 'border-box';
-    }
 }
 
 function measure_heading_single_line_width(container: HTMLElement): number {
-    const heading = container.querySelector('#modal-dialog-title');
+    const shell_el = get_modal_shell(container);
+    const heading = shell_el.querySelector('#modal-dialog-title');
     if (!(heading instanceof HTMLElement)) return 0;
 
     const previous_white_space = heading.style.whiteSpace;
@@ -206,7 +204,8 @@ function sync_preview_heading_layout_mode(
     container: HTMLElement,
     dialog_el: HTMLDialogElement
 ): void {
-    const heading = container.querySelector('#modal-dialog-title');
+    const shell_el = get_modal_shell(container);
+    const heading = shell_el.querySelector('#modal-dialog-title');
     if (!(heading instanceof HTMLElement)) return;
 
     const wrap_at_cap = measure_heading_single_line_width(container)
@@ -506,9 +505,11 @@ export function teardown_audit_media_preview_for_view_switch(
         dialog_el.classList.remove('modal-dialog--media-preview');
     }
 
-    container.classList.remove('modal-content--media-preview');
+    const shell_el = get_modal_shell(container);
+    shell_el.classList.remove('modal-content--media-preview');
+    container.classList.remove('modal-body--media-preview');
 
-    const heading = container.querySelector('#modal-dialog-title');
+    const heading = shell_el.querySelector('#modal-dialog-title');
     if (heading instanceof HTMLElement) {
         heading.classList.remove('modal-heading--wrap-at-cap');
     }
@@ -531,13 +532,20 @@ export function reset_audit_media_preview_layout(
         dialog_el.classList.remove('modal-dialog--media-preview');
     }
 
-    container.classList.remove('modal-content--media-preview');
+    const shell_el = get_modal_shell(container);
+    shell_el.classList.remove('modal-content--media-preview');
+    shell_el.style.width = '';
+    shell_el.style.maxWidth = '';
+    shell_el.style.boxSizing = '';
+    delete shell_el.dataset.previewLayoutLocked;
+
+    container.classList.remove('modal-body--media-preview');
     container.style.width = '';
     container.style.maxWidth = '';
     container.style.boxSizing = '';
     delete container.dataset.previewLayoutLocked;
 
-    const heading = container.querySelector('#modal-dialog-title');
+    const heading = shell_el.querySelector('#modal-dialog-title');
     if (heading instanceof HTMLElement) {
         heading.classList.remove('modal-heading--wrap-at-cap');
     }
@@ -567,7 +575,8 @@ export function mount_audit_media_image_preview(
         defer_baseline_lock = false
     } = options;
 
-    container.classList.add('modal-content--media-preview');
+    container.classList.add('modal-body--media-preview');
+    get_modal_shell(container).classList.add('modal-content--media-preview');
     dialog_el?.classList.add('modal-dialog--media-preview');
 
     const preview_wrap = Helpers.create_element('div', {

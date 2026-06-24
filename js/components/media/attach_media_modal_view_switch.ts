@@ -82,6 +82,13 @@ function clear_preview_container_layout_locks(container: HTMLElement): void {
     container.style.maxWidth = '';
     container.style.boxSizing = '';
     delete container.dataset.previewLayoutLocked;
+    const shell = get_modal_shell_from_container(container);
+    if (shell !== container) {
+        shell.style.width = '';
+        shell.style.maxWidth = '';
+        shell.style.boxSizing = '';
+        delete shell.dataset.previewLayoutLocked;
+    }
 }
 
 async function wait_for_next_frame(): Promise<void> {
@@ -103,8 +110,13 @@ async function wait_for_layout(container: HTMLElement): Promise<void> {
     await wait_for_next_frame();
 }
 
+function get_modal_shell_from_container(container: HTMLElement): HTMLElement {
+    return (container.closest('.modal-content') as HTMLElement | null) ?? container;
+}
+
 function is_media_preview_container(container: HTMLElement): boolean {
-    return container.classList.contains('modal-content--media-preview');
+    const shell = get_modal_shell_from_container(container);
+    return shell.classList.contains('modal-content--media-preview');
 }
 
 function force_reflow(dialog_el: HTMLDialogElement): void {

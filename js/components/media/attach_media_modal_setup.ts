@@ -52,6 +52,8 @@ export type AttachMediaModalOptions = {
 type AttachMediaModalHost = {
     close: (focus_element?: HTMLElement | null) => void;
     dialog_element_ref?: HTMLDialogElement | null;
+    shell_container_ref?: HTMLElement | null;
+    header_container_ref?: HTMLElement | null;
 };
 
 export type AttachMediaModalSetupContext = AttachMediaModalOptions & {
@@ -92,10 +94,16 @@ export function setup_attach_media_modal_content(
     let persist_in_flight = ctx.persist_in_flight;
     const server_index = audit_id && can_upload ? create_audit_media_server_index(audit_id) : null;
 
-    container.classList.add('modal-content--attach-media');
+    container.classList.add('modal-body--attach-media');
+    const shell_el = modal.shell_container_ref
+        ?? (container.closest('.modal-content') as HTMLElement | null)
+        ?? container;
+    shell_el.classList.add('modal-content--attach-media');
     const dialog_el = modal.dialog_element_ref;
-    const heading_el = container.querySelector('#modal-dialog-title') as HTMLHeadingElement | null;
-    const message_el = container.querySelector('.modal-message') as HTMLElement | null;
+    const header_el = modal.header_container_ref
+        ?? (shell_el.querySelector('.modal-header') as HTMLElement | null);
+    const heading_el = (header_el?.querySelector('#modal-dialog-title') ?? shell_el.querySelector('#modal-dialog-title')) as HTMLHeadingElement | null;
+    const message_el = (header_el?.querySelector('.modal-message') ?? shell_el.querySelector('.modal-message')) as HTMLElement | null;
     const modal_heading_text = t('attach_media_modal_h1');
     const modal_message_text = message_el?.textContent ?? '';
 
@@ -154,6 +162,8 @@ export function setup_attach_media_modal_content(
     });
     if (heading_el) {
         heading_el.insertAdjacentElement('afterend', status_el);
+    } else if (header_el) {
+        header_el.appendChild(status_el);
     } else {
         list_mode_root.appendChild(status_el);
     }

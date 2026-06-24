@@ -22,6 +22,10 @@ type HelpersLike = {
 
 const PREVIEW_HISTORY_FLAG = '__gv_attach_media_preview';
 
+function get_modal_shell(container: HTMLElement): HTMLElement {
+    return (container.closest('.modal-content') as HTMLElement | null) ?? container;
+}
+
 export type AttachMediaInModalPreviewOptions = {
     t: TranslateFn;
     Helpers: HelpersLike;
@@ -97,13 +101,15 @@ export function create_attach_media_in_modal_preview(
     };
 
     const apply_list_view = () => {
+        const shell_el = get_modal_shell(modal_container);
         teardown_audit_media_preview_for_view_switch(dialog_el, modal_container);
         preview_mount_destroy = () => {};
         preview_finalize_layout = () => {};
         preview_open = false;
         on_preview_open_change?.(false);
 
-        modal_container.classList.add('modal-content--attach-media');
+        shell_el.classList.add('modal-content--attach-media');
+        modal_container.classList.add('modal-body--attach-media');
 
         heading_el.textContent = modal_heading_text;
         message_el.textContent = modal_message_text;
@@ -164,8 +170,10 @@ export function create_attach_media_in_modal_preview(
         blob_url: string | null | undefined,
         trigger_element: HTMLElement | null
     ) => {
+        const shell_el = get_modal_shell(modal_container);
         list_mode_root.remove();
-        modal_container.classList.remove('modal-content--attach-media');
+        shell_el.classList.remove('modal-content--attach-media');
+        modal_container.classList.remove('modal-body--attach-media');
 
         heading_el.textContent = filename;
         message_el.textContent = '';
@@ -233,8 +241,10 @@ export function create_attach_media_in_modal_preview(
         preview_finalize_layout = () => {};
         preview_open = false;
         reset_audit_media_preview_layout(dialog_el, modal_container);
-        modal_container.classList.add('modal-content--attach-media');
-        modal_container.classList.remove('modal-content--attach-media-view-switch');
+        const shell_el = get_modal_shell(modal_container);
+        shell_el.classList.add('modal-content--attach-media');
+        shell_el.classList.remove('modal-content--attach-media-view-switch');
+        modal_container.classList.add('modal-body--attach-media');
         modal_container.style.opacity = '';
         dialog_el?.classList.remove('modal-dialog--attach-media-view-switch');
         if (dialog_el) {

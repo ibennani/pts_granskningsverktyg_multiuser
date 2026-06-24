@@ -15,6 +15,8 @@ export class ModalComponent {
         this.Translation = deps.Translation;
 
         this.dialog_element_ref = null;
+        this.shell_container_ref = null;
+        this.header_container_ref = null;
         this.content_container_ref = null;
         this.focus_before_open = null;
         this.pending_focus_element = null;
@@ -378,6 +380,8 @@ export class ModalComponent {
             this.root.setAttribute('aria-hidden', 'true');
         }
         this.dialog_element_ref = null;
+        this.shell_container_ref = null;
+        this.header_container_ref = null;
         this.content_container_ref = null;
         this.focus_before_open = null;
         this.pending_focus_element = null;
@@ -408,9 +412,12 @@ export class ModalComponent {
             },
         });
 
-        this.content_container_ref = this.Helpers.create_element('div', {
-            class_name: 'modal-content',
-            attributes: { id: 'modal-content-container' },
+        this.shell_container_ref = this.Helpers.create_element('div', {
+            class_name: 'modal-content'
+        });
+
+        this.header_container_ref = this.Helpers.create_element('div', {
+            class_name: 'modal-header'
         });
 
         const heading = this.Helpers.create_element('h1', {
@@ -419,21 +426,32 @@ export class ModalComponent {
             text_content: h1_text || '',
             attributes: { tabindex: '-1' },
         });
-        this.content_container_ref.appendChild(heading);
+        this.header_container_ref.appendChild(heading);
 
         const message = this.Helpers.create_element('p', {
             class_name: 'modal-message',
             text_content: message_text || '',
         });
-        this.content_container_ref.appendChild(message);
+        if (!String(message_text || '').trim()) {
+            message.hidden = true;
+        }
+        this.header_container_ref.appendChild(message);
+
+        this.content_container_ref = this.Helpers.create_element('div', {
+            class_name: 'modal-body',
+            attributes: { id: 'modal-content-container' },
+        });
+
+        this.shell_container_ref.appendChild(this.header_container_ref);
+        this.shell_container_ref.appendChild(this.content_container_ref);
 
         if (typeof content_callback === 'function') {
             content_callback(this.content_container_ref, this);
         }
 
-        this._transform_quotes_to_strong_in_container(this.content_container_ref);
+        this._transform_quotes_to_strong_in_container(this.shell_container_ref);
 
-        this.dialog_element_ref.appendChild(this.content_container_ref);
+        this.dialog_element_ref.appendChild(this.shell_container_ref);
 
         this._bound_handle_close = () => this._finish_close();
         this._bound_handle_cancel = (e) => {
@@ -522,6 +540,8 @@ export class ModalComponent {
             this.root?.setAttribute('aria-hidden', 'true');
 
             this.dialog_element_ref = null;
+            this.shell_container_ref = null;
+            this.header_container_ref = null;
             this.content_container_ref = null;
             this.focus_before_open = null;
             this.pending_focus_element = null;

@@ -160,11 +160,18 @@
     font-style: italic;
 }
 
+.modal-content--attach-media > .modal-body,
+.modal-body.modal-body--attach-media {
+    min-width: 0;
+    max-width: 100%;
+}
+
 .attach-media-list-mode {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
     min-width: 0;
+    max-width: 100%;
 }
 
 dialog.modal-dialog.modal-dialog--attach-media-view-switch,
@@ -184,6 +191,7 @@ dialog.modal-dialog.modal-dialog--attach-media-view-switch.modal-dialog--media-p
 .attach-media-list-heading {
     font-size: 1rem;
     margin: 0 0 0.5rem 0;
+    color: var(--heading-color, var(--text-color));
 }
 
 .attach-media-list-container {
@@ -329,6 +337,7 @@ dialog.modal-dialog.modal-dialog--attach-media-view-switch.modal-dialog--media-p
 .audit-media-preview-observation__label {
     font-weight: 600;
     margin: 0;
+    color: var(--heading-color, var(--text-color));
 }
 
 .audit-media-preview-observation__edit-btn {
@@ -387,6 +396,7 @@ dialog.modal-dialog.modal-dialog--attach-media-view-switch.modal-dialog--media-p
     overflow-wrap: anywhere;
     white-space: pre-wrap;
     word-break: break-word;
+    color: var(--text-color);
     opacity: 1;
     visibility: visible;
     transform: translateY(0);
@@ -470,9 +480,10 @@ dialog.modal-dialog.modal-dialog--attach-media-view-switch.modal-dialog--media-p
 }
 
 dialog.modal-dialog.modal-dialog--media-preview {
-    width: max-content;
+    width: min(var(--modal-max-viewport-width, 90vw), 100%);
     max-width: var(--modal-max-viewport-width, 90vw);
     max-height: var(--modal-max-viewport-height, 90vh);
+    min-width: 0;
     margin: auto;
     padding: 1rem;
     box-sizing: border-box;
@@ -482,6 +493,7 @@ dialog.modal-dialog.modal-dialog--media-preview {
 dialog.modal-dialog.modal-dialog--media-preview > .modal-content {
     flex: 1 1 auto;
     min-height: 0;
+    min-width: 0;
     max-width: 100%;
     max-height: 100%;
     overflow: hidden;
@@ -489,7 +501,7 @@ dialog.modal-dialog.modal-dialog--media-preview > .modal-content {
 
 @media (max-width: 799px) {
     dialog.modal-dialog.modal-dialog--media-preview {
-        width: max-content;
+        width: min(100%, var(--modal-max-viewport-width, 90vw));
         max-width: var(--modal-max-viewport-width, 90vw);
         max-height: var(--modal-max-viewport-height, 90vh);
         margin: auto;
@@ -499,6 +511,7 @@ dialog.modal-dialog.modal-dialog--media-preview > .modal-content {
 .modal-content--media-preview {
     flex: 1 1 auto;
     min-height: 0;
+    min-width: 0;
     width: 100%;
     max-width: 100%;
     max-height: 100%;
@@ -506,6 +519,28 @@ dialog.modal-dialog.modal-dialog--media-preview > .modal-content {
     gap: 0.75rem;
     align-items: stretch;
     transition: height var(--modal-transition-duration, 0.5s) ease;
+}
+
+.modal-content--media-preview > .modal-body,
+.modal-body.modal-body--media-preview {
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    overflow-x: hidden;
+    overflow-y: auto;
+    align-items: stretch;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.modal-content--media-preview .modal-header {
+    flex-shrink: 0;
+    min-width: 0;
+    max-width: 100%;
 }
 
 .modal-content--media-preview .modal-heading {

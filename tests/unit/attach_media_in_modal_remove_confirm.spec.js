@@ -28,19 +28,25 @@ function create_helpers() {
 function setup_modal_dom() {
     const dialog = document.createElement('dialog');
     dialog.className = 'modal-dialog';
-    const container = document.createElement('div');
-    container.className = 'modal-content modal-content--attach-media';
+    const shell = document.createElement('div');
+    shell.className = 'modal-content modal-content--attach-media';
+    const header = document.createElement('div');
+    header.className = 'modal-header';
     const heading = document.createElement('h1');
     heading.id = 'modal-dialog-title';
     const message = document.createElement('p');
     message.className = 'modal-message';
+    header.append(heading, message);
+    const body = document.createElement('div');
+    body.className = 'modal-body modal-body--attach-media';
     const list_root = document.createElement('div');
     list_root.className = 'attach-media-list-mode';
     list_root.textContent = 'list';
-    container.append(heading, message, list_root);
-    dialog.appendChild(container);
+    body.appendChild(list_root);
+    shell.append(header, body);
+    dialog.appendChild(shell);
     document.body.appendChild(dialog);
-    return { dialog, container, heading, message, list_root };
+    return { dialog, container: body, shell, heading, message, list_root };
 }
 
 describe('create_attach_media_in_modal_remove_confirm', () => {

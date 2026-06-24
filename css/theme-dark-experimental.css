@@ -109,6 +109,10 @@
 
     --build-timestamp-color: #94949e;
 
+    --modal-backdrop-color: rgba(0, 0, 0, 0.65);
+    --modal-dialog-border: 1px solid var(--de-border-default);
+    --modal-dialog-shadow: 0 24px 48px rgba(0, 0, 0, 0.45);
+
     --de-bg-page: #09090b;
     --de-bg-panel: #111113;
     --de-bg-elevated: #18181b;
@@ -1031,58 +1035,6 @@ html[data-theme="dark-experimental"] .FilterPanelComponent__status-icon.status-i
 [data-theme="dark-experimental"] .requirement-audit-sidebar .status-icon-partially-audited,
 [data-theme="dark-experimental"] .audit-status-stack__distribution-icon .status-icon-partially-audited {
     color: var(--de-status-warning);
-}
-
-/* --- Modal --- */
-[data-theme="dark-experimental"] dialog.modal-dialog::backdrop,
-[data-theme="dark-experimental"] dialog.modal-dialog.modal-dialog--visible::backdrop {
-    background-color: rgba(0, 0, 0, 0.65);
-    backdrop-filter: blur(4px);
-}
-
-[data-theme="dark-experimental"] dialog.modal-dialog {
-    background-color: var(--de-bg-panel);
-    border: 1px solid var(--de-border-default);
-    border-radius: 14px;
-    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.45);
-}
-
-[data-theme="dark-experimental"] .modal-heading {
-    font-size: 1.125rem;
-    font-weight: 600;
-    padding: 1.25rem 1.5rem;
-    border-bottom: 1px solid var(--de-border-default);
-}
-
-[data-theme="dark-experimental"] .modal-content {
-    padding: 1.25rem 1.5rem;
-    color: var(--de-text-primary);
-}
-
-[data-theme="dark-experimental"] .modal-heading {
-    color: var(--heading-color);
-}
-
-[data-theme="dark-experimental"] .modal-message {
-    color: var(--de-text-primary);
-}
-
-[data-theme="dark-experimental"] .copy-observation-radio-group {
-    color: var(--de-text-primary);
-}
-
-[data-theme="dark-experimental"] .copy-observation-radio-option {
-    background-color: var(--input-background-color);
-    color: var(--input-text-color);
-    border: var(--de-interactive-border-width) solid var(--de-interactive-border);
-}
-
-[data-theme="dark-experimental"] .copy-observation-radio-option:hover,
-[data-theme="dark-experimental"] .copy-observation-radio-option:focus-within {
-    border-color: var(--de-interactive-border);
-    outline: var(--de-focus-ring-width) var(--de-focus-ring-style) var(--de-focus-color);
-    outline-offset: var(--de-focus-ring-outline-offset);
-    box-shadow: var(--de-interactive-shadow);
 }
 
 /* --- Notifieringar --- */

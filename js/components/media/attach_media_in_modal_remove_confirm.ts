@@ -10,6 +10,10 @@ type HelpersLike = {
     create_element: (tag: string, opts?: Record<string, unknown>) => HTMLElement;
 };
 
+function get_modal_shell(container: HTMLElement): HTMLElement {
+    return (container.closest('.modal-content') as HTMLElement | null) ?? container;
+}
+
 export type AttachMediaInModalRemoveConfirmOptions = {
     t: TranslateFn;
     Helpers: HelpersLike;
@@ -85,7 +89,8 @@ export function create_attach_media_in_modal_remove_confirm(
         on_open_change?.(false);
         remove_confirm_actions();
 
-        modal_container.classList.add('modal-content--attach-media');
+        get_modal_shell(modal_container).classList.add('modal-content--attach-media');
+        modal_container.classList.add('modal-body--attach-media');
 
         heading_el.textContent = modal_heading_text;
         message_el.textContent = modal_message_text;
@@ -186,8 +191,9 @@ export function create_attach_media_in_modal_remove_confirm(
 
         remove_confirm_actions();
         confirm_open = false;
-        modal_container.classList.add('modal-content--attach-media');
-        modal_container.classList.remove('modal-content--attach-media-view-switch');
+        get_modal_shell(modal_container).classList.add('modal-content--attach-media');
+        get_modal_shell(modal_container).classList.remove('modal-content--attach-media-view-switch');
+        modal_container.classList.add('modal-body--attach-media');
         modal_container.style.opacity = '';
 
         heading_el.textContent = modal_heading_text;

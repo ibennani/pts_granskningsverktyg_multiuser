@@ -42,17 +42,23 @@ function create_helpers() {
 function setup_modal_dom() {
     const dialog = document.createElement('dialog');
     dialog.className = 'modal-dialog';
-    const container = document.createElement('div');
-    container.className = 'modal-content';
+    const shell = document.createElement('div');
+    shell.className = 'modal-content';
+    const header = document.createElement('div');
+    header.className = 'modal-header';
     const heading = document.createElement('h1');
     heading.id = 'modal-dialog-title';
     const message = document.createElement('p');
     message.className = 'modal-message';
     message.textContent = 'Intro';
-    container.append(heading, message);
-    dialog.appendChild(container);
+    header.append(heading, message);
+    const body = document.createElement('div');
+    body.className = 'modal-body';
+    body.id = 'modal-content-container';
+    shell.append(header, body);
+    dialog.appendChild(shell);
     document.body.appendChild(dialog);
-    return { dialog, container };
+    return { dialog, container: body, shell, header };
 }
 
 describe('setup_attach_media_modal_content', () => {
@@ -70,13 +76,14 @@ describe('setup_attach_media_modal_content', () => {
     });
 
     it('bygger listvy utan att kasta fel (krav-bifogning, online)', () => {
-        const { dialog, container } = setup_modal_dom();
+        const { dialog, container, shell } = setup_modal_dom();
         const t = (key: string) => key;
 
         expect(() => {
             setup_attach_media_modal_content(container, {
                 close: () => {},
-                dialog_element_ref: dialog
+                dialog_element_ref: dialog,
+                shell_container_ref: shell
             }, {
                 t,
                 Helpers: create_helpers(),

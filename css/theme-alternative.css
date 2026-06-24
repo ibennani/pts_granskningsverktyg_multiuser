@@ -29,6 +29,32 @@
     --input-border: #D1D5DB;
     --table-header-bg: #F9FAFB;
     --table-header-text: #374151;
+
+    /* Alias till gemensamma variabler som modal och formulär använder */
+    --text-color: var(--text-core);
+    --text-color-muted: var(--text-muted);
+    --heading-color: var(--text-core);
+    --plate-background-color: var(--bg-panel);
+    --background-color: var(--bg-page);
+    --border-color: var(--border-alt);
+    --input-background-color: var(--bg-panel);
+    --input-text-color: var(--text-core);
+    --primary-color: var(--primary-alt);
+    --info-color: var(--primary-alt);
+    --info-color-light: var(--badge-blue-bg);
+    --success-color: var(--badge-green-text);
+    --success-color-light: var(--badge-green-bg);
+    --danger-color: var(--badge-red-text);
+    --danger-color-light: var(--badge-red-bg);
+    --border-radius: 8px;
+    --focus-outer-width: 2px;
+    --focus-outer-style: solid;
+    --focus-outer-color: var(--primary-alt);
+    --focus-ring-outline-offset: 2px;
+    --focus-ring-box-shadow: none;
+
+    --modal-backdrop-color: rgba(0, 0, 0, 0.5);
+    --modal-dialog-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
 }
 
 /* --- Sidbakgrund och layout --- */
@@ -370,33 +396,6 @@
 
 [data-theme="alternative"] .generic-table-header-sort-btn:hover {
     color: var(--primary-alt);
-}
-
-/* --- Modal --- */
-[data-theme="alternative"] dialog.modal-dialog::backdrop {
-    background-color: rgba(0, 0, 0, 0.5);
-}
-
-[data-theme="alternative"] dialog.modal-dialog.modal-dialog--visible::backdrop {
-    background-color: rgba(0, 0, 0, 0.5);
-}
-
-[data-theme="alternative"] dialog.modal-dialog {
-    background-color: var(--bg-panel);
-    border: none;
-    border-radius: 8px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
-}
-
-[data-theme="alternative"] .modal-heading {
-    font-size: 18px;
-    font-weight: 600;
-    padding: 20px 24px;
-    border-bottom: 1px solid var(--border-alt);
-}
-
-[data-theme="alternative"] .modal-content {
-    padding: 20px 24px;
 }
 
 /* --- Progress / staplar --- */

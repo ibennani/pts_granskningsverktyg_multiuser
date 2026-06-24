@@ -115,6 +115,10 @@
 
     --build-timestamp-color: #6b6b61;
 
+    --modal-backdrop-color: rgba(0, 0, 0, 0.35);
+    --modal-dialog-border: 1px solid var(--ww-border-default);
+    --modal-dialog-shadow: 0 24px 48px rgba(0, 0, 0, 0.12);
+
     --ww-bg-page: #fafafa;
     --ww-bg-panel: #eeefed;
     --ww-bg-elevated: #e7e7e4;
@@ -1049,58 +1053,6 @@ html[data-theme="winter-white"] .FilterPanelComponent__status-icon.status-icon-n
 [data-theme="winter-white"] .requirement-audit-sidebar .status-icon-partially-audited,
 [data-theme="winter-white"] .audit-status-stack__distribution-icon .status-icon-partially-audited {
     color: var(--ww-status-warning);
-}
-
-/* --- Modal --- */
-[data-theme="winter-white"] dialog.modal-dialog::backdrop,
-[data-theme="winter-white"] dialog.modal-dialog.modal-dialog--visible::backdrop {
-    background-color: rgba(0, 0, 0, 0.35);
-    backdrop-filter: blur(4px);
-}
-
-[data-theme="winter-white"] dialog.modal-dialog {
-    background-color: var(--ww-bg-panel);
-    border: 1px solid var(--ww-border-default);
-    border-radius: 14px;
-    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.12);
-}
-
-[data-theme="winter-white"] .modal-heading {
-    font-size: 1.125rem;
-    font-weight: 600;
-    padding: 1.25rem 1.5rem;
-    border-bottom: 1px solid var(--ww-border-default);
-}
-
-[data-theme="winter-white"] .modal-content {
-    padding: 1.25rem 1.5rem;
-    color: var(--ww-text-primary);
-}
-
-[data-theme="winter-white"] .modal-heading {
-    color: var(--heading-color);
-}
-
-[data-theme="winter-white"] .modal-message {
-    color: var(--ww-text-primary);
-}
-
-[data-theme="winter-white"] .copy-observation-radio-group {
-    color: var(--ww-text-primary);
-}
-
-[data-theme="winter-white"] .copy-observation-radio-option {
-    background-color: var(--input-background-color);
-    color: var(--input-text-color);
-    border: var(--ww-interactive-border-width) solid var(--ww-interactive-border);
-}
-
-[data-theme="winter-white"] .copy-observation-radio-option:hover,
-[data-theme="winter-white"] .copy-observation-radio-option:focus-within {
-    border-color: var(--ww-interactive-border);
-    outline: var(--ww-focus-ring-width) var(--ww-focus-ring-style) var(--ww-focus-color);
-    outline-offset: var(--ww-focus-ring-outline-offset);
-    box-shadow: var(--ww-interactive-shadow);
 }
 
 /* --- Notifieringar --- */

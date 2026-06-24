@@ -5,6 +5,12 @@
     --modal-max-viewport-width: 90vw;
     --modal-max-viewport-height: 90vh;
     --modal-default-max-width: min(600px, var(--modal-max-viewport-width));
+    --modal-inner-gap: 0.75rem;
+    --modal-backdrop-color: rgba(0, 0, 0, 0.5);
+    --modal-backdrop-filter: blur(4px);
+    --modal-dialog-border: none;
+    --modal-dialog-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+    --modal-focus-clearance: calc(var(--focus-outer-width, 2px) + var(--focus-ring-outline-offset, 3px) + 2px);
 }
 
 /* Backdrop – mörk overlay bakom dialogen */
@@ -14,7 +20,8 @@ dialog.modal-dialog::backdrop {
 }
 
 dialog.modal-dialog.modal-dialog--visible::backdrop {
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: var(--modal-backdrop-color);
+    backdrop-filter: var(--modal-backdrop-filter);
 }
 
 dialog.modal-dialog.modal-dialog--closing::backdrop {
@@ -22,17 +29,19 @@ dialog.modal-dialog.modal-dialog--closing::backdrop {
     transition: background-color var(--modal-transition-duration) ease;
 }
 
-/* Dialog-rutan */
+/* Dialog-rutan – fast behållare inom viewport */
 dialog.modal-dialog {
-    width: max-content;
-    max-width: var(--modal-default-max-width);
+    width: min(var(--modal-default-max-width), var(--modal-max-viewport-width));
+    max-width: var(--modal-max-viewport-width);
     max-height: var(--modal-max-viewport-height);
+    min-width: 0;
     margin: auto;
     padding: 1.5rem;
-    border: none;
+    border: var(--modal-dialog-border);
     border-radius: var(--border-radius, 12px);
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--modal-dialog-shadow);
     background-color: var(--plate-background-color, #fff);
+    color: var(--text-color);
     outline: none;
     opacity: 0;
     transition: opacity var(--modal-transition-duration) ease;
@@ -60,7 +69,11 @@ dialog.modal-dialog.modal-dialog--closing {
     dialog.modal-dialog.modal-dialog--visible,
     dialog.modal-dialog.modal-dialog--visible::backdrop {
         opacity: 1;
-        background-color: rgba(0, 0, 0, 0.5);
+        background-color: var(--modal-backdrop-color);
+    }
+
+    dialog.modal-dialog.modal-dialog--visible::backdrop {
+        backdrop-filter: none;
     }
 
     dialog.modal-dialog.modal-dialog--closing,
@@ -72,46 +85,84 @@ dialog.modal-dialog.modal-dialog--closing {
 
 @media (max-width: 799px) {
     dialog.modal-dialog {
-        margin: auto;
-        width: max-content;
+        width: min(100%, var(--modal-max-viewport-width));
         max-width: var(--modal-max-viewport-width);
         max-height: var(--modal-max-viewport-height);
     }
 }
 
+/* Yttre skal – ingen scroll, bara flex-uppdelning */
 dialog.modal-dialog > .modal-content {
     flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--modal-inner-gap);
     min-height: 0;
+    min-width: 0;
     max-width: 100%;
     max-height: 100%;
-    overflow-x: hidden;
-    overflow-y: auto;
+    overflow: hidden;
+    box-sizing: border-box;
 }
 
 .modal-content {
     display: flex;
     flex-direction: column;
-    gap: 0;
-    overflow-y: auto;
+    gap: var(--modal-inner-gap);
     min-height: 0;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.modal-header {
+    flex-shrink: 0;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.modal-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    box-sizing: border-box;
+    padding: var(--modal-focus-clearance);
+    scroll-padding: var(--modal-focus-clearance);
 }
 
 .modal-heading {
     margin-top: 0;
     margin-bottom: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
     color: var(--heading-color, var(--text-color));
 }
 
 .modal-message {
     margin-top: 0;
-    margin-bottom: 1rem;
+    margin-bottom: 0;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
     white-space: pre-line;
     color: var(--text-color);
+}
+
+.modal-message:empty {
+    display: none;
 }
 
 .modal-message-block {
     margin-top: 0;
     margin-bottom: 1rem;
+    max-width: 100%;
+    color: var(--text-color);
 }
 
 .modal-message-block p {
@@ -130,6 +181,7 @@ dialog.modal-dialog > .modal-content {
 .modal-affected-samples-label {
     margin: 0 0 0.5rem 0;
     font-weight: 600;
+    color: var(--text-color);
 }
 
 .modal-affected-samples-ul {
@@ -141,6 +193,7 @@ dialog.modal-dialog > .modal-content {
     margin: 0 0 0.5rem 0;
     font-size: 1rem;
     font-weight: 600;
+    color: var(--text-color);
 }
 
 .modal-versions-list {
@@ -148,8 +201,11 @@ dialog.modal-dialog > .modal-content {
     padding-left: 1.5rem;
 }
 
+.modal-body .button,
 .modal-content .button {
     align-self: flex-start;
+    max-width: 100%;
+    scroll-margin: var(--modal-focus-clearance);
 }
 
 .modal-confirm-actions {
@@ -157,22 +213,20 @@ dialog.modal-dialog > .modal-content {
     gap: 1rem;
     flex-wrap: wrap;
     margin-top: 1rem;
+    max-width: 100%;
 }
 
 .modal-attach-media-actions {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: wrap;
     gap: 0.75rem;
     margin-top: 1rem;
+    max-width: 100%;
 }
 
 .modal-attach-media-actions .form-group {
     margin-bottom: 0;
-}
-
-.modal-attach-media-actions {
-    flex-direction: row;
-    flex-wrap: wrap;
 }
 
 .modal-attach-media-actions .modal-action-right {
@@ -184,11 +238,13 @@ dialog.modal-dialog > .modal-content {
     flex-direction: column;
     gap: 0.75rem;
     margin: 1rem 0;
-    max-height: 50vh;
+    max-height: min(50vh, 100%);
     overflow-y: auto;
-    padding: 0.5rem 0;
+    padding: var(--modal-focus-clearance) 0;
+    scroll-padding: var(--modal-focus-clearance);
     color: var(--text-color);
     border: none;
+    min-width: 0;
 }
 
 .copy-observation-radio-option {
@@ -201,6 +257,7 @@ dialog.modal-dialog > .modal-content {
     cursor: pointer;
     background-color: var(--input-background-color);
     color: var(--input-text-color, var(--text-color));
+    min-width: 0;
 }
 
 .copy-observation-radio-option:hover,
@@ -218,6 +275,7 @@ dialog.modal-dialog > .modal-content {
 
 .copy-observation-radio-text {
     flex: 1;
+    min-width: 0;
     white-space: pre-wrap;
     word-break: break-word;
     color: inherit;
@@ -229,9 +287,5 @@ dialog.modal-dialog > .modal-content {
     flex-wrap: wrap;
     gap: 0.75rem;
     margin-top: 1rem;
-}
-
-[data-theme="dark"] dialog.modal-dialog {
-    background-color: var(--plate-background-color);
-    color: var(--text-color);
+    max-width: 100%;
 }
