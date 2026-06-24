@@ -710,7 +710,7 @@
   "export_pdf_screenshots_appendix_button": "Bilaga 3: Alla bilder (PDF)",
   "export_screenshots_appendix_title": "Bilaga 3 Skärmbilder",
   "screenshots_appendix_export_filename_label": "Bilaga 3 Skärmbilder",
-  "audit_actions_export_screenshots_appendix_description": "Exporterar alla skärmbilder från granskningen som bilaga, en bild per sida med standardiserat filnamn som rubrik, som Word- eller PDF-fil.",
+  "audit_actions_export_screenshots_appendix_description": "Exporterar en bilaga med alla skärmbilder, som Word- eller PDF-fil.",
   "export_screenshots_appendix_empty": "Inga skärmbilder kunde hittas i granskningen.",
   "screenshots_appendix_missing_media_warning": "Bilagan sparades. {count} bilder kunde inte hämtas och saknas i filen.",
   "error_exporting_screenshots_appendix": "Fel vid export av bilaga med skärmbilder:",

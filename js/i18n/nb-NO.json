@@ -710,7 +710,7 @@
   "export_pdf_screenshots_appendix_button": "Vedlegg 3: Alle bilder (PDF)",
   "export_screenshots_appendix_title": "Vedlegg 3 Skjermbilder",
   "screenshots_appendix_export_filename_label": "Vedlegg 3 Skjermbilder",
-  "audit_actions_export_screenshots_appendix_description": "Eksporterer alle skjermbilder fra tilsynet som vedlegg, ett bilde per side med standardisert filnavn som overskrift, som Word- eller PDF-fil.",
+  "audit_actions_export_screenshots_appendix_description": "Eksporterer et vedlegg med alle skjermbilder, som Word- eller PDF-fil.",
   "export_screenshots_appendix_empty": "Ingen skjermbilder ble funnet i tilsynet.",
   "screenshots_appendix_missing_media_warning": "Vedlegget ble lagret. {count} bilder kunne ikke hentes og mangler i filen.",
   "error_exporting_screenshots_appendix": "Feil ved eksport av vedlegg med skjermbilder:",

@@ -710,7 +710,7 @@
   "export_pdf_screenshots_appendix_button": "Appendix 3: All images (PDF)",
   "export_screenshots_appendix_title": "Appendix 3 Screenshots",
   "screenshots_appendix_export_filename_label": "Appendix 3 Screenshots",
-  "audit_actions_export_screenshots_appendix_description": "Exports all screenshots from the audit as an appendix, one image per page with the standardised filename as heading, as Word or PDF.",
+  "audit_actions_export_screenshots_appendix_description": "Exports an appendix with all screenshots, as Word or PDF.",
   "export_screenshots_appendix_empty": "No screenshots were found in the audit.",
   "screenshots_appendix_missing_media_warning": "The appendix was saved. {count} images could not be fetched and are missing from the file.",
   "error_exporting_screenshots_appendix": "Error exporting screenshots appendix:",
