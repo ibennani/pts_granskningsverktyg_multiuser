@@ -1,5 +1,5 @@
 ---
-description: Automatisk commit och push vid "Pusha"; vid "Deploy" först pusha sedan deploy till v2
+description: Automatisk commit och push vid "Pusha"; vid "Deploy" först pusha sedan deploy till v2. Endast aktuell agents filer.
 alwaysApply: true
 ---
 
@@ -7,32 +7,80 @@ alwaysApply: true
 
 ## Pusha
 
-När användaren skriver **`Pusha`** (exakt ordet) ska agenten **endast** skapa commit och pusha – ingen deploy. Följ commit-reglerna i `00-project-rules.mdc` (svenska meddelanden, beskriv användarupplevelse).
+När användaren skriver **`Pusha`** (exakt ordet) ska agenten **endast** skapa commit och pusha filer som **denna agent** har hanterat i den pågående konversationen — **ingen deploy**. Följ commit-reglerna i `00-project-rules.mdc` (svenska meddelanden, beskriv användarupplevelse).
+
+**Pusha aldrig** ändringar i filer som en annan agent har jobbat med utan att användaren uttryckligen valt det (se **Överlappande filer**).
+
+### Spårning under arbetet
+
+Varje agent ska löpande hålla reda på vilka filer den rör:
+
+1. **I konversationen:** alla filer som skapats, redigerats eller raderats via verktyg (`Write`, `StrReplace`, `EditNotebook`, `Delete`) räknas som **denna agents filer**.
+2. **Delat register (parallella agenter):** vid varje filändring ska agenten också registrera filen i **`.cursor/agent_touched_files.json`** (gitignorerad). Format:
+
+```json
+{
+  "js/components/Exempel.ts": ["Uppdaterar exportknapp", "Fixar lint i utils"],
+  "css/style.css": ["Uppdaterar exportknapp"]
+}
+```
+
+- **Nyckel:** filsökväg relativt projektroten, med `/`.
+- **Värde:** lista med korta etiketter (en per agent som rört filen). Använd etikett från `NABU_TASK_LABEL` eller `.cursor/nabu_task_context.txt` om den finns; annars en kort beskrivning av uppgiften (3–8 ord).
+- Läs befintlig JSON, merga in ny etikett om den saknas för filen, skriv tillbaka. Skapa filen om den inte finns.
+
+### Klassificering vid Pusha
+
+Innan commit: kör `git status`, `git diff` och `git log -5`. Klassificera varje ändrad fil (staged och unstaged):
+
+| Kategori | Definition | Åtgärd |
+|----------|------------|--------|
+| **Denna agent** | Filen finns i agentens verktygshistorik i konversationen **och/eller** endast denna agents etikett i `agent_touched_files.json` | Får committas |
+| **Ann agent** | Filen är ändrad i git men **inte** hanterad av denna agent, **eller** endast andra agents etiketter i registret | **Committas inte** — lista tydligt för användaren |
+| **Överlapp** | Filen hanterades av denna agent **och** minst en annan etikett finns i registret för samma fil | **Stoppa** — varna och fråga användaren (se nedan) |
+
+### Överlappande filer
+
+Om minst en fil är **överlapp**:
+
+1. **Stoppa** commit och push tills användaren svarat.
+2. **Varna** tydligt: lista filerna och vilka etiketter/agents som registrerats för varje fil.
+3. **Fråga** användaren (t.ex. med `AskQuestion`) hur varje överlappande fil ska hanteras. Minst dessa alternativ per fil eller som gemensamt val:
+   - **Ta med i denna commit** — hela filens nuvarande ändringar committas (användaren accepterar att andra agents arbete följer med).
+   - **Lämna utanför** — filen committas inte nu; andra agents ändringar (och ev. egna) stannar kvar lokalt.
+   - **Avvakta** — ingen commit/push nu; användaren löser manuellt eller via annan agent först.
+4. Följ användarens svar innan du fortsätter.
+
+Committa **aldrig** överlappande filer tyst utan explicit val.
 
 ### Arbetsflöde vid Pusha
 
-1. Kör `git status`, `git diff` och `git log -5` för att förstå alla ändringar.
-2. Analysera alla staged och unstaged ändringar.
-3. Generera ett commit-meddelande på svenska:
-   - Om det bara är en tydlig åtgärd: skriv en kort sammanfattande rad.
-   - Om det finns fler än en tydlig åtgärd: använd en numrerad lista i brödtexten (`1. ...`, `2. ...`) där varje punkt beskriver en användarsynlig ändring.
-4. Lägg till relevanta filer med `git add` (utelämna uppenbara hemligheter som `.env`, nycklar, lösenord).
-5. Kör `git commit` med det genererade meddelandet.
-6. Kontrollera med `git status` att arbetskatalogen är ren.
-7. Kör `git push` till aktuell remote-branch.
+1. Kör `git status`, `git diff` och `git log -5`.
+2. Bygg listan **denna agents filer** (verktygshistorik + register).
+3. Klassificera alla ändrade filer enligt tabellen ovan.
+4. Om **överlapp** — varna, fråga, invänta svar; justera filurvalet efter svaret.
+5. Om inga filer återstår att committa för denna agent: redovisa det (inkl. filer som lämnades utanför) och **pusha inte**.
+6. Generera commit-meddelande på svenska **endast för filer som ska med**:
+   - En tydlig åtgärd: kort sammanfattande rad.
+   - Flera åtgärder: numrerad lista i brödtexten (`1. ...`, `2. ...`) med användarsynliga ändringar.
+7. `git add` **endast** de valda filerna (utelämna hemligheter som `.env`, nycklar, lösenord).
+8. `git commit` med meddelandet.
+9. `git status` — bekräfta att **endast avsedda filer** committats; övriga ändringar (andra agents filer, filer som lämnades utanför) ska finnas kvar unstaged/uncommitted.
+10. Redovisa kort: vad som pushades, vad som **medvetet lämnades kvar** (annan agent / användarens val).
+11. `git push` till aktuell remote-branch.
 
 ## Säkerhet och begränsningar
 
-- Skapa aldrig en commit om det inte finns några ändringar att committa.
+- Skapa aldrig en commit om det inte finns några filer att committa enligt urvalet ovan.
 - Pusha inte filer som uppenbart kan innehålla hemligheter (t.ex. `.env`, nyckelfiler, lösenord).
+- Committa **aldrig** hela working tree (`git add -A` / `git add .`) vid Pusha — alltid explicit fil-lista.
 - Om commit eller push misslyckas ska agenten redovisa felet i klartext och inte försöka forcera igenom ändringen.
 
 ## Deploy
 
 När användaren skriver **`Deploy`** (exakt ordet) ska agenten:
 
-1. **Först** utföra hela arbetsflödet för **Pusha** (commit + push) enligt stegen ovan. Om det inte finns något att committa ska push hoppas över men deploy köras om användaren uttryckligen skrev "Deploy".
+1. **Först** utföra hela arbetsflödet för **Pusha** (commit + push enligt filurval ovan). Om det inte finns något att committa ska push hoppas över men deploy köras om användaren uttryckligen skrev "Deploy".
 2. **Därefter** köra deploy till v2: `npm run deploy:v2`.
 
-Kort sagt: **Deploy = Pusha, sedan deploy till v2.**
-
+Kort sagt: **Deploy = Pusha (endast denna agents filer), sedan deploy till v2.**

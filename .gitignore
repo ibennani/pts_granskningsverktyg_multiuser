@@ -25,6 +25,9 @@ build/
 # Nabu klar-notis (lokal uppgifts-etikett, skrivs av set_nabu_task)
 .cursor/nabu_task_context.txt
 
+# Parallella agenter: vilka filer vilken agent rört (för Pusha-urval)
+.cursor/agent_touched_files.json
+
 # Nabu-webhook (hemlig URL — lokal regel, committas inte)
 .cursor/rules/nabu-webhook.local.mdc
 
