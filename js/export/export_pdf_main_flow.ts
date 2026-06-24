@@ -3,13 +3,17 @@
  */
 import { consoleManager } from '../utils/console_manager.js';
 import { get_t_internal, show_global_message_internal } from './export_bootstrap.js';
-import { build_report_export_filename } from './export_report_filename.js';
+import {
+    build_report_export_filename,
+    build_deficiency_types_appendix_pdf_filename,
+} from './export_report_filename.js';
 import {
     build_report_body_sorted_by_requirements,
     build_report_pdf_intro_html,
     build_report_pdf_html_document,
     type ExportReportHtmlT,
 } from './export_report_html_criterias.js';
+import { build_deficiency_types_appendix_pdf_document } from './export_report_html_deficiency_types.js';
 import { api_post_pdf } from '../api/client.js';
 import { trigger_browser_blob_download } from '../utils/download_filename_utils.js';
 
@@ -55,6 +59,43 @@ export async function export_to_pdf_criterias(current_audit: Record<string, unkn
         show_global_message_internal(t('audit_saved_as_file', { filename }), 'success');
     } catch (error: unknown) {
         if (window.ConsoleManager?.warn) window.ConsoleManager.warn('Error exporting to PDF:', error);
+        const msg = error instanceof Error ? error.message : String(error);
+        show_global_message_internal(`${t('error_exporting_pdf')} ${msg}`.trim(), 'error');
+    }
+}
+
+export async function export_to_pdf_deficiency_types(
+    current_audit: Record<string, unknown> | null | undefined
+): Promise<void> {
+    const t = get_t_internal() as ExportReportHtmlT;
+    if (!current_audit) {
+        show_global_message_internal(t('no_audit_data_to_save'), 'error');
+        return;
+    }
+
+    const audit_id = current_audit.auditId;
+    if (!audit_id || typeof audit_id !== 'string') {
+        show_global_message_internal(t('error_exporting_pdf_no_server_id'), 'error');
+        return;
+    }
+
+    consoleManager.log('[PDF Export] Starting export_to_pdf_deficiency_types');
+
+    try {
+        const html_content = build_deficiency_types_appendix_pdf_document(current_audit, t);
+        const pdf_blob = await api_post_pdf(`/audits/${encodeURIComponent(audit_id)}/export/pdf-requirements`, {
+            htmlContent: html_content,
+        });
+
+        const filename = build_deficiency_types_appendix_pdf_filename(
+            current_audit as { auditMetadata?: { caseNumber?: string; actorName?: string }; updated_at?: string | null },
+            t
+        );
+
+        trigger_browser_blob_download(pdf_blob, filename);
+        show_global_message_internal(t('audit_saved_as_file', { filename }), 'success');
+    } catch (error: unknown) {
+        if (window.ConsoleManager?.warn) window.ConsoleManager.warn('Error exporting deficiency types PDF:', error);
         const msg = error instanceof Error ? error.message : String(error);
         show_global_message_internal(`${t('error_exporting_pdf')} ${msg}`.trim(), 'error');
     }

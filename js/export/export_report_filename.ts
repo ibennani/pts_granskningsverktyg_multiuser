@@ -35,3 +35,35 @@ export function build_report_export_filename(
 export function get_audit_export_filename_datetime_segment(): string {
     return get_download_filename_datetime(null);
 }
+
+export function build_deficiency_types_appendix_pdf_filename(
+    current_audit: {
+        auditMetadata?: { caseNumber?: string; actorName?: string };
+        updated_at?: string | null;
+    },
+    t: ExportReportFilenameT
+): string {
+    return build_deficiency_types_appendix_filename(current_audit, 'pdf', t);
+}
+
+export function build_deficiency_types_appendix_word_filename(
+    current_audit: {
+        auditMetadata?: { caseNumber?: string; actorName?: string };
+        updated_at?: string | null;
+    },
+    t: ExportReportFilenameT
+): string {
+    return build_deficiency_types_appendix_filename(current_audit, 'docx', t);
+}
+
+function build_deficiency_types_appendix_filename(
+    current_audit: {
+        auditMetadata?: { caseNumber?: string; actorName?: string };
+        updated_at?: string | null;
+    },
+    extension: 'docx' | 'pdf',
+    t: ExportReportFilenameT
+): string {
+    const base = build_report_export_filename(current_audit, true, extension, t);
+    return base.replace(new RegExp(`\\.${extension}$`, 'i'), `_bilaga_1_bristtyper.${extension}`);
+}

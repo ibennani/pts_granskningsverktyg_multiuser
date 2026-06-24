@@ -45,3 +45,5 @@ export async function export_to_word_criterias (current_audit: any) {
 export async function export_to_word_samples (current_audit: any) {
     return await export_to_word_wrapper(current_audit, 'samples');
 }
+
+export { export_to_word_deficiency_types } from './export_word_deficiency_types.js';

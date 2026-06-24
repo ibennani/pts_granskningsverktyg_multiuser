@@ -115,12 +115,16 @@ test.describe('Export rapport (mockat API)', () => {
         await expect(page.locator('#audit-action-btn-export-excel')).toBeVisible();
         await expect(page.locator('#audit-action-btn-export-word-reqs')).toBeVisible();
         await expect(page.locator('#audit-action-btn-export-pdf-reqs')).toBeVisible();
+        await expect(page.locator('#audit-action-btn-export-word-deficiency-types')).toBeVisible();
+        await expect(page.locator('#audit-action-btn-export-pdf-deficiency-types')).toBeVisible();
 
         for (const sel of [
             '#audit-action-btn-export-csv',
             '#audit-action-btn-export-excel',
             '#audit-action-btn-export-word-reqs',
-            '#audit-action-btn-export-pdf-reqs'
+            '#audit-action-btn-export-pdf-reqs',
+            '#audit-action-btn-export-word-deficiency-types',
+            '#audit-action-btn-export-pdf-deficiency-types'
         ]) {
             const dl = page.waitForEvent('download');
             await page.locator(sel).click();

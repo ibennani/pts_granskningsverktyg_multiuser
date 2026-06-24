@@ -54,5 +54,8 @@ p.comment-block { margin-top: ${comment_before}pt; }
 .comment-label { font-weight: 700; color: #${comment_label}; }
 a { color: #${hyperlink}; text-decoration: underline; }
 strong { font-weight: 700; }
+ul { margin: 0 0 ${paragraph_after}pt; padding-left: 1.2em; }
+li { margin: 0 0 ${paragraph_after}pt; }
+.deficiency-types-appendix h2:first-of-type { page-break-before: auto; }
 `.trim();
 }

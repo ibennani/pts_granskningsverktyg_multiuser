@@ -59,6 +59,8 @@ export class AuditActionsViewComponent {
         this.handle_export_excel = this.handle_export_excel.bind(this);
         this.handle_export_word = this.handle_export_word.bind(this);
         this.handle_export_pdf = this.handle_export_pdf.bind(this);
+        this.handle_export_pdf_deficiency_types = this.handle_export_pdf_deficiency_types.bind(this);
+        this.handle_export_word_deficiency_types = this.handle_export_word_deficiency_types.bind(this);
         this.handle_export_word_samples = this.handle_export_word_samples.bind(this);
         this.handle_export_html = this.handle_export_html.bind(this);
         this.handle_export_images_zip = this.handle_export_images_zip.bind(this);
@@ -256,6 +258,32 @@ export class AuditActionsViewComponent {
                 'error'
             );
         }
+    }
+
+    async handle_export_pdf_deficiency_types() {
+        const t = this.Translation.t;
+        const current_state = this.getState();
+        if (!this.ExportLogic?.export_to_pdf_deficiency_types) return;
+        try {
+            await this.ExportLogic.export_to_pdf_deficiency_types(current_state);
+        } catch (error) {
+            this.NotificationComponent.show_global_message(
+                `${t('error_exporting_pdf')} ${error?.message || ''}`.trim(),
+                'error'
+            );
+        }
+    }
+
+    handle_export_word_deficiency_types() {
+        const t = this.Translation.t;
+        const current_state = this.getState();
+        if (!this.ExportLogic?.export_to_word_deficiency_types) return;
+        void this.ExportLogic.export_to_word_deficiency_types(current_state).catch((error) => {
+            this.NotificationComponent.show_global_message(
+                `${t('error_exporting_word')} ${error?.message || ''}`.trim(),
+                'error'
+            );
+        });
     }
 
     handle_export_word_samples() {
@@ -717,6 +745,28 @@ export class AuditActionsViewComponent {
                     description: t('audit_actions_export_images_zip_description'),
                     on_click: this.handle_export_images_zip,
                     id_suffix: 'export-images-zip'
+                }));
+            }
+            if (this.ExportLogic?.export_to_word_deficiency_types || this.ExportLogic?.export_to_pdf_deficiency_types) {
+                export_actions.appendChild(this.create_export_item_with_buttons({
+                    buttons: [
+                        ...(this.ExportLogic?.export_to_word_deficiency_types
+                            ? [{
+                                label: t('export_word_deficiency_types_button'),
+                                on_click: this.handle_export_word_deficiency_types,
+                                id_suffix: 'export-word-deficiency-types'
+                            }]
+                            : []),
+                        ...(this.ExportLogic?.export_to_pdf_deficiency_types
+                            ? [{
+                                label: t('export_pdf_deficiency_types_button'),
+                                on_click: this.handle_export_pdf_deficiency_types,
+                                id_suffix: 'export-pdf-deficiency-types'
+                            }]
+                            : [])
+                    ],
+                    description: t('audit_actions_export_deficiency_types_description'),
+                    desc_id_suffix: 'export-deficiency-types'
                 }));
             }
             export_section.appendChild(export_actions);

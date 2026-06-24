@@ -23,8 +23,9 @@ export async function finalize_word_export_download (options: {
     current_audit: any;
     isSortByRequirements: boolean;
     t: ExportWordMainFlowT;
+    filename?: string;
 }): Promise<void> {
-    const { children, current_audit, isSortByRequirements, t } = options;
+    const { children, current_audit, isSortByRequirements, t, filename: filename_override } = options;
     const doc = new Document({
         sections: [{
             properties: isSortByRequirements ? {} : {
@@ -123,12 +124,9 @@ export async function finalize_word_export_download (options: {
 
     const buffer = await Packer.toBlob(doc);
 
-    const filename = build_report_export_filename(
-        current_audit,
-        isSortByRequirements,
-        'docx',
-        t
-    );
+    const filename =
+        filename_override ??
+        build_report_export_filename(current_audit, isSortByRequirements, 'docx', t);
 
     trigger_browser_blob_download(buffer, filename);
     show_global_message_internal(t('audit_saved_as_file', { filename: filename }), 'success');
