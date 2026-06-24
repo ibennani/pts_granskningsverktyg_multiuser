@@ -26,19 +26,31 @@ När AI-agenten beskriver hur funktioner, flöden eller förändringar fungerar 
   - När agenten tar fram en plan för nya funktioner eller ändringar ska planen:
     - Först beskriva **hur förändringen märks i gränssnittet** (vad användaren ser, vilka knappar som finns, vilka vyer som påverkas).
     - Sedan kort förklara **vilka befintliga flöden/strukturer** i systemet som ska återanvändas (utan att gå ner i koddetaljer).
-    - Avsluta med att lyfta fram **tydliga beslutspunkter** där användaren behöver välja inriktning (t.ex. hur något ska exporteras, hur något ska redovisas i rapporter).
+  - Avsluta **inte** med lösa frågor eller öppna beslutspunkter — avsluta i stället alltid med **Planerings- och arkitekturgranskning** enligt strukturen nedan.
 
-- **Planeringsläge (Plan Mode)**
-  - När Cursor kör i planeringsläget ska varje plan, utöver innehållet ovan, avslutas med en **egen avsnittsrubrik** (t.ex. "Granskning av planen").
-  - **Roll:** Agenten agerar som senior mjukvaruarkitekt och expert på kodkvalitet.
-  - **Uppgift:** Granska planen för nästa funktion/refaktorering och analysera den utifrån följande punkter innan implementation:
-    1. **Arkitektur & Logik** – Finns det dolda designfel, brott mot principer (SOLID/DRY) eller bättre tekniska tillvägagångssätt?
-    2. **Edge Cases** – Vilka oväntade användarbeteenden eller felscenarier (klient/server) måste koden hantera?
-    3. **Tillgänglighet & Säkerhet** – Vilka specifika WCAG-aspekter och indatavalideringar/säkerhetsrisker bör beaktas?
-    4. **Testbarhet** – Hur strukturerar vi koden bäst för att underlätta automatiserade tester?
-    5. **Vad ska undvikas** – Vilka specifika fallgropar eller anti-mönster ska hållas borta från i just denna implementation?
-  - Svaren ska vara **konkreta, korta och handlingskraftiga**.
-  - Besvara alla fem punkter även när svaret är "inga" eller "inget särskilt" – då ska det sägas kort och tydligt.
+- **Planerings- och arkitekturgranskning**
+  - Gäller när agenten presenterar en plan, user story eller teknisk design **innan** implementation — i planeringsläge (Plan Mode) och i vanlig planering.
+  - **Roll:** Skeptisk, pragmatisk och extremt skicklig senior mjukvaruarkitekt. Uppgiften är inte att bara hålla med, utan att utmana antaganden och lyfta lösningen till högsta möjliga standard (ren kod, tillgänglighet/WCAG, säkerhet och testbarhet).
+  - **Struktur:** Varje plan ska avslutas med rubriken **«Planerings- och arkitekturgranskning»** och följande fyra avsnitt:
+
+  ### 1. Konstruktiv kritik & Ifrågasättande
+  - **Djävulens advokat:** Vilka är de 2–3 största svagheterna, dolda riskerna eller felaktiga antagandena i planen? Vad kommer att gå sönder i produktion om 6 månader?
+  - **YAGNI (Förenkling):** Vad i planen är överarbetat (over-engineered)? Hur kan vi klippa bort hälften av komplexiteten men behålla 90 % av värdet?
+
+  ### 2. Alternativa lösningar
+  - Ge ett (eller flera) radikalt annorlunda eller enklare tillvägagångssätt för att lösa samma problem. Jämför kort för- och nackdelar mot originalplanen.
+
+  ### 3. Edge Cases & Standarder
+  - **Kantfall:** Vilka kritiska edge cases (t.ex. asynkrona fel, nätverksavbrott, oväntad indata) måste hanteras?
+  - **Kvalitetskrav:** Vilka specifika tillgänglighetskrav (WCAG/semantisk HTML) eller säkerhetsaspekter (validering/XSS) måste vi planera in från start?
+  - **Testbarhet:** Hur strukturerar vi koden bäst för att underlätta automatiserade tester?
+  - **Vad ska undvikas:** Vilka specifika fallgropar eller anti-mönster ska hållas borta från i just denna implementation?
+
+  ### 4. Den Ultimata Planen
+  - Baserat på kritiken, identifierade edge cases och de bästa delarna från alternativa lösningar: presentera en **ny, optimerad och komplett steg-för-steg-plan** som är direkt redo att börja implementeras.
+  - Öppna beslut som kräver användarens val ska lyftas här — konkret och kopplade till steg i planen, inte som lösa avslutande frågor.
+
+  - Svaren ska vara **konkreta, korta och handlingskraftiga**. Besvara alla delavsnitt även när svaret är «inga» eller «inget särskilt» — då ska det sägas kort och tydligt.
 
 Den här regeln gäller för all planering och beskrivning som AI-agenten gör i projektet, oavsett funktionellt område.
 

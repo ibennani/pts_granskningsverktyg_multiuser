@@ -7,6 +7,16 @@ import { inject_dist_build_metadata } from './scripts/inject_dist_build_metadata
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
+/** App-bas vid build/dev, t.ex. "/v2/" eller "/test-server/". */
+const app_base = (() => {
+  const raw = process.env.GV_BASE_PATH || '/v2/'
+  const trimmed = String(raw).replace(/\/+$/, '') || ''
+  return trimmed ? `${trimmed}/` : '/'
+})()
+
+/** Prefix utan slash, t.ex. "v2" eller "test-server". */
+const app_base_prefix = app_base === '/' ? '' : app_base.replace(/^\/|\/$/g, '')
+
 const IGNORABLE_WS_ERROR_CODES = new Set([
   'ECONNRESET',
   'ECONNREFUSED',
@@ -36,17 +46,19 @@ function is_ignorable_ws_error (err) {
   return false
 }
 
-/** Redirect /v2 → /v2/ så att index.html alltid laddas (annars 404 och tom sida utan fel i appens konsol). */
+/** Redirect /prefix → /prefix/ så att index.html alltid laddas. */
 function redirect_base_without_trailing_slash() {
+  if (!app_base_prefix) return { name: 'redirect-base-without-trailing-slash' }
+  const base_no_slash = `/${app_base_prefix}`
   return {
     name: 'redirect-base-without-trailing-slash',
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         const url = req.url || ''
-        if (url === '/v2' || url.startsWith('/v2?')) {
-          const q = url.startsWith('/v2?') ? url.slice(3) : '/'
+        if (url === base_no_slash || url.startsWith(`${base_no_slash}?`)) {
+          const q = url.startsWith(`${base_no_slash}?`) ? url.slice(base_no_slash.length) : '/'
           res.statusCode = 302
-          res.setHeader('Location', `/v2/${q === '/' ? '' : q}`)
+          res.setHeader('Location', `${app_base}${q === '/' ? '' : q}`)
           res.end()
           return
         }
@@ -71,7 +83,7 @@ function inject_dist_metadata_before_pwa () {
 }
 
 export default defineConfig({
-  base: '/v2/',
+  base: app_base,
   plugins: [
     redirect_base_without_trailing_slash(),
     inject_dist_metadata_before_pwa(),
@@ -86,7 +98,10 @@ export default defineConfig({
         // build-info används för versionskontroll och ska alltid komma från nätverket (no-store i Nginx).
         globIgnores: ['**/build-info.js'],
         navigateFallback: 'index.html',
-        navigateFallbackDenylist: [/^\/v2\/api\//, /^\/v2\/ws/],
+        navigateFallbackDenylist: [
+          new RegExp(`^\\/${app_base_prefix}\\/api\\/`),
+          new RegExp(`^\\/${app_base_prefix}\\/ws`)
+        ],
         maximumFileSizeToCacheInBytes: 6000000,
         runtimeCaching: [
           {
@@ -111,36 +126,38 @@ export default defineConfig({
     port: 5173,
     strictPort: false,
     open: false,
-    proxy: {
-      '/v2/api': {
-        target: 'http://localhost:3000',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/v2/, ''),
-        configure: (proxy) => {
-          proxy.on('error', (err, _req, res) => {
-            if (!is_ignorable_ws_error(err)) {
-              console.warn('[vite] api proxy:', err?.message || err)
+    proxy: app_base_prefix
+      ? {
+          [`${app_base}api`]: {
+            target: 'http://localhost:3000',
+            changeOrigin: true,
+            rewrite: (path) => path.replace(new RegExp(`^\\/${app_base_prefix}`), ''),
+            configure: (proxy) => {
+              proxy.on('error', (err, _req, res) => {
+                if (!is_ignorable_ws_error(err)) {
+                  console.warn('[vite] api proxy:', err?.message || err)
+                }
+                if (res && !res.headersSent) {
+                  res.writeHead(503, { 'Content-Type': 'application/json' });
+                  res.end(JSON.stringify({ ok: false, error: 'Backend ej tillgänglig' }));
+                }
+              });
             }
-            if (res && !res.headersSent) {
-              res.writeHead(503, { 'Content-Type': 'application/json' });
-              res.end(JSON.stringify({ ok: false, error: 'Backend ej tillgänglig' }));
+          },
+          [`${app_base}ws`]: {
+            target: 'http://localhost:3000',
+            ws: true,
+            rewrite: (path) => path.replace(new RegExp(`^\\/${app_base_prefix}`), ''),
+            configure: (proxy) => {
+              proxy.on('error', (err, _req, _res) => {
+                if (!is_ignorable_ws_error(err)) {
+                  console.warn('[vite] ws proxy:', err?.message || err)
+                }
+              });
             }
-          });
+          }
         }
-      },
-      '/v2/ws': {
-        target: 'http://localhost:3000',
-        ws: true,
-        rewrite: (path) => path.replace(/^\/v2/, ''),
-        configure: (proxy) => {
-          proxy.on('error', (err, _req, _res) => {
-            if (!is_ignorable_ws_error(err)) {
-              console.warn('[vite] ws proxy:', err?.message || err)
-            }
-          });
-        }
-      }
-    },
+      : {},
     // build-info.js uppdateras av dev-build-info-watcher; ignorera så Vite inte omladdar hela appen vid varje skrivning.
     watch: {
       usePolling: true,

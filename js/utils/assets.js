@@ -1,17 +1,21 @@
 import { app_runtime_refs } from './app_runtime_refs.js';
-
-/** Base path för deploy under /v2 (sökväg måste matcha så att CSS/assets laddas rätt). */
-const DEPLOY_BASE_PATH = '/v2';
+import {
+    detect_base_prefix_from_pathname,
+    get_deploy_base_path,
+    normalize_deploy_base_path
+} from './app_base_path.js';
 
 /**
  * Returnerar appens rot-sökväg (base) så att CSS och andra assets hamnar rätt.
- * - Vid deploy under /v2 (t.ex. https://host/v2 eller https://host/v2/audit/1): returnerar "/v2/".
+ * - Vid deploy under /v2 eller /test-server: returnerar "/v2/" resp. "/test-server/".
  * - Lokalt eller vid root: returnerar "/".
  */
 export function get_app_base() {
-    if (typeof window === 'undefined' || !window.location) return '/';
-    const pathname = (window.location.pathname || '/').split('#')[0].split('?')[0].replace(/\/+$/, '') || '/';
-    if (pathname === DEPLOY_BASE_PATH || pathname.startsWith(DEPLOY_BASE_PATH + '/')) return DEPLOY_BASE_PATH + '/';
+    if (typeof window === 'undefined' || !window.location) {
+        return get_deploy_base_path();
+    }
+    const prefix = detect_base_prefix_from_pathname(window.location.pathname);
+    if (prefix) return normalize_deploy_base_path(prefix);
     return '/';
 }
 

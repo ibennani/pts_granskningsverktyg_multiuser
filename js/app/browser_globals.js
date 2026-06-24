@@ -3,6 +3,8 @@
  * Behåller befintliga namn internt så äldre skript och tester kan sätta dem direkt.
  */
 
+import { get_api_base_path } from '../utils/app_base_path.js';
+
 /**
  * @param {string} viewName
  * @param {string} paramsJsonString
@@ -25,9 +27,9 @@ export function get_current_view_params_json() {
 
 /** @returns {string} */
 export function get_api_base_url() {
-    if (typeof window === 'undefined') return '/v2/api';
+    if (typeof window === 'undefined') return get_api_base_path();
     const b = window.__GV_API_BASE__;
-    return b ? String(b) : '/v2/api';
+    return b ? String(b) : get_api_base_path();
 }
 
 /** @returns {string|undefined} */

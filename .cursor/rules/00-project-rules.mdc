@@ -92,7 +92,7 @@ Adhere to the following rules at all times.
 
 - Analysera & Föreslå: När du får en uppgift, generera ingen kod. Analysera istället instruktionerna och återkom med en tydlig plan.
 - Invänta Godkännande: Implementera först efter tydligt godkännande.
-- **Planeringsläge:** I planeringsläget ska planen avslutas med granskning enligt fem punkter: Arkitektur & Logik, Edge Cases, Tillgänglighet & Säkerhet, Testbarhet, Vad ska undvikas. Se `10-beskrivningar-och-planering.mdc` för fullständig struktur.
+- **Planeringsläge:** I planeringsläget (och vid all planering före implementation) ska planen avslutas med **Planerings- och arkitekturgranskning** enligt fyra avsnitt: Konstruktiv kritik, Alternativa lösningar, Edge Cases & Standarder, Den Ultimata Planen. Se `10-beskrivningar-och-planering.mdc` för fullständig struktur.
 
 ### Hårda Regler
 

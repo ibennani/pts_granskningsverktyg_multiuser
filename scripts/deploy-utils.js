@@ -5,6 +5,8 @@
  */
 import 'dotenv/config';
 import { spawn, execSync } from 'child_process';
+import { existsSync, readFileSync } from 'fs';
+import { homedir } from 'os';
 import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { NodeSSH } from 'node-ssh';
@@ -19,6 +21,27 @@ const host = hostParts[1] || rawHost;
 const remotePath = process.env.DEPLOY_PATH || '/var/www/granskningsverktyget-v2';
 const sshPassword = process.env.DEPLOY_SSH_PASSWORD || '';
 const username = process.env.DEPLOY_USER || sshUser || process.env.USERNAME || process.env.USER || 'granskning';
+/** SSH-config-alias (t.ex. "granskning") – används av spawn ssh/scp när node-ssh inte används. */
+const sshAlias = process.env.DEPLOY_SSH_ALIAS || '';
+const sshConnectHost = process.env.DEPLOY_SSH_HOSTNAME || host;
+
+function resolve_private_key_pem() {
+    const candidates = [
+        process.env.DEPLOY_SSH_PRIVATE_KEY,
+        join(homedir(), '.ssh', 'id_ed25519_granskning'),
+        join(homedir(), '.ssh', 'id_rsa')
+    ].filter(Boolean);
+    for (const candidate of candidates) {
+        if (existsSync(candidate)) {
+            return readFileSync(candidate, 'utf8');
+        }
+    }
+    return null;
+}
+
+function get_ssh_spawn_target() {
+    return sshAlias || `${username}@${sshConnectHost}`;
+}
 
 /** Max väntan på SSH-handshake (ms). Höj vid långsam VPN eller "Timed out while waiting for handshake". */
 const sshReadyTimeoutMs = (() => {
@@ -44,19 +67,53 @@ function sshpass_available() {
  */
 async function getSshClient() {
     if (sshClient) return sshClient;
-    if (!sshPassword) return null;
+    /** OpenSSH-config (Host granskning m.m.) hanteras bättre av spawn ssh/scp än node-ssh. */
+    if (sshAlias) return null;
 
+    const privateKey = resolve_private_key_pem();
     const ssh = new NodeSSH();
-    await ssh.connect({
-        host,
+    const baseOpts = {
+        host: sshConnectHost,
         username,
-        password: sshPassword,
-        tryKeyboard: true,
         readyTimeout: sshReadyTimeoutMs,
         keepaliveInterval: 10000
-    });
-    sshClient = ssh;
-    return ssh;
+    };
+
+    if (privateKey && !sshPassword) {
+        try {
+            await ssh.connect({ ...baseOpts, privateKey });
+            sshClient = ssh;
+            return ssh;
+        } catch (keyErr) {
+            console.warn('[deploy] SSH-nyckel (node-ssh) misslyckades, försöker OpenSSH-alias:', keyErr.message);
+            return null;
+        }
+    }
+
+    if (privateKey) {
+        try {
+            await ssh.connect({ ...baseOpts, privateKey });
+            sshClient = ssh;
+            return ssh;
+        } catch (keyErr) {
+            console.warn('[deploy] SSH-nyckel misslyckades, försöker lösenord:', keyErr.message);
+        }
+    }
+
+    if (!sshPassword) return null;
+
+    try {
+        await ssh.connect({
+            ...baseOpts,
+            password: sshPassword,
+            tryKeyboard: true
+        });
+        sshClient = ssh;
+        return ssh;
+    } catch (passwordErr) {
+        console.warn('[deploy] SSH-lösenord misslyckades, försöker OpenSSH-alias:', passwordErr.message);
+        return null;
+    }
 }
 
 /**
@@ -77,7 +134,7 @@ async function exec(cmd, opts = {}) {
         if (result.code !== 0) throw new Error(`Kommando misslyckades (kod ${result.code}): ${cmd}`);
         return;
     }
-    await run('ssh', [host, wrappedCmd]);
+    await run('ssh', [get_ssh_spawn_target(), wrappedCmd]);
 }
 
 /**
@@ -89,7 +146,7 @@ async function putFile(localPath, remotePathDest) {
         await client.putFile(localPath, remotePathDest);
         return;
     }
-    await run('scp', [localPath, `${host}:${remotePathDest}`]);
+    await run('scp', [localPath, `${get_ssh_spawn_target()}:${remotePathDest}`]);
 }
 
 /**
@@ -108,7 +165,7 @@ async function putDirectory(localPath, remotePathDest, opts = {}) {
         });
         return;
     }
-    await run('scp', ['-r', localPath, `${host}:${remotePathDest}`]);
+    await run('scp', ['-r', localPath, `${get_ssh_spawn_target()}:${remotePathDest}`]);
 }
 
 /**
@@ -118,7 +175,7 @@ function run(cmd, args, opts = {}) {
     let finalCmd = cmd;
     let finalArgs = args;
 
-    if (sshPassword && (cmd === 'ssh' || cmd === 'scp') && !sshClient) {
+    if (sshPassword && (cmd === 'ssh' || cmd === 'scp') && !sshClient && !sshAlias) {
         if (sshpass_available()) {
             if (cmd === 'ssh') {
                 const [sshHost, ...rest] = args;
@@ -160,4 +217,4 @@ async function disconnect() {
     }
 }
 
-export { run, exec, putFile, putDirectory, getSshClient, disconnect, host, remotePath, projectRoot, sshPassword, username };
+export { run, exec, putFile, putDirectory, getSshClient, disconnect, host, remotePath, projectRoot, sshPassword, username, get_ssh_spawn_target };

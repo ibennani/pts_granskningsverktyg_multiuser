@@ -1,4 +1,5 @@
 import { get_api_base_url, clear_current_user_name_window } from '../app/browser_globals.js';
+import { get_ws_base_path } from '../utils/app_base_path.js';
 
 const AUTH_TOKEN_KEY = 'gv_auth_token';
 const AUTH_USER_IS_ADMIN_KEY = 'gv_current_user_is_admin';
@@ -106,7 +107,7 @@ export function get_websocket_url() {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host;
     const base = get_api_base_url();
-    const ws_path = base.replace(/\/api\/?$/, '/ws').replace(/\/$/, '') || '/v2/ws';
+    const ws_path = base.replace(/\/api\/?$/, '/ws').replace(/\/$/, '') || get_ws_base_path();
     return `${protocol}//${host}${ws_path}`;
 }
 

@@ -4,6 +4,7 @@
 
 import { set_pending_checklist_focus_target } from '../../app/browser_globals.js';
 import { find_requirement_definition, get_stored_requirement_result_for_def } from '../../logic/audit_logic_lookup.js';
+import type { RequirementResultStored } from '../../logic/audit_logic_types.js';
 import {
     find_pass_criterion_by_deficiency_search,
     parse_deficiency_search_number
@@ -38,7 +39,7 @@ export function prepare_deficiency_observation_focus_before_audit_navigation(opt
     if (!req_def) return;
 
     const result = get_stored_requirement_result_for_def(
-        sample.requirementResults as Record<string, unknown> | null | undefined,
+        sample.requirementResults as Record<string, RequirementResultStored> | null | undefined,
         requirements,
         req_def,
         options.requirement_id

@@ -11,6 +11,10 @@ import { install_vite_dev_client_timestamp_listeners } from '../utils/vite_dev_c
 import { inject_deficiency_score_bar_gradient_styles } from './deficiency_color_scale.js';
 import { get_tab_origin_id } from '../utils/tab_origin_id.js';
 import { reload_open_audit_if_server_ahead } from './audit_remote_reload.js';
+import {
+    apply_test_server_viewport_indicator,
+    update_test_server_banner_text
+} from './test_server_indicator.js';
 
 /**
  * Kör initiering efter att övriga beroenden satts upp i main.
@@ -48,8 +52,10 @@ export async function init_app(deps) {
     const AUTH_REQUIRED_MESSAGE_KEY = 'gv_auth_required_message';
 
     set_initial_theme();
+    apply_test_server_viewport_indicator();
     inject_deficiency_score_bar_gradient_styles();
     update_build_timestamp();
+    update_test_server_banner_text();
     if (!is_dev_build_environment()) {
         try {
             await refresh_production_build_info_from_server();
@@ -57,6 +63,7 @@ export async function init_app(deps) {
             /* ignoreras */
         }
         update_build_timestamp();
+        update_test_server_banner_text();
     }
     if (is_dev_build_environment()) {
         install_vite_dev_client_timestamp_listeners(update_build_timestamp);
@@ -70,6 +77,7 @@ export async function init_app(deps) {
                 await refresh_production_build_info_from_server();
             }
             update_build_timestamp();
+            update_test_server_banner_text();
         })();
     }, 100);
     if (is_dev_build_environment()) {
