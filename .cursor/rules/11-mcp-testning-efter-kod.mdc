@@ -1,0 +1,68 @@
+---
+description: MCP-baserad standards- och tillgänglighetskontroll efter UI-relaterade kodändringar
+alwaysApply: true
+---
+
+# MCP-testning efter kodändringar
+
+Kompletterar `npm run check` och Playwright/Jest — ersätter dem inte. Tillgänglighetskrav i Leffe: se `00-project-rules.mdc` (WCAG 2.2 AA).
+
+## Beslutsmatris
+
+| Ändringstyp | `npm run check` | MDN MCP | Accessibility scanner |
+|---|---|---|---|
+| Ren logik/server, inga nya webb-API:er | Ja | Nej | Nej |
+| Ny/ändrad HTML, ARIA, CSS, DOM, fokus | Ja | Ja | Ja (målvy) |
+| Layout, responsivitet, zoom, tema | Ja | Vid behov | Ja + `scan_page_matrix` |
+| Stor routing/navigationsändring | Ja | Nej | Ja + begränsad `audit_site` |
+
+**Hoppa över MCP** för enbart `tests/`, `docs/`, commit-meddelanden eller `.cursor/rules/` (utom manuell verifiering av regeln).
+
+## Ordning efter implementation
+
+1. Kör **`npm run check`** (eller minst `npm test` + relevant enhetstest).
+2. Om UI eller webbplattform påverkats — kör MCP enligt matrisen nedan.
+3. Rapportera resultat i slutsvaret **före** `notify_done.cmd` (blanda aldrig MCP med klar-notis i samma batch).
+
+## MDN MCP (`user-mdn`)
+
+Använd vid ny/ändrad HTML, ARIA, CSS eller JS Web APIs.
+
+- **`search`** — hitta rätt mönster (t.ex. `dialog focus`, `aria-expanded button`).
+- **`get-doc`** — verifiera korrekt användning av specifikt API/element.
+- **`get-compat`** — vid nya CSS/JS-funktioner med oklar browserstöd.
+
+Jämför MDN med Leffes hårda regler i `00-project-rules.mdc` (inga `disabled`/`aria-disabled`, synliga `<label>`, accordion via `<button>` + `aria-expanded`, m.m.).
+
+## Accessibility scanner MCP (`user-accessibility-scanner`)
+
+Endast när en vy kan renderas i webbläsaren.
+
+**Förutsättningar:**
+
+- App på **`http://localhost:5173`**. Starta **`npm run dev:client`** i bakgrund om porten inte svarar.
+- Läs MCP-schema **före** varje anrop.
+- Hash-route till målvy; mocka session/API enligt mönster i `tests/home.e2e.spec.js` och `tests/e2e/*.e2e.spec.js` vid behov.
+- Hantera ”Återställ session”-dialog (t.ex. knappen ”Nej, börja om från början”).
+
+**Minimikedja per påverkad vy (max 1–3 URL:er):**
+
+1. `browser_navigate` → `browser_snapshot` (bekräfta att vyn laddats).
+2. `scan_page` med `violationsTag`: `["wcag22a", "wcag22aa"]`.
+3. `audit_keyboard` — om ändringen rör fokus, tab-ordning, modaler, accordion eller knappar.
+
+**Utökad nivå (endast vid behov):**
+
+- `scan_page_matrix` — layout, responsivitet, `prefers-reduced-motion`, 200 % zoom.
+- `audit_site` — max 5–10 sidor, `strategy: "provided"`, bara vid routing/menyändringar.
+
+**Prioritering:** Åtgärda **nya** brott som du introducerat. Dokumentera **befintliga** brott som inte hör till uppgiften. Rapportera axe-regel-id, element och föreslagen fix.
+
+## Effektivitet och fallback
+
+- Kör MCP **efter** implementation, **före** slutrapport — inte parallellt med redigering.
+- Om MCP-server saknas: skriv tydligt i svaret, kör `npm run check` och vid UI-ändring **`npm run test:e2e:smoke`** om möjligt.
+
+## Rapportering i slutsvaret
+
+Sammanfatta: `npm run check`, MDN-slutsats (vid körning), axe-brott (nya vs befintliga), tangentbordsaudit (vid körning).
