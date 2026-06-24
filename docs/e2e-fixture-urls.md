@@ -66,3 +66,5 @@ Vid `**/v2/api/**`-mock, hantera minst det som referenstestet behöver:
 ## Underhåll
 
 Uppdatera denna fil när nya vyer läggs till i `js/logic/view_components_index.js` eller hash-alias ändras i `router_url_codec.js`.
+
+Kör **`npm run check:fixture-urls`** (ingår i `npm run check`) för att verifiera att tabellen stämmer med routern.

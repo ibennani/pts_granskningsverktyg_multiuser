@@ -5,7 +5,15 @@ alwaysApply: true
 
 # MCP-testning efter kodändringar
 
-Kompletterar `npm run check` och Playwright/Jest — ersätter dem inte. WCAG-detaljer: `00-project-rules.mdc`. **Navigering:** `docs/e2e-fixture-urls.md` (gissa inte hash-routes).
+Kompletterar `npm run check` och Playwright/Jest — ersätter dem inte. WCAG-detaljer: `00-project-rules.mdc`. **Navigering:** `docs/e2e-fixture-urls.md` (gissa inte hash-routes). Sync-kontroll: `npm run check:fixture-urls`.
+
+## Anti-mönster (punkt 4 — undvik alltid)
+
+- **Ersätt inte** `npm run check` med enbart MCP — terminalcheck först, MCP efteråt.
+- **Kör inte** `audit_site` som standard — max 5–10 angivna URL:er vid routing/menyändring.
+- **Duplicera inte** WCAG-listan här — länka till `00-project-rules.mdc`.
+- **Blanda inte** MCP-anrop med `notify_done.cmd` i samma svar — test och rapport klart först, notis sist.
+- **Ersätt inte** accessibility scanner med Playwright MCP för axe/tangentbord.
 
 ## Beslutsmatris
 

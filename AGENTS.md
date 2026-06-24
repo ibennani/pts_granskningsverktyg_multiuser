@@ -106,6 +106,7 @@ Projektet är organiserat enligt följande struktur:
 - Kör E2E (smoke, Chromium): `npm run test:e2e:smoke`
 - Kör E2E (full svit): `npm run test:e2e`
 - Kör “allt” inför release/PR: `npm run check:full`
+- Kör fixture-sync: `npm run check:fixture-urls` (ingår i `npm run check`; validerar `docs/e2e-fixture-urls.md` mot routern)
 - **MCP efter UI-ändringar:** Se `.cursor/rules/11-mcp-testning-efter-kod.mdc`. Navigera med hash-URL:er från `docs/e2e-fixture-urls.md`. Efter `npm run check`: **user-mdn** (standardskontroll), **user-accessibility-scanner** (axe + tangentbord på `http://localhost:5173/v2/`), valfritt **user-playwright** om inget E2E-test täcker flödet. MCP kompletterar Jest/Playwright — ersätter dem inte. I molnläge utan MCP: `npm run test:e2e:smoke`.
 
 ## Kända begränsningar
