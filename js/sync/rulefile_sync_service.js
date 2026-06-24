@@ -9,7 +9,7 @@ import {
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import { update_rulefile_baseline_from_remote } from '../logic/rulefile_collaboration_notice.js';
 import { drain_rulefile_patch_queue } from './rulefile_patch_queue.js';
-import { prepare_rulefile_content_for_persist } from '../logic/prepare_rulefile_content_for_persist.ts';
+import { prepare_rulefile_content_for_persist } from '../logic/prepare_rulefile_content_for_persist.js';
 
 let rulefile_debounce_timer = null;
 const RULEFILE_DEBOUNCE_MS = 500;

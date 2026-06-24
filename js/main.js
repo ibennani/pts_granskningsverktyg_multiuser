@@ -5,12 +5,12 @@ import '@fontsource/roboto/500.css';
 import '@fontsource/roboto/700.css';
 
 import * as Helpers from './utils/helpers.js';
-import * as TranslationLogic from './translation_logic.ts';
+import * as TranslationLogic from './translation_logic.js';
 import { NotificationComponent } from './components/NotificationComponent.js';
-import * as AuditLogic from './audit_logic.ts';
-import './export_logic.ts';
-import * as SaveAuditLogic from './logic/save_audit_logic.ts';
-import * as ValidationLogic from './validation_logic.ts';
+import * as AuditLogic from './audit_logic.js';
+import './export_logic.js';
+import * as SaveAuditLogic from './logic/save_audit_logic.js';
+import * as ValidationLogic from './validation_logic.js';
 import * as RulefileUpdaterLogic from './logic/rulefile_updater_logic.js';
 import * as ScoreCalculator from './logic/ScoreCalculator.js';
 import { AutosaveService, capture_focus_state, restore_focus_state } from './logic/autosave_service.js';
@@ -32,7 +32,7 @@ import {
 import {
     updatePageTitle as updatePageTitle_impl,
     updatePageTitleFromCurrentView as updatePageTitleFromCurrentView_impl
-} from './logic/page_title_manager.ts';
+} from './logic/page_title_manager.js';
 import {
     set_initial_theme,
     is_dev_build_environment,
@@ -40,7 +40,7 @@ import {
     refresh_production_build_info_from_server,
     update_build_timestamp,
     start_normal_session as start_normal_session_impl
-} from './logic/session_manager.ts';
+} from './logic/session_manager.js';
 import { MarkdownToolbar } from './features/markdown_toolbar.js';
 import './utils/dependency_manager.js';
 import './utils/console_manager.js';
@@ -56,7 +56,7 @@ import { GlobalActionBarComponent } from './components/GlobalActionBarComponent.
 import { ModalComponent } from './components/ModalComponent.js';
 import { SideMenuComponent } from './components/SideMenuComponent.js';
 import { ErrorBoundaryComponent } from './components/ErrorBoundaryComponent.js';
-import { DraftManager } from './draft_manager.ts';
+import { DraftManager } from './draft_manager.js';
 import { get_auth_token, clear_auth_token, get_current_user_preferences, set_current_user_admin } from './api/client.js';
 import { getState, dispatch, subscribe, initState, StoreActionTypes, loadStateFromLocalStorageBackup, updateBackupRestorePosition, APP_STATE_KEY } from './state.js';
 

@@ -2,11 +2,11 @@
  * Vyrendering: init/destroy/render av aktuell vykomponent.
  */
 import { flush_sync_to_server } from './server_sync.js';
-import { DraftManager } from '../draft_manager.ts';
+import { DraftManager } from '../draft_manager.js';
 import * as Helpers from '../utils/helpers.js';
-import * as SaveAuditLogic from '../logic/save_audit_logic.ts';
+import * as SaveAuditLogic from '../logic/save_audit_logic.js';
 import { get_registered_translation_module } from '../utils/translation_access.js';
-import { public_api as ExportLogicApi } from '../export_logic.ts';
+import { public_api as ExportLogicApi } from '../export_logic.js';
 import {
     apply_post_render_focus_instruction,
     update_restore_position

@@ -2,7 +2,7 @@ import { calculateQualityScore } from '../logic/ScoreCalculator.js';
 import {
     deficiency_gauge_zone_stroke_css,
     get_deficiency_gauge_zone_boundary_degrees
-} from '../logic/deficiency_color_scale.ts';
+} from '../logic/deficiency_color_scale.js';
 import "./score_analysis_component.css";
 
 export const ScoreAnalysisComponent = {

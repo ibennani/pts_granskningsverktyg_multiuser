@@ -1,7 +1,7 @@
 import { GenericTableComponent } from '../GenericTableComponent.js';
 import { filter_text_matches } from '../../utils/string_filter_normalize.js';
 import { get_rulefile_backup_history, get_rulefile_backup_overview } from '../../api/client.js';
-import { build_rulefile_history_columns, build_rulefile_table_columns, download_rulefile_snapshot_json, type RulefileBackupHistoryRow } from './backup_rulefile_tables';
+import { build_rulefile_history_columns, build_rulefile_table_columns, download_rulefile_snapshot_json, type RulefileBackupHistoryRow } from './backup_rulefile_tables.js';
 
 export type RulefileKind = 'all' | 'published' | 'working' | 'deleted';
 

@@ -8,7 +8,7 @@ import { apply_session_boot_merge_from_backup } from './session_boot_merge.js';
 import { memoryManager } from '../utils/memory_manager.js';
 import { consoleManager } from '../utils/console_manager.js';
 import { install_vite_dev_client_timestamp_listeners } from '../utils/vite_dev_client_timestamp_hmr.js';
-import { inject_deficiency_score_bar_gradient_styles } from './deficiency_color_scale.ts';
+import { inject_deficiency_score_bar_gradient_styles } from './deficiency_color_scale.js';
 import { get_tab_origin_id } from '../utils/tab_origin_id.js';
 import { reload_open_audit_if_server_ahead } from './audit_remote_reload.js';
 

@@ -1,8 +1,8 @@
 import './backup_overview_component.css';
-import { BackupAuditController } from './backup/backup_audit_controller';
-import { BackupRulefileController, type RulefileKind } from './backup/backup_rulefile_controller';
-import { load_backup_mode_from_storage, save_backup_mode_to_storage, type BackupMode } from './backup/backup_mode_storage';
-import { measure_backup_select_min_width_px } from '../utils/backup_filter_select_width';
+import { BackupAuditController } from './backup/backup_audit_controller.js';
+import { BackupRulefileController, type RulefileKind } from './backup/backup_rulefile_controller.js';
+import { load_backup_mode_from_storage, save_backup_mode_to_storage, type BackupMode } from './backup/backup_mode_storage.js';
+import { measure_backup_select_min_width_px } from '../utils/backup_filter_select_width.js';
 
 export class BackupOverviewComponent {
     CSS_PATH = './backup_overview_component.css';

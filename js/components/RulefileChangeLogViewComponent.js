@@ -1,7 +1,7 @@
 // js/components/RulefileChangeLogViewComponent.js
 
 import { render_rulefile_change_log } from '../logic/rulefile_change_log_renderer.js';
-import { get_download_filename_datetime, trigger_browser_blob_download } from '../utils/download_filename_utils.ts';
+import { get_download_filename_datetime, trigger_browser_blob_download } from '../utils/download_filename_utils.js';
 
 export class RulefileChangeLogViewComponent {
     constructor() {

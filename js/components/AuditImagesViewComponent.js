@@ -1,7 +1,7 @@
 import { get_current_user_name } from '../utils/helpers.js';
 import './audit_images_view_component.css';
 import { build_compact_hash_fragment } from '../logic/router_url_codec.js';
-import { get_requirement_public_key, find_requirement_definition, definition_primary_id, resolve_map_entry } from '../audit_logic.ts';
+import { get_requirement_public_key, find_requirement_definition, definition_primary_id, resolve_map_entry } from '../audit_logic.js';
 import { get_current_view_name } from '../app/browser_globals.js';
 import {
     build_audit_images_view_fingerprint,

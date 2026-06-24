@@ -1,5 +1,5 @@
 /**
  * Brygga: behåller import med .js-suffix (Vite extensionAlias + verify_js_only_imports).
- * Källan: BackupOverviewComponent.ts
+ * Källan: SampleFormViewComponent.ts
  */
-export * from './BackupOverviewComponent.ts';
+export * from './SampleFormViewComponent.ts';

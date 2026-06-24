@@ -1,10 +1,10 @@
 // js/components/audit_view/AuditSamplesSection.js
 // Bygger högerkolumnen: granskningar (listor eller sektioner beroende på audit_mode).
 
-import { build_audit_list_section_configs } from '../../logic/audit_list_section_filter.ts';
+import { build_audit_list_section_configs } from '../../logic/audit_list_section_filter.js';
 import { clamp_page_index } from '../../logic/table_pagination_logic.js';
 import { build_audit_list_groups, count_audits_in_auditor_groups } from '../../logic/audit_list_case_grouping.js';
-import { clear_audit_lists_transition_classes } from '../../logic/audit_list_view_transition.ts';
+import { clear_audit_lists_transition_classes } from '../../logic/audit_list_view_transition.js';
 
 function get_audit_section_table_keys(heading_key) {
     const empty_key =

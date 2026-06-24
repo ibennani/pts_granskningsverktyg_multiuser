@@ -1,10 +1,10 @@
 import { SaveAuditButtonComponent } from './SaveAuditButtonComponent.js';
 import { can_edit_rulefile } from '../utils/helpers.js';
-import { get_download_filename_datetime, trigger_browser_blob_download } from '../utils/download_filename_utils.ts';
+import { get_download_filename_datetime, trigger_browser_blob_download } from '../utils/download_filename_utils.js';
 import {
     prepare_rulefile_content_for_persist,
     build_rulefile_download_filename
-} from '../logic/prepare_rulefile_content_for_persist.ts';
+} from '../logic/prepare_rulefile_content_for_persist.js';
 import './global_action_bar_component.css';
 
 export class GlobalActionBarComponent {

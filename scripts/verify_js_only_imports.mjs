@@ -5,9 +5,11 @@
  * 2) Obligatoriska tunna bryggfiler (.js som re-exporterar .ts) får inte tas bort — undviker t.ex. 404 på
  *    requirement_lookup.js när källan bara ligger som .ts.
  * 3) Alla källfiler (.js/.ts/.tsx/.mts): relativa importmål *.js måste matcha minst en av .js / .ts / .tsx på disk.
+ * 4) .js-filer som inte är tunna bryggor får inte importera .ts direkt — använd .js-brygga.
  *
  * Kör via `npm run check:js-ts-imports` (ingår i `npm run check`).
  * Återsätt saknade bryggor: `node scripts/verify_js_only_imports.mjs --fix` eller `npm run fix:js-ts-bridges`.
+ * Städa konsument-imports: `npm run fix:js-ts-consumer-imports`.
  */
 import fs from 'fs';
 import path from 'path';
@@ -27,15 +29,28 @@ const REQUIRED_JS_REEXPORT_BRIDGES = [
     'js/utils/vite_dev_client_timestamp.js',
     'js/utils/vite_dev_client_timestamp_hmr.js',
     'js/utils/download_filename_utils.js',
-    'js/logic/audit_observation_edit_policy.js'
+    'js/logic/audit_observation_edit_policy.js',
+    'js/logic/backup_download_filename.js',
+    'js/logic/prepare_rulefile_content_for_persist.js',
+    'js/components/AuditGroupedListComponent.js',
+    'js/utils/backup_filter_select_width.js',
+    'js/translation_logic.js',
+    'js/export_logic.js',
+    'js/validation_logic.js',
+    'js/draft_manager.js',
+    'js/logic/save_audit_logic.js',
+    'js/logic/page_title_manager.js',
+    'js/components/BackupOverviewComponent.js'
 ];
 
 const importReStatic = /(?:from|import)\s+['"](\.\.?\/[^'"]+\.js)['"]/g;
 const importReDynamic = /import\s*\(\s*['"](\.\.?\/[^'"]+\.js)['"]\s*\)/g;
+const importReTsStatic = /(?:from|import)\s+['"](\.\.?\/[^'"]+\.ts)['"]/g;
+const importReTsSideEffect = /import\s+['"](\.\.?\/[^'"]+\.ts)['"]\s*;/g;
 
 const SOURCE_EXTS = new Set(['.js', '.ts', '.tsx', '.mts']);
 
-const exportFromTsRe = /export\s+\*\s+from\s+['"]\.\/[^'"]+\.tsx?['"]\s*;?/;
+const exportFromTsRe = /export\s+(\*|\{[^}]+\})\s+from\s+['"]\.\/[^'"]+\.tsx?['"]\s*;?/;
 
 function walk_source_files (dir, acc = []) {
     for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -63,6 +78,26 @@ function collect_specs (text) {
     return out;
 }
 
+function collect_ts_specs (text) {
+    const out = [];
+    for (const re of [importReTsStatic, importReTsSideEffect]) {
+        re.lastIndex = 0;
+        let m;
+        while ((m = re.exec(text)) !== null) out.push(m[1]);
+    }
+    return out;
+}
+
+function is_thin_bridge (body) {
+    const stripped = body
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/\/\/[^\n]*/g, '')
+        .trim();
+    if (!exportFromTsRe.test(stripped)) return false;
+    const lines = stripped.split('\n').map((l) => l.trim()).filter(Boolean);
+    return lines.every((l) => exportFromTsRe.test(l));
+}
+
 function verify_js_importers_no_ts_only_targets (js_files, cwd) {
     const issues = [];
     for (const filePath of js_files) {
@@ -87,6 +122,18 @@ function verify_resolvable_relative_js (all_files, cwd) {
             if (!stem_targets_exist(resolved)) {
                 issues.push(`${path.relative(cwd, filePath)}: ${spec} (saknas som .js/.ts/.tsx)`);
             }
+        }
+    }
+    return issues;
+}
+
+function verify_js_consumers_no_direct_ts (js_files, cwd) {
+    const issues = [];
+    for (const filePath of js_files) {
+        const text = fs.readFileSync(filePath, 'utf8');
+        if (is_thin_bridge(text)) continue;
+        for (const spec of collect_ts_specs(text)) {
+            issues.push(`${path.relative(cwd, filePath)}: ${spec} (använd .js-brygga)`);
         }
     }
     return issues;
@@ -144,14 +191,15 @@ if (do_fix) {
 
 const issues_bridge = verify_required_bridges(cwd);
 const issues_js_only = verify_js_importers_no_ts_only_targets(js_only, cwd);
+const issues_direct_ts = verify_js_consumers_no_direct_ts(js_only, cwd);
 const issues_resolve = verify_resolvable_relative_js(all_files, cwd);
 
-const all_issues = [...issues_bridge, ...issues_js_only, ...issues_resolve];
+const all_issues = [...issues_bridge, ...issues_js_only, ...issues_direct_ts, ...issues_resolve];
 if (all_issues.length) {
     console.error('verify_js_only_imports: fel hittades:\n' + all_issues.join('\n'));
     process.exit(1);
 }
 
 console.log(
-    'OK: obligatoriska bryggor finns, inga .js-filer importerar endast-.ts-mål, alla relativa .js-importmål löser sig.'
+    'OK: obligatoriska bryggor finns, inga .js-konsumenter importerar .ts direkt, inga .js-filer importerar endast-.ts-mål, alla relativa .js-importmål löser sig.'
 );

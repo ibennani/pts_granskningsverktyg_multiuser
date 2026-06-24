@@ -13,7 +13,7 @@ import {
 } from '../../api/client.js';
 import { app_runtime_refs } from '../../utils/app_runtime_refs.js';
 import { filter_text_matches } from '../../utils/string_filter_normalize.js';
-import { build_audit_detail_columns, build_audit_overview_columns, download_audit_backup_json } from './backup_audit_tables';
+import { build_audit_detail_columns, build_audit_overview_columns, download_audit_backup_json } from './backup_audit_tables.js';
 
 export class BackupAuditController {
     root: HTMLElement | null = null;

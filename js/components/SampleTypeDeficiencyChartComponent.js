@@ -4,7 +4,7 @@
 import {
     MONITORING_LABEL_FALLBACK_SENTINEL,
     build_sampletype_chart_sections_from_audit_state
-} from '../logic/sample_type_deficiency_chart_data.ts';
+} from '../logic/sample_type_deficiency_chart_data.js';
 import './statistics_view_component.css';
 
 /**
