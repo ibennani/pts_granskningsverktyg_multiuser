@@ -24,8 +24,11 @@ import { single_route_param } from '../utils/route_params.js';
 import { parse_body } from '../utils/zod_boundary.js';
 import { AuditUrlScreenshotBodySchema } from '../schemas/audit_url_screenshot.js';
 import { assert_public_http_url, SsrfUrlRejectedError } from '../utils/ssrf_url_guard.js';
-import { capture_page_screenshot } from '../services/page_screenshot_service.js';
+import { capture_page_screenshot, fetch_page_title_from_url } from '../services/page_screenshot_service.js';
+import { detect_page_content_types } from '../services/page_content_type_detection_service.js';
 import { build_sample_screenshot_filename } from '../utils/sample_screenshot_filename.js';
+import { UrlContentTypeDetectionBodySchema } from '../schemas/url_content_type_detection.js';
+import { AuditUrlPageTitleBodySchema } from '../schemas/audit_url_page_title.js';
 
 type AuthedRequest = express.Request & {
     user?: { id: string; name: string };
@@ -96,6 +99,88 @@ export function register_audit_media_routes(router: express.Router, upload_limit
         }
     });
 
+    router.post('/:id/detect-content-types', upload_limiter, async (req: Request, res: Response) => {
+        try {
+            const id = single_route_param(req.params.id);
+            if (!(await audit_exists(id))) {
+                return res.status(404).json({ error: 'Granskning hittades inte' });
+            }
+
+            const body = parse_body(UrlContentTypeDetectionBodySchema, req.body, res);
+            if (!body) {
+                return;
+            }
+
+            let safe_url: URL;
+            try {
+                safe_url = assert_public_http_url(body.url);
+            } catch (err) {
+                const message = err instanceof SsrfUrlRejectedError ? err.message : 'Ogiltig URL';
+                return res.status(422).json({ error: message });
+            }
+
+            const unique_allowed = [...new Set(body.allowedContentTypeIds.map((ct_id) => ct_id.trim()).filter(Boolean))];
+
+            let detection_result;
+            try {
+                detection_result = await detect_page_content_types({
+                    url: safe_url.href,
+                    allowed_content_type_ids: unique_allowed,
+                });
+            } catch (err) {
+                const detail = err instanceof Error ? err.message : String(err);
+                console.error('[audit_media] detect-content-types error:', safe_url.href, detail);
+                return res.status(422).json({ error: 'Kunde inte analysera sidans innehåll' });
+            }
+
+            res.json({
+                detectedContentTypeIds: detection_result.detected_content_type_ids,
+            });
+        } catch (err) {
+            console.error('[audit_media] detect-content-types route error:', err);
+            res.status(500).json({ error: 'Kunde inte analysera sidans innehåll' });
+        }
+    });
+
+    router.post('/:id/fetch-page-title', upload_limiter, async (req: Request, res: Response) => {
+        try {
+            const id = single_route_param(req.params.id);
+            if (!(await audit_exists(id))) {
+                return res.status(404).json({ error: 'Granskning hittades inte' });
+            }
+
+            const body = parse_body(AuditUrlPageTitleBodySchema, req.body, res);
+            if (!body) {
+                return;
+            }
+
+            let safe_url: URL;
+            try {
+                safe_url = assert_public_http_url(body.url);
+            } catch (err) {
+                const message = err instanceof SsrfUrlRejectedError ? err.message : 'Ogiltig URL';
+                return res.status(422).json({ error: message });
+            }
+
+            let title_result;
+            try {
+                title_result = await fetch_page_title_from_url({ url: safe_url.href });
+            } catch (err) {
+                const detail = err instanceof Error ? err.message : String(err);
+                console.error('[audit_media] fetch-page-title error:', safe_url.href, detail);
+                return res.status(422).json({
+                    error: 'Kunde inte hämta sidtitel',
+                    detail,
+                });
+            }
+
+            res.json({ pageTitle: title_result.page_title });
+        } catch (err) {
+            console.error('[audit_media] fetch-page-title route error:', err);
+            res.status(500).json({ error: 'Kunde inte hämta sidtitel' });
+        }
+    });
+
     router.post('/:id/media/capture-screenshot', upload_limiter, async (req: Request, res: Response) => {
         try {
             const id = single_route_param(req.params.id);
@@ -122,7 +207,10 @@ export function register_audit_media_routes(router: express.Router, upload_limit
             } catch (err) {
                 const detail = err instanceof Error ? err.message : String(err);
                 console.error('[audit_media] capture-screenshot error:', safe_url.href, detail);
-                return res.status(422).json({ error: 'Kunde inte ta skärmdump av sidan' });
+                return res.status(422).json({
+                    error: 'Kunde inte ta skärmdump av sidan',
+                    detail,
+                });
             }
 
             const requested_filename = build_sample_screenshot_filename(

@@ -19,7 +19,7 @@ type UploadResponse = {
     requestedFilename?: string;
 };
 
-async function parse_error_payload(res: Response): Promise<{ error?: string }> {
+async function parse_error_payload(res: Response): Promise<{ error?: string; detail?: string }> {
     return res.json().catch(() => ({ error: res.statusText || `HTTP ${res.status}` }));
 }
 
@@ -141,6 +141,28 @@ export type CaptureUrlScreenshotResponse = {
     requestedFilename?: string;
 };
 
+export type FetchUrlPageTitleResponse = {
+    pageTitle: string;
+};
+
+export async function fetch_audit_url_page_title(
+    audit_id: string,
+    url: string
+): Promise<FetchUrlPageTitleResponse> {
+    const api_url = `${get_base_url()}/audits/${encodeURIComponent(String(audit_id))}/fetch-page-title`;
+    const res = await fetch_with_auth_retry(api_url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
+        body: JSON.stringify({ url })
+    });
+    if (!res.ok) {
+        const err = await parse_error_payload(res);
+        const message = err.detail || err.error || `HTTP ${res.status}`;
+        throw new Error(message);
+    }
+    return (await res.json()) as FetchUrlPageTitleResponse;
+}
+
 export async function capture_audit_url_screenshot(
     audit_id: string,
     url: string,
@@ -154,9 +176,32 @@ export async function capture_audit_url_screenshot(
     });
     if (!res.ok) {
         const err = await parse_error_payload(res);
-        throw new Error(err.error || `HTTP ${res.status}`);
+        const message = err.detail || err.error || `HTTP ${res.status}`;
+        throw new Error(message);
     }
     return (await res.json()) as CaptureUrlScreenshotResponse;
+}
+
+export type DetectContentTypesResponse = {
+    detectedContentTypeIds: string[];
+};
+
+export async function detect_content_types_from_url(
+    audit_id: string,
+    url: string,
+    allowed_content_type_ids: string[]
+): Promise<DetectContentTypesResponse> {
+    const api_url = `${get_base_url()}/audits/${encodeURIComponent(String(audit_id))}/detect-content-types`;
+    const res = await fetch_with_auth_retry(api_url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json; charset=utf-8' },
+        body: JSON.stringify({ url, allowedContentTypeIds: allowed_content_type_ids })
+    });
+    if (!res.ok) {
+        const err = await parse_error_payload(res);
+        throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    return (await res.json()) as DetectContentTypesResponse;
 }
 
 export function can_upload_audit_media(audit_id: string | null | undefined): boolean {

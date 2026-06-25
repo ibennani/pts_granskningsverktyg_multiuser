@@ -13,6 +13,7 @@ import {
     page_has_renderable_content,
     PUPPETEER_LAUNCH_ARGS,
 } from './page_screenshot_stealth.js';
+import { dismiss_cookie_banners_before_screenshot } from './page_screenshot_cookie_consent.js';
 
 const VIEWPORT_WIDTH = 1280;
 const VIEWPORT_HEIGHT = 800;
@@ -46,7 +47,7 @@ async function prepare_page(page: Page): Promise<void> {
 
 async function navigate_and_validate(page: Page, url: string, timeout_ms: number): Promise<void> {
     const response = await page.goto(url, {
-        waitUntil: 'networkidle2',
+        waitUntil: 'load',
         timeout: timeout_ms,
     });
 
@@ -60,9 +61,11 @@ async function navigate_and_validate(page: Page, url: string, timeout_ms: number
 }
 
 async function capture_full_page_png(page: Page): Promise<{ png_buffer: Buffer; page_title: string }> {
+    await dismiss_cookie_banners_before_screenshot(page);
     await auto_scroll_lazy_content(page);
     await settle_after_lazy_load(page);
     await scroll_to_top(page);
+    await dismiss_cookie_banners_before_screenshot(page);
 
     const page_title = await read_page_title(page);
     const png_buffer = Buffer.from(
@@ -73,6 +76,32 @@ async function capture_full_page_png(page: Page): Promise<{ png_buffer: Buffer; 
     );
 
     return { png_buffer, page_title };
+}
+
+/**
+ * Navigerar till URL och returnerar sidans dokumenttitel (ingen skärmdump).
+ */
+export async function fetch_page_title_from_url(
+    input: CapturePageScreenshotInput
+): Promise<{ page_title: string }> {
+    const { url, timeout_ms = NAVIGATION_TIMEOUT_MS } = input;
+    let browser: Browser | undefined;
+
+    try {
+        browser = await puppeteer.launch({
+            headless: true,
+            args: PUPPETEER_LAUNCH_ARGS,
+        });
+        const page = await browser.newPage();
+        await prepare_page(page);
+        await navigate_and_validate(page, url, timeout_ms);
+        const page_title = await read_page_title(page);
+        return { page_title };
+    } finally {
+        if (browser) {
+            await browser.close();
+        }
+    }
 }
 
 /**

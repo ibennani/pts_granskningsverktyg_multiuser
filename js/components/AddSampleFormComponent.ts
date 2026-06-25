@@ -12,9 +12,13 @@ import {
     save_new_sample_form_draft,
     type NewSampleFormDraft
 } from './add_sample_form/new_sample_form_draft.js';
-import { clear_sample_auto_screenshot_if_needed, handle_sample_url_blur, type SampleUrlAutoScreenshotComponentLike } from './add_sample_form/sample_url_auto_screenshot.js';
+import { clear_sample_auto_screenshot_if_needed, handle_sample_url_blur } from './add_sample_form/sample_url_auto_screenshot.js';
+import { build_sample_url_screenshot_form_host, type SampleUrlScreenshotFormHostSource } from './add_sample_form/sample_url_screenshot_form_host.js';
+import { build_sample_url_page_title_form_host, handle_sample_url_page_title_on_blur, type SampleUrlPageTitleFormHostSource } from './add_sample_form/sample_url_page_title.js';
+import { handle_analyze_page_content_click as run_analyze_page_content_click, update_content_type_analyze_visibility, type ContentTypeDetectionComponentLike } from './add_sample_form/content_type_detection.js';
 import { sync_to_server_now } from '../logic/server_sync.js';
 import { get_auth_token } from '../api/client.js';
+import { audit_status_blocks_sample_and_requirement_edits } from '../utils/audit_status_helpers.js';
 
 export class AddSampleFormComponent {
     private root: HTMLElement | null;
@@ -35,6 +39,7 @@ export class AddSampleFormComponent {
     private category_fieldset_element: any;
     private sample_type_select: any;
     private description_input: any;
+    private description_label_element: HTMLLabelElement | null;
     private url_input: any;
     private url_form_group_ref: any;
     private content_types_container_element: any;
@@ -49,12 +54,19 @@ export class AddSampleFormComponent {
     private current_editing_sample_id: string | null;
     private original_content_types_on_load: string[];
     private previous_sample_type_value: string;
+    private previous_url_page_title: string;
+    private url_page_title_generation: number;
+    private page_title_label_loading_count: number;
     private autosave_session: any;
     private skip_autosave_on_destroy: boolean;
     private initial_sample_snapshot: any;
     private show_back_to_samples_button: boolean;
     private content_type_selected_ids: Set<string>;
     private content_types_section_panel_inner: HTMLElement | null;
+    private content_type_analyze_btn: HTMLButtonElement | null;
+    private content_type_analyze_live_region: HTMLElement | null;
+    private content_type_detection_in_progress: boolean;
+    private content_type_detection_generation: number;
 
     constructor() {
         this.root = null;
@@ -75,6 +87,7 @@ export class AddSampleFormComponent {
         this.category_fieldset_element = null;
         this.sample_type_select = null;
         this.description_input = null;
+        this.description_label_element = null;
         this.url_input = null;
         this.url_form_group_ref = null;
         this.content_types_container_element = null;
@@ -89,12 +102,19 @@ export class AddSampleFormComponent {
         this.current_editing_sample_id = null;
         this.original_content_types_on_load = [];
         this.previous_sample_type_value = '';
+        this.previous_url_page_title = '';
+        this.url_page_title_generation = 0;
+        this.page_title_label_loading_count = 0;
         this.autosave_session = null;
         this.skip_autosave_on_destroy = false;
         this.initial_sample_snapshot = null;
         this.show_back_to_samples_button = false;
         this.content_type_selected_ids = new Set();
         this.content_types_section_panel_inner = null;
+        this.content_type_analyze_btn = null;
+        this.content_type_analyze_live_region = null;
+        this.content_type_detection_in_progress = false;
+        this.content_type_detection_generation = 0;
     }
 
     init({ root, deps }: { root: HTMLElement; deps: any }) {
@@ -116,6 +136,7 @@ export class AddSampleFormComponent {
         this.category_fieldset_element = null;
         this.sample_type_select = null;
         this.description_input = null;
+        this.description_label_element = null;
         this.url_input = null;
         this.url_form_group_ref = null;
         this.content_types_container_element = null;
@@ -130,12 +151,19 @@ export class AddSampleFormComponent {
         this.current_editing_sample_id = null;
         this.original_content_types_on_load = [];
         this.previous_sample_type_value = "";
+        this.previous_url_page_title = "";
+        this.url_page_title_generation = 0;
+        this.page_title_label_loading_count = 0;
         this.autosave_session = null;
         this.skip_autosave_on_destroy = false;
         this.initial_sample_snapshot = null;
         this.show_back_to_samples_button = false;
         this.content_type_selected_ids = new Set();
         this.content_types_section_panel_inner = null;
+        this.content_type_analyze_btn = null;
+        this.content_type_analyze_live_region = null;
+        this.content_type_detection_in_progress = false;
+        this.content_type_detection_generation = 0;
 
         this.handle_form_submit = this.handle_form_submit.bind(this);
         this.update_description_from_sample_type = this.update_description_from_sample_type.bind(this);
@@ -143,6 +171,12 @@ export class AddSampleFormComponent {
         this.handle_autosave_input = this.handle_autosave_input.bind(this);
         this.handle_content_type_change = this.handle_content_type_change.bind(this);
         this.handle_url_input_blur = this.handle_url_input_blur.bind(this);
+        this.handle_analyze_page_content_click = this.handle_analyze_page_content_click.bind(this);
+        this.get_t_internally = this.get_t_internally.bind(this);
+    }
+
+    handle_analyze_page_content_click(): void {
+        void run_analyze_page_content_click(this as unknown as ContentTypeDetectionComponentLike);
     }
 
     _get_sample_edit_draft() {
@@ -277,7 +311,14 @@ export class AddSampleFormComponent {
                 this.url_input.value = fixed;
             }
         }
-        void handle_sample_url_blur(this as unknown as SampleUrlAutoScreenshotComponentLike);
+        const screenshot_host = build_sample_url_screenshot_form_host(
+            this as unknown as SampleUrlScreenshotFormHostSource
+        );
+        const page_title_host = build_sample_url_page_title_form_host(
+            this as unknown as SampleUrlPageTitleFormHostSource
+        );
+        void handle_sample_url_page_title_on_blur(page_title_host);
+        void handle_sample_url_blur(screenshot_host);
     }
 
     update_description_from_sample_type() {
@@ -305,8 +346,8 @@ export class AddSampleFormComponent {
         if (!this.sample_type_container) return;
         this.sample_type_container.innerHTML = '';
         const t = this.get_t_internally();
-        const label = this.Helpers.create_element('label', { attributes: { for: 'sampleTypeSelect' }, text_content: t('sample_type_label') + '*' });
-        this.sample_type_select = this.Helpers.create_element('select', { id: 'sampleTypeSelect', class_name: 'form-control', attributes: { required: true } });
+        const label = this.Helpers.create_element('label', { attributes: { for: 'sampleTypeSelect' }, text_content: t('sample_type_label') });
+        this.sample_type_select = this.Helpers.create_element('select', { id: 'sampleTypeSelect', class_name: 'form-control' });
         this.sample_type_select.addEventListener('change', () => {
             this.update_description_from_sample_type();
             // Variant B: typ- och ev. auto-uppdaterad beskrivning ska direkt in i utkastet.
@@ -327,9 +368,12 @@ export class AddSampleFormComponent {
             this.url_form_group_ref.style.display = selected_category.hasUrl ? '' : 'none';
             if (!selected_category.hasUrl) {
                 this.url_input.value = '';
-                void clear_sample_auto_screenshot_if_needed(this as unknown as SampleUrlAutoScreenshotComponentLike);
+                void clear_sample_auto_screenshot_if_needed(
+                    build_sample_url_screenshot_form_host(this as unknown as SampleUrlScreenshotFormHostSource)
+                );
             }
         }
+        update_content_type_analyze_visibility(this as unknown as ContentTypeDetectionComponentLike);
 
         this.previous_sample_type_value = this.sample_type_select.value
             ? (this.sample_type_select.options[this.sample_type_select.selectedIndex]?.text || '')
@@ -569,6 +613,14 @@ export class AddSampleFormComponent {
     _perform_save(sample_payload_data: any, is_autosave = false, skip_render_for_trim = false) {
         const t = this.get_t_internally();
         const should_skip_render = is_autosave === true || skip_render_for_trim === true;
+        const audit_status = this.getState?.()?.auditStatus;
+        if (
+            !this.current_editing_sample_id &&
+            audit_status_blocks_sample_and_requirement_edits(audit_status)
+        ) {
+            this.NotificationComponent.show_global_message(t('error_cannot_add_sample_when_audit_closed'), 'error');
+            return;
+        }
         if (this.current_editing_sample_id) {
             this.dispatch({
                 type: this.StoreActionTypes.UPDATE_SAMPLE,
@@ -614,15 +666,7 @@ export class AddSampleFormComponent {
 
         const selected_category_radio = this.form_element.querySelector('input[name="sampleCategory"]:checked');
         const sample_category_id = selected_category_radio ? selected_category_radio.value : null;
-        if (!sample_category_id) {
-            this.NotificationComponent.show_global_message(t('field_is_required', { fieldName: t('sample_category_title') }), 'error');
-            return;
-        }
-        if (!this.sample_type_select) {
-            this.NotificationComponent.show_global_message(t('add_sample_select_category_before_type'), 'error');
-            return;
-        }
-        const sample_type_id = this.sample_type_select.value;
+        const sample_type_id = this.sample_type_select?.value || null;
 
         const description_raw = this.description_input.value;
         const url_raw = this.url_input.value;
@@ -640,9 +684,6 @@ export class AddSampleFormComponent {
             ? this.Helpers.sanitize_plain_array(selected_raw_values, { trim: true })
             : selected_raw_values.map((v: any) => v.trim().replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ''));
 
-        if (!sample_type_id) { this.NotificationComponent.show_global_message(t('field_is_required', { fieldName: t('sample_type_label') }), 'error'); this.sample_type_select.focus(); return; }
-        if (!description) { this.NotificationComponent.show_global_message(t('field_is_required', { fieldName: t('description') }), 'error'); this.description_input.focus(); return; }
-        if (selected_content_types.length === 0) { this.NotificationComponent.show_global_message(t('error_min_one_content_type'), 'error'); return; }
         if (url_val) url_val = this.Helpers.add_protocol_if_missing(url_val);
 
         const sample_payload_data = {

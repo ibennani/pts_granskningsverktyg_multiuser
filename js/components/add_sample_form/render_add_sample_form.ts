@@ -1,19 +1,27 @@
 import { render_content_types_section_accordion } from './content_type_accordion.js';
 import { handle_sample_attach_media_click, render_sample_screenshot_section } from './sample_attach_media.js';
 import { sync_sample_auto_screenshot_state_from_data } from './sample_url_auto_screenshot.js';
+import { update_content_type_analyze_visibility } from './content_type_detection.js';
 
 export function render_add_sample_form(component: any, sample_id_to_edit: string | null = null) {
-    // Prevent re-rendering (and resetting form state) only when editing the same existing sample and the form is mounted.
-    // For "add new sample" (null) we always re-render so that checkboxes start unchecked.
+    // Undvik omrendering när samma vy redan är monterad — annars avbryts t.ex. auto-skärmdump vid blur.
     // Kräv isConnected: annars kan contain() vara sant för en frånkopplad subträd efter att värden
     // (t.ex. parent.innerHTML) tagit bort noden från dokumentet — då måste formuläret byggas om från state.
-    if (sample_id_to_edit !== null &&
-        component.current_editing_sample_id === sample_id_to_edit &&
+    const form_already_mounted =
         component.form_element &&
         component.root &&
         component.root.isConnected &&
-        component.root.contains(component.form_element)) {
-        return;
+        component.root.contains(component.form_element);
+    if (form_already_mounted) {
+        if (
+            sample_id_to_edit !== null &&
+            component.current_editing_sample_id === sample_id_to_edit
+        ) {
+            return;
+        }
+        if (sample_id_to_edit === null && component.current_editing_sample_id === null) {
+            return;
+        }
     }
 
     const t = component.get_t_internally();
@@ -50,6 +58,7 @@ export function render_add_sample_form(component: any, sample_id_to_edit: string
     component.original_content_types_on_load = sample_data ? [...(sample_data.selectedContentTypes || [])] : [];
 
     component.root.innerHTML = '';
+    component.page_title_label_loading_count = 0;
     component.form_element = component.Helpers.create_element('form', { class_name: 'add-sample-form' });
     // Nytt stickprov: ignorera DraftManager (samma route-nyckel som tidigare partiellt ifyllt formulär)
     // annars återställs kryssrutor/radio/text från localStorage/sessionStorage efter render.
@@ -65,7 +74,7 @@ export function render_add_sample_form(component: any, sample_id_to_edit: string
     sample_categories.forEach((cat: any) => {
         const radio_id = `sample-cat-${cat.id}`;
         const radio_wrapper = component.Helpers.create_element('div', { class_name: ['form-check', 'content-type-child-item'] });
-        const radio = component.Helpers.create_element('input', { id: radio_id, class_name: 'form-check-input', attributes: { type: 'radio', name: 'sampleCategory', value: cat.id, required: true } });
+        const radio = component.Helpers.create_element('input', { id: radio_id, class_name: 'form-check-input', attributes: { type: 'radio', name: 'sampleCategory', value: cat.id } });
         if (effective_sample_data && effective_sample_data.sampleCategory === cat.id) radio.checked = true;
         radio.addEventListener('change', () => {
             component.on_category_change(cat.id);
@@ -79,10 +88,21 @@ export function render_add_sample_form(component: any, sample_id_to_edit: string
     // --- Sample Info Section ---
     component.form_element.appendChild(component.Helpers.create_element('h2', { text_content: t('sample_info_title') }));
     component.sample_type_container = component.Helpers.create_element('div', { class_name: 'form-group' });
-    component.description_input = component.Helpers.create_element('input', { id: 'sampleDescriptionInput', class_name: 'form-control', attributes: { type: 'text', required: true } });
+    component.description_input = component.Helpers.create_element('input', { id: 'sampleDescriptionInput', class_name: 'form-control', attributes: { type: 'text' } });
     component.description_input.addEventListener('input', component.handle_autosave_input);
+    component.description_label_element = component.Helpers.create_element('label', {
+        class_name: 'sample-description-label',
+        attributes: { for: 'sampleDescriptionInput' }
+    });
+    component.description_label_element.appendChild(component.Helpers.create_element('span', {
+        class_name: 'sample-description-label__text',
+        text_content: t('description')
+    }));
     component.url_input = component.Helpers.create_element('input', { id: 'sampleUrlInput', class_name: 'form-control', attributes: { type: 'url' } });
-    component.url_input.addEventListener('input', component.handle_autosave_input);
+    component.url_input.addEventListener('input', () => {
+        component.handle_autosave_input();
+        update_content_type_analyze_visibility(component);
+    });
     component.url_input.addEventListener('blur', () => {
         if (typeof component.handle_url_input_blur === 'function') {
             component.handle_url_input_blur();
@@ -97,8 +117,11 @@ export function render_add_sample_form(component: any, sample_id_to_edit: string
     });
     component.form_element.append(
         component.sample_type_container,
-        component.Helpers.create_element('div', { class_name: 'form-group', children: [component.Helpers.create_element('label', { attributes: { for: 'sampleDescriptionInput' }, text_content: t('description') + '*' }), component.description_input] }),
-        component.url_form_group_ref
+        component.url_form_group_ref,
+        component.Helpers.create_element('div', {
+            class_name: 'form-group',
+            children: [component.description_label_element, component.description_input]
+        })
     );
     component.description_input.value = effective_sample_data?.description || "";
     component.url_input.value = effective_sample_data?.url || "";
