@@ -19,6 +19,7 @@ import {
     is_same_hash_render_scheduled,
     set_same_hash_render_scheduled
 } from '../app/browser_globals.js';
+import { audit_status_blocks_sample_and_requirement_edits } from '../utils/audit_status_helpers.js';
 
 if (typeof window !== 'undefined' && is_debug_nav()) {
     consoleManager.log('[router] Debug-navigering aktiv.');
@@ -194,6 +195,23 @@ export function navigate_and_set_hash(target_view_name, target_params = {}, opti
     }
 
     const safe_params = { ...(target_params || {}) };
+    if (
+        target_view_name === 'sample_form' &&
+        !safe_params.editSampleId &&
+        audit_status_blocks_sample_and_requirement_edits(current_state_for_nav?.auditStatus)
+    ) {
+        nav_debug('navigate_and_set_hash blockerad: nytt stickprov vid avslutad/arkiverad granskning');
+        const t = window.Translation?.t || ((k) => k);
+        app_runtime_refs.notification_component?.show_global_message?.(
+            t('error_cannot_add_sample_when_audit_closed'),
+            'warning'
+        );
+        return navigate_and_set_hash(
+            'sample_management',
+            merge_audit_id_from_state_into_params('sample_management', {}, getState),
+            options
+        );
+    }
     if (allow_new_audit_exit) {
         delete safe_params.allow_new_audit_exit;
     }

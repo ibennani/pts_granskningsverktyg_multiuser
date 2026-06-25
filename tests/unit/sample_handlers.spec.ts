@@ -3,7 +3,7 @@
  */
 
 import { describe, test, expect } from '@jest/globals';
-import { reduce_delete_sample } from '../../js/state/sampleHandlers.js';
+import { reduce_add_sample, reduce_delete_sample } from '../../js/state/sampleHandlers.js';
 
 describe('reduce_delete_sample', () => {
     const base_state = {
@@ -44,5 +44,39 @@ describe('reduce_delete_sample', () => {
     test('ändrar inte arkiverad granskning', () => {
         const archived = { ...base_state, auditStatus: 'archived' };
         expect(reduce_delete_sample(archived, { payload: { sampleId: 'sample-a' } })).toBe(archived);
+    });
+});
+
+describe('reduce_add_sample', () => {
+    const base_state = {
+        auditStatus: 'in_progress',
+        auditMetadata: {},
+        samples: [{ id: 'sample-a', description: 'A' }]
+    };
+
+    test('lägger till stickprov under pågående granskning', () => {
+        const next = reduce_add_sample(base_state, {
+            payload: { id: 'sample-b', description: 'B', sampleCategory: '', sampleType: '' }
+        });
+        expect(next.samples).toHaveLength(2);
+        expect(next.samples[1].id).toBe('sample-b');
+    });
+
+    test('blockerar nytt stickprov vid avslutad granskning', () => {
+        const locked = { ...base_state, auditStatus: 'locked' };
+        const next = reduce_add_sample(locked, {
+            payload: { id: 'sample-b', description: 'B', sampleCategory: '', sampleType: '' }
+        });
+        expect(next).toBe(locked);
+        expect(next.samples).toHaveLength(1);
+    });
+
+    test('blockerar nytt stickprov vid arkiverad granskning', () => {
+        const archived = { ...base_state, auditStatus: 'archived' };
+        const next = reduce_add_sample(archived, {
+            payload: { id: 'sample-b', description: 'B', sampleCategory: '', sampleType: '' }
+        });
+        expect(next).toBe(archived);
+        expect(next.samples).toHaveLength(1);
     });
 });

@@ -9,6 +9,7 @@ import {
     with_last_local_change_at
 } from '../logic/audit_sync_tracking.js';
 import { with_last_in_progress_activity_in_metadata } from '../logic/audit_list_last_updated.js';
+import { audit_status_blocks_sample_and_requirement_edits } from '../utils/audit_status_helpers.js';
 
 function sample_ids_match(left: unknown, right: unknown): boolean {
     return String(left ?? '') === String(right ?? '');
@@ -39,7 +40,7 @@ export function reduce_clear_sample_edit_draft(current_state: any) {
 }
 
 export function reduce_add_sample(current_state: any, action: any) {
-    if (current_state.auditStatus === 'archived') return current_state;
+    if (audit_status_blocks_sample_and_requirement_edits(current_state.auditStatus)) return current_state;
     const new_sample_with_defaults = { sampleCategory: '', sampleType: '', ...action.payload };
     const out = {
         ...current_state,

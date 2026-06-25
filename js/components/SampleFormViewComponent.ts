@@ -1,4 +1,5 @@
 import { AddSampleFormComponent } from './AddSampleFormComponent.js';
+import { audit_status_blocks_sample_and_requirement_edits } from '../utils/audit_status_helpers.js';
 
 export class SampleFormViewComponent {
     private root: HTMLElement | null;
@@ -85,6 +86,18 @@ export class SampleFormViewComponent {
         const current_state = this.getState();
         const audit_status = current_state.auditStatus;
         const sample_count = current_state.samples?.length || 0;
+
+        if (
+            !sample_id_to_edit &&
+            audit_status_blocks_sample_and_requirement_edits(audit_status)
+        ) {
+            this.NotificationComponent.show_global_message(
+                t('error_cannot_add_sample_when_audit_closed'),
+                'warning'
+            );
+            this.router('sample_management');
+            return;
+        }
 
         const root = this.root;
         root.innerHTML = '';

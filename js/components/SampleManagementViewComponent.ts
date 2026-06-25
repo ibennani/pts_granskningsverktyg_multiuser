@@ -11,6 +11,7 @@ import { show_open_all_sample_urls_modal, sample_url_raw_string } from '../logic
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import { effective_status_is_fully_unreviewed_for_bulk_pass } from '../audit_logic.js';
 import { user_may_use_sample_mark_bulk_pass_not_audited } from '../logic/sample_bulk_pass_not_audited_gate.js';
+import { audit_status_blocks_sample_and_requirement_edits } from '../utils/audit_status_helpers.js';
 import './sample_management_view_component.css';
 
 export class SampleManagementViewComponent {
@@ -265,15 +266,18 @@ export class SampleManagementViewComponent {
         );
 
         const top_actions_div = this.Helpers.create_element('div', { class_name: 'sample-management-actions' });
-        const add_button = this.Helpers.create_element('button', {
-            class_name: ['button', 'button-primary'],
-            html_content: `<span>${t('add_new_sample')}</span>${this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('add') : ''}`
-        });
+        const can_add_sample = !audit_status_blocks_sample_and_requirement_edits(current_state.auditStatus);
+        if (can_add_sample) {
+            const add_button = this.Helpers.create_element('button', {
+                class_name: ['button', 'button-primary'],
+                html_content: `<span>${t('add_new_sample')}</span>${this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('add') : ''}`
+            });
 
-        add_button.addEventListener('click', () => {
-            this.router?.('sample_form');
-        });
-        top_actions_div.appendChild(add_button);
+            add_button.addEventListener('click', () => {
+                this.router?.('sample_form');
+            });
+            top_actions_div.appendChild(add_button);
+        }
 
         const has_any_sample_url = (current_state.samples as Array<Record<string, unknown>> | undefined)?.some(
             (s) => sample_url_raw_string(s) !== ''
