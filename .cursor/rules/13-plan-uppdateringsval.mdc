@@ -1,0 +1,43 @@
+---
+description: Fråga användaren om planen ska uppdateras när en förbättrad eller ultimat plan föreslås.
+alwaysApply: true
+---
+
+# Planuppdatering — val innan implementation
+
+När agenten presenterar en plan (Plan Mode eller planering före implementation) och **Planerings- och arkitekturgranskning** leder till en **förbättrad plan** eller **Den Ultimata Planen** som skiljer sig meningsfullt från den plan som redan presenterats — **fråga alltid användaren innan nästa steg**.
+
+## När regeln gäller
+
+- Avsnitt **«Den Ultimata Planen»** (eller motsvarande optimerat förslag) avviker från huvudplanen i steg, omfattning, arkitektur eller prioritering.
+- Agenten i efterhand föreslår en tydligt bättre variant (t.ex. efter kritik, alternativ eller ny information).
+- Planen har redan godkänts eller diskuterats, men granskningen pekar på väsentliga förbättringar.
+
+**Gäller inte** när ultimat plan och nuvarande plan i praktiken är samma — då räcker det att kort konstatera det.
+
+## Obligatoriskt val
+
+Använd **`AskQuestion`** (eller tydlig strukturerad fråga om verktyget saknas) med **exakt två huvudalternativ**:
+
+1. **Uppdatera planen** — ersätt/justera den aktiva planen enligt den förbättrade eller ultimata planen; presentera den uppdaterade planen som ny utgångspunkt.
+2. **Kör på nuvarande plan** — behåll planen som den är och gå vidare (implementation, nästa steg eller godkännande) utan att slå ihop ultimat planen.
+
+Lägg till **«Annat»** endast om användaren behöver formulera ett tredje val (t.ex. delvis uppdatering).
+
+## Beteende efter svaret
+
+| Användarens val | Agentens åtgärd |
+|-----------------|-----------------|
+| **Uppdatera planen** | Skriv om planen så att den följer den ultimata/förbättrade planen. Kör **Planerings- och arkitekturgranskning** igen på den nya planen. Om ny ultimat plan skiljer sig — **upprepa frågan**. |
+| **Kör på nuvarande plan** | Implementera eller fortsätt enligt **nuvarande** plan. Nämn kort vad som medvetet lämnas utanför (från ultimat planen), utan att omimplementera planen. |
+
+## Före implementation
+
+- **Starta inte implementation** (kod, filändringar, commit) förrän användaren har valt **«Kör på nuvarande plan»** eller en **uppdaterad plan** som därefter godkänts/implementeras enligt projektets övriga regler (t.ex. invänta godkännande i Plan Mode).
+- Syftet är **iterativ förbättring**: planen ska kunna slipas tills användaren aktivt väljer att köra vidare.
+
+## Kort exempel
+
+Efter «Den Ultimata Planen» som förenklar bort ett extra lager:
+
+> «Ultimat planen tar bort mellanlagret X och gör Y direkt i befintlig komponent. Vill du uppdatera planen enligt detta, eller köra på nuvarande plan med mellanlagret?»

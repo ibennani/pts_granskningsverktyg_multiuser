@@ -49,6 +49,7 @@ När AI-agenten beskriver hur funktioner, flöden eller förändringar fungerar 
   ### 4. Den Ultimata Planen
   - Baserat på kritiken, identifierade edge cases och de bästa delarna från alternativa lösningar: presentera en **ny, optimerad och komplett steg-för-steg-plan** som är direkt redo att börja implementeras.
   - Öppna beslut som kräver användarens val ska lyftas här — konkret och kopplade till steg i planen, inte som lösa avslutande frågor.
+  - Om ultimat planen **skiljer sig meningsfullt** från huvudplanen: följ **`13-plan-uppdateringsval.mdc`** — fråga om planen ska uppdateras eller om ni kör på nuvarande plan innan implementation.
 
   - Svaren ska vara **konkreta, korta och handlingskraftiga**. Besvara alla delavsnitt även när svaret är «inga» eller «inget särskilt» — då ska det sägas kort och tydligt.
 
