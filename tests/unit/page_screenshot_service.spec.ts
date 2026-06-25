@@ -70,7 +70,7 @@ describe('page_screenshot_service', () => {
         const result = await capture_page_screenshot({ url: 'https://example.com' });
         expect(goto_mock).toHaveBeenCalledWith(
             'https://example.com',
-            expect.objectContaining({ waitUntil: 'networkidle2' })
+            expect.objectContaining({ waitUntil: 'load' })
         );
         expect(screenshot_mock).toHaveBeenCalledWith({ type: 'png', fullPage: true });
         expect(result.page_title).toBe('Testtitel');

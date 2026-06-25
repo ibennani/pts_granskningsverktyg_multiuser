@@ -189,6 +189,8 @@ export default {
     '^.+[\\\\/]server/utils/zod_boundary\\.js$': '<rootDir>/server/utils/zod_boundary.ts',
     '^.+[\\\\/]page_screenshot_stealth\\.js$': '<rootDir>/server/services/page_screenshot_stealth.ts',
     '^.+[\\\\/]page_screenshot_lazy_load\\.js$': '<rootDir>/server/services/page_screenshot_lazy_load.ts',
+    '^.+[\\\\/]page_screenshot_cookie_consent\\.js$': '<rootDir>/server/services/page_screenshot_cookie_consent.ts',
+    '^.+[\\\\/]page_screenshot_cookie_consent_logic\\.js$': '<rootDir>/server/services/page_screenshot_cookie_consent_logic.ts',
     '^.+[\\\\/]page_content_type_detection_rules\\.js$': '<rootDir>/server/services/page_content_type_detection_rules.ts',
     '^.+[\\\\/]page_content_type_detection_service\\.js$': '<rootDir>/server/services/page_content_type_detection_service.ts',
     '^.+[\\\\/]page_screenshot_service\\.js$': '<rootDir>/server/services/page_screenshot_service.ts',
