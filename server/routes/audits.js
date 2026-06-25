@@ -26,6 +26,7 @@ import {
 } from '../repositories/audit_repository.js';
 import { fetch_rule_set_by_id } from '../repositories/rule_repository.js';
 import { generate_pdf_from_html } from '../services/pdf_generation_service.ts';
+import { PDF_EXPORT_HTML_MAX_BYTES } from '../../shared/constants/pdf_export_limits.js';
 
 const router = express.Router();
 
@@ -435,8 +436,6 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-const PDF_EXPORT_HTML_MAX_BYTES = 8 * 1024 * 1024;
-
 router.post('/:id/export/pdf-requirements', async (req, res) => {
     try {
         const { id } = req.params;
@@ -448,8 +447,14 @@ router.post('/:id/export/pdf-requirements', async (req, res) => {
         if (!htmlContent || typeof htmlContent !== 'string') {
             return res.status(400).json({ error: 'htmlContent krävs' });
         }
-        if (Buffer.byteLength(htmlContent, 'utf8') > PDF_EXPORT_HTML_MAX_BYTES) {
-            return res.status(400).json({ error: 'htmlContent är för stor' });
+        const byte_size = Buffer.byteLength(htmlContent, 'utf8');
+        if (byte_size > PDF_EXPORT_HTML_MAX_BYTES) {
+            return res.status(400).json({
+                code: 'PDF_EXPORT_HTML_TOO_LARGE',
+                error: 'PDF_EXPORT_HTML_TOO_LARGE',
+                byte_size,
+                max_bytes: PDF_EXPORT_HTML_MAX_BYTES,
+            });
         }
         const pdf_buffer = await generate_pdf_from_html({ htmlContent });
         res.setHeader('Content-Type', 'application/pdf');
