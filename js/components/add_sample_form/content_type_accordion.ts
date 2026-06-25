@@ -9,6 +9,9 @@ import {
     animate_expandable_panel,
     apply_instant_expanded_panel_state
 } from '../../utils/expandable_panel_transition.js';
+import {
+    is_content_type_analyze_available,
+} from './content_type_detection.js';
 
 type ContentTypeChild = {
     id: string;
@@ -44,6 +47,43 @@ export function get_selected_content_type_ids(component: any): string[] {
     return Array.from(component.content_type_selected_ids || []);
 }
 
+function render_content_type_analyze_toolbar(component: any, panel_inner: HTMLElement): void {
+    const t = component.get_t_internally();
+    const toolbar = component.Helpers.create_element('div', {
+        class_name: 'content-type-analyze-toolbar'
+    });
+
+    const analyze_btn = component.Helpers.create_element('button', {
+        class_name: ['button', 'button-default', 'content-type-analyze-button'],
+        attributes: { type: 'button' },
+        text_content: t('content_type_analyze_button')
+    });
+    analyze_btn.addEventListener('click', () => {
+        if (typeof component.handle_analyze_page_content_click === 'function') {
+            void component.handle_analyze_page_content_click();
+        }
+    });
+
+    const live_region = component.Helpers.create_element('p', {
+        class_name: 'content-type-analyze-status',
+        attributes: {
+            'aria-live': 'polite',
+            'aria-atomic': 'true'
+        },
+        style: { 'margin-bottom': '0', 'color': 'var(--text-color-muted)' }
+    });
+
+    toolbar.append(analyze_btn, live_region);
+    panel_inner.appendChild(toolbar);
+
+    component.content_type_analyze_btn = analyze_btn;
+    component.content_type_analyze_live_region = live_region;
+
+    const show = is_content_type_analyze_available(component);
+    analyze_btn.hidden = !show;
+    analyze_btn.style.display = show ? '' : 'none';
+}
+
 function render_content_type_groups(
     component: any,
     groups: ContentTypeGroup[],
@@ -55,6 +95,8 @@ function render_content_type_groups(
         text_content: t('content_types_instruction'),
         style: { 'margin-top': '0', 'color': 'var(--text-color-muted)' }
     }));
+
+    render_content_type_analyze_toolbar(component, panel_inner);
 
     groups.forEach((group: ContentTypeGroup) => {
         const fieldset = component.Helpers.create_element('fieldset', { class_name: 'content-type-parent-group' });
@@ -153,6 +195,8 @@ function mount_section_panel(component: any, groups: ContentTypeGroup[]): void {
 
 function unmount_section_panel(component: any): void {
     sync_content_type_selection_from_dom(component);
+    component.content_type_analyze_btn = null;
+    component.content_type_analyze_live_region = null;
     component.content_types_section_panel_inner?.replaceChildren();
 }
 
