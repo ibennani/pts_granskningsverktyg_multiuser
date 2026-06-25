@@ -2,8 +2,13 @@
  * @fileoverview Gränser och tillåtna typer för uppladdning av mediefiler.
  */
 
+import {
+    FILE_MAX_BYTES,
+    format_file_max_size_label,
+} from './file_size_limits.js';
+
 /** Max storlek per fil (25 MiB). */
-export const MEDIA_MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
+export const MEDIA_MAX_UPLOAD_BYTES = FILE_MAX_BYTES;
 
 /** Tillåtna MIME-typer för uppladdning. */
 export const ALLOWED_MEDIA_MIME_TYPES = Object.freeze([
@@ -29,6 +34,5 @@ export const IMAGE_MEDIA_MIME_PREFIX = 'image/';
  * Visningsetikett för max filstorlek i UI (t.ex. "25 MB").
  */
 export function format_media_max_upload_size_label(): string {
-    const mib = MEDIA_MAX_UPLOAD_BYTES / (1024 * 1024);
-    return `${mib} MB`;
+    return format_file_max_size_label();
 }

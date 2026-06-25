@@ -16,7 +16,10 @@ import auditsRouter from './routes/audits.js';
 import backupRouter from './routes/backup.js';
 import timeRouter from './routes/time.js';
 import { get_last_backup_status, start_backup_scheduler } from './backup/audit_backup.js';
-import { JSON_MAX_UPLOAD_BYTES } from '../shared/constants/json_upload_limits.js';
+import {
+    JSON_MAX_UPLOAD_BYTES,
+    format_json_max_upload_size_label,
+} from '../shared/constants/json_upload_limits.js';
 
 process.on('uncaughtException', (err) => {
     logger.error({ err }, '[Server] Uncaught exception');
@@ -82,7 +85,7 @@ app.use(cors({
     credentials: true
 }));
 
-// Samma tak som klientens uppladdningsgräns och dokumentation (10 MiB)
+// Samma tak som klientens uppladdningsgräns och dokumentation (25 MiB)
 app.use(express.json({ limit: JSON_MAX_UPLOAD_BYTES }));
 
 app.use('/api/auth', authRouter);
@@ -166,7 +169,9 @@ app.get('/api/debug-status', async (_req, res) => {
 
 app.use((err, _req, res, _next) => {
     if (err && (err.type === 'entity.too.large' || err.status === 413)) {
-        return res.status(413).json({ error: 'Begäran överskrider maxstorlek (10 MB).' });
+        return res.status(413).json({
+            error: `Begäran överskrider maxstorlek (${format_json_max_upload_size_label()}).`,
+        });
     }
     logger.error({ err }, '[Server] Ohanterat fel i route');
     res.status(500).json({ error: 'Ett serverfel inträffade' });

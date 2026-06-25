@@ -27,7 +27,7 @@ import { GenericTableComponent } from '../GenericTableComponent.js';
 import { AuditListComponent } from '../AuditListComponent.js';
 import { AuditGroupedListComponent } from '../AuditGroupedListComponent.js';
 import { open_audit_by_id, download_audit_by_id } from '../../logic/audit_open_logic.js';
-import { get_download_filename_datetime, sanitize_filename_segment, trigger_browser_blob_download } from '../../utils/download_filename_utils.js';
+import { get_download_filename_datetime, sanitize_filename_segment, trigger_browser_blob_download, is_download_file_too_large_error, format_file_download_max_size_label } from '../../utils/download_filename_utils.js';
 import { measure_backup_select_min_width_px } from '../../utils/backup_filter_select_width.js';
 import { flush_sync_rulefile_to_server } from '../../logic/server_sync.js';
 import { build_rulefile_download_filename } from '../../logic/prepare_rulefile_content_for_persist.js';
@@ -36,7 +36,10 @@ import { create_audit_filter_skip_link } from './audit_filter_skip_link.js';
 import { announce_audit_filter_reset } from './audit_filter_live_status.js';
 import { render_audit_requirement_section } from './AuditRequirementSection.js';
 import { render_audit_audits_sections, render_audit_samples_section } from './AuditSamplesSection.js';
-import { JSON_MAX_UPLOAD_BYTES } from '../../../shared/constants/json_upload_limits.js';
+import {
+    JSON_MAX_UPLOAD_BYTES,
+    format_json_max_upload_size_label,
+} from '../../../shared/constants/json_upload_limits.js';
 import { check_json_structure_depth_and_size } from '../../../shared/json/json_structure_guard.js';
 import { audit_page_size_string_to_number } from '../../logic/table_pagination_logic.js';
 import { run_audit_lists_toggle_animation } from '../../logic/audit_list_view_transition.js';
@@ -467,7 +470,10 @@ export class AuditViewComponent {
         const file = event.target.files[0];
         if (!file) return;
         if (file.size > JSON_MAX_UPLOAD_BYTES) {
-            this.NotificationComponent?.show_global_message(t('audit_upload_file_too_large'), 'error');
+            this.NotificationComponent?.show_global_message(
+                t('audit_upload_file_too_large', { max_size: format_json_max_upload_size_label() }),
+                'error'
+            );
             if (event.target) event.target.value = '';
             return;
         }
@@ -670,7 +676,10 @@ export class AuditViewComponent {
         const file = event.target.files?.[0];
         if (!file) return;
         if (file.size > JSON_MAX_UPLOAD_BYTES) {
-            this.NotificationComponent?.show_global_message(t('audit_upload_file_too_large'), 'error');
+            this.NotificationComponent?.show_global_message(
+                t('audit_upload_file_too_large', { max_size: format_json_max_upload_size_label() }),
+                'error'
+            );
             if (event.target) event.target.value = '';
             return;
         }
@@ -2118,7 +2127,10 @@ export class AuditViewComponent {
             trigger_browser_blob_download(blob, filename, { aria_hidden: true });
         } catch (err) {
             if (show_msg) {
-                show_msg(t('audit_load_rule_error') + ' ' + (err.message || ''), 'error');
+                const msg = is_download_file_too_large_error(err)
+                    ? t('file_download_too_large', { max_size: format_file_download_max_size_label() })
+                    : t('audit_load_rule_error') + ' ' + (err.message || '');
+                show_msg(msg, 'error');
             }
         }
     }

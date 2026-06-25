@@ -266,6 +266,17 @@ export async function api_post_pdf(path, body) {
         const err = await parse_error_payload(res);
         const e = new Error(err.error || `HTTP ${res.status}`);
         e.status = res.status;
+        if (err.code !== undefined && err.code !== null) {
+            e.code = err.code;
+        } else if (typeof err.error === 'string' && err.error.startsWith('PDF_EXPORT_')) {
+            e.code = err.error;
+        }
+        if (typeof err.byte_size === 'number') {
+            e.byte_size = err.byte_size;
+        }
+        if (typeof err.max_bytes === 'number') {
+            e.max_bytes = err.max_bytes;
+        }
         throw e;
     }
     return res.blob();

@@ -20,6 +20,22 @@ import { build_screenshots_appendix_pdf_document } from './export_report_html_sc
 import { prepare_screenshots_appendix_media } from './export_screenshots_appendix_media.js';
 import { api_post_pdf } from '../api/client.js';
 import { trigger_browser_blob_download } from '../utils/download_filename_utils.js';
+import {
+    assert_pdf_export_html_within_limit,
+} from './export_pdf_html_size_error.js';
+import { throw_pdf_export_user_error } from './export_pdf_user_errors.js';
+
+function handle_pdf_export_error(
+    error: unknown,
+    t: ExportReportHtmlT,
+    message_key: 'export_screenshots_appendix_too_large' | 'export_pdf_html_too_large',
+    log_label: string
+): never {
+    if (window.ConsoleManager?.warn) {
+        window.ConsoleManager.warn(log_label, error);
+    }
+    throw_pdf_export_user_error(t, error, message_key);
+}
 
 export async function export_to_pdf_criterias(current_audit: Record<string, unknown> | null | undefined): Promise<void> {
     const t = get_t_internal() as ExportReportHtmlT;
@@ -48,6 +64,8 @@ export async function export_to_pdf_criterias(current_audit: Record<string, unkn
             body_html,
         });
 
+        assert_pdf_export_html_within_limit(html_content, 'export_pdf_html_too_large');
+
         const pdf_blob = await api_post_pdf(`/audits/${encodeURIComponent(audit_id)}/export/pdf-requirements`, {
             htmlContent: html_content,
         });
@@ -62,9 +80,7 @@ export async function export_to_pdf_criterias(current_audit: Record<string, unkn
         trigger_browser_blob_download(pdf_blob, filename);
         show_global_message_internal(t('audit_saved_as_file', { filename }), 'success');
     } catch (error: unknown) {
-        if (window.ConsoleManager?.warn) window.ConsoleManager.warn('Error exporting to PDF:', error);
-        const msg = error instanceof Error ? error.message : String(error);
-        show_global_message_internal(`${t('error_exporting_pdf')} ${msg}`.trim(), 'error');
+        handle_pdf_export_error(error, t, 'export_pdf_html_too_large', 'Error exporting to PDF:');
     }
 }
 
@@ -95,6 +111,8 @@ export async function export_to_pdf_samples(current_audit: Record<string, unknow
             body_html,
         });
 
+        assert_pdf_export_html_within_limit(html_content, 'export_pdf_html_too_large');
+
         const pdf_blob = await api_post_pdf(`/audits/${encodeURIComponent(audit_id)}/export/pdf-requirements`, {
             htmlContent: html_content,
         });
@@ -109,9 +127,7 @@ export async function export_to_pdf_samples(current_audit: Record<string, unknow
         trigger_browser_blob_download(pdf_blob, filename);
         show_global_message_internal(t('audit_saved_as_file', { filename }), 'success');
     } catch (error: unknown) {
-        if (window.ConsoleManager?.warn) window.ConsoleManager.warn('Error exporting samples PDF:', error);
-        const msg = error instanceof Error ? error.message : String(error);
-        show_global_message_internal(`${t('error_exporting_pdf')} ${msg}`.trim(), 'error');
+        handle_pdf_export_error(error, t, 'export_pdf_html_too_large', 'Error exporting samples PDF:');
     }
 }
 
@@ -134,6 +150,7 @@ export async function export_to_pdf_deficiency_types(
 
     try {
         const html_content = build_deficiency_types_appendix_pdf_document(current_audit, t);
+        assert_pdf_export_html_within_limit(html_content, 'export_pdf_html_too_large');
         const pdf_blob = await api_post_pdf(`/audits/${encodeURIComponent(audit_id)}/export/pdf-requirements`, {
             htmlContent: html_content,
         });
@@ -146,9 +163,7 @@ export async function export_to_pdf_deficiency_types(
         trigger_browser_blob_download(pdf_blob, filename);
         show_global_message_internal(t('audit_saved_as_file', { filename }), 'success');
     } catch (error: unknown) {
-        if (window.ConsoleManager?.warn) window.ConsoleManager.warn('Error exporting deficiency types PDF:', error);
-        const msg = error instanceof Error ? error.message : String(error);
-        show_global_message_internal(`${t('error_exporting_pdf')} ${msg}`.trim(), 'error');
+        handle_pdf_export_error(error, t, 'export_pdf_html_too_large', 'Error exporting deficiency types PDF:');
     }
 }
 
@@ -179,6 +194,7 @@ export async function export_to_pdf_screenshots_appendix(
         }
 
         const html_content = build_screenshots_appendix_pdf_document(current_audit, items, t);
+        assert_pdf_export_html_within_limit(html_content, 'export_screenshots_appendix_too_large');
         const pdf_blob = await api_post_pdf(`/audits/${encodeURIComponent(audit_id)}/export/pdf-requirements`, {
             htmlContent: html_content,
         });
@@ -200,8 +216,11 @@ export async function export_to_pdf_screenshots_appendix(
             show_global_message_internal(t('audit_saved_as_file', { filename }), 'success');
         }
     } catch (error: unknown) {
-        if (window.ConsoleManager?.warn) window.ConsoleManager.warn('Error exporting screenshots appendix PDF:', error);
-        const msg = error instanceof Error ? error.message : String(error);
-        show_global_message_internal(`${t('error_exporting_screenshots_appendix')} ${msg}`.trim(), 'error');
+        handle_pdf_export_error(
+            error,
+            t,
+            'export_screenshots_appendix_too_large',
+            'Error exporting screenshots appendix PDF:'
+        );
     }
 }

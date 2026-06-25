@@ -38,6 +38,9 @@ async function render_pdf_buffer(page: Awaited<ReturnType<Browser['newPage']>>):
  * Renderar HTML till en taggad (tillgänglig) PDF med dokumentbokmärken från h1–h3.
  * @returns PDF som Buffer
  */
+/** Timeout för stora bilagor med inbäddade bilder (ms). */
+const PDF_SET_CONTENT_TIMEOUT_MS = 120_000;
+
 export async function generate_pdf_from_html(input: GeneratePdfInput): Promise<Buffer> {
     const { htmlContent, outputPath } = input;
     let browser: Browser | undefined;
@@ -48,11 +51,13 @@ export async function generate_pdf_from_html(input: GeneratePdfInput): Promise<B
             args: ['--no-sandbox', '--disable-setuid-sandbox'],
         });
         const page = await browser.newPage();
+        page.setDefaultNavigationTimeout(PDF_SET_CONTENT_TIMEOUT_MS);
+        page.setDefaultTimeout(PDF_SET_CONTENT_TIMEOUT_MS);
 
-        // networkidle0 stöds av Chromium; typings i puppeteer kan vara snävare
-        await page.setContent(htmlContent, { waitUntil: 'networkidle0' } as unknown as Parameters<
-            typeof page.setContent
-        >[1]);
+        await page.setContent(htmlContent, {
+            waitUntil: 'load',
+            timeout: PDF_SET_CONTENT_TIMEOUT_MS,
+        } as unknown as Parameters<typeof page.setContent>[1]);
 
         const pdf_buffer = await render_pdf_buffer(page);
 
