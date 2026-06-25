@@ -5,6 +5,7 @@
 import { create_audit_group_table_columns, create_audit_table_columns } from '../utils/audit_table_columns.js';
 import {
     build_audit_list_groups,
+    get_audit_group_expanded_key,
     type AuditListGroup,
     type AuditListGroupMode,
     type AuditRowForGrouping
@@ -38,6 +39,7 @@ export type AuditGroupedListRenderOpts = {
     root: HTMLElement;
     audits: AuditRowForGrouping[];
     groupMode?: AuditListGroupMode;
+    minGroupSize?: number;
     emptyMessage: string;
     emptyMessageNoGroups?: string;
     ariaLabel: string;
@@ -215,7 +217,8 @@ export function render_audit_grouped_list(
 
     const audits = opts.audits || [];
     const group_mode: AuditListGroupMode = opts.groupMode === 'auditor' ? 'auditor' : 'case';
-    const groups = build_audit_list_groups(audits, group_mode);
+    const min_group_size = opts.minGroupSize ?? 2;
+    const groups = build_audit_list_groups(audits, group_mode, { min_group_size });
     const empty_message =
         audits.length > 0 && groups.length === 0
             ? opts.emptyMessageNoGroups || opts.emptyMessage
@@ -281,7 +284,7 @@ export function render_audit_grouped_list(
     const tbody = Helpers.create_element('tbody', {});
 
     for (const group of page_groups) {
-        const expanded_key = `${group_mode}:${group.group_key}`;
+        const expanded_key = get_audit_group_expanded_key(group_mode, group);
         const is_expanded = expanded_group_keys.has(expanded_key);
         const summary_row = Helpers.create_element('tr', {
             class_name: ['audit-group-summary-row', ...(is_expanded ? ['audit-group-summary-row--expanded'] : [])],

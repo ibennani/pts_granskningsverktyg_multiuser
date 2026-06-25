@@ -3,7 +3,11 @@
  */
 
 import { animate_audit_group_panel } from '../logic/audit_list_view_transition.js';
-import type { AuditListGroup, AuditListGroupMode } from '../logic/audit_list_case_grouping.js';
+import {
+    get_audit_group_expanded_key,
+    type AuditListGroup,
+    type AuditListGroupMode
+} from '../logic/audit_list_case_grouping.js';
 
 type RenderContext = {
     expanded_group_keys: Set<string>;
@@ -72,7 +76,7 @@ export function bind_group_row_toggle(
     const run_toggle = async () => {
         if (detail_row.getAttribute('data-animating') === 'true') return;
 
-        const key = `${group_mode}:${group.group_key}`;
+        const key = get_audit_group_expanded_key(group_mode, group);
         const will_expand = !ctx.expanded_group_keys.has(key);
         if (will_expand) ctx.expanded_group_keys.add(key);
         else ctx.expanded_group_keys.delete(key);

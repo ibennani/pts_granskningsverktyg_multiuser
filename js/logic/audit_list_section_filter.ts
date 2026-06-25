@@ -75,35 +75,40 @@ export function filter_audits_by_type(list: AuditListRow[], audit_type_filter: s
     return list.filter((a) => String(a?.audit_type || '').trim() === want_type);
 }
 
+/** Filtrerar och sorterar sektionens granskningar (text + typ). */
+export function filter_audits_for_section(list: AuditListRow[], ctx: AuditListFilterContext): AuditListRow[] {
+    const query_raw = ctx.audit_filter_query || '';
+    return sort_audits_by_case_number(
+        filter_audits_by_type(filter_audits_by_text(list, query_raw), ctx.audit_type_filter || '')
+    );
+}
+
 /**
- * Bygger sektionskonfiguration för granskningslistan (rubrikantal kan skilja från tabell vid typfilter).
+ * Bygger sektionskonfiguration för granskningslistan.
+ * Rubrik och tabell använder samma filterpipeline.
  */
 export function build_audit_list_section_configs(ctx: AuditListFilterContext): {
     query_raw: string;
     has_text_filter: boolean;
     has_type_filter: boolean;
+    has_active_filter: boolean;
     section_configs: AuditListSectionConfig[];
 } {
     const query_raw = ctx.audit_filter_query || '';
     const has_text_filter = !!query_raw.trim();
     const has_type_filter = !!String(ctx.audit_type_filter || '').trim();
-
-    const audits_for_heading = (list: AuditListRow[]) =>
-        sort_audits_by_case_number(filter_audits_by_text(list, query_raw));
-    const audits_for_table = (list: AuditListRow[]) =>
-        sort_audits_by_case_number(
-            filter_audits_by_type(filter_audits_by_text(list, query_raw), ctx.audit_type_filter || '')
-        );
+    const has_active_filter = has_text_filter || has_type_filter;
 
     const section_configs = SECTION_HEADING_KEYS.map((heading_key) => {
         const status = STATUS_BY_HEADING[heading_key];
         const base = ctx.audits.filter((a) => a.status === status);
+        const filtered = filter_audits_for_section(base, ctx);
         return {
             heading_key,
-            audits: audits_for_table(base),
-            heading_audits: audits_for_heading(base)
+            audits: filtered,
+            heading_audits: filtered
         };
     });
 
-    return { query_raw, has_text_filter, has_type_filter, section_configs };
+    return { query_raw, has_text_filter, has_type_filter, has_active_filter, section_configs };
 }

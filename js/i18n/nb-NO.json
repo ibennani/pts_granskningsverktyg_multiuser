@@ -200,6 +200,7 @@
   "audit_group_row_expand_aria": "Utvid gruppe med saksnummer {caseNumber}, {count} tilsyn",
   "audit_group_summary_aria": "Saksnummer {caseNumber}, {count} tilsyn",
   "audit_grouped_no_groups": "Ingen tilsyn deler samme saksnummer i denne listen.",
+  "audit_grouped_no_groups_auditor": "Ingen tilsyn deler samme gransker i denne listen.",
   "audit_images_card_count": "Det er {count} bilder og/eller videoer i dette kravet",
   "audit_images_card_count_plural": "Det finnes {count} mediefiler i dette kravet.",
   "audit_images_card_count_singular": "Det finnes 1 mediefil i dette kravet.",

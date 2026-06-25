@@ -4,10 +4,12 @@ import {
     build_audit_list_groups,
     count_audits_in_auditor_groups,
     format_group_actor_names,
+    get_audit_group_expanded_key,
     normalize_auditor_name,
     normalize_case_number,
     partition_audits_by_auditor,
     partition_audits_for_display,
+    resolve_audit_list_min_group_size,
     sort_audits_within_group
 } from '../../js/logic/audit_list_case_grouping.js';
 
@@ -123,5 +125,47 @@ describe('audit_list_case_grouping', () => {
         ];
         expect(build_audit_auditor_groups(audits)).toHaveLength(1);
         expect(count_audits_in_auditor_groups(audits)).toBe(3);
+    });
+
+    test('resolve_audit_list_min_group_size sänker tröskeln vid aktivt filter', () => {
+        expect(resolve_audit_list_min_group_size(false)).toBe(2);
+        expect(resolve_audit_list_min_group_size(true)).toBe(1);
+    });
+
+    test('min_group_size 1 visar enskilda granskare som grupper', () => {
+        const audits = [
+            { id: '1', metadata: { auditorName: 'Anna', caseNumber: 'A-1' } },
+            { id: '2', metadata: { auditorName: 'Bob', caseNumber: 'B-1' } }
+        ];
+        const groups = build_audit_auditor_groups(audits, { min_group_size: 1 });
+        expect(groups).toHaveLength(2);
+        expect(groups.map((g) => g.group_key)).toEqual(['Anna', 'Bob']);
+        expect(groups.every((g) => g.audits.length === 1)).toBe(true);
+    });
+
+    test('min_group_size 1 promotar keyless granskningar till egna grupper', () => {
+        const audits = [{ id: 'solo', metadata: { actorName: 'Ensam aktör' } }];
+        const groups = build_audit_case_groups(audits, { min_group_size: 1 });
+        expect(groups).toHaveLength(1);
+        expect(groups[0].group_key).toBe('');
+        expect(groups[0].audits.map((a) => a.id)).toEqual(['solo']);
+    });
+
+    test('filtrerat läge: en granskare med flera träffar blir en grupp', () => {
+        const audits = [
+            { id: '1', metadata: { auditorName: 'Anna', caseNumber: 'A-1' } },
+            { id: '2', metadata: { auditorName: 'Anna', caseNumber: 'A-2' } },
+            { id: '3', metadata: { auditorName: 'Bob', caseNumber: 'B-1' } }
+        ];
+        const filtered = audits.filter((a) => a.metadata?.auditorName === 'Anna');
+        const groups = build_audit_list_groups(filtered, 'auditor', { min_group_size: 1 });
+        expect(groups).toHaveLength(1);
+        expect(groups[0].group_key).toBe('Anna');
+        expect(groups[0].audits).toHaveLength(2);
+    });
+
+    test('get_audit_group_expanded_key hanterar tom group_key', () => {
+        const group = { group_key: '', audits: [{ id: '42' }] };
+        expect(get_audit_group_expanded_key('auditor', group)).toBe('auditor:__id:42');
     });
 });

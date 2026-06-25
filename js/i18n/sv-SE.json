@@ -200,6 +200,7 @@
   "audit_group_row_expand_aria": "Expandera grupp med diarienummer {caseNumber}, {count} granskningar",
   "audit_group_summary_aria": "Diarienummer {caseNumber}, {count} granskningar",
   "audit_grouped_no_groups": "Inga granskningar delar samma diarienummer i den här listan.",
+  "audit_grouped_no_groups_auditor": "Inga granskningar delar samma granskare i den här listan.",
   "audit_images_card_count": "Det finns {count} bilder och/eller filmer i det här kravet",
   "audit_images_card_count_plural": "Det finns {count} mediefiler i det här kravet.",
   "audit_images_card_count_singular": "Det finns 1 mediefil i det här kravet.",

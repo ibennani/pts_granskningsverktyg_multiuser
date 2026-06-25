@@ -200,6 +200,7 @@
   "audit_group_row_expand_aria": "Expand group with case number {caseNumber}, {count} audits",
   "audit_group_summary_aria": "Case number {caseNumber}, {count} audits",
   "audit_grouped_no_groups": "No audits share the same case number in this list.",
+  "audit_grouped_no_groups_auditor": "No audits share the same auditor in this list.",
   "audit_images_card_count": "There are {count} images and/or videos in this requirement",
   "audit_images_card_count_plural": "There are {count} media files in this requirement.",
   "audit_images_card_count_singular": "There is 1 media file in this requirement.",

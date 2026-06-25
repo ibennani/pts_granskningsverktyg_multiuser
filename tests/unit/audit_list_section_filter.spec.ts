@@ -30,6 +30,7 @@ describe('build_audit_list_section_configs', () => {
         const result = build_audit_list_section_configs(ctx);
         expect(result.has_text_filter).toBe(false);
         expect(result.has_type_filter).toBe(false);
+        expect(result.has_active_filter).toBe(false);
         expect(result.section_configs[0].audits.map((a) => a.id)).toEqual([1, 2]);
     });
 
@@ -44,32 +45,34 @@ describe('build_audit_list_section_configs', () => {
         };
         const result = build_audit_list_section_configs(ctx);
         expect(result.has_text_filter).toBe(true);
+        expect(result.has_active_filter).toBe(true);
         expect(result.section_configs[0].audits.map((a) => a.id)).toEqual([1]);
         expect(result.section_configs[1].audits).toEqual([]);
         expect(result.section_configs[2].audits.map((a) => a.id)).toEqual([3]);
     });
 
-    it('filtrerar tabell på granskningstyp men rubrikantal följer bara textfilter', () => {
+    it('filtrerar rubrik och tabell på granskningstyp', () => {
         const ctx = {
             audit_filter_query: '',
-            audit_type_filter: 'web',
+            audit_type_filter: 'webb',
             audits: [
-                make_audit(1, 'in_progress', { caseNumber: '1' }, 'web'),
+                make_audit(1, 'in_progress', { caseNumber: '1' }, 'webb'),
                 make_audit(2, 'in_progress', { caseNumber: '2' }, 'app'),
-                make_audit(3, 'not_started', { caseNumber: '3' }, 'web')
+                make_audit(3, 'not_started', { caseNumber: '3' }, 'webb')
             ]
         };
         const result = build_audit_list_section_configs(ctx);
         expect(result.has_type_filter).toBe(true);
+        expect(result.has_active_filter).toBe(true);
         expect(result.section_configs[0].audits.map((a) => a.id)).toEqual([1]);
-        expect(result.section_configs[0].heading_audits.map((a) => a.id)).toEqual([1, 2]);
+        expect(result.section_configs[0].heading_audits.map((a) => a.id)).toEqual([1]);
         expect(result.section_configs[1].audits.map((a) => a.id)).toEqual([3]);
     });
 });
 
 describe('filter_audits_by_type', () => {
     it('returnerar ofiltrerad lista när typ saknas', () => {
-        const list = [make_audit(1, 'in_progress', {}, 'web')];
+        const list = [make_audit(1, 'in_progress', {}, 'webb')];
         expect(filter_audits_by_type(list, '')).toEqual(list);
     });
 });

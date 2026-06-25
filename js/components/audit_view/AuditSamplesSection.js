@@ -3,7 +3,11 @@
 
 import { build_audit_list_section_configs } from '../../logic/audit_list_section_filter.js';
 import { clamp_page_index } from '../../logic/table_pagination_logic.js';
-import { build_audit_list_groups, count_audits_in_auditor_groups } from '../../logic/audit_list_case_grouping.js';
+import {
+    build_audit_list_groups,
+    count_audits_in_auditor_groups,
+    resolve_audit_list_min_group_size
+} from '../../logic/audit_list_case_grouping.js';
 import { clear_audit_lists_transition_classes } from '../../logic/audit_list_view_transition.js';
 import { create_file_download_button } from '../../utils/file_download_button_ui.js';
 
@@ -36,13 +40,18 @@ function get_audit_section_table_keys(heading_key) {
     return { empty_key, sort_state_key, grouped_sort_state_key, page_state_key };
 }
 
+function get_audit_list_group_options(ctx) {
+    const has_active_filter = ctx._audit_list_has_active_filter === true;
+    return { min_group_size: resolve_audit_list_min_group_size(has_active_filter) };
+}
+
 /** Antal rader som faktiskt visas i sektionens tabell (grupper eller enskilda granskningar). */
 function get_audit_section_display_count(audits, ctx) {
     const list = audits || [];
     const is_grouped = ctx.audit_list_group_mode !== 'all';
     if (is_grouped) {
         const group_mode = ctx.audit_list_group_mode === 'auditor' ? 'auditor' : 'case';
-        return build_audit_list_groups(list, group_mode).length;
+        return build_audit_list_groups(list, group_mode, get_audit_list_group_options(ctx)).length;
     }
     return list.length;
 }
@@ -50,8 +59,12 @@ function get_audit_section_display_count(audits, ctx) {
 /** Antal för sektionsrubrik (kan skilja från tabellrader vid gruppering per granskare). */
 function get_audit_section_heading_count(audits, ctx) {
     const list = audits || [];
+    const has_active_filter = ctx._audit_list_has_active_filter === true;
+    if (has_active_filter) {
+        return list.length;
+    }
     if (ctx.audit_list_group_mode === 'auditor') {
-        return count_audits_in_auditor_groups(list);
+        return count_audits_in_auditor_groups(list, get_audit_list_group_options(ctx));
     }
     return get_audit_section_display_count(audits, ctx);
 }
@@ -81,11 +94,14 @@ function render_audit_section_table(ctx, config, table_wrapper, section_heading_
                 }
             }
             : undefined;
+    const no_groups_key =
+        group_mode === 'auditor' ? 'audit_grouped_no_groups_auditor' : 'audit_grouped_no_groups';
     const list_render_opts = {
         root: table_wrapper,
         audits: config.audits,
         emptyMessage: t(empty_key),
-        emptyMessageNoGroups: t('audit_grouped_no_groups'),
+        emptyMessageNoGroups: t(no_groups_key),
+        minGroupSize: resolve_audit_list_min_group_size(ctx._audit_list_has_active_filter === true),
         ariaLabel: section_heading_text,
         includeDelete: true,
         sortState: is_grouped ? ctx[grouped_sort_state_key] : ctx[sort_state_key],
@@ -120,7 +136,8 @@ export function render_audit_audits_sections(ctx, container) {
     container.innerHTML = '';
     container.classList.add('audit-audits-sections-container');
 
-    const { section_configs } = build_audit_list_section_configs(ctx);
+    const { section_configs, has_active_filter } = build_audit_list_section_configs(ctx);
+    ctx._audit_list_has_active_filter = has_active_filter;
     section_configs.forEach((config, index) => {
         const section = ctx.Helpers.create_element('section', {
             class_name: index === 0 ? 'start-view-audits-section' : 'start-view-audits-section start-view-audits-section-following',
