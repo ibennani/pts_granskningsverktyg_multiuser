@@ -4,7 +4,8 @@
 
 import { open_attach_media_modal } from '../media/AttachMediaModal.js';
 import { collect_attached_media_filenames } from '../../logic/audit_attached_media_references.js';
-import { on_sample_attach_media_saved, type SampleUrlAutoScreenshotComponentLike } from './sample_url_auto_screenshot.js';
+import { on_sample_attach_media_saved } from './sample_url_auto_screenshot.js';
+import { build_sample_url_screenshot_form_host, type SampleUrlScreenshotFormHostSource } from './sample_url_screenshot_form_host.js';
 import {
     create_url_screenshot_live_region,
     set_sample_url_screenshot_live_status,
@@ -190,7 +191,10 @@ export function handle_sample_attach_media_click(component: AddSampleFormLike, e
             return still_referenced;
         },
         on_save: (filenames) => {
-            on_sample_attach_media_saved(component as unknown as SampleUrlAutoScreenshotComponentLike, filenames);
+            on_sample_attach_media_saved(
+                build_sample_url_screenshot_form_host(component as unknown as SampleUrlScreenshotFormHostSource),
+                filenames
+            );
             component.sample_attached_media_filenames = filenames;
             update_sample_attach_media_button(component);
             if (component.current_editing_sample_id) {

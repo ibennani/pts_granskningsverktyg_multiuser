@@ -58,14 +58,14 @@ describe('export_pdf_html_size_error', () => {
 
     test('build_export_pdf_html_too_large_message använder klartext', () => {
         const error = new ExportPdfHtmlTooLargeError(
-            27 * 1024 * 1024,
-            25 * 1024 * 1024,
+            52 * 1024 * 1024,
+            50 * 1024 * 1024,
             'export_screenshots_appendix_too_large'
         );
         const message = build_export_pdf_html_too_large_message(t, error);
         expect(message).toContain('Bilagan med skärmbilder är för stor');
-        expect(message).toContain('27 MByte');
-        expect(message).toContain('Maxgräns: 25 Mbyte');
+        expect(message).toContain('52 MByte');
+        expect(message).toContain('Maxgräns: 50 Mbyte');
         expect(message).not.toContain('htmlContent');
     });
 });

@@ -12,6 +12,7 @@ import {
     collect_html_export_zip_entries,
     flatten_html_export_zip_entries
 } from './export_html_media.js';
+import { finalize_export_catch } from './export_error_handling.js';
 
 async function build_images_zip_download_filename(
     audit: Record<string, unknown> & {
@@ -82,8 +83,10 @@ export async function export_to_images_zip(
             show_global_message_internal(t('audit_saved_as_file', { filename: zip_filename }), 'success');
         }
     } catch (error: unknown) {
-        if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[ExportLogic] Error exporting images zip:', error);
-        const msg = error instanceof Error ? error.message : String(error);
-        show_global_message_internal(t('error_exporting_images_zip') + ` ${msg}`, 'error');
+        finalize_export_catch(error, (err) => {
+            if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[ExportLogic] Error exporting images zip:', err);
+            const msg = err instanceof Error ? err.message : String(err);
+            show_global_message_internal(t('error_exporting_images_zip') + ` ${msg}`, 'error');
+        });
     }
 }

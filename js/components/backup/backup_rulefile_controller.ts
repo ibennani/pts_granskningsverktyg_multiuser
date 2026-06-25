@@ -2,6 +2,7 @@ import { GenericTableComponent } from '../GenericTableComponent.js';
 import { filter_text_matches } from '../../utils/string_filter_normalize.js';
 import { get_rulefile_backup_history, get_rulefile_backup_overview } from '../../api/client.js';
 import { build_rulefile_history_columns, build_rulefile_table_columns, download_rulefile_snapshot_json, type RulefileBackupHistoryRow } from './backup_rulefile_tables.js';
+import { is_download_file_too_large_error } from '../../utils/download_filename_utils.js';
 
 export type RulefileKind = 'all' | 'published' | 'working' | 'deleted';
 
@@ -109,8 +110,15 @@ export class BackupRulefileController {
     async handle_download(row: RulefileBackupHistoryRow) {
         try {
             await download_rulefile_snapshot_json(row);
-        } catch (err: any) {
-            this.NotificationComponent?.show_global_message?.(err?.message || this.t('backup_detail_load_error'), 'error');
+        } catch (err) {
+            if (is_download_file_too_large_error(err)) {
+                throw err;
+            }
+            this.NotificationComponent?.show_global_message?.(
+                (err as Error)?.message || this.t('backup_detail_load_error'),
+                'error'
+            );
+            throw err;
         }
     }
 

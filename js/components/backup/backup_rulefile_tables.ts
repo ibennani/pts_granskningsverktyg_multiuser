@@ -2,6 +2,7 @@ import { create_rule_table_columns } from '../../utils/rule_table_columns.js';
 import { get_base_url, get_auth_headers } from '../../api/client.js';
 import { build_rulefile_backup_download_filename } from '../../logic/backup_download_filename.js';
 import { trigger_browser_blob_download } from '../../utils/download_filename_utils.js';
+import { create_file_download_button } from '../../utils/file_download_button_ui.js';
 
 export type RulefileBackupOverviewRow = {
     ruleSetId: string;
@@ -193,13 +194,15 @@ export function build_rulefile_history_columns({
             headerLabel: t('backup_detail_col_actions'),
             isAction: true,
             getContent: (row: RulefileBackupHistoryRow) => {
-                const btn = Helpers.create_element('button', {
-                    class_name: ['button', 'button-default', 'button-small'],
-                    text_content: t('backup_detail_download_button'),
-                    attributes: { type: 'button' }
+                const parts = create_file_download_button({
+                    Helpers,
+                    label: t('backup_detail_download_button'),
+                    t,
+                    variant: 'button-default',
+                    icon_name: 'download',
+                    on_download: () => Promise.resolve(on_download(row)),
                 });
-                btn.addEventListener('click', () => on_download(row));
-                return btn;
+                return parts.wrapper;
             }
         }
     ];

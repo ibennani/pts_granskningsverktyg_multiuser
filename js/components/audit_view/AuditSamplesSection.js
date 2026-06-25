@@ -5,6 +5,7 @@ import { build_audit_list_section_configs } from '../../logic/audit_list_section
 import { clamp_page_index } from '../../logic/table_pagination_logic.js';
 import { build_audit_list_groups, count_audits_in_auditor_groups } from '../../logic/audit_list_case_grouping.js';
 import { clear_audit_lists_transition_classes } from '../../logic/audit_list_view_transition.js';
+import { create_file_download_button } from '../../utils/file_download_button_ui.js';
 
 function get_audit_section_table_keys(heading_key) {
     const empty_key =
@@ -235,12 +236,16 @@ export function render_audit_samples_section(ctx) {
                 const delete_aria = t('audit_delete_audit_aria', { name: audit_link_text });
                 const download_aria = t('audit_download_audit_aria', { name: audit_link_text });
                 const icon_svg_li = (name, size = 16) => (ctx.Helpers.get_icon_svg ? ctx.Helpers.get_icon_svg(name, ['currentColor'], size) : '');
-                const download_btn = ctx.Helpers.create_element('button', {
-                    class_name: ['button', 'button-default', 'button-small', 'audit-download-btn'],
-                    html_content: `<span>${t('audit_download_label')}</span>` + icon_svg_li('save'),
-                    attributes: { type: 'button', 'aria-label': download_aria }
+                const download_parts = create_file_download_button({
+                    Helpers: ctx.Helpers,
+                    label: t('audit_download_label'),
+                    t,
+                    variant: 'button-default',
+                    icon_name: 'save',
+                    extra_class_names: ['audit-download-btn'],
+                    aria_label: download_aria,
+                    on_download: () => Promise.resolve(ctx.handle_download_audit(a.id)),
                 });
-                download_btn.addEventListener('click', () => ctx.handle_download_audit(a.id));
                 const delete_btn = ctx.Helpers.create_element('button', {
                     class_name: ['button', 'button-danger', 'button-small', 'audit-delete-btn'],
                     html_content: `<span>${t('delete')}</span>` + icon_svg_li('delete'),
@@ -250,7 +255,7 @@ export function render_audit_samples_section(ctx) {
                     ctx.handle_delete_audit_click(a.id, audit_link_text, delete_btn);
                 });
                 const btn_group = ctx.Helpers.create_element('div', { class_name: 'audit-audit-item-actions' });
-                btn_group.appendChild(download_btn);
+                btn_group.appendChild(download_parts.wrapper);
                 btn_group.appendChild(delete_btn);
                 li.appendChild(case_span);
                 li.appendChild(link);

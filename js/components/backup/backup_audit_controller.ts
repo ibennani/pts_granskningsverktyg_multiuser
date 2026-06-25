@@ -14,6 +14,7 @@ import {
 import { app_runtime_refs } from '../../utils/app_runtime_refs.js';
 import { filter_text_matches } from '../../utils/string_filter_normalize.js';
 import { build_audit_detail_columns, build_audit_overview_columns, download_audit_backup_json } from './backup_audit_tables.js';
+import { is_download_file_too_large_error } from '../../utils/download_filename_utils.js';
 
 export class BackupAuditController {
     root: HTMLElement | null = null;
@@ -212,8 +213,15 @@ export class BackupAuditController {
     async handle_download(audit_id: string, filename: string) {
         try {
             await download_audit_backup_json({ audit_id, filename });
-        } catch (err: any) {
-            this.NotificationComponent?.show_global_message?.(err?.message || this.t('backup_detail_load_error'), 'error');
+        } catch (err) {
+            if (is_download_file_too_large_error(err)) {
+                throw err;
+            }
+            this.NotificationComponent?.show_global_message?.(
+                (err as Error)?.message || this.t('backup_detail_load_error'),
+                'error'
+            );
+            throw err;
         }
     }
 

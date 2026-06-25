@@ -1,6 +1,8 @@
 // js/utils/rule_table_columns.js
 // Returnerar kolumndefinitioner för regelfilstabellen, används med GenericTableComponent.
 
+import { create_file_download_button } from './file_download_button_ui.js';
+
 /**
  * Skapar kolumndefinitioner för regelfilstabellen.
  * @param {Object} deps - { t, Helpers, Translation, production_rules_with_base_ids?, is_draft_table? }
@@ -161,16 +163,17 @@ export function create_rule_table_columns(deps, handlers) {
 
                 if (typeof onDownloadRule === 'function') {
                     const download_aria = t('audit_download_rule_aria', { name: link_text });
-                    const download_btn = Helpers.create_element('button', {
-                        class_name: ['button', 'button-default', 'button-small', 'generic-table-download-btn'],
-                        html_content: `<span>${t('audit_download_label')}</span>` + icon_svg('save'),
-                        attributes: {
-                            type: 'button',
-                            'aria-label': download_aria
-                        }
+                    const parts = create_file_download_button({
+                        Helpers,
+                        label: t('audit_download_label'),
+                        t,
+                        variant: 'button-default',
+                        icon_name: 'save',
+                        extra_class_names: ['generic-table-download-btn'],
+                        aria_label: download_aria,
+                        on_download: () => Promise.resolve(onDownloadRule(row.id)),
                     });
-                    download_btn.addEventListener('click', () => onDownloadRule(row.id));
-                    container.appendChild(download_btn);
+                    container.appendChild(parts.wrapper);
                 }
 
                 if (typeof onDeleteRule === 'function') {

@@ -6,6 +6,7 @@ import { consoleManager } from '../utils/console_manager.js';
 import { get_t_internal, show_global_message_internal } from './export_bootstrap.js';
 import { collect_deficiency_types_grouped_by_principle } from './export_deficiency_types_collect.js';
 import { finalize_word_export_download } from './export_word_main_flow_document.js';
+import { finalize_export_catch } from './export_error_handling.js';
 import { build_deficiency_types_appendix_word_filename } from './export_report_filename.js';
 import type { ExportWordMainFlowT } from './export_word_main_flow_children.js';
 
@@ -88,8 +89,10 @@ export async function export_to_word_deficiency_types(
             filename: build_deficiency_types_appendix_word_filename(current_audit, t),
         });
     } catch (error: unknown) {
-        if (window.ConsoleManager?.warn) window.ConsoleManager.warn('Error exporting deficiency types Word:', error);
-        const msg = error instanceof Error ? error.message : String(error);
-        show_global_message_internal(`${t('error_exporting_word')} ${msg}`.trim(), 'error');
+        finalize_export_catch(error, (err) => {
+            if (window.ConsoleManager?.warn) window.ConsoleManager.warn('Error exporting deficiency types Word:', err);
+            const msg = err instanceof Error ? err.message : String(err);
+            show_global_message_internal(`${t('error_exporting_word')} ${msg}`.trim(), 'error');
+        });
     }
 }

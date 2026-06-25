@@ -1,0 +1,5 @@
+Fixa: Skärmdump från URL stänger cookie-banner och fungerar igen
+
+- Cookie-banner försöker klickas bort automatiskt innan skärmdump tas
+- Fixat fel som gjorde att skärmdump misslyckades i webbläsaren
+- Förbättrad sidladdning vid automatisk skärmdump från stickprov

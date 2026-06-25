@@ -57,6 +57,7 @@ let _current_tooltip_el = null;
 
 function _show_tooltip_in_overlay(wrapper) {
     if (!wrapper || !document.body.contains(wrapper)) return;
+    if (wrapper.classList.contains('file-download-tooltip-wrapper')) return;
     const tooltip = wrapper.querySelector(TOOLTIP_SEL);
     if (!tooltip) return;
     _hide_tooltip_from_overlay();

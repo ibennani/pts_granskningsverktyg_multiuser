@@ -1,6 +1,7 @@
 import { SaveAuditButtonComponent } from './SaveAuditButtonComponent.js';
 import { can_edit_rulefile } from '../utils/helpers.js';
 import { get_download_filename_datetime, trigger_browser_blob_download } from '../utils/download_filename_utils.js';
+import { create_file_download_button } from '../utils/file_download_button_ui.js';
 import {
     prepare_rulefile_content_for_persist,
     build_rulefile_download_filename
@@ -84,7 +85,7 @@ export class GlobalActionBarComponent {
 
     if (!current_state.ruleFileContent) {
       this.NotificationComponent.show_global_message(t('error_internal'), 'error');
-      return;
+      throw new Error('no_rulefile');
     }
 
     const is_edit_mode = current_state.auditStatus === 'rulefile_editing';
@@ -107,7 +108,7 @@ export class GlobalActionBarComponent {
       );
       if (!updated_rulefile_content) {
         this.NotificationComponent.show_global_message(t('error_internal'), 'error');
-        return;
+        throw new Error('prepare_rulefile_failed');
       }
       const current_metadata = updated_rulefile_content.metadata || {};
       const rule_set_id = current_state.ruleSetId ?? current_metadata.ruleSetId ??
@@ -334,16 +335,17 @@ export class GlobalActionBarComponent {
         left_group.appendChild(this.save_audit_button_container_element);
       }
     } else if (is_in_audit_or_rulefile_edit && has_rulefile_loaded && can_edit_rulefile(current_state)) {
-      const save_rulefile_button = this.Helpers.create_element('button', {
-        class_name: ['button', 'button-primary'],
-        html_content:
-          `<span class="button-text">${t('save_and_download_rulefile')}</span>` +
-          (this.Helpers.get_icon_svg
-            ? this.Helpers.get_icon_svg('save', ['currentColor'], 18)
-            : ''),
+      const parts = create_file_download_button({
+        Helpers: this.Helpers,
+        label: t('save_and_download_rulefile'),
+        t,
+        variant: 'button-primary',
+        icon_name: 'save',
+        icon_size: 18,
+        omit_small: true,
+        on_download: () => this.handle_save_rulefile(),
       });
-      save_rulefile_button.addEventListener('click', this.handle_save_rulefile);
-      left_group.appendChild(save_rulefile_button);
+      left_group.appendChild(parts.wrapper);
     }
 
     bar_element.appendChild(left_group);

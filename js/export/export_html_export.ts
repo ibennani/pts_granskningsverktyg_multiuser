@@ -23,6 +23,7 @@ import {
     resolve_html_export_document_theme
 } from './export_html_themes.js';
 import { HTML_EXPORT_SIDEBAR_SCRIPT } from './export_html_sidebar_script.js';
+import { finalize_export_catch } from './export_error_handling.js';
 
 // HTML-exportfunktion (sorterar på krav)
 export async function export_to_html(current_audit: Record<string, unknown> | null | undefined): Promise<void> {
@@ -194,10 +195,12 @@ ${HTML_EXPORT_EMBEDDED_SCRIPT}
         }
 
     } catch (error: unknown) {
-        if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[ExportLogic] Error exporting to HTML:', error);
-        const err = error as { stack?: string; message?: string };
-        if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[ExportLogic] Error stack:', err?.stack);
-        const msg = error instanceof Error ? error.message : String(error);
-        show_global_message_internal(t('error_exporting_html') + ` ${msg}`, 'error');
+        finalize_export_catch(error, (err) => {
+            if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[ExportLogic] Error exporting to HTML:', err);
+            const error_obj = err as { stack?: string; message?: string };
+            if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[ExportLogic] Error stack:', error_obj?.stack);
+            const msg = err instanceof Error ? err.message : String(err);
+            show_global_message_internal(t('error_exporting_html') + ` ${msg}`, 'error');
+        });
     }
 }

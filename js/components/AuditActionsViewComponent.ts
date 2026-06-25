@@ -8,6 +8,8 @@ import { audit_status_is_exportable, audit_status_blocks_rulefile_update_offer }
 import { collect_html_export_zip_entries } from '../export/export_html_media.js';
 import { has_screenshots_appendix_images } from '../export/export_screenshots_appendix_collect.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
+import { create_file_download_button } from '../utils/file_download_button_ui.js';
+import { is_download_file_too_large_error } from '../utils/download_filename_utils.js';
 import './audit_actions_view_component.css';
 
 export class AuditActionsViewComponent {
@@ -136,7 +138,7 @@ export class AuditActionsViewComponent {
             });
     }
 
-    handle_download_audit() {
+    async handle_download_audit() {
         const t = this.Translation.t;
         const current_state = this.getState();
         const show_msg = this.NotificationComponent?.show_global_message?.bind(this.NotificationComponent);
@@ -144,11 +146,18 @@ export class AuditActionsViewComponent {
             save_audit_backup_on_server(current_state.auditId).catch(() => {});
         }
         if (this.SaveAuditLogic?.save_audit_to_json_file) {
-            void this.SaveAuditLogic.save_audit_to_json_file(current_state, t, show_msg).catch(() => {
+            try {
+                await this.SaveAuditLogic.save_audit_to_json_file(current_state, t, show_msg);
+            } catch (err) {
+                if (is_download_file_too_large_error(err)) {
+                    throw err;
+                }
                 if (show_msg) show_msg(t('error_internal'), 'error');
-            });
+                throw new Error('download_audit_failed');
+            }
         } else if (show_msg) {
             show_msg(t('error_internal'), 'error');
+            throw new Error('download_audit_failed');
         }
     }
 
@@ -229,137 +238,80 @@ export class AuditActionsViewComponent {
         });
     }
 
-    handle_export_csv() {
+    async handle_export_csv() {
         const current_state = this.getState();
         if (this.ExportLogic?.export_to_csv) {
-            this.ExportLogic.export_to_csv(current_state);
+            await this.ExportLogic.export_to_csv(current_state);
         }
     }
 
-    handle_export_excel() {
+    async handle_export_excel() {
         const current_state = this.getState();
         if (this.ExportLogic?.export_to_excel) {
-            this.ExportLogic.export_to_excel(current_state);
+            await this.ExportLogic.export_to_excel(current_state);
         }
     }
 
-    handle_export_word() {
+    async handle_export_word() {
         const current_state = this.getState();
         if (this.ExportLogic?.export_to_word_criterias) {
-            this.ExportLogic.export_to_word_criterias(current_state);
+            await this.ExportLogic.export_to_word_criterias(current_state);
         }
     }
 
     async handle_export_pdf() {
-        const t = this.Translation.t;
         const current_state = this.getState();
         if (!this.ExportLogic?.export_to_pdf_criterias) return;
-        try {
-            await this.ExportLogic.export_to_pdf_criterias(current_state);
-        } catch (error) {
-            this.NotificationComponent.show_global_message(
-                `${t('error_exporting_pdf')} ${error?.message || ''}`.trim(),
-                'error'
-            );
-        }
+        await this.ExportLogic.export_to_pdf_criterias(current_state);
     }
 
     async handle_export_pdf_deficiency_types() {
-        const t = this.Translation.t;
         const current_state = this.getState();
         if (!this.ExportLogic?.export_to_pdf_deficiency_types) return;
-        try {
-            await this.ExportLogic.export_to_pdf_deficiency_types(current_state);
-        } catch (error) {
-            this.NotificationComponent.show_global_message(
-                `${t('error_exporting_pdf')} ${error?.message || ''}`.trim(),
-                'error'
-            );
-        }
+        await this.ExportLogic.export_to_pdf_deficiency_types(current_state);
     }
 
     async handle_export_pdf_samples() {
-        const t = this.Translation.t;
         const current_state = this.getState();
         if (!this.ExportLogic?.export_to_pdf_samples) return;
-        try {
-            await this.ExportLogic.export_to_pdf_samples(current_state);
-        } catch (error) {
-            this.NotificationComponent.show_global_message(
-                `${t('error_exporting_pdf')} ${error?.message || ''}`.trim(),
-                'error'
-            );
-        }
+        await this.ExportLogic.export_to_pdf_samples(current_state);
     }
 
-    handle_export_word_deficiency_types() {
-        const t = this.Translation.t;
+    async handle_export_word_deficiency_types() {
         const current_state = this.getState();
         if (!this.ExportLogic?.export_to_word_deficiency_types) return;
-        void this.ExportLogic.export_to_word_deficiency_types(current_state).catch((error) => {
-            this.NotificationComponent.show_global_message(
-                `${t('error_exporting_word')} ${error?.message || ''}`.trim(),
-                'error'
-            );
-        });
+        await this.ExportLogic.export_to_word_deficiency_types(current_state);
     }
 
-    handle_export_word_screenshots_appendix() {
-        const t = this.Translation.t;
+    async handle_export_word_screenshots_appendix() {
         const current_state = this.getState();
         if (!this.ExportLogic?.export_to_word_screenshots_appendix) return;
-        void this.ExportLogic.export_to_word_screenshots_appendix(current_state).catch((error) => {
-            this.NotificationComponent.show_global_message(
-                `${t('error_exporting_screenshots_appendix')} ${error?.message || ''}`.trim(),
-                'error'
-            );
-        });
+        await this.ExportLogic.export_to_word_screenshots_appendix(current_state);
     }
 
     async handle_export_pdf_screenshots_appendix() {
-        const t = this.Translation.t;
         const current_state = this.getState();
         if (!this.ExportLogic?.export_to_pdf_screenshots_appendix) return;
-        try {
-            await this.ExportLogic.export_to_pdf_screenshots_appendix(current_state);
-        } catch (error) {
-            this.NotificationComponent.show_global_message(
-                `${t('error_exporting_screenshots_appendix')} ${error?.message || ''}`.trim(),
-                'error'
-            );
-        }
+        await this.ExportLogic.export_to_pdf_screenshots_appendix(current_state);
     }
 
-    handle_export_word_samples() {
+    async handle_export_word_samples() {
         const current_state = this.getState();
         if (this.ExportLogic?.export_to_word_samples) {
-            this.ExportLogic.export_to_word_samples(current_state);
+            await this.ExportLogic.export_to_word_samples(current_state);
         }
     }
 
     async handle_export_html() {
-        const t = this.Translation.t;
         const current_state = this.getState();
         if (!this.ExportLogic?.export_to_html) return;
-        try {
-            await this.ExportLogic.export_to_html(current_state);
-        } catch (error) {
-            this.NotificationComponent.show_global_message(`${t('error_exporting_html')} ${error?.message || ''}`.trim(), 'error');
-        }
+        await this.ExportLogic.export_to_html(current_state);
     }
 
     async handle_export_images_zip() {
-        const t = this.Translation.t;
         const current_state = this.getState();
         if (!this.ExportLogic?.export_to_images_zip) return;
-        try {
-            await this.ExportLogic.export_to_images_zip(current_state);
-        } catch (error) {
-            this.NotificationComponent.show_global_message(
-                `${t('error_exporting_images_zip')} ${error?.message || ''}`.trim(),
-                'error'
-            );
-        }
+        await this.ExportLogic.export_to_images_zip(current_state);
     }
 
     count_unreviewed_requirements() {
@@ -456,6 +408,20 @@ export class AuditActionsViewComponent {
         );
     }
 
+    create_file_download_action_button({ label, on_download, variant = 'button-default', icon_name = 'export', id = null, aria_describedby = null }) {
+        const parts = create_file_download_button({
+            Helpers: this.Helpers,
+            label,
+            on_download,
+            t: this.Translation.t,
+            variant,
+            icon_name,
+            id,
+            aria_describedby,
+        });
+        return parts.wrapper;
+    }
+
     create_action_button({ label, on_click, variant = 'button-default', icon_name = null, id = null, aria_describedby = null }) {
         const icon = (icon_name && this.Helpers.get_icon_svg)
             ? this.Helpers.get_icon_svg(icon_name, ['currentColor'], 16)
@@ -481,9 +447,9 @@ export class AuditActionsViewComponent {
             class_name: 'audit-actions__export-item',
             attributes: btn_id ? { role: 'group', 'aria-labelledby': btn_id } : {}
         });
-        wrapper.appendChild(this.create_action_button({
+        wrapper.appendChild(this.create_file_download_action_button({
             label,
-            on_click,
+            on_download: on_click,
             variant: 'button-default',
             icon_name: 'export',
             id: btn_id,
@@ -509,9 +475,9 @@ export class AuditActionsViewComponent {
             class_name: 'audit-actions__export-buttons'
         });
         for (const btn of buttons) {
-            buttons_row.appendChild(this.create_action_button({
+            buttons_row.appendChild(this.create_file_download_action_button({
                 label: btn.label,
-                on_click: btn.on_click,
+                on_download: btn.on_click,
                 variant: 'button-default',
                 icon_name: 'export',
                 id: btn.id_suffix ? `audit-action-btn-${btn.id_suffix}` : null,
@@ -521,6 +487,31 @@ export class AuditActionsViewComponent {
         wrapper.appendChild(buttons_row);
         const desc_el = this.Helpers.create_element('p', {
             class_name: 'audit-actions__export-description',
+            text_content: description,
+            attributes: desc_id ? { id: desc_id } : {}
+        });
+        wrapper.appendChild(desc_el);
+        return wrapper;
+    }
+
+    create_file_download_status_item({ label, description, on_download, variant = 'button-default', icon_name = null, id_suffix }) {
+        const btn_id = id_suffix ? `audit-action-btn-${id_suffix}` : null;
+        const desc_id = id_suffix ? `audit-action-desc-${id_suffix}` : null;
+
+        const wrapper = this.Helpers.create_element('div', {
+            class_name: 'audit-actions__status-item',
+            attributes: btn_id ? { role: 'group', 'aria-labelledby': btn_id } : {}
+        });
+        wrapper.appendChild(this.create_file_download_action_button({
+            label,
+            on_download,
+            variant,
+            icon_name,
+            id: btn_id,
+            aria_describedby: desc_id || undefined
+        }));
+        const desc_el = this.Helpers.create_element('p', {
+            class_name: 'audit-actions__status-description',
             text_content: description,
             attributes: desc_id ? { id: desc_id } : {}
         });
@@ -586,10 +577,10 @@ export class AuditActionsViewComponent {
 
         const status_actions = this.Helpers.create_element('div', { class_name: 'audit-actions__status-list' });
 
-        status_actions.appendChild(this.create_status_action_item({
+        status_actions.appendChild(this.create_file_download_status_item({
             label: t('audit_actions_download_label'),
             description: t('audit_actions_download_description'),
-            on_click: this.handle_download_audit,
+            on_download: () => this.handle_download_audit(),
             variant: 'button-default',
             icon_name: 'save',
             id_suffix: 'download-audit'

@@ -73,11 +73,11 @@ describe('media mime helpers', () => {
 });
 
 describe('media_upload_limits', () => {
-    test('har 25 MiB som maxstorlek', () => {
-        expect(MEDIA_MAX_UPLOAD_BYTES).toBe(25 * 1024 * 1024);
+    test('har 50 MiB som maxstorlek', () => {
+        expect(MEDIA_MAX_UPLOAD_BYTES).toBe(50 * 1024 * 1024);
     });
 
-    test('format_media_max_upload_size_label returnerar 25 MB', () => {
-        expect(format_media_max_upload_size_label()).toBe('25 MB');
+    test('format_media_max_upload_size_label returnerar 50 MB', () => {
+        expect(format_media_max_upload_size_label()).toBe('50 MB');
     });
 });

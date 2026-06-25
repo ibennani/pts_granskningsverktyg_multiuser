@@ -1,0 +1,5 @@
+Uppdatera: Stickprovsformulär med sidtitel från URL och enklare fält
+
+- Sidtyp visas före URL och beskrivning; inga fält är obligatoriska längre
+- När URL-fältet tappar fokus hämtas sidans titel till beskrivningen med laddningstext, spinner och skärmläsarmeddelande
+- Knappen i dialogen Bifoga media heter Spara i stället för Spara media

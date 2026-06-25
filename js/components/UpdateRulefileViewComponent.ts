@@ -2,7 +2,8 @@
 import { migrate_rulefile_to_new_structure } from '../logic/rulefile_migration_logic.js';
 import { get_rule } from '../api/client.js';
 import { render_rulefile_change_log } from '../logic/rulefile_change_log_renderer.js';
-import { get_download_filename_datetime, trigger_browser_blob_download } from '../utils/download_filename_utils.js';
+import { get_download_filename_datetime, trigger_browser_blob_download, is_download_file_too_large_error } from '../utils/download_filename_utils.js';
+import { create_file_download_button } from '../utils/file_download_button_ui.js';
 import { analyze_rule_file_changes, apply_rule_file_update } from '../logic/rulefile_updater_logic.js';
 import { find_requirement_definition } from '../audit_logic.js';
 import './update_rulefile_view.css';
@@ -128,11 +129,14 @@ export class UpdateRulefileViewComponent {
                     show_msg,
                     { backup_suffix_key: 'filename_backup_suffix' }
                 );
-            } catch {
+            } catch (err) {
+                if (is_download_file_too_large_error(err)) {
+                    throw err;
+                }
                 if (this.NotificationComponent?.show_global_message) {
                     this.NotificationComponent.show_global_message(t('error_saving_audit'), 'error');
                 }
-                return;
+                throw new Error('backup_save_failed');
             }
             this._backup_saved = true;
             this.current_step = this.VIEW_STEPS.UPLOAD;
@@ -142,6 +146,7 @@ export class UpdateRulefileViewComponent {
             if (this.NotificationComponent?.show_global_message) {
                 this.NotificationComponent.show_global_message(t('error_saving_audit'), 'error');
             }
+            throw new Error('backup_save_unavailable');
         }
     }
 
@@ -346,11 +351,15 @@ export class UpdateRulefileViewComponent {
         this.plate_element_ref?.appendChild(this.Helpers.create_element('h2', { style: { 'font-size': '1.2rem', 'margin-top': '1.5rem' }, text_content: t('update_rulefile_recommendation') }));
         this.plate_element_ref?.appendChild(this.Helpers.create_element('p', { text_content: t('update_rulefile_backup_text') }));
 
-        const backup_button = this.Helpers.create_element('button', {
-            class_name: ['button', 'button-primary'],
-            html_content: `<span>${t('save_audit_to_file')}</span>` + (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('save') : '')
+        const backup_button_parts = create_file_download_button({
+            Helpers: this.Helpers,
+            label: t('save_audit_to_file'),
+            t,
+            variant: 'button-primary',
+            icon_name: 'save',
+            omit_small: true,
+            on_download: () => this.handle_backup_click(),
         });
-        backup_button.addEventListener('click', () => void this.handle_backup_click());
 
         const skip_backup_button = this.Helpers.create_element('button', {
             class_name: ['button', 'button-default'],
@@ -365,7 +374,7 @@ export class UpdateRulefileViewComponent {
         back_button.addEventListener('click', () => this.router('audit_overview'));
 
         const actions_div = this.Helpers.create_element('div', { class_name: 'form-actions', style: { 'margin-top': '2rem' } });
-        actions_div.append(backup_button, skip_backup_button, back_button);
+        actions_div.append(backup_button_parts.wrapper, skip_backup_button, back_button);
         this.plate_element_ref?.appendChild(actions_div);
     }
 
@@ -489,11 +498,15 @@ export class UpdateRulefileViewComponent {
         });
         confirm_button.addEventListener('click', () => this.handle_confirm_update_click());
 
-        const download_log_button = this.Helpers.create_element('button', {
-            class_name: ['button', 'button-default'],
-            text_content: t('update_rulefile_download_change_log_button')
+        const download_log_parts = create_file_download_button({
+            Helpers: this.Helpers,
+            label: t('update_rulefile_download_change_log_button'),
+            t,
+            variant: 'button-default',
+            icon_name: 'download',
+            omit_small: true,
+            on_download: () => this.handle_download_change_log_click(),
         });
-        download_log_button.addEventListener('click', () => this.handle_download_change_log_click());
 
         const cancel_button = this.Helpers.create_element('button', {
             class_name: ['button', 'button-default'],
@@ -503,7 +516,7 @@ export class UpdateRulefileViewComponent {
 
         const actions_div = this.Helpers.create_element('div', { class_name: 'form-actions', style: { 'margin-top': '2rem' } });
 
-        actions_div.append(confirm_button, download_log_button, cancel_button);
+        actions_div.append(confirm_button, download_log_parts.wrapper, cancel_button);
         this.plate_element_ref?.appendChild(actions_div);
     }
 

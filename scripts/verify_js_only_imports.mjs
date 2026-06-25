@@ -29,6 +29,8 @@ const REQUIRED_JS_REEXPORT_BRIDGES = [
     'js/utils/vite_dev_client_timestamp.js',
     'js/utils/vite_dev_client_timestamp_hmr.js',
     'js/utils/download_filename_utils.js',
+    'js/utils/status_icon_tooltip.js',
+    'js/utils/file_download_button_ui.js',
     'js/logic/audit_observation_edit_policy.js',
     'js/logic/backup_download_filename.js',
     'js/logic/prepare_rulefile_content_for_persist.js',

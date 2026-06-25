@@ -18,7 +18,7 @@ export function format_pdf_export_actual_size_label(byte_size) {
 }
 
 /**
- * Visningsetikett för maxgräns i exportfel (t.ex. "25 Mbyte").
+ * Visningsetikett för maxgräns i exportfel (t.ex. "50 Mbyte").
  */
 export function format_pdf_export_max_size_label(max_bytes) {
     const mib = max_bytes / (1024 * 1024);

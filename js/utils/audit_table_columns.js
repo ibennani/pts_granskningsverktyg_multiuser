@@ -5,6 +5,7 @@ import {
     format_group_actor_names,
     get_group_actor_sort_value
 } from '../logic/audit_list_case_grouping.js';
+import { create_file_download_button } from './file_download_button_ui.js';
 
 const EMPTY_PLACEHOLDER = '—';
 
@@ -99,16 +100,17 @@ export function create_audit_table_columns(deps, handlers, opts = {}) {
                 const case_number = (row.metadata?.caseNumber ?? '').toString().trim();
                 const actor_name = (row.metadata?.actorName ?? '').toString().trim();
                 const download_details = [case_number, actor_name].filter(Boolean).join(' ') || EMPTY_PLACEHOLDER;
-                const btn = Helpers.create_element('button', {
-                    class_name: ['button', 'button-default', 'button-small', 'generic-table-download-btn'],
-                    html_content: `<span>${t('audit_download_label')}</span>` + icon_svg('save'),
-                    attributes: {
-                        type: 'button',
-                        'aria-label': t('start_view_download_audit_aria', { details: download_details })
-                    }
+                const parts = create_file_download_button({
+                    Helpers,
+                    label: t('audit_download_label'),
+                    t,
+                    variant: 'button-default',
+                    icon_name: 'save',
+                    extra_class_names: ['generic-table-download-btn'],
+                    aria_label: t('start_view_download_audit_aria', { details: download_details }),
+                    on_download: () => Promise.resolve(onDownloadAudit(row.id)),
                 });
-                btn.addEventListener('click', () => onDownloadAudit(row.id));
-                return btn;
+                return parts.wrapper;
             }
         }
     ];

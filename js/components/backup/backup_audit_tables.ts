@@ -1,5 +1,6 @@
 import { get_base_url, get_auth_headers } from '../../api/client.js';
 import { trigger_browser_blob_download } from '../../utils/download_filename_utils.js';
+import { create_file_download_button } from '../../utils/file_download_button_ui.js';
 
 export function build_audit_overview_columns({
     Helpers,
@@ -181,25 +182,21 @@ export function build_audit_detail_columns({
                 }
                 restore_btn.addEventListener('click', () => on_restore(row));
 
-                const download_a = Helpers.create_element('a', {
-                    class_name: ['button', 'button-default', 'button-small', 'generic-table-action-cell', 'backup-btn-with-icon'],
-                    attributes: { href: '#' }
-                });
-                download_a.appendChild(Helpers.create_element('span', { class_name: 'backup-btn-label', text_content: t('backup_detail_download_button') }));
-                if (Helpers.get_icon_svg) {
-                    const dl_icon = Helpers.create_element('span', {
-                        html_content: Helpers.get_icon_svg('download', ['currentColor'], 18),
-                        attributes: { 'aria-hidden': 'true' }
-                    });
-                    dl_icon.classList.add('backup-btn-icon');
-                    download_a.appendChild(dl_icon);
-                }
-                download_a.addEventListener('click', (e: Event) => {
-                    e.preventDefault();
-                    on_download(String(row?.filename || ''));
+                const download_parts = create_file_download_button({
+                    Helpers,
+                    label: t('backup_detail_download_button'),
+                    t,
+                    variant: 'button-default',
+                    icon_name: 'download',
+                    extra_class_names: ['generic-table-action-cell', 'backup-btn-with-icon'],
+                    tag: 'a',
+                    href: '#',
+                    on_download: async () => {
+                        await on_download(String(row?.filename || ''));
+                    },
                 });
                 wrapper.appendChild(restore_btn);
-                wrapper.appendChild(download_a);
+                wrapper.appendChild(download_parts.wrapper);
                 return wrapper;
             }
         }

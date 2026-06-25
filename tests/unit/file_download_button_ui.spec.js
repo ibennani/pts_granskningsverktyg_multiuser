@@ -201,8 +201,8 @@ describe('file_download_button_ui', () => {
             t,
             on_download: async () => {
                 throw new ExportPdfHtmlTooLargeError(
-                    27 * 1024 * 1024,
-                    25 * 1024 * 1024,
+                    52 * 1024 * 1024,
+                    50 * 1024 * 1024,
                     'export_screenshots_appendix_too_large'
                 );
             },
@@ -214,8 +214,8 @@ describe('file_download_button_ui', () => {
 
         const tooltip_text = parts.tooltip_el.querySelector('.file-download-tooltip-text')?.textContent;
         expect(tooltip_text).toContain('Bilagan med skärmbilder är för stor');
-        expect(tooltip_text).toContain('27 MByte');
-        expect(tooltip_text).toContain('Maxgräns: 25 Mbyte');
+        expect(tooltip_text).toContain('52 MByte');
+        expect(tooltip_text).toContain('Maxgräns: 50 Mbyte');
         expect(tooltip_text).not.toContain('htmlContent');
 
         jest.advanceTimersByTime(READY_RESET_MS);

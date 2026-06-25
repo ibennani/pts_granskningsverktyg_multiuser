@@ -10,6 +10,7 @@ import {
     type ExportWordMainFlowT
 } from './export_word_main_flow_children.js';
 import { finalize_word_export_download } from './export_word_main_flow_document.js';
+import { finalize_export_catch } from './export_error_handling.js';
 
 // sortBy kan vara 'requirements' (sorterar på krav) eller 'samples' (sorterar på stickprov)
 export async function export_to_word_wrapper (current_audit: any, sortBy: any) {
@@ -32,9 +33,11 @@ export async function export_to_word_wrapper (current_audit: any, sortBy: any) {
         }
         await finalize_word_export_download({ children, current_audit, isSortByRequirements, t });
     } catch (error: unknown) {
-        if (window.ConsoleManager?.warn) window.ConsoleManager.warn('Error exporting to Word:', error);
-        const msg = error instanceof Error ? error.message : String(error);
-        show_global_message_internal(t('error_exporting_word') + ` ${msg}`, 'error');
+        finalize_export_catch(error, (err) => {
+            if (window.ConsoleManager?.warn) window.ConsoleManager.warn('Error exporting to Word:', err);
+            const msg = err instanceof Error ? err.message : String(err);
+            show_global_message_internal(t('error_exporting_word') + ` ${msg}`, 'error');
+        });
     }
 }
 

@@ -16,8 +16,8 @@ describe('export_error_handling', () => {
     test('finalize_export_catch kastar PDF-HTML-storleksfel utan notify', () => {
         const notify = jest.fn();
         const err = new ExportPdfHtmlTooLargeError(
-            27 * 1024 * 1024,
-            25 * 1024 * 1024,
+            52 * 1024 * 1024,
+            50 * 1024 * 1024,
             'export_screenshots_appendix_too_large'
         );
 

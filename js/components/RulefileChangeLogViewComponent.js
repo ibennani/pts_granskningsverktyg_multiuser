@@ -2,6 +2,7 @@
 
 import { render_rulefile_change_log } from '../logic/rulefile_change_log_renderer.js';
 import { get_download_filename_datetime, trigger_browser_blob_download } from '../utils/download_filename_utils.js';
+import { create_file_download_button } from '../utils/file_download_button_ui.js';
 
 export class RulefileChangeLogViewComponent {
     constructor() {
@@ -91,24 +92,28 @@ export class RulefileChangeLogViewComponent {
         });
         back_button.addEventListener('click', () => this.router('audit_overview'));
 
-        const download_log_button = this.Helpers.create_element('button', {
-            class_name: ['button', 'button-default'],
-            text_content: t('update_rulefile_download_change_log_button')
-        });
-        download_log_button.addEventListener('click', () => {
-            const ts = get_download_filename_datetime(log.createdAt || null);
-            const filename = `rulefile_change_log_${ts}.json`;
-            const payload = {
-                previousRuleVersion: prev_version,
-                newRuleVersion: new_version,
-                createdAt: log.createdAt || null,
-                report: log.report
-            };
-            const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-            trigger_browser_blob_download(blob, filename);
+        const download_log_parts = create_file_download_button({
+            Helpers: this.Helpers,
+            label: t('update_rulefile_download_change_log_button'),
+            t,
+            variant: 'button-default',
+            icon_name: 'download',
+            omit_small: true,
+            on_download: () => {
+                const ts = get_download_filename_datetime(log.createdAt || null);
+                const filename = `rulefile_change_log_${ts}.json`;
+                const payload = {
+                    previousRuleVersion: prev_version,
+                    newRuleVersion: new_version,
+                    createdAt: log.createdAt || null,
+                    report: log.report
+                };
+                const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+                trigger_browser_blob_download(blob, filename);
+            },
         });
 
-        actions.append(back_button, download_log_button);
+        actions.append(back_button, download_log_parts.wrapper);
         this.plate_element_ref.appendChild(actions);
     }
 

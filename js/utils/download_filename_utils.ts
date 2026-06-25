@@ -10,6 +10,12 @@ import {
     format_filename_datetime_from_iso,
     parse_iso_to_date,
 } from '../../shared/datetime/filename_datetime.js';
+import {
+    FILE_DOWNLOAD_MAX_BYTES,
+} from '../../shared/constants/file_download_limits.js';
+
+export { FILE_DOWNLOAD_MAX_BYTES } from '../../shared/constants/file_download_limits.js';
+export { format_file_download_max_size_label } from '../../shared/constants/file_download_limits.js';
 
 const UNSAFE_FILENAME_CHARS = /[<>:"/\\|?*\u0000-\u001f]/g;
 
@@ -88,14 +94,47 @@ export type TriggerBrowserBlobDownloadOptions = {
     aria_hidden?: boolean;
 };
 
+export const FILE_DOWNLOAD_TOO_LARGE_CODE = 'FILE_DOWNLOAD_TOO_LARGE';
+
+export class DownloadFileTooLargeError extends Error {
+    readonly code = FILE_DOWNLOAD_TOO_LARGE_CODE;
+
+    constructor(
+        public readonly byte_size: number,
+        public readonly max_bytes: number = FILE_DOWNLOAD_MAX_BYTES
+    ) {
+        super(FILE_DOWNLOAD_TOO_LARGE_CODE);
+        this.name = 'DownloadFileTooLargeError';
+    }
+}
+
+export function is_download_file_too_large_error(error: unknown): error is DownloadFileTooLargeError {
+    if (error instanceof DownloadFileTooLargeError) return true;
+    if (error && typeof error === 'object' && 'code' in error) {
+        return (error as { code?: string }).code === FILE_DOWNLOAD_TOO_LARGE_CODE;
+    }
+    return false;
+}
+
+/**
+ * Kastar om blob överskrider maxstorlek för nedladdning.
+ */
+export function assert_download_blob_within_limit(blob: Blob): void {
+    if (blob.size > FILE_DOWNLOAD_MAX_BYTES) {
+        throw new DownloadFileTooLargeError(blob.size, FILE_DOWNLOAD_MAX_BYTES);
+    }
+}
+
 /**
  * Startar nedladdning av en Blob i webbläsaren (temporär länk).
+ * Kastar DownloadFileTooLargeError om filen överskrider FILE_DOWNLOAD_MAX_BYTES.
  */
 export function trigger_browser_blob_download(
     blob: Blob,
     filename: string,
     options: TriggerBrowserBlobDownloadOptions = {}
 ): void {
+    assert_download_blob_within_limit(blob);
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;

@@ -85,7 +85,7 @@ app.use(cors({
     credentials: true
 }));
 
-// Samma tak som klientens uppladdningsgräns och dokumentation (25 MiB)
+// Samma tak som klientens uppladdningsgräns och dokumentation (50 MiB)
 app.use(express.json({ limit: JSON_MAX_UPLOAD_BYTES }));
 
 app.use('/api/auth', authRouter);

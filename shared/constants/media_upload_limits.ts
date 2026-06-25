@@ -7,7 +7,7 @@ import {
     format_file_max_size_label,
 } from './file_size_limits.js';
 
-/** Max storlek per fil (25 MiB). */
+/** Max storlek per fil (50 MiB). */
 export const MEDIA_MAX_UPLOAD_BYTES = FILE_MAX_BYTES;
 
 /** Tillåtna MIME-typer för uppladdning. */
@@ -31,7 +31,7 @@ export const ALLOWED_MEDIA_MIME_SET = new Set<string>(ALLOWED_MEDIA_MIME_TYPES);
 export const IMAGE_MEDIA_MIME_PREFIX = 'image/';
 
 /**
- * Visningsetikett för max filstorlek i UI (t.ex. "25 MB").
+ * Visningsetikett för max filstorlek i UI (t.ex. "50 MB").
  */
 export function format_media_max_upload_size_label(): string {
     return format_file_max_size_label();

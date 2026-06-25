@@ -6,6 +6,7 @@ import { consoleManager } from '../utils/console_manager.js';
 import { get_t_internal, show_global_message_internal } from './export_bootstrap.js';
 import { build_screenshots_appendix_word_filename } from './export_report_filename.js';
 import { finalize_word_export_download } from './export_word_main_flow_document.js';
+import { finalize_export_catch } from './export_error_handling.js';
 import {
     prepare_screenshots_appendix_media,
     type PreparedScreenshotsAppendixItem,
@@ -108,10 +109,12 @@ export async function export_to_word_screenshots_appendix(
             );
         }
     } catch (error: unknown) {
-        if (window.ConsoleManager?.warn) {
-            window.ConsoleManager.warn('Error exporting screenshots appendix Word:', error);
-        }
-        const msg = error instanceof Error ? error.message : String(error);
-        show_global_message_internal(`${t('error_exporting_screenshots_appendix')} ${msg}`.trim(), 'error');
+        finalize_export_catch(error, (err) => {
+            if (window.ConsoleManager?.warn) {
+                window.ConsoleManager.warn('Error exporting screenshots appendix Word:', err);
+            }
+            const msg = err instanceof Error ? err.message : String(err);
+            show_global_message_internal(`${t('error_exporting_screenshots_appendix')} ${msg}`.trim(), 'error');
+        });
     }
 }
