@@ -1275,8 +1275,8 @@ select,
 }
 
 html.test-server-viewport {
-    outline: 3px solid #c00;
-    outline-offset: -3px;
+    outline: 10px solid #c00;
+    outline-offset: -10px;
 }
 
 .test-server-banner {

@@ -22,6 +22,7 @@
     "deploy:v2": "node scripts/deploy-v2.js",
     "deploy:test-server": "node scripts/deploy-test-server.js",
     "seed:test-server": "node scripts/seed-test-server-from-local.js",
+    "copy:v2-users-to-test-server": "node scripts/copy-v2-users-to-test-server.js",
     "setup:test-server": "node scripts/seed-test-server-from-local.js --confirm && cross-env DEPLOY_TEST_SERVER_COPY_ENV=1 node scripts/deploy-test-server.js",
     "diagnose:v2": "node scripts/diagnose-v2-remote.js",
     "remote:fix-prod-deps": "node scripts/remote-fix-prod-deps.js",

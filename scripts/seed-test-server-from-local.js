@@ -9,7 +9,14 @@
  * Användning:
  *   npm run seed:test-server -- --confirm
  */
+import 'dotenv/config';
+
 process.env.DEPLOY_PATH = process.env.DEPLOY_PATH || '/var/www/granskningsverktyget-test-server';
+if (!process.env.DEPLOY_SSH_ALIAS && !process.env.DEPLOY_SSH_PASSWORD) {
+    process.env.DEPLOY_SSH_ALIAS = 'granskning';
+}
+if (!process.env.DEPLOY_USER) process.env.DEPLOY_USER = 'localiliben';
+if (!process.env.DEPLOY_SSH_HOSTNAME) process.env.DEPLOY_SSH_HOSTNAME = 'ux-granskningsverktyg.pts.ad';
 
 import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'fs';
 import { join } from 'path';

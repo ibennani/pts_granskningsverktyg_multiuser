@@ -4,8 +4,12 @@
  * Isolerad instans: egen deploy-mapp, backend :3001, databas granskningsverktyget_test.
  * Prod (/v2/, PM2 granskningsverktyget-v2) startas inte om.
  */
+import 'dotenv/config';
+
 process.env.DEPLOY_PATH = process.env.DEPLOY_PATH || '/var/www/granskningsverktyget-test-server';
-if (!process.env.DEPLOY_SSH_ALIAS) process.env.DEPLOY_SSH_ALIAS = 'granskning';
+if (!process.env.DEPLOY_SSH_ALIAS && !process.env.DEPLOY_SSH_PASSWORD) {
+    process.env.DEPLOY_SSH_ALIAS = 'granskning';
+}
 if (!process.env.DEPLOY_USER) process.env.DEPLOY_USER = 'localiliben';
 if (!process.env.DEPLOY_SSH_HOSTNAME) process.env.DEPLOY_SSH_HOSTNAME = 'ux-granskningsverktyg.pts.ad';
 
@@ -34,9 +38,29 @@ const PUBLIC_URL = process.env.DEPLOY_TEST_SERVER_PUBLIC_URL
 const TEST_DB_NAME = process.env.GV_TEST_SERVER_DB_NAME || 'granskningsverktyget_test';
 const PROD_DEPLOY_PATH = process.env.DEPLOY_PROD_PATH || '/var/www/granskningsverktyget-v2';
 
+function resolve_sudo_password() {
+    const raw = process.env.DEPLOY_SUDO_PASSWORD || process.env.DEPLOY_SSH_PASSWORD || '';
+    return raw.replace(/^"|"$/g, '');
+}
+
+function sudo_bash_cmd(inner_cmd) {
+    const sudoPassword = resolve_sudo_password();
+    if (!sudoPassword) {
+        return `sudo ${inner_cmd}`;
+    }
+    const b64 = Buffer.from(sudoPassword, 'utf8').toString('base64');
+    return `echo ${JSON.stringify(b64)} | base64 -d | sudo -S bash -c ${JSON.stringify(inner_cmd)}`;
+}
+
 async function main() {
     try {
         console.log(`[deploy:test-server] SSH-mål: ${get_ssh_spawn_target()}`);
+
+        const deployUser = process.env.DEPLOY_USER || 'localiliben';
+        const ensureDeployDir = `mkdir -p ${remotePath} && chown ${deployUser}:${deployUser} ${remotePath}`;
+        console.log('[deploy:test-server] Säkerställer deploy-mapp på servern...');
+        await exec(sudo_bash_cmd(ensureDeployDir), { cwd: false });
+
         console.log('[deploy:test-server] Bygger projektet med bas /test-server/...');
         await run('npm', ['run', 'build:test-server']);
 
@@ -67,6 +91,7 @@ async function main() {
 
         await putDirectory(join(projectRoot, 'css'), `${remotePath}/css`);
         await putDirectory(join(projectRoot, 'js'), `${remotePath}/js`);
+        await putDirectory(join(projectRoot, 'shared'), `${remotePath}/shared`);
         await putDirectory(serverDir, `${remotePath}/server`);
         await putFile(join(projectRoot, 'scripts', 'health-check-and-restart.sh'), `${remotePath}/scripts/health-check-and-restart.sh`);
         await putFile(join(projectRoot, 'scripts', 'healthcheck-watchdog.js'), `${remotePath}/scripts/healthcheck-watchdog.js`);
@@ -133,11 +158,8 @@ async function main() {
         await exec(health_verify, { cwd: false });
 
         const nginxConfigPath = process.env.DEPLOY_NGINX_CONF || '/etc/nginx/conf.d/ux-granskning.conf';
-        const sudoPassword = process.env.DEPLOY_SUDO_PASSWORD || '';
         const nginxCopyAndReload = `cp ${remotePath}/nginx-ux-granskning.conf ${nginxConfigPath} && nginx -t && systemctl reload nginx`;
-        const nginxCmd = sudoPassword
-            ? `echo ${JSON.stringify(Buffer.from(sudoPassword, 'utf8').toString('base64'))} | base64 -d | sudo -S bash -c ${JSON.stringify(nginxCopyAndReload)}`
-            : `sudo cp ${remotePath}/nginx-ux-granskning.conf ${nginxConfigPath} && sudo nginx -t && sudo systemctl reload nginx`;
+        const nginxCmd = sudo_bash_cmd(nginxCopyAndReload);
         try {
             console.log('[deploy:test-server] Uppdaterar Nginx och laddar om...');
             await exec(nginxCmd, { cwd: false });
