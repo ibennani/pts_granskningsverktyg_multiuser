@@ -54,8 +54,8 @@ async function main() {
 
         // Säkerställ mappstruktur för backend + statiska filer
         await sshOrRun(
-            `mkdir -p ${remotePath} ${remotePath}/server ${remotePath}/js ${remotePath}/scripts`,
-            ['ssh', [host, `mkdir -p ${remotePath} ${remotePath}/server ${remotePath}/js ${remotePath}/scripts`]],
+            `mkdir -p ${remotePath} ${remotePath}/server ${remotePath}/js ${remotePath}/scripts ${remotePath}/shared`,
+            ['ssh', [host, `mkdir -p ${remotePath} ${remotePath}/server ${remotePath}/js ${remotePath}/scripts ${remotePath}/shared`]],
             { cwd: false }
         );
 
@@ -80,6 +80,8 @@ async function main() {
 
         // Ladda upp JS-källor (används av servern / bundlade moduler)
         await scpDir(join(projectRoot, 'js'), `${remotePath}/js`);
+
+        await scpDir(join(projectRoot, 'shared'), `${remotePath}/shared`);
 
         await scpDir(serverDir, `${remotePath}/server`);
         await scpFile(join(projectRoot, 'scripts', 'health-check-and-restart.sh'), `${remotePath}/scripts/health-check-and-restart.sh`);
