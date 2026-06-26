@@ -218,6 +218,7 @@
   "audit_last_updated": "Last updated",
   "audit_link": "Audits",
   "audit_list_view_mode_all": "Show all audits",
+  "audit_list_view_mode_mine": "Show my audits",
   "audit_list_view_mode_grouped": "Group by case number",
   "audit_list_view_mode_grouped_auditor": "Group by auditor",
   "audit_list_view_mode_label": "Group audits",

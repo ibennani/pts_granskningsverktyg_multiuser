@@ -4,6 +4,7 @@
 
 import {
     build_audit_list_section_configs,
+    filter_audits_by_current_user,
     filter_audits_by_type,
     sort_audits_by_case_number
 } from '../../js/logic/audit_list_section_filter.ts';
@@ -67,6 +68,42 @@ describe('build_audit_list_section_configs', () => {
         expect(result.section_configs[0].audits.map((a) => a.id)).toEqual([1]);
         expect(result.section_configs[0].heading_audits.map((a) => a.id)).toEqual([1]);
         expect(result.section_configs[1].audits.map((a) => a.id)).toEqual([3]);
+    });
+
+    it('visar bara inloggad användares granskningar i läget mine', () => {
+        sessionStorage.setItem('gv_current_user_name', 'Anna Granskare');
+        const ctx = {
+            audit_filter_query: '',
+            audit_type_filter: '',
+            audit_list_group_mode: 'mine',
+            audits: [
+                make_audit(1, 'in_progress', { caseNumber: '1', auditorName: 'Anna Granskare' }),
+                make_audit(2, 'in_progress', { caseNumber: '2', auditorName: 'Bob' }),
+                make_audit(3, 'not_started', { caseNumber: '3', auditorName: 'Anna Granskare' })
+            ]
+        };
+        const result = build_audit_list_section_configs(ctx);
+        expect(result.section_configs[0].audits.map((a) => a.id)).toEqual([1]);
+        expect(result.section_configs[1].audits.map((a) => a.id)).toEqual([3]);
+        sessionStorage.removeItem('gv_current_user_name');
+    });
+});
+
+describe('filter_audits_by_current_user', () => {
+    it('matchar granskare case-insensitive mot sessionStorage', () => {
+        sessionStorage.setItem('gv_current_user_name', 'Anna Granskare');
+        const list = [
+            make_audit(1, 'in_progress', { auditorName: 'anna granskare' }),
+            make_audit(2, 'in_progress', { auditorName: 'Bob' })
+        ];
+        expect(filter_audits_by_current_user(list).map((a) => a.id)).toEqual([1]);
+        sessionStorage.removeItem('gv_current_user_name');
+    });
+
+    it('returnerar tom lista utan inloggad användare', () => {
+        sessionStorage.removeItem('gv_current_user_name');
+        const list = [make_audit(1, 'in_progress', { auditorName: 'Anna' })];
+        expect(filter_audits_by_current_user(list)).toEqual([]);
     });
 });
 

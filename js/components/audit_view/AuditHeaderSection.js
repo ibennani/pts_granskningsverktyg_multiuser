@@ -137,6 +137,7 @@ export function render_audit_header(ctx) {
         });
         [
             { value: 'all', label: t('audit_list_view_mode_all') },
+            { value: 'mine', label: t('audit_list_view_mode_mine') },
             { value: 'case', label: t('audit_list_view_mode_grouped') },
             { value: 'auditor', label: t('audit_list_view_mode_grouped_auditor') }
         ].forEach((o) => {
@@ -147,7 +148,7 @@ export function render_audit_header(ctx) {
                 })
             );
         });
-        const valid_group_modes = ['all', 'case', 'auditor'];
+        const valid_group_modes = ['all', 'mine', 'case', 'auditor'];
         group_select.value = valid_group_modes.includes(ctx.audit_list_group_mode)
             ? ctx.audit_list_group_mode
             : 'all';

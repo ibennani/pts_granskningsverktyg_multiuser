@@ -47,7 +47,7 @@ import './audit_view_component.css';
 
 const AUDIT_LIST_GROUP_MODE_STORAGE_KEY = 'gv_audit_list_group_mode';
 const LEGACY_AUDIT_GROUP_BY_CASE_STORAGE_KEY = 'gv_audit_group_by_case';
-const AUDIT_LIST_GROUP_MODES = ['all', 'case', 'auditor'];
+const AUDIT_LIST_GROUP_MODES = ['all', 'mine', 'case', 'auditor'];
 
 function read_audit_list_group_mode_pref() {
     try {

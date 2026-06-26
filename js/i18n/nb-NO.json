@@ -218,6 +218,7 @@
   "audit_last_updated": "Sist oppdatert",
   "audit_link": "Tilsyn",
   "audit_list_view_mode_all": "Vis alle tilsyn",
+  "audit_list_view_mode_mine": "Vis mine tilsyn",
   "audit_list_view_mode_grouped": "Grupper etter saksnummer",
   "audit_list_view_mode_grouped_auditor": "Grupper etter revisor",
   "audit_list_view_mode_label": "Grupper tilsyn",

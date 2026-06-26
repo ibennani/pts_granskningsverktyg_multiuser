@@ -218,6 +218,7 @@
   "audit_last_updated": "Senast uppdaterad",
   "audit_link": "Granskningar",
   "audit_list_view_mode_all": "Visa alla granskningar",
+  "audit_list_view_mode_mine": "Visa mina granskningar",
   "audit_list_view_mode_grouped": "Gruppera på diarienummer",
   "audit_list_view_mode_grouped_auditor": "Gruppera på granskare",
   "audit_list_view_mode_label": "Gruppera granskningarna",

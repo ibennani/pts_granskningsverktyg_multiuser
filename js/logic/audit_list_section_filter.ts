@@ -2,6 +2,7 @@
  * @fileoverview Delad filter- och sorteringslogik för granskningslistans sektioner i AuditSamplesSection.
  */
 
+import { get_current_user_name } from '../user/current_user.js';
 import { filter_text_matches } from '../utils/string_filter_normalize.js';
 
 export type AuditListRow = {
@@ -21,11 +22,19 @@ export type AuditListSectionConfig = {
     heading_audits: AuditListRow[];
 };
 
+export type AuditListViewMode = 'mine' | 'all' | 'case' | 'auditor';
+
 export type AuditListFilterContext = {
     audits: AuditListRow[];
     audit_filter_query?: string;
     audit_type_filter?: string;
+    audit_list_group_mode?: AuditListViewMode | string;
 };
+
+/** Sant när listan ska grupperas (diarienummer eller granskare). */
+export function is_audit_list_grouped_view_mode(mode: string | undefined): boolean {
+    return mode === 'case' || mode === 'auditor';
+}
 
 const SECTION_HEADING_KEYS = [
     'start_view_audits_heading',
@@ -68,6 +77,16 @@ export function filter_audits_by_text(list: AuditListRow[], query_raw: string): 
     });
 }
 
+/** Filtrerar till granskningar där metadata.auditorName matchar inloggad användare. */
+export function filter_audits_by_current_user(list: AuditListRow[]): AuditListRow[] {
+    const current = get_current_user_name().trim().toLowerCase();
+    if (!current) return [];
+    return list.filter((a) => {
+        const auditor = (a.metadata?.auditorName ?? '').toString().trim().toLowerCase();
+        return auditor === current;
+    });
+}
+
 /** Filtrerar på granskningstyp (tom sträng = alla typer). */
 export function filter_audits_by_type(list: AuditListRow[], audit_type_filter: string): AuditListRow[] {
     const want_type = String(audit_type_filter || '').trim();
@@ -99,9 +118,14 @@ export function build_audit_list_section_configs(ctx: AuditListFilterContext): {
     const has_type_filter = !!String(ctx.audit_type_filter || '').trim();
     const has_active_filter = has_text_filter || has_type_filter;
 
+    const mine_mode = ctx.audit_list_group_mode === 'mine';
+
     const section_configs = SECTION_HEADING_KEYS.map((heading_key) => {
         const status = STATUS_BY_HEADING[heading_key];
-        const base = ctx.audits.filter((a) => a.status === status);
+        let base = ctx.audits.filter((a) => a.status === status);
+        if (mine_mode) {
+            base = filter_audits_by_current_user(base);
+        }
         const filtered = filter_audits_for_section(base, ctx);
         return {
             heading_key,

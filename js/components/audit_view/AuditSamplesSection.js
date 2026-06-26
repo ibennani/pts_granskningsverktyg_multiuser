@@ -1,7 +1,10 @@
 // js/components/audit_view/AuditSamplesSection.js
 // Bygger högerkolumnen: granskningar (listor eller sektioner beroende på audit_mode).
 
-import { build_audit_list_section_configs } from '../../logic/audit_list_section_filter.js';
+import {
+    build_audit_list_section_configs,
+    is_audit_list_grouped_view_mode
+} from '../../logic/audit_list_section_filter.js';
 import { clamp_page_index } from '../../logic/table_pagination_logic.js';
 import {
     build_audit_list_groups,
@@ -48,7 +51,7 @@ function get_audit_list_group_options(ctx) {
 /** Antal rader som faktiskt visas i sektionens tabell (grupper eller enskilda granskningar). */
 function get_audit_section_display_count(audits, ctx) {
     const list = audits || [];
-    const is_grouped = ctx.audit_list_group_mode !== 'all';
+    const is_grouped = is_audit_list_grouped_view_mode(ctx.audit_list_group_mode);
     if (is_grouped) {
         const group_mode = ctx.audit_list_group_mode === 'auditor' ? 'auditor' : 'case';
         return build_audit_list_groups(list, group_mode, get_audit_list_group_options(ctx)).length;
@@ -76,7 +79,7 @@ function render_audit_section_table(ctx, config, table_wrapper, section_heading_
     ctx[sort_state_key] = ctx[sort_state_key] ?? { columnIndex: 0, direction: 'asc' };
     ctx[grouped_sort_state_key] = ctx[grouped_sort_state_key] ?? { columnIndex: 0, direction: 'asc' };
     const page_size_num = ctx.get_audit_table_page_size_number();
-    const is_grouped = ctx.audit_list_group_mode !== 'all';
+    const is_grouped = is_audit_list_grouped_view_mode(ctx.audit_list_group_mode);
     const group_mode = ctx.audit_list_group_mode === 'auditor' ? 'auditor' : 'case';
     const total_list_rows = get_audit_section_display_count(config.audits || [], ctx);
     ctx[page_state_key] = clamp_page_index(ctx[page_state_key] ?? 0, total_list_rows, page_size_num);
