@@ -110,11 +110,11 @@ const ALLOWED_RUNS = [1, 2, 3, 4, 6, 8, 12, 24];
 router.put('/settings', async (req, res) => {
     try {
         const body = req.body || {};
-        const has_retention = body.retention_days !== undefined;
+        const has_retention = body.retention_days !== undefined || body.min_backups !== undefined;
         const has_schedule = body.runs_per_day !== undefined || body.first_run_hour !== undefined || body.last_run_hour !== undefined;
         if (!has_retention && !has_schedule) {
             return res.status(400).json({
-                error: 'Saknar giltiga inställningar. Skicka retention_days och/eller runs_per_day, first_run_hour, last_run_hour.'
+                error: 'Saknar giltiga inställningar. Skicka retention_days, min_backups och/eller runs_per_day, first_run_hour, last_run_hour.'
             });
         }
 
@@ -127,6 +127,13 @@ router.put('/settings', async (req, res) => {
                 return res.status(400).json({ error: 'retention_days måste vara ett tal mellan 1 och 365' });
             }
             updates.retention_days = num;
+        }
+        if (body.min_backups !== undefined) {
+            const num = typeof body.min_backups === 'number' ? body.min_backups : parseInt(body.min_backups, 10);
+            if (!Number.isInteger(num) || num < 0 || num > 100) {
+                return res.status(400).json({ error: 'min_backups måste vara ett tal mellan 0 och 100' });
+            }
+            updates.min_backups = num;
         }
         if (body.runs_per_day !== undefined) {
             const num = typeof body.runs_per_day === 'number' ? body.runs_per_day : parseInt(body.runs_per_day, 10);

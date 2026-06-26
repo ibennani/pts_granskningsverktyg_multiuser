@@ -315,7 +315,7 @@ export async function save_system_snapshot({ backup_dir, now = new Date(), reten
     };
 }
 
-export async function cleanup_old_system_snapshots({ backup_dir, retention_days = 30 } = {}) {
+export async function cleanup_old_system_snapshots({ backup_dir, retention_days = 30, min_backups = DEFAULT_MIN_BACKUPS } = {}) {
     const base = path.resolve(backup_dir || process.cwd());
     const system_root_dir = path.join(base, SYSTEM_DIRNAME);
 
@@ -341,7 +341,7 @@ export async function cleanup_old_system_snapshots({ backup_dir, retention_days 
 
     const to_delete = select_entries_for_retention_deletion(snapshot_entries, {
         retention_days,
-        min_count: DEFAULT_MIN_BACKUPS
+        min_count: min_backups
     });
 
     let removed = 0;

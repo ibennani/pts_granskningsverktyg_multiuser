@@ -72,6 +72,7 @@ export class BackupSettingsViewComponent {
         } catch {
             this.settings = {
                 retention_days: 30,
+                min_backups: 5,
                 runs_per_day: 4,
                 first_run_hour: 0,
                 last_run_hour: 18
@@ -111,6 +112,14 @@ export class BackupSettingsViewComponent {
             }
             return;
         }
+        const min_backups_raw = this.min_backups_input_ref?.value?.trim() ?? '';
+        const min_backups = min_backups_raw === '' ? NaN : parseInt(min_backups_raw, 10);
+        if (!Number.isInteger(min_backups) || min_backups < 0 || min_backups > 100) {
+            if (this.NotificationComponent?.show_global_message) {
+                this.NotificationComponent.show_global_message(t('backup_settings_min_backups_invalid'), 'warning');
+            }
+            return;
+        }
         const runs_per_day = parseInt(this.runs_select_ref?.value ?? '4', 10);
         const first_run_hour = parseInt(this.hour_select_ref?.value ?? '0', 10);
         const last_run_hour = parseInt(this.last_hour_select_ref?.value ?? '18', 10);
@@ -122,6 +131,7 @@ export class BackupSettingsViewComponent {
         const SAVE_TIMEOUT_MS = 15000;
         const save_promise = update_backup_settings({
             retention_days: retention,
+            min_backups,
             runs_per_day,
             first_run_hour,
             last_run_hour
@@ -159,7 +169,7 @@ export class BackupSettingsViewComponent {
         if (!this.settings) {
             await this._load_settings();
         }
-        const s = this.settings || { retention_days: 30, runs_per_day: 4, first_run_hour: 0, last_run_hour: 18 };
+        const s = this.settings || { retention_days: 30, min_backups: 5, runs_per_day: 4, first_run_hour: 0, last_run_hour: 18 };
 
         this.root.innerHTML = '';
         const plate = this.Helpers.create_element('div', { class_name: 'content-plate backup-settings-plate' });
@@ -289,6 +299,30 @@ export class BackupSettingsViewComponent {
             attributes: { id: 'backup-settings-retention-help' }
         }));
         form.appendChild(retention_group);
+
+        const min_backups_group = this.Helpers.create_element('div', { class_name: 'form-group' });
+        min_backups_group.appendChild(this.Helpers.create_element('label', {
+            text_content: t('backup_settings_min_backups_label'),
+            attributes: { for: 'backup-settings-min-backups' }
+        }));
+        this.min_backups_input_ref = this.Helpers.create_element('input', {
+            attributes: {
+                type: 'number',
+                id: 'backup-settings-min-backups',
+                min: '0',
+                max: '100',
+                value: String(s.min_backups ?? 5),
+                'aria-describedby': 'backup-settings-min-backups-help'
+            },
+            class_name: 'form-control'
+        });
+        min_backups_group.appendChild(this.min_backups_input_ref);
+        min_backups_group.appendChild(this.Helpers.create_element('p', {
+            class_name: 'form-help',
+            text_content: t('backup_settings_min_backups_help'),
+            attributes: { id: 'backup-settings-min-backups-help' }
+        }));
+        form.appendChild(min_backups_group);
 
         const btn_row = this.Helpers.create_element('div', { class_name: 'backup-settings-buttons' });
         const save_btn = this.Helpers.create_element('button', {

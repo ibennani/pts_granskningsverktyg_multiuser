@@ -1,6 +1,6 @@
 /**
  * Schemalagd backup av granskningar till JSON-filer.
- * Schema styrs av first_run_hour, last_run_hour och runs_per_day (jämnt fördelat). Sparar endast vid ändringar, rensar filer enligt retention_days men behåller minst 5 senaste per granskning.
+ * Schema styrs av first_run_hour, last_run_hour och runs_per_day (jämnt fördelat). Sparar endast vid ändringar, rensar filer enligt retention_days och min_backups per granskning.
  */
 import crypto from 'crypto';
 import fs from 'fs/promises';
@@ -18,6 +18,8 @@ const DEFAULT_RETENTION_DAYS = 30;
 const DEFAULT_RUNS_PER_DAY = 4;
 const DEFAULT_FIRST_RUN_HOUR = 0;
 const DEFAULT_LAST_RUN_HOUR = 18;
+const MIN_BACKUPS_MIN = 0;
+const MIN_BACKUPS_MAX = 100;
 const SETTINGS_FILENAME = '.backup-settings.json';
 const ALLOWED_RUNS_PER_DAY = [1, 2, 3, 4, 6, 8, 12, 24];
 
@@ -34,6 +36,14 @@ function clamp_runs_per_day(n) {
 function clamp_hour(n) {
     const num = typeof n === 'number' ? n : parseInt(n, 10);
     if (!Number.isInteger(num) || num < 0 || num > 23) return 0;
+    return num;
+}
+
+function clamp_min_backups(n) {
+    const num = typeof n === 'number' ? n : parseInt(n, 10);
+    if (!Number.isInteger(num) || num < MIN_BACKUPS_MIN || num > MIN_BACKUPS_MAX) {
+        return DEFAULT_MIN_BACKUPS;
+    }
     return num;
 }
 
@@ -69,6 +79,7 @@ export function build_cron_from_settings(settings) {
 
 export async function get_backup_settings() {
     let retention_days = DEFAULT_RETENTION_DAYS;
+    let min_backups = DEFAULT_MIN_BACKUPS;
     let runs_per_day = DEFAULT_RUNS_PER_DAY;
     let first_run_hour = DEFAULT_FIRST_RUN_HOUR;
     let last_run_hour = DEFAULT_LAST_RUN_HOUR;
@@ -78,6 +89,9 @@ export async function get_backup_settings() {
         if (typeof data.retention_days === 'number' && data.retention_days >= 1 && data.retention_days <= 365) {
             retention_days = data.retention_days;
         }
+        if (typeof data.min_backups === 'number' && data.min_backups >= MIN_BACKUPS_MIN && data.min_backups <= MIN_BACKUPS_MAX) {
+            min_backups = data.min_backups;
+        }
         if (data.runs_per_day != null) runs_per_day = clamp_runs_per_day(data.runs_per_day);
         if (data.first_run_hour != null) first_run_hour = clamp_hour(data.first_run_hour);
         if (data.last_run_hour != null) last_run_hour = clamp_hour(data.last_run_hour);
@@ -85,7 +99,7 @@ export async function get_backup_settings() {
         /* använd standardvärden */
     }
     const schedule_cron = build_cron_from_settings({ runs_per_day, first_run_hour, last_run_hour });
-    return { retention_days, runs_per_day, first_run_hour, last_run_hour, schedule_cron };
+    return { retention_days, min_backups, runs_per_day, first_run_hour, last_run_hour, schedule_cron };
 }
 
 export async function save_backup_settings(settings) {
@@ -94,6 +108,7 @@ export async function save_backup_settings(settings) {
         retention_days: typeof settings.retention_days === 'number' && settings.retention_days >= 1 && settings.retention_days <= 365
             ? settings.retention_days
             : current.retention_days,
+        min_backups: settings.min_backups != null ? clamp_min_backups(settings.min_backups) : current.min_backups,
         runs_per_day: settings.runs_per_day != null ? clamp_runs_per_day(settings.runs_per_day) : current.runs_per_day,
         first_run_hour: settings.first_run_hour != null ? clamp_hour(settings.first_run_hour) : current.first_run_hour,
         last_run_hour: settings.last_run_hour != null ? clamp_hour(settings.last_run_hour) : current.last_run_hour
@@ -214,7 +229,7 @@ async function run_scheduled_backup() {
     }
 
     const settings = await get_backup_settings();
-    await cleanup_old_backups(backup_dir, settings.retention_days);
+    await cleanup_old_backups(backup_dir, settings.retention_days, settings.min_backups);
     try {
         await save_system_snapshot({
             backup_dir,
@@ -227,7 +242,8 @@ async function run_scheduled_backup() {
     try {
         await cleanup_old_system_snapshots({
             backup_dir,
-            retention_days: settings.retention_days
+            retention_days: settings.retention_days,
+            min_backups: settings.min_backups
         });
     } catch (err) {
         console.warn('[backup] Rensning av system-snapshots misslyckades:', err.message);
@@ -243,7 +259,7 @@ async function run_scheduled_backup() {
     return status;
 }
 
-async function cleanup_old_backups(backup_dir, retention_days = DEFAULT_RETENTION_DAYS) {
+async function cleanup_old_backups(backup_dir, retention_days = DEFAULT_RETENTION_DAYS, min_backups = DEFAULT_MIN_BACKUPS) {
     let removed = 0;
     try {
         const audit_ids = await fs.readdir(backup_dir);
@@ -267,7 +283,7 @@ async function cleanup_old_backups(backup_dir, retention_days = DEFAULT_RETENTIO
 
             const to_delete = select_entries_for_retention_deletion(entries, {
                 retention_days,
-                min_count: DEFAULT_MIN_BACKUPS
+                min_count: min_backups
             });
             for (const filename of to_delete) {
                 try {
