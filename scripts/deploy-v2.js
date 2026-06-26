@@ -9,6 +9,10 @@
  *
  * Användning:
  *   npm run deploy:v2
+ *
+ * Rollback till äldre commit: efter deploy, synka byggtext längst ner till release-tidpunkten
+ * (annars visar sidan dagens build-tid). Kör t.ex.:
+ *   node scripts/sync-v2-build-stamp.mjs --till=2026-06-09T17:06:00.000Z
  */
 import { existsSync, readFileSync, writeFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
