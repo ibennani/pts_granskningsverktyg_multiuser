@@ -126,13 +126,28 @@
     flex: 0 0 auto;
 }
 
+/* Reserverar samma vertikala utrymme som label + gap i syskonfälten */
+.audit-filter-row__field--reset::before {
+    content: '\00a0';
+    display: block;
+    font-weight: bold;
+    font-size: var(--font-size-base);
+    line-height: var(--line-height-base);
+    visibility: hidden;
+    pointer-events: none;
+    user-select: none;
+}
+
 .audit-filter-reset {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
+    box-sizing: border-box;
     width: auto;
-    min-height: 24px;
-    align-self: flex-end;
+    margin-right: 0;
+    padding: 0.6rem;
+    border-width: 2px;
+    min-height: calc(0.6rem * 2 + var(--line-height-base) * 1em + 4px);
 }
 
 .audit-filter-reset__icon {
