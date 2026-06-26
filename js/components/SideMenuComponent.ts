@@ -234,6 +234,31 @@ export class SideMenuComponent {
         }
     }
 
+    get_view_heading_i18n_key(view_name) {
+        switch (view_name) {
+            case 'start':
+            case 'audit_audits':
+                return 'audit_title_audits';
+            case 'audit_rules':
+                return 'audit_title_rules';
+            case 'backup':
+                return 'menu_link_backups';
+            case 'statistics':
+                return 'menu_link_statistics';
+            case 'my_settings':
+                return 'menu_link_my_settings';
+            case 'manage_users':
+                return 'manage_users_title';
+            default:
+                return null;
+        }
+    }
+
+    get_view_heading_label(view_name) {
+        const key = this.get_view_heading_i18n_key(view_name);
+        return key ? this.Translation.t(key) : view_name;
+    }
+
     create_menu_link({ label, view_name, params = {}, count_id, count_value }) {
         const view_from_hash = this.get_view_name_from_location_hash();
         let active_view_name = view_from_hash || this.current_view_name;
@@ -242,6 +267,9 @@ export class SideMenuComponent {
         }
         const current_params = this.get_params_from_location_hash();
         let is_active = active_view_name === view_name;
+        if (view_name === 'start' && (active_view_name === 'start' || active_view_name === 'audit_audits')) {
+            is_active = true;
+        }
         if (is_active && view_name === 'rulefile_sections' && params.section) {
             is_active = current_params.section === params.section;
         }
@@ -346,14 +374,14 @@ export class SideMenuComponent {
         if (this.current_view_name === 'start' || this.current_view_name === 'audit' || this.current_view_name === 'audit_audits' || this.current_view_name === 'audit_rules' || this.current_view_name === 'manage_users' || this.current_view_name === 'my_settings' || this.current_view_name === 'statistics' || this.current_view_name === 'backup' || this.current_view_name === 'backup_detail' || this.current_view_name === 'backup_rulefile_detail' || this.current_view_name === 'backup_settings') {
             const is_admin = typeof sessionStorage !== 'undefined' && sessionStorage.getItem('gv_current_user_is_admin') === '1';
             const items = [
-                { label: t('menu_link_manage_audits'), view_name: 'start' },
-                { label: t('menu_link_manage_rules'), view_name: 'audit_rules' },
-                { label: t('menu_link_backups'), view_name: 'backup' },
-                { label: t('menu_link_statistics'), view_name: 'statistics' },
-                { label: t('menu_link_my_settings'), view_name: 'my_settings' }
+                { label: this.get_view_heading_label('start'), view_name: 'start' },
+                { label: this.get_view_heading_label('audit_rules'), view_name: 'audit_rules' },
+                { label: this.get_view_heading_label('backup'), view_name: 'backup' },
+                { label: this.get_view_heading_label('statistics'), view_name: 'statistics' },
+                { label: this.get_view_heading_label('my_settings'), view_name: 'my_settings' }
             ];
             if (is_admin) {
-                items.push({ label: t('menu_link_manage_users'), view_name: 'manage_users' });
+                items.push({ label: this.get_view_heading_label('manage_users'), view_name: 'manage_users' });
             }
             return {
                 should_show: true,
@@ -374,7 +402,7 @@ export class SideMenuComponent {
                     { label: t('rulefile_section_info_blocks_order_title'), view_name: 'rulefile_sections', params: { section: 'info_blocks_order' } },
                     { label: t('rulefile_section_classifications_title'), view_name: 'rulefile_sections', params: { section: 'classifications' } },
                     { label: t('rulefile_section_report_template_title'), view_name: 'rulefile_sections', params: { section: 'report_template' } },
-                    { label: t('side_menu_back_to_audit'), view_name: 'audit_rules', back_to_start: true }
+                    { label: this.get_view_heading_label('audit_rules'), view_name: 'audit_rules', back_to_start: true }
                 ]
             };
         }
@@ -411,7 +439,7 @@ export class SideMenuComponent {
                     { label: t('left_menu_images_with_count', { count: media_count }), view_name: 'audit_images', count_id: 'media_count', count_value: media_count },
                     { label: t('left_menu_problems_with_count', { count: problems_count }), view_name: 'audit_problems', count_id: 'problems_count', count_value: problems_count },
                     { label: t('left_menu_actions'), view_name: 'audit_actions' },
-                    { label: t('audit_back_to_start'), view_name: 'start', back_to_start: true }
+                    { label: this.get_view_heading_label('start'), view_name: 'start', back_to_start: true }
                 ]
             };
         }

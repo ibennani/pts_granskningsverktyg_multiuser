@@ -27,6 +27,7 @@ import {
 } from '../view/view_lifecycle.js';
 import { render_view_not_found, handle_view_lifecycle_error } from '../view/view_error_handler.js';
 import { set_current_view_tracking, get_restore_position_via_hook } from '../app/browser_globals.js';
+import { sync_version_reload_banner_in_host } from './version_reload_banner_mount.js';
 
 /**
  * Renderar en vy utifrån namn och parametrar.
@@ -111,6 +112,7 @@ export async function render_view(view_name_to_render, params_to_render = {}, de
     if (is_quick) {
         await render_quick_view({
             view_root,
+            view_name: view_name_mut,
             current_view_component_instance,
             top_action_bar_instance,
             bottom_action_bar_container,
@@ -225,6 +227,10 @@ export async function render_view(view_name_to_render, params_to_render = {}, de
 
         if (notificationComponent?.append_global_message_areas_to) {
             notificationComponent.append_global_message_areas_to(null);
+        }
+
+        if (view_name_mut !== 'audit_overview') {
+            sync_version_reload_banner_in_host(view_init_root);
         }
 
     } catch (error) {

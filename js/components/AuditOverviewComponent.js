@@ -8,6 +8,16 @@ import {
     newer_rule_banner_dismissal_storage_key,
     should_show_newer_rule_banner
 } from '../logic/audit_overview_newer_rule_banner_dismissal.js';
+import { clear_main_view_content_except_global_notifications } from '../logic/app_dom.js';
+import {
+    build_critical_notice_banner,
+    build_critical_notice_banner_row,
+    build_version_reload_banner_row
+} from '../utils/critical_notice_banner_ui.js';
+import {
+    get_version_reload_prompt,
+    VERSION_RELOAD_PROMPT_EVENT
+} from '../logic/version_reload_prompt_state.js';
 import { version_greater_than } from '../utils/version_utils.js';
 import "./audit_overview_component.css";
 
@@ -39,6 +49,11 @@ export class AuditOverviewComponent {
         this.newerRuleAvailable = null;
         this._newerRuleCheckRequested = false;
         this._auditInfoComponent = null;
+        this._on_version_reload_prompt = () => {
+            if (this.root) {
+                this.render();
+            }
+        };
         this.handle_store_update = this.handle_store_update.bind(this);
     }
 
@@ -61,6 +76,11 @@ export class AuditOverviewComponent {
 
         if (!this.unsubscribe_from_store_function && typeof this.subscribe === 'function') {
             this.unsubscribe_from_store_function = this.subscribe(this.handle_store_update);
+        }
+
+        if (typeof document !== 'undefined') {
+            document.removeEventListener(VERSION_RELOAD_PROMPT_EVENT, this._on_version_reload_prompt);
+            document.addEventListener(VERSION_RELOAD_PROMPT_EVENT, this._on_version_reload_prompt);
         }
 
         // Den här komponenten är en singleton och kan återanvändas mellan olika granskningar.
@@ -154,7 +174,7 @@ export class AuditOverviewComponent {
 
     render() {
         const t = this.Translation.t;
-        this.root.innerHTML = '';
+        clear_main_view_content_except_global_notifications(this.root);
 
         const current_global_state = this.getState();
 
@@ -183,9 +203,14 @@ export class AuditOverviewComponent {
         plate_element.appendChild(this.Helpers.create_element('h1', { text_content: t('audit_overview_title') }));
 
         if (current_global_state.auditStatus !== 'in_progress') {
-            this.newerRuleAvailable = null;
-            this._newerRuleCheckRequested = false;
-        } else if (!this._newerRuleCheckRequested) {
+        this.newerRuleAvailable = null;
+        this._newerRuleCheckRequested = false;
+        this._on_version_reload_prompt = () => {
+            if (this.root) {
+                this.render();
+            }
+        };
+    } else if (!this._newerRuleCheckRequested) {
             this._newerRuleCheckRequested = true;
             get_rules()
                 .then((rules) => {
@@ -211,46 +236,47 @@ export class AuditOverviewComponent {
             && newer?.version
             && should_show_newer_rule_banner(newer.version, dismissed_version);
 
-        if (show_newer_banner) {
-            const banner = this.Helpers.create_element('div', {
-                class_name: 'audit-overview__newer-rule-banner',
-                attributes: { 'aria-live': 'polite' }
-            });
-            const row = this.Helpers.create_element('div', { class_name: 'audit-overview__newer-rule-banner__row' });
-            const left = this.Helpers.create_element('div', { class_name: 'audit-overview__newer-rule-banner__left' });
-            left.appendChild(this.Helpers.create_element('span', {
-                class_name: 'audit-overview__newer-rule-banner__lead',
-                text_content: t('audit_overview_newer_rule_available') + ' '
-            }));
-            const actions = this.Helpers.create_element('div', { class_name: 'audit-overview__newer-rule-banner__actions' });
-            const update_btn = this.Helpers.create_element('button', {
-                class_name: ['button', 'button-default', 'audit-overview__newer-rule-banner__btn'],
-                text_content: t('update_rulefile_button_with_version', { version: newer.version }),
-                attributes: { type: 'button' }
-            });
-            update_btn.addEventListener('click', () => {
-                this.router('update_rulefile', { ruleId: newer.ruleId, version: newer.version });
-            });
-            actions.appendChild(update_btn);
-            const later_btn = this.Helpers.create_element('button', {
-                class_name: ['button', 'button-secondary', 'audit-overview__newer-rule-banner__btn'],
-                text_content: t('audit_overview_newer_rule_update_later'),
-                attributes: {
-                    type: 'button',
-                    'aria-label': t('audit_overview_newer_rule_update_later_aria')
-                }
-            });
-            later_btn.addEventListener('click', () => {
-                if (typeof sessionStorage !== 'undefined' && newer?.version) {
-                    sessionStorage.setItem(dismissal_key, newer.version);
-                }
-                this.render();
-            });
-            actions.appendChild(later_btn);
-            left.appendChild(actions);
-            row.appendChild(left);
-            banner.appendChild(row);
-            plate_element.appendChild(banner);
+        if (show_newer_banner || get_version_reload_prompt()) {
+            const banner_rows = [];
+
+            const version_prompt = get_version_reload_prompt();
+            if (version_prompt) {
+                banner_rows.push(build_version_reload_banner_row(this.Helpers, {
+                    message: version_prompt.message,
+                    reload_label: t('reload_page'),
+                    on_reload: () => {
+                        void version_prompt.on_reload();
+                    }
+                }));
+            }
+
+            if (show_newer_banner) {
+                banner_rows.push(build_critical_notice_banner_row(this.Helpers, {
+                    lead_text: t('audit_overview_newer_rule_available') + ' ',
+                    buttons: [
+                        {
+                            text: t('update_rulefile_button_with_version', { version: newer.version }),
+                            class_names: ['button', 'button-default', 'audit-overview__newer-rule-banner__btn'],
+                            on_click: () => {
+                                this.router('update_rulefile', { ruleId: newer.ruleId, version: newer.version });
+                            }
+                        },
+                        {
+                            text: t('audit_overview_newer_rule_update_later'),
+                            class_names: ['button', 'button-secondary', 'audit-overview__newer-rule-banner__btn'],
+                            aria_label: t('audit_overview_newer_rule_update_later_aria'),
+                            on_click: () => {
+                                if (typeof sessionStorage !== 'undefined' && newer?.version) {
+                                    sessionStorage.setItem(dismissal_key, newer.version);
+                                }
+                                this.render();
+                            }
+                        }
+                    ]
+                }));
+            }
+
+            plate_element.appendChild(build_critical_notice_banner(this.Helpers, banner_rows));
         }
 
         const dashboard_container = this.Helpers.create_element('div', { class_name: 'overview-dashboard' });
@@ -352,6 +378,9 @@ export class AuditOverviewComponent {
         }
         this._auditInfoComponent?.destroy();
         this._auditInfoComponent = null;
+        if (typeof document !== 'undefined') {
+            document.removeEventListener(VERSION_RELOAD_PROMPT_EVENT, this._on_version_reload_prompt);
+        }
         ScoreAnalysisComponent.destroy();
 
         this._sampleTypeChartComponent?.destroy();

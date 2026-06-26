@@ -29,15 +29,6 @@ jest.unstable_mockModule('puppeteer', () => ({
     },
 }));
 
-jest.unstable_mockModule('../../server/services/pdf_merge_service.js', () => ({
-    merge_pdf_buffers: async (buffers: Buffer[]) => {
-        if (buffers.length === 1) {
-            return buffers[0]!;
-        }
-        return Buffer.from('%PDF-1.4-merged');
-    },
-}));
-
 const { generate_pdf_from_html, generate_pdf_from_html_chunks } = await import(
     '../../server/services/pdf_generation_service.ts'
 );
@@ -75,15 +66,25 @@ describe('pdf_generation_service', () => {
         expect(buffer.subarray(0, 4).toString('utf8')).toBe('%PDF');
     });
 
-    test('generate_pdf_from_html_chunks renderar varje del och slår ihop', async () => {
+    test('generate_pdf_from_html_chunks slår ihop HTML och renderar en taggad PDF', async () => {
         const chunks = [
-            '<!DOCTYPE html><html lang="sv"><body><h1>Del 1</h1></body></html>',
-            '<!DOCTYPE html><html lang="sv"><body><h2>Del 2</h2></body></html>',
+            '<!DOCTYPE html><html lang="sv"><body><main><h1>Del 1</h1></main></body></html>',
+            '<!DOCTYPE html><html lang="sv"><body><main><h2>Del 2</h2></main></body></html>',
         ];
         const buffer = await generate_pdf_from_html_chunks(chunks);
 
-        expect(set_content_mock).toHaveBeenCalledTimes(2);
-        expect(print_to_pdf_mock).toHaveBeenCalledTimes(2);
+        expect(set_content_mock).toHaveBeenCalledTimes(1);
+        const merged_html = set_content_mock.mock.calls[0]?.[0] as string;
+        expect(merged_html).toContain('<h1>Del 1</h1>');
+        expect(merged_html).toContain('<h2>Del 2</h2>');
+        expect(print_to_pdf_mock).toHaveBeenCalledTimes(1);
+        expect(print_to_pdf_mock).toHaveBeenCalledWith(
+            'Page.printToPDF',
+            expect.objectContaining({
+                generateTaggedPDF: true,
+                generateDocumentOutline: true,
+            })
+        );
         expect(buffer.subarray(0, 4).toString('utf8')).toBe('%PDF');
     });
 });

@@ -46,6 +46,12 @@
     min-height: 2rem;
 }
 
+.audit-overview__newer-rule-banner__row--stacked {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid color-mix(in srgb, #DC7D0A 35%, transparent);
+}
+
 [data-theme="dark"] .audit-overview__newer-rule-banner {
     background: #DC7D0A;
     color: #000000;

@@ -8,6 +8,7 @@ export function is_same_view_quick_render({ prev_view, view_name, prev_params_js
 
 export async function render_quick_view({
     view_root,
+    view_name,
     current_view_component_instance,
     top_action_bar_instance,
     bottom_action_bar_container,
@@ -28,6 +29,10 @@ export async function render_quick_view({
     }
     if (notificationComponent?.append_global_message_areas_to) {
         notificationComponent.append_global_message_areas_to(null);
+    }
+    if (view_name !== 'audit_overview') {
+        const { sync_version_reload_banner_in_host } = await import('../logic/version_reload_banner_mount.js');
+        sync_version_reload_banner_in_host(view_root);
     }
     const skip_target = resolve_skip_target({ view_root }) || view_root;
     ensure_skip_link_target(skip_target);

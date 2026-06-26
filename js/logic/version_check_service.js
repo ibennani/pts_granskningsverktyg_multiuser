@@ -6,7 +6,7 @@
 
 import { build_reload_url } from '../utils/build_reload_url.js';
 import { hard_reload_page } from '../utils/hard_reload_page.js';
-import { app_runtime_refs } from '../utils/app_runtime_refs.js';
+import { set_version_reload_prompt } from './version_reload_prompt_state.js';
 
 export { build_reload_url };
 
@@ -130,18 +130,15 @@ export function init_version_check_service() {
             // ignoreras medvetet
         }
         const msg = window.Translation?.t?.('new_version_available') || 'En ny version är tillgänglig.';
-        const label = window.Translation?.t?.('reload_page') || 'Ladda om sidan';
-        if (app_runtime_refs.notification_component?.show_global_critical_message_with_action) {
-            app_runtime_refs.notification_component.show_global_critical_message_with_action(msg, 'warning', {
-                label,
-                callback: () => {
-                    void hard_reload_page({
-                        save_audit_backup: true,
-                        abort_when_offline: true
-                    });
-                }
-            });
-        }
+        set_version_reload_prompt({
+            message: msg,
+            on_reload: () => {
+                void hard_reload_page({
+                    save_audit_backup: true,
+                    abort_when_offline: true
+                });
+            }
+        });
     }
 
     function schedule_next_check() {

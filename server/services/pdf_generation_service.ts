@@ -2,8 +2,8 @@
  * @fileoverview Genererar taggade PDF:er med bokmärken (rubriknivå 1–3) från semantisk HTML via Puppeteer/Chromium.
  */
 import puppeteer, { type Browser, type Page } from 'puppeteer';
+import { merge_pdf_export_html_chunks } from '../../shared/pdf/merge_pdf_export_html_chunks.js';
 import { PUPPETEER_LAUNCH_ARGS } from './page_screenshot_stealth.js';
-import { merge_pdf_buffers } from './pdf_merge_service.js';
 
 export interface GeneratePdfInput {
     htmlContent: string;
@@ -113,29 +113,10 @@ export async function generate_pdf_from_html(input: GeneratePdfInput): Promise<B
 }
 
 /**
- * Renderar flera HTML-delar i samma Chromium-session och slår ihop till en PDF.
- * Används för bilaga 3 med många skärmbilder.
+ * Slår ihop HTML-delar till ett dokument och renderar en taggad PDF.
+ * (pdf-lib-sammanslagning tar bort tillgänglighetstaggar — därför HTML-merge + en printToPDF.)
  */
 export async function generate_pdf_from_html_chunks(html_chunks: string[]): Promise<Buffer> {
-    if (html_chunks.length === 0) {
-        throw new Error('htmlChunks får inte vara tom');
-    }
-    if (html_chunks.length === 1) {
-        return generate_pdf_from_html({ htmlContent: html_chunks[0]! });
-    }
-
-    let browser: Browser | undefined;
-    try {
-        browser = await launch_pdf_browser();
-        const page = await browser.newPage();
-        const pdf_buffers: Buffer[] = [];
-        for (const html_chunk of html_chunks) {
-            pdf_buffers.push(await render_single_html_to_pdf(page, html_chunk));
-        }
-        return merge_pdf_buffers(pdf_buffers);
-    } finally {
-        if (browser) {
-            await browser.close();
-        }
-    }
+    const merged_html = merge_pdf_export_html_chunks(html_chunks);
+    return generate_pdf_from_html({ htmlContent: merged_html });
 }

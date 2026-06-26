@@ -20,6 +20,7 @@ import { get_current_user_name_window, get_restore_position_via_hook } from '../
 import { is_debug_modal_scroll } from '../app/runtime_flags.js';
 import { init_same_user_tab_field_sync_listener } from './same_user_tab_field_sync.js';
 import { init_audit_sync_lifecycle } from './audit_sync_lifecycle.js';
+import { init_version_reload_banner_live_sync } from './version_reload_banner_mount.js';
 
 /** Bygg-info som läses in dynamiskt i webbläsaren. */
 interface BuildInfoPayload {
@@ -356,6 +357,7 @@ export async function start_normal_session(deps: StartNormalSessionDeps): Promis
         MarkdownToolbar.init();
     }
     init_version_check_service();
+    init_version_reload_banner_live_sync();
     const rulefile_view_poll_instance = init_rulefile_view_poll_service({ getState, dispatch, StoreActionTypes });
     init_audit_view_poll_service({ getState, dispatch, StoreActionTypes });
     const same_user_tab_field_sync_disconnect = init_same_user_tab_field_sync_listener({

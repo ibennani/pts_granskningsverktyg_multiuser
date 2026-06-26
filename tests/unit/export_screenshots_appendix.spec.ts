@@ -113,7 +113,8 @@ describe('export_report_filename screenshots appendix', () => {
 });
 
 describe('export_report_html_screenshots_appendix', () => {
-    test('build_screenshots_appendix_body_html renderar h1, h2 och img', () => {
+    test('build_screenshots_appendix_body_html renderar endast h1, h2 och img', () => {
+        const audit = { auditMetadata: { actorName: 'PTS AB', caseNumber: '2024-123' } };
         const items = [
             {
                 export_filename: '047_1_WEBB_1_2026-04-11_26-11111.png',
@@ -128,14 +129,17 @@ describe('export_report_html_screenshots_appendix', () => {
                 pdf_data_uri: 'data:image/jpeg;base64,/9j/4AAQ',
             },
         ];
-        const html = build_screenshots_appendix_body_html(items, t);
-        expect(html).toContain('<h1>Bilaga 3 Skärmbilder</h1>');
+        const html = build_screenshots_appendix_body_html(items, audit, t);
+        expect(html).toContain('<h1>2024-123 PTS AB</h1>');
         expect(html).toContain('<h2>047_1_WEBB_1_2026-04-11_26-11111.png</h2>');
+        expect(html).toContain('alt="047_1_WEBB_1_2026-04-11_26-11111.png"');
         expect(html).toContain('data:image/jpeg;base64,');
-        expect(html).toContain('screenshots-appendix__item');
+        expect(html).not.toContain('<main');
+        expect(html).not.toContain('<section');
+        expect(html).not.toContain('<figure');
     });
 
-    test('build_screenshots_appendix_pdf_document_chunks delar upp titel och bilder', () => {
+    test('build_screenshots_appendix_pdf_document_chunks delar upp h1 och h2-bildpar', () => {
         const items = [
             {
                 export_filename: 'a.png',
@@ -180,10 +184,13 @@ describe('export_report_html_screenshots_appendix', () => {
             t
         );
         expect(chunks.length).toBe(3);
-        expect(chunks[0]).toContain('<h1>Bilaga 3 Skärmbilder</h1>');
+        expect(chunks[0]).toContain('<h1>NetOnNet</h1>');
+        expect(chunks[0]).not.toContain('<main');
         expect(chunks[1]).toContain('<h2>a.png</h2>');
+        expect(chunks[1]).toContain('alt="a.png"');
         expect(chunks[1]).toContain('<h2>b.png</h2>');
         expect(chunks[2]).toContain('<h2>c.png</h2>');
+        expect(chunks[2]).toContain('alt="c.png"');
     });
 });
 

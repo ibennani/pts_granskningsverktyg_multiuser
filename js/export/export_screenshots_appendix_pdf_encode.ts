@@ -13,6 +13,7 @@ import {
     type ExportPdfHtmlTooLargeMessageKey,
 } from './export_pdf_html_size_error.js';
 import {
+    build_screenshots_appendix_pdf_document,
     build_screenshots_appendix_pdf_document_chunks,
     type ExportScreenshotsAppendixHtmlT,
 } from './export_report_html_screenshots_appendix.js';
@@ -133,6 +134,17 @@ export async function build_screenshots_appendix_pdf_html_chunks_within_limit(
 
     for (const jpeg_quality of PDF_SCREENSHOT_JPEG_QUALITY_STEPS) {
         const pdf_items = await prepare_screenshots_appendix_items_for_pdf_html(items, jpeg_quality);
+        const single_html = build_screenshots_appendix_pdf_document(current_audit, pdf_items, t);
+        try {
+            assert_pdf_export_html_within_limit(single_html, message_key);
+            return [single_html];
+        } catch (error: unknown) {
+            if (!is_export_pdf_html_too_large_error(error)) {
+                throw error;
+            }
+            last_too_large = error;
+        }
+
         const html_chunks = build_screenshots_appendix_pdf_document_chunks(current_audit, pdf_items, t);
         try {
             assert_all_chunks_within_limit(html_chunks, message_key);

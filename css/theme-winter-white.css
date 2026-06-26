@@ -451,7 +451,6 @@ html[data-theme="winter-white"] :focus-visible {
 [data-theme="winter-white"] .button-primary:hover,
 [data-theme="winter-white"] .button-primary:focus {
     background-color: var(--button-primary-hover-bg);
-    transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
@@ -465,18 +464,26 @@ html[data-theme="winter-white"] :focus-visible {
 }
 
 [data-theme="winter-white"] .button-success {
+    background-color: var(--button-success-bg);
+    color: var(--button-success-text);
     border: var(--ww-interactive-border-width) solid var(--button-success-border);
 }
 
 [data-theme="winter-white"] .button-danger {
+    background-color: var(--button-danger-bg);
+    color: var(--button-danger-text);
     border: var(--ww-interactive-border-width) solid var(--button-danger-border);
 }
 
 [data-theme="winter-white"] .button-warning {
+    background-color: var(--button-warning-bg);
+    color: var(--button-warning-text);
     border: var(--ww-interactive-border-width) solid var(--button-warning-border);
 }
 
 [data-theme="winter-white"] .button-info {
+    background-color: var(--button-info-bg);
+    color: var(--button-info-text);
     border: var(--ww-interactive-border-width) solid var(--button-info-border);
 }
 
@@ -492,14 +499,23 @@ html[data-theme="winter-white"] :focus-visible {
 }
 
 [data-theme="winter-white"] .button-success:hover,
-[data-theme="winter-white"] .button-success:focus,
+[data-theme="winter-white"] .button-success:focus {
+    background-color: var(--button-success-hover-bg);
+}
+
 [data-theme="winter-white"] .button-danger:hover,
-[data-theme="winter-white"] .button-danger:focus,
+[data-theme="winter-white"] .button-danger:focus {
+    background-color: var(--button-danger-hover-bg);
+}
+
 [data-theme="winter-white"] .button-warning:hover,
-[data-theme="winter-white"] .button-warning:focus,
+[data-theme="winter-white"] .button-warning:focus {
+    background-color: var(--button-warning-hover-bg);
+}
+
 [data-theme="winter-white"] .button-info:hover,
 [data-theme="winter-white"] .button-info:focus {
-    transform: translateY(-1px);
+    background-color: var(--button-info-hover-bg);
 }
 
 /* --- Kravsidebar --- */
@@ -861,89 +877,40 @@ html[data-theme="winter-white"] .app-right-sidebar-inner:has(.requirement-audit-
     color: var(--ww-text-primary);
 }
 
-/* --- Tabell --- */
+/* --- Tabell – endast färger; layout enligt generic_table_component.css (Ljust) --- */
 [data-theme="winter-white"] .generic-table-wrapper {
-    border: 1px solid var(--ww-border-default);
-    border-radius: 10px;
+    border-color: var(--ww-border-default);
     background-color: var(--ww-bg-panel);
-    overflow: hidden;
 }
 
 [data-theme="winter-white"] .generic-table thead tr {
-    background-color: var(--ww-bg-elevated);
-    border-bottom: 1px solid var(--ww-border-default);
+    background: linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--primary-color) 8%, var(--input-background-color)),
+        color-mix(in srgb, var(--primary-color) 4%, var(--input-background-color))
+    );
+    border-bottom-color: color-mix(in srgb, var(--border-color) 50%, transparent);
 }
 
 [data-theme="winter-white"] .generic-table th,
 [data-theme="winter-white"] .generic-table thead th {
-    font-size: 0.6875rem;
-    font-weight: 600;
     color: var(--ww-text-secondary);
-    padding: 0.4rem 0.65rem;
-    border-color: var(--ww-border-subtle);
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
 }
 
 [data-theme="winter-white"] .generic-table tbody tr {
-    border-bottom: 1px solid color-mix(in srgb, var(--ww-border-subtle) 45%, transparent);
+    border-bottom-color: color-mix(in srgb, var(--ww-border-subtle) 45%, transparent);
 }
 
-[data-theme="winter-white"] .generic-table tbody tr:last-child {
-    border-bottom: none;
-}
-
-[data-theme="winter-white"] .generic-table tbody tr td {
-    padding: 0.35rem 0.65rem;
-    border-color: var(--ww-border-subtle);
-    background-color: var(--ww-table-row-bg);
-    font-size: 0.8125rem;
-    line-height: 1.35;
-    transition: background-color 0.15s ease;
-}
-
-[data-theme="winter-white"] .generic-table tbody tr:nth-child(even) td {
-    background-color: var(--ww-table-row-zebra-bg);
-}
-
-[data-theme="winter-white"] .generic-table tbody tr:hover td {
+[data-theme="winter-white"] .generic-table tbody tr:hover {
     background-color: var(--ww-table-row-hover-bg);
-}
-
-[data-theme="winter-white"] .generic-table .button {
-    padding: 0.3rem 0.6rem;
-    font-size: 0.8125rem;
-    border-radius: 8px;
-}
-
-[data-theme="winter-white"] .generic-table .generic-table-action-cell {
-    gap: 0.2rem;
-}
-
-[data-theme="winter-white"] .generic-table td.generic-table-col-actions {
-    padding-left: 0.35rem;
-    padding-right: 0.35rem;
 }
 
 [data-theme="winter-white"] .generic-table-header-sort-btn {
     color: var(--ww-text-secondary);
-    border: var(--ww-interactive-border-width) solid transparent;
-    border-radius: 8px;
-    padding: 0.25rem 0.5rem;
-    transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
 }
 
 [data-theme="winter-white"] .generic-table-header-sort-btn:hover {
     color: var(--ww-text-primary);
-    border-color: var(--ww-interactive-border);
-    background-color: var(--ww-interactive-bg);
-}
-
-[data-theme="winter-white"] .generic-table-header-sort-btn:focus-visible {
-    border-color: var(--ww-interactive-border);
-    box-shadow: var(--ww-interactive-shadow);
-    outline: var(--ww-focus-ring-width) var(--ww-focus-ring-style) var(--ww-focus-color);
-    outline-offset: var(--ww-focus-ring-outline-offset);
 }
 
 /* --- Dashboard / översikt --- */

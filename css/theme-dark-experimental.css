@@ -447,7 +447,6 @@ html[data-theme="dark-experimental"] :focus-visible {
 [data-theme="dark-experimental"] .button-primary:hover,
 [data-theme="dark-experimental"] .button-primary:focus {
     background-color: var(--button-primary-hover-bg);
-    transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
@@ -460,18 +459,26 @@ html[data-theme="dark-experimental"] :focus-visible {
 }
 
 [data-theme="dark-experimental"] .button-success {
+    background-color: var(--button-success-bg);
+    color: var(--button-success-text);
     border: var(--de-interactive-border-width) solid var(--button-success-border);
 }
 
 [data-theme="dark-experimental"] .button-danger {
+    background-color: var(--button-danger-bg);
+    color: var(--button-danger-text);
     border: var(--de-interactive-border-width) solid var(--button-danger-border);
 }
 
 [data-theme="dark-experimental"] .button-warning {
+    background-color: var(--button-warning-bg);
+    color: var(--button-warning-text);
     border: var(--de-interactive-border-width) solid var(--button-warning-border);
 }
 
 [data-theme="dark-experimental"] .button-info {
+    background-color: var(--button-info-bg);
+    color: var(--button-info-text);
     border: var(--de-interactive-border-width) solid var(--button-info-border);
 }
 
@@ -486,14 +493,23 @@ html[data-theme="dark-experimental"] :focus-visible {
 }
 
 [data-theme="dark-experimental"] .button-success:hover,
-[data-theme="dark-experimental"] .button-success:focus,
+[data-theme="dark-experimental"] .button-success:focus {
+    background-color: var(--button-success-hover-bg);
+}
+
 [data-theme="dark-experimental"] .button-danger:hover,
-[data-theme="dark-experimental"] .button-danger:focus,
+[data-theme="dark-experimental"] .button-danger:focus {
+    background-color: var(--button-danger-hover-bg);
+}
+
 [data-theme="dark-experimental"] .button-warning:hover,
-[data-theme="dark-experimental"] .button-warning:focus,
+[data-theme="dark-experimental"] .button-warning:focus {
+    background-color: var(--button-warning-hover-bg);
+}
+
 [data-theme="dark-experimental"] .button-info:hover,
 [data-theme="dark-experimental"] .button-info:focus {
-    transform: translateY(-1px);
+    background-color: var(--button-info-hover-bg);
 }
 
 /* --- Kravsidebar --- */
@@ -848,89 +864,40 @@ html[data-theme="dark-experimental"] .app-right-sidebar-inner:has(.requirement-a
     color: var(--de-text-primary);
 }
 
-/* --- Tabell --- */
+/* --- Tabell – endast färger; layout enligt generic_table_component.css (Ljust) --- */
 [data-theme="dark-experimental"] .generic-table-wrapper {
-    border: 1px solid var(--de-border-default);
-    border-radius: 10px;
+    border-color: var(--de-border-default);
     background-color: var(--de-bg-panel);
-    overflow: hidden;
 }
 
 [data-theme="dark-experimental"] .generic-table thead tr {
-    background-color: var(--de-bg-elevated);
-    border-bottom: 1px solid var(--de-border-default);
+    background: linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--primary-color) 8%, var(--input-background-color)),
+        color-mix(in srgb, var(--primary-color) 4%, var(--input-background-color))
+    );
+    border-bottom-color: color-mix(in srgb, var(--border-color) 50%, transparent);
 }
 
 [data-theme="dark-experimental"] .generic-table th,
 [data-theme="dark-experimental"] .generic-table thead th {
-    font-size: 0.6875rem;
-    font-weight: 600;
     color: var(--de-text-secondary);
-    padding: 0.4rem 0.65rem;
-    border-color: var(--de-border-subtle);
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
 }
 
 [data-theme="dark-experimental"] .generic-table tbody tr {
-    border-bottom: 1px solid color-mix(in srgb, var(--de-border-subtle) 45%, transparent);
+    border-bottom-color: color-mix(in srgb, var(--de-border-subtle) 45%, transparent);
 }
 
-[data-theme="dark-experimental"] .generic-table tbody tr:last-child {
-    border-bottom: none;
-}
-
-[data-theme="dark-experimental"] .generic-table tbody tr td {
-    padding: 0.35rem 0.65rem;
-    border-color: var(--de-border-subtle);
-    background-color: var(--de-table-row-bg);
-    font-size: 0.8125rem;
-    line-height: 1.35;
-    transition: background-color 0.15s ease;
-}
-
-[data-theme="dark-experimental"] .generic-table tbody tr:nth-child(even) td {
-    background-color: var(--de-table-row-zebra-bg);
-}
-
-[data-theme="dark-experimental"] .generic-table tbody tr:hover td {
+[data-theme="dark-experimental"] .generic-table tbody tr:hover {
     background-color: var(--de-table-row-hover-bg);
-}
-
-[data-theme="dark-experimental"] .generic-table .button {
-    padding: 0.3rem 0.6rem;
-    font-size: 0.8125rem;
-    border-radius: 8px;
-}
-
-[data-theme="dark-experimental"] .generic-table .generic-table-action-cell {
-    gap: 0.2rem;
-}
-
-[data-theme="dark-experimental"] .generic-table td.generic-table-col-actions {
-    padding-left: 0.35rem;
-    padding-right: 0.35rem;
 }
 
 [data-theme="dark-experimental"] .generic-table-header-sort-btn {
     color: var(--de-text-secondary);
-    border: var(--de-interactive-border-width) solid transparent;
-    border-radius: 8px;
-    padding: 0.25rem 0.5rem;
-    transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
 }
 
 [data-theme="dark-experimental"] .generic-table-header-sort-btn:hover {
     color: var(--de-text-primary);
-    border-color: var(--de-interactive-border);
-    background-color: var(--de-interactive-bg);
-}
-
-[data-theme="dark-experimental"] .generic-table-header-sort-btn:focus-visible {
-    border-color: var(--de-interactive-border);
-    box-shadow: var(--de-interactive-shadow);
-    outline: var(--de-focus-ring-width) var(--de-focus-ring-style) var(--de-focus-color);
-    outline-offset: var(--de-focus-ring-outline-offset);
 }
 
 /* --- Dashboard / översikt --- */
