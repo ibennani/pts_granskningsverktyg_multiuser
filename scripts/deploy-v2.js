@@ -84,6 +84,7 @@ async function main() {
         await scpDir(serverDir, `${remotePath}/server`);
         await scpFile(join(projectRoot, 'scripts', 'health-check-and-restart.sh'), `${remotePath}/scripts/health-check-and-restart.sh`);
         await scpFile(join(projectRoot, 'scripts', 'healthcheck-watchdog.js'), `${remotePath}/scripts/healthcheck-watchdog.js`);
+        await scpFile(join(projectRoot, 'scripts', 'verify_pdf_generation.ts'), `${remotePath}/scripts/verify_pdf_generation.ts`);
         await scpFile(join(projectRoot, 'scripts', 'cleanup-docker-remote.sh'), `${remotePath}/scripts/cleanup-docker-remote.sh`);
         await sshOrRun(`chmod +x ${remotePath}/scripts/health-check-and-restart.sh ${remotePath}/scripts/cleanup-docker-remote.sh`, ['ssh', [host, `chmod +x ${remotePath}/scripts/health-check-and-restart.sh ${remotePath}/scripts/cleanup-docker-remote.sh`]], { cwd: false });
         await scpFile(join(projectRoot, 'docker-compose.yml'), `${remotePath}/docker-compose.yml`);
@@ -155,8 +156,8 @@ async function main() {
             'npx pm2 save 2>/dev/null || true'
         ].join(' && ');
         await sshOrRun(
-            `npm install --omit=dev --ignore-scripts && npm run db:migrate && ${pm2Start}`,
-            ['ssh', [host, `cd ${remotePath} && npm install --omit=dev --ignore-scripts && npm run db:migrate && ${pm2Start}`]]
+            `npm install --omit=dev --ignore-scripts && npx puppeteer browsers install chrome && npm run db:migrate && ${pm2Start}`,
+            ['ssh', [host, `cd ${remotePath} && npm install --omit=dev --ignore-scripts && npx puppeteer browsers install chrome && npm run db:migrate && ${pm2Start}`]]
         );
 
         console.log('[deploy] Verifierar att backend svarar på /api/health...');

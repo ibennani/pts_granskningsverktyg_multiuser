@@ -93,6 +93,7 @@ async function main() {
         await putDirectory(serverDir, `${remotePath}/server`);
         await putFile(join(projectRoot, 'scripts', 'health-check-and-restart.sh'), `${remotePath}/scripts/health-check-and-restart.sh`);
         await putFile(join(projectRoot, 'scripts', 'healthcheck-watchdog.js'), `${remotePath}/scripts/healthcheck-watchdog.js`);
+        await putFile(join(projectRoot, 'scripts', 'verify_pdf_generation.ts'), `${remotePath}/scripts/verify_pdf_generation.ts`);
         await putFile(join(projectRoot, 'scripts', 'cleanup-docker-remote.sh'), `${remotePath}/scripts/cleanup-docker-remote.sh`);
         await exec(
             `chmod +x ${remotePath}/scripts/health-check-and-restart.sh ${remotePath}/scripts/cleanup-docker-remote.sh`,
@@ -142,7 +143,13 @@ async function main() {
             `npx pm2 start npm --name ${PM2_NAME} -- run dev:server`,
             'npx pm2 save 2>/dev/null || true'
         ].join(' && ');
-        await exec(`npm install --omit=dev --ignore-scripts && npm run db:migrate && ${pm2Start}`);
+        const server_setup = [
+            'npm install --omit=dev --ignore-scripts',
+            'npx puppeteer browsers install chrome',
+            'npm run db:migrate',
+            pm2Start
+        ].join(' && ');
+        await exec(server_setup);
 
         console.log(`[deploy:test-server] Verifierar backend på port ${API_PORT}...`);
         const rp_esc = remotePath.replace(/'/g, "'\\''");
@@ -154,6 +161,14 @@ async function main() {
             'exit 0'
         ].join('; ');
         await exec(health_verify, { cwd: false });
+
+        console.log('[deploy:test-server] Verifierar PDF-export (Puppeteer/Chrome)...');
+        try {
+            await exec(`cd '${rp_esc}' && npx tsx scripts/verify_pdf_generation.ts`, { cwd: false });
+        } catch (err) {
+            console.warn('[deploy:test-server] VARNING: PDF-verifiering misslyckades:', err.message);
+            console.warn('[deploy:test-server] Kör manuellt på servern: npx puppeteer browsers install chrome');
+        }
 
         const nginxConfigPath = process.env.DEPLOY_NGINX_CONF || '/etc/nginx/conf.d/ux-granskning.conf';
         const nginxCopyAndReload = `cp ${remotePath}/nginx-ux-granskning.conf ${nginxConfigPath} && nginx -t && systemctl reload nginx`;
