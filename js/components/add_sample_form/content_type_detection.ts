@@ -15,6 +15,10 @@ import {
     get_selected_content_type_ids,
     sync_content_type_selection_from_dom,
 } from './content_type_accordion.js';
+import {
+    clear_temporary_live_region,
+    update_text_with_temporary_live_region,
+} from '../../utils/temporary_live_text_update.js';
 
 export type ContentTypeDetectionComponentLike = {
     url_input: HTMLInputElement | null;
@@ -68,11 +72,22 @@ function set_detection_in_progress(
 ): void {
     component.content_type_detection_in_progress = in_progress;
     const btn = component.content_type_analyze_btn;
-    if (btn) {
-        btn.textContent = in_progress
-            ? component.get_t_internally()('content_type_analyze_capturing')
-            : component.get_t_internally()('content_type_analyze_button');
+    if (!btn) return;
+
+    const t = component.get_t_internally();
+    const label_el = btn.querySelector('.content-type-analyze-button__label');
+    if (!(label_el instanceof HTMLElement)) return;
+
+    if (in_progress) {
+        update_text_with_temporary_live_region(label_el, t('content_type_analyze_capturing'));
+        return;
     }
+
+    update_text_with_temporary_live_region(
+        label_el,
+        t('content_type_analyze_button'),
+        () => clear_temporary_live_region(label_el)
+    );
 }
 
 export function apply_detected_content_types(

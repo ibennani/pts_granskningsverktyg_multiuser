@@ -10,6 +10,7 @@ import { get_requirement_public_key, resolve_requirement_map_key, find_requireme
 import { RequirementLookup } from '../logic/requirement_lookup.js';
 import { get_current_view_name } from '../app/browser_globals.js';
 import { is_debug_problems_update } from '../app/runtime_flags.js';
+import { show_temporary_button_label_feedback } from '../utils/temporary_live_text_update.js';
 
 export class AuditProblemsViewComponent {
     constructor() {
@@ -253,13 +254,12 @@ export class AuditProblemsViewComponent {
                 await navigator.clipboard.writeText(plain_content);
             }
 
-            const original_html = btn.innerHTML;
-            btn.innerHTML = `<span>${this.Helpers.escape_html(this.Translation.t('audit_problems_copied_button'))}</span>`;
-            btn.classList.add('audit-problem-copy-btn--copied');
-            setTimeout(() => {
-                btn.innerHTML = original_html;
-                btn.classList.remove('audit-problem-copy-btn--copied');
-            }, 15000);
+            show_temporary_button_label_feedback(
+                btn,
+                this.Translation.t('audit_problems_copied_button'),
+                15000,
+                { copied_class_name: 'audit-problem-copy-btn--copied' }
+            );
 
             if (this.NotificationComponent?.show_global_message) {
                 this.NotificationComponent.show_global_message(
@@ -327,13 +327,12 @@ export class AuditProblemsViewComponent {
                 await navigator.clipboard.writeText(combined_plain);
             }
 
-            const original_html = btn.innerHTML;
-            btn.innerHTML = `<span>${this.Helpers.escape_html(this.Translation.t('audit_problems_copied_button'))}</span>`;
-            btn.classList.add('audit-problem-copy-btn--copied');
-            setTimeout(() => {
-                btn.innerHTML = original_html;
-                btn.classList.remove('audit-problem-copy-btn--copied');
-            }, 15000);
+            show_temporary_button_label_feedback(
+                btn,
+                this.Translation.t('audit_problems_copied_button'),
+                15000,
+                { copied_class_name: 'audit-problem-copy-btn--copied' }
+            );
 
             if (this.NotificationComponent?.show_global_message) {
                 this.NotificationComponent.show_global_message(

@@ -4,6 +4,10 @@
 
 import { create_password_reset_code } from '../../api/client.js';
 import { app_runtime_refs } from '../../utils/app_runtime_refs.js';
+import {
+    clear_temporary_live_region,
+    update_text_with_temporary_live_region,
+} from '../../utils/temporary_live_text_update.js';
 
 /**
  * @param {object} user
@@ -81,9 +85,13 @@ export function open_reset_code_modal_for_user(user, deps, options = {}) {
             let current_expires_at = null;
             const copy_btn = Helpers.create_element('button', {
                 class_name: ['button', 'button-primary', 'manage-users-copy-button'],
-                text_content: t('manage_users_copy_code_button'),
                 attributes: { type: 'button' }
             });
+            const copy_label_span = Helpers.create_element('span', {
+                class_name: 'manage-users-copy-button__label',
+                text_content: t('manage_users_copy_code_button')
+            });
+            copy_btn.appendChild(copy_label_span);
 
             const copy_info = Helpers.create_element('p', {
                 class_name: 'manage-users-copy-info'
@@ -126,7 +134,10 @@ export function open_reset_code_modal_for_user(user, deps, options = {}) {
                         document.execCommand('copy');
                         document.body.removeChild(textarea);
                     }
-                    copy_btn.textContent = t('manage_users_copy_code_button_copied');
+                    update_text_with_temporary_live_region(
+                        copy_label_span,
+                        t('manage_users_copy_code_button_copied')
+                    );
                     copy_info.textContent = t('manage_users_copy_code_button_copied');
                     deps.NotificationComponent?.show_global_message?.(
                         t('manage_users_copy_code_button_copied'),
@@ -187,7 +198,11 @@ export function open_reset_code_modal_for_user(user, deps, options = {}) {
 
                     code_container.appendChild(info);
                     code_container.appendChild(list);
-                    copy_btn.textContent = t('manage_users_copy_code_button');
+                    update_text_with_temporary_live_region(
+                        copy_label_span,
+                        t('manage_users_copy_code_button'),
+                        () => clear_temporary_live_region(copy_label_span)
+                    );
                     deps.NotificationComponent?.show_global_message?.(t('manage_users_password_code_created'), 'success');
                 } catch (err) {
                     const msg = err?.message || t('manage_users_password_code_error');

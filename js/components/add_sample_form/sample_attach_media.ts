@@ -10,6 +10,10 @@ import {
     create_url_screenshot_live_region,
     set_sample_url_screenshot_live_status,
 } from './sample_url_screenshot_aria_status.js';
+import {
+    clear_temporary_live_region,
+    update_text_with_temporary_live_region,
+} from '../../utils/temporary_live_text_update.js';
 
 type AttachedMediaState = Parameters<typeof collect_attached_media_filenames>[0] & {
     auditId?: string | null;
@@ -135,15 +139,23 @@ export function update_sample_attach_media_button(
     if (!btn) return;
     const t = component.get_t_internally();
     const filenames = component.sample_attached_media_filenames;
-    const attach_btn_label = get_attach_button_label(
-        t,
-        filenames.length,
-        Boolean(component.sample_url_screenshot_in_progress)
-    );
+    const in_progress = Boolean(component.sample_url_screenshot_in_progress);
+    const attach_btn_label = get_attach_button_label(t, filenames.length, in_progress);
     const attach_aria_label = `${attach_btn_label} ${t('attach_media_aria_label_for')} ${t('sample_screenshot_section_label')}`;
     btn.setAttribute('aria-label', attach_aria_label);
     const text_span = btn.querySelector('.attach-media-button-label');
-    if (text_span) {
+    if (!(text_span instanceof HTMLElement)) return;
+
+    const was_in_progress = btn.getAttribute('data-screenshot-capturing') === 'true';
+    if (in_progress && !was_in_progress) {
+        btn.setAttribute('data-screenshot-capturing', 'true');
+        update_text_with_temporary_live_region(text_span, attach_btn_label);
+    } else if (!in_progress && was_in_progress) {
+        btn.removeAttribute('data-screenshot-capturing');
+        update_text_with_temporary_live_region(text_span, attach_btn_label, () => {
+            clear_temporary_live_region(text_span);
+        });
+    } else if (!in_progress) {
         text_span.textContent = attach_btn_label;
     }
 }

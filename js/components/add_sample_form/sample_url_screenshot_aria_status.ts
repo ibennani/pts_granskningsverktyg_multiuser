@@ -18,7 +18,8 @@ export function find_url_screenshot_live_region(btn: HTMLButtonElement): HTMLEle
 }
 
 /**
- * Uppdaterar dold live-region i bifoga-media-knappen. Synlig knapptext påverkas inte.
+ * Uppdaterar dold live-region i bifoga-media-knappen.
+ * Capturing annonseras via synlig knapptext; här används success/failed/idle.
  */
 export function set_sample_url_screenshot_live_status(
     btn: HTMLButtonElement | null,
@@ -26,6 +27,9 @@ export function set_sample_url_screenshot_live_status(
     t: (key: string, params?: Record<string, unknown>) => string
 ): void {
     if (!btn) return;
+    if (status === 'capturing') {
+        return;
+    }
     const region = find_url_screenshot_live_region(btn);
     if (!region) return;
     region.textContent = status === 'idle' ? '' : t(LIVE_STATUS_I18N_KEY[status]);

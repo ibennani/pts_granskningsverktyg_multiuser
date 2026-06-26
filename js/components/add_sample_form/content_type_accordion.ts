@@ -56,7 +56,7 @@ function render_content_type_analyze_toolbar(component: any, panel_inner: HTMLEl
     const analyze_btn = component.Helpers.create_element('button', {
         class_name: ['button', 'button-default', 'content-type-analyze-button'],
         attributes: { type: 'button' },
-        text_content: t('content_type_analyze_button')
+        html_content: `<span class="content-type-analyze-button__label">${t('content_type_analyze_button')}</span>`
     });
     analyze_btn.addEventListener('click', () => {
         if (typeof component.handle_analyze_page_content_click === 'function') {
