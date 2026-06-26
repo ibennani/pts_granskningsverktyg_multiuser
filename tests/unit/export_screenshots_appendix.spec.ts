@@ -3,7 +3,7 @@ import {
     collect_screenshots_appendix_entries_sync,
     has_screenshots_appendix_images,
 } from '../../js/export/export_screenshots_appendix_collect.ts';
-import { build_screenshots_appendix_body_html } from '../../js/export/export_report_html_screenshots_appendix.ts';
+import { build_screenshots_appendix_body_html, build_screenshots_appendix_pdf_document_chunks } from '../../js/export/export_report_html_screenshots_appendix.ts';
 import {
     build_screenshots_appendix_pdf_filename,
     build_screenshots_appendix_word_filename,
@@ -133,6 +133,57 @@ describe('export_report_html_screenshots_appendix', () => {
         expect(html).toContain('<h2>047_1_WEBB_1_2026-04-11_26-11111.png</h2>');
         expect(html).toContain('data:image/jpeg;base64,');
         expect(html).toContain('screenshots-appendix__item');
+    });
+
+    test('build_screenshots_appendix_pdf_document_chunks delar upp titel och bilder', () => {
+        const items = [
+            {
+                export_filename: 'a.png',
+                original_filename: 'a.png',
+                bytes: new Uint8Array([137, 80, 78, 71]).buffer,
+                mime_type: 'image/png',
+                docx_image_type: 'png' as const,
+                display_width_px: 400,
+                display_height_px: 300,
+                max_height_cm: 24.5,
+                scaled_for_page_fit: false,
+                pdf_data_uri: 'data:image/jpeg;base64,/9j/4AAQ',
+            },
+            {
+                export_filename: 'b.png',
+                original_filename: 'b.png',
+                bytes: new Uint8Array([137, 80, 78, 71]).buffer,
+                mime_type: 'image/png',
+                docx_image_type: 'png' as const,
+                display_width_px: 400,
+                display_height_px: 300,
+                max_height_cm: 24.5,
+                scaled_for_page_fit: false,
+                pdf_data_uri: 'data:image/jpeg;base64,/9j/4AAQ',
+            },
+            {
+                export_filename: 'c.png',
+                original_filename: 'c.png',
+                bytes: new Uint8Array([137, 80, 78, 71]).buffer,
+                mime_type: 'image/png',
+                docx_image_type: 'png' as const,
+                display_width_px: 400,
+                display_height_px: 300,
+                max_height_cm: 24.5,
+                scaled_for_page_fit: false,
+                pdf_data_uri: 'data:image/jpeg;base64,/9j/4AAQ',
+            },
+        ];
+        const chunks = build_screenshots_appendix_pdf_document_chunks(
+            { auditMetadata: { actorName: 'NetOnNet' } },
+            items,
+            t
+        );
+        expect(chunks.length).toBe(3);
+        expect(chunks[0]).toContain('<h1>Bilaga 3 Skärmbilder</h1>');
+        expect(chunks[1]).toContain('<h2>a.png</h2>');
+        expect(chunks[1]).toContain('<h2>b.png</h2>');
+        expect(chunks[2]).toContain('<h2>c.png</h2>');
     });
 });
 

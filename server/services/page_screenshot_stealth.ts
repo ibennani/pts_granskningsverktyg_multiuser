@@ -13,6 +13,7 @@ export const CHROME_USER_AGENT =
 export const PUPPETEER_LAUNCH_ARGS = [
     '--no-sandbox',
     '--disable-setuid-sandbox',
+    '--disable-dev-shm-usage',
     '--disable-blink-features=AutomationControlled',
 ];
 

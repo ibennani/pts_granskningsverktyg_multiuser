@@ -195,6 +195,8 @@ export default {
     '^.+[\\\\/]page_content_type_detection_rules\\.js$': '<rootDir>/server/services/page_content_type_detection_rules.ts',
     '^.+[\\\\/]page_content_type_detection_service\\.js$': '<rootDir>/server/services/page_content_type_detection_service.ts',
     '^.+[\\\\/]page_screenshot_service\\.js$': '<rootDir>/server/services/page_screenshot_service.ts',
+    '^.+[\\\\/]pdf_generation_service\\.js$': '<rootDir>/server/services/pdf_generation_service.ts',
+    '^.+[\\\\/]pdf_merge_service\\.js$': '<rootDir>/server/services/pdf_merge_service.ts',
   },
   testMatch: [
     '<rootDir>/tests/unit/**/*.spec.js',

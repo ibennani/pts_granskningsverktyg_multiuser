@@ -16,7 +16,7 @@ import {
     type ExportReportHtmlT,
 } from './export_report_html_criterias.js';
 import { build_deficiency_types_appendix_pdf_document } from './export_report_html_deficiency_types.js';
-import { build_screenshots_appendix_pdf_html_within_limit } from './export_screenshots_appendix_pdf_encode.js';
+import { build_screenshots_appendix_pdf_html_chunks_within_limit } from './export_screenshots_appendix_pdf_encode.js';
 import { prepare_screenshots_appendix_media } from './export_screenshots_appendix_media.js';
 import { api_post_pdf } from '../api/client.js';
 import { trigger_browser_blob_download } from '../utils/download_filename_utils.js';
@@ -193,13 +193,13 @@ export async function export_to_pdf_screenshots_appendix(
             return;
         }
 
-        const html_content = await build_screenshots_appendix_pdf_html_within_limit(
+        const html_chunks = await build_screenshots_appendix_pdf_html_chunks_within_limit(
             current_audit,
             items,
             t
         );
         const pdf_blob = await api_post_pdf(`/audits/${encodeURIComponent(audit_id)}/export/pdf-requirements`, {
-            htmlContent: html_content,
+            htmlChunks: html_chunks,
         });
 
         const filename = build_screenshots_appendix_pdf_filename(

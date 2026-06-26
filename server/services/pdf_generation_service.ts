@@ -1,7 +1,9 @@
 /**
  * @fileoverview Genererar taggade PDF:er med bokmärken (rubriknivå 1–3) från semantisk HTML via Puppeteer/Chromium.
  */
-import puppeteer, { type Browser } from 'puppeteer';
+import puppeteer, { type Browser, type Page } from 'puppeteer';
+import { PUPPETEER_LAUNCH_ARGS } from './page_screenshot_stealth.js';
+import { merge_pdf_buffers } from './pdf_merge_service.js';
 
 export interface GeneratePdfInput {
     htmlContent: string;
@@ -16,7 +18,15 @@ const PDF_MARGIN_INCHES = {
     right: 15 / 25.4,
 };
 
-async function render_pdf_buffer(page: Awaited<ReturnType<Browser['newPage']>>): Promise<Buffer> {
+const PDF_BASE_TIMEOUT_MS = 120_000;
+const PDF_MAX_TIMEOUT_MS = 600_000;
+
+function resolve_pdf_timeout_ms(html_length: number): number {
+    const scaled = PDF_BASE_TIMEOUT_MS + Math.floor(html_length / 2048);
+    return Math.min(PDF_MAX_TIMEOUT_MS, scaled);
+}
+
+async function render_pdf_buffer(page: Page): Promise<Buffer> {
     await page.emulateMediaType('print');
     const client = await page.createCDPSession();
     const result = await client.send('Page.printToPDF', {
@@ -34,32 +44,60 @@ async function render_pdf_buffer(page: Awaited<ReturnType<Browser['newPage']>>):
     return Buffer.from(result.data, 'base64');
 }
 
+async function wait_for_page_images(page: Page): Promise<void> {
+    await page.evaluate(async () => {
+        const images = Array.from(document.images);
+        await Promise.all(
+            images.map(
+                (img) =>
+                    new Promise<void>((resolve, reject) => {
+                        if (img.complete && img.naturalHeight > 0) {
+                            resolve();
+                            return;
+                        }
+                        img.addEventListener('load', () => resolve(), { once: true });
+                        img.addEventListener(
+                            'error',
+                            () => reject(new Error('Bild kunde inte laddas i PDF-export')),
+                            { once: true }
+                        );
+                    })
+            )
+        );
+    });
+}
+
+async function launch_pdf_browser(): Promise<Browser> {
+    return puppeteer.launch({
+        headless: true,
+        args: [...PUPPETEER_LAUNCH_ARGS],
+    });
+}
+
+async function render_single_html_to_pdf(page: Page, html_content: string): Promise<Buffer> {
+    const timeout_ms = resolve_pdf_timeout_ms(html_content.length);
+    page.setDefaultNavigationTimeout(timeout_ms);
+    page.setDefaultTimeout(timeout_ms);
+
+    await page.setContent(html_content, {
+        waitUntil: 'domcontentloaded',
+        timeout: timeout_ms,
+    } as unknown as Parameters<typeof page.setContent>[1]);
+    await wait_for_page_images(page);
+    return render_pdf_buffer(page);
+}
+
 /**
  * Renderar HTML till en taggad (tillgänglig) PDF med dokumentbokmärken från h1–h3.
- * @returns PDF som Buffer
  */
-/** Timeout för stora bilagor med inbäddade bilder (ms). */
-const PDF_SET_CONTENT_TIMEOUT_MS = 120_000;
-
 export async function generate_pdf_from_html(input: GeneratePdfInput): Promise<Buffer> {
     const { htmlContent, outputPath } = input;
     let browser: Browser | undefined;
 
     try {
-        browser = await puppeteer.launch({
-            headless: true,
-            args: ['--no-sandbox', '--disable-setuid-sandbox'],
-        });
+        browser = await launch_pdf_browser();
         const page = await browser.newPage();
-        page.setDefaultNavigationTimeout(PDF_SET_CONTENT_TIMEOUT_MS);
-        page.setDefaultTimeout(PDF_SET_CONTENT_TIMEOUT_MS);
-
-        await page.setContent(htmlContent, {
-            waitUntil: 'load',
-            timeout: PDF_SET_CONTENT_TIMEOUT_MS,
-        } as unknown as Parameters<typeof page.setContent>[1]);
-
-        const pdf_buffer = await render_pdf_buffer(page);
+        const pdf_buffer = await render_single_html_to_pdf(page, htmlContent);
 
         if (outputPath) {
             const fs = await import('node:fs/promises');
@@ -67,8 +105,34 @@ export async function generate_pdf_from_html(input: GeneratePdfInput): Promise<B
         }
 
         return pdf_buffer;
-    } catch (error) {
-        throw error;
+    } finally {
+        if (browser) {
+            await browser.close();
+        }
+    }
+}
+
+/**
+ * Renderar flera HTML-delar i samma Chromium-session och slår ihop till en PDF.
+ * Används för bilaga 3 med många skärmbilder.
+ */
+export async function generate_pdf_from_html_chunks(html_chunks: string[]): Promise<Buffer> {
+    if (html_chunks.length === 0) {
+        throw new Error('htmlChunks får inte vara tom');
+    }
+    if (html_chunks.length === 1) {
+        return generate_pdf_from_html({ htmlContent: html_chunks[0]! });
+    }
+
+    let browser: Browser | undefined;
+    try {
+        browser = await launch_pdf_browser();
+        const page = await browser.newPage();
+        const pdf_buffers: Buffer[] = [];
+        for (const html_chunk of html_chunks) {
+            pdf_buffers.push(await render_single_html_to_pdf(page, html_chunk));
+        }
+        return merge_pdf_buffers(pdf_buffers);
     } finally {
         if (browser) {
             await browser.close();
