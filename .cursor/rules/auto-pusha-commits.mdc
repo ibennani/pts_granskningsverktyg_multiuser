@@ -1,5 +1,5 @@
 ---
-description: Automatisk commit och push vid "Pusha"; vid "Deploy" först pusha sedan deploy till v2. Endast aktuell agents filer.
+description: Automatisk commit och push vid "Pusha"; vid "Deploy" pusha direkt, bekräftelse krävs endast för deploy till v2. Endast aktuell agents filer.
 alwaysApply: true
 ---
 
@@ -80,7 +80,19 @@ Committa **aldrig** överlappande filer tyst utan explicit val.
 
 När användaren skriver **`Deploy`** (exakt ordet) ska agenten:
 
-1. **Först** utföra hela arbetsflödet för **Pusha** (commit + push enligt filurval ovan). Om det inte finns något att committa ska push hoppas över men deploy köras om användaren uttryckligen skrev "Deploy".
-2. **Därefter** köra deploy till v2: `npm run deploy:v2`.
+1. **Först** utföra hela arbetsflödet för **Pusha** (commit + push till aktuell branch enligt filurval ovan) **utan** bekräftelsefråga. Push/commit ska alltid kunna köras direkt. Om det inte finns något att committa ska push hoppas över.
+2. **Därefter** — innan deploy till v2 — fråga användaren om bekräftelse (se nedan). Kör **inte** `npm run deploy:v2` förrän användaren uttryckligen bekräftat.
 
-Kort sagt: **Deploy = Pusha (endast denna agents filer), sedan deploy till v2.**
+### Bekräftelse endast för deploy
+
+Efter lyckad push (eller om inget fanns att committa):
+
+1. **Redovisa kort** att push/commit är klar (eller att inget fanns att pusha) och att nästa steg är deploy till v2 (`npm run deploy:v2`).
+2. **Fråga** — använd **`AskQuestion`** (eller motsvarande tydlig ja/nej-fråga) med ungefär: *«Vill du verkligen deploya till v2?»* Minst alternativen **Ja, deploya till v2** och **Nej, avbryt deploy**.
+3. **Vänta** — kör **ingen** deploy förrän användaren svarat.
+
+**Avbryt deploy** om användaren väljer nej — redovisa att deploy avbröts. Push/commit som redan körts ska **behållas** (rullas inte tillbaka).
+
+**Fortsätt deploy** endast efter uttrycklig bekräftelse (val i `AskQuestion` eller tydligt ja i nästa meddelande, t.ex. «Ja, deploya»): kör `npm run deploy:v2`.
+
+Kort sagt: **Deploy = Pusha direkt (endast denna agents filer), bekräftelse, sedan deploy till v2.**
