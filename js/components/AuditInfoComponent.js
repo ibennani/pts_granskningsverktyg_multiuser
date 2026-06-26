@@ -121,6 +121,16 @@ export class AuditInfoComponent {
             ? this.Helpers.format_iso_to_local_date(start_time_iso, lang_code)
             : ''));
 
+        if (current_state.auditStatus === 'locked' || current_state.auditStatus === 'archived') {
+            const end_time_iso = current_state.endTime
+                || current_state.auditMetadata?.endTime
+                || state_for_times?.endTime
+                || null;
+            info_panel.appendChild(this.create_info_item('end_time', end_time_iso
+                ? this.Helpers.format_iso_to_local_date(end_time_iso, lang_code)
+                : ''));
+        }
+
         if (current_state.auditStatus === 'in_progress'
             || current_state.auditStatus === 'locked'
             || current_state.auditStatus === 'archived') {

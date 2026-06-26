@@ -97,17 +97,27 @@ export function recalculateAuditTimes(auditState: AuditStateShape | null | undef
 
     if (minTime || maxTime) {
         const newState = { ...auditState };
-        const meta = auditState.auditMetadata as { startTime?: string | null } | undefined;
+        const meta = auditState.auditMetadata as { startTime?: string | null; endTime?: string | null } | undefined;
         const manual_start =
             typeof meta?.startTime === 'string' && meta.startTime.trim()
                 ? meta.startTime.trim()
                 : null;
+        const manual_end =
+            typeof meta?.endTime === 'string' && meta.endTime.trim()
+                ? meta.endTime.trim()
+                : typeof auditState.endTime === 'string' && auditState.endTime.trim()
+                    ? auditState.endTime.trim()
+                    : null;
         if (manual_start) {
             newState.startTime = manual_start;
         } else if (minTime) {
             newState.startTime = minTime;
         }
-        if (maxTime) newState.endTime = maxTime;
+        if (manual_end) {
+            newState.endTime = manual_end;
+        } else if (maxTime) {
+            newState.endTime = maxTime;
+        }
         return newState;
     }
 
@@ -183,3 +193,10 @@ export function get_audit_last_updated_display_timestamp(audit_state: AuditState
 }
 
 export { AUDIT_METADATA_LAST_IN_PROGRESS_ACTIVITY_KEY };
+
+export {
+    clamp_audit_activity_to_end_date,
+    count_timestamps_after_end_date,
+    is_timestamp_after_end_date,
+    total_clamp_count
+} from './audit_clamp_activity_to_end_date.js';

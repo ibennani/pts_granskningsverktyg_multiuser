@@ -233,7 +233,11 @@ function execute_single_dispatch(
                                 }
                             }
                         } else if (action.type === ActionTypes.UPDATE_METADATA) {
-                            note_metadata_only_changed();
+                            if (action_payload?.samples_modified === true) {
+                                note_audit_full_sync_required();
+                            } else {
+                                note_metadata_only_changed();
+                            }
                         } else {
                             note_audit_full_sync_required();
                         }

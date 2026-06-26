@@ -6,6 +6,14 @@ import {
     metadata_form_set_start_date_error_visible,
     metadata_form_start_date_error_text
 } from './metadata_form_start_date.js';
+import {
+    metadata_form_create_end_date_field,
+    metadata_form_end_date_error_text,
+    metadata_form_is_end_before_start,
+    metadata_form_normalize_end_date_display,
+    metadata_form_parse_end_date,
+    metadata_form_set_end_date_error_visible
+} from './metadata_form_end_date.js';
 
 export const MetadataFormComponent = {
     init({ root, deps, options = {} }) {
@@ -37,7 +45,11 @@ export const MetadataFormComponent = {
         this.internal_comment_input = null;
         this.start_time_input = null;
         this.start_time_error_element = null;
+        this.end_time_input = null;
+        this.end_time_error_element = null;
         this.show_start_date_field = false;
+        this.show_end_date_field = false;
+        this.effective_start_iso = null;
         this.form_element_ref = null;
 
         // Load CSS if possible
@@ -48,6 +60,44 @@ export const MetadataFormComponent = {
 
         this.handle_autosave_input = this.handle_autosave_input.bind(this);
         this.handle_start_date_blur = this.handle_start_date_blur.bind(this);
+        this.handle_end_date_blur = this.handle_end_date_blur.bind(this);
+    },
+
+    _parse_end_date_input_value(raw_value) {
+        return metadata_form_parse_end_date(this.Helpers, this.Translation, raw_value);
+    },
+
+    _set_end_date_error_visible(show_error, message) {
+        metadata_form_set_end_date_error_visible(
+            this.end_time_input,
+            this.end_time_error_element,
+            show_error,
+            message
+        );
+    },
+
+    handle_end_date_blur() {
+        if (!this.end_time_input) return;
+        const raw = this.end_time_input.value;
+        if (!(raw || '').trim()) {
+            this._set_end_date_error_visible(false);
+            return;
+        }
+        const parsed = this._parse_end_date_input_value(raw);
+        if (parsed.ok && parsed.iso_date) {
+            this.end_time_input.value = metadata_form_normalize_end_date_display(
+                this.Helpers,
+                this.Translation,
+                raw
+            );
+            if (metadata_form_is_end_before_start(parsed.iso_date, this.effective_start_iso)) {
+                this._set_end_date_error_visible(true, this.Translation.t('metadata_end_date_before_start'));
+                return;
+            }
+            this._set_end_date_error_visible(false);
+            return;
+        }
+        this._set_end_date_error_visible(true, metadata_form_end_date_error_text(this.Helpers, this.Translation));
     },
 
     _parse_start_date_input_value(raw_value) {
@@ -139,6 +189,13 @@ export const MetadataFormComponent = {
             }
         }
 
+        if (this.show_end_date_field && this.end_time_input) {
+            const parsed = this._parse_end_date_input_value(this.end_time_input.value);
+            if (parsed.ok && parsed.iso_date) {
+                form_data.endTime = parsed.iso_date;
+            }
+        }
+
         return form_data;
     },
 
@@ -184,6 +241,26 @@ export const MetadataFormComponent = {
                     this.start_time_input.focus();
                     return;
                 }
+            }
+        }
+
+        if (this.show_end_date_field && this.end_time_input) {
+            const raw = (this.end_time_input.value || '').trim();
+            if (!raw) {
+                this._set_end_date_error_visible(true, this.Translation.t('metadata_end_date_required'));
+                this.end_time_input.focus();
+                return;
+            }
+            const parsed = this._parse_end_date_input_value(raw);
+            if (!parsed.ok || !parsed.iso_date) {
+                this._set_end_date_error_visible(true, metadata_form_end_date_error_text(this.Helpers, this.Translation));
+                this.end_time_input.focus();
+                return;
+            }
+            if (metadata_form_is_end_before_start(parsed.iso_date, this.effective_start_iso)) {
+                this._set_end_date_error_visible(true, this.Translation.t('metadata_end_date_before_start'));
+                this.end_time_input.focus();
+                return;
             }
         }
 
@@ -236,6 +313,18 @@ export const MetadataFormComponent = {
         );
     },
 
+    _create_end_date_field(initial_value = '') {
+        return metadata_form_create_end_date_field(
+            this.Helpers,
+            this.Translation,
+            {
+                on_blur: this.handle_end_date_blur,
+                on_input: () => this._set_end_date_error_visible(false)
+            },
+            initial_value
+        );
+    },
+
     render(options = {}) {
         const t = this.Translation?.t || (k => k);
         const {
@@ -243,11 +332,16 @@ export const MetadataFormComponent = {
             submitButtonText = t('metadata_form_submit'),
             cancelButtonText = null,
             goToListButtonText = null,
-            showStartDate = false
+            showStartDate = false,
+            showEndDate = false,
+            effectiveStartIso = null
         } = options;
 
         this.show_start_date_field = showStartDate === true;
+        this.show_end_date_field = showEndDate === true;
+        this.effective_start_iso = effectiveStartIso || null;
         this.start_time_input = null;
+        this.end_time_input = null;
         this.root.innerHTML = '';
         const form_wrapper = this.Helpers.create_element('div', { class_name: 'metadata-form-container' });
 
@@ -292,6 +386,13 @@ export const MetadataFormComponent = {
             this.start_time_input = start_field.input_element;
             this.start_time_error_element = start_field.error_element;
             this.form_element_ref.appendChild(start_field.form_group);
+        }
+
+        if (this.show_end_date_field) {
+            const end_field = this._create_end_date_field(initialData.endDateInputValue || '');
+            this.end_time_input = end_field.input_element;
+            this.end_time_error_element = end_field.error_element;
+            this.form_element_ref.appendChild(end_field.form_group);
         }
 
         const comment_field = this.create_form_field('internalComment', 'internal_comment', 'textarea', initialData.internalComment);
@@ -387,7 +488,11 @@ export const MetadataFormComponent = {
         this.on_go_to_list_callback = null;
         this.start_time_input = null;
         this.start_time_error_element = null;
+        this.end_time_input = null;
+        this.end_time_error_element = null;
         this.show_start_date_field = false;
+        this.show_end_date_field = false;
+        this.effective_start_iso = null;
         this.root = null;
         this.deps = null;
     }

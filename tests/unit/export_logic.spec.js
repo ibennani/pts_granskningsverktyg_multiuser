@@ -5,6 +5,7 @@ import { register_translation_module } from '../../js/utils/translation_access.j
 // Mock docx library before importing export_logic
 const mockParagraph = jest.fn();
 const mockTextRun = jest.fn();
+const mockImageRun = jest.fn();
 const mockDocument = jest.fn();
 const mockPacker = {
     toBlob: jest.fn().mockResolvedValue(new Blob())
@@ -15,6 +16,7 @@ jest.unstable_mockModule('docx', () => ({
     Packer: mockPacker,
     Paragraph: mockParagraph,
     TextRun: mockTextRun,
+    ImageRun: mockImageRun,
     HeadingLevel: {},
     AlignmentType: {},
     Table: jest.fn(),

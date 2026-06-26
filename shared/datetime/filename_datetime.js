@@ -144,3 +144,31 @@ export function format_local_iso_with_display_timezone_offset(date_input) {
     const offset = stockholm_offset_string(date_input);
     return `${y}-${m}-${day}T${hh}:${mm}:${ss}${offset}`;
 }
+
+/**
+ * Sista millisekunden på angiven kalenderdag i Europe/Stockholm, som UTC ISO.
+ * @param {string|null|undefined} iso_date ISO med kalenderdatum (t.ex. 2024-06-15T00:00:00.000Z)
+ * @returns {string}
+ */
+export function get_end_of_stockholm_calendar_day_iso(iso_date) {
+    const ymd = String(iso_date || '').slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) {
+        return String(iso_date || '');
+    }
+    const probe = parse_iso_to_date(`${ymd}T12:00:00.000Z`) ?? new Date();
+    let offset = stockholm_offset_string(probe);
+    for (let i = 0; i < 3; i++) {
+        const local_end = `${ymd}T23:59:59.999${offset}`;
+        const end_date = parse_iso_to_date(local_end);
+        if (!end_date) {
+            break;
+        }
+        const refined = stockholm_offset_string(end_date);
+        if (refined === offset) {
+            return end_date.toISOString();
+        }
+        offset = refined;
+    }
+    const fallback = parse_iso_to_date(`${ymd}T23:59:59.999${offset}`);
+    return fallback ? fallback.toISOString() : `${ymd}T23:59:59.999Z`;
+}

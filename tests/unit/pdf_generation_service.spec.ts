@@ -15,6 +15,8 @@ jest.unstable_mockModule('puppeteer', () => ({
         launch: jest.fn(async () => ({
             newPage: jest.fn(async () => ({
                 setContent: set_content_mock,
+                setDefaultNavigationTimeout: jest.fn(),
+                setDefaultTimeout: jest.fn(),
                 emulateMediaType: emulate_media_type_mock,
                 createCDPSession: jest.fn(async () => ({
                     send: print_to_pdf_mock,
@@ -39,7 +41,10 @@ describe('pdf_generation_service', () => {
         const html = '<!DOCTYPE html><html lang="sv"><body><h1>Test</h1></body></html>';
         const buffer = await generate_pdf_from_html({ htmlContent: html });
 
-        expect(set_content_mock).toHaveBeenCalledWith(html, { waitUntil: 'networkidle0' });
+        expect(set_content_mock).toHaveBeenCalledWith(html, {
+            waitUntil: 'load',
+            timeout: 120_000,
+        });
         expect(emulate_media_type_mock).toHaveBeenCalledWith('print');
         expect(print_to_pdf_mock).toHaveBeenCalledWith(
             'Page.printToPDF',

@@ -90,7 +90,7 @@ describe('page_content_type_detection_service', () => {
         });
         expect(goto_mock).toHaveBeenCalledWith(
             'https://example.com/page',
-            expect.objectContaining({ waitUntil: 'networkidle2' })
+            expect.objectContaining({ waitUntil: 'load' })
         );
         expect(result.detected_content_type_ids).toEqual(['forms']);
         expect(close_mock).toHaveBeenCalled();

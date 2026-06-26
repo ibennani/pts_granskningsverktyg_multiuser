@@ -3,6 +3,10 @@ import { get_current_user_name } from '../utils/helpers.js';
 import { sync_to_server_now } from '../logic/server_sync.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import { get_show_empty_metadata_form, clear_show_empty_metadata_form } from '../app/browser_globals.js';
+import {
+    count_timestamps_after_end_date,
+    total_clamp_count
+} from '../logic/audit_clamp_activity_to_end_date.js';
 
 export class EditMetadataViewComponent {
     constructor() {
@@ -57,7 +61,7 @@ export class EditMetadataViewComponent {
         window.customFocusApplied = true;
     }
 
-    async handle_form_submit(form_data) {
+    async _submit_metadata(form_data) {
         await this.dispatch({
             type: this.StoreActionTypes.UPDATE_METADATA,
             payload: form_data
@@ -65,12 +69,10 @@ export class EditMetadataViewComponent {
         if (window.DraftManager?.commitCurrentDraft) {
             window.DraftManager.commitCurrentDraft();
         }
-        
+
         const current_status = this.getState().auditStatus;
 
         if (current_status === 'not_started') {
-            // För nya granskningar sparar vi endast lokalt och går vidare till stickprov.
-            // Själva skapandet av remote-granskningen sker först när granskningen startas.
             this.router('sample_management');
         } else {
             try {
@@ -82,6 +84,57 @@ export class EditMetadataViewComponent {
             this._request_focus_on_audit_info_h2();
             this.router('audit_overview');
         }
+    }
+
+    _show_end_date_clamp_modal(form_data, counts, on_proceed) {
+        const ModalComponent = app_runtime_refs.modal_component;
+        if (!ModalComponent?.show || !this.Helpers?.create_element) {
+            if (typeof on_proceed === 'function') on_proceed();
+            return;
+        }
+        const t = this.Translation.t;
+        const message_text = t('metadata_end_date_clamp_modal_message', {
+            click_count: counts.click_count,
+            requirement_count: counts.requirement_count,
+            frozen_count: counts.frozen_count
+        });
+
+        ModalComponent.show(
+            {
+                h1_text: t('metadata_end_date_clamp_modal_title'),
+                message_text
+            },
+            (container, modal_instance) => {
+                const buttons_wrapper = this.Helpers.create_element('div', { class_name: 'modal-confirm-actions' });
+                const stay_btn = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-default'],
+                    text_content: t('metadata_end_date_clamp_modal_stay_button')
+                });
+                stay_btn.addEventListener('click', () => modal_instance.close());
+                const confirm_btn = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-primary'],
+                    text_content: t('metadata_end_date_clamp_modal_confirm_button')
+                });
+                confirm_btn.addEventListener('click', () => {
+                    modal_instance.close(null, { skipHistoryPop: true });
+                    if (typeof on_proceed === 'function') on_proceed();
+                });
+                buttons_wrapper.appendChild(stay_btn);
+                buttons_wrapper.appendChild(confirm_btn);
+                container.appendChild(buttons_wrapper);
+            }
+        );
+    }
+
+    async handle_form_submit(form_data) {
+        if (form_data?.endTime) {
+            const counts = count_timestamps_after_end_date(this.getState(), form_data.endTime);
+            if (total_clamp_count(counts) > 0) {
+                this._show_end_date_clamp_modal(form_data, counts, () => this._submit_metadata(form_data));
+                return;
+            }
+        }
+        await this._submit_metadata(form_data);
     }
 
     handle_cancel() {
@@ -339,12 +392,29 @@ export class EditMetadataViewComponent {
         const start_date_input_value = start_time_iso && this.Helpers?.format_iso_for_locale_date_input
             ? this.Helpers.format_iso_for_locale_date_input(start_time_iso, lang_code)
             : '';
+        const is_locked = current_state.auditStatus === 'locked';
+        const end_time_iso = (() => {
+            if (!is_locked) return null;
+            const state_for_times = this.AuditLogic?.recalculateAuditTimes
+                ? this.AuditLogic.recalculateAuditTimes({ ...current_state })
+                : null;
+            return current_state.endTime
+                || current_state.auditMetadata?.endTime
+                || state_for_times?.endTime
+                || null;
+        })();
+        const end_date_input_value = end_time_iso && this.Helpers?.format_iso_for_locale_date_input
+            ? this.Helpers.format_iso_for_locale_date_input(end_time_iso, lang_code)
+            : '';
         const form_options = {
             initialData: {
                 ...metadata,
-                startDateInputValue: start_date_input_value
+                startDateInputValue: start_date_input_value,
+                endDateInputValue: end_date_input_value
             },
             showStartDate: !is_new_audit,
+            showEndDate: is_locked,
+            effectiveStartIso: start_time_iso,
             submitButtonText: is_new_audit ? t('continue_to_samples') : t('save_changes_button'),
             cancelButtonText: t('return_without_saving_button_text'),
             goToListButtonText: is_new_audit ? t('go_to_audit_list_button') : null
