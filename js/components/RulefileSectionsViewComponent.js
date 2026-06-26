@@ -34,9 +34,7 @@ let _last_section_id = null;
 let _last_is_editing = null;
 
 export class RulefileSectionsViewComponent {
-    constructor() {
-        this.CSS_PATH = './rulefile_sections_view.css';
-        this.root = null;
+    constructor() {        this.root = null;
         this.deps = null;
         this.router = null;
         this.getState = null;
@@ -68,10 +66,7 @@ export class RulefileSectionsViewComponent {
         this.page_types_form_initial_focus_set = false; // Flagga för att veta om fokus redan har satts på page_types-formuläret
         this.content_types_form_initial_focus_set = false; // Flagga för att veta om fokus redan har satts på content_types-formuläret
         
-        if (this.Helpers?.load_css) {
-            await this.Helpers.load_css(this.CSS_PATH).catch(err => console.warn('[RulefileSectionsViewComponent] Failed to load CSS', err));
-        }
-    }
+            }
 
     _get_section_config(section_id) {
         return get_section_config(section_id, this.Translation.t);

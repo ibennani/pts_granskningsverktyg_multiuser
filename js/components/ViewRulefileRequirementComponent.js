@@ -7,9 +7,7 @@ import { append_info_block_accordion_section } from './view_rulefile_requirement
 import './requirement_audit_component.css';
 
 export class ViewRulefileRequirementComponent {
-    constructor() {
-        this.CSS_PATH = './requirement_audit_component.css';
-        this.root = null;
+    constructor() {        this.root = null;
         this.deps = null;
         this.router = null;
         this.params = null;
@@ -31,8 +29,6 @@ export class ViewRulefileRequirementComponent {
         this.NotificationComponent = deps.NotificationComponent;
         
         this.plate_element_ref = null;
-
-        await this.Helpers.load_css(this.CSS_PATH).catch(e => console.warn(e));
     }
 
     _safe_parse_markdown(markdown_string, _is_inline = false) {

@@ -243,28 +243,8 @@ function _build_audit_status_stack_root(create_element, t, safe, ui_opts) {
 
 export class ProgressBarComponent {
     static created_instances = new Set();
-    static css_loaded = false;
-
-    static async load_styles_if_needed() {
-        if (!ProgressBarComponent.css_loaded && typeof window.Helpers !== 'undefined' && typeof window.Helpers.load_css === 'function') {
-            if (!document.querySelector(`link[href$="progress_bar_component.css"]`)) {
-                try {
-                    await window.Helpers.load_css('./progress_bar_component.css');
-                    ProgressBarComponent.css_loaded = true;
-                } catch (error) {
-                    console.warn("Failed to load CSS for ProgressBarComponent:", error);
-                }
-            } else {
-                ProgressBarComponent.css_loaded = true; // Already in DOM
-            }
-        } else if (!ProgressBarComponent.css_loaded) {
-            // Fallback or ignore
-        }
-    }
 
     static create(current_value, max_value, options = {}) {
-        ProgressBarComponent.load_styles_if_needed();
-
         if (typeof window.Helpers === 'undefined' || typeof window.Helpers.create_element !== 'function') {
             if (window.ConsoleManager?.warn) window.ConsoleManager.warn("ProgressBarComponent: Helpers.create_element not available!");
             const fallback_progress = document.createElement('div');
@@ -347,8 +327,6 @@ export class ProgressBarComponent {
      * @param {string|null} [options.distribution_heading_id] — id för h3 Fördelning
      */
     static create_audit_status_stack(options = {}) {
-        ProgressBarComponent.load_styles_if_needed();
-
         const {
             counts,
             t,

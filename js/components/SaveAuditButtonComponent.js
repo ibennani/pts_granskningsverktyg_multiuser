@@ -3,9 +3,7 @@ import { create_file_download_button } from '../utils/file_download_button_ui.js
 import { is_download_file_too_large_error } from '../utils/download_filename_utils.js';
 
 export class SaveAuditButtonComponent {
-    constructor() {
-        this.CSS_PATH = './save_audit_button_component.css';
-        this.root = null;
+    constructor() {        this.root = null;
         this.deps = null;
         this.Helpers = null;
         this.Translation = null;
@@ -23,15 +21,7 @@ export class SaveAuditButtonComponent {
         this.SaveAuditLogic = deps.SaveAuditLogic;
         this.NotificationComponent = deps.NotificationComponent;
 
-        if (this.Helpers && this.Helpers.load_css) {
-            try {
-                const link_tag = document.querySelector(`link[href="${this.CSS_PATH}"]`);
-                if (!link_tag) await this.Helpers.load_css(this.CSS_PATH);
-            } catch (error) {
-                console.warn("Failed to load CSS for SaveAuditButtonComponent:", error);
             }
-        }
-    }
 
     async _run_save_download() {
         if (!this.getState || !this.SaveAuditLogic || !this.Translation || !this.NotificationComponent) {

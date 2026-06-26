@@ -68,7 +68,6 @@ type ViewComponentLike = {
 /** Alla beroenden till start_normal_session från main. */
 export interface StartNormalSessionDeps {
     ensure_app_layout: () => void;
-    setup_tooltip_overlay: () => void;
     LayoutManager?: { init?: () => void };
     init_global_components: () => Promise<void>;
     init_connectivity_service: (opts: { getState: () => unknown; dispatch: (a: unknown) => void }) => void;
@@ -298,7 +297,6 @@ export async function apply_user_preferences_from_server({
 export async function start_normal_session(deps: StartNormalSessionDeps): Promise<void> {
     const {
         ensure_app_layout,
-        setup_tooltip_overlay,
         LayoutManager,
         init_global_components,
         init_connectivity_service,
@@ -340,7 +338,6 @@ export async function start_normal_session(deps: StartNormalSessionDeps): Promis
     void _updatePageTitle;
 
     ensure_app_layout();
-    setup_tooltip_overlay();
     if (LayoutManager && typeof LayoutManager.init === 'function') {
         LayoutManager.init();
     }

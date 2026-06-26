@@ -71,9 +71,7 @@ function write_audit_list_group_mode_pref(mode) {
     }
 }
 
-export class AuditViewComponent {
-    static CSS_PATH = './audit_view_component.css';
-
+export class AuditViewComponent {
     async init({ root, deps }) {
         this.root = root;
         this.deps = deps;
@@ -150,15 +148,7 @@ export class AuditViewComponent {
         this.handle_audit_filter_reset = this.handle_audit_filter_reset.bind(this);
         this.handle_skip_to_audit_filter = this.handle_skip_to_audit_filter.bind(this);
 
-        if (this.Helpers?.load_css_safely) {
-            await this.Helpers.load_css_safely(AuditViewComponent.CSS_PATH, 'AuditViewComponent', {
-                timeout: 5000,
-                maxRetries: 2
-            }).catch(() => {
-                console.warn('[AuditViewComponent] Continuing without CSS due to loading failure');
-            });
-        }
-        this._unsubscribe_audits = null;
+                this._unsubscribe_audits = null;
         this._unsubscribe_rules = null;
 
         this._auditsTable = new GenericTableComponent();

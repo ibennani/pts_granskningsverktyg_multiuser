@@ -5,21 +5,13 @@ import { slice_rows_for_page } from '../logic/table_pagination_logic.js';
 import { create_table_pagination_element } from './table_pagination_bar.js';
 import './generic_table_component.css';
 
-export class GenericTableComponent {
-    static CSS_PATH = './generic_table_component.css';
-
+export class GenericTableComponent {
     async init({ root, deps }) {
         this.root = root;
         this.deps = deps;
         this.Helpers = deps.Helpers;
 
-        if (this.Helpers?.load_css_safely) {
-            await this.Helpers.load_css_safely(this.constructor.CSS_PATH, 'GenericTableComponent', {
-                timeout: 5000,
-                maxRetries: 2
-            }).catch(() => {});
-        }
-    }
+            }
 
     /**
      * @param {Object} opts

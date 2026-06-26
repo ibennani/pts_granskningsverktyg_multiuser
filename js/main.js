@@ -50,7 +50,6 @@ import { memoryManager } from './utils/memory_manager.js';
 import { app_runtime_refs } from './utils/app_runtime_refs.js';
 import { register_translation_module } from './utils/translation_access.js';
 import { LayoutManager } from './utils/layout_manager.js';
-import { setup_tooltip_overlay } from './utils/overlay_portal.js';
 
 import { GlobalActionBarComponent } from './components/GlobalActionBarComponent.js';
 import { ModalComponent } from './components/ModalComponent.js';
@@ -297,7 +296,6 @@ if (typeof window !== 'undefined') {
         return start_normal_session_impl({
             ...options,
             ensure_app_layout,
-            setup_tooltip_overlay,
             LayoutManager,
             init_global_components,
             init_connectivity_service,

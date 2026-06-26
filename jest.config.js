@@ -49,6 +49,7 @@ export default {
     '^.+[\\\\/]export_word_deficiency_types\\.js$': '<rootDir>/js/export/export_word_deficiency_types.ts',
     '^.+[\\\\/]export_screenshots_appendix_collect\\.js$': '<rootDir>/js/export/export_screenshots_appendix_collect.ts',
     '^.+[\\\\/]export_screenshots_appendix_media\\.js$': '<rootDir>/js/export/export_screenshots_appendix_media.ts',
+    '^.+[\\\\/]export_screenshots_appendix_pdf_encode\\.js$': '<rootDir>/js/export/export_screenshots_appendix_pdf_encode.ts',
     '^.+[\\\\/]export_report_html_screenshots_appendix\\.js$': '<rootDir>/js/export/export_report_html_screenshots_appendix.ts',
     '^.+[\\\\/]export_word_screenshots_appendix\\.js$': '<rootDir>/js/export/export_word_screenshots_appendix.ts',
     '^.+[\\\\/]export_pdf_main_flow\\.js$': '<rootDir>/js/export/export_pdf_main_flow.ts',

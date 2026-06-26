@@ -41,6 +41,11 @@ export type PreparedScreenshotsAppendixItem = {
     scaled_for_page_fit: boolean;
 };
 
+/** Samma som PreparedScreenshotsAppendixItem men med omkodad data-URI för PDF-HTML. */
+export type PreparedScreenshotsAppendixPdfItem = PreparedScreenshotsAppendixItem & {
+    pdf_data_uri: string;
+};
+
 export type PrepareScreenshotsAppendixMediaResult = {
     items: PreparedScreenshotsAppendixItem[];
     missing_filenames: string[];
@@ -168,7 +173,7 @@ async function prepare_single_screenshot_item(
     }
 }
 
-/** Konverterar ArrayBuffer till base64 för PDF HTML (originalbytes, ingen omkomprimering). */
+/** Konverterar ArrayBuffer till base64 för PDF HTML (fallback om JPEG-omkodning misslyckas). */
 export function array_buffer_to_base64_data_uri(bytes: ArrayBuffer, mime_type: string): string {
     const uint8 = new Uint8Array(bytes);
     let binary = '';

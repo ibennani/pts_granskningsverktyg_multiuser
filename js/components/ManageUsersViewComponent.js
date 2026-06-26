@@ -13,9 +13,7 @@ import { GenericTableComponent } from './GenericTableComponent.js';
 import { clear_restore_focus_info, get_restore_focus_info } from '../app/browser_globals.js';
 
 export class ManageUsersViewComponent {
-    constructor() {
-        this.CSS_PATH = './manage_users_view_component.css';
-        this.root = null;
+    constructor() {        this.root = null;
         this.deps = null;
         this.router = null;
         this.Translation = null;
@@ -74,13 +72,7 @@ export class ManageUsersViewComponent {
         this._table = new GenericTableComponent();
         await this._table.init({ root, deps: { Helpers: this.Helpers } });
 
-        if (this.Helpers?.load_css_safely) {
-            await this.Helpers.load_css_safely(this.CSS_PATH, 'ManageUsersViewComponent', {
-                timeout: 5000,
-                maxRetries: 2
-            }).catch(() => {});
-        }
-    }
+            }
 
     get_t_func() {
         return (this.Translation && typeof this.Translation.t === 'function')

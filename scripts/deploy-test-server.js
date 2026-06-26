@@ -56,10 +56,8 @@ async function main() {
     try {
         console.log(`[deploy:test-server] SSH-mål: ${get_ssh_spawn_target()}`);
 
-        const deployUser = process.env.DEPLOY_USER || 'localiliben';
-        const ensureDeployDir = `mkdir -p ${remotePath} && chown ${deployUser}:${deployUser} ${remotePath}`;
         console.log('[deploy:test-server] Säkerställer deploy-mapp på servern...');
-        await exec(sudo_bash_cmd(ensureDeployDir), { cwd: false });
+        await exec(`mkdir -p ${remotePath}`, { cwd: false });
 
         console.log('[deploy:test-server] Bygger projektet med bas /test-server/...');
         await run('npm', ['run', 'build:test-server']);

@@ -61,7 +61,13 @@ GV_AUDIT_MEDIA_DIR=./audit-media
    npm run deploy:test-server
    ```
 
-3. Öppna `https://ux-granskningsverktyg.pts.ad/test-server/` och kontrollera röd ram + banner.
+3. Synka inloggningsuppgifter från v2 (prod) till testservern — **deploy kopierar inte lösenord**:
+
+   ```bat
+   npm run copy:v2-users-to-test-server
+   ```
+
+4. Öppna `https://ux-granskningsverktyg.pts.ad/test-server/` och kontrollera röd ram + banner.
 
 ## Seed från lokal miljö
 
@@ -80,6 +86,7 @@ Torrkörning: `npm run seed:test-server -- --dry-run`
 |---|---|
 | `npm run build:test-server` | Bygg frontend med bas `/test-server/` |
 | `npm run deploy:test-server` | Deploy kod till testservern |
+| `npm run copy:v2-users-to-test-server` | Kopiera användare och lösenord från v2 (prod) till testservern |
 | `npm run seed:test-server -- --confirm` | Kopiera lokal DB + filer till testservern |
 | `npm run setup:test-server` | Seed + deploy i ett steg (kräver SSH) |
 | `scripts\setup-test-server.cmd` | Samma som ovan (Windows) |
@@ -94,5 +101,6 @@ Deploy och seed använder `DEPLOY_SSH_PASSWORD` från `.env`. Om du får *Passwo
 - Health: `curl http://127.0.0.1:3001/api/health`
 - Nginx: kontrollera att `scripts/ux-granskning-with-v2.conf` innehåller `/test-server`-block
 - JWT: om inloggning misslyckas efter seed, kontrollera att `JWT_SECRET` i `.env.test-server` matchar lokal miljö
+- **Inloggning efter deploy:** `deploy:test-server` kopierar inte lösenord från v2. Kör `npm run copy:v2-users-to-test-server` så att samma användarnamn och lösenord fungerar som i prod
 
 Se även [`deploy-v2-workflow.md`](deploy-v2-workflow.md) och [`drift-checklista.md`](drift-checklista.md).

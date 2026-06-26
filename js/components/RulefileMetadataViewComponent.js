@@ -3,17 +3,13 @@
 import './rulefile_metadata_view_component.css';
 
 export class RulefileMetadataViewComponent {
-    constructor() {
-        this.CSS_PATH = './rulefile_metadata_view_component.css';
-        this.root = null;
+    constructor() {        this.root = null;
         this.deps = null;
         this.router = null;
         this.getState = null;
         this.Translation = null;
         this.Helpers = null;
-        this.NotificationComponent = null;
-        this.is_css_loaded = false;
-    }
+        this.NotificationComponent = null;    }
 
     async init({ root, deps }) {
         this.root = root;
@@ -22,19 +18,8 @@ export class RulefileMetadataViewComponent {
         this.getState = deps.getState;
         this.Translation = deps.Translation;
         this.Helpers = deps.Helpers;
-        this.NotificationComponent = deps.NotificationComponent;
-        
-        this.is_css_loaded = false;
-
-        if (this.Helpers?.load_css) {
-            try {
-                await this.Helpers.load_css(this.CSS_PATH);
-                this.is_css_loaded = true;
-            } catch (error) {
-                console.warn('[RulefileMetadataViewComponent] Failed to load CSS. Continuing without dedicated styles.', error);
+        this.NotificationComponent = deps.NotificationComponent;
             }
-        }
-    }
 
     _ensure_dependencies() {
         if (!this.Helpers?.create_element || !this.Translation?.t) {

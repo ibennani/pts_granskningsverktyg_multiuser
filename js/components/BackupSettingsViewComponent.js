@@ -26,9 +26,7 @@ function format_schedule_times(hours) {
 }
 
 export class BackupSettingsViewComponent {
-    constructor() {
-        this.CSS_PATH = './backup_settings_view_component.css';
-        this.root = null;
+    constructor() {        this.root = null;
         this.deps = null;
         this.router = null;
         this.Helpers = null;
@@ -48,10 +46,7 @@ export class BackupSettingsViewComponent {
         this.settings = null;
         this._save_in_progress = false;
 
-        if (this.Helpers?.load_css && this.CSS_PATH) {
-            await this.Helpers.load_css(this.CSS_PATH).catch(() => {});
-        }
-        this._handle_save = this._handle_save.bind(this);
+                this._handle_save = this._handle_save.bind(this);
         this._handle_back = this._handle_back.bind(this);
         this._handle_schedule_change = this._handle_schedule_change.bind(this);
     }

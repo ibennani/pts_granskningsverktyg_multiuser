@@ -2,6 +2,8 @@
  * @fileoverview Enhetlig UX för knappar som genererar filnedladdning.
  */
 
+import '../../css/components/file_download_button.css';
+
 import { get_icon_svg as default_get_icon_svg } from '../ui/icons.js';
 import {
     is_download_file_too_large_error,
@@ -19,7 +21,6 @@ import {
     type StatusIconTooltipParts,
 } from './status_icon_tooltip.js';
 
-export const FILE_DOWNLOAD_CSS_PATH = 'css/components/file_download_button.css';
 export const READY_RESET_MS = 3000;
 
 export type TranslationFn = (key: string, params?: Record<string, unknown>) => string;
@@ -51,14 +52,6 @@ export type CreateFileDownloadButtonOptions = {
     href?: string;
     omit_small?: boolean;
 };
-
-let _css_load_started = false;
-
-function ensure_file_download_css(Helpers: FileDownloadHelpers): void {
-    if (_css_load_started || !Helpers.load_css_safely) return;
-    _css_load_started = true;
-    void Helpers.load_css_safely(FILE_DOWNLOAD_CSS_PATH).catch(() => {});
-}
 
 function resolve_get_icon_svg(Helpers: FileDownloadHelpers) {
     return Helpers.get_icon_svg ?? default_get_icon_svg;
@@ -303,8 +296,6 @@ export function wrap_file_download_trigger(
         icon_size?: number;
     } = {}
 ): FileDownloadButtonParts {
-    ensure_file_download_css(Helpers);
-
     if (!trigger.classList.contains('file-download-btn')) {
         trigger.classList.add('file-download-btn');
     }
@@ -376,8 +367,6 @@ export function create_file_download_button(
         href = '#',
         omit_small = false,
     } = opts;
-
-    ensure_file_download_css(Helpers);
 
     const class_names = ['button', variant, 'file-download-btn', ...extra_class_names];
     if (!omit_small) {

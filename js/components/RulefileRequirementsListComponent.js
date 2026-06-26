@@ -12,9 +12,7 @@ import './rulefile_requirements_list_component.css';
 import { consoleManager } from '../utils/console_manager.js';
 
 export class RulefileRequirementsListComponent {
-    constructor() {
-        this.CSS_PATH = './rulefile_requirements_list_component.css';
-        this.RETURN_FOCUS_SESSION_KEY = 'gv_return_focus_rulefile_requirements_list_v1';
+    constructor() {        this.RETURN_FOCUS_SESSION_KEY = 'gv_return_focus_rulefile_requirements_list_v1';
         this.SORT_OPTIONS = [
             { value: 'ref_asc', textKey: 'sort_option_ref_asc_natural' },
             { value: 'ref_desc', textKey: 'sort_option_ref_desc_natural' },
@@ -65,9 +63,7 @@ export class RulefileRequirementsListComponent {
         this.handle_list_keydown = this.handle_list_keydown.bind(this);
         this.handle_toolbar_change = this.handle_toolbar_change.bind(this);
         this.handle_state_update = this.handle_state_update.bind(this);
-        
-        await this.Helpers.load_css(this.CSS_PATH).catch(e => console.warn(e));
-        
+
         if (typeof this.subscribe === 'function') {
             this.unsubscribe_from_store_function = this.subscribe(this.handle_state_update);
         }
@@ -239,7 +235,7 @@ export class RulefileRequirementsListComponent {
                 on_change: this.handle_toolbar_change,
                 initial_state: initial_toolbar_state,
                 Translation: { t: t },
-                Helpers: { create_element: this.Helpers.create_element, load_css: this.Helpers.load_css },
+                Helpers: { create_element: this.Helpers.create_element },
                 config: { showStatusFilter: false, sortOptions: this.SORT_OPTIONS }
             }
         });

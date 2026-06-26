@@ -5,8 +5,6 @@ import { FilterPanelComponent } from './FilterPanelComponent.js';
 import './requirement_audit_sidebar_component.css';
 
 export const RequirementsFilterComponent = {
-    CSS_PATH: './requirement_audit_sidebar_component.css',
-
     async init({ root, deps }) {
         this.root = root;
         this.deps = deps;
@@ -24,12 +22,6 @@ export const RequirementsFilterComponent = {
 
         this._handle_search_input = this._handle_search_input.bind(this);
         this._handle_sort_change = this._handle_sort_change.bind(this);
-
-        if (this.Helpers?.load_css_safely) {
-            await this.Helpers.load_css_safely(this.CSS_PATH, 'RequirementsFilterComponent').catch(() => {});
-        } else if (this.Helpers?.load_css) {
-            await this.Helpers.load_css(this.CSS_PATH).catch(() => {});
-        }
 
         this._build_dom();
     },

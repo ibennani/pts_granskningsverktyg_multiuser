@@ -13,9 +13,7 @@ import { is_debug_problems_update } from '../app/runtime_flags.js';
 import { show_temporary_button_label_feedback } from '../utils/temporary_live_text_update.js';
 
 export class AuditProblemsViewComponent {
-    constructor() {
-        this.CSS_PATH = './audit_problems_view_component.css';
-        this.root = null;
+    constructor() {        this.root = null;
         this.deps = null;
         this.router = null;
         this.getState = null;
@@ -128,11 +126,7 @@ export class AuditProblemsViewComponent {
             consoleManager.log('[GV-Debug problems] init: hoppar över fetch', { has_auditId: !!state?.auditId, has_dispatch: typeof this.dispatch === 'function' });
         }
 
-        if (this.Helpers?.load_css && this.CSS_PATH) {
-            await this.Helpers.load_css(this.CSS_PATH).catch(() => {});
-        }
-
-        this.handle_requirement_link_click = this.handle_requirement_link_click.bind(this);
+                this.handle_requirement_link_click = this.handle_requirement_link_click.bind(this);
         this.handle_copy_click = this.handle_copy_click.bind(this);
         this.handle_copy_all_click = this.handle_copy_all_click.bind(this);
         this.handle_edit_click = this.handle_edit_click.bind(this);

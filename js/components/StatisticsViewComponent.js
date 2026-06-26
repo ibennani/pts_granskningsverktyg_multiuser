@@ -14,9 +14,7 @@ import './statistics_view_component.css';
 const MONITORING_FALLBACK_SENTINEL = '__GV_STATS_MONITORING_FALLBACK__';
 
 export class StatisticsViewComponent {
-    constructor() {
-        this.CSS_PATH = './statistics_view_component.css';
-        this.root = null;
+    constructor() {        this.root = null;
         this.deps = null;
         this.Translation = null;
         this.Helpers = null;
@@ -33,10 +31,7 @@ export class StatisticsViewComponent {
         this.Helpers = deps.Helpers;
         this.router = deps.router;
         this._fetch_error = null;
-        if (this.Helpers?.load_css && this.CSS_PATH) {
-            await this.Helpers.load_css(this.CSS_PATH).catch(() => {});
-        }
-    }
+            }
 
     destroy() {
         ScoreAnalysisComponent.destroy();

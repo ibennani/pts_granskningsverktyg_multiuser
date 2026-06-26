@@ -15,10 +15,7 @@ import { fingerprint_item_keys, can_incremental_update } from '../utils/incremen
 import './all_requirements_view_component.css';
 import './requirement_list_component.css';
 
-export class RequirementsListViewComponent {
-    static CSS_PATH_ALL = './all_requirements_view_component.css';
-    static CSS_PATH_SAMPLE = './requirement_list_component.css';
-
+export class RequirementsListViewComponent {
     async init({ root, deps }) {
         this.root = root;
         this.deps = deps;
@@ -69,16 +66,7 @@ export class RequirementsListViewComponent {
         this.handle_requirement_list_keydown = this.handle_requirement_list_keydown.bind(this);
 
         // Load CSS – båda lägena använder samma kompakta kravlistformat
-        if (this.Helpers?.load_css) {
-            if (this.constructor.CSS_PATH_SAMPLE) {
-                await this.Helpers.load_css(this.constructor.CSS_PATH_SAMPLE).catch(() => {});
-            }
-            if (this.mode === 'all' && this.constructor.CSS_PATH_ALL) {
-                await this.Helpers.load_css(this.constructor.CSS_PATH_ALL).catch(() => {});
-            }
-        }
-
-        this.NotificationComponent = deps.NotificationComponent;
+                this.NotificationComponent = deps.NotificationComponent;
 
         if (typeof this.subscribe === 'function') {
             this.unsubscribe_from_store = this.subscribe((_new_state, listener_meta) => {

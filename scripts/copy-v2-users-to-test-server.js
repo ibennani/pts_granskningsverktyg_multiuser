@@ -10,6 +10,9 @@ import 'dotenv/config';
 
 process.env.DEPLOY_USER = process.env.DEPLOY_USER || 'localiliben';
 process.env.DEPLOY_SSH_HOSTNAME = process.env.DEPLOY_SSH_HOSTNAME || 'ux-granskningsverktyg.pts.ad';
+if (!process.env.DEPLOY_SSH_ALIAS && !process.env.DEPLOY_SSH_PASSWORD) {
+    process.env.DEPLOY_SSH_ALIAS = 'granskning';
+}
 
 const PROD_DB = process.env.GV_PROD_DB_NAME || 'granskningsverktyget';
 const TEST_DB = process.env.GV_TEST_SERVER_DB_NAME || 'granskningsverktyget_test';

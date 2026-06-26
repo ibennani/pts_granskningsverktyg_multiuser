@@ -6,9 +6,7 @@ import { get_current_user_name } from '../utils/helpers.js';
 import './settings_view_component.css';
 
 export class SettingsViewComponent {
-    constructor() {
-        this.CSS_PATH = './settings_view_component.css';
-        this.root = null;
+    constructor() {        this.root = null;
         this.deps = null;
         this.Translation = null;
         this.Helpers = null;
@@ -49,10 +47,7 @@ export class SettingsViewComponent {
             this.user_preferences = null;
         }
 
-        if (this.Helpers?.load_css && this.CSS_PATH) {
-            await this.Helpers.load_css(this.CSS_PATH).catch(() => {});
-        }
-    }
+            }
 
     async handle_language_change(event) {
         const lang = event.target?.value;

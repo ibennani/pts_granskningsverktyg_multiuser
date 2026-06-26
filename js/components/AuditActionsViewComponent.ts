@@ -13,9 +13,7 @@ import { is_download_file_too_large_error } from '../utils/download_filename_uti
 import './audit_actions_view_component.css';
 
 export class AuditActionsViewComponent {
-    constructor() {
-        this.CSS_PATH = './audit_actions_view_component.css';
-        this.root = null;
+    constructor() {        this.root = null;
         this.deps = null;
         this.newerRuleAvailable = null;
         this._newerRuleCheckInProgress = false;
@@ -51,11 +49,7 @@ export class AuditActionsViewComponent {
         this.SaveAuditLogic = deps.SaveAuditLogic || window.SaveAuditLogic;
         this.flush_sync_to_server = deps.flush_sync_to_server || null;
 
-        if (this.Helpers?.load_css && this.CSS_PATH) {
-            await this.Helpers.load_css(this.CSS_PATH).catch(() => {});
-        }
-
-        this.handle_lock_audit = this.handle_lock_audit.bind(this);
+                this.handle_lock_audit = this.handle_lock_audit.bind(this);
         this.handle_mark_all_unreviewed_as_passed = this.handle_mark_all_unreviewed_as_passed.bind(this);
         this.handle_unlock_audit = this.handle_unlock_audit.bind(this);
         this.handle_export_csv = this.handle_export_csv.bind(this);

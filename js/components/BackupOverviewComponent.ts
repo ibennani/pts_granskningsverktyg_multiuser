@@ -4,9 +4,7 @@ import { BackupRulefileController, type RulefileKind } from './backup/backup_rul
 import { load_backup_mode_from_storage, save_backup_mode_to_storage, type BackupMode } from './backup/backup_mode_storage.js';
 import { measure_backup_select_min_width_px } from '../utils/backup_filter_select_width.js';
 
-export class BackupOverviewComponent {
-    CSS_PATH = './backup_overview_component.css';
-    root: HTMLElement | null = null;
+export class BackupOverviewComponent {    root: HTMLElement | null = null;
     deps: any = null;
     router: any = null;
     view_name: string | null = null;
@@ -30,10 +28,7 @@ export class BackupOverviewComponent {
         this.NotificationComponent = deps.NotificationComponent;
         this.mode = load_backup_mode_from_storage();
 
-        if (this.Helpers?.load_css_safely) {
-            await this.Helpers.load_css_safely(this.CSS_PATH, 'BackupOverviewComponent', { timeout: 5000, maxRetries: 2 }).catch(() => {});
-        }
-        const deps_for_backup_child = {
+                const deps_for_backup_child = {
             ...deps,
             backup_overview_refresh_table: () => this._refresh_backup_overview_table_only(),
             backup_detail_table_refresh: () => this._refresh_backup_detail_table_only(),

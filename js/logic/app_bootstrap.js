@@ -15,6 +15,7 @@ import {
     apply_test_server_viewport_indicator,
     update_test_server_banner_text
 } from './test_server_indicator.js';
+import { setup_tooltip_overlay } from '../utils/overlay_portal.js';
 
 /**
  * Kör initiering efter att övriga beroenden satts upp i main.
@@ -105,6 +106,7 @@ export async function init_app(deps) {
         });
     }
     await window.Translation.ensure_initial_load();
+    setup_tooltip_overlay();
     setup_skip_link_click_handler();
     update_landmarks_and_skip_link();
     document.addEventListener('languageChanged', update_landmarks_and_skip_link);

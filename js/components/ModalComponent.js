@@ -5,9 +5,7 @@ import { MODAL_TRANSITION_MS } from '../../shared/constants/modal_layout.js';
 import { consoleManager } from '../utils/console_manager.js';
 import { is_debug_modal_scroll } from '../app/runtime_flags.js';
 
-export class ModalComponent {
-    static CSS_PATH = './modal_component.css';
-
+export class ModalComponent {
     init({ root, deps }) {
         this.root = root;
         this.deps = deps;
@@ -31,15 +29,7 @@ export class ModalComponent {
         this._pending_on_closed = null;
         this._scroll_lock_refs = null;
 
-        if (this.Helpers?.load_css_safely && ModalComponent.CSS_PATH) {
-            this.Helpers.load_css_safely(ModalComponent.CSS_PATH, 'ModalComponent', {
-                timeout: 5000,
-                maxRetries: 2,
-            }).catch(() => {
-                console.warn('[ModalComponent] Continuing without CSS due to loading failure');
-            });
-        }
-    }
+            }
 
     _setup_history_close_on_back() {
         if (typeof window === 'undefined' || !window.history) return;

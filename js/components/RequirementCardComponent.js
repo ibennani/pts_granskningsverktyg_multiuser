@@ -1,10 +1,6 @@
 import './requirement_card_component.css';
 
 export const RequirementCardComponent = {
-    // Cache for CSS loading state
-    css_loaded: false,
-    CSS_PATH: './requirement_card_component.css',
-
     /**
      * Creates a requirement card element.
      * 
@@ -41,9 +37,6 @@ export const RequirementCardComponent = {
                 }
                 return str + " (ReqCard t not found)";
             };
-
-        // Load CSS if needed
-        this.load_styles_if_needed(Helpers);
 
         const create_element = Helpers.create_element;
         const add_protocol_if_missing = Helpers.add_protocol_if_missing || ((url) => url);
@@ -103,24 +96,5 @@ export const RequirementCardComponent = {
         card_li.appendChild(card_content_wrapper);
 
         return card_li;
-    },
-
-    /**
-     * Helper to load CSS exactly once.
-     * @param {Object} Helpers - Helpers instance
-     */
-    async load_styles_if_needed(Helpers) {
-        if (!this.css_loaded && Helpers && typeof Helpers.load_css === 'function') {
-            if (!document.querySelector(`link[href$="${this.CSS_PATH}"]`)) {
-                try {
-                    await Helpers.load_css(this.CSS_PATH);
-                    this.css_loaded = true;
-                } catch (error) {
-                    console.warn("Failed to load CSS for RequirementCardComponent:", error);
-                }
-            } else {
-                this.css_loaded = true; // CSS already in DOM
-            }
-        }
     }
 };

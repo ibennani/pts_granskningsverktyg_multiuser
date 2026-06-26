@@ -4,17 +4,15 @@
 import { escape_html_internal } from './export_html_build_primitives.js';
 import { build_report_pdf_html_document } from './export_report_html_criterias.js';
 import {
-    array_buffer_to_base64_data_uri,
     get_screenshots_appendix_max_image_height_cm,
-    type PreparedScreenshotsAppendixItem,
+    type PreparedScreenshotsAppendixPdfItem,
 } from './export_screenshots_appendix_media.js';
 
 export type ExportScreenshotsAppendixHtmlT = (key: string, opts?: Record<string, unknown>) => string;
 
-function build_screenshot_item_html(item: PreparedScreenshotsAppendixItem): string {
+function build_screenshot_item_html(item: PreparedScreenshotsAppendixPdfItem): string {
     const title = escape_html_internal(item.export_filename);
-    const src = array_buffer_to_base64_data_uri(item.bytes, item.mime_type);
-    const safe_src = escape_html_internal(src);
+    const safe_src = escape_html_internal(item.pdf_data_uri);
     const max_height_cm = get_screenshots_appendix_max_image_height_cm();
     return (
         `<section class="screenshots-appendix__item">` +
@@ -26,7 +24,7 @@ function build_screenshot_item_html(item: PreparedScreenshotsAppendixItem): stri
 }
 
 export function build_screenshots_appendix_body_html(
-    items: PreparedScreenshotsAppendixItem[],
+    items: PreparedScreenshotsAppendixPdfItem[],
     t: ExportScreenshotsAppendixHtmlT
 ): string {
     let html =
@@ -47,7 +45,7 @@ export function build_screenshots_appendix_body_html(
 
 export function build_screenshots_appendix_pdf_document(
     current_audit: Record<string, unknown>,
-    items: PreparedScreenshotsAppendixItem[],
+    items: PreparedScreenshotsAppendixPdfItem[],
     t: ExportScreenshotsAppendixHtmlT
 ): string {
     const actor = String(

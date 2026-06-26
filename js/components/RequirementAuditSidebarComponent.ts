@@ -18,8 +18,6 @@ import {
 
 export class RequirementAuditSidebarComponent {
     constructor() {
-        this.CSS_PATH = './requirement_audit_sidebar_component.css';
-
         this.root = null;
         this.deps = null;
         this.router = null;
@@ -80,12 +78,6 @@ export class RequirementAuditSidebarComponent {
 
         // Ladda sparade inställningar från state
         this.load_settings_from_state();
-
-        if (this.Helpers?.load_css_safely) {
-            await this.Helpers.load_css_safely(this.CSS_PATH, 'RequirementAuditSidebarComponent').catch(() => {});
-        } else if (this.Helpers?.load_css) {
-            await this.Helpers.load_css(this.CSS_PATH).catch(() => {});
-        }
     }
 
     async ensure_dom_initialized() {

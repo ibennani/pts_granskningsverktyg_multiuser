@@ -4,9 +4,7 @@ import { show_confirm_delete_modal } from '../logic/confirm_delete_modal_logic.j
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 import './rulefile_sections_view.css';
 
-export const EditInfoBlocksSectionComponent = {
-    CSS_PATH: './rulefile_sections_view.css',
-
+export const EditInfoBlocksSectionComponent = {
     async init({ root, deps }) {
         this.root = root;
         this.deps = deps;
@@ -22,10 +20,7 @@ export const EditInfoBlocksSectionComponent = {
         this.autosave_session = null;
         this.handle_autosave_input = this.handle_autosave_input.bind(this);
 
-        if (this.Helpers?.load_css) {
-            await this.Helpers.load_css(this.CSS_PATH).catch(() => {});
-        }
-    },
+            },
 
     handle_autosave_input() {
         this.autosave_session?.request_autosave?.();

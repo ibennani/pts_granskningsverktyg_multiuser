@@ -34,10 +34,7 @@ declare global {
 
 const RULEFILE_LOCK_POLL_MS = 4000;
 
-export class EditRulefileRequirementComponent {
-    CSS_PATH_SHARED = './requirement_audit_component.css';
-    CSS_PATH_SPECIFIC = './edit_rulefile_requirement_component.css';
-    root: HTMLElement | null = null;
+export class EditRulefileRequirementComponent {    root: HTMLElement | null = null;
     deps: any = null;
     router: any = null;
     params: Record<string, any> | null = null;
@@ -91,9 +88,6 @@ export class EditRulefileRequirementComponent {
         this.handle_form_click = this.handle_form_click.bind(this);
         this._handle_content_type_change = this._handle_content_type_change.bind(this);
         this._handle_edit_requirement_focusout_save = this._handle_edit_requirement_focusout_save.bind(this);
-        
-        await this.Helpers.load_css(this.CSS_PATH_SHARED).catch(e => console.warn(e));
-        await this.Helpers.load_css(this.CSS_PATH_SPECIFIC).catch(e => console.warn(e));
     }
 
     async _try_patch_infoblock_text_to_server({ requirement_key, block_id, text_value }) {

@@ -54,11 +54,7 @@ export const MetadataFormComponent = {
 
         // Load CSS if possible
         const CSS_PATH = './metadata_form_component.css';
-        if (this.Helpers && this.Helpers.load_css) {
-            this.Helpers.load_css(CSS_PATH);
-        }
-
-        this.handle_autosave_input = this.handle_autosave_input.bind(this);
+                this.handle_autosave_input = this.handle_autosave_input.bind(this);
         this.handle_start_date_blur = this.handle_start_date_blur.bind(this);
         this.handle_end_date_blur = this.handle_end_date_blur.bind(this);
     },

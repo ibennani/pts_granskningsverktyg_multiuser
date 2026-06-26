@@ -8,9 +8,7 @@ import { analyze_rule_file_changes, apply_rule_file_update } from '../logic/rule
 import { find_requirement_definition } from '../audit_logic.js';
 import './update_rulefile_view.css';
 
-export class UpdateRulefileViewComponent {
-    CSS_PATH: string;
-    VIEW_STEPS: { WARNING: string; UPLOAD: string; CONFIRM: string };
+export class UpdateRulefileViewComponent {    VIEW_STEPS: { WARNING: string; UPLOAD: string; CONFIRM: string };
     root: any;
     deps: any;
     router: any;
@@ -33,9 +31,7 @@ export class UpdateRulefileViewComponent {
     _backup_saved: boolean;
     _analysis_ready: boolean;
 
-    constructor() {
-        this.CSS_PATH = './update_rulefile_view.css';
-        this.VIEW_STEPS = {
+    constructor() {        this.VIEW_STEPS = {
             WARNING: 'WARNING',
             UPLOAD: 'UPLOAD',
             CONFIRM: 'CONFIRM'
@@ -102,17 +98,7 @@ export class UpdateRulefileViewComponent {
         this._backup_saved = false;
         this._analysis_ready = false;
 
-        if (this.Helpers?.load_css && this.CSS_PATH) {
-            try {
-                const link_tag = document.querySelector(`link[href="${this.CSS_PATH}"]`);
-                if (!link_tag) {
-                    await this.Helpers.load_css(this.CSS_PATH);
-                }
-            } catch (error) {
-                if ((window as any).ConsoleManager?.warn) (window as any).ConsoleManager.warn('CSS för UpdateRulefileViewComponent hittades inte än, hoppar över.', error);
             }
-        }
-    }
 
     get_t_internally() {
         return this.Translation?.t || ((key: string) => `**${key}**`);

@@ -5,9 +5,7 @@ import { GenericTableComponent } from './GenericTableComponent.js';
 import { create_audit_table_columns } from '../utils/audit_table_columns.js';
 import './generic_table_component.css';
 
-export class AuditListComponent {
-    static CSS_PATH = './generic_table_component.css';
-
+export class AuditListComponent {
     constructor() {
         this.root = null;
         this.deps = null;

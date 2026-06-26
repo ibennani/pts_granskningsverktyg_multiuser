@@ -9,9 +9,7 @@ import {
 import './global_action_bar_component.css';
 
 export class GlobalActionBarComponent {
-  constructor() {
-    this.CSS_PATH = './global_action_bar_component.css';
-
+  constructor() {
     // Internal references
     this.root = null;
     this.deps = null;
@@ -50,16 +48,7 @@ export class GlobalActionBarComponent {
     this.dispatch = deps.dispatch;
     this.StoreActionTypes = deps.StoreActionTypes;
 
-    if (this.Helpers && this.Helpers.load_css) {
-      try {
-        const link_tag = document.querySelector(`link[href="${this.CSS_PATH}"]`);
-        if (!link_tag) await this.Helpers.load_css(this.CSS_PATH);
-      } catch (error) {
-        console.warn('Failed to load CSS for GlobalActionBarComponent:', error);
-      }
-    }
-
-    this.save_audit_button_container_element = this.Helpers.create_element(
+        this.save_audit_button_container_element = this.Helpers.create_element(
       'div',
       { class_name: 'save-audit-button-container' }
     );

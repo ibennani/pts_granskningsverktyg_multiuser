@@ -32,9 +32,7 @@ function write_cached_audits_list(audits) {
 
 const START_VIEW_SECTION_COUNT = 4;
 
-export class StartViewComponent {
-    static CSS_PATH = './start_view_component.css';
-
+export class StartViewComponent {
     constructor() {
         this.root = null;
         this.deps = null;
@@ -73,14 +71,7 @@ export class StartViewComponent {
         this._api_checked = false;
         this._unsubscribe_audits = null;
 
-        if (this.Helpers?.load_css_safely) {
-            await this.Helpers.load_css_safely(StartViewComponent.CSS_PATH, 'StartViewComponent', {
-                timeout: 5000,
-                maxRetries: 2
-            }).catch(() => {});
-        }
-
-        this._genericTables = [];
+                this._genericTables = [];
         for (let i = 0; i < START_VIEW_SECTION_COUNT; i++) {
             const tbl = new GenericTableComponent();
             await tbl.init({ deps });

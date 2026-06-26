@@ -7,7 +7,6 @@ export class ErrorBoundaryComponent {
         this.deps = {};
         this.retry_callback = null;
         this.error_info = null;
-        this.css_loaded = false;
     }
 
     async init({ root, deps = {}, options = {} }) {
@@ -18,7 +17,6 @@ export class ErrorBoundaryComponent {
             this.retry_callback = options.retry_callback;
         }
 
-        this.load_css();
         // Kall start: töm inte huvudytan — där ligger vyvärd (t.ex. #app-main-view-content).
         // clear_error() sätter root.innerHTML = '' och kan lämna singleton-komponenter med frånkopplad root.
         if (this.root && this.root.querySelector('.error-boundary-container')) {
@@ -26,31 +24,6 @@ export class ErrorBoundaryComponent {
         } else {
             this.error_info = null;
         }
-    }
-
-    load_css() {
-        if (this.css_loaded) return;
-        const css_path = './error_boundary_component.css';
-
-        // Try to use helper if available
-        if (this.deps.Helpers && typeof this.deps.Helpers.load_css === 'function') {
-            this.deps.Helpers.load_css(css_path).catch(err => console.warn('Failed to load CSS via Helpers:', err));
-            this.css_loaded = true;
-            return;
-        }
-
-        // Fallback
-        if (document.querySelector(`link[href="${css_path}"]`)) {
-            this.css_loaded = true;
-            return;
-        }
-
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = css_path;
-        link.type = 'text/css';
-        document.head.appendChild(link);
-        this.css_loaded = true;
     }
 
     get_t() {
@@ -208,7 +181,6 @@ export class ErrorBoundaryComponent {
             this.retry_callback = retry_callback;
         }
 
-        this.load_css();
         this.log_error(error_data);
 
         this.error_info = error_data;

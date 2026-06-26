@@ -8,9 +8,7 @@ import {
 import { show_confirm_delete_modal } from '../logic/confirm_delete_modal_logic.js';
 import './edit_rulefile_metadata_view.css';
 
-export const EditContentTypesSectionComponent = {
-    CSS_PATH: './edit_rulefile_metadata_view.css',
-
+export const EditContentTypesSectionComponent = {
     async init({ root, deps }) {
         this.root = root;
         this.deps = deps;
@@ -29,10 +27,7 @@ export const EditContentTypesSectionComponent = {
         this.content_types_container = null;
         this.handle_autosave_input = this.handle_autosave_input.bind(this);
 
-        if (this.Helpers?.load_css) {
-            await this.Helpers.load_css(this.CSS_PATH).catch(err => console.warn('[EditContentTypesSectionComponent] Failed to load CSS', err));
-        }
-    },
+            },
 
     _clone_metadata(metadata) {
         return JSON.parse(JSON.stringify(metadata || {}));

@@ -124,12 +124,14 @@ describe('export_report_html_screenshots_appendix', () => {
                 display_width_px: 400,
                 display_height_px: 300,
                 max_height_cm: 24.5,
+                scaled_for_page_fit: false,
+                pdf_data_uri: 'data:image/jpeg;base64,/9j/4AAQ',
             },
         ];
         const html = build_screenshots_appendix_body_html(items, t);
         expect(html).toContain('<h1>Bilaga 3 Skärmbilder</h1>');
         expect(html).toContain('<h2>047_1_WEBB_1_2026-04-11_26-11111.png</h2>');
-        expect(html).toContain('data:image/png;base64,');
+        expect(html).toContain('data:image/jpeg;base64,');
         expect(html).toContain('screenshots-appendix__item');
     });
 });

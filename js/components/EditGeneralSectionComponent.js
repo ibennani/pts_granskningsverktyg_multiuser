@@ -3,9 +3,7 @@
 import './edit_rulefile_metadata_view.css';
 
 export class EditGeneralSectionComponent {
-    constructor() {
-        this.CSS_PATH = './edit_rulefile_metadata_view.css';
-        this.root = null;
+    constructor() {        this.root = null;
         this.deps = null;
         this.router = null;
         this.getState = null;
@@ -40,10 +38,7 @@ export class EditGeneralSectionComponent {
         this.skip_autosave_on_destroy = false;
         this.handle_autosave_input = this.handle_autosave_input.bind(this);
         
-        if (this.Helpers?.load_css) {
-            await this.Helpers.load_css(this.CSS_PATH).catch(err => console.warn('[EditGeneralSectionComponent] Failed to load CSS', err));
-        }
-    }
+            }
 
     _create_field(label_key, name, value = '', type = 'text', options = {}) {
         const { required = false } = options;

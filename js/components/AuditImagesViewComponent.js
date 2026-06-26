@@ -1,5 +1,6 @@
 import { get_current_user_name } from '../utils/helpers.js';
 import './audit_images_view_component.css';
+import '../../css/components/attach_media_modal.css';
 import { build_compact_hash_fragment } from '../logic/router_url_codec.js';
 import { get_requirement_public_key, find_requirement_definition, definition_primary_id, resolve_map_entry } from '../audit_logic.js';
 import { get_current_view_name } from '../app/browser_globals.js';
@@ -22,9 +23,7 @@ import { fill_audit_media_filenames_list, revoke_audit_media_blob_urls } from '.
 import { collect_attached_media_filenames } from '../logic/audit_attached_media_references.js';
 
 export class AuditImagesViewComponent {
-    constructor() {
-        this.CSS_PATH = './audit_images_view_component.css';
-        this.root = null;
+    constructor() {        this.root = null;
         this.deps = null;
         this.router = null;
         this.getState = null;
@@ -53,13 +52,6 @@ export class AuditImagesViewComponent {
         this.Translation = deps.Translation;
         this.Helpers = deps.Helpers;
         this.AuditLogic = deps.AuditLogic;
-
-        if (this.Helpers?.load_css && this.CSS_PATH) {
-            await this.Helpers.load_css(this.CSS_PATH).catch(() => {});
-        }
-        if (this.Helpers?.load_css) {
-            await this.Helpers.load_css('../css/components/attach_media_modal.css').catch(() => {});
-        }
 
         this.handle_requirement_link_click = this.handle_requirement_link_click.bind(this);
         this.handle_attach_media_click = this.handle_attach_media_click.bind(this);

@@ -38,6 +38,10 @@ export function resolve_asset_href(href) {
     return base + relative;
 }
 
+/**
+ * Laddar stylesheet dynamiskt. Föredra `import './komponent.css'` i JS/TS så att Vite
+ * bundlar CSS i prod — dynamisk laddning via `./fil.css` löser fel sökväg under /v2/ och /test-server/.
+ */
 export function load_css(href, options = {}) {
     return new Promise((resolve, reject) => {
         const resolved_href = resolve_asset_href(href);

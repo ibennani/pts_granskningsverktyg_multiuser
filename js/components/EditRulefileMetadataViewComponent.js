@@ -15,9 +15,7 @@ import { create_report_template_section } from './rulefile_metadata/rulefile_met
 import './edit_rulefile_metadata_view.css';
 
 export class EditRulefileMetadataViewComponent {
-    constructor() {
-        this.CSS_PATH = './edit_rulefile_metadata_view.css';
-        this.root = null;
+    constructor() {        this.root = null;
         this.deps = null;
         this.params = null;
         this.router = null;
@@ -41,10 +39,7 @@ export class EditRulefileMetadataViewComponent {
         this.Helpers = deps.Helpers;
         this.NotificationComponent = deps.NotificationComponent;
 
-        if (this.Helpers?.load_css) {
-            await this.Helpers.load_css(this.CSS_PATH).catch(err => { if (window.ConsoleManager) window.ConsoleManager.warn('[EditRulefileMetadataView] Failed to load CSS', err); });
-        }
-    }
+            }
 
     _create_form(metadata, is_create_mode = false) {
         const workingMetadata = is_create_mode

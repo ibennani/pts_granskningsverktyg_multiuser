@@ -31,10 +31,7 @@ export class SampleManagementViewComponent {
 
     Helpers: SampleManagementDeps['Helpers'] | null = null;
 
-    NotificationComponent: SampleManagementDeps['NotificationComponent'] | null = null;
-
-    readonly CSS_PATH = './sample_management_view_component.css';
-
+    NotificationComponent: SampleManagementDeps['NotificationComponent'] | null = null;
     sample_list_component_instance = SampleListComponent;
 
     sample_list_container_element: HTMLElement | null = null;
@@ -65,10 +62,7 @@ export class SampleManagementViewComponent {
         this.NotificationComponent = deps.NotificationComponent;
 
         void this.init_sub_components();
-        if (this.Helpers?.load_css) {
-            void this.Helpers.load_css(this.CSS_PATH).catch((e: unknown) => console.warn(e));
-        }
-    }
+            }
 
     async init_sub_components() {
         if (!this.Helpers) return;
