@@ -193,7 +193,7 @@ describe('AuditLogic', () => {
     });
 
     describe('calculate_overall_audit_progress', () => {
-        test('returnerar noll vid null, undefined eller tomma stickprov', () => {
+        test('returnerar noll vid null, undefined eller tomma granskningsdel', () => {
             expect(calculate_overall_audit_progress(null)).toEqual({ audited: 0, total: 0 });
             expect(calculate_overall_audit_progress(undefined)).toEqual({ audited: 0, total: 0 });
             expect(
@@ -222,7 +222,7 @@ describe('AuditLogic', () => {
             });
         });
 
-        test('räknar fyra statusar för ett stickprov', () => {
+        test('räknar fyra statusar för en granskningsdel', () => {
             const sample = {
                 id: 's1',
                 requirementResults: {
@@ -343,7 +343,7 @@ describe('AuditLogic', () => {
             expect(sample_has_any_requirement_needing_review(rule_split_key, sample)).toBe(true);
         });
 
-        test('count_requirements_needing_review_in_audit räknar relevant krav en gång per stickprov', () => {
+        test('count_requirements_needing_review_in_audit räknar relevant krav en gång per granskningsdel', () => {
             const audit = {
                 ruleFileContent: minimal_rule_file,
                 samples: [
@@ -386,7 +386,7 @@ describe('AuditLogic', () => {
             });
         });
 
-        test('summerar över flera stickprov', () => {
+        test('summerar över flera granskningsdelar', () => {
             const audit = {
                 ruleFileContent: minimal_rule_file,
                 samples: [

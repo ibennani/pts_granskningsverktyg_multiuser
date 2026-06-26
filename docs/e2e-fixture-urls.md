@@ -30,12 +30,12 @@ Kör **före** `browser_navigate` om vyn behöver det:
 | Skiplänk (rot `/` eller `#start`) | `/v2/` eller `#start` | — | Svenska + stäng session-dialog | `tests/a11y.skip-link.e2e.spec.js` |
 | Granskningsöversikt (lista) | `#audit` | — | sessionStorage eller API-mock | `tests/home.e2e.spec.js` |
 | Metadata (ny/pågående granskning) | `#metadata` | `#md` | sessionStorage + regelfil i state, API-mock | `tests/e2e/save_and_reload.e2e.spec.js` |
-| Stickprov | `#sample_management` | `#sm` | Granskning påbörjad i state | — |
+| Granskningsdel | `#sample_management` | `#sm` | Granskning påbörjad i state | — |
 | Granskningsöversikt (enskild) | `#audit_overview` | `#ov` | `auditId` i state/hash | `tests/e2e/audit_flow.e2e.spec.js` |
 | Export | `#audit_actions` | `#xa` | sessionStorage + API-mock | `tests/e2e/export_report.e2e.spec.js` |
 | Alla krav | `#all_requirements` | `#qr` | API-mock + pågående granskning | `tests/e2e/audit_flow.e2e.spec.js` |
-| Kravgranskning | `#requirement_audit?sampleId=s1&requirementId=req1` | `#ra?s=…&r=…` | Full mock + stickprov/krav i state | `tests/e2e/audit_collab_locks.e2e.spec.js` |
-| Kravlista (stickprov) | `#requirement_list?sampleId=…` | `#rl?s=…` | Granskning + stickprov | — |
+| Kravgranskning | `#requirement_audit?sampleId=s1&requirementId=req1` | `#ra?s=…&r=…` | Full mock + granskningsdel/krav i state | `tests/e2e/audit_collab_locks.e2e.spec.js` |
+| Kravlista (granskningsdel) | `#requirement_list?sampleId=…` | `#rl?s=…` | Granskning + granskningsdel | — |
 | Regelfiler (admin) | `#audit_rules` | — | Admin + API eller inloggning | `tests/admin-upload.e2e.spec.js` |
 | Redigera krav i regelfil | `#rulefile_edit_requirement?id=…` | `#rm?id=…` | Regelfil i state + API-mock | `tests/e2e/rulefile_collab_locks.e2e.spec.js` |
 | Användarhantering | `#manage_users` | — | Admin-inloggning | `tests/e2e/login.e2e.spec.js` |
@@ -47,7 +47,7 @@ Parametrar kan förkortas i hash: `auditId` → `a`, `sampleId` → `s`, `requir
 
 | Nyckel | Syfte |
 |---|---|
-| `digitalTillsynAppCentralState` | Hel granskning (regelfil, stickprov, metadata) |
+| `digitalTillsynAppCentralState` | Hel granskning (regelfil, granskningsdel, metadata) |
 | `gv_auth_token` | JWT för API-anrop |
 | `gv_current_user_name` | Visningsnamn utan full login |
 | `gv_current_user_is_admin` | `'1'` / `'0'` |

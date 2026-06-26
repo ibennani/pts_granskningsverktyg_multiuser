@@ -1,5 +1,5 @@
 /**
- * @fileoverview Relevanta krav per stickprov och sorterade kravnycklar.
+ * @fileoverview Relevanta krav per granskningsdel och sorterade kravnycklar.
  */
 
 import * as Helpers from '../utils/helpers.js';

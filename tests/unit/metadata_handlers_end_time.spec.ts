@@ -39,7 +39,7 @@ describe('reduce_update_metadata endTime', () => {
         expect(next.auditMetadata.endTime).toBe(end_date);
     });
 
-    test('clampar stickprov och sätter samples_modified på action', () => {
+    test('clampar granskningsdel och sätter samples_modified på action', () => {
         const action = { payload: { endTime: end_date } };
         const next = reduce_update_metadata(locked_state, action);
         expect(action.payload.samples_modified).toBe(true);

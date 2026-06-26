@@ -384,7 +384,7 @@ describe('router', () => {
             replace_spy.mockRestore();
         });
 
-        test('audit_overview med auditId och not_started utan stickprov: renderar audit_overview', async () => {
+        test('audit_overview med auditId och not_started utan granskningsdel: renderar audit_overview', async () => {
             window.location.hash = '#audit_overview?auditId=ns1';
             load_audit_with_rule_file.mockResolvedValue({
                 auditId: 'ns1',
@@ -399,7 +399,7 @@ describe('router', () => {
             expect(opts.render_view).toHaveBeenCalledWith('audit_overview', { auditId: 'ns1' });
         });
 
-        test('audit_overview med auditId och not_started med stickprov: renderar audit_overview', async () => {
+        test('audit_overview med auditId och not_started med granskningsdel: renderar audit_overview', async () => {
             window.location.hash = '#audit_overview?auditId=ns2';
             load_audit_with_rule_file.mockResolvedValue({
                 auditId: 'ns2',

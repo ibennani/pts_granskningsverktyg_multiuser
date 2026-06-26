@@ -1,5 +1,5 @@
 /**
- * @fileoverview Enhetstester för filnamn vid automatisk stickprovsskärmdump.
+ * @fileoverview Enhetstester för filnamn vid automatisk granskningsdelsskärmdump.
  */
 import { describe, test, expect } from '@jest/globals';
 import { build_sample_screenshot_filename } from '../../server/utils/sample_screenshot_filename.ts';

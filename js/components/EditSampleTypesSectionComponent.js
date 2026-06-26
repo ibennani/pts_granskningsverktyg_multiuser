@@ -53,7 +53,7 @@ export const EditSampleTypesSectionComponent = {
         }
         const types = [];
         sample_categories.forEach(cat => {
-            // Textarean redigerar endast underkategorierna (stickprovstyperna), inte parent-kategorin
+            // Textarean redigerar endast underkategorierna (granskningsdelstyperna), inte parent-kategorin
             (cat.categories || []).forEach(sub => {
                 types.push(sub.text || sub.id || '');
             });
@@ -157,14 +157,14 @@ export const EditSampleTypesSectionComponent = {
         const form = this.Helpers.create_element('form', { class_name: 'rulefile-metadata-edit-form' });
 
         const section = this.Helpers.create_element('section', { class_name: 'form-section' });
-        const label_text = t('rulefile_sections_sample_types_textarea_label') || 'Stickprovstyper (en per rad).';
+        const label_text = t('rulefile_sections_sample_types_textarea_label') || 'Granskningsdelstyper (en per rad).';
         const label = this.Helpers.create_element('label', {
             attributes: { for: 'sample-types-textarea' },
             html_content: `<strong>${this.Helpers.escape_html ? this.Helpers.escape_html(label_text) : label_text}</strong>`
         });
         const instruction_line1 = this.Helpers.create_element('p', {
             class_name: 'field-hint',
-            text_content: t('rulefile_sections_sample_types_instruction_line1') || 'Skriv en stickprovstyp per rad.'
+            text_content: t('rulefile_sections_sample_types_instruction_line1') || 'Skriv en granskningsdelstyp per rad.'
         });
         const instruction_line2 = this.Helpers.create_element('p', {
             class_name: 'field-hint',
@@ -193,9 +193,9 @@ export const EditSampleTypesSectionComponent = {
             class_name: ['button', 'button-primary'],
             attributes: {
                 type: 'button',
-                'aria-label': t('rulefile_metadata_save_sample_types') || 'Spara stickprovstyper'
+                'aria-label': t('rulefile_metadata_save_sample_types') || 'Spara granskningsdelstyper'
             },
-            html_content: `<span>${t('rulefile_metadata_save_sample_types') || 'Spara stickprovstyper'}</span>` +
+            html_content: `<span>${t('rulefile_metadata_save_sample_types') || 'Spara granskningsdelstyper'}</span>` +
                 (this.Helpers.get_icon_svg ? `<span aria-hidden="true">${this.Helpers.get_icon_svg('save', ['currentColor'], 16)}</span>` : '')
         });
         save_button.addEventListener('click', () => {
@@ -204,7 +204,7 @@ export const EditSampleTypesSectionComponent = {
                 window.DraftManager.commitCurrentDraft();
             }
             this.NotificationComponent.show_global_message?.(
-                t('rulefile_sections_sample_types_saved') || 'Stickprovstyper sparade',
+                t('rulefile_sections_sample_types_saved') || 'Granskningsdelstyper sparade',
                 'success'
             );
             sessionStorage.setItem('focusAfterLoad', '.rulefile-sections-header h2');
@@ -215,9 +215,9 @@ export const EditSampleTypesSectionComponent = {
             class_name: ['button', 'button-default'],
             attributes: {
                 type: 'button',
-                'aria-label': t('rulefile_sample_types_back_without_saving') || 'Tillbaka till stickprov utan att spara'
+                'aria-label': t('rulefile_sample_types_back_without_saving') || 'Tillbaka till granskningsdelar utan att spara'
             },
-            html_content: `<span>${t('rulefile_sample_types_back_without_saving') || 'Tillbaka till stickprov utan att spara'}</span>`
+            html_content: `<span>${t('rulefile_sample_types_back_without_saving') || 'Tillbaka till granskningsdelar utan att spara'}</span>`
         });
         cancel_button.addEventListener('click', () => {
             this._restore_initial_state();

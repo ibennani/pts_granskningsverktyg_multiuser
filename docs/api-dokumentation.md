@@ -337,10 +337,10 @@ async function export_to_word_criterias(current_audit) {
     // Filnamn: [case_number]_[actor]_[date]_sorterat_på_krav.docx
 }
 
-// Word Export (sorterat på stickprov)
+// Word Export (sorterat på granskningsdel)
 async function export_to_word_samples(current_audit) {
-    // Genererar Word-dokument med formaterad rapport, sorterat på stickprov
-    // Filnamn: [case_number]_[actor]_[date]_sorterat_på_stickprov.docx
+    // Genererar Word-dokument med formaterad rapport, sorterat på granskningsdelar
+    // Filnamn: [case_number]_[actor]_[date]_sorterat_på_granskningsdel.docx
 }
 ```
 
@@ -626,7 +626,7 @@ await dispatch({
     }
 });
 
-// Lägg till stickprov
+// Lägg till granskningsdelar
 await dispatch({
     type: StoreActionTypes.ADD_SAMPLE,
     payload: {
@@ -679,7 +679,7 @@ try {
     window.NotificationComponent.show_global_message('Fel vid Word-export', 'error');
 }
 
-// Word-export (sorterat på stickprov)
+// Word-export (sorterat på granskningsdel)
 try {
     await window.ExportLogic.export_to_word_samples(state);
     window.NotificationComponent.show_global_message('Word-dokument genererat', 'success');
@@ -702,7 +702,7 @@ try {
 
 - Max storlek för JSON-body (t.ex. `POST /api/audits/import`) är **50 MiB** (`JSON_MAX_UPLOAD_BYTES` i `shared/constants/json_upload_limits.js`), samma värde som `express.json` använder i `server/index.js`.
 - Klienten avvisar uppladdade JSON-filer större än samma gräns innan parsning (gransknings-/regeluppladdning i granskningsvyn).
-- **Import av granskning** valideras på servern med samma logik som `validate_saved_audit_file` (toppfält, metadata/stickprov/typ av status, samt inbäddad regelfil enligt `validation_logic.ts`). Felmeddelanden byggs från `js/i18n/sv-SE.json` via `audit_import_t` i `server/routes/audits.js`.
+- **Import av granskning** valideras på servern med samma logik som `validate_saved_audit_file` (toppfält, metadata/granskningsdel/typ av status, samt inbäddad regelfil enligt `validation_logic.ts`). Felmeddelanden byggs från `js/i18n/sv-SE.json` via `audit_import_t` i `server/routes/audits.js`.
 - **JSON-struktur:** `js/utils/json_structure_guard.js` begränsar nästlingsdjup och antal noder på importerad data (klient och server).
 - **Rate limit:** `POST /api/audits/import` och `POST /api/rules/import` använder `import_payload_rate_limiter` i `server/middleware/rateLimiter.js` (svar **429** vid för många försök).
 - I **produktion** bakom t.ex. **nginx**: sätt `client_max_body_size` till minst **50m** så proxyn inte avvisar begäran innan den når Node (annars kan användaren få otydliga fel). `server/index.js` använder `trust proxy` för korrekt klient-IP bakom proxy.
@@ -719,7 +719,7 @@ try {
 
 ## Markdown och visning (XSS)
 
-- Markdown som blir HTML ska där det är användargenererat innehåll i första hand gå via `Helpers.sanitize_html` efter `marked.parse` (se t.ex. stickprov formulär).
+- Markdown som blir HTML ska där det är användargenererat innehåll i första hand gå via `Helpers.sanitize_html` efter `marked.parse` (se t.ex. granskningsdel formulär).
 
 ---
 

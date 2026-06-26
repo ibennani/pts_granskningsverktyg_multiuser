@@ -9,7 +9,7 @@ import { build_requirement_result_with_assessment_gaps_filled } from '../logic/r
 import { remove_stale_requirement_result_aliases } from './auditResultAliases.js';
 
 export type BulkPassFullyUnreviewedScope = {
-    /** Om satt: endast detta stickprov; annars alla stickprov */
+    /** Om satt: endast denna granskningsdel; annars alla granskningsdelar */
     target_sample_id: string | null;
     /** Om satt: endast detta krav (key/id); annars alla relevanta krav */
     requirement_id: string | null;

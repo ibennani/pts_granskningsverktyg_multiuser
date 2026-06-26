@@ -1,5 +1,5 @@
 /**
- * Hash-parametrar för filter i kravlistor (per stickprov respektive alla krav).
+ * Hash-parametrar för filter i kravlistor (per granskningsdel respektive alla krav).
  * @module js/logic/requirements_list_filters_url_ui
  */
 

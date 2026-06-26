@@ -6,10 +6,10 @@ Regelfilens `requirements` kan levereras som **nycklat objekt** (varje krav unde
 
 ## Var data används (kategorier)
 
-1. **Granskning och stickprov** – lista relevanta krav, läsa och skriva bedömningar, sidomeny och hash-länkar. Här ska samma uppslag som i `find_requirement_definition` användas så att både publikt id och lagringsnyckel fungerar.
+1. **Granskning och granskningsdel** – lista relevanta krav, läsa och skriva bedömningar, sidomeny och hash-länkar. Här ska samma uppslag som i `find_requirement_definition` användas så att både publikt id och lagringsnyckel fungerar.
 2. **Regelfilsredigering** – ändra enskilt krav, infoblock och innehållstyper. I praktiken ofta objektformat efter migrering; uppslag ska ändå vara tolerant mot lista om filen inte normaliserats.
 3. **Export (Word, Excel, CSV, HTML)** – många moduler itererar krav. Vid objekt används poster och nycklar; vid lista måste iteration och id för export härledas från kravpostens `id`/`key`, inte från listindex som enda id.
-4. **Poäng / bristindex** – räknar över alla krav per stickprov; iteration måste ge samma mängd kravdefinitioner oavsett list- eller objektformat.
+4. **Poäng / bristindex** – räknar över alla krav per granskningsdel; iteration måste ge samma mängd kravdefinitioner oavsett list- eller objektformat.
 5. **Innehållstyper i regelfil** – räkna och filtrera krav per innehållstyp; här krävs korrekt iteration så att listformat inte felaktigt använder index som krav-id.
 6. **Validering vid inläsning** – regelfil och sparad granskning kontrolleras att `requirements` är giltigt objekt eller icke-tom array med samma innehållskrav per post.
 

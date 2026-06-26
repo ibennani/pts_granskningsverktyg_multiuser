@@ -54,7 +54,7 @@ Projektet är organiserat enligt följande struktur:
 ### Export-funktionalitet
 - Exponeras via `window.ExportLogic` (skapas i `js/export_logic.ts`; importeras ofta som `export_logic.js` enligt regeln ovan)
 - Word-export (sorterat på krav): `window.ExportLogic.export_to_word_criterias()`
-- Word-export (sorterat på stickprov): `window.ExportLogic.export_to_word_samples()`
+- Word-export (sorterat på granskningsdel): `window.ExportLogic.export_to_word_samples()`
 - Excel-export: `window.ExportLogic.export_to_excel()`
 - CSV-export: `window.ExportLogic.export_to_csv()`
 - HTML-export: `window.ExportLogic.export_to_html()`

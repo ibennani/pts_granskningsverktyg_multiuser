@@ -1,5 +1,5 @@
 /**
- * Tester för tillgång till bulk-knappen per stickprov.
+ * Tester för tillgång till bulk-knappen per granskningsdel.
  */
 import { describe, expect, it } from '@jest/globals';
 import { user_may_use_sample_mark_bulk_pass_not_audited } from '../../js/logic/sample_bulk_pass_not_audited_gate.js';

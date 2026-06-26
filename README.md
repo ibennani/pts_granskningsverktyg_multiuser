@@ -4,15 +4,15 @@
 
 ## Översikt
 
-Leffe stöder hela kedjan från regelfiler och stickprov till låst granskning och rapport. Gränssnittet är tänkt att vara tillgängligt (WCAG 2.2 AA) och går att använda på svenska eller engelska.
+Leffe stöder hela kedjan från regelfiler och granskningsdel till låst granskning och rapport. Gränssnittet är tänkt att vara tillgängligt (WCAG 2.2 AA) och går att använda på svenska eller engelska.
 
 ### Huvudfunktioner
 
 - **Regelfilshantering**: Ladda upp och validera JSON-baserade regelfiler (serverlagrat läge)
-- **Stickprov**: Definiera och hantera stickprov för granskning
+- **Granskningsdel**: Definiera och hantera granskningsdel för granskning
 - **Strukturerad granskning**: Bedömning av krav enligt regelfilen
 - **Dokumentation**: Observationer och kommentarer
-- **Export**: CSV, Excel, Word (krav eller stickprov) och HTML
+- **Export**: CSV, Excel, Word (krav eller granskningsdel) och HTML
 - **Språk**: Svenska och engelska (fler språkfiler kan finnas)
 - **Responsiv layout**: Desktop och mindre skärmar
 

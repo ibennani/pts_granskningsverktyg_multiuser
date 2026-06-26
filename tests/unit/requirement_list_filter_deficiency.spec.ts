@@ -51,10 +51,10 @@ describe('filter_requirements brist-id-sökning', () => {
         expect(filtered_items[0][0]).toBe('req-b');
     });
 
-    test('låst granskning: under krav visas endast stickprov med brist-id (inte alla stickprov för kravet)', () => {
+    test('låst granskning: under krav visas endast granskningsdel med brist-id (inte alla granskningsdelar för kravet)', () => {
         const sample_without_b27 = {
             id: 'sp2',
-            description: 'Stickprov utan brist 27',
+            description: 'Granskningsdel utan brist 27',
             requirementResults: {
                 'req-b': {
                     checkResults: {

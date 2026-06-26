@@ -77,7 +77,7 @@ export function state_to_patch(state: SyncPayloadState, options: StateToPatchOpt
     return patch;
 }
 
-/** PATCH med endast metadata och status (inga stickprov eller regelfil). */
+/** PATCH med endast metadata och status (inga granskningsdel eller regelfil). */
 export type AuditMetadataPatchPayload = {
     metadata: Record<string, unknown>;
     status: ServerAuditStatus;

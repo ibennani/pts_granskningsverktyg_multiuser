@@ -24,7 +24,7 @@ export function build_report_export_filename(
     );
     const case_number = (current_audit.auditMetadata?.caseNumber || '').trim();
     const sanitized_case_number = case_number ? case_number.replace(/[^a-z0-9åäöÅÄÖ-]/gi, '') : '';
-    const sort_suffix = is_sort_by_requirements ? '_sorterat_på_krav' : '_sorterat_på_stickprov';
+    const sort_suffix = is_sort_by_requirements ? '_sorterat_på_krav' : '_sorterat_på_granskningsdel';
     const date_str = get_download_filename_datetime(null);
 
     if (sanitized_case_number) {

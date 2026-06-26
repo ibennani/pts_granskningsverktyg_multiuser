@@ -39,7 +39,7 @@ export function max_iso_timestamps(...candidates: (string | null | undefined)[])
     return max;
 }
 
-/** Senaste interaktionstid från stickprov (krav, kontroller, kriterier). */
+/** Senaste interaktionstid från granskningsdel (krav, kontroller, kriterier). */
 export function get_last_activity_from_samples(samples: unknown): string | null {
     const parsed = parse_samples_array(samples);
     if (!parsed) return null;
@@ -48,8 +48,8 @@ export function get_last_activity_from_samples(samples: unknown): string | null 
 
 /**
  * Tid som ska visas som "Senast ändrad" i granskningslistan.
- * Avslutade/arkiverade: fryst metadata-värde, annars beräknat från stickprov.
- * Pågående: senaste av metadata-fält och stickprov.
+ * Avslutade/arkiverade: fryst metadata-värde, annars beräknat från granskningsdel.
+ * Pågående: senaste av metadata-fält och granskningsdel.
  */
 export function resolve_audit_list_last_updated_at(input: AuditListLastUpdatedInput): string | null {
     const status = (input.status ?? '').toString();

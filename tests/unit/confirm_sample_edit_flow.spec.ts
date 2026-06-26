@@ -2,7 +2,7 @@ import { jest } from '@jest/globals';
 import { ConfirmSampleEditViewComponent } from '../../js/components/ConfirmSampleEditViewComponent.ts';
 
 describe('ConfirmSampleEditViewComponent flöde', () => {
-    test('Släng återställer stickprov och rensar staged changes', () => {
+    test('Släng återställer granskningsdel och rensar staged changes', () => {
         const comp = new ConfirmSampleEditViewComponent();
         const dispatch = jest.fn();
         const router = jest.fn();

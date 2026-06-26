@@ -48,7 +48,7 @@ describe('sample_type_deficiency_chart_data', () => {
         expect(get_monitoring_type_label_for_audit({})).toBe(MONITORING_LABEL_FALLBACK_SENTINEL);
     });
 
-    test('en stickprovstyp med ett stickprov ger en rad med samma bristindex som ScoreCalculator', () => {
+    test('en granskningsdelstyp med en granskningsdel ger en rad med samma bristindex som ScoreCalculator', () => {
         const state = {
             ruleFileContent: mockRuleFileContent,
             samples: [

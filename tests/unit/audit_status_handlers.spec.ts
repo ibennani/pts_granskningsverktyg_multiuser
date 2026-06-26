@@ -51,7 +51,7 @@ describe('reduce_set_audit_status', () => {
         expect(next.auditMetadata[AUDIT_METADATA_LAST_IN_PROGRESS_ACTIVITY_KEY]).toBe(activity_ts);
     });
 
-    test('in_progress → locked utan stickprov ger null fryst tidsstämpel', () => {
+    test('in_progress → locked utan granskningsdel ger null fryst tidsstämpel', () => {
         const state = base_state({
             auditStatus: 'in_progress',
             endTime: null
@@ -91,7 +91,7 @@ describe('reduce_set_audit_status', () => {
         expect(next.auditMetadata[AUDIT_METADATA_LAST_IN_PROGRESS_ACTIVITY_KEY]).toBe(activity_ts);
     });
 
-    test('locked → archived sätter metadata från stickprov om fryst saknas', () => {
+    test('locked → archived sätter metadata från granskningsdel om fryst saknas', () => {
         const activity_ts = '2026-05-29T05:45:59.000Z';
         const state = base_state({
             auditStatus: 'locked',
@@ -144,7 +144,7 @@ describe('reduce_set_audit_status', () => {
         expect(next.auditMetadata.last_local_change_at).toBe('2026-06-01T08:00:00.000Z');
     });
 
-    test('not_started → in_progress committar bifogad media från utkast till stickprov', () => {
+    test('not_started → in_progress committar bifogad media från utkast till granskningsdel', () => {
         const state = base_state({
             auditStatus: 'not_started',
             samples: [{ id: 's1', attachedMediaFilenames: [] }],

@@ -1,5 +1,5 @@
 /**
- * @file Handlare för stickprov, utkast och väntande ändringar i audit-reducern.
+ * @file Handlare för granskningsdel, utkast och väntande ändringar i audit-reducern.
  */
 
 import * as AuditLogic from '../audit_logic.js';

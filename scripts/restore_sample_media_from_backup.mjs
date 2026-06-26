@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Återställer attachedMediaFilenames (och urlAutoScreenshotFilename) på stickprov
+ * Återställer attachedMediaFilenames (och urlAutoScreenshotFilename) på granskningsdelar
  * från en JSON-säkerhetskopia utan att skriva över övrig granskningsdata.
  *
  * Lokal körning (mot DATABASE_URL):
@@ -71,17 +71,17 @@ function pick_backup_file(audit_id_local, explicit_name) {
         }
     }
     if (!best) {
-        throw new Error('Ingen backup med bifogad media på stickprov hittades');
+        throw new Error('Ingen backup med bifogad media på granskningsdel hittades');
     }
     return best.file;
 }
 
 function merge_sample_media_from_backup(current_samples, backup_samples) {
     if (!Array.isArray(current_samples)) {
-        throw new Error('Aktuella stickprov saknas eller är ogiltiga');
+        throw new Error('Aktuella granskningsdel saknas eller är ogiltiga');
     }
     if (!Array.isArray(backup_samples)) {
-        throw new Error('Backup saknar stickprov');
+        throw new Error('Backup saknar granskningsdel');
     }
 
     const backup_by_id = new Map();
@@ -148,13 +148,13 @@ async function main() {
         );
 
         if (restored_samples === 0) {
-            console.info('[media-restore] Inget att återställa — aktuella stickprov har redan samma media som backup.');
+            console.info('[media-restore] Inget att återställa — aktuella granskningsdel har redan samma media som backup.');
             return;
         }
 
         console.info('[media-restore] Backup:', backup_file.name);
-        console.info('[media-restore] Stickprov i backup:', backup_sample_count);
-        console.info('[media-restore] Stickprov som uppdateras:', restored_samples);
+        console.info('[media-restore] Granskningsdel i backup:', backup_sample_count);
+        console.info('[media-restore] Granskningsdel som uppdateras:', restored_samples);
         console.info('[media-restore] Filnamn totalt:', restored_filenames);
         console.info('[media-restore] Före — version:', row.version, 'status:', row.status);
 
@@ -166,7 +166,7 @@ async function main() {
                 updated_at = CURRENT_TIMESTAMP
              WHERE id = $3
              RETURNING version, status, updated_at::text AS updated_at`,
-            [JSON.stringify(merged), 'Återställning av stickprovsbilder från säkerhetskopia', audit_id]
+            [JSON.stringify(merged), 'Återställning av granskningsdelsbilder från säkerhetskopia', audit_id]
         );
 
         const after = updated.rows[0];

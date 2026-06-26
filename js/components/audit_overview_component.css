@@ -83,7 +83,7 @@
     color: var(--heading-color);
 }
 
-/* Stickprovstyp-diagram (återanvänder statistics-sampletype-chart) */
+/* Granskningsdelstyp-diagram (återanvänder statistics-sampletype-chart) */
 .audit-overview-sampletype-chart-wrap {
     margin-top: 1rem;
     width: 100%;
@@ -160,7 +160,7 @@
 }
 
 
-/* --- Header för stickprovslistan --- */
+/* --- Header för granskningsdelslistan --- */
 .sample-list-header {
     display: flex;
     align-items: baseline;

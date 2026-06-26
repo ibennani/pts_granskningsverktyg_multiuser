@@ -1,5 +1,5 @@
 /**
- * @fileoverview Word-export: uppslag av krav/stickprov och brister för sortering och listor.
+ * @fileoverview Word-export: uppslag av krav/granskningsdel och brister för sortering och listor.
  */
 import { get_export_requirement_result } from './export_bootstrap.js';
 import {

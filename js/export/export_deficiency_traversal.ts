@@ -85,7 +85,7 @@ export function resolve_deficiency_id_part_width(current_audit: unknown): number
     return max_width;
 }
 
-/** Nollor för stickprovs-id-del, samma bredd som bristnummer i granskningen. */
+/** Nollor för granskningsdels-id-del, samma bredd som bristnummer i granskningen. */
 export function format_zero_id_part_for_sample(deficiency_id_part_width: number): string {
     const width = Math.max(MIN_DEFICIENCY_ID_PART_WIDTH, Math.floor(deficiency_id_part_width));
     return '0'.repeat(width);

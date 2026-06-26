@@ -104,8 +104,8 @@ export function get_aggregated_display_status_for_requirement(
 }
 
 /**
- * Kontrollerar om ett stickprov matchar statusfiltret för ett givet krav.
- * Används för att filtrera både krav (minst ett matchande stickprov) och stickprov (endast matchande visas).
+ * Kontrollerar om en granskningsdel matchar statusfiltret för ett givet krav.
+ * Används för att filtrera både krav (minst ett matchande granskningsdel) och granskningsdel (endast matchande visas).
  *
  * @param {object} sample
  * @param {string|number} req_id

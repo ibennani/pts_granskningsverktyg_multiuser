@@ -78,7 +78,7 @@ export function build_item_keys(
 }
 
 /**
- * Visar eller döljer knappen "Markera som godkänt i alla stickprov" efter bulk-åtgärd.
+ * Visar eller döljer knappen "Markera som godkänt i alla granskningsdelar" efter bulk-åtgärd.
  */
 export function sync_requirement_mark_all_passed_button(
     req_li: HTMLElement,

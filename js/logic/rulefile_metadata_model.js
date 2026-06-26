@@ -1,5 +1,5 @@
 /**
- * Kloning och normalisering av regelfilsmetadata (vocabularies, stickprov m.m.).
+ * Kloning och normalisering av regelfilsmetadata (vocabularies, granskningsdel m.m.).
  * @module js/logic/rulefile_metadata_model
  */
 

@@ -1,6 +1,6 @@
 /**
  * Bygger samma datastruktur som statistik-API:t `monitoring_sampletype_chart`
- * för aktuell granskning (median bristindex per stickprovstyp).
+ * för aktuell granskning (median bristindex per granskningsdelstyp).
  */
 import { calculateQualityScore } from './ScoreCalculator.js';
 
@@ -84,7 +84,7 @@ export function build_sampletype_chart_sections_from_audit_state(state: Record<s
     const samples = state?.samples;
     if (!Array.isArray(samples) || samples.length === 0) return [];
 
-    /** sampleType-id → bristindex per stickprov */
+    /** sampleType-id → bristindex per granskningsdel */
     const by_type = new Map<string, number[]>();
 
     for (const sample of samples) {

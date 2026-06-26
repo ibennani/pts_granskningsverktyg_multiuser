@@ -1,5 +1,5 @@
 /**
- * @fileoverview Word-export: huvudflöde (krav- respektive stickprovssortering).
+ * @fileoverview Word-export: huvudflöde (krav- respektive granskningsdelssortering).
  */
 import { consoleManager } from '../utils/console_manager.js';
 import { get_t_internal, show_global_message_internal } from './export_bootstrap.js';
@@ -12,7 +12,7 @@ import {
 import { finalize_word_export_download } from './export_word_main_flow_document.js';
 import { finalize_export_catch } from './export_error_handling.js';
 
-// sortBy kan vara 'requirements' (sorterar på krav) eller 'samples' (sorterar på stickprov)
+// sortBy kan vara 'requirements' (sorterar på krav) eller 'samples' (sorterar på granskningsdel)
 export async function export_to_word_wrapper (current_audit: any, sortBy: any) {
     const t = get_t_internal() as ExportWordMainFlowT;
     if (!current_audit) {

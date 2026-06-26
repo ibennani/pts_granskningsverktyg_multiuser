@@ -9,8 +9,8 @@ Denna guide beskriver formatet och strukturen för de json-regelfiler som använ
 
 Regelfilen definierar bland annat:
 *   Allmän information om regelverket (t.ex. titel, version).
-*   Vilka typer av sidor/vyer som kan granskas (som stickprov).
-*   Vilka typer av innehåll som kraven kan kopplas till (för att filtrera relevanta krav per stickprov).
+*   Vilka typer av sidor/vyer som kan granskas (som granskningsdel).
+*   Vilka typer av innehåll som kraven kan kopplas till (för att filtrera relevanta krav per granskningsdel).
 *   De specifika kraven som ska granskas.
 *   Kontrollpunkter och underliggande godkännandekriterier för varje krav.
 
@@ -35,7 +35,7 @@ Regelfilen måste vara en giltig json-fil (`.json`). Hela innehållet ska utgör
 
 Toppnivåobjektet i json-filen måste innehålla följande två nycklar, och båda är obligatoriska:
 
-*   **`metadata`**: Ett objekt som innehåller allmän information om regelfilen samt definitioner av sidtyper och innehållstyper som används för att kategorisera stickprov och krav. Beskrivs i detalj i avsnitt 4.
+*   **`metadata`**: Ett objekt som innehåller allmän information om regelfilen samt definitioner av sidtyper och innehållstyper som används för att kategorisera granskningsdel och krav. Beskrivs i detalj i avsnitt 4.
 *   **`requirements`**: Ett objekt där varje nyckel-värdepar representerar ett enskilt krav som ska kunna granskas. Beskrivs i detalj i avsnitt 5.
 
 ## 4. Metadata-objektet (`metadata`)
@@ -55,12 +55,12 @@ Objektet under nyckeln `metadata` är obligatoriskt och definierar övergripande
 
 *   **`pageTypes`** (Array av strängar)
     *   **Obligatorisk:** Ja.
-    *   **Beskrivning:** En lista med fördefinierade typer av webbsidor, vyer eller digitala komponenter som kan väljas när en användare skapar ett stickprov. Detta hjälper till att kategorisera stickproven.
+    *   **Beskrivning:** En lista med fördefinierade typer av webbsidor, vyer eller digitala komponenter som kan väljas när en användare skapar en granskningsdel. Detta hjälper till att kategorisera granskningsdelarna.
     *   **Villkor:** Arrayen får inte vara tom. Varje sträng i arrayen ska vara en meningsfull beskrivning och får inte vara tom (t.ex. `"Startsida"`, `"Produktsida"`, `"Nyhetsartikel"`, `"Kontaktformulär"`, `"Sökresultatsida"`, `"Mobilapp - Inloggningsvy"`).
 
 *   **`contentTypes`** (Array av objekt)
     *   **Obligatorisk:** Ja.
-    *   **Beskrivning:** En lista över olika typer av innehåll eller funktionalitet som kraven kan vara specifikt relevanta för. Detta används för att filtrera fram relevanta krav för ett givet stickprov baserat på vad stickprovet innehåller.
+    *   **Beskrivning:** En lista över olika typer av innehåll eller funktionalitet som kraven kan vara specifikt relevanta för. Detta används för att filtrera fram relevanta krav för ett givet granskningsdel baserat på vad granskningsdelen innehåller.
     *   **Villkor:** Arrayen får inte vara tom. Varje objekt i arrayen måste ha följande två nycklar:
         *   **`id`** (Sträng):
             *   **Obligatorisk:** Ja.
@@ -68,7 +68,7 @@ Objektet under nyckeln `metadata` är obligatoriskt och definierar övergripande
             *   **Villkor:** Får inte vara en tom sträng och bör vara unik inom `contentTypes`-arrayen.
         *   **`text`** (Sträng):
             *   **Obligatorisk:** Ja.
-            *   **Beskrivning:** En läsbar beskrivning av innehållstypen som visas för användaren i gränssnittet när de väljer innehållstyper för ett stickprov (t.ex. `"Formulär"`, `"Tabeller"`, `"Videoinnehåll"`, `"Bilder och grafik"`, `"Användning av ARIA"`).
+            *   **Beskrivning:** En läsbar beskrivning av innehållstypen som visas för användaren i gränssnittet när de väljer innehållstyper för en granskningsdel (t.ex. `"Formulär"`, `"Tabeller"`, `"Videoinnehåll"`, `"Bilder och grafik"`, `"Användning av ARIA"`).
             *   **Villkor:** Får inte vara en tom sträng.
 
 **Exempel på `metadata`-objekt:**
@@ -119,14 +119,14 @@ Varje kravobjekt måste innehålla följande **obligatoriska fält**:
     *   **Villkor:** Får inte vara en tom sträng.
 
 *   **`expectedObservation`** (Sträng)
-    *   **Beskrivning:** En tydlig och koncis beskrivning av vad granskaren förväntas observera eller kunna bekräfta om kravet är uppfyllt på det aktuella stickprovet. Detta är ofta den primära texten som granskaren utgår ifrån vid bedömning. Kan innehålla formuleringshjälp eller exempel på hur en korrekt observation kan se ut.
+    *   **Beskrivning:** En tydlig och koncis beskrivning av vad granskaren förväntas observera eller kunna bekräfta om kravet är uppfyllt på den aktuella granskningsdelen. Detta är ofta den primära texten som granskaren utgår ifrån vid bedömning. Kan innehålla formuleringshjälp eller exempel på hur en korrekt observation kan se ut.
     *   **Villkor:** Får inte vara en tom sträng.
 
 *   **`contentType`** (Array av strängar)
     *   **Beskrivning:** En lista med id:n (strängar) som korresponderar mot `id`-fälten i `metadata.contentTypes`. Specificerar vilka typer av innehåll detta krav är relevant för.
     *   **Villkor:** Detta är en obligatorisk array.
-        *   Om arrayen innehåller ett eller flera `contentType`-id:n, kommer kravet endast att visas för stickprov där minst en av dessa innehållstyper har valts.
-        *   Om arrayen är tom (`[]`), antas kravet vara relevant för **alla** stickprov, oavsett vilka innehållstyper som är valda för stickprovet.
+        *   Om arrayen innehåller ett eller flera `contentType`-id:n, kommer kravet endast att visas för granskningsdel där minst en av dessa innehållstyper har valts.
+        *   Om arrayen är tom (`[]`), antas kravet vara relevant för **alla** granskningsdel, oavsett vilka innehållstyper som är valda för granskningsdelen.
 
 *   **`checks`** (Array av objekt)
     *   **Beskrivning:** En lista som innehåller ett eller flera kontrollpunktsobjekt. Varje kontrollpunkt representerar ett specifikt villkor eller en fråga som granskaren måste bedöma för att avgöra om kravet som helhet är uppfyllt.

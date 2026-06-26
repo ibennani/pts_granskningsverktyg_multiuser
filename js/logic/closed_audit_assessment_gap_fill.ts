@@ -103,7 +103,7 @@ export function apply_closed_audit_assessment_gap_fill(
     return { state: recalculated, changed: true, stats };
 }
 
-/** Räknar kvarvarande delvis granskade och ogranskade kravbedömningar (relevanta krav per stickprov). */
+/** Räknar kvarvarande delvis granskade och ogranskade kravbedömningar (relevanta krav per granskningsdel). */
 export function count_incomplete_assessments_in_audit(audit_state: AuditStateShape): {
     partially_audited: number;
     not_audited: number;

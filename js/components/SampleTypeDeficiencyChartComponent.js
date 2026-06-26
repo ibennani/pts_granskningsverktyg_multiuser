@@ -1,5 +1,5 @@
 /**
- * Återanvändbar vy: staplar med median bristindex per stickprovstyp (samma utseende som statistiksidan).
+ * Återanvändbar vy: staplar med median bristindex per granskningsdelstyp (samma utseende som statistiksidan).
  */
 import {
     MONITORING_LABEL_FALLBACK_SENTINEL,

@@ -37,7 +37,7 @@ export function should_skip_url_screenshot_capture(
     return attached_filenames.includes(auto_filename);
 }
 
-/** Vid blur: ta inte auto-skärmdump om stickprovet har manuellt bifogade bilder (ej enbart auto-skärmdump). */
+/** Vid blur: ta inte auto-skärmdump om granskningsdelen har manuellt bifogade bilder (ej enbart auto-skärmdump). */
 export function should_skip_url_screenshot_when_attached_media_exists(
     filenames: string[],
     auto_filename: string | null = null

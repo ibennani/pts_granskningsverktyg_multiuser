@@ -1,5 +1,5 @@
 /**
- * Tillgång till massåtgärden "sätt alla helt ogranskade till ingen anmärkning" per stickprov
+ * Tillgång till massåtgärden "sätt alla helt ogranskade till ingen anmärkning" per granskningsdel
  * när granskningen pågår.
  */
 

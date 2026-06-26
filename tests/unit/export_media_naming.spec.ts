@@ -81,7 +81,7 @@ describe('export_media_naming', () => {
         ).toBe('047_1_WEB_1_2026-04-11_26-11111.png');
     });
 
-    test('resolve_sample_media_export_filename använder stickprovsordning', () => {
+    test('resolve_sample_media_export_filename använder granskningsdelsordning', () => {
         const samples = [{ id: 's1' }, { id: 's2' }];
         expect(
             resolve_sample_media_export_filename('stickprov.png', sample_context, { sample_id: 's2' }, samples)

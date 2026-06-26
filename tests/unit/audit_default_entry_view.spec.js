@@ -23,7 +23,7 @@ describe('audit_default_entry_view', () => {
         ).toBe(true);
     });
 
-    test('default_view: not_started med sparad metadata → sample_management även utan stickprov', () => {
+    test('default_view: not_started med sparad metadata → sample_management även utan granskningsdel', () => {
         expect(
             default_view_for_loaded_audit_state({
                 auditStatus: 'not_started',
@@ -33,7 +33,7 @@ describe('audit_default_entry_view', () => {
         ).toBe('sample_management');
     });
 
-    test('default_view: not_started med stickprov men utan sparad metadata → metadata', () => {
+    test('default_view: not_started med granskningsdel men utan sparad metadata → metadata', () => {
         expect(
             default_view_for_loaded_audit_state({
                 auditStatus: 'not_started',

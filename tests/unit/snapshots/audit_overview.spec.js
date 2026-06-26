@@ -46,7 +46,7 @@ function build_translation() {
         audit_status_locked: 'Låst',
         deficiency_index_title: 'Bristindex',
         lower_is_better: 'Lägre är bättre',
-        based_on_samples: 'Baserat på stickprov',
+        based_on_samples: 'Baserat på granskningsdelar',
         score_by_principle_deficiency: 'Per princip',
         perceivable: 'Upplevbar',
         operable: 'Hanterbar',

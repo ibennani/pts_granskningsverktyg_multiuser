@@ -17,8 +17,8 @@ Denna guide tar dig från start till att du har gått igenom dina första krav o
 1. Gå till **Admin** via sidomenyn
 2. Klicka på **"Starta ny granskning"**
 3. Välj en regelfil från listan (eller ladda upp en ny via knappen "Ladda upp")
-4. Fyll i **metadata** (diarienummer, aktör, granskare m.m.) och klicka **"Fortsätt till stickprov"**
-5. Lägg till minst ett **stickprov** – sidor eller vyer som ska granskas
+4. Fyll i **metadata** (diarienummer, aktör, granskare m.m.) och klicka **"Fortsätt till granskningsdel"**
+5. Lägg till minst ett **granskningsdel** – sidor eller vyer som ska granskas
 6. Klicka **"Starta granskning"**
 7. Du kommer till granskningsöversikten
 
@@ -26,11 +26,11 @@ Denna guide tar dig från start till att du har gått igenom dina första krav o
 
 ## 2. Genomföra granskningen
 
-### Välj stickprov och gå till krav
-- I granskningsöversikten ser du alla stickprov
-- **"Granska nästa"** – tar dig till det första ogranskade kravet för stickprovet
-- **"Visa alla krav"** – visar hela kravlistan för stickprovet
-- **"Besök"** – öppnar stickprovets webbadress i ny flik (användbart när du granskar)
+### Välj granskningsdel och gå till krav
+- I granskningsöversikten ser du alla granskningsdelar
+- **"Granska nästa"** – tar dig till det första ogranskade kravet för granskningsdelen
+- **"Visa alla krav"** – visar hela kravlistan för granskningsdelen
+- **"Besök"** – öppnar granskningsdelens webbadress i ny flik (användbart när du granskar)
 
 ### Bedöm krav
 När du är i **kravgranskningsvyn**:
@@ -64,8 +64,8 @@ När du är i **kravgranskningsvyn**:
 - **Sortera efter** – t.ex. Kategori, Status (problem först), Titel (A–Ö), Referens
 
 ### I kravgranskningsvyn
-- **Sidopanelen** visar relaterade krav och stickprov – du kan filtrera och sortera där också
-- **Inställningar** – välj om du vill granska "Sorterat per krav" eller "Sorterat per stickprov"
+- **Sidopanelen** visar relaterade krav och granskningsdel – du kan filtrera och sortera där också
+- **Inställningar** – välj om du vill granska "Sorterat per krav" eller "Sorterat per granskningsdel"
 
 ---
 
@@ -81,7 +81,7 @@ När granskningen är låst:
 - **Exportera till CSV** – en eller flera textfiler
 - **Exportera till Excel** – en Excel-fil (.xlsx)
 - **Exportera till Word (krav)** – rapport sorterad på krav
-- **Exportera till Word (stickprov)** – rapport sorterad på stickprov
+- **Exportera till Word (granskningsdel)** – rapport sorterad på granskningsdelar
 - **Exportera till HTML** – rapport för webbvisning
 
 ### Behöver du ändra något?
@@ -93,7 +93,7 @@ När granskningen är låst:
 
 - **Metadata** – kan redigeras när som helst via knappen **"Redigera"** i granskningsinfopanelens header (även under pågående granskning)
 - **Ladda ner** – i startvyns tabell finns en knapp för att ladda ner granskningen som JSON-fil
-- **Stickprov** – du kan lägga till, redigera och radera stickprov även när granskningen är pågående
+- **Granskningsdel** – du kan lägga till, redigera och radera granskningsdel även när granskningen är pågående
 
 ---
 

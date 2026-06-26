@@ -35,7 +35,7 @@ Granskningsmetadata lagras centralt i `state.auditMetadata` i [js/state.js](../j
 |-------|-----------|----------------|
 | Granskningsöversikt | [AuditInfoComponent](../js/components/AuditInfoComponent.js) | Alla fält |
 | Sidtitel (flik) | [main.js](../js/main.js) `build_page_title` | `actorName` |
-| Stickprovslista (header) | [RequirementsListViewComponent](../js/components/RequirementsListViewComponent.js) | `actorName` |
+| Granskningsdelslista (header) | [RequirementsListViewComponent](../js/components/RequirementsListViewComponent.js) | `actorName` |
 | Kravgranskning (kontext) | [RequirementAuditComponent](../js/components/RequirementAuditComponent.js) | `actorName` |
 | Export (Word, Excel, CSV, HTML) | [export_logic.js](../js/export_logic.js) | Alla fält |
 | Sparfilnamn | [save_audit_logic.js](../js/logic/save_audit_logic.js) | `actorName`, `caseNumber` |

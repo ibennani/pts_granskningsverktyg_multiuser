@@ -13,7 +13,7 @@
     color: var(--heading-color);
 }
 
-/* NY REGEL: Gör länken för aktör/stickprov klickbar över hela ytan med rätt pekare */
+/* NY REGEL: Gör länken för aktör/granskningsdel klickbar över hela ytan med rätt pekare */
 .requirement-audit-header p a {
     cursor: pointer;
     display: inline-block; /* Säkerställer att hela texten agerar som en enhet */

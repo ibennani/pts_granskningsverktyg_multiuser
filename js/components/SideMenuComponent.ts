@@ -304,7 +304,7 @@ export class SideMenuComponent {
         const rule_file_content = state?.ruleFileContent || null;
         const requirements = rule_file_content?.requirements;
 
-        // Antalet krav i menyn ska räkna krav som är relevanta för minst ett stickprov,
+        // Antalet krav i menyn ska räkna krav som är relevanta för minst en granskningsdel,
         // baserat på valda innehållstyper (inte baserat på requirementResults som ofta är tomt innan granskning).
         const can_use_audit_logic = Boolean(
             this.AuditLogic &&

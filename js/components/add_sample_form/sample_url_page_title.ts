@@ -1,5 +1,5 @@
 /**
- * @fileoverview Hämtar sidtitel från URL och fyller beskrivningsfältet i stickprovsformuläret.
+ * @fileoverview Hämtar sidtitel från URL och fyller beskrivningsfältet i granskningsdelsformuläret.
  */
 
 import { can_upload_audit_media, fetch_audit_url_page_title } from '../../api/audit_media_api.js';

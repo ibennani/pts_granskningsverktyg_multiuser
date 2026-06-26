@@ -201,7 +201,7 @@ export function _create_requirement_page(
         }
     }
 
-    // Stickprov för detta krav
+    // Granskningsdel för detta krav
     const samples_for_requirement = get_samples_for_requirement(requirement, current_audit);
     for (const sample of samples_for_requirement) {
         const sample_children = create_sample_section(sample, requirement, current_audit, t);
@@ -219,7 +219,7 @@ export function create_sample_section(
 ) {
     const children = [];
 
-    // H2: Stickprovets namn
+    // H2: Granskningsdelens namn
     children.push(new Paragraph({
         children: [create_heading_text(sample.description, 2)],
         heading: HeadingLevel.HEADING_2

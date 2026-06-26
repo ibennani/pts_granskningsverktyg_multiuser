@@ -5,7 +5,7 @@
     overflow: visible;
 }
 
-/* Header för vyn - Stickprovsinfo */
+/* Header för vyn - Granskningsdelsinfo */
 .requirement-list-header {
     margin-bottom: 1.5rem;
     padding-bottom: 1rem;
@@ -178,7 +178,7 @@
     background-color: color-mix(in srgb, var(--plate-background-color) 95%, black);
 }
 
-/* Nästlad struktur: h3 med kravnamn, sub-text med ref och antal, ul med stickprov (all requirements-vyn) */
+/* Nästlad struktur: h3 med kravnamn, sub-text med ref och antal, ul med granskningsdel (all requirements-vyn) */
 .requirements-list-content .requirement-header-nested {
     font-size: 1.05rem;
     font-weight: 600;

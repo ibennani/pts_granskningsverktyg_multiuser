@@ -1,5 +1,5 @@
 /**
- * @fileoverview Bygger filnamn för automatisk stickprovsskärmdump.
+ * @fileoverview Bygger filnamn för automatisk granskningsdelsskärmdump.
  */
 import { sanitize_media_filename } from '../../shared/media/sanitize_media_filename.js';
 

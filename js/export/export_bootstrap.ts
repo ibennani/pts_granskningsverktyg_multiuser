@@ -20,7 +20,7 @@ export function show_global_message_internal(message: string, type: string, dura
     }
 }
 
-/** Kanoniskt kravresultat per stickprov (samma uppslag som granskning och audit_logic). */
+/** Kanoniskt kravresultat per granskningsdel (samma uppslag som granskning och audit_logic). */
 export function get_export_requirement_result(requirements: unknown, sample: unknown, req_definition: unknown) {
     if (!requirements || !sample || !req_definition) return undefined;
     const results = (sample as { requirementResults?: Record<string, RequirementResultStored> | null | undefined })

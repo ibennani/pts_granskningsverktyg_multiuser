@@ -1,5 +1,5 @@
 /**
- * @fileoverview Bygger standardiserade exportfilnamn för medier kopplade till brister och stickprov.
+ * @fileoverview Bygger standardiserade exportfilnamn för medier kopplade till brister och granskningsdel.
  */
 
 import { sanitize_media_filename } from '../../shared/media/sanitize_media_filename.js';
@@ -81,7 +81,7 @@ export function build_requirement_media_export_filename(input: RequirementMediaE
 }
 
 /**
- * Format: {000…}_{stickprovsnr}_{WEBB|PDF}_{granskningsnr}_{YYYY-MM-DD}_{diarienummer}.{ext}
+ * Format: {000…}_{granskningsdelsnr}_{WEBB|PDF}_{granskningsnr}_{YYYY-MM-DD}_{diarienummer}.{ext}
  */
 export function build_sample_media_export_filename(input: SampleMediaExportFilenameInput): string {
     return build_media_export_filename({

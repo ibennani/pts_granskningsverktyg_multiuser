@@ -31,7 +31,7 @@ function make_state(overrides = {}) {
         samples: [
             {
                 id: 'sample_1',
-                description: 'Stickprov',
+                description: 'Granskningsdel',
                 requirementResults: {
                     krav_a: {
                         checkResults: {

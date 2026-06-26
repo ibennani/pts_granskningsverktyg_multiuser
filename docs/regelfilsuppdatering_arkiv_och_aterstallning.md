@@ -34,7 +34,7 @@ När användaren klickar på åtgärden för att uppdatera regelfil händer föl
 
 Backup‑steget fungerar så här i praktiken:
 
-- Hela granskningens aktuella state (inklusive nuvarande regelfil, alla kravresultat, stickprov, metadata och arkiverad information som redan finns) packas ihop till ett JSON‑objekt.
+- Hela granskningens aktuella state (inklusive nuvarande regelfil, alla kravresultat, granskningsdel, metadata och arkiverad information som redan finns) packas ihop till ett JSON‑objekt.
 - Användaren får ladda ner filen i webbläsaren.
 - Denna fil kan senare användas för att manuellt återskapa granskningen om något skulle gå fel vid uppdateringen.
 
@@ -99,8 +99,8 @@ När användaren bekräftar att regelfilen ska uppdateras byggs granskningens in
    - `ruleFileContent` i state byts ut mot den nya regelfilen.
    - Övriga delar av state, t.ex. UI‑inställningar och metadata, förs över.
 
-2. **Stickprov och kravresultat gås igenom**
-   - För varje stickprov i granskningen tittar systemet på alla kravresultat (`requirementResults`).
+2. **Granskningsdel och kravresultat gås igenom**
+   - För varje granskningsdel i granskningen tittar systemet på alla kravresultat (`requirementResults`).
    - För varje kravresultat avgörs om kravet:
      - fortfarande finns oförändrat i den nya regelfilen,
      - finns men är ändrat,
@@ -108,7 +108,7 @@ När användaren bekräftar att regelfilen ska uppdateras byggs granskningens in
    - **Mappning av kontrollpunkter och godkännandekriterier:** För krav som finns kvar omstruktureras varje kravresultat så att det följer den nya regelfilens ID-struktur. Kontrollpunkter och godkännandekriterier kan ha nya ID:n i den nya regelfilen även när innehållet är detsamma (t.ex. efter redigering). Systemet matchar då gamla och nya kontrollpunkter på normaliserad condition-text, och inom varje kontrollpunkt matchas kriterier på normaliserad requirement-text (ordning används vid identisk text). Sparad status (t.ex. Underkänt, Inte aktuellt), bristbeskrivningar och bilagor flyttas till de nya ID:n så att de visas korrekt efter uppdateringen.
 
 3. **Borttagna krav flyttas till arkivet**
-   - Om ett krav inte längre finns i den nya regelfilen tas det bort från de ordinarie kravresultaten i respektive stickprov.
+   - Om ett krav inte längre finns i den nya regelfilen tas det bort från de ordinarie kravresultaten i respektive granskningsdel.
    - I stället flyttas kravet och alla dess resultat till ett särskilt arkivfält i granskningens state (se avsnitt 3 nedan).
    - På så sätt försvinner borttagna krav från den aktiva checklistan, men observationerna finns kvar i arkivet.
 
@@ -122,7 +122,7 @@ När användaren bekräftar att regelfilen ska uppdateras byggs granskningens in
    - Resultaten för dessa krav fortsätter att gälla som tidigare.
 
 6. **Det nya state:et ersätter det gamla**
-   - När alla stickprov och kravresultat har hanterats beräknas statusar om (på krav- och kontrollpunktsnivå) så att de sparade statusfälten stämmer med den nya regelfilens struktur.
+   - När alla granskningsdelar och kravresultat har hanterats beräknas statusar om (på krav- och kontrollpunktsnivå) så att de sparade statusfälten stämmer med den nya regelfilens struktur.
    - Det nybyggda state:et ersätter sedan det gamla.
    - Synkroniseringstjänsten skickar därefter upp de relevanta delarna av state till servern så att databasen uppdateras.
 
@@ -187,7 +187,7 @@ För godkännandekriterier görs en liknande analys:
 
 Resultatet av analysen används för att styra vad som händer i granskningen:
 
-- Om ett krav är ändrat och redan har ett resultat i något stickprov markeras kravet som **behöver omgranskning** i dessa stickprov.
+- Om ett krav är ändrat och redan har ett resultat i någon granskningsdel markeras kravet som **behöver omgranskning** i dessa granskningsdel.
 - En separat struktur i state sparar vilka kontrollpunkter och kriterier som är nya eller ändrade för varje krav.
 - När användaren går in i kravvyn kan gränssnittet visa att kravet har ändrats och peka ut exakt vilka delar som är nya eller ändrade.
 
@@ -204,13 +204,13 @@ När ett krav tas bort i samband med en regelfilsuppdatering flyttas det från d
 - Kravets id och titel.
 - Standardreferens eller annan textuell referens till regelverket.
 - Vilken version av regelfilen kravet kommer ifrån.
-- En lista över stickprov där kravet förekom, inklusive:
+- En lista över granskningsdel där kravet förekom, inklusive:
   - hela kravresultatet (status, observationstext, bilagor m.m.) så som det såg ut innan uppdateringen.
 
 Resultatet visas i en särskild arkivvy där användaren kan:
 
 - Se vilka krav som försvunnit i samband med uppdateringen.
-- Se hur många stickprov som påverkats av varje borttaget krav.
+- Se hur många granskningsdel som påverkats av varje borttaget krav.
 - Läsa de observationer som gjorts på dessa krav i tidigare versioner av regelfilen.
 
 ### 3.2 Arkivets koppling till servern
@@ -221,7 +221,7 @@ Klientens synkroniseringslogik är utformad så att den kan skicka med arkivet t
 
 I nuläget är serverdelen dock inte fullt utbyggd för att ta hand om arkivet:
 
-- Servern tar emot uppdateringar av metadata, status, stickprov och regelfilsinnehåll.
+- Servern tar emot uppdateringar av metadata, status, granskningsdel och regelfilsinnehåll.
 - Information om arkivet hanteras däremot inte konsekvent i databasen än.
 
 Konsekvensen är att:
@@ -276,9 +276,9 @@ På en övergripande nivå kan återläggning av borttagna krav fungera så här
 
 - När användaren väljer att “lägga tillbaka” ett arkiverat krav:
   - Skapas en intern nyckel för kravet som inte krockar med befintliga krav i regelfilen, till exempel med ett prefix som markerar att det är ett återlagt arkivkrav.
-  - För de stickprov där kravet hade resultat skapas nya poster i `requirementResults` baserade på de sparade arkivresultaten.
+  - För de granskningsdel där kravet hade resultat skapas nya poster i `requirementResults` baserade på de sparade arkivresultaten.
   - Själva kravdefinitionen för arkivkravet läggs i en separat struktur, till exempel en lista med extra krav som kompletterar den ordinarie regelfilen.
-- Logik som tar fram relevanta krav för ett stickprov behöver anpassas så att dessa extra krav tas med när det är lämpligt:
+- Logik som tar fram relevanta krav för en granskningsdel behöver anpassas så att dessa extra krav tas med när det är lämpligt:
   - Antingen alltid, under en särskild rubrik.
   - Eller styrt av en inställning på granskningen.
 

@@ -200,7 +200,7 @@ export function navigate_and_set_hash(target_view_name, target_params = {}, opti
         !safe_params.editSampleId &&
         audit_status_blocks_sample_and_requirement_edits(current_state_for_nav?.auditStatus)
     ) {
-        nav_debug('navigate_and_set_hash blockerad: nytt stickprov vid avslutad/arkiverad granskning');
+        nav_debug('navigate_and_set_hash blockerad: ny granskningsdel vid avslutad/arkiverad granskning');
         const t = window.Translation?.t || ((k) => k);
         app_runtime_refs.notification_component?.show_global_message?.(
             t('error_cannot_add_sample_when_audit_closed'),

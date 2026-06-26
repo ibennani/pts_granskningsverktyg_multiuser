@@ -11,7 +11,7 @@
 
 Verktyget ska underlätta strukturerad granskning enligt definierade regler genom att:
 - Validera och hantera JSON-baserade regelfiler
-- Stödja definiering och hantering av stickprov
+- Stödja definiering och hantering av granskningsdel
 - Möjliggöra systematisk bedömning av krav
 - Dokumentera observationer och kommentarer
 - Generera rapporter i olika format (CSV, Excel, Word)
@@ -22,7 +22,7 @@ Verktyget ska underlätta strukturerad granskning enligt definierade regler geno
 - **Prestanda**: Snabb laddning och responsiv användarupplevelse
 - **Tillgänglighet**: Fullständig kompatibilitet med hjälpmedel
 - **Säkerhet**: Säker hantering av känslig data
-- **Skalbarhet**: Stöd för stora regelfiler och många stickprov
+- **Skalbarhet**: Stöd för stora regelfiler och många granskningsdel
 - **Underhållbarhet**: Modulär arkitektur för enkel utveckling
 
 ## 2. Teknisk arkitektur
@@ -138,23 +138,23 @@ Verktyget ska underlätta strukturerad granskning enligt definierade regler geno
     *   Ansvarig granskare (frivilligt).
     *   Intern kommentar (frivilligt, flerradig text).
 2.  **Redigerbarhet:** Metadata kan redigeras i status `not_started` och `in_progress` via knappen **Redigera** i granskningsinfopanelens header (vy `edit_metadata`). I status `locked` är bedömningar låsta; metadata kan fortfarande visas men redigeras normalt inte under låst granskning.
-3.  **Navigering:** Knapp för att fortsätta till stickprovshantering.
+3.  **Navigering:** Knapp för att fortsätta till granskningsdelshantering.
 
-### 4.3 Initial stickprovshantering (status: `not_started`)
-1.  **Vy:** En dedikerad vy för att hantera stickprov innan granskningen formellt startas.
+### 4.3 Initial granskningsdelshantering (status: `not_started`)
+1.  **Vy:** En dedikerad vy för att hantera granskningsdel innan granskningen formellt startas.
 2.  **Funktioner:**
-    *   **Lägga till nytt stickprov:** Formulär för att ange:
+    *   **Lägga till ny granskningsdel:** Formulär för att ange:
         *   Typ av sida/vy (från en lista definierad i regelfilen).
-        *   Beskrivning/Namn på stickprovet (obligatoriskt).
+        *   Beskrivning/Namn på granskningsdelen (obligatoriskt).
         *   Url (frivilligt, url-format).
         *   Innehållstyper (checkbox-lista, baserad på definitioner i regelfilen, minst en måste väljas).
-    *   **Lista befintliga stickprov:** Tydlig visning av alla tillagda stickprov med deras detaljer.
-    *   **Redigera stickprov:** Möjlighet att ändra informationen för ett befintligt stickprov.
-    *   **Radera stickprov:** Möjlighet att ta bort ett stickprov. En bekräftelsedialog ska visas. Minst ett stickprov måste alltid finnas för att kunna starta granskningen. Om endast ett stickprov finns, ska raderingsalternativet inte vara tillgängligt/renderas för det stickprovet.
-3.  **Navigering:** Knapp för att starta själva granskningen. Denna knapp ska endast vara aktiv om minst ett stickprov har lagts till.
+    *   **Lista befintliga granskningsdel:** Tydlig visning av alla tillagda granskningsdel med deras detaljer.
+    *   **Redigera granskningsdel:** Möjlighet att ändra informationen för ett befintligt granskningsdel.
+    *   **Radera granskningsdel:** Möjlighet att ta bort en granskningsdel. En bekräftelsedialog ska visas. Minst en granskningsdel måste alltid finnas för att kunna starta granskningen. Om endast en granskningsdel finns, ska raderingsalternativet inte vara tillgängligt/renderas för det granskningsdelen.
+3.  **Navigering:** Knapp för att starta själva granskningen. Denna knapp ska endast vara aktiv om minst en granskningsdel har lagts till.
 
 ### 4.4 Starta granskning
-1.  **Åtgärd:** När användaren klickar på "Starta granskning" (från stickprovshanteringsvyn):
+1.  **Åtgärd:** När användaren klickar på "Starta granskning" (från granskningsdelshanteringsvyn):
     *   Granskningens status ändras från `not_started` till `in_progress`.
     *   En starttid (tidsstämpel, ISO 8601) registreras för granskningen.
     *   Applikationen navigerar till granskningsöversikten. Metadata kan fortfarande redigeras via **Redigera** i granskningsinfopanelen.
@@ -162,22 +162,22 @@ Verktyget ska underlätta strukturerad granskning enligt definierade regler geno
 ### 4.5 Granskningsöversikt (status: `in_progress` eller `locked`)
 1.  **Visad information:**
     *   Allmän granskningsinformation (metadata, regelfilens titel/version, starttid, ev. sluttid, aktuell status).
-    *   En sammanfattning av den totala granskningsframstegen (t.ex. antal granskade krav / totalt antal relevanta krav för alla stickprov, kan visas med en progressbar).
-    *   Rubrik som indikerar antalet tillagda stickprov (t.ex. "Tillagda stickprov: 3 st").
-    *   En lista över alla aktuella stickprov (renderad av en återanvändbar stickprovslistkomponent). För varje stickprov visas:
+    *   En sammanfattning av den totala granskningsframstegen (t.ex. antal granskade krav / totalt antal relevanta krav för alla granskningsdelar, kan visas med en progressbar).
+    *   Rubrik som indikerar antalet tillagda granskningsdel (t.ex. "Tillagda granskningsdel: 3 st").
+    *   En lista över alla aktuella granskningsdel (renderad av en återanvändbar granskningsdelslistkomponent). För varje granskningsdel visas:
         *   Beskrivning, sidtyp, url.
-        *   Progress för det enskilda stickprovet (antal granskade krav / totalt relevanta krav, kan visas med en progressbar).
+        *   Progress för det enskilda granskningsdelen (antal granskade krav / totalt relevanta krav, kan visas med en progressbar).
         *   Valda innehållstyper.
         *   Åtgärdsknappar (beroende på granskningsstatus):
-            *   "Visa alla krav": Navigerar till kravlistvyn för stickprovet.
-            *   "Granska nästa ohanterade" (eller "Granska"): Navigerar till det första ogranskade/delvis granskade kravet för stickprovet i kravgranskningsvyn. Om alla krav är hanterade, kan denna knapp antingen döljas eller ändra text/funktion till "Visa resultat" (navigerar till kravlistvyn).
+            *   "Visa alla krav": Navigerar till kravlistvyn för granskningsdelen.
+            *   "Granska nästa ohanterade" (eller "Granska"): Navigerar till det första ogranskade/delvis granskade kravet för granskningsdelen i kravgranskningsvyn. Om alla krav är hanterade, kan denna knapp antingen döljas eller ändra text/funktion till "Visa resultat" (navigerar till kravlistvyn).
             *   "Besök url" (om url finns).
-2.  **Stickprovshantering under pågående granskning (status: `in_progress`):**
-    *   **Lägg till nytt stickprov:** En knapp ska finnas tillgänglig (t.ex. bredvid rubriken för stickprovslistan) för att lägga till nya stickprov. Detta ska öppna ett formulär (återanvändning av formulärkomponenten från 4.3.2.a rekommenderas, eventuellt i en modal eller genom att expandera ett område i vyn).
-    *   **Redigera stickprov:** För varje listat stickprov ska det finnas en redigeringsknapp som öppnar formuläret för att ändra stickprovets detaljer.
-    *   **Radera stickprov:** För varje listat stickprov ska det finnas en raderingsknapp.
+2.  **Granskningsdelshantering under pågående granskning (status: `in_progress`):**
+    *   **Lägg till ny granskningsdel:** En knapp ska finnas tillgänglig (t.ex. bredvid rubriken för granskningsdelslistan) för att lägga till nya granskningsdel. Detta ska öppna ett formulär (återanvändning av formulärkomponenten från 4.3.2.a rekommenderas, eventuellt i en modal eller genom att expandera ett område i vyn).
+    *   **Redigera granskningsdel:** För varje listat granskningsdel ska det finnas en redigeringsknapp som öppnar formuläret för att ändra granskningsdelens detaljer.
+    *   **Radera granskningsdel:** För varje listat granskningsdel ska det finnas en raderingsknapp.
         *   En bekräftelsedialog ska visas innan radering. Fokus ska hanteras korrekt (flyttas till dialogen och tillbaka till relevant element när dialogen stängs).
-        *   Radering ska endast vara möjlig om det finns fler än ett stickprov i granskningen. Om endast ett stickprov återstår, ska raderingsknappen inte vara tillgänglig/renderas för det stickprovet.
+        *   Radering ska endast vara möjlig om det finns fler än en granskningsdel i granskningen. Om endast en granskningsdel återstår, ska raderingsknappen inte vara tillgänglig/renderas för det granskningsdelen.
 3.  **Åtgärder för hela granskningen:**
     *   "Spara granskning till fil" (alltid tillgänglig).
     *   Om status är `in_progress`: "Lås och avsluta granskningen".
@@ -185,14 +185,14 @@ Verktyget ska underlätta strukturerad granskning enligt definierade regler geno
         *   "Lås upp granskning".
         *   "Exportera till csv".
         *   "Exportera till excel (xlsx)".
-        *   "Exportera till Word (krav)" / "Exportera till Word (stickprov)".
+        *   "Exportera till Word (krav)" / "Exportera till Word (granskningsdel)".
         *   "Exportera till HTML".
 
-### 4.6 Kravlistvy (per stickprov)
-1.  **Visning:** När användaren väljer att se kraven för ett specifikt stickprov.
+### 4.6 Kravlistvy (per granskningsdel)
+1.  **Visning:** När användaren väljer att se kraven för ett specifikt granskningsdel.
 2.  **Innehåll:**
-    *   Information om det valda stickprovet (beskrivning, sidtyp, granskningsprogress för stickprovet).
-    *   En lista över alla relevanta krav för stickprovet (baserat på dess valda innehållstyper).
+    *   Information om det valda granskningsdelen (beskrivning, sidtyp, granskningsprogress för granskningsdelen).
+    *   En lista över alla relevanta krav för granskningsdelen (baserat på dess valda innehållstyper).
     *   Kraven ska grupperas efter huvudkategori och underkategori (enligt regelfilen). Kategorier och krav inom kategorier ska sorteras alfabetiskt baserat på deras text.
     *   För varje krav visas:
         *   Titel (klickbar för att navigera till kravgranskningsvyn).
@@ -201,11 +201,11 @@ Verktyget ska underlätta strukturerad granskning enligt definierade regler geno
         *   Standardreferens (om sådan finns i regelfilen, klickbar om url finns).
 3.  **Navigering:** Tillbaka till granskningsöversikten.
 
-### 4.7 Kravgranskningsvy (per krav och stickprov)
+### 4.7 Kravgranskningsvy (per krav och granskningsdel)
 1.  **Visning:** När användaren klickar på ett specifikt krav från kravlistvyn.
 2.  **Innehåll:**
     *   Kravets titel och standardreferens (om den finns).
-    *   Övergripande status för kravet för det aktuella stickprovet.
+    *   Övergripande status för kravet för den aktuella granskningsdelen.
     *   Sektioner från regelfilen: Förväntad observation, Instruktioner, Tips, Undantag, Vanliga fel (om de finns).
     *   Kravets metadata (kategori, påverkan etc.).
     *   **Kontrollpunkter (`checks`):**
@@ -226,40 +226,40 @@ Verktyget ska underlätta strukturerad granskning enligt definierade regler geno
     *   Status för en kontrollpunkt beräknas baserat på den manuellt satta övergripande statusen ("Stämmer"/"Stämmer inte") och, om "Stämmer" är valt, statusen för dess godkännandekriterier (och logiken AND/OR om specificerad).
     *   Status för ett krav beräknas baserat på status för alla dess relevanta kontrollpunkter.
 4.  **Navigering:**
-    *   Tillbaka till kravlistvyn för det aktuella stickprovet.
-    *   Knappar för "Föregående krav" och "Nästa krav" (inom samma stickprov, baserat på den sorterade listan). Ikoner till höger om texten.
-    *   Knapp för "Nästa ohanterade krav" (inom samma stickprov). Ikon till höger om texten.
+    *   Tillbaka till kravlistvyn för den aktuella granskningsdelen.
+    *   Knappar för "Föregående krav" och "Nästa krav" (inom samma granskningsdel, baserat på den sorterade listan). Ikoner till höger om texten.
+    *   Knapp för "Nästa ohanterade krav" (inom samma granskningsdel). Ikon till höger om texten.
     *   Dessa navigeringsknappar ska endast renderas om de är funktionella (t.ex. "Föregående" visas inte för första kravet).
 
 ### 4.8 Låsa och låsa upp granskning
 1.  **Låsning:** Från granskningsöversikten kan en `in_progress`-granskning låsas.
     *   Status ändras till `locked`.
     *   En sluttid (tidsstämpel, iso 8601) registreras.
-    *   Inga fler ändringar i granskningsresultat, observationer, kommentarer eller stickprov är tillåtna. Alla inmatningsfält och statusändringsknappar blir skrivskyddade/inaktiva (eller renderas inte om de inte längre har funktion).
+    *   Inga fler ändringar i granskningsresultat, observationer, kommentarer eller granskningsdel är tillåtna. Alla inmatningsfält och statusändringsknappar blir skrivskyddade/inaktiva (eller renderas inte om de inte längre har funktion).
     *   Exportalternativ blir tillgängliga.
 2.  **Upplåsning:** Från granskningsöversikten kan en `locked`-granskning låsas upp.
     *   Status ändras tillbaka till `in_progress`.
     *   Sluttiden nollställs.
-    *   Granskningen blir återigen redigerbar (inklusive stickprovshantering).
+    *   Granskningen blir återigen redigerbar (inklusive granskningsdelshantering).
 
 ### 4.9 Spara och ladda granskning (filbaserat)
-1.  **Spara:** Användaren ska kunna spara ner hela det aktuella granskningstillståndet (inklusive regelfilsinnehåll, metadata, stickprov och alla resultat) som en json-fil till sin lokala dator. Filnamnet bör genereras dynamiskt för att inkludera t.ex. ärendenummer, aktör och datum.
+1.  **Spara:** Användaren ska kunna spara ner hela det aktuella granskningstillståndet (inklusive regelfilsinnehåll, metadata, granskningsdel och alla resultat) som en json-fil till sin lokala dator. Filnamnet bör genereras dynamiskt för att inkludera t.ex. ärendenummer, aktör och datum.
 2.  **Ladda:** Från startvyn ska användaren kunna ladda upp en tidigare sparad json-granskningsfil. Applikationen ska validera filens grundläggande struktur och sedan återställa hela granskningstillståndet.
 
 ### 4.10 Export av resultat (status: `locked`)
 1.  **Tillgänglighet:** Exportfunktioner är endast tillgängliga när granskningen är `locked`.
 2.  **Format:**
-    *   **Csv:** En eller flera csv-filer som på ett strukturerat sätt presenterar resultaten. Detaljer om kolumner och filstruktur behöver specificeras närmare (t.ex. en rad per krav per stickprov, eller en mer sammanfattande).
-    *   **Xlsx (excel):** En excel-fil med resultaten, potentiellt uppdelad på flera flikar (t.ex. en för allmän information, en för detaljerade resultat). Innehållet liknar csv men i ett mer användarvänligt format. Ska inkludera metadata, stickprovsinformation, krav, status, observationer och kommentarer.
+    *   **Csv:** En eller flera csv-filer som på ett strukturerat sätt presenterar resultaten. Detaljer om kolumner och filstruktur behöver specificeras närmare (t.ex. en rad per krav per granskningsdel, eller en mer sammanfattande).
+    *   **Xlsx (excel):** En excel-fil med resultaten, potentiellt uppdelad på flera flikar (t.ex. en för allmän information, en för detaljerade resultat). Innehållet liknar csv men i ett mer användarvänligt format. Ska inkludera metadata, granskningsdelsinformation, krav, status, observationer och kommentarer.
 
 ## 5. Vystruktur (logisk indelning)
 
 *   **Startvy (`upload`):** Ladda upp regelfil eller sparad granskning.
 *   **Metadata-vy (`metadata`):** Ange/visa granskningsmetadata.
-*   **Initial stickprovshanteringsvy (`sample_management`):** Lägg till/visa/redigera stickprov *innan* granskningen startas.
-*   **Granskningsöversiktsvy (`audit_overview`):** Översikt av metadata, stickprovslista (med möjlighet till modifiering om granskning pågår), total progress, åtgärdsknappar (lås/export etc.).
-*   **Kravlistvy (`requirement_list`):** Lista och gruppera krav för ett specifikt stickprov.
-*   **Kravgranskningsvy (`requirement_audit`):** Granska ett enskilt krav för ett specifikt stickprov med alla dess detaljer och inmatningsfält.
+*   **Initial granskningsdelshanteringsvy (`sample_management`):** Lägg till/visa/redigera granskningsdel *innan* granskningen startas.
+*   **Granskningsöversiktsvy (`audit_overview`):** Översikt av metadata, granskningsdelslista (med möjlighet till modifiering om granskning pågår), total progress, åtgärdsknappar (lås/export etc.).
+*   **Kravlistvy (`requirement_list`):** Lista och gruppera krav för ett specifikt granskningsdel.
+*   **Kravgranskningsvy (`requirement_audit`):** Granska ett enskilt krav för ett specifikt granskningsdel med alla dess detaljer och inmatningsfält.
 
 ## 6. Datahantering och lagring
 
@@ -272,21 +272,21 @@ Hela granskningen lever i centralt state (`getState()` via `js/state.js`). Vid p
 *   `auditId`, `version`, `ruleSetId`: Fjärrfält vid serverlagrad granskning/regelfil.
 *   `startTime`: Iso 8601 tidsstämpel för när granskningen startades.
 *   `endTime`: Iso 8601 tidsstämpel för när granskningen låstes.
-*   `samples`: En array av stickprovsobjekt.
+*   `samples`: En array av granskningsdelsobjekt.
 
-### 6.2 Stickprovsobjekt (inom `samples`-arrayen)
-Varje objekt representerar ett stickprov och innehåller:
-*   `id`: Unikt id för stickprovet (t.ex. uuid).
+### 6.2 Granskningsdelsobjekt (inom `samples`-arrayen)
+Varje objekt representerar en granskningsdel och innehåller:
+*   `id`: Unikt id för granskningsdelen (t.ex. uuid).
 *   `pageType`: Sträng (från regelfilens `pageTypes`).
-*   `description`: Sträng (användarens namn på stickprovet).
-*   `url`: Sträng (url till stickprovet).
+*   `description`: Sträng (användarens namn på granskningsdelen).
+*   `url`: Sträng (url till granskningsdelen).
 *   `selectedContentTypes`: Array av strängar (id:n från regelfilens `contentTypes`).
-*   `attachedMediaFilenames`: Valfri array av strängar (filnamn för skärmavbildningar och ev. video som avser hela stickprovet, ett filnamn per rad i modalen). Saknas fältet behandlas det som en tom lista.
-*   `requirementResults`: Ett objekt där nycklarna är krav-id:n (från regelfilen) och värdena är resultatobjekt (se nedan) för det specifika kravet och detta stickprov.
+*   `attachedMediaFilenames`: Valfri array av strängar (filnamn för skärmavbildningar och ev. video som avser hela granskningsdelen, ett filnamn per rad i modalen). Saknas fältet behandlas det som en tom lista.
+*   `requirementResults`: Ett objekt där nycklarna är krav-id:n (från regelfilen) och värdena är resultatobjekt (se nedan) för det specifika kravet och denna granskningsdel.
 
 ### 6.3 Resultatobjekt (inom `requirementResults`)
-Varje objekt representerar resultatet för ett enskilt krav på ett enskilt stickprov:
-*   `status`: Sträng som indikerar kravets status för detta stickprov (`passed`, `failed`, `partially_audited`, `not_audited`).
+Varje objekt representerar resultatet för ett enskilt krav på ett enskilt granskningsdel:
+*   `status`: Sträng som indikerar kravets status för denna granskningsdel (`passed`, `failed`, `partially_audited`, `not_audited`).
 *   `actualObservation`: Sträng (användarens observation).
 *   `commentToAuditor`: Sträng (intern kommentar).
 *   `commentToActor`: Sträng (kommentar för export).
@@ -317,7 +317,7 @@ Se `docs/state_and_persistence.md` för detaljer.
 *   **Färgkontrast:** Tillräcklig färgkontrast ska säkerställas för text och ui-komponenter enligt wcag aa-kraven, både i ljust och mörkt tema.
 *   **Semantisk html:** Använd korrekt html-semantik för struktur och komponenter.
 *   **Aria-attribut:** Använd aria-attribut där det behövs för att förbättra tillgängligheten för dynamiskt innehåll och anpassade kontroller (t.ex. `aria-live` för meddelanden, `aria-label` för ikoner utan synlig text, `aria-pressed` för växlingsknappar).
-*   **Fokushantering:** Vid öppning/stängning av modaler/dialoger (t.ex. bekräftelse vid radering av stickprov) ska fokus hanteras korrekt (flyttas till dialogen, fångas inuti, och återställas när den stängs). Ikoner i knappar ska placeras till höger om texten (med undantag för globala navigeringsknappar som "Tillbaka").
+*   **Fokushantering:** Vid öppning/stängning av modaler/dialoger (t.ex. bekräftelse vid radering av granskningsdel) ska fokus hanteras korrekt (flyttas till dialogen, fångas inuti, och återställas när den stängs). Ikoner i knappar ska placeras till höger om texten (med undantag för globala navigeringsknappar som "Tillbaka").
 
 ## 8. Kodstruktur och moduler (exempel på nuvarande implementation)
 
@@ -350,7 +350,7 @@ Regelfilen är grunden för granskningen och måste följa ett definierat schema
 *   **`metadata` (objekt):**
     *   `title` (sträng, obligatorisk, ej tom): Titel på regelfilen/standarden.
     *   `version` (sträng, frivillig): Version av regelfilen.
-    *   `pageTypes` (array av strängar, obligatorisk, ej tomma strängar): Lista över definierade sidtyper som kan väljas för stickprov (t.ex. "Startsida", "Produktsida", "Kontaktformulär").
+    *   `pageTypes` (array av strängar, obligatorisk, ej tomma strängar): Lista över definierade sidtyper som kan väljas för granskningsdel (t.ex. "Startsida", "Produktsida", "Kontaktformulär").
     *   `contentTypes` (array av objekt, obligatorisk): Lista över innehållstyper som krav kan kopplas till. Varje objekt måste ha:
         *   `id` (sträng, obligatorisk, unikt, ej tom): Kort identifierare för innehållstypen.
         *   `text` (sträng, obligatorisk, ej tom): Beskrivande text för innehållstypen (t.ex. "Tabeller", "Formulär", "Video").
@@ -365,7 +365,7 @@ Regelfilen är grunden för granskningen och måste följa ett definierat schema
         *   `tips` (sträng eller array av strängar, frivillig): Tips för granskaren.
         *   `exceptions` (sträng eller array av strängar, frivillig): Eventuella undantag för kravet.
         *   `commonErrors` (sträng eller array av strängar, frivillig): Vanliga fel relaterade till kravet.
-        *   `contentType` (array av strängar, obligatorisk): Lista med id:n från `metadata.contentTypes` som detta krav är relevant för. Om arrayen är tom (`[]`), antas kravet vara relevant för **alla** stickprov.
+        *   `contentType` (array av strängar, obligatorisk): Lista med id:n från `metadata.contentTypes` som detta krav är relevant för. Om arrayen är tom (`[]`), antas kravet vara relevant för **alla** granskningsdel.
         *   `metadata` (objekt, frivillig): Ytterligare metadata om kravet:
             *   `mainCategory` (objekt, frivillig): `{ "id": "unik-id-huvudkategori", "text": "Text för huvudkategori" }`
             *   `subCategory` (objekt, frivillig): `{ "id": "unik-id-underkategori", "text": "Text för underkategori" }`

@@ -1,5 +1,5 @@
 /**
- * @fileoverview Word-export: metadata-, observations- och kommentarstycken per krav/stickprov.
+ * @fileoverview Word-export: metadata-, observations- och kommentarstycken per krav/granskningsdel.
  */
 import { Paragraph, TextRun, ExternalHyperlink, TabStopType } from 'docx';
 import { extractDeficiencyNumber } from './export_format_helpers.js';

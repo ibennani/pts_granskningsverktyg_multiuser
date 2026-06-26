@@ -1,5 +1,5 @@
 /**
- * @fileoverview Enhetstester för auto-skärmdumpslogik i stickprovsformuläret.
+ * @fileoverview Enhetstester för auto-skärmdumpslogik i granskningsdelsformuläret.
  */
 import { describe, test, expect } from '@jest/globals';
 import {

@@ -74,8 +74,8 @@ export class ConfirmSampleEditViewComponent {
                     const ok = expected_set.size === actual_set.size && [...expected_set].every(v => actual_set.has(v));
                     if (!ok) {
                         this.NotificationComponent.show_global_message(
-                            t('server_sync_error', { message: 'Innehållstyper kunde inte sparas i stickprovet. Försök igen – om felet kvarstår kan granskningen ha skrivits över av synk från servern.' })
-                                || 'Innehållstyper kunde inte sparas i stickprovet. Försök igen – om felet kvarstår kan granskningen ha skrivits över av synk från servern.',
+                            t('server_sync_error', { message: 'Innehållstyper kunde inte sparas i granskningsdelen. Försök igen – om felet kvarstår kan granskningen ha skrivits över av synk från servern.' })
+                                || 'Innehållstyper kunde inte sparas i granskningsdelen. Försök igen – om felet kvarstår kan granskningen ha skrivits över av synk från servern.',
                             'error'
                         );
                         return;
@@ -90,7 +90,7 @@ export class ConfirmSampleEditViewComponent {
                 }
 
                 // Robusthet: vänta in server-synk innan vi navigerar, så att polling/REPLACE_STATE_FROM_REMOTE
-                // inte hinner skriva över stickprovsändringen direkt efter bekräftelsen.
+                // inte hinner skriva över granskningsdelsändringen direkt efter bekräftelsen.
                 if (typeof this.flush_sync_to_server === 'function' && this.getState && this.dispatch) {
                     try {
                         await this.flush_sync_to_server(this.getState, this.dispatch);
@@ -140,7 +140,7 @@ export class ConfirmSampleEditViewComponent {
 
     handle_discard_and_return() {
         const pending_changes = this.getState().pendingSampleChanges;
-        // Återställ stickprovet till ursprungsläget om vi har en snapshot.
+        // Återställ granskningsdelen till ursprungsläget om vi har en snapshot.
         if (pending_changes?.sampleId && pending_changes?.originalSampleData) {
             try {
                 this.dispatch({

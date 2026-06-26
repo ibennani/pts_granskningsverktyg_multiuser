@@ -1,5 +1,5 @@
 /**
- * @fileoverview Bygger ett host-objekt med closures mot stickprovsformuläret för URL-skärmdump.
+ * @fileoverview Bygger ett host-objekt med closures mot granskningsdelsformuläret för URL-skärmdump.
  */
 
 import type { SampleUrlAutoScreenshotComponentLike } from './sample_url_auto_screenshot.js';

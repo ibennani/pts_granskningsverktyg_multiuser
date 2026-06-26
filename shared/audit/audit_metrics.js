@@ -3,7 +3,7 @@
  */
 
 /**
- * Räknar hur många “kört fast”-texter som finns i stickprovens kravresultat.
+ * Räknar hur många “kört fast”-texter som finns i granskningsdelarnas kravresultat.
  * Funktionen är ren och får inte bero på DOM, window eller server-API.
  * @param {Array} samples
  * @returns {number}

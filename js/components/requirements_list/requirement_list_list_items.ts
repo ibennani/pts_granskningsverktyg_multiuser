@@ -1,5 +1,5 @@
 /**
- * DOM-byggande för enskilda rader i kravlistor (alla stickprov respektive ett stickprov).
+ * DOM-byggande för enskilda rader i kravlistor (alla granskningsdelar respektive en granskningsdel).
  * @module js/components/requirements_list/requirement_list_list_items
  */
 

@@ -51,7 +51,7 @@ describe('audit_list_last_updated', () => {
         expect(display).toBe(FROZEN_TS);
     });
 
-    test('arkiverad utan metadata faller tillbaka till stickprov', () => {
+    test('arkiverad utan metadata faller tillbaka till granskningsdel', () => {
         const display = resolve_audit_list_last_updated_at({
             status: 'archived',
             metadata: {},
@@ -61,7 +61,7 @@ describe('audit_list_last_updated', () => {
         expect(display).toBe(SAMPLE_TS);
     });
 
-    test('pågående väljer senaste av metadata och stickprov', () => {
+    test('pågående väljer senaste av metadata och granskningsdel', () => {
         const display = resolve_audit_list_last_updated_at({
             status: 'in_progress',
             metadata: { [AUDIT_METADATA_LAST_IN_PROGRESS_ACTIVITY_KEY]: '2026-05-30T08:00:00.000Z' },

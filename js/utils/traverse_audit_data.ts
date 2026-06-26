@@ -1,5 +1,5 @@
 /**
- * @fileoverview Gemensam traversering av granskningsdata (stickprov → kravresultat
+ * @fileoverview Gemensam traversering av granskningsdata (granskningsdel → kravresultat
  * → kontrollresultat → bedömningskriterier) så att samma loop inte dupliceras på många ställen.
  */
 
@@ -111,7 +111,7 @@ export function traverse_pass_criteria_in_requirement_result (
 }
 
 /**
- * Anropar callback för varje bedömningskriterium under alla stickprov.
+ * Anropar callback för varje bedömningskriterium under alla granskningsdelar.
  */
 export function traverse_all_pass_criteria (
     audit_state: AuditStateLike | null | undefined,

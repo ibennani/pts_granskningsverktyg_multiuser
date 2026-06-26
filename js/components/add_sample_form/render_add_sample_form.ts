@@ -60,7 +60,7 @@ export function render_add_sample_form(component: any, sample_id_to_edit: string
     component.root.innerHTML = '';
     component.page_title_label_loading_count = 0;
     component.form_element = component.Helpers.create_element('form', { class_name: 'add-sample-form' });
-    // Nytt stickprov: ignorera DraftManager (samma route-nyckel som tidigare partiellt ifyllt formulär)
+    // Ny granskningsdel: ignorera DraftManager (samma route-nyckel som tidigare partiellt ifyllt formulär)
     // annars återställs kryssrutor/radio/text från localStorage/sessionStorage efter render.
     if (sample_id_to_edit === null) {
         component.form_element.setAttribute('data-draft-ignore', 'true');
@@ -198,7 +198,7 @@ export function render_add_sample_form(component: any, sample_id_to_edit: string
     if (selected_cat_id) {
         component.on_category_change(selected_cat_id, effective_sample_data?.sampleType ?? null);
     } else if (sample_id_to_edit === null) {
-        // Nytt stickprov: ingen förvald kategori — typväljaren visas efter att användaren valt kategori.
+        // Ny granskningsdel: ingen förvald kategori — typväljaren visas efter att användaren valt kategori.
         component.sample_type_container.innerHTML = '';
         const hint = component.Helpers.create_element('p', {
             class_name: 'add-sample-category-hint',

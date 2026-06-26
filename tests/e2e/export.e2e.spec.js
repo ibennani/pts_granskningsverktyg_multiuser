@@ -109,7 +109,7 @@ test.describe('Export (mockat API)', () => {
         expect(download.suggestedFilename()).toMatch(/\.csv$/i);
     });
 
-    test('HTML-export triggar nedladdning av .html-fil', async ({ page }) => {
+    test('HTML-export triggar nedladdning av zip-fil', async ({ page }) => {
         const rule = JSON.parse(
             readFileSync(path.join(__dirname, '../fixtures/minimal-rulefile.json'), 'utf8')
         );
@@ -160,6 +160,6 @@ test.describe('Export (mockat API)', () => {
         const download_promise = page.waitForEvent('download');
         await page.locator('#audit-action-btn-export-html').click();
         const download = await download_promise;
-        expect(download.suggestedFilename()).toMatch(/\.html$/i);
+        expect(download.suggestedFilename()).toMatch(/\.zip$/i);
     });
 });

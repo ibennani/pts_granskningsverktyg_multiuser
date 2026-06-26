@@ -61,7 +61,7 @@ export function get_deficiency_media_export_names(
         .filter(Boolean);
 }
 
-/** Exportfilnamn för stickprovsbilder (högst en). */
+/** Exportfilnamn för granskningsdelsbilder (högst en). */
 export function get_sample_media_export_names(
     filenames: unknown,
     media_context: ExportMediaFilenameContext | null,
@@ -121,7 +121,7 @@ function collect_sample_zip_entries(
 }
 
 /**
- * Samlar alla zip-poster för HTML-export (brist + stickprov).
+ * Samlar alla zip-poster för HTML-export (brist + granskningsdel).
  */
 export function collect_html_export_zip_entries(
     audit: unknown,

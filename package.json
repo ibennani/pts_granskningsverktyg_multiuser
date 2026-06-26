@@ -46,8 +46,8 @@
     "capture-screenshot": "tsx scripts/capture_page_screenshot.ts",
     "check": "npm run lint && npm run check:export-facades && npm run check:js-ts-imports && npm run check:audit-logic-strict && npm run check:ts-prototype-fields && npm run check:fixture-urls && npm run check:css-background-color && npm run check:css && npm run typecheck && npm test",
     "check:full": "npm run lint:js && npm run lint:ts && npm run check:export-facades && npm run check:js-ts-imports && npm run check:audit-logic-strict && npm run typecheck && npm test && npm run build",
-    "test:e2e": "playwright test",
-    "test:e2e:smoke": "playwright test --project=Chromium",
+    "test:e2e": "node ./node_modules/@playwright/test/cli.js test",
+    "test:e2e:smoke": "node ./node_modules/@playwright/test/cli.js test --project=Chromium",
     "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --config jest.config.js --passWithNoTests"
   },
   "devDependencies": {

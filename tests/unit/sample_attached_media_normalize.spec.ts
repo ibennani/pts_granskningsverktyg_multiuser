@@ -1,5 +1,5 @@
 /**
- * @fileoverview Tester för normalisering av stickprovets attachedMediaFilenames.
+ * @fileoverview Tester för normalisering av granskningsdelens attachedMediaFilenames.
  */
 
 import { describe, expect, test } from '@jest/globals';
@@ -27,7 +27,7 @@ describe('sample_attached_media_normalize', () => {
         expect(out.attachedMediaFilenames).toEqual([]);
     });
 
-    test('ensure_samples_attached_media_shape normaliserar alla stickprov', () => {
+    test('ensure_samples_attached_media_shape normaliserar alla granskningsdelar', () => {
         const out = ensure_samples_attached_media_shape([
             { id: 's1' },
             { id: 's2', attachedMediaFilenames: ['x.png'] }
@@ -67,7 +67,7 @@ describe('sample_attached_media_normalize', () => {
         ).toEqual(['pending.png']);
     });
 
-    test('resolve_samples_for_server_sync slår in utkast per stickprov', () => {
+    test('resolve_samples_for_server_sync slår in utkast per granskningsdel', () => {
         const samples = resolve_samples_for_server_sync(
             {
                 sampleEditDraft: {
@@ -84,7 +84,7 @@ describe('sample_attached_media_normalize', () => {
         expect(samples[1].attachedMediaFilenames).toEqual(['saved.png']);
     });
 
-    test('sort_audit_image_card_groups sorterar stickprov före krav', () => {
+    test('sort_audit_image_card_groups sorterar granskningsdel före krav', () => {
         const sorted = sort_audit_image_card_groups([
             { is_sample_screenshot: false, reqId: 'req1', sample: { id: 's1' } },
             { is_sample_screenshot: true, reqId: null, sample: { id: 's1', description: 'A' } },

@@ -40,7 +40,7 @@
     list-style: none;
 }
 
-/* Knapp "Ingen anmärkning i alla stickprov" – uppe till höger i kravrutan */
+/* Knapp "Ingen anmärkning i alla granskningsdelar" – uppe till höger i kravrutan */
 .requirements-list-content .requirement-item-with-actions {
     position: relative;
 }

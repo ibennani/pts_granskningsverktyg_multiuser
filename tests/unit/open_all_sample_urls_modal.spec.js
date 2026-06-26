@@ -101,7 +101,7 @@ describe('open_all_sample_urls_modal', () => {
             expect(r.samples_with_url_count).toBe(0);
         });
 
-        test('unika URL:er i ordning efter första förekomst i stickprovslistan', () => {
+        test('unika URL:er i ordning efter första förekomst i granskningsdelslistan', () => {
             const r = collect_unique_sample_open_urls(
                 [
                     { url: 'https://b.test/' },

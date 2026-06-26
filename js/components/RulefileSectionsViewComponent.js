@@ -203,7 +203,7 @@ export class RulefileSectionsViewComponent {
         const section_id = params.section || 'general';
         const is_editing = params.edit === 'true';
 
-        // Redirect: gamla Stickprov-länken pekar nu på Sidtyper
+        // Redirect: gamla Granskningsdel-länken pekar nu på Sidtyper
         if (section_id === 'sample_types') {
             this.router('rulefile_sections', { section: 'page_types', edit: params.edit || undefined });
             return;

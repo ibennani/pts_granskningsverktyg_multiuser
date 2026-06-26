@@ -8,7 +8,7 @@
     margin-top: 0.5rem;
 }
 
-/* När listan sorteras på krav: stickprovsnamn på raden ovanför kravlänken */
+/* När listan sorteras på krav: granskningsdelsnamn på raden ovanför kravlänken */
 .confirm-updates-item-left {
     display: flex;
     flex-direction: column;

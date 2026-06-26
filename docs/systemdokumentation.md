@@ -40,7 +40,7 @@ Projektet följer en standardiserad struktur för webbapplikationer:
     *   `state.js`: Ansvarar för global tillståndshantering (det `current_audit`-objekt som innehåller all granskningsdata).
     *   `translation_logic.js`: Hanterar internationalisering (i18n), laddning av språkfiler från `js/i18n/` och tillhandahåller översättningsfunktioner.
     *   `validation_logic.js`: Innehåller logik för att validera JSON-strukturen hos uppladdade regelfiler och sparade granskningsfiler.
-    *   `audit_logic.js`: Innehåller affärslogik relaterad till granskningsprocessen, såsom beräkning av status för krav och kontrollpunkter, samt identifiering av relevanta krav för specifika stickprov.
+    *   `audit_logic.js`: Innehåller affärslogik relaterad till granskningsprocessen, såsom beräkning av status för krav och kontrollpunkter, samt identifiering av relevanta krav för specifika granskningsdel.
     *   `export_logic.js`: Genererar export till CSV, Excel (ExcelJS), Word (docx) och HTML; inga CDN-lösningar – npm-moduler.
     *   `utils/`: Innehåller allmänna hjälpfunktioner.
         *   `helpers.js`: En samling av återanvändbara funktioner för DOM-manipulering (t.ex. `create_element`), generering av UUID, dynamisk laddning av CSS, datumformatering, HTML-sanering och generering av SVG-ikoner.
@@ -97,8 +97,8 @@ Projektet följer en standardiserad struktur för webbapplikationer:
 ### 3.4 `validation_logic.ts` (klient och server-import)
 *   **Ansvar:** Validerar JSON för **regelfiler** och **sparade granskningar** innan de laddas in eller sparas. Regler och felmeddelanden underhålls i kod tillsammans med översättningsnycklar i `js/i18n/*.json` (ingen separat JSON Schema-/Zod-fil).
 *   **Nyckelfunktioner:**
-    *   `validate_rule_file_json(jsonObject, options?)`: Kontrollerar att regelfilen har obligatoriska delar (metadata med titel, innehållstyper/stickprovstyper, `requirements` som objekt eller array med giltiga krav m.m.). Returnerar `{ isValid, message }`. Vid lyckad validering används meddelandenyckeln `rule_file_validation_complete`.
-    *   `validate_saved_audit_file(jsonObject, options?)`: Kontrollerar toppnivåfält (`ruleFileContent`, `auditMetadata`, `auditStatus`, `samples`), att metadata är objekt, att stickprov är en array, att status är en sträng, samt den inbäddade regelfilen: om både `metadata` och `requirements` finns anropas samma regelkedja som för fristående regelfil; annars kontrolleras åtminstone kravlistan. Returnerar `{ isValid, message }` med texter från `saved_audit_validation_ok` respektive `error_saved_audit_*` / `error_saved_audit_embedded_rulefile_invalid` (med detalj från underliggande fel).
+    *   `validate_rule_file_json(jsonObject, options?)`: Kontrollerar att regelfilen har obligatoriska delar (metadata med titel, innehållstyper/granskningsdelstyper, `requirements` som objekt eller array med giltiga krav m.m.). Returnerar `{ isValid, message }`. Vid lyckad validering används meddelandenyckeln `rule_file_validation_complete`.
+    *   `validate_saved_audit_file(jsonObject, options?)`: Kontrollerar toppnivåfält (`ruleFileContent`, `auditMetadata`, `auditStatus`, `samples`), att metadata är objekt, att granskningsdel är en array, att status är en sträng, samt den inbäddade regelfilen: om både `metadata` och `requirements` finns anropas samma regelkedja som för fristående regelfil; annars kontrolleras åtminstone kravlistan. Returnerar `{ isValid, message }` med texter från `saved_audit_validation_ok` respektive `error_saved_audit_*` / `error_saved_audit_embedded_rulefile_invalid` (med detalj från underliggande fel).
 
 ### 3.5 `audit_logic.ts` (brygga `audit_logic.js`)
 *   **Ansvar:** Innehåller central affärslogik för granskningsprocessen, främst relaterad till statusberäkningar och att avgöra vilka krav som är relevanta.
@@ -106,9 +106,9 @@ Projektet följer en standardiserad struktur för webbapplikationer:
     *   `calculate_check_status(check_object, pass_criteria_statuses_map, overall_manual_status)`: Beräknar status för en kontrollpunkt via samma trestegsmodell som kravnivå: ogranskad → delvis granskad → (när alla godkännandekriterier är bedömda) underkänd om minst ett är underkänt, annars godkänd. Manuell status ("Stämmer inte", "Inte aktuellt", ej påbörjad) hanteras före kriterieaggregering. `aggregate_child_audit_statuses` används för kriterier och kontrollpunkter.
     *   `calculate_requirement_status(requirement_object, requirement_result_object)`: Beräknar den övergripande statusen för ett helt krav baserat på de beräknade statusarna för alla dess ingående kontrollpunkter. Om någon kontrollpunkt är `failed`, blir kravet `failed`. Om alla är `passed`, blir kravet `passed`, etc.
     *   `get_relevant_requirements_for_sample(rule_file_content, sample_object)`: Filtrerar och returnerar en array av de kravobjekt från `rule_file_content.requirements` som är relevanta för ett givet `sample_object`. Relevansen baseras på `sample_object.selectedContentTypes` och varje kravs definierade `contentType`-array.
-    *   `get_ordered_relevant_requirement_keys(rule_file_content, sample_object)`: Returnerar en array av krav-ID:n (nycklar) som är relevanta för ett stickprov, sorterade i en användarvänlig ordning (först efter huvudkategori (text), sedan underkategori (text), och slutligen kravtitel (text), allt alfabetiskt).
-    *   `calculate_overall_audit_progress(current_audit_data)`: Beräknar det totala antalet relevanta krav över alla stickprov och hur många av dessa som har en slutgiltig status (`passed` eller `failed`). Returnerar ett objekt `{ audited: number, total: number }`.
-    *   `find_first_incomplete_requirement_key_for_sample(rule_file_content, sample_object)`: Letar igenom de relevanta och sorterade kraven för ett stickprov och returnerar nyckeln till det första kravet som har status `not_audited` eller `partially_audited`. Används för "Granska nästa ohanterade"-funktionaliteten.
+    *   `get_ordered_relevant_requirement_keys(rule_file_content, sample_object)`: Returnerar en array av krav-ID:n (nycklar) som är relevanta för en granskningsdel, sorterade i en användarvänlig ordning (först efter huvudkategori (text), sedan underkategori (text), och slutligen kravtitel (text), allt alfabetiskt).
+    *   `calculate_overall_audit_progress(current_audit_data)`: Beräknar det totala antalet relevanta krav över alla granskningsdelar och hur många av dessa som har en slutgiltig status (`passed` eller `failed`). Returnerar ett objekt `{ audited: number, total: number }`.
+    *   `find_first_incomplete_requirement_key_for_sample(rule_file_content, sample_object)`: Letar igenom de relevanta och sorterade kraven för en granskningsdel och returnerar nyckeln till det första kravet som har status `not_audited` eller `partially_audited`. Används för "Granska nästa ohanterade"-funktionaliteten.
 
 ### 3.6 `js/utils/helpers.js`
 *   **Ansvar:** En samling av generiska hjälpfunktioner som används på flera ställen i applikationen för att undvika kodduplicering och förenkla vanliga uppgifter.
@@ -170,25 +170,25 @@ export const ComponentName = {
     *   **CSS:** `css/components/edit_metadata_view_component.css`.
 
 *   **`SampleManagementViewComponent.ts`**
-    *   **Syfte:** Hanterar skapande, listning, redigering och radering av stickprov *innan* en granskning har startat (dvs. när `auditStatus === 'not_started'`).
-    *   **Internt tillstånd:** Håller reda på om formuläret för att lägga till/redigera stickprov är synligt (`is_form_visible`).
-    *   **Interaktioner:** Använder/initierar `SampleFormViewComponent` för att visa formuläret och `SampleListComponent` för att visa listan över befintliga stickprov. Knapparna "Lägg till nytt stickprov" och "Starta granskning" renderas villkorligt. Vid start av granskning uppdateras `auditStatus` via `deps.dispatch()` och `deps.router()` navigerar till `AuditOverviewComponent`.
+    *   **Syfte:** Hanterar skapande, listning, redigering och radering av granskningsdel *innan* en granskning har startat (dvs. när `auditStatus === 'not_started'`).
+    *   **Internt tillstånd:** Håller reda på om formuläret för att lägga till/redigera granskningsdel är synligt (`is_form_visible`).
+    *   **Interaktioner:** Använder/initierar `SampleFormViewComponent` för att visa formuläret och `SampleListComponent` för att visa listan över befintliga granskningsdel. Knapparna "Lägg till ny granskningsdel" och "Starta granskning" renderas villkorligt. Vid start av granskning uppdateras `auditStatus` via `deps.dispatch()` och `deps.router()` navigerar till `AuditOverviewComponent`.
     *   **CSS:** `css/components/sample_management_view_component.css`.
 
 *   **`AuditOverviewComponent.js`**
-    *   **Syfte:** Central vy som visar en översikt av en pågående eller låst granskning. Inkluderar metadata, övergripande progress, en lista över stickprov, och åtgärder för hela granskningen. Tillåter hantering av stickprov (lägga till, redigera, radera) om granskningen är `in_progress`.
+    *   **Syfte:** Central vy som visar en översikt av en pågående eller låst granskning. Inkluderar metadata, övergripande progress, en lista över granskningsdel, och åtgärder för hela granskningen. Tillåter hantering av granskningsdel (lägga till, redigera, radera) om granskningen är `in_progress`.
     *   **Internt tillstånd:** `is_add_sample_form_visible` för att styra formulärets synlighet.
-    *   **Interaktioner:** Hämtar all data från `deps.getState()`. Använder `AuditLogic.calculate_overall_audit_progress` och `ProgressBarComponent` för att visa total progress. Initierar och använder `SampleListComponent` för att visa stickprovslistan. Initierar och använder `SampleFormViewComponent` (dynamiskt visad/dold) för att lägga till eller redigera stickprov när `auditStatus === 'in_progress'`. Hanterar anrop till `window.ExportLogic` för export. Hanterar logik för att låsa/låsa upp granskning.
+    *   **Interaktioner:** Hämtar all data från `deps.getState()`. Använder `AuditLogic.calculate_overall_audit_progress` och `ProgressBarComponent` för att visa total progress. Initierar och använder `SampleListComponent` för att visa granskningsdelslistan. Initierar och använder `SampleFormViewComponent` (dynamiskt visad/dold) för att lägga till eller redigera granskningsdel när `auditStatus === 'in_progress'`. Hanterar anrop till `window.ExportLogic` för export. Hanterar logik för att låsa/låsa upp granskning.
     *   **CSS:** `css/components/audit_overview_component.css`.
 
 *   **`RequirementListComponent.js`**
-    *   **Syfte:** Visar en detaljerad lista över alla krav som är relevanta för ett specifikt stickprov, grupperade efter kategori och underkategori.
+    *   **Syfte:** Visar en detaljerad lista över alla krav som är relevanta för ett specifikt granskningsdel, grupperade efter kategori och underkategori.
     *   **Internt tillstånd:** Håller det aktuella `sample_object`, en lista över `relevant_requirements` och en strukturerad `requirements_by_category`.
     *   **Interaktioner:** Tar emot `sampleId` som parameter via router. Använder `AuditLogic` för att hämta och sortera relevanta krav. Renderar varje krav, ofta med hjälp av en intern logik eller `RequirementCardComponent` (om den används externt). Klick på en kravtitel navigerar till `RequirementAuditComponent` via `deps.router()`. Använder eventdelegering för klick på kravtitlar.
     *   **CSS:** `css/components/requirement_list_component.css`.
 
 *   **`RequirementAuditComponent.ts`**
-    *   **Syfte:** Detaljvy för att granska och bedöma ett enskilt krav mot ett specifikt stickprov.
+    *   **Syfte:** Detaljvy för att granska och bedöma ett enskilt krav mot ett specifikt granskningsdel.
     *   **Internt tillstånd:** Håller referenser till `current_sample_object`, `current_requirement_object`, `current_requirement_result`, samt till DOM-element för inmatningsfält.
     *   **Interaktioner:** Tar emot `sampleId` och `requirementId` som parametrar via router. Visar all information om kravet. Renderar kontrollpunkter och godkännandekriterier med interaktiva knappar för statusbedömning. Använder eventdelegering för knappinteraktioner. Anropar `AuditLogic` för att beräkna statusar. Sparar ändringar i `requirementResults` via `deps.dispatch()`. Hanterar navigationsknappar ("Föregående", "Nästa", "Nästa ohanterade").
     *   **CSS:** `css/components/requirement_audit_component.css`.
@@ -196,13 +196,13 @@ export const ComponentName = {
 ### 4.2 Återanvändbara UI-delkomponenter
 
 *   **`SampleFormViewComponent.js`**
-    *   **Syfte:** Ett formulär för att mata in eller redigera detaljer för ett stickprov (sidtyp, beskrivning, url, innehållstyper).
-    *   **Interaktioner:** Anropas av `SampleManagementViewComponent` (för initiala stickprov) och `AuditOverviewComponent` (för stickprov under pågående granskning). Populerar sina fält från `deps.getState().ruleFileContent.metadata` (för `pageTypes` och `contentTypes`). Vid submit anropas en `on_sample_saved_callback` som tillhandahålls av föräldrakomponenten.
+    *   **Syfte:** Ett formulär för att mata in eller redigera detaljer för en granskningsdel (sidtyp, beskrivning, url, innehållstyper).
+    *   **Interaktioner:** Anropas av `SampleManagementViewComponent` (för initiala granskningsdel) och `AuditOverviewComponent` (för granskningsdel under pågående granskning). Populerar sina fält från `deps.getState().ruleFileContent.metadata` (för `pageTypes` och `contentTypes`). Vid submit anropas en `on_sample_saved_callback` som tillhandahålls av föräldrakomponenten.
     *   **CSS:** `css/components/sample_form_view_component.css`.
 
 *   **`SampleListComponent.ts`**
-    *   **Syfte:** Renderar en lista (`<ul>`) av stickprov (`<li>`). Varje listobjekt visar information om stickprovet och åtgärdsknappar.
-    *   **Interaktioner:** Används av `SampleManagementViewComponent` och `AuditOverviewComponent`. Läser `deps.getState().samples`. Renderar knappar ("Redigera", "Radera", "Visa krav", "Granska", "Besök url") villkorligt baserat på `auditStatus` och antal stickprov. Använder eventdelegering för att hantera klick på dessa knappar, och anropar sedan antingen `deps.router()` för navigering eller `on_edit_callback`/`on_delete_callback` som tillhandahålls av föräldern.
+    *   **Syfte:** Renderar en lista (`<ul>`) av granskningsdel (`<li>`). Varje listobjekt visar information om granskningsdelen och åtgärdsknappar.
+    *   **Interaktioner:** Används av `SampleManagementViewComponent` och `AuditOverviewComponent`. Läser `deps.getState().samples`. Renderar knappar ("Redigera", "Radera", "Visa krav", "Granska", "Besök url") villkorligt baserat på `auditStatus` och antal granskningsdel. Använder eventdelegering för att hantera klick på dessa knappar, och anropar sedan antingen `deps.router()` för navigering eller `on_edit_callback`/`on_delete_callback` som tillhandahålls av föräldern.
     *   **CSS:** `css/components/sample_list_component.css`.
 
 *   **`RequirementCardComponent.js`**

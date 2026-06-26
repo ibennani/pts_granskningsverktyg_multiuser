@@ -35,7 +35,7 @@ describe('audit_open_logic', () => {
     const StoreActionTypes = { LOAD_AUDIT_FROM_FILE: 'LOAD_AUDIT_FROM_FILE' };
     const t = (k) => k;
 
-    test('navigate_to_default_audit_view: not_started utan stickprov → sample_management', () => {
+    test('navigate_to_default_audit_view: not_started utan granskningsdel → sample_management', () => {
         const router = jest.fn();
         navigate_to_default_audit_view(
             { auditStatus: 'not_started', samples: [] },
@@ -44,7 +44,7 @@ describe('audit_open_logic', () => {
         expect(router).toHaveBeenCalledWith('sample_management', {});
     });
 
-    test('navigate_to_default_audit_view: not_started med stickprov → metadata', () => {
+    test('navigate_to_default_audit_view: not_started med granskningsdel → metadata', () => {
         const router = jest.fn();
         navigate_to_default_audit_view(
             { auditStatus: 'not_started', samples: [{}] },

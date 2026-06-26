@@ -234,8 +234,8 @@ describe('ExportLogic - Word Export', () => {
                 .join(' ');
 
             // Verify observation section is present
-            // When sorting by requirements, observations come directly after "Stickprov:" heading
-            expect(allText).toContain('Stickprov:');
+            // When sorting by requirements, observations come directly after "Granskningsdel:" heading
+            expect(allText).toContain('Granskningsdel:');
             expect(allText).toContain('Test observation');
         });
 
@@ -286,7 +286,7 @@ describe('ExportLogic - Word Export', () => {
                 .join(' ');
 
             // Verify observation section is present
-            expect(allText).toContain('Stickprov:');
+            expect(allText).toContain('Granskningsdel:');
             expect(allText).toContain('Test Sample');
             expect(allText).toContain('Aktuella observationer');
             expect(allText).toContain('Test observation');

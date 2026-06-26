@@ -1,4 +1,4 @@
-// Deprekerad stickprovsbaserad Word-textexport (behålls tills vidare).
+// Deprekerad granskningsdelsbaserad Word-textexport (behålls tills vidare).
 import { Document, Packer, Paragraph, TextRun, ExternalHyperlink, TabStopType } from 'docx';
 import * as Helpers from '../utils/helpers.js';
 import { get_audit_export_filename_datetime_segment } from './export_report_filename.js';
@@ -30,7 +30,7 @@ export async function _export_to_text_export_deprecated(current_audit: any) {
             new Paragraph({
                 children: [
                     new TextRun({
-                        text: "Textexport - Granskningsresultat per stickprov"
+                        text: "Textexport - Granskningsresultat per granskningsdel"
                     })
                 ],
                 heading: "Heading1"
@@ -41,11 +41,11 @@ export async function _export_to_text_export_deprecated(current_audit: any) {
         const requirements_root = current_audit.ruleFileContent?.requirements ?? {};
 
         for (const sample of samples) {
-            // Kontrollera om stickprovet har några brister alls
+            // Kontrollera om granskningsdelen har några brister alls
             const deficiencies = get_deficiencies_for_sample_any_req(sample, current_audit, t);
             if (deficiencies.length === 0) continue;
 
-            // H2: Stickprovets namn
+            // H2: Granskningsdelens namn
             children.push(
                 new Paragraph({
                     children: [
@@ -58,7 +58,7 @@ export async function _export_to_text_export_deprecated(current_audit: any) {
                 })
             );
 
-            // 3. Iterera krav med brister för detta stickprov (H3)
+            // 3. Iterera krav med brister för denna granskningsdel (H3)
             const requirements_map = group_deficiencies_by_requirement(deficiencies, current_audit);
 
             // Sortera krav enligt referens
@@ -159,7 +159,7 @@ export async function _export_to_text_export_deprecated(current_audit: any) {
                     }
                 }
 
-                // Identifierade brister (specifika för detta stickprov/krav)
+                // Identifierade brister (specifika för denna granskningsdel/krav)
                 const deficiencyIds = [...new Set(reqDeficiencies.map(d => extractDeficiencyNumber(d.deficiencyId)))].filter(Boolean).sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
                 if (deficiencyIds.length > 0) {
                     metadata_items.push(new Paragraph({
@@ -269,7 +269,7 @@ export async function _export_to_text_export_deprecated(current_audit: any) {
                     }
                 } // slut loop observationer
 
-                // Kommentar för detta krav på detta stickprov
+                // Kommentar för detta krav på denna granskningsdel
                 const sample_result = get_export_requirement_result(
                     requirements_root,
                     sample,
@@ -289,7 +289,7 @@ export async function _export_to_text_export_deprecated(current_audit: any) {
                 }
 
             } // slut loop krav
-        } // slut loop stickprov
+        } // slut loop granskningsdel
 
         const doc = new Document({
             sections: [{

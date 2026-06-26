@@ -33,7 +33,7 @@ function create_mock_audit_with_deficiency() {
             },
         },
         samples: [{
-            description: 'Stickprov ett',
+            description: 'Granskningsdel ett',
             url: 'https://example.com/page',
             requirementResults: {
                 req1: {
@@ -85,16 +85,16 @@ describe('export_report_html_criterias', () => {
         expect(body).toContain('<strong>Referens: </strong>');
         expect(body).toContain('<strong>Principer: </strong>');
         expect(body).toContain('<strong>Identifierade brister: </strong>');
-        expect(body).toContain('<h3>Stickprov: <a href="https://example.com/page">Stickprov ett</a></h3>');
-        expect(body).not.toContain('<strong>Stickprov: </strong>');
+        expect(body).toContain('<h3>Granskningsdel: <a href="https://example.com/page">Granskningsdel ett</a></h3>');
+        expect(body).not.toContain('<strong>Granskningsdel: </strong>');
         expect(body).toContain('<strong>Brist-id: 1 </strong>');
         expect(body).toContain('<strong>fet</strong>');
     });
 
-    test('stickprov med brist renderas med h2 stickprov och h3 krav', () => {
+    test('granskningsdel med brist renderas med h2 granskningsdel och h3 krav', () => {
         const audit = create_mock_audit_with_deficiency();
         const body = build_report_body_sorted_by_samples(audit, t);
-        expect(body).toContain('<h2>Stickprov: <a href="https://example.com/page">Stickprov ett</a></h2>');
+        expect(body).toContain('<h2>Granskningsdel: <a href="https://example.com/page">Granskningsdel ett</a></h2>');
         expect(body).toContain('<h3>1.1.1 Testkrav</h3>');
         expect(body).toContain('<strong>Brist-id: 1 </strong>');
     });

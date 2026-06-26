@@ -31,11 +31,11 @@ describe('build_attach_media_duplicate_filenames_message', () => {
         expect(html).toBe('Filen <strong>hej.jpg</strong> finns redan i det aktuella kravet.');
     });
 
-    it('formaterar flera filer för stickprov med strong', () => {
+    it('formaterar flera filer för granskningsdel med strong', () => {
         const t = (key) => {
             const map = {
                 attach_media_file_already_in_sample_many_before: 'Filerna ',
-                attach_media_file_already_in_sample_many_after: ' finns redan i det aktuella stickprovet.'
+                attach_media_file_already_in_sample_many_after: ' finns redan i den aktuella granskningsdelen.'
             };
             return map[key] || key;
         };
@@ -46,7 +46,7 @@ describe('build_attach_media_duplicate_filenames_message', () => {
             escape_html
         );
         expect(html).toBe(
-            'Filerna <strong>a.jpg</strong>, <strong>b.jpg</strong> finns redan i det aktuella stickprovet.'
+            'Filerna <strong>a.jpg</strong>, <strong>b.jpg</strong> finns redan i den aktuella granskningsdelen.'
         );
     });
 });

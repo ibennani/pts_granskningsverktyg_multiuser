@@ -13,7 +13,7 @@ export type AuditStateLike = {
 };
 
 /**
- * Senaste ISO-tidsstämpel från kravresultat i stickprov (lastStatusUpdate).
+ * Senaste ISO-tidsstämpel från kravresultat i granskningsdel (lastStatusUpdate).
  */
 export function get_latest_requirement_status_update_iso(state: AuditStateLike | null | undefined): string | null {
     if (!state?.samples?.length) return null;
@@ -94,7 +94,7 @@ export function should_touch_last_local_change_at(
 }
 
 /**
- * Sätter last_local_change_at till angiven tid — vid faktisk ändring (text, knapp, metadata, stickprov).
+ * Sätter last_local_change_at till angiven tid — vid faktisk ändring (text, knapp, metadata, granskningsdel).
  */
 export function with_last_local_change_at<T extends AuditStateLike>(state: T, now_iso: string): T {
     return {

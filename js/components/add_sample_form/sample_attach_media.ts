@@ -1,5 +1,5 @@
 /**
- * @fileoverview Skärmavbildnings-/media-bifogning i stickprovsformuläret (samma modal som vid bristbeskrivning).
+ * @fileoverview Skärmavbildnings-/media-bifogning i granskningsdelsformuläret (samma modal som vid bristbeskrivning).
  */
 
 import { open_attach_media_modal } from '../media/AttachMediaModal.js';

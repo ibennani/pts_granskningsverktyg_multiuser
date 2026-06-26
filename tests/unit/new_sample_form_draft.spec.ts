@@ -1,5 +1,5 @@
 /**
- * Enhetstester för sessionStorage-utkast vid nytt stickprov.
+ * Enhetstester för sessionStorage-utkast vid ny granskningsdel.
  */
 
 import {

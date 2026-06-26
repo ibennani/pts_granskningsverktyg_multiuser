@@ -1,5 +1,5 @@
 /**
- * @fileoverview Automatisk URL-skärmdump vid blur i stickprovsformuläret.
+ * @fileoverview Automatisk URL-skärmdump vid blur i granskningsdelsformuläret.
  */
 
 import {

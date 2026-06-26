@@ -44,7 +44,7 @@ const SAMPLE_SERVER_SYNC_ACTIONS = new Set([
 ]);
 
 /**
- * Om dispatch ska schemalägga serversynk (stickprov synkas även före "Starta granskning" om auditId finns).
+ * Om dispatch ska schemalägga serversynk (granskningsdel synkas även före "Starta granskning" om auditId finns).
  */
 function should_schedule_audit_server_sync_after_dispatch(
     action_type: string,

@@ -1,5 +1,5 @@
 /**
- * Redigerare för stickprovskategorier och stickprovstyper i regelfilsmetadata.
+ * Redigerare för granskningsdelskategorier och granskningsdelstyper i regelfilsmetadata.
  * @module js/components/rulefile_metadata/rulefile_metadata_sample_editors
  */
 

@@ -12,7 +12,7 @@ Sidomenyn visar åtta alternativ som leder till olika sektioner. Varje sektion h
 |--------------------|-----------------------|-------------------|----------------------------|-------------------------------------|
 | Allmän information | rulefile_sections     | general           | Definition list            | EditGeneralSectionComponent         |
 | Krav               | rulefile_requirements | –                 | Lista med länkar           | RulefileRequirementsListComponent + EditRulefileRequirementComponent |
-| Stickprov          | rulefile_sections     | sample_types      | Punktlista                 | EditSampleTypesSectionComponent     |
+| Granskningsdel          | rulefile_sections     | sample_types      | Punktlista                 | EditSampleTypesSectionComponent     |
 | Sidtyper           | rulefile_sections     | page_types        | Lista med underkategorier  | EditPageTypesSectionComponent       |
 | Innehållstyper     | rulefile_sections     | content_types     | Nästlad lista              | EditContentTypesSectionComponent    |
 | Informationsblock  | rulefile_sections     | info_blocks_order | Numrerad lista             | EditInfoBlocksSectionComponent      |
@@ -39,7 +39,7 @@ Sidomenyn visar åtta alternativ som leder till olika sektioner. Varje sektion h
 Varje sektion har en dedikerad redigeringskomponent:
 
 - **EditGeneralSectionComponent** – Allmän information, utgivare, källa
-- **EditSampleTypesSectionComponent** – Stickprovskategorier och typer
+- **EditSampleTypesSectionComponent** – Granskningsdelskategorier och typer
 - **EditPageTypesSectionComponent** – Sidtyper med underkategorier
 - **EditContentTypesSectionComponent** – Innehållstyper (hierarki)
 - **EditInfoBlocksSectionComponent** – Informationsblock (ordning och namn)

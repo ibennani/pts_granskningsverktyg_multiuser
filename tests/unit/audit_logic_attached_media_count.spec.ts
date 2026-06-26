@@ -61,7 +61,7 @@ describe('audit_logic attached media counts', () => {
         expect(count_attached_media_places(state)).toBe(2);
     });
 
-    test('count_attached_images inkluderar stickprovets skärmavbildningar', () => {
+    test('count_attached_images inkluderar granskningsdelens skärmavbildningar', () => {
         const state = {
             samples: [
                 {

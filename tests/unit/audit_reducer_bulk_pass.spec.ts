@@ -82,7 +82,7 @@ describe('audit_reducer_bulk_pass', () => {
         expect(out[0].requirementResults.B.checkResults.c2.passCriteria.pc2.status).toBe('passed');
     });
 
-    test('requirement_id begränsar till ett krav över alla stickprov', () => {
+    test('requirement_id begränsar till ett krav över alla granskningsdelar', () => {
         const req = {
             key: 'R1',
             id: 'R1',

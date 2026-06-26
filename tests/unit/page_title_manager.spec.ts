@@ -27,9 +27,9 @@ function make_t_simple() {
         login_title: 'Logga in',
         audit_metadata_title: 'Metadata',
         edit_audit_metadata_title: 'Redigera metadata',
-        manage_samples_title: 'Stickprov',
-        edit_sample: 'Redigera stickprov',
-        add_new_sample: 'Nytt stickprov',
+        manage_samples_title: 'Granskningsdel',
+        edit_sample: 'Redigera granskningsdel',
+        add_new_sample: 'Ny granskningsdel',
         sample_edit_confirm_dialog_title: 'Bekräfta',
         audit_overview_title: 'Översikt',
         audit_actions_title: 'Åtgärder',
@@ -58,7 +58,7 @@ function make_t_simple() {
         rulefile_section_general_title: 'Allmänt',
         rulefile_metadata_section_page_types: 'Sidtyper',
         rulefile_metadata_section_content_types: 'Innehållstyper',
-        rulefile_section_sample_types_title: 'Stickprovstyper',
+        rulefile_section_sample_types_title: 'Granskningsdelstyper',
         rulefile_section_info_blocks_order_title: 'Informationsblock',
         rulefile_section_classifications_title: 'Klassificeringar',
         rulefile_section_report_template_title: 'Mall'
@@ -106,7 +106,7 @@ describe('page_title_manager', () => {
             ['login', {}, 'Logga in'],
             ['metadata', {}, 'Metadata'],
             ['edit_metadata', {}, 'Redigera metadata'],
-            ['sample_management', {}, 'Stickprov'],
+            ['sample_management', {}, 'Granskningsdel'],
             ['confirm_sample_edit', {}, 'Bekräfta'],
             ['audit_overview', {}, 'Översikt'],
             ['audit_actions', {}, 'Åtgärder'],
@@ -136,10 +136,10 @@ describe('page_title_manager', () => {
     });
 
     test('sample_form: redigera vs nytt', () => {
-        expect(get_page_title_prefix('sample_form', {}, { getState, Translation })).toBe('Nytt stickprov');
+        expect(get_page_title_prefix('sample_form', {}, { getState, Translation })).toBe('Ny granskningsdel');
         expect(
             get_page_title_prefix('sample_form', { editSampleId: '1' }, { getState, Translation })
-        ).toBe('Redigera stickprov');
+        ).toBe('Redigera granskningsdel');
     });
 
     test('confirm_delete: requirement, check, criterion', () => {
@@ -154,7 +154,7 @@ describe('page_title_manager', () => {
         ).toBe('Ta bort kriterium');
     });
 
-    test('requirement_audit: sidebar läge stickprov visar beskrivning', () => {
+    test('requirement_audit: sidebar läge granskningsdel visar beskrivning', () => {
         getState = () => ({
             auditStatus: 'in_progress',
             auditMetadata: {},

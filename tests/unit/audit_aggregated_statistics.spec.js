@@ -206,7 +206,7 @@ describe('audit_aggregated_statistics', () => {
         expect(web_slice.median_duration_weeks).toBe(y2024.median_duration_weeks);
     });
 
-    test('build_statistics_from_audit_rows hittar stickprovstyp med högst bristindex', () => {
+    test('build_statistics_from_audit_rows hittar granskningsdelstyp med högst bristindex', () => {
         const rule_web = {
             metadata: { monitoringType: { text: 'Webbsida' } },
             requirements: {

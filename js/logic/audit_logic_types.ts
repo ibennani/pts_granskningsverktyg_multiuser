@@ -1,5 +1,5 @@
 /**
- * @fileoverview Gemensamma typer för granskningslogik (stickprov, krav, kontroller, kriterier).
+ * @fileoverview Gemensamma typer för granskningslogik (granskningsdel, krav, kontroller, kriterier).
  */
 
 /** Bedömningskriterium i regelfil (kontrollpunkt). */

@@ -135,7 +135,7 @@ const formatDate = (date) => new Date(date).toLocaleDateString('sv-SE');
 /**
  * Beräknar kvalitetspoäng baserat på granskningsresultat
  * @param {Object} auditData - Granskningsdata
- * @param {Array} auditData.samples - Stickprov
+ * @param {Array} auditData.samples - Granskningsdel
  * @param {Object} auditData.ruleFileContent - Regelfil
  * @returns {number} Poäng mellan 0-100
  */

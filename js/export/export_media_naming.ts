@@ -97,7 +97,7 @@ export function resolve_media_export_filename(
 }
 
 /**
- * Ett originalfilnamn → exportfilnamn enligt PTS-regler (stickprov).
+ * Ett originalfilnamn → exportfilnamn enligt PTS-regler (granskningsdel).
  */
 export function resolve_sample_media_export_filename(
     original_filename: string,
@@ -149,7 +149,7 @@ export function resolve_media_export_filenames(
 }
 
 /**
- * Lista originalfilnamn → lista exportfilnamn enligt PTS-regler (stickprov, högst en bild).
+ * Lista originalfilnamn → lista exportfilnamn enligt PTS-regler (granskningsdel, högst en bild).
  */
 export function resolve_sample_media_export_filenames(
     filenames: unknown,
@@ -180,7 +180,7 @@ export function format_media_export_filenames_for_cell(
 }
 
 /**
- * Formatering för celler: stickprovsfilnamn (högst en bild).
+ * Formatering för celler: granskningsdelsfilnamn (högst en bild).
  */
 export function format_sample_media_filenames_for_export(
     filenames: unknown,
@@ -206,7 +206,7 @@ export function format_media_filenames_for_export(
 }
 
 /**
- * Väljer PTS-exportfilnamn när kontext finns, annars råa filnamn (stickprov).
+ * Väljer PTS-exportfilnamn när kontext finns, annars råa filnamn (granskningsdel).
  */
 export function format_sample_media_filenames_for_export_or_raw(
     filenames: unknown,

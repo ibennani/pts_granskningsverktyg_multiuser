@@ -1,13 +1,13 @@
 /**
- * @fileoverview Modal som bekräftar innan stickprovs-URL:er (http/https) öppnas:
- * en about:blank-flik per stickprov med länk, redirect efter en sekund.
+ * @fileoverview Modal som bekräftar innan granskningsdels-URL:er (http/https) öppnas:
+ * en about:blank-flik per granskningsdel med länk, redirect efter en sekund.
  */
 
 import * as HelpersModule from '../utils/helpers.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
 
 /**
- * Rå sträng från stickprovets url-fält (flera nycklar för importerad data, icke-sträng).
+ * Rå sträng från granskningsdelens url-fält (flera nycklar för importerad data, icke-sträng).
  * @param {Record<string, unknown>|null|undefined} sample
  * @returns {string}
  */
@@ -40,7 +40,7 @@ export function canonical_http_open_href(href) {
 }
 
 /**
- * Stickprov i ordning → en flik per giltig http(s)-adress (ingen dedupe; samma URL kan förekomma flera gånger).
+ * Granskningsdelar i ordning → en flik per giltig http(s)-adress (ingen dedupe; samma URL kan förekomma flera gånger).
  * @param {Array<Record<string, unknown>>|undefined} samples
  * @param {(raw: string) => string} add_protocol_fn
  * @returns {{ ordered_hrefs: string[], has_duplicate_open_urls: boolean }}
@@ -107,7 +107,7 @@ const NAVIGATE_DELAY_MS = 1000;
 
 /**
  * Öppnar en tom flik per href, redirectar alla efter angiven fördröjning.
- * @param {string[]} hrefs - kanoniska http(s)-URL:er i stickprovsordning
+ * @param {string[]} hrefs - kanoniska http(s)-URL:er i granskningsdelsordning
  * @param {number} [navigate_delay_ms]
  */
 export function open_http_hrefs_via_blank_then_assign(hrefs, navigate_delay_ms = NAVIGATE_DELAY_MS) {
@@ -160,7 +160,7 @@ function attach_open_all_sample_urls_modal_body(container, modal, ctx) {
 }
 
 /**
- * Visar modal och öppnar stickprovens URL:er vid bekräftelse (färsk state vid klick).
+ * Visar modal och öppnar granskningsdelarnas URL:er vid bekräftelse (färsk state vid klick).
  * @param {Object} opts
  * @param {HTMLElement|null} opts.trigger_element
  * @param {() => { samples?: Array<Record<string, unknown>> }} opts.getState

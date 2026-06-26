@@ -5,7 +5,7 @@
 import { get_latest_requirement_status_update_iso } from '../../js/logic/audit_sync_tracking.js';
 
 /**
- * True om inkommande stickprov har äldre senaste kravändring än befintlig rad.
+ * True om inkommande granskningsdel har äldre senaste kravändring än befintlig rad.
  */
 export function is_incoming_audit_samples_older_than_existing(
     existing_samples: unknown,

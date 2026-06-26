@@ -1,5 +1,5 @@
 /**
- * @fileoverview Normaliserar bifogade filnamn på stickprov (skärmavbildningar) vid inläsning.
+ * @fileoverview Normaliserar bifogade filnamn på granskningsdel (skärmavbildningar) vid inläsning.
  */
 
 import { coerce_to_array } from './sanitize_persisted_app_state.js';
@@ -12,7 +12,7 @@ export function normalize_attached_media_filenames_list(raw: unknown): string[] 
     return raw.map((filename) => String(filename).trim()).filter(Boolean);
 }
 
-/** Säkerställer attachedMediaFilenames på ett stickprovsobjekt. */
+/** Säkerställer attachedMediaFilenames på en granskningsdelsobjekt. */
 export function ensure_sample_attached_media_shape(sample: unknown): unknown {
     if (!sample || typeof sample !== 'object' || Array.isArray(sample)) {
         return sample;
@@ -30,7 +30,7 @@ export function ensure_sample_attached_media_shape(sample: unknown): unknown {
     };
 }
 
-/** Säkerställer attachedMediaFilenames på alla stickprov i en granskning. */
+/** Säkerställer attachedMediaFilenames på alla granskningsdelar i en granskning. */
 export function ensure_samples_attached_media_shape(samples: unknown): unknown[] {
     return coerce_to_array(samples).map((sample) => ensure_sample_attached_media_shape(sample));
 }
@@ -61,7 +61,7 @@ function read_attached_filenames_from_staged_source(
 }
 
 /**
- * Stickprov för serversynk/import: attachedMediaFilenames från utkast eller väntande ändringar
+ * Granskningsdel för serversynk/import: attachedMediaFilenames från utkast eller väntande ändringar
  * slås in så att bifogad media inte försvinner vid statusbyte eller PATCH.
  */
 export function resolve_samples_for_server_sync(
@@ -80,7 +80,7 @@ export function resolve_samples_for_server_sync(
     });
 }
 
-/** Returnerar aktuell lista med bifogade filnamn för ett stickprov, inklusive utkast och väntande ändringar. */
+/** Returnerar aktuell lista med bifogade filnamn för en granskningsdel, inklusive utkast och väntande ändringar. */
 export function resolve_effective_sample_attached_filenames(
     state: Sample_media_source_state | null | undefined,
     sample: { id?: string; attachedMediaFilenames?: unknown } | null | undefined

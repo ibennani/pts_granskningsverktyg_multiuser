@@ -101,9 +101,9 @@ function build_sample_heading_html(
         const safe_url = escape_html_internal(
             Helpers?.add_protocol_if_missing ? Helpers.add_protocol_if_missing(String(sample.url)) : String(sample.url)
         );
-        return `<${tag}>Stickprov: <a href="${safe_url}">${sample_name}</a></${tag}>`;
+        return `<${tag}>Granskningsdel: <a href="${safe_url}">${sample_name}</a></${tag}>`;
     }
-    return `<${tag}>Stickprov: ${sample_name}</${tag}>`;
+    return `<${tag}>Granskningsdel: ${sample_name}</${tag}>`;
 }
 
 function build_comment_html(
@@ -237,8 +237,8 @@ export function build_report_body_sorted_by_samples(
 export function build_report_pdf_intro_html(): string {
     return (
         '<h1>Redovisning av granskningsresultatet</h1>' +
-        '<p>Det här avsnittet redovisar samtliga brister som har identifierats vid granskningen. För varje krav anges i vilka stickprov PTS har observerat brister.</p>' +
-        '<p>Bristerna kan även förekomma i andra delar av e-handeln än de stickprov som har granskats. Verksamheten behöver därför gå igenom e-handeln i sin helhet för att identifiera om motsvarande brister finns även utanför stickproven.</p>' +
+        '<p>Det här avsnittet redovisar samtliga brister som har identifierats vid granskningen. För varje krav anges i vilka granskningsdel PTS har observerat brister.</p>' +
+        '<p>Bristerna kan även förekomma i andra delar av e-handeln än de granskningsdel som har granskats. Verksamheten behöver därför gå igenom e-handeln i sin helhet för att identifiera om motsvarande brister finns även utanför granskningsdelarna.</p>' +
         '<p>Redovisningen omfattar endast de brister som har iakttagits inom ramen för den genomförda granskningen.</p>'
     );
 }

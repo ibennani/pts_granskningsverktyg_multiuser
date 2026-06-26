@@ -1,6 +1,6 @@
 /**
  * Notislogik för granskning när servern har en nyare version:
- * visa notis endast om användaren har osparat i exakt den cell (stickprov+krav)
+ * visa notis endast om användaren har osparat i exakt den cell (granskningsdel+krav)
  * som den inkommande uppdateringen berör.
  *
  * Baseline spåras per (auditId, sampleId, resolvedRequirementKey) och uppdateras

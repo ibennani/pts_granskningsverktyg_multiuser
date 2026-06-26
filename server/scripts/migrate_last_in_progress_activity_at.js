@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Backfill av metadata.lastInProgressActivityAt för låsta/arkiverade granskningar.
- * Beräknar från befintliga tidsstämplar i stickprov (senaste interaktion under pågående granskning).
+ * Beräknar från befintliga tidsstämplar i granskningsdel (senaste interaktion under pågående granskning).
  * Ändrar inte audits.updated_at.
  *
  * Användning:
@@ -98,7 +98,7 @@ async function run_migration({ dry_run }) {
     console.info('');
     console.info(`Totalt låsta/arkiverade: ${result.rows.length}`);
     console.info(`Redan korrekta: ${skipped_already_ok}`);
-    console.info(`Utan stickprovstidsstämplar: ${skipped_no_samples}`);
+    console.info(`Utan granskningsdelstidsstämplar: ${skipped_no_samples}`);
     console.info(`${dry_run ? 'Skulle uppdatera' : 'Uppdaterade'}: ${dry_run ? would_update : updated}`);
     if (!dry_run && updated > 0) {
         broadcast_audits_changed(null, { changeKind: 'full' });

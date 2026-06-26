@@ -1,6 +1,6 @@
 /**
  * Central konfiguration för bristindex 0–100: zongränser, färger och genererad CSS för staplar.
- * Ändra här så slår ändringar igenom i mätare, principrader och stickprovstypsdiagram (efter injektion vid start).
+ * Ändra här så slår ändringar igenom i mätare, principrader och granskningsdelstypsdiagram (efter injektion vid start).
  */
 
 /** Övre gräns för grön, gul respektive orange zon (över sista värdet rött). */
@@ -50,7 +50,7 @@ export function deficiency_score_bar_background_css_value(): string {
 }
 
 /**
- * Injicerar en gång: gemensam gradient + background-size för principrad och stickprovstyp-diagram.
+ * Injicerar en gång: gemensam gradient + background-size för principrad och granskningsdelstyp-diagram.
  * Fyllnader under "Underkända krav" (samma klass men utanför .statistics-sampletype-chart) får inte gradienten.
  * Idempotent. Anropas från app-start (webbläsare).
  */

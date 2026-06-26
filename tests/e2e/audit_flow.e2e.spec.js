@@ -1,5 +1,5 @@
 /**
- * E2E: ny granskning, metadata, stickprov och kravlista med mockade API-anrop.
+ * E2E: ny granskning, metadata, granskningsdel och kravlista med mockade API-anrop.
  */
 import { readFileSync } from 'fs';
 import path from 'path';
@@ -119,7 +119,7 @@ test.describe('Granskningsflöde (mockat API)', () => {
         await context.clearCookies();
     });
 
-    test('ny granskning → metadata → stickprov → kravlista', async ({ page }) => {
+    test('ny granskning → metadata → granskningsdel → kravlista', async ({ page }) => {
         test.setTimeout(120000);
         await page.addInitScript(() => {
             try {
@@ -175,28 +175,30 @@ test.describe('Granskningsflöde (mockat API)', () => {
             name: 'Du har inte fyllt i någon metadata'
         });
         const continue_in_modal = empty_meta_modal.getByRole('button', {
-            name: 'Fortsätt till stickprov'
+            name: 'Fortsätt till granskningsdelar'
         });
         if (await continue_in_modal.isVisible().catch(() => false)) {
             await continue_in_modal.click();
         }
 
-        await expect(page.getByRole('heading', { level: 1, name: /Stickprov/ })).toBeVisible({
+        await expect(page.getByRole('heading', { level: 1, name: /Granskningsdel/ })).toBeVisible({
             timeout: 30000
         });
 
-        await page.getByRole('button', { name: 'Lägg till nytt stickprov' }).click();
+        await page.getByRole('button', { name: 'Lägg till ny granskningsdel' }).click();
 
+        await page.locator('input[name="sampleCategory"][value="cat1"]').check();
         await page.locator('#sampleTypeSelect').waitFor({ state: 'visible', timeout: 15000 });
         await page.locator('#sampleTypeSelect').selectOption('stype1');
-        await page.locator('#sampleDescriptionInput').fill('E2E stickprov');
+        await page.locator('#sampleDescriptionInput').fill('E2E granskningsdel');
 
+        await page.getByRole('button', { name: 'Innehållstyper' }).click();
         const plain_cb = page.locator('#ct-child-plain');
         await plain_cb.click();
 
-        await page.getByRole('button', { name: 'Spara stickprovet' }).click();
+        await page.getByRole('button', { name: 'Spara granskningsdelen' }).click();
 
-        await expect(page.getByText('E2E stickprov')).toBeVisible();
+        await expect(page.getByText('E2E granskningsdel')).toBeVisible();
 
         await page.getByRole('button', { name: 'Starta granskning' }).click();
 

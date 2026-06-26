@@ -1,5 +1,5 @@
 /**
- * Accordion för avsnittet Innehållstyper i stickprovsformuläret.
+ * Accordion för avsnittet Innehållstyper i granskningsdelsformuläret.
  * Instruktionstext och alla innehållstypgrupper renderas endast när avsnittet är expanderat.
  */
 

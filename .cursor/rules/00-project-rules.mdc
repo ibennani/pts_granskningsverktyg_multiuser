@@ -264,7 +264,7 @@ Alla formulärkomponenter måste följa samma mönster:
 - `EditGeneralSectionComponent` (regelfilsmetadata)
 - `EditPageTypesSectionComponent` (sidtyper)
 - `MetadataFormComponent` (granskningsmetadata)
-- `AddSampleFormComponent` (stickprov)
+- `AddSampleFormComponent` (granskningsdel)
 - `ChecklistHandler` (observationer i granskning)
 - `EditRulefileRequirementComponent` (kravredigering)
 

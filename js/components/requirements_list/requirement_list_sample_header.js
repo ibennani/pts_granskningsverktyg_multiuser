@@ -1,5 +1,5 @@
 /**
- * Rubrik och stickprovsinformation ovanför kravlistan (ett stickprov).
+ * Rubrik och granskningsdelsinformation ovanför kravlistan (en granskningsdel).
  * @module js/components/requirements_list/requirement_list_sample_header
  */
 

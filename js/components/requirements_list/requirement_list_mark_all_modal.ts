@@ -1,5 +1,5 @@
 /**
- * Modal för att markera ett krav som godkänt i alla relevanta stickprov.
+ * Modal för att markera ett krav som godkänt i alla relevanta granskningsdel.
  * @module js/components/requirements_list/requirement_list_mark_all_modal
  */
 

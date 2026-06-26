@@ -76,7 +76,7 @@ describe('export_html_media', () => {
         ).toEqual(['047_1_WEBB_1_2026-04-11_26-11111.png']);
     });
 
-    test('get_sample_media_export_names använder stickprovsnummer', () => {
+    test('get_sample_media_export_names använder granskningsdelsnummer', () => {
         expect(
             get_sample_media_export_names(
                 ['stickprov.png'],
@@ -87,7 +87,7 @@ describe('export_html_media', () => {
         ).toEqual(['000_1_WEBB_1_2026-04-11_26-11111.png']);
     });
 
-    test('collect_html_export_zip_entries samlar brist och stickprov', () => {
+    test('collect_html_export_zip_entries samlar brist och granskningsdel', () => {
         const entries = collect_html_export_zip_entries(sample_audit, media_context);
         expect(entries).toEqual([
             {
@@ -136,14 +136,14 @@ describe('export_html_media', () => {
         expect(html).toContain('<figcaption>047_1_WEBB_1_2026-04-11_26-11111.png</figcaption>');
     });
 
-    test('krav-sortering innehåller bristbild men inte stickprovssektion', () => {
+    test('krav-sortering innehåller bristbild men inte granskningsdelssektion', () => {
         const t = (key: string) => key;
         const { content_html } = build_content_sorted_by_requirement(sample_audit, t, media_context);
         expect(content_html).toContain('src="media/047_1_WEBB_1_2026-04-11_26-11111.png"');
         expect(content_html).not.toContain('sample-media-section');
     });
 
-    test('stickprov-sortering innehåller stickprovsbild och bristbild', () => {
+    test('granskningsdel-sortering innehåller granskningsdelsbild och bristbild', () => {
         const t = (key: string) => key;
         const { content_html } = build_content_sorted_by_sample(sample_audit, t, media_context);
         expect(content_html).toContain('sample-media-section');

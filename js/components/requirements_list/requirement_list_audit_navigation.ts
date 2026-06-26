@@ -15,7 +15,7 @@ function is_audit_frozen(state: { auditStatus?: string } | null | undefined): bo
 }
 
 /**
- * Sätter väntande fokus på bristbeskrivning om användaren sökte på brist-id och navigerar till träffande krav/stickprov.
+ * Sätter väntande fokus på bristbeskrivning om användaren sökte på brist-id och navigerar till träffande krav/granskningsdel.
  */
 export function prepare_deficiency_observation_focus_before_audit_navigation(options: {
     getState: () => { auditStatus?: string; samples?: unknown[]; ruleFileContent?: { requirements?: unknown }; uiSettings?: Record<string, { searchText?: string } | undefined> } | null | undefined;

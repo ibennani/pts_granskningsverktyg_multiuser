@@ -148,7 +148,7 @@ export type SampleListRowForSequence = {
 };
 
 /**
- * Returnerar 1-baserad ordning för stickprov enligt samples-arrayens ordning.
+ * Returnerar 1-baserad ordning för granskningsdel enligt samples-arrayens ordning.
  */
 export function resolve_sample_sequence_number(
     samples: SampleListRowForSequence[] | null | undefined,

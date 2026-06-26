@@ -60,7 +60,7 @@ export function find_pass_criterion_by_deficiency_search(
 }
 
 /**
- * Alla-läge: minst ett relevant stickprov har matchande brist-id.
+ * Alla-läge: minst ett relevant granskningsdel har matchande brist-id.
  */
 export function requirement_has_deficiency_search_all_mode(
     req_id: unknown,
@@ -81,7 +81,7 @@ export function requirement_has_deficiency_search_all_mode(
 }
 
 /**
- * Om ett stickprov har det sökta brist-id:t för ett givet krav.
+ * Om en granskningsdel har det sökta brist-id:t för ett givet krav.
  */
 export function sample_has_deficiency_search_for_requirement(
     sample: { requirementResults?: Record<string, RequirementResultStored> | null },
@@ -100,7 +100,7 @@ export function sample_has_deficiency_search_for_requirement(
 }
 
 /**
- * Stickprovsläge: aktuellt stickprovs resultat har matchande brist-id.
+ * Granskningsdelsläge: aktuellt granskningsdels resultat har matchande brist-id.
  */
 export function requirement_has_deficiency_search_sample_mode(
     requirement_results: unknown,

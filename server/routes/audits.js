@@ -840,7 +840,7 @@ router.patch('/:id/content-part', async (req, res) => {
 
         const samples = Array.isArray(audit.samples) ? JSON.parse(JSON.stringify(audit.samples)) : [];
         const sample = samples.find(s => String(s?.id) === String(parsed.sample_id));
-        if (!sample) return res.status(400).json({ error: 'Stickprov hittades inte för part_key' });
+        if (!sample) return res.status(400).json({ error: 'Granskningsdel hittades inte för part_key' });
         if (!sample.requirementResults) sample.requirementResults = {};
         const req_res = sample.requirementResults[parsed.requirement_id] || {};
         sample.requirementResults[parsed.requirement_id] = req_res;

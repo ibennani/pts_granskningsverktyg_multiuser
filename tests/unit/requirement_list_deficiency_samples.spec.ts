@@ -46,7 +46,7 @@ function minimal_helpers() {
 function minimal_translation() {
     const map: Record<string, string> = {
         unknown_value: 'Okänd',
-        all_requirements_occurs_in_samples_filtered: 'Förekommer i {count} stickprov',
+        all_requirements_occurs_in_samples_filtered: 'Förekommer i {count} granskningsdelar',
         audit_status_failed: 'Underkänt',
         undefined_description: 'Beskrivning'
     };
@@ -63,7 +63,7 @@ function minimal_translation() {
     };
 }
 
-describe('create_all_requirement_list_item brist-id på stickprov', () => {
+describe('create_all_requirement_list_item brist-id på granskningsdel', () => {
     beforeEach(() => {
         document.body.innerHTML = '';
     });
@@ -72,7 +72,7 @@ describe('create_all_requirement_list_item brist-id på stickprov', () => {
         document.body.innerHTML = '';
     });
 
-    test('visar endast stickprov som har det sökta brist-id:t', () => {
+    test('visar endast granskningsdel som har det sökta brist-id:t', () => {
         const relevant = new Map([
             ['sp1', new Set(['req-b'])],
             ['sp2', new Set(['req-b'])]
@@ -94,7 +94,7 @@ describe('create_all_requirement_list_item brist-id på stickprov', () => {
         expect(sample_items[0].textContent).toContain('Med brist 27');
     });
 
-    test('utan brist-id-filter visas båda stickprov', () => {
+    test('utan brist-id-filter visas båda granskningsdel', () => {
         const relevant = new Map([
             ['sp1', new Set(['req-b'])],
             ['sp2', new Set(['req-b'])]

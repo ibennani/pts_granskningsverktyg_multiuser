@@ -49,7 +49,7 @@ function sets_equal(left: string[], right: string[]): boolean {
     return a.size === b.size && [...a].every((value) => b.has(value));
 }
 
-/** Avgör om stickprovsändringen är tom, enbart media eller något annat. */
+/** Avgör om granskningsdelsändringen är tom, enbart media eller något annat. */
 export function classify_sample_edit_change(
     baseline: SampleEditComparable | null | undefined,
     updated: SampleEditComparable | null | undefined

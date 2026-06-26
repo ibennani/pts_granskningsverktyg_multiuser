@@ -197,7 +197,7 @@ export class AddSampleFormComponent {
         const current_sample = state.samples.find((s: any) => String(s.id) === String(this.current_editing_sample_id));
         if (!current_sample) return;
 
-        // Skapa ett utkast som startar på stickprovets aktuella värden.
+        // Skapa ett utkast som startar på granskningsdelens aktuella värden.
         this.dispatch({
             type: this.StoreActionTypes.SET_SAMPLE_EDIT_DRAFT,
             payload: {
@@ -500,7 +500,7 @@ export class AddSampleFormComponent {
         }
 
         // Variant B: autospar och ändringar skriver alltid till ett "utkast" i state.
-        // Själva stickprovet uppdateras först när användaren bekräftar.
+        // Själva granskningsdelen uppdateras först när användaren bekräftar.
         this._update_sample_edit_draft_from_dom({ should_trim, skip_render });
     }
 

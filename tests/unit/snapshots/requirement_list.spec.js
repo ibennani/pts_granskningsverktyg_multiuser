@@ -1,5 +1,5 @@
 /**
- * Snapshot: RequirementListComponent (stickprovsläge) med mockade krav.
+ * Snapshot: RequirementListComponent (granskningsdelsläge) med mockade krav.
  */
 import { jest, describe, test, expect, beforeEach, afterEach } from '@jest/globals';
 import fs from 'node:fs';
@@ -25,10 +25,10 @@ const rule_two_req = {
 
 function build_translation() {
     const map = {
-        requirement_list_title_suffix: 'Krav för stickprov',
+        requirement_list_title_suffix: 'Krav för granskningsdel',
         error_no_active_audit: 'Ingen aktiv granskning',
-        error_no_sample_selected: 'Inget stickprov',
-        error_sample_not_found: 'Stickprov saknas',
+        error_no_sample_selected: 'Ingen granskningsdel',
+        error_sample_not_found: 'Granskningsdel saknas',
         uncategorized: 'Övrigt',
         other_requirements: 'Övriga krav',
         requirement_status_not_audited: 'Ej granskad',
@@ -97,7 +97,7 @@ describe('RequirementListComponent snapshot', () => {
             samples: [
                 {
                     id: 'sp-1',
-                    description: 'Stickprov A',
+                    description: 'Granskningsdel A',
                     sampleType: 'Webbsida',
                     sampleCategory: 'cat1',
                     selectedContentTypes: [],

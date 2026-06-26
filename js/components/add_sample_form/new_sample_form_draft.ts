@@ -1,6 +1,6 @@
 /**
- * @fileoverview SessionStorage-utkast för formuläret "lägg till nytt stickprov".
- * Sparas lokalt tills användaren sparar stickprovet eller rensar formuläret.
+ * @fileoverview SessionStorage-utkast för formuläret "lägg till ny granskningsdel".
+ * Sparas lokalt tills användaren sparar granskningsdelen eller rensar formuläret.
  */
 
 export type NewSampleFormDraft = {

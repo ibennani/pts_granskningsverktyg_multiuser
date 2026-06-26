@@ -12,7 +12,7 @@ function get_translation_func(Translation) {
 }
 
 /**
- * Navigerar till standardvy för en granskning utifrån status och stickprov (efter LOAD i state).
+ * Navigerar till standardvy för en granskning utifrån status och granskningsdelar (efter LOAD i state).
  * @param {Object} full_state
  * @param {function(string, Object): void} router
  */

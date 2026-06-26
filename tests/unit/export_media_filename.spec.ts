@@ -67,7 +67,7 @@ describe('export_media_filename', () => {
         ).toBe('047_1_WEB_1_2026-04-11_26-11111.png');
     });
 
-    test('stickprovsfilnamn med tre siffrors id-bredd', () => {
+    test('granskningsdelsfilnamn med tre siffrors id-bredd', () => {
         expect(
             build_sample_media_export_filename({
                 sample_sequence: 1,
@@ -81,7 +81,7 @@ describe('export_media_filename', () => {
         ).toBe('000_1_WEBB_1_2026-04-11_26-11111.png');
     });
 
-    test('stickprovsfilnamn följer bredare bristnummer', () => {
+    test('granskningsdelsfilnamn följer bredare bristnummer', () => {
         expect(
             build_sample_media_export_filename({
                 sample_sequence: 2,

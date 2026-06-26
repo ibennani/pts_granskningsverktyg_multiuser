@@ -15,7 +15,7 @@ describe('recalculateAuditTimes manuell startTime', () => {
         expect(next?.startTime).toBe('2023-01-01T00:00:00.000Z');
     });
 
-    test('sätter startTime från stickprov när ingen manuell finns', () => {
+    test('sätter startTime från granskningsdel när ingen manuell finns', () => {
         const state = {
             auditMetadata: {},
             samples: [{
@@ -44,7 +44,7 @@ describe('recalculateAuditTimes manuell endTime', () => {
         expect(next?.endTime).toBe('2025-01-01T00:00:00.000Z');
     });
 
-    test('sätter endTime från stickprov när ingen manuell finns', () => {
+    test('sätter endTime från granskningsdel när ingen manuell finns', () => {
         const state = {
             auditMetadata: {},
             samples: [{

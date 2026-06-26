@@ -1,5 +1,5 @@
 /**
- * @fileoverview Statusmeddelanden när bifogade filnamn redan finns i aktuellt krav eller stickprov.
+ * @fileoverview Statusmeddelanden när bifogade filnamn redan finns i aktuellt krav eller granskningsdel.
  */
 
 import { partition_files_for_upload } from '../../logic/audit_media_server_index.js';
@@ -39,7 +39,7 @@ function build_multiple_filenames_html_message(
 }
 
 /**
- * Bygger HTML för felmeddelande när filer redan finns i aktuellt krav eller stickprov.
+ * Bygger HTML för felmeddelande när filer redan finns i aktuellt krav eller granskningsdel.
  */
 export function build_attach_media_duplicate_filenames_message(
     t: TranslateFn,

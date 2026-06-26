@@ -1,5 +1,5 @@
 /**
- * @fileoverview Stickprovets skärmavbildningar i vyn Bifogad media (Bilder).
+ * @fileoverview Granskningsdelens skärmavbildningar i vyn Bifogad media (Bilder).
  */
 
 import { resolve_effective_sample_attached_filenames } from '../logic/sample_attached_media_normalize.js';

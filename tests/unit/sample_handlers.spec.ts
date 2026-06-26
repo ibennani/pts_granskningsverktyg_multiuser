@@ -1,5 +1,5 @@
 /**
- * @fileoverview Enhetstester för sampleHandlers (stickprov i audit-reducern).
+ * @fileoverview Enhetstester för sampleHandlers (granskningsdel i audit-reducern).
  */
 
 import { describe, test, expect } from '@jest/globals';
@@ -16,7 +16,7 @@ describe('reduce_delete_sample', () => {
         ]
     };
 
-    test('tar bort stickprov via sträng-id', () => {
+    test('tar bort granskningsdel via sträng-id', () => {
         const next = reduce_delete_sample(base_state, { payload: { sampleId: 'sample-a' } });
         expect(next.samples).toHaveLength(1);
         expect(next.samples[0].id).toBe('sample-b');
@@ -54,7 +54,7 @@ describe('reduce_add_sample', () => {
         samples: [{ id: 'sample-a', description: 'A' }]
     };
 
-    test('lägger till stickprov under pågående granskning', () => {
+    test('lägger till granskningsdel under pågående granskning', () => {
         const next = reduce_add_sample(base_state, {
             payload: { id: 'sample-b', description: 'B', sampleCategory: '', sampleType: '' }
         });
@@ -62,7 +62,7 @@ describe('reduce_add_sample', () => {
         expect(next.samples[1].id).toBe('sample-b');
     });
 
-    test('blockerar nytt stickprov vid avslutad granskning', () => {
+    test('blockerar ny granskningsdel vid avslutad granskning', () => {
         const locked = { ...base_state, auditStatus: 'locked' };
         const next = reduce_add_sample(locked, {
             payload: { id: 'sample-b', description: 'B', sampleCategory: '', sampleType: '' }
@@ -71,7 +71,7 @@ describe('reduce_add_sample', () => {
         expect(next.samples).toHaveLength(1);
     });
 
-    test('blockerar nytt stickprov vid arkiverad granskning', () => {
+    test('blockerar ny granskningsdel vid arkiverad granskning', () => {
         const archived = { ...base_state, auditStatus: 'archived' };
         const next = reduce_add_sample(archived, {
             payload: { id: 'sample-b', description: 'B', sampleCategory: '', sampleType: '' }

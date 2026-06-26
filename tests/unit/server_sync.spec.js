@@ -163,7 +163,7 @@ describe('server_sync', () => {
         );
     });
 
-    test('endast metadata-ändring skickar PATCH utan stickprov och regelfil', async () => {
+    test('endast metadata-ändring skickar PATCH utan granskningsdel och regelfil', async () => {
         const {
             clear_rule_file_sync_baseline_for_testing,
             mark_rule_file_synced_from_state,
