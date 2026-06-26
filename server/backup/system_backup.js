@@ -9,6 +9,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { query } from '../db.js';
 import { format_filename_datetime_for_download } from '../../shared/datetime/filename_datetime.js';
+import { DEFAULT_MIN_BACKUPS, select_entries_for_retention_deletion } from './backup_retention.js';
 
 const SYSTEM_DIRNAME = '_system';
 const MANIFEST_FILENAME = 'manifest.json';
@@ -318,10 +319,6 @@ export async function cleanup_old_system_snapshots({ backup_dir, retention_days 
     const base = path.resolve(backup_dir || process.cwd());
     const system_root_dir = path.join(base, SYSTEM_DIRNAME);
 
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - retention_days);
-    const cutoff_time = cutoff.getTime();
-
     let entries;
     try {
         entries = await fs.readdir(system_root_dir, { withFileTypes: true });
@@ -330,20 +327,29 @@ export async function cleanup_old_system_snapshots({ backup_dir, retention_days 
         throw err;
     }
 
-    const dirs = entries
-        .filter((d) => d.isDirectory())
-        .map((d) => d.name)
-        .filter((name) => typeof name === 'string' && name.length > 0);
-
-    let removed = 0;
-    for (const dirname of dirs) {
-        const dir_path = path.join(system_root_dir, dirname);
+    const snapshot_entries = [];
+    for (const entry of entries) {
+        if (!entry.isDirectory()) continue;
+        const dir_path = path.join(system_root_dir, entry.name);
         try {
             const stat = await fs.stat(dir_path);
-            if (stat.mtimeMs < cutoff_time) {
-                await fs.rm(dir_path, { recursive: true, force: true });
-                removed += 1;
-            }
+            snapshot_entries.push({ id: entry.name, mtimeMs: stat.mtimeMs });
+        } catch {
+            // Ignorera
+        }
+    }
+
+    const to_delete = select_entries_for_retention_deletion(snapshot_entries, {
+        retention_days,
+        min_count: DEFAULT_MIN_BACKUPS
+    });
+
+    let removed = 0;
+    for (const dirname of to_delete) {
+        const dir_path = path.join(system_root_dir, dirname);
+        try {
+            await fs.rm(dir_path, { recursive: true, force: true });
+            removed += 1;
         } catch {
             // Ignorera
         }

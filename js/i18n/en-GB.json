@@ -429,7 +429,7 @@
   "backup_settings_modal_title": "Backup settings",
   "backup_settings_retention_days": "{days} days",
   "backup_settings_retention_heading": "How long files are kept",
-  "backup_settings_retention_help": "Files older than this are deleted automatically. Between 1 and 365 days.",
+  "backup_settings_retention_help": "Files older than this are deleted automatically, but at least the 5 most recent backups per review and rule file are always kept. Between 1 and 365 days.",
   "backup_settings_retention_invalid": "Enter a number between 1 and 365.",
   "backup_settings_retention_label": "Keep files for (days)",
   "backup_settings_runs_help": "Backup runs this many times per day, with at least one hour between runs.",

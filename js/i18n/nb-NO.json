@@ -429,7 +429,7 @@
   "backup_settings_modal_title": "Innstillinger for sikkerhetskopi",
   "backup_settings_retention_days": "{days} dager",
   "backup_settings_retention_heading": "Hvor lenge filer beholdes",
-  "backup_settings_retention_help": "Filer som er eldre enn dette, slettes automatisk. Mellom 1 og 365 dager.",
+  "backup_settings_retention_help": "Filer som er eldre enn dette, slettes automatisk, men minst 5 nyeste sikkerhetskopier per gjennomgang og regelfil beholdes alltid. Mellom 1 og 365 dager.",
   "backup_settings_retention_invalid": "Skriv inn et tall mellom 1 og 365.",
   "backup_settings_retention_label": "Behold filer i (dager)",
   "backup_settings_runs_help": "Sikkerhetskopieringen kjøres dette antallet ganger per dag, med minst én time mellom hver kjøring.",

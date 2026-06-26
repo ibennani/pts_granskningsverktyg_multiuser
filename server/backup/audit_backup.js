@@ -1,6 +1,6 @@
 /**
  * Schemalagd backup av granskningar till JSON-filer.
- * Schema styrs av first_run_hour, last_run_hour och runs_per_day (jämnt fördelat). Sparar endast vid ändringar, rensar filer enligt retention_days.
+ * Schema styrs av first_run_hour, last_run_hour och runs_per_day (jämnt fördelat). Sparar endast vid ändringar, rensar filer enligt retention_days men behåller minst 5 senaste per granskning.
  */
 import crypto from 'crypto';
 import fs from 'fs/promises';
@@ -11,6 +11,7 @@ import { query } from '../db.js';
 import { build_full_state } from '../routes/audits.js';
 import { generate_audit_filename } from '../../js/utils/filename_utils.js';
 import { save_system_snapshot, cleanup_old_system_snapshots, stable_stringify } from './system_backup.js';
+import { DEFAULT_MIN_BACKUPS, select_entries_for_retention_deletion } from './backup_retention.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_RETENTION_DAYS = 30;
@@ -243,10 +244,6 @@ async function run_scheduled_backup() {
 }
 
 async function cleanup_old_backups(backup_dir, retention_days = DEFAULT_RETENTION_DAYS) {
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() - retention_days);
-    const cutoff_time = cutoff.getTime();
-
     let removed = 0;
     try {
         const audit_ids = await fs.readdir(backup_dir);
@@ -256,13 +253,28 @@ async function cleanup_old_backups(backup_dir, retention_days = DEFAULT_RETENTIO
             if (!stat.isDirectory()) continue;
 
             const files = await fs.readdir(audit_path);
+            const entries = [];
             for (const f of files) {
                 if (!f.endsWith('.json')) continue;
                 const fp = path.join(audit_path, f);
-                const fstat = await fs.stat(fp);
-                if (fstat.mtimeMs < cutoff_time) {
-                    await fs.unlink(fp);
+                try {
+                    const fstat = await fs.stat(fp);
+                    entries.push({ id: f, mtimeMs: fstat.mtimeMs });
+                } catch {
+                    // Ignorera oläsbar fil
+                }
+            }
+
+            const to_delete = select_entries_for_retention_deletion(entries, {
+                retention_days,
+                min_count: DEFAULT_MIN_BACKUPS
+            });
+            for (const filename of to_delete) {
+                try {
+                    await fs.unlink(path.join(audit_path, filename));
                     removed++;
+                } catch {
+                    // Ignorera
                 }
             }
         }

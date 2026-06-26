@@ -429,7 +429,7 @@
   "backup_settings_modal_title": "Inställningar för säkerhetskopior",
   "backup_settings_retention_days": "{days} dagar",
   "backup_settings_retention_heading": "Hur länge filer sparas",
-  "backup_settings_retention_help": "Filer äldre än detta raderas automatiskt. Mellan 1 och 365 dagar.",
+  "backup_settings_retention_help": "Filer äldre än detta raderas automatiskt, men minst 5 senaste säkerhetskopior per granskning och regelfil behålls alltid. Mellan 1 och 365 dagar.",
   "backup_settings_retention_invalid": "Ange ett tal mellan 1 och 365.",
   "backup_settings_retention_label": "Spara filer i antal dagar",
   "backup_settings_runs_help": "Säkerhetskopieringen körs detta antal gånger per dygn, med minst en timmes mellanrum.",
