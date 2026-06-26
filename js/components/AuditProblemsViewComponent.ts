@@ -11,9 +11,11 @@ import { RequirementLookup } from '../logic/requirement_lookup.js';
 import { get_current_view_name } from '../app/browser_globals.js';
 import { is_debug_problems_update } from '../app/runtime_flags.js';
 import { show_temporary_button_label_feedback } from '../utils/temporary_live_text_update.js';
+import { merge_local_stuck_into_server_samples } from '../logic/audit_stuck_merge.js';
 
 export class AuditProblemsViewComponent {
-    constructor() {        this.root = null;
+    constructor() {
+        this.root = null;
         this.deps = null;
         this.router = null;
         this.getState = null;
@@ -106,9 +108,17 @@ export class AuditProblemsViewComponent {
                     consoleManager.log('[GV-Debug problems] init: från servern, kört-fast i samples:', stuck_from_server, 'samples.length:', full_state.samples?.length);
                 }
                 if (full_state && full_state.samples) {
+                    const merged_samples = merge_local_stuck_into_server_samples(
+                        state?.samples || [],
+                        full_state.samples
+                    );
                     await this.dispatch({
                         type: this.StoreActionTypes.REPLACE_STATE_FROM_REMOTE,
-                        payload: { ...full_state, saveFileVersion: full_state.saveFileVersion || '2.1.0' }
+                        payload: {
+                            ...full_state,
+                            samples: merged_samples,
+                            saveFileVersion: full_state.saveFileVersion || '2.1.0'
+                        }
                     });
                     if (is_debug_problems_update()) {
                         const after_state = this.getState();

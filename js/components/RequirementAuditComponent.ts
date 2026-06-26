@@ -944,10 +944,33 @@ export class RequirementAuditComponent {
 
         const result_after = this._snapshot_requirement_result_for_compare(this.current_result);
         if (result_before !== '' && result_before === result_after) {
+            this._sync_checklist_result_ref_from_current_result();
             return;
         }
 
         await this._refresh_plate_ui_after_result_sync_from_store();
+    }
+
+    /** Checklistans resultatref ska peka på samma objekt som current_result efter reload från store. */
+    _sync_checklist_result_ref_from_current_result() {
+        if (this.checklist_handler_instance && this.current_result) {
+            this.checklist_handler_instance.requirement_result_ref = this.current_result;
+        }
+    }
+
+    /** Kopierar kört-fast från checklistans ref till current_result innan sparning till store. */
+    _sync_stuck_from_checklist_to_current_result() {
+        const ref = this.checklist_handler_instance?.requirement_result_ref;
+        if (!ref || !this.current_result) return;
+        if (typeof ref.stuckProblemDescription === 'string') {
+            this.current_result.stuckProblemDescription = ref.stuckProblemDescription;
+        }
+        if (typeof ref.lastStatusUpdate === 'string' || ref.lastStatusUpdate === null) {
+            this.current_result.lastStatusUpdate = ref.lastStatusUpdate;
+        }
+        if (typeof ref.lastStatusUpdateBy === 'string' || ref.lastStatusUpdateBy === null) {
+            this.current_result.lastStatusUpdateBy = ref.lastStatusUpdateBy;
+        }
     }
 
     /**
@@ -1652,6 +1675,7 @@ export class RequirementAuditComponent {
                     if (is_debug_stuck_sync()) {
                         consoleManager.log('[GV-Debug] onStuckDescriptionSaved: sparar, anropar save_result_immediately + flush_sync_to_server');
                     }
+                    this._sync_stuck_from_checklist_to_current_result();
                     await this.save_result_immediately({ skipRender: true });
                     if (typeof this.refresh_side_menu_and_title === 'function') {
                         this.refresh_side_menu_and_title();

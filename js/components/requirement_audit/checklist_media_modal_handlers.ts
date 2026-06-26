@@ -107,6 +107,32 @@ export function handle_attach_media_click(
     });
 }
 
+function apply_stuck_description_to_result_ref(
+    host: ChecklistEventHandlerHost,
+    description: string
+): void {
+    if (!host.requirement_result_ref) return;
+    host.requirement_result_ref.stuckProblemDescription = description;
+    host.requirement_result_ref.lastStatusUpdate = host.Helpers?.get_current_iso_datetime_utc?.()
+        || new Date().toISOString();
+    host.requirement_result_ref.lastStatusUpdateBy = get_current_user_name();
+}
+
+async function persist_stuck_modal_change_and_close(
+    host: ChecklistEventHandlerHost,
+    modal: { close: (el: HTMLElement) => void },
+    stuck_btn: HTMLButtonElement,
+    t: (key: string) => string
+): Promise<void> {
+    host._update_dom_stuck_button(t);
+    if (host.on_stuck_description_saved_callback) {
+        await host.on_stuck_description_saved_callback();
+    } else if (host.on_observation_change_callback) {
+        host.on_observation_change_callback();
+    }
+    modal.close(stuck_btn);
+}
+
 function build_stuck_modal_actions(
     host: ChecklistEventHandlerHost,
     container: HTMLElement,
@@ -122,26 +148,17 @@ function build_stuck_modal_actions(
         text_content: t('stuck_modal_save')
     });
     save_btn.addEventListener('click', () => {
-        const raw = textarea.value || '';
-        const description = host.Helpers?.trim_textarea_preserve_lines
-            ? host.Helpers.trim_textarea_preserve_lines(raw)
-            : raw.trim();
-        if (host.requirement_result_ref) {
-            host.requirement_result_ref.stuckProblemDescription = description;
-            host.requirement_result_ref.lastStatusUpdate = host.Helpers?.get_current_iso_datetime_utc?.()
-                || new Date().toISOString();
-            host.requirement_result_ref.lastStatusUpdateBy = get_current_user_name();
-        }
-        if (is_debug_stuck_sync()) {
-            consoleManager.log('[GV-Debug] Modal: Spara klickad, textlängd:', description.length);
-        }
-        host._update_dom_stuck_button(t);
-        if (host.on_stuck_description_saved_callback) {
-            void host.on_stuck_description_saved_callback();
-        } else if (host.on_observation_change_callback) {
-            host.on_observation_change_callback();
-        }
-        modal.close(stuck_btn);
+        void (async () => {
+            const raw = textarea.value || '';
+            const description = host.Helpers?.trim_textarea_preserve_lines
+                ? host.Helpers.trim_textarea_preserve_lines(raw)
+                : raw.trim();
+            apply_stuck_description_to_result_ref(host, description);
+            if (is_debug_stuck_sync()) {
+                consoleManager.log('[GV-Debug] Modal: Spara klickad, textlängd:', description.length);
+            }
+            await persist_stuck_modal_change_and_close(host, modal, stuck_btn, t);
+        })();
     });
     const discard_btn = host.Helpers!.create_element('button', {
         class_name: ['button', 'button-default'],
@@ -158,22 +175,13 @@ function build_stuck_modal_actions(
             text_content: t('stuck_modal_problem_solved')
         });
         problem_solved_btn.addEventListener('click', () => {
-            if (host.requirement_result_ref) {
-                host.requirement_result_ref.stuckProblemDescription = '';
-                host.requirement_result_ref.lastStatusUpdate = host.Helpers?.get_current_iso_datetime_utc?.()
-                    || new Date().toISOString();
-                host.requirement_result_ref.lastStatusUpdateBy = get_current_user_name();
-            }
-            if (is_debug_stuck_sync()) {
-                consoleManager.log('[GV-Debug] Modal: Problemet är löst klickad');
-            }
-            host._update_dom_stuck_button(t);
-            if (host.on_stuck_description_saved_callback) {
-                void host.on_stuck_description_saved_callback();
-            } else if (host.on_observation_change_callback) {
-                host.on_observation_change_callback();
-            }
-            modal.close(stuck_btn);
+            void (async () => {
+                apply_stuck_description_to_result_ref(host, '');
+                if (is_debug_stuck_sync()) {
+                    consoleManager.log('[GV-Debug] Modal: Problemet är löst klickad');
+                }
+                await persist_stuck_modal_change_and_close(host, modal, stuck_btn, t);
+            })();
         });
         actions_wrapper.appendChild(problem_solved_btn);
     }
