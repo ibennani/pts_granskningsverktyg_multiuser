@@ -28,6 +28,9 @@ build/
 # Parallella agenter: vilka filer vilken agent rört (för Pusha-urval)
 .cursor/agent_touched_files.json
 
+# Tillfälliga commit-meddelandeförslag från agent eller sparkle-ikon
+.cursor/commit_msg_agent.txt
+
 # Nabu-webhook (hemlig URL — lokal regel, committas inte)
 .cursor/rules/nabu-webhook.local.mdc
 
@@ -116,6 +119,7 @@ jspm_packages/
 tmp/
 temp/
 temp*.txt
+commit-msg*.txt
 temp*.json
 temp*.modelfile
 *.modelfile
