@@ -1,6 +1,7 @@
 // js/logic/version_check_service.js
 // Kontrollerar periodiskt om en ny version av appen har deployats. Visar kritisk meddelanderuta med knapp (ingen nedräkning).
-// Kör endast periodisk kontroll när fliken är synlig – webbläsare throttlar timers i bakgrunden, då syns inte meddelandet förrän användaren växlar tillbaka.
+// Periodisk kontroll körs bara när fliken är synlig (timers throttlas i bakgrunden).
+// Direktkontroll vid fokus: visibilitychange (annan flik) och window focus (tillbaka från annat program).
 // Jämför alltid server-mot-server (senast hämtad build vs nu hämtad) så att cachad script-tagg inte ger falska notiser.
 
 import { build_reload_url } from '../utils/build_reload_url.js';
@@ -17,6 +18,8 @@ export { build_reload_url };
 export const ENABLE_VERSION_RELOAD_PROMPT = true;
 
 const INITIAL_DELAY_MS = 5000;
+/** Slår ihop visibilitychange + focus så samma fokus inte ger dubbla fetch i rad. */
+const ACTIVE_CHECK_DEBOUNCE_MS = 100;
 // Cooldown efter att användaren sett/klickat på notisen – undviker att den dyker upp igen direkt efter omladdning
 const NOTIFICATION_COOLDOWN_MS = 180000; // 3 minuter
 const NOTIFICATION_COOLDOWN_KEY = 'gv_version_notification_shown';
@@ -75,6 +78,7 @@ export function init_version_check_service() {
     if (!window.BUILD_INFO?.timestamp) return;
 
     let check_timer = null;
+    let active_check_debounce_timer = null;
     let already_shown = false;
     // Baseline från servern (senast bekräftad) – jämför mot detta istället för script-taggens BUILD_INFO som kan vara cachad
     let verified_server_timestamp = null;
@@ -162,14 +166,39 @@ export function init_version_check_service() {
         }
     }
 
-    document.addEventListener('visibilitychange', () => {
+    function clear_active_check_debounce() {
+        if (active_check_debounce_timer) {
+            clearTimeout(active_check_debounce_timer);
+            active_check_debounce_timer = null;
+        }
+    }
+
+    function run_version_check_on_page_active() {
+        if (document.visibilityState !== 'visible') return;
+        check_for_new_version();
+        schedule_next_check();
+    }
+
+    function schedule_immediate_version_check_on_active() {
+        if (document.visibilityState !== 'visible') return;
+        clear_active_check_debounce();
+        active_check_debounce_timer = setTimeout(() => {
+            active_check_debounce_timer = null;
+            run_version_check_on_page_active();
+        }, ACTIVE_CHECK_DEBOUNCE_MS);
+    }
+
+    function on_visibility_change() {
         if (document.visibilityState === 'visible') {
-            check_for_new_version();
-            schedule_next_check();
+            schedule_immediate_version_check_on_active();
         } else {
+            clear_active_check_debounce();
             stop_periodic_check();
         }
-    });
+    }
+
+    document.addEventListener('visibilitychange', on_visibility_change);
+    window.addEventListener('focus', schedule_immediate_version_check_on_active);
 
     // Sätt baseline från servern direkt så att första jämförelsen inte använder cachad data.
     // Viktigt: om användaren öppnar en GAMMAL cachad version efter deploy måste vi visa notisen direkt
@@ -206,6 +235,9 @@ export function init_version_check_service() {
 
     return {
         disconnect() {
+            document.removeEventListener('visibilitychange', on_visibility_change);
+            window.removeEventListener('focus', schedule_immediate_version_check_on_active);
+            clear_active_check_debounce();
             stop_periodic_check();
         }
     };
