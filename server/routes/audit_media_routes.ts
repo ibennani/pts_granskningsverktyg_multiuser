@@ -135,6 +135,7 @@ export function register_audit_media_routes(router: express.Router, upload_limit
 
             res.json({
                 detectedContentTypeIds: detection_result.detected_content_type_ids,
+                triggeredSignals: detection_result.triggered_signals,
             });
         } catch (err) {
             console.error('[audit_media] detect-content-types route error:', err);

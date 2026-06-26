@@ -1,5 +1,5 @@
 /**
- * @fileoverview Automatisk innehållstyp-detektering via URL i stickprovsformuläret.
+ * @fileoverview Automatisk innehållstyp-detektering via URL i granskningsdelsformuläret.
  */
 
 import {
@@ -130,7 +130,7 @@ export async function handle_analyze_page_content_click(
     );
     const allowed_ids = collect_allowed_content_type_ids(component.getState?.()?.ruleFileContent);
     if (allowed_ids.length === 0) {
-        set_detection_live_status(component, t('content_type_analyze_none_found'));
+        set_detection_live_status(component, t('content_type_analyze_no_allowed_ids'));
         return;
     }
 

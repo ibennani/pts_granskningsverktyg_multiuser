@@ -33,6 +33,7 @@ export type DetectPageContentTypesInput = {
 
 export type DetectPageContentTypesResult = {
     detected_content_type_ids: string[];
+    triggered_signals: string[];
 };
 
 async function prepare_page(page: Page): Promise<void> {
@@ -65,6 +66,18 @@ async function prepare_page_content(page: Page): Promise<void> {
     await settle_after_lazy_load(page);
     await scroll_to_top(page);
     await dismiss_cookie_banners_before_screenshot(page);
+}
+
+const COMMON_CONTENT_MARKER_SELECTOR =
+    'form, table, nav, main, img, video, audio, [role="navigation"], [role="table"], [role="main"]';
+
+/** Väntar kort på vanliga innehållselement (SPA) utan att avbryta om inget hittas. */
+async function wait_for_common_content_markers(page: Page): Promise<void> {
+    try {
+        await page.waitForSelector(COMMON_CONTENT_MARKER_SELECTOR, { timeout: 5000 });
+    } catch {
+        // Sidor utan dessa element — fortsätt ändå.
+    }
 }
 
 async function collect_triggered_signals(
@@ -105,7 +118,7 @@ export async function detect_page_content_types(
     )];
 
     if (sanitized_allowed.length === 0) {
-        return { detected_content_type_ids: [] };
+        return { detected_content_type_ids: [], triggered_signals: [] };
     }
 
     let browser: Browser | undefined;
@@ -119,6 +132,7 @@ export async function detect_page_content_types(
         await prepare_page(page);
         await navigate_and_validate(page, url, timeout_ms);
         await prepare_page_content(page);
+        await wait_for_common_content_markers(page);
 
         const rules = get_serializable_detection_rules();
         const triggered_signals = await collect_triggered_signals(page, rules);
@@ -127,7 +141,7 @@ export async function detect_page_content_types(
             triggered_signals
         );
 
-        return { detected_content_type_ids };
+        return { detected_content_type_ids, triggered_signals };
     } finally {
         if (browser) {
             await browser.close();

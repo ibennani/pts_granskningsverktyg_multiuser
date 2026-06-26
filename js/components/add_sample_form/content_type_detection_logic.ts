@@ -1,8 +1,9 @@
 /**
- * @fileoverview Ren logik för innehållstyp-detektering i stickprovsformuläret (testbar).
+ * @fileoverview Ren logik för innehållstyp-detektering i granskningsdelsformuläret (testbar).
  */
 
 type ContentTypeGroup = {
+    id?: string;
     types?: Array<{ id?: string }>;
 };
 
@@ -20,7 +21,13 @@ export function collect_allowed_content_type_ids(rule_file: RuleFileLike | null 
         [];
     const ids = new Set<string>();
     for (const group of groups) {
-        for (const child of group.types || []) {
+        const child_types = group.types || [];
+        if (child_types.length === 0) {
+            const parent_id = String(group.id || '').trim();
+            if (parent_id) ids.add(parent_id);
+            continue;
+        }
+        for (const child of child_types) {
             const id = String(child?.id || '').trim();
             if (id) ids.add(id);
         }

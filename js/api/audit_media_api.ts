@@ -184,6 +184,7 @@ export async function capture_audit_url_screenshot(
 
 export type DetectContentTypesResponse = {
     detectedContentTypeIds: string[];
+    triggeredSignals?: string[];
 };
 
 export async function detect_content_types_from_url(

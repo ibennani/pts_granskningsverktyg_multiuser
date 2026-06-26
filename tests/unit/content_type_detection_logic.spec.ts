@@ -21,6 +21,18 @@ describe('content_type_detection_logic', () => {
         expect(ids).toEqual(['forms', 'tables', 'video']);
     });
 
+    test('collect_allowed_content_type_ids använder föräldra-id utan undertyper', () => {
+        const ids = collect_allowed_content_type_ids({
+            metadata: {
+                contentTypes: [
+                    { id: 'forms', text: 'Formulär', types: [] },
+                    { types: [{ id: 'video' }] },
+                ],
+            },
+        });
+        expect(ids).toEqual(['forms', 'video']);
+    });
+
     test('should_apply_detected_content_types endast vid tomt val', () => {
         expect(should_apply_detected_content_types([])).toBe(true);
         expect(should_apply_detected_content_types(['forms'])).toBe(false);
