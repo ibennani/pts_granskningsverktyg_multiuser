@@ -217,4 +217,65 @@ async function disconnect() {
     }
 }
 
-export { run, exec, putFile, putDirectory, getSshClient, disconnect, host, remotePath, projectRoot, sshPassword, username, get_ssh_spawn_target };
+/** Sudo-lösenord: samma som SSH (DEPLOY_SSH_PASSWORD), valfri override via DEPLOY_SUDO_PASSWORD. */
+function resolve_sudo_password() {
+    const raw = process.env.DEPLOY_SSH_PASSWORD || process.env.DEPLOY_SUDO_PASSWORD || '';
+    return raw.replace(/^"|"$/g, '').replace(/\r/g, '').trim();
+}
+
+/** Kör inner_cmd med sudo -S (lösenord via stdin, base64-safe för spawn-fallback). */
+function sudo_bash_cmd(inner_cmd) {
+    const sudoPassword = resolve_sudo_password();
+    if (!sudoPassword) {
+        return `sudo ${inner_cmd}`;
+    }
+    const b64 = Buffer.from(sudoPassword, 'utf8').toString('base64');
+    return `echo ${JSON.stringify(b64)} | base64 -d | sudo -S bash -c ${JSON.stringify(inner_cmd)}`;
+}
+
+/**
+ * Kör inner_cmd med sudo. Använder node-ssh stdin när möjligt (pålitligare än echo|base64).
+ * @param {string} inner_cmd
+ * @param {{ cwd?: boolean }} opts
+ */
+async function exec_sudo(inner_cmd, opts = {}) {
+    const sudoPassword = resolve_sudo_password();
+    if (!sudoPassword) {
+        await exec(`sudo ${inner_cmd}`, opts);
+        return;
+    }
+    const useCwd = opts.cwd !== false;
+    const fullInner = useCwd ? `cd ${remotePath} && ${inner_cmd}` : inner_cmd;
+    const client = await getSshClient();
+    if (client) {
+        const result = await client.execCommand(`sudo -S bash -c ${JSON.stringify(fullInner)}`, {
+            stdin: `${sudoPassword}\n`,
+            ...(useCwd ? {} : { cwd: '/' })
+        });
+        if (result.stdout) process.stdout.write(result.stdout);
+        if (result.stderr) process.stderr.write(result.stderr);
+        if (result.code !== 0) {
+            throw new Error(`Sudo-kommando misslyckades (kod ${result.code}): ${inner_cmd}`);
+        }
+        return;
+    }
+    await exec(sudo_bash_cmd(inner_cmd), opts);
+}
+
+export {
+    run,
+    exec,
+    putFile,
+    putDirectory,
+    getSshClient,
+    disconnect,
+    host,
+    remotePath,
+    projectRoot,
+    sshPassword,
+    username,
+    get_ssh_spawn_target,
+    resolve_sudo_password,
+    sudo_bash_cmd,
+    exec_sudo,
+};

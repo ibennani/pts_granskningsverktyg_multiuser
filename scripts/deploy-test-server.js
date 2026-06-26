@@ -25,7 +25,8 @@ const {
     host,
     remotePath,
     projectRoot,
-    get_ssh_spawn_target
+    get_ssh_spawn_target,
+    exec_sudo,
 } = await import('./deploy-utils.js');
 
 const distDir = join(projectRoot, 'dist');
@@ -37,20 +38,6 @@ const PUBLIC_URL = process.env.DEPLOY_TEST_SERVER_PUBLIC_URL
     || 'https://ux-granskningsverktyg.pts.ad/test-server';
 const TEST_DB_NAME = process.env.GV_TEST_SERVER_DB_NAME || 'granskningsverktyget_test';
 const PROD_DEPLOY_PATH = process.env.DEPLOY_PROD_PATH || '/var/www/granskningsverktyget-v2';
-
-function resolve_sudo_password() {
-    const raw = process.env.DEPLOY_SUDO_PASSWORD || process.env.DEPLOY_SSH_PASSWORD || '';
-    return raw.replace(/^"|"$/g, '');
-}
-
-function sudo_bash_cmd(inner_cmd) {
-    const sudoPassword = resolve_sudo_password();
-    if (!sudoPassword) {
-        return `sudo ${inner_cmd}`;
-    }
-    const b64 = Buffer.from(sudoPassword, 'utf8').toString('base64');
-    return `echo ${JSON.stringify(b64)} | base64 -d | sudo -S bash -c ${JSON.stringify(inner_cmd)}`;
-}
 
 async function main() {
     try {
@@ -172,10 +159,9 @@ async function main() {
 
         const nginxConfigPath = process.env.DEPLOY_NGINX_CONF || '/etc/nginx/conf.d/ux-granskning.conf';
         const nginxCopyAndReload = `cp ${remotePath}/nginx-ux-granskning.conf ${nginxConfigPath} && nginx -t && systemctl reload nginx`;
-        const nginxCmd = sudo_bash_cmd(nginxCopyAndReload);
         try {
             console.log('[deploy:test-server] Uppdaterar Nginx och laddar om...');
-            await exec(nginxCmd, { cwd: false });
+            await exec_sudo(nginxCopyAndReload, { cwd: false });
             console.log('[deploy:test-server] Nginx uppdaterad.');
         } catch (err) {
             console.warn('[deploy:test-server] Nginx-uppdatering misslyckades:', err.message);

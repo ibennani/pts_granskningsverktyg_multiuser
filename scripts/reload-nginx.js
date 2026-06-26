@@ -1,22 +1,22 @@
 #!/usr/bin/env node
 /**
- * Kör nginx -t och reload på servern via SSH.
- * Använder DEPLOY_SSH_PASSWORD från .env (samma som deploy:v2).
- * För sudo: lägg DEPLOY_SUDO_PASSWORD i .env (eller använd NOPASSWD för nginx på servern).
+ * Kopierar nginx-ux-granskning.conf från deploy-mappen och laddar om nginx på servern.
+ * Sudo: DEPLOY_SSH_PASSWORD från .env (samma som SSH), valfri override DEPLOY_SUDO_PASSWORD.
+ *
+ * Testserver: npm run reload-nginx:test-server
+ * Prod v2:    npm run reload-nginx
  */
 import 'dotenv/config';
-import { exec, disconnect } from './deploy-utils.js';
-
-const sudoPassword = process.env.DEPLOY_SUDO_PASSWORD || '';
+import { exec_sudo, disconnect, remotePath } from './deploy-utils.js';
 
 async function main() {
+    const nginxConfigPath = process.env.DEPLOY_NGINX_CONF || '/etc/nginx/conf.d/ux-granskning.conf';
+    const nginxCopyAndReload =
+        `cp ${remotePath}/nginx-ux-granskning.conf ${nginxConfigPath} && nginx -t && systemctl reload nginx`;
+
     try {
-        // Base64 undviker problem med specialtecken i lösenord
-        const pwB64 = sudoPassword ? Buffer.from(sudoPassword, 'utf8').toString('base64') : '';
-        const cmd = pwB64
-            ? `echo ${JSON.stringify(pwB64)} | base64 -d | sudo -S nginx -t && echo ${JSON.stringify(pwB64)} | base64 -d | sudo -S systemctl reload nginx`
-            : 'sudo nginx -t && sudo systemctl reload nginx';
-        await exec(cmd, { cwd: false });
+        console.log(`[reload-nginx] Uppdaterar ${nginxConfigPath} från ${remotePath}/nginx-ux-granskning.conf ...`);
+        await exec_sudo(nginxCopyAndReload, { cwd: false });
         console.log('[reload-nginx] Nginx testad och omstartad.');
     } finally {
         await disconnect();

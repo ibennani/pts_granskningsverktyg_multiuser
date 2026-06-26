@@ -12,7 +12,7 @@
  */
 import { existsSync, readFileSync, writeFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
-import { run, exec, putFile, putDirectory, disconnect, host, remotePath, projectRoot, sshPassword } from './deploy-utils.js';
+import { run, exec, putFile, putDirectory, disconnect, host, remotePath, projectRoot, sshPassword, exec_sudo } from './deploy-utils.js';
 
 const distDir = join(projectRoot, 'dist');
 const serverDir = join(projectRoot, 'server');
@@ -178,14 +178,10 @@ async function main() {
         }
 
         const nginxConfigPath = process.env.DEPLOY_NGINX_CONF || '/etc/nginx/conf.d/ux-granskning.conf';
-        const sudoPassword = process.env.DEPLOY_SUDO_PASSWORD || '';
         const nginxCopyAndReload = `cp ${remotePath}/nginx-ux-granskning.conf ${nginxConfigPath} && nginx -t && systemctl reload nginx`;
-        const nginxCmd = sudoPassword
-            ? `echo ${JSON.stringify(Buffer.from(sudoPassword, 'utf8').toString('base64'))} | base64 -d | sudo -S bash -c ${JSON.stringify(nginxCopyAndReload)}`
-            : `sudo cp ${remotePath}/nginx-ux-granskning.conf ${nginxConfigPath} && sudo nginx -t && sudo systemctl reload nginx`;
         try {
             console.log('[deploy] Uppdaterar Nginx och laddar om...');
-            await exec(nginxCmd, { cwd: false });
+            await exec_sudo(nginxCopyAndReload, { cwd: false });
             console.log('[deploy] Nginx uppdaterad.');
         } catch (err) {
             console.warn('[deploy] Nginx-uppdatering misslyckades (kräver sudo):', err.message);
