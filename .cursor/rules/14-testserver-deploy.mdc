@@ -1,0 +1,21 @@
+---
+description: Testserver-URL och deploy (inte prod v2)
+alwaysApply: true
+---
+
+# Testserver
+
+**Testservern** (Leffe under `/test-server/`) är:
+
+**https://ux-granskningsverktyg.pts.ad/test-server/**
+
+| Miljö | URL | Deploy-kommando |
+|-------|-----|-----------------|
+| **Testserver** | `https://ux-granskningsverktyg.pts.ad/test-server/` | `npm run deploy:test-server` |
+| Prod v2 | `https://ux-granskningsverktyg.pts.ad/v2/` | `npm run deploy:v2` |
+
+När användaren säger **testservern**, **test-server** eller **deploya till test** — deploya med **`npm run deploy:test-server`**, inte `deploy:v2`.
+
+Prod `/v2/` ska **inte** deployas om användaren uttryckligen bett om testservern.
+
+Mer: `docs/deploy-test-server-setup.md`.
