@@ -8,6 +8,7 @@ import {
     create_source_link,
     create_list
 } from './rulefile_sections_display_helpers.js';
+import { resolve_taxonomies } from '../../../shared/rulefile/rulefile_metadata_vocabularies.js';
 
 /**
  * @param {{ Helpers: object, Translation: object }} ctx
@@ -115,8 +116,7 @@ export function render_rulefile_classifications_section(ctx, metadata) {
     const Helpers = ctx.Helpers;
     const section = Helpers.create_element('section', { class_name: 'rulefile-section-content' });
 
-    const vocabularies = metadata.vocabularies || {};
-    const taxonomies = vocabularies.taxonomies || metadata.taxonomies || [];
+    const taxonomies = resolve_taxonomies(metadata);
 
     const keywords_subsection = Helpers.create_element('div', { class_name: 'metadata-subsection' });
     keywords_subsection.appendChild(Helpers.create_element('h2', { text_content: t('rulefile_metadata_section_keywords') }));

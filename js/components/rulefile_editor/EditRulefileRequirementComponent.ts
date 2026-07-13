@@ -21,6 +21,10 @@ import { is_remote_lock_held_by_other_user } from '../../logic/collab_lock_compa
 import { find_requirement_definition } from '../../audit_logic.js';
 import './requirement_audit_component.css';
 import './edit_rulefile_requirement_component.css';
+import {
+    resolve_content_types,
+    resolve_taxonomies
+} from '../../../shared/rulefile/rulefile_metadata_vocabularies.js';
 
 declare global {
     interface Window {
@@ -34,7 +38,8 @@ declare global {
 
 const RULEFILE_LOCK_POLL_MS = 4000;
 
-export class EditRulefileRequirementComponent {    root: HTMLElement | null = null;
+export class EditRulefileRequirementComponent {
+    root: HTMLElement | null = null;
     deps: any = null;
     router: any = null;
     params: Record<string, any> | null = null;
@@ -738,7 +743,7 @@ export class EditRulefileRequirementComponent {    root: HTMLElement | null = n
         fragment.appendChild(section_wrapper);
 
         const current_state = this.getState();
-        const taxonomies = current_state.ruleFileContent.metadata?.vocabularies?.taxonomies || current_state.ruleFileContent.metadata?.taxonomies || [];
+        const taxonomies = resolve_taxonomies(current_state.ruleFileContent.metadata);
         const pour_taxonomy = taxonomies.find(tax => tax.id === 'wcag22-pour');
         
         if (pour_taxonomy && pour_taxonomy.concepts) {
@@ -1109,7 +1114,7 @@ export class EditRulefileRequirementComponent {    root: HTMLElement | null = n
         this.form_element_ref.appendChild(this._create_classification_section(this.local_requirement_data.metadata, this.local_requirement_data.classifications));
         this.form_element_ref.appendChild(this._create_impact_section(this.local_requirement_data.metadata));
 
-        const all_content_types = current_state.ruleFileContent.metadata?.vocabularies?.contentTypes || current_state.ruleFileContent.metadata?.contentTypes || [];
+        const all_content_types = resolve_content_types(current_state.ruleFileContent.metadata);
         const selected_content_types = this.local_requirement_data.contentType || [];
         this.form_element_ref.appendChild(this._create_content_types_section(all_content_types, selected_content_types));
         

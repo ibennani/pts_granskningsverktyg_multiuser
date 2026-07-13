@@ -63,4 +63,18 @@ describe('validate_saved_audit_file', () => {
         expect(r.isValid).toBe(false);
         expect(r.message).toContain('error_saved_audit_embedded_rulefile_invalid');
     });
+
+    it('godkänner granskning med legacy vocabulary-dubletter utan att mutera regelfilen', () => {
+        const audit = build_valid_audit();
+        const rf = audit.ruleFileContent as Record<string, unknown>;
+        const meta = rf.metadata as Record<string, unknown>;
+        meta.vocabularies = {
+            pageTypes: meta.pageTypes,
+            contentTypes: meta.contentTypes
+        };
+        const before = JSON.stringify(audit.ruleFileContent);
+        const r = validate_saved_audit_file(audit);
+        expect(r.isValid).toBe(true);
+        expect(JSON.stringify(audit.ruleFileContent)).toBe(before);
+    });
 });

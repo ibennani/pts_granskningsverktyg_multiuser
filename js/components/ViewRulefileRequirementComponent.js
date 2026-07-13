@@ -5,9 +5,14 @@ import { can_edit_rulefile } from '../utils/helpers.js';
 import { find_requirement_definition } from '../audit_logic.js';
 import { append_info_block_accordion_section } from './view_rulefile_requirement/info_block_accordion.js';
 import './requirement_audit_component.css';
+import {
+    resolve_content_types,
+    resolve_taxonomies
+} from '../../shared/rulefile/rulefile_metadata_vocabularies.js';
 
 export class ViewRulefileRequirementComponent {
-    constructor() {        this.root = null;
+    constructor() {
+        this.root = null;
         this.deps = null;
         this.router = null;
         this.params = null;
@@ -268,7 +273,7 @@ export class ViewRulefileRequirementComponent {
         }
         
         // WCAG Principles section
-        const taxonomies = current_state.ruleFileContent.metadata?.vocabularies?.taxonomies || current_state.ruleFileContent.metadata?.taxonomies || [];
+        const taxonomies = resolve_taxonomies(current_state.ruleFileContent.metadata);
         const pour_taxonomy = taxonomies.find(tax => tax.id === 'wcag22-pour');
         if (pour_taxonomy && requirement.classifications?.length > 0) {
             const concepts = requirement.classifications
@@ -309,7 +314,7 @@ export class ViewRulefileRequirementComponent {
             content_types_section.appendChild(this.Helpers.create_element('h2', { text_content: t('content_types_associated') }));
             const content_types_ul = this.Helpers.create_element('ul', { class_name: 'requirement-metadata-list' });
             const content_types_map = new Map();
-            const content_types = current_state.ruleFileContent.metadata?.vocabularies?.contentTypes || current_state.ruleFileContent.metadata?.contentTypes || [];
+            const content_types = resolve_content_types(current_state.ruleFileContent.metadata);
             content_types.forEach(parent => {
                 (parent.types || []).forEach(child => content_types_map.set(child.id, child.text));
             });

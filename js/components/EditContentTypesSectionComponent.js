@@ -6,9 +6,15 @@ import {
     remove_content_type_from_requirements
 } from '../utils/content_types_helper.js';
 import { show_confirm_delete_modal } from '../logic/confirm_delete_modal_logic.js';
+import { ensure_metadata_defaults, clone_metadata } from '../logic/rulefile_metadata_model.js';
+import {
+    resolve_content_types,
+    normalize_rulefile_metadata_vocabularies
+} from '../../shared/rulefile/rulefile_metadata_vocabularies.js';
+import { flush_rulefile_editing_sync_if_active } from '../logic/server_sync.js';
 import './edit_rulefile_metadata_view.css';
 
-export const EditContentTypesSectionComponent = {
+export const EditContentTypesSectionComponent = {
     async init({ root, deps }) {
         this.root = root;
         this.deps = deps;
@@ -30,20 +36,11 @@ export const EditContentTypesSectionComponent = {
             },
 
     _clone_metadata(metadata) {
-        return JSON.parse(JSON.stringify(metadata || {}));
+        return clone_metadata(metadata);
     },
 
     _ensure_metadata_defaults(workingMetadata) {
-        const vocabularies = workingMetadata.vocabularies || {};
-        if (!Array.isArray(workingMetadata.contentTypes)) {
-            workingMetadata.contentTypes = Array.isArray(vocabularies.contentTypes)
-                ? [...vocabularies.contentTypes]
-                : [];
-        }
-        if (!vocabularies.contentTypes) {
-            vocabularies.contentTypes = workingMetadata.contentTypes;
-        }
-        return workingMetadata;
+        return ensure_metadata_defaults(workingMetadata);
     },
 
     _generate_slug(value) {
@@ -135,7 +132,7 @@ export const EditContentTypesSectionComponent = {
         const ruleFileContent = this.getState()?.ruleFileContent || {};
         container.innerHTML = '';
 
-        const content_types = workingMetadata.vocabularies?.contentTypes || workingMetadata.contentTypes || [];
+        const content_types = resolve_content_types(workingMetadata);
 
         if (!Array.isArray(content_types) || content_types.length === 0) {
             container.appendChild(this.Helpers.create_element('p', {
@@ -346,7 +343,7 @@ export const EditContentTypesSectionComponent = {
 
     _delete_content_type_with_animation(workingMetadata, parentIndex, elementToDelete) {
         this.handle_autosave_input();
-        const content_types = workingMetadata.vocabularies?.contentTypes || workingMetadata.contentTypes || [];
+        const content_types = resolve_content_types(workingMetadata);
 
         if (parentIndex < 0 || parentIndex >= content_types.length) return;
 
@@ -399,7 +396,7 @@ export const EditContentTypesSectionComponent = {
 
         this.handle_autosave_input();
 
-        const content_types = workingMetadata.vocabularies?.contentTypes || workingMetadata.contentTypes || [];
+        const content_types = resolve_content_types(workingMetadata);
         const fade_duration_ms = 1000;
         const move_duration_ms = 1000;
         const gap = 8; // 0.5rem från editable-sublist
@@ -446,14 +443,10 @@ export const EditContentTypesSectionComponent = {
                 }
                 updatedRulefile = {
                     ...updatedRulefile,
-                    metadata: {
+                    metadata: normalize_rulefile_metadata_vocabularies({
                         ...updatedRulefile.metadata,
-                        contentTypes: content_types,
-                        vocabularies: {
-                            ...updatedRulefile.metadata?.vocabularies,
-                            contentTypes: content_types
-                        }
-                    }
+                        contentTypes: content_types
+                    }, { mode: 'read' })
                 };
                 this.dispatch({
                     type: this.StoreActionTypes.UPDATE_RULEFILE_CONTENT,
@@ -499,7 +492,7 @@ export const EditContentTypesSectionComponent = {
         const content_types_from_dom = this._read_content_types_from_dom(this.content_types_container, shouldTrim);
         const content_types = content_types_from_dom.length > 0
             ? content_types_from_dom
-            : (this.working_metadata.vocabularies?.contentTypes || this.working_metadata.contentTypes || []);
+            : resolve_content_types(this.working_metadata);
 
         const cleanedContentTypes = content_types.map(parent => {
             const cleanedParent = {
@@ -539,14 +532,10 @@ export const EditContentTypesSectionComponent = {
             });
         });
 
-        const updatedMetadata = {
+        const updatedMetadata = normalize_rulefile_metadata_vocabularies({
             ...currentRulefile.metadata,
-            contentTypes: cleanedContentTypes,
-            vocabularies: {
-                ...currentRulefile.metadata?.vocabularies,
-                contentTypes: cleanedContentTypes
-            }
-        };
+            contentTypes: cleanedContentTypes
+        }, { mode: 'read' });
 
         const updatedRulefileContent = {
             ...currentRulefile,
@@ -578,8 +567,9 @@ export const EditContentTypesSectionComponent = {
             html_content: `<span>${t('rulefile_metadata_save_content_types')}</span>` +
                 (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('save') : '')
         });
-        save_button.addEventListener('click', () => {
+        save_button.addEventListener('click', async () => {
             this.autosave_session?.flush({ should_trim: true, skip_render: true });
+            await flush_rulefile_editing_sync_if_active(this.getState, this.dispatch);
             this.NotificationComponent.show_global_message?.(t('rulefile_metadata_edit_saved'), 'success');
             sessionStorage.setItem('focusAfterLoad', '.rulefile-sections-header h1');
             this.router('rulefile_sections', { section: 'content_types' });
@@ -654,6 +644,7 @@ export const EditContentTypesSectionComponent = {
         if (!this.skip_autosave_on_destroy && this.form_element_ref && this.working_metadata) {
             this.autosave_session?.flush({ should_trim: true, skip_render: true });
         }
+        void flush_rulefile_editing_sync_if_active(this.getState, this.dispatch);
         this.autosave_session?.destroy();
         this.autosave_session = null;
 

@@ -3,6 +3,11 @@
  */
 
 import { format_simple_value } from './rulefile_sections_display_helpers.js';
+import {
+    resolve_content_types,
+    resolve_page_types,
+    resolve_sample_vocab
+} from '../../../shared/rulefile/rulefile_metadata_vocabularies.js';
 
 /**
  * @param {{ info_blocks_edit_component?: { flush_to_state?: function } }} ctx
@@ -51,18 +56,10 @@ export function render_rulefile_page_types_section(ctx, metadata) {
     const Helpers = ctx.Helpers;
     const section = Helpers.create_element('section', { class_name: 'rulefile-section-content' });
 
-    const vocabularies = metadata.vocabularies || {};
-    let page_types = vocabularies.pageTypes || metadata.pageTypes || [];
+    let page_types = resolve_page_types(metadata);
 
-    const samples = metadata.samples || {};
-    let sample_categories = samples.sampleCategories || [];
-
-    if (!Array.isArray(sample_categories) || sample_categories.length === 0) {
-        const vocab_samples = vocabularies.sampleTypes || {};
-        if (Array.isArray(vocab_samples.sampleCategories)) {
-            sample_categories = vocab_samples.sampleCategories;
-        }
-    }
+    const sample_vocab = resolve_sample_vocab(metadata);
+    let sample_categories = sample_vocab.sampleCategories;
 
     if (!Array.isArray(page_types) || page_types.length === 0) {
         if (Array.isArray(sample_categories) && sample_categories.length > 0) {
@@ -166,8 +163,7 @@ export function render_rulefile_content_types_section(ctx, metadata) {
     const Helpers = ctx.Helpers;
     const section = Helpers.create_element('section', { class_name: 'rulefile-section-content' });
 
-    const vocabularies = metadata.vocabularies || {};
-    const content_types = vocabularies.contentTypes || metadata.contentTypes || [];
+    const content_types = resolve_content_types(metadata);
 
     if (!Array.isArray(content_types) || content_types.length === 0) {
         section.appendChild(Helpers.create_element('p', {

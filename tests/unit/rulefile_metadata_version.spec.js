@@ -97,5 +97,23 @@ describe('prepare_rulefile_content_for_persist', () => {
         expect(out?.metadata?.version).toBe('2026.5.r2');
         expect(out?.metadata?.dateModified).toBe('2026-05-06');
     });
+
+    test('tar bort vocabularies före versionsbump', () => {
+        const d = new Date('2026-05-06T12:00:00.000Z');
+        const out = prepare_rulefile_content_for_persist(
+            {
+                metadata: {
+                    version: '2026.5.r1',
+                    pageTypes: ['Startsida'],
+                    vocabularies: { pageTypes: ['Startsida'] }
+                },
+                requirements: {}
+            },
+            { bump_version: true, reference_date: d }
+        );
+        expect(out?.metadata?.vocabularies).toBeUndefined();
+        expect(out?.metadata?.pageTypes).toEqual(['Startsida']);
+        expect(out?.metadata?.version).toBe('2026.5.r2');
+    });
 });
 

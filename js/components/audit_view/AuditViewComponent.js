@@ -354,6 +354,8 @@ export class AuditViewComponent {
             id: r?.id,
             updated_at: r?.updated_at,
             content_updated_at: r?.content_updated_at,
+            content_metadata_version: r?.content_metadata_version,
+            draft_version: r?.draft_version,
             version: r?.version,
             is_published: r?.is_published
         });

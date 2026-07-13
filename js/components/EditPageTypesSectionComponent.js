@@ -1,10 +1,18 @@
 // js/components/EditPageTypesSectionComponent.js
 
 import { show_confirm_delete_modal } from '../logic/confirm_delete_modal_logic.js';
+import { ensure_metadata_defaults, clone_metadata } from '../logic/rulefile_metadata_model.js';
+import {
+    resolve_page_types,
+    resolve_sample_vocab,
+    normalize_rulefile_metadata_vocabularies
+} from '../../shared/rulefile/rulefile_metadata_vocabularies.js';
+import { flush_rulefile_editing_sync_if_active } from '../logic/server_sync.js';
 import './edit_rulefile_metadata_view.css';
 
 export class EditPageTypesSectionComponent {
-    constructor() {        this.root = null;
+    constructor() {
+        this.root = null;
         this.deps = null;
         this.router = null;
         this.getState = null;
@@ -44,24 +52,22 @@ export class EditPageTypesSectionComponent {
             }
 
     _clone_metadata(metadata) {
-        return JSON.parse(JSON.stringify(metadata || {}));
+        return clone_metadata(metadata);
     }
 
     _ensure_metadata_defaults(workingMetadata) {
-        // Se till att samples och sampleCategories finns
-        if (!workingMetadata.samples) {
-            workingMetadata.samples = {};
+        return ensure_metadata_defaults(workingMetadata);
+    }
+
+    _get_page_types_and_categories(workingMetadata) {
+        let page_types = resolve_page_types(workingMetadata);
+        let sample_categories = resolve_sample_vocab(workingMetadata).sampleCategories;
+        if (!Array.isArray(page_types) || page_types.length === 0) {
+            if (Array.isArray(sample_categories) && sample_categories.length > 0) {
+                page_types = sample_categories.map(cat => cat.text || cat.id).filter(Boolean);
+            }
         }
-        if (!Array.isArray(workingMetadata.samples.sampleCategories)) {
-            workingMetadata.samples.sampleCategories = [];
-        }
-        
-        // Se till att pageTypes finns
-        if (!Array.isArray(workingMetadata.pageTypes)) {
-            workingMetadata.pageTypes = [];
-        }
-        
-        return workingMetadata;
+        return { page_types, sample_categories };
     }
 
     _move_page_type(workingMetadata, index, direction, clickedButton) {
@@ -70,25 +76,7 @@ export class EditPageTypesSectionComponent {
         // Spara nuvarande värden från formuläret innan vi flyttar
         this._save_form_values_to_metadata(workingMetadata);
         
-        const vocabularies = workingMetadata.vocabularies || {};
-        let page_types = vocabularies.pageTypes || workingMetadata.pageTypes || [];
-        const samples = workingMetadata.samples || {};
-        let sample_categories = samples.sampleCategories || [];
-        
-        // Om sampleCategories är tom, försök hämta från vocabularies
-        if (!Array.isArray(sample_categories) || sample_categories.length === 0) {
-            const vocab_samples = vocabularies.sampleTypes || {};
-            if (Array.isArray(vocab_samples.sampleCategories)) {
-                sample_categories = vocab_samples.sampleCategories;
-            }
-        }
-        
-        // Om pageTypes är tom, använd sampleCategories som källa
-        if (!Array.isArray(page_types) || page_types.length === 0) {
-            if (Array.isArray(sample_categories) && sample_categories.length > 0) {
-                page_types = sample_categories.map(cat => cat.text || cat.id).filter(Boolean);
-            }
-        }
+        let { page_types, sample_categories } = this._get_page_types_and_categories(workingMetadata);
         
         const new_index = direction === 'up' ? index - 1 : index + 1;
         
@@ -107,25 +95,7 @@ export class EditPageTypesSectionComponent {
         // Spara nuvarande värden från formuläret innan vi tar bort
         this._save_form_values_to_metadata(workingMetadata);
         
-        const vocabularies = workingMetadata.vocabularies || {};
-        let page_types = vocabularies.pageTypes || workingMetadata.pageTypes || [];
-        const samples = workingMetadata.samples || {};
-        let sample_categories = samples.sampleCategories || [];
-        
-        // Om sampleCategories är tom, försök hämta från vocabularies
-        if (!Array.isArray(sample_categories) || sample_categories.length === 0) {
-            const vocab_samples = vocabularies.sampleTypes || {};
-            if (Array.isArray(vocab_samples.sampleCategories)) {
-                sample_categories = vocab_samples.sampleCategories;
-            }
-        }
-        
-        // Om pageTypes är tom, använd sampleCategories som källa
-        if (!Array.isArray(page_types) || page_types.length === 0) {
-            if (Array.isArray(sample_categories) && sample_categories.length > 0) {
-                page_types = sample_categories.map(cat => cat.text || cat.id).filter(Boolean);
-            }
-        }
+        let { page_types, sample_categories } = this._get_page_types_and_categories(workingMetadata);
         
         if (index < 0 || index >= page_types.length) {
             return; // Ogiltigt index
@@ -178,16 +148,9 @@ export class EditPageTypesSectionComponent {
                     sample_categories.splice(index, 1);
                 }
                 
-                // Uppdatera workingMetadata
-                if (vocabularies.pageTypes) {
-                    vocabularies.pageTypes = page_types;
-                } else {
-                    workingMetadata.pageTypes = page_types;
-                }
-                
-                if (samples.sampleCategories) {
-                    samples.sampleCategories = sample_categories;
-                }
+                workingMetadata.pageTypes = page_types;
+                if (!workingMetadata.samples) workingMetadata.samples = {};
+                workingMetadata.samples.sampleCategories = sample_categories;
                 
                 // Uppdatera endast working_metadata (som vid flytt) – sparas till state vid Spara eller flush
                 this.working_metadata = workingMetadata;
@@ -222,16 +185,9 @@ export class EditPageTypesSectionComponent {
         const container = form.querySelector('.page-types-editor');
         if (!container) return;
 
-        const vocabularies = workingMetadata.vocabularies || {};
-        let existing_page_types = vocabularies.pageTypes || workingMetadata.pageTypes || [];
-        const samples = workingMetadata.samples || {};
-        let existing_sample_categories = samples.sampleCategories || [];
-        if (!Array.isArray(existing_sample_categories) || existing_sample_categories.length === 0) {
-            const vocab_samples = vocabularies.sampleTypes || {};
-            if (Array.isArray(vocab_samples.sampleCategories)) {
-                existing_sample_categories = vocab_samples.sampleCategories;
-            }
-        }
+        const existing = this._get_page_types_and_categories(workingMetadata);
+        let existing_page_types = existing.page_types;
+        let existing_sample_categories = existing.sample_categories;
         if (!Array.isArray(existing_page_types)) existing_page_types = [];
         if (!Array.isArray(existing_sample_categories)) existing_sample_categories = [];
         const page_types = [];
@@ -283,14 +239,8 @@ export class EditPageTypesSectionComponent {
         sample_categories.length = page_types.length;
 
         workingMetadata.pageTypes = page_types;
-        if (vocabularies.pageTypes) {
-            vocabularies.pageTypes = page_types;
-        }
         if (!workingMetadata.samples) workingMetadata.samples = {};
         workingMetadata.samples.sampleCategories = sample_categories;
-        if (vocabularies.sampleTypes) {
-            vocabularies.sampleTypes.sampleCategories = sample_categories;
-        }
     }
 
     _perform_save(shouldTrim, skip_render) {
@@ -302,14 +252,10 @@ export class EditPageTypesSectionComponent {
         }
         this._save_form_values_to_metadata(this.working_metadata, shouldTrim);
         const currentRulefile = state?.ruleFileContent || {};
-        const updatedMetadata = { ...this.working_metadata };
-        if (!updatedMetadata.vocabularies) updatedMetadata.vocabularies = {};
-        if (!updatedMetadata.samples) updatedMetadata.samples = {};
-        if (updatedMetadata.pageTypes) updatedMetadata.vocabularies.pageTypes = updatedMetadata.pageTypes;
-        if (updatedMetadata.samples.sampleCategories) {
-            if (!updatedMetadata.vocabularies.sampleTypes) updatedMetadata.vocabularies.sampleTypes = {};
-            updatedMetadata.vocabularies.sampleTypes.sampleCategories = updatedMetadata.samples.sampleCategories;
-        }
+        const updatedMetadata = normalize_rulefile_metadata_vocabularies(
+            { ...this.working_metadata },
+            { mode: 'read' }
+        );
         const updatedRulefileContent = {
             ...currentRulefile,
             metadata: { ...currentRulefile.metadata, ...updatedMetadata }
@@ -343,8 +289,7 @@ export class EditPageTypesSectionComponent {
     _update_move_buttons(page_types_container, workingMetadata) {
         const t = this.Translation.t;
         
-        const vocabularies = workingMetadata.vocabularies || {};
-        const page_types = vocabularies.pageTypes || workingMetadata.pageTypes || [];
+        const page_types = resolve_page_types(workingMetadata);
         const totalCount = page_types.length;
         
         const items = Array.from(page_types_container.querySelectorAll('.page-type-editor-item'))
@@ -429,21 +374,16 @@ export class EditPageTypesSectionComponent {
         if (!this.form_element_ref || !this.working_metadata) return;
 
         const workingMetadata = this.working_metadata;
-        const vocabularies = workingMetadata.vocabularies || {};
-        let page_types = vocabularies.pageTypes || workingMetadata.pageTypes || [];
-        const samples = workingMetadata.samples || {};
-        let sample_categories = samples.sampleCategories || [];
+        let { page_types, sample_categories } = this._get_page_types_and_categories(workingMetadata);
 
         if (!Array.isArray(page_types)) page_types = [];
         if (!Array.isArray(sample_categories)) sample_categories = [];
 
-        if (!workingMetadata.vocabularies) workingMetadata.vocabularies = {};
         if (!workingMetadata.samples) workingMetadata.samples = {};
         if (!Array.isArray(workingMetadata.samples.sampleCategories)) workingMetadata.samples.sampleCategories = [];
 
         page_types.push('');
         sample_categories.push({ text: '', id: '', categories: [] });
-        workingMetadata.vocabularies.pageTypes = page_types;
         workingMetadata.pageTypes = page_types;
         workingMetadata.samples.sampleCategories = sample_categories;
 
@@ -554,10 +494,8 @@ export class EditPageTypesSectionComponent {
     }
 
     _do_swap_and_render_page_type_move(workingMetadata, index, new_index, fade_in_after, clickedButton) {
-        const vocabularies = workingMetadata.vocabularies || {};
-        const page_types = vocabularies.pageTypes || workingMetadata.pageTypes || [];
-        const samples = workingMetadata.samples || {};
-        const sample_categories = samples.sampleCategories || [];
+        const page_types = resolve_page_types(workingMetadata);
+        const sample_categories = resolve_sample_vocab(workingMetadata).sampleCategories;
 
         const temp_pt = page_types[index];
         page_types[index] = page_types[new_index];
@@ -567,9 +505,9 @@ export class EditPageTypesSectionComponent {
             sample_categories[index] = sample_categories[new_index];
             sample_categories[new_index] = temp_cat;
         }
-        if (vocabularies.pageTypes) vocabularies.pageTypes = page_types;
-        else workingMetadata.pageTypes = page_types;
-        if (samples.sampleCategories) samples.sampleCategories = sample_categories;
+        workingMetadata.pageTypes = page_types;
+        if (!workingMetadata.samples) workingMetadata.samples = {};
+        workingMetadata.samples.sampleCategories = sample_categories;
 
         this.move_after_render = {
             focus_index: new_index,
@@ -650,26 +588,7 @@ export class EditPageTypesSectionComponent {
 
         const t = this.Translation.t;
         
-        // Hämta pageTypes och sampleCategories
-        const vocabularies = metadata.vocabularies || {};
-        let page_types = vocabularies.pageTypes || metadata.pageTypes || [];
-        const samples = metadata.samples || {};
-        let sample_categories = samples.sampleCategories || [];
-        
-        // Om sampleCategories är tom, försök hämta från vocabularies
-        if (!Array.isArray(sample_categories) || sample_categories.length === 0) {
-            const vocab_samples = vocabularies.sampleTypes || {};
-            if (Array.isArray(vocab_samples.sampleCategories)) {
-                sample_categories = vocab_samples.sampleCategories;
-            }
-        }
-        
-        // Om pageTypes är tom, använd sampleCategories som källa
-        if (!Array.isArray(page_types) || page_types.length === 0) {
-            if (Array.isArray(sample_categories) && sample_categories.length > 0) {
-                page_types = sample_categories.map(cat => cat.text || cat.id).filter(Boolean);
-            }
-        }
+        let { page_types, sample_categories } = this._get_page_types_and_categories(workingMetadata);
 
         const page_types_container = this.Helpers.create_element('div', { class_name: 'page-types-editor' });
         
@@ -897,8 +816,9 @@ export class EditPageTypesSectionComponent {
                           (this.Helpers.get_icon_svg ? `<span aria-hidden="true">${this.Helpers.get_icon_svg('save', ['currentColor'], 16)}</span>` : '')
         });
         
-        save_button.addEventListener('click', () => {
+        save_button.addEventListener('click', async () => {
             this.autosave_session?.flush({ should_trim: true, skip_render: true });
+            await flush_rulefile_editing_sync_if_active(this.getState, this.dispatch);
             if (window.DraftManager?.commitCurrentDraft) {
                 window.DraftManager.commitCurrentDraft();
             }
@@ -999,6 +919,7 @@ export class EditPageTypesSectionComponent {
         if (!this.skip_autosave_on_destroy && this.form_element_ref && this.working_metadata) {
             this.autosave_session?.flush({ should_trim: true, skip_render: true });
         }
+        void flush_rulefile_editing_sync_if_active(this.getState, this.dispatch);
         this.autosave_session?.destroy();
         this.autosave_session = null;
         this.move_after_render = null;

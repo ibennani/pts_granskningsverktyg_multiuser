@@ -1,8 +1,10 @@
 // js/components/EditSampleTypesSectionComponent.js
 
+import { resolve_sample_vocab, normalize_rulefile_metadata_vocabularies } from '../../shared/rulefile/rulefile_metadata_vocabularies.js';
+import { flush_rulefile_editing_sync_if_active } from '../logic/server_sync.js';
 import './edit_rulefile_metadata_view.css';
 
-export const EditSampleTypesSectionComponent = {
+export const EditSampleTypesSectionComponent = {
     async init({ root, deps }) {
         this.root = root;
         this.deps = deps;
@@ -20,8 +22,7 @@ export const EditSampleTypesSectionComponent = {
         this.autosave_session = null;
         this.skip_autosave_on_destroy = false;
         this.handle_autosave_input = this.handle_autosave_input.bind(this);
-
-            },
+    },
 
     _clone_metadata(metadata) {
         return JSON.parse(JSON.stringify(metadata || {}));
@@ -37,18 +38,9 @@ export const EditSampleTypesSectionComponent = {
     },
 
     _get_flattened_sample_types(metadata) {
-        const samples = metadata?.samples || {};
-        const vocabularies = metadata?.vocabularies || {};
-        let sample_categories = samples.sampleCategories || [];
-        if (!Array.isArray(sample_categories) || sample_categories.length === 0) {
-            const vocab_samples = vocabularies.sampleTypes || {};
-            if (Array.isArray(vocab_samples.sampleCategories)) {
-                sample_categories = vocab_samples.sampleCategories;
-            }
-        }
+        const sample_categories = resolve_sample_vocab(metadata).sampleCategories;
         const types = [];
         sample_categories.forEach(cat => {
-            // Textarean redigerar endast underkategorierna (granskningsdelstyperna), inte parent-kategorin
             (cat.categories || []).forEach(sub => {
                 types.push(sub.text || sub.id || '');
             });
@@ -73,18 +65,14 @@ export const EditSampleTypesSectionComponent = {
         if (categories.length === 0) {
             categories.push({ id: 'ovrigt', text: 'Övrigt' });
         }
-        const samples = workingMetadata.samples || {};
-        const vocabularies = workingMetadata.vocabularies || {};
         const sample_categories = [{
             id: 'allman',
             text: 'Allmän',
             hasUrl: false,
             categories
         }];
-        if (!samples.sampleCategories) samples.sampleCategories = [];
-        samples.sampleCategories = sample_categories;
-        if (!vocabularies.sampleTypes) vocabularies.sampleTypes = {};
-        vocabularies.sampleTypes.sampleCategories = sample_categories;
+        if (!workingMetadata.samples) workingMetadata.samples = {};
+        workingMetadata.samples.sampleCategories = sample_categories;
     },
 
     _perform_save(shouldTrim, skip_render) {
@@ -96,13 +84,10 @@ export const EditSampleTypesSectionComponent = {
         }
         this._save_form_values_to_metadata(this.working_metadata, shouldTrim);
         const currentRulefile = state?.ruleFileContent || {};
-        const updatedMetadata = { ...this.working_metadata };
-        if (!updatedMetadata.vocabularies) updatedMetadata.vocabularies = {};
-        if (!updatedMetadata.samples) updatedMetadata.samples = {};
-        if (updatedMetadata.samples.sampleCategories) {
-            if (!updatedMetadata.vocabularies.sampleTypes) updatedMetadata.vocabularies.sampleTypes = {};
-            updatedMetadata.vocabularies.sampleTypes.sampleCategories = updatedMetadata.samples.sampleCategories;
-        }
+        const updatedMetadata = normalize_rulefile_metadata_vocabularies(
+            { ...this.working_metadata },
+            { mode: 'read' }
+        );
         const updatedRulefileContent = {
             ...currentRulefile,
             metadata: { ...currentRulefile.metadata, ...updatedMetadata }
@@ -193,8 +178,9 @@ export const EditSampleTypesSectionComponent = {
             html_content: `<span>${t('rulefile_metadata_save_sample_types') || 'Spara granskningsdelstyper'}</span>` +
                 (this.Helpers.get_icon_svg ? `<span aria-hidden="true">${this.Helpers.get_icon_svg('save', ['currentColor'], 16)}</span>` : '')
         });
-        save_button.addEventListener('click', () => {
+        save_button.addEventListener('click', async () => {
             this.autosave_session?.flush?.({ should_trim: true, skip_render: true });
+            await flush_rulefile_editing_sync_if_active(this.getState, this.dispatch);
             if (window.DraftManager?.commitCurrentDraft) {
                 window.DraftManager.commitCurrentDraft();
             }
@@ -249,6 +235,7 @@ export const EditSampleTypesSectionComponent = {
         if (!this.skip_autosave_on_destroy && this.form_element_ref && this.working_metadata) {
             this.autosave_session?.flush?.({ should_trim: true, skip_render: true });
         }
+        void flush_rulefile_editing_sync_if_active(this.getState, this.dispatch);
         this.autosave_session?.destroy?.();
         this.autosave_session = null;
 

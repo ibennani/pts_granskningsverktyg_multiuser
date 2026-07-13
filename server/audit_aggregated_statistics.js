@@ -7,6 +7,7 @@ import {
     get_relevant_requirements_for_sample
 } from '../js/audit_logic.ts';
 import { calculateQualityScore } from '../js/logic/ScoreCalculator.js';
+import { resolve_sample_vocab } from '../shared/rulefile/rulefile_metadata_vocabularies.js';
 
 /** Ordning för WCAG 2.2 POUR-principer (samma som i ScoreCalculator). */
 export const WCAG_PRINCIPLE_IDS = ['perceivable', 'operable', 'understandable', 'robust'];
@@ -42,10 +43,7 @@ function sample_type_key(sample) {
 function sample_type_label(rule_content, sample_type_id) {
     const id = String(sample_type_id || '').trim();
     if (!id) return '';
-    const cats =
-        rule_content?.metadata?.vocabularies?.sampleTypes?.sampleCategories ||
-        rule_content?.metadata?.samples?.sampleCategories ||
-        [];
+    const cats = resolve_sample_vocab(rule_content?.metadata).sampleCategories;
     if (Array.isArray(cats)) {
         for (const cat of cats) {
             const subs = Array.isArray(cat?.categories) ? cat.categories : [];

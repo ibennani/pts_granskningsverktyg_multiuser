@@ -1,6 +1,7 @@
 // js/logic/rulefile_migration_logic.js
 
 import { consoleManager } from '../utils/console_manager.js';
+import { normalize_rulefile_metadata_vocabularies } from '../../shared/rulefile/rulefile_metadata_vocabularies.js';
 
 /**
  * Konverterar en regelfil från gammal struktur (direkta fält) till ny struktur (infoBlocks).
@@ -142,6 +143,12 @@ export function migrate_rulefile_to_new_structure(ruleFileContent, options = {})
         if (converted_count > 0) {
             consoleManager.log(`[MigrationLogic] Konverterade ${converted_count} requirements från gammal struktur till ny struktur`);
         }
+    }
+
+    if (migrated_content.metadata) {
+        migrated_content.metadata = normalize_rulefile_metadata_vocabularies(migrated_content.metadata, {
+            mode: 'read'
+        });
     }
 
     return migrated_content;

@@ -3,6 +3,10 @@
  */
 import { validate_rulefile_requirements_section } from './logic/validation_rulefile_requirements.js';
 import { consoleManager } from './utils/console_manager.js';
+import {
+    resolve_content_types,
+    resolve_sample_vocab
+} from '../shared/rulefile/rulefile_metadata_vocabularies.js';
 
 type TranslateFn = (key: string, replacements?: Record<string, string>) => string;
 
@@ -116,12 +120,9 @@ export function validate_rule_file_json(json_object: unknown, options: ValidateO
         }
     }
 
-    const vocab = meta.vocabularies as Record<string, unknown> | undefined;
-    const samplesMeta = meta.samples as Record<string, unknown> | undefined;
-    const sampleTypesBlock = vocab?.sampleTypes as Record<string, unknown> | undefined;
-    const sampleCategories =
-        (sampleTypesBlock?.sampleCategories as unknown) || (samplesMeta?.sampleCategories as unknown);
-    const sampleTypes = (sampleTypesBlock?.sampleTypes as unknown) || (samplesMeta?.sampleTypes as unknown);
+    const sample_vocab = resolve_sample_vocab(meta);
+    const sampleCategories = sample_vocab.sampleCategories;
+    const sampleTypes = sample_vocab.sampleTypes;
 
     if (!Array.isArray(sampleCategories) && !Array.isArray(sampleTypes)) {
         return {
@@ -165,7 +166,7 @@ export function validate_rule_file_json(json_object: unknown, options: ValidateO
         };
     }
 
-    const contentTypes = (vocab?.contentTypes as unknown) || meta.contentTypes;
+    const contentTypes = resolve_content_types(meta);
     if (!Array.isArray(contentTypes) || contentTypes.length === 0) {
         return {
             isValid: false,

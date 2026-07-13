@@ -51,14 +51,26 @@ Denna analys identifierar fält i regelfilstrukturen som antingen saknas i redig
 - Lägg till en sektion i metadata-redigeringen där användaren kan ändra ordningen på info-blocks globalt
 - Detta skulle påverka hur alla krav visas när de redigeras
 
-### 2. `metadata.vocabularies` - Synkas automatiskt men redigeras inte direkt
+### 2. `metadata.vocabularies` — legacy-dubletter (uppdaterat 2026)
 
-**Problem:**
-- `vocabularies` är en backup-struktur som synkas automatiskt när man redigerar pageTypes, contentTypes, taxonomies, sampleTypes
-- Den redigeras inte direkt utan skapas/synkas automatiskt i `_ensure_metadata_defaults()`
-- Detta är faktiskt korrekt beteende - den ska vara en synkad backup, inte något man redigerar direkt
+**Tidigare beteende:**
+- `vocabularies` var en speglad backup-struktur som synkades automatiskt vid redigering av pageTypes, contentTypes, taxonomies och sampleTypes.
 
-**Status:** ✅ Fungerar som tänkt - ingen ändring behövs
+**Nuvarande arkitektur (regelfil vs granskning):**
+
+| Kontext | Lagring | Åtgärd |
+|---------|---------|--------|
+| **Fristående regelfil** (redigering, publicering) | Kanoniskt platt format (`metadata.pageTypes`, `metadata.contentTypes`, …) | `normalize(persist)` vid sparning tar bort `metadata.vocabularies` |
+| **Inbäddad regelfil i granskning** (`audits.rule_file_content`) | Historisk snapshot, oförändrad i databasen | Endast tolerant läsning via `resolve_*()` — ingen strukturell normalisering vid öppning eller synk |
+
+**Konsekvenser:**
+- Nya regelfilssparanden skriver **inte** längre dubletter till `vocabularies`.
+- Gamla granskningar kan behålla `vocabularies` i sin inbäddade snapshot — det är avsett och påverkar inte funktion (accessors läser båda format).
+- Ingen databasrensning eller automatisk uppgradering av inbäddad regelfil sker.
+
+**Teknisk referens:** `shared/rulefile/rulefile_metadata_vocabularies.ts`
+
+**Status:** ✅ Omstrukturerat — `vocabularies` är legacy i nya regelfiler; tolereras i gamla granskningssnapshots
 
 ### 3. `reportTemplate` - På toppnivå men redigeras i metadata-vyn
 

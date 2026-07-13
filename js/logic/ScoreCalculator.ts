@@ -6,6 +6,7 @@ import { get_stored_requirement_result_for_def } from '../audit_logic.js';
 import { consoleManager } from '../utils/console_manager.js';
 import { normalize_requirements_to_record } from './requirement_lookup.js';
 import { count_failed_pass_criteria_under_passed_checks } from './score_calculator_passed_check_failures.js';
+import { resolve_taxonomies } from '../../shared/rulefile/rulefile_metadata_vocabularies.js';
 
 type RuleFileContentLike = {
     requirements?: unknown;
@@ -95,10 +96,7 @@ export function calculateQualityScore (audit_state: AuditStateLike | null | unde
         };
     }
 
-    const taxonomies =
-        (audit_state.ruleFileContent.metadata?.vocabularies as { taxonomies?: unknown } | undefined)?.taxonomies
-        ?? audit_state.ruleFileContent.metadata?.taxonomies
-        ?? [];
+    const taxonomies = resolve_taxonomies(audit_state.ruleFileContent.metadata);
     const classifications = Array.isArray(taxonomies)
         ? (taxonomies as Array<{ id?: string }>).find((tax) => tax?.id === 'wcag22-pour')
         : null;

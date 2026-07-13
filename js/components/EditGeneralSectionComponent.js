@@ -1,9 +1,11 @@
 // js/components/EditGeneralSectionComponent.js
 
 import './edit_rulefile_metadata_view.css';
+import { flush_rulefile_editing_sync_if_active } from '../logic/server_sync.js';
 
 export class EditGeneralSectionComponent {
-    constructor() {        this.root = null;
+    constructor() {
+        this.root = null;
         this.deps = null;
         this.router = null;
         this.getState = null;
@@ -279,9 +281,10 @@ export class EditGeneralSectionComponent {
         this.autosave_session?.request_autosave();
     }
 
-    _handle_submit(_form, _originalMetadata, _workingMetadata) {
+    async _handle_submit(_form, _originalMetadata, _workingMetadata) {
         const t = this.Translation.t;
         this.autosave_session?.flush({ should_trim: true, skip_render: true });
+        await flush_rulefile_editing_sync_if_active(this.getState, this.dispatch);
         if (window.DraftManager?.commitCurrentDraft) {
             window.DraftManager.commitCurrentDraft();
         }
@@ -359,6 +362,7 @@ export class EditGeneralSectionComponent {
         if (!this.skip_autosave_on_destroy && this.form_element_ref && this.working_metadata) {
             this.autosave_session?.flush({ should_trim: true, skip_render: true });
         }
+        void flush_rulefile_editing_sync_if_active(this.getState, this.dispatch);
         this.autosave_session?.destroy();
         this.autosave_session = null;
 

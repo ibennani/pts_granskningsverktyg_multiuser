@@ -28,13 +28,34 @@ async function run_sync_rulefile(state, dispatch_fn) {
         const to_send = drain_rulefile_patch_queue();
         if (to_send.length > 0) {
             const base_version = Number(state?.ruleFileServerVersion ?? 0);
+            let last_updated = null;
             for (const p of to_send) {
                 if (!p?.part_key) continue;
-                await patch_rule_content_part(state.ruleSetId, {
+                last_updated = await patch_rule_content_part(state.ruleSetId, {
                     part_key: String(p.part_key),
                     base_version,
                     value: typeof p.value === 'string' ? p.value : String(p.value ?? '')
                 });
+            }
+            if (last_updated?.content && typeof dispatch_fn === 'function') {
+                let content = last_updated.content;
+                if (typeof content === 'string') {
+                    try {
+                        content = JSON.parse(content);
+                    } catch {
+                        content = null;
+                    }
+                }
+                if (content && typeof content === 'object') {
+                    dispatch_fn({
+                        type: 'REPLACE_RULEFILE_FROM_REMOTE',
+                        payload: {
+                            ruleFileContent: content,
+                            version: last_updated.version
+                        }
+                    });
+                    update_rulefile_baseline_from_remote(state.ruleSetId, content);
+                }
             }
             clear_rulefile_sync_pending();
             notify_rules_list_changed();
@@ -50,16 +71,36 @@ async function run_sync_rulefile(state, dispatch_fn) {
 
         const updated = await update_rule(state.ruleSetId, { content: content_to_send });
         if (updated?.content && typeof dispatch_fn === 'function') {
-            dispatch_fn({
-                type: 'REPLACE_RULEFILE_FROM_REMOTE',
-                payload: {
-                    ruleFileContent: updated.content,
-                    version: updated.version
+            let content = updated.content;
+            if (typeof content === 'string') {
+                try {
+                    content = JSON.parse(content);
+                } catch {
+                    content = null;
                 }
-            });
+            }
+            if (content && typeof content === 'object') {
+                dispatch_fn({
+                    type: 'REPLACE_RULEFILE_FROM_REMOTE',
+                    payload: {
+                        ruleFileContent: content,
+                        version: updated.version
+                    }
+                });
+            }
         }
         if (updated?.content) {
-            update_rulefile_baseline_from_remote(state.ruleSetId, updated.content);
+            let content_for_baseline = updated.content;
+            if (typeof content_for_baseline === 'string') {
+                try {
+                    content_for_baseline = JSON.parse(content_for_baseline);
+                } catch {
+                    content_for_baseline = null;
+                }
+            }
+            if (content_for_baseline && typeof content_for_baseline === 'object') {
+                update_rulefile_baseline_from_remote(state.ruleSetId, content_for_baseline);
+            }
         }
         clear_rulefile_sync_pending();
         notify_rules_list_changed();
@@ -116,5 +157,18 @@ export async function flush_sync_rulefile_to_server(get_state_fn, dispatch_fn) {
     if (state?.auditStatus === 'rulefile_editing' && state.ruleSetId && state.ruleFileContent) {
         await run_sync_rulefile(state, dispatch_fn);
     }
+}
+
+/**
+ * Sparar arbetskopia till servern direkt så metadata.version uppdateras i listan.
+ * @param {function} get_state_fn
+ * @param {function} [dispatch_fn]
+ */
+export async function flush_rulefile_editing_sync_if_active(get_state_fn, dispatch_fn) {
+    const state = typeof get_state_fn === 'function' ? get_state_fn() : null;
+    if (state?.auditStatus !== 'rulefile_editing' || !state?.ruleSetId || !state?.ruleFileContent) {
+        return;
+    }
+    await flush_sync_rulefile_to_server(get_state_fn, dispatch_fn);
 }
 

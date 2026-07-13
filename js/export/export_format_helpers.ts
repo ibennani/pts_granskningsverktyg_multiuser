@@ -4,6 +4,7 @@
 
 import { Paragraph, TextRun } from 'docx';
 import { recalculateAuditTimes, get_audit_last_updated_display_timestamp } from '../audit_logic.js';
+import { resolve_taxonomies } from '../../shared/rulefile/rulefile_metadata_vocabularies.js';
 
 export function create_paragraphs_with_line_breaks(text: unknown, options: Record<string, unknown> = {}): Paragraph[] {
     if (!text) {
@@ -151,9 +152,8 @@ export function get_wcag_pour_export_values_for_requirement(
         wcagRobust: ''
     };
     const meta = current_audit?.ruleFileContent as Record<string, unknown> | undefined;
-    const meta_inner = meta?.metadata as Record<string, unknown> | undefined;
-    const taxonomies =
-        (meta_inner?.vocabularies as { taxonomies?: unknown } | undefined)?.taxonomies || meta_inner?.taxonomies;
+    const meta_inner = meta?.metadata;
+    const taxonomies = resolve_taxonomies(meta_inner);
     if (!Array.isArray(taxonomies)) {
         return empty;
     }

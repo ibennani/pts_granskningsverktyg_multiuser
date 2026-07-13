@@ -1,15 +1,22 @@
 // js/components/RulefileMetadataViewComponent.js
 
 import './rulefile_metadata_view_component.css';
+import {
+    resolve_content_types,
+    resolve_page_types,
+    resolve_taxonomies
+} from '../../shared/rulefile/rulefile_metadata_vocabularies.js';
 
 export class RulefileMetadataViewComponent {
-    constructor() {        this.root = null;
+    constructor() {
+        this.root = null;
         this.deps = null;
         this.router = null;
         this.getState = null;
         this.Translation = null;
         this.Helpers = null;
-        this.NotificationComponent = null;    }
+        this.NotificationComponent = null;
+    }
 
     async init({ root, deps }) {
         this.root = root;
@@ -18,7 +25,7 @@ export class RulefileMetadataViewComponent {
         this.getState = deps.getState;
         this.Translation = deps.Translation;
         this.Helpers = deps.Helpers;
-        this.NotificationComponent = deps.NotificationComponent;
+        this.NotificationComponent = deps.NotificationComponent;
             }
 
     _ensure_dependencies() {
@@ -314,10 +321,9 @@ export class RulefileMetadataViewComponent {
                 this._create_list(metadata.keywords, 'rulefile_metadata_empty_value', 'metadata-list')
             ]);
 
-            const vocabularies = metadata.vocabularies || {};
-            const page_types = vocabularies.pageTypes || metadata.pageTypes || [];
-            const content_types = vocabularies.contentTypes || metadata.contentTypes || [];
-            const taxonomies = vocabularies.taxonomies || metadata.taxonomies || [];
+            const page_types = resolve_page_types(metadata);
+            const content_types = resolve_content_types(metadata);
+            const taxonomies = resolve_taxonomies(metadata);
             const page_types_section = this._create_section('rulefile_metadata_section_page_types', [
                 this._create_list(page_types, 'rulefile_metadata_empty_value', 'metadata-list')
             ]);

@@ -2,6 +2,13 @@ import { render_content_types_section_accordion } from './content_type_accordion
 import { handle_sample_attach_media_click, render_sample_screenshot_section } from './sample_attach_media.js';
 import { sync_sample_auto_screenshot_state_from_data } from './sample_url_auto_screenshot.js';
 import { update_content_type_analyze_visibility } from './content_type_detection.js';
+import { resolve_content_types } from '../../../shared/rulefile/rulefile_metadata_vocabularies.js';
+
+type ContentTypeGroupOption = {
+    id: string;
+    text: string;
+    types?: Array<{ id: string; text: string; description?: string }>;
+};
 
 export function render_add_sample_form(component: any, sample_id_to_edit: string | null = null) {
     // Undvik omrendering när samma vy redan är monterad — annars avbryts t.ex. auto-skärmdump vid blur.
@@ -50,10 +57,7 @@ export function render_add_sample_form(component: any, sample_id_to_edit: string
     }
 
     const sample_categories = component.get_sample_categories_from_state();
-    const grouped_content_types =
-        current_state.ruleFileContent.metadata?.vocabularies?.contentTypes ||
-        current_state.ruleFileContent.metadata?.contentTypes ||
-        [];
+    const grouped_content_types = resolve_content_types(current_state.ruleFileContent.metadata) as ContentTypeGroupOption[];
 
     component.original_content_types_on_load = sample_data ? [...(sample_data.selectedContentTypes || [])] : [];
 

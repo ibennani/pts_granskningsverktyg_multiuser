@@ -4,6 +4,10 @@ import { ProgressBarComponent } from './ProgressBarComponent.js';
 import { open_http_href_in_background_tab } from '../logic/open_all_sample_urls_modal.js';
 import { effective_status_is_fully_unreviewed_for_bulk_pass } from '../audit_logic.js';
 import { user_may_use_sample_mark_bulk_pass_not_audited } from '../logic/sample_bulk_pass_not_audited_gate.js';
+import {
+    resolve_content_types,
+    resolve_sample_vocab
+} from '../../shared/rulefile/rulefile_metadata_vocabularies.js';
 
 export const SampleListComponent = {
     init({ root, deps }) {
@@ -105,19 +109,15 @@ export const SampleListComponent = {
         
         // Skapa lookup-maps (tål att metadata/vokabulärer saknas i vissa lägen).
         const content_types_map = new Map();
-        const content_types = state?.ruleFileContent?.metadata?.vocabularies?.contentTypes
-            || state?.ruleFileContent?.metadata?.contentTypes
-            || [];
+        const content_types = resolve_content_types(state?.ruleFileContent?.metadata);
         content_types.forEach(parent => {
             (parent.types || []).forEach(child => content_types_map.set(child.id, child.text));
         });
 
         const sample_categories_map = new Map();
         const sample_subcategories_map = new Map();
-        const sample_categories =
-            state?.ruleFileContent?.metadata?.samples?.sampleCategories
-            || state?.ruleFileContent?.metadata?.vocabularies?.sampleTypes?.sampleCategories
-            || [];
+        const sample_vocab = resolve_sample_vocab(state?.ruleFileContent?.metadata);
+        const sample_categories = sample_vocab.sampleCategories;
         (sample_categories || []).forEach(cat => {
             sample_categories_map.set(cat.id, cat.text);
             (cat.categories || []).forEach(subcat => {

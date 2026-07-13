@@ -3,6 +3,7 @@
  */
 import { find_check_def_by_storage_id, find_pass_criterion_def_by_storage_id } from '../logic/entity_id_match.js';
 import { for_each_failed_export_pass_criterion } from './export_deficiency_traversal.js';
+import { resolve_taxonomies } from '../../shared/rulefile/rulefile_metadata_vocabularies.js';
 
 export const WCAG_PRINCIPLE_ORDER = ['perceivable', 'operable', 'understandable', 'robust'] as const;
 
@@ -40,8 +41,7 @@ export function resolve_wcag_principle_concepts(
 ): PrincipleConcept[] {
     const meta = current_audit?.ruleFileContent as Record<string, unknown> | undefined;
     const metadata = meta?.metadata as Record<string, unknown> | undefined;
-    const taxonomies =
-        (metadata?.vocabularies as { taxonomies?: unknown } | undefined)?.taxonomies || metadata?.taxonomies;
+    const taxonomies = resolve_taxonomies(metadata);
     const pour_taxonomy = Array.isArray(taxonomies)
         ? (taxonomies as Array<{ id?: string; concepts?: PrincipleConcept[] }>).find(
               (entry) => entry?.id === 'wcag22-pour'

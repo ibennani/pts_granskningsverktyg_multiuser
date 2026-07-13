@@ -13,6 +13,7 @@ import {
     format_rulefile_date_modified
 } from '../utils/rulefile_metadata_touch.js';
 import { normalize_rulefile_content_object } from '../utils/rulefile_content_utils.js';
+import { prepare_rulefile_content_for_server_put } from '../../shared/rulefile/rulefile_server_put_prepare.js';
 import {
     fetch_rule_sets_list,
     fetch_rule_set_version_row,
@@ -366,9 +367,21 @@ router.put('/:id', async (req, res) => {
             values.push(name);
         }
         if (content !== undefined) {
+            const existing_row = await fetch_rule_set_by_id(id);
+            const existing_content = existing_row.rows.length > 0
+                ? normalize_rulefile_content_object(existing_row.rows[0].content)
+                : null;
+            const now = new Date();
             const content_with_metadata = typeof content === 'object' && content !== null
-                ? touch_rulefile_metadata(content, { bump_version: false })
+                ? prepare_rulefile_content_for_server_put(
+                    existing_content?.metadata?.version,
+                    content,
+                    { reference_date: now }
+                )
                 : content;
+            if (content !== null && typeof content === 'object' && !content_with_metadata) {
+                return res.status(400).json({ error: 'Ogiltigt regelfilinnehåll' });
+            }
             updates.push(`content = $${i++}`);
             values.push(JSON.stringify(content_with_metadata));
             updates.push(`content_updated_at = CURRENT_TIMESTAMP`);

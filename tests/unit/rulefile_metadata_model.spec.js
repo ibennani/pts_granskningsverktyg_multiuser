@@ -15,12 +15,12 @@ describe('rulefile_metadata_model', () => {
     });
 
     describe('ensure_metadata_defaults', () => {
-        it('sätter monitoringType och vocabularies för minimalt objekt', () => {
+        it('sätter monitoringType och kanoniska platta vocabulary-fält', () => {
             const m = {};
             ensure_metadata_defaults(m);
             expect(m.monitoringType).toEqual({ type: '', text: '' });
-            expect(Array.isArray(m.vocabularies.pageTypes)).toBe(true);
-            expect(m.pageTypes).toBe(m.vocabularies.pageTypes);
+            expect(Array.isArray(m.pageTypes)).toBe(true);
+            expect(m.vocabularies).toBeUndefined();
         });
     });
 });

@@ -9,6 +9,8 @@ import {
     show_rulefile_required_fields_modal
 } from '../components/rulefile_metadata/rulefile_metadata_validation.js';
 import { generate_slug, ensure_unique_slug } from './rulefile_metadata_slug.js';
+import { normalize_rulefile_metadata_vocabularies } from '../../shared/rulefile/rulefile_metadata_vocabularies.js';
+import { flush_rulefile_editing_sync_if_active } from './server_sync.js';
 
 /**
  * @param {object} deps
@@ -121,7 +123,7 @@ export async function handle_submit_create(deps) {
  * @param {function} deps.router
  * @param {object|null|undefined} deps.report_template_ref
  */
-export function handle_submit(deps) {
+export async function handle_submit(deps) {
     const {
         form,
         originalMetadata,
@@ -311,19 +313,10 @@ export function handle_submit(deps) {
             sampleCategories: cleanedSampleCategories,
             sampleTypes: cleanedSampleTypes
         },
-        taxonomies: cleanedTaxonomies,
-        // Update vocabularies structure
-        vocabularies: {
-            ...originalMetadata.vocabularies,
-            pageTypes: cleanedPageTypes,
-            contentTypes: cleanedContentTypes,
-            taxonomies: cleanedTaxonomies,
-            sampleTypes: {
-                sampleCategories: cleanedSampleCategories,
-                sampleTypes: cleanedSampleTypes
-            }
-        }
+        taxonomies: cleanedTaxonomies
     };
+
+    const normalizedMetadata = normalize_rulefile_metadata_vocabularies(updatedMetadata, { mode: 'persist' });
 
     // Collect report template sections data
     const report_template_sections = {};
@@ -357,17 +350,17 @@ export function handle_submit(deps) {
 
     // Update metadata.blockOrders.reportSections
     if (report_section_order.length > 0) {
-        if (!updatedMetadata.blockOrders) {
-            updatedMetadata.blockOrders = {};
+        if (!normalizedMetadata.blockOrders) {
+            normalizedMetadata.blockOrders = {};
         }
-        updatedMetadata.blockOrders.reportSections = report_section_order;
+        normalizedMetadata.blockOrders.reportSections = report_section_order;
     }
 
     const state = getState();
     const currentRulefile = state?.ruleFileContent || {};
     const updatedRulefileContent = {
         ...currentRulefile,
-        metadata: updatedMetadata
+        metadata: normalizedMetadata
     };
 
     // Update reportTemplate if it exists or create it
@@ -381,6 +374,8 @@ export function handle_submit(deps) {
         type: StoreActionTypes.UPDATE_RULEFILE_CONTENT,
         payload: { ruleFileContent: updatedRulefileContent }
     });
+
+    await flush_rulefile_editing_sync_if_active(getState, dispatch);
 
     NotificationComponent.show_global_message?.(t('rulefile_metadata_edit_saved'), 'success');
     router('edit_rulefile_main');

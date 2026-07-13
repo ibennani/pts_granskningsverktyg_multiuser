@@ -2,23 +2,19 @@
  * @fileoverview Ren logik för innehållstyp-detektering i granskningsdelsformuläret (testbar).
  */
 
+import { resolve_content_types } from '../../../shared/rulefile/rulefile_metadata_vocabularies.js';
+
 type ContentTypeGroup = {
     id?: string;
     types?: Array<{ id?: string }>;
 };
 
 type RuleFileLike = {
-    metadata?: {
-        vocabularies?: { contentTypes?: ContentTypeGroup[] };
-        contentTypes?: ContentTypeGroup[];
-    };
+    metadata?: Record<string, unknown>;
 };
 
 export function collect_allowed_content_type_ids(rule_file: RuleFileLike | null | undefined): string[] {
-    const groups =
-        rule_file?.metadata?.vocabularies?.contentTypes ||
-        rule_file?.metadata?.contentTypes ||
-        [];
+    const groups = resolve_content_types(rule_file?.metadata) as ContentTypeGroup[];
     const ids = new Set<string>();
     for (const group of groups) {
         const child_types = group.types || [];

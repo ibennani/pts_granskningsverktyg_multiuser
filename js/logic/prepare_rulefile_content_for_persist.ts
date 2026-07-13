@@ -3,6 +3,7 @@
  */
 
 import { touch_rulefile_metadata } from '../../shared/rulefile/rulefile_metadata_touch.js';
+import { normalize_rulefile_content_vocabularies_for_persist } from '../../shared/rulefile/rulefile_metadata_vocabularies.js';
 
 export type PrepareRulefileContentOptions = {
     bump_version?: boolean;
@@ -17,7 +18,9 @@ export function prepare_rulefile_content_for_persist(
     content: unknown,
     options: PrepareRulefileContentOptions = {}
 ): Record<string, unknown> | null {
-    return touch_rulefile_metadata(content, {
+    const normalized = normalize_rulefile_content_vocabularies_for_persist(content);
+    if (!normalized) return null;
+    return touch_rulefile_metadata(normalized, {
         bump_version: options.bump_version === true,
         reference_date: options.reference_date
     });

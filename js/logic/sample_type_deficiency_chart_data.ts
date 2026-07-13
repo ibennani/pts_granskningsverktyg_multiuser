@@ -3,6 +3,7 @@
  * för aktuell granskning (median bristindex per granskningsdelstyp).
  */
 import { calculateQualityScore } from './ScoreCalculator.js';
+import { resolve_sample_vocab } from '../../shared/rulefile/rulefile_metadata_vocabularies.js';
 
 /** Samma sentinel som server/audit_aggregated_statistics.js */
 export const MONITORING_LABEL_FALLBACK_SENTINEL = '__GV_STATS_MONITORING_FALLBACK__';
@@ -35,12 +36,8 @@ function sample_type_key(sample: { sampleType?: unknown } | null | undefined): s
 function resolve_sample_type_label(rule_content: Record<string, unknown> | null, sample_type_id: string): string {
     const id = String(sample_type_id || '').trim();
     if (!id) return '';
-    const meta = rule_content?.metadata as Record<string, unknown> | undefined;
-    const cats =
-        (meta?.vocabularies as { sampleTypes?: { sampleCategories?: unknown[] } } | undefined)?.sampleTypes
-            ?.sampleCategories ||
-        (meta?.samples as { sampleCategories?: unknown[] } | undefined)?.sampleCategories ||
-        [];
+    const meta = rule_content?.metadata;
+    const cats = resolve_sample_vocab(meta).sampleCategories;
     if (Array.isArray(cats)) {
         for (const cat of cats) {
             const subs = Array.isArray((cat as { categories?: unknown[] })?.categories)

@@ -13,12 +13,29 @@ import {
     type NewSampleFormDraft
 } from './add_sample_form/new_sample_form_draft.js';
 import { clear_sample_auto_screenshot_if_needed, handle_sample_url_blur } from './add_sample_form/sample_url_auto_screenshot.js';
+import {
+    resolve_content_types,
+    resolve_sample_vocab
+} from '../../shared/rulefile/rulefile_metadata_vocabularies.js';
 import { build_sample_url_screenshot_form_host, type SampleUrlScreenshotFormHostSource } from './add_sample_form/sample_url_screenshot_form_host.js';
 import { build_sample_url_page_title_form_host, handle_sample_url_page_title_on_blur, type SampleUrlPageTitleFormHostSource } from './add_sample_form/sample_url_page_title.js';
 import { handle_analyze_page_content_click as run_analyze_page_content_click, update_content_type_analyze_visibility, type ContentTypeDetectionComponentLike } from './add_sample_form/content_type_detection.js';
 import { sync_to_server_now } from '../logic/server_sync.js';
 import { get_auth_token } from '../api/client.js';
 import { audit_status_blocks_sample_and_requirement_edits } from '../utils/audit_status_helpers.js';
+
+type SampleCategoryOption = {
+    id?: string;
+    text?: string;
+    hasUrl?: boolean;
+    categories?: Array<{ id?: string; text?: string }>;
+};
+
+type ContentTypeGroupOption = {
+    id?: string;
+    text?: string;
+    types?: Array<{ id?: string; text?: string }>;
+};
 
 export class AddSampleFormComponent {
     private root: HTMLElement | null;
@@ -265,21 +282,10 @@ export class AddSampleFormComponent {
         });
     }
 
-    get_sample_categories_from_state() {
+    get_sample_categories_from_state(): SampleCategoryOption[] {
         const state = this.getState ? this.getState() : null;
         const metadata = state?.ruleFileContent?.metadata || {};
-        const samples = metadata.samples || {};
-
-        let sample_categories = Array.isArray(samples.sampleCategories) ? samples.sampleCategories : [];
-
-        if (sample_categories.length === 0) {
-            const vocab_sample_types = metadata.vocabularies?.sampleTypes || {};
-            if (Array.isArray(vocab_sample_types.sampleCategories)) {
-                sample_categories = vocab_sample_types.sampleCategories;
-            }
-        }
-
-        return sample_categories;
+        return resolve_sample_vocab(metadata).sampleCategories as SampleCategoryOption[];
     }
 
     get_t_internally() {
@@ -505,7 +511,7 @@ export class AddSampleFormComponent {
     }
 
     _resolve_content_type_label(rule_file: any, id: string) {
-        const groups = rule_file?.metadata?.vocabularies?.contentTypes || rule_file?.metadata?.contentTypes || [];
+        const groups = resolve_content_types(rule_file?.metadata) as ContentTypeGroupOption[];
         for (const g of groups) {
             for (const t of (g.types || [])) {
                 if (t.id === id) return String(t.text || id);
@@ -515,19 +521,15 @@ export class AddSampleFormComponent {
     }
 
     _resolve_sample_category_label(rule_file: any, id: string) {
-        const cats = rule_file?.metadata?.samples?.sampleCategories ||
-            rule_file?.metadata?.vocabularies?.sampleTypes?.sampleCategories ||
-            [];
-        const cat = (cats || []).find((c: any) => c.id === id);
+        const cats = resolve_sample_vocab(rule_file?.metadata).sampleCategories as SampleCategoryOption[];
+        const cat = (cats || []).find((c) => c.id === id);
         return cat ? String(cat.text || id) : id;
     }
 
     _resolve_sample_type_label(rule_file: any, id: string) {
-        const cats = rule_file?.metadata?.samples?.sampleCategories ||
-            rule_file?.metadata?.vocabularies?.sampleTypes?.sampleCategories ||
-            [];
+        const cats = resolve_sample_vocab(rule_file?.metadata).sampleCategories as SampleCategoryOption[];
         for (const c of (cats || [])) {
-            const match = (c.categories || []).find((s: any) => s.id === id);
+            const match = (c.categories || []).find((s) => s.id === id);
             if (match) return String(match.text || id);
         }
         return id;
