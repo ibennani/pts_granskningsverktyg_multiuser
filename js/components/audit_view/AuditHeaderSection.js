@@ -50,7 +50,7 @@ export function render_audit_header(ctx) {
     const title_text = ctx.audit_mode === 'rules' ? t('audit_title_rules') : ctx.audit_mode === 'audits' ? t('audit_title_audits') : t('audit_title');
     const title = ctx.Helpers.create_element('h1', { text_content: title_text });
     header.appendChild(title);
-    if (ctx.audit_mode === 'rules' || ctx.audit_mode === 'both') {
+    if (ctx.audit_mode === 'both') {
         const page_row = ctx.Helpers.create_element('div', { class_name: 'audit-header-page-size-row' });
         page_row.appendChild(render_audit_page_size_field(ctx));
         header.appendChild(page_row);
