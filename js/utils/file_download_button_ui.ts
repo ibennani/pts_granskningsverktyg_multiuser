@@ -143,6 +143,11 @@ export function set_file_download_trigger_busy(trigger: HTMLElement, busy: boole
     set_busy(trigger, busy);
 }
 
+/** True när knappen redan kör ett pågående flöde — använd för att ignorera extra klick (ingen disabled). */
+export function is_file_download_trigger_busy(trigger: HTMLElement): boolean {
+    return is_busy(trigger);
+}
+
 export function set_file_download_idle(
     parts: FileDownloadButtonParts,
     _idle_icon_html: string,

@@ -4,9 +4,11 @@ import { get_icon_svg } from '../../js/ui/icons.js';
 import { create_tooltip_wrapper } from '../../js/utils/generic_tooltip.ts';
 import {
     create_file_download_button,
+    is_file_download_trigger_busy,
     READY_RESET_MS,
     run_file_download_flow,
     set_file_download_idle,
+    set_file_download_trigger_busy,
 } from '../../js/utils/file_download_button_ui.ts';
 import { DownloadFileTooLargeError, FILE_DOWNLOAD_MAX_BYTES } from '../../js/utils/download_filename_utils.ts';
 import { ExportPdfHtmlTooLargeError } from '../../js/export/export_pdf_html_size_error.ts';
@@ -303,5 +305,40 @@ describe('file_download_button_ui', () => {
 
         expect(btn.getAttribute('data-file-download-busy')).toBe('false');
         expect(tooltip.is_mounted()).toBe(false);
+    });
+
+    test('is_file_download_trigger_busy används för att ignorera extra klick utan disabled', async () => {
+        const btn = create_element('button', {
+            class_name: 'file-download-btn',
+            attributes: { 'data-file-download-busy': 'true' },
+            html_content:
+                '<span class="file-download-btn__label">Test</span>' +
+                '<span class="file-download-btn__status-icon"></span>',
+        });
+        const { wrapper, tooltip } = create_tooltip_wrapper(Helpers, {
+            content: btn,
+            mode: 'feedback',
+            use_overlay: false,
+        });
+        const parts = { wrapper, button: btn, tooltip };
+        const download_fn = jest.fn(async () => {});
+
+        await run_file_download_flow(parts, t, Helpers, download_fn, {
+            idle_icon_html: get_icon_svg('save', ['currentColor'], 16),
+        });
+
+        expect(download_fn).not.toHaveBeenCalled();
+        expect(is_file_download_trigger_busy(btn)).toBe(true);
+        expect(btn.hasAttribute('disabled')).toBe(false);
+        expect(btn.getAttribute('aria-disabled')).toBeNull();
+    });
+
+    test('set_file_download_trigger_busy och is_file_download_trigger_busy hänger ihop', () => {
+        const btn = create_element('button', {
+            attributes: { 'data-file-download-busy': 'false' },
+        });
+        expect(is_file_download_trigger_busy(btn)).toBe(false);
+        set_file_download_trigger_busy(btn, true);
+        expect(is_file_download_trigger_busy(btn)).toBe(true);
     });
 });

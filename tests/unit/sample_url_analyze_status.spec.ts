@@ -62,6 +62,8 @@ describe('sample_url_analyze_status', () => {
         const text_el = parts.tooltip.get_text_element();
 
         expect(parts.button.getAttribute('data-file-download-busy')).toBe('true');
+        expect(parts.button.hasAttribute('disabled')).toBe(false);
+        expect(parts.button.getAttribute('aria-disabled')).toBeNull();
         expect(text_el?.getAttribute('aria-live')).toBe('polite');
         expect(text_el?.textContent).toBe('Hämtar info från webbsidan');
         expect(tooltip_el?.classList.contains('generic-tooltip--active')).toBe(true);

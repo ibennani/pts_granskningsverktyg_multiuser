@@ -13,7 +13,10 @@ import {
     type SampleUrlScreenshotFormHostSource
 } from './sample_url_screenshot_form_host.js';
 import { set_sample_url_analyze_status, type SampleUrlAnalyzeStatusHost } from './sample_url_analyze_status.js';
-import { READY_RESET_MS } from '../../utils/file_download_button_ui.js';
+import {
+    is_file_download_trigger_busy,
+    READY_RESET_MS
+} from '../../utils/file_download_button_ui.js';
 
 export type SampleUrlAnalyzeFlowHost = SampleUrlAnalyzeStatusHost &
     SampleUrlPageTitleFormHostSource &
@@ -24,6 +27,11 @@ export type SampleUrlAnalyzeFlowHost = SampleUrlAnalyzeStatusHost &
     };
 
 export async function run_sample_url_analyze_flow(host: SampleUrlAnalyzeFlowHost): Promise<void> {
+    const trigger = host.url_analyze_button_parts?.button ?? null;
+    if (trigger && is_file_download_trigger_busy(trigger)) {
+        return;
+    }
+
     const generation = host.bump_url_analyze_generation();
     set_sample_url_analyze_status(host, 'loading');
 
