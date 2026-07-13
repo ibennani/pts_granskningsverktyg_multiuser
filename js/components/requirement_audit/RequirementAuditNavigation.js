@@ -1,5 +1,7 @@
 // js/components/requirement_audit/RequirementAuditNavigation.js
 
+import { wrap_with_static_tooltip } from '../../utils/generic_tooltip.js';
+
 export class RequirementAuditNavigationComponent {
     constructor() {
         this.container_ref = null;
@@ -82,15 +84,14 @@ export class RequirementAuditNavigationComponent {
             attributes: { 'aria-keyshortcuts': aria_keyshortcuts(back_key), 'data-action': 'back-to-list' }
         });
         back_btn.addEventListener('click', this.handle_back_click);
-        const back_wrapper = this.Helpers.create_element('span', { class_name: 'status-icon-tooltip-wrapper' });
-        const back_tooltip = this.Helpers.create_element('span', {
-            class_name: 'status-icon-tooltip',
-            text_content: `${t('back_to_requirement_list')} (Shift+Alt+${shortcut_display(back_key)})`,
-            attributes: { 'aria-hidden': 'true' }
-        });
-        back_wrapper.appendChild(back_btn);
-        back_wrapper.appendChild(back_tooltip);
-        nav_group_left.appendChild(back_wrapper);
+        nav_group_left.appendChild(
+            wrap_with_static_tooltip(
+                this.Helpers,
+                back_btn,
+                `${t('back_to_requirement_list')} (Shift+Alt+${shortcut_display(back_key)})`,
+                { use_overlay: false }
+            )
+        );
 
         // "Confirm status" button for updated requirements
         if (requirement_result?.needsReview === true) {
@@ -124,15 +125,14 @@ export class RequirementAuditNavigationComponent {
                 prev_btn.setAttribute('aria-label', previous_aria_label);
             }
             prev_btn.addEventListener('click', this.handle_prev_click);
-            const prev_wrapper = this.Helpers.create_element('span', { class_name: 'status-icon-tooltip-wrapper' });
-            const prev_tooltip = this.Helpers.create_element('span', {
-                class_name: 'status-icon-tooltip',
-                text_content: `${t(previous_text_key)} (Shift+Alt+${shortcut_display(prev_shortcut_key)})`,
-                attributes: { 'aria-hidden': 'true' }
-            });
-            prev_wrapper.appendChild(prev_btn);
-            prev_wrapper.appendChild(prev_tooltip);
-            nav_group_right.appendChild(prev_wrapper);
+            nav_group_right.appendChild(
+                wrap_with_static_tooltip(
+                    this.Helpers,
+                    prev_btn,
+                    `${t(previous_text_key)} (Shift+Alt+${shortcut_display(prev_shortcut_key)})`,
+                    { use_overlay: false }
+                )
+            );
         }
 
         if (!is_last_requirement) {
@@ -149,15 +149,14 @@ export class RequirementAuditNavigationComponent {
                 next_btn.setAttribute('aria-label', next_aria_label);
             }
             next_btn.addEventListener('click', this.handle_next_click);
-            const next_wrapper = this.Helpers.create_element('span', { class_name: 'status-icon-tooltip-wrapper' });
-            const next_tooltip = this.Helpers.create_element('span', {
-                class_name: 'status-icon-tooltip',
-                text_content: `${t(next_text_key)} (Shift+Alt+${shortcut_display(next_shortcut_key)})`,
-                attributes: { 'aria-hidden': 'true' }
-            });
-            next_wrapper.appendChild(next_btn);
-            next_wrapper.appendChild(next_tooltip);
-            nav_group_right.appendChild(next_wrapper);
+            nav_group_right.appendChild(
+                wrap_with_static_tooltip(
+                    this.Helpers,
+                    next_btn,
+                    `${t(next_text_key)} (Shift+Alt+${shortcut_display(next_shortcut_key)})`,
+                    { use_overlay: false }
+                )
+            );
         }
 
         const next_unhandled_req_key = this.AuditLogic.find_first_incomplete_requirement_key_for_sample(rule_file_content, sample_object, current_requirement_id);
@@ -178,15 +177,14 @@ export class RequirementAuditNavigationComponent {
                 next_unhandled_btn.setAttribute('aria-label', next_unhandled_aria_label);
             }
             next_unhandled_btn.addEventListener('click', this.handle_next_unhandled_click);
-            const next_unhandled_wrapper = this.Helpers.create_element('span', { class_name: 'status-icon-tooltip-wrapper' });
-            const next_unhandled_tooltip = this.Helpers.create_element('span', {
-                class_name: 'status-icon-tooltip',
-                text_content: `${t(next_unhandled_text_key)} (Shift+Alt+${shortcut_display(next_unhandled_shortcut_key)})`,
-                attributes: { 'aria-hidden': 'true' }
-            });
-            next_unhandled_wrapper.appendChild(next_unhandled_btn);
-            next_unhandled_wrapper.appendChild(next_unhandled_tooltip);
-            nav_group_right.appendChild(next_unhandled_wrapper);
+            nav_group_right.appendChild(
+                wrap_with_static_tooltip(
+                    this.Helpers,
+                    next_unhandled_btn,
+                    `${t(next_unhandled_text_key)} (Shift+Alt+${shortcut_display(next_unhandled_shortcut_key)})`,
+                    { use_overlay: false }
+                )
+            );
         }
         
         this.container_ref.appendChild(nav_group_left);

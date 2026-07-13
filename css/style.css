@@ -81,6 +81,7 @@
     --focus-outer-style: solid;
     --focus-ring-outline-offset: calc(var(--focus-offset) + var(--focus-inner-width));
     --focus-ring-box-shadow: 0 0 0 calc(var(--focus-inner-width) + var(--focus-offset)) var(--focus-inner-color);
+    --focus-clearance: calc(var(--focus-outer-width) + var(--focus-ring-outline-offset) + 2px);
 
     --status-icon-tooltip-color: #1a1a1a;
     --status-icon-tooltip-bg: #fff;
@@ -227,6 +228,7 @@
     --focus-outer-style: solid;
     --focus-ring-outline-offset: calc(var(--focus-offset) + var(--focus-inner-width));
     --focus-ring-box-shadow: 0 0 0 calc(var(--focus-inner-width) + var(--focus-offset)) var(--focus-inner-color);
+    --focus-clearance: calc(var(--focus-outer-width) + var(--focus-ring-outline-offset) + 2px);
 
     --status-icon-tooltip-color: #f5f5f5;
     --status-icon-tooltip-bg: #2d2d2d;
@@ -841,26 +843,6 @@ select:-webkit-autofill:focus {
 }
 #app-overlay > * {
     pointer-events: auto;
-}
-
-/* Tooltip i overlay: samma utseende som inline, position fixed så att den inte klipps */
-#app-overlay .status-icon-tooltip.status-icon-tooltip--in-overlay {
-    position: fixed;
-    visibility: visible;
-    opacity: 1;
-    margin-bottom: 0;
-    padding: 0.35rem 0.5rem;
-    font-size: 1rem;
-    font-weight: 500;
-    line-height: 1.2;
-    white-space: nowrap;
-    color: var(--status-icon-tooltip-color);
-    background-color: var(--status-icon-tooltip-bg);
-    border: 1px solid var(--status-icon-tooltip-border);
-    border-radius: 4px;
-    box-shadow: var(--status-icon-tooltip-shadow);
-    z-index: 100;
-    pointer-events: none;
 }
 
 .text-danger {

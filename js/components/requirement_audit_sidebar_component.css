@@ -200,19 +200,9 @@
     color: var(--text-color-muted);
 }
 
-.requirement-audit-sidebar__item-status-row .status-icon-tooltip-wrapper {
+.requirement-audit-sidebar__item-status-row .generic-tooltip-wrapper {
     flex-shrink: 0;
     position: relative;
-}
-
-/* Tooltip-texten ska inte påverka layouten i sidopanelen – bara visas i overlay */
-.requirement-audit-sidebar__item-status-row .status-icon-tooltip {
-    position: absolute;
-    left: 50%;
-    top: 0;
-    transform: translateX(-50%);
-    opacity: 0;
-    pointer-events: none;
 }
 
 .requirement-audit-sidebar__meta {

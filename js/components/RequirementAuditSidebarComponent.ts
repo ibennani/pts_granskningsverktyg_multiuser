@@ -2,6 +2,7 @@
 // @ts-nocheck
 
 import { RequirementsFilterComponent } from './RequirementsFilterComponent.js';
+import { wrap_with_static_tooltip } from '../utils/generic_tooltip.js';
 import './requirement_audit_sidebar_component.css';
 import { get_searchable_text_for_requirement as get_searchable_text_util } from '../utils/requirement_search_utils.js';
 import { prepareString, filter_text_matches } from '../utils/string_filter_normalize.js';
@@ -363,48 +364,36 @@ export class RequirementAuditSidebarComponent {
         const icons_wrapper = this.Helpers.create_element('span', { class_name: 'status-icons-wrapper' });
 
         const status_tooltip_text = t(`audit_status_${base_status}`);
-        const status_icon_wrapper = this.Helpers.create_element('span', { class_name: 'status-icon-tooltip-wrapper' });
-        status_icon_wrapper.appendChild(this.Helpers.create_element('span', {
+        const status_icon = this.Helpers.create_element('span', {
             class_name: `requirement-audit-sidebar__status-icon status-icon status-icon-${base_status.replace('_', '-')}`,
             text_content: this.get_status_icon(base_status),
             attributes: { 'aria-hidden': 'true' }
-        }));
-        status_icon_wrapper.appendChild(this.Helpers.create_element('span', {
-            class_name: 'status-icon-tooltip',
-            text_content: status_tooltip_text,
-            attributes: { 'aria-hidden': 'true' }
-        }));
-        icons_wrapper.appendChild(status_icon_wrapper);
+        });
+        icons_wrapper.appendChild(
+            wrap_with_static_tooltip(this.Helpers, status_icon, status_tooltip_text, { use_overlay: true })
+        );
 
         if (needs_help) {
             const warning_svg = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('warning', ['currentColor'], 14) : '';
-            const needs_help_wrapper = this.Helpers.create_element('span', { class_name: 'status-icon-tooltip-wrapper' });
-            needs_help_wrapper.appendChild(this.Helpers.create_element('span', {
+            const needs_help_icon = this.Helpers.create_element('span', {
                 class_name: 'status-icon status-icon-needs-help-indicator',
                 html_content: warning_svg,
                 attributes: { 'aria-hidden': 'true' }
-            }));
-            needs_help_wrapper.appendChild(this.Helpers.create_element('span', {
-                class_name: 'status-icon-tooltip',
-                text_content: t('filter_option_needs_help'),
-                attributes: { 'aria-hidden': 'true' }
-            }));
-            icons_wrapper.appendChild(needs_help_wrapper);
+            });
+            icons_wrapper.appendChild(
+                wrap_with_static_tooltip(this.Helpers, needs_help_icon, t('filter_option_needs_help'), { use_overlay: true })
+            );
         }
         if (is_updated) {
             const update_svg = this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('update', ['currentColor'], 14) : '';
-            const updated_wrapper = this.Helpers.create_element('span', { class_name: 'status-icon-tooltip-wrapper' });
-            updated_wrapper.appendChild(this.Helpers.create_element('span', {
+            const updated_icon = this.Helpers.create_element('span', {
                 class_name: 'status-icon status-icon-updated-indicator',
                 html_content: update_svg,
                 attributes: { 'aria-hidden': 'true' }
-            }));
-            updated_wrapper.appendChild(this.Helpers.create_element('span', {
-                class_name: 'status-icon-tooltip',
-                text_content: t('status_updated_tooltip'),
-                attributes: { 'aria-hidden': 'true' }
-            }));
-            icons_wrapper.appendChild(updated_wrapper);
+            });
+            icons_wrapper.appendChild(
+                wrap_with_static_tooltip(this.Helpers, updated_icon, t('status_updated_tooltip'), { use_overlay: true })
+            );
         }
         return icons_wrapper;
     }
@@ -484,14 +473,9 @@ export class RequirementAuditSidebarComponent {
 
             const add_status_row = (icon_node, text) => {
                 const row = this.Helpers.create_element('li', { class_name: 'requirement-audit-sidebar__item-status-row' });
-                const wrapper = this.Helpers.create_element('span', { class_name: 'status-icon-tooltip-wrapper' });
-                wrapper.appendChild(icon_node);
-                wrapper.appendChild(this.Helpers.create_element('span', {
-                    class_name: 'status-icon-tooltip',
-                    text_content: text,
-                    attributes: { 'aria-hidden': 'true' }
-                }));
-                row.appendChild(wrapper);
+                row.appendChild(
+                    wrap_with_static_tooltip(this.Helpers, icon_node, text, { use_overlay: true })
+                );
                 row.appendChild(this.Helpers.create_element('span', {
                     class_name: 'requirement-audit-sidebar__status-text',
                     text_content: text
@@ -611,14 +595,9 @@ export class RequirementAuditSidebarComponent {
 
             const add_status_row = (icon_node, text) => {
                 const row = this.Helpers.create_element('li', { class_name: 'requirement-audit-sidebar__item-status-row' });
-                const wrapper = this.Helpers.create_element('span', { class_name: 'status-icon-tooltip-wrapper' });
-                wrapper.appendChild(icon_node);
-                wrapper.appendChild(this.Helpers.create_element('span', {
-                    class_name: 'status-icon-tooltip',
-                    text_content: text,
-                    attributes: { 'aria-hidden': 'true' }
-                }));
-                row.appendChild(wrapper);
+                row.appendChild(
+                    wrap_with_static_tooltip(this.Helpers, icon_node, text, { use_overlay: true })
+                );
                 row.appendChild(this.Helpers.create_element('span', {
                     class_name: 'requirement-audit-sidebar__status-text',
                     text_content: text

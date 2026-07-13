@@ -655,42 +655,6 @@
     opacity: 0;
 }
 
-/* Tooltip för navigeringsknappar – samma mönster som kravlistan */
-.audit-navigation-buttons .status-icon-tooltip-wrapper {
-    position: relative;
-    display: inline-flex;
-    cursor: default;
-}
-
-.audit-navigation-buttons .status-icon-tooltip {
-    position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    margin-bottom: 0.35rem;
-    padding: 0.35rem 0.5rem;
-    font-size: 1rem;
-    font-weight: 500;
-    line-height: 1.2;
-    white-space: nowrap;
-    color: var(--status-icon-tooltip-color);
-    background-color: var(--status-icon-tooltip-bg);
-    border: 1px solid var(--status-icon-tooltip-border);
-    border-radius: 4px;
-    box-shadow: var(--status-icon-tooltip-shadow);
-    visibility: hidden;
-    opacity: 0;
-    transition: opacity 0.15s ease, visibility 0.15s ease;
-    z-index: 100;
-    pointer-events: none;
-}
-
-.audit-navigation-buttons .status-icon-tooltip-wrapper:hover .status-icon-tooltip,
-.audit-navigation-buttons .status-icon-tooltip-wrapper:focus-within .status-icon-tooltip {
-    visibility: visible;
-    opacity: 1;
-}
-
 .pc-observation-detail-wrapper label[for^="pc-observation-"] {
     margin-top: 0.75rem;
     display: block;
