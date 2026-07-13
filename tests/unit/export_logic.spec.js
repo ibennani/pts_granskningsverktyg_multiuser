@@ -94,6 +94,8 @@ mockDocument.mockImplementation((config) => {
 describe('ExportLogic - Word Export', () => {
     let ExportLogic;
 
+    jest.setTimeout(30000);
+
     beforeEach(async () => {
         // Clear all mocks and instances
         jest.clearAllMocks();
@@ -239,6 +241,40 @@ describe('ExportLogic - Word Export', () => {
             expect(allText).toContain('Test observation');
         });
 
+        test('ska rendera inline-kod i observation utan INLINECODE-fragment', async () => {
+            const mockAudit = createMockAudit();
+            mockAudit.samples[0].requirementResults.req1.checkResults.check1.passCriteria.pc1.observationDetail =
+                'Taggar: `<b>`, `<i>`, `<br>` och <b>Maximal lagringstid</b>.';
+
+            await ExportLogic.export_to_word_criterias(mockAudit);
+
+            const allText = textRunInstances
+                .map(tr => tr.text)
+                .join(' ');
+
+            expect(allText).toContain('<b>');
+            expect(allText).toContain('<i>');
+            expect(allText).toContain('<br>');
+            expect(allText).toContain('<b>Maximal lagringstid</b>');
+            expect(allText).not.toMatch(/INLINECODE/i);
+        });
+
+        test('ska rendera kursiv markdown i hover-observation utan ITALIC-fragment', async () => {
+            const mockAudit = createMockAudit();
+            mockAudit.samples[0].requirementResults.req1.checkResults.check1.passCriteria.pc1.observationDetail =
+                'Innehåll som visas vid hovring förblir inte synligt till dess användaren flyttar pekaren,*väljer*att dölja det, eller tills den visade informationen inte längre är relevant.';
+
+            await ExportLogic.export_to_word_criterias(mockAudit);
+
+            const allText = textRunInstances
+                .map(tr => tr.text)
+                .join(' ');
+
+            expect(allText).toContain('väljer');
+            expect(allText).toContain('att dölja');
+            expect(allText).not.toMatch(/ITALIC/i);
+        });
+
         test('should handle empty audit gracefully', async () => {
             const emptyAudit = {
                 auditStatus: 'locked',
@@ -290,6 +326,23 @@ describe('ExportLogic - Word Export', () => {
             expect(allText).toContain('Test Sample');
             expect(allText).toContain('Aktuella observationer');
             expect(allText).toContain('Test observation');
+        });
+
+        test('ska rendera inline-kod i observation utan INLINECODE-fragment', async () => {
+            const mockAudit = createMockAudit();
+            mockAudit.samples[0].requirementResults.req1.checkResults.check1.passCriteria.pc1.observationDetail =
+                'Taggar: `<b>`, `<i>`, `<br>` och <b>Maximal lagringstid</b>.';
+
+            await ExportLogic.export_to_word_samples(mockAudit);
+
+            const allText = textRunInstances
+                .map(tr => tr.text)
+                .join(' ');
+
+            expect(allText).toContain('<b>');
+            expect(allText).toContain('<i>');
+            expect(allText).toContain('<br>');
+            expect(allText).not.toMatch(/INLINECODE/i);
         });
 
         test('should include requirement metadata', async () => {

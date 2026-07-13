@@ -1,11 +1,15 @@
 // Deprekerad granskningsdelsbaserad Word-textexport (behålls tills vidare).
-import { Document, Packer, Paragraph, TextRun, ExternalHyperlink, TabStopType } from 'docx';
+import { Document, Packer, Paragraph, TextRun, ExternalHyperlink } from 'docx';
 import * as Helpers from '../utils/helpers.js';
 import { get_audit_export_filename_datetime_segment } from './export_report_filename.js';
 import { sanitize_filename_segment, trigger_browser_blob_download } from '../utils/download_filename_utils.js';
 import { consoleManager } from '../utils/console_manager.js';
-import { get_t_internal, show_global_message_internal, get_export_requirement_result } from './export_bootstrap.js';
+import { get_t_internal, show_global_message_internal } from './export_bootstrap.js';
 import { extractDeficiencyNumber } from './export_format_helpers.js';
+import {
+    create_observation_paragraphs,
+    create_comment_paragraphs
+} from './export_word_requirement_sections.js';
 import {
     get_deficiencies_for_sample_any_req,
     group_deficiencies_by_requirement,
@@ -198,95 +202,11 @@ export async function _export_to_text_export_deprecated(current_audit: any) {
                 // Lista observationer/brister
                 for (let i = 0; i < reqDeficiencies.length; i++) {
                     const deficiency = reqDeficiencies[i];
-
-                    let observationText = (deficiency.observationDetail || '').trim();
-                    observationText = observationText.replace(/^[\s]*[-*]\s/gm, '• ');
-
-                    const isStandardText = deficiency.isStandardText || false;
-                    const defId = extractDeficiencyNumber(deficiency.deficiencyId);
-                    const defIdString = defId ? `Brist-id: ${defId} ` : '';
-
-                    if (observationText.includes('\n')) {
-                        const lines = observationText.split('\n');
-                        for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
-                            const isFirstLine = lineIndex === 0;
-                            const isLastLine = lineIndex === lines.length - 1;
-                            let textRuns = [];
-                            const lineText = lines[lineIndex];
-                            const isBulletLine = lineText.trim().startsWith('•');
-
-                            const indentConfig = isBulletLine ? { left: 227, hanging: 227 } : {};
-                            const tabStopsConfig = isBulletLine ? [{ position: 227, type: TabStopType.LEFT }] : [];
-
-                            let runText = lineText;
-                            if (isBulletLine) runText = runText.replace('• ', '•\t');
-
-                            if (isFirstLine) {
-                                if (defIdString) {
-                                    textRuns.push(new TextRun({ text: defIdString, bold: true }));
-                                    const prefix = isStandardText ? "Kravet är inte uppfyllt: " : "";
-                                    textRuns.push(new TextRun({ text: prefix + runText }));
-                                } else {
-                                    const prefix = isStandardText ? "Kravet är inte uppfyllt: " : "";
-                                    textRuns.push(new TextRun({ text: prefix + runText }));
-                                }
-                            } else {
-                                textRuns = [new TextRun({ text: runText + (isLastLine ? ' ' : '') })];
-                            }
-
-                            children.push(new Paragraph({
-                                children: textRuns,
-                                spacing: { after: isLastLine ? 240 : 0 },
-                                indent: indentConfig,
-                                tabStops: tabStopsConfig
-                            }));
-                        }
-                    } else {
-                        // Enkelrad
-                        const textRuns = [];
-                        const isBulletLine = observationText.trim().startsWith('•');
-                        const indentConfig = isBulletLine ? { left: 227, hanging: 227 } : {};
-                        const tabStopsConfig = isBulletLine ? [{ position: 227, type: TabStopType.LEFT }] : [];
-
-                        let runText = observationText;
-                        if (isBulletLine) runText = runText.replace('• ', '•\t');
-
-                        if (defIdString) {
-                            textRuns.push(new TextRun({ text: defIdString, bold: true }));
-                            const prefix = isStandardText ? "Kravet är inte uppfyllt: " : "";
-                            textRuns.push(new TextRun({ text: prefix + runText + ' ' }));
-                        } else {
-                            const prefix = isStandardText ? "Kravet är inte uppfyllt: " : "";
-                            textRuns.push(new TextRun({ text: prefix + runText + ' ' }));
-                        }
-
-                        children.push(new Paragraph({
-                            children: textRuns,
-                            spacing: { after: 240 },
-                            indent: indentConfig,
-                            tabStops: tabStopsConfig
-                        }));
-                    }
+                    children.push(...create_observation_paragraphs(deficiency, t));
                 } // slut loop observationer
 
                 // Kommentar för detta krav på denna granskningsdel
-                const sample_result = get_export_requirement_result(
-                    requirements_root,
-                    sample,
-                    req
-                );
-                if (sample_result && sample_result.commentToActor && sample_result.commentToActor.trim()) {
-                    children.push(new Paragraph({
-                        children: [new TextRun({ text: "" })],
-                        spacing: { before: 120 }
-                    }));
-                    children.push(new Paragraph({
-                        children: [
-                            new TextRun({ text: "Kommentar: ", bold: true, color: "6E3282" }),
-                            new TextRun({ text: sample_result.commentToActor.trim() })
-                        ]
-                    }));
-                }
+                children.push(...create_comment_paragraphs(req, sample, requirements_root, t));
 
             } // slut loop krav
         } // slut loop granskningsdel

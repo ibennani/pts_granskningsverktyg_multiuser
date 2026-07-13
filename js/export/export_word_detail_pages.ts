@@ -10,6 +10,7 @@ import {
     create_text_runs_with_line_breaks,
     formatDeficiencyForWord
 } from './export_format_helpers.js';
+import { parse_markdown_to_text_runs } from './export_word_markdown_docx.js';
 import {
     get_total_requirements_count,
     get_requirements_percentage,
@@ -259,89 +260,91 @@ export function create_sample_section(
 
         deficiencies.forEach((deficiency, index) => {
             const numberPrefix = `${index + 1}. `;
-            const observationText = deficiency.observationDetail;
+            const observationText = String(deficiency.observationDetail || '');
             const isStandardText = deficiency.isStandardText || false;
+            const prefix = isStandardText ? 'Kravet är inte uppfyllt: ' : '';
+            const detailStyle = { size: 22, font: 'Calibri' as const };
 
-            // Om observationText innehåller \n, hantera radbrytningar
             if (observationText.includes('\n')) {
                 const lines = observationText.split('\n');
                 for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
                     const isFirstLine = lineIndex === 0;
                     const isLastLine = lineIndex === lines.length - 1;
-
-                    let textRuns = [];
+                    const textRuns = [];
 
                     if (isFirstLine) {
-                        // Första raden: nummer + eventuell prefix + text
-                        const prefix = isStandardText ? "Kravet är inte uppfyllt: " : "";
-                        textRuns = [
+                        textRuns.push(
                             new TextRun({
-                                text: numberPrefix + prefix + lines[lineIndex],
-                                size: 22,
-                                font: "Calibri",
+                                text: numberPrefix + prefix,
+                                ...detailStyle,
                                 bold: true
                             })
-                        ];
+                        );
+                        textRuns.push(...parse_markdown_to_text_runs(lines[lineIndex]));
                     } else if (isLastLine) {
-                        // Sista raden: text + bristindex i kursiv
-                        textRuns = [
+                        textRuns.push(
                             new TextRun({
-                                text: '   ' + lines[lineIndex] + ' ',
-                                size: 22,
-                                font: "Calibri"
-                            }),
+                                text: '   ',
+                                ...detailStyle
+                            })
+                        );
+                        textRuns.push(...parse_markdown_to_text_runs(lines[lineIndex]));
+                        textRuns.push(new TextRun({ text: ' ', ...detailStyle }));
+                        textRuns.push(
                             new TextRun({
                                 text: `(${formatDeficiencyForWord(deficiency.deficiencyId)})`,
-                                size: 22,
-                                font: "Calibri",
+                                ...detailStyle,
                                 italics: true
                             })
-                        ];
+                        );
                     } else {
-                        // Mellanrader: bara text
-                        textRuns = [
+                        textRuns.push(
                             new TextRun({
-                                text: '   ' + lines[lineIndex],
-                                size: 22,
-                                font: "Calibri"
+                                text: '   ',
+                                ...detailStyle
                             })
-                        ];
+                        );
+                        textRuns.push(...parse_markdown_to_text_runs(lines[lineIndex]));
                     }
 
-                    // Om det bara finns en rad, lägg till bristindex på samma rad
                     if (lines.length === 1) {
-                        textRuns.push(new TextRun({ text: ' ', size: 22, font: "Calibri" }));
-                        textRuns.push(new TextRun({
-                            text: `(${deficiency.deficiencyId})`,
-                            size: 22,
-                            font: "Calibri",
-                            italics: true
-                        }));
+                        textRuns.push(new TextRun({ text: ' ', ...detailStyle }));
+                        textRuns.push(
+                            new TextRun({
+                                text: `(${deficiency.deficiencyId})`,
+                                ...detailStyle,
+                                italics: true
+                            })
+                        );
                     }
 
-                    children.push(new Paragraph({
-                        children: textRuns
-                    }));
+                    children.push(
+                        new Paragraph({
+                            children: textRuns
+                        })
+                    );
                 }
             } else {
-                // Enkel text utan radbrytningar
-                const prefix = isStandardText ? "Kravet är inte uppfyllt: " : "";
-                children.push(new Paragraph({
-                    children: [
-                        new TextRun({
-                            text: numberPrefix + prefix + observationText + ' ',
-                            size: 22,
-                            font: "Calibri",
-                            bold: true
-                        }),
-                        new TextRun({
-                            text: `(${deficiency.deficiencyId})`,
-                            size: 22,
-                            font: "Calibri",
-                            italics: true
-                        })
-                    ]
-                }));
+                const textRuns = [
+                    new TextRun({
+                        text: numberPrefix + prefix,
+                        ...detailStyle,
+                        bold: true
+                    }),
+                    ...parse_markdown_to_text_runs(observationText),
+                    new TextRun({ text: ' ', ...detailStyle }),
+                    new TextRun({
+                        text: `(${deficiency.deficiencyId})`,
+                        ...detailStyle,
+                        italics: true
+                    })
+                ];
+
+                children.push(
+                    new Paragraph({
+                        children: textRuns
+                    })
+                );
             }
         });
     }

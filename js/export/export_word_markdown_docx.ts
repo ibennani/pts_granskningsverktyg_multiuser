@@ -96,6 +96,105 @@ type ParseMarkdownOptions = { bold?: boolean; italics?: boolean };
 
 export type MarkdownTextRunChild = TextRun | ExternalHyperlink;
 
+type MarkdownPlaceholderKind = 'CODEBLOCK' | 'INLINECODE' | 'LINK' | 'BOLD' | 'ITALIC';
+
+const MARKDOWN_PLACEHOLDER_PREFIX = '\uE000';
+const MARKDOWN_PLACEHOLDER_SUFFIX = '\uE001';
+const MARKDOWN_PLACEHOLDER_SPLIT_RE = /(\uE000(?:CODEBLOCK|INLINECODE|LINK|BOLD|ITALIC):\d+\uE001)/;
+const MARKDOWN_PLACEHOLDER_PARSE_RE = /^\uE000(CODEBLOCK|INLINECODE|LINK|BOLD|ITALIC):(\d+)\uE001$/;
+
+function make_markdown_placeholder(kind: MarkdownPlaceholderKind, index: number): string {
+    return `${MARKDOWN_PLACEHOLDER_PREFIX}${kind}:${index}${MARKDOWN_PLACEHOLDER_SUFFIX}`;
+}
+
+function parse_markdown_placeholder(part: string): { kind: MarkdownPlaceholderKind; index: number } | null {
+    const match = part.match(MARKDOWN_PLACEHOLDER_PARSE_RE);
+    if (!match) {
+        return null;
+    }
+    return {
+        kind: match[1] as MarkdownPlaceholderKind,
+        index: parseInt(match[2], 10)
+    };
+}
+
+function create_inline_code_text_run(
+    code: string,
+    options: ParseMarkdownOptions
+): TextRun {
+    const { bold: forceBold = false, italics: forceItalics = false } = options;
+    return new TextRun({
+        text: code,
+        font: 'Courier New',
+        shading: {
+            type: ShadingType.SOLID,
+            color: 'F5F5F5',
+            fill: 'F5F5F5'
+        },
+        bold: forceBold,
+        italics: forceItalics
+    });
+}
+
+function append_placeholder_text_run(
+    text_runs: MarkdownTextRunChild[],
+    part: string,
+    stores: {
+        codeBlocks: string[];
+        inlineCodes: string[];
+        links: { text: string; url: string }[];
+        boldTexts: string[];
+        italicTexts: string[];
+    },
+    options: ParseMarkdownOptions
+): void {
+    const parsed = parse_markdown_placeholder(part);
+    if (!parsed) {
+        return;
+    }
+
+    const { bold: forceBold = false, italics: forceItalics = false } = options;
+
+    if (parsed.kind === 'CODEBLOCK') {
+        text_runs.push(create_inline_code_text_run(stores.codeBlocks[parsed.index] ?? '', options));
+        return;
+    }
+
+    if (parsed.kind === 'INLINECODE') {
+        text_runs.push(create_inline_code_text_run(stores.inlineCodes[parsed.index] ?? '', options));
+        return;
+    }
+
+    if (parsed.kind === 'LINK') {
+        const link = stores.links[parsed.index];
+        if (link) {
+            text_runs.push(
+                new ExternalHyperlink({
+                    children: [
+                        new TextRun({
+                            text: link.text,
+                            style: 'Hyperlink',
+                            bold: forceBold,
+                            italics: forceItalics
+                        })
+                    ],
+                    link: link.url
+                })
+            );
+        }
+        return;
+    }
+
+    if (parsed.kind === 'BOLD') {
+        const content = stores.boldTexts[parsed.index] ?? '';
+        text_runs.push(...parse_markdown_to_text_runs(content, { bold: true, italics: forceItalics }));
+        return;
+    }
+
+    const content = stores.italicTexts[parsed.index] ?? '';
+    text_runs.push(...parse_markdown_to_text_runs(content, { bold: forceBold, italics: true }));
+}
+
 // Konverterar markdown-text till TextRun-objekt med stöd för länkar, fetstil, kursiv och kod
 export function parse_markdown_to_text_runs(
     text: unknown,
@@ -111,126 +210,58 @@ export function parse_markdown_to_text_runs(
 
     const codeBlocks: string[] = [];
     current_text = current_text.replace(/```([\s\S]*?)```/g, (match, code: string) => {
-        const placeholder = `__CODEBLOCK_${codeBlocks.length}__`;
+        const placeholder = make_markdown_placeholder('CODEBLOCK', codeBlocks.length);
         codeBlocks.push(code.trim());
         return placeholder;
     });
 
     const inlineCodes: string[] = [];
     current_text = current_text.replace(/`([^`\n]+)`/g, (match, code: string) => {
-        const placeholder = `__INLINECODE_${inlineCodes.length}__`;
+        const placeholder = make_markdown_placeholder('INLINECODE', inlineCodes.length);
         inlineCodes.push(code);
         return placeholder;
     });
 
     const links: { text: string; url: string }[] = [];
     current_text = current_text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, linkText: string, url: string) => {
-        const placeholder = `__LINK_${links.length}__`;
+        const placeholder = make_markdown_placeholder('LINK', links.length);
         links.push({ text: linkText, url });
         return placeholder;
     });
 
     const boldTexts: string[] = [];
     current_text = current_text.replace(/\*\*(.*?)\*\*/g, (match, content: string) => {
-        const placeholder = `__BOLD_${boldTexts.length}__`;
+        const placeholder = make_markdown_placeholder('BOLD', boldTexts.length);
         boldTexts.push(content);
         return placeholder;
     });
     current_text = current_text.replace(/__(.*?)__/g, (match, content: string) => {
-        if (content.match(/^(CODEBLOCK|INLINECODE|LINK|BOLD|ITALIC)_\d+$/)) {
-            return match;
-        }
-        const placeholder = `__BOLD_${boldTexts.length}__`;
+        const placeholder = make_markdown_placeholder('BOLD', boldTexts.length);
         boldTexts.push(content);
         return placeholder;
     });
 
     const italicTexts: string[] = [];
     current_text = current_text.replace(/\*([^*]+)\*/g, (match, content: string) => {
-        if (content.includes('__')) {
-            return match;
-        }
-        const placeholder = `__ITALIC_${italicTexts.length}__`;
+        const placeholder = make_markdown_placeholder('ITALIC', italicTexts.length);
         italicTexts.push(content);
         return placeholder;
     });
     current_text = current_text.replace(/_([^_]+)_/g, (match, content: string) => {
-        if (content.includes('__') || content.match(/^\d+$/)) {
+        if (content.match(/^\d+$/)) {
             return match;
         }
-        const placeholder = `__ITALIC_${italicTexts.length}__`;
+        const placeholder = make_markdown_placeholder('ITALIC', italicTexts.length);
         italicTexts.push(content);
         return placeholder;
     });
 
-    const parts = current_text.split(/(__CODEBLOCK_\d+__|__INLINECODE_\d+__|__LINK_\d+__|__BOLD_\d+__|__ITALIC_\d+__)/);
+    const parts = current_text.split(MARKDOWN_PLACEHOLDER_SPLIT_RE);
+    const stores = { codeBlocks, inlineCodes, links, boldTexts, italicTexts };
 
     for (const part of parts) {
-        if (part.startsWith('__CODEBLOCK_')) {
-            const digit_match = part.match(/\d+/);
-            const index = digit_match ? parseInt(digit_match[0], 10) : 0;
-            const code = codeBlocks[index] ?? '';
-            text_runs.push(
-                new TextRun({
-                    text: code,
-                    font: 'Courier New',
-                    shading: {
-                        type: ShadingType.SOLID,
-                        color: 'F5F5F5',
-                        fill: 'F5F5F5'
-                    },
-                    bold: forceBold,
-                    italics: forceItalics
-                })
-            );
-        } else if (part.startsWith('__INLINECODE_')) {
-            const digit_match = part.match(/\d+/);
-            const index = digit_match ? parseInt(digit_match[0], 10) : 0;
-            const code = inlineCodes[index] ?? '';
-            text_runs.push(
-                new TextRun({
-                    text: code,
-                    font: 'Courier New',
-                    shading: {
-                        type: ShadingType.SOLID,
-                        color: 'F5F5F5',
-                        fill: 'F5F5F5'
-                    },
-                    bold: forceBold,
-                    italics: forceItalics
-                })
-            );
-        } else if (part.startsWith('__LINK_')) {
-            const digit_match = part.match(/\d+/);
-            const index = digit_match ? parseInt(digit_match[0], 10) : 0;
-            const link = links[index];
-            if (link) {
-                text_runs.push(
-                    new ExternalHyperlink({
-                        children: [
-                            new TextRun({
-                                text: link.text,
-                                style: 'Hyperlink',
-                                bold: forceBold,
-                                italics: forceItalics
-                            })
-                        ],
-                        link: link.url
-                    })
-                );
-            }
-        } else if (part.startsWith('__BOLD_')) {
-            const digit_match = part.match(/\d+/);
-            const index = digit_match ? parseInt(digit_match[0], 10) : 0;
-            const content = boldTexts[index] ?? '';
-            const nestedRuns = parse_markdown_to_text_runs(content, { bold: true, italics: forceItalics });
-            text_runs.push(...nestedRuns);
-        } else if (part.startsWith('__ITALIC_')) {
-            const digit_match = part.match(/\d+/);
-            const index = digit_match ? parseInt(digit_match[0], 10) : 0;
-            const content = italicTexts[index] ?? '';
-            const nestedRuns = parse_markdown_to_text_runs(content, { bold: forceBold, italics: true });
-            text_runs.push(...nestedRuns);
+        if (parse_markdown_placeholder(part)) {
+            append_placeholder_text_run(text_runs, part, stores, options);
         } else if (part.trim()) {
             text_runs.push(
                 new TextRun({

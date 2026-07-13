@@ -1,4 +1,4 @@
-import { get_audit_last_updated_iso_for_export } from '../../js/export/export_format_helpers.ts';
+import { get_audit_last_updated_iso_for_export, strip_markdown_for_excel } from '../../js/export/export_format_helpers.ts';
 
 describe('get_audit_last_updated_iso_for_export', () => {
     test('använder aktivitetstidsstämpel i stället för updated_at', () => {
@@ -30,5 +30,29 @@ describe('get_audit_last_updated_iso_for_export', () => {
 
     test('returnerar null utan audit', () => {
         expect(get_audit_last_updated_iso_for_export(null)).toBeNull();
+    });
+});
+
+describe('strip_markdown_for_excel', () => {
+    test('tar bort backticks men behåller inline-kodens innehåll', () => {
+        const input = 'Taggar: `<b>`, `<i>`, `<br>` och mer.';
+        const result = strip_markdown_for_excel(input);
+
+        expect(result).toContain('<b>');
+        expect(result).toContain('<i>');
+        expect(result).toContain('<br>');
+        expect(result).not.toContain('`');
+        expect(result).not.toMatch(/INLINECODE/i);
+    });
+
+    test('tar bort kursiv-markdown men behåller ordet', () => {
+        const input =
+            'flyttar pekaren,*väljer*att dölja det, eller tills den visade informationen inte längre är relevant.';
+        const result = strip_markdown_for_excel(input);
+
+        expect(result).toContain('väljer');
+        expect(result).toContain('att dölja');
+        expect(result).not.toMatch(/ITALIC/i);
+        expect(result).not.toContain('*');
     });
 });
