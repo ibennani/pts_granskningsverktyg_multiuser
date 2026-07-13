@@ -404,6 +404,33 @@ export async function start_normal_session(deps: StartNormalSessionDeps): Promis
                 } catch {
                     /* ignore */
                 }
+                const view_name = get_current_view_name_rendered();
+                const state_now = getState() as { auditStatus?: string };
+                const user_name = get_current_user_name();
+                if (
+                    view_name === 'requirement_audit'
+                    && state_now?.auditStatus === 'in_progress'
+                    && user_name.trim()
+                    && parsed_params
+                    && typeof parsed_params === 'object'
+                    && !Array.isArray(parsed_params)
+                ) {
+                    const params_obj = parsed_params as { sampleId?: string; requirementId?: string };
+                    const sample_id = String(params_obj.sampleId || '').trim();
+                    const requirement_id = String(params_obj.requirementId || '').trim();
+                    if (sample_id && requirement_id) {
+                        dispatch({
+                            type: StoreActionTypes.UPDATE_USER_REQUIREMENT_RESUME,
+                            payload: {
+                                userName: user_name,
+                                sampleId: sample_id,
+                                requirementId: requirement_id,
+                                focusInfo: info,
+                                updatedAtIso: new Date().toISOString()
+                            }
+                        });
+                    }
+                }
             }
         }, 150);
     };

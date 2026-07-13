@@ -126,16 +126,20 @@ describe('open_all_sample_urls_modal', () => {
             jest.useFakeTimers();
             const loc1 = { href: '' };
             const loc2 = { href: '' };
-            const w1 = { closed: false, location: loc1 };
-            const w2 = { closed: false, location: loc2 };
+            const w1 = { closed: false, location: loc1, blur: jest.fn() };
+            const w2 = { closed: false, location: loc2, blur: jest.fn() };
             let call = 0;
             global.window.open = jest.fn(() => (call++ === 0 ? w1 : w2));
+            const focus_spy = jest.spyOn(global.window, 'focus').mockImplementation(() => {});
 
             open_http_hrefs_via_blank_then_assign(['https://a.test', 'https://b.test'], 1000);
 
             expect(global.window.open).toHaveBeenCalledTimes(2);
             expect(global.window.open).toHaveBeenNthCalledWith(1, 'about:blank', '_blank');
             expect(global.window.open).toHaveBeenNthCalledWith(2, 'about:blank', '_blank');
+            expect(w1.blur).toHaveBeenCalled();
+            expect(w2.blur).toHaveBeenCalled();
+            expect(focus_spy.mock.calls.length).toBeGreaterThanOrEqual(2);
 
             jest.advanceTimersByTime(999);
             expect(loc1.href).toBe('');
@@ -144,6 +148,33 @@ describe('open_all_sample_urls_modal', () => {
             jest.advanceTimersByTime(1);
             expect(loc1.href).toBe('https://a.test/');
             expect(loc2.href).toBe('https://b.test/');
+            focus_spy.mockRestore();
+        });
+
+        test('omedelbar öppning (delay 0) använder direkt URL utan setTimeout-redirect', () => {
+            jest.useFakeTimers();
+            const open_spy = jest.fn();
+            global.window.open = open_spy;
+            const focus_spy = jest.spyOn(global.window, 'focus').mockImplementation(() => {});
+
+            open_http_hrefs_via_blank_then_assign(['https://a.test/', 'https://b.test/'], 0);
+
+            expect(open_spy).toHaveBeenCalledTimes(2);
+            expect(open_spy).toHaveBeenNthCalledWith(1, 'https://a.test/', '_blank');
+            expect(open_spy).toHaveBeenNthCalledWith(2, 'https://b.test/', '_blank');
+            expect(focus_spy.mock.calls.length).toBeGreaterThanOrEqual(2);
+            expect(jest.getTimerCount()).toBeGreaterThan(0);
+            focus_spy.mockRestore();
+        });
+
+        test('blur anropas när window.open returnerar referens', () => {
+            const blur_spy = jest.fn();
+            global.window.open = jest.fn(() => ({ closed: false, blur: blur_spy, opener: window }));
+            jest.spyOn(global.window, 'focus').mockImplementation(() => {});
+
+            open_http_hrefs_via_blank_then_assign(['https://a.test/'], 0);
+
+            expect(blur_spy).toHaveBeenCalled();
         });
 
         test('tom lista anropar inte window.open', () => {

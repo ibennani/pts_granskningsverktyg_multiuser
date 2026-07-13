@@ -83,7 +83,8 @@ const AUDIT_ACTIONS = new Set([
     ActionTypes.UPDATE_REQUIREMENT_RESULT,
     ActionTypes.SET_AUDIT_STATUS,
     ActionTypes.SET_REMOTE_AUDIT_ID,
-    ActionTypes.REPLACE_STATE_FROM_REMOTE
+    ActionTypes.REPLACE_STATE_FROM_REMOTE,
+    ActionTypes.UPDATE_USER_REQUIREMENT_RESUME
 ]);
 
 const RULEFILE_ACTIONS = new Set([

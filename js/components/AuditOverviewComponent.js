@@ -1,7 +1,6 @@
 import { ScoreAnalysisComponent } from './ScoreAnalysisComponent.js';
 import { SampleTypeDeficiencyChartComponent } from './SampleTypeDeficiencyChartComponent.js';
 import { AuditInfoComponent } from './AuditInfoComponent.js';
-import { ProgressBarComponent } from './ProgressBarComponent.js';
 import { get_rules } from '../api/client.js';
 import { find_newer_rule_for_audit } from '../logic/newer_rule_check.js';
 import {
@@ -19,6 +18,11 @@ import {
     VERSION_RELOAD_PROMPT_EVENT
 } from '../logic/version_reload_prompt_state.js';
 import { version_greater_than } from '../utils/version_utils.js';
+import {
+    create_continue_audit_button_if_visible,
+    load_instance_users_for_continue
+} from './audit_overview_continue_audit.js';
+import { build_audit_overview_score_panel } from './audit_overview_score_panel.js';
 import "./audit_overview_component.css";
 
 export class AuditOverviewComponent {
@@ -49,6 +53,9 @@ export class AuditOverviewComponent {
         this.newerRuleAvailable = null;
         this._newerRuleCheckRequested = false;
         this._auditInfoComponent = null;
+        this._known_users_for_continue = null;
+        this._known_users_load_started = false;
+        this._last_progress_snapshot = null;
         this._on_version_reload_prompt = () => {
             if (this.root) {
                 this.render();
@@ -92,6 +99,21 @@ export class AuditOverviewComponent {
         this._last_audit_id_snapshot = null;
         this._last_rule_set_id_snapshot = null;
         this._last_audit_status_snapshot = null;
+        this._known_users_for_continue = null;
+        this._known_users_load_started = false;
+        this._last_progress_snapshot = null;
+    }
+
+    _ensure_known_users_for_continue() {
+        if (this._known_users_load_started) return;
+        this._known_users_load_started = true;
+        void load_instance_users_for_continue().then((users) => {
+            const prev = this._known_users_for_continue;
+            this._known_users_for_continue = users;
+            if (this.root && JSON.stringify(prev) !== JSON.stringify(users)) {
+                this.render();
+            }
+        });
     }
 
     async init_sub_components() {
@@ -154,6 +176,10 @@ export class AuditOverviewComponent {
         const next_status = new_state?.auditStatus;
         const status_changed = next_status !== this._last_audit_status_snapshot;
 
+        const progress_data = this.AuditLogic.calculate_overall_audit_progress(new_state);
+        const progress_snapshot = `${progress_data.audited}/${progress_data.total}`;
+        const progress_changed = progress_snapshot !== this._last_progress_snapshot;
+
         if (rulefile_version_changed) {
             // Efter t.ex. "Uppdatera regelfil" måste vi köra en ny kontroll, annars kan den gamla
             // newerRuleAvailable ligga kvar och fortsätta visa bannern.
@@ -167,7 +193,7 @@ export class AuditOverviewComponent {
             this.newerRuleAvailable = null;
         }
 
-        if (metadata_changed || rulefile_version_changed || audit_identity_changed || status_changed) {
+        if (metadata_changed || rulefile_version_changed || audit_identity_changed || status_changed || progress_changed) {
             this.render();
         }
     }
@@ -196,11 +222,27 @@ export class AuditOverviewComponent {
         this._last_audit_id_snapshot = (current_global_state?.auditId || '').toString();
         this._last_rule_set_id_snapshot = (current_global_state?.ruleSetId || '').toString();
         this._last_audit_status_snapshot = current_global_state?.auditStatus ?? null;
+        const progress_now = this.AuditLogic.calculate_overall_audit_progress(current_global_state);
+        this._last_progress_snapshot = `${progress_now.audited}/${progress_now.total}`;
+
+        this._ensure_known_users_for_continue();
 
         const plate_element = this.Helpers.create_element('div', { class_name: 'content-plate audit-overview-plate' });
         this.root.appendChild(plate_element);
 
-        plate_element.appendChild(this.Helpers.create_element('h1', { text_content: t('audit_overview_title') }));
+        const heading_row = this.Helpers.create_element('div', { class_name: 'audit-overview-heading-row' });
+        heading_row.appendChild(this.Helpers.create_element('h1', { text_content: t('audit_overview_title') }));
+        const continue_btn = create_continue_audit_button_if_visible({
+            Helpers: this.Helpers,
+            t,
+            getState: this.getState,
+            known_users: this._known_users_for_continue,
+            router: this.router
+        });
+        if (continue_btn) {
+            heading_row.appendChild(continue_btn);
+        }
+        plate_element.appendChild(heading_row);
 
         if (current_global_state.auditStatus !== 'in_progress') {
         this.newerRuleAvailable = null;
@@ -286,84 +328,15 @@ export class AuditOverviewComponent {
             this._auditInfoComponent?.render();
         }
 
-        const score_panel = this.Helpers.create_element('div', { class_name: ['dashboard-panel', 'score-panel'] });
-        score_panel.appendChild(this.Helpers.create_element('h2', {
-            class_name: 'dashboard-panel__title',
-            text_content: t('result_summary_and_deficiency_analysis', { defaultValue: "Result Summary" })
-        }));
-
-        const status_counts = this.AuditLogic.calculate_overall_audit_status_counts(current_global_state);
-        const progress_data = this.AuditLogic.calculate_overall_audit_progress(current_global_state);
-        const lang_code = this.Translation.get_current_language_code();
-        const audited = progress_data.audited;
-        const total_req = progress_data.total;
-        const pct_complete = total_req > 0 ? (audited / total_req) * 100 : 0;
-        const formatted_pct = this.Helpers.format_number_locally(pct_complete, lang_code, {
-            minimumFractionDigits: 1,
-            maximumFractionDigits: 1
+        const score_panel = build_audit_overview_score_panel({
+            Helpers: this.Helpers,
+            Translation: this.Translation,
+            AuditLogic: this.AuditLogic,
+            getState: this.getState,
+            scoreAnalysisContainerElement: this.scoreAnalysisContainerElement,
+            sampleTypeChartContainerElement: this.sampleTypeChartContainerElement,
+            sampleTypeChartComponent: this._sampleTypeChartComponent
         });
-
-        const progress_heading_id = 'audit-overview-progress-heading';
-        const progress_summary_id = 'audit-overview-progress-summary';
-        score_panel.appendChild(this.Helpers.create_element('h3', {
-            class_name: 'dashboard-panel__subtitle',
-            attributes: { id: progress_heading_id },
-            text_content: t('total_audit_progress_header', { defaultValue: "Klart hittills" })
-        }));
-
-        const summary_p = this.Helpers.create_element('p', {
-            class_name: ['progress-text-wrapper', 'audit-overview-progress-summary'],
-            attributes: { id: progress_summary_id }
-        });
-        summary_p.appendChild(this.Helpers.create_element('strong', {
-            text_content: `${t('total_audit_progress_header', { defaultValue: 'Klart hittills' })}: `
-        }));
-        const summary_value_span = this.Helpers.create_element('span', { class_name: 'value' });
-        summary_value_span.textContent = t('audit_overview_progress_core', {
-            audited,
-            total: total_req,
-            pct: formatted_pct,
-            defaultValue: '{audited} / {total} kontroller ({pct} %)'
-        }).trim();
-        summary_p.appendChild(summary_value_span);
-
-        const progress_container = this.Helpers.create_element('div', { class_name: 'info-item--progress-container' });
-        progress_container.appendChild(summary_p);
-
-        if (ProgressBarComponent) {
-            progress_container.appendChild(ProgressBarComponent.create_audit_status_stack({
-                counts: status_counts,
-                t,
-                create_element: this.Helpers.create_element,
-                format_number_locally: this.Helpers.format_number_locally,
-                lang_code,
-                variant: 'default',
-                group_labelledby_id: `${progress_heading_id} ${progress_summary_id}`,
-                show_total_line: false,
-                overview_distribution_layout: true,
-                distribution_heading_id: 'audit-overview-distribution-heading'
-            }));
-        }
-        score_panel.appendChild(progress_container);
-
-        const divider = this.Helpers.create_element('div', {
-            style: {
-                borderBottom: '1px dashed var(--secondary-color)',
-                margin: '1.5rem 0'
-            }
-        });
-        score_panel.appendChild(divider);
-
-        if (this.scoreAnalysisContainerElement) {
-            score_panel.appendChild(this.scoreAnalysisContainerElement);
-            ScoreAnalysisComponent.render();
-        }
-
-        if (this.sampleTypeChartContainerElement && this._sampleTypeChartComponent) {
-            score_panel.appendChild(this.sampleTypeChartContainerElement);
-            this._sampleTypeChartComponent.render();
-        }
-
         dashboard_container.appendChild(score_panel);
 
         plate_element.appendChild(dashboard_container);

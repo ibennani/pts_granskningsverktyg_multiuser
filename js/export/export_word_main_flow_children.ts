@@ -110,7 +110,7 @@ export function append_word_export_body_sorted_by_requirements (
             const sampleName = sample.description || sample.url || '';
 
             const h3_children: Array<TextRun | InstanceType<typeof ExternalHyperlink>> = [
-                new TextRun({ text: 'Granskningsdel: ', color: '000000' })
+                new TextRun({ text: 'Granskningsdelar: ', color: '000000' })
             ];
             if (sample.url) {
                 h3_children.push(
@@ -158,7 +158,7 @@ export function append_word_export_body_sorted_by_samples (
     for (const sample of samples_with_deficiencies) {
         const sampleName = sample.description || sample.url || t('export_unspecified_sample');
         const h2_children: Array<TextRun | InstanceType<typeof ExternalHyperlink>> = [
-            new TextRun({ text: 'Granskningsdel: ', color: '000000' })
+            new TextRun({ text: 'Granskningsdelar: ', color: '000000' })
         ];
         if (sample.url) {
             h2_children.push(

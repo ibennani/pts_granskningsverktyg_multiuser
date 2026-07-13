@@ -1,6 +1,7 @@
 // @ts-nocheck
 import "./sample_list_component.css";
 import { ProgressBarComponent } from './ProgressBarComponent.js';
+import { open_http_href_in_background_tab } from '../logic/open_all_sample_urls_modal.js';
 import { effective_status_is_fully_unreviewed_for_bulk_pass } from '../audit_logic.js';
 import { user_may_use_sample_mark_bulk_pass_not_audited } from '../logic/sample_bulk_pass_not_audited_gate.js';
 
@@ -54,7 +55,11 @@ export const SampleListComponent = {
                 if (this.router) this.router('requirement_list', { sampleId: sample_id });
                 break;
             case 'visit-url':
-                if (sample.url && this.Helpers?.add_protocol_if_missing) window.open(this.Helpers.add_protocol_if_missing(sample.url), '_blank', 'noopener,noreferrer');
+                if (sample.url && this.Helpers?.add_protocol_if_missing) {
+                    open_http_href_in_background_tab(this.Helpers.add_protocol_if_missing(sample.url), {
+                        focus_element: action_button
+                    });
+                }
                 break;
             case 'review-sample':
                 if (this.router && current_global_state.ruleFileContent && this.AuditLogic?.find_first_incomplete_requirement_key_for_sample) {

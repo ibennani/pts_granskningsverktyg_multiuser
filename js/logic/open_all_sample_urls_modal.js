@@ -102,22 +102,88 @@ export function fill_open_all_sample_urls_modal_message(msg_p, create_el, t, tab
     msg_p.appendChild(document.createTextNode(tail_text));
 }
 
-/** Sekund innan tomma flikar redirectar till respektive måladress. */
+/** Sekund innan tomma flikar redirectar till respektive måladress (modalbekräftelse). */
 const NAVIGATE_DELAY_MS = 1000;
 
-/**
- * Öppnar en tom flik per href, redirectar alla efter angiven fördröjning.
- * @param {string[]} hrefs - kanoniska http(s)-URL:er i granskningsdelsordning
- * @param {number} [navigate_delay_ms]
- */
-export function open_http_hrefs_via_blank_then_assign(hrefs, navigate_delay_ms = NAVIGATE_DELAY_MS) {
-    if (!hrefs?.length) return;
+function restore_opener_window_focus(focus_element) {
+    try { window.focus(); } catch (_) { /* noop */ }
+    if (focus_element && document.contains(focus_element)) {
+        try { focus_element.focus({ preventScroll: true }); } catch (_) {
+            try { focus_element.focus(); } catch (_2) { /* noop */ }
+        }
+    }
+}
+
+function schedule_restore_opener_focus_burst(focus_element) {
+    restore_opener_window_focus(focus_element);
+    for (const ms of [0, 1, 5, 10, 25, 50, 100, 200, 400]) {
+        setTimeout(() => restore_opener_window_focus(focus_element), ms);
+    }
+}
+
+function blur_and_detach_opened_window(win) {
+    if (!win || win.closed) return;
+    try { win.blur(); } catch (_) { /* noop */ }
+    try { win.opener = null; } catch (_) { /* noop */ }
+}
+
+function open_single_href_via_window_open(safe_href) {
+    const w = window.open(safe_href, '_blank');
+    blur_and_detach_opened_window(w);
+    return Boolean(w);
+}
+
+function open_single_href_via_hidden_iframe(safe_href) {
+    const iframe = document.createElement('iframe');
+    iframe.setAttribute('aria-hidden', 'true');
+    iframe.setAttribute('tabindex', '-1');
+    iframe.style.cssText = 'position:fixed;width:0;height:0;border:0;opacity:0;pointer-events:none;left:-9999px';
+    iframe.src = 'about:blank';
+    document.body.appendChild(iframe);
+    try {
+        const doc = iframe.contentDocument;
+        if (!doc?.body) return false;
+        doc.body.replaceChildren();
+        const a = doc.createElement('a');
+        a.href = safe_href;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        doc.body.appendChild(a);
+        a.click();
+        return true;
+    } catch (_) {
+        return false;
+    } finally {
+        iframe.remove();
+    }
+}
+
+function open_single_href_in_background_tab(safe_href, focus_element) {
+    const opened = open_single_href_via_window_open(safe_href);
+    if (!opened) {
+        open_single_href_via_hidden_iframe(safe_href);
+    }
+    restore_opener_window_focus(focus_element);
+}
+
+function open_http_hrefs_in_background_immediate(hrefs, focus_element) {
+    for (const href of hrefs) {
+        const safe = canonical_http_open_href(href);
+        if (!safe) continue;
+        open_single_href_in_background_tab(safe, focus_element);
+    }
+    schedule_restore_opener_focus_burst(focus_element);
+}
+
+function open_http_hrefs_via_blank_then_delayed_assign(hrefs, navigate_delay_ms, focus_element) {
     const windows = [];
     for (let i = 0; i < hrefs.length; i += 1) {
         const w = window.open('about:blank', '_blank');
         windows.push(w || null);
-        if (w) try { w.opener = null; } catch (_) { /* noop */ }
+        blur_and_detach_opened_window(w);
+        restore_opener_window_focus(focus_element);
     }
+    restore_opener_window_focus(focus_element);
     setTimeout(() => {
         hrefs.forEach((href, index) => {
             const safe = canonical_http_open_href(href);
@@ -125,9 +191,35 @@ export function open_http_hrefs_via_blank_then_assign(hrefs, navigate_delay_ms =
             if (!safe || !win || win.closed) return;
             try {
                 win.location.href = safe;
+                blur_and_detach_opened_window(win);
             } catch (_) { /* noop */ }
         });
+        schedule_restore_opener_focus_burst(focus_element);
     }, navigate_delay_ms);
+}
+
+/**
+ * Öppnar en flik per href i bakgrunden utan att lämna Leffe-fliken.
+ * @param {string[]} hrefs - kanoniska http(s)-URL:er i granskningsdelsordning
+ * @param {number} [navigate_delay_ms] - 0 = direkt (rekommenderat); >0 endast för fördröjd redirect
+ * @param {{ focus_element?: HTMLElement|null }} [opts]
+ */
+export function open_http_hrefs_via_blank_then_assign(hrefs, navigate_delay_ms = 0, opts = {}) {
+    if (!hrefs?.length) return;
+    const focus_element = opts.focus_element ?? null;
+    if (navigate_delay_ms <= 0) {
+        open_http_hrefs_in_background_immediate(hrefs, focus_element);
+        return;
+    }
+    open_http_hrefs_via_blank_then_delayed_assign(hrefs, navigate_delay_ms, focus_element);
+}
+
+/** @param {string} href @param {{ focus_element?: HTMLElement|null }} [opts] */
+export function open_http_href_in_background_tab(href, opts = {}) {
+    const safe = canonical_http_open_href(href);
+    if (!safe) return;
+    open_single_href_in_background_tab(safe, opts.focus_element ?? null);
+    schedule_restore_opener_focus_burst(opts.focus_element ?? null);
 }
 
 function attach_open_all_sample_urls_modal_body(container, modal, ctx) {
@@ -147,8 +239,8 @@ function attach_open_all_sample_urls_modal_body(container, modal, ctx) {
         confirm_already_handled = true;
         const samples_now = typeof getState === 'function' ? getState().samples : [];
         const { ordered_hrefs } = collect_ordered_sample_open_hrefs(samples_now, add_protocol);
-        open_http_hrefs_via_blank_then_assign(ordered_hrefs);
         modal.close(focus_target);
+        open_http_hrefs_via_blank_then_assign(ordered_hrefs, 0, { focus_element: focus_target });
     });
     const later_btn = create_el('button', {
         class_name: ['button', 'button-secondary'],

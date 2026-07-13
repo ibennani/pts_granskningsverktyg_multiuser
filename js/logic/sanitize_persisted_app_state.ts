@@ -6,7 +6,7 @@
 
 import { initial_state } from '../state/initialState.js';
 import { ensure_samples_attached_media_shape } from './sample_attached_media_normalize.js';
-
+import { USER_LAST_REQUIREMENT_RESUME_METADATA_KEY } from './audit_user_requirement_resume.js';
 /** Returnerar en array; annars tom lista. */
 export function coerce_to_array(value: unknown): unknown[] {
     return Array.isArray(value) ? value : [];
@@ -47,6 +47,13 @@ export function coerce_audit_metadata(
         return { ...template };
     }
     return { ...template, ...(value as Record<string, unknown>) };
+}
+
+function coerce_resume_metadata_map(value: unknown): Record<string, unknown> {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+        return {};
+    }
+    return value as Record<string, unknown>;
 }
 
 function deep_clone<T>(value: T): T {
@@ -96,6 +103,12 @@ export function sanitize_persisted_app_state_shape(state: Record<string, unknown
         out.auditMetadata,
         initial_state.auditMetadata as unknown as Record<string, unknown>
     );
+    const meta = out.auditMetadata as Record<string, unknown>;
+    if (Object.prototype.hasOwnProperty.call(meta, USER_LAST_REQUIREMENT_RESUME_METADATA_KEY)) {
+        meta[USER_LAST_REQUIREMENT_RESUME_METADATA_KEY] = coerce_resume_metadata_map(
+            meta[USER_LAST_REQUIREMENT_RESUME_METADATA_KEY]
+        );
+    }
     out.uiSettings = coerce_ui_settings(out.uiSettings, initial_state.uiSettings);
     out.auditCalculations = coerce_plain_object_or_empty(out.auditCalculations);
     out.ruleFileContent = coerce_rule_file_content(out.ruleFileContent);

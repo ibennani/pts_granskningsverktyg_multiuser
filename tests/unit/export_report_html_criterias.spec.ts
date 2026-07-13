@@ -85,8 +85,8 @@ describe('export_report_html_criterias', () => {
         expect(body).toContain('<strong>Referens: </strong>');
         expect(body).toContain('<strong>Principer: </strong>');
         expect(body).toContain('<strong>Identifierade brister: </strong>');
-        expect(body).toContain('<h3>Granskningsdel: <a href="https://example.com/page">Granskningsdel ett</a></h3>');
-        expect(body).not.toContain('<strong>Granskningsdel: </strong>');
+        expect(body).toContain('<h3>Granskningsdelar: <a href="https://example.com/page">Granskningsdel ett</a></h3>');
+        expect(body).not.toContain('<strong>Granskningsdelar: </strong>');
         expect(body).toContain('<strong>Brist-id: 1 </strong>');
         expect(body).toContain('<strong>fet</strong>');
     });
@@ -94,7 +94,7 @@ describe('export_report_html_criterias', () => {
     test('granskningsdel med brist renderas med h2 granskningsdel och h3 krav', () => {
         const audit = create_mock_audit_with_deficiency();
         const body = build_report_body_sorted_by_samples(audit, t);
-        expect(body).toContain('<h2>Granskningsdel: <a href="https://example.com/page">Granskningsdel ett</a></h2>');
+        expect(body).toContain('<h2>Granskningsdelar: <a href="https://example.com/page">Granskningsdel ett</a></h2>');
         expect(body).toContain('<h3>1.1.1 Testkrav</h3>');
         expect(body).toContain('<strong>Brist-id: 1 </strong>');
     });

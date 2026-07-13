@@ -111,12 +111,12 @@ export function build_content_sorted_by_requirement(
                 );
                 const icon_html =
                     typeof Helpers?.get_external_link_icon_html === 'function' ? Helpers.get_external_link_icon_html(t) : '';
-                content_html += `<h3 id="${h3_sample_anchor_id}">Granskningsdel: <a href="${safe_url}" target="_blank" rel="noopener noreferrer">${escape_html_internal(sampleName)}${icon_html}</a></h3>`;
+                content_html += `<h3 id="${h3_sample_anchor_id}">Granskningsdelar: <a href="${safe_url}" target="_blank" rel="noopener noreferrer">${escape_html_internal(sampleName)}${icon_html}</a></h3>`;
             } else {
-                content_html += `<h3 id="${h3_sample_anchor_id}">Granskningsdel: ${escape_html_internal(sampleName)}</h3>`;
+                content_html += `<h3 id="${h3_sample_anchor_id}">Granskningsdelar: ${escape_html_internal(sampleName)}</h3>`;
             }
 
-            sidebar_html += `<ul role="list"><li role="listitem" class="sidebar-h3"><a href="#${h3_sample_anchor_id}" aria-label="Granskningsdel: ${escape_html_internal(sampleName)} för krav: ${escape_html_internal(h2_text)}">${escape_html_internal(sampleName)}</a></li></ul>`;
+            sidebar_html += `<ul role="list"><li role="listitem" class="sidebar-h3"><a href="#${h3_sample_anchor_id}" aria-label="Granskningsdelar: ${escape_html_internal(sampleName)} för krav: ${escape_html_internal(h2_text)}">${escape_html_internal(sampleName)}</a></li></ul>`;
 
             for (const deficiency of deficiencies) {
                 content_html += create_html_observations(deficiency as Record<string, unknown>, t, media_context);
@@ -170,7 +170,7 @@ export function build_content_sorted_by_sample(
         const sampleName = String(s.description || s.url || '');
         const h2_anchor_id = 'h2-sample-' + generate_anchor_id(sampleName);
 
-        sidebar_html += `<li role="listitem" class="sidebar-h2"><a href="#${h2_anchor_id}" aria-label="Granskningsdel: ${escape_html_internal(sampleName)}">${escape_html_internal(sampleName)}</a>`;
+        sidebar_html += `<li role="listitem" class="sidebar-h2"><a href="#${h2_anchor_id}" aria-label="Granskningsdelar: ${escape_html_internal(sampleName)}">${escape_html_internal(sampleName)}</a>`;
 
         if (s.url) {
             const safe_url = escape_html_internal(
@@ -178,9 +178,9 @@ export function build_content_sorted_by_sample(
             );
             const icon_html =
                 typeof Helpers?.get_external_link_icon_html === 'function' ? Helpers.get_external_link_icon_html(t) : '';
-            content_html += `<h2 id="${h2_anchor_id}">Granskningsdel: <a href="${safe_url}" target="_blank" rel="noopener noreferrer">${escape_html_internal(sampleName)}${icon_html}</a></h2>`;
+            content_html += `<h2 id="${h2_anchor_id}">Granskningsdelar: <a href="${safe_url}" target="_blank" rel="noopener noreferrer">${escape_html_internal(sampleName)}${icon_html}</a></h2>`;
         } else {
-            content_html += `<h2 id="${h2_anchor_id}">Granskningsdel: ${escape_html_internal(sampleName)}</h2>`;
+            content_html += `<h2 id="${h2_anchor_id}">Granskningsdelar: ${escape_html_internal(sampleName)}</h2>`;
         }
 
         content_html += create_html_sample_media(s, samples_list, current_audit, media_context, t);

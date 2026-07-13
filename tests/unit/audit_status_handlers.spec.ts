@@ -4,6 +4,7 @@
 import { describe, test, expect } from '@jest/globals';
 import { reduce_set_audit_status } from '../../js/state/auditStatusHandlers.js';
 import { AUDIT_METADATA_LAST_IN_PROGRESS_ACTIVITY_KEY } from '../../js/logic/audit_list_last_updated.ts';
+import { USER_LAST_REQUIREMENT_RESUME_METADATA_KEY } from '../../js/logic/audit_user_requirement_resume.js';
 
 const ISO_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/;
 
@@ -117,6 +118,32 @@ describe('reduce_set_audit_status', () => {
         const next = reduce_set_audit_status(state, { payload: { status: 'locked' } });
         expect(next.auditStatus).toBe('locked');
         expect(next.endTime).toBe('2026-06-01T10:00:00.000Z');
+    });
+
+    test('in_progress → locked raderar userLastRequirementResumeByUser', () => {
+        const state = base_state({
+            auditStatus: 'in_progress',
+            auditMetadata: {
+                [USER_LAST_REQUIREMENT_RESUME_METADATA_KEY]: {
+                    anna: { sampleId: 's1', requirementId: 'r1', focusInfo: { elementId: 'x' } }
+                }
+            }
+        });
+        const next = reduce_set_audit_status(state, { payload: { status: 'locked' } });
+        expect(next.auditMetadata[USER_LAST_REQUIREMENT_RESUME_METADATA_KEY]).toBeUndefined();
+    });
+
+    test('locked → archived raderar userLastRequirementResumeByUser', () => {
+        const state = base_state({
+            auditStatus: 'locked',
+            auditMetadata: {
+                [USER_LAST_REQUIREMENT_RESUME_METADATA_KEY]: {
+                    bo: { sampleId: 's1', requirementId: 'r1', focusInfo: { elementId: 'y' } }
+                }
+            }
+        });
+        const next = reduce_set_audit_status(state, { payload: { status: 'archived' } });
+        expect(next.auditMetadata[USER_LAST_REQUIREMENT_RESUME_METADATA_KEY]).toBeUndefined();
     });
 
     test('in_progress → locked sätter last_local_change_at', () => {

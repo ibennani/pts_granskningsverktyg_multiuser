@@ -6,6 +6,7 @@ import { get_current_iso_datetime_utc } from './audit_reducer_time.js';
 import { remove_stale_requirement_result_aliases } from './auditResultAliases.js';
 import { reduce_update_metadata } from './metadataHandlers.js';
 import { reduce_set_audit_status } from './auditStatusHandlers.js';
+import { reduce_update_user_requirement_resume } from './auditUserResumeHandlers.js';
 import {
     reduce_stage_sample_changes,
     reduce_clear_staged_sample_changes,
@@ -389,6 +390,8 @@ export function auditReducer(current_state: any, action: any) {
             }
             return new_state;
         }
+        case ActionTypes.UPDATE_USER_REQUIREMENT_RESUME:
+            return reduce_update_user_requirement_resume(current_state, action);
         case ActionTypes.SET_AUDIT_STATUS:
             return reduce_set_audit_status(current_state, action);
         case ActionTypes.SET_REMOTE_AUDIT_ID:

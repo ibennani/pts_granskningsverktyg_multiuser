@@ -31,7 +31,7 @@ export class SampleManagementViewComponent {
 
     Helpers: SampleManagementDeps['Helpers'] | null = null;
 
-    NotificationComponent: SampleManagementDeps['NotificationComponent'] | null = null;
+    NotificationComponent: SampleManagementDeps['NotificationComponent'] | null = null;
     sample_list_component_instance = SampleListComponent;
 
     sample_list_container_element: HTMLElement | null = null;
@@ -277,9 +277,12 @@ export class SampleManagementViewComponent {
             (s) => sample_url_raw_string(s) !== ''
         );
         if (has_any_sample_url) {
+            const external_tab_icon_html = this.Helpers.get_external_link_icon_html
+                ? this.Helpers.get_external_link_icon_html(t)
+                : '';
             const open_all_tabs_btn = this.Helpers.create_element('button', {
                 class_name: ['button', 'button-secondary'],
-                text_content: t('open_all_sample_urls_in_tabs_button')
+                html_content: `<span>${t('open_all_sample_urls_in_tabs_button')}</span>${external_tab_icon_html}`
             });
             open_all_tabs_btn.addEventListener('click', () => {
                 this.handle_open_all_sample_urls(open_all_tabs_btn);

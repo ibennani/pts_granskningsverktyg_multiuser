@@ -101,9 +101,9 @@ function build_sample_heading_html(
         const safe_url = escape_html_internal(
             Helpers?.add_protocol_if_missing ? Helpers.add_protocol_if_missing(String(sample.url)) : String(sample.url)
         );
-        return `<${tag}>Granskningsdel: <a href="${safe_url}">${sample_name}</a></${tag}>`;
+        return `<${tag}>Granskningsdelar: <a href="${safe_url}">${sample_name}</a></${tag}>`;
     }
-    return `<${tag}>Granskningsdel: ${sample_name}</${tag}>`;
+    return `<${tag}>Granskningsdelar: ${sample_name}</${tag}>`;
 }
 
 function build_comment_html(

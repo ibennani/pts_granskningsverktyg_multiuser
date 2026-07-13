@@ -20,7 +20,7 @@ function build_translation() {
         side_menu_close_button: 'Stäng meny',
         left_menu_audit_overview: 'Översikt',
         left_menu_all_requirements_with_count: 'Alla krav ({count})',
-        left_menu_sample_list_with_count: 'Granskningsdel ({count})',
+        left_menu_sample_list_with_count: 'Granskningsdelar ({count})',
         left_menu_images_with_count: 'Bilder ({count})',
         left_menu_problems_with_count: 'Problem ({count})',
         left_menu_actions: 'Åtgärder',
@@ -98,7 +98,7 @@ describe('SideMenuComponent snapshot', () => {
         expect(nav).toBeTruthy();
         const texts = [...root.querySelectorAll('a.side-menu__link')].map((a) => a.textContent.trim());
         expect(texts.some((t) => t.includes('Översikt'))).toBe(true);
-        expect(texts.some((t) => t.includes('Granskningsdel'))).toBe(true);
+        expect(texts.some((t) => t.includes('Granskningsdelar'))).toBe(true);
         expect(texts.some((t) => t.includes('Logga ut'))).toBe(true);
 
         expect(root.innerHTML).toMatchSnapshot();

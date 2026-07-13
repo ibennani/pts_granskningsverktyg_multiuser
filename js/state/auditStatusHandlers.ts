@@ -10,6 +10,7 @@ import {
     without_last_in_progress_activity_in_metadata
 } from '../logic/audit_list_last_updated.js';
 import { resolve_samples_for_server_sync } from '../logic/sample_attached_media_normalize.js';
+import { without_user_last_requirement_resume_in_metadata } from '../logic/audit_user_requirement_resume.js';
 
 export function reduce_set_audit_status(current_state: any, action: any) {
     const newStatus = action.payload.status;
@@ -56,6 +57,12 @@ export function reduce_set_audit_status(current_state: any, action: any) {
         && (current_state.auditStatus === 'locked' || current_state.auditStatus === 'archived')
     ) {
         audit_metadata = without_last_in_progress_activity_in_metadata(audit_metadata);
+    }
+    if (
+        (newStatus === 'locked' && current_state.auditStatus === 'in_progress')
+        || (newStatus === 'archived' && current_state.auditStatus === 'locked')
+    ) {
+        audit_metadata = without_user_last_requirement_resume_in_metadata(audit_metadata);
     }
     let merged = {
         ...state_before_status_change,
