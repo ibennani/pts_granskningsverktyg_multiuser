@@ -5,7 +5,7 @@ import { MODAL_TRANSITION_MS } from '../../shared/constants/modal_layout.js';
 import { consoleManager } from '../utils/console_manager.js';
 import { is_debug_modal_scroll } from '../app/runtime_flags.js';
 
-export class ModalComponent {
+export class ModalComponent {
     init({ root, deps }) {
         this.root = root;
         this.deps = deps;
@@ -425,12 +425,13 @@ export class ModalComponent {
         if (!String(message_text || '').trim()) {
             message.hidden = true;
         }
-        this.header_container_ref.appendChild(message);
 
         this.content_container_ref = this.Helpers.create_element('div', {
             class_name: 'modal-body',
             attributes: { id: 'modal-content-container' },
         });
+
+        this.content_container_ref.appendChild(message);
 
         this.shell_container_ref.appendChild(this.header_container_ref);
         this.shell_container_ref.appendChild(this.content_container_ref);

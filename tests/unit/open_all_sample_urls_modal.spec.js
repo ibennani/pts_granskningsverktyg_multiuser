@@ -8,6 +8,8 @@ import {
     collect_unique_sample_open_urls,
     fill_open_all_sample_urls_modal_message,
     open_http_hrefs_via_blank_then_assign,
+    fill_audit_overview_continue_modal_message,
+    show_audit_overview_continue_modal,
     sample_url_raw_string,
     show_open_all_sample_urls_modal
 } from '../../js/logic/open_all_sample_urls_modal.js';
@@ -151,30 +153,16 @@ describe('open_all_sample_urls_modal', () => {
             focus_spy.mockRestore();
         });
 
-        test('omedelbar öppning (delay 0) använder direkt URL utan setTimeout-redirect', () => {
-            jest.useFakeTimers();
-            const open_spy = jest.fn();
-            global.window.open = open_spy;
-            const focus_spy = jest.spyOn(global.window, 'focus').mockImplementation(() => {});
-
-            open_http_hrefs_via_blank_then_assign(['https://a.test/', 'https://b.test/'], 0);
-
-            expect(open_spy).toHaveBeenCalledTimes(2);
-            expect(open_spy).toHaveBeenNthCalledWith(1, 'https://a.test/', '_blank');
-            expect(open_spy).toHaveBeenNthCalledWith(2, 'https://b.test/', '_blank');
-            expect(focus_spy.mock.calls.length).toBeGreaterThanOrEqual(2);
-            expect(jest.getTimerCount()).toBeGreaterThan(0);
-            focus_spy.mockRestore();
-        });
-
         test('blur anropas när window.open returnerar referens', () => {
+            jest.useFakeTimers();
             const blur_spy = jest.fn();
-            global.window.open = jest.fn(() => ({ closed: false, blur: blur_spy, opener: window }));
+            global.window.open = jest.fn(() => ({ closed: false, blur: blur_spy, location: { href: '' }, opener: window }));
             jest.spyOn(global.window, 'focus').mockImplementation(() => {});
 
-            open_http_hrefs_via_blank_then_assign(['https://a.test/'], 0);
+            open_http_hrefs_via_blank_then_assign(['https://a.test/']);
 
             expect(blur_spy).toHaveBeenCalled();
+            jest.useRealTimers();
         });
 
         test('tom lista anropar inte window.open', () => {
@@ -182,6 +170,82 @@ describe('open_all_sample_urls_modal', () => {
             global.window.open = openSpy;
             open_http_hrefs_via_blank_then_assign([]);
             expect(openSpy).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('show_audit_overview_continue_modal', () => {
+        const orig_modal = app_runtime_refs.modal_component;
+
+        afterEach(() => {
+            app_runtime_refs.modal_component = orig_modal;
+        });
+
+        test('anropar inte show utan URL:er', () => {
+            const show_spy = jest.fn();
+            app_runtime_refs.modal_component = { show: show_spy };
+            show_audit_overview_continue_modal({
+                trigger_element: null,
+                getState: () => ({ samples: [{ url: '' }] }),
+                Helpers: { create_element: () => document.createElement('div') },
+                Translation: { t: (k) => k },
+                navigate_to_requirement: jest.fn()
+            });
+            expect(show_spy).not.toHaveBeenCalled();
+        });
+
+        test('visar modal med tre knappar och vardaglig text', () => {
+            let content_callback = null;
+            const show_spy = jest.fn((config, cb) => {
+                expect(config.h1_text).toBe('audit_overview_continue_modal_title');
+                content_callback = cb;
+            });
+            app_runtime_refs.modal_component = { show: show_spy };
+            const navigate_spy = jest.fn();
+            const t = (key, rep) => {
+                if (key === 'audit_overview_continue_modal_open_many_lead' && rep?.count === 2) {
+                    return `Öppna alla granskningsdelar öppnar ${rep.count} nya flikar`;
+                }
+                const map = {
+                    audit_overview_continue_modal_lead: 'Du går tillbaka till kravet.',
+                    audit_overview_continue_modal_open_tail: ' Hitta tillbaka till Leffe.',
+                    audit_overview_continue_modal_only_lead: 'Fortsätt bara till kravet',
+                    audit_overview_continue_modal_only_tail: ' utan extra flikar.',
+                    audit_overview_continue_modal_stay_lead: 'Stanna på Granskningsöversikten',
+                    audit_overview_continue_modal_stay_tail: ' stänger dialogen.',
+                    open_all_sample_urls_confirm_button: 'Öppna alla granskningsdelar',
+                    audit_overview_continue_requirement_only_button: 'Fortsätt bara till kravet',
+                    audit_overview_continue_stay_on_overview_button: 'Stanna på Granskningsöversikten'
+                };
+                return map[key] || key;
+            };
+            const create_el = (tag, opts) => {
+                const el = document.createElement(tag);
+                if (opts?.class_name) {
+                    el.className = Array.isArray(opts.class_name) ? opts.class_name.join(' ') : opts.class_name;
+                }
+                if (opts?.text_content != null) el.textContent = opts.text_content;
+                return el;
+            };
+            show_audit_overview_continue_modal({
+                trigger_element: null,
+                getState: () => ({ samples: [{ url: 'a.com' }, { url: 'b.com' }] }),
+                Helpers: { create_element: create_el },
+                Translation: { t },
+                navigate_to_requirement: navigate_spy
+            });
+            expect(show_spy).toHaveBeenCalledTimes(1);
+            const container = document.createElement('div');
+            const close_spy = jest.fn();
+            content_callback(container, { close: close_spy });
+            expect(container.querySelector('.modal-message-block strong')?.textContent).toContain('2 nya flikar');
+            const buttons = container.querySelectorAll('.modal-confirm-actions button');
+            expect(buttons.length).toBe(3);
+            expect(buttons[0].textContent).toBe('Öppna alla granskningsdelar');
+            expect(buttons[1].textContent).toBe('Fortsätt bara till kravet');
+            expect(buttons[2].textContent).toBe('Stanna på Granskningsöversikten');
+            buttons[2].click();
+            expect(close_spy).toHaveBeenCalled();
+            expect(navigate_spy).not.toHaveBeenCalled();
         });
     });
 
@@ -254,13 +318,12 @@ describe('open_all_sample_urls_modal', () => {
             msg_p.className = 'modal-message';
             container.appendChild(msg_p);
             content_callback(container, { close: jest.fn() });
-            const strong = container.querySelector('.modal-message strong');
+            const strong = container.querySelector('.modal-message-block strong');
             expect(strong?.textContent).toBe('Detta öppnar 2 nya flikar');
         });
 
         test('fill_open_all_sample_urls_modal_message: singular utan delade URL', () => {
-            const msg_p = document.createElement('p');
-            msg_p.className = 'modal-message';
+            const container = document.createElement('div');
             const create_el = (tag, opts) => {
                 const el = document.createElement(tag);
                 if (opts?.text_content != null) el.textContent = opts.text_content;
@@ -269,13 +332,14 @@ describe('open_all_sample_urls_modal', () => {
             const t = (key) => {
                 const m = {
                     open_all_sample_urls_modal_intro_one_lead: 'Ett',
-                    open_all_sample_urls_modal_intro_one_tail: ' två.'
+                    open_all_sample_urls_modal_intro_one_tail: ' två.',
+                    open_all_sample_urls_modal_find_tab_note: 'Hitta tillbaka till fliken.'
                 };
                 return m[key] || key;
             };
-            fill_open_all_sample_urls_modal_message(msg_p, create_el, t, 1);
-            expect(msg_p.querySelector('strong')?.textContent).toBe('Ett');
-            expect(msg_p.textContent).toBe('Ett två.');
+            fill_open_all_sample_urls_modal_message(container, create_el, t, 1);
+            expect(container.querySelector('strong')?.textContent).toBe('Ett');
+            expect(container.textContent).toContain('Hitta tillbaka till fliken.');
         });
     });
 });

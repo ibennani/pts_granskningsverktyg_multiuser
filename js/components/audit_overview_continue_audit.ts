@@ -6,11 +6,12 @@ import { get_users } from '../api/client.js';
 import { set_restore_focus_info } from '../app/browser_globals.js';
 import {
     collect_ordered_sample_open_hrefs,
-    open_http_hrefs_via_blank_then_assign
+    show_audit_overview_continue_modal
 } from '../logic/open_all_sample_urls_modal.js';
 import {
     get_user_resume_from_metadata,
-    should_show_audit_overview_continue_button
+    should_show_audit_overview_continue_button,
+    type UserRequirementResumeEntry
 } from '../logic/audit_user_requirement_resume.js';
 import { get_current_user_name } from '../user/current_user.js';
 
@@ -33,7 +34,7 @@ type ContinueAuditDeps = {
     router: (view: string, params?: Record<string, unknown>) => void;
     getState: () => Record<string, unknown>;
     Helpers: HelpersLike;
-    t: (key: string) => string;
+    t: (key: string, replacements?: Record<string, unknown>) => string;
     known_users: InstanceUser[] | null;
 };
 
@@ -75,12 +76,26 @@ export function should_show_continue_audit_button(
     return should_show_audit_overview_continue_button(state, get_current_user_name(), known_users);
 }
 
+function navigate_to_resume_requirement(
+    router: ContinueAuditDeps['router'],
+    resume: UserRequirementResumeEntry
+) {
+    if (resume.focusInfo) {
+        set_restore_focus_info(resume.focusInfo);
+    }
+    router('requirement_audit', {
+        sampleId: resume.sampleId,
+        requirementId: resume.requirementId
+    });
+}
+
 export function handle_continue_audit_click({
     router,
     getState,
     Helpers,
+    t,
     focus_element
-}: Pick<ContinueAuditDeps, 'router' | 'getState' | 'Helpers'> & {
+}: Pick<ContinueAuditDeps, 'router' | 'getState' | 'Helpers' | 't'> & {
     focus_element?: HTMLElement | null;
 }) {
     const state = getState();
@@ -97,17 +112,19 @@ export function handle_continue_audit_click({
         add_protocol
     );
 
-    if (ordered_hrefs.length > 0) {
-        open_http_hrefs_via_blank_then_assign(ordered_hrefs, 0, { focus_element: focus_element ?? null });
+    const navigate = () => navigate_to_resume_requirement(router, resume);
+
+    if (ordered_hrefs.length === 0) {
+        navigate();
+        return;
     }
 
-    if (resume.focusInfo) {
-        set_restore_focus_info(resume.focusInfo);
-    }
-
-    router('requirement_audit', {
-        sampleId: resume.sampleId,
-        requirementId: resume.requirementId
+    show_audit_overview_continue_modal({
+        trigger_element: focus_element ?? null,
+        getState,
+        Helpers,
+        Translation: { t },
+        navigate_to_requirement: navigate
     });
 }
 
@@ -133,6 +150,7 @@ export function create_continue_audit_button_if_visible({
                     router,
                     getState,
                     Helpers,
+                    t,
                     focus_element: target instanceof HTMLElement ? target : null
                 });
             }

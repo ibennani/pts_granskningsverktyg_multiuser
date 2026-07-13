@@ -438,16 +438,17 @@ a {
     text-decoration: underline;
 }
 
-/* Ikon för externa länkar (ruta med pil) – visas i slutet av länkar som öppnas i ny flik */
+/* Ikon för externa länkar (ruta med pil) – ingår i länkens understrykning */
 .external-link-icon {
-    display: inline-flex;
-    align-items: center;
-    margin-left: 0.2em;
+    display: inline;
     vertical-align: middle;
+    margin-left: 0.2em;
+    text-decoration: inherit;
 }
 
 .external-link-icon svg {
-    display: block;
+    display: inline-block;
+    vertical-align: middle;
 }
 
 a:hover,
