@@ -5,7 +5,7 @@ import type { Page } from 'puppeteer';
 import {
     browser_hide_webdriver_flag,
     browser_page_has_renderable_content,
-} from './page_screenshot_browser_scripts.js';
+} from './page_screenshot_browser_scripts_loader.js';
 
 export const CHROME_USER_AGENT =
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';

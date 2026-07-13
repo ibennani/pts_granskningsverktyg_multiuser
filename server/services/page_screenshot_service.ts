@@ -1,9 +1,10 @@
 /**
- * @fileoverview Tar fullsidsskärmdumpar (topp till botten) med Puppeteer/Chromium.
+ * @fileoverview Tar skärmavbilder (viewport-bredd, max 3× höjd) med Puppeteer/Chromium.
  */
 import puppeteer, { type Browser, type Page } from 'puppeteer';
 import {
     auto_scroll_lazy_content,
+    read_document_scroll_height,
     scroll_to_top,
     settle_after_lazy_load,
 } from './page_screenshot_lazy_load.js';
@@ -14,6 +15,7 @@ import {
     PUPPETEER_LAUNCH_ARGS,
 } from './page_screenshot_stealth.js';
 import { dismiss_cookie_banners_before_screenshot } from './page_screenshot_cookie_consent.js';
+import { compute_screenshot_clip_height_css } from './page_screenshot_capture_height.js';
 
 const VIEWPORT_WIDTH = 1280;
 const VIEWPORT_HEIGHT = 800;
@@ -68,10 +70,20 @@ async function capture_full_page_png(page: Page): Promise<{ png_buffer: Buffer; 
     await dismiss_cookie_banners_before_screenshot(page);
 
     const page_title = await read_page_title(page);
+    const scroll_height_css = await read_document_scroll_height(page);
+    const capture_height_css = compute_screenshot_clip_height_css(scroll_height_css, VIEWPORT_WIDTH);
+
+    await page.setViewport({
+        width: VIEWPORT_WIDTH,
+        height: capture_height_css,
+        deviceScaleFactor: DEVICE_SCALE_FACTOR,
+    });
+    await scroll_to_top(page);
+
     const png_buffer = Buffer.from(
         await page.screenshot({
             type: 'png',
-            fullPage: true,
+            fullPage: false,
         })
     );
 
@@ -105,7 +117,7 @@ export async function fetch_page_title_from_url(
 }
 
 /**
- * Navigerar till URL, laddar lazy content och returnerar en fullPage PNG.
+ * Navigerar till URL, laddar lazy content och returnerar en PNG (max höjd 3× bredd).
  */
 export async function capture_page_screenshot(
     input: CapturePageScreenshotInput

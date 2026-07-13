@@ -1,5 +1,5 @@
 /**
- * @fileoverview Automatisk URL-skärmdump vid blur i granskningsdelsformuläret.
+ * @fileoverview Automatisk URL-skärmdump vid klick på Analysera sida i granskningsdelsformuläret.
  */
 
 import {
@@ -162,7 +162,7 @@ export async function clear_sample_auto_screenshot_if_needed(
 }
 
 /**
- * Hanterar blur på URL-fält — tar eller byter skärmdump i bakgrunden utan notis.
+ * Hanterar klick på Analysera sida — tar eller byter skärmdump i bakgrunden utan notis.
  */
 export async function handle_sample_url_blur(
     component: SampleUrlAutoScreenshotComponentLike

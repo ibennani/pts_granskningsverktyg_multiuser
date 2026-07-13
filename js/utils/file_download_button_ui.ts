@@ -16,23 +16,24 @@ import {
 } from '../export/export_pdf_html_size_error.js';
 import { is_export_pdf_failed_error } from '../export/export_pdf_user_errors.js';
 import {
-    create_status_icon_tooltip_wrapper,
-    find_file_download_live_region,
-    type StatusIconTooltipParts,
-} from './status_icon_tooltip.js';
+    create_tooltip_wrapper,
+    GenericTooltip,
+    type TooltipHelpers,
+} from './generic_tooltip.js';
 
 export const READY_RESET_MS = 3000;
 
 export type TranslationFn = (key: string, params?: Record<string, unknown>) => string;
 
-export type FileDownloadHelpers = {
-    create_element: (tag: string, opts?: Record<string, unknown>) => HTMLElement;
+export type FileDownloadHelpers = TooltipHelpers & {
     get_icon_svg?: (name: string, colors?: string[], size?: number) => string;
     load_css_safely?: (path: string) => Promise<void>;
 };
 
-export type FileDownloadButtonParts = StatusIconTooltipParts & {
+export type FileDownloadButtonParts = {
+    wrapper: HTMLElement;
     button: HTMLElement;
+    tooltip: GenericTooltip;
 };
 
 export type CreateFileDownloadButtonOptions = {
@@ -57,31 +58,17 @@ function resolve_get_icon_svg(Helpers: FileDownloadHelpers) {
     return Helpers.get_icon_svg ?? default_get_icon_svg;
 }
 
-function sync_tooltip_content_attr(tooltip_el: HTMLElement): void {
-    const text_el = tooltip_el.querySelector('.file-download-tooltip-text');
-    const has_content = text_el
-        ? Boolean(text_el.textContent?.trim())
-        : Boolean(tooltip_el.textContent?.trim());
-    if (has_content) {
-        tooltip_el.setAttribute('data-has-tooltip-content', 'true');
-    } else {
-        tooltip_el.removeAttribute('data-has-tooltip-content');
-    }
-}
-
-function set_tooltip_active(parts: FileDownloadButtonParts, active: boolean): void {
-    parts.tooltip_el.classList.toggle('file-download-tooltip--active', active);
-}
-
 function icon_html(Helpers: FileDownloadHelpers, icon_name: string, size: number): string {
     const svg = resolve_get_icon_svg(Helpers)(icon_name, ['currentColor'], size);
     if (icon_name === 'loader') {
-        return `<span class="file-download-spinner">${svg}</span>`;
+        return `<span class="generic-tooltip-spinner">${svg}</span>`;
     }
     return svg;
 }
 
 type FileDownloadStatusState = 'generating' | 'ready' | 'error';
+
+export type StatusIconTooltipFeedbackState = FileDownloadStatusState;
 
 function status_icon_markup(
     Helpers: FileDownloadHelpers,
@@ -91,42 +78,6 @@ function status_icon_markup(
     if (state === 'generating') return icon_html(Helpers, 'loader', size);
     if (state === 'ready') return icon_html(Helpers, 'check', size);
     return icon_html(Helpers, 'close', size);
-}
-
-const TOOLTIP_STATUS_ICON_CLASS = 'file-download-tooltip-icon';
-
-function clear_tooltip_status_classes(tooltip_el: HTMLElement): void {
-    tooltip_el.classList.remove('file-download-tooltip--with-status-icon');
-    tooltip_el.querySelectorAll(`.${TOOLTIP_STATUS_ICON_CLASS}`).forEach((el) => {
-        el.classList.forEach((cls) => {
-            if (cls.startsWith(`${TOOLTIP_STATUS_ICON_CLASS}--`)) {
-                el.classList.remove(cls);
-            }
-        });
-    });
-}
-
-function set_tooltip_status_with_icon(
-    parts: FileDownloadButtonParts,
-    text: string,
-    icon_html_str: string,
-    state: FileDownloadStatusState
-): void {
-    if (parts.live_region) {
-        parts.live_region.textContent = text;
-    }
-    clear_tooltip_status_classes(parts.tooltip_el);
-    parts.tooltip_el.classList.add('file-download-tooltip--with-status-icon');
-    parts.tooltip_el.replaceChildren();
-    const text_el = document.createElement('span');
-    text_el.className = 'file-download-tooltip-text';
-    text_el.textContent = text;
-    const icon_el = document.createElement('span');
-    icon_el.className = `${TOOLTIP_STATUS_ICON_CLASS} ${TOOLTIP_STATUS_ICON_CLASS}--${state}`;
-    icon_el.setAttribute('aria-hidden', 'true');
-    icon_el.innerHTML = icon_html_str;
-    parts.tooltip_el.append(text_el, icon_el);
-    sync_tooltip_content_attr(parts.tooltip_el);
 }
 
 function find_trigger(parts: FileDownloadButtonParts): HTMLElement {
@@ -141,30 +92,65 @@ function set_busy(trigger: HTMLElement, busy: boolean): void {
     trigger.setAttribute('data-file-download-busy', busy ? 'true' : 'false');
 }
 
-function update_status_text(
-    parts: FileDownloadButtonParts,
+function init_feedback_tooltip_on_wrapper(
+    Helpers: FileDownloadHelpers,
+    wrapper: HTMLElement,
+    idle_tooltip_text = ''
+): GenericTooltip {
+    const tooltip = new GenericTooltip();
+    tooltip.init({
+        wrapper,
+        deps: Helpers,
+        options: {
+            mode: 'feedback',
+            idle_text: idle_tooltip_text,
+            use_overlay: false,
+        },
+    });
+    return tooltip;
+}
+
+/** Bygger ikonmarkup för tooltip-status (samma som PDF-export). */
+export function build_status_icon_tooltip_icon_html(
+    Helpers: FileDownloadHelpers,
+    state: StatusIconTooltipFeedbackState,
+    icon_size = 16
+): string {
+    return status_icon_markup(Helpers, state, icon_size);
+}
+
+/** Uppdaterar tooltip med text och ikon (feedback-läge). */
+export function set_status_icon_tooltip_feedback(
+    parts: Pick<FileDownloadButtonParts, 'tooltip'>,
     text: string,
     icon_html_str: string,
-    state: FileDownloadStatusState
+    state: StatusIconTooltipFeedbackState
 ): void {
-    set_tooltip_status_with_icon(parts, text, icon_html_str, state);
+    parts.tooltip.show();
+    parts.tooltip.set_content(text, icon_html_str, state);
+}
+
+/** Återställer tooltip (avmonterar ur DOM). */
+export function reset_status_icon_tooltip(
+    parts: Pick<FileDownloadButtonParts, 'tooltip'>,
+    _idle_tooltip_text = ''
+): void {
+    parts.tooltip.hide();
+}
+
+/** Sätter data-file-download-busy på knappen (samma som PDF-export). */
+export function set_file_download_trigger_busy(trigger: HTMLElement, busy: boolean): void {
+    set_busy(trigger, busy);
 }
 
 export function set_file_download_idle(
     parts: FileDownloadButtonParts,
     _idle_icon_html: string,
-    idle_tooltip_text = ''
+    _idle_tooltip_text = ''
 ): void {
     const trigger = find_trigger(parts);
     set_busy(trigger, false);
-    if (parts.live_region) {
-        parts.live_region.textContent = '';
-    }
-    set_tooltip_active(parts, false);
-    clear_tooltip_status_classes(parts.tooltip_el);
-    parts.tooltip_el.replaceChildren();
-    parts.tooltip_el.textContent = idle_tooltip_text;
-    sync_tooltip_content_attr(parts.tooltip_el);
+    parts.tooltip.hide();
 }
 
 function apply_generating_state(
@@ -177,8 +163,7 @@ function apply_generating_state(
     set_busy(trigger, true);
     const msg = t('file_download_generating');
     const icon_markup = status_icon_markup(Helpers, 'generating', icon_size);
-    update_status_text(parts, msg, icon_markup, 'generating');
-    set_tooltip_active(parts, true);
+    set_status_icon_tooltip_feedback(parts, msg, icon_markup, 'generating');
 }
 
 function apply_ready_state(
@@ -189,8 +174,7 @@ function apply_ready_state(
 ): void {
     const msg = t('file_download_ready');
     const icon_markup = status_icon_markup(Helpers, 'ready', icon_size);
-    update_status_text(parts, msg, icon_markup, 'ready');
-    set_tooltip_active(parts, true);
+    set_status_icon_tooltip_feedback(parts, msg, icon_markup, 'ready');
 }
 
 function resolve_error_message(t: TranslationFn, message_key: string): string {
@@ -210,8 +194,7 @@ function apply_error_state(
 ): void {
     const msg = custom_message ?? resolve_error_message(t, message_key);
     const icon_markup = status_icon_markup(Helpers, 'error', icon_size);
-    set_tooltip_status_with_icon(parts, msg, icon_markup, 'error');
-    set_tooltip_active(parts, true);
+    set_status_icon_tooltip_feedback(parts, msg, icon_markup, 'error');
 }
 
 export async function run_file_download_flow(
@@ -315,24 +298,26 @@ export function wrap_file_download_trigger(
     }
 
     const parent = trigger.parentElement;
-    if (parent?.classList.contains('file-download-tooltip-wrapper')) {
-        const wrapper = parent;
-        const tooltip_el = wrapper.querySelector('[data-file-download-tooltip]');
-        const live_region = find_file_download_live_region(wrapper);
+    if (parent?.classList.contains('generic-tooltip-wrapper')) {
+        const tooltip = init_feedback_tooltip_on_wrapper(
+            Helpers,
+            parent,
+            options.idle_tooltip_text ?? ''
+        );
         const parts: FileDownloadButtonParts = {
-            wrapper,
+            wrapper: parent,
             button: trigger,
-            live_region,
-            tooltip_el: tooltip_el instanceof HTMLElement ? tooltip_el : wrapper,
+            tooltip,
         };
         bind_download_handler(parts, t, Helpers, download_fn, options);
         return parts;
     }
 
-    const { wrapper, live_region, tooltip_el } = create_status_icon_tooltip_wrapper(Helpers, {
+    const { wrapper, tooltip } = create_tooltip_wrapper(Helpers, {
         content: trigger,
-        idle_tooltip_text: options.idle_tooltip_text ?? '',
-        include_live_region: true,
+        mode: 'feedback',
+        idle_text: options.idle_tooltip_text ?? '',
+        use_overlay: false,
     });
 
     trigger.parentNode?.replaceChild(wrapper, trigger);
@@ -340,8 +325,7 @@ export function wrap_file_download_trigger(
     const parts: FileDownloadButtonParts = {
         wrapper,
         button: trigger,
-        live_region,
-        tooltip_el,
+        tooltip,
     };
     bind_download_handler(parts, t, Helpers, download_fn, options);
     return parts;
@@ -394,17 +378,17 @@ export function create_file_download_button(
             `<span class="file-download-btn__status-icon" aria-hidden="true">${idle_icon}</span>`,
     });
 
-    const { wrapper, live_region, tooltip_el } = create_status_icon_tooltip_wrapper(Helpers, {
+    const { wrapper, tooltip } = create_tooltip_wrapper(Helpers, {
         content: trigger,
-        idle_tooltip_text,
-        include_live_region: true,
+        mode: 'feedback',
+        idle_text: idle_tooltip_text,
+        use_overlay: false,
     });
 
     const parts: FileDownloadButtonParts = {
         wrapper,
         button: trigger,
-        live_region,
-        tooltip_el,
+        tooltip,
     };
 
     bind_download_handler(parts, t, Helpers, on_download, {

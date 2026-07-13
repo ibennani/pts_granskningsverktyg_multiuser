@@ -2,10 +2,39 @@
  * @fileoverview Ren logik för automatisk URL-skärmdump (testbar utan DOM/API).
  */
 
-export function normalize_url_for_screenshot(raw: string, add_protocol?: (url: string) => string): string {
+function looks_like_dangerous_url_scheme(raw: string): boolean {
+    return /^(javascript|data|vbscript):/i.test(String(raw || '').trim());
+}
+
+/**
+ * Returnerar kanonisk http(s)-URL om råvärdet är en accepterad adress (protokoll valfritt).
+ */
+export function canonical_http_sample_url(
+    raw: string,
+    add_protocol?: (url: string) => string
+): string | null {
     const trimmed = String(raw || '').trim();
-    if (!trimmed) return '';
-    return add_protocol ? add_protocol(trimmed) : trimmed;
+    if (!trimmed || looks_like_dangerous_url_scheme(trimmed)) return null;
+    const href = add_protocol ? add_protocol(trimmed) : trimmed;
+    try {
+        const u = new URL(href);
+        if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
+        if (!u.hostname) return null;
+        if (u.pathname === '/' && !u.search && !u.hash) {
+            return u.origin;
+        }
+        return u.href;
+    } catch {
+        return null;
+    }
+}
+
+export function is_accepted_sample_url(raw: string, add_protocol?: (url: string) => string): boolean {
+    return canonical_http_sample_url(raw, add_protocol) !== null;
+}
+
+export function normalize_url_for_screenshot(raw: string, add_protocol?: (url: string) => string): string {
+    return canonical_http_sample_url(raw, add_protocol) ?? '';
 }
 
 export function remove_filename_from_list(filenames: string[], filename: string | null | undefined): string[] {

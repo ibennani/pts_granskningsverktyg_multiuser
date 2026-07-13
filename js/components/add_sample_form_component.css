@@ -1,19 +1,48 @@
 /* css/components/add_sample_form_component.css */
 
+@import '../../css/components/file_download_button.css';
+
 .add-sample-form {
     max-width: 100%;
-    overflow-x: hidden;
     box-sizing: border-box;
+    padding-inline: var(--focus-clearance);
 }
 
 .add-sample-form * {
     box-sizing: border-box;
 }
 
+.add-sample-form input,
+.add-sample-form textarea,
+.add-sample-form button,
+.add-sample-form select {
+    scroll-margin: var(--focus-clearance);
+}
+
 .add-sample-form .form-group {
     margin-bottom: 1.25rem;
     max-width: 100%;
-    overflow-x: hidden;
+}
+
+.sample-url-input-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: stretch;
+    max-width: 100%;
+}
+
+.sample-url-input-row .form-control {
+    flex: 1 1 12rem;
+    min-width: 0;
+}
+
+.sample-url-input-row .file-download-tooltip-wrapper {
+    flex: 0 0 auto;
+}
+
+.sample-url-input-row .sample-url-analyze-button {
+    flex: 0 0 auto;
 }
 
 .sample-description-label {
@@ -86,7 +115,6 @@
     margin: 0 0 1.5rem 0;
     background-color: var(--plate-background-color);
     max-width: 100%;
-    overflow-x: hidden;
     box-sizing: border-box;
 }
 
@@ -99,7 +127,6 @@
     margin-bottom: 0.75rem;
     border-bottom: 2px solid var(--secondary-color);
     max-width: 100%;
-    overflow-x: hidden;
     box-sizing: border-box;
 }
 
@@ -141,7 +168,6 @@
     padding-left: 0.5rem;
     margin-bottom: 0.5rem;
     max-width: 100%;
-    overflow-x: hidden;
     box-sizing: border-box;
 }
 
@@ -162,12 +188,10 @@
 
 .content-type-description.markdown-content {
     max-width: calc(100% - 3.5rem);
-    overflow-x: hidden;
 }
 
 .content-type-description.markdown-content * {
     max-width: 100%;
-    overflow-x: hidden;
 }
 
 .content-type-description.markdown-content table,
@@ -189,7 +213,6 @@
     gap: 1rem;
     flex-wrap: wrap;
     max-width: 100%;
-    overflow-x: hidden;
 }
 
 .sample-screenshot-section {
@@ -212,7 +235,6 @@
 
 .content-types-group {
     max-width: 100%;
-    overflow-x: hidden;
     box-sizing: border-box;
 }
 
@@ -228,7 +250,6 @@
     border-radius: var(--border-radius);
     background: var(--plate-background-color, transparent);
     margin: 0;
-    overflow: hidden;
 }
 
 .content-types-section-accordion__header {
@@ -237,7 +258,7 @@
     justify-content: flex-start;
     align-items: center;
     text-align: left;
-    padding: 0.9rem 1rem;
+    padding: calc(0.9rem + var(--focus-clearance)) calc(1rem + var(--focus-clearance));
     border: none;
     border-radius: 0;
     background-color: var(--button-default-bg);
@@ -252,8 +273,10 @@
 }
 
 .content-types-section-accordion__header:focus-visible {
-    outline: 3px solid var(--focus-ring-color, #1a73e8);
-    outline-offset: 2px;
+    outline: var(--focus-outer-width) var(--focus-outer-style, solid) var(--focus-outer-color);
+    outline-offset: var(--focus-ring-outline-offset);
+    box-shadow: var(--focus-ring-box-shadow);
+    z-index: 10;
 }
 
 .content-types-section-accordion__header-inner {
@@ -270,7 +293,7 @@
     font-weight: 600;
     line-height: 1.3;
     color: var(--primary-color);
-    scroll-margin-top: 1rem;
+    scroll-margin-top: var(--focus-clearance);
 }
 
 .add-sample-form .content-types-section-accordion__title {
@@ -308,8 +331,9 @@
 }
 
 .content-types-section-accordion__panel-inner {
-    padding: 0.9rem 1rem 0.2rem;
+    padding: calc(0.9rem + var(--focus-clearance)) calc(1rem + var(--focus-clearance)) calc(0.2rem + var(--focus-clearance));
     background-color: var(--plate-background-color);
+    scroll-padding: var(--focus-clearance);
 }
 
 .content-type-analyze-toolbar {
@@ -337,7 +361,6 @@
 
 .content-types-group fieldset {
     max-width: 100%;
-    overflow-x: hidden;
 }
 
 .content-types-group .content-type-description.markdown-content table {

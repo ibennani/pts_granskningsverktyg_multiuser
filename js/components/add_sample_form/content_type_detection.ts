@@ -6,7 +6,7 @@ import {
     can_upload_audit_media,
     detect_content_types_from_url,
 } from '../../api/audit_media_api.js';
-import { normalize_url_for_screenshot } from './sample_url_auto_screenshot_logic.js';
+import { is_accepted_sample_url, normalize_url_for_screenshot } from './sample_url_auto_screenshot_logic.js';
 import {
     collect_allowed_content_type_ids,
     should_apply_detected_content_types,
@@ -46,7 +46,7 @@ export function is_content_type_analyze_available(component: ContentTypeDetectio
     if (group.style.display === 'none' || group.hidden) return false;
     if (group.getClientRects().length === 0) return false;
     const raw = component.url_input?.value || '';
-    return Boolean(normalize_url_for_screenshot(raw, component.Helpers?.add_protocol_if_missing));
+    return is_accepted_sample_url(raw, component.Helpers?.add_protocol_if_missing);
 }
 
 export function update_content_type_analyze_visibility(component: ContentTypeDetectionComponentLike): void {

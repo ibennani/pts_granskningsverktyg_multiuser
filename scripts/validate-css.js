@@ -11,15 +11,15 @@ console.log('[validate-css] Checking for CSS issues...');
 
 let hasErrors = false;
 
-const TOOLTIP_DARK_ONLY_OVERRIDE = /\[data-theme="dark"\][^{]*\.status-icon-tooltip(?!-)/;
-const TOOLTIP_ELEMENT_SELECTOR = /\.status-icon-tooltip(?!-)/;
+const TOOLTIP_DARK_ONLY_OVERRIDE = /\[data-theme="dark"\][^{]*\.(?:status-icon-tooltip|generic-tooltip)(?!-)/;
+const TOOLTIP_ELEMENT_SELECTOR = /\.(?:status-icon-tooltip|generic-tooltip)(?!-)/;
 
 /**
  * @param {string} css_content
  * @param {string} relative_path
  */
-function validate_status_icon_tooltip_rules(css_content, relative_path) {
-    if (!css_content.includes('.status-icon-tooltip')) {
+function validate_tooltip_rules(css_content, relative_path) {
+    if (!css_content.includes('.status-icon-tooltip') && !css_content.includes('.generic-tooltip')) {
         return;
     }
 
@@ -153,7 +153,7 @@ for (const dir of tooltip_css_dirs) {
     for (const css_path of collect_css_files(dir)) {
         const css_content = readFileSync(css_path, 'utf8');
         const relative_path = css_path.replace(`${projectRoot}\\`, '').replace(`${projectRoot}/`, '');
-        validate_status_icon_tooltip_rules(css_content, relative_path);
+        validate_tooltip_rules(css_content, relative_path);
     }
 }
 

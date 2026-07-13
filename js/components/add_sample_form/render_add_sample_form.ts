@@ -2,6 +2,7 @@ import { render_content_types_section_accordion } from './content_type_accordion
 import { handle_sample_attach_media_click, render_sample_screenshot_section } from './sample_attach_media.js';
 import { sync_sample_auto_screenshot_state_from_data } from './sample_url_auto_screenshot.js';
 import { update_content_type_analyze_visibility } from './content_type_detection.js';
+import { create_sample_url_analyze_button } from './sample_url_analyze_status.js';
 import { resolve_content_types } from '../../../shared/rulefile/rulefile_metadata_vocabularies.js';
 
 type ContentTypeGroupOption = {
@@ -11,7 +12,7 @@ type ContentTypeGroupOption = {
 };
 
 export function render_add_sample_form(component: any, sample_id_to_edit: string | null = null) {
-    // Undvik omrendering när samma vy redan är monterad — annars avbryts t.ex. auto-skärmdump vid blur.
+    // Undvik omrendering när samma vy redan är monterad — annars avbryts t.ex. pågående sidanalys.
     // Kräv isConnected: annars kan contain() vara sant för en frånkopplad subträd efter att värden
     // (t.ex. parent.innerHTML) tagit bort noden från dokumentet — då måste formuläret byggas om från state.
     const form_already_mounted =
@@ -107,16 +108,23 @@ export function render_add_sample_form(component: any, sample_id_to_edit: string
         component.handle_autosave_input();
         update_content_type_analyze_visibility(component);
     });
-    component.url_input.addEventListener('blur', () => {
-        if (typeof component.handle_url_input_blur === 'function') {
-            component.handle_url_input_blur();
+    const url_analyze_parts = create_sample_url_analyze_button(component.Helpers, t);
+    component.url_analyze_button_parts = url_analyze_parts;
+    component.url_analyze_btn = url_analyze_parts.button;
+    component.url_analyze_btn.addEventListener('click', () => {
+        if (typeof component.handle_analyze_url_page_click === 'function') {
+            component.handle_analyze_url_page_click();
         }
+    });
+    const url_input_row = component.Helpers.create_element('div', {
+        class_name: 'sample-url-input-row',
+        children: [component.url_input, url_analyze_parts.wrapper]
     });
     component.url_form_group_ref = component.Helpers.create_element('div', {
         class_name: 'form-group',
         children: [
             component.Helpers.create_element('label', { attributes: { for: 'sampleUrlInput' }, text_content: t('url') }),
-            component.url_input
+            url_input_row
         ]
     });
     component.form_element.append(
@@ -129,6 +137,7 @@ export function render_add_sample_form(component: any, sample_id_to_edit: string
     );
     component.description_input.value = effective_sample_data?.description || "";
     component.url_input.value = effective_sample_data?.url || "";
+    update_content_type_analyze_visibility(component);
 
     // --- Content Types Section ---
     // Vid redigering kommer kryssrutorna från state/utkast i Redux. DraftManager.restoreIntoDom körs

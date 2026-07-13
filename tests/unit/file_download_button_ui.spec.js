@@ -1,7 +1,7 @@
 import { jest } from '@jest/globals';
 import { create_element } from '../../js/dom/create_element.js';
 import { get_icon_svg } from '../../js/ui/icons.js';
-import { create_status_icon_tooltip_wrapper } from '../../js/utils/status_icon_tooltip.ts';
+import { create_tooltip_wrapper } from '../../js/utils/generic_tooltip.ts';
 import {
     create_file_download_button,
     READY_RESET_MS,
@@ -35,28 +35,36 @@ const t = (key, params) => {
     return text;
 };
 
-describe('status_icon_tooltip', () => {
-    test('skapar aria-live före tooltip-elementet', () => {
+async function flush_raf() {
+    await Promise.resolve();
+}
+
+describe('generic_tooltip integration', () => {
+    test('create_tooltip_wrapper har bara trigger i DOM i viloläge', () => {
         const btn = create_element('button', { text_content: 'Ladda ner' });
-        const { wrapper, live_region, tooltip_el } = create_status_icon_tooltip_wrapper(Helpers, {
+        const { wrapper, tooltip } = create_tooltip_wrapper(Helpers, {
             content: btn,
-            include_live_region: true,
+            mode: 'feedback',
+            use_overlay: false,
         });
 
         expect(wrapper.children[0]).toBe(btn);
-        expect(wrapper.children[1]).toBe(live_region);
-        expect(wrapper.children[2]).toBe(tooltip_el);
-        expect(live_region?.getAttribute('aria-live')).toBe('polite');
-        expect(live_region?.textContent).toBe('');
+        expect(wrapper.children.length).toBe(1);
+        expect(tooltip.is_mounted()).toBe(false);
     });
 });
 
 describe('file_download_button_ui', () => {
     beforeEach(() => {
         jest.useFakeTimers();
+        jest.spyOn(window, 'requestAnimationFrame').mockImplementation((callback) => {
+            callback(0);
+            return 1;
+        });
     });
 
     afterEach(() => {
+        jest.restoreAllMocks();
         jest.useRealTimers();
     });
 
@@ -78,36 +86,36 @@ describe('file_download_button_ui', () => {
         const initial_button_html = parts.button.innerHTML;
 
         parts.button.click();
+        await flush_raf();
+
+        const tooltip_el = parts.tooltip.get_tooltip_element();
+        const text_el = parts.tooltip.get_text_element();
 
         expect(parts.button.getAttribute('data-file-download-busy')).toBe('true');
         expect(parts.button.innerHTML).toBe(initial_button_html);
-        expect(parts.button.querySelector('.file-download-spinner')).toBeNull();
-        expect(parts.live_region?.textContent).toBe('Genererar fil för nedladdning');
-        expect(parts.tooltip_el.querySelector('.file-download-tooltip-text')?.textContent)
-            .toBe('Genererar fil för nedladdning');
-        expect(parts.tooltip_el.querySelector('.file-download-tooltip-icon--generating .file-download-spinner'))
+        expect(parts.button.querySelector('.generic-tooltip-spinner')).toBeNull();
+        expect(text_el?.textContent).toBe('Genererar fil för nedladdning');
+        expect(tooltip_el?.querySelector('.generic-tooltip__icon--generating .generic-tooltip-spinner'))
             .not.toBeNull();
-        expect(parts.tooltip_el.getAttribute('data-has-tooltip-content')).toBe('true');
-        expect(parts.tooltip_el.classList.contains('file-download-tooltip--active')).toBe(true);
+        expect(tooltip_el?.getAttribute('data-has-tooltip-content')).toBe('true');
+        expect(tooltip_el?.classList.contains('generic-tooltip--active')).toBe(true);
 
         resolve_download();
         await Promise.resolve();
-        await Promise.resolve();
+        await flush_raf();
 
         expect(parts.button.innerHTML).toBe(initial_button_html);
-        expect(parts.live_region?.textContent).toBe('Nu kan du ladda ner filen');
-        expect(parts.tooltip_el.querySelector('.file-download-tooltip-icon--ready')).not.toBeNull();
+        expect(parts.tooltip.get_text_element()?.textContent).toBe('Nu kan du ladda ner filen');
+        expect(parts.tooltip.get_tooltip_element()?.querySelector('.generic-tooltip__icon--ready')).not.toBeNull();
 
         jest.advanceTimersByTime(READY_RESET_MS);
         await Promise.resolve();
 
         expect(parts.button.getAttribute('data-file-download-busy')).toBe('false');
-        expect(parts.live_region?.textContent).toBe('');
-        expect(parts.tooltip_el.hasAttribute('data-has-tooltip-content')).toBe(false);
-        expect(parts.tooltip_el.classList.contains('file-download-tooltip--active')).toBe(false);
+        expect(parts.tooltip.is_mounted()).toBe(false);
     });
 
-    test('tom tooltip visas inte i viloläge', () => {
+    test('tom tooltip finns inte i DOM i viloläge', () => {
         const parts = create_file_download_button({
             Helpers,
             label: 'Exportera',
@@ -115,8 +123,7 @@ describe('file_download_button_ui', () => {
             on_download: () => Promise.resolve(),
         });
 
-        expect(parts.tooltip_el.textContent).toBe('');
-        expect(parts.tooltip_el.hasAttribute('data-has-tooltip-content')).toBe(false);
+        expect(parts.tooltip.is_mounted()).toBe(false);
     });
 
     test('ignorerar klick medan busy', async () => {
@@ -157,20 +164,21 @@ describe('file_download_button_ui', () => {
         parts.button.click();
         await Promise.resolve();
         await Promise.resolve();
+        await flush_raf();
+
+        const tooltip_el = parts.tooltip.get_tooltip_element();
 
         expect(parts.button.getAttribute('data-file-download-busy')).toBe('true');
         expect(parts.button.innerHTML).toBe(initial_button_html);
-        expect(parts.live_region?.textContent).toBe('Det gick inte att generera filen');
-        expect(parts.tooltip_el.querySelector('.file-download-tooltip-text')?.textContent)
-            .toBe('Det gick inte att generera filen');
-        expect(parts.tooltip_el.querySelector('.file-download-tooltip-icon--error')).not.toBeNull();
+        expect(parts.tooltip.get_text_element()?.textContent).toBe('Det gick inte att generera filen');
+        expect(tooltip_el?.querySelector('.generic-tooltip__icon--error')).not.toBeNull();
         expect(parts.button.querySelector('.file-download-btn__status-icon--error')).toBeNull();
 
         jest.advanceTimersByTime(READY_RESET_MS);
         await Promise.resolve();
 
         expect(parts.button.getAttribute('data-file-download-busy')).toBe('false');
-        expect(parts.live_region?.textContent).toBe('');
+        expect(parts.tooltip.is_mounted()).toBe(false);
     });
 
     test('visar storleksfel när nedladdning överskrider max', async () => {
@@ -186,10 +194,11 @@ describe('file_download_button_ui', () => {
         parts.button.click();
         await Promise.resolve();
         await Promise.resolve();
+        await flush_raf();
 
-        expect(parts.live_region?.textContent).toContain('Maxstorlek');
-        expect(parts.tooltip_el.textContent).toContain('Maxstorlek');
-        expect(parts.live_region?.textContent).not.toBe('Nu kan du ladda ner filen');
+        expect(parts.tooltip.get_text_element()?.textContent).toContain('Maxstorlek');
+        expect(parts.tooltip.get_tooltip_element()?.textContent).toContain('Maxstorlek');
+        expect(parts.tooltip.get_text_element()?.textContent).not.toBe('Nu kan du ladda ner filen');
         expect(parts.button.querySelector('.file-download-btn__status-icon--error')).toBeNull();
         expect(parts.button.querySelector('.file-download-btn__status-icon--ready')).toBeNull();
     });
@@ -211,8 +220,9 @@ describe('file_download_button_ui', () => {
         parts.button.click();
         await Promise.resolve();
         await Promise.resolve();
+        await flush_raf();
 
-        const tooltip_text = parts.tooltip_el.querySelector('.file-download-tooltip-text')?.textContent;
+        const tooltip_text = parts.tooltip.get_text_element()?.textContent;
         expect(tooltip_text).toContain('Bilagan med skärmbilder är för stor');
         expect(tooltip_text).toContain('52 MByte');
         expect(tooltip_text).toContain('Maxgräns: 50 Mbyte');
@@ -237,8 +247,9 @@ describe('file_download_button_ui', () => {
         parts.button.click();
         await Promise.resolve();
         await Promise.resolve();
+        await flush_raf();
 
-        const tooltip_text = parts.tooltip_el.querySelector('.file-download-tooltip-text')?.textContent;
+        const tooltip_text = parts.tooltip.get_text_element()?.textContent;
         expect(tooltip_text).toBe('Det gick inte att skapa PDF-filen. Försök igen om en stund.');
         expect(tooltip_text).not.toContain('Kunde inte exportera PDF');
 
@@ -254,11 +265,12 @@ describe('file_download_button_ui', () => {
                 '<span class="file-download-btn__label">Test</span>' +
                 '<span class="file-download-btn__status-icon"></span>',
         });
-        const { wrapper, live_region, tooltip_el } = create_status_icon_tooltip_wrapper(Helpers, {
+        const { wrapper, tooltip } = create_tooltip_wrapper(Helpers, {
             content: btn,
-            include_live_region: true,
+            mode: 'feedback',
+            use_overlay: false,
         });
-        const parts = { wrapper, button: btn, live_region, tooltip_el };
+        const parts = { wrapper, button: btn, tooltip };
 
         const flow_promise = run_file_download_flow(parts, t, Helpers, async () => {}, {
             idle_icon_html: get_icon_svg('save', ['currentColor'], 16),
@@ -270,7 +282,7 @@ describe('file_download_button_ui', () => {
         expect(btn.getAttribute('data-file-download-busy')).toBe('false');
     });
 
-    test('set_file_download_idle rensar status', () => {
+    test('set_file_download_idle rensar status', async () => {
         const btn = create_element('button', {
             class_name: 'file-download-btn',
             attributes: { 'data-file-download-busy': 'true' },
@@ -278,20 +290,18 @@ describe('file_download_button_ui', () => {
                 '<span class="file-download-btn__label">Test</span>' +
                 '<span class="file-download-btn__status-icon">x</span>',
         });
-        const { wrapper, live_region, tooltip_el } = create_status_icon_tooltip_wrapper(Helpers, {
+        const { wrapper, tooltip } = create_tooltip_wrapper(Helpers, {
             content: btn,
-            include_live_region: true,
+            mode: 'feedback',
+            use_overlay: false,
         });
-        live_region.textContent = 'status';
-        tooltip_el.textContent = 'status';
+        tooltip.show();
+        tooltip.set_content('status');
+        await flush_raf();
 
-        set_file_download_idle(
-            { wrapper, button: btn, live_region, tooltip_el },
-            get_icon_svg('save', ['currentColor'], 16),
-            ''
-        );
+        set_file_download_idle({ wrapper, button: btn, tooltip }, get_icon_svg('save', ['currentColor'], 16), '');
 
         expect(btn.getAttribute('data-file-download-busy')).toBe('false');
-        expect(live_region.textContent).toBe('');
+        expect(tooltip.is_mounted()).toBe(false);
     });
 });

@@ -29,7 +29,7 @@ const REQUIRED_JS_REEXPORT_BRIDGES = [
     'js/utils/vite_dev_client_timestamp.js',
     'js/utils/vite_dev_client_timestamp_hmr.js',
     'js/utils/download_filename_utils.js',
-    'js/utils/status_icon_tooltip.js',
+    'js/utils/generic_tooltip.js',
     'js/utils/file_download_button_ui.js',
     'js/utils/temporary_live_text_update.js',
     'js/logic/audit_observation_edit_policy.js',

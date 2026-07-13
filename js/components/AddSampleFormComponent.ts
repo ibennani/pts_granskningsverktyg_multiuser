@@ -12,13 +12,16 @@ import {
     save_new_sample_form_draft,
     type NewSampleFormDraft
 } from './add_sample_form/new_sample_form_draft.js';
-import { clear_sample_auto_screenshot_if_needed, handle_sample_url_blur } from './add_sample_form/sample_url_auto_screenshot.js';
+import { clear_sample_auto_screenshot_if_needed } from './add_sample_form/sample_url_auto_screenshot.js';
+import { is_accepted_sample_url } from './add_sample_form/sample_url_auto_screenshot_logic.js';
+import { show_sample_url_analyze_invalid_modal } from './add_sample_form/sample_url_analyze_invalid_modal.js';
+import { run_sample_url_analyze_flow, type SampleUrlAnalyzeFlowHost } from './add_sample_form/sample_url_analyze_flow.js';
+import type { FileDownloadButtonParts } from '../utils/file_download_button_ui.js';
 import {
     resolve_content_types,
     resolve_sample_vocab
 } from '../../shared/rulefile/rulefile_metadata_vocabularies.js';
 import { build_sample_url_screenshot_form_host, type SampleUrlScreenshotFormHostSource } from './add_sample_form/sample_url_screenshot_form_host.js';
-import { build_sample_url_page_title_form_host, handle_sample_url_page_title_on_blur, type SampleUrlPageTitleFormHostSource } from './add_sample_form/sample_url_page_title.js';
 import { handle_analyze_page_content_click as run_analyze_page_content_click, update_content_type_analyze_visibility, type ContentTypeDetectionComponentLike } from './add_sample_form/content_type_detection.js';
 import { sync_to_server_now } from '../logic/server_sync.js';
 import { get_auth_token } from '../api/client.js';
@@ -58,6 +61,9 @@ export class AddSampleFormComponent {
     private description_input: any;
     private description_label_element: HTMLLabelElement | null;
     private url_input: any;
+    private url_analyze_btn: HTMLButtonElement | null;
+    private url_analyze_button_parts: FileDownloadButtonParts | null;
+    private url_analyze_generation: number;
     private url_form_group_ref: any;
     private content_types_container_element: any;
     private sample_type_container: any;
@@ -106,6 +112,9 @@ export class AddSampleFormComponent {
         this.description_input = null;
         this.description_label_element = null;
         this.url_input = null;
+        this.url_analyze_btn = null;
+        this.url_analyze_button_parts = null;
+        this.url_analyze_generation = 0;
         this.url_form_group_ref = null;
         this.content_types_container_element = null;
         this.sample_type_container = null;
@@ -155,6 +164,9 @@ export class AddSampleFormComponent {
         this.description_input = null;
         this.description_label_element = null;
         this.url_input = null;
+        this.url_analyze_btn = null;
+        this.url_analyze_button_parts = null;
+        this.url_analyze_generation = 0;
         this.url_form_group_ref = null;
         this.content_types_container_element = null;
         this.sample_type_container = null;
@@ -187,7 +199,7 @@ export class AddSampleFormComponent {
         this._handleCheckboxChange = this._handleCheckboxChange.bind(this);
         this.handle_autosave_input = this.handle_autosave_input.bind(this);
         this.handle_content_type_change = this.handle_content_type_change.bind(this);
-        this.handle_url_input_blur = this.handle_url_input_blur.bind(this);
+        this.handle_analyze_url_page_click = this.handle_analyze_url_page_click.bind(this);
         this.handle_analyze_page_content_click = this.handle_analyze_page_content_click.bind(this);
         this.get_t_internally = this.get_t_internally.bind(this);
     }
@@ -309,22 +321,32 @@ export class AddSampleFormComponent {
         return after_sync?.auditId ? String(after_sync.auditId) : null;
     }
 
-    handle_url_input_blur(): void {
+    handle_analyze_url_page_click(): void {
         const val = (this.url_input?.value || '').trim();
-        if (val && this.Helpers?.add_protocol_if_missing) {
-            const fixed = this.Helpers.add_protocol_if_missing(val);
+        const add_protocol = this.Helpers?.add_protocol_if_missing;
+        if (!is_accepted_sample_url(val, add_protocol)) {
+            show_sample_url_analyze_invalid_modal({
+                Helpers: this.Helpers,
+                t: this.get_t_internally()
+            });
+            return;
+        }
+        if (val && add_protocol) {
+            const fixed = add_protocol(val);
             if (fixed !== val && this.url_input) {
                 this.url_input.value = fixed;
             }
         }
-        const screenshot_host = build_sample_url_screenshot_form_host(
-            this as unknown as SampleUrlScreenshotFormHostSource
-        );
-        const page_title_host = build_sample_url_page_title_form_host(
-            this as unknown as SampleUrlPageTitleFormHostSource
-        );
-        void handle_sample_url_page_title_on_blur(page_title_host);
-        void handle_sample_url_blur(screenshot_host);
+        void run_sample_url_analyze_flow(this as unknown as SampleUrlAnalyzeFlowHost);
+    }
+
+    bump_url_analyze_generation(): number {
+        this.url_analyze_generation += 1;
+        return this.url_analyze_generation;
+    }
+
+    is_url_analyze_generation_current(generation: number): boolean {
+        return this.url_analyze_generation === generation;
     }
 
     update_description_from_sample_type() {

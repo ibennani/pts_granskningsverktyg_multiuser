@@ -1,42 +1,4 @@
-/* Filnedladdningsknappar – tooltip, spinner och tillståndsikoner */
-
-.file-download-tooltip-wrapper.status-icon-tooltip-wrapper {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    vertical-align: middle;
-    cursor: default;
-}
-
-.file-download-tooltip-wrapper .status-icon-tooltip {
-    position: absolute;
-    bottom: calc(100% + 6px);
-    left: 50%;
-    transform: translateX(-50%);
-    margin-bottom: 0;
-    padding: 0.35rem 0.5rem;
-    font-size: 1rem;
-    font-weight: 500;
-    line-height: 1.2;
-    white-space: nowrap;
-    color: var(--status-icon-tooltip-color);
-    background-color: var(--status-icon-tooltip-bg);
-    border: 1px solid var(--status-icon-tooltip-border);
-    border-radius: 4px;
-    box-shadow: var(--status-icon-tooltip-shadow);
-    visibility: hidden;
-    opacity: 0;
-    transition: opacity 0.15s ease, visibility 0.15s ease;
-    z-index: 100;
-    pointer-events: none;
-}
-
-.file-download-tooltip-wrapper .status-icon-tooltip[data-has-tooltip-content="true"].file-download-tooltip--active,
-.file-download-tooltip-wrapper:hover .status-icon-tooltip[data-has-tooltip-content="true"],
-.file-download-tooltip-wrapper:focus-within .status-icon-tooltip[data-has-tooltip-content="true"] {
-    visibility: visible;
-    opacity: 1;
-}
+/* Filnedladdningsknappar – knapp och statusikon i knappen */
 
 .file-download-btn {
     display: inline-flex;
@@ -60,63 +22,9 @@
     line-height: 0;
 }
 
-.file-download-btn__status-icon svg,
-.file-download-tooltip-icon svg {
+.file-download-btn__status-icon svg {
     display: block;
     width: 1.2em;
     height: 1.2em;
     flex-shrink: 0;
-}
-
-.file-download-tooltip-icon--generating {
-    color: inherit;
-}
-
-.file-download-tooltip-icon--ready {
-    color: var(--success-color);
-}
-
-.file-download-tooltip-icon--error {
-    color: var(--danger-color);
-}
-
-.file-download-tooltip-wrapper .status-icon-tooltip.file-download-tooltip--with-status-icon {
-    display: inline-flex;
-    align-items: center;
-    flex-wrap: nowrap;
-    column-gap: 0.35em;
-}
-
-.file-download-tooltip-text {
-    flex: 0 1 auto;
-}
-
-.file-download-tooltip-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    line-height: 0;
-}
-
-.file-download-tooltip-icon .file-download-spinner {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    animation: file-download-spin 0.8s linear infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-    .file-download-tooltip-icon .file-download-spinner {
-        animation: none;
-    }
-}
-
-@keyframes file-download-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
 }

@@ -155,7 +155,7 @@ async function resolve_audit_id_for_page_title(component: SampleUrlPageTitleComp
 }
 
 /**
- * Hämtar sidtitel när URL-fältet tappar fokus — visar laddning på etiketten direkt.
+ * Hämtar sidtitel när användaren klickar på Hämta information.
  */
 export async function handle_sample_url_page_title_on_blur(
     component: SampleUrlPageTitleComponentLike
@@ -194,7 +194,7 @@ export async function handle_sample_url_page_title_on_blur(
 }
 
 /**
- * @deprecated Använd handle_sample_url_page_title_on_blur vid URL-blur.
+ * @deprecated Använd handle_sample_url_page_title_on_blur vid klick på Analysera sida.
  */
 export async function fetch_and_apply_page_title_from_url(
     component: SampleUrlPageTitleComponentLike

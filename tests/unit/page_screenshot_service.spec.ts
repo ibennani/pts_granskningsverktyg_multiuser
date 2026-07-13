@@ -1,7 +1,8 @@
 /**
- * @fileoverview Enhetstester för fullsidsskärmdump (mockad Puppeteer).
+ * @fileoverview Enhetstester för skärmavbild med höjdbegränsning (mockad Puppeteer).
  */
 import { jest, describe, test, expect, beforeEach } from '@jest/globals';
+import { browser_read_document_scroll_height } from '../../server/services/page_screenshot_browser_scripts_loader.js';
 
 const set_user_agent_mock = jest.fn(async () => undefined);
 const set_extra_http_headers_mock = jest.fn(async () => undefined);
@@ -35,6 +36,15 @@ jest.unstable_mockModule('puppeteer', () => ({
 
 const { capture_page_screenshot } = await import('../../server/services/page_screenshot_service.ts');
 
+function mock_evaluate_with_scroll_height(scroll_height: number) {
+    evaluate_mock.mockImplementation(async (fn: unknown) => {
+        if (fn === browser_read_document_scroll_height) {
+            return scroll_height;
+        }
+        return undefined;
+    });
+}
+
 describe('page_screenshot_service', () => {
     beforeEach(() => {
         set_user_agent_mock.mockClear();
@@ -47,7 +57,7 @@ describe('page_screenshot_service', () => {
         screenshot_mock.mockClear();
         wait_for_network_idle_mock.mockClear();
         close_mock.mockClear();
-        evaluate_mock.mockImplementation(async () => undefined);
+        mock_evaluate_with_scroll_height(2000);
     });
 
     test('konfigurerar stealth (user agent m.m.)', async () => {
@@ -57,25 +67,49 @@ describe('page_screenshot_service', () => {
         expect(evaluate_on_new_document_mock).toHaveBeenCalled();
     });
 
-    test('sätter viewport med deviceScaleFactor 2', async () => {
+    test('sätter viewport till dokumenthöjd före screenshot', async () => {
         await capture_page_screenshot({ url: 'https://example.com' });
         expect(set_viewport_mock).toHaveBeenCalledWith({
             width: 1280,
             height: 800,
             deviceScaleFactor: 2,
         });
+        expect(set_viewport_mock).toHaveBeenLastCalledWith({
+            width: 1280,
+            height: 2000,
+            deviceScaleFactor: 2,
+        });
     });
 
-    test('tar fullPage-screenshot och stänger webbläsaren', async () => {
+    test('tar viewport-screenshot med dokumenthöjd och stänger webbläsaren', async () => {
         const result = await capture_page_screenshot({ url: 'https://example.com' });
         expect(goto_mock).toHaveBeenCalledWith(
             'https://example.com',
             expect.objectContaining({ waitUntil: 'load' })
         );
-        expect(screenshot_mock).toHaveBeenCalledWith({ type: 'png', fullPage: true });
+        expect(screenshot_mock).toHaveBeenCalledWith({
+            type: 'png',
+            fullPage: false,
+        });
         expect(result.page_title).toBe('Testtitel');
         expect(result.png_buffer.toString()).toBe('png-bytes');
         expect(close_mock).toHaveBeenCalled();
+    });
+
+    test('begränsar capture-höjd till tre gånger viewport-bredden', async () => {
+        mock_evaluate_with_scroll_height(8000);
+
+        await capture_page_screenshot({ url: 'https://example.com' });
+
+        expect(set_viewport_mock).toHaveBeenLastCalledWith({
+            width: 1280,
+            height: 3840,
+            deviceScaleFactor: 2,
+        });
+        expect(screenshot_mock).toHaveBeenCalledWith({
+            type: 'png',
+            fullPage: false,
+        });
     });
 
     test('kör lazy-scroll, bildväntan och scroll-to-top via evaluate', async () => {
@@ -86,10 +120,12 @@ describe('page_screenshot_service', () => {
 
     test('tillåter 403 om sidan ändå har renderat innehåll', async () => {
         goto_mock.mockResolvedValueOnce({ status: () => 403 });
-        evaluate_mock
-            .mockResolvedValueOnce(true)
-            .mockResolvedValueOnce(undefined)
-            .mockResolvedValueOnce(undefined);
+        evaluate_mock.mockImplementation(async (fn: unknown) => {
+            if (fn === browser_read_document_scroll_height) {
+                return 2000;
+            }
+            return true;
+        });
 
         const result = await capture_page_screenshot({ url: 'https://example.com' });
         expect(result.page_title).toBe('Testtitel');

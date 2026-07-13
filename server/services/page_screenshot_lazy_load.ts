@@ -5,9 +5,10 @@
 import type { Page } from 'puppeteer';
 import {
     browser_auto_scroll_lazy_content,
+    browser_read_document_scroll_height,
     browser_scroll_to_top,
     browser_wait_for_lazy_images,
-} from './page_screenshot_browser_scripts.js';
+} from './page_screenshot_browser_scripts_loader.js';
 
 export const LAZY_SCROLL_STEP_PX = 400;
 export const LAZY_SCROLL_PAUSE_MS = 150;
@@ -73,4 +74,10 @@ export async function settle_after_lazy_load(page: Page): Promise<void> {
 
 export async function scroll_to_top(page: Page): Promise<void> {
     await page.evaluate(browser_scroll_to_top);
+}
+
+/** Läser dokumentets scrollHeight i sidans kontext (för capture-höjd). */
+export async function read_document_scroll_height(page: Page): Promise<number> {
+    const height = await page.evaluate(browser_read_document_scroll_height);
+    return typeof height === 'number' && Number.isFinite(height) ? height : 0;
 }

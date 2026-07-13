@@ -3,7 +3,7 @@
  */
 
 import type { Page } from 'puppeteer';
-import { browser_dismiss_cookie_banners } from './page_screenshot_browser_scripts.js';
+import { browser_dismiss_cookie_banners } from './page_screenshot_browser_scripts_loader.js';
 import { build_cookie_banner_dismiss_config } from './page_screenshot_cookie_consent_logic.js';
 
 const POST_DISMISS_SETTLE_MS = 700;

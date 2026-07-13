@@ -3,6 +3,8 @@
  * @module js/components/requirements_list/requirement_list_status_icons
  */
 
+import { wrap_with_static_tooltip } from '../../utils/generic_tooltip.js';
+
 /**
  * @param {string} status
  * @returns {string}
@@ -37,31 +39,36 @@ export function create_status_icons_wrapper(ctx, base_status, needs_help, is_upd
     const t = Translation.t;
     const icons_wrapper = Helpers.create_element('span', { class_name: 'status-icons-wrapper' });
     const status_tooltip_text = t(`audit_status_${base_status}`);
-    const status_icon_wrapper = Helpers.create_element('span', { class_name: 'status-icon-tooltip-wrapper' });
-    status_icon_wrapper.appendChild(Helpers.create_element('span', {
+    const status_icon = Helpers.create_element('span', {
         class_name: `status-icon status-icon-${base_status.replace('_', '-')}`,
         text_content: get_status_icon(base_status),
-        attributes: { 'aria-hidden': 'true' }
-    }));
-    status_icon_wrapper.appendChild(Helpers.create_element('span', {
-        class_name: 'status-icon-tooltip',
-        text_content: status_tooltip_text,
-        attributes: { 'aria-hidden': 'true' }
-    }));
-    icons_wrapper.appendChild(status_icon_wrapper);
+        attributes: { 'aria-hidden': 'true' },
+    });
+    icons_wrapper.appendChild(
+        wrap_with_static_tooltip(Helpers, status_icon, status_tooltip_text, { use_overlay: true })
+    );
+
     if (needs_help) {
         const warning_svg = Helpers.get_icon_svg ? Helpers.get_icon_svg('warning', ['currentColor'], 14) : '';
-        const wh = Helpers.create_element('span', { class_name: 'status-icon-tooltip-wrapper' });
-        wh.appendChild(Helpers.create_element('span', { class_name: 'status-icon status-icon-needs-help-indicator', html_content: warning_svg, attributes: { 'aria-hidden': 'true' } }));
-        wh.appendChild(Helpers.create_element('span', { class_name: 'status-icon-tooltip', text_content: t('filter_option_needs_help'), attributes: { 'aria-hidden': 'true' } }));
-        icons_wrapper.appendChild(wh);
+        const needs_help_icon = Helpers.create_element('span', {
+            class_name: 'status-icon status-icon-needs-help-indicator',
+            html_content: warning_svg,
+            attributes: { 'aria-hidden': 'true' },
+        });
+        icons_wrapper.appendChild(
+            wrap_with_static_tooltip(Helpers, needs_help_icon, t('filter_option_needs_help'), { use_overlay: true })
+        );
     }
     if (is_updated) {
         const update_svg = Helpers.get_icon_svg ? Helpers.get_icon_svg('update', ['currentColor'], 14) : '';
-        const uw = Helpers.create_element('span', { class_name: 'status-icon-tooltip-wrapper' });
-        uw.appendChild(Helpers.create_element('span', { class_name: 'status-icon status-icon-updated-indicator', html_content: update_svg, attributes: { 'aria-hidden': 'true' } }));
-        uw.appendChild(Helpers.create_element('span', { class_name: 'status-icon-tooltip', text_content: t('status_updated_tooltip'), attributes: { 'aria-hidden': 'true' } }));
-        icons_wrapper.appendChild(uw);
+        const updated_icon = Helpers.create_element('span', {
+            class_name: 'status-icon status-icon-updated-indicator',
+            html_content: update_svg,
+            attributes: { 'aria-hidden': 'true' },
+        });
+        icons_wrapper.appendChild(
+            wrap_with_static_tooltip(Helpers, updated_icon, t('status_updated_tooltip'), { use_overlay: true })
+        );
     }
     return icons_wrapper;
 }

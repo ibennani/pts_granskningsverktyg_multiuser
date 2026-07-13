@@ -3,6 +3,8 @@
  */
 import { describe, test, expect } from '@jest/globals';
 import {
+    canonical_http_sample_url,
+    is_accepted_sample_url,
     normalize_url_for_screenshot,
     remove_filename_from_list,
     replace_auto_screenshot_filename,
@@ -15,6 +17,25 @@ import {
 describe('sample_url_auto_screenshot', () => {
     test('normalize_url_for_screenshot lägger till protokoll', () => {
         expect(normalize_url_for_screenshot('example.com', (u) => `https://${u}`)).toBe('https://example.com');
+    });
+
+    test('is_accepted_sample_url godkänner domän utan protokoll', () => {
+        const add_protocol = (u: string) => `https://${u}`;
+        expect(is_accepted_sample_url('hej.stockholm', add_protocol)).toBe(true);
+        expect(is_accepted_sample_url('www.exempel.se', add_protocol)).toBe(true);
+        expect(is_accepted_sample_url('https://exempel.se/sida', add_protocol)).toBe(true);
+    });
+
+    test('is_accepted_sample_url avvisar tom eller ogiltig adress', () => {
+        const add_protocol = (u: string) => `https://${u}`;
+        expect(is_accepted_sample_url('', add_protocol)).toBe(false);
+        expect(is_accepted_sample_url('   ', add_protocol)).toBe(false);
+        expect(is_accepted_sample_url('inte en url', add_protocol)).toBe(false);
+        expect(is_accepted_sample_url('javascript:alert(1)', add_protocol)).toBe(false);
+    });
+
+    test('canonical_http_sample_url returnerar null för ogiltig adress', () => {
+        expect(canonical_http_sample_url('foo bar', (u) => `https://${u}`)).toBeNull();
     });
 
     test('remove_filename_from_list tar bort angivet filnamn', () => {

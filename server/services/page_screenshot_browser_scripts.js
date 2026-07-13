@@ -1,11 +1,16 @@
 /**
  * @fileoverview Funktioner som skickas till Puppeteer page.evaluate / evaluateOnNewDocument.
- * Måste vara ren JavaScript — tsx/esbuild injicerar annars __name i serialiserad kod.
+ * Måste vara ren JavaScript — laddas via page_screenshot_browser_scripts_loader.ts
+ * (Function-konstruktor från rå fil) så tsx/esbuild inte injicerar __name i serialiserad kod.
  */
 
 /**
  * @param {{ step_px: number, pause_ms: number, max_passes: number, stable_passes_needed: number }} config
  */
+export function browser_read_document_scroll_height() {
+    return Math.max(document.body?.scrollHeight ?? 0, document.documentElement?.scrollHeight ?? 0);
+}
+
 export async function browser_auto_scroll_lazy_content(config) {
     const sleep = (ms) =>
         new Promise((resolve) => {

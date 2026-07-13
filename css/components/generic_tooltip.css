@@ -1,0 +1,125 @@
+/* Generisk tooltip – wrapper, bubbla, text, ikon och feedback-tillstånd */
+
+.generic-tooltip-wrapper {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+    cursor: default;
+}
+
+.generic-tooltip-wrapper--feedback {
+    display: inline-flex;
+    align-items: center;
+    vertical-align: middle;
+}
+
+.generic-tooltip {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 0;
+    padding: 0.35rem 0.5rem;
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.2;
+    white-space: nowrap;
+    color: var(--status-icon-tooltip-color);
+    background-color: var(--status-icon-tooltip-bg);
+    border: 1px solid var(--status-icon-tooltip-border);
+    border-radius: 4px;
+    box-shadow: var(--status-icon-tooltip-shadow);
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.15s ease, visibility 0.15s ease;
+    z-index: 100;
+    pointer-events: none;
+}
+
+.generic-tooltip[data-has-tooltip-content="true"].generic-tooltip--active,
+.generic-tooltip-wrapper:hover .generic-tooltip[data-has-tooltip-content="true"],
+.generic-tooltip-wrapper:focus-within .generic-tooltip[data-has-tooltip-content="true"] {
+    visibility: visible;
+    opacity: 1;
+}
+
+.generic-tooltip--with-icon {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    column-gap: 0.35em;
+}
+
+.generic-tooltip__text {
+    flex: 0 1 auto;
+}
+
+.generic-tooltip__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    line-height: 0;
+}
+
+.generic-tooltip__icon svg {
+    display: block;
+    width: 1.2em;
+    height: 1.2em;
+    flex-shrink: 0;
+}
+
+.generic-tooltip__icon--generating {
+    color: inherit;
+}
+
+.generic-tooltip__icon--ready {
+    color: var(--success-color);
+}
+
+.generic-tooltip__icon--error {
+    color: var(--danger-color);
+}
+
+.generic-tooltip__icon .generic-tooltip-spinner {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    animation: generic-tooltip-spin 0.8s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .generic-tooltip__icon .generic-tooltip-spinner {
+        animation: none;
+    }
+}
+
+@keyframes generic-tooltip-spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Tooltip i overlay: position fixed så att den inte klipps */
+#app-overlay .generic-tooltip.generic-tooltip--in-overlay {
+    position: fixed;
+    visibility: visible;
+    opacity: 1;
+    margin-bottom: 0;
+    padding: 0.35rem 0.5rem;
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.2;
+    white-space: nowrap;
+    color: var(--status-icon-tooltip-color);
+    background-color: var(--status-icon-tooltip-bg);
+    border: 1px solid var(--status-icon-tooltip-border);
+    border-radius: 4px;
+    box-shadow: var(--status-icon-tooltip-shadow);
+    z-index: 100;
+    pointer-events: none;
+}

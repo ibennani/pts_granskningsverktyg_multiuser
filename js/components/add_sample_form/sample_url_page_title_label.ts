@@ -3,10 +3,6 @@
  */
 
 import { get_icon_svg as default_get_icon_svg } from '../../ui/icons.js';
-import {
-    clear_temporary_live_region,
-    update_text_with_temporary_live_region,
-} from '../../utils/temporary_live_text_update.js';
 
 export type SampleUrlPageTitleLabelComponentLike = {
     description_label_element: HTMLLabelElement | null;
@@ -57,20 +53,13 @@ function set_label_loading_ui(component: SampleUrlPageTitleLabelComponentLike, l
     if (loading) {
         label.classList.add('sample-description-label--loading');
         ensure_label_spinner(label, component.Helpers);
-        update_text_with_temporary_live_region(
-            text_el,
-            component.get_t_internally()('sample_page_title_fetching_label')
-        );
+        text_el.textContent = component.get_t_internally()('sample_page_title_fetching_label');
         return;
     }
 
     label.classList.remove('sample-description-label--loading');
     label.querySelector(LABEL_SPINNER_SELECTOR)?.remove();
-    update_text_with_temporary_live_region(
-        text_el,
-        get_default_label_text(component),
-        () => clear_temporary_live_region(text_el)
-    );
+    text_el.textContent = get_default_label_text(component);
 }
 
 export function begin_sample_description_page_title_loading(
