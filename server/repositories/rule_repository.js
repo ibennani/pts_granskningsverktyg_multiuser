@@ -21,6 +21,7 @@ export async function fetch_rule_sets_list() {
                     name
                 ) AS name,
                 NULLIF(TRIM(COALESCE(published_content, content)->'metadata'->>'version'), '') AS version_display,
+                NULLIF(TRIM(content->'metadata'->>'version'), '') AS content_metadata_version,
                 COALESCE(published_content, content)->'metadata'->>'version' AS metadata_version,
                 COALESCE(
                     NULLIF(TRIM(COALESCE(published_content, content)->'metadata'->'monitoringType'->>'text'), ''),
@@ -42,6 +43,7 @@ export async function fetch_rule_sets_list() {
                 true AS list_as_arbetskopia,
                 COALESCE(NULLIF(TRIM(content->'metadata'->>'title'), ''), name) AS name,
                 NULLIF(TRIM(content->'metadata'->>'version'), '') AS version_display,
+                NULLIF(TRIM(content->'metadata'->>'version'), '') AS content_metadata_version,
                 content->'metadata'->>'version' AS metadata_version,
                 COALESCE(
                     NULLIF(TRIM(content->'metadata'->'monitoringType'->>'text'), ''),

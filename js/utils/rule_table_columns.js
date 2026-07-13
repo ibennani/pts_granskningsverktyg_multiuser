@@ -2,6 +2,10 @@
 // Returnerar kolumndefinitioner för regelfilstabellen, används med GenericTableComponent.
 
 import { create_file_download_button } from './file_download_button_ui.js';
+import {
+    arbetskopia_version_label,
+    published_row_version_label
+} from '../logic/rule_table_version_labels.js';
 
 /**
  * Skapar kolumndefinitioner för regelfilstabellen.
@@ -12,25 +16,6 @@ import { create_file_download_button } from './file_download_button_ui.js';
 export function create_rule_table_columns(deps, handlers) {
     const { t, Helpers, Translation, is_draft_table = false } = deps;
     const { onEditRule, onDownloadRule, onDeleteRule, onCopyRule, onPublishProductionRule } = handlers;
-
-    /** Versionsnummer för arbetskopior ska följa kolumnen content (samma som i regelfilsredigeraren). */
-    const arbetskopia_version_label = (row) => {
-        const from_content = row.content_metadata_version;
-        if (from_content != null && String(from_content).trim() !== '') return String(from_content).trim();
-        if (row.version_display != null && String(row.version_display).trim() !== '') return String(row.version_display).trim();
-        return '';
-    };
-
-    /** Publicerad basregel med ospublicerat utkast: visa utkastets version. */
-    const published_row_version_label = (row) => {
-        if (row.has_draft === true && row.draft_version != null && String(row.draft_version).trim() !== '') {
-            return String(row.draft_version).trim();
-        }
-        if (row.version_display != null && String(row.version_display).trim() !== '') {
-            return String(row.version_display).trim();
-        }
-        return '';
-    };
 
     const icon_svg = (name, size = 16) =>
         Helpers?.get_icon_svg ? Helpers.get_icon_svg(name, ['currentColor'], size) : '';
