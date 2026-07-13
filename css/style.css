@@ -744,9 +744,9 @@ input[type="radio"] + label {
 }
 
 :focus-visible {
-    outline: var(--focus-outer-width) solid var(--focus-outer-color);
-    outline-offset: calc(var(--focus-offset) + var(--focus-inner-width));
-    box-shadow: 0 0 0 calc(var(--focus-inner-width) + var(--focus-offset)) var(--focus-inner-color);
+    outline: var(--focus-outer-width) var(--focus-outer-style, solid) var(--focus-outer-color);
+    outline-offset: var(--focus-ring-outline-offset);
+    box-shadow: var(--focus-ring-box-shadow);
     /* 
        Note: The box-shadow fills the gap + inner ring space.
        To explicitly have a transparent gap (1px) + white ring (2px) + black ring (2px):
