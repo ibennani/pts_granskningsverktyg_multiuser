@@ -9,6 +9,7 @@ const mockParagraph = jest.fn(function MockParagraph(opts) {
 });
 const mockTextRun = jest.fn(function MockTextRun(opts) {
     this.text = opts?.text;
+    this.bold = opts?.bold;
     return this;
 });
 const mockTable = jest.fn(function MockTable(opts) {
@@ -31,6 +32,7 @@ jest.unstable_mockModule('docx', () => ({
     TableCell: mockTableCell,
     TableRow: mockTableRow,
     TextRun: mockTextRun,
+    TabStopType: { LEFT: 'left' },
     WidthType: { PERCENTAGE: 'pct' },
 }));
 
@@ -53,9 +55,24 @@ jest.unstable_mockModule('../../js/export/export_report_filename.js', () => ({
 const { collect_observation_export_deficiencies } = await import(
     '../../js/export/export_observation_texts_collect.js'
 );
-const { build_observation_texts_word_children } = await import(
-    '../../js/export/export_observation_texts_word.js'
-);
+const {
+    build_observation_texts_word_children,
+    build_bold_placeholder_intro_runs,
+    create_observation_texts_export_t,
+} = await import('../../js/export/export_observation_texts_word.js');
+
+const RULEFILE_SV = { metadata: { language: 'sv-SE' } };
+const RULEFILE_EN = { metadata: { language: 'en-GB' } };
+
+function create_audit_for_word_export(entries, metadata = {}) {
+    const audit = create_audit_with_deficiencies(entries);
+    audit.auditMetadata = {
+        caseNumber: '2024-123',
+        actorName: 'Testbolaget AB',
+        ...metadata,
+    };
+    return audit;
+}
 
 function create_audit_with_deficiencies(entries) {
     const pass_criteria = {};
@@ -69,6 +86,7 @@ function create_audit_with_deficiencies(entries) {
 
     return {
         ruleFileContent: {
+            metadata: { language: 'sv-SE' },
             requirements: {
                 req1: {
                     id: 'req1',
@@ -136,34 +154,98 @@ describe('collect_observation_export_deficiencies', () => {
 });
 
 describe('build_observation_texts_word_children', () => {
-    const t = (key, opts = {}) => {
-        if (key === 'pass_criterion_deficiency_id_label') {
-            return `Brist-id: ${opts.id}`;
-        }
-        return key;
-    };
-
     beforeEach(() => {
         jest.clearAllMocks();
     });
 
-    test('skapar id-paragraf och tabell med röd ram per brist', () => {
+    test('lägger till h1, intro med dnr och aktör, punktlistor och h2 per brist-id', () => {
+        const audit = create_audit_for_word_export([
+            { pc_id: 'pc1', deficiency_id: 'B3', observation: 'Observation A' },
+            { pc_id: 'pc2', deficiency_id: 'B7', observation: 'Observation B' },
+        ]);
+
         build_observation_texts_word_children([
             { deficiencyId: 'B3', observationDetail: 'Observation A' },
             { deficiencyId: 'B7', observationDetail: 'Observation B' },
-        ], t);
+        ], audit);
 
-        expect(mockParagraph).toHaveBeenCalled();
-        expect(mockTable).toHaveBeenCalledTimes(2);
-
-        const id_paragraph = mockParagraph.mock.calls.find(
-            ([opts]) => opts?.children?.[0]?.text === 'Brist-id: 3'
+        const title_paragraph = mockParagraph.mock.calls.find(
+            ([opts]) => opts?.heading === 'Heading1'
+                && opts?.children?.[0]?.text === 'Observationstexter för handläggning'
         );
-        expect(id_paragraph).toBeTruthy();
+        expect(title_paragraph).toBeTruthy();
+
+        const intro_paragraph = mockParagraph.mock.calls.find(
+            ([opts]) => opts?.children?.some((child) => child?.text === '2024-123' && child?.bold === true)
+        );
+        expect(intro_paragraph).toBeTruthy();
+        expect(intro_paragraph[0].children.find((child) => child.text === '2024-123')?.bold).toBe(true);
+        expect(intro_paragraph[0].children.find((child) => child.text === 'Testbolaget AB')?.bold).toBe(true);
+        expect(intro_paragraph[0].children.some((child) => child.text?.includes('Här hittar du'))).toBe(true);
+
+        const edit_bullet = mockParagraph.mock.calls.find(
+            ([opts]) => opts?.children?.[1]?.text?.includes('röda ramen')
+        );
+        expect(edit_bullet).toBeTruthy();
+        expect(edit_bullet[0].children[0].text).toBe('•\t');
+
+        const delete_bullet = mockParagraph.mock.calls.find(
+            ([opts]) => opts?.children?.[1]?.text?.includes('radera brist-id')
+        );
+        expect(delete_bullet).toBeTruthy();
+
+        const return_paragraph = mockParagraph.mock.calls.find(
+            ([opts]) => opts?.children?.[0]?.text
+                === 'Skicka tillbaka dokumentet till granskaren när alla texter är uppdaterade.'
+        );
+        expect(return_paragraph).toBeTruthy();
+
+        const id_heading = mockParagraph.mock.calls.find(
+            ([opts]) => opts?.heading === 'Heading2'
+                && opts?.children?.[0]?.text === 'Brist-id: 3'
+        );
+        expect(id_heading).toBeTruthy();
+
+        expect(mockTable).toHaveBeenCalledTimes(2);
 
         const table_call = mockTable.mock.calls[0][0];
         const cell = table_call.rows[0].opts.children[0].opts;
         expect(cell.borders.top.color).toBe('CC0000');
         expect(cell.borders.bottom.color).toBe('CC0000');
+    });
+});
+
+describe('build_bold_placeholder_intro_runs', () => {
+    test('sätter fetstil på dnr och aktörsnamn', () => {
+        const runs = build_bold_placeholder_intro_runs(
+            'Text före {dnr} mellan {actor_name} efter.',
+            { dnr: '2024-1', actor_name: 'Acme AB' }
+        );
+
+        expect(runs).toHaveLength(5);
+        expect(runs[1].text).toBe('2024-1');
+        expect(runs[1].bold).toBe(true);
+        expect(runs[3].text).toBe('Acme AB');
+        expect(runs[3].bold).toBe(true);
+        expect(runs[0].bold).toBeUndefined();
+    });
+});
+
+describe('create_observation_texts_export_t', () => {
+    test('använder regelfilens språk för exporttexter', () => {
+        const t_sv = create_observation_texts_export_t(RULEFILE_SV);
+        const t_en = create_observation_texts_export_t(RULEFILE_EN);
+
+        expect(t_sv('export_observation_texts_word_title')).toBe('Observationstexter för handläggning');
+        expect(t_en('export_observation_texts_word_title')).toBe('Observation texts for processing');
+        expect(t_sv('pass_criterion_deficiency_id_label', { id: '5' })).toBe('Brist-id: 5');
+        expect(t_sv('export_observation_texts_word_intro', {
+            dnr: '2024-1',
+            actor_name: 'Acme',
+        })).toContain('2024-1');
+        expect(t_sv('export_observation_texts_word_intro', {
+            dnr: '2024-1',
+            actor_name: 'Acme',
+        })).toContain('Acme');
     });
 });

@@ -41,7 +41,7 @@ export function resolve_audit_type_for_export(rule_file_content: unknown): Audit
     return null;
 }
 
-function resolve_rulefile_language_for_export(rule_file_content: unknown): string {
+export function resolve_rulefile_language_for_export(rule_file_content: unknown): string {
     const content = rule_file_content as { metadata?: { language?: string } } | null;
     const lang = typeof content?.metadata?.language === 'string' ? content.metadata.language.trim() : '';
     return lang || DEFAULT_RULEFILE_LANGUAGE_FOR_EXPORT;

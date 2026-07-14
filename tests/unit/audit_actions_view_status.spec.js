@@ -129,7 +129,8 @@ describe('AuditActionsViewComponent statusknappar', () => {
         expect(ids).toContain('audit-action-btn-download-observation-texts-word');
         expect(ids).toContain('audit-action-btn-import-processed-observation-texts-word');
         expect(root.textContent).toContain('audit_actions_appendix_guide_intro');
-        expect(root.textContent).toContain('audit_actions_appendix_guide_upload_intro');
+        expect(root.querySelector('#audit-action-desc-appendix-guide-upload')).toBeTruthy();
+        expect(root.querySelector('.audit-actions__appendix-guide-upload-block')).toBeTruthy();
 
         const download_desc = root.querySelector('#audit-action-desc-appendix-guide-download');
         const download_btn = root.querySelector('#audit-action-btn-download-observation-texts-word');
