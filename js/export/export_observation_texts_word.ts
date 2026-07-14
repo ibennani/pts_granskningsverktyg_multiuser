@@ -90,7 +90,7 @@ function append_bullet_paragraph(children: Paragraph[], text: string): void {
 }
 
 /**
- * Bygger intro-paragraf med fetstil för {dnr} och {actor_name} i översättningsmallen.
+ * Bygger intro-paragraf med fetstil för {dnr} och {actor_name} (med citationstecken) i mallen.
  */
 export function build_bold_placeholder_intro_runs(
     intro_template: string,
@@ -136,7 +136,10 @@ function append_observation_texts_word_intro(
             heading: 'Heading1',
         }),
         new Paragraph({
-            children: build_bold_placeholder_intro_runs(intro_template, { dnr, actor_name }),
+            children: build_bold_placeholder_intro_runs(intro_template, {
+                dnr,
+                actor_name: `"${actor_name}"`,
+            }),
             spacing: { after: 120 },
         })
     );

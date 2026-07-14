@@ -180,8 +180,8 @@ describe('build_observation_texts_word_children', () => {
         );
         expect(intro_paragraph).toBeTruthy();
         expect(intro_paragraph[0].children.find((child) => child.text === '2024-123')?.bold).toBe(true);
-        expect(intro_paragraph[0].children.find((child) => child.text === 'Testbolaget AB')?.bold).toBe(true);
-        expect(intro_paragraph[0].children.some((child) => child.text?.includes('Här hittar du'))).toBe(true);
+        expect(intro_paragraph[0].children.find((child) => child.text === '"Testbolaget AB"')?.bold).toBe(true);
+        expect(intro_paragraph[0].children.some((child) => child.text === ': ')).toBe(true);
 
         const edit_bullet = mockParagraph.mock.calls.find(
             ([opts]) => opts?.children?.[1]?.text?.includes('röda ramen')
@@ -216,16 +216,17 @@ describe('build_observation_texts_word_children', () => {
 });
 
 describe('build_bold_placeholder_intro_runs', () => {
-    test('sätter fetstil på dnr och aktörsnamn', () => {
+    test('sätter fetstil på dnr och aktörsnamn med citationstecken', () => {
         const runs = build_bold_placeholder_intro_runs(
-            'Text före {dnr} mellan {actor_name} efter.',
-            { dnr: '2024-1', actor_name: 'Acme AB' }
+            'Text före {dnr}: {actor_name} efter.',
+            { dnr: '2024-1', actor_name: '"Acme AB"' }
         );
 
         expect(runs).toHaveLength(5);
         expect(runs[1].text).toBe('2024-1');
         expect(runs[1].bold).toBe(true);
-        expect(runs[3].text).toBe('Acme AB');
+        expect(runs[2].text).toBe(': ');
+        expect(runs[3].text).toBe('"Acme AB"');
         expect(runs[3].bold).toBe(true);
         expect(runs[0].bold).toBeUndefined();
     });

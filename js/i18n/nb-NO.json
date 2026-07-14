@@ -778,7 +778,7 @@
   "export_to_pdf": "Eksporter til PDF (krav)",
   "export_to_pdf_samples": "Eksporter til PDF (granskningsdel)",
   "export_observation_texts_word_title": "Observasjonstekster for behandling",
-  "export_observation_texts_word_intro": "Her finner du alle observasjonstekstene for tilsynet {dnr} {actor_name}, sortert etter avviks-ID.",
+  "export_observation_texts_word_intro": "Her finner du alle observasjonstekstene for tilsynet {dnr}: {actor_name}, sortert etter avviks-ID.",
   "export_observation_texts_word_bullet_edit": "Hvis du vil endre en tekst, må du holde deg innenfor den røde rammen.",
   "export_observation_texts_word_bullet_delete": "Hvis du vil fjerne et avvik, slett avviks-ID og hele den røde rammen.",
   "export_observation_texts_word_return": "Send dokumentet tilbake til granskeren når alle tekstene er oppdatert.",
