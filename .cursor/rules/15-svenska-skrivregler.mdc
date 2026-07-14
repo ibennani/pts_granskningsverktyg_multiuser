@@ -1,0 +1,29 @@
+---
+description: Svenska skrivregler för användartexter i Leffe — inga em-dash
+alwaysApply: true
+---
+
+# Svenska skrivregler
+
+Gäller texter i `js/i18n/`, UI-hjälptexter, felmeddelanden, beskrivningar till icke-tekniska läsare och agent-svar på svenska om användarupplevelsen.
+
+## Obligatoriskt
+
+- Skriv **korrekt svenska**: tydliga meningar, rätt grammatik.
+- Använd **aldrig em-dash (—, U+2014)** i svenska användartexter.
+- Använd **inte en-dash eller bindestreck som inskjutet tankstreck** mellan satser i löptext.
+
+## I stället för tankstreck
+
+| Undvik | Använd |
+|--------|--------|
+| «…granskningsdelen — till exempel sidfoten» | «…granskningsdelen. Det kan till exempel vara sidfoten.» |
+| «Funktionen — som är ny — visas här» | «Funktionen, som är ny, visas här» eller två meningar |
+
+**Undantag:** bindestreck i sammansatta ord och etablerade termer (`e-post`, `WCAG 2.2`, filnamn).
+
+## Övriga språk
+
+Samma princip i `en-GB.json` och `nb-NO.json`: undvik em-dash i motsvarande texter.
+
+Se även avsnittet **«Svenska skrivregler»** i `.cursor/rules/00-project-rules.mdc`.

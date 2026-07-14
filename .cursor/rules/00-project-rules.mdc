@@ -38,6 +38,17 @@ Adhere to the following rules at all times.
 - **Language:** All communication, code comments, and commit messages MUST be in **Swedish** (Svenska).
 - **Tone:** Professional, helpful, and concise.
 
+### Svenska skrivregler (användartexter och dokumentation)
+
+Gäller texter som användaren ser i gränssnittet (`js/i18n/`), hjälptexter, felmeddelanden, planer/beskrivningar till icke-tekniska läsare och commit-meddelanden (commit har egna regler ovan).
+
+- **Skriv korrekt svenska:** Tydliga meningar, rätt stavning och grammatik. Undvik anglicismer när det finns etablerade svenska ord.
+- **Ingen em-dash (—):** Använd **aldrig** långt tankstreck (em-dash, Unicode U+2014) i svenska användartexter. Använd i stället punkt, komma, kolon eller dela upp i två meningar. Exempel: skriv «Det kan till exempel vara sidfoten.» i stället för «…avser — till exempel sidfoten».
+- **Ingen en-dash som tankstreck i löptext:** Undvik även `-` eller `–` (en-dash) som inskjutet tankstreck mellan satser. Undantag: bindestreck i sammansatta ord och tekniska termer (t.ex. `e-post`, `WCAG 2.2`).
+- **Exempel och förtydliganden:** Formulera som egna meningar eller efter komma («…granskningsdelen. Det kan till exempel vara …»), inte efter tankstreck.
+- **Konsekvent «du»-form** i instruktioner där det passar (imperativ eller beskrivande «du»-text enligt befintlig ton i appen).
+- **Översättningar:** Samma principer ska följas i `sv-SE.json`; `en-GB` och `nb-NO` ska inte använda em-dash i motsvarande texter.
+
 ### Coding Standards
 
 - Follow the component standard defined below under **"Standard för JavaScript-komponenter"**.

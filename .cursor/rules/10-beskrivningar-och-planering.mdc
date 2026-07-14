@@ -20,6 +20,7 @@ När AI-agenten beskriver hur funktioner, flöden eller förändringar fungerar 
 - **Stil och detaljnivå**
   - Beskrivningen ska likna den typ av text som användaren efterfrågat för regelfilsuppdatering: en tydlig, berättande förklaring av vad som händer före, under och efter en åtgärd.
   - Undvik onödig teknisk jargong (t.ex. “reducer”, “dispatch”, “selector”) om det inte är absolut nödvändigt; översätt hellre till vad användaren upplever (t.ex. “granskningens läge uppdateras”, “listan med krav byggs om”).
+  - Följ **svenska skrivregler** i `00-project-rules.mdc` (avsnitt «Svenska skrivregler»): korrekt svenska, **aldrig em-dash (—)** i användartexter; använd punkt, komma eller ny mening i stället.
   - När det finns viktiga konsekvenser (t.ex. att observationer arkiveras i stället för att försvinna) ska dessa alltid beskrivas tydligt.
 
 - **Planering av förändringar**
