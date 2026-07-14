@@ -61,11 +61,11 @@ async function navigate_and_validate(page: Page, url: string, timeout_ms: number
 }
 
 async function prepare_page_content(page: Page): Promise<void> {
-    await dismiss_cookie_banners_before_screenshot(page);
+    await dismiss_cookie_banners_before_screenshot(page, { wait_for_banner: false });
     await auto_scroll_lazy_content(page);
     await settle_after_lazy_load(page);
     await scroll_to_top(page);
-    await dismiss_cookie_banners_before_screenshot(page);
+    await dismiss_cookie_banners_before_screenshot(page, { wait_for_banner: false });
 }
 
 const COMMON_CONTENT_MARKER_SELECTOR =

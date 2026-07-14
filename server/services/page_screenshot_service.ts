@@ -14,8 +14,23 @@ import {
     page_has_renderable_content,
     PUPPETEER_LAUNCH_ARGS,
 } from './page_screenshot_stealth.js';
-import { dismiss_cookie_banners_before_screenshot } from './page_screenshot_cookie_consent.js';
+import {
+    dismiss_cookie_banners_before_screenshot,
+    hide_cookie_banners_visually_for_screenshot,
+    is_cookie_banner_visible,
+    settle_after_consent_apply,
+} from './page_screenshot_cookie_consent.js';
 import { compute_screenshot_clip_height_css } from './page_screenshot_capture_height.js';
+import {
+    enable_cmp_request_block_for_screenshot,
+    read_cmp_blocked_count,
+} from './page_screenshot_cmp_block.js';
+import {
+    apply_consent_cookies,
+    apply_consent_local_storage,
+    learn_consent_from_page,
+    load_consent_for_domain,
+} from './page_screenshot_consent_cache.js';
 
 const VIEWPORT_WIDTH = 1280;
 const VIEWPORT_HEIGHT = 800;
@@ -62,12 +77,34 @@ async function navigate_and_validate(page: Page, url: string, timeout_ms: number
     assert_acceptable_navigation_status(status, has_content);
 }
 
-async function capture_full_page_png(page: Page): Promise<{ png_buffer: Buffer; page_title: string }> {
-    await dismiss_cookie_banners_before_screenshot(page);
+async function navigate_for_screenshot(page: Page, url: string, timeout_ms: number): Promise<void> {
+    await enable_cmp_request_block_for_screenshot(page);
+    const consent = await load_consent_for_domain(url);
+    await apply_consent_cookies(page, consent);
+    await navigate_and_validate(page, url, timeout_ms);
+    await apply_consent_local_storage(page, consent);
+    await settle_after_consent_apply(page);
+}
+
+async function ensure_banner_dismissed(
+    page: Page,
+    options: { wait_for_banner?: boolean } = {}
+): Promise<{ banner_gone: boolean; clicked: boolean }> {
+    const result = await dismiss_cookie_banners_before_screenshot(page, options);
+    return { banner_gone: result.banner_gone, clicked: result.clicked };
+}
+
+async function capture_full_page_png(
+    page: Page,
+    url: string
+): Promise<{ png_buffer: Buffer; page_title: string }> {
+    let dismiss_state = await ensure_banner_dismissed(page, { wait_for_banner: true });
+
     await auto_scroll_lazy_content(page);
     await settle_after_lazy_load(page);
     await scroll_to_top(page);
-    await dismiss_cookie_banners_before_screenshot(page);
+
+    dismiss_state = await ensure_banner_dismissed(page, { wait_for_banner: false });
 
     const page_title = await read_page_title(page);
     const scroll_height_css = await read_document_scroll_height(page);
@@ -79,6 +116,24 @@ async function capture_full_page_png(page: Page): Promise<{ png_buffer: Buffer; 
         deviceScaleFactor: DEVICE_SCALE_FACTOR,
     });
     await scroll_to_top(page);
+
+    if (!dismiss_state.banner_gone || (await is_cookie_banner_visible(page))) {
+        dismiss_state = await ensure_banner_dismissed(page, { wait_for_banner: false });
+    }
+
+    const hidden_count = await hide_cookie_banners_visually_for_screenshot(page);
+    await settle_after_consent_apply(page);
+
+    if (dismiss_state.clicked || dismiss_state.banner_gone) {
+        await learn_consent_from_page(page, url);
+    }
+
+    const blocked_count = read_cmp_blocked_count(page);
+    if (blocked_count > 0 || hidden_count > 0) {
+        console.info(
+            `[page_screenshot] CMP ${url}: blockerade=${blocked_count}, dolda_element=${hidden_count}, klick=${dismiss_state.clicked}`
+        );
+    }
 
     const png_buffer = Buffer.from(
         await page.screenshot({
@@ -132,8 +187,8 @@ export async function capture_page_screenshot(
         });
         const page = await browser.newPage();
         await prepare_page(page);
-        await navigate_and_validate(page, url, timeout_ms);
-        return await capture_full_page_png(page);
+        await navigate_for_screenshot(page, url, timeout_ms);
+        return await capture_full_page_png(page, url);
     } finally {
         if (browser) {
             await browser.close();

@@ -117,6 +117,7 @@ export function browser_hide_webdriver_flag() {
  * den funktion som skickas till page.evaluate(), inte modulnivå-hjälpare.
  * @param {{
  *   accept_selectors: string[];
+ *   accept_all_text_patterns?: string[];
  *   accept_text_patterns: string[];
  *   reject_text_patterns: string[];
  *   container_selectors: string[];
@@ -142,13 +143,13 @@ export function browser_dismiss_cookie_banners(config) {
         return [text, aria, title].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim().toLowerCase();
     };
 
-    const label_matches_accept = (label, accept_text_patterns, reject_text_patterns) => {
+    const label_matches_patterns = (label, patterns, reject_text_patterns) => {
         const normalized = String(label || '').replace(/\s+/g, ' ').trim().toLowerCase();
         if (!normalized) return false;
         for (const pattern of reject_text_patterns) {
             if (normalized.includes(String(pattern).toLowerCase())) return false;
         }
-        for (const pattern of accept_text_patterns) {
+        for (const pattern of patterns) {
             if (normalized.includes(String(pattern).toLowerCase())) return true;
         }
         return false;
@@ -170,12 +171,26 @@ export function browser_dismiss_cookie_banners(config) {
             }
         }
 
+        const accept_all_patterns = config.accept_all_text_patterns || [];
+        const accept_patterns = [
+            ...accept_all_patterns,
+            ...(config.accept_text_patterns || []),
+        ];
+
         const candidates = root.querySelectorAll(
             'button, a[role="button"], input[type="button"], input[type="submit"], [role="button"]'
         );
+
         for (const candidate of candidates) {
             const label = read_clickable_label(candidate);
-            if (label_matches_accept(label, config.accept_text_patterns, config.reject_text_patterns)) {
+            if (label_matches_patterns(label, accept_all_patterns, config.reject_text_patterns)) {
+                if (try_click(candidate)) return true;
+            }
+        }
+
+        for (const candidate of candidates) {
+            const label = read_clickable_label(candidate);
+            if (label_matches_patterns(label, accept_patterns, config.reject_text_patterns)) {
                 if (try_click(candidate)) return true;
             }
         }
@@ -201,4 +216,69 @@ export function browser_dismiss_cookie_banners(config) {
     }
 
     return false;
+}
+
+/**
+ * @param {{ container_selectors: string[] }} config
+ * @returns {boolean}
+ */
+export function browser_is_cookie_banner_visible(config) {
+    const is_visible = (element) => {
+        if (!(element instanceof HTMLElement)) return false;
+        const style = window.getComputedStyle(element);
+        if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) {
+            return false;
+        }
+        const rect = element.getBoundingClientRect();
+        return rect.width > 4 && rect.height > 4;
+    };
+
+    for (const container_selector of config.container_selectors) {
+        let containers = [];
+        try {
+            containers = Array.from(document.querySelectorAll(container_selector));
+        } catch {
+            continue;
+        }
+        for (const container of containers) {
+            if (is_visible(container)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Döljer kända cookie-banner DOM-noder och återställer scroll — sista steg före skärmdump.
+ * @param {{ hide_selectors: string[] }} config
+ * @returns {number} Antal dolda element
+ */
+export function browser_hide_cookie_banners_for_screenshot(config) {
+    let hidden_count = 0;
+
+    for (const selector of config.hide_selectors) {
+        let elements = [];
+        try {
+            elements = Array.from(document.querySelectorAll(selector));
+        } catch {
+            continue;
+        }
+        for (const element of elements) {
+            if (!(element instanceof HTMLElement)) continue;
+            element.style.setProperty('display', 'none', 'important');
+            element.style.setProperty('visibility', 'hidden', 'important');
+            element.style.setProperty('opacity', '0', 'important');
+            element.style.setProperty('pointer-events', 'none', 'important');
+            hidden_count += 1;
+        }
+    }
+
+    document.documentElement.style.overflow = '';
+    document.body.style.overflow = '';
+    document.body.style.position = '';
+    document.body.classList.remove('overflow-hidden', 'no-scroll', 'modal-open');
+
+    return hidden_count;
 }

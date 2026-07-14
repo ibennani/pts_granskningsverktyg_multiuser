@@ -129,6 +129,7 @@ Modelfile
 # GV_BACKUP_DIR pekar standard på ./backup (server/backup är applikationskod)
 /backup/
 /audit-media/
+/cmp-consent-cache/
 /backups/
 *.dump
 

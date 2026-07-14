@@ -14,6 +14,10 @@ import {
     clear_temporary_live_region,
     update_text_with_temporary_live_region,
 } from '../../utils/temporary_live_text_update.js';
+import {
+    is_file_download_trigger_busy,
+    set_file_download_trigger_busy,
+} from '../../utils/file_download_button_ui.js';
 
 type AttachedMediaState = Parameters<typeof collect_attached_media_filenames>[0] & {
     auditId?: string | null;
@@ -87,12 +91,14 @@ function build_attach_media_button(
         ? component.Helpers.escape_html(attach_btn_label)
         : attach_btn_label;
 
+    const in_progress = Boolean(component.sample_url_screenshot_in_progress);
     const attach_btn = component.Helpers.create_element('button', {
         class_name: ['button', 'button-default', 'button-small'],
         attributes: {
             'data-action': 'attach-sample-media',
             type: 'button',
             'aria-label': attach_aria_label,
+            'data-file-download-busy': in_progress ? 'true' : 'false',
         },
         html_content: `<span class="attach-media-button-label">${escaped_label}</span>${attach_icons_html}`,
     }) as HTMLButtonElement;
@@ -143,6 +149,7 @@ export function update_sample_attach_media_button(
     const attach_btn_label = get_attach_button_label(t, filenames.length, in_progress);
     const attach_aria_label = `${attach_btn_label} ${t('attach_media_aria_label_for')} ${t('sample_screenshot_section_label')}`;
     btn.setAttribute('aria-label', attach_aria_label);
+    set_file_download_trigger_busy(btn, in_progress);
     const text_span = btn.querySelector('.attach-media-button-label');
     if (!(text_span instanceof HTMLElement)) return;
 
@@ -175,6 +182,9 @@ export function handle_sample_attach_media_click(component: AddSampleFormLike, e
     event.preventDefault();
     const target = event.currentTarget;
     if (!(target instanceof HTMLButtonElement) || target.getAttribute('data-action') !== 'attach-sample-media') {
+        return;
+    }
+    if (is_file_download_trigger_busy(target)) {
         return;
     }
 

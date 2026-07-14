@@ -178,6 +178,15 @@ export default {
     '^.+[\\\\/]attach_media_modal_status\\.js$': '<rootDir>/js/components/media/attach_media_modal_status.ts',
     '^.+[\\\\/]attach_media_modal_view_switch\\.js$': '<rootDir>/js/components/media/attach_media_modal_view_switch.ts',
     '^.+[\\\\/]attach_media_in_modal_preview\\.js$': '<rootDir>/js/components/media/attach_media_in_modal_preview.ts',
+    '^.+[\\\\/]AttachMediaModal\\.js$': '<rootDir>/js/components/media/AttachMediaModal.ts',
+    '^.+[\\\\/]sample_url_auto_screenshot\\.js$': '<rootDir>/js/components/add_sample_form/sample_url_auto_screenshot.ts',
+    '^.+[\\\\/]sample_url_auto_screenshot_logic\\.js$':
+      '<rootDir>/js/components/add_sample_form/sample_url_auto_screenshot_logic.ts',
+    '^.+[\\\\/]sample_attach_media\\.js$': '<rootDir>/js/components/add_sample_form/sample_attach_media.ts',
+    '^.+[\\\\/]sample_url_screenshot_form_host\\.js$':
+      '<rootDir>/js/components/add_sample_form/sample_url_screenshot_form_host.ts',
+    '^.+[\\\\/]sample_url_screenshot_aria_status\\.js$':
+      '<rootDir>/js/components/add_sample_form/sample_url_screenshot_aria_status.ts',
     '^.+[\\\\/]open_audit_media_image_preview\\.js$': '<rootDir>/js/components/media/open_audit_media_image_preview.ts',
     '^.+[\\\\/]audit_media_image_preview_mount\\.js$': '<rootDir>/js/components/media/audit_media_image_preview_mount.ts',
     '^.+[\\\\/]audit_media_preview_observation\\.js$': '<rootDir>/js/components/media/audit_media_preview_observation.ts',
@@ -196,6 +205,10 @@ export default {
     '^.+[\\\\/]page_screenshot_lazy_load\\.js$': '<rootDir>/server/services/page_screenshot_lazy_load.ts',
     '^.+[\\\\/]page_screenshot_cookie_consent\\.js$': '<rootDir>/server/services/page_screenshot_cookie_consent.ts',
     '^.+[\\\\/]page_screenshot_cookie_consent_logic\\.js$': '<rootDir>/server/services/page_screenshot_cookie_consent_logic.ts',
+    '^.+[\\\\/]page_screenshot_consent_cache_logic\\.js$': '<rootDir>/server/services/page_screenshot_consent_cache_logic.ts',
+    '^.+[\\\\/]page_screenshot_consent_cache\\.js$': '<rootDir>/server/services/page_screenshot_consent_cache.ts',
+    '^.+[\\\\/]page_screenshot_cmp_block_logic\\.js$': '<rootDir>/server/services/page_screenshot_cmp_block_logic.ts',
+    '^.+[\\\\/]page_screenshot_cmp_block\\.js$': '<rootDir>/server/services/page_screenshot_cmp_block.ts',
     '^.+[\\\\/]page_content_type_detection_rules\\.js$': '<rootDir>/server/services/page_content_type_detection_rules.ts',
     '^.+[\\\\/]page_content_type_detection_service\\.js$': '<rootDir>/server/services/page_content_type_detection_service.ts',
     '^.+[\\\\/]page_screenshot_service\\.js$': '<rootDir>/server/services/page_screenshot_service.ts',
