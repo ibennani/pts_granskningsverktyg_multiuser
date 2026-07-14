@@ -344,6 +344,50 @@
     margin-bottom: 1rem;
 }
 
+.content-types-instruction-row {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.content-types-instruction-text {
+    margin: 0;
+    width: 100%;
+}
+
+.content-type-paste-analyze-button {
+    align-self: flex-start;
+}
+
+/* Automatisk analys-modal: dialog inom viewport, scroll i textarea */
+dialog.modal-dialog.modal-dialog--content-type-paste-analyze {
+    width: min(720px, var(--modal-max-viewport-width));
+}
+
+.modal-body.modal-body--content-type-paste-analyze {
+    overflow: hidden;
+}
+
+.modal-body--content-type-paste-analyze .content-type-paste-analyze-modal-form {
+    margin-bottom: 0;
+}
+
+.modal-body--content-type-paste-analyze .content-type-paste-analyze-modal-textarea {
+    display: block;
+    width: 100%;
+    min-height: 8rem;
+    max-height: min(50vh, calc(var(--modal-max-viewport-height) - 14rem));
+    box-sizing: border-box;
+    overflow-y: auto;
+    resize: none;
+}
+
+.content-type-paste-analyze-modal-status:empty {
+    display: none;
+}
+
 .content-type-analyze-status:empty {
     display: none;
 }

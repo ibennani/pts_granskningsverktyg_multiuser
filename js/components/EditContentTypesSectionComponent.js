@@ -193,7 +193,7 @@ export const EditContentTypesSectionComponent = {
 
             parent.types.forEach((child, childIndex) => {
                 if (!child) {
-                    parent.types[childIndex] = { id: '', text: '', description: '' };
+                    parent.types[childIndex] = { id: '', text: '', description: '', detectionPattern: '' };
                     child = parent.types[childIndex];
                 }
                 const childId = child.id || (parent.id ? `${parent.id}-${this._generate_slug(child.text)}` : '');
@@ -240,11 +240,20 @@ export const EditContentTypesSectionComponent = {
                     child.description = value;
                     this.handle_autosave_input();
                 }, { textarea: true }));
+                childCard.appendChild(this._create_inline_input('rulefile_metadata_field_detection_pattern', child.detectionPattern || '', value => {
+                    child.detectionPattern = value;
+                    this.handle_autosave_input();
+                }));
+                const pattern_help = this.Helpers.create_element('p', {
+                    class_name: 'inline-field-help',
+                    text_content: t('rulefile_metadata_field_detection_pattern_help')
+                });
+                childCard.appendChild(pattern_help);
                 childList.appendChild(childCard);
             });
 
             const addChildBtn = this._create_small_button('rulefile_metadata_add_content_subtype', 'add', () => {
-                parent.types.push({ id: '', text: '', description: '' });
+                parent.types.push({ id: '', text: '', description: '', detectionPattern: '' });
                 this._render_content_types_editor(container, workingMetadata, {
                     type: 'child',
                     parentIndex,
@@ -477,7 +486,13 @@ export const EditContentTypesSectionComponent = {
                 const fields = child_card.querySelectorAll('.inline-field input, .inline-field textarea');
                 const text_val = fields[0] ? normalize(fields[0].value) : '';
                 const desc_val = fields[1] ? normalize(fields[1].value) : '';
-                types.push({ id: '', text: text_val, description: desc_val });
+                const pattern_val = fields[2] ? normalize(fields[2].value) : '';
+                types.push({
+                    id: '',
+                    text: text_val,
+                    description: desc_val,
+                    detectionPattern: pattern_val
+                });
             });
             result.push({ id: '', text: parent_text, description: '', types });
         });
@@ -502,12 +517,19 @@ export const EditContentTypesSectionComponent = {
             };
             const childTypes = Array.isArray(parent.types) ? parent.types : [];
             cleanedParent.types = childTypes
-                .map(child => ({
-                    id: (child?.id || '').trim(),
-                    text: (child?.text || '').trim(),
-                    description: (child?.description || '').trim()
-                }))
-                .filter(child => child.id || child.text || child.description);
+                .map(child => {
+                    const cleaned = {
+                        id: (child?.id || '').trim(),
+                        text: (child?.text || '').trim(),
+                        description: (child?.description || '').trim(),
+                        detectionPattern: (child?.detectionPattern || '').trim()
+                    };
+                    if (!cleaned.detectionPattern) {
+                        delete cleaned.detectionPattern;
+                    }
+                    return cleaned;
+                })
+                .filter(child => child.id || child.text || child.description || child.detectionPattern);
             return cleanedParent;
         }).filter(parent => parent.id || parent.text || (parent.types && parent.types.length > 0));
 

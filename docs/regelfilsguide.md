@@ -71,6 +71,29 @@ Objektet under nyckeln `metadata` är obligatoriskt och definierar övergripande
             *   **Beskrivning:** En läsbar beskrivning av innehållstypen som visas för användaren i gränssnittet när de väljer innehållstyper för en granskningsdel (t.ex. `"Formulär"`, `"Tabeller"`, `"Videoinnehåll"`, `"Bilder och grafik"`, `"Användning av ARIA"`).
             *   **Villkor:** Får inte vara en tom sträng.
 
+    *   **`types`** (Array av objekt, på huvudinnehållstyp):
+        *   **Obligatorisk:** Ja (minst en undertyp per huvudgrupp i aktuellt schema).
+        *   **`detectionPattern`** (Sträng, valfri, på varje undertyp):
+            *   **Beskrivning:** Reguljärt uttryck som matchas mot HTML som granskaren klistrar in vid **Automatisk analys** i granskningsdelsformuläret. Ett mönster per undertyp — t.ex. rubriker: `<h[1-6][\s/>]|role\s*=\s*["']heading["']` fångar både h-taggar och `role="heading"`.
+            *   **Underhåll:** Sätts av regelfilsunderhållare i regelfilsredigeringen eller direkt i JSON. Granskaren ser inte mönstret.
+            *   **Villkor:** Om fältet anges måste det vara ett giltigt reguljärt uttryck. Tomt eller utelämnat = ingen automatdetektion för den undertypen.
+
+**Exempel på undertyp med detektionsmönster:**
+
+```json
+{
+  "id": "text",
+  "text": "Text och struktur",
+  "types": [
+    {
+      "id": "rubriker",
+      "text": "Rubriker",
+      "detectionPattern": "<h[1-6][\\s/>]|role\\s*=\\s*[\"']heading[\"']"
+    }
+  ]
+}
+```
+
 **Exempel på `metadata`-objekt:**
 
 "metadata": {

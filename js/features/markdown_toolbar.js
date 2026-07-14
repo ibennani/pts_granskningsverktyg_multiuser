@@ -42,6 +42,9 @@ export const MarkdownToolbar = {
         if (textarea.closest('.markdown-editor-wrapper')) {
             return;
         }
+        if (textarea.dataset.skipMarkdownToolbar === 'true') {
+            return;
+        }
         if (textarea.closest('.manage-users-plate') || textarea.id === 'manage-users-textarea') {
             return;
         }

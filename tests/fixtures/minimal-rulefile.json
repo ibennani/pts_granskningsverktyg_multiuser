@@ -6,7 +6,11 @@
       {
         "id": "text",
         "text": "Text",
-        "types": [{ "id": "plain", "text": "Plain" }]
+        "types": [{
+          "id": "plain",
+          "text": "Plain",
+          "detectionPattern": "<p[\\s/>]"
+        }]
       }
     ],
     "samples": {

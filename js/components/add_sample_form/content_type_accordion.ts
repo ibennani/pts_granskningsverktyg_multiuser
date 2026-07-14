@@ -47,6 +47,34 @@ export function get_selected_content_type_ids(component: any): string[] {
     return Array.from(component.content_type_selected_ids || []);
 }
 
+function render_content_type_instruction_row(component: any, panel_inner: HTMLElement): void {
+    const t = component.get_t_internally();
+    const row = component.Helpers.create_element('div', {
+        class_name: 'content-types-instruction-row'
+    });
+
+    row.appendChild(component.Helpers.create_element('p', {
+        class_name: 'content-types-instruction-text',
+        text_content: t('content_types_instruction'),
+        style: { 'color': 'var(--text-color-muted)' }
+    }));
+
+    const paste_btn = component.Helpers.create_element('button', {
+        class_name: ['button', 'button-default', 'content-type-paste-analyze-button'],
+        attributes: { type: 'button' },
+        text_content: t('content_type_paste_analyze_button')
+    });
+    paste_btn.addEventListener('click', () => {
+        if (typeof component.handle_content_type_paste_analyze_click === 'function') {
+            component.handle_content_type_paste_analyze_click();
+        }
+    });
+    row.appendChild(paste_btn);
+    panel_inner.appendChild(row);
+
+    component.content_type_paste_analyze_btn = paste_btn;
+}
+
 function render_content_type_analyze_toolbar(component: any, panel_inner: HTMLElement): void {
     const t = component.get_t_internally();
     const toolbar = component.Helpers.create_element('div', {
@@ -64,6 +92,17 @@ function render_content_type_analyze_toolbar(component: any, panel_inner: HTMLEl
         }
     });
 
+    toolbar.appendChild(analyze_btn);
+    panel_inner.appendChild(toolbar);
+
+    component.content_type_analyze_btn = analyze_btn;
+
+    const show = is_content_type_analyze_available(component);
+    analyze_btn.hidden = !show;
+    analyze_btn.style.display = show ? '' : 'none';
+}
+
+function render_content_type_analyze_status(component: any, panel_inner: HTMLElement): void {
     const live_region = component.Helpers.create_element('p', {
         class_name: 'content-type-analyze-status',
         attributes: {
@@ -72,16 +111,8 @@ function render_content_type_analyze_toolbar(component: any, panel_inner: HTMLEl
         },
         style: { 'margin-bottom': '0', 'color': 'var(--text-color-muted)' }
     });
-
-    toolbar.append(analyze_btn, live_region);
-    panel_inner.appendChild(toolbar);
-
-    component.content_type_analyze_btn = analyze_btn;
+    panel_inner.appendChild(live_region);
     component.content_type_analyze_live_region = live_region;
-
-    const show = is_content_type_analyze_available(component);
-    analyze_btn.hidden = !show;
-    analyze_btn.style.display = show ? '' : 'none';
 }
 
 function render_content_type_groups(
@@ -91,11 +122,8 @@ function render_content_type_groups(
 ): void {
     const t = component.get_t_internally();
 
-    panel_inner.appendChild(component.Helpers.create_element('p', {
-        text_content: t('content_types_instruction'),
-        style: { 'margin-top': '0', 'color': 'var(--text-color-muted)' }
-    }));
-
+    render_content_type_instruction_row(component, panel_inner);
+    render_content_type_analyze_status(component, panel_inner);
     render_content_type_analyze_toolbar(component, panel_inner);
 
     groups.forEach((group: ContentTypeGroup) => {
@@ -196,6 +224,7 @@ function mount_section_panel(component: any, groups: ContentTypeGroup[]): void {
 function unmount_section_panel(component: any): void {
     sync_content_type_selection_from_dom(component);
     component.content_type_analyze_btn = null;
+    component.content_type_paste_analyze_btn = null;
     component.content_type_analyze_live_region = null;
     component.content_types_section_panel_inner?.replaceChildren();
 }
