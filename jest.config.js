@@ -187,6 +187,21 @@ export default {
       '<rootDir>/js/components/add_sample_form/sample_url_screenshot_form_host.ts',
     '^.+[\\\\/]sample_url_screenshot_aria_status\\.js$':
       '<rootDir>/js/components/add_sample_form/sample_url_screenshot_aria_status.ts',
+    '^.+[\\\\/]sample_url_page_title\\.js$': '<rootDir>/js/components/add_sample_form/sample_url_page_title.ts',
+    '^.+[\\\\/]sample_url_page_title_label\\.js$':
+      '<rootDir>/js/components/add_sample_form/sample_url_page_title_label.ts',
+    '^.+[\\\\/]sample_url_page_title_logic\\.js$':
+      '<rootDir>/js/components/add_sample_form/sample_url_page_title_logic.ts',
+    '^.+[\\\\/]sample_url_analyze_tasks\\.js$': '<rootDir>/js/components/add_sample_form/sample_url_analyze_tasks.ts',
+    '^.+[\\\\/]sample_url_analyze_flow\\.js$': '<rootDir>/js/components/add_sample_form/sample_url_analyze_flow.ts',
+    '^.+[\\\\/]sample_url_analyze_progress\\.js$':
+      '<rootDir>/js/components/add_sample_form/sample_url_analyze_progress.ts',
+    '^.+[\\\\/]sample_url_analyze_task_ui\\.js$':
+      '<rootDir>/js/components/add_sample_form/sample_url_analyze_task_ui.ts',
+    '^.+[\\\\/]sample_url_analyze_modal\\.js$': '<rootDir>/js/components/add_sample_form/sample_url_analyze_modal.ts',
+    '^.+[\\\\/]sample_url_analyze_fetch_snapshot\\.js$':
+      '<rootDir>/js/components/add_sample_form/sample_url_analyze_fetch_snapshot.ts',
+    '^.+[\\\\/]sample_url_analyze_status\\.js$': '<rootDir>/js/components/add_sample_form/sample_url_analyze_status.ts',
     '^.+[\\\\/]open_audit_media_image_preview\\.js$': '<rootDir>/js/components/media/open_audit_media_image_preview.ts',
     '^.+[\\\\/]audit_media_image_preview_mount\\.js$': '<rootDir>/js/components/media/audit_media_image_preview_mount.ts',
     '^.+[\\\\/]audit_media_preview_observation\\.js$': '<rootDir>/js/components/media/audit_media_preview_observation.ts',

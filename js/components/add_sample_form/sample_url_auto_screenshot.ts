@@ -52,10 +52,20 @@ export type SampleUrlAutoScreenshotComponentLike = {
     show_url_screenshot_error?: (message: string) => void;
 };
 
+export type SampleUrlScreenshotRunOptions = {
+    suppress_live_announcements?: boolean;
+};
+
+export type SampleUrlScreenshotRunOutcome = 'success' | 'failed' | 'aborted';
+
 function announce_url_screenshot_status(
     component: SampleUrlAutoScreenshotComponentLike,
-    status: 'capturing' | 'success' | 'failed' | 'idle'
+    status: 'capturing' | 'success' | 'failed' | 'idle',
+    options?: SampleUrlScreenshotRunOptions
 ): void {
+    if (options?.suppress_live_announcements) {
+        return;
+    }
     update_sample_url_screenshot_live_status(component, status);
 }
 
@@ -128,13 +138,14 @@ function is_capture_generation_current(
 
 function report_url_screenshot_failure(
     component: SampleUrlAutoScreenshotComponentLike,
-    detail?: string
+    detail?: string,
+    options?: SampleUrlScreenshotRunOptions
 ): void {
     const t = component.get_t_internally();
     const base = t('sample_screenshot_live_failed');
     const message = detail ? `${base}: ${detail}` : base;
     component.show_url_screenshot_error?.(message);
-    announce_url_screenshot_status(component, 'failed');
+    announce_url_screenshot_status(component, 'failed', options);
 }
 
 /**
@@ -165,10 +176,11 @@ export async function clear_sample_auto_screenshot_if_needed(
  * Hanterar klick på Analysera sida — tar eller byter skärmdump i bakgrunden utan notis.
  */
 export async function handle_sample_url_blur(
-    component: SampleUrlAutoScreenshotComponentLike
-): Promise<void> {
+    component: SampleUrlAutoScreenshotComponentLike,
+    options?: SampleUrlScreenshotRunOptions
+): Promise<SampleUrlScreenshotRunOutcome> {
     if (!is_url_field_visible_for_screenshot(component)) {
-        return;
+        return 'aborted';
     }
 
     const audit_id_from_state = component.getState?.()?.auditId ?? null;
@@ -177,20 +189,20 @@ export async function handle_sample_url_blur(
         audit_id = await component.ensure_audit_id_for_media();
     }
     if (!audit_id || !can_upload_audit_media(audit_id)) {
-        return;
+        return 'failed';
     }
 
     const normalized_url = read_normalized_url_from_input(component);
     if (!normalized_url) {
         await remove_auto_screenshot_quietly(component, audit_id);
-        return;
+        return 'success';
     }
 
     const attached_filenames = component.get_attached_media_filenames();
     const auto_filename = component.get_url_auto_screenshot_filename();
 
     if (should_skip_url_screenshot_when_attached_media_exists(attached_filenames, auto_filename)) {
-        return;
+        return 'success';
     }
 
     if (
@@ -201,18 +213,18 @@ export async function handle_sample_url_blur(
             attached_filenames
         )
     ) {
-        return;
+        return 'success';
     }
 
     if (component.is_url_screenshot_in_progress()) {
-        return;
+        return 'aborted';
     }
 
     const previous_auto_filename = auto_filename;
     const generation = component.get_url_auto_screenshot_generation() + 1;
     component.set_url_auto_screenshot_generation(generation);
 
-    announce_url_screenshot_status(component, 'capturing');
+    announce_url_screenshot_status(component, 'capturing', options);
     set_url_screenshot_in_progress(component, true);
 
     try {
@@ -224,7 +236,7 @@ export async function handle_sample_url_blur(
         );
 
         if (!is_capture_generation_current(component, generation)) {
-            return;
+            return 'aborted';
         }
 
         if (!result?.filename) {
@@ -249,17 +261,25 @@ export async function handle_sample_url_blur(
             get_t_internally: component.get_t_internally,
             sample_url_screenshot_in_progress: false
         });
-        announce_url_screenshot_status(component, 'success');
+        announce_url_screenshot_status(component, 'success', options);
         persist_sample_form_after_auto_screenshot(component);
+        return 'success';
     } catch (err) {
         if (!is_capture_generation_current(component, generation)) {
-            return;
+            return 'aborted';
         }
         const detail = err instanceof Error ? err.message : String(err);
-        report_url_screenshot_failure(component, detail);
+        report_url_screenshot_failure(component, detail, options);
+        return 'failed';
     } finally {
         if (is_capture_generation_current(component, generation)) {
             set_url_screenshot_in_progress(component, false);
         }
     }
+}
+
+export async function run_sample_url_screenshot_task(
+    component: SampleUrlAutoScreenshotComponentLike
+): Promise<SampleUrlScreenshotRunOutcome> {
+    return handle_sample_url_blur(component, { suppress_live_announcements: true });
 }

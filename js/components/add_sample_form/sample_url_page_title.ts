@@ -154,14 +154,21 @@ async function resolve_audit_id_for_page_title(component: SampleUrlPageTitleComp
     return audit_id;
 }
 
+export type SampleUrlPageTitleRunOptions = {
+    suppress_label_loading_ui?: boolean;
+};
+
+export type SampleUrlPageTitleRunOutcome = 'success' | 'failed' | 'aborted';
+
 /**
  * Hämtar sidtitel när användaren klickar på Hämta information.
  */
 export async function handle_sample_url_page_title_on_blur(
-    component: SampleUrlPageTitleComponentLike
-): Promise<void> {
+    component: SampleUrlPageTitleComponentLike,
+    options?: SampleUrlPageTitleRunOptions
+): Promise<SampleUrlPageTitleRunOutcome> {
     if (!is_url_form_group_visible(component.url_form_group_ref, component.url_input)) {
-        return;
+        return 'aborted';
     }
 
     const normalized_url = normalize_url_for_screenshot(
@@ -169,27 +176,39 @@ export async function handle_sample_url_page_title_on_blur(
         component.Helpers?.add_protocol_if_missing
     );
     if (!normalized_url) {
-        return;
+        return 'aborted';
     }
 
     const generation = component.bump_url_page_title_generation();
-    begin_sample_description_page_title_loading(component);
+    const show_label_loading = !options?.suppress_label_loading_ui;
+    if (show_label_loading) {
+        begin_sample_description_page_title_loading(component);
+    }
 
     try {
         const audit_id = await resolve_audit_id_for_page_title(component);
-        if (!audit_id || !component.is_url_page_title_generation_current(generation)) {
-            return;
+        if (!component.is_url_page_title_generation_current(generation)) {
+            return 'aborted';
+        }
+        if (!audit_id) {
+            return 'failed';
         }
 
         const result = await fetch_audit_url_page_title(audit_id, normalized_url);
         if (!component.is_url_page_title_generation_current(generation)) {
-            return;
+            return 'aborted';
         }
         apply_page_title_to_description(component, result.pageTitle);
+        return 'success';
     } catch {
-        // Tyst — användaren kan skriva beskrivning manuellt
+        if (!component.is_url_page_title_generation_current(generation)) {
+            return 'aborted';
+        }
+        return 'failed';
     } finally {
-        end_sample_description_page_title_loading(component);
+        if (show_label_loading) {
+            end_sample_description_page_title_loading(component);
+        }
     }
 }
 
@@ -200,4 +219,10 @@ export async function fetch_and_apply_page_title_from_url(
     component: SampleUrlPageTitleComponentLike
 ): Promise<void> {
     await handle_sample_url_page_title_on_blur(component);
+}
+
+export async function run_sample_url_page_title_task(
+    component: SampleUrlPageTitleComponentLike
+): Promise<SampleUrlPageTitleRunOutcome> {
+    return handle_sample_url_page_title_on_blur(component, { suppress_label_loading_ui: true });
 }

@@ -1,6 +1,7 @@
 /* css/components/add_sample_form_component.css */
 
 @import '../../css/components/file_download_button.css';
+@import '../../css/components/generic_tooltip.css';
 
 .add-sample-form {
     max-width: 100%;
@@ -37,7 +38,7 @@
     min-width: 0;
 }
 
-.sample-url-input-row .file-download-tooltip-wrapper {
+.sample-url-input-row .sample-url-analyze-button-wrap {
     flex: 0 0 auto;
 }
 
@@ -386,6 +387,58 @@ dialog.modal-dialog.modal-dialog--content-type-paste-analyze {
 
 .content-type-paste-analyze-modal-status:empty {
     display: none;
+}
+
+/* Hämta information-modal: uppgiftslista och progress */
+dialog.modal-dialog.modal-dialog--sample-url-analyze {
+    width: min(560px, var(--modal-max-viewport-width));
+}
+
+.modal-body--sample-url-analyze .sample-url-analyze-task-list {
+    margin: 1rem 0 1rem;
+    padding-left: 1.35rem;
+}
+
+.sample-url-analyze-task {
+    padding: 0.1rem 0;
+}
+
+.sample-url-analyze-task__content {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.sample-url-analyze-task__label {
+    flex: 0 1 auto;
+}
+
+.sample-url-analyze-task__status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    min-width: 1rem;
+    min-height: 1rem;
+}
+
+.sample-url-analyze-task__status .generic-tooltip__icon svg {
+    width: 1rem;
+    height: 1rem;
+}
+
+.sample-url-analyze-modal-progress:empty {
+    display: none;
+}
+
+.sample-url-analyze-modal-run[hidden],
+.sample-url-analyze-modal-stop[hidden],
+.sample-url-analyze-modal-close[hidden] {
+    display: none;
+}
+
+.modal-body--sample-url-analyze .modal-confirm-actions--fetch-done {
+    justify-content: flex-start;
 }
 
 .content-type-analyze-status:empty {

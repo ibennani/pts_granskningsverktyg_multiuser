@@ -15,8 +15,9 @@ import {
 import { clear_sample_auto_screenshot_if_needed } from './add_sample_form/sample_url_auto_screenshot.js';
 import { is_accepted_sample_url } from './add_sample_form/sample_url_auto_screenshot_logic.js';
 import { show_sample_url_analyze_invalid_modal } from './add_sample_form/sample_url_analyze_invalid_modal.js';
-import { run_sample_url_analyze_flow, type SampleUrlAnalyzeFlowHost } from './add_sample_form/sample_url_analyze_flow.js';
-import type { FileDownloadButtonParts } from '../utils/file_download_button_ui.js';
+import { show_sample_url_analyze_modal } from './add_sample_form/sample_url_analyze_modal.js';
+import type { SampleUrlAnalyzeFlowHost } from './add_sample_form/sample_url_analyze_flow.js';
+import type { SampleUrlAnalyzeButtonParts } from './add_sample_form/sample_url_analyze_status.js';
 import {
     resolve_content_types,
     resolve_sample_vocab
@@ -63,7 +64,7 @@ export class AddSampleFormComponent {
     private description_label_element: HTMLLabelElement | null;
     private url_input: any;
     private url_analyze_btn: HTMLButtonElement | null;
-    private url_analyze_button_parts: FileDownloadButtonParts | null;
+    private url_analyze_button_parts: SampleUrlAnalyzeButtonParts | null;
     private url_analyze_generation: number;
     private url_form_group_ref: any;
     private content_types_container_element: any;
@@ -350,7 +351,12 @@ export class AddSampleFormComponent {
                 this.url_input.value = fixed;
             }
         }
-        void run_sample_url_analyze_flow(this as unknown as SampleUrlAnalyzeFlowHost);
+        show_sample_url_analyze_modal({
+            host: this as unknown as SampleUrlAnalyzeFlowHost,
+            trigger_button: this.url_analyze_btn,
+            Helpers: this.Helpers,
+            t: this.get_t_internally()
+        });
     }
 
     bump_url_analyze_generation(): number {

@@ -1,64 +1,56 @@
 /**
- * @fileoverview Orkestrerar sidtitel + skärmdump vid klick på «Hämta information».
+ * @fileoverview Orkestrerar uppgifter vid hämtning av sidinfo i granskningsdelsformuläret.
  */
 
-import { handle_sample_url_blur } from './sample_url_auto_screenshot.js';
 import {
-    build_sample_url_page_title_form_host,
-    handle_sample_url_page_title_on_blur,
-    type SampleUrlPageTitleFormHostSource
-} from './sample_url_page_title.js';
-import {
-    build_sample_url_screenshot_form_host,
-    type SampleUrlScreenshotFormHostSource
-} from './sample_url_screenshot_form_host.js';
-import { set_sample_url_analyze_status, type SampleUrlAnalyzeStatusHost } from './sample_url_analyze_status.js';
-import {
-    is_file_download_trigger_busy,
-    READY_RESET_MS
-} from '../../utils/file_download_button_ui.js';
+    get_sample_url_analyze_tasks,
+    type SampleUrlAnalyzeFlowHost,
+    type SampleUrlAnalyzeTaskId,
+    type SampleUrlAnalyzeTaskOutcome,
+} from './sample_url_analyze_tasks.js';
 
-export type SampleUrlAnalyzeFlowHost = SampleUrlAnalyzeStatusHost &
-    SampleUrlPageTitleFormHostSource &
-    SampleUrlScreenshotFormHostSource & {
-        url_analyze_generation: number;
-        bump_url_analyze_generation: () => number;
-        is_url_analyze_generation_current: (generation: number) => boolean;
-    };
+export type { SampleUrlAnalyzeFlowHost } from './sample_url_analyze_tasks.js';
 
-export async function run_sample_url_analyze_flow(host: SampleUrlAnalyzeFlowHost): Promise<void> {
-    const trigger = host.url_analyze_button_parts?.button ?? null;
-    if (trigger && is_file_download_trigger_busy(trigger)) {
+export type SampleUrlAnalyzeTaskCallbacks = {
+    on_task_start: (id: SampleUrlAnalyzeTaskId) => void;
+    on_task_complete: (id: SampleUrlAnalyzeTaskId, outcome: SampleUrlAnalyzeTaskOutcome) => void;
+};
+
+async function run_single_sample_url_analyze_task(
+    host: SampleUrlAnalyzeFlowHost,
+    generation: number,
+    callbacks: SampleUrlAnalyzeTaskCallbacks,
+    task: ReturnType<typeof get_sample_url_analyze_tasks>[number]
+): Promise<void> {
+    if (!host.is_url_analyze_generation_current(generation)) {
         return;
     }
 
-    const generation = host.bump_url_analyze_generation();
-    set_sample_url_analyze_status(host, 'loading');
+    callbacks.on_task_start(task.id);
 
-    const page_title_host = build_sample_url_page_title_form_host(host);
-    const screenshot_host = build_sample_url_screenshot_form_host(host);
-
-    try {
-        await Promise.all([
-            handle_sample_url_page_title_on_blur(page_title_host),
-            handle_sample_url_blur(screenshot_host)
-        ]);
-        if (!host.is_url_analyze_generation_current(generation)) {
-            return;
-        }
-        set_sample_url_analyze_status(host, 'success');
-        await new Promise((resolve) => setTimeout(resolve, READY_RESET_MS));
-        if (host.is_url_analyze_generation_current(generation)) {
-            set_sample_url_analyze_status(host, 'idle');
-        }
-    } catch {
-        if (!host.is_url_analyze_generation_current(generation)) {
-            return;
-        }
-        set_sample_url_analyze_status(host, 'failed');
-        await new Promise((resolve) => setTimeout(resolve, READY_RESET_MS));
-        if (host.is_url_analyze_generation_current(generation)) {
-            set_sample_url_analyze_status(host, 'idle');
-        }
+    const raw_outcome = await task.run(host);
+    if (!host.is_url_analyze_generation_current(generation)) {
+        return;
     }
+    if (raw_outcome === 'aborted') {
+        return;
+    }
+
+    callbacks.on_task_complete(task.id, raw_outcome);
+}
+
+export async function run_sample_url_analyze_tasks(
+    host: SampleUrlAnalyzeFlowHost,
+    callbacks: SampleUrlAnalyzeTaskCallbacks
+): Promise<void> {
+    const generation = host.bump_url_analyze_generation();
+    const tasks = get_sample_url_analyze_tasks();
+
+    await Promise.all(
+        tasks.map((task) => run_single_sample_url_analyze_task(host, generation, callbacks, task))
+    );
+}
+
+export function cancel_sample_url_analyze_tasks(host: SampleUrlAnalyzeFlowHost): void {
+    host.bump_url_analyze_generation();
 }
