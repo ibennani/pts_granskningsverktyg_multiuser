@@ -21,7 +21,24 @@
 .observation-word-import-file-picker-row {
     display: flex;
     flex-wrap: wrap;
+    align-items: stretch;
     gap: 0.5rem;
+}
+
+.observation-word-import-file-picker-row .button {
+    align-self: stretch;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    min-height: 2.75rem;
+    margin-right: 0;
+}
+
+.observation-word-import-file-picker-row .button svg {
+    width: 1em;
+    height: 1em;
+    flex-shrink: 0;
 }
 
 .observation-word-import-pending-file {

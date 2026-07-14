@@ -183,7 +183,7 @@ export function create_observation_word_file_drop_zone(
     const picker_row = helpers.create_element('div', { class_name: 'observation-word-import-file-picker-row' });
     const icon_svg = helpers.get_icon_svg ? helpers.get_icon_svg('upload_file', ['currentColor'], 16) : '';
     const pick_btn = helpers.create_element('button', {
-        class_name: ['button', 'button-primary', 'audit-upload-btn', 'observation-word-import-choose-file-btn'],
+        class_name: ['button', 'button-primary', 'observation-word-import-choose-file-btn'],
         html_content: `<span>${t('observation_word_import_choose_file_button')}</span>${icon_svg}`,
         attributes: { type: 'button', 'aria-label': label_text },
     });
