@@ -145,6 +145,17 @@ describe('AuditActionsViewComponent statusknappar', () => {
         root.remove();
     });
 
+    test('archived visar export men inte importknapp, med förklaring', async () => {
+        const { root, component } = await render_with_status('archived');
+        const ids = button_ids(root);
+
+        expect(ids).toContain('audit-action-btn-download-observation-texts-word');
+        expect(ids).not.toContain('audit-action-btn-import-processed-observation-texts-word');
+        expect(root.textContent).toContain('audit_actions_import_processed_observation_texts_archived_blocked');
+        component.destroy();
+        root.remove();
+    });
+
     test('exportbeskrivning ligger ovanför exportknapp', async () => {
         const { root, component } = await render_with_status('locked');
         const desc = root.querySelector('#audit-action-desc-download-audit');

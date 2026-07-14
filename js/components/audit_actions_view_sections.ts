@@ -53,14 +53,22 @@ export function build_audit_actions_appendix_guide_section(view, state, t) {
         text_content: t('audit_actions_appendix_guide_upload_intro'),
         attributes: { id: 'audit-action-desc-appendix-guide-upload' },
     }));
-    upload_block.appendChild(view.create_action_button({
-        label: t('audit_actions_import_processed_observation_texts_word'),
-        on_click: () => {},
-        variant: 'button-default',
-        icon_name: 'upload_file',
-        id: 'audit-action-btn-import-processed-observation-texts-word',
-        aria_describedby: 'audit-action-desc-appendix-guide-upload',
-    }));
+
+    if (state.auditStatus === 'archived') {
+        upload_block.appendChild(view.Helpers.create_element('p', {
+            class_name: 'audit-actions__export-description',
+            text_content: t('audit_actions_import_processed_observation_texts_archived_blocked'),
+        }));
+    } else if (state.auditStatus === 'locked') {
+        upload_block.appendChild(view.create_action_button({
+            label: t('audit_actions_import_processed_observation_texts_word'),
+            on_click: () => view.handle_import_processed_observation_texts_word?.(),
+            variant: 'button-default',
+            icon_name: 'upload_file',
+            id: 'audit-action-btn-import-processed-observation-texts-word',
+            aria_describedby: 'audit-action-desc-appendix-guide-upload',
+        }));
+    }
     steps.appendChild(upload_block);
 
     section.appendChild(steps);

@@ -2,6 +2,7 @@
 /**
  * @fileoverview Export-handlers för Åtgärder-sidan.
  */
+import { open_observation_word_import_modal } from './observation_word_import/observation_word_import_modal.js';
 
 /**
  * @param {import('./AuditActionsViewComponent.js').AuditActionsViewComponent} view
@@ -87,5 +88,22 @@ export function bind_audit_actions_export_handlers(view) {
         const current_state = view.getState();
         if (!view.ExportLogic?.export_observation_texts_word) return;
         await view.ExportLogic.export_observation_texts_word(current_state);
+    };
+
+    view.handle_import_processed_observation_texts_word = () => {
+        const current_state = view.getState();
+        if (current_state?.auditStatus !== 'locked') return;
+        const t = view.Translation.t;
+        open_observation_word_import_modal({
+            t,
+            Helpers: view.Helpers,
+            audit: current_state,
+            dispatch: view.dispatch,
+            StoreActionTypes: view.StoreActionTypes,
+            trigger_element: document.getElementById('audit-action-btn-import-processed-observation-texts-word'),
+            on_import_complete: (message) => {
+                view.NotificationComponent?.show_global_message?.(message, 'success');
+            },
+        });
     };
 }

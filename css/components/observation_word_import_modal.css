@@ -1,0 +1,78 @@
+.observation-word-import-upload-group {
+    margin-top: 0;
+}
+
+.observation-word-import-drop-zone {
+    border: 2px dashed var(--border-color, #888);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    background: var(--surface-card-bg, #fafafa);
+}
+
+.observation-word-import-drop-zone--active {
+    border-color: var(--primary-color, #005ea2);
+    background: color-mix(in srgb, var(--primary-color, #005ea2) 8%, transparent);
+}
+
+.observation-word-import-drop-zone__hint {
+    margin: 0 0 0.75rem;
+}
+
+.observation-word-import-file-picker-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.observation-word-import-pending-file {
+    margin: 0.75rem 0 0;
+}
+
+.observation-word-import-status {
+    margin: 0.75rem 0 0;
+}
+
+.observation-word-import-analysis-heading {
+    margin: 1rem 0 0.35rem;
+}
+
+.observation-word-import-analysis-list {
+    margin: 0 0 0.75rem;
+    padding-left: 1.25rem;
+}
+
+.observation-word-import-analysis-list li {
+    margin-bottom: 0.1rem;
+    line-height: 1.35;
+}
+
+.observation-word-import-analysis-list li:last-child {
+    margin-bottom: 0;
+}
+
+.observation-word-import-blocked-note {
+    margin: 0.5rem 0 0;
+    color: var(--error-text-color, #b00020);
+}
+
+.observation-word-import-diff-list {
+    margin: 0;
+    padding-left: 1.25rem;
+    max-height: 16rem;
+    overflow: auto;
+}
+
+.observation-word-import-diff-list li {
+    margin-bottom: 0.35rem;
+}
+
+.observation-word-import-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.modal-body--observation-word-import {
+    max-width: 42rem;
+}

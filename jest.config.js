@@ -70,6 +70,33 @@ export default {
     '^.+[\\\\/]export_observation_texts_word_blocks\\.js$': '<rootDir>/js/export/export_observation_texts_word_blocks.ts',
     '^.+[\\\\/]export_observation_texts_word_constants\\.js$': '<rootDir>/js/export/export_observation_texts_word_constants.ts',
     '^.+[\\\\/]export_word_observation_body_paragraphs\\.js$': '<rootDir>/js/export/export_word_observation_body_paragraphs.ts',
+    '^.+[\\\\/]import/parse_observation_word_handling_docx\\.js$': '<rootDir>/js/import/parse_observation_word_handling_docx.ts',
+    '^.+[\\\\/]import/docx_paragraphs_to_markdown\\.js$': '<rootDir>/js/import/docx_paragraphs_to_markdown.ts',
+    '^.+[\\\\/]import/observation_word_import_diff\\.js$': '<rootDir>/js/import/observation_word_import_diff.ts',
+    '^.+[\\\\/]import/observation_word_import_apply\\.js$': '<rootDir>/js/import/observation_word_import_apply.ts',
+    '^.+[\\\\/]import/observation_word_import_types\\.js$': '<rootDir>/js/import/observation_word_import_types.ts',
+    '^.+/parse_observation_word_handling_docx\\.js$': '<rootDir>/js/import/parse_observation_word_handling_docx.ts',
+    '^.+/docx_paragraphs_to_markdown\\.js$': '<rootDir>/js/import/docx_paragraphs_to_markdown.ts',
+    '^.+/observation_word_import_diff\\.js$': '<rootDir>/js/import/observation_word_import_diff.ts',
+    '^.+/observation_word_import_apply\\.js$': '<rootDir>/js/import/observation_word_import_apply.ts',
+    '^.+/observation_word_import_types\\.js$': '<rootDir>/js/import/observation_word_import_types.ts',
+    '^.+[\\\\/]state/audit_reducer_observation_word_import\\.js$': '<rootDir>/js/state/audit_reducer_observation_word_import.ts',
+    '^.+/audit_reducer_observation_word_import\\.js$': '<rootDir>/js/state/audit_reducer_observation_word_import.ts',
+    '^.+/shared/import/word_file_validation\\.js$': '<rootDir>/shared/import/word_file_validation.ts',
+    '^.+/word_file_validation\\.js$': '<rootDir>/shared/import/word_file_validation.ts',
+    '^.+/shared/import/clipboard_word_files\\.js$': '<rootDir>/shared/import/clipboard_word_files.ts',
+    '^.+[\\\\/]import/clipboard_word_files\\.js$': '<rootDir>/shared/import/clipboard_word_files.ts',
+    '^.+[\\\\/]observation_word_import/observation_word_import_modal\\.js$':
+      '<rootDir>/js/components/observation_word_import/observation_word_import_modal.ts',
+    '^.+[\\\\/]observation_word_import/observation_word_import_modal_setup\\.js$':
+      '<rootDir>/js/components/observation_word_import/observation_word_import_modal_setup.ts',
+    '^.+[\\\\/]observation_word_import/observation_word_file_drop_zone\\.js$':
+      '<rootDir>/js/components/observation_word_import/observation_word_file_drop_zone.ts',
+    '^.+/observation_word_import_modal\\.js$': '<rootDir>/js/components/observation_word_import/observation_word_import_modal.ts',
+    '^.+/observation_word_import_modal_setup\\.js$':
+      '<rootDir>/js/components/observation_word_import/observation_word_import_modal_setup.ts',
+    '^.+/observation_word_file_drop_zone\\.js$':
+      '<rootDir>/js/components/observation_word_import/observation_word_file_drop_zone.ts',
     '^.+[\\\\/]export_html_media\\.js$': '<rootDir>/js/export/export_html_media.ts',
     '^.+[\\\\/]export_html_themes\\.js$': '<rootDir>/js/export/export_html_themes.ts',
     '^.+[\\\\/]export_html_sidebar_script\\.js$': '<rootDir>/js/export/export_html_sidebar_script.ts',

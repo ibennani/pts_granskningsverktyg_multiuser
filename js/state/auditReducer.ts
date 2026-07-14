@@ -26,6 +26,7 @@ import {
 } from './remoteStateHandlers.js';
 import { RequirementLookup } from '../logic/requirement_lookup.js';
 import { map_samples_bulk_pass_fully_unreviewed_only } from './audit_reducer_bulk_pass.js';
+import { reduce_apply_observation_word_import } from './audit_reducer_observation_word_import.js';
 import { definition_primary_id, same_storage_id } from '../logic/entity_id_match.js';
 import {
     should_touch_last_local_change_at,
@@ -390,6 +391,8 @@ export function auditReducer(current_state: any, action: any) {
             }
             return new_state;
         }
+        case ActionTypes.APPLY_OBSERVATION_WORD_IMPORT:
+            return reduce_apply_observation_word_import(current_state, action.payload);
         case ActionTypes.UPDATE_USER_REQUIREMENT_RESUME:
             return reduce_update_user_requirement_resume(current_state, action);
         case ActionTypes.SET_AUDIT_STATUS:
