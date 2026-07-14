@@ -56,8 +56,13 @@ export function create_export_item(view, { label, description, on_click, id_suff
 
     const wrapper = view.Helpers.create_element('div', {
         class_name: 'audit-actions__export-item',
-        attributes: btn_id ? { role: 'group', 'aria-labelledby': btn_id } : {},
+        attributes: desc_id ? { role: 'group', 'aria-describedby': desc_id } : {},
     });
+    wrapper.appendChild(view.Helpers.create_element('p', {
+        class_name: 'audit-actions__export-description',
+        text_content: description,
+        attributes: desc_id ? { id: desc_id } : {},
+    }));
     wrapper.appendChild(create_file_download_action_button(view, {
         label,
         on_download: on_click,
@@ -65,11 +70,6 @@ export function create_export_item(view, { label, description, on_click, id_suff
         icon_name: 'export',
         id: btn_id,
         aria_describedby: desc_id || undefined,
-    }));
-    wrapper.appendChild(view.Helpers.create_element('p', {
-        class_name: 'audit-actions__export-description',
-        text_content: description,
-        attributes: desc_id ? { id: desc_id } : {},
     }));
     return wrapper;
 }
@@ -84,6 +84,11 @@ export function create_export_item_with_buttons(view, { buttons, description, de
         class_name: 'audit-actions__export-item',
         attributes: desc_id ? { role: 'group', 'aria-describedby': desc_id } : {},
     });
+    wrapper.appendChild(view.Helpers.create_element('p', {
+        class_name: 'audit-actions__export-description',
+        text_content: description,
+        attributes: desc_id ? { id: desc_id } : {},
+    }));
     const buttons_row = view.Helpers.create_element('div', {
         class_name: 'audit-actions__export-buttons',
     });
@@ -98,11 +103,6 @@ export function create_export_item_with_buttons(view, { buttons, description, de
         }));
     }
     wrapper.appendChild(buttons_row);
-    wrapper.appendChild(view.Helpers.create_element('p', {
-        class_name: 'audit-actions__export-description',
-        text_content: description,
-        attributes: desc_id ? { id: desc_id } : {},
-    }));
     return wrapper;
 }
 
@@ -118,8 +118,13 @@ export function create_file_download_status_item(
 
     const wrapper = view.Helpers.create_element('div', {
         class_name: 'audit-actions__status-item',
-        attributes: btn_id ? { role: 'group', 'aria-labelledby': btn_id } : {},
+        attributes: desc_id ? { role: 'group', 'aria-describedby': desc_id } : {},
     });
+    wrapper.appendChild(view.Helpers.create_element('p', {
+        class_name: 'audit-actions__status-description',
+        text_content: description,
+        attributes: desc_id ? { id: desc_id } : {},
+    }));
     wrapper.appendChild(create_file_download_action_button(view, {
         label,
         on_download,
@@ -127,11 +132,6 @@ export function create_file_download_status_item(
         icon_name,
         id: btn_id,
         aria_describedby: desc_id || undefined,
-    }));
-    wrapper.appendChild(view.Helpers.create_element('p', {
-        class_name: 'audit-actions__status-description',
-        text_content: description,
-        attributes: desc_id ? { id: desc_id } : {},
     }));
     return wrapper;
 }
@@ -148,8 +148,13 @@ export function create_status_action_item(
 
     const wrapper = view.Helpers.create_element('div', {
         class_name: 'audit-actions__status-item',
-        attributes: btn_id ? { role: 'group', 'aria-labelledby': btn_id } : {},
+        attributes: desc_id ? { role: 'group', 'aria-describedby': desc_id } : {},
     });
+    wrapper.appendChild(view.Helpers.create_element('p', {
+        class_name: 'audit-actions__status-description',
+        text_content: description,
+        attributes: desc_id ? { id: desc_id } : {},
+    }));
     wrapper.appendChild(create_action_button(view, {
         label,
         on_click,
@@ -157,11 +162,6 @@ export function create_status_action_item(
         icon_name,
         id: btn_id,
         aria_describedby: desc_id || undefined,
-    }));
-    wrapper.appendChild(view.Helpers.create_element('p', {
-        class_name: 'audit-actions__status-description',
-        text_content: description,
-        attributes: desc_id ? { id: desc_id } : {},
     }));
     return wrapper;
 }

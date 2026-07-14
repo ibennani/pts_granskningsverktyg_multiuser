@@ -26,41 +26,41 @@ export function build_audit_actions_appendix_guide_section(view, state, t) {
         return section;
     }
 
-    section.appendChild(view.Helpers.create_element('p', {
-        class_name: 'audit-actions__section-lead',
+    const steps = view.Helpers.create_element('div', { class_name: 'audit-actions__appendix-guide-steps' });
+
+    steps.appendChild(view.Helpers.create_element('p', {
+        class_name: 'audit-actions__export-description',
         text_content: t('audit_actions_appendix_guide_intro'),
+        attributes: { id: 'audit-action-desc-appendix-guide-download' },
     }));
 
-    const actions = view.Helpers.create_element('div', { class_name: 'audit-actions__export-list' });
-    const item = view.Helpers.create_element('div', {
-        class_name: 'audit-actions__export-item',
-        attributes: { role: 'group', 'aria-labelledby': 'audit-action-btn-download-observation-texts-word' },
-    });
-    const buttons_row = view.Helpers.create_element('div', {
-        class_name: 'audit-actions__export-buttons',
-    });
-
     if (view.ExportLogic?.export_observation_texts_word) {
-        buttons_row.appendChild(view.create_file_download_action_button({
+        steps.appendChild(view.create_file_download_action_button({
             label: t('audit_actions_download_observation_texts_word'),
             on_download: () => view.handle_export_observation_texts_word(),
             variant: 'button-default',
             icon_name: 'export',
             id: 'audit-action-btn-download-observation-texts-word',
+            aria_describedby: 'audit-action-desc-appendix-guide-download',
         }));
     }
 
-    buttons_row.appendChild(view.create_action_button({
+    steps.appendChild(view.Helpers.create_element('p', {
+        class_name: 'audit-actions__export-description audit-actions__appendix-guide-upload-lead',
+        text_content: t('audit_actions_appendix_guide_upload_intro'),
+        attributes: { id: 'audit-action-desc-appendix-guide-upload' },
+    }));
+
+    steps.appendChild(view.create_action_button({
         label: t('audit_actions_import_processed_observation_texts_word'),
         on_click: () => {},
         variant: 'button-default',
-        icon_name: 'export',
+        icon_name: 'upload_file',
         id: 'audit-action-btn-import-processed-observation-texts-word',
+        aria_describedby: 'audit-action-desc-appendix-guide-upload',
     }));
 
-    item.appendChild(buttons_row);
-    actions.appendChild(item);
-    section.appendChild(actions);
+    section.appendChild(steps);
     return section;
 }
 

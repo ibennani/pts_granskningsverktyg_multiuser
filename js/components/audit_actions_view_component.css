@@ -19,10 +19,27 @@
 .audit-actions__status-description {
     margin: 0;
     font-size: 0.85rem;
+    font-weight: normal;
     color: var(--text-color-muted);
 }
 
 .audit-actions__appendix-guide-section {
+    margin-top: 1.25rem;
+}
+
+.audit-actions__appendix-guide-steps {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.15rem;
+    margin-top: 0.75rem;
+}
+
+.audit-actions__appendix-guide-steps .button {
+    margin-right: 0;
+}
+
+.audit-actions__appendix-guide-upload-lead {
     margin-top: 1.25rem;
 }
 
@@ -37,6 +54,7 @@
 .audit-actions__section-lead {
     margin-top: 0;
     margin-bottom: 0;
+    font-weight: normal;
 }
 
 .audit-actions__export-list {
@@ -66,6 +84,7 @@
 .audit-actions__export-description {
     margin: 0;
     font-size: 0.85rem;
+    font-weight: normal;
     color: var(--text-color-muted);
 }
 
