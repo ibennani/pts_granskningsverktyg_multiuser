@@ -782,6 +782,7 @@
   "export_observation_texts_word_bullet_edit": "Hvis du vil endre en tekst, må du holde deg innenfor den røde rammen.",
   "export_observation_texts_word_bullet_delete": "Hvis du vil fjerne et avvik, slett avviks-ID og hele den røde rammen.",
   "export_observation_texts_word_return": "Send dokumentet tilbake til granskeren når alle tekstene er oppdatert.",
+  "export_observation_texts_word_deficiency_id_heading": "Avviks-ID {id}",
   "export_pdf_deficiency_types_button": "Vedlegg 1: Avvikstyper (PDF)",
   "export_word_deficiency_types_button": "Vedlegg 1: Avvikstyper (Word)",
   "export_pdf_deficiency_types_title": "Vedlegg 1: Avvikstyper",

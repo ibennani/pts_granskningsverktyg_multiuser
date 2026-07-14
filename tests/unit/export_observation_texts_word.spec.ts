@@ -24,6 +24,10 @@ const mockTableCell = jest.fn(function MockTableCell(opts) {
     this.opts = opts;
     return this;
 });
+const mockExternalHyperlink = jest.fn(function MockExternalHyperlink(opts) {
+    this.opts = opts;
+    return this;
+});
 
 jest.unstable_mockModule('docx', () => ({
     BorderStyle: { SINGLE: 'single' },
@@ -32,6 +36,7 @@ jest.unstable_mockModule('docx', () => ({
     TableCell: mockTableCell,
     TableRow: mockTableRow,
     TextRun: mockTextRun,
+    ExternalHyperlink: mockExternalHyperlink,
     TabStopType: { LEFT: 'left' },
     WidthType: { PERCENTAGE: 'pct' },
 }));
@@ -90,7 +95,11 @@ function create_audit_with_deficiencies(entries) {
             requirements: {
                 req1: {
                     id: 'req1',
-                    title: 'Krav 1',
+                    title: 'Knappar ska ha synlig fokusmarkering',
+                    standardReference: {
+                        text: '1.2.3 Knappar ska ha synlig fokusmarkering',
+                        url: 'https://example.com/wcag',
+                    },
                     checks: [{
                         id: 'check1',
                         passCriteria: entries.map((entry) => ({
@@ -104,6 +113,8 @@ function create_audit_with_deficiencies(entries) {
         },
         samples: [{
             id: 's1',
+            description: 'Startsida',
+            url: 'https://example.com/start',
             requirementResults: {
                 req1: {
                     checkResults: {
@@ -151,6 +162,18 @@ describe('collect_observation_export_deficiencies', () => {
         const result = collect_observation_export_deficiencies(audit);
         expect(result).toHaveLength(1);
     });
+
+    test('inkluderar kravdefinition och granskningsdel', () => {
+        const audit = create_audit_with_deficiencies([
+            { pc_id: 'pc1', deficiency_id: 'B3', observation: 'Observation A' },
+        ]);
+
+        const result = collect_observation_export_deficiencies(audit);
+        expect(result[0].req_definition.title).toBe('Knappar ska ha synlig fokusmarkering');
+        expect(result[0].req_definition.standardReference?.text).toContain('1.2.3');
+        expect(result[0].sample.description).toBe('Startsida');
+        expect(result[0].sample.url).toBe('https://example.com/start');
+    });
 });
 
 describe('build_observation_texts_word_children', () => {
@@ -158,16 +181,14 @@ describe('build_observation_texts_word_children', () => {
         jest.clearAllMocks();
     });
 
-    test('lägger till h1, intro med dnr och aktör, punktlistor och h2 per brist-id', () => {
+    test('lägger till h1, intro, kravkontext, h3 granskningsdel och h4 i röd cell', () => {
         const audit = create_audit_for_word_export([
             { pc_id: 'pc1', deficiency_id: 'B3', observation: 'Observation A' },
-            { pc_id: 'pc2', deficiency_id: 'B7', observation: 'Observation B' },
+            { pc_id: 'pc2', deficiency_id: 'B7', observation: '- Punkt ett\n- Punkt två' },
         ]);
 
-        build_observation_texts_word_children([
-            { deficiencyId: 'B3', observationDetail: 'Observation A' },
-            { deficiencyId: 'B7', observationDetail: 'Observation B' },
-        ], audit);
+        const deficiencies = collect_observation_export_deficiencies(audit);
+        build_observation_texts_word_children(deficiencies, audit);
 
         const title_paragraph = mockParagraph.mock.calls.find(
             ([opts]) => opts?.heading === 'Heading1'
@@ -200,18 +221,45 @@ describe('build_observation_texts_word_children', () => {
         );
         expect(return_paragraph).toBeTruthy();
 
-        const id_heading = mockParagraph.mock.calls.find(
+        const req_heading = mockParagraph.mock.calls.find(
+            ([opts]) => opts?.heading === 'Heading2'
+                && opts?.children?.[0]?.text?.includes('Knappar ska ha synlig fokusmarkering')
+        );
+        expect(req_heading).toBeTruthy();
+
+        const sample_heading = mockParagraph.mock.calls.find(
+            ([opts]) => opts?.heading === 'Heading3'
+                && opts?.children?.[0]?.text === 'Granskningsdelar: '
+        );
+        expect(sample_heading).toBeTruthy();
+
+        const old_id_h2 = mockParagraph.mock.calls.find(
             ([opts]) => opts?.heading === 'Heading2'
                 && opts?.children?.[0]?.text === 'Brist-id: 3'
         );
-        expect(id_heading).toBeTruthy();
+        expect(old_id_h2).toBeUndefined();
+
+        const h4_in_cell = mockParagraph.mock.calls.find(
+            ([opts]) => opts?.heading === 'Heading4'
+                && opts?.children?.[0]?.text === 'Brist-id 3'
+        );
+        expect(h4_in_cell).toBeTruthy();
 
         expect(mockTable).toHaveBeenCalledTimes(2);
 
         const table_call = mockTable.mock.calls[0][0];
-        const cell = table_call.rows[0].opts.children[0].opts;
+        const table_row = table_call.rows[0].opts;
+        expect(table_row.cantSplit).toBe(true);
+
+        const cell = table_row.children[0].opts;
         expect(cell.borders.top.color).toBe('CC0000');
         expect(cell.borders.bottom.color).toBe('CC0000');
+
+        const cell_paragraphs = cell.children;
+        expect(cell_paragraphs[0].opts.heading).toBe('Heading4');
+        expect(cell_paragraphs[0].opts.keepNext).toBe(true);
+        expect(cell_paragraphs[0].opts.keepLines).toBe(true);
+        expect(cell_paragraphs[1].opts.children[0].text).toBe('Observation A');
     });
 });
 
@@ -239,7 +287,8 @@ describe('create_observation_texts_export_t', () => {
 
         expect(t_sv('export_observation_texts_word_title')).toBe('Observationstexter för handläggning');
         expect(t_en('export_observation_texts_word_title')).toBe('Observation texts for processing');
-        expect(t_sv('pass_criterion_deficiency_id_label', { id: '5' })).toBe('Brist-id: 5');
+        expect(t_sv('export_observation_texts_word_deficiency_id_heading', { id: '5' })).toBe('Brist-id 5');
+        expect(t_en('export_observation_texts_word_deficiency_id_heading', { id: '5' })).toBe('Deficiency ID 5');
         expect(t_sv('export_observation_texts_word_intro', {
             dnr: '2024-1',
             actor_name: 'Acme',

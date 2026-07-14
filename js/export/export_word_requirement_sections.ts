@@ -28,13 +28,19 @@ export function extract_reference_number(requirement: any) {
     return referenceNumber;
 }
 
+type MetadataParagraphOptions = {
+    include_deficiency_id_list?: boolean;
+};
+
 // Gemensam hjälpfunktion för att skapa metadata-paragraf (Referens, Principer, Brist)
 export function create_metadata_paragraphs(
     requirement: any,
     current_audit: any,
     deficiencyIds: any,
-    _t: any
+    _t: any,
+    options?: MetadataParagraphOptions
 ) {
+    const include_deficiency_id_list = options?.include_deficiency_id_list !== false;
     const metadata_items = [];
 
     // Referens
@@ -97,7 +103,7 @@ export function create_metadata_paragraphs(
     }
 
     // Identifierade brister
-    if (deficiencyIds.length > 0) {
+    if (include_deficiency_id_list && deficiencyIds.length > 0) {
         metadata_items.push(
             new Paragraph({
                 children: [

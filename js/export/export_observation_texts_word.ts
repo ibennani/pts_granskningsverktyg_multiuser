@@ -1,37 +1,21 @@
 /**
  * @fileoverview Word-export av alla observationstexter för handläggning före bilagor.
  */
-import {
-    BorderStyle,
-    Paragraph,
-    Table,
-    TableCell,
-    TableRow,
-    TextRun,
-    TabStopType,
-    WidthType,
-} from 'docx';
+import { Paragraph, TextRun, TabStopType } from 'docx';
 import { resolve_rulefile_language_for_export } from '../logic/audit_granskning_sequence.js';
 import { t_for_language } from '../translation_logic.js';
 import { consoleManager } from '../utils/console_manager.js';
 import { get_t_internal, show_global_message_internal } from './export_bootstrap.js';
-import { extractDeficiencyNumber } from './export_format_helpers.js';
 import { collect_observation_export_deficiencies } from './export_observation_texts_collect.js';
 import type { ObservationExportEntry } from './export_observation_texts_collect.js';
+import {
+    append_observation_entry_context_blocks,
+    append_observation_entry_red_frame_block,
+} from './export_observation_texts_word_blocks.js';
 import { finalize_export_catch } from './export_error_handling.js';
 import { build_observation_texts_word_filename } from './export_report_filename.js';
 import { finalize_word_export_download } from './export_word_main_flow_document.js';
-import { parse_markdown_to_text_runs } from './export_word_markdown_docx.js';
 import type { ExportWordMainFlowT } from './export_word_main_flow_children.js';
-
-const OBSERVATION_BORDER_COLOR = 'CC0000';
-
-const red_cell_border = {
-    top: { style: BorderStyle.SINGLE, size: 6, color: OBSERVATION_BORDER_COLOR },
-    bottom: { style: BorderStyle.SINGLE, size: 6, color: OBSERVATION_BORDER_COLOR },
-    left: { style: BorderStyle.SINGLE, size: 6, color: OBSERVATION_BORDER_COLOR },
-    right: { style: BorderStyle.SINGLE, size: 6, color: OBSERVATION_BORDER_COLOR },
-};
 
 function apply_translation_replacements(
     text: string,
@@ -48,22 +32,6 @@ export function create_observation_texts_export_t(rule_file_content: unknown): E
     const language_tag = resolve_rulefile_language_for_export(rule_file_content);
     return (key, opts = {}) =>
         apply_translation_replacements(t_for_language(key, language_tag), opts);
-}
-
-function build_observation_cell_paragraphs(observation_text: string): Paragraph[] {
-    const trimmed = String(observation_text || '').trim();
-    if (!trimmed) {
-        return [new Paragraph({ children: [new TextRun({ text: '' })] })];
-    }
-
-    const lines = trimmed.split('\n');
-    return lines.map((line, index) => {
-        const is_last = index === lines.length - 1;
-        return new Paragraph({
-            children: parse_markdown_to_text_runs(line),
-            spacing: { after: is_last ? 0 : 60 },
-        });
-    });
 }
 
 function resolve_observation_export_metadata(
@@ -156,43 +124,11 @@ function append_observation_texts_word_intro(
 function append_observation_entry_blocks(
     children: unknown[],
     entry: ObservationExportEntry,
+    current_audit: Record<string, unknown>,
     t: ExportWordMainFlowT
 ): void {
-    const c = children as Array<Paragraph | Table>;
-    const id_number = extractDeficiencyNumber(entry.deficiencyId);
-    const id_label = t('pass_criterion_deficiency_id_label', { id: id_number });
-
-    c.push(
-        new Paragraph({
-            children: [new TextRun({ text: id_label })],
-            heading: 'Heading2',
-            spacing: { after: 40 },
-        })
-    );
-
-    c.push(
-        new Table({
-            width: { size: 100, type: WidthType.PERCENTAGE },
-            rows: [
-                new TableRow({
-                    children: [
-                        new TableCell({
-                            borders: red_cell_border,
-                            margins: { top: 80, bottom: 80, left: 120, right: 120 },
-                            children: build_observation_cell_paragraphs(entry.observationDetail),
-                        }),
-                    ],
-                }),
-            ],
-        })
-    );
-
-    c.push(
-        new Paragraph({
-            children: [new TextRun({ text: '' })],
-            spacing: { after: 240 },
-        })
-    );
+    append_observation_entry_context_blocks(children, entry, current_audit, t);
+    append_observation_entry_red_frame_block(children, entry, t);
 }
 
 export function build_observation_texts_word_children(
@@ -204,7 +140,7 @@ export function build_observation_texts_word_children(
     const children: unknown[] = [];
     append_observation_texts_word_intro(children, t, current_audit);
     for (const entry of deficiencies) {
-        append_observation_entry_blocks(children, entry, t);
+        append_observation_entry_blocks(children, entry, current_audit, t);
     }
     return children;
 }

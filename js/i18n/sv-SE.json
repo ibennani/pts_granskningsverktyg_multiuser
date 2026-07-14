@@ -782,6 +782,7 @@
   "export_observation_texts_word_bullet_edit": "Vill du ändra i en text så måste du hålla dig inom den röda ramen.",
   "export_observation_texts_word_bullet_delete": "Vill du ta bort en brist så radera brist-id och hela den röda ramen.",
   "export_observation_texts_word_return": "Skicka tillbaka dokumentet till granskaren när alla texter är uppdaterade.",
+  "export_observation_texts_word_deficiency_id_heading": "Brist-id {id}",
   "export_pdf_deficiency_types_button": "Bilaga 1: Bristtyper (PDF)",
   "export_word_deficiency_types_button": "Bilaga 1: Bristtyper (Word)",
   "export_pdf_deficiency_types_title": "Bilaga 1: Bristtyper",

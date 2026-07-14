@@ -4,22 +4,32 @@
 import { for_each_failed_export_pass_criterion } from './export_deficiency_traversal.js';
 import { extractDeficiencyNumber } from './export_format_helpers.js';
 
-export type ObservationExportEntry = {
-    deficiencyId: string;
-    observationDetail: string;
-};
-
 type RequirementCheck = {
     id?: string;
     passCriteria?: Array<{ id?: string; failureStatementTemplate?: string; requirement?: string }>;
 };
 
-type RequirementDefinition = {
+export type ObservationExportSample = {
+    description?: string;
+    url?: string;
+};
+
+export type ObservationExportRequirement = {
+    title?: string;
+    standardReference?: { text?: string; url?: string };
+    classifications?: Array<{ taxonomyId?: string; conceptId?: string }>;
     checks?: RequirementCheck[];
 };
 
+export type ObservationExportEntry = {
+    deficiencyId: string;
+    observationDetail: string;
+    req_definition: ObservationExportRequirement;
+    sample: ObservationExportSample;
+};
+
 function resolve_observation_text(
-    req_definition: RequirementDefinition,
+    req_definition: ObservationExportRequirement,
     check_id: string,
     pc_id: string,
     pc_obj: { observationDetail?: string }
@@ -52,6 +62,14 @@ function sort_deficiency_entries(entries: ObservationExportEntry[]): Observation
     });
 }
 
+function to_export_sample(sample: unknown): ObservationExportSample {
+    const s = sample as { description?: string; url?: string } | null | undefined;
+    return {
+        description: s?.description,
+        url: s?.url,
+    };
+}
+
 /**
  * Returnerar alla unika brister med observationstext, sorterade på brist-id.
  */
@@ -61,6 +79,7 @@ export function collect_observation_export_deficiencies(current_audit: unknown):
     const by_id = new Map<string, ObservationExportEntry>();
 
     for_each_failed_export_pass_criterion(current_audit, ({
+        sample,
         req_definition,
         check_id,
         pc_id,
@@ -72,11 +91,13 @@ export function collect_observation_export_deficiencies(current_audit: unknown):
         by_id.set(deficiency_id, {
             deficiencyId: deficiency_id,
             observationDetail: resolve_observation_text(
-                req_definition as RequirementDefinition,
+                req_definition as ObservationExportRequirement,
                 check_id,
                 pc_id,
                 pc_obj
             ),
+            req_definition: req_definition as ObservationExportRequirement,
+            sample: to_export_sample(sample),
         });
     });
 
