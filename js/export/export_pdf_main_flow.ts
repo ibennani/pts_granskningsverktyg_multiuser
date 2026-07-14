@@ -131,6 +131,75 @@ export async function export_to_pdf_samples(current_audit: Record<string, unknow
     }
 }
 
+type AuditExportMeta = {
+    auditMetadata?: { caseNumber?: string; actorName?: string };
+    updated_at?: string | null;
+};
+
+export async function build_deficiency_types_appendix_pdf_blob(
+    current_audit: Record<string, unknown> | null | undefined
+): Promise<{ blob: Blob; filename: string } | null> {
+    const t = get_t_internal() as ExportReportHtmlT;
+    if (!current_audit) {
+        return null;
+    }
+
+    const audit_id = current_audit.auditId;
+    if (!audit_id || typeof audit_id !== 'string') {
+        return null;
+    }
+
+    const html_content = build_deficiency_types_appendix_pdf_document(current_audit, t);
+    assert_pdf_export_html_within_limit(html_content, 'export_pdf_html_too_large');
+    const pdf_blob = await api_post_pdf(`/audits/${encodeURIComponent(audit_id)}/export/pdf-requirements`, {
+        htmlContent: html_content,
+    });
+
+    const filename = build_deficiency_types_appendix_pdf_filename(
+        current_audit as AuditExportMeta,
+        t
+    );
+
+    return { blob: pdf_blob, filename };
+}
+
+export async function build_screenshots_appendix_pdf_blob(
+    current_audit: Record<string, unknown> | null | undefined
+): Promise<{ blob: Blob; filename: string; missing_filenames: string[] } | null> {
+    const t = get_t_internal() as ExportReportHtmlT;
+    if (!current_audit) {
+        return null;
+    }
+
+    const audit_id = current_audit.auditId;
+    if (!audit_id || typeof audit_id !== 'string') {
+        return null;
+    }
+
+    const { items, missing_filenames } = await prepare_screenshots_appendix_media(
+        current_audit as Record<string, unknown> & { auditId?: string | null }
+    );
+    if (items.length === 0) {
+        return null;
+    }
+
+    const html_chunks = await build_screenshots_appendix_pdf_html_chunks_within_limit(
+        current_audit,
+        items,
+        t
+    );
+    const pdf_blob = await api_post_pdf(`/audits/${encodeURIComponent(audit_id)}/export/pdf-requirements`, {
+        htmlChunks: html_chunks,
+    });
+
+    const filename = build_screenshots_appendix_pdf_filename(
+        current_audit as AuditExportMeta,
+        t
+    );
+
+    return { blob: pdf_blob, filename, missing_filenames };
+}
+
 export async function export_to_pdf_deficiency_types(
     current_audit: Record<string, unknown> | null | undefined
 ): Promise<void> {
@@ -149,19 +218,14 @@ export async function export_to_pdf_deficiency_types(
     consoleManager.log('[PDF Export] Starting export_to_pdf_deficiency_types');
 
     try {
-        const html_content = build_deficiency_types_appendix_pdf_document(current_audit, t);
-        assert_pdf_export_html_within_limit(html_content, 'export_pdf_html_too_large');
-        const pdf_blob = await api_post_pdf(`/audits/${encodeURIComponent(audit_id)}/export/pdf-requirements`, {
-            htmlContent: html_content,
-        });
+        const result = await build_deficiency_types_appendix_pdf_blob(current_audit);
+        if (!result) {
+            show_global_message_internal(t('error_exporting_pdf'), 'error');
+            return;
+        }
 
-        const filename = build_deficiency_types_appendix_pdf_filename(
-            current_audit as { auditMetadata?: { caseNumber?: string; actorName?: string }; updated_at?: string | null },
-            t
-        );
-
-        trigger_browser_blob_download(pdf_blob, filename);
-        show_global_message_internal(t('audit_saved_as_file', { filename }), 'success');
+        trigger_browser_blob_download(result.blob, result.filename);
+        show_global_message_internal(t('audit_saved_as_file', { filename: result.filename }), 'success');
     } catch (error: unknown) {
         handle_pdf_export_error(error, t, 'export_pdf_html_too_large', 'Error exporting deficiency types PDF:');
     }
@@ -185,38 +249,22 @@ export async function export_to_pdf_screenshots_appendix(
     consoleManager.log('[PDF Export] Starting export_to_pdf_screenshots_appendix');
 
     try {
-        const { items, missing_filenames } = await prepare_screenshots_appendix_media(
-            current_audit as Record<string, unknown> & { auditId?: string | null }
-        );
-        if (items.length === 0) {
+        const result = await build_screenshots_appendix_pdf_blob(current_audit);
+        if (!result) {
             show_global_message_internal(t('export_screenshots_appendix_empty'), 'error');
             return;
         }
 
-        const html_chunks = await build_screenshots_appendix_pdf_html_chunks_within_limit(
-            current_audit,
-            items,
-            t
-        );
-        const pdf_blob = await api_post_pdf(`/audits/${encodeURIComponent(audit_id)}/export/pdf-requirements`, {
-            htmlChunks: html_chunks,
-        });
-
-        const filename = build_screenshots_appendix_pdf_filename(
-            current_audit as { auditMetadata?: { caseNumber?: string; actorName?: string }; updated_at?: string | null },
-            t
-        );
-
-        trigger_browser_blob_download(pdf_blob, filename);
-        if (missing_filenames.length > 0) {
+        trigger_browser_blob_download(result.blob, result.filename);
+        if (result.missing_filenames.length > 0) {
             show_global_message_internal(
                 t('screenshots_appendix_missing_media_warning', {
-                    count: String(missing_filenames.length),
+                    count: String(result.missing_filenames.length),
                 }),
                 'success'
             );
         } else {
-            show_global_message_internal(t('audit_saved_as_file', { filename }), 'success');
+            show_global_message_internal(t('audit_saved_as_file', { filename: result.filename }), 'success');
         }
     } catch (error: unknown) {
         handle_pdf_export_error(

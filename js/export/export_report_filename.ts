@@ -101,6 +101,27 @@ export function build_screenshots_appendix_pdf_filename(
     return build_screenshots_appendix_filename(current_audit, 'pdf', t);
 }
 
+/** Zip med bilaga 1–3: [diarienummer]_[aktör]_alla_bilagor.zip (suffix översatt). */
+export function build_all_appendices_zip_filename(
+    current_audit: {
+        auditMetadata?: { caseNumber?: string; actorName?: string };
+    },
+    t: ExportReportFilenameT
+): string {
+    const actor_name = sanitize_filename_segment(
+        current_audit.auditMetadata?.actorName || t('filename_fallback_actor')
+    );
+    const case_number = (current_audit.auditMetadata?.caseNumber || '').trim();
+    const sanitized_case_number = case_number ? case_number.replace(/[^a-z0-9åäöÅÄÖ-]/gi, '') : '';
+    const suffix = sanitize_filename_segment(t('audit_actions_all_appendices_zip_filename_suffix'))
+        || 'alla_bilagor';
+
+    if (sanitized_case_number) {
+        return `${sanitized_case_number}_${actor_name}_${suffix}.zip`;
+    }
+    return `${actor_name}_${suffix}.zip`;
+}
+
 function build_screenshots_appendix_filename(
     current_audit: {
         auditMetadata?: { caseNumber?: string; actorName?: string };

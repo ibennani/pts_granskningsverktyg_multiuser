@@ -90,6 +90,12 @@ export function bind_audit_actions_export_handlers(view) {
         await view.ExportLogic.export_observation_texts_word(current_state);
     };
 
+    view.handle_export_all_appendices_zip = async () => {
+        const current_state = view.getState();
+        if (!view.ExportLogic?.export_audit_appendices_zip) return;
+        await view.ExportLogic.export_audit_appendices_zip(current_state);
+    };
+
     view.handle_import_processed_observation_texts_word = () => {
         const current_state = view.getState();
         if (current_state?.auditStatus !== 'locked') return;

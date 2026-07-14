@@ -8,7 +8,12 @@ import { find_requirement_definition } from '../audit_logic.js';
  * @param {import('./AuditActionsViewComponent.js').AuditActionsViewComponent} view
  */
 export function build_audit_actions_status_section(view, state, t) {
-    const status_section = view.Helpers.create_element('section', {});
+    const is_after_exports = state.auditStatus === 'locked' || state.auditStatus === 'archived';
+    const status_section = view.Helpers.create_element('section', {
+        class_name: is_after_exports
+            ? 'audit-actions__status-section audit-actions__status-section--after-exports'
+            : 'audit-actions__status-section',
+    });
     status_section.appendChild(view.Helpers.create_element('h2', {
         class_name: 'audit-actions__section-title',
         text_content: t('audit_actions_status_section_title'),

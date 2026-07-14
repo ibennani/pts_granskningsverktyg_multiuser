@@ -10,13 +10,15 @@ import { is_download_file_too_large_error } from '../utils/download_filename_uti
 import { bind_audit_actions_view_ui } from './audit_actions_view_ui.js';
 import { bind_audit_actions_export_handlers } from './audit_actions_view_export_handlers.js';
 import {
-    build_audit_actions_appendix_guide_section,
-    build_audit_actions_export_section,
+    build_audit_actions_content_wrapper,
 } from './audit_actions_view_sections.js';
 import {
-    build_audit_actions_status_section,
     refresh_audit_actions_rulefile_subscription,
 } from './audit_actions_view_status_section.js';
+import {
+    audit_actions_status_change_should_fade_content,
+    run_audit_actions_content_transition,
+} from './audit_actions_view_content_transition.js';
 import './audit_actions_view_component.css';
 
 export class AuditActionsViewComponent {
@@ -44,6 +46,7 @@ export class AuditActionsViewComponent {
         this.newerRuleAvailable = null;
         this._newerRuleCheckInProgress = false;
         this._unsubscribe_rules = null;
+        this._audit_actions_status_transition_active = false;
 
         this.router = deps.router;
         this.getState = deps.getState;
@@ -184,18 +187,37 @@ export class AuditActionsViewComponent {
         }
         void (async () => {
             try {
+                const previous_status = this.getState()?.auditStatus;
+                const should_fade_content = audit_actions_status_change_should_fade_content(previous_status, status);
+                if (should_fade_content) {
+                    this._audit_actions_status_transition_active = true;
+                }
                 if (!this.dispatch || !this.StoreActionTypes) return;
-                await this.dispatch({
-                    type: this.StoreActionTypes.SET_AUDIT_STATUS,
-                    payload: { status }
-                });
+                if (should_fade_content) {
+                    await run_audit_actions_content_transition(this.root, async () => {
+                        await this.dispatch({
+                            type: this.StoreActionTypes.SET_AUDIT_STATUS,
+                            payload: { status }
+                        });
+                        this._render_immediate({ enter_hidden: true });
+                    });
+                } else {
+                    await this.dispatch({
+                        type: this.StoreActionTypes.SET_AUDIT_STATUS,
+                        payload: { status }
+                    });
+                    this._render_immediate();
+                }
                 if (btn) btn.removeAttribute('aria-busy');
-                this.render();
+                await new Promise((resolve) => {
+                    requestAnimationFrame(() => resolve(undefined));
+                });
                 this._focus_primary_status_button(status);
                 this.NotificationComponent?.show_global_message?.(t(success_message_key), 'success');
             } catch {
                 this.NotificationComponent?.show_global_message?.(t('error_internal'), 'error');
             } finally {
+                this._audit_actions_status_transition_active = false;
                 if (btn) {
                     setTimeout(() => btn.classList.remove('audit-actions__btn--animating'), 500);
                 }
@@ -326,12 +348,19 @@ export class AuditActionsViewComponent {
     }
 
     render() {
+        if (this._audit_actions_status_transition_active) {
+            return;
+        }
+        this._render_immediate();
+    }
+
+    _render_immediate({ enter_hidden = false } = {}) {
         if (!this.root) return;
         const t = this.Translation.t;
-        this.root.innerHTML = '';
-
         const state = this.getState();
+
         if (!state?.ruleFileContent) {
+            this.root.innerHTML = '';
             const plate = this.Helpers.create_element('div', { class_name: 'content-plate' });
             plate.appendChild(this.Helpers.create_element('h1', { text_content: t('audit_actions_title') }));
             plate.appendChild(this.Helpers.create_element('p', { text_content: t('error_no_active_audit') }));
@@ -339,15 +368,24 @@ export class AuditActionsViewComponent {
             return;
         }
 
-        const plate = this.Helpers.create_element('div', { class_name: 'content-plate' });
-        plate.appendChild(this.Helpers.create_element('h1', { text_content: t('audit_actions_title') }));
+        let plate = this.root.querySelector('.content-plate');
+        if (!plate) {
+            this.root.innerHTML = '';
+            plate = this.Helpers.create_element('div', { class_name: 'content-plate' });
+            plate.appendChild(this.Helpers.create_element('h1', { text_content: t('audit_actions_title') }));
+            this.root.appendChild(plate);
+        } else {
+            const existing_content = plate.querySelector('.audit-actions__content');
+            if (existing_content) existing_content.remove();
+        }
 
         refresh_audit_actions_rulefile_subscription(this, state);
-
-        plate.appendChild(build_audit_actions_status_section(this, state, t));
-        plate.appendChild(build_audit_actions_appendix_guide_section(this, state, t));
-        plate.appendChild(build_audit_actions_export_section(this, state, t));
-        this.root.appendChild(plate);
+        const content_wrapper = build_audit_actions_content_wrapper(this, state, t);
+        if (enter_hidden) {
+            content_wrapper.style.opacity = '0';
+            content_wrapper.style.transition = 'opacity 0.25s ease';
+        }
+        plate.appendChild(content_wrapper);
     }
 
     destroy() {
@@ -357,5 +395,6 @@ export class AuditActionsViewComponent {
         this.deps = null;
         this.newerRuleAvailable = null;
         this._newerRuleCheckInProgress = false;
+        this._audit_actions_status_transition_active = false;
     }
 }
