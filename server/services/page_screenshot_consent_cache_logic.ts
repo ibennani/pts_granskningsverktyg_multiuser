@@ -2,20 +2,17 @@
  * @fileoverview Regler för domän-cache av CMP-samtycke vid skärmdump (testbar utan Puppeteer).
  */
 
-export const CMP_CONSENT_COOKIE_NAMES = [
-    'CookieConsent',
-    'OptanonConsent',
-    'OptanonAlertBoxClosed',
-    'uc_user_interaction',
-    'CookieInformationConsent',
-] as const;
+import {
+    CMP_STORAGE_EXACT_COOKIE_NAMES,
+    CMP_STORAGE_EXACT_LOCAL_STORAGE_KEYS,
+    matches_cmp_storage_cookie_name,
+    matches_cmp_storage_local_storage_key,
+} from './page_screenshot_cmp_pattern_families.js';
 
-export const CMP_CONSENT_LOCAL_STORAGE_KEYS = [
-    'didomi_token',
-    'didomi_config',
-    'klaro',
-    'uc_settings',
-] as const;
+export {
+    CMP_STORAGE_EXACT_COOKIE_NAMES as CMP_CONSENT_COOKIE_NAMES,
+    CMP_STORAGE_EXACT_LOCAL_STORAGE_KEYS as CMP_CONSENT_LOCAL_STORAGE_KEYS,
+} from './page_screenshot_cmp_pattern_families.js';
 
 export const DEFAULT_CONSENT_CACHE_TTL_DAYS = 90;
 
@@ -46,13 +43,11 @@ export function get_registrable_domain(url: string): string {
 }
 
 export function is_cmp_consent_cookie_name(name: string): boolean {
-    const normalized = String(name || '').trim();
-    return CMP_CONSENT_COOKIE_NAMES.some((allowed) => allowed === normalized);
+    return matches_cmp_storage_cookie_name(name);
 }
 
 export function is_cmp_consent_local_storage_key(key: string): boolean {
-    const normalized = String(key || '').trim();
-    return CMP_CONSENT_LOCAL_STORAGE_KEYS.some((allowed) => allowed === normalized);
+    return matches_cmp_storage_local_storage_key(key);
 }
 
 export function filter_cmp_cookies(

@@ -6,6 +6,7 @@ import {
     should_block_cmp_request,
     hostname_matches_cmp_block_suffix,
     hostname_matches_cmp_block_prefix,
+    hostname_matches_cmp_block_substring,
 } from '../../server/services/page_screenshot_cmp_block_logic.ts';
 
 describe('page_screenshot_cmp_block_logic', () => {
@@ -46,5 +47,15 @@ describe('page_screenshot_cmp_block_logic', () => {
     test('hostname_matches_cmp_block_prefix känner igen cmp.*-värdar', () => {
         expect(hostname_matches_cmp_block_prefix('cmp.svd.se')).toBe(true);
         expect(hostname_matches_cmp_block_prefix('www.svd.se')).toBe(false);
+    });
+
+    test('should_block_cmp_request blockerar okänd consent-domän via substring', () => {
+        expect(
+            should_block_cmp_request('https://cdn.example-consent.io/bundle.js', 'script')
+        ).toBe(true);
+    });
+
+    test('hostname_matches_cmp_block_substring blockerar inte huvuddomän', () => {
+        expect(hostname_matches_cmp_block_substring('www.pts.se')).toBe(false);
     });
 });

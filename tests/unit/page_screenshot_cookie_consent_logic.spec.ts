@@ -4,6 +4,8 @@
 import { describe, test, expect } from '@jest/globals';
 import {
     build_cookie_banner_hide_config,
+    button_label_requires_consent_context,
+    element_text_suggests_consent,
     get_cookie_accept_label_priority,
     is_cookie_accept_all_button_label,
     is_cookie_accept_button_label,
@@ -46,6 +48,18 @@ describe('page_screenshot_cookie_consent_logic', () => {
         expect(config.hide_selectors).toContain('#CybotCookiebotDialog');
         expect(config.hide_selectors).toContain('[id^="sp_message_container_"]');
         expect(config.hide_selectors.length).toBeGreaterThan(10);
+        expect(config.overlay_detection).toBeDefined();
+        expect(config.container_selectors.length).toBeGreaterThan(5);
+    });
+
+    test('element_text_suggests_consent skiljer cookie från nyhetsbrev', () => {
+        expect(element_text_suggests_consent('Vi använder kakor på webbplatsen.')).toBe(true);
+        expect(element_text_suggests_consent('Prenumerera på nyhetsbrev')).toBe(false);
+    });
+
+    test('button_label_requires_consent_context flaggar generiska knappar', () => {
+        expect(button_label_requires_consent_context('OK')).toBe(true);
+        expect(button_label_requires_consent_context('Acceptera alla')).toBe(false);
     });
 
     test('is_cookie_accept_button_label klickar inte avvisning', () => {

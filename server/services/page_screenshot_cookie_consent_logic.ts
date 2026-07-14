@@ -2,138 +2,35 @@
  * @fileoverview Regler för att hitta och acceptera cookie-banners (testbar utan Puppeteer).
  */
 
-/** Vanliga «acceptera»-knappar hos etablerade CMP:er. */
-export const COOKIE_ACCEPT_BUTTON_SELECTORS = [
-    '#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll',
-    '#CybotCookiebotDialogBodyButtonAccept',
-    '#onetrust-accept-btn-handler',
-    '#didomi-notice-agree-button',
-    '#truste-consent-button',
-    '#ccc-notify-accept',
-    '.osano-cm-accept-all',
-    '.cm-btn-success',
-    'button[data-testid="cookie-accept"]',
-    'button.cookie-accept',
-    // Sourcepoint (Schibsted m.fl.)
-    'button.sp_choice_type_11',
-    'button.sp_choice_type_ACCEPT_ALL',
-    'button[title="Godkänn alla cookies"]',
-    'button[title="Godkänn alla"]',
-    '#notice button[title="Godkänn alla cookies"]',
-    '#notice button[title="Godkänn alla"]',
-    'button[id*="accept"]',
-    'button[class*="accept"]',
-    'button[id*="accept-all"]',
-    'button[class*="accept-all"]',
-    '#cookie_action_close_header',
-    '.coi-banner__accept',
-    '#c-p-bn',
-] as const;
+import {
+    build_cmp_accept_button_selectors,
+    build_cmp_banner_container_selectors,
+    build_cmp_banner_hide_selectors,
+    build_overlay_detection_config,
+    button_label_requires_consent_context,
+    CMP_BUTTON_ACCEPT_ALL_TEXT_PATTERNS,
+    CMP_BUTTON_ACCEPT_TEXT_PATTERNS,
+    CMP_BUTTON_GENERIC_REQUIRES_CONTEXT_PATTERNS,
+    CMP_BUTTON_REJECT_TEXT_PATTERNS,
+    CMP_CONSENT_CONTEXT_KEYWORDS,
+    element_text_suggests_consent,
+    normalize_cmp_text,
+} from './page_screenshot_cmp_pattern_families.js';
 
-/** Textmönster som indikerar avvisning — ska inte klickas. */
-export const COOKIE_REJECT_TEXT_PATTERNS = [
-    'avvisa',
-    'avslå',
-    'neka',
-    'reject',
-    'deny',
-    'decline',
-    'endast nödvänd',
-    'necessary only',
-    'only necessary',
-    'reject all',
-    'avvisa alla',
-] as const;
+export const COOKIE_ACCEPT_BUTTON_SELECTORS = build_cmp_accept_button_selectors();
 
-/** Textmönster för «acceptera alla» — högre prioritet än generisk accept. */
-export const COOKIE_ACCEPT_ALL_TEXT_PATTERNS = [
-    'godkänn alla cookies',
-    'godkänn alla',
-    'acceptera alla',
-    'tillåt alla',
-    'accept all',
-    'allow all',
-    'alla kakor',
-    'all cookies',
-] as const;
+export const COOKIE_REJECT_TEXT_PATTERNS = CMP_BUTTON_REJECT_TEXT_PATTERNS;
 
-/** Textmönster som indikerar acceptera / godkänn (lägre prioritet). */
-export const COOKIE_ACCEPT_TEXT_PATTERNS = [
-    'godkänn',
-    'acceptera',
-    'tillåt',
-    'accept',
-    'allow',
-    'jag förstår',
-    'jag forstår',
-    'jag accepterar',
-    'samtycker',
-    'ok',
-    'agree',
-    'yes',
-    'ja',
-    'continue',
-    'fortsätt',
-    'got it',
-] as const;
+export const COOKIE_ACCEPT_ALL_TEXT_PATTERNS = CMP_BUTTON_ACCEPT_ALL_TEXT_PATTERNS;
 
-export const COOKIE_BANNER_CONTAINER_SELECTORS = [
-    '#CybotCookiebotDialog',
-    '#onetrust-banner-sdk',
-    '#onetrust-consent-sdk',
-    '.qc-cmp2-container',
-    '#didomi-host',
-    '#didomi-notice',
-    '[id*="cookie"]',
-    '[class*="cookie"]',
-    '[id*="consent"]',
-    '[class*="consent"]',
-    '[aria-label*="cookie"]',
-    '[aria-label*="kakor"]',
-    '[role="dialog"]',
-    '#sp-cc',
-    '[id^="sp_message_container_"]',
-    '[id^="sp_message_iframe"]',
-    '#notice',
-    '.sch-datacontroller',
-    '#schibsted-data-controller-sticky',
-    '.schibsted-data-controller',
-    '#usercentrics-root',
-    '.cookieyes-banner',
-    '#cookiebanner',
-    '#cookie-law-info-bar',
-    '.cookie-law-info-bar',
-    '#cookiescript_injected',
-    '#klaro',
-    'div#cc--main',
-    '.silktide-banner',
-    '#civic-cookie-control',
-    '.coi-overlay',
-    '#onetrust-pc-sdk',
-    '.modal-backdrop',
-] as const;
+export const COOKIE_ACCEPT_TEXT_PATTERNS = CMP_BUTTON_ACCEPT_TEXT_PATTERNS;
 
-/** Bredare lista — döljer visuellt före skärmdump även om klick misslyckades. */
-export const COOKIE_BANNER_HIDE_SELECTORS = [
-    ...COOKIE_BANNER_CONTAINER_SELECTORS,
-    '#cookiebanner',
-    '.cookie-banner',
-    '.cookie-notice',
-    '.cookie-modal',
-    '.cookie-overlay',
-    '.cookie-consent',
-    '[data-cookiebanner]',
-    '[class*="CookieConsent"]',
-    '[id*="CookieConsent"]',
-    '.ch2-container',
-    '.ch2-dialog',
-] as const;
+export const COOKIE_BANNER_CONTAINER_SELECTORS = build_cmp_banner_container_selectors();
+
+export const COOKIE_BANNER_HIDE_SELECTORS = build_cmp_banner_hide_selectors();
 
 export function normalize_button_label(raw: string): string {
-    return String(raw || '')
-        .replace(/\s+/g, ' ')
-        .trim()
-        .toLowerCase();
+    return normalize_cmp_text(raw);
 }
 
 export function is_cookie_reject_button_label(label: string): boolean {
@@ -170,11 +67,19 @@ export function build_cookie_banner_dismiss_config() {
         accept_text_patterns: [...COOKIE_ACCEPT_TEXT_PATTERNS],
         reject_text_patterns: [...COOKIE_REJECT_TEXT_PATTERNS],
         container_selectors: [...COOKIE_BANNER_CONTAINER_SELECTORS],
+        consent_context_keywords: [...CMP_CONSENT_CONTEXT_KEYWORDS],
+        generic_requires_context_patterns: [...CMP_BUTTON_GENERIC_REQUIRES_CONTEXT_PATTERNS],
+        overlay_detection: build_overlay_detection_config(),
     };
 }
 
 export function build_cookie_banner_hide_config() {
     return {
-        hide_selectors: [...new Set(COOKIE_BANNER_HIDE_SELECTORS)],
+        hide_selectors: [...COOKIE_BANNER_HIDE_SELECTORS],
+        container_selectors: [...COOKIE_BANNER_CONTAINER_SELECTORS],
+        consent_context_keywords: [...CMP_CONSENT_CONTEXT_KEYWORDS],
+        overlay_detection: build_overlay_detection_config(),
     };
 }
+
+export { button_label_requires_consent_context, element_text_suggests_consent };

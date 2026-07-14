@@ -35,7 +35,11 @@ function delay(ms: number): Promise<void> {
 
 function get_banner_visibility_config() {
     const config = build_cookie_banner_dismiss_config();
-    return { container_selectors: config.container_selectors };
+    return {
+        container_selectors: config.container_selectors,
+        consent_context_keywords: config.consent_context_keywords,
+        overlay_detection: config.overlay_detection,
+    };
 }
 
 function get_search_frames(page: Page): Array<Frame | Page> {

@@ -208,6 +208,7 @@ export default {
     '^.+[\\\\/]page_screenshot_consent_cache_logic\\.js$': '<rootDir>/server/services/page_screenshot_consent_cache_logic.ts',
     '^.+[\\\\/]page_screenshot_consent_cache\\.js$': '<rootDir>/server/services/page_screenshot_consent_cache.ts',
     '^.+[\\\\/]page_screenshot_cmp_block_logic\\.js$': '<rootDir>/server/services/page_screenshot_cmp_block_logic.ts',
+    '^.+[\\\\/]page_screenshot_cmp_pattern_families\\.js$': '<rootDir>/server/services/page_screenshot_cmp_pattern_families.ts',
     '^.+[\\\\/]page_screenshot_cmp_block\\.js$': '<rootDir>/server/services/page_screenshot_cmp_block.ts',
     '^.+[\\\\/]page_content_type_detection_rules\\.js$': '<rootDir>/server/services/page_content_type_detection_rules.ts',
     '^.+[\\\\/]page_content_type_detection_service\\.js$': '<rootDir>/server/services/page_content_type_detection_service.ts',

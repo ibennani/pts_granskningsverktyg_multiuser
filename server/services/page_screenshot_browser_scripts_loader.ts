@@ -19,6 +19,7 @@ const BROWSER_SCRIPT_EXPORT_NAMES = [
     'browser_page_has_renderable_content',
     'browser_hide_webdriver_flag',
     'browser_dismiss_cookie_banners',
+    'browser_find_cookie_overlay_roots',
     'browser_is_cookie_banner_visible',
     'browser_hide_cookie_banners_for_screenshot',
 ] as const;
@@ -58,5 +59,6 @@ export const browser_scroll_to_top = scripts.browser_scroll_to_top;
 export const browser_page_has_renderable_content = scripts.browser_page_has_renderable_content;
 export const browser_hide_webdriver_flag = scripts.browser_hide_webdriver_flag;
 export const browser_dismiss_cookie_banners = scripts.browser_dismiss_cookie_banners;
+export const browser_find_cookie_overlay_roots = scripts.browser_find_cookie_overlay_roots;
 export const browser_is_cookie_banner_visible = scripts.browser_is_cookie_banner_visible;
 export const browser_hide_cookie_banners_for_screenshot = scripts.browser_hide_cookie_banners_for_screenshot;

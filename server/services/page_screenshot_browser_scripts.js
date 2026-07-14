@@ -112,15 +112,108 @@ export function browser_hide_webdriver_flag() {
 }
 
 /**
+ * Hittar synliga cookie-overlay-kandidater via mönsterfamilj.
+ * @param {{
+ *   container_selectors?: string[];
+ *   consent_context_keywords?: string[];
+ *   overlay_detection?: {
+ *     consent_context_keywords: string[];
+ *     min_viewport_width_ratio: number;
+ *     min_z_index: number;
+ *     positions: string[];
+ *   };
+ * }} config
+ * @returns {HTMLElement[]}
+ */
+export function browser_find_cookie_overlay_roots(config) {
+    const overlay = config.overlay_detection || {};
+    const keywords = overlay.consent_context_keywords || config.consent_context_keywords || [];
+    const min_ratio = overlay.min_viewport_width_ratio ?? 0.35;
+    const min_z = overlay.min_z_index ?? 100;
+    const positions = overlay.positions || ['fixed', 'sticky'];
+
+    const is_visible = (element) => {
+        if (!(element instanceof HTMLElement)) return false;
+        const style = window.getComputedStyle(element);
+        if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) {
+            return false;
+        }
+        const rect = element.getBoundingClientRect();
+        return rect.width > 4 && rect.height > 4;
+    };
+
+    const text_suggests_consent = (text) => {
+        const normalized = String(text || '').replace(/\s+/g, ' ').trim().toLowerCase();
+        if (!normalized) return false;
+        return keywords.some((keyword) => normalized.includes(String(keyword).toLowerCase()));
+    };
+
+    const has_visible_button = (root) => {
+        const buttons = root.querySelectorAll(
+            'button, a[role="button"], input[type="button"], input[type="submit"], [role="button"]'
+        );
+        for (const button of buttons) {
+            if (is_visible(button)) return true;
+        }
+        return false;
+    };
+
+    const is_overlay_candidate = (element) => {
+        if (!is_visible(element)) return false;
+        const style = window.getComputedStyle(element);
+        if (!positions.includes(style.position)) return false;
+        const z_index = Number.parseInt(style.zIndex, 10);
+        if (!Number.isNaN(z_index) && z_index < min_z) return false;
+        const rect = element.getBoundingClientRect();
+        const viewport_width = window.innerWidth || document.documentElement.clientWidth || 1;
+        if (rect.width / viewport_width < min_ratio) return false;
+        const text = element.innerText || element.textContent || '';
+        if (!text_suggests_consent(text)) return false;
+        return has_visible_button(element);
+    };
+
+    const roots = [];
+    const seen = new Set();
+
+    const add_root = (element) => {
+        if (!(element instanceof HTMLElement) || seen.has(element)) return;
+        if (!is_overlay_candidate(element)) return;
+        seen.add(element);
+        roots.push(element);
+    };
+
+    for (const selector of config.container_selectors || []) {
+        let containers = [];
+        try {
+            containers = Array.from(document.querySelectorAll(selector));
+        } catch {
+            continue;
+        }
+        for (const container of containers) {
+            add_root(container);
+        }
+    }
+
+    document.querySelectorAll('body *').forEach((node) => {
+        if (node instanceof HTMLElement) {
+            add_root(node);
+        }
+    });
+
+    return roots;
+}
+
+/**
  * Försöker klicka bort cookie-/samtyckesbanner före skärmdump.
- * All hjälplogik måste ligga inuti funktionen — Puppeteer serialiserar bara
- * den funktion som skickas till page.evaluate(), inte modulnivå-hjälpare.
  * @param {{
  *   accept_selectors: string[];
  *   accept_all_text_patterns?: string[];
  *   accept_text_patterns: string[];
  *   reject_text_patterns: string[];
  *   container_selectors: string[];
+ *   consent_context_keywords?: string[];
+ *   generic_requires_context_patterns?: string[];
+ *   overlay_detection?: object;
  * }} config
  * @returns {boolean}
  */
@@ -143,6 +236,19 @@ export function browser_dismiss_cookie_banners(config) {
         return [text, aria, title].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim().toLowerCase();
     };
 
+    const text_suggests_consent = (text) => {
+        const keywords = config.consent_context_keywords || [];
+        const normalized = String(text || '').replace(/\s+/g, ' ').trim().toLowerCase();
+        if (!normalized) return false;
+        return keywords.some((keyword) => normalized.includes(String(keyword).toLowerCase()));
+    };
+
+    const label_requires_consent_context = (label) => {
+        const patterns = config.generic_requires_context_patterns || [];
+        const normalized = String(label || '').replace(/\s+/g, ' ').trim().toLowerCase();
+        return patterns.some((pattern) => normalized.includes(String(pattern).toLowerCase()));
+    };
+
     const label_matches_patterns = (label, patterns, reject_text_patterns) => {
         const normalized = String(label || '').replace(/\s+/g, ' ').trim().toLowerCase();
         if (!normalized) return false;
@@ -161,7 +267,7 @@ export function browser_dismiss_cookie_banners(config) {
         return true;
     };
 
-    const find_accept_in_root = (root) => {
+    const find_accept_in_root = (root, enforce_consent_context) => {
         for (const selector of config.accept_selectors) {
             try {
                 const match = root.querySelector(selector);
@@ -172,10 +278,9 @@ export function browser_dismiss_cookie_banners(config) {
         }
 
         const accept_all_patterns = config.accept_all_text_patterns || [];
-        const accept_patterns = [
-            ...accept_all_patterns,
-            ...(config.accept_text_patterns || []),
-        ];
+        const accept_patterns = config.accept_text_patterns || [];
+        const root_text = root.innerText || root.textContent || '';
+        const root_has_consent = text_suggests_consent(root_text);
 
         const candidates = root.querySelectorAll(
             'button, a[role="button"], input[type="button"], input[type="submit"], [role="button"]'
@@ -190,15 +295,26 @@ export function browser_dismiss_cookie_banners(config) {
 
         for (const candidate of candidates) {
             const label = read_clickable_label(candidate);
-            if (label_matches_patterns(label, accept_patterns, config.reject_text_patterns)) {
-                if (try_click(candidate)) return true;
+            if (!label_matches_patterns(label, accept_patterns, config.reject_text_patterns)) {
+                continue;
             }
+            if (enforce_consent_context && label_requires_consent_context(label) && !root_has_consent) {
+                continue;
+            }
+            if (try_click(candidate)) return true;
         }
         return false;
     };
 
-    if (find_accept_in_root(document)) {
+    if (find_accept_in_root(document, true)) {
         return true;
+    }
+
+    const overlay_roots = browser_find_cookie_overlay_roots(config);
+    for (const overlay of overlay_roots) {
+        if (find_accept_in_root(overlay, false)) {
+            return true;
+        }
     }
 
     for (const container_selector of config.container_selectors) {
@@ -209,7 +325,7 @@ export function browser_dismiss_cookie_banners(config) {
             continue;
         }
         for (const container of containers) {
-            if (find_accept_in_root(container)) {
+            if (find_accept_in_root(container, false)) {
                 return true;
             }
         }
@@ -219,7 +335,7 @@ export function browser_dismiss_cookie_banners(config) {
 }
 
 /**
- * @param {{ container_selectors: string[] }} config
+ * @param {{ container_selectors: string[]; overlay_detection?: object; consent_context_keywords?: string[] }} config
  * @returns {boolean}
  */
 export function browser_is_cookie_banner_visible(config) {
@@ -247,16 +363,26 @@ export function browser_is_cookie_banner_visible(config) {
         }
     }
 
-    return false;
+    const overlay_roots = browser_find_cookie_overlay_roots(config);
+    return overlay_roots.length > 0;
 }
 
 /**
  * Döljer kända cookie-banner DOM-noder och återställer scroll — sista steg före skärmdump.
- * @param {{ hide_selectors: string[] }} config
+ * @param {{ hide_selectors: string[]; overlay_detection?: object; container_selectors?: string[]; consent_context_keywords?: string[] }} config
  * @returns {number} Antal dolda element
  */
 export function browser_hide_cookie_banners_for_screenshot(config) {
     let hidden_count = 0;
+
+    const hide_element = (element) => {
+        if (!(element instanceof HTMLElement)) return;
+        element.style.setProperty('display', 'none', 'important');
+        element.style.setProperty('visibility', 'hidden', 'important');
+        element.style.setProperty('opacity', '0', 'important');
+        element.style.setProperty('pointer-events', 'none', 'important');
+        hidden_count += 1;
+    };
 
     for (const selector of config.hide_selectors) {
         let elements = [];
@@ -266,13 +392,17 @@ export function browser_hide_cookie_banners_for_screenshot(config) {
             continue;
         }
         for (const element of elements) {
-            if (!(element instanceof HTMLElement)) continue;
-            element.style.setProperty('display', 'none', 'important');
-            element.style.setProperty('visibility', 'hidden', 'important');
-            element.style.setProperty('opacity', '0', 'important');
-            element.style.setProperty('pointer-events', 'none', 'important');
-            hidden_count += 1;
+            hide_element(element);
         }
+    }
+
+    const overlay_roots = browser_find_cookie_overlay_roots({
+        container_selectors: config.container_selectors || [],
+        consent_context_keywords: config.consent_context_keywords,
+        overlay_detection: config.overlay_detection,
+    });
+    for (const overlay of overlay_roots) {
+        hide_element(overlay);
     }
 
     document.documentElement.style.overflow = '';

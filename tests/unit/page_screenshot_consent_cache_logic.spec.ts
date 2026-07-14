@@ -34,6 +34,23 @@ describe('page_screenshot_consent_cache_logic', () => {
         expect(filtered).toEqual({ didomi_token: 'token' });
     });
 
+    test('filter_cmp_cookies fångar pattern-baserade cookie-namn', () => {
+        const filtered = filter_cmp_cookies([
+            { name: 'sp_consent', value: 'yes', domain: '.example.se', path: '/' },
+            { name: 'session_id', value: 'secret', domain: '.example.se', path: '/' },
+        ]);
+        expect(filtered).toHaveLength(1);
+        expect(filtered[0].name).toBe('sp_consent');
+    });
+
+    test('filter_cmp_local_storage fångar pattern-baserade nycklar', () => {
+        const filtered = filter_cmp_local_storage({
+            user_consent_settings: '{"ok":true}',
+            unrelated: 'value',
+        });
+        expect(filtered).toEqual({ user_consent_settings: '{"ok":true}' });
+    });
+
     test('merge_consent_snapshots slår ihop cookies och localStorage', () => {
         const seed = {
             domain: 'pts.se',
