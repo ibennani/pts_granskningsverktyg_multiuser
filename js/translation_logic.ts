@@ -250,6 +250,33 @@ export function t(key: string, replacements: Record<string, string> = {}): strin
     );
 }
 
+function apply_translation_replacements_plain(
+    translation_value: string,
+    replacements: Record<string, string | number | boolean | null | undefined> = {}
+): string {
+    return translation_value.replace(/{([^{}]+)}/g, (match, placeholder_key: string) =>
+        replacements[placeholder_key] !== undefined
+            ? String(replacements[placeholder_key])
+            : match
+    );
+}
+
+/**
+ * Översättning med platshållare utan HTML-escaping (t.ex. textContent i modal).
+ */
+export function interpolate_translation_plain(
+    key: string,
+    replacements: Record<string, string | number | boolean | null | undefined> = {}
+): string {
+    const translation_value = loaded_translations?.[key];
+    if (translation_value === undefined) {
+        warn(`interpolate_translation_plain(): Missing key "${key}" for lang "${current_language_tag}". Returning key.`);
+        return `**${key}**`;
+    }
+
+    return apply_translation_replacements_plain(translation_value, replacements);
+}
+
 /**
  * Översättning för ett visst språk utan att byta globalt UI-språk (t.ex. exportfilnamn från regelfilens språk).
  */

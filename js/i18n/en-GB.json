@@ -1105,6 +1105,7 @@
   "observation_word_import_error_no_handling_blocks": "The Word file contains no red import blocks with deficiency IDs.",
   "observation_word_import_error_not_docx": "The file is not a valid Word file (.docx).",
   "observation_word_import_error_parse_failed": "The Word file could not be read.",
+  "observation_word_import_error_wrong_audit": "The Word file does not belong to this audit. You are working on {audit_case}, {audit_actor}. Upload the correct file or export the observation texts again from Actions.",
   "observation_word_import_file_too_large": "The Word file is too large.",
   "observation_word_import_modal_intro": "Upload the file that the handlers have processed.",
   "observation_word_import_modal_title": "Upload processed observation texts",

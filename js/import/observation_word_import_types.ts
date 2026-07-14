@@ -1,6 +1,7 @@
 /**
  * @fileoverview Typer för import av handläggar-Word med observationstexter.
  */
+import type { ObservationWordAuditMarker } from '../../shared/export/observation_word_audit_marker.js';
 
 export type ParsedHandlingBlock = {
     id_number: string;
@@ -11,6 +12,7 @@ export type ObservationWordImportParseResult = {
     ok: boolean;
     blocks: ParsedHandlingBlock[];
     error_key?: string;
+    audit_marker?: ObservationWordAuditMarker | null;
 };
 
 export type DeficiencyLocation = {
@@ -48,6 +50,7 @@ export type ObservationWordImportDiffResult = {
     };
     items: ObservationWordDiffItem[];
     parse_error_key?: string;
+    parse_error_params?: Record<string, string>;
 };
 
 export type ObservationWordImportChange = {

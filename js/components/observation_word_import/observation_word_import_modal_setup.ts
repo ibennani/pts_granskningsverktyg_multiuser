@@ -14,6 +14,8 @@ import { build_observation_word_import_apply_payload } from '../../import/observ
 
 import type { ObservationWordImportDiffResult } from '../../import/observation_word_import_types.js';
 
+import { interpolate_translation_plain } from '../../translation_logic.js';
+
 import '../../../css/components/observation_word_import_modal.css';
 
 
@@ -308,8 +310,10 @@ export function setup_observation_word_import_modal_content(
         diff_result = build_observation_word_import_diff(audit, parse_result);
 
         if (!diff_result.parse_ok && diff_result.parse_error_key) {
-
-            status_el.textContent = t(diff_result.parse_error_key);
+            status_el.textContent = interpolate_translation_plain(
+                diff_result.parse_error_key,
+                diff_result.parse_error_params || {}
+            );
 
             status_el.classList.add('form-error');
 

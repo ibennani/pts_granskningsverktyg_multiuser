@@ -17,6 +17,7 @@ import {
     should_handle_paste_event,
 } from '../../../shared/import/clipboard_word_files.js';
 import '../../../css/components/observation_word_import_modal.css';
+import { interpolate_translation_plain } from '../../translation_logic.js';
 
 type TranslateFn = (key: string, params?: Record<string, unknown>) => string;
 
@@ -202,7 +203,7 @@ export function create_observation_word_file_drop_zone(
             return;
         }
         pending_el.hidden = false;
-        pending_el.textContent = t('observation_word_import_selected_file', {
+        pending_el.textContent = interpolate_translation_plain('observation_word_import_selected_file', {
             filename: String(file.name || '').trim(),
         });
     };

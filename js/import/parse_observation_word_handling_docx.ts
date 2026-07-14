@@ -2,6 +2,9 @@
  * @fileoverview Läser handläggar-Word: röda tabellceller med H4 och observationstext.
  */
 import JSZip from 'jszip';
+import {
+    read_observation_word_audit_marker_from_docx,
+} from '../../shared/export/observation_word_audit_marker.js';
 import { OBSERVATION_BORDER_COLOR } from '../export/export_observation_texts_word_constants.js';
 import {
     children_by_local_name,
@@ -150,10 +153,16 @@ export async function parse_observation_word_handling_docx(
     file_bytes: ArrayBuffer | Uint8Array
 ): Promise<ObservationWordImportParseResult> {
     try {
+        const audit_marker = await read_observation_word_audit_marker_from_docx(file_bytes);
         const zip = await JSZip.loadAsync(file_bytes);
         const document_entry = zip.file('word/document.xml');
         if (!document_entry) {
-            return { ok: false, blocks: [], error_key: 'observation_word_import_error_not_docx' };
+            return {
+                ok: false,
+                blocks: [],
+                error_key: 'observation_word_import_error_not_docx',
+                audit_marker,
+            };
         }
 
         const document_xml = await document_entry.async('string');
@@ -165,10 +174,15 @@ export async function parse_observation_word_handling_docx(
 
         const blocks = parse_document_xml(document_xml, rel_map);
         if (blocks.length === 0) {
-            return { ok: false, blocks: [], error_key: 'observation_word_import_error_no_handling_blocks' };
+            return {
+                ok: false,
+                blocks: [],
+                error_key: 'observation_word_import_error_no_handling_blocks',
+                audit_marker,
+            };
         }
 
-        return { ok: true, blocks };
+        return { ok: true, blocks, audit_marker };
     } catch {
         return { ok: false, blocks: [], error_key: 'observation_word_import_error_parse_failed' };
     }

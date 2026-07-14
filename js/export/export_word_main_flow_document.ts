@@ -24,8 +24,16 @@ export async function finalize_word_export_download (options: {
     isSortByRequirements: boolean;
     t: ExportWordMainFlowT;
     filename?: string;
+    transform_blob?: (buffer: ArrayBuffer) => Promise<ArrayBuffer>;
 }): Promise<void> {
-    const { children, current_audit, isSortByRequirements, t, filename: filename_override } = options;
+    const {
+        children,
+        current_audit,
+        isSortByRequirements,
+        t,
+        filename: filename_override,
+        transform_blob,
+    } = options;
     const doc = new Document({
         sections: [{
             properties: isSortByRequirements ? {} : {
@@ -122,7 +130,13 @@ export async function finalize_word_export_download (options: {
         }
     });
 
-    const buffer = await Packer.toBlob(doc);
+    let buffer = await Packer.toBlob(doc);
+    if (transform_blob) {
+        const transformed = await transform_blob(await buffer.arrayBuffer());
+        buffer = new Blob([transformed], {
+            type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        });
+    }
 
     const filename =
         filename_override ??

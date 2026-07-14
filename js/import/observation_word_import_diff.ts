@@ -1,6 +1,7 @@
 /**
  * @fileoverview Jämför handläggar-Word mot aktuell granskning.
  */
+import { validate_observation_word_audit_marker } from '../../shared/export/observation_word_audit_marker.js';
 import { collect_observation_export_deficiencies } from '../export/export_observation_texts_collect.js';
 import { extractDeficiencyNumber } from '../export/export_format_helpers.js';
 import { traverse_all_pass_criteria } from '../utils/traverse_audit_data.js';
@@ -100,6 +101,18 @@ export function build_observation_word_import_diff(
             summary: empty_summary,
             items: [],
             parse_error_key: parse_result.error_key,
+        };
+    }
+
+    const marker_validation = validate_observation_word_audit_marker(audit, parse_result.audit_marker);
+    if (!marker_validation.ok) {
+        return {
+            parse_ok: false,
+            can_import: false,
+            summary: empty_summary,
+            items: [],
+            parse_error_key: marker_validation.error_key,
+            parse_error_params: marker_validation.params,
         };
     }
 

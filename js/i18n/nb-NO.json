@@ -164,6 +164,7 @@
   "observation_word_import_error_not_docx": "Filen er ikke en gyldig Word-fil (.docx).",
   "observation_word_import_error_no_handling_blocks": "Word-filen inneholder ingen røde importblokker med avviks-ID.",
   "observation_word_import_error_parse_failed": "Word-filen kunne ikke leses.",
+  "observation_word_import_error_wrong_audit": "Word-filen hører ikke til dette tilsynet. Du jobber med {audit_case}, {audit_actor}. Last opp riktig fil eller eksporter observasjonstekstene på nytt fra Handlinger.",
   "audit_actions_lock_audit_description": "Fullfører tilsynet. Etter dette kan ingenting endres, men du kan eksportere resultatet.",
   "audit_actions_nav_next_state": "Neste steg",
   "audit_actions_nav_next_to_archived": "Arkiver tilsynet",

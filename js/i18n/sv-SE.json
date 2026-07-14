@@ -164,6 +164,7 @@
   "observation_word_import_error_not_docx": "Filen är inte en giltig Word-fil (.docx).",
   "observation_word_import_error_no_handling_blocks": "Word-filen innehåller inga röda importblock med brist-id.",
   "observation_word_import_error_parse_failed": "Word-filen kunde inte läsas.",
+  "observation_word_import_error_wrong_audit": "Word-filen hör inte till den här granskningen. Du arbetar med {audit_case}, {audit_actor}. Ladda upp rätt fil eller exportera observationstexterna på nytt från Åtgärder.",
   "audit_actions_lock_audit_description": "Avslutar granskningen. Därefter kan inget ändras, men du kan exportera resultatet.",
   "audit_actions_nav_next_state": "Nästa steg",
   "audit_actions_nav_next_to_archived": "Arkivera granskningen",

@@ -15,6 +15,10 @@ import {
 import { finalize_export_catch } from './export_error_handling.js';
 import { build_observation_texts_word_filename } from './export_report_filename.js';
 import { finalize_word_export_download } from './export_word_main_flow_document.js';
+import {
+    build_observation_word_audit_marker_from_audit,
+    embed_observation_word_audit_marker_in_docx,
+} from '../../shared/export/observation_word_audit_marker.js';
 import type { ExportWordMainFlowT } from './export_word_main_flow_children.js';
 
 function apply_translation_replacements(
@@ -172,6 +176,13 @@ export async function export_observation_texts_word(
             isSortByRequirements: true,
             t: export_t,
             filename: build_observation_texts_word_filename(current_audit, export_t),
+            transform_blob: async (buffer) =>
+                embed_observation_word_audit_marker_in_docx(
+                    buffer,
+                    build_observation_word_audit_marker_from_audit(
+                        current_audit as Record<string, unknown>
+                    )
+                ),
         });
     } catch (error: unknown) {
         finalize_export_catch(error, (err) => {
