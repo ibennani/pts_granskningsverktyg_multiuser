@@ -10,9 +10,19 @@ import type { Request, Response, RequestHandler } from 'express';
 import { query } from '../db.js';
 import { MEDIA_MAX_UPLOAD_BYTES } from '../../shared/constants/media_upload_limits.js';
 import {
+    decode_multipart_original_filename,
     is_allowed_media_mime,
     sanitize_media_filename
 } from '../../shared/media/sanitize_media_filename.js';
+import {
+    is_upload_image_file,
+    normalize_image_filename_to_png,
+    should_convert_image_to_png
+} from '../../shared/media/image_png_upload.js';
+import {
+    convert_image_file_to_png,
+    ImagePngConversionError
+} from '../services/convert_image_to_png.js';
 import {
     delete_audit_media_file,
     ensure_audit_media_dir,
@@ -54,7 +64,12 @@ const upload = multer({
         },
         filename: (req, file, cb) => {
             const audit_id = single_route_param((req as Request).params.id);
-            pick_upload_media_filename(audit_id, file.originalname || 'fil')
+            const decoded_name = decode_multipart_original_filename(file.originalname || 'fil');
+            const mime = (file.mimetype || '').toLowerCase();
+            const upload_name = is_upload_image_file(mime, decoded_name)
+                ? normalize_image_filename_to_png(decoded_name)
+                : decoded_name;
+            pick_upload_media_filename(audit_id, upload_name || 'fil')
                 .then((pick) => {
                     (req as AuthedRequest).media_upload_pick = pick;
                     cb(null, pick.filename);
@@ -256,10 +271,26 @@ export function register_audit_media_routes(router: express.Router, upload_limit
                 return res.status(400).json({ error: 'Filtypen stöds inte' });
             }
             const pick = (req as AuthedRequest).media_upload_pick;
+            let stored_size = file.size;
+            let stored_mime = mime;
+            if (should_convert_image_to_png(mime, file.filename)) {
+                try {
+                    const convert_result = await convert_image_file_to_png(file.path);
+                    stored_size = convert_result.size;
+                    stored_mime = 'image/png';
+                } catch (err) {
+                    await fs.unlink(file.path).catch(() => {});
+                    const message =
+                        err instanceof ImagePngConversionError
+                            ? err.message
+                            : 'Kunde inte konvertera bilden till PNG';
+                    return res.status(422).json({ error: message });
+                }
+            }
             const response: Record<string, unknown> = {
                 filename: file.filename,
-                size: file.size,
-                mime
+                size: stored_size,
+                mime: stored_mime
             };
             if (pick?.renamed_due_to_conflict) {
                 response.renamedDueToConflict = true;

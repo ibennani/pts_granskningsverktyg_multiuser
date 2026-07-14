@@ -2,7 +2,7 @@
  * @fileoverview Sekventiell uppladdningskö för media-modalen.
  */
 
-import { upload_audit_media } from '../../api/audit_media_api.js';
+import { upload_audit_media, fetch_audit_media_blob_url } from '../../api/audit_media_api.js';
 import { is_browser_online } from '../../utils/browser_online.js';
 import {
     move_audit_media_local_preview_blob_url,
@@ -19,9 +19,40 @@ import {
     build_attach_media_upload_renamed_conflict_message,
     type AttachMediaDuplicateScope
 } from './attach_media_duplicate_filename_status.js';
+import {
+    is_upload_image_file,
+    normalize_image_filename_to_png,
+    should_convert_image_to_png
+} from '../../../shared/media/image_png_upload.js';
 import type { AuditMediaServerIndex } from '../../logic/audit_media_server_index.js';
 
 type TranslateFn = (key: string, params?: Record<string, unknown>) => string;
+
+function prepare_upload_file(file: File): File {
+    if (!is_upload_image_file(file.type, file.name)) {
+        return file;
+    }
+    const png_name = normalize_image_filename_to_png(file.name);
+    if (png_name === file.name) {
+        return file;
+    }
+    return new File([file], png_name, { type: file.type, lastModified: file.lastModified });
+}
+
+async function apply_upload_preview_from_server(
+    audit_id: string,
+    filename: string,
+    fallback_blob_url: string
+): Promise<void> {
+    const server_blob_url = await fetch_audit_media_blob_url(audit_id, filename);
+    if (server_blob_url) {
+        revoke_audit_media_blob_url(audit_id, filename);
+        set_audit_media_local_preview_blob_url(audit_id, filename, server_blob_url);
+        URL.revokeObjectURL(fallback_blob_url);
+        return;
+    }
+    set_audit_media_local_preview_blob_url(audit_id, filename, fallback_blob_url);
+}
 
 type EscapeHtmlFn = (value: string) => string;
 
@@ -89,7 +120,9 @@ export function create_attach_media_upload_queue(deps: AttachMediaUploadQueueDep
             return { filename: null, renamed_due_to_conflict: false };
         }
 
-        const local_name = String(file.name || '').trim();
+        const upload_file = prepare_upload_file(file);
+        const needs_server_preview = should_convert_image_to_png(file.type, file.name);
+        const local_name = String(upload_file.name || '').trim();
         if (!local_name) return { filename: null, renamed_due_to_conflict: false };
 
         const working_filenames = deps.get_working_filenames();
@@ -104,13 +137,13 @@ export function create_attach_media_upload_queue(deps: AttachMediaUploadQueueDep
             ? [...working_filenames]
             : [...working_filenames, local_name];
         deps.set_working_filenames(optimistic_filenames);
-        const local_preview_url = URL.createObjectURL(file);
+        const local_preview_url = URL.createObjectURL(upload_file);
         set_audit_media_local_preview_blob_url(deps.audit_id, local_name, local_preview_url);
         deps.refresh_list();
         deps.show_status(deps.t('attach_media_uploading'), 'info');
 
         try {
-            const result = await upload_audit_media(deps.audit_id, file);
+            const result = await upload_audit_media(deps.audit_id, upload_file);
             if (!is_browser_online() || abort_due_to_offline) {
                 revoke_audit_media_blob_url(deps.audit_id, local_name);
                 rollback_optimistic_filename(local_name, already_in_list);
@@ -136,7 +169,12 @@ export function create_attach_media_upload_queue(deps: AttachMediaUploadQueueDep
             deps.refresh_list();
             deps.server_index?.mark_on_server(server_name);
             await deps.persist_changes();
-            apply_upload_preview(server_name, local_preview_url);
+            if (needs_server_preview) {
+                await apply_upload_preview_from_server(deps.audit_id, server_name, local_preview_url);
+            } else {
+                apply_upload_preview(server_name, local_preview_url);
+            }
+            deps.refresh_list();
 
             const renamed_due_to_conflict = Boolean(result.renamedDueToConflict);
             if (renamed_due_to_conflict) {

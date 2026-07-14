@@ -11,6 +11,15 @@ import {
     format_allowed_media_types_label,
     is_allowed_client_media_file
 } from '../../../shared/media/client_media_validation.js';
+import {
+    can_use_navigator_clipboard_read,
+    clipboard_event_has_non_file_content,
+    clipboard_event_has_non_image_files,
+    extract_all_files_from_clipboard_event,
+    extract_image_files_from_clipboard_event,
+    extract_image_files_from_navigator_clipboard,
+    should_handle_paste_event
+} from '../../../shared/media/clipboard_media_files.js';
 import '../../../css/components/attach_media_modal.css';
 
 type TranslateFn = (key: string, params?: Record<string, unknown>) => string;
@@ -176,6 +185,21 @@ function bind_viewport_file_drop(
     };
 }
 
+function bind_paste_target(
+    target: HTMLElement,
+    options: {
+        on_paste: (event: ClipboardEvent) => void;
+    }
+): () => void {
+    const on_paste = (event: ClipboardEvent) => {
+        options.on_paste(event);
+    };
+    target.addEventListener('paste', on_paste);
+    return () => {
+        target.removeEventListener('paste', on_paste);
+    };
+}
+
 /**
  * Skapar uppladdningsgrupp med drag-och-släpp, dold filinput och synlig knapp.
  */
@@ -240,6 +264,7 @@ export function create_attach_media_file_drop_zone(
     });
     pick_btn.addEventListener('click', () => input.click());
     picker_row.appendChild(pick_btn);
+
     drop_zone.appendChild(picker_row);
 
     const pending_el = helpers.create_element('p', {
@@ -315,6 +340,55 @@ export function create_attach_media_file_drop_zone(
         on_files(accepted);
     };
 
+    if (can_use_navigator_clipboard_read()) {
+        const paste_btn = helpers.create_element('button', {
+            class_name: ['button', 'button-default', 'attach-media-paste-image-btn'],
+            text_content: t('attach_media_paste_image_button'),
+            attributes: { type: 'button' }
+        });
+        paste_btn.addEventListener('click', async () => {
+            if (!is_drop_enabled()) return;
+            try {
+                const items = await navigator.clipboard.read();
+                const pasted_files = await extract_image_files_from_navigator_clipboard(items);
+                if (pasted_files.length === 0) {
+                    report_issue(t('attach_media_paste_no_image'), 'error');
+                    return;
+                }
+                handle_files(pasted_files);
+            } catch (error) {
+                if (error instanceof DOMException && error.name === 'NotAllowedError') {
+                    report_issue(t('attach_media_paste_permission_denied'), 'error');
+                    return;
+                }
+                report_issue(t('attach_media_paste_no_image'), 'error');
+            }
+        });
+        picker_row.appendChild(paste_btn);
+    }
+
+    const handle_paste = (event: ClipboardEvent) => {
+        if (!is_drop_enabled()) return;
+        if (!should_handle_paste_event(event.target)) return;
+
+        const image_files = extract_image_files_from_clipboard_event(event);
+        if (image_files.length > 0) {
+            event.preventDefault();
+            handle_files(image_files);
+            return;
+        }
+
+        if (clipboard_event_has_non_image_files(event)) {
+            event.preventDefault();
+            handle_files(extract_all_files_from_clipboard_event(event));
+            return;
+        }
+
+        if (clipboard_event_has_non_file_content(event)) {
+            report_issue(t('attach_media_paste_no_image'), 'error');
+        }
+    };
+
     input.addEventListener('change', () => {
         const selected = input.files ? Array.from(input.files) : [];
         input.value = '';
@@ -332,9 +406,9 @@ export function create_attach_media_file_drop_zone(
         }
     };
 
-    let destroy_viewport_drop = () => {};
+    const destroy_callbacks: Array<() => void> = [];
     if (accept_drop_on_viewport) {
-        destroy_viewport_drop = bind_viewport_file_drop(drop_bindings);
+        destroy_callbacks.push(bind_viewport_file_drop(drop_bindings));
     } else {
         bind_drag_drop_target(drop_zone, drop_bindings);
         for (const extra_target of additional_drop_targets) {
@@ -344,11 +418,22 @@ export function create_attach_media_file_drop_zone(
         }
     }
 
+    destroy_callbacks.push(bind_paste_target(group, { on_paste: handle_paste }));
+    for (const extra_target of additional_drop_targets) {
+        if (extra_target && extra_target !== group) {
+            destroy_callbacks.push(bind_paste_target(extra_target, { on_paste: handle_paste }));
+        }
+    }
+
     group.appendChild(drop_zone);
     return {
         group,
         input,
         set_pending_filenames,
-        destroy: destroy_viewport_drop
+        destroy: () => {
+            for (const destroy_callback of destroy_callbacks) {
+                destroy_callback();
+            }
+        }
     };
 }
