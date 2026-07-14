@@ -109,7 +109,7 @@ test.describe('Export rapport (mockat API)', () => {
         await page.goto('/v2/#audit_actions');
         await ensureSwedishAndDismissRestore(page);
 
-        await expect(page.getByRole('heading', { name: 'Export' })).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Exportera till olika format' })).toBeVisible();
 
         await expect(page.locator('#audit-action-btn-export-csv')).toBeVisible();
         await expect(page.locator('#audit-action-btn-export-excel')).toBeVisible();

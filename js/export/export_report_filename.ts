@@ -70,6 +70,17 @@ function build_deficiency_types_appendix_filename(
     return base.replace(new RegExp(`\\.${extension}$`, 'i'), `_bilaga_1_bristtyper.${extension}`);
 }
 
+export function build_observation_texts_word_filename(
+    current_audit: {
+        auditMetadata?: { caseNumber?: string; actorName?: string };
+        updated_at?: string | null;
+    },
+    t: ExportReportFilenameT
+): string {
+    const base = build_report_export_filename(current_audit, true, 'docx', t);
+    return base.replace(/\.docx$/i, '_observationstexter.docx');
+}
+
 export function build_screenshots_appendix_word_filename(
     current_audit: {
         auditMetadata?: { caseNumber?: string; actorName?: string };

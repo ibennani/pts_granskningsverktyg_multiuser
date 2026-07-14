@@ -22,6 +22,10 @@
     color: var(--text-color-muted);
 }
 
+.audit-actions__appendix-guide-section {
+    margin-top: 1.25rem;
+}
+
 .audit-actions__export-section {
     margin-top: 1.25rem;
 }

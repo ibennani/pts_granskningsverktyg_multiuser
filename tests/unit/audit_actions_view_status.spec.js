@@ -47,7 +47,9 @@ function make_deps(audit_status) {
         Translation: { t: (key) => key },
         Helpers: make_helpers(),
         NotificationComponent: { show_global_message: jest.fn() },
-        ExportLogic: {},
+        ExportLogic: {
+            export_observation_texts_word: jest.fn(),
+        },
         AuditLogic: {
             get_relevant_requirements_for_sample: () => [],
             get_effective_requirement_audit_status: () => 'not_audited',
@@ -80,6 +82,10 @@ describe('AuditActionsViewComponent statusknappar', () => {
         return [...root.querySelectorAll('button[id^="audit-action-btn-"]')].map((b) => b.id);
     }
 
+    function heading_texts(root) {
+        return [...root.querySelectorAll('h2')].map((h) => h.textContent);
+    }
+
     test('in_progress visar avsluta-knapp, inte lås upp eller arkivera', async () => {
         const { root, component } = await render_with_status('in_progress');
         const ids = button_ids(root);
@@ -109,6 +115,31 @@ describe('AuditActionsViewComponent statusknappar', () => {
         expect(ids).not.toContain('audit-action-btn-unlock-audit');
         expect(ids).not.toContain('audit-action-btn-lock-audit');
         expect(ids).not.toContain('audit-action-btn-archive-audit');
+        component.destroy();
+        root.remove();
+    });
+
+    test('locked visar bilageguide och exportknappar för observationstexter', async () => {
+        const { root, component } = await render_with_status('locked');
+        const ids = button_ids(root);
+        const headings = heading_texts(root);
+
+        expect(headings).toContain('audit_actions_appendix_guide_title');
+        expect(headings).toContain('audit_actions_exports_title');
+        expect(ids).toContain('audit-action-btn-download-observation-texts-word');
+        expect(ids).toContain('audit-action-btn-import-processed-observation-texts-word');
+        expect(root.textContent).toContain('audit_actions_appendix_guide_intro');
+        component.destroy();
+        root.remove();
+    });
+
+    test('in_progress visar låst-meddelande i guide och export, utan guide-knappar', async () => {
+        const { root, component } = await render_with_status('in_progress');
+        const ids = button_ids(root);
+
+        expect(root.textContent).toContain('audit_not_locked_for_export');
+        expect(ids).not.toContain('audit-action-btn-download-observation-texts-word');
+        expect(ids).not.toContain('audit-action-btn-import-processed-observation-texts-word');
         component.destroy();
         root.remove();
     });

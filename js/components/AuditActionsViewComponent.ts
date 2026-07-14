@@ -1,19 +1,27 @@
 // @ts-nocheck
-import { find_requirement_definition, effective_status_is_fully_unreviewed_for_bulk_pass } from '../audit_logic.js';
+import { effective_status_is_fully_unreviewed_for_bulk_pass } from '../audit_logic.js';
 import { get_rules, save_audit_backup_on_server } from '../api/client.js';
 import { subscribe_rules } from '../logic/list_push_service.js';
 import { version_greater_than } from '../utils/version_utils.js';
 import { find_newer_rule_for_audit } from '../logic/newer_rule_check.js';
-import { audit_status_is_exportable, audit_status_blocks_rulefile_update_offer } from '../utils/audit_status_helpers.js';
-import { collect_html_export_zip_entries } from '../export/export_html_media.js';
-import { has_screenshots_appendix_images } from '../export/export_screenshots_appendix_collect.js';
+import { audit_status_blocks_rulefile_update_offer } from '../utils/audit_status_helpers.js';
 import { app_runtime_refs } from '../utils/app_runtime_refs.js';
-import { create_file_download_button } from '../utils/file_download_button_ui.js';
 import { is_download_file_too_large_error } from '../utils/download_filename_utils.js';
+import { bind_audit_actions_view_ui } from './audit_actions_view_ui.js';
+import { bind_audit_actions_export_handlers } from './audit_actions_view_export_handlers.js';
+import {
+    build_audit_actions_appendix_guide_section,
+    build_audit_actions_export_section,
+} from './audit_actions_view_sections.js';
+import {
+    build_audit_actions_status_section,
+    refresh_audit_actions_rulefile_subscription,
+} from './audit_actions_view_status_section.js';
 import './audit_actions_view_component.css';
 
 export class AuditActionsViewComponent {
-    constructor() {        this.root = null;
+    constructor() {
+        this.root = null;
         this.deps = null;
         this.newerRuleAvailable = null;
         this._newerRuleCheckInProgress = false;
@@ -52,21 +60,12 @@ export class AuditActionsViewComponent {
                 this.handle_lock_audit = this.handle_lock_audit.bind(this);
         this.handle_mark_all_unreviewed_as_passed = this.handle_mark_all_unreviewed_as_passed.bind(this);
         this.handle_unlock_audit = this.handle_unlock_audit.bind(this);
-        this.handle_export_csv = this.handle_export_csv.bind(this);
-        this.handle_export_excel = this.handle_export_excel.bind(this);
-        this.handle_export_word = this.handle_export_word.bind(this);
-        this.handle_export_pdf = this.handle_export_pdf.bind(this);
-        this.handle_export_pdf_samples = this.handle_export_pdf_samples.bind(this);
-        this.handle_export_pdf_deficiency_types = this.handle_export_pdf_deficiency_types.bind(this);
-        this.handle_export_word_deficiency_types = this.handle_export_word_deficiency_types.bind(this);
-        this.handle_export_word_screenshots_appendix = this.handle_export_word_screenshots_appendix.bind(this);
-        this.handle_export_pdf_screenshots_appendix = this.handle_export_pdf_screenshots_appendix.bind(this);
-        this.handle_export_word_samples = this.handle_export_word_samples.bind(this);
-        this.handle_export_html = this.handle_export_html.bind(this);
-        this.handle_export_images_zip = this.handle_export_images_zip.bind(this);
         this.handle_download_audit = this.handle_download_audit.bind(this);
         this.handle_archive_audit = this.handle_archive_audit.bind(this);
         this.handle_activate_audit = this.handle_activate_audit.bind(this);
+
+        bind_audit_actions_view_ui(this);
+        bind_audit_actions_export_handlers(this);
     }
 
     _populate_update_rulefile_slot(slot_element, state) {
@@ -232,82 +231,6 @@ export class AuditActionsViewComponent {
         });
     }
 
-    async handle_export_csv() {
-        const current_state = this.getState();
-        if (this.ExportLogic?.export_to_csv) {
-            await this.ExportLogic.export_to_csv(current_state);
-        }
-    }
-
-    async handle_export_excel() {
-        const current_state = this.getState();
-        if (this.ExportLogic?.export_to_excel) {
-            await this.ExportLogic.export_to_excel(current_state);
-        }
-    }
-
-    async handle_export_word() {
-        const current_state = this.getState();
-        if (this.ExportLogic?.export_to_word_criterias) {
-            await this.ExportLogic.export_to_word_criterias(current_state);
-        }
-    }
-
-    async handle_export_pdf() {
-        const current_state = this.getState();
-        if (!this.ExportLogic?.export_to_pdf_criterias) return;
-        await this.ExportLogic.export_to_pdf_criterias(current_state);
-    }
-
-    async handle_export_pdf_deficiency_types() {
-        const current_state = this.getState();
-        if (!this.ExportLogic?.export_to_pdf_deficiency_types) return;
-        await this.ExportLogic.export_to_pdf_deficiency_types(current_state);
-    }
-
-    async handle_export_pdf_samples() {
-        const current_state = this.getState();
-        if (!this.ExportLogic?.export_to_pdf_samples) return;
-        await this.ExportLogic.export_to_pdf_samples(current_state);
-    }
-
-    async handle_export_word_deficiency_types() {
-        const current_state = this.getState();
-        if (!this.ExportLogic?.export_to_word_deficiency_types) return;
-        await this.ExportLogic.export_to_word_deficiency_types(current_state);
-    }
-
-    async handle_export_word_screenshots_appendix() {
-        const current_state = this.getState();
-        if (!this.ExportLogic?.export_to_word_screenshots_appendix) return;
-        await this.ExportLogic.export_to_word_screenshots_appendix(current_state);
-    }
-
-    async handle_export_pdf_screenshots_appendix() {
-        const current_state = this.getState();
-        if (!this.ExportLogic?.export_to_pdf_screenshots_appendix) return;
-        await this.ExportLogic.export_to_pdf_screenshots_appendix(current_state);
-    }
-
-    async handle_export_word_samples() {
-        const current_state = this.getState();
-        if (this.ExportLogic?.export_to_word_samples) {
-            await this.ExportLogic.export_to_word_samples(current_state);
-        }
-    }
-
-    async handle_export_html() {
-        const current_state = this.getState();
-        if (!this.ExportLogic?.export_to_html) return;
-        await this.ExportLogic.export_to_html(current_state);
-    }
-
-    async handle_export_images_zip() {
-        const current_state = this.getState();
-        if (!this.ExportLogic?.export_to_images_zip) return;
-        await this.ExportLogic.export_to_images_zip(current_state);
-    }
-
     count_unreviewed_requirements() {
         const state = this.getState();
         if (!state?.ruleFileContent?.requirements || !state?.samples?.length || !this.AuditLogic) {
@@ -402,142 +325,6 @@ export class AuditActionsViewComponent {
         );
     }
 
-    create_file_download_action_button({ label, on_download, variant = 'button-default', icon_name = 'export', id = null, aria_describedby = null }) {
-        const parts = create_file_download_button({
-            Helpers: this.Helpers,
-            label,
-            on_download,
-            t: this.Translation.t,
-            variant,
-            icon_name,
-            id,
-            aria_describedby,
-        });
-        return parts.wrapper;
-    }
-
-    create_action_button({ label, on_click, variant = 'button-default', icon_name = null, id = null, aria_describedby = null }) {
-        const icon = (icon_name && this.Helpers.get_icon_svg)
-            ? this.Helpers.get_icon_svg(icon_name, ['currentColor'], 16)
-            : '';
-
-        const attributes = {};
-        if (id) attributes.id = id;
-        if (aria_describedby) attributes['aria-describedby'] = aria_describedby;
-
-        return this.Helpers.create_element('button', {
-            class_name: ['button', 'button-small', variant],
-            html_content: `<span>${label}</span>${icon}`,
-            attributes,
-            event_listeners: { click: on_click }
-        });
-    }
-
-    create_export_item({ label, description, on_click, id_suffix }) {
-        const btn_id = id_suffix ? `audit-action-btn-${id_suffix}` : null;
-        const desc_id = id_suffix ? `audit-action-desc-${id_suffix}` : null;
-
-        const wrapper = this.Helpers.create_element('div', {
-            class_name: 'audit-actions__export-item',
-            attributes: btn_id ? { role: 'group', 'aria-labelledby': btn_id } : {}
-        });
-        wrapper.appendChild(this.create_file_download_action_button({
-            label,
-            on_download: on_click,
-            variant: 'button-default',
-            icon_name: 'export',
-            id: btn_id,
-            aria_describedby: desc_id || undefined
-        }));
-        const desc_el = this.Helpers.create_element('p', {
-            class_name: 'audit-actions__export-description',
-            text_content: description,
-            attributes: desc_id ? { id: desc_id } : {}
-        });
-        wrapper.appendChild(desc_el);
-        return wrapper;
-    }
-
-    create_export_item_with_buttons({ buttons, description, desc_id_suffix }) {
-        const desc_id = desc_id_suffix ? `audit-action-desc-${desc_id_suffix}` : null;
-
-        const wrapper = this.Helpers.create_element('div', {
-            class_name: 'audit-actions__export-item',
-            attributes: desc_id ? { role: 'group', 'aria-describedby': desc_id } : {}
-        });
-        const buttons_row = this.Helpers.create_element('div', {
-            class_name: 'audit-actions__export-buttons'
-        });
-        for (const btn of buttons) {
-            buttons_row.appendChild(this.create_file_download_action_button({
-                label: btn.label,
-                on_download: btn.on_click,
-                variant: 'button-default',
-                icon_name: 'export',
-                id: btn.id_suffix ? `audit-action-btn-${btn.id_suffix}` : null,
-                aria_describedby: desc_id || undefined
-            }));
-        }
-        wrapper.appendChild(buttons_row);
-        const desc_el = this.Helpers.create_element('p', {
-            class_name: 'audit-actions__export-description',
-            text_content: description,
-            attributes: desc_id ? { id: desc_id } : {}
-        });
-        wrapper.appendChild(desc_el);
-        return wrapper;
-    }
-
-    create_file_download_status_item({ label, description, on_download, variant = 'button-default', icon_name = null, id_suffix }) {
-        const btn_id = id_suffix ? `audit-action-btn-${id_suffix}` : null;
-        const desc_id = id_suffix ? `audit-action-desc-${id_suffix}` : null;
-
-        const wrapper = this.Helpers.create_element('div', {
-            class_name: 'audit-actions__status-item',
-            attributes: btn_id ? { role: 'group', 'aria-labelledby': btn_id } : {}
-        });
-        wrapper.appendChild(this.create_file_download_action_button({
-            label,
-            on_download,
-            variant,
-            icon_name,
-            id: btn_id,
-            aria_describedby: desc_id || undefined
-        }));
-        const desc_el = this.Helpers.create_element('p', {
-            class_name: 'audit-actions__status-description',
-            text_content: description,
-            attributes: desc_id ? { id: desc_id } : {}
-        });
-        wrapper.appendChild(desc_el);
-        return wrapper;
-    }
-
-    create_status_action_item({ label, description, on_click, variant = 'button-default', icon_name = null, id_suffix }) {
-        const btn_id = id_suffix ? `audit-action-btn-${id_suffix}` : null;
-        const desc_id = id_suffix ? `audit-action-desc-${id_suffix}` : null;
-
-        const wrapper = this.Helpers.create_element('div', {
-            class_name: 'audit-actions__status-item',
-            attributes: btn_id ? { role: 'group', 'aria-labelledby': btn_id } : {}
-        });
-        wrapper.appendChild(this.create_action_button({
-            label,
-            on_click,
-            variant,
-            icon_name,
-            id: btn_id,
-            aria_describedby: desc_id || undefined
-        }));
-        const desc_el = this.Helpers.create_element('p', {
-            class_name: 'audit-actions__status-description',
-            text_content: description,
-            attributes: desc_id ? { id: desc_id } : {}
-        });
-        wrapper.appendChild(desc_el);
-        return wrapper;
-    }
-
     render() {
         if (!this.root) return;
         const t = this.Translation.t;
@@ -555,293 +342,11 @@ export class AuditActionsViewComponent {
         const plate = this.Helpers.create_element('div', { class_name: 'content-plate' });
         plate.appendChild(this.Helpers.create_element('h1', { text_content: t('audit_actions_title') }));
 
-        if (state.auditStatus === 'in_progress') {
-            if (this.newerRuleAvailable === null && !this._newerRuleCheckInProgress) {
-                this._refresh_newer_rule_check();
-            }
-            this._ensure_rules_push_subscription();
-        } else {
-            this._close_rules_push_subscription();
-            this.newerRuleAvailable = null;
-        }
+        refresh_audit_actions_rulefile_subscription(this, state);
 
-        // Statusåtgärder
-        const status_section = this.Helpers.create_element('section', {});
-        status_section.appendChild(this.Helpers.create_element('h2', { class_name: 'audit-actions__section-title', text_content: t('audit_actions_status_section_title') }));
-
-        const status_actions = this.Helpers.create_element('div', { class_name: 'audit-actions__status-list' });
-
-        status_actions.appendChild(this.create_file_download_status_item({
-            label: t('audit_actions_download_label'),
-            description: t('audit_actions_download_description'),
-            on_download: () => this.handle_download_audit(),
-            variant: 'button-default',
-            icon_name: 'save',
-            id_suffix: 'download-audit'
-        }));
-
-        const update_rulefile_slot = this.Helpers.create_element('div', {
-            class_name: 'audit-actions__update-rulefile-slot',
-            attributes: { 'data-audit-action': 'update-rulefile-slot' }
-        });
-        this._populate_update_rulefile_slot(update_rulefile_slot, state);
-        status_actions.appendChild(update_rulefile_slot);
-
-        const { req_count: unreviewed_count } = this.count_unreviewed_requirements();
-        if (state.auditStatus === 'in_progress' && unreviewed_count > 0) {
-            status_actions.appendChild(this.create_status_action_item({
-                label: t('mark_all_unreviewed_passed_button'),
-                description: t('mark_all_unreviewed_passed_description'),
-                on_click: this.handle_mark_all_unreviewed_as_passed,
-                variant: 'button-default',
-                icon_name: 'check',
-                id_suffix: 'mark-all-unreviewed'
-            }));
-        }
-
-        if (state.lastRulefileUpdateLog && state.lastRulefileUpdateLog.report) {
-            status_actions.appendChild(this.create_status_action_item({
-                label: t('audit_actions_view_rulefile_change_log_label'),
-                description: t('audit_actions_view_rulefile_change_log_description'),
-                on_click: () => this.router('rulefile_change_log'),
-                variant: 'button-default',
-                icon_name: 'info',
-                id_suffix: 'view-rulefile-change-log'
-            }));
-        }
-
-        if (state.auditStatus === 'locked') {
-            status_actions.appendChild(this.create_status_action_item({
-                label: t('unlock_audit'),
-                description: t('audit_actions_unlock_audit_description'),
-                on_click: this.handle_unlock_audit,
-                variant: 'button-primary',
-                icon_name: 'unlock_audit',
-                id_suffix: 'unlock-audit'
-            }));
-        } else if (state.auditStatus === 'in_progress') {
-            status_actions.appendChild(this.create_status_action_item({
-                label: t('lock_audit'),
-                description: t('audit_actions_lock_audit_description'),
-                on_click: this.handle_lock_audit,
-                variant: 'button-primary',
-                icon_name: 'lock_audit',
-                id_suffix: 'lock-audit'
-            }));
-        }
-
-        // Antal krav som har needsReview och en tydlig bedömning (godkänd/underkänd) – det som faktiskt behöver bekräftas i vyn.
-        const requirements = state?.ruleFileContent?.requirements;
-        let updated_reqs_count = 0;
-        (state.samples || []).forEach(sample => {
-            Object.keys(sample.requirementResults || {}).forEach(reqId => {
-                const req_def = requirements ? find_requirement_definition(requirements, reqId) : null;
-                if (!req_def) return;
-                const resolved = this.AuditLogic.get_stored_requirement_result_for_def(
-                    sample.requirementResults,
-                    requirements,
-                    req_def,
-                    reqId
-                );
-                if (resolved?.needsReview !== true) return;
-                const display_status = this.AuditLogic.get_effective_requirement_audit_status
-                    ? this.AuditLogic.get_effective_requirement_audit_status(
-                        requirements,
-                        sample.requirementResults,
-                        req_def,
-                        reqId
-                    )
-                    : 'not_audited';
-                if (display_status === 'passed' || display_status === 'failed') updated_reqs_count++;
-            });
-        });
-
-        if (updated_reqs_count > 0 && state.auditStatus !== 'archived') {
-            status_actions.appendChild(this.create_status_action_item({
-                label: t('handle_updated_assessments', { count: updated_reqs_count }),
-                description: t('audit_actions_handle_updated_description'),
-                on_click: () => this.router('confirm_updates'),
-                variant: 'button-info',
-                icon_name: 'info',
-                id_suffix: 'handle-updated'
-            }));
-        }
-
-        status_section.appendChild(status_actions);
-
-        if (state.auditStatus === 'locked' || state.auditStatus === 'archived') {
-            const archive_row = this.Helpers.create_element('div', { class_name: 'audit-actions__archive-row' });
-            if (state.auditStatus === 'locked') {
-                archive_row.appendChild(this.create_status_action_item({
-                    label: t('audit_actions_archive_audit_label'),
-                    description: t('audit_actions_archive_description'),
-                    on_click: this.handle_archive_audit,
-                    variant: 'button-default',
-                    icon_name: 'save',
-                    id_suffix: 'archive-audit'
-                }));
-            }
-            if (state.auditStatus === 'archived') {
-                archive_row.appendChild(this.create_status_action_item({
-                    label: t('audit_actions_activate_audit_label'),
-                    description: t('audit_actions_activate_description'),
-                    on_click: this.handle_activate_audit,
-                    variant: 'button-primary',
-                    icon_name: 'unlock_audit',
-                    id_suffix: 'activate-audit'
-                }));
-            }
-            status_section.appendChild(archive_row);
-        }
-
-        plate.appendChild(status_section);
-
-        // Export
-        const export_section = this.Helpers.create_element('section', { class_name: 'audit-actions__export-section' });
-        export_section.appendChild(this.Helpers.create_element('h2', { class_name: 'audit-actions__section-title', text_content: t('audit_actions_exports_title') }));
-
-        if (!audit_status_is_exportable(state.auditStatus)) {
-            export_section.appendChild(this.Helpers.create_element('p', {
-                class_name: 'audit-actions__section-lead',
-                text_content: t('audit_not_locked_for_export')
-            }));
-        } else {
-            const export_actions = this.Helpers.create_element('div', { class_name: 'audit-actions__export-list' });
-            if (this.ExportLogic?.export_to_csv || this.ExportLogic?.export_to_excel) {
-                export_actions.appendChild(this.create_export_item_with_buttons({
-                    buttons: [
-                        ...(this.ExportLogic?.export_to_excel
-                            ? [{
-                                label: t('export_to_excel'),
-                                on_click: this.handle_export_excel,
-                                id_suffix: 'export-excel'
-                            }]
-                            : []),
-                        ...(this.ExportLogic?.export_to_csv
-                            ? [{
-                                label: t('export_to_csv'),
-                                on_click: this.handle_export_csv,
-                                id_suffix: 'export-csv'
-                            }]
-                            : [])
-                    ],
-                    description: t('audit_actions_export_spreadsheet_description'),
-                    desc_id_suffix: 'export-spreadsheet'
-                }));
-            }
-            if (this.ExportLogic?.export_to_word_criterias || this.ExportLogic?.export_to_pdf_criterias) {
-                export_actions.appendChild(this.create_export_item_with_buttons({
-                    buttons: [
-                        ...(this.ExportLogic?.export_to_word_criterias
-                            ? [{
-                                label: t('export_to_word'),
-                                on_click: this.handle_export_word,
-                                id_suffix: 'export-word-reqs'
-                            }]
-                            : []),
-                        ...(this.ExportLogic?.export_to_pdf_criterias
-                            ? [{
-                                label: t('export_to_pdf'),
-                                on_click: this.handle_export_pdf,
-                                id_suffix: 'export-pdf-reqs'
-                            }]
-                            : [])
-                    ],
-                    description: t('audit_actions_export_word_requirements_description'),
-                    desc_id_suffix: 'export-reqs-report'
-                }));
-            }
-            if (this.ExportLogic?.export_to_word_samples || this.ExportLogic?.export_to_pdf_samples) {
-                export_actions.appendChild(this.create_export_item_with_buttons({
-                    buttons: [
-                        ...(this.ExportLogic?.export_to_word_samples
-                            ? [{
-                                label: t('export_to_word_samples'),
-                                on_click: this.handle_export_word_samples,
-                                id_suffix: 'export-word-samples'
-                            }]
-                            : []),
-                        ...(this.ExportLogic?.export_to_pdf_samples
-                            ? [{
-                                label: t('export_to_pdf_samples'),
-                                on_click: this.handle_export_pdf_samples,
-                                id_suffix: 'export-pdf-samples'
-                            }]
-                            : [])
-                    ],
-                    description: t('audit_actions_export_word_samples_description'),
-                    desc_id_suffix: 'export-samples-report'
-                }));
-            }
-            if (this.ExportLogic?.export_to_html) {
-                export_actions.appendChild(this.create_export_item({
-                    label: t('export_to_html'),
-                    description: t('audit_actions_export_html_description'),
-                    on_click: this.handle_export_html,
-                    id_suffix: 'export-html'
-                }));
-            }
-            const has_exportable_images = collect_html_export_zip_entries(state, null).length > 0;
-            const has_screenshots_appendix = has_screenshots_appendix_images(state);
-            if (this.ExportLogic?.export_to_images_zip && has_exportable_images) {
-                export_actions.appendChild(this.create_export_item({
-                    label: t('export_to_images_zip'),
-                    description: t('audit_actions_export_images_zip_description'),
-                    on_click: this.handle_export_images_zip,
-                    id_suffix: 'export-images-zip'
-                }));
-            }
-            if (this.ExportLogic?.export_to_word_deficiency_types || this.ExportLogic?.export_to_pdf_deficiency_types) {
-                export_actions.appendChild(this.create_export_item_with_buttons({
-                    buttons: [
-                        ...(this.ExportLogic?.export_to_word_deficiency_types
-                            ? [{
-                                label: t('export_word_deficiency_types_button'),
-                                on_click: this.handle_export_word_deficiency_types,
-                                id_suffix: 'export-word-deficiency-types'
-                            }]
-                            : []),
-                        ...(this.ExportLogic?.export_to_pdf_deficiency_types
-                            ? [{
-                                label: t('export_pdf_deficiency_types_button'),
-                                on_click: this.handle_export_pdf_deficiency_types,
-                                id_suffix: 'export-pdf-deficiency-types'
-                            }]
-                            : [])
-                    ],
-                    description: t('audit_actions_export_deficiency_types_description'),
-                    desc_id_suffix: 'export-deficiency-types'
-                }));
-            }
-            if (
-                has_screenshots_appendix &&
-                (this.ExportLogic?.export_to_word_screenshots_appendix || this.ExportLogic?.export_to_pdf_screenshots_appendix)
-            ) {
-                export_actions.appendChild(this.create_export_item_with_buttons({
-                    buttons: [
-                        ...(this.ExportLogic?.export_to_word_screenshots_appendix
-                            ? [{
-                                label: t('export_word_screenshots_appendix_button'),
-                                on_click: this.handle_export_word_screenshots_appendix,
-                                id_suffix: 'export-word-screenshots-appendix'
-                            }]
-                            : []),
-                        ...(this.ExportLogic?.export_to_pdf_screenshots_appendix
-                            ? [{
-                                label: t('export_pdf_screenshots_appendix_button'),
-                                on_click: this.handle_export_pdf_screenshots_appendix,
-                                id_suffix: 'export-pdf-screenshots-appendix'
-                            }]
-                            : [])
-                    ],
-                    description: t('audit_actions_export_screenshots_appendix_description'),
-                    desc_id_suffix: 'export-screenshots-appendix'
-                }));
-            }
-            export_section.appendChild(export_actions);
-        }
-
-        plate.appendChild(export_section);
+        plate.appendChild(build_audit_actions_status_section(this, state, t));
+        plate.appendChild(build_audit_actions_appendix_guide_section(this, state, t));
+        plate.appendChild(build_audit_actions_export_section(this, state, t));
         this.root.appendChild(plate);
     }
 

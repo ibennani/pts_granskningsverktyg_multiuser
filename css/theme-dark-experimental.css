@@ -35,7 +35,8 @@
     --success-color-light: #122318;
 
     --text-color: #fafafa;
-    --text-color-muted: #a8a8b0;
+    /* Samma som brödtext/section-lead – beskrivningar under knappar ska inte vara mörkare */
+    --text-color-muted: var(--de-text-primary);
 
     --background-color: #09090b;
     --page-background: var(--background-color);
@@ -227,11 +228,6 @@
 [data-theme="dark-experimental"] .content-plate h1 + .view-intro-text,
 [data-theme="dark-experimental"] .content-plate h1 + p.view-intro-text {
     color: var(--de-text-secondary) !important;
-}
-
-[data-theme="dark-experimental"] .audit-actions__status-description,
-[data-theme="dark-experimental"] .audit-actions__export-description {
-    color: var(--de-text-support);
 }
 
 [data-theme="dark-experimental"] a {
