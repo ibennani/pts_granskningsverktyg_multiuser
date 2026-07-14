@@ -6,11 +6,11 @@ import { describe, test, expect, jest, afterEach } from '@jest/globals';
 import {
     build_clipboard_paste_filename,
     can_use_navigator_clipboard_read,
+    clipboard_event_has_disallowed_files,
     clipboard_event_has_non_file_content,
-    clipboard_event_has_non_image_files,
     ensure_paste_filename,
-    extract_image_files_from_clipboard_event,
-    extract_image_files_from_navigator_clipboard,
+    extract_media_files_from_clipboard_event,
+    extract_media_files_from_navigator_clipboard,
     should_handle_paste_event
 } from '../../shared/media/clipboard_media_files.js';
 
@@ -34,7 +34,12 @@ function create_clipboard_event(items: Array<{ kind: string; type: string; file?
 }
 
 describe('clipboard_media_files', () => {
-    test('build_clipboard_paste_filename använder tidsstämpel och rätt ändelse', () => {
+    test('build_clipboard_paste_filename använder tidsstämpel och rätt ändelse för video', () => {
+        const filename = build_clipboard_paste_filename('video/mp4', '2026-07-14T10:30:45.000Z');
+        expect(filename).toMatch(/^urklipp_\d{8}_\d{6}\.mp4$/);
+    });
+
+    test('build_clipboard_paste_filename använder tidsstämpel och rätt ändelse för bild', () => {
         const filename = build_clipboard_paste_filename('image/jpeg', '2026-07-14T10:30:45.000Z');
         expect(filename).toMatch(/^urklipp_\d{8}_\d{6}\.jpg$/);
     });
@@ -46,13 +51,20 @@ describe('clipboard_media_files', () => {
         expect(renamed.type).toBe('image/png');
     });
 
+    test('ensure_paste_filename ersätter generiska videonamn', () => {
+        const generic = create_mock_file('video.mp4', 'video/mp4');
+        const renamed = ensure_paste_filename(generic);
+        expect(renamed.name).toMatch(/^urklipp_\d{8}_\d{6}\.mp4$/);
+        expect(renamed.type).toBe('video/mp4');
+    });
+
     test('ensure_paste_filename behåller riktiga filnamn', () => {
         const original = create_mock_file('skarmavbild.png', 'image/png');
         const kept = ensure_paste_filename(original);
         expect(kept.name).toBe('skarmavbild.png');
     });
 
-    test('extract_image_files_from_clipboard_event plockar ut bilder', () => {
+    test('extract_media_files_from_clipboard_event plockar ut bilder', () => {
         const png = create_mock_file('image.png', 'image/png');
         const pdf = create_mock_file('rapport.pdf', 'application/pdf');
         const event = create_clipboard_event([
@@ -60,16 +72,28 @@ describe('clipboard_media_files', () => {
             { kind: 'file', type: 'application/pdf', file: pdf }
         ]);
 
-        const files = extract_image_files_from_clipboard_event(event);
+        const files = extract_media_files_from_clipboard_event(event);
         expect(files).toHaveLength(1);
         expect(files[0]?.name).toMatch(/^urklipp_\d{8}_\d{6}\.png$/);
     });
 
-    test('clipboard_event_has_non_image_files identifierar ogiltiga filer', () => {
+    test('extract_media_files_from_clipboard_event plockar ut videor', () => {
+        const mp4 = create_mock_file('video.mp4', 'video/mp4');
+        const event = create_clipboard_event([
+            { kind: 'file', type: 'video/mp4', file: mp4 }
+        ]);
+
+        const files = extract_media_files_from_clipboard_event(event);
+        expect(files).toHaveLength(1);
+        expect(files[0]?.type).toBe('video/mp4');
+        expect(files[0]?.name).toMatch(/^urklipp_\d{8}_\d{6}\.mp4$/);
+    });
+
+    test('clipboard_event_has_disallowed_files identifierar ogiltiga filer', () => {
         const event = create_clipboard_event([
             { kind: 'file', type: 'application/pdf', file: create_mock_file('rapport.pdf', 'application/pdf') }
         ]);
-        expect(clipboard_event_has_non_image_files(event)).toBe(true);
+        expect(clipboard_event_has_disallowed_files(event)).toBe(true);
     });
 
     test('clipboard_event_has_non_file_content hittar text i urklipp', () => {
@@ -86,7 +110,7 @@ describe('clipboard_media_files', () => {
         expect(should_handle_paste_event(document.body)).toBe(true);
     });
 
-    test('extract_image_files_from_navigator_clipboard konverterar ClipboardItem till File', async () => {
+    test('extract_media_files_from_navigator_clipboard konverterar ClipboardItem till File', async () => {
         const blob = new Blob([new Uint8Array([1, 2, 3])], { type: 'image/png' });
         const items = [
             {
@@ -98,10 +122,27 @@ describe('clipboard_media_files', () => {
             }
         ] as unknown as ClipboardItem[];
 
-        const files = await extract_image_files_from_navigator_clipboard(items);
+        const files = await extract_media_files_from_navigator_clipboard(items);
         expect(files).toHaveLength(1);
         expect(files[0]?.type).toBe('image/png');
         expect(files[0]?.name).toMatch(/^urklipp_\d{8}_\d{6}\.png$/);
+    });
+
+    test('extract_media_files_from_navigator_clipboard plockar ut video', async () => {
+        const blob = new Blob([new Uint8Array([1, 2, 3])], { type: 'video/mp4' });
+        const items = [
+            {
+                types: ['video/mp4'],
+                getType: async (type: string) => {
+                    if (type === 'video/mp4') return blob;
+                    throw new Error('unexpected type');
+                }
+            }
+        ] as unknown as ClipboardItem[];
+
+        const files = await extract_media_files_from_navigator_clipboard(items);
+        expect(files).toHaveLength(1);
+        expect(files[0]?.type).toBe('video/mp4');
     });
 
     describe('can_use_navigator_clipboard_read', () => {

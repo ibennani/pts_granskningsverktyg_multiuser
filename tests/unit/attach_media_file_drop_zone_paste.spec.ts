@@ -79,6 +79,26 @@ describe('attach_media_file_drop_zone paste', () => {
         });
     });
 
+    test('klistrar in video via paste-event och anropar on_files', () => {
+        const on_files = jest.fn();
+        const zone = create_attach_media_file_drop_zone({
+            helpers,
+            t,
+            input_id: 'media-input-video',
+            label_id: 'media-label-video',
+            label_key: 'attach_media_choose_file_label',
+            on_files
+        });
+        root.appendChild(zone.group);
+
+        const mp4 = create_mock_file('video.mp4', 'video/mp4');
+        const event = dispatch_paste(zone.group, [{ kind: 'file', type: 'video/mp4', file: mp4 }]);
+        expect(event.defaultPrevented).toBe(true);
+        expect(on_files).toHaveBeenCalledTimes(1);
+        expect(on_files.mock.calls[0]?.[0]?.[0]?.type).toBe('video/mp4');
+        zone.destroy();
+    });
+
     test('klistrar in bild via paste-event och anropar on_files', () => {
         const on_files = jest.fn();
         const zone = create_attach_media_file_drop_zone({
@@ -134,11 +154,11 @@ describe('attach_media_file_drop_zone paste', () => {
         root.appendChild(zone.group);
 
         dispatch_paste(zone.group, [{ kind: 'string', type: 'text/plain' }]);
-        expect(on_status).toHaveBeenCalledWith('attach_media_paste_no_image', 'error');
+        expect(on_status).toHaveBeenCalledWith('attach_media_paste_no_media', 'error');
         zone.destroy();
     });
 
-    test('renderar knappen Klistra in bild när Clipboard API finns', () => {
+    test('renderar knappen Klistra in när Clipboard API finns', () => {
         const zone = create_attach_media_file_drop_zone({
             helpers,
             t,
@@ -149,9 +169,9 @@ describe('attach_media_file_drop_zone paste', () => {
         });
         root.appendChild(zone.group);
 
-        const paste_btn = zone.group.querySelector('.attach-media-paste-image-btn');
+        const paste_btn = zone.group.querySelector('.attach-media-paste-btn');
         expect(paste_btn).not.toBeNull();
-        expect(paste_btn?.textContent).toBe('attach_media_paste_image_button');
+        expect(paste_btn?.textContent).toBe('attach_media_paste_button');
         zone.destroy();
     });
 
@@ -182,7 +202,7 @@ describe('attach_media_file_drop_zone paste', () => {
         });
         root.appendChild(zone.group);
 
-        const paste_btn = zone.group.querySelector('.attach-media-paste-image-btn') as HTMLButtonElement;
+        const paste_btn = zone.group.querySelector('.attach-media-paste-btn') as HTMLButtonElement;
         paste_btn.click();
         await new Promise((resolve) => {
             setTimeout(resolve, 0);

@@ -13,11 +13,11 @@ import {
 } from '../../../shared/media/client_media_validation.js';
 import {
     can_use_navigator_clipboard_read,
+    clipboard_event_has_disallowed_files,
     clipboard_event_has_non_file_content,
-    clipboard_event_has_non_image_files,
     extract_all_files_from_clipboard_event,
-    extract_image_files_from_clipboard_event,
-    extract_image_files_from_navigator_clipboard,
+    extract_media_files_from_clipboard_event,
+    extract_media_files_from_navigator_clipboard,
     should_handle_paste_event
 } from '../../../shared/media/clipboard_media_files.js';
 import '../../../css/components/attach_media_modal.css';
@@ -342,17 +342,17 @@ export function create_attach_media_file_drop_zone(
 
     if (can_use_navigator_clipboard_read()) {
         const paste_btn = helpers.create_element('button', {
-            class_name: ['button', 'button-default', 'attach-media-paste-image-btn'],
-            text_content: t('attach_media_paste_image_button'),
+            class_name: ['button', 'button-default', 'attach-media-paste-btn'],
+            text_content: t('attach_media_paste_button'),
             attributes: { type: 'button' }
         });
         paste_btn.addEventListener('click', async () => {
             if (!is_drop_enabled()) return;
             try {
                 const items = await navigator.clipboard.read();
-                const pasted_files = await extract_image_files_from_navigator_clipboard(items);
+                const pasted_files = await extract_media_files_from_navigator_clipboard(items);
                 if (pasted_files.length === 0) {
-                    report_issue(t('attach_media_paste_no_image'), 'error');
+                    report_issue(t('attach_media_paste_no_media'), 'error');
                     return;
                 }
                 handle_files(pasted_files);
@@ -361,7 +361,7 @@ export function create_attach_media_file_drop_zone(
                     report_issue(t('attach_media_paste_permission_denied'), 'error');
                     return;
                 }
-                report_issue(t('attach_media_paste_no_image'), 'error');
+                report_issue(t('attach_media_paste_no_media'), 'error');
             }
         });
         picker_row.appendChild(paste_btn);
@@ -371,21 +371,21 @@ export function create_attach_media_file_drop_zone(
         if (!is_drop_enabled()) return;
         if (!should_handle_paste_event(event.target)) return;
 
-        const image_files = extract_image_files_from_clipboard_event(event);
-        if (image_files.length > 0) {
+        const media_files = extract_media_files_from_clipboard_event(event);
+        if (media_files.length > 0) {
             event.preventDefault();
-            handle_files(image_files);
+            handle_files(media_files);
             return;
         }
 
-        if (clipboard_event_has_non_image_files(event)) {
+        if (clipboard_event_has_disallowed_files(event)) {
             event.preventDefault();
             handle_files(extract_all_files_from_clipboard_event(event));
             return;
         }
 
         if (clipboard_event_has_non_file_content(event)) {
-            report_issue(t('attach_media_paste_no_image'), 'error');
+            report_issue(t('attach_media_paste_no_media'), 'error');
         }
     };
 
