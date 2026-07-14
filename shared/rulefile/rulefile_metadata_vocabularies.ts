@@ -3,6 +3,8 @@
  * Gäller fristående regelfiler — inbäddad ruleFileContent i granskningar ska inte normaliseras vid persist.
  */
 
+import { apply_detection_patterns_for_rulefile_metadata } from './content_type_detection_pattern_rulefile_apply.js';
+
 export type RulefileMetadataVocabularyNormalizeMode = 'read' | 'persist';
 
 type MetadataRecord = Record<string, unknown>;
@@ -95,7 +97,7 @@ export function resolve_sample_vocab(metadata: unknown): SampleVocabShape {
     return { sampleCategories: sample_categories, sampleTypes: sample_types };
 }
 
-function apply_canonical_vocab_fields(metadata: MetadataRecord): MetadataRecord {
+function apply_canonical_vocab_fields(metadata: MetadataRecord, options: { mode?: RulefileMetadataVocabularyNormalizeMode } = {}): MetadataRecord {
     const next = { ...metadata };
     next.pageTypes = resolve_page_types(next);
     next.contentTypes = resolve_content_types(next);
@@ -109,6 +111,11 @@ function apply_canonical_vocab_fields(metadata: MetadataRecord): MetadataRecord 
     samples.sampleTypes = sample_vocab.sampleTypes;
     next.samples = samples;
     delete next.vocabularies;
+
+    if (options.mode === 'persist') {
+        return apply_detection_patterns_for_rulefile_metadata(next);
+    }
+
     return next;
 }
 
@@ -121,7 +128,7 @@ export function normalize_rulefile_metadata_vocabularies(
 ): MetadataRecord {
     void options.mode;
     const cloned = JSON.parse(JSON.stringify(as_metadata(metadata))) as MetadataRecord;
-    return apply_canonical_vocab_fields(cloned);
+    return apply_canonical_vocab_fields(cloned, options);
 }
 
 export function normalize_rulefile_content_vocabularies_for_persist(

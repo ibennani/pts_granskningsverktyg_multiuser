@@ -11,6 +11,7 @@ import {
     normalize_rulefile_metadata_vocabularies,
     normalize_rulefile_content_vocabularies_for_persist
 } from '../../shared/rulefile/rulefile_metadata_vocabularies.js';
+import { WEB_TEXT_CONTENT_ALWAYS_TRUE_PATTERN } from '../../shared/rulefile/content_type_detection_pattern_web_catalog.ts';
 
 const legacy_flat_only = {
     pageTypes: ['Startsida'],
@@ -93,6 +94,49 @@ describe('rulefile_metadata_vocabularies', () => {
             const meta = out?.metadata as Record<string, unknown>;
             expect(meta?.vocabularies).toBeUndefined();
             expect(meta?.contentTypes).toHaveLength(1);
+        });
+
+        it('sätter detectionPattern för webb-regelfil vid persist', () => {
+            const out = normalize_rulefile_content_vocabularies_for_persist({
+                metadata: {
+                    monitoringType: { type: 'web', text: 'Webb' },
+                    contentTypes: [
+                        {
+                            id: 'text',
+                            text: 'Text',
+                            types: [
+                                { id: 'text', text: 'Text' },
+                                { id: 'rubriker', text: 'Rubriker' },
+                            ],
+                        },
+                    ],
+                },
+                requirements: {},
+            });
+            const groups = (out?.metadata as { contentTypes?: Array<{ types?: Array<{ detectionPattern?: string }> }> })
+                ?.contentTypes;
+            expect(groups?.[0]?.types?.[0]?.detectionPattern).toBe(WEB_TEXT_CONTENT_ALWAYS_TRUE_PATTERN);
+            expect(groups?.[0]?.types?.[1]?.detectionPattern).toContain('h[1-6]');
+        });
+
+        it('tar bort detectionPattern för pdf-regelfil vid persist', () => {
+            const out = normalize_rulefile_content_vocabularies_for_persist({
+                metadata: {
+                    monitoringType: { type: 'pdf', text: 'PDF' },
+                    contentTypes: [
+                        {
+                            id: 'text',
+                            text: 'Text',
+                            types: [{ id: 'rubriker', text: 'Rubriker', detectionPattern: '<h1>' }],
+                        },
+                    ],
+                },
+                requirements: {},
+            });
+            const child = (
+                out?.metadata as { contentTypes?: Array<{ types?: Array<{ detectionPattern?: string }> }> }
+            )?.contentTypes?.[0]?.types?.[0];
+            expect(child?.detectionPattern).toBeUndefined();
         });
     });
 });

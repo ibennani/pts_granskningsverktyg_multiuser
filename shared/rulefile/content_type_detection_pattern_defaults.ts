@@ -3,6 +3,8 @@
  * Används vid seed av regelfil och som referens i dokumentation — inte vid runtime-gissning.
  */
 
+import { resolve_web_detection_pattern_for_label } from './content_type_detection_pattern_web_catalog.js';
+
 type SuggestInput = {
     id?: string;
     text?: string;
@@ -106,6 +108,9 @@ export function suggest_detection_pattern_for_content_type(input: SuggestInput):
     const id = String(input?.id || '').trim();
     const text = String(input?.text || '').trim();
     if (!id && !text) return '';
+
+    const from_web_catalog = resolve_web_detection_pattern_for_label(text);
+    if (from_web_catalog) return from_web_catalog;
 
     for (const entry of SIGNAL_PATTERN_DEFAULTS) {
         if (matches_any_signal(id, text, entry.signals)) {

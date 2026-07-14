@@ -76,6 +76,7 @@ Objektet under nyckeln `metadata` är obligatoriskt och definierar övergripande
         *   **`detectionPattern`** (Sträng, valfri, på varje undertyp):
             *   **Beskrivning:** Reguljärt uttryck som matchas mot HTML som granskaren klistrar in vid **Automatisk analys** i granskningsdelsformuläret. Ett mönster per undertyp — t.ex. rubriker: `<h[1-6][\s/>]|role\s*=\s*["']heading["']` fångar både h-taggar och `role="heading"`.
             *   **Underhåll:** Sätts av regelfilsunderhållare i regelfilsredigeringen eller direkt i JSON. Granskaren ser inte mönstret.
+            *   **Webb-regelfiler:** Vid sparning fylls kända undertyper i automatiskt utifrån katalogen i `shared/rulefile/content_type_detection_pattern_web_catalog.ts` (matchning på undertypens visningsnamn `text`). Undertypen **Text** får mönstret `[\s\S]` (alltid sant för icke-tom HTML). PDF-regelfiler får aldrig `detectionPattern` (fältet tas bort vid sparning).
             *   **Villkor:** Om fältet anges måste det vara ett giltigt reguljärt uttryck. Tomt eller utelämnat = ingen automatdetektion för den undertypen.
 
 **Exempel på undertyp med detektionsmönster:**

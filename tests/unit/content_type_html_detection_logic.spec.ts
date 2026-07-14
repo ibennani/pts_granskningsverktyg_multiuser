@@ -46,22 +46,43 @@ describe('content_type_detection_pattern', () => {
 });
 
 describe('content_type_html_detection_logic', () => {
-    test('collect_child_detection_patterns läser undertyper från regelfil', () => {
+    test('collect_child_detection_patterns använder webbkatalog utan detectionPattern i snapshot', () => {
         const patterns = collect_child_detection_patterns({
             metadata: {
+                monitoringType: { type: 'web', text: 'Webb' },
                 contentTypes: [
                     {
                         id: 'text',
                         text: 'Text',
                         types: [
-                            { id: 'rubriker', text: 'Rubriker', detectionPattern: HEADING_PATTERN },
-                            { id: 'tom', text: 'Tom' },
+                            { id: 'rubriker', text: 'Rubriker' },
+                            { id: 'nav', text: 'Navigeringsmenyer' },
+                            { id: 'tom', text: 'Ospecificerad typ' },
                         ],
                     },
                 ],
             },
         });
-        expect(patterns).toEqual([{ id: 'rubriker', pattern: HEADING_PATTERN }]);
+        expect(patterns.map((rule) => rule.id)).toEqual(
+            expect.arrayContaining(['rubriker', 'nav'])
+        );
+        expect(patterns.find((rule) => rule.id === 'tom')).toBeUndefined();
+    });
+
+    test('collect_child_detection_patterns returnerar tomt för pdf-regelfil', () => {
+        const patterns = collect_child_detection_patterns({
+            metadata: {
+                monitoringType: { type: 'pdf', text: 'PDF' },
+                contentTypes: [
+                    {
+                        id: 'text',
+                        text: 'Text',
+                        types: [{ id: 'rubriker', text: 'Rubriker', detectionPattern: HEADING_PATTERN }],
+                    },
+                ],
+            },
+        });
+        expect(patterns).toEqual([]);
     });
 
     test('detect_content_types_from_html i footer-fragment', () => {
