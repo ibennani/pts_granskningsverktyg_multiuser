@@ -5,8 +5,10 @@ import { jest } from '@jest/globals';
 import {
     MIN_IDLE_MS,
     STALE_RESET_MS,
+    SUBAGENT_LEAK_MS,
     count_open_todos,
     create_default_state,
+    maybe_reset_leaked_subagents,
     maybe_reset_stale,
     normalize_state,
     read_state,
@@ -72,7 +74,7 @@ describe('nabu_work_state', () => {
     test('try_flush skickar en gång vid idle och notify_requested', () => {
         request_notify();
         const state = read_state();
-        state.last_activity_at = Date.now() - MIN_IDLE_MS - 1;
+        state.notify_requested_at = Date.now() - MIN_IDLE_MS - 1;
         write_state(state);
 
         const first = try_flush();
@@ -87,7 +89,7 @@ describe('nabu_work_state', () => {
         request_notify();
         request_notify();
         const state = read_state();
-        state.last_activity_at = Date.now() - MIN_IDLE_MS - 1;
+        state.notify_requested_at = Date.now() - MIN_IDLE_MS - 1;
         write_state(state);
 
         const first = try_flush();
@@ -101,11 +103,34 @@ describe('nabu_work_state', () => {
         subagent_start();
         subagent_stop();
         const state = read_state();
-        state.last_activity_at = Date.now() - MIN_IDLE_MS - 1;
+        state.notify_requested_at = Date.now() - MIN_IDLE_MS - 1;
         write_state(state);
 
         const result = try_flush();
         expect(result.sent).toBe(true);
+    });
+
+    test('läckta underagenter nollställs efter SUBAGENT_LEAK_MS', () => {
+        request_notify();
+        subagent_start();
+        subagent_start();
+        const state = read_state();
+        const stale_at = Date.now() - SUBAGENT_LEAK_MS - 1;
+        state.notify_requested_at = stale_at;
+        state.last_subagent_activity_at = stale_at;
+        write_state(state);
+
+        const blocked = try_flush();
+        expect(blocked.sent).toBe(true);
+    });
+
+    test('pending_subagents kan schemalägga delayed flush', () => {
+        request_notify();
+        subagent_start();
+        const result = try_flush();
+        expect(result.sent).toBe(false);
+        expect(result.reason).toBe('pending_subagents');
+        expect(result.schedule_delayed_flush).toBe(true);
     });
 
     test('debounce blockeras och kan schemalägga delayed flush', () => {
@@ -126,6 +151,17 @@ describe('nabu_work_state', () => {
         expect(reset).toBe(true);
         expect(state.pending_subagents).toBe(0);
         expect(state.open_todo_count).toBe(0);
+    });
+
+    test('maybe_reset_leaked_subagents nollställer när klar-notis väntat tillräckligt', () => {
+        const state = create_default_state();
+        state.notify_requested = true;
+        state.notify_requested_at = Date.now() - SUBAGENT_LEAK_MS - 1;
+        state.pending_subagents = 2;
+
+        const reset = maybe_reset_leaked_subagents(state);
+        expect(reset).toBe(true);
+        expect(state.pending_subagents).toBe(0);
     });
 
     test('normalize_state skyddar mot ogiltig indata', () => {

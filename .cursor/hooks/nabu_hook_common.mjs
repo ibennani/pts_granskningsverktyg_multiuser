@@ -56,7 +56,7 @@ export function handle_flush_result(result) {
         return;
     }
     if (result.schedule_delayed_flush) {
-        schedule_delayed_flush(get_done_message());
+        schedule_delayed_flush();
     }
 }
 
@@ -77,16 +77,16 @@ export function send_webhook(message) {
     }).unref();
 }
 
-/**
- * @param {string} message
- */
-export function schedule_delayed_flush(message) {
+export function schedule_delayed_flush() {
+    const message = get_done_message();
+    const message_path = path.join(REPO_ROOT, '.cursor', 'nabu_flush_message.txt');
+    fs.mkdirSync(path.dirname(message_path), { recursive: true });
+    fs.writeFileSync(message_path, message, 'utf8');
     const script = path.join(REPO_ROOT, 'scripts', 'nabu_delayed_flush.ps1');
     spawn('powershell.exe', [
         '-NoProfile',
         '-ExecutionPolicy', 'Bypass',
         '-File', script,
-        '-Message', message,
     ], {
         cwd: REPO_ROOT,
         stdio: 'ignore',

@@ -29,6 +29,7 @@ build/
 # Nabu klar-notis (arbetsregister för uppskjuten notis, skrivs av nabu_work_state)
 .cursor/nabu_work_state.json
 .cursor/nabu_work_state.json.lock
+.cursor/nabu_flush_message.txt
 
 # Parallella agenter: vilka filer vilken agent rört (för Pusha-urval)
 .cursor/agent_touched_files.json

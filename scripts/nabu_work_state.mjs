@@ -7,14 +7,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-export const MIN_IDLE_MS = 8000;
+export const MIN_IDLE_MS = 3000;
 export const STALE_RESET_MS = 30 * 60 * 1000;
+export const SUBAGENT_LEAK_MS = 8000;
 export const DELAYED_FLUSH_SECONDS = 10;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_REPO_ROOT = path.resolve(__dirname, '..');
 
-/** @typedef {{ version: number, pending_subagents: number, open_todo_count: number, notify_requested: boolean, delayed_flush_scheduled: boolean, last_activity_at: number }} NabuWorkState */
+/** @typedef {{ version: number, pending_subagents: number, open_todo_count: number, notify_requested: boolean, notify_requested_at: number, delayed_flush_scheduled: boolean, last_activity_at: number, last_subagent_activity_at: number }} NabuWorkState */
 
 /**
  * @param {string} [repo_root]
@@ -45,8 +46,10 @@ export function create_default_state() {
         pending_subagents: 0,
         open_todo_count: 0,
         notify_requested: false,
+        notify_requested_at: 0,
         delayed_flush_scheduled: false,
         last_activity_at: Date.now(),
+        last_subagent_activity_at: 0,
     };
 }
 
@@ -65,8 +68,10 @@ export function normalize_state(raw) {
         pending_subagents: Math.max(0, Number(obj.pending_subagents) || 0),
         open_todo_count: Math.max(0, Number(obj.open_todo_count) || 0),
         notify_requested: Boolean(obj.notify_requested),
+        notify_requested_at: Math.max(0, Number(obj.notify_requested_at) || 0),
         delayed_flush_scheduled: Boolean(obj.delayed_flush_scheduled),
         last_activity_at: Number(obj.last_activity_at) || Date.now(),
+        last_subagent_activity_at: Math.max(0, Number(obj.last_subagent_activity_at) || 0),
     };
 }
 
@@ -151,6 +156,30 @@ export function maybe_reset_stale(state) {
 }
 
 /**
+ * Nollställer läckta underagent-räknare när klar-notis väntat tillräckligt länge.
+ * @param {NabuWorkState} state
+ * @returns {boolean}
+ */
+export function maybe_reset_leaked_subagents(state) {
+    if (!state.notify_requested || state.pending_subagents === 0) {
+        return false;
+    }
+    if (state.open_todo_count > 0) {
+        return false;
+    }
+    const requested_at = state.notify_requested_at || state.last_activity_at;
+    if (Date.now() - requested_at < SUBAGENT_LEAK_MS) {
+        return false;
+    }
+    const subagent_after_notify = state.last_subagent_activity_at > requested_at;
+    if (subagent_after_notify && Date.now() - state.last_subagent_activity_at < SUBAGENT_LEAK_MS) {
+        return false;
+    }
+    state.pending_subagents = 0;
+    return true;
+}
+
+/**
  * @param {unknown} todos
  * @returns {number}
  */
@@ -173,12 +202,7 @@ export function count_open_todos(todos) {
 export function init_session_state(repo_root) {
     with_state_lock((state) => {
         maybe_reset_stale(state);
-        const has_pending = state.pending_subagents > 0 || state.open_todo_count > 0;
-        if (!has_pending) {
-            state.notify_requested = false;
-            state.delayed_flush_scheduled = false;
-        }
-        state.last_activity_at = Date.now();
+        maybe_reset_leaked_subagents(state);
     }, repo_root);
 }
 
@@ -187,8 +211,12 @@ export function init_session_state(repo_root) {
  */
 export function request_notify(repo_root) {
     with_state_lock((state) => {
+        const now = Date.now();
         state.notify_requested = true;
-        state.last_activity_at = Date.now();
+        if (!state.notify_requested_at) {
+            state.notify_requested_at = now;
+        }
+        state.last_activity_at = now;
     }, repo_root);
 }
 
@@ -197,8 +225,10 @@ export function request_notify(repo_root) {
  */
 export function subagent_start(repo_root) {
     with_state_lock((state) => {
+        const now = Date.now();
         state.pending_subagents += 1;
-        state.last_activity_at = Date.now();
+        state.last_activity_at = now;
+        state.last_subagent_activity_at = now;
     }, repo_root);
 }
 
@@ -207,8 +237,10 @@ export function subagent_start(repo_root) {
  */
 export function subagent_stop(repo_root) {
     with_state_lock((state) => {
+        const now = Date.now();
         state.pending_subagents = Math.max(0, state.pending_subagents - 1);
-        state.last_activity_at = Date.now();
+        state.last_activity_at = now;
+        state.last_subagent_activity_at = now;
     }, repo_root);
 }
 
@@ -231,37 +263,53 @@ export function sync_todos(todos, repo_root) {
  * @param {string} [repo_root]
  * @returns {FlushResult}
  */
+function should_schedule_delayed_flush(state) {
+    if (state.delayed_flush_scheduled) {
+        return false;
+    }
+    state.delayed_flush_scheduled = true;
+    return true;
+}
+
 export function try_flush(repo_root) {
     return /** @type {FlushResult} */ (with_state_lock((state) => {
         maybe_reset_stale(state);
+        maybe_reset_leaked_subagents(state);
 
         if (!state.notify_requested) {
             return { sent: false, reason: 'no_request' };
         }
         if (state.pending_subagents > 0) {
-            return { sent: false, reason: 'pending_subagents', count: state.pending_subagents };
+            return {
+                sent: false,
+                reason: 'pending_subagents',
+                count: state.pending_subagents,
+                schedule_delayed_flush: should_schedule_delayed_flush(state),
+            };
         }
         if (state.open_todo_count > 0) {
-            return { sent: false, reason: 'open_todos', count: state.open_todo_count };
+            return {
+                sent: false,
+                reason: 'open_todos',
+                count: state.open_todo_count,
+                schedule_delayed_flush: should_schedule_delayed_flush(state),
+            };
         }
 
-        const idle_ms = Date.now() - state.last_activity_at;
+        const debounce_base = state.notify_requested_at || state.last_activity_at;
+        const idle_ms = Date.now() - debounce_base;
         if (idle_ms < MIN_IDLE_MS) {
             const wait_ms = MIN_IDLE_MS - idle_ms;
-            let schedule_delayed_flush = false;
-            if (!state.delayed_flush_scheduled) {
-                state.delayed_flush_scheduled = true;
-                schedule_delayed_flush = true;
-            }
             return {
                 sent: false,
                 reason: 'debounce',
                 wait_ms,
-                schedule_delayed_flush,
+                schedule_delayed_flush: should_schedule_delayed_flush(state),
             };
         }
 
         state.notify_requested = false;
+        state.notify_requested_at = 0;
         state.delayed_flush_scheduled = false;
         return { sent: true };
     }, repo_root));
