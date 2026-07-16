@@ -5,7 +5,7 @@ import { consoleManager } from '../utils/console_manager.js';
 import { get_t_internal, show_global_message_internal } from './export_bootstrap.js';
 import {
     build_report_export_filename,
-    build_deficiency_types_appendix_pdf_filename,
+    build_appendix1_summary_pdf_filename,
     build_screenshots_appendix_pdf_filename,
 } from './export_report_filename.js';
 import {
@@ -15,7 +15,7 @@ import {
     build_report_pdf_html_document,
     type ExportReportHtmlT,
 } from './export_report_html_criterias.js';
-import { build_deficiency_types_appendix_pdf_document } from './export_report_html_deficiency_types.js';
+import { build_appendix1_summary_pdf_document } from './export_report_html_appendix1_summary.js';
 import { build_screenshots_appendix_pdf_html_chunks_within_limit } from './export_screenshots_appendix_pdf_encode.js';
 import { prepare_screenshots_appendix_media } from './export_screenshots_appendix_media.js';
 import { api_post_pdf } from '../api/client.js';
@@ -136,7 +136,7 @@ type AuditExportMeta = {
     updated_at?: string | null;
 };
 
-export async function build_deficiency_types_appendix_pdf_blob(
+export async function build_appendix1_summary_pdf_blob(
     current_audit: Record<string, unknown> | null | undefined
 ): Promise<{ blob: Blob; filename: string } | null> {
     const t = get_t_internal() as ExportReportHtmlT;
@@ -149,18 +149,25 @@ export async function build_deficiency_types_appendix_pdf_blob(
         return null;
     }
 
-    const html_content = build_deficiency_types_appendix_pdf_document(current_audit, t);
+    const html_content = build_appendix1_summary_pdf_document(current_audit, t);
     assert_pdf_export_html_within_limit(html_content, 'export_pdf_html_too_large');
     const pdf_blob = await api_post_pdf(`/audits/${encodeURIComponent(audit_id)}/export/pdf-requirements`, {
         htmlContent: html_content,
     });
 
-    const filename = build_deficiency_types_appendix_pdf_filename(
+    const filename = build_appendix1_summary_pdf_filename(
         current_audit as AuditExportMeta,
         t
     );
 
     return { blob: pdf_blob, filename };
+}
+
+/** @deprecated Använd build_appendix1_summary_pdf_blob */
+export async function build_deficiency_types_appendix_pdf_blob(
+    current_audit: Record<string, unknown> | null | undefined
+): Promise<{ blob: Blob; filename: string } | null> {
+    return build_appendix1_summary_pdf_blob(current_audit);
 }
 
 export async function build_screenshots_appendix_pdf_blob(
@@ -200,7 +207,7 @@ export async function build_screenshots_appendix_pdf_blob(
     return { blob: pdf_blob, filename, missing_filenames };
 }
 
-export async function export_to_pdf_deficiency_types(
+export async function export_to_pdf_appendix1_summary(
     current_audit: Record<string, unknown> | null | undefined
 ): Promise<void> {
     const t = get_t_internal() as ExportReportHtmlT;
@@ -215,10 +222,10 @@ export async function export_to_pdf_deficiency_types(
         return;
     }
 
-    consoleManager.log('[PDF Export] Starting export_to_pdf_deficiency_types');
+    consoleManager.log('[PDF Export] Starting export_to_pdf_appendix1_summary');
 
     try {
-        const result = await build_deficiency_types_appendix_pdf_blob(current_audit);
+        const result = await build_appendix1_summary_pdf_blob(current_audit);
         if (!result) {
             show_global_message_internal(t('error_exporting_pdf'), 'error');
             return;
@@ -227,8 +234,15 @@ export async function export_to_pdf_deficiency_types(
         trigger_browser_blob_download(result.blob, result.filename);
         show_global_message_internal(t('audit_saved_as_file', { filename: result.filename }), 'success');
     } catch (error: unknown) {
-        handle_pdf_export_error(error, t, 'export_pdf_html_too_large', 'Error exporting deficiency types PDF:');
+        handle_pdf_export_error(error, t, 'export_pdf_html_too_large', 'Error exporting appendix1 summary PDF:');
     }
+}
+
+/** @deprecated Använd export_to_pdf_appendix1_summary */
+export async function export_to_pdf_deficiency_types(
+    current_audit: Record<string, unknown> | null | undefined
+): Promise<void> {
+    return export_to_pdf_appendix1_summary(current_audit);
 }
 
 export async function export_to_pdf_screenshots_appendix(

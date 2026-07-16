@@ -330,7 +330,8 @@ export const MetadataFormComponent = {
             goToListButtonText = null,
             showStartDate = false,
             showEndDate = false,
-            effectiveStartIso = null
+            effectiveStartIso = null,
+            hide_form_actions = false
         } = options;
 
         this.show_start_date_field = showStartDate === true;
@@ -432,36 +433,38 @@ export const MetadataFormComponent = {
             if (el) el.addEventListener('input', this.handle_autosave_input);
         });
 
-        const form_actions_wrapper = this.Helpers.create_element('div', { class_name: 'form-actions' });
+        if (!hide_form_actions) {
+            const form_actions_wrapper = this.Helpers.create_element('div', { class_name: 'form-actions' });
 
-        const submit_button = this.Helpers.create_element('button', {
-            class_name: ['button', 'button-primary'],
-            attributes: { type: 'submit' },
-            html_content: `<span>${submitButtonText}</span>` + (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('arrow_forward') : '')
-        });
-        form_actions_wrapper.appendChild(submit_button);
-
-        if (goToListButtonText && typeof this.on_go_to_list_callback === 'function') {
-            const go_to_list_button = this.Helpers.create_element('button', {
-                class_name: ['button', 'button-default'],
-                attributes: { type: 'button' },
-                text_content: goToListButtonText
+            const submit_button = this.Helpers.create_element('button', {
+                class_name: ['button', 'button-primary'],
+                attributes: { type: 'submit' },
+                html_content: `<span>${submitButtonText}</span>` + (this.Helpers.get_icon_svg ? this.Helpers.get_icon_svg('arrow_forward') : '')
             });
-            go_to_list_button.addEventListener('click', () => this.handle_go_to_list_click());
-            form_actions_wrapper.appendChild(go_to_list_button);
-        }
+            form_actions_wrapper.appendChild(submit_button);
 
-        if (cancelButtonText && typeof this.on_cancel_callback === 'function') {
-            const cancel_button = this.Helpers.create_element('button', {
-                class_name: ['button', 'button-default'],
-                attributes: { type: 'button' },
-                text_content: cancelButtonText
-            });
-            cancel_button.addEventListener('click', () => this.handle_cancel_click());
-            form_actions_wrapper.appendChild(cancel_button);
-        }
+            if (goToListButtonText && typeof this.on_go_to_list_callback === 'function') {
+                const go_to_list_button = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-default'],
+                    attributes: { type: 'button' },
+                    text_content: goToListButtonText
+                });
+                go_to_list_button.addEventListener('click', () => this.handle_go_to_list_click());
+                form_actions_wrapper.appendChild(go_to_list_button);
+            }
 
-        this.form_element_ref.appendChild(form_actions_wrapper);
+            if (cancelButtonText && typeof this.on_cancel_callback === 'function') {
+                const cancel_button = this.Helpers.create_element('button', {
+                    class_name: ['button', 'button-default'],
+                    attributes: { type: 'button' },
+                    text_content: cancelButtonText
+                });
+                cancel_button.addEventListener('click', () => this.handle_cancel_click());
+                form_actions_wrapper.appendChild(cancel_button);
+            }
+
+            this.form_element_ref.appendChild(form_actions_wrapper);
+        }
         form_wrapper.appendChild(this.form_element_ref);
         this.root.appendChild(form_wrapper);
     },

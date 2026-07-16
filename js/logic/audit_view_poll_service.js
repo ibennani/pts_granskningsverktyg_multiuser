@@ -23,6 +23,7 @@ const AUDIT_VIEWS = new Set([
     'audit_problems',
     'metadata',
     'edit_metadata',
+    'audit_settings',
     'sample_management',
     'sample_form',
     'audit_actions',

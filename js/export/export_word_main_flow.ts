@@ -49,6 +49,6 @@ export async function export_to_word_samples (current_audit: any) {
     return await export_to_word_wrapper(current_audit, 'samples');
 }
 
-export { export_to_word_deficiency_types } from './export_word_deficiency_types.js';
+export { export_to_word_appendix1_summary, export_to_word_deficiency_types } from './export_word_appendix1_summary.js';
 export { export_to_word_screenshots_appendix } from './export_word_screenshots_appendix.js';
 export { export_observation_texts_word } from './export_observation_texts_word.js';

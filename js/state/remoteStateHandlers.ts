@@ -10,6 +10,7 @@ import {
     traverse_all_requirement_results
 } from '../utils/traverse_audit_data.js';
 import { ensure_samples_attached_media_shape } from '../logic/sample_attached_media_normalize.js';
+import { with_initialized_appendix1_summary_metadata, normalize_rulefile_appendix1 } from '../logic/appendix1_summary_text.js';
 import type { RequirementResultNode } from '../utils/traverse_audit_data.js';
 
 export function reduce_initialize_new_audit (_current_state: any, action: any) {
@@ -41,10 +42,11 @@ export function reduce_discard_prepared_audit (current_state: any, _action: any)
 }
 
 export function reduce_initialize_rulefile_editing (_current_state: any, action: any) {
+    const normalized_content = normalize_rulefile_appendix1(action.payload.ruleFileContent);
     return {
         ...initial_state,
         saveFileVersion: APP_STATE_VERSION,
-        ruleFileContent: action.payload.ruleFileContent,
+        ruleFileContent: normalized_content,
         ruleFileIsPublished: action.payload.ruleFileIsPublished ?? false,
         uiSettings: JSON.parse(JSON.stringify(initial_state.uiSettings)),
         auditStatus: 'rulefile_editing',
@@ -133,7 +135,7 @@ export function reduce_load_audit_from_file (current_state: any, action: any) {
                 loaded_final = { ...loaded_final, auditLastUpdatedAtFrozen: frozen };
             }
         }
-        return loaded_final;
+        return with_initialized_appendix1_summary_metadata(loaded_final);
     }
     if (window.ConsoleManager?.warn) window.ConsoleManager.warn('[State] LOAD_AUDIT_FROM_FILE: Invalid payload.', action.payload);
     return current_state;

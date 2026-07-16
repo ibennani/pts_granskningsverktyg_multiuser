@@ -33,6 +33,7 @@ export function update_side_menu(view_name, params = {}, deps) {
         (
             view_name === 'metadata' ||
             view_name === 'edit_metadata' ||
+            view_name === 'audit_settings' ||
             view_name === 'sample_management' ||
             view_name === 'sample_form' ||
             view_name === 'confirm_sample_edit'

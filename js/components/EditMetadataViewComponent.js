@@ -305,6 +305,11 @@ export class EditMetadataViewComponent {
         const current_state = this.getState();
         const is_new_audit = current_state.auditStatus === 'not_started';
 
+        if (!is_new_audit) {
+            this.router('audit_settings', { section: 'information', returnTo: 'settings' });
+            return;
+        }
+
         // För nya granskningar ska vi aldrig automatiskt kasta användaren tillbaka till översikten
         // om något är inkonsekvent – metadata-vyn är själva startpunkten.
         // För pågående/avslutade granskningar utan regelfil-innehåll skickar vi fortfarande tillbaka till start.

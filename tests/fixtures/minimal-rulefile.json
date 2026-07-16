@@ -17,6 +17,9 @@
       "sampleTypes": ["Webbsida"]
     }
   },
+  "appendix1": {
+    "summaryText": ""
+  },
   "requirements": {
     "req1": {
       "id": "req1",

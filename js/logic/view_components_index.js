@@ -2,6 +2,7 @@
  * Registrerar vykomponenter (singletons) och mappar vy-namn till rätt instans.
  * Används av view_render.js — samma instanser som tidigare i main.js.
  */
+import { AuditSettingsViewComponent } from '../components/AuditSettingsViewComponent.js';
 import { EditMetadataViewComponent } from '../components/EditMetadataViewComponent.js';
 import { SampleManagementViewComponent } from '../components/SampleManagementViewComponent.js';
 import { SampleFormViewComponent } from '../components/SampleFormViewComponent.js';
@@ -49,6 +50,7 @@ const auditProblemsViewComponent = new AuditProblemsViewComponent();
 const sampleManagementViewComponent = new SampleManagementViewComponent();
 const sampleFormViewComponent = new SampleFormViewComponent();
 const editMetadataViewComponent = new EditMetadataViewComponent();
+const auditSettingsViewComponent = new AuditSettingsViewComponent();
 const requirementListComponent = new RequirementListComponent();
 const requirementAuditComponent = new RequirementAuditComponent();
 const confirmUpdatesViewComponent = new ConfirmUpdatesViewComponent();
@@ -87,6 +89,7 @@ export function get_component_class(view_name) {
         case 'login': return loginViewComponent;
         case 'metadata': return editMetadataViewComponent;
         case 'edit_metadata': return editMetadataViewComponent;
+        case 'audit_settings': return auditSettingsViewComponent;
         case 'sample_management': return sampleManagementViewComponent;
         case 'sample_form': return sampleFormViewComponent;
         case 'confirm_sample_edit': return confirmSampleEditViewComponent;

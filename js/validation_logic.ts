@@ -82,6 +82,16 @@ export function validate_rule_file_json(json_object: unknown, options: ValidateO
         }
     }
 
+    if (root.appendix1) {
+        if (typeof root.appendix1 !== 'object' || root.appendix1 === null) {
+            return { isValid: false, message: t('rule_file_err_appendix1_object') };
+        }
+        const appendix1 = root.appendix1 as Record<string, unknown>;
+        if (appendix1.summaryText !== undefined && typeof appendix1.summaryText !== 'string') {
+            return { isValid: false, message: t('rule_file_err_appendix1_summary_text_string') };
+        }
+    }
+
     if (root.reportTemplate) {
         if (typeof root.reportTemplate !== 'object') {
             return { isValid: false, message: t('rule_file_err_report_template_object') };

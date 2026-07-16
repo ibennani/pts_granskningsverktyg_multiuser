@@ -45,7 +45,8 @@ export function get_section_config(section_id, t) {
             id: 'report_template',
             title: t('rulefile_section_report_template_title'),
             editRoute: 'rulefile_sections',
-            editSection: 'report_template'
+            editSection: 'report_template',
+            isEditable: true
         },
         info_blocks_order: {
             id: 'info_blocks_order',

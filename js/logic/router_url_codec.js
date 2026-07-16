@@ -31,6 +31,7 @@ const CANONICAL_VIEW_TO_COMPACT = Object.freeze({
     confirm_sample_edit: 'ce',
     metadata: 'md',
     edit_metadata: 'em',
+    audit_settings: 'as',
     backup_detail: 'bd',
     backup_rulefile_detail: 'br',
     backup_settings: 'ws',

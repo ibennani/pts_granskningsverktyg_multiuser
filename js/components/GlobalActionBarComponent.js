@@ -273,7 +273,7 @@ export class GlobalActionBarComponent {
       'rulefile_sections', 'rulefile_requirements', 'rulefile_edit_requirement',
       'rulefile_add_requirement', 'rulefile_view_requirement', 'rulefile_metadata_edit',
       'rulefile_sections_edit_general', 'rulefile_sections_edit_page_types',
-      'edit_rulefile_main', 'audit_overview', 'metadata', 'edit_metadata',
+      'edit_rulefile_main', 'audit_overview', 'metadata', 'edit_metadata', 'audit_settings',
       'sample_management', 'sample_form', 'requirement_list', 'requirement_audit',
       'audit_actions', 'all_requirements', 'audit_images', 'audit_problems',
       'confirm_sample_edit', 'final_confirm_updates', 'update_rulefile',

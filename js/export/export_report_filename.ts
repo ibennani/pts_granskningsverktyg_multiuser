@@ -38,6 +38,39 @@ export function get_audit_export_filename_datetime_segment(): string {
     return get_download_filename_datetime(null);
 }
 
+function build_appendix1_summary_filename(
+    current_audit: {
+        auditMetadata?: { caseNumber?: string; actorName?: string };
+        updated_at?: string | null;
+    },
+    extension: 'docx' | 'pdf',
+    t: ExportReportFilenameT
+): string {
+    const base = build_report_export_filename(current_audit, true, extension, t);
+    return base.replace(new RegExp(`\\.${extension}$`, 'i'), `_bilaga_1_sammanfattning.${extension}`);
+}
+
+export function build_appendix1_summary_pdf_filename(
+    current_audit: {
+        auditMetadata?: { caseNumber?: string; actorName?: string };
+        updated_at?: string | null;
+    },
+    t: ExportReportFilenameT
+): string {
+    return build_appendix1_summary_filename(current_audit, 'pdf', t);
+}
+
+export function build_appendix1_summary_word_filename(
+    current_audit: {
+        auditMetadata?: { caseNumber?: string; actorName?: string };
+        updated_at?: string | null;
+    },
+    t: ExportReportFilenameT
+): string {
+    return build_appendix1_summary_filename(current_audit, 'docx', t);
+}
+
+/** @deprecated Använd build_appendix1_summary_pdf_filename */
 export function build_deficiency_types_appendix_pdf_filename(
     current_audit: {
         auditMetadata?: { caseNumber?: string; actorName?: string };
@@ -45,9 +78,10 @@ export function build_deficiency_types_appendix_pdf_filename(
     },
     t: ExportReportFilenameT
 ): string {
-    return build_deficiency_types_appendix_filename(current_audit, 'pdf', t);
+    return build_appendix1_summary_pdf_filename(current_audit, t);
 }
 
+/** @deprecated Använd build_appendix1_summary_word_filename */
 export function build_deficiency_types_appendix_word_filename(
     current_audit: {
         auditMetadata?: { caseNumber?: string; actorName?: string };
@@ -55,7 +89,7 @@ export function build_deficiency_types_appendix_word_filename(
     },
     t: ExportReportFilenameT
 ): string {
-    return build_deficiency_types_appendix_filename(current_audit, 'docx', t);
+    return build_appendix1_summary_word_filename(current_audit, t);
 }
 
 function build_deficiency_types_appendix_filename(
@@ -66,8 +100,7 @@ function build_deficiency_types_appendix_filename(
     extension: 'docx' | 'pdf',
     t: ExportReportFilenameT
 ): string {
-    const base = build_report_export_filename(current_audit, true, extension, t);
-    return base.replace(new RegExp(`\\.${extension}$`, 'i'), `_bilaga_1_bristtyper.${extension}`);
+    return build_appendix1_summary_filename(current_audit, extension, t);
 }
 
 export function build_observation_texts_word_filename(

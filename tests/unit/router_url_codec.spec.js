@@ -14,6 +14,11 @@ describe('router_url_codec', () => {
         expect(expand_view_slug_from_hash('ra')).toBe('requirement_audit');
         expect(expand_view_slug_from_hash('ov')).toBe('audit_overview');
         expect(expand_view_slug_from_hash('audit')).toBe('audit');
+        expect(expand_view_slug_from_hash('as')).toBe('audit_settings');
+    });
+
+    test('build_compact_hash_fragment stöder audit_settings section', () => {
+        expect(build_compact_hash_fragment('audit_settings', { section: 'summary' })).toBe('as?section=summary');
     });
 
     test('normalize_params_from_hash_query expanderar a, s, r', () => {

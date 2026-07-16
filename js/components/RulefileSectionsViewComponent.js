@@ -26,7 +26,8 @@ import {
     render_rulefile_general_edit_form,
     render_rulefile_page_types_edit_form,
     render_rulefile_content_types_edit_form,
-    render_rulefile_info_blocks_edit_form
+    render_rulefile_info_blocks_edit_form,
+    render_rulefile_report_template_edit_form
 } from './rulefile_sections/rulefile_sections_edit_forms.js';
 import './rulefile_sections_view.css';
 
@@ -34,7 +35,8 @@ let _last_section_id = null;
 let _last_is_editing = null;
 
 export class RulefileSectionsViewComponent {
-    constructor() {        this.root = null;
+    constructor() {
+        this.root = null;
         this.deps = null;
         this.router = null;
         this.getState = null;
@@ -183,6 +185,14 @@ export class RulefileSectionsViewComponent {
         );
     }
 
+    async _render_report_template_edit_form(container, _ruleFileContent) {
+        return render_rulefile_report_template_edit_form(
+            { deps: this.deps, view: this },
+            container,
+            _ruleFileContent
+        );
+    }
+
     async _render_info_blocks_edit_form(container, _metadata) {
         return render_rulefile_info_blocks_edit_form(
             { deps: this.deps, view: this },
@@ -225,7 +235,7 @@ export class RulefileSectionsViewComponent {
         _last_section_id = section_id;
         _last_is_editing = is_editing;
 
-        const editable_sections = ['general', 'page_types', 'content_types', 'info_blocks_order'];
+        const editable_sections = ['general', 'page_types', 'content_types', 'info_blocks_order', 'report_template'];
         const is_switching_view_edit = editable_sections.includes(section_id) &&
             prev_section === section_id &&
             prev_editing !== is_editing &&
@@ -272,7 +282,7 @@ export class RulefileSectionsViewComponent {
         let section_content;
         let header_section_config;
         const section_heading_id = `rulefile-section-${section_id}-heading`;
-        if (is_editing && (section_id === 'general' || section_id === 'page_types' || section_id === 'content_types' || section_id === 'info_blocks_order')) {
+        if (is_editing && (section_id === 'general' || section_id === 'page_types' || section_id === 'content_types' || section_id === 'info_blocks_order' || section_id === 'report_template')) {
             header_section_config = this._get_section_config(section_id);
             right_wrapper.appendChild(this._create_header(header_section_config, is_editing));
             const edit_form_container = this.Helpers.create_element('div', { class_name: 'rulefile-section-edit-form-container' });
@@ -280,6 +290,7 @@ export class RulefileSectionsViewComponent {
             else if (section_id === 'page_types') await this._render_page_types_edit_form(edit_form_container, metadata);
             else if (section_id === 'content_types') await this._render_content_types_edit_form(edit_form_container, metadata);
             else if (section_id === 'info_blocks_order') await this._render_info_blocks_edit_form(edit_form_container, metadata);
+            else if (section_id === 'report_template') await this._render_report_template_edit_form(edit_form_container, state.ruleFileContent);
             const edit_section = this.Helpers.create_element('section', {
                 class_name: 'rulefile-section-content',
                 attributes: { 'aria-labelledby': section_heading_id }
@@ -307,7 +318,7 @@ export class RulefileSectionsViewComponent {
                     break;
                 case 'report_template':
                     header_section_config = this._get_section_config(section_id);
-                    section_content = this._render_coming_soon_section();
+                    section_content = this._render_report_template_section(state.ruleFileContent);
                     break;
                 case 'info_blocks_order':
                     header_section_config = this._get_section_config(section_id);

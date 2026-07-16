@@ -193,6 +193,15 @@ export function get_page_title_prefix(
                 case 'edit_metadata':
                     title_prefix = t('edit_audit_metadata_title');
                     break;
+                case 'audit_settings':
+                    if (params?.section === 'information') {
+                        title_prefix = t('audit_settings_nav_information');
+                    } else if (params?.section === 'summary') {
+                        title_prefix = t('audit_settings_appendix1_heading');
+                    } else {
+                        title_prefix = t('audit_settings_title');
+                    }
+                    break;
                 case 'sample_management':
                     title_prefix = t('manage_samples_title');
                     break;

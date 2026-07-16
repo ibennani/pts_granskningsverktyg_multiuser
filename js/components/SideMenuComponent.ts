@@ -273,6 +273,9 @@ export class SideMenuComponent {
         if (is_active && view_name === 'rulefile_sections' && params.section) {
             is_active = current_params.section === params.section;
         }
+        if (is_active && view_name === 'audit_settings' && params.section) {
+            is_active = current_params.section === params.section;
+        }
 
         const base_path = (window.location && window.location.pathname)
             ? window.location.pathname.split('?')[0].split('#')[0]
@@ -439,6 +442,7 @@ export class SideMenuComponent {
                     { label: t('left_menu_images_with_count', { count: media_count }), view_name: 'audit_images', count_id: 'media_count', count_value: media_count },
                     { label: t('left_menu_problems_with_count', { count: problems_count }), view_name: 'audit_problems', count_id: 'problems_count', count_value: problems_count },
                     { label: t('left_menu_actions'), view_name: 'audit_actions' },
+                    { label: t('left_menu_audit_settings'), view_name: 'audit_settings' },
                     { label: this.get_view_heading_label('start'), view_name: 'start', back_to_start: true }
                 ]
             };

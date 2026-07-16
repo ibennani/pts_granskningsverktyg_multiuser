@@ -94,6 +94,22 @@ export function create_rulefile_section_header(deps, section_config, is_editing 
         heading_row.appendChild(edit_button);
     }
 
+    if (can_edit && section_config.id === 'report_template' && !is_editing) {
+        const edit_button = Helpers.create_element('button', {
+            class_name: ['button', 'button-secondary', 'rulefile-sections-edit-button'],
+            attributes: {
+                type: 'button',
+                'aria-label': t('rulefile_sections_edit_report_template_aria')
+            },
+            html_content: `<span>${t('edit_button_label')}</span>` +
+                          (Helpers.get_icon_svg ? Helpers.get_icon_svg('edit') : '')
+        });
+        edit_button.addEventListener('click', () => {
+            deps.router('rulefile_sections', { section: 'report_template', edit: 'true' });
+        });
+        heading_row.appendChild(edit_button);
+    }
+
     header_wrapper.appendChild(heading_row);
 
     if (section_config.id === 'content_types' && is_editing) {

@@ -211,6 +211,13 @@ export function render_rulefile_content_types_section(ctx, metadata) {
 }
 
 /**
+ * @fileoverview Renderar Rapportmall-sektionen (Bilaga 1-standardtext).
+ */
+import { render_markdown_to_html } from '../../export/export_html_build_primitives.js';
+import { read_rulefile_appendix1_summary_text } from '../../logic/appendix1_summary_text.js';
+import '../../components/markdown_preview_editor.css';
+
+/**
  * @param {{ Helpers: object, Translation: object }} ctx
  * @param {object} ruleFileContent
  */
@@ -219,48 +226,25 @@ export function render_rulefile_report_template_section(ctx, ruleFileContent) {
     const Helpers = ctx.Helpers;
     const section = Helpers.create_element('section', { class_name: 'rulefile-section-content' });
 
-    const report_template = ruleFileContent.reportTemplate || { sections: {} };
-    const sections = report_template.sections || {};
-    const metadata = ruleFileContent.metadata || {};
-    const block_order = metadata?.blockOrders?.reportSections || [];
+    section.appendChild(Helpers.create_element('p', {
+        class_name: 'view-intro-text',
+        text_content: t('rulefile_appendix1_summary_intro'),
+    }));
 
-    if (Object.keys(sections).length === 0) {
-        section.appendChild(Helpers.create_element('p', {
-            class_name: 'metadata-empty',
-            text_content: t('rulefile_metadata_empty_value')
-        }));
+    const summary_text = read_rulefile_appendix1_summary_text(ruleFileContent);
+    const preview = Helpers.create_element('div', {
+        class_name: ['markdown-content', 'rulefile-appendix1-preview'],
+    });
+    const html = render_markdown_to_html(summary_text);
+    if (html.trim()) {
+        preview.innerHTML = html;
     } else {
-        const ordered_section_ids = [...block_order];
-        const extra_section_ids = Object.keys(sections).filter(id => !ordered_section_ids.includes(id));
-        ordered_section_ids.push(...extra_section_ids);
-
-        const sections_list = Helpers.create_element('div', { class_name: 'report-sections-list' });
-        ordered_section_ids.forEach(section_id => {
-            const section_data = sections[section_id];
-            if (!section_data) return;
-
-            const section_card = Helpers.create_element('article', { class_name: 'metadata-card' });
-            const header = Helpers.create_element('div', { class_name: 'report-section-header' });
-            header.appendChild(Helpers.create_element('h2', { text_content: section_data.name || section_id }));
-            if (section_data.required) {
-                const required_tag = Helpers.create_element('span', {
-                    class_name: 'metadata-tag',
-                    text_content: t('report_section_required')
-                });
-                header.appendChild(required_tag);
-            }
-            section_card.appendChild(header);
-            if (section_data.content) {
-                section_card.appendChild(Helpers.create_element('div', {
-                    class_name: 'report-section-content',
-                    text_content: section_data.content
-                }));
-            }
-            sections_list.appendChild(section_card);
-        });
-        section.appendChild(sections_list);
+        preview.appendChild(Helpers.create_element('p', {
+            class_name: 'metadata-empty',
+            text_content: t('markdown_preview_editor_empty'),
+        }));
     }
-
+    section.appendChild(preview);
     return section;
 }
 

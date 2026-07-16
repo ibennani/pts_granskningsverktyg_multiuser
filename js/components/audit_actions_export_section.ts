@@ -106,26 +106,31 @@ function populate_audit_actions_export_list(view, state, t, export_actions) {
         }));
     }
 
-    if (view.ExportLogic?.export_to_word_deficiency_types || view.ExportLogic?.export_to_pdf_deficiency_types) {
+    if (
+        view.ExportLogic?.export_to_word_appendix1_summary
+        || view.ExportLogic?.export_to_word_deficiency_types
+        || view.ExportLogic?.export_to_pdf_appendix1_summary
+        || view.ExportLogic?.export_to_pdf_deficiency_types
+    ) {
         export_actions.appendChild(view.create_export_item_with_buttons({
             buttons: [
-                ...(view.ExportLogic?.export_to_word_deficiency_types
+                ...(view.ExportLogic?.export_to_word_appendix1_summary || view.ExportLogic?.export_to_word_deficiency_types
                     ? [{
-                        label: t('export_word_deficiency_types_button'),
+                        label: t('export_word_appendix1_summary_button'),
                         on_click: view.handle_export_word_deficiency_types,
-                        id_suffix: 'export-word-deficiency-types',
+                        id_suffix: 'export-word-appendix1-summary',
                     }]
                     : []),
-                ...(view.ExportLogic?.export_to_pdf_deficiency_types
+                ...(view.ExportLogic?.export_to_pdf_appendix1_summary || view.ExportLogic?.export_to_pdf_deficiency_types
                     ? [{
-                        label: t('export_pdf_deficiency_types_button'),
+                        label: t('export_pdf_appendix1_summary_button'),
                         on_click: view.handle_export_pdf_deficiency_types,
-                        id_suffix: 'export-pdf-deficiency-types',
+                        id_suffix: 'export-pdf-appendix1-summary',
                     }]
                     : []),
             ],
-            description: t('audit_actions_export_deficiency_types_description'),
-            desc_id_suffix: 'export-deficiency-types',
+            description: t('audit_actions_export_appendix1_summary_description'),
+            desc_id_suffix: 'export-appendix1-summary',
         }));
     }
 

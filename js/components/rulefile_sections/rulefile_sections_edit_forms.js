@@ -137,3 +137,22 @@ export async function render_rulefile_info_blocks_edit_form(ctx, container, _met
 
     view.info_blocks_edit_component = EditInfoBlocksSectionComponent;
 }
+
+/**
+ * @param {{ deps: object, view: object }} ctx
+ * @param {HTMLElement} container
+ * @param {object} ruleFileContent
+ */
+export async function render_rulefile_report_template_edit_form(ctx, container, ruleFileContent) {
+    const { deps, view } = ctx;
+
+    if (view.report_template_edit_component && container.children.length > 0) {
+        return;
+    }
+
+    const { EditReportTemplateAppendix1Component } = await import('./EditReportTemplateAppendix1Component.js');
+    const comp = new EditReportTemplateAppendix1Component();
+    await comp.init({ root: container, deps });
+    comp.render();
+    view.report_template_edit_component = comp;
+}

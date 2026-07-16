@@ -24,6 +24,7 @@ function build_translation() {
         left_menu_images_with_count: 'Bilder ({count})',
         left_menu_problems_with_count: 'Problem ({count})',
         left_menu_actions: 'Åtgärder',
+        left_menu_audit_settings: 'Inställningar',
         audit_title_audits: 'Hantera granskningar',
         menu_link_logout: 'Logga ut',
     };
@@ -99,8 +100,99 @@ describe('SideMenuComponent snapshot', () => {
         const texts = [...root.querySelectorAll('a.side-menu__link')].map((a) => a.textContent.trim());
         expect(texts.some((t) => t.includes('Översikt'))).toBe(true);
         expect(texts.some((t) => t.includes('Granskningsdelar'))).toBe(true);
+        expect(texts.some((t) => t.includes('Inställningar'))).toBe(true);
         expect(texts.some((t) => t.includes('Logga ut'))).toBe(true);
 
         expect(root.innerHTML).toMatchSnapshot();
+    });
+
+    test('visar normal granskningsmeny på audit_settings med section', async () => {
+        const HelpersNs = await import('../../../js/utils/helpers.js');
+        const Helpers = {
+            ...HelpersNs,
+            load_css: jest.fn().mockResolvedValue(undefined),
+        };
+
+        const { SideMenuComponent } = await import('../../../js/components/SideMenuComponent.js');
+
+        const mock_state = {
+            auditStatus: 'in_progress',
+            ruleFileContent: fixture_rule,
+            samples: [{ id: 's1', description: 'A', selectedContentTypes: [], requirementResults: {} }],
+        };
+
+        const root = document.createElement('div');
+        document.body.appendChild(root);
+
+        const menu = new SideMenuComponent();
+        await menu.init({
+            root,
+            deps: {
+                router: jest.fn(),
+                getState: () => mock_state,
+                subscribe: (fn) => () => {},
+                Translation: build_translation(),
+                Helpers,
+                AuditLogic,
+                clear_auth_token: jest.fn(),
+            },
+        });
+        window.location.hash = '#as?section=information';
+        menu.set_current_view('audit_settings', { section: 'information' });
+        menu.render();
+
+        const texts = [...root.querySelectorAll('a.side-menu__link')].map((a) => a.textContent.trim());
+        expect(texts.some((t) => t.includes('Översikt'))).toBe(true);
+        expect(texts.some((t) => t.includes('Inställningar'))).toBe(true);
+        expect(texts.some((t) => t.includes('Granskningsöversikten'))).toBe(false);
+        expect(texts.some((t) => t.includes('Sammanfattningen'))).toBe(false);
+
+        const settings_link = [...root.querySelectorAll('a.side-menu__link')].find((a) =>
+            a.textContent.trim().includes('Inställningar')
+        );
+        expect(settings_link?.classList.contains('active')).toBe(true);
+        expect(settings_link?.getAttribute('aria-current')).toBe('page');
+    });
+
+    test('Inställningar är aktiv på audit_settings hub utan section', async () => {
+        const HelpersNs = await import('../../../js/utils/helpers.js');
+        const Helpers = {
+            ...HelpersNs,
+            load_css: jest.fn().mockResolvedValue(undefined),
+        };
+
+        const { SideMenuComponent } = await import('../../../js/components/SideMenuComponent.js');
+
+        const mock_state = {
+            auditStatus: 'in_progress',
+            ruleFileContent: fixture_rule,
+            samples: [{ id: 's1', description: 'A', selectedContentTypes: [], requirementResults: {} }],
+        };
+
+        const root = document.createElement('div');
+        document.body.appendChild(root);
+
+        const menu = new SideMenuComponent();
+        await menu.init({
+            root,
+            deps: {
+                router: jest.fn(),
+                getState: () => mock_state,
+                subscribe: (fn) => () => {},
+                Translation: build_translation(),
+                Helpers,
+                AuditLogic,
+                clear_auth_token: jest.fn(),
+            },
+        });
+        window.location.hash = '#as';
+        menu.set_current_view('audit_settings', {});
+        menu.render();
+
+        const settings_link = [...root.querySelectorAll('a.side-menu__link')].find((a) =>
+            a.textContent.trim().includes('Inställningar')
+        );
+        expect(settings_link?.classList.contains('active')).toBe(true);
+        expect(settings_link?.getAttribute('aria-current')).toBe('page');
     });
 });
