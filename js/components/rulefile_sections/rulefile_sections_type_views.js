@@ -8,6 +8,9 @@ import {
     resolve_page_types,
     resolve_sample_vocab
 } from '../../../shared/rulefile/rulefile_metadata_vocabularies.js';
+import { read_rulefile_appendix1_sections } from '../../logic/appendix1_sections.js';
+import { render_appendix1_summary_editor_page } from '../../utils/appendix1_summary_editor_render.js';
+import '../../components/markdown_preview_editor.css';
 
 /**
  * @param {{ info_blocks_edit_component?: { flush_to_state?: function } }} ctx
@@ -211,40 +214,36 @@ export function render_rulefile_content_types_section(ctx, metadata) {
 }
 
 /**
- * @fileoverview Renderar Rapportmall-sektionen (Bilaga 1-standardtext).
- */
-import { render_markdown_to_html } from '../../export/export_html_build_primitives.js';
-import { read_rulefile_appendix1_summary_text } from '../../logic/appendix1_summary_text.js';
-import '../../components/markdown_preview_editor.css';
-
-/**
  * @param {{ Helpers: object, Translation: object }} ctx
  * @param {object} ruleFileContent
  */
 export function render_rulefile_report_template_section(ctx, ruleFileContent) {
-    const t = ctx.Translation.t;
     const Helpers = ctx.Helpers;
     const section = Helpers.create_element('section', { class_name: 'rulefile-section-content' });
+    const introduction_text =
+        read_rulefile_appendix1_sections(ruleFileContent).introduction?.content ?? '';
 
-    section.appendChild(Helpers.create_element('p', {
-        class_name: 'view-intro-text',
-        text_content: t('rulefile_appendix1_summary_intro'),
-    }));
+    render_appendix1_summary_editor_page(
+        { Helpers: ctx.Helpers, Translation: ctx.Translation },
+        section,
+        {
+            heading_id: 'rulefile-appendix1-summary-heading',
+            heading_key: 'rulefile_appendix1_summary_heading',
+            intro_key: 'rulefile_appendix1_summary_intro',
+            label_key: 'rulefile_appendix1_summary_label',
+            textarea_id: 'rulefile-appendix1-summary-text-view',
+            initial_text: introduction_text,
+            readonly: true,
+            summary_host: {
+                is_editing: false,
+                working_text: introduction_text,
+                textarea_ref: null,
+                preview_container_ref: null,
+            },
+            on_save: () => {},
+        }
+    );
 
-    const summary_text = read_rulefile_appendix1_summary_text(ruleFileContent);
-    const preview = Helpers.create_element('div', {
-        class_name: ['markdown-content', 'rulefile-appendix1-preview'],
-    });
-    const html = render_markdown_to_html(summary_text);
-    if (html.trim()) {
-        preview.innerHTML = html;
-    } else {
-        preview.appendChild(Helpers.create_element('p', {
-            class_name: 'metadata-empty',
-            text_content: t('markdown_preview_editor_empty'),
-        }));
-    }
-    section.appendChild(preview);
     return section;
 }
 

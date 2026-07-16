@@ -1,0 +1,46 @@
+{
+  "coverImage": "default",
+  "sections": {
+    "introduction": {
+      "title": "1. Inledning",
+      "content": "Under perioden den {{startDate}}–{{endDate}} genomförde Post- och telestyrelsen (PTS) en granskning av e-handelstjänsten {{actorName}}. Granskningen genomfördes med stöd av lagen (2023:524) om vissa produkters och tjänsters tillgänglighet (LPTT) som ger PTS tillsynsansvar över e-handelstjänster.\n\nGranskningen omfattade totalt nio granskningsdelar av e-handelstjänstens innehåll och funktionalitet. Under granskningen noterades brister i de tillgänglighetskrav som följer av LPTT. I avsnittet Sammanfattning av granskningsresultatet finns en kortare sammanfattning av bristerna inom respektive tillgänglighetskrav. I granskningsprotokollet (bilaga 2) beskrivs varje enskild brist detaljerat."
+    },
+    "method": {
+      "title": "2. Metod",
+      "content": "Här beskrivs vilka lagkrav PTS utgår ifrån, vilket urval respektive avgränsning som har gjorts av granskningen av e-handelstjänsten samt tillvägagångssättet för granskningen."
+    },
+    "method_legal": {
+      "title": "2.1 Lagkrav",
+      "content": "Granskningen utgår från de tillgänglighetskrav som framgår i förordningen (2023:676) om vissa produkters och tjänsters tillgänglighet (FPTT) bilaga 2. Där framgår bland annat att webbplatser ska vara uppfattningsbara, hanterbara, begripliga och robusta.\n\nEN 301 549, Accessibility requirements for ICT products and services, är en europeisk standard med tillgänglighetskrav för produkter och tjänster inom informations- och kommunikationsteknik (IKT). Det pågår ett arbete för att harmonisera standarden mot Europaparlamentets och rådets direktiv (EU) 2019/882 av den 17 april 2019 om tillgänglighetskrav för produkter och tjänster (tillgänglighetsdirektivet).\n\nDå standarden EN 301 549 inte har harmoniserats mot tillgänglighetsdirektivet ännu har PTS hämtat vägledning ur Web Content Accessibility Guidelines (WCAG) 2.2 på nivå A och AA till stöd för tolkningen av tillgänglighetskraven. WCAG är en global standard som innehåller en uppsättning riktlinjer som syftar till att göra webbinnehåll mer tillgängligt för människor oavsett funktionsförmåga. Det är en internationellt erkänd standard som hjälper till att göra digitalt innehåll mer användbart, det vill säga uppfattningsbart, hanterbart, begripligt och robust. WCAG-riktlinjerna används för att bedöma vad som är tillgängligt på webben i enlighet med samma tillgänglighetskrav som framgår av FPTT bilaga 2 p. 2 och 3."
+    },
+    "method_scope": {
+      "title": "2.2 Avgränsning",
+      "content": "I den här granskningen används begreppet granskningsdel för att beskriva de webbsidor, delar av webbsidor eller funktioner på en webbsida som har granskats.\n\nPTS har avgränsat granskningen av tjänsten till att omfatta delar av webbplatsen. De granskade delarna är startsidan, en produktsida, sökfunktionen, allmänna villkor eller motsvarande dokument och information om e-handelstjänstens tillgänglighet.\n\nPTS har även avgränsat granskningen till att avse kontroll av krav på information och kontroll av funktionell utformning enligt FPTT bilaga 2 p. 2 respektive p. 3.\n\nDet innehåll på sidorna som är återkommande och förekommer vid minst två tillfällen har hanterats som en separat granskningsdel. Följande granskningsdelar har bedömts vara återkommande: Cookiebanner, sidhuvud, huvudmeny (vänster) och sidfot och feedback-dialog."
+    },
+    "method_approach": {
+      "title": "2.3 Granskningens tillvägagångssätt",
+      "format": "list",
+      "content": "- PTS har identifierat och säkerställt varje brist genom manuella kontroller. Utöver det har även automatiska tester använts.\n- Eftersom maskinläsbarhet är en teknisk förutsättning för hjälpmedel utgår kontrollen av tillgänglighetskraven från maskinläsbarhet där det är relevant.\n- Granskningen har också omfattat kontroll av kod, exempelvis HTML och CSS, i webbläsaren.\n- Granskningen har genomförts i flera vanliga webbläsare med stöd av insticksprogram och så kallade bookmarklets. Bookmarklets är egenutvecklade bokmärkesprogram skrivna med JavaScript som används för att automatisera vissa tester i webbläsaren.\n- Utgångsläget för granskningen har varit i datormiljö (desktop) med stor skärm om inget annat anges. När ”liten skärm” anges i granskningsprotokollet har kontrollen genomförts i mobilläge. Granskning med liten skärm har genomförts specifikt för att kontrollera tillgänglighetskrav/WCAG-kriterier som handlar om innehållets anpassning till olika skärmstorlekar (responsivitet). Granskning med liten skärm täcker in användare som interagerar med e-handelstjänster i mobila gränssnitt.\n- Huvudsakligen har Windows 11 samt webbläsarna Chrome och Edge i kombination med skärmläsaren JAWS använts.\n- Den hårdvara som har använts vid granskningen är Lenovo PC, och punktskriftsdisplay. Den mjukvara som har använts i datormiljö (desktop) är Windows 11 samt webbläsarna Chrome v149 och Edge v149.\n- Använda skärmläsare har varit JAWS och NVDA. Därutöver har vanligt förekommande insticksprogram för webbläsare och bookmarklets använts."
+    },
+    "results_intro": {
+      "title": "3. Sammanfattning av granskningsresultatet",
+      "content": "Detta avsnitt är uppdelat utifrån tillgänglighetskraven uppfattningsbar, hanterbar, begriplig och robust i FPTT bilaga 2 p. 2 och 3. För respektive tillgänglighetskrav ges en sammanfattning av de funna bristerna.\n\nI granskningsprotokollet (bilaga 2) beskrivs varje enskild brist detaljerat och kopplas till det WCAG-kriterium som motsvarar respektive tillgänglighetskrav. PTS anger inom vilken granskningsdel varje brist har observerats. Granskningsprotokollet är sök- och filtrerbart och anger ett nummer (brist-id) för varje brist samt en länk till det aktuella WCAG-kriteriet.\n\nHär följer en sammanfattande uppräkning av de olika typer av brister som PTS har noterat vid granskningen uppdelade per tillgänglighetskrav. I granskningsprotokollet kopplas bristtyperna (kolumnen Typ av brist) till de enskilda bristerna (brist-id och Observation)."
+    },
+    "results_perceivable": {
+      "title": "3.1 Uppfattningsbar – sammanfattning av brister",
+      "content": "PTS har funnit brister i hur e-handelstjänsten utformar och presenterar information och visuella komponenter. Bristerna påverkar bland annat maskinläsbarhet vilket gör att exempelvis hjälpmedel inte kan tolka innehållet korrekt. Det anges inte hur vanligt förekommande bristerna är."
+    },
+    "results_operable": {
+      "title": "3.2 Hanterbar - sammanfattning av brister",
+      "content": "PTS har funnit brister i hur e-handelstjänsten fungerar med tangentbord avseende exempelvis navigation och interaktion. Bristerna påverkar orientering, kontroll och användning av funktioner. Det anges inte hur vanligt förekommande bristerna är."
+    },
+    "results_understandable": {
+      "title": "3.3 Begriplig - sammanfattning av brister",
+      "content": "PTS har funnit brister i språklig uppmärkning samt i hur tjänsten namnger och presenterar innehåll och komponenter. Bristerna gör att innehållet blir svårare att tolka och att funktioner inte blir tydliga eller förutsägbara. Det anges inte hur vanligt förekommande bristerna är."
+    },
+    "results_robust": {
+      "title": "3.4 Robust - sammanfattning av brister",
+      "content": "PTS har funnit brister i hur tjänsten exponerar komponenters namn, roller, tillstånd och värden på ett maskinläsbart sätt. Bristerna gör exempelvis att hjälpmedel och olika användaragenters tolkning inte blir tillförlitlig. Det anges inte hur vanligt förekommande bristerna är."
+    }
+  }
+}

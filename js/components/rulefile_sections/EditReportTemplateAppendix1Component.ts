@@ -1,15 +1,15 @@
 /**
- * @fileoverview Redigerar Bilaga 1-standardtext i regelfilens Rapportmall-sektion.
+ * @fileoverview Redigerar Bilaga 1-standardtext (inledning) i regelfilens Rapportmall.
  */
 import {
-    build_markdown_preview_editor_ui,
-    type MarkdownPreviewEditorHost,
-} from '../../utils/markdown_preview_editor_ui.js';
-import {
     normalize_rulefile_appendix1,
-    read_rulefile_appendix1_summary_text,
-} from '../../logic/appendix1_summary_text.js';
+    read_rulefile_appendix1_sections,
+} from '../../logic/appendix1_sections.js';
 import { flush_rulefile_editing_sync_if_active } from '../../logic/server_sync.js';
+import {
+    render_appendix1_summary_editor_page,
+} from '../../utils/appendix1_summary_editor_render.js';
+import { type MarkdownPreviewEditorHost } from '../../utils/markdown_preview_editor_ui.js';
 
 type Deps = {
     router: (view: string, params?: Record<string, string>) => void;
@@ -18,10 +18,7 @@ type Deps = {
     StoreActionTypes: { UPDATE_RULEFILE_CONTENT: string };
     Translation: { t: (key: string) => string };
     Helpers: {
-        create_element: (
-            tag: string,
-            opts?: Record<string, unknown>
-        ) => HTMLElement;
+        create_element: (tag: string, opts?: Record<string, unknown>) => HTMLElement;
     };
     NotificationComponent: { show_global_message: (msg: string, type: string) => void };
 };
@@ -29,7 +26,7 @@ type Deps = {
 export class EditReportTemplateAppendix1Component {
     private root: HTMLElement | null = null;
     private deps: Deps | null = null;
-    private preview_host: MarkdownPreviewEditorHost = {
+    private summary_host: MarkdownPreviewEditorHost = {
         is_editing: false,
         working_text: '',
         textarea_ref: null,
@@ -41,28 +38,28 @@ export class EditReportTemplateAppendix1Component {
         this.deps = deps;
     }
 
-    private get_working_text(): string {
-        const state = this.deps?.getState();
-        const rule_file = state?.ruleFileContent as Record<string, unknown> | undefined;
-        return read_rulefile_appendix1_summary_text(rule_file);
+    private navigate_back_to_view(): void {
+        this.deps?.router('rulefile_sections', { section: 'report_template' });
     }
 
-    private async save_summary_text(text: string): Promise<void> {
+    private async save_introduction_content(content: string): Promise<void> {
         if (!this.deps) return;
         const state = this.deps.getState();
         const rule_file = (state.ruleFileContent as Record<string, unknown>) || {};
         const normalized = normalize_rulefile_appendix1(rule_file);
-        normalized.appendix1 = {
-            ...(normalized.appendix1 as Record<string, unknown>),
-            summaryText: text,
+        const appendix = normalized.appendix1 as Record<string, unknown>;
+        const sections = { ...(appendix.sections as Record<string, unknown>) };
+        const existing = read_rulefile_appendix1_sections(normalized);
+        sections.introduction = {
+            ...existing.introduction,
+            content,
         };
+        appendix.sections = sections;
+        normalized.appendix1 = appendix;
 
         await this.deps.dispatch({
             type: this.deps.StoreActionTypes.UPDATE_RULEFILE_CONTENT,
-            payload: {
-                ruleFileContent: normalized,
-                skip_render: true,
-            },
+            payload: { ruleFileContent: normalized, skip_render: true },
         });
 
         try {
@@ -79,48 +76,35 @@ export class EditReportTemplateAppendix1Component {
     render(): void {
         if (!this.root || !this.deps) return;
         this.root.innerHTML = '';
-        this.preview_host.working_text = this.get_working_text();
-        this.preview_host.is_editing = false;
 
-        const t = this.deps.Translation.t;
-        const intro = this.deps.Helpers.create_element('p', {
-            class_name: 'view-intro-text',
-            text_content: t('rulefile_appendix1_summary_intro'),
-        });
-        this.root.appendChild(intro);
+        const state = this.deps.getState();
+        const rule_file = state.ruleFileContent as Record<string, unknown> | undefined;
+        const introduction_text =
+            read_rulefile_appendix1_sections(rule_file).introduction?.content ?? '';
 
-        const page_header = this.deps.Helpers.create_element('div', {
-            class_name: 'markdown-preview-editor__page-header-row',
-        });
-        page_header.appendChild(
-            this.deps.Helpers.create_element('h2', {
-                attributes: { id: 'rulefile-appendix1-summary-heading' },
-                text_content: t('rulefile_appendix1_summary_heading'),
-            })
-        );
-        this.root.appendChild(page_header);
-
-        const editor = build_markdown_preview_editor_ui(
+        render_appendix1_summary_editor_page(
             { Helpers: this.deps.Helpers, Translation: this.deps.Translation },
-            this.preview_host,
+            this.root,
             {
+                heading_id: 'rulefile-appendix1-summary-heading',
+                heading_key: 'rulefile_appendix1_summary_heading',
+                intro_key: 'rulefile_appendix1_summary_intro',
                 label_key: 'rulefile_appendix1_summary_label',
                 textarea_id: 'rulefile-appendix1-summary-text',
-                initial_text: this.preview_host.working_text,
-                hide_heading: true,
-                external_edit_button_container: page_header,
-                on_save: async (text) => {
-                    await this.save_summary_text(text);
-                },
+                initial_text: introduction_text,
+                summary_host: this.summary_host,
+                back_button_key: 'rulefile_info_blocks_back_to_view',
+                on_save: (text) => this.save_introduction_content(text),
+                on_discard: () => this.navigate_back_to_view(),
+                on_back: () => this.navigate_back_to_view(),
             }
         );
-        this.root.appendChild(editor);
     }
 
     destroy(): void {
         this.root = null;
         this.deps = null;
-        this.preview_host = {
+        this.summary_host = {
             is_editing: false,
             working_text: '',
             textarea_ref: null,

@@ -8,6 +8,7 @@ import {
     reduce_initialize_new_audit,
     reduce_set_remote_audit_id
 } from '../../js/state/remoteStateHandlers.ts';
+import { get_default_appendix1_sections } from '../../js/logic/appendix1_sections.ts';
 
 describe('reduce_initialize_new_audit', () => {
     test('nollställer metadata utom inloggad granskare', () => {
@@ -28,15 +29,30 @@ describe('reduce_initialize_new_audit', () => {
         });
         expect(next.auditStatus).toBe('not_started');
         expect(next.freshNewAuditMetadata).toBe(true);
-        expect(next.auditMetadata).toEqual({
+        expect(next.auditMetadata).toMatchObject({
             caseNumber: '',
             actorName: '',
             actorLink: '',
             auditorName: 'Anna Granskare',
             caseHandler: '',
-            internalComment: ''
+            internalComment: '',
+            appendix1SectionOverrides: {},
         });
+        expect(typeof next.auditMetadata.appendix1SummaryText).toBe('string');
+        expect(next.auditMetadata.appendix1SummaryText.length).toBeGreaterThan(0);
         sessionStorage.removeItem('gv_current_user_name');
+    });
+
+    test('kopierar Bilaga 1-standardtext från regelfil vid ny granskning', () => {
+        const sections = get_default_appendix1_sections();
+        sections.introduction.content = 'Regelfilens inledning {{actorName}}';
+        const next = reduce_initialize_new_audit({}, {
+            payload: {
+                ruleFileContent: { appendix1: { sections } },
+            },
+        });
+        expect(next.auditMetadata.appendix1SummaryText).toBe('Regelfilens inledning {{actorName}}');
+        expect(next.auditMetadata.appendix1SectionOverrides).toEqual({});
     });
 });
 

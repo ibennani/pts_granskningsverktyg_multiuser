@@ -2,11 +2,9 @@
  * @fileoverview Renderhjälp för Inställningar-vyn (hub och undersidor).
  */
 import { MetadataFormComponent } from './MetadataFormComponent.js';
-import {
-    build_markdown_preview_editor_ui,
-    type MarkdownPreviewEditorHost,
-} from '../utils/markdown_preview_editor_ui.js';
-import { resolve_appendix1_summary_text } from '../logic/appendix1_summary_text.js';
+import { type MarkdownPreviewEditorHost } from '../utils/markdown_preview_editor_ui.js';
+import { resolve_appendix1_sections } from '../logic/appendix1_summary_text.js';
+import { render_appendix1_summary_editor_page } from '../utils/appendix1_summary_editor_render.js';
 
 export type AuditSettingsSection = '' | 'information' | 'summary';
 
@@ -203,57 +201,28 @@ export function render_audit_settings_summary_section(
         handlers: Pick<AuditSettingsFormHandlers, 'on_summary_save' | 'on_back'>;
     }
 ): void {
-    const { Helpers: helpers, Translation: { t } } = deps;
+    const { Helpers: helpers } = deps;
     const { state, readonly, summary_host, return_to, handlers } = options;
     const back_label_key = audit_settings_back_label_key(return_to);
 
-    const page_header = helpers.create_element('div', {
-        class_name: 'audit-settings__page-header-row',
-    });
-    page_header.appendChild(
-        helpers.create_element('h1', {
-            attributes: { id: 'audit-settings-appendix1-heading' },
-            text_content: t('audit_settings_appendix1_heading'),
-        })
-    );
-    plate.appendChild(page_header);
-
-    plate.appendChild(
-        helpers.create_element('p', {
-            class_name: 'view-intro-text',
-            text_content: t('audit_settings_summary_intro'),
-        })
-    );
-    plate.appendChild(
-        helpers.create_element('hr', {
-            class_name: 'audit-settings__section-divider',
-            attributes: { 'aria-hidden': 'true' },
-        })
-    );
-
-    summary_host.working_text = resolve_appendix1_summary_text(state);
-    summary_host.is_editing = false;
-
-    const summary_section = build_markdown_preview_editor_ui(
+    render_appendix1_summary_editor_page(
         { Helpers: helpers, Translation: deps.Translation },
-        summary_host,
+        plate,
         {
+            heading_id: 'audit-settings-appendix1-heading',
+            heading_key: 'audit_settings_appendix1_heading',
+            intro_key: 'audit_settings_summary_intro',
             label_key: 'audit_settings_appendix1_label',
             textarea_id: 'audit-settings-appendix1-summary-text',
-            initial_text: summary_host.working_text,
+            initial_text: resolve_appendix1_sections(state).introduction?.content ?? '',
             readonly,
-            hide_heading: true,
-            external_edit_button_container: readonly ? undefined : page_header,
-            on_save: async (text) => {
-                await handlers.on_summary_save(text);
-            },
+            summary_host,
+            back_button_key: back_label_key,
+            on_save: (text) => handlers.on_summary_save(text),
             on_discard: handlers.on_back,
             on_back: handlers.on_back,
-            back_button_key: back_label_key,
         }
     );
-    summary_section.classList.add('audit-settings__summary-section');
-    plate.appendChild(summary_section);
 }
 
 export function normalize_audit_settings_section(raw: unknown): AuditSettingsSection {

@@ -14,7 +14,7 @@ import { with_initialized_appendix1_summary_metadata, normalize_rulefile_appendi
 import type { RequirementResultNode } from '../utils/traverse_audit_data.js';
 
 export function reduce_initialize_new_audit (_current_state: any, action: any) {
-    return {
+    const base = {
         ...initial_state,
         saveFileVersion: APP_STATE_VERSION,
         ruleFileContent: action.payload.ruleFileContent,
@@ -30,6 +30,7 @@ export function reduce_initialize_new_audit (_current_state: any, action: any) {
         auditStatus: 'not_started',
         freshNewAuditMetadata: true
     };
+    return with_initialized_appendix1_summary_metadata(base);
 }
 
 export function reduce_discard_prepared_audit (current_state: any, _action: any) {
