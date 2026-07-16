@@ -1,7 +1,6 @@
 import { render_content_types_section_accordion } from './content_type_accordion.js';
 import { handle_sample_attach_media_click, render_sample_screenshot_section } from './sample_attach_media.js';
 import { sync_sample_auto_screenshot_state_from_data } from './sample_url_auto_screenshot.js';
-import { update_content_type_analyze_visibility } from './content_type_detection.js';
 import { create_sample_url_analyze_button } from './sample_url_analyze_status.js';
 import { resolve_content_types } from '../../../shared/rulefile/rulefile_metadata_vocabularies.js';
 
@@ -106,7 +105,6 @@ export function render_add_sample_form(component: any, sample_id_to_edit: string
     component.url_input = component.Helpers.create_element('input', { id: 'sampleUrlInput', class_name: 'form-control', attributes: { type: 'url' } });
     component.url_input.addEventListener('input', () => {
         component.handle_autosave_input();
-        update_content_type_analyze_visibility(component);
     });
     const url_analyze_parts = create_sample_url_analyze_button(component.Helpers, t);
     component.url_analyze_button_parts = url_analyze_parts;
@@ -137,7 +135,6 @@ export function render_add_sample_form(component: any, sample_id_to_edit: string
     );
     component.description_input.value = effective_sample_data?.description || "";
     component.url_input.value = effective_sample_data?.url || "";
-    update_content_type_analyze_visibility(component);
 
     // --- Content Types Section ---
     // Vid redigering kommer kryssrutorna från state/utkast i Redux. DraftManager.restoreIntoDom körs

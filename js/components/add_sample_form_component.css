@@ -337,14 +337,6 @@
     scroll-padding: var(--focus-clearance);
 }
 
-.content-type-analyze-toolbar {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-}
-
 .content-types-instruction-row {
     display: flex;
     flex-direction: column;

@@ -23,8 +23,8 @@ import {
     resolve_sample_vocab
 } from '../../shared/rulefile/rulefile_metadata_vocabularies.js';
 import { build_sample_url_screenshot_form_host, type SampleUrlScreenshotFormHostSource } from './add_sample_form/sample_url_screenshot_form_host.js';
-import { handle_analyze_page_content_click as run_analyze_page_content_click, update_content_type_analyze_visibility, type ContentTypeDetectionComponentLike } from './add_sample_form/content_type_detection.js';
 import { show_content_type_paste_analyze_modal } from './add_sample_form/content_type_paste_analyze_modal.js';
+import type { ContentTypeDetectionComponentLike } from './add_sample_form/content_type_detection.js';
 import { sync_to_server_now } from '../logic/server_sync.js';
 import { get_auth_token } from '../api/client.js';
 import { audit_status_blocks_sample_and_requirement_edits } from '../utils/audit_status_helpers.js';
@@ -88,11 +88,8 @@ export class AddSampleFormComponent {
     private show_back_to_samples_button: boolean;
     private content_type_selected_ids: Set<string>;
     private content_types_section_panel_inner: HTMLElement | null;
-    private content_type_analyze_btn: HTMLButtonElement | null;
     private content_type_paste_analyze_btn: HTMLButtonElement | null;
     private content_type_analyze_live_region: HTMLElement | null;
-    private content_type_detection_in_progress: boolean;
-    private content_type_detection_generation: number;
 
     constructor() {
         this.root = null;
@@ -140,11 +137,8 @@ export class AddSampleFormComponent {
         this.show_back_to_samples_button = false;
         this.content_type_selected_ids = new Set();
         this.content_types_section_panel_inner = null;
-        this.content_type_analyze_btn = null;
         this.content_type_paste_analyze_btn = null;
         this.content_type_analyze_live_region = null;
-        this.content_type_detection_in_progress = false;
-        this.content_type_detection_generation = 0;
     }
 
     init({ root, deps }: { root: HTMLElement; deps: any }) {
@@ -193,11 +187,8 @@ export class AddSampleFormComponent {
         this.show_back_to_samples_button = false;
         this.content_type_selected_ids = new Set();
         this.content_types_section_panel_inner = null;
-        this.content_type_analyze_btn = null;
         this.content_type_paste_analyze_btn = null;
         this.content_type_analyze_live_region = null;
-        this.content_type_detection_in_progress = false;
-        this.content_type_detection_generation = 0;
 
         this.handle_form_submit = this.handle_form_submit.bind(this);
         this.update_description_from_sample_type = this.update_description_from_sample_type.bind(this);
@@ -205,7 +196,6 @@ export class AddSampleFormComponent {
         this.handle_autosave_input = this.handle_autosave_input.bind(this);
         this.handle_content_type_change = this.handle_content_type_change.bind(this);
         this.handle_analyze_url_page_click = this.handle_analyze_url_page_click.bind(this);
-        this.handle_analyze_page_content_click = this.handle_analyze_page_content_click.bind(this);
         this.handle_content_type_paste_analyze_click = this.handle_content_type_paste_analyze_click.bind(this);
         this.get_t_internally = this.get_t_internally.bind(this);
     }
@@ -216,10 +206,6 @@ export class AddSampleFormComponent {
             Helpers: this.Helpers,
             t: (key, params) => this.Translation.t(key, params),
         });
-    }
-
-    handle_analyze_page_content_click(): void {
-        void run_analyze_page_content_click(this as unknown as ContentTypeDetectionComponentLike);
     }
 
     _get_sample_edit_draft() {
@@ -420,7 +406,6 @@ export class AddSampleFormComponent {
                 );
             }
         }
-        update_content_type_analyze_visibility(this as unknown as ContentTypeDetectionComponentLike);
 
         this.previous_sample_type_value = this.sample_type_select.value
             ? (this.sample_type_select.options[this.sample_type_select.selectedIndex]?.text || '')
