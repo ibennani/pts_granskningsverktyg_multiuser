@@ -1,6 +1,6 @@
 # Kopierar Nabu user rule-text till urklipp (samma som i nabu-klar-notis.mdc).
 $text = @'
-I Leffe-projektet (denna arbetskatalog): skicka klar-notis först när hela uppgiften är klar och det avslutande användarsvaret är skrivet. Kör notify_done.cmd som sista och enda verktygsanrop i sista svaret (inte parallellt med annat). I planläge när användaren ska svara: kör notify_question.cmd med kort sammanfattning som sista verktygsanrop (fråge-notis). Webhook kan läsas från .cursor/rules/nabu-webhook.local.mdc. Mer detaljer: .cursor/rules/nabu-klar-notis.mdc, nabu-frage-notis.mdc, 01-nabu-sista-steget.mdc och 02-nabu-frage-notis.mdc
+I Leffe-projektet (denna arbetskatalog): huvudagenten begär klar-notis med notify_done.cmd som sista verktygsanrop när hela uppgiften är klar. Underagenter ska aldrig köra notify_done eller nabu_notify. Webhook skickas högst en gång när underagenter och todos är klara (Cursor hooks + nabu_work_state). I planläge när användaren ska svara: kör notify_question.cmd med kort sammanfattning som sista verktygsanrop (fråge-notis). Webhook kan läsas från .cursor/rules/nabu-webhook.local.mdc. Mer detaljer: .cursor/rules/nabu-klar-notis.mdc, nabu-frage-notis.mdc, 01-nabu-sista-steget.mdc och 02-nabu-frage-notis.mdc
 '@.Trim()
 
 Set-Clipboard -Value $text

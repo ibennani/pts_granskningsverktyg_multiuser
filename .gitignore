@@ -26,6 +26,9 @@ build/
 .cursor/nabu_task_context.txt
 # Nabu fråge-notis (lokal sammanfattning, skrivs av set_nabu_question / notify_question)
 .cursor/nabu_question_context.txt
+# Nabu klar-notis (arbetsregister för uppskjuten notis, skrivs av nabu_work_state)
+.cursor/nabu_work_state.json
+.cursor/nabu_work_state.json.lock
 
 # Parallella agenter: vilka filer vilken agent rört (för Pusha-urval)
 .cursor/agent_touched_files.json

@@ -15,9 +15,9 @@ Den här filen är projektets **enda** källa för Cursor-regler. Alla tidigare 
 
 Skicka klar-notis **först när allt är klart** och **efter** att det avslutande infomeddelandet till användaren (sammanfattning efter fixen) är skrivet i sista svaret.
 
-**Sista åtgärden** i det svaret — som **enda och sista** verktygsanrop, **inte** parallellt med annat och **inte** efter delsteg: kör från projektroten **`notify_done.cmd`** eller **`cmd.exe /c scripts\nabu_notify.cmd`**.
+**Sista åtgärden** i det svaret — som **enda och sista** verktygsanrop, **inte** parallellt med annat och **inte** efter delsteg: kör från projektroten **`notify_done.cmd`** eller **`cmd.exe /c scripts\nabu_notify.cmd`**. Skriptet skickar webhook **högst en gång** när underagenter och todos är klara (se **`nabu-klar-notis.mdc`**).
 
-Webhook utan `setx`: läses från **`.cursor/rules/nabu-webhook.local.mdc`** av skriptet. Gäller **Composer, Agent, chatt och underagenter** — samma krav överallt. Se **`.cursor/rules/01-nabu-sista-steget.mdc`** och **`nabu-klar-notis.mdc`**. **Fråge-notis** i planläge (väntar på svar): **`02-nabu-frage-notis.mdc`** och **`nabu-frage-notis.mdc`**, kör **`notify_question.cmd`**.
+Webhook utan `setx`: läses från **`.cursor/rules/nabu-webhook.local.mdc`** av skriptet. Gäller **huvudagenten** i Composer, Agent och chatt. **Underagenter ska aldrig köra klar-notis.** Se **`.cursor/rules/01-nabu-sista-steget.mdc`** och **`nabu-klar-notis.mdc`**. **Fråge-notis** i planläge (väntar på svar): **`02-nabu-frage-notis.mdc`** och **`nabu-frage-notis.mdc`**, kör **`notify_question.cmd`**.
 
 ## Regel: Alltid följ denna fil
 

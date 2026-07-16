@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": "node .cursor/hooks/nabu_on_session_start.mjs"
+      }
+    ],
+    "subagentStart": [
+      {
+        "command": "node .cursor/hooks/nabu_on_subagent_start.mjs"
+      }
+    ],
+    "subagentStop": [
+      {
+        "command": "node .cursor/hooks/nabu_on_subagent_stop.mjs"
+      }
+    ],
+    "postToolUse": [
+      {
+        "command": "node .cursor/hooks/nabu_on_todo_write.mjs",
+        "matcher": "TodoWrite"
+      }
+    ]
+  }
+}

@@ -134,7 +134,7 @@ Projektet är organiserat enligt följande struktur:
 3. **Följ projektets struktur** - Placera kod i rätt kataloger
 4. **Testa ändringar** - Kör tester efter större ändringar
 5. **Använd svenska** - Kommentarer och commit-meddelanden ska vara på svenska
-6. **Klar-notis (Galaxy Watch)** - Först när hela uppgiften är klar och det avslutande användarsvaret är skrivet: kör `notify_done.cmd` som sista verktygsanrop (inte parallellt med annat). Se `.cursor/rules/01-nabu-sista-steget.mdc` och `nabu-klar-notis.mdc`
+6. **Klar-notis (Galaxy Watch)** - Huvudagenten begär klar-notis med `notify_done.cmd` som sista verktygsanrop när hela uppgiften är klar. Underagenter ska aldrig köra klar-notis. Webhook skickas högst en gång när underagenter och todos är klara (Cursor hooks + `nabu_work_state.mjs`). Se `.cursor/rules/01-nabu-sista-steget.mdc` och `nabu-klar-notis.mdc`
 7. **Fråge-notis (Galaxy Watch, planläge)** - När användaren ska svara på frågor eller godkänna plan: kör `notify_question.cmd {kort sammanfattning}` som sista verktygsanrop. Se `.cursor/rules/02-nabu-frage-notis.mdc` och `nabu-frage-notis.mdc`
 
 ## Ytterligare resurser
