@@ -106,8 +106,7 @@ function render_content_type_analyze_status(component: any, panel_inner: HTMLEle
     const live_region = component.Helpers.create_element('p', {
         class_name: 'content-type-analyze-status',
         attributes: {
-            'aria-live': 'polite',
-            'aria-atomic': 'true'
+            role: 'status',
         },
         style: { 'margin-bottom': '0', 'color': 'var(--text-color-muted)' }
     });

@@ -1749,7 +1749,7 @@ export class RequirementAuditComponent {
         hint1.style.fontSize = '0.85em';
         hint1.style.fontWeight = 'bold';
         hint1.style.color = '#d32f2f';
-        hint1.setAttribute('aria-live', 'polite');
+        hint1.setAttribute('role', 'status');
         fg1.appendChild(hint1);
 
         this.comment_to_auditor_input = this.Helpers.create_element('textarea', {
@@ -1771,7 +1771,7 @@ export class RequirementAuditComponent {
         hint2.style.fontSize = '0.85em';
         hint2.style.fontWeight = 'bold';
         hint2.style.color = '#d32f2f';
-        hint2.setAttribute('aria-live', 'polite');
+        hint2.setAttribute('role', 'status');
         fg2.appendChild(hint2);
 
         this.comment_to_actor_input = this.Helpers.create_element('textarea', {

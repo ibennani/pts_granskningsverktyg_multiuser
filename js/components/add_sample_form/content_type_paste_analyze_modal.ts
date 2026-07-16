@@ -86,8 +86,7 @@ export function show_content_type_paste_analyze_modal({
             const status_el = Helpers.create_element('p', {
                 class_name: 'content-type-paste-analyze-modal-status',
                 attributes: {
-                    'aria-live': 'polite',
-                    'aria-atomic': 'true',
+                    role: 'status',
                 },
             });
             container.appendChild(status_el);

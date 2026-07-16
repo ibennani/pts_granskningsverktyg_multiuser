@@ -47,7 +47,7 @@ export function build_critical_notice_banner_row(Helpers, { lead_text, buttons }
  * @returns {HTMLElement}
  */
 export function build_critical_notice_banner(Helpers, rows, options = {}) {
-    const attrs = { 'aria-live': 'polite' };
+    const attrs = { role: 'status' };
     if (options.id) {
         attrs.id = options.id;
     }

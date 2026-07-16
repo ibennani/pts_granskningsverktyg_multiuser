@@ -135,7 +135,7 @@ export function create_online_upload_section(
             offline_hint_el = Helpers.create_element('p', {
                 class_name: 'attach-media-offline-upload-hint',
                 text_content: t('attach_media_upload_requires_online'),
-                attributes: { 'aria-live': 'polite' }
+                attributes: { role: 'status' }
             });
             heading_el.insertAdjacentElement('afterend', offline_hint_el);
         }

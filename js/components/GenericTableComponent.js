@@ -5,7 +5,7 @@ import { slice_rows_for_page } from '../logic/table_pagination_logic.js';
 import { create_table_pagination_element } from './table_pagination_bar.js';
 import './generic_table_component.css';
 
-export class GenericTableComponent {
+export class GenericTableComponent {
     async init({ root, deps }) {
         this.root = root;
         this.deps = deps;
@@ -73,7 +73,7 @@ export class GenericTableComponent {
         const wrapper = this.Helpers.create_element('div', { class_name: wrapper_class });
         const live_region = this.Helpers.create_element('div', {
             class_name: 'visually-hidden',
-            attributes: { 'aria-live': 'polite', 'aria-atomic': 'true' }
+            attributes: { role: 'status' }
         });
         wrapper.appendChild(live_region);
         const table = this.Helpers.create_element('table', {

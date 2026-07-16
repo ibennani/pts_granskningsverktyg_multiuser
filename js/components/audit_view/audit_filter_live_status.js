@@ -1,5 +1,5 @@
 /**
- * @fileoverview Dold aria-live-bekräftelse när filter i granskningslistan återställs.
+ * @fileoverview Dold role=status-bekräftelse när filter i granskningslistan återställs.
  */
 
 const CLEAR_AFTER_MS = 800;

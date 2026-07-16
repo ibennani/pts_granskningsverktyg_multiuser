@@ -32,22 +32,20 @@ export class NotificationComponent {
             if (!this.global_critical_message_element && window.Helpers && typeof window.Helpers.create_element === 'function') {
                 this.global_critical_message_element = window.Helpers.create_element('div', {
                     id: GLOBAL_CRITICAL_MESSAGE_CONTAINER_ID,
-                    attributes: { 'aria-live': 'polite', hidden: 'true' }
+                    attributes: { hidden: 'true' }
                 });
-            } else if (this.global_critical_message_element && !this.global_critical_message_element.getAttribute('aria-live')) {
-                this.global_critical_message_element.setAttribute('aria-live', 'polite');
             }
 
             this.global_message_element = document.getElementById(GLOBAL_MESSAGE_CONTAINER_ID);
             if (!this.global_message_element && window.Helpers && typeof window.Helpers.create_element === 'function') {
                 this.global_message_element = window.Helpers.create_element('div', {
                     id: GLOBAL_MESSAGE_CONTAINER_ID,
-                    attributes: { 'aria-live': 'polite', hidden: 'true' }
+                    attributes: { role: 'status', hidden: 'true' }
                 });
             } else if (!window.Helpers && !this.global_message_element) {
                 if (window.ConsoleManager?.warn) window.ConsoleManager.warn("NotificationComponent: Helpers module not available to create message container.");
-            } else if (this.global_message_element && !this.global_message_element.getAttribute('aria-live')) {
-                this.global_message_element.setAttribute('aria-live', 'polite');
+            } else if (this.global_message_element && !this.global_message_element.getAttribute('role')) {
+                this.global_message_element.setAttribute('role', 'status');
             }
         });
     }
@@ -57,19 +55,25 @@ export class NotificationComponent {
         const ref = which === 'critical' ? 'global_critical_message_element' : 'global_message_element';
         if (!this[ref]) {
             if (window.Helpers && typeof window.Helpers.create_element === 'function' && !document.getElementById(id)) {
+                const attrs = { hidden: 'true' };
+                if (which !== 'critical') {
+                    attrs.role = 'status';
+                }
                 this[ref] = window.Helpers.create_element('div', {
                     id,
-                    attributes: { 'aria-live': 'polite', hidden: 'true' }
+                    attributes: attrs
                 });
             } else if (!document.getElementById(id)) {
                 this[ref] = document.createElement('div');
                 this[ref].id = id;
-                this[ref].setAttribute('aria-live', 'polite');
+                if (which !== 'critical') {
+                    this[ref].setAttribute('role', 'status');
+                }
                 this[ref].hidden = true;
             } else {
                 this[ref] = document.getElementById(id);
-                if (this[ref] && !this[ref].getAttribute('aria-live')) {
-                    this[ref].setAttribute('aria-live', 'polite');
+                if (this[ref] && which !== 'critical' && !this[ref].getAttribute('role')) {
+                    this[ref].setAttribute('role', 'status');
                 }
             }
         }
@@ -85,8 +89,8 @@ export class NotificationComponent {
             return;
         }
 
-        if (!element.getAttribute('aria-live')) {
-            element.setAttribute('aria-live', 'polite');
+        if (!is_critical && !element.getAttribute('role')) {
+            element.setAttribute('role', 'status');
         }
 
         if (!is_critical && message && message.trim() !== '') {
@@ -188,7 +192,7 @@ export class NotificationComponent {
             el.textContent = '';
             el.setAttribute('hidden', 'true');
             el.className = 'global-message-content';
-            el.removeAttribute('role');
+            el.setAttribute('role', 'status');
         }
     }
 

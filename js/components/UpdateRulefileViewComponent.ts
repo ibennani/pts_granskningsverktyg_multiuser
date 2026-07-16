@@ -8,7 +8,8 @@ import { analyze_rule_file_changes, apply_rule_file_update } from '../logic/rule
 import { find_requirement_definition } from '../audit_logic.js';
 import './update_rulefile_view.css';
 
-export class UpdateRulefileViewComponent {    VIEW_STEPS: { WARNING: string; UPLOAD: string; CONFIRM: string };
+export class UpdateRulefileViewComponent {
+    VIEW_STEPS: { WARNING: string; UPLOAD: string; CONFIRM: string };
     root: any;
     deps: any;
     router: any;
@@ -31,7 +32,8 @@ export class UpdateRulefileViewComponent {    VIEW_STEPS: { WARNING: string; UP
     _backup_saved: boolean;
     _analysis_ready: boolean;
 
-    constructor() {        this.VIEW_STEPS = {
+    constructor() {
+        this.VIEW_STEPS = {
             WARNING: 'WARNING',
             UPLOAD: 'UPLOAD',
             CONFIRM: 'CONFIRM'
@@ -408,7 +410,7 @@ export class UpdateRulefileViewComponent {    VIEW_STEPS: { WARNING: string; UP
             const loading_p = this.Helpers.create_element('p', {
                 class_name: 'update-rulefile-loading',
                 text_content: t('update_rulefile_loading_server'),
-                attributes: { 'aria-live': 'polite' }
+                attributes: { role: 'status' }
             });
             actions_div.appendChild(loading_p);
         } else {
@@ -449,7 +451,6 @@ export class UpdateRulefileViewComponent {    VIEW_STEPS: { WARNING: string; UP
             class_name: 'view-intro-text',
             text_content: t('update_rulefile_confirm_intro')
         });
-        confirm_intro.setAttribute('aria-live', 'polite');
         this.plate_element_ref?.appendChild(confirm_intro);
 
         const change_log_title = this.Helpers.create_element('h2', {

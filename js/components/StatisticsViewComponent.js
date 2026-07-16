@@ -14,7 +14,8 @@ import './statistics_view_component.css';
 const MONITORING_FALLBACK_SENTINEL = '__GV_STATS_MONITORING_FALLBACK__';
 
 export class StatisticsViewComponent {
-    constructor() {        this.root = null;
+    constructor() {
+        this.root = null;
         this.deps = null;
         this.Translation = null;
         this.Helpers = null;
@@ -215,7 +216,7 @@ export class StatisticsViewComponent {
         );
         const status_el = Helpers.create_element('div', {
             class_name: 'statistics-status',
-            attributes: { role: 'status', 'aria-live': 'polite', 'aria-busy': 'true' },
+            attributes: { role: 'status', 'aria-busy': 'true' },
             text_content: t('statistics_loading')
         });
         plate.appendChild(status_el);

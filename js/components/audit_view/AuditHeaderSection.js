@@ -168,7 +168,7 @@ export function render_audit_header(ctx) {
 
         const live_region = ctx.Helpers.create_element('div', {
             class_name: 'visually-hidden',
-            attributes: { 'aria-live': 'polite', 'aria-atomic': 'true' }
+            attributes: { role: 'status' }
         });
         ctx._auditFilterLiveRegionRef = live_region;
         filter_wrapper.appendChild(live_region);

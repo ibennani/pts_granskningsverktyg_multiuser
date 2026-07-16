@@ -299,8 +299,6 @@ export function show_sample_url_analyze_modal({
                 class_name: 'sample-url-analyze-modal-progress',
                 attributes: {
                     role: 'status',
-                    'aria-live': 'polite',
-                    'aria-atomic': 'true',
                 },
             }) as HTMLParagraphElement;
 

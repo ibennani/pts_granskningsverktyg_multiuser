@@ -33,7 +33,7 @@ export function create_table_pagination_element(create_el, opts) {
 
     const status = create_el('p', {
         class_name: 'table-pagination-status',
-        attributes: { 'aria-live': 'polite', 'aria-atomic': 'true' },
+        attributes: { role: 'status' },
         text_content: t('table_pagination_status', { start, end, total: total_rows })
     });
     controls.appendChild(status);

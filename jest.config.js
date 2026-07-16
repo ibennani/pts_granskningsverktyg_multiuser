@@ -65,6 +65,7 @@ export default {
     '^.+[\\\\/]export_html_script_generated\\.js$': '<rootDir>/js/export/export_html_script_generated.ts',
     '^.+[\\\\/]export_html_export\\.js$': '<rootDir>/js/export/export_html_export.ts',
     '^.+[\\\\/]export_images_zip_export\\.js$': '<rootDir>/js/export/export_images_zip_export.ts',
+    '^.+[\\\\/]export_audit_appendices_zip\\.js$': '<rootDir>/js/export/export_audit_appendices_zip.ts',
     '^.+[\\\\/]export_observation_texts_collect\\.js$': '<rootDir>/js/export/export_observation_texts_collect.ts',
     '^.+[\\\\/]export_observation_texts_word\\.js$': '<rootDir>/js/export/export_observation_texts_word.ts',
     '^.+[\\\\/]export_observation_texts_word_blocks\\.js$': '<rootDir>/js/export/export_observation_texts_word_blocks.ts',

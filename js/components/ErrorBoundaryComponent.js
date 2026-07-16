@@ -40,7 +40,6 @@ export class ErrorBoundaryComponent {
         const error_container = document.createElement('div');
         error_container.className = 'error-boundary-container';
         error_container.setAttribute('role', 'alert');
-        error_container.setAttribute('aria-live', 'polite');
 
         const error_title = document.createElement('h1');
         error_title.className = 'error-boundary-title';

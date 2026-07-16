@@ -215,7 +215,7 @@ export function setup_observation_word_import_modal_content(
 
         class_name: 'observation-word-import-status',
 
-        attributes: { 'aria-live': 'polite', 'aria-atomic': 'true' },
+        attributes: { role: 'status' },
 
     });
 

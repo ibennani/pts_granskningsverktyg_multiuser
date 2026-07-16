@@ -6,7 +6,8 @@ import { get_current_user_name } from '../utils/helpers.js';
 import './settings_view_component.css';
 
 export class SettingsViewComponent {
-    constructor() {        this.root = null;
+    constructor() {
+        this.root = null;
         this.deps = null;
         this.Translation = null;
         this.Helpers = null;
@@ -273,7 +274,7 @@ export class SettingsViewComponent {
                     id: error_id,
                     class_name: 'settings-password-error',
                     text_content: this.password_change_error,
-                    attributes: { role: 'alert', 'aria-live': 'polite' }
+                    attributes: { role: 'alert' }
                 });
                 password_section.appendChild(error_el);
             }

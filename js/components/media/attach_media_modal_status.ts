@@ -1,5 +1,5 @@
 /**
- * @fileoverview Statusfält i modalen Bifoga media (aria-live och dubblettfel).
+ * @fileoverview Statusfält i modalen Bifoga media (role status/alert och dubblettfel).
  */
 
 import {
@@ -48,7 +48,7 @@ export function create_attach_media_status_handlers(
 
     const status_el = Helpers.create_element('p', {
         class_name: 'attach-media-status',
-        attributes: { 'aria-live': 'polite' }
+        attributes: { role: 'status' }
     });
     status_el.hidden = true;
 
@@ -59,7 +59,6 @@ export function create_attach_media_status_handlers(
     ) => {
         status_el.hidden = false;
         status_el.className = `attach-media-status attach-media-status--${type}`;
-        status_el.setAttribute('aria-live', 'polite');
         if (html_options?.html && typeof Helpers.safe_set_inner_html === 'function') {
             Helpers.safe_set_inner_html(status_el, message, { allow_html: true });
         } else {

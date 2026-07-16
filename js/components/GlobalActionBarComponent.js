@@ -9,13 +9,14 @@ import {
 import './global_action_bar_component.css';
 
 export class GlobalActionBarComponent {
-  constructor() {
+  constructor() {
     // Internal references
     this.root = null;
     this.deps = null;
     this.save_audit_button_element = null;
     this.save_audit_button_instance = null;
     this.theme_toggle_button = null;
+    this.theme_status_live_element = null;
     this.theme_observer = null;
 
     // Dependencies
@@ -253,6 +254,9 @@ export class GlobalActionBarComponent {
       }
       this.theme_toggle_button.setAttribute('aria-label', t('dark_mode'));
     }
+    if (this.theme_status_live_element) {
+      this.theme_status_live_element.textContent = this.theme_toggle_button.getAttribute('aria-label') || '';
+    }
   }
 
   render() {
@@ -375,7 +379,11 @@ export class GlobalActionBarComponent {
 
       this.theme_toggle_button = this.Helpers.create_element('button', {
         class_name: ['button', 'button-default'],
-        attributes: { 'aria-live': 'polite' },
+      });
+
+      this.theme_status_live_element = this.Helpers.create_element('span', {
+        class_name: 'visually-hidden',
+        attributes: { role: 'status' },
       });
 
       this.theme_toggle_button.addEventListener('click', this.toggle_theme);
@@ -384,6 +392,7 @@ export class GlobalActionBarComponent {
       this.update_theme_button_content(current_theme);
 
       right_group.appendChild(this.theme_toggle_button);
+      right_group.appendChild(this.theme_status_live_element);
     }
 
     bar_element.appendChild(right_group);
@@ -437,6 +446,7 @@ export class GlobalActionBarComponent {
     this.deps = null;
     this.save_audit_button_container_element = null;
     this.theme_toggle_button = null;
+    this.theme_status_live_element = null;
     this.Helpers = null;
     this.Translation = null;
     this.getState = null;

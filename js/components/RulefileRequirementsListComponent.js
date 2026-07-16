@@ -12,7 +12,8 @@ import './rulefile_requirements_list_component.css';
 import { consoleManager } from '../utils/console_manager.js';
 
 export class RulefileRequirementsListComponent {
-    constructor() {        this.RETURN_FOCUS_SESSION_KEY = 'gv_return_focus_rulefile_requirements_list_v1';
+    constructor() {
+        this.RETURN_FOCUS_SESSION_KEY = 'gv_return_focus_rulefile_requirements_list_v1';
         this.SORT_OPTIONS = [
             { value: 'ref_asc', textKey: 'sort_option_ref_asc_natural' },
             { value: 'ref_desc', textKey: 'sort_option_ref_desc_natural' },
@@ -198,7 +199,7 @@ export class RulefileRequirementsListComponent {
         this.results_summary_element = this.Helpers.create_element('p', {
             id: 'rulefile-list-results-summary',
             class_name: 'results-summary',
-            attributes: { 'aria-live': 'polite' }
+            attributes: { role: 'status' }
         });
         this.plate_element_ref.appendChild(this.results_summary_element);
         

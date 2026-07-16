@@ -316,7 +316,7 @@ Se `docs/state_and_persistence.md` för detaljer.
 *   **Tangentbordsnavigering:** Fullständig navigering och interaktion med applikationens alla funktioner ska vara möjlig enbart med tangentbord. Fokusordning ska vara logisk och förutsägbar. Fokusindikatorer ska vara tydliga.
 *   **Färgkontrast:** Tillräcklig färgkontrast ska säkerställas för text och ui-komponenter enligt wcag aa-kraven, både i ljust och mörkt tema.
 *   **Semantisk html:** Använd korrekt html-semantik för struktur och komponenter.
-*   **Aria-attribut:** Använd aria-attribut där det behövs för att förbättra tillgängligheten för dynamiskt innehåll och anpassade kontroller (t.ex. `aria-live` för meddelanden, `aria-label` för ikoner utan synlig text, `aria-pressed` för växlingsknappar).
+*   **Aria-attribut:** Använd aria-attribut där det behövs för att förbättra tillgängligheten för dynamiskt innehåll och anpassade kontroller (t.ex. `role="status"` för statusmeddelanden, `role="alert"` för fel, `aria-label` för ikoner utan synlig text, `aria-pressed` för växlingsknappar).
 *   **Fokushantering:** Vid öppning/stängning av modaler/dialoger (t.ex. bekräftelse vid radering av granskningsdel) ska fokus hanteras korrekt (flyttas till dialogen, fångas inuti, och återställas när den stängs). Ikoner i knappar ska placeras till höger om texten (med undantag för globala navigeringsknappar som "Tillbaka").
 
 ## 8. Kodstruktur och moduler (exempel på nuvarande implementation)

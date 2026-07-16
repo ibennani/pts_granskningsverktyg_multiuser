@@ -231,7 +231,7 @@ _(Se föregående svar för detaljerad beskrivning av flödena: Starta ny gransk
     *   När dialoger/modaler stängs (t.ex. `SampleFormViewComponent` eller den inbyggda `confirm()`-dialogen), görs ett försök att återställa fokus till det element som hade fokus innan dialogen öppnades, med hjälp av `previously_focused_element`.
     *   **Förbättringsområde:** Den nuvarande `confirm()`-dialogen för radering har begränsad fokuskontroll. En anpassad modal skulle ge bättre möjligheter för fokusfångst (trapping) och mer precis återställning.
 *   **Semantik:** Applikationen strävar efter att använda semantiskt korrekt HTML (rubriker `<h1>`-`<h4>`, listor `<ul>`/`<li>`, knappar `<button>`, formulärelement `<form>`, `<label>`, `<input>`, `<select>`, `<textarea>`, `<fieldset>`, `<legend>`).
-*   **Dynamiska meddelanden:** `NotificationComponent` använder en `div` med `aria-live="polite"` för att meddela statusuppdateringar och felmeddelanden på ett tillgängligt sätt.
+*   **Dynamiska meddelanden:** `NotificationComponent` använder en `div` med `role="status"` (eller `role="alert"` vid fel) för att meddela statusuppdateringar och felmeddelanden på ett tillgängligt sätt.
 *   **ARIA-attribut:** `aria-pressed` används på växlingsknappar (t.ex. för "Stämmer"/"Stämmer inte"). `aria-label` används på knappar i `SampleListComponent` för att ge unik kontext när flera likadana knappar finns. I `ChecklistHandler` har kontrollpunkter (h3) aria-label i formatet "Kontrollpunkt X. {status}" och godkännandekriterier (h4) aria-label i formatet "Godkännandekriterium X.Y. {status}". Nedladdningsknappar i `StartViewComponent` har aria-label "Ladda ner {diarienummer} {aktörens namn}".
 
 ## 7. Utvecklingsmiljö och byggprocess

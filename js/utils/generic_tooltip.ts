@@ -1,5 +1,5 @@
 /**
- * @fileoverview Generisk tooltip-controller med DOM mount/unmount och aria-live på textspanen.
+ * @fileoverview Generisk tooltip-controller med DOM mount/unmount och role=status på textspanen.
  */
 
 import '../../css/components/generic_tooltip.css';
@@ -147,8 +147,7 @@ export class GenericTooltip {
         const text_el = this.deps.create_element('span', {
             class_name: TEXT_CLASS,
             attributes: {
-                'aria-live': 'polite',
-                'aria-atomic': 'true',
+                role: 'status',
             },
         });
         tooltip_el.appendChild(text_el);
@@ -234,8 +233,7 @@ export class GenericTooltip {
         const text_el = deps.create_element('span', {
             class_name: TEXT_CLASS,
             attributes: {
-                'aria-live': 'polite',
-                'aria-atomic': 'true',
+                role: 'status',
             },
             text_content: text,
         });

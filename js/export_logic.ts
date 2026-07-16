@@ -1,7 +1,4 @@
-/**
- * @fileoverview Tunn fasad för export (Word/HTML/CSV/Excel).
- * Första argumentet till varje export normaliseras lätt (t.ex. samples som array) innan underliggande modul anropas.
- */
+/** @fileoverview Tunn fasad för export (Word/HTML/CSV/Excel). Första argument normaliseras lätt innan underliggande modul anropas. */
 import { export_to_csv } from './export/export_csv.js';
 import { export_to_excel } from './export/export_excel.js';
 import { export_to_word_criterias, export_to_word_samples, export_to_word_deficiency_types, export_to_word_screenshots_appendix, export_observation_texts_word } from './export/export_word_main_flow.js';

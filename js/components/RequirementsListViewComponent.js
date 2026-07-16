@@ -15,7 +15,7 @@ import { fingerprint_item_keys, can_incremental_update } from '../utils/incremen
 import './all_requirements_view_component.css';
 import './requirement_list_component.css';
 
-export class RequirementsListViewComponent {
+export class RequirementsListViewComponent {
     async init({ root, deps }) {
         this.root = root;
         this.deps = deps;
@@ -55,6 +55,7 @@ export class RequirementsListViewComponent {
         this.h1_element_ref = null;
         this.header_element_ref = null;
         this.results_summary_element_ref = null;
+        this.results_summary_live_element_ref = null;
         this.empty_message_element_ref = null;
         this.list_element_ref = null;
         this.content_div_for_delegation = null;
@@ -184,6 +185,7 @@ export class RequirementsListViewComponent {
         this.filter_heading_ref = dom_refs.filter_heading_ref;
         this.filter_container_element = dom_refs.filter_container_element;
         this.results_summary_element_ref = dom_refs.results_summary_element_ref;
+        this.results_summary_live_element_ref = dom_refs.results_summary_live_element_ref;
         this.empty_message_element_ref = dom_refs.empty_message_element_ref;
         this.content_div_for_delegation = dom_refs.content_div_for_delegation;
         this.is_dom_initialized = true;
@@ -333,10 +335,14 @@ export class RequirementsListViewComponent {
         const filtered_count = filtered_items.length;
 
         // Update results summary
-        this.results_summary_element_ref.textContent = t('results_summary_template', {
+        const summary_text = t('results_summary_template', {
             filteredCount: filtered_count,
             totalCount: total_count
         });
+        this.results_summary_element_ref.textContent = summary_text;
+        if (this.results_summary_live_element_ref) {
+            this.results_summary_live_element_ref.textContent = summary_text;
+        }
 
         // Sort items
         const sort_by = current_ui_settings.sortBy || 'ref_asc';
@@ -443,6 +449,7 @@ export class RequirementsListViewComponent {
         this.h1_element_ref = null;
         this.header_element_ref = null;
         this.results_summary_element_ref = null;
+        this.results_summary_live_element_ref = null;
         this.empty_message_element_ref = null;
         this.list_element_ref = null;
     }

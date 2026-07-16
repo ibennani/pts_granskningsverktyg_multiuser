@@ -1,5 +1,5 @@
 /**
- * @fileoverview Enhetstester för dold aria-live-status vid URL-skärmdump.
+ * @fileoverview Enhetstester för dold role=status vid URL-skärmdump.
  */
 import { describe, test, expect } from '@jest/globals';
 import {
@@ -23,7 +23,7 @@ describe('sample_url_screenshot_aria_status', () => {
         expect(find_url_screenshot_live_region(btn)?.textContent).toBe('');
     });
 
-    test('set_sample_url_screenshot_live_status sätter success i live-region', () => {
+    test('set_sample_url_screenshot_live_status sätter success i statusregion', () => {
         const btn = document.createElement('button');
         const region = document.createElement('span');
         region.setAttribute('data-url-screenshot-live-status', 'true');

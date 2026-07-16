@@ -1,5 +1,5 @@
 /**
- * @fileoverview Dold aria-live-status för automatisk URL-skärmdump (endast skärmläsare).
+ * @fileoverview Dold role=status för automatisk URL-skärmdump (endast skärmläsare).
  */
 
 export type UrlScreenshotLiveStatus = 'idle' | 'capturing' | 'success' | 'failed';
@@ -41,8 +41,7 @@ export function create_url_screenshot_live_region(Helpers: {
     return Helpers.create_element('span', {
         class_name: 'visually-hidden',
         attributes: {
-            'aria-live': 'polite',
-            'aria-atomic': 'true',
+            role: 'status',
             'data-url-screenshot-live-status': 'true',
         },
     });

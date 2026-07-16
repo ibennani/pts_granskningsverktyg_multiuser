@@ -78,7 +78,7 @@ export function apply_visible_message_presentation(element, type, is_critical) {
     if (type === 'error' || type === 'warning' || is_critical) {
         element.setAttribute('role', 'alert');
     } else {
-        element.removeAttribute('role');
+        element.setAttribute('role', 'status');
     }
     element.className = '';
     element.classList.add('global-message-content');

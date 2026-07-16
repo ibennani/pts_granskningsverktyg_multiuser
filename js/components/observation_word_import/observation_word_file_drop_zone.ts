@@ -192,7 +192,7 @@ export function create_observation_word_file_drop_zone(
 
     const pending_el = helpers.create_element('p', {
         class_name: 'observation-word-import-pending-file',
-        attributes: { 'aria-live': 'polite' },
+        attributes: { role: 'status' },
     });
     pending_el.hidden = true;
 

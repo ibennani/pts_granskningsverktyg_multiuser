@@ -18,6 +18,7 @@
  *   filter_heading_ref: HTMLElement,
  *   filter_container_element: HTMLElement,
  *   results_summary_element_ref: HTMLElement,
+ *   results_summary_live_element_ref: HTMLElement,
  *   empty_message_element_ref: HTMLElement|null,
  *   content_div_for_delegation: HTMLElement
  * }}
@@ -56,9 +57,14 @@ export function build_requirements_list_dom(ctx) {
         class_name: 'results-summary',
         id: summary_id,
         text_content: '',
-        attributes: { 'aria-live': 'polite' }
+    });
+    const results_summary_live_element_ref = Helpers.create_element('p', {
+        class_name: 'visually-hidden',
+        attributes: { role: 'status' },
+        text_content: '',
     });
     plate_element_ref.appendChild(results_summary_element_ref);
+    plate_element_ref.appendChild(results_summary_live_element_ref);
 
     let empty_message_element_ref = null;
     if (mode === 'all') {
@@ -84,6 +90,7 @@ export function build_requirements_list_dom(ctx) {
         filter_heading_ref,
         filter_container_element,
         results_summary_element_ref,
+        results_summary_live_element_ref,
         empty_message_element_ref,
         content_div_for_delegation
     };

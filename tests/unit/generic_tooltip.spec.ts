@@ -31,7 +31,7 @@ describe('generic_tooltip', () => {
         jest.restoreAllMocks();
     });
 
-    test('mount_empty_shell skapar tom textspan med aria-live', () => {
+    test('mount_empty_shell skapar tom textspan med role status', () => {
         const icon = create_element('span', { text_content: '○' });
         const { wrapper, tooltip } = create_tooltip_wrapper(Helpers, {
             content: icon,
@@ -46,8 +46,7 @@ describe('generic_tooltip', () => {
         const tooltip_el = tooltip.get_tooltip_element();
         const text_el = tooltip.get_text_element();
         expect(tooltip_el).not.toBeNull();
-        expect(text_el?.getAttribute('aria-live')).toBe('polite');
-        expect(text_el?.getAttribute('aria-atomic')).toBe('true');
+        expect(text_el?.getAttribute('role')).toBe('status');
         expect(text_el?.textContent).toBe('');
     });
 
