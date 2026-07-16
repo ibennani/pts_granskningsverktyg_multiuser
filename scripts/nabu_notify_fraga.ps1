@@ -69,7 +69,9 @@ if ($summary.Length -gt $max_summary) {
 # Bygg prefix med Unicode-koder (samma mönster som nabu_notify.ps1) så att Windows PowerShell
 # inte dubbelkodar å/ä/ö när skriptfilen läses in via -File.
 $aa = [char]0x00E5
-$msg = ('Du m{0}ste svara p{0} fr{0}gor om {1}' -f $aa, $summary)
+$tz = [TimeZoneInfo]::FindSystemTimeZoneById('W. Europe Standard Time')
+$stamp = [TimeZoneInfo]::ConvertTimeFromUtc([DateTime]::UtcNow, $tz).ToString('HH:mm:ss')
+$msg = ('Du m{0}ste svara p{0} fr{0}gor om {1} ({2})' -f $aa, $summary, $stamp)
 $body = @{ message = $msg } | ConvertTo-Json -Compress
 $tmp = [System.IO.Path]::GetTempFileName()
 try {

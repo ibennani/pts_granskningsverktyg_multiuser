@@ -27,9 +27,8 @@ Skicka **fråge-notis** när **alla** följande gäller:
 ## Obligatorisk avslutning (agent)
 
 1. **Frågan ska vara skriven först** — användaren ska se planen, alternativen eller frågorna i chatten innan notisen skickas.
-2. **Notisen allra sist** — kör `notify_question.cmd` (eller `scripts\nabu_notify_fraga.cmd`) som **enda och sista** verktygsanrop i det svaret, **efter** plan-/frågetexten (och efter `AskQuestion` om det används). Blanda **aldrig** fråge-notis med andra verktyg i samma batch.
-3. Det räcker **inte** att bara skriva i chatten — notisen måste skickas via skriptet.
-4. **`NABU_WEBHOOK_URL`** läses som för klar-notis: från miljön eller `.cursor/rules/nabu-webhook.local.mdc` via `nabu_notify_fraga.ps1`.
+2. **Notisen före `AskQuestion`** — kör `notify_question.cmd` **innan** `AskQuestion`, eftersom `AskQuestion` avslutar agentens tur och verktyg efter den **inte körs**. Ordning: skriv frågan → `notify_question.cmd` → `AskQuestion` (sista verktyget).
+3. **Blanda aldrig** fråge-notis med andra verktyg utöver `AskQuestion` i samma svar.
 
 ## Sammanfattning till notisen
 
@@ -45,7 +44,9 @@ Exempel:
 
 Meddelandet på klockan blir då:
 
-`Du måste svara på frågor om {sammanfattning}`
+`Du måste svara på frågor om {sammanfattning} ({HH:mm:ss})`
+
+Klockslaget gör varje notis unik så Nabu/Home Assistant triggar även vid upprepade frågor.
 
 ## Rekommenderat (fråge-notis)
 
